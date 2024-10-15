@@ -1,4 +1,4 @@
-; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -165,7 +165,7 @@
 
 ; This function is used to extract the :REWRITE rules from a term.
 ; Lambdas are sort of expanded to expose the conclusion.  They are not
-; expanded in the hypotheses, or within an function symbol other than
+; expanded in the hypotheses, or within a function symbol other than
 ; the top-level IFs and IMPLIES.  But top-level lambdas (those enclosing
 ; the entire term) are blown away.
 
@@ -216,7 +216,7 @@
 ; to a term so that we can recognize if a type-prescription can be
 ; represented as a tau signature rule.
 
-; The next few functions are used to produced the formulas represented by
+; The next few functions are used to produce the formulas represented by
 ; type-prescriptions.
 
 (defun convert-returned-vars-to-term-lst (term vars)
@@ -1006,7 +1006,7 @@
 ; MV-NTH Synonym:
 ; (equal (fn x y) (mv-nth x y))
 
-; where the monadic predicate symbols above, p, q, p1, p2, etc., may be are our
+; where the monadic predicate symbols above, p, q, p1, p2, etc., may be our
 ; signed tau recognizers.
 
 ; On Tau Recognizers -- Part 1

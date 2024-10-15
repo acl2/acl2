@@ -1,4 +1,4 @@
-; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -136,7 +136,7 @@
 ; evaluate to "nan", say, if we have overflow -- at least in principle.
 
 ;   An error should be signaled
-; 
+;
 ;   This means that an error is signaled in safe code, and an error
 ;   might be signaled in unsafe code. Conforming code may rely on the
 ;   fact that the error is signaled in safe code. Every implementation
@@ -144,9 +144,9 @@
 ;   error is not signaled, the ``consequences are undefined'' (see
 ;   below). For example, ``+ should signal an error of type type-error
 ;   if any argument is not of type number.''
-; 
+;
 ;   The consequences are undefined
-; 
+;
 ;   This means that the consequences are unpredictable. The consequences
 ;   may range from harmless to fatal. No conforming code may depend on
 ;   the results or effects. Conforming code must treat the consequences
@@ -155,7 +155,7 @@
 ;   the stated requirement is not met and no specific consequence is
 ;   explicitly stated. An implementation is permitted to signal an error
 ;   in this case.
-; 
+;
 ;   For example: ``Once a name has been declared by defconstant to be
 ;   constant, any further assignment or binding of that variable has
 ;   undefined consequences.''
@@ -179,7 +179,7 @@
 ; * (sb-int:get-floating-point-modes)
 ; (:TRAPS (:OVERFLOW :INVALID :DIVIDE-BY-ZERO) :ROUNDING-MODE :NEAREST
 ;  :CURRENT-EXCEPTIONS (:INEXACT) :ACCRUED-EXCEPTIONS (:INEXACT) :FAST-MODE NIL)
-; * 
+; *
 
 ; Indeed, for SBCL we check at build time that :OVERFLOW is among the :TRAPS.
 
@@ -232,18 +232,18 @@
 ;  * (rational most-positive-double-float)
 ;  179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368
 ;  * (rational double-float-positive-infinity)
-;  
+;
 ;  debugger invoked on a SIMPLE-ERROR in thread
 ;  #<THREAD "main thread" RUNNING {1001D60003}>:
 ;    Can't decode NaN or infinity: #.DOUBLE-FLOAT-POSITIVE-INFINITY.
-;  
+;
 ;  Type HELP for debugger help, or (SB-EXT:EXIT) to exit from SBCL.
-;  
+;
 ;  restarts (invokable by number or by possibly-abbreviated name):
 ;    0: [ABORT] Exit debugger, returning to top level.
-;  
+;
 ;  (SB-KERNEL:INTEGER-DECODE-DOUBLE-FLOAT #.DOUBLE-FLOAT-POSITIVE-INFINITY)
-;  0] 
+;  0]
 
 ; CCL
 
@@ -262,7 +262,7 @@
 ;  ? (> (rational ccl::double-float-positive-infinity)
 ;       (rational most-positive-double-float))
 ;  T
-;  ? 
+;  ?
 
 #-acl2-loop-only
 (declaim (inline

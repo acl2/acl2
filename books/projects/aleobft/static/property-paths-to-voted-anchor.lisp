@@ -213,13 +213,7 @@
 ; because we re-use it in property-paths-to-other-voted-anchor.lisp.
 
 (defruled cardinality-of-voters/previous-intersection
-  (implies (and (certificate-setp certs1)
-                (certificate-setp certs2)
-                (certificate-set-unequivocalp (set::union certs1 certs2))
-                (<= (set::cardinality
-                     (certificate-set->round-set (set::union certs1 certs2)))
-                    1)
-                (<= (set::cardinality (set::union certs1 certs2)) n)
+  (implies (and (<= (set::cardinality (set::union certs1 certs2)) n)
                 (>= (set::cardinality certs1) (1+ f))
                 (equal (set::cardinality certs2) (- n f)))
            (>= (set::cardinality (set::intersect certs1 certs2)) 1))

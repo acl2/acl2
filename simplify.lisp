@@ -1,4 +1,4 @@
-; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -53,7 +53,7 @@
 
 ; In this section we develop rewrite-clause.
 
-; Note: The following two functions are no longer called.  The were
+; Note: The following two functions are no longer called.  They were
 ; called before we made type-set track dependencies.  However, after
 ; that change, we found the burden of passing up the ttrees generated
 ; below to be so off-putting that we eliminated their calls in favor
@@ -4356,7 +4356,7 @@
 ; commented-out of the sources!
 
 ; fc-round is the round number in question.  The arguments subscripted with 1
-; are the results of advancing all the activations in this round.  Thos
+; are the results of advancing all the activations in this round.  Those
 ; subscripted with 2 are the results of processing disjunctions in this round.
 
 ; Note: Running the fill-format-string Emacs macro from emacs-acl2.el messes up

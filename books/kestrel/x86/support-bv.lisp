@@ -29,14 +29,10 @@
 ;(local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 
+;move
 (defthm fix-of-ifix
   (equal (fix (ifix x))
          (ifix x)))
-
-(defthm fix-when-integerp
-  (implies (integerp x)
-           (equal (fix x)
-                  x)))
 
 ;; ;replace the other one!
 ;; (encapsulate ()
@@ -140,7 +136,7 @@
   :hints (("Goal" :in-theory (enable bvchop ifix))))
 
 ;move
-(defthm bvchop-upper-bound-strong
+(defthmd bvchop-upper-bound-strong
   (implies (natp n)
            (<= (bvchop n x) (+ -1 (expt 2 n))))
   :hints (("Goal" :in-theory (enable bvchop))))
@@ -186,9 +182,9 @@
 
 ;; Since 0 and 1 are the only BVs less than 2
 (defthmd <-of-bvchop-and-2
-  (equal (< (BVCHOP size x) 2)
-         (or (equal (BVCHOP size x) 0)
-             (equal (BVCHOP size x) 1))))
+  (equal (< (bvchop size x) 2)
+         (or (equal (bvchop size x) 0)
+             (equal (bvchop size x) 1))))
 
 ;;gen
 (defthm bvplus-subst-smaller-term
@@ -196,14 +192,3 @@
                 (syntaxp (smaller-termp x2 x)))
            (equal (bvplus 32 x y)
                   (bvplus 32 x2 y))))
-
-(defthm equal-of-bvchop-and-bvplus-same
-  (implies (natp size)
-           (equal (equal (bvchop size x) (bvplus size y x))
-                  (equal (bvchop size y) 0)))
-  :hints (("Goal"
-           :in-theory (e/d (bvplus bvchop-of-sum-cases bvuminus bvminus)
-                           (bvminus-becomes-bvplus-of-bvuminus
-                            ;; bvcat-of-+-high
-                            ;; NTH-OF-CDR
-                            )))))

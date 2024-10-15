@@ -1,4 +1,4 @@
-; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -2003,7 +2003,7 @@
 ; Address is a valid address for the term, term.  This function returns a
 ; geneqv g such that if one substitutes a subterm u of term at the given
 ; address such that (g term u), resulting in a term term', then (geneqv term
-; term').  As usual, we may return nil for to represent the geneqv for equal.
+; term').  As usual, we may return nil to represent the geneqv for equal.
 
   (cond ((null addr)
          geneqv)

@@ -1814,7 +1814,7 @@
     (xdoc::topstring
      (xdoc::p
       "This is used to print argument expressions of function calls,
-       as well as paramaters of GCC attributes
+       as well as parameters of GCC attributes
        if GCC extensions are supported.")
      (xdoc::p
       "The case of an empty expression list

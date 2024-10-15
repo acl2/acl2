@@ -493,6 +493,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define stringlit-list->prefix?-list ((strlits stringlit-listp))
+  :returns (prefixes eprefix-option-listp)
+  :short "Lift @(tsee stringlit->prefix?) to lists."
+  (cond ((endp strlits) nil)
+        (t (cons (stringlit->prefix? (car strlits))
+                 (stringlit-list->prefix?-list (cdr strlits)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define expr-postfix/primary-p ((expr exprp))
   :returns (yes/no booleanp)
   :short "Check if an expression is postfix or primary."

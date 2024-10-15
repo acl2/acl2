@@ -1,4 +1,4 @@
-; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -771,9 +771,9 @@
 ; out: the name of the package, and the list of symbol names.
 ;
 ; See also the Essay on Bad Objects and Serialize.  When we are decoding, we
-; optionally check that packages are known to ACL2 by calling pkg-witness, which
-; causes an error if it the package isn't known.  Note that we only have to do
-; this once per package, so this is a very low-cost check.
+; optionally check that packages are known to ACL2 by calling pkg-witness,
+; which causes an error if the package isn't known.  Note that we only have to
+; do this once per package, so this is a very low-cost check.
 ;
 ; If checking packages is so cheap, why not just check packages all the time?
 ; We tried that originally, but sometimes ACL2 actually DOES read in bad
@@ -1091,7 +1091,7 @@
 ; their indices.  This is especially efficient because their hash tables have
 ; already been grown to the proper sizes.
 ;
-; Before we this smashing process, we check that the maximum index we will ever
+; Before this smashing process, we check that the maximum index we will ever
 ; need is going to be a fixnum.  Because of this, throughout this code we can
 ; assume that all indices are always fixnums.
 ;

@@ -1,4 +1,4 @@
-; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -2394,7 +2394,7 @@
 (defun body (fn normalp w)
 
 ; WARNING: Fn can be either a function symbol of w or a lambda, but in the
-; former case fn should in :logic mode.  The requirement is actually a bit
+; former case fn should be in :logic mode.  The requirement is actually a bit
 ; looser: fn can be a :program mode function symbol if fn is not built-in and
 ; normalp is nil.  But if fn is a built-in :program mode function symbol, we do
 ; not store even its 'unnormalized-body property; when we tried modifying
@@ -3689,7 +3689,7 @@
 (defun attach-stobj-guard (gen impl wrld)
   (declare (xargs :guard (plist-worldp wrld)))
   (null (attach-stobj-guard-msg gen impl wrld)))
-   
+
 (set-table-guard attach-stobj-table
                  (attach-stobj-guard key val world)
                  :topic attach-stobj
@@ -3785,7 +3785,7 @@
 ; defabsstobj event for gen is effectively modified as followed.
 
 ; - The :foundation for gen is replaced by the :foundation for impl.
-; 
+;
 ; - The function specs for gen -- that is, for the :recognizer, :creator, and
 ; :exports -- are replaced by the filled-in function specs for impl, except
 ; that in each case the name is preserved and the updater, if any, is replaced
@@ -3904,7 +3904,7 @@
 ; so impl2, not impl, will be attached to gen.  The compilation of code for the
 ; primitives of gen will do macroexpansion without taking into account the
 ; attachment of impl2, so we have the same problem as before.
-; 
+;
 ; We have seen above that compiled code from books must be ignored when it is
 ; based on macroexpanding generic stobj primitives.  Thus, suppose that ACL2 is
 ; processing a defun event for a function symbol, foo, whose code thus depends
@@ -3916,7 +3916,7 @@
 ; invalidate the precompiled symbol-function for bar, provided foo is
 ; proclaimed notinline before compiling bar (so that the call of p made by foo
 ; is not macroexpanded when compiling bar).
-; 
+;
 ; We thus introduce two categories of function symbols that together are
 ; intended to include all ACL2 function symbols that should not be called by
 ; code obtained from a book's compiled file.  First, we define an "extended
@@ -3982,7 +3982,7 @@
 ;     (st1 :type st))
 ;     :inline t ; optional
 ;     )
- 
+
 ; It may seem unfortunate that st1 is in neither ext-gen-barriers nor ext-gen,
 ; if one is concerned about compiled calls of st1 made by subsequently defined
 ; functions.  However, (st1 top1) is defined to be (svref top1 0) in raw Lisp.
@@ -4164,66 +4164,66 @@
 ; ---------- absstobj-simple.lisp ----------
 
 ; (in-package "ACL2")
-; 
+;
 ; (defstobj st$c
 ;   (misc$c :initially 0))
-; 
+;
 ; (defun st$ap (x)
 ;   (declare (xargs :guard t))
 ;   (and (true-listp x)
 ;        (equal (len x) 1)))
-; 
+;
 ; (defun misc$a (st$a)
 ;   (declare (xargs :guard (st$ap st$a)))
 ;   (nth 0 st$a))
-; 
+;
 ; (defun misc$c-er$inline (st$c)
 ;   (declare (xargs :stobjs st$c))
 ;   (prog2$ (er hard? 'misc$c-er$inline "Illegal misc access!")
 ;           (misc$c st$c)))
-; 
+;
 ; (defun update-misc$a (v st$a)
 ;   (declare (xargs :guard (st$ap st$a)))
 ;   (update-nth 0 v st$a))
-; 
+;
 ; (defun st$corr (st$c st$a)
 ;   (declare (xargs :stobjs st$c :verify-guards nil))
 ;   (and (st$cp st$c)
 ;        (st$ap st$a)
 ;        (equal (misc$c st$c) (misc$a st$a))))
-; 
+;
 ; (defun-nx create-st$a ()
 ;   (declare (xargs :guard t))
 ;   (list (nth 0 (create-st$c)) ; or: initial value of misc$c, i.e., 0
 ;         ))
-; 
+;
 ; (DEFTHM CREATE-ST{CORRESPONDENCE}
 ;   (ST$CORR (CREATE-ST$C) (CREATE-ST$A))
 ;   :RULE-CLASSES NIL)
-; 
+;
 ; (DEFTHM CREATE-ST{PRESERVED}
 ;   (ST$AP (CREATE-ST$A))
 ;   :RULE-CLASSES NIL)
-; 
+;
 ; (DEFTHM MISC{CORRESPONDENCE}
 ;   (IMPLIES (AND (ST$CORR ST$C ST)
 ;                 (ST$AP ST))
 ;            (EQUAL (misc$c-er$inline ST$C)
 ;                   (MISC$A ST)))
 ;   :RULE-CLASSES NIL)
-; 
+;
 ; (DEFTHM UPDATE-MISC{CORRESPONDENCE}
 ;   (IMPLIES (AND (ST$CORR ST$C ST)
 ;                 (ST$AP ST))
 ;            (ST$CORR (UPDATE-MISC$C V ST$C)
 ;                     (UPDATE-MISC$A V ST)))
 ;   :RULE-CLASSES NIL)
-; 
+;
 ; (DEFTHM UPDATE-MISC{PRESERVED}
 ;   (IMPLIES (ST$AP ST)
 ;            (ST$AP (UPDATE-MISC$A V ST)))
 ;   :RULE-CLASSES NIL)
-; 
+;
 ; (defabsstobj st
 ;   :foundation st$c
 ;   :recognizer (stp :logic st$ap :exec st$cp)
@@ -4242,9 +4242,9 @@
 ; ---------- foo.lisp ----------
 
 ; (in-package "ACL2")
-; 
+;
 ; (include-book "absstobj-simple")
-; 
+;
 ; (defun foo (st)
 ;   (declare (xargs :stobjs st))
 ;   (misc st))
@@ -4254,111 +4254,111 @@
 ; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; ;;; The set-up
 ; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; 
+;
 ; ; In a fresh session (see above for contents of absstobj-simple.lisp):
 ; (certify-book "absstobj-simple")
-; 
+;
 ; ; In another fresh session (see above for contents of foo.lisp):
 ; (certify-book "foo")
-; 
+;
 ; ; Note that absstobj-simple.lisp defines an abstract stobj with an
 ; ; export whose :exec is an inlined function, as follows (thanks to the
 ; ; "$INLINE$ suffix), which always causes an error.
-; 
+;
 ; #|
 ; (defun misc$c-er$inline (st$c)
 ;   (declare (xargs :stobjs st$c))
 ;   (prog2$ (er hard? 'misc$c-er$inline "Illegal misc access!")
 ;           (misc$c st$c)))
 ; |#
-; 
+;
 ; ; This is in analogy to the errors caused by invoking an export of a
 ; ; purely generic stobj (if one could even invoke that export -- not
 ; ; actually possible since that stobj cannot even be created!).
-; 
+;
 ; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; ;;; Illustration of the problem
 ; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; 
+;
 ; ; Start a fresh ACL2 session.
-; 
+;
 ; (include-book "foo")
-; 
+;
 ; ; Error, as expected:
-; 
+;
 ; (foo st)
-; 
+;
 ; ; Now let's simulate what would happen if we were to include the
 ; ; generic stobj book after providing an implementation.  So, we are
 ; ; giving a different definition to the export function called by foo,
 ; ; but we see below that this makes no difference since that export was
 ; ; expanded away during compilation of foo.
-; 
+;
 ; (set-ld-redefinition-action '(:doit . :overwrite) state)
-; 
+;
 ; (defun misc$c-er$inline (st$c)
 ;   (declare (xargs :stobjs st$c))
 ;   (misc$c st$c))
-; 
+;
 ; ; Unfortunately, still an error:
 ; (foo st)
-; 
+;
 ; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; ;;; Better illustration of the problem
 ; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; 
+;
 ; ; Start a fresh ACL2 session.
-; 
+;
 ; ; This time we simulate the problem a bit more closely, by waiting
 ; ; till after redefinition before including foo.lisp.  But that doesn't
 ; ; solve the problem either.
-; 
+;
 ; (include-book "absstobj-simple")
-; 
+;
 ; (set-ld-redefinition-action '(:doit . :overwrite) state)
-; 
+;
 ; (defun misc$c-er$inline (st$c)
 ;   (declare (xargs :stobjs st$c))
 ;   (misc$c st$c))
-; 
+;
 ; (set-ld-redefinition-action nil state)
-; 
+;
 ; (include-book "foo")
-; 
+;
 ; ; Still an error:
 ; (foo st)
-; 
+;
 ; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; ;;; Solution: Load the application book without compiled file
 ; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; 
+;
 ; ; Note that we are not proposing that the user avoid loading a
 ; ; compiled file.  The point here is just to show that if ACL2 avoids
 ; ; loading pre-compiled code, that avoids the problem.
-; 
+;
 ; ; Start a fresh ACL2 session.
-; 
+;
 ; (include-book "absstobj-simple")
-; 
+;
 ; (set-ld-redefinition-action '(:doit . :overwrite) state)
-; 
+;
 ; (defun misc$c-er$inline (st$c)
 ;   (declare (xargs :stobjs st$c))
 ;   (misc$c st$c))
-; 
+;
 ; (set-ld-redefinition-action nil state)
-; 
+;
 ; ; Notice the change here from the previous attempt: we are not loading
 ; ; the compiled file, so the application function (here, simulated by
 ; ; foo) is defined (and compiled) after the implementation has been
 ; ; attached to the generic stobj (here, simulated by redefinition).
-; 
+;
 ; (include-book "foo" :load-compiled-file nil)
-; 
+;
 ; ; No error -- hurray!
-; 
+;
 ; (foo st)
-; 
+;
 ; --------------------
 ;
 ; End of Essay on Attachable Stobjs.

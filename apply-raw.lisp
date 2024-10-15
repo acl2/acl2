@@ -1,4 +1,4 @@
-; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -2417,7 +2417,7 @@
 
 ; Both scenarios (c) and (d) pay the price of recognizing this particular good
 ; lambda and compiling it.  We can compute the price of that from
-; Scenario (b), where it the good lambda is recognized and compiled a million
+; Scenario (b), where the good lambda is recognized and compiled a million
 ; times.  (/ 318.78 (expt 10.0 6)) = 0.00032 (approx).  (This ignores the
 ; cost of doing the ``real work'' of cdring down the list, applying the
 ; compiled lambda, and summing up the answer.  That is estimated below but is

@@ -1,4 +1,4 @@
-; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -364,7 +364,7 @@
 ; code in read-file-into-string2.  That function allocates a string and copies
 ; a stream into it.  Presumably that works because the stream is interpreted as
 ; a character stream (since character is the default element-type for open) and
-; a each byte in the file is treated as a single character in that stream.
+; each byte in the file is treated as a single character in that stream.
 
 ; We set the character encoding (see discussion above).
 
@@ -1175,7 +1175,7 @@ ACL2 from scratch.")
    (setq acl2::*copy-of-acl2-version*
 ;  Keep this in sync with the value of acl2-version in *initial-global-table*.
          (concatenate 'string
-                      "ACL2 Version 8.5"
+                      "ACL2 Version 8.6"
                       #+non-standard-analysis
                       "(r)"
                       #+(and mcl (not ccl))
@@ -1205,7 +1205,7 @@ ACL2 from scratch.")
 
 ; Note that for the community books, files books/Makefile-generic,
 ; books/Makefile-subdirs, and books/Makefile-psubdirs all deal with compiled
-; file extensions.  Thanks to Gary Byers for suggested the following approach
+; file extensions.  Thanks to Gary Byers for suggesting the following approach
 ; for #+ansi-cl, which however appears to work for all Lisps supported as of
 ; early 2006.
 
@@ -2286,19 +2286,19 @@ which is saved just in case it's needed later.")
 ;   #X, #x hex
 ;          ok
 ;
-; Eventually, it will be best to define a read function for ACL2 solely in terms
-; of ACL2 character reading primitives.  Common Lisp read is ambiguous.  There is
-; the ambiguity of backquote described above.  There is the ambiguity of which
-; tokens get read as numbers.  To make matters a little more scary, there is
-; nothing that prevents a Common Lisp implementation from adding, for example, a
-; new # readmacro option that would provide something as potentially catastrophic
-; as full-blown sharp-dot.  One obstacle to doing a read within ACL2 this is
-; efficiency.  For example, ACL2 does not now support unread-char.  And given the
-; requirement that whatever is specified in a guard must be checkable, it is
-; unclear now how best to add unread-char since Common Lisp does permit one to
-; detect whether a stream is in a ``just unread'' state.  ACL2 could enable one
-; to answer such a question, but at the cost of having to store the information
-; every time that a character was unread.
+; Eventually, it will be best to define a read function for ACL2 solely in
+; terms of ACL2 character reading primitives.  Common Lisp read is ambiguous.
+; There is the ambiguity of backquote described above.  There is the ambiguity
+; of which tokens get read as numbers.  To make matters a little more scary,
+; there is nothing that prevents a Common Lisp implementation from adding, for
+; example, a new # readmacro option that would provide something as potentially
+; catastrophic as full-blown sharp-dot.  One obstacle to doing a read within
+; ACL2 is efficiency.  For example, ACL2 does not now support unread-char.  And
+; given the requirement that whatever is specified in a guard must be
+; checkable, it is unclear now how best to add unread-char since Common Lisp
+; does permit one to detect whether a stream is in a ``just unread'' state.
+; ACL2 could enable one to answer such a question, but at the cost of having to
+; store the information every time that a character was unread.
 
 
 ;          ACL2's Implementation of the character reader
@@ -2470,7 +2470,7 @@ You are using version ~s.~s.~s."
 ; trap it is difficult to figure out what is happening.  Here is a
 ; brute force way to do it.
 ; (0) create an events file or book that will recreate the
-;     the state up to the event that causes the illegal instruction.
+;     state up to the event that causes the illegal instruction.
 ; (1) Copy saved_acl2 to old_saved_acl2
 ; (2) replace the declaim above with
 ;     (declaim (optimize (safety 3) (space 0) (speed 0)));
@@ -2999,3 +2999,4 @@ You are using version ~s.~s.~s."
 
 #+ccl ; originally for ACL2(h), but here we make behavior the same for ACL2
 (setq ccl::*quit-on-eof* t)
+

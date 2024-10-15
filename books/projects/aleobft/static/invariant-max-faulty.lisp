@@ -55,6 +55,8 @@
      since these are useful in other proofs.
      We also prove the top-level theorem for all kinds of events."))
 
+  (local (in-theory (enable in-all-addresses-when-in-correct-addresses)))
+
   (defrule max-faulty-of-create-certificate-next
     (implies (create-certificate-possiblep cert systate)
              (equal (max-faulty (create-certificate-next cert systate))

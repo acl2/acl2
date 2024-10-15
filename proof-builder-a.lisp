@@ -1,4 +1,4 @@
-; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -523,7 +523,7 @@
 
 (defmacro with-output-forced (output-chan signature code)
 
-; Use this to force output to output-chan after executing the give code.  See
+; Use this to force output to output-chan after executing the given code.  See
 ; print-pc-prompt and print-prompt for examples that make the usage pretty
 ; obvious.
 

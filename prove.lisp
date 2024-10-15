@@ -1,4 +1,4 @@
-; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -3079,7 +3079,7 @@
 ; It should also be noted that the problem with moving m&m is not so
 ; much with the code for the mate and merge process as it is with the
 ; pseudo functional argument it takes.  M&m naturally is a higher
-; order function that compute the transitive closure of an operation
+; order function that computes the transitive closure of an operation
 ; supplied to it.  Because ACL2 is first order, our m&m doesn't really
 ; take a function but rather a symbol and has a finite table mapping
 ; symbols to functions (m&m-apply).  It is only that table that we

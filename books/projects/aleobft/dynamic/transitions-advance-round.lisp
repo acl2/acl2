@@ -14,6 +14,8 @@
 (include-book "system-states")
 (include-book "elections")
 
+;; cert_param: (non-acl2r)
+
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
@@ -276,6 +278,6 @@
   (in-theory (disable validator-state->dag-of-advance-round-next
                       validator-state->buffer-of-advance-round-next
                       validator-state->endorsed-of-advance-round-next
-                      validator-state->blockchain-of-advance-round-next
+                      validator-state->last-of-advance-round-next
                       validator-state->blockchain-of-advance-round-next
                       get-network-state-of-advance-round-next)))

@@ -22,8 +22,9 @@
 (include-book "quorum-intersection")
 (include-book "last-blockchain-round")
 (include-book "ordered-even-blocks")
+(include-book "accepted-certificate-committee")
 (include-book "signer-quorum")
-(include-book "predecessor-quorum")
+(include-book "previous-quorum")
 (include-book "backward-closure")
 (include-book "unequivocal-signed-certificates")
 (include-book "unequivocal-accepted-certificates-def-and-init")
@@ -31,6 +32,7 @@
 (include-book "same-committees")
 (include-book "unequivocal-accepted-certificates-next")
 (include-book "unequivocal-dags")
+(include-book "predecessor-cardinality")
 (include-book "anchors-of-validators")
 (include-book "last-anchor-present")
 
@@ -58,8 +60,9 @@
                     quorum-intersection
                     last-blockchain-round
                     ordered-even-blocks
+                    accepted-certificate-committee
                     signer-quorum
-                    predecessor-quorum
+                    previous-quorum
                     backward-closure
                     unequivocal-signed-certificates
                     unequivocal-accepted-certificates-def-and-init

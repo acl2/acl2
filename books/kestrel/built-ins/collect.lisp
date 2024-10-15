@@ -14,9 +14,6 @@
 ; This file must not include any other file,
 ; because we are collecting only the built-in events.
 
-; TODO: get this file to work with ACL2(r)
-; cert_param: (non-acl2r)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; (depends-on "build/ground-zero-theory.certdep" :dir :system)
@@ -964,8 +961,7 @@
     apply$-warrant-loop$-default-values-definition
     apply$-loop$-default-values1
     apply$-warrant-loop$-default-values1-necc
-    apply$-warrant-loop$-default-values1-definition
-))
+    apply$-warrant-loop$-default-values1-definition))
 
 ; Put all the above names together, and check that
 ; (1) they are all built-in axiom and theorem names and
@@ -997,7 +993,8 @@
                           (append *builtin-defaxiom-names*
                                   *builtin-defthm-names*)))
 
-#-acl2data ; The following assertion is false for certain "acl2data" runs.
+#-(or acl2data non-standard-analysis)
+; The following assertion is false for certain "acl2data" runs, and for ACL2(r).
 (assert-event (subsetp-eq (append *builtin-defaxiom-names*
                                   *builtin-defthm-names*)
                           *builtin-defaxiom/defthm-all*))

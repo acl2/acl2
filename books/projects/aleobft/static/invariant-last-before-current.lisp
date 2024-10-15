@@ -57,7 +57,9 @@
           (implies (set::in val (correct-addresses systate))
                    (b* (((validator-state vstate)
                          (get-validator-state val systate)))
-                     (< vstate.last vstate.round)))))
+                     (< vstate.last vstate.round))))
+  :guard-hints
+  (("Goal" :in-theory (enable in-all-addresses-when-in-correct-addresses))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -72,6 +74,7 @@
            (system-last-before-current-p systate))
   :enable (system-last-before-current-p
            system-state-initp
+           validator-init-when-system-initp
            validator-init))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

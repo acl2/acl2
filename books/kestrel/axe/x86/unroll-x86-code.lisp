@@ -67,6 +67,7 @@
 (include-book "kestrel/lists-light/nthcdr" :dir :system)
 (include-book "kestrel/lists-light/append" :dir :system)
 (include-book "kestrel/arithmetic-light/less-than" :dir :system)
+(include-book "kestrel/arithmetic-light/fix" :dir :system)
 (include-book "kestrel/bv/arith" :dir :system) ;reduce?
 (include-book "kestrel/bv/intro" :dir :system)
 (include-book "kestrel/bv/rtl" :dir :system)

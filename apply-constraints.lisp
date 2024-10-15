@@ -1,4 +1,4 @@
-; ACL2 Version 8.5 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2024, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -37,7 +37,7 @@
 ; when an untame function is applied.)  The ``badge'' of a function describes
 ; how it uses its formals.  Badges report the arity of the symbol and the
 ; ``ilks'' of its formals (tokens indicating whether the value of the formal is
-; treated as an as ordinary objects, a function, or an expression).
+; treated as an ordinary object, a function, or an expression).
 
 ; The ``warrant'' of a symbol fn is a 0-ary predicate named APPLY$-WARRANT-fn,
 ; which specifies the badge of 'fn and the conditions under which (apply$ 'fn

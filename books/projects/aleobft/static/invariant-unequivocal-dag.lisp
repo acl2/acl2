@@ -64,7 +64,9 @@
           (implies (set::in val (correct-addresses systate))
                    (certificate-set-unequivocalp
                     (validator-state->dag
-                     (get-validator-state val systate))))))
+                     (get-validator-state val systate)))))
+  :guard-hints
+  (("Goal" :in-theory (enable in-all-addresses-when-in-correct-addresses))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

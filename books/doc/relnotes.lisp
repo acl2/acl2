@@ -80,6 +80,73 @@
  <p>The current version of ACL2 is the value of the constant @('(@
  acl2-version)').</p>")
 
+(defxdoc note-8-7-books
+
+; Please add information about your library in the appropriate
+; category below --- the category title is enclosed in (xdoc::h3 ...)
+; (of course, feel free to add a new category if needed).  To
+; ensure consistency with the style of previous book release doc
+; topics, please follow the following convention:
+
+;  (xdoc::h4 "Your Library Title")
+;  (xdoc::p "Details go here.")
+
+; Please put the h4's in alphabetical order, each preceded by 40 semicolons.
+; You can also use (xdoc::h5 ...) under each h4, e.g. for sub-libraries:
+; There is no need to order the h5's alphabetically,
+; but please precede each h5 by 20 semicolons.
+; If you are stuck, see the entries about other libraries.
+
+  :parents (note-8-7 release-notes-books)
+
+  :short "Release notes for the ACL2 Community Books for ACL2 8.7"
+
+  :long
+
+  (xdoc::topstring
+
+   (xdoc::p
+    "The following is a brief summary of
+     changes made to the @(see community-books)
+     between the releases of ACL2 8.6 and 8.7.")
+
+   (xdoc::p
+    "See also @(see note-8-7) for the changes made to ACL2 itself.
+     For additional details,
+     you may also see the raw "
+    (xdoc::ahref "https://github.com/acl2/acl2/commits/master" "commit log")
+    ".")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h3 "New Libraries")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h3 "Changes to Existing Libraries")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h3 "Documentation")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h3 "Licensing Changes")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h3 "Build System Updates")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h3 "Testing")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h3 "Miscellaneous")
+
+   ))
+
 (defxdoc note-8-6-books
 
 ; Please add information about your library in the appropriate
@@ -134,6 +201,14 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 "CSV Library (@('kestrel/csv/'))")
+
+   (xdoc::p
+     "This library contains a parser for CSV (comma separated value) files and
+      utilities for handling parsed CSV files.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 "Ethereum Virtual Machine")
 
    (xdoc::p
@@ -182,13 +257,21 @@
    (xdoc::h4 "Kestrel Hints Library")
 
    (xdoc::p
-     "A new library (@('kestrel/hints/')) has been added for manipulting
+     "A new library (@('kestrel/hints/')) has been added for manipulating
       hints (combining, removing, applying renamings, etc.). This gathers
       and improves existing utilities, and adds new ones.")
 
    (xdoc::p
      "A new hint, @(':casesx'), has been added to make a @(':cases') hint
       with all possible combinations of a given set of cases.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Leo Library")
+
+   (xdoc::p
+    "An initial ACL2 library for Leo,
+     Provable Inc.'s language for zero-knowledge applications.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -213,7 +296,7 @@
    (xdoc::h4 "Schroder-Bernstein Library")
 
    (xdoc::p
-    "This added a proof of the Schroder-Berstein theorem. See
+    "This added a proof of the Schroder-Bernstein theorem. See
      @('projects/schroder-bernstein/README.md').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -246,6 +329,11 @@
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "abnf::abnf" "ABNF Library"))
+
+   (xdoc::p
+    "This library has been moved
+     from @('[books]/kestrel/abnf/')
+     to @('[books]/projects/abnf').")
 
    (xdoc::p
     "The library has been refactored to organize its constituents more clearly.
@@ -334,13 +422,243 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-   (xdoc::h4 "Axe Toolkit (@('kestrel/axe/'))")
+   (xdoc::h4 (xdoc::seetopic "axe" "Axe Toolkit"))
 
    (xdoc::p
-     "A very large number of improvements were made to Axe and its variants (for
-x86, JVM, and R1CS reasoning).  These included performance, usability,
-generality, and documentation improvements.  Many new rules and rule-lists were
-added, as were several new examples.")
+     "Many improvements have been made to the Axe toolkit.  These include
+     improvements to the legacy Axe tools (Rewriter, Prover, and Equivalence
+     checker) as well as to the new tools (rewriters, provers, etc.) that we
+     are creating.  These new tools are generated from a template for various
+     applications, and we sometimes refer to them as generated rewriters,
+     generated provers, etc.  Improvements specific to individual Axe
+     variants (for x86, JVM, and R1CS reasoning) are discussed in further
+     sections, below.")
+
+   (xdoc::p
+     "Various Axe-specific rewrite rules have been added, improved, organized, and
+      renamed.  Rule-lists have also been improved in many ways (e.g., to build in
+      more simplifications).")
+
+   (xdoc::p
+     "Axe rewriters were improved in various ways (most of these improvements apply
+to the new, generated rewriters).  Handling of @('if') was improved when the
+test can be resolved.  Rewriting of @('bvif') now assumes the test when
+rewriting the then-branch (and assumes the negation of the test when rewriting
+the else-branch).  When rewriting a DAG node that is an @('if') or @('myif'),
+replacements of the test that preserve @('iff') are allowed.  Non-nil branches
+of @('boolif')s now rewrite to @('t') (since @('boolif') bool-fixes them).
+Equality assumptions are interpreted as directed equalities and used to replace
+terms as indicated.  A new variant of hit-counting efficiently counts only the
+total number of hits, not the number per rule.  Generate rewriters now
+use (approximate) internal context information.")
+
+   (xdoc::p
+     "When memoization is enabled, generated rewriters now do two rewrites, first
+with memoization and then a second one using node contexts (but no memoization,
+for soundness).  We sometimes need to use the node contexts, but we also want
+memoization turned on when most of the work is being done (this can make a huge
+difference in the speed of large rewrites).  When a rewriter does makes two
+passes, it now ensures the reduced rule limits from pass 1 are passed to pass
+2.")
+
+   (xdoc::p
+     "Axe rules now support binding hypotheses. These must be wrapped in
+calls of the identity function @('axe-binding-hyp').")
+
+   (xdoc::p
+     "Lambdas are no longer always expanded in normal hypotheses of Axe rules.
+Instead, we call @('pre-simplify-term') to apply various theory-independent
+simplifications to them (e.g., removing unnecessary lambda bindings, such as
+those that bind variables to constants).  The same simplifications are also now
+applied to the right hand sides of Axe rules.")
+
+   (xdoc::p
+     "Various theorems were proved about the implementation of Axe itself, and
+theorems were added to justify some of Axe's operations (e.g., simplifications
+it makes).  Many skip-proofs in the legacy Axe tools were removed, and more
+code was put into @(':logic') mode.  Many guards were added, improved, or
+strengthened, and more code has been guard verified.  Proofs about the
+implementation (e.g., termination, guard, and return type proofs) were sped up
+and made more robust.  Many clarifications were made to the code, and code style
+was modernized.")
+
+   (xdoc::p
+     "Generated provers now support the @(':var-ordering') option to prevent
+undesirable substitutions.  The new prover tactic :rewrite-top causes rewriting
+only of literals whose top nodes match rewrite rules.  A rare completeness
+issue was fixed, and each generated prover can now have its own set of
+@('default-global-rules').  The @(':extra-global-rules') and @(':count-hits')
+options were also added.  Handling of empty clauses was improved.  Some
+quadratic prover behaviors (in the number of literals) are now avoided.")
+
+   (xdoc::p
+     "The dependencies of Axe were reduced, as were the rules exported when Axe is
+included (e.g., rules Axe uses to reason about its own implementation).")
+
+   (xdoc::p
+     "The Tactic Prover now applies a set of rewrite rules before calling STP on a
+goal. These prepare the proof for STP by rewriting unsupported constructs into
+supported ones (e.g., splitting rotations with non-constant rotation amounts
+into cases).  Also, a @(':sweep-and-merge') tactic is being added (currently it
+just prints the probable facts).  Improvements have also been made to probable
+fact finding.")
+
+   (xdoc::p
+     "At least one fix was made to the STP translation, and supporting analyses,
+such as type inference, were improved and clarified.  The formalization of Axe
+types was improved (including some long awaited changes), and better error
+checking is now done.  STP calls record the time taken.  The environment variable
+@('STP') can now override the default location of STP.  More options have been
+added to the @('stp-clause-processor').")
+
+   (xdoc::p
+     "The @('ACL2_STP_VARIETY') environment variable now controls how STP is to be
+called, specifically the max conflicts option.  The default is 2, and a value
+of 3 should work with the latest STP.  See @(tsee stp).")
+
+   (xdoc::p
+     "A @(':max-conflicts') option was added to the query tool.")
+
+   (xdoc::p
+     "The @('prove-equivalence2') tool was renamed to @('prove-equal-with-tactics').")
+
+   (xdoc::p
+     "Evaluation was improved to build more functions into the evaluators.")
+
+   (xdoc::p
+     "Tests and examples were added and improved (e.g., when new tool options reduce user input required).
+   New examples include some Axe verifications of AES implementations.
+   Documentation has also been improved.")
+
+   (xdoc::p
+     "Pruning of unreachable if branches has been improved (evaluating additional
+ground terms and supporting @('boolif') and @('bvif')).  More assumptions are
+now used when pruning as well.")
+
+   (xdoc::p
+     "The implementation was optimized in various ways, e.g. by using stobjs and
+fast-alists, by using @('tshell-call') instead of @('sys-call') (much faster),
+and by having the memoization use a tree hash that is less likely to have
+collisions.  Generated rewriters were optimized to gather groups of common
+arguments into a stobjs, to reduce the number of arguments that have to be
+pushed for each call.  A second rewriting pass (to use internal contextual
+information) is now avoided when there are no @('if')s (or similar functions).")
+
+   (xdoc::p
+     "The Equivalence Checker now allows the @(':types') argument (usually an alist)
+to be just @(':bits') or @(':bytes'), which is taken to describe all variables.
+The @(':prove-theorem') option (default nil) was added to control whether an ACL2
+theorem is generated after the proof.  Also, @('bv-array-if') can now appear in
+pure DAGs.  Finally, after proving a node is constant, the tool doesn't then try
+to merge it with a smaller node.")
+
+   (xdoc::p
+     "The @('unroll-spec-basic') tool now uses a better set of rules, and the
+@(':assumptions') argument can now be @(':bytes') or @(':bits,') meaning to
+assume all variables have those types.")
+
+   (xdoc::p
+     "Printing was significantly improved (e.g., to print elapsed times, to print
+more information for failures, and to elide uninteresting output).
+Counterexample printing has also been improved, as has printing when monitoring
+rules (only printing relevant DAG nodes and suppressing printing of huge
+assumptions) and when printing assumptions (adding the ability to elide given
+function calls).")
+
+   (xdoc::h4 "Axe JVM toolkit (@('kestrel/axe/jvm/'))")
+
+   (xdoc::p
+  "The Java Formal Unit Tester now analyzes all methods whose names start with
+   @('test') or @('fail_test'), with the latter former expected to pass and the
+   latter expected to fail.  The Formal Unit Tester was improved in other
+   ways (e.g., handling of type assumptions for arrays), and several examples
+   of using it have been added.  The @('unroll-java-code') tool has been
+   improved in several ways, and the model of exception handling was also
+   improved.")
+
+   (xdoc::h4 "Axe R1CS toolkit (@('kestrel/axe/r1cs/'))")
+
+   (xdoc::p
+     "The R1CS variant of Axe has benefited from many of the general Axe
+   improvements mentioned above, especially scalability improvements to
+   generated provers.  Also, more global rules have been built in.")
+
+   (xdoc::h4 "Axe x86 toolkit (@('kestrel/axe/x86/'))")
+
+   (xdoc::p
+     "Many improvements were made to the x86 variant of Axe, including incorporation
+of improved rules and normal forms from the @('kestrel/x86') library (described
+below).  Some of these improvements are in-progress and are currently being
+further improved.  Further Caveat: Some improvements described in this section
+apply only to lifting of 64-bit code, or only to the Lifter variant that
+unrolls loops.")
+
+   (xdoc::p
+     "The x86 Axe tools now use an Axe Rewriter variant specialized for x86
+reasoning.")
+
+   (xdoc::p
+     "A new tool, @('prove-functions-equivalent'), can be used to directly show
+equivalence of two (simple) x86 binary functions.")
+
+   (xdoc::p
+     "Support for parsing and lifting ELF files was added, as was a
+:position-independent option.")
+
+   (xdoc::p
+     "Lifting of x86 code into logic was improved in many ways, including new rules, new normal forms,
+improved rule-lists, better support for floating-point operations, better
+debugging, more ways to indicate which components of the final state should be
+extracted, and improved generation of assumptions for lifting.  The
+@(':assumptions') option has been renamed to @(':extra-assumptions') (these
+augment, not replace, the assumptions added by the tool).  A new
+@(':untranslatep') option controls whether to untranslate terms when printing.")
+
+   (xdoc::p
+     "Lifting has been optimized (e.g., by avoiding passing in unhelpful assumptions
+when pruning).  Also, the Lifter avoids opening @('fetch-decode-execute')
+unless it can resolve the next instruction byte.  This can make failures easier
+to read.  The Lifter now ensures that the result is simplified, even in the
+special case when pruning finished the run by pruning away all non-finished
+branches.  The Lifter no longer generates a theorem by default (since the
+theorem assumptions mention the program, printing the theorem can crash the
+pretty printer if the program is large).  However, when the theorem is
+generated, the automatically generated assumptions are now included.")
+
+   (xdoc::p
+     "The ability to name and describe the types of inputs was added.  This can help
+the tools put in some assumptions automatically.  If this option is used, the
+Lifter puts in assumptions about the inputs being separate from the code and
+the saved return address.  Also, the assumptions about inputs being disjoint
+from subsequent stack slots are now sensitive to the number of stack slots
+specified.  For an array input, variables can now be introduced for individual
+elements.  The scheme for introducing variable for registers has been improved,
+and type assumptions are now generated for these variables.  Initial support
+for Lifter @(':output-indicators') that are SIMD registers has been added.")
+
+   (xdoc::p
+     "The order of parameters in generated functions has been improved (to match x86
+calling conventions), and the @(':non-executable') option can now take the
+value @(':auto').")
+
+   (xdoc::p
+     "The Axe x86 tools now always use @('if'), not @('myif').  Since ACL2 rewrite
+rules can now target calls of @('if'), @('myif') is less important and may be
+deprecated.")
+
+   (xdoc::p
+     "An executable to be lifted must now be indicated by giving its path.  Passing
+in an entire parsed executable, as was previously done, is now deprecated.")
+
+   (xdoc::p
+     "Examples were added, including a proof of an x86 implementation of the TEA
+ block cipher, and an example of lifting and verifying a recursive x86
+ factorial program.")
+
+   (xdoc::p
+     "A Formal Unit Tester for x86 binaries was added.  This can be used to augment
+unit test suites with small proofs about binary programs.")
+
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -486,7 +804,7 @@ improved.")
 
    (xdoc::p
     "A soundness issue was fixed in @(tsee tshell-call), which was modified to
-     take and return @(tsee state). To accomodate users who do not wish to
+     take and return @(tsee state). To accommodate users who do not wish to
      refactor to this new stateful variant, the old version was retained and
      moved to a new book under the name @(tsee tshell-call-unsound).")
 
@@ -520,7 +838,7 @@ improved.")
 
    (xdoc::p
      "Formal specifications have been added for the AES block cipher, the TEA block
-     cipher, and the the SHA-3 hash function.  Proofs have been done to connect
+     cipher, and the SHA-3 hash function.  Proofs have been done to connect
      the SHA-3 spec to the Keccak spec.")
 
    (xdoc::p
@@ -594,7 +912,7 @@ library organization has been improved.  New books have been added (e.g., about
      "A new Proof Advice tool has been added to help create and repair ACL2
       proofs.  The tool can get proof help over the web, from machine
       learning models running on servers.  It also applies some proof search
-      heuristics.  Tools have also added to expermentally evaluate how well
+      heuristics.  Tools have also added to experimentally evaluate how well
       the Proof Advice tool performs.")
 
    (xdoc::p
@@ -674,13 +992,80 @@ was added.")
      goal by induction, and label them accordingly.")
 
    (xdoc::p
-     "A large number of other improvements was made to this library, including
-new utilities, new books, and improved utilities.")
+     "Various new utilities have been added, including
+      @('most-recent-failed-theorem-goal'), @('translatable-term-listp'),
+      @('dir-of-path'), @('all-included-books'), @('defthms-in-world'),
+      @('extend-pathnames$'), @('sys-call-event'), @('split-path'),
+      @('reduce-print-level'), @('pack-in-package'), @('eval-tests'),
+      @('setenv$-event'), @('prove$-nice-trying-hints'),
+      @('prove$-nice-with-time-and-steps'), @('last-prover-steps$'),
+      @('merge-sort-string<'), and utilities for parsing strings.")
+
+   (xdoc::p
+     "New data structures have been added, including @('fast-alist-set') (an
+      efficient implementation of sets using fast-alists) and
+      @('array-stobj') (a stobj containing a single array, of elements of any
+      type)")
+
+   (xdoc::p
+     "New books on have been created about @('read-acl2-oracle'),
+      @('update-acl2-oracle'), @('invariant-risk'), @('getenv$'),
+      @('get-serialize-character'), @('plist-worldp'), @('char-code'), widening
+      margins, @('strip-cadrs'), @('>=-len'), @('our-digit-char-p'),
+      @('read-run-time'), @('get-cpu-time'), @('get-real-time'), @('put-global')
+      and @('get-global'), @('ppr2'), @('doublet-listp'), and @('add-prefix') and
+      @('add-prefix-to-fn').")
+
+   (xdoc::p
+     "Various rules have been added (e.g., about @('world'), @('state'), channels,
+      @('assoc-keyword') setting margins, @('coerce'), non-trivial-bindings,
+      @('map-symbol-name'), @('merge-sort-symbol<'), and @('acl2-count')).")
+
+   (xdoc::p
+  "Library organization has been improved (e.g., splitting out material on
+  @('byte-array-stobj') and @('unquote-list') into new books.  Also, more tests
+  have been added.")
+
+   (xdoc::p
+  "Various improvement have been made, including to @('prove$-nice') and
+  @('prove$+'), the declare-handling utilities, @('defxdoc-for-macro'),
+  @('ubi'), the utilities dealing with temporary directories, and to material
+  about conjuncts/disjuncts, @('acl2-count'), @('my-get-event') (add support
+  for @('defmacro') and @('deftheory')), @('print-to-hundredths') (support
+  negative values), and @('ld-history').")
+
+   (xdoc::p
+  "The utility @('defopeners-mut-rec') has been deprecated (just use
+  @('defopeners')).")
+
+   (xdoc::p
+  "The utility @('archive-topics-for-books-tree') has a new option,
+@(':include-defxdoc-raw-topicsp').")
+
+   (xdoc::p
+  "The @('defmergesort') utility has been improved (@(':extra-theorems') option),
+   and the first two arguments of @('defmergesort') have been swapped (putting
+   the name of the sorting function, not the merging function, first).")
+
+   (xdoc::p
+  "New utilities @('shuffle-array-stobj'), @('shuffle-array-stobj2'),
+  @('shuffle-list'), and @('shuffle-list2') were added.  These use a
+  Fisher-Yates shuffle.")
+
+   (xdoc::p
+  "The @('defstobj+') utility has been improved.  It generates more
+   theorems (e.g., about hash-table fields, although these are still not fully
+   supported) and puts in better hints.  More tests have been added.")
+
+   (xdoc::p
+  "The utility @('make-var-name-range') has been renamed to
+  @('make-var-names-from').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 "Lists Light Library (@('kestrel/lists-light/'))")
 
-(xdoc::p
+   (xdoc::p
   "Various rules about list functions have been added or collected (e.g., rules
   about @('union-equal') and @('remove-equal')). Various books have been
   added (e.g., about @('position-equal-ac') and @('position-equal')).  Various
@@ -724,8 +1109,11 @@ new utilities, new books, and improved utilities.")
    (xdoc::h4 (xdoc::seetopic "omap::omaps" "Ordered Maps (Omaps) Library"))
 
    (xdoc::p
-    "Moved from @('[books]/kestrel/utilities/omaps/')
-     to @('[books]/std/omaps/').")
+    "This library have been moved
+     from @('[books]/kestrel/utilities/omaps/')
+     to @('[books]/std/omaps/').
+     So omaps are now part of the Std library,
+     as the Std/omaps sub-library.")
 
    (xdoc::p
     "Added some theorems.")
@@ -814,6 +1202,13 @@ new utilities, new books, and improved utilities.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "rtl::rtl" "RTL Library"))
+
+   (xdoc::p
+     "Some proofs have been significantly sped up.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 "Sequences Library (@('kestrel/sequences/'))")
 
    (xdoc::p
@@ -861,6 +1256,10 @@ new utilities, new books, and improved utilities.")
    (xdoc::h4 (xdoc::seetopic "std/strings" "Standard Strings Library"))
 
    (xdoc::p
+    "The Std/strings books extensions in @('[books]/kestrel/std/strings')
+     have been integrated into @('[books]/std/strings').")
+
+   (xdoc::p
     "The recognizers of digit characters in various bases
      have been renamed to have the suffix @('-list*p'),
      because they are loose list recognizers.
@@ -870,6 +1269,10 @@ new utilities, new books, and improved utilities.")
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "std/system" "Standard System Library"))
+
+   (xdoc::p
+    "The Std/system books extensions in @('[books]/kestrel/std/system')
+     have been integrated into @('[books]/std/system').")
 
    (xdoc::p
     "A new utility @(tsee untranslate$) has been added,
@@ -936,6 +1339,10 @@ new utilities, new books, and improved utilities.")
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "std::std/util" "Standard Utilities Library"))
+
+   (xdoc::p
+    "The Std/util books extensions in @('[books]/kestrel/std/util')
+     have been integrated into @('[books]/std/util').")
 
    (xdoc::p
     "The "
@@ -1348,7 +1755,8 @@ building blocks for building more complex @('clause-processors').")
    help developing books, including very preliminary tools to find hints, prove
    return type theorems, and improve existing books.")
 
-   (xdoc::p "A new utility be used to process dependency information.")
+   (xdoc::p "A new utility has been added for processing dependency
+             information.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
