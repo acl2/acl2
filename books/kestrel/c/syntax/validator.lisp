@@ -12,6 +12,7 @@
 
 (include-book "abstract-syntax-operations")
 (include-book "implementation-environments")
+(include-book "unambiguity")
 
 (include-book "std/util/error-value-tuples" :dir :system)
 
@@ -175,6 +176,13 @@
   (:unknown ())
   :pred typep)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-type
+  :short "An irrelevant type."
+  :type typep
+  :body (type-void))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defoption type-option
@@ -185,6 +193,187 @@
    (xdoc::p
     "Types are defined in @(tsee type)."))
   :pred type-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist type-list
+  :short "Fixtype of lists of types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Types are defined in @(tsee type)."))
+  :elt-type type
+  :true-listp t
+  :elementp-of-nil nil
+  :pred type-listp
+  :prepwork ((local (in-theory (enable nfix)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-standard-signed-integerp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is a standard signed integer type [C:6.2.5/4]."
+  (and (member-eq (type-kind type) '(:schar :sshort :sint :slong :sllong))
+       t)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-signed-integerp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is a signed integer type [C:6.2.5/4]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we do not model any extended signed integer types,
+     so the signed integer types coincide with
+     the standard signed integer types."))
+  (type-standard-signed-integerp type)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-standard-unsigned-integerp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is a standard unsigned integer type [C:6.2.5/6]."
+  (and (member-eq (type-kind type) '(:bool :uchar :ushort :uint :ulong :ullong))
+       t)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-unsigned-integerp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is an unsigned integer type [C:6.2.5/6]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we do not model any extended unsigned integer types,
+     so the unsigned integer types coincide with
+     the standard unsigned integer types."))
+  (type-standard-unsigned-integerp type)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-standard-integerp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is a standard integer type [C:6.2.5/7]."
+  (or (type-standard-signed-integerp type)
+      (type-standard-unsigned-integerp type))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-real-floatingp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is a real floating type [C:6.2.5/10]."
+  (and (member-eq (type-kind type) '(:float :double :ldouble))
+       t)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-complexp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is a complex type [C:6.2.5/11]."
+  (and (member-eq (type-kind type) '(:floatc :doublec :ldoublec))
+       t)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-floatingp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is a floating type [C:6.2.5/11]."
+  (or (type-real-floatingp type)
+      (type-complexp type))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-basicp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is a basic type [C:6.2.5/14]."
+  (or (type-case type :char)
+      (type-signed-integerp type)
+      (type-unsigned-integerp type)
+      (type-floatingp type))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-characterp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is a character type [C:6.2.5/15]."
+  (and (member-eq (type-kind type) '(:char :schar :uchar))
+       t)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-integerp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is an integer type [C:6.2.5/17]."
+  (or (type-case type :char)
+      (type-signed-integerp type)
+      (type-unsigned-integerp type)
+      (type-case type :enum))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-realp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is a real type [C:6.2.5/17]."
+  (or (type-integerp type)
+      (type-real-floatingp type))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-arithmeticp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is an arithmetic type [C:6.2.5/18]."
+  (or (type-integerp type)
+      (type-floatingp type))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-apconvert ((type typep))
+  :returns (new-type typep)
+  :short "Convert array types to pointer types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This performs the conversion in [C:6.3.2.1/3].
+     It leaves non-array types unchanged.")
+   (xdoc::p
+    "In our currently approximate type system,
+     there is just one type for arrays and one type for pointers."))
+  (if (type-case type :array)
+      (type-pointer)
+    (type-fix type))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-fpconvert ((type typep))
+  :returns (new-type typep)
+  :short "Convert function types to pointer types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This performs the conversion in [C:6.3.2.1/4].
+     It leaves non-function types unchanged.")
+   (xdoc::p
+    "In our currently approximate type system,
+     there is just one type for functions and one type for pointers."))
+  (if (type-case type :function)
+      (type-pointer)
+    (type-fix type))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -506,7 +695,7 @@
      We formalize that table here, and we return the type of the constant.
      If the constant is too large,
      it does not have a type, and it is invalid."))
-  (b* (((reterr) (type-void))
+  (b* (((reterr) (irr-type))
        ((iconst iconst) iconst)
        (value (valid-dec/oct/hex-const iconst.core)))
     (cond
@@ -605,12 +794,12 @@
           ((or (fsuffix-case suffix? :locase-l)
                (fsuffix-case suffix? :upcase-l))
            (type-ldouble))
-          (t (prog2$ (impossible) (type-void)))))
+          (t (prog2$ (impossible) (irr-type)))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define valid-univ-char-name ((ucn univ-char-name-p))
+(define valid-univ-char-name ((ucn univ-char-name-p) (max natp))
   :returns (mv erp (code natp))
   :short "Validate a universal character name."
   :long
@@ -619,9 +808,14 @@
     "If validation is successful, we return the numeric code of the character.")
    (xdoc::p
     "[C:6.4.3/2] states some restriction on the character code.
-     Another implicit restriction is that it should be
-     within the current range of Unicode character codes,
-     i.e. at most @('10FFFFh')."))
+     [C:6.4.4.4/4] and (implicitly) [C:6.4.5/4]
+     state type-based restrictions on
+     the character codes of octal and hexadecimal escapes,
+     based on the (possibly absent) prefix of
+     the character constant or string literal.
+     But it seems reasonable that the same range restrictions
+     should also apply to universal character names;
+     some experiments with the C compiler on Mac confirms this."))
   (b* (((reterr) 0)
        (code (univ-char-name-case
               ucn
@@ -652,43 +846,649 @@
         (reterr (msg "The universal character name ~x0 ~
                       has a code ~x1 between D800h and DFFFh."
                      (univ-char-name-fix ucn) code)))
-       ((when (> code #x10ffff))
+       ((when (> code (nfix max)))
         (reterr (msg "The universal character name ~x0 ~
-                      has a code ~x1 above 10FFFFh."
-                     (univ-char-name-fix ucn) code))))
+                      has a code ~x1 above ~x2."
+                     (univ-char-name-fix ucn) code (nfix max)))))
     (retok code))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define valid-simple-escape ((esc simple-escapep))
+  :returns (code natp)
+  :short "Validate a simple escape."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Simple escapes are always valid.
+     This function returns their ASCII codes.
+     Note that these always fit in any of the types
+     mentioned in [C:6.4.4.4/4]."))
+  (simple-escape-case
+   esc
+   :squote (char-code #\')
+   :dquote (char-code #\")
+   :qmark (char-code #\?)
+   :bslash (char-code #\\)
+   :a 7
+   :b 8
+   :f 12
+   :n 10
+   :r 13
+   :t 9
+   :v 11)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define valid-oct-escape ((esc oct-escapep) (max natp))
+  :returns (mv erp (code natp))
+  :short "Validate an octal escape."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "[C:6.4.4.4/9] states restrictions on
+     the numeric value of an octal escape used in a character constant,
+     based on the prefix of the character constant;
+     similarly restrictions apply to octal escapes in string literals
+     [C:6.4.5/4].
+     This ACL2 function is used to check
+     both octal escapes in character constants
+     and octal escapes in string literals:
+     we pass as input the maximum allowed character code,
+     which is determined from the character constant or string literal prefix
+     if present (see callers),
+     and suffices to express the applicable restrictions."))
+  (b* (((reterr) 0)
+       (code (oct-escape-case
+              esc
+              :one (str::oct-digit-char-value esc.digit)
+              :two (str::oct-digit-chars-value (list esc.digit1
+                                                     esc.digit2))
+              :three (str::oct-digit-chars-value (list esc.digit1
+                                                       esc.digit2
+                                                       esc.digit3)))))
+    (if (<= code (nfix max))
+        (retok code)
+      (reterr (msg "The octal escape sequence ~x0 ~
+                    has value ~x1, which exceeds the maximum allowed ~x2, ~
+                    required in the context of where this octal escape occurs."
+                   (oct-escape-fix esc)
+                   code
+                   (nfix max)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define valid-escape ((esc escapep) (max natp))
+  :returns (mv erp (code natp))
+  :short "Validate an escape sequence."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the escape sequence is valid, we return its character code.
+     For simple and octal escapes, and for universal character names,
+     we use separate validation functions.
+     For a hexadecimal escape, we calculate the numeric value,
+     and we subject them to same restrictions as octal escapes
+     [C:6.4.4.4/9] [C:6.4.5/4].")
+   (xdoc::p
+    "Although [C] does not seem to state that explicitly,
+     it seems reasonable that the same restriction applies to
+     universal character names;
+     we will revise this if that turns out to be not the case."))
+  (b* (((reterr) 0))
+    (escape-case
+     esc
+     :simple (retok (valid-simple-escape esc.unwrap))
+     :oct (valid-oct-escape esc.unwrap max)
+     :hex (b* ((code (str::hex-digit-chars-value esc.unwrap)))
+            (if (<= code (nfix max))
+                (retok code)
+              (reterr (msg "The hexadecimal escape sequence ~x0 ~
+                            has value ~x1, which exceeds ~
+                            the maximum allowed ~x2, ~
+                            required in the context where ~
+                            this hexadecimal escape occurs."
+                           (escape-fix esc)
+                           code
+                           (nfix max)))))
+     :univ (valid-univ-char-name esc.unwrap max)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define valid-c-char ((cchar c-char-p) (prefix? cprefix-optionp))
+  :returns (mv erp (code natp))
+  :short "Validate a character of a character constant."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If validation succeeds, we return the character code.")
+   (xdoc::p
+    "The grammar [C:6.4.4.4/1] excludes (direct) character codes
+     for single quote and new-line.
+     For the latter, we check both line feed and carriage return.
+     Note that our lexer normalizes both to line feed,
+     and excludes line feed when lexing @('c-char');
+     here we make an independent check,
+     but in the future we could make that
+     an invariant in the abstract syntax.")
+   (xdoc::p
+    "[C:6.4.4.4/4] says that, based on the (possibly absent) prefix
+     of the character constant of which this character is part,
+     the character code of an octal or hexadecimal escape must fit in
+     @('unsigned char'), or
+     @('wchar_t'), or
+     @('char16_t'), or
+     @('char32_t').
+     To properly capture the range of the latter three types,
+     we should probably extend our implementation environments
+     with information about which built-in types those types expand to,
+     and then use again the implementation environment
+     to obtain the maximun values of such built-in types.
+     For now, we just use the maximum Unicode code points,
+     i.e. effectively we do not enforce any restriction."))
+  (b* (((reterr) 0)
+       (max (if prefix?
+                #x10ffff
+              (uchar-max))))
+    (c-char-case
+     cchar
+     :char (cond ((= cchar.unwrap (char-code #\'))
+                  (reterr (msg "Single quote cannot be used directly ~
+                                in a character constant.")))
+                 ((= cchar.unwrap 10)
+                  (reterr (msg "Line feed cannot be used directly ~
+                                in a character constant.")))
+                 ((= cchar.unwrap 13)
+                  (reterr (msg "Carriage return cannot be used directly ~
+                                in a character constant.")))
+                 ((> cchar.unwrap max)
+                  (reterr (msg "The character with code ~x0 ~
+                                exceeed the maximum ~x1 allowed for ~
+                                a character constant with prefix ~x2."
+                               cchar.unwrap max (cprefix-option-fix prefix?))))
+                 (t (retok cchar.unwrap)))
+     :escape (valid-escape cchar.unwrap max)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define valid-c-char-list ((cchars c-char-listp) (prefix? cprefix-optionp))
+  :returns (mv erp (codes nat-listp))
+  :short "Validate a list of characters of a character constant."
+  (b* (((reterr) nil)
+       ((when (endp cchars)) (retok nil))
+       ((erp code) (valid-c-char (car cchars) prefix?))
+       ((erp codes) (valid-c-char-list (cdr cchars) prefix?)))
+    (retok (cons code codes)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define valid-cconst ((cconst cconstp))
-  :returns (type typep)
+  :returns (mv erp (type typep))
   :short "Validate a character constant."
   :long
   (xdoc::topstring
    (xdoc::p
-    "[C:6.4.4.4] states a number of requirements,
-     but for now we do not actually impose any requirement,
-     and we just return the type of the character constant.")
+    "We check the characters that form the constant,
+     with respect to the prefix (if any).
+     If validation is successful, we return the type of the constant.
+     According to [C:6.4.4.4/10],
+     a character constant without prefix has type @('int').
+     According to [C:6.4.4.4/11],
+     a character constant with a prefix has type
+     @('wchar_t'), @('char16_t'), or @('char32_t');
+     since for now we do not model these,
+     we return an unknown type in this case.")
    (xdoc::p
-    "The requirements have to do with the size of the characters
-     with respect to the optional prefix of the character constant.
-     However, those refer to types defined in the standard library,
-     specifically @('wchar_t'), @('char16_t'), and @('char32_t').
-     These may vary across implementations.
+    "The types @('wchar_t'), @('char16_t'), and @('char32_t')
+     may vary across implementations.
      In order to handle these in a general way,
      we should probably extend our implementation environments
      with information about which built-in types those types expand to.
-     We do not do that for now, which is why we do not impose requirements.")
-   (xdoc::p
-    "The character constant may also have one of those types [C:6.4.4.4/11].
-     So, for now, we return type @('int') if there is no prefix [C:6.4.4.4/10],
-     and instead we return an unknown type if there is a prefix."))
-  (b* (((cconst cconst) cconst))
+     Once we do that, we will be able to perform
+     a full validation of character constants here."))
+  (b* (((reterr) (irr-type))
+       ((cconst cconst) cconst)
+       ((erp &) (valid-c-char-list cconst.cchars cconst.prefix?)))
     (if cconst.prefix?
-        (type-unknown)
-      (type-sint)))
+        (retok (type-unknown))
+      (retok (type-sint))))
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define valid-enum-const ((econst identp) (table valid-tablep))
+  :returns (mv erp (type typep))
+  :short "Validate an enumeration constant."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Here we validate an enumeration constant that occurs as an expression.
+     Thus, the validation table must include that (ordinary) identifier,
+     with the information of being an enumeration constant.
+     Its type is always @('int') [C:6.7.2.2/3],
+     so this function always returns that type if validation succeeds;
+     so we could have this function return nothing if there's no error,
+     but we have it return the @('int') type for uniformity and simplicity."))
+  (b* (((reterr) (irr-type))
+       ((mv info &) (valid-lookup-ord econst table))
+       ((unless info)
+        (reterr (msg "The identifier ~x0, used as an enumeration constant, ~
+                      is not in scope."
+                     (ident-fix econst))))
+       ((unless (valid-ord-info-case info :enumconst))
+        (reterr (msg "The identifier ~x0, used as an enumeration constant, ~
+                      is in scope, but it is not an enumeration constant: ~
+                      its information is ~x1."
+                     (ident-fix econst) info))))
+    (retok (type-sint)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define valid-const ((const constp) (table valid-tablep) (ienv ienvp))
+  :returns (mv erp (type typep))
+  :short "Validate a constant."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If validation is successful, we return the type of the constant."))
+  (const-case
+   const
+   :int (valid-iconst const.unwrap ienv)
+   :float (retok (valid-fconst const.unwrap))
+   :enum (valid-enum-const const.unwrap table)
+   :char (valid-cconst const.unwrap))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define valid-s-char ((schar s-char-p) (prefix? eprefix-optionp))
+  :returns (mv erp (code natp))
+  :short "Validate a character of a string literal."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If validation succeeds, we return the character code.
+     [C:6.4.5/4] says that the same restrictions that apply
+     to @('c-char')s in character constants
+     also apply to @('s-char')s in string literals.
+     So this function is similar to @(tsee valid-c-char),
+     except that we prohibit double quote instead of single quote,
+     based on the grammar in [C:6.4.5/1]."))
+  (b* (((reterr) 0)
+       (max (if prefix?
+                #x10ffff
+              (uchar-max))))
+    (s-char-case
+     schar
+     :char (cond ((= schar.unwrap (char-code #\"))
+                  (reterr (msg "Double quote cannot be used directly ~
+                                in a string literal.")))
+                 ((= schar.unwrap 10)
+                  (reterr (msg "Line feed cannot be used directly ~
+                                in a character consant.")))
+                 ((= schar.unwrap 13)
+                  (reterr (msg "Carriage return cannot be used directly ~
+                                in a character consant.")))
+                 ((> schar.unwrap max)
+                  (reterr (msg "The character with code ~x0 ~
+                                exceeed the maximum ~x1 allowed for ~
+                                a character constant with prefix ~x2."
+                               schar.unwrap max (eprefix-option-fix prefix?))))
+                 (t (retok schar.unwrap)))
+     :escape (valid-escape schar.unwrap max)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define valid-s-char-list ((cchars s-char-listp) (prefix? eprefix-optionp))
+  :returns (mv erp (codes nat-listp))
+  :short "Validate a list of characters of a string literal."
+  (b* (((reterr) nil)
+       ((when (endp cchars)) (retok nil))
+       ((erp code) (valid-s-char (car cchars) prefix?))
+       ((erp codes) (valid-s-char-list (cdr cchars) prefix?)))
+    (retok (cons code codes)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define valid-stringlit ((strlit stringlitp))
+  :returns (mv erp (type typep))
+  :short "Validate a string literal."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We check the characters that form the string literal,
+     with respect to the prefix (if any).
+     If validation is successful, we return the type of the string literal,
+     which according to [C:6.4.5/6], is an array type
+     of @('char') or @('wchar_t') or @('char16_t') or @('char32_t').
+     In our current approximate type system,
+     we just have a single type for arrays, so we return that."))
+  (b* (((reterr) (irr-type))
+       ((stringlit strlit) strlit)
+       ((erp &) (valid-s-char-list strlit.schars strlit.prefix?)))
+    (retok (type-array)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define valid-stringlit-list ((strlits stringlit-listp))
+  :returns (mv erp (type typep))
+  :short "Validate a list of string literals."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Our abstract syntax preserves information about
+     adjacent string literals [C:5.1.1.2/6],
+     by using lists of string literals, instead of single string literals,
+     in various places.
+     So the validator also operates on such lists of string literals.")
+   (xdoc::p
+    "One basic requirement is that the list is not empty,
+     because there must be at least one string literal;
+     in the future we could built that constraint into the abstract syntax,
+     but for now we put that as a check in the validator.")
+   (xdoc::p
+    "Another requirement is that
+     there cannot be both UTF-8 and wide prefixes [C:6.4.5/2],
+     where these kinds of prefixes are defined in [C:6.4.5/3].
+     We check that by projecting the optional prefixes
+     and checking for incompatible occurrences.")
+   (xdoc::p
+    "Whether string literals with different prefixes
+     (satisfying the requirement just mentioned)
+     can be concatenated, and what their combined type is,
+     is implementation-defined [C:6.4.5/5].
+     We plan to extend our implementation environments
+     with information about how to treat those cases,
+     but for now we allow all concatenations,
+     and the resulting type is just our approximate type for all arrays."))
+  (b* (((reterr) (irr-type))
+       ((unless (consp strlits))
+        (reterr (msg "There must be at least one string literal.")))
+       (prefixes (stringlit-list->prefix?-list strlits))
+       ((when (and (member-equal (eprefix-locase-u8) prefixes)
+                   (or (member-equal (eprefix-locase-u) prefixes)
+                       (member-equal (eprefix-upcase-u) prefixes)
+                       (member-equal (eprefix-upcase-l) prefixes))))
+        (reterr (msg "Incompatible prefixes ~x0 ~
+                      in the list of string literals."
+                     prefixes))))
+    (retok (type-array)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define valid-var ((var identp) (table valid-tablep))
+  :returns (mv erp (type typep))
+  :short "Validate a variable."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used to validate the @(':ident') case of the @(tsee expr) fixtype.
+     This is the case of a variable, not an enumeration constant,
+     which is part of the @(':const') case of @(tsee expr).
+     Recall that the parser initially parses all identifiers used as expressions
+     under the @(':ident') case, but the disambiguator re-classifies
+     some of them under the @(':const') case, as appropriate.")
+   (xdoc::p
+    "A variable (i.e. identifier) is valid if
+     it is found in the validation table,
+     recorded as denoting an object or function
+     [C:6.5.1/2].
+     The type is obtained from the table."))
+  (b* (((reterr) (irr-type))
+       ((mv info &) (valid-lookup-ord var table))
+       ((unless info)
+        (reterr (msg "The variable ~x0 is not in scope." (ident-fix var))))
+       ((unless (valid-ord-info-case info :objfun))
+        (reterr (msg "The identifier ~x0, used as a variable, ~
+                      is in scope, but does not denote ~
+                      an object or function."
+                     (ident-fix var)))))
+    (retok (valid-ord-info-objfun->type info)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define valid-arrsub ((expr exprp) (type-arg1 typep) (type-arg2 typep))
+  :guard (expr-case expr :arrsub)
+  :returns (mv erp (type typep))
+  :short "Validate an array subscripting expression,
+          given the types of the two sub-expressions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The types of the two sub-expressions are
+     calculated (recursively) by @(tsee valid-expr).")
+   (xdoc::p
+    "After converting array types to pointer types [C:6.3.2.1/3],
+     one sub-expression must have pointer type,
+     and the other sub-expression must have integer type
+     [C:6.5.2.1/1].
+     The expression should have the type referenced by the pointer type,
+     but since for now we model just one pointer type,
+     the type of the expression is unknown."))
+  (b* (((reterr) (irr-type))
+       (type1 (type-apconvert type-arg1))
+       (type2 (type-apconvert type-arg2))
+       ((unless (or (and (or (type-case type1 :pointer)
+                             (type-case type1 :unknown))
+                         (or (type-integerp type2)
+                             (type-case type2 :unknown)))
+                    (and (or (type-integerp type1)
+                             (type-case type1 :unknown))
+                         (or (type-case type2 :pointer)
+                             (type-case type2 :unknown)))))
+        (reterr (msg "In the array subscripting expression ~x0, ~
+                      the first sub-expression has type ~x1, ~
+                      and the second sub-expression has type ~x2."
+                     (expr-fix expr)
+                     (type-fix type-arg1)
+                     (type-fix type-arg2)))))
+    (retok (type-unknown)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define valid-funcall ((expr exprp) (type-fun typep) (types-arg type-listp))
+  :guard (expr-case expr :funcall)
+  :returns (mv erp (type typep))
+  :short "Validate a function call expression,
+          given the types of the sub-expressions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The types of the two sub-expressions are
+     calculated (recursively) by @(tsee valid-expr).")
+   (xdoc::p
+    "After converting function types to pointer types,
+     the first sub-expression must have pointer type [C:6.5.2.2/1];
+     since we currently have just one pointer type,
+     we cannot check that it is a pointer to a function.
+     For the same reason,
+     we do not check the argument types against the function type [C:6.5.2.2/2].
+     Also for the same reason,
+     we return the unknown type,
+     because we do not have information about the result type."))
+  (declare (ignore types-arg))
+  (b* (((reterr) (irr-type))
+       (type (type-fpconvert type-fun))
+       ((unless (type-case type :pointer))
+        (reterr (msg "In the function call expression ~x0, ~
+                      the first sub-expression has type ~x1."
+                     (expr-fix expr)
+                     (type-fix type-fun)))))
+    (retok (type-unknown)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define valid-member ((expr exprp) (type-arg typep))
+  :guard (expr-case expr :member)
+  :returns (mv erp (type typep))
+  :short "Validate a member expression,
+          given the type of the sub-expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The type of the sub-expression is
+     calculated (recursively) by @(tsee valid-expr).")
+   (xdoc::p
+    "The argument type must be a structure or union type [C:6.5.2.3/1].
+     Since a pointer type is not allowed here,
+     there is no need to convert arrays to pointers [C:6.3.2.1/3].")
+   (xdoc::p
+    "For now we only have one type for structures and one type for unions.
+     We cannot look up the member type, so we return the unknown type."))
+  (b* (((reterr) (irr-type))
+       ((unless (or (type-case type-arg :struct)
+                    (type-case type-arg :union)))
+        (reterr (msg "In the member expression ~x0, ~
+                      the sub-expression has type ~x1."
+                     (expr-fix expr) (type-fix type-arg)))))
+    (retok (type-unknown)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define valid-memberp ((expr exprp) (type-arg typep))
+  :guard (expr-case expr :memberp)
+  :returns (mv erp (type typep))
+  :short "Validate a member pointer expression,
+          given the type of the sub-expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The type of the sub-expression is
+     calculated (recursively) by @(tsee valid-expr).")
+   (xdoc::p
+    "The argument type must be a pointer to a structure or union type
+     [C:6.5.2.3/2].
+     We need to convert arrays to pointers,
+     and then we just check that we have the (one) pointer type;
+     we will refine this when we refine our type system.")
+   (xdoc::p
+    "Since we cannot yet look up members in structure and union types,
+     we return the unknown type."))
+  (b* (((reterr) (irr-type))
+       (type (type-apconvert type-arg))
+       ((unless (type-case type :pointer))
+        (reterr (msg "In the member pointer expression ~x0, ~
+                      the sub-expression has type ~x1."
+                     (expr-fix expr) (type-fix type-arg)))))
+    (retok (type-unknown)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines valid-exprs/decls/stmts
+  :short "Validate expressions, declarations, statements,
+          and related artifacts."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Since we currently have an approximate model of types,
+     with the `unknown type' among them (see @(tsee type)),
+     wherever a certain kind of type is required (e.g. an integer type),
+     we also need to allow the unknown type,
+     because that could the required kind of type.
+     Our currently approximate validator must not reject valid programs,
+     because it needs to deal with any practical programs we encounter.
+     Eventually, when we refine our validator and our model of types
+     to no longer be approximate and include the unknown type,
+     we will rescind this extra allowance for the unknown type."))
+
+  (define valid-expr ((expr exprp) (table valid-tablep) (ienv ienvp))
+    :guard (expr-unambp expr)
+    :returns (mv erp (type typep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate an expression."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "If validation is successful, we return the type of the expression.
+       For now we do not distinguish lvalues [C:6.3.2.1/1].
+       To do that, we will introduce a richer notion of expression type
+       that includes a type and also
+       an indication of whether the expression is an lvalue;
+       we will also perform lvalue conversion where needed.
+       This is already done in @(see c::static-semantics),
+       for the subset of C that is formalized.")
+     (xdoc::p
+      "We use separate functions to validate the various kinds of expressions,
+       to minimize case splits in the mutually recursive clique of functions.
+       But we need to calculate types for sub-expressions recursively here,
+       and pass the types to those separate functions.")
+     (xdoc::p
+      "For now we allow all generic selections,
+       returning the unknown type for them."))
+    (b* (((reterr) (irr-type)))
+      (expr-case
+       expr
+       :ident (valid-var expr.unwrap table)
+       :const (valid-const expr.unwrap table ienv)
+       :string (valid-stringlit-list expr.literals)
+       :paren (valid-expr expr.unwrap table ienv)
+       :gensel (retok (type-unknown))
+       :arrsub (b* (((erp type-arg1) (valid-expr expr.arg1 table ienv))
+                    ((erp type-arg2) (valid-expr expr.arg2 table ienv)))
+                 (valid-arrsub expr type-arg1 type-arg2))
+       :funcall (b* (((erp type-fun) (valid-expr expr.fun table ienv))
+                     ((erp types-arg) (valid-expr-list expr.args table ienv)))
+                  (valid-funcall expr type-fun types-arg))
+       :member (b* (((erp type-arg) (valid-expr expr.arg table ienv)))
+                 (valid-member expr type-arg))
+       :memberp (b* (((erp type-arg) (valid-expr expr.arg table ienv)))
+                  (valid-memberp expr type-arg))
+       :complit (reterr :todo)
+       :unary (reterr :todo)
+       :sizeof (reterr :todo)
+       :alignof (reterr :todo)
+       :cast (reterr :todo)
+       :binary (reterr :todo)
+       :cond (reterr :todo)
+       :comma (reterr :todo)
+       :stmt (reterr :todo)
+       :tycompat (reterr :todo)
+       :offsetof (reterr :todo)
+       :otherwise (prog2$ (impossible) (reterr t))))
+    :measure (expr-count expr))
+
+  (define valid-expr-list ((exprs expr-listp) (table valid-tablep) (ienv ienvp))
+    :guard (expr-list-unambp exprs)
+    :returns (mv erp (types type-listp))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate a list of expressions."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We validate all the expressions, one after the other,
+       and we return the resulting types, in the same order."))
+    (b* (((reterr) nil)
+         ((when (endp exprs)) (retok nil))
+         ((erp type) (valid-expr (car exprs) table ienv))
+         ((erp types) (valid-expr-list (cdr exprs) table ienv)))
+      (retok (cons type types)))
+    :measure (expr-list-count exprs))
+
+  :hints (("Goal" :in-theory (enable o< o-finp)))
+
+  :verify-guards nil ; done below
+
+  ///
+
+  (verify-guards valid-expr)
+
+  (fty::deffixequiv-mutual valid-exprs/decls/stmts))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

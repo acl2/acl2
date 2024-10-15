@@ -76,9 +76,12 @@
        ((mv yes-votes &) (tally-leader-votes leader voters))
        ((unless (>= yes-votes (1+ (max-faulty systate)))) nil))
     t)
-  :guard-hints (("Goal" :in-theory (enable evenp
-                                           posp
-                                           set::not-emptyp-when-in-of-subset)))
+  :guard-hints
+  (("Goal" :in-theory (enable evenp
+                              posp
+                              set::not-emptyp-when-in-of-subset
+                              correct-addresses-subset-all-addresses
+                              in-all-addresses-when-in-correct-addresses)))
   :prepwork ((local (include-book "arithmetic-3/top" :dir :system)))
 
   ///
@@ -111,8 +114,11 @@
        (vals (all-addresses systate))
        (new-vstate (commit-anchors-next-val vals vstate)))
     (update-validator-state val new-vstate systate))
-  :guard-hints (("Goal" :in-theory (enable commit-anchors-possiblep
-                                           set::not-emptyp-when-in-of-subset)))
+  :guard-hints
+  (("Goal" :in-theory (enable commit-anchors-possiblep
+                              correct-addresses-subset-all-addresses
+                              in-all-addresses-when-in-correct-addresses
+                              set::not-emptyp-when-in-of-subset)))
 
   :prepwork
   ((define commit-anchors-next-val ((vals address-setp)
@@ -147,7 +153,10 @@
         :blockchain new-blockchain
         :last commit-round
         :committed new-committed-certs))
-     :guard-hints (("Goal" :in-theory (enable posp natp evenp oddp)))
+     :guard-hints (("Goal" :in-theory (enable posp
+                                              natp
+                                              evenp
+                                              oddp)))
      :prepwork ((local (include-book "arithmetic-3/top" :dir :system)))))
 
   ///
@@ -164,7 +173,8 @@
                     (validator-state->round
                      (get-validator-state val systate))))
     :enable (commit-anchors-next-val
-             commit-anchors-possiblep))
+             commit-anchors-possiblep
+             get-validator-state-of-update-validator-state))
 
   (defrule validator-state->dag-of-commit-anchors-next
     (implies (and (set::in val (correct-addresses systate))
@@ -175,7 +185,8 @@
                     (validator-state->dag
                      (get-validator-state val systate))))
     :enable (commit-anchors-next-val
-             commit-anchors-possiblep))
+             commit-anchors-possiblep
+             get-validator-state-of-update-validator-state))
 
   (defrule validator-state->last-of-commit-anchors-next
     (implies (and (set::in val (correct-addresses systate))

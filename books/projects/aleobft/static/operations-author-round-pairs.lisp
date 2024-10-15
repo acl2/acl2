@@ -201,7 +201,11 @@
               (update-validator-state endorser new-vstate systate))
           systate)))
     (add-endorsed (set::tail endorsers) author round systate))
-  :guard-hints (("Goal" :in-theory (enable* set::expensive-rules)))
+  :guard-hints
+  (("Goal"
+    :in-theory
+    (enable* in-correct-validator-addresess-when-get-validator-state
+             set::expensive-rules)))
 
   ///
 
@@ -225,9 +229,12 @@
     (equal (correct-addresses new-systate)
            (correct-addresses systate))
     :hyp (set::subset endorsers (all-addresses systate))
-    :hints (("Goal"
-             :induct t
-             :in-theory (enable* set::expensive-rules))))
+    :hints
+    (("Goal"
+      :induct t
+      :in-theory
+      (enable* in-correct-validator-addresess-when-get-validator-state
+               set::expensive-rules))))
 
   (defrule validator-state->round-of-add-endorsed
     (equal (validator-state->round
@@ -236,7 +243,9 @@
              (add-endorsed endorsers author round systate)))
            (validator-state->round (get-validator-state val systate)))
     :induct t
-    :enable add-endorsed-val)
+    :enable (add-endorsed-val
+             in-correct-validator-addresess-when-get-validator-state
+             get-validator-state-of-update-validator-state))
 
   (defrule validator-state->dag-of-add-endorsed
     (equal (validator-state->dag
@@ -245,7 +254,9 @@
              (add-endorsed endorsers author round systate)))
            (validator-state->dag (get-validator-state val systate)))
     :induct t
-    :enable add-endorsed-val)
+    :enable (in-correct-validator-addresess-when-get-validator-state
+             add-endorsed-val
+             get-validator-state-of-update-validator-state))
 
   (defrule validator-state->buffer-of-add-endorsed
     (equal (validator-state->buffer
@@ -254,7 +265,9 @@
              (add-endorsed endorsers author round systate)))
            (validator-state->buffer (get-validator-state val systate)))
     :induct t
-    :enable add-endorsed-val)
+    :enable (in-correct-validator-addresess-when-get-validator-state
+             add-endorsed-val
+             get-validator-state-of-update-validator-state))
 
   (defrule validator-state->endorsed-of-add-endorsed
     (equal (validator-state->endorsed
@@ -269,7 +282,9 @@
              (validator-state->endorsed
               (get-validator-state val systate))))
     :induct t
-    :enable add-endorsed-val)
+    :enable (in-correct-validator-addresess-when-get-validator-state
+             add-endorsed-val
+             get-validator-state-of-update-validator-state))
 
   (defrule validator-state->last-of-add-endorsed
     (implies (set::in val (correct-addresses systate))
@@ -280,7 +295,9 @@
                     (validator-state->last
                      (get-validator-state val systate))))
     :induct t
-    :enable (add-endorsed-val
+    :enable (in-correct-validator-addresess-when-get-validator-state
+             add-endorsed-val
+             get-validator-state-of-update-validator-state
              nfix))
 
   (defrule validator-state->blockchain-of-add-endorsed
@@ -292,7 +309,9 @@
                     (validator-state->blockchain
                      (get-validator-state val systate))))
     :induct t
-    :enable add-endorsed-val)
+    :enable (in-correct-validator-addresess-when-get-validator-state
+             add-endorsed-val
+             get-validator-state-of-update-validator-state))
 
   (defrule validator-state->committed-of-add-endorsed
     (implies (set::in val (correct-addresses systate))
@@ -303,4 +322,6 @@
                     (validator-state->committed
                      (get-validator-state val systate))))
     :induct t
-    :enable add-endorsed-val))
+    :enable (in-correct-validator-addresess-when-get-validator-state
+             add-endorsed-val
+             get-validator-state-of-update-validator-state)))

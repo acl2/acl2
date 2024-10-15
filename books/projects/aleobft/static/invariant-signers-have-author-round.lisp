@@ -148,6 +148,7 @@
            system-signers-have-author+round-p
            certificates-for-validator
            get-network-state
+           validator-init-when-system-initp
            validator-init))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -184,7 +185,8 @@
              create-certificate-next-val
              certificate->signers
              signer-has-author+round-p
-             get-validator-state-iff-in-correct-addresses))
+             get-validator-state-iff-in-correct-addresses
+             get-validator-state-of-update-validator-state))
 
   (defrule system-signers-have-author+round-p-of-create-certificate-next
     (implies (and (system-signers-have-author+round-p systate)
@@ -222,7 +224,8 @@
     :enable (receive-certificate-possiblep
              receive-certificate-next
              receive-certificate-next-val
-             signer-has-author+round-p))
+             signer-has-author+round-p
+             get-validator-state-of-update-validator-state))
 
   (defrule system-signers-have-author+round-p-of-receive-certificate-next
     (implies (and (system-signers-have-author+round-p systate)
@@ -264,7 +267,8 @@
     :enable (store-certificate-possiblep
              store-certificate-next
              store-certificate-next-val
-             signer-has-author+round-p)
+             signer-has-author+round-p
+             get-validator-state-of-update-validator-state)
     :prep-lemmas
     ((defrule lemma
        (implies (and (certificate-with-author+round author round certs)
@@ -305,7 +309,8 @@
     :enable (advance-round-possiblep
              advance-round-next
              advance-round-next-val
-             signer-has-author+round-p))
+             signer-has-author+round-p
+             get-validator-state-of-update-validator-state))
 
   (defrule system-signers-have-author+round-p-of-advance-round-next
     (implies (and (system-signers-have-author+round-p systate)
@@ -336,7 +341,8 @@
     :enable (commit-anchors-possiblep
              commit-anchors-next
              commit-anchors-next-val
-             signer-has-author+round-p))
+             signer-has-author+round-p
+             get-validator-state-of-update-validator-state))
 
   (defrule system-signers-have-author+round-p-of-commit-anchors-next
     (implies (and (system-signers-have-author+round-p systate)
@@ -367,7 +373,8 @@
     :enable (timer-expires-possiblep
              timer-expires-next
              timer-expires-next-val
-             signer-has-author+round-p))
+             signer-has-author+round-p
+             get-validator-state-of-update-validator-state))
 
   (defrule system-signers-have-author+round-p-of-timer-expires-next
     (implies (and (system-signers-have-author+round-p systate)

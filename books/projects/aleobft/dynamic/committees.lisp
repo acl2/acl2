@@ -139,7 +139,8 @@
   ///
 
   (defret not-emptyp-of-committee-members
-    (not (set::emptyp addresses))))
+    (not (set::emptyp addresses)))
+  (in-theory (disable not-emptyp-of-committee-members)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -249,7 +250,6 @@
               (set::subset (committee-members commtt) all-vals))
     :hints (("Goal" :in-theory (enable* committee-members
                                         set::expensive-rules))))
-
   (in-theory (disable update-committee-with-transactions-subset-all-vals)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -287,7 +287,6 @@
              :induct t
              :in-theory
              (enable update-committee-with-transactions-subset-all-vals))))
-
   (in-theory (disable update-committee-with-transaction-list-subset-all-vals)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -334,7 +333,6 @@
              :in-theory
              (enable
               update-committee-with-transaction-list-subset-all-vals))))
-
   (in-theory (disable committee-after-blocks-subset-all-vals)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -468,7 +466,6 @@
                 :induct t
                 :in-theory
                 (enable committee-after-blocks-subset-all-vals))))
-
      (in-theory (disable bonded-committee-at-round-loop-subset-all-vals))
 
      (defruled bonded-committee-at-round-loop-of-round-leq-2
@@ -518,7 +515,6 @@
     :hints
     (("Goal"
       :in-theory (enable bonded-committee-at-round-loop-subset-all-vals))))
-
   (in-theory (disable bonded-committee-at-round-subset-all-vals))
 
   (defruled bonded-committee-at-round-iff-round-upper-bound
@@ -668,7 +664,6 @@
     :hints
     (("Goal"
       :in-theory (enable bonded-committee-at-round-subset-all-vals))))
-
   (in-theory (disable active-committee-at-round-subset-all-vals))
 
   (defruled active-committee-at-round-iff-round-upper-bound
@@ -810,14 +805,16 @@
     (< max (/ total 3))
     :hyp (not (zp total))
     :rule-classes ((:linear :trigger-terms ((max-faulty-for-total total)))))
+  (in-theory (disable max-faulty-for-total-upper-bound))
 
   (defret max-faulty-for-total-upper-bound-tight
     (>= (1+ max) (/ total 3))
     :hyp (not (zp total))
     :rule-classes ((:linear
                     :trigger-terms ((1+ (max-faulty-for-total total))))))
+  (in-theory (disable max-faulty-for-total-upper-bound-tight))
 
-  (defrule total-lower-bound-wrt-max-faulty
+  (defruled total-lower-bound-wrt-max-faulty
     (implies (not (zp total))
              (>= total
                  (1+ (* 3 (max-faulty-for-total total)))))
@@ -827,6 +824,7 @@
     (<= max (nfix total))
     :rule-classes ((:linear :trigger-terms ((max-faulty-for-total total))))
     :hints (("Goal" :in-theory (enable nfix))))
+  (in-theory (disable max-faulty-for-total-leq-total))
 
   (assert-event (= (max-faulty-for-total 0) 0))
   (assert-event (= (max-faulty-for-total 1) 0))
@@ -892,9 +890,12 @@
 (define committee-quorum ((commtt committeep))
   :returns (quorum natp
                    :rule-classes (:rewrite :type-prescription)
-                   :hints (("Goal" :in-theory (enable natp
-                                                      nfix
-                                                      committee-max-faulty))))
+                   :hints (("Goal"
+                            :in-theory
+                            (enable natp
+                                    nfix
+                                    committee-max-faulty
+                                    max-faulty-for-total-leq-total))))
   :short "Quorum of validators in a committee."
   :long
   (xdoc::topstring

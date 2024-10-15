@@ -278,7 +278,8 @@
        :induct t
        :enable (correct-addresses-loop-of-update
                 set::emptyp
-                set::expensive-rules)
+                set::expensive-rules
+                correct-addresses-loop-subset)
        :hints ('(:use ((:instance set::emptyp-of-intersect-of-subset-left
                                   (a (tail faulty-vals))
                                   (b faulty-vals)

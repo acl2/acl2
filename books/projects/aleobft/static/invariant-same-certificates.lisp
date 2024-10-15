@@ -92,7 +92,8 @@
            certificates-for-validator
            message-certificates-for-validator
            get-network-state
-           correct-addresses))
+           correct-addresses
+           validator-init-when-system-initp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

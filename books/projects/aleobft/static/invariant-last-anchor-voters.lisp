@@ -73,6 +73,8 @@
         (tally-leader-votes (leader-at-round vstate.last vals) voters)))
     (>= yes (1+ max-faulty))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define-sk system-last-anchor-voters-p ((systate system-statep))
   :guard (and (not (set::emptyp (all-addresses systate)))
               (system-last-is-even-p systate)
@@ -88,9 +90,11 @@
                     (get-validator-state val systate)
                     (max-faulty systate)
                     (all-addresses systate))))
-  :guard-hints (("Goal"
-                 :in-theory (enable system-last-is-even-p-necc
-                                    system-last-anchor-present-p-necc))))
+  :guard-hints
+  (("Goal"
+    :in-theory (enable system-last-is-even-p-necc
+                       system-last-anchor-present-p-necc
+                       in-all-addresses-when-in-correct-addresses))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -106,6 +110,7 @@
   :enable (system-last-anchor-voters-p
            validator-last-anchor-voters-p
            system-state-initp
+           validator-init-when-system-initp
            validator-init))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -11,8 +11,7 @@
 
 (in-package "ALEOBFT-DYNAMIC")
 
-(include-book "certificates-of-validators")
-(include-book "ordered-even-blocks")
+(include-book "accepted-certificate-committee")
 
 (local (include-book "arithmetic-3/top" :dir :system))
 
@@ -34,8 +33,9 @@
      is defined in @(tsee accepted-certificates) as
      the certificates in the DAG or buffer of the validator.
      It is the case that, for each such certificate,
-     the validator can calculate the active committee for the certificate round
-     and the certificate signers form a quorum in that committee;
+     the signers form a quorum in the committee for the certificate round
+     (which the validator can calculate,
+     as proved in @(see accepted-certificate-committee));
      we prove this invariant here.")
    (xdoc::p
     "There are two possible ways in which a validator accepts a new certificate.
@@ -62,25 +62,25 @@
 (define validator-signer-quorum-p ((cert certificatep)
                                    (vstate validator-statep)
                                    (all-vals address-setp))
+  :guard (active-committee-at-round (certificate->round cert)
+                                    (validator-state->blockchain vstate)
+                                    all-vals)
   :returns (yes/no booleanp)
-  :short "Check if
-          (i) a validator (represented by its state)
-          can calculate the active committee for a certificate,
-          (ii) the committee contains all the signers, and
-          (iii) the signers form a quorum in the committee."
+  :short "Check if the signers of a certificate
+          are a subset of the committee for a certificate's round
+          and form a quorum in that committee,
+          where the committee is calculated by a validator
+          (represented by its state)."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is used by @(tsee signer-quorum-p)
-     to define our invariant.
-     The validator whose state is @('vstate') is
-     the one that has the accepted certificate."))
+    "This is used by @(tsee signer-quorum-p) to define our invariant.
+     The guard ensures that the validator can calculate the committee."))
   (b* (((validator-state vstate) vstate)
        ((certificate cert) cert)
        (commtt
         (active-committee-at-round cert.round vstate.blockchain all-vals)))
-    (and commtt
-         (set::subset (certificate->signers cert)
+    (and (set::subset (certificate->signers cert)
                       (committee-members commtt))
          (equal (set::cardinality (certificate->signers cert))
                 (committee-quorum commtt)))))
@@ -88,10 +88,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define-sk signer-quorum-p ((systate system-statep))
+  :guard (accepted-certificate-committee-p systate)
   :returns (yes/no booleanp)
   :short "Definition of the invariant:
           the signers of every accepted certificate of every correct validator
-          form a quorum in the committee for the certificate's round
+          form a quorum in the committee for the certificate's round,
           calculated by the validator from its own blockchain."
   (forall (val cert)
           (implies (and (set::in val (correct-addresses systate))
@@ -99,7 +100,9 @@
                    (validator-signer-quorum-p
                     cert
                     (get-validator-state val systate)
-                    (all-addresses systate)))))
+                    (all-addresses systate))))
+  :guard-hints
+  (("Goal" :in-theory (enable accepted-certificate-committee-p-necc))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -181,7 +184,8 @@
   ;; create-certificate:
 
   (defruled validator-certificates-quorum-p-of-create-certificate-next-old
-    (implies (and (set::in val (correct-addresses systate))
+    (implies (and (accepted-certificate-committee-p systate)
+                  (set::in val (correct-addresses systate))
                   (validator-signer-quorum-p
                    cert1
                    (get-validator-state val systate)
@@ -192,7 +196,8 @@
                val (create-certificate-next cert systate))
               (all-addresses systate)))
     :enable (validator-signer-quorum-p
-             validator-state->blockchain-of-create-certificate-next))
+             validator-state->blockchain-of-create-certificate-next
+             accepted-certificate-committee-p-necc))
 
   (defruled validator-certificates-quorum-p-of-create-certificate-next-new
     (implies (and (create-certificate-possiblep cert systate)
@@ -213,6 +218,7 @@
 
   (defruled signer-quorum-p-of-create-certificate-next
     (implies (and (signer-quorum-p systate)
+                  (accepted-certificate-committee-p systate)
                   (create-certificate-possiblep cert systate))
              (signer-quorum-p
               (create-certificate-next cert systate)))
@@ -221,6 +227,7 @@
     ((defruled lemma
        (implies (and (certificatep cert)
                      (signer-quorum-p systate)
+                     (accepted-certificate-committee-p systate)
                      (create-certificate-possiblep cert systate))
                 (signer-quorum-p
                  (create-certificate-next cert systate)))
@@ -329,7 +336,9 @@
   (defruled validator-signer-quorum-p-of-commit-anchors-next
     (implies (and (ordered-even-p systate)
                   (last-blockchain-round-p systate)
+                  (accepted-certificate-committee-p systate)
                   (set::in val1 (correct-addresses systate))
+                  (set::in cert (accepted-certificates val1 systate))
                   (validator-signer-quorum-p
                    cert
                    (get-validator-state val1 systate)
@@ -352,11 +361,14 @@
              blocks-last-round
              posp
              pos-fix
-             evenp))
+             evenp
+             accepted-certificate-committee-p-necc-fixing-binding
+             certificate->round-of-certificate-with-author+round))
 
   (defruled signer-quorum-p-of-commit-anchors-next
     (implies (and (ordered-even-p systate)
                   (last-blockchain-round-p systate)
+                  (accepted-certificate-committee-p systate)
                   (signer-quorum-p systate)
                   (commit-anchors-possiblep val systate))
              (signer-quorum-p
@@ -398,6 +410,7 @@
   (defruled signer-quorum-p-of-event-next
     (implies (and (ordered-even-p systate)
                   (last-blockchain-round-p systate)
+                  (accepted-certificate-committee-p systate)
                   (signer-quorum-p systate)
                   (event-possiblep event systate))
              (signer-quorum-p (event-next event systate)))

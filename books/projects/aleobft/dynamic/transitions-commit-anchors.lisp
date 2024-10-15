@@ -209,7 +209,8 @@
                        posp
                        natp
                        evenp
-                       active-committee-at-earlier-round-when-at-later-round)))
+                       active-committee-at-earlier-round-when-at-later-round
+                       certificate->round-of-certificate-with-author+round)))
   :hooks (:fix)
 
   ///
