@@ -208,6 +208,22 @@
   :pred type-listp
   :prepwork ((local (in-theory (enable nfix)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defalist type-option-type-alist
+  :short "Fixtype of alists from optional types to types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Types are defined in @(tsee type)."))
+  :key-type type-option
+  :val-type type
+  :true-listp t
+  :keyp-of-nil t
+  :valp-of-nil nil
+  :pred type-option-type-alistp
+  :prepwork ((set-induction-depth-limit 1)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-standard-signed-integerp ((type typep))
@@ -1266,6 +1282,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define valid-gensel ((expr exprp)
+                      (type typep)
+                      (type-alist type-option-type-alistp))
+  :guard (expr-case expr :gensel)
+  :returns (mv erp (type typep))
+  :short "Validate a generic selection expression,
+          given the types for the components."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we do not perform any of the checks prescribed in [C:6.5.1.1/2].
+     We will perform them later, when we refine our validator.
+     We return the unknown type."))
+  (declare (ignore expr type type-alist))
+  (retok (type-unknown))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define valid-arrsub ((expr exprp) (type-arg1 typep) (type-arg2 typep))
   :guard (expr-case expr :arrsub)
   :returns (mv erp (type typep))
@@ -1437,7 +1472,10 @@
        But we need to calculate types for sub-expressions recursively here,
        and pass the types to those separate functions.")
      (xdoc::p
-      "For now we allow all generic selections,
+      "For now we validate the components of generic selections
+       but we do not yet
+
+       allow all generic selections,
        returning the unknown type for them."))
     (b* (((reterr) (irr-type) (irr-valid-table)))
       (expr-case
@@ -1449,7 +1487,11 @@
        :string (b* (((erp type) (valid-stringlit-list expr.literals)))
                  (retok type (valid-table-fix table)))
        :paren (valid-expr expr.unwrap table ienv)
-       :gensel (retok (type-unknown) (valid-table-fix table))
+       :gensel (b* (((erp type table) (valid-expr expr.control table ienv))
+                    ((erp type-alist table)
+                     (valid-genassoc-list expr.assocs table ienv))
+                    ((erp type) (valid-gensel expr type type-alist)))
+                 (retok type table))
        :arrsub (b* (((erp type-arg1 table) (valid-expr expr.arg1 table ienv))
                     ((erp type-arg2 table) (valid-expr expr.arg2 table ienv))
                     ((erp type) (valid-arrsub expr type-arg1 type-arg2)))
@@ -1498,9 +1540,84 @@
       (retok (cons type types) table))
     :measure (expr-list-count exprs))
 
+  (define valid-genassoc ((genassoc genassocp)
+                          (table valid-tablep)
+                          (ienv ienvp))
+    :guard (genassoc-unambp genassoc)
+    :returns (mv erp
+                 (tyname-type type-optionp)
+                 (expr-type typep)
+                 (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate a generic association."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "If the generic association has a type name,
+       we validate it and return the type that it denotes.
+       If the generic association has @('default'),
+       we return @('nil') as the @('tyname-type') result.
+       Either way, we validate the expression, and return its type."))
+    (b* (((reterr) nil (irr-type) (irr-valid-table)))
+      (genassoc-case
+       genassoc
+       :type (b* (((erp tyname-type table)
+                   (valid-tyname genassoc.type table ienv))
+                  ((erp expr-type table)
+                   (valid-expr genassoc.expr table ienv)))
+               (retok tyname-type expr-type table))
+       :default (b* (((erp expr-type table)
+                      (valid-expr genassoc.expr table ienv)))
+                  (retok nil expr-type table))))
+    :measure (genassoc-count genassoc))
+
+  (define valid-genassoc-list ((genassocs genassoc-listp)
+                               (table valid-tablep)
+                               (ienv ienvp))
+    :guard (genassoc-list-unambp genassocs)
+    :returns (mv erp
+                 (type-alist type-option-type-alistp)
+                 (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate a list of generic associations."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We validate each generic association, one after the other.
+       We put the calculated types (and optional types) into an alist,
+       which we return.
+       There may be repeated keys in the alist: it is a feature,
+       so we can separately check their uniqueness."))
+    (b* (((reterr) nil (irr-valid-table))
+         ((when (endp genassocs)) (retok nil (valid-table-fix table)))
+         ((erp tyname-type? expr-type table)
+          (valid-genassoc (car genassocs) table ienv))
+         ((erp type-alist table)
+          (valid-genassoc-list (cdr genassocs) table ienv)))
+      (retok (acons tyname-type? expr-type type-alist) table))
+    :measure (genassoc-list-count genassocs))
+
+  (define valid-tyname ((tyname tynamep) (table valid-tablep) (ienv ienvp))
+    :guard (tyname-unambp tyname)
+    :returns (mv erp (type typep) (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate a type name."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "A valid type name denotes a type,
+       so we return a type if validation is successful."))
+    (declare (ignore tyname table ienv))
+    (b* (((reterr) (irr-type) (irr-valid-table)))
+      (reterr :todo))
+    :measure (tyname-count tyname))
+
   :hints (("Goal" :in-theory (enable o< o-finp)))
 
   :verify-guards nil ; done below
+
+  :prepwork ((set-bogus-mutual-recursion-ok t) ; TODO: remove eventually
+             (local (in-theory (enable acons))))
 
   ///
 
