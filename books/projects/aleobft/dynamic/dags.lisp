@@ -455,12 +455,12 @@
 
   ///
 
-  (defret predecessors-subset
+  (defret predecessors-subset-of-dag
     (set::subset certs dag)
     :hyp (certificate-setp dag)
     :hints
     (("Goal" :in-theory (enable certificates-with-authors+round-subset))))
-  (in-theory (disable predecessors-subset))
+  (in-theory (disable predecessors-subset-of-dag))
 
   (defret predecessors-subset-of-previous-round
     (set::subset certs
