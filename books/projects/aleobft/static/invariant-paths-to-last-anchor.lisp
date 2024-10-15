@@ -70,7 +70,8 @@
   :guard-hints
   (("Goal"
     :in-theory (enable nonempty-all-addresses-when-correct-validator
-                       system-last-is-even-p-necc))))
+                       system-last-is-even-p-necc
+                       in-all-addresses-when-in-correct-addresses))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -191,7 +191,8 @@
                                             (get-validator-state val systate)))
     :enable (get-validator-state
              correct-addresses
-             in-of-correct-addresses-loop)))
+             in-of-correct-addresses-loop
+             lookup-nonnil-of-correct-addresses)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -274,7 +275,8 @@
              (system-endorsed-not-self-p
               (add-endorsed endorsers author round systate)))
     :induct t
-    :enable (add-endorsed
+    :enable (in-correct-validator-addresess-when-get-validator-state
+             add-endorsed
              address+pos-not-address-p
              set::expensive-rules)
     :prep-lemmas

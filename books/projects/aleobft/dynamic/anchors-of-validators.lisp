@@ -70,12 +70,14 @@
                                   (validator-state->last vstate)
                                   (validator-state->blockchain vstate)
                                   all-vals)))
-                      (leader-at-round (validator-state->last vstate) commtt)))))
+                      (leader-at-round (validator-state->last vstate) commtt))))
+    :enable certificate->author-of-certificate-with-author+round)
 
   (defruled certificate->round-of-last-anchor
     (implies (last-anchor vstate all-vals)
              (equal (certificate->round (last-anchor vstate all-vals))
-                    (validator-state->last vstate))))
+                    (validator-state->last vstate)))
+    :enable certificate->round-of-certificate-with-author+round)
 
   (defruled last-anchor-in-dag
     (implies (last-anchor vstate all-vals)

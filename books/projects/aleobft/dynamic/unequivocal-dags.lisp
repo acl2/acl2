@@ -71,7 +71,7 @@
 
   ///
 
-  (defruled unequivocal-dags-necc-single
+  (defruled unequivocal-dags-p-necc-single
     (implies (and (unequivocal-dags-p systate)
                   (set::in val (correct-addresses systate)))
              (certificate-set-unequivocalp

@@ -258,7 +258,8 @@
   :rule-classes :linear
   :enable (set::expand-cardinality-of-intersect
            committee-quorum
-           committee-max-faulty)
+           committee-max-faulty
+           total-lower-bound-wrt-max-faulty)
   :disable set::expand-cardinality-of-union
   :prep-lemmas
   ((defrule lemma

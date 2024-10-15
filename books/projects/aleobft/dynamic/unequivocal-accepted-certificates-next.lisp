@@ -199,6 +199,7 @@
                   (no-self-buffer-p systate)
                   (no-self-endorsed-p systate)
                   (same-owned-certificates-p systate)
+                  (accepted-certificate-committee-p systate)
                   (create-certificate-possiblep cert systate)
                   (set::in (certificate->author cert) (correct-addresses systate))
                   (set::in val (correct-addresses systate))
@@ -219,8 +220,15 @@
              system-fault-tolerant-p-necc
              validator-fault-tolerant-p-necc
              in-owned-certificates-when-in-accepted-certificates
-             in-signed-certificates-when-in-owned-and-signer)
-    :use ((:instance quorum-intersection-has-correct-validator
+             in-signed-certificates-when-in-owned-and-signer
+             certificate->author-of-certificate-with-author+round
+             certificate->round-of-certificate-with-author+round)
+    :use ((:instance accepted-certificate-committee-p-necc
+                     (cert (certificate-with-author+round
+                            (certificate->author cert)
+                            (certificate->round cert)
+                            (accepted-certificates val systate))))
+          (:instance quorum-intersection-has-correct-validator
                      (commtt
                       (active-committee-at-round
                        (certificate->round cert)
@@ -277,6 +285,7 @@
                   (no-self-buffer-p systate)
                   (no-self-endorsed-p systate)
                   (same-owned-certificates-p systate)
+                  (accepted-certificate-committee-p systate)
                   (create-certificate-possiblep cert systate))
              (unequivocal-accepted-certificates-p
               (create-certificate-next cert systate)))
@@ -299,6 +308,7 @@
                   (system-fault-tolerant-p systate)
                   (signer-quorum-p systate)
                   (same-committees-p systate)
+                  (accepted-certificate-committee-p systate)
                   (receive-certificate-possiblep msg systate)
                   (set::in (message->destination msg)
                            (correct-addresses systate))
@@ -321,8 +331,15 @@
              unequivocal-signed-certificates-p-necc
              in-owned-certificates-when-in-accepted-certificates
              in-signed-certificates-when-in-owned-and-signer
-             message-certificate-in-owned-certificates)
-    :use ((:instance quorum-intersection-has-correct-validator
+             message-certificate-in-owned-certificates
+             certificate->author-of-certificate-with-author+round
+             certificate->round-of-certificate-with-author+round)
+    :use ((:instance accepted-certificate-committee-p-necc
+                     (cert (certificate-with-author+round
+                            (certificate->author (message->certificate msg))
+                            (certificate->round (message->certificate msg))
+                            (accepted-certificates val systate))))
+          (:instance quorum-intersection-has-correct-validator
                      (commtt
                       (active-committee-at-round
                        (certificate->round (message->certificate msg))
@@ -374,6 +391,7 @@
                   (system-fault-tolerant-p systate)
                   (signer-quorum-p systate)
                   (same-committees-p systate)
+                  (accepted-certificate-committee-p systate)
                   (receive-certificate-possiblep msg systate))
              (unequivocal-accepted-certificates-p
               (receive-certificate-next msg systate)))
@@ -444,6 +462,7 @@
                   (no-self-buffer-p systate)
                   (no-self-endorsed-p systate)
                   (signer-records-p systate)
+                  (accepted-certificate-committee-p systate)
                   (event-possiblep event systate))
              (unequivocal-accepted-certificates-p
               (event-next event systate)))

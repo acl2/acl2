@@ -57,7 +57,9 @@
                    (dag-authors-are-validators-p
                     (validator-state->dag
                      (get-validator-state val systate))
-                    (all-addresses systate)))))
+                    (all-addresses systate))))
+  :guard-hints
+  (("Goal" :in-theory (enable in-all-addresses-when-in-correct-addresses))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

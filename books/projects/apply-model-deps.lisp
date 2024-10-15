@@ -3,6 +3,7 @@
 (in-package "ACL2")
 
 #||
+(depends-on "build/universal-dependency.certdep" :dir :system)
 (depends-on "build/first-order-like-terms-and-out-arities.certdep" :dir :system)
 (include-book "ordinals/lexicographic-ordering-without-arithmetic" :dir :system)
 (include-book "tools/flag" :dir :system)

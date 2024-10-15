@@ -78,7 +78,8 @@
                     (all-addresses systate))))
   :guard-hints
   (("Goal" :in-theory (enable system-last-is-even-p-necc
-                              system-last-anchor-present-p-necc))))
+                              system-last-anchor-present-p-necc
+                              in-all-addresses-when-in-correct-addresses))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -94,6 +95,7 @@
   (implies (system-state-initp systate)
            (system-blockchain-redundantp systate))
   :enable (system-state-initp
+           validator-init-when-system-initp
            validator-init
            system-blockchain-redundantp
            validator-blockchain-redundantp

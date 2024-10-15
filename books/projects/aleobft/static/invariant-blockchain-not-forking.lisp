@@ -60,7 +60,9 @@
                     (validator-state->blockchain
                      (get-validator-state val1 systate))
                     (validator-state->blockchain
-                     (get-validator-state val2 systate))))))
+                     (get-validator-state val2 systate)))))
+  :guard-hints
+  (("Goal" :in-theory (enable in-all-addresses-when-in-correct-addresses))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

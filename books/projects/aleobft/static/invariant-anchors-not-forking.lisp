@@ -81,9 +81,11 @@
                                        (all-addresses systate))
                     (validator-anchors (get-validator-state val2 systate)
                                        (all-addresses systate)))))
-  :guard-hints (("Goal" :in-theory (enable* system-last-is-even-p-necc
-                                            system-last-anchor-present-p-necc
-                                            set::expensive-rules))))
+  :guard-hints
+  (("Goal" :in-theory (enable* system-last-is-even-p-necc
+                               system-last-anchor-present-p-necc
+                               set::expensive-rules
+                               in-all-addresses-when-in-correct-addresses))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

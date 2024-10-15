@@ -182,7 +182,7 @@
        :hints ('(:use (:instance correct-addresses-loop-subset-keys
                                  (vstates (omap::tail vstates))))))
 
-     (defrule correct-addresses-loop-of-update
+     (defruled correct-addresses-loop-of-update
        (implies (and (addressp val)
                      (validator-statep vstate)
                      (validators-statep vstates))
@@ -205,7 +205,7 @@
 
   ///
 
-  (defrule correct-addresses-subset-all-addresses
+  (defruled correct-addresses-subset-all-addresses
     (set::subset (correct-addresses systate)
                  (all-addresses systate))
     :enable (all-addresses
@@ -213,20 +213,20 @@
 
   ;; Variant of the theorem just above with all-addresses expanded.
   ;; Useful when all-addresses is enabled in a proof.
-  (defrule correct-addresses-subset-keys-validators
+  (defruled correct-addresses-subset-keys-validators
     (set::subset (correct-addresses systate)
                  (omap::keys (system-state->validators systate)))
     :use correct-addresses-subset-all-addresses
-    :disable correct-addresses-subset-all-addresses
     :enable all-addresses)
 
-  (defrule in-all-addresses-when-in-correct-addresses
+  (defruled in-all-addresses-when-in-correct-addresses
     (implies (set::in val (correct-addresses systate))
              (set::in val (all-addresses systate)))
     :disable correct-addresses
-    :enable set::expensive-rules)
+    :enable (set::expensive-rules
+             correct-addresses-subset-all-addresses))
 
-  (defrule lookup-nonnil-of-correct-addresses
+  (defruled lookup-nonnil-of-correct-addresses
     (implies (set::in addr (correct-addresses systate))
              (omap::lookup addr (system-state->validators systate)))
     :rule-classes (:rewrite :type-prescription)
@@ -261,7 +261,7 @@
   :hooks (:fix)
   ///
 
-  (defrule faulty-addresses-subset-all-addresses
+  (defruled faulty-addresses-subset-all-addresses
     (set::subset (faulty-addresses systate)
                  (all-addresses systate))))
 
@@ -285,7 +285,7 @@
     :enable (all-addresses
              omap::size-to-cardinality-of-keys))
 
-  (defrule number-validator-gt-0-when-nonempty-all-addresses
+  (defruled number-validator-gt-0-when-nonempty-all-addresses
     (implies (not (set::emptyp (all-addresses systate)))
              (> (number-validators systate) 0))
     :rule-classes :linear))
@@ -302,7 +302,11 @@
   (defret number-correct-upper-bound
     (<= number (number-validators systate))
     :rule-classes :linear
-    :hints (("Goal" :in-theory (acl2::enable number-validators)))))
+    :hints
+    (("Goal"
+      :in-theory (acl2::enable number-validators
+                               correct-addresses-subset-all-addresses))))
+  (in-theory (disable number-correct-upper-bound)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -328,6 +332,7 @@
     :enable (number-validators
              number-correct
              faulty-addresses
+             correct-addresses-subset-all-addresses
              set::expensive-rules)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -347,9 +352,11 @@
 
   (defret validator-statep-of-get-validator-state
     (validator-statep vstate?)
-    :hyp (set::in val (correct-addresses systate)))
+    :hyp (set::in val (correct-addresses systate))
+    :hints (("Goal" :in-theory (enable lookup-nonnil-of-correct-addresses))))
+  (in-theory (disable validator-statep-of-get-validator-state))
 
-  (defrule in-correct-validator-addresess-when-get-validator-state
+  (defruled in-correct-validator-addresess-when-get-validator-state
     (implies (get-validator-state val systate)
              (set::in val (correct-addresses systate)))
     :enable (correct-addresses
@@ -358,7 +365,12 @@
 
   (defruled get-validator-state-iff-in-correct-addresses
     (iff (get-validator-state val systate)
-         (set::in val (correct-addresses systate)))))
+         (set::in val (correct-addresses systate)))
+    :hints
+    (("Goal"
+      :in-theory
+      (enable lookup-nonnil-of-correct-addresses
+              in-correct-validator-addresess-when-get-validator-state)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -395,9 +407,10 @@
            (correct-addresses systate))
     :hyp (and (set::in val (correct-addresses systate))
               (validator-statep vstate))
-    :hints (("Goal" :in-theory (enable correct-addresses))))
+    :hints (("Goal" :in-theory (enable correct-addresses
+                                       correct-addresses-loop-of-update))))
 
-  (defrule get-validator-state-of-update-validator-state
+  (defruled get-validator-state-of-update-validator-state
     (implies (and (set::in val1 (correct-addresses systate))
                   (validator-statep vstate))
              (equal (get-validator-state
@@ -405,6 +418,29 @@
                     (if (equal val val1)
                         vstate
                       (get-validator-state val systate))))
+    :enable (get-validator-state
+             omap::lookup))
+
+  (defrule get-validator-state-of-update-validator-state-same
+    (implies (and (set::in val (correct-addresses systate))
+                  (validator-statep vstate))
+             (equal (get-validator-state val
+                                         (update-validator-state val
+                                                                 vstate
+                                                                 systate))
+                    vstate))
+    :enable (get-validator-state
+             omap::lookup))
+
+  (defrule get-validator-state-of-update-validator-state-diff
+    (implies (and (set::in val1 (correct-addresses systate))
+                  (not (equal val val1))
+                  (validator-statep vstate))
+             (equal (get-validator-state val
+                                         (update-validator-state val1
+                                                                 vstate
+                                                                 systate))
+                    (get-validator-state val systate)))
     :enable (get-validator-state
              omap::lookup)))
 

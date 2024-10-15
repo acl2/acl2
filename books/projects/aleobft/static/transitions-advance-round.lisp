@@ -94,9 +94,12 @@
                 (>= no-votes
                     (quorum systate))
                 timeout)))))
-  :guard-hints (("Goal" :in-theory (enable evenp
-                                           posp
-                                           set::not-emptyp-when-in-of-subset)))
+  :guard-hints
+  (("Goal" :in-theory (enable evenp
+                              posp
+                              correct-addresses-subset-all-addresses
+                              in-all-addresses-when-in-correct-addresses
+                              set::not-emptyp-when-in-of-subset)))
   :prepwork ((local (include-book "arithmetic-3/top" :dir :system)))
 
   ///
@@ -120,7 +123,9 @@
        (round (validator-state->round vstate))
        (new-vstate (advance-round-next-val round vstate)))
     (update-validator-state val new-vstate systate))
-  :guard-hints (("Goal" :in-theory (enable advance-round-possiblep)))
+  :guard-hints
+  (("Goal" :in-theory (enable advance-round-possiblep
+                              in-all-addresses-when-in-correct-addresses)))
 
   :prepwork
   ((define advance-round-next-val ((round posp) (vstate validator-statep))
@@ -158,7 +163,8 @@
                     (validator-state->dag
                      (get-validator-state val systate))))
     :enable (advance-round-next-val
-             advance-round-possiblep))
+             advance-round-possiblep
+             get-validator-state-of-update-validator-state))
 
   (defrule validator-state->last-of-advance-round-next
     (implies (and (set::in val (correct-addresses systate))
@@ -171,6 +177,7 @@
                      (get-validator-state val systate))))
     :enable (advance-round-possiblep
              advance-round-next-val
+             get-validator-state-of-update-validator-state
              nfix))
 
   (defrule validator-state->blockchain-of-advance-round-next
@@ -183,7 +190,8 @@
                     (validator-state->blockchain
                      (get-validator-state val systate))))
     :enable (advance-round-possiblep
-             advance-round-next-val))
+             advance-round-next-val
+             get-validator-state-of-update-validator-state))
 
   (defrule validator-state->committed-of-advance-round-next
     (implies (and (set::in val (correct-addresses systate))
@@ -195,4 +203,5 @@
                     (validator-state->committed
                      (get-validator-state val systate))))
     :enable (advance-round-possiblep
-             advance-round-next-val)))
+             advance-round-next-val
+             get-validator-state-of-update-validator-state)))

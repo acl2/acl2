@@ -122,7 +122,8 @@
     :enable (last-blockchain-round-p
              last-blockchain-round-p-necc
              validator-state->blockchain-of-create-certificate-next
-             validator-state->last-of-create-certificate-next))
+             validator-state->last-of-create-certificate-next
+             certificate->round-of-certificate-with-author+round))
 
   (defruled last-blockchain-round-p-of-receive-certificate-next
     (implies (and (last-blockchain-round-p systate)
@@ -167,7 +168,8 @@
              consp-of-extend-blockchain
              round-of-car-of-extend-blockchain
              car-of-collect-anchors
-             blocks-last-round))
+             blocks-last-round
+             certificate->round-of-certificate-with-author+round))
 
   (defruled last-blockchain-round-p-of-timer-expires-next
     (implies (and (last-blockchain-round-p systate)
