@@ -533,6 +533,25 @@
              set::expensive-rules)
     :disable certificates-with-round)
 
+  (defruled certificate-set->round-set-of-certificates-with-round
+    (implies (certificate-setp certs)
+             (equal (certificate-set->round-set
+                     (certificates-with-round round certs))
+                    (if (set::in (pos-fix round)
+                                 (certificate-set->round-set certs))
+                        (set::insert (pos-fix round) nil)
+                      nil)))
+    :induct t
+    :enable (certificate-set->round-set
+             certificate-set->round-set-of-insert))
+
+  (defruled emptyp-of-certificates-with-round-to-no-round
+    (equal (set::emptyp (certificates-with-round round certs))
+           (not (set::in (pos-fix round)
+                         (certificate-set->round-set certs))))
+    :induct t
+    :enable certificate-set->round-set)
+
   (defruled certificate-set->round-set-of-certificates-with-round-not-empty
     (b* ((rounds (certificate-set->round-set
                   (certificates-with-round round certs))))
