@@ -1238,7 +1238,7 @@
      which is part of the @(':const') case of @(tsee expr).
      Recall that the parser initially parses all identifiers used as expressions
      under the @(':ident') case, but the disambiguator re-classifies
-     some of them under the @(':const) case, as appropriate.")
+     some of them under the @(':const') case, as appropriate.")
    (xdoc::p
     "A variable (i.e. identifier) is valid if
      it is found in the validation table,
