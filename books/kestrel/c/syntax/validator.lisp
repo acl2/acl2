@@ -502,6 +502,13 @@
   ((scopes valid-scope-list))
   :pred valid-tablep)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-valid-table
+  :short "An irrelevant validation table."
+  :type valid-tablep
+  :body (valid-table nil))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define valid-empty-scope ()
@@ -1409,13 +1416,14 @@
 
   (define valid-expr ((expr exprp) (table valid-tablep) (ienv ienvp))
     :guard (expr-unambp expr)
-    :returns (mv erp (type typep))
+    :returns (mv erp (type typep) (new-table valid-tablep))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate an expression."
     :long
     (xdoc::topstring
      (xdoc::p
-      "If validation is successful, we return the type of the expression.
+      "If validation is successful, we return the type of the expression,
+       along with a possibly updated validation table.
        For now we do not distinguish lvalues [C:6.3.2.1/1].
        To do that, we will introduce a richer notion of expression type
        that includes a type and also
@@ -1431,24 +1439,33 @@
      (xdoc::p
       "For now we allow all generic selections,
        returning the unknown type for them."))
-    (b* (((reterr) (irr-type)))
+    (b* (((reterr) (irr-type) (irr-valid-table)))
       (expr-case
        expr
-       :ident (valid-var expr.unwrap table)
-       :const (valid-const expr.unwrap table ienv)
-       :string (valid-stringlit-list expr.literals)
+       :ident (b* (((erp type) (valid-var expr.unwrap table)))
+                (retok type (valid-table-fix table)))
+       :const (b* (((erp type) (valid-const expr.unwrap table ienv)))
+                (retok type (valid-table-fix table)))
+       :string (b* (((erp type) (valid-stringlit-list expr.literals)))
+                 (retok type (valid-table-fix table)))
        :paren (valid-expr expr.unwrap table ienv)
-       :gensel (retok (type-unknown))
-       :arrsub (b* (((erp type-arg1) (valid-expr expr.arg1 table ienv))
-                    ((erp type-arg2) (valid-expr expr.arg2 table ienv)))
-                 (valid-arrsub expr type-arg1 type-arg2))
-       :funcall (b* (((erp type-fun) (valid-expr expr.fun table ienv))
-                     ((erp types-arg) (valid-expr-list expr.args table ienv)))
-                  (valid-funcall expr type-fun types-arg))
-       :member (b* (((erp type-arg) (valid-expr expr.arg table ienv)))
-                 (valid-member expr type-arg))
-       :memberp (b* (((erp type-arg) (valid-expr expr.arg table ienv)))
-                  (valid-memberp expr type-arg))
+       :gensel (retok (type-unknown) (valid-table-fix table))
+       :arrsub (b* (((erp type-arg1 table) (valid-expr expr.arg1 table ienv))
+                    ((erp type-arg2 table) (valid-expr expr.arg2 table ienv))
+                    ((erp type) (valid-arrsub expr type-arg1 type-arg2)))
+                 (retok type table))
+       :funcall (b* (((erp type-fun table) (valid-expr expr.fun table ienv))
+                     ((erp types-arg table) (valid-expr-list expr.args
+                                                             table
+                                                             ienv))
+                     ((erp type) (valid-funcall expr type-fun types-arg)))
+                  (retok type table))
+       :member (b* (((erp type-arg table) (valid-expr expr.arg table ienv))
+                    ((erp type) (valid-member expr type-arg)))
+                 (retok type table))
+       :memberp (b* (((erp type-arg table) (valid-expr expr.arg table ienv))
+                     ((erp type) (valid-memberp expr type-arg)))
+                  (retok type table))
        :complit (reterr :todo)
        :unary (reterr :todo)
        :sizeof (reterr :todo)
@@ -1465,19 +1482,20 @@
 
   (define valid-expr-list ((exprs expr-listp) (table valid-tablep) (ienv ienvp))
     :guard (expr-list-unambp exprs)
-    :returns (mv erp (types type-listp))
+    :returns (mv erp (types type-listp) (new-table valid-tablep))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate a list of expressions."
     :long
     (xdoc::topstring
      (xdoc::p
       "We validate all the expressions, one after the other,
-       and we return the resulting types, in the same order."))
-    (b* (((reterr) nil)
-         ((when (endp exprs)) (retok nil))
-         ((erp type) (valid-expr (car exprs) table ienv))
-         ((erp types) (valid-expr-list (cdr exprs) table ienv)))
-      (retok (cons type types)))
+       and we return the resulting types, in the same order.
+       We also return a possibly updated validation table."))
+    (b* (((reterr) nil (irr-valid-table))
+         ((when (endp exprs)) (retok nil (valid-table-fix table)))
+         ((erp type table) (valid-expr (car exprs) table ienv))
+         ((erp types table) (valid-expr-list (cdr exprs) table ienv)))
+      (retok (cons type types) table))
     :measure (expr-list-count exprs))
 
   :hints (("Goal" :in-theory (enable o< o-finp)))
