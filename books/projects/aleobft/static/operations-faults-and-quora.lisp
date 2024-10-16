@@ -235,7 +235,7 @@
   :hooks (:fix)
   ///
 
-  (defrule posp-of-quorum-when-there-are-validators
+  (defruled posp-of-quorum-when-there-are-validators
     (implies (not (set::emptyp (all-addresses systate)))
              (posp (quorum systate)))
     :rule-classes (:rewrite :type-prescription)
