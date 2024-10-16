@@ -568,7 +568,7 @@
     "Instead of @('(equal A B)'),
      we phrase this theorem as @('(equal (equal A B) t)')
      so it can fire as a rewrite rule in the main theorem
-     @(tsee same-committees-p-when-nonforking-ordered-even-blockchains)."))
+     @(tsee same-committees-p-invariant)."))
   (implies (and (lists-noforkp blocks1 blocks2)
                 (blocks-ordered-even-p blocks1)
                 (blocks-ordered-even-p blocks2)
