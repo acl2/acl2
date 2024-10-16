@@ -17,12 +17,12 @@
 (include-book "kestrel/bv/bvand" :dir :system)
 (include-book "kestrel/bv/bvshr" :dir :system)
 (include-book "kestrel/bv/bvplus" :dir :system)
-(include-book "kestrel/utilities/smaller-termp" :dir :system)
-(include-book "kestrel/utilities/polarity" :dir :system) ; for want-to-strengthen
+;(include-book "kestrel/utilities/smaller-termp" :dir :system)
+;(include-book "kestrel/utilities/polarity" :dir :system) ; for want-to-strengthen
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (local (include-book "kestrel/bv/logand-b" :dir :system))
 (local (include-book "kestrel/bv/rules" :dir :system)) ; for slice-too-high-is-0-new (todo: move it)
-(local (include-book "kestrel/bv/rules10" :dir :system)) ; todo, for logand-of-bvchop-becomes-bvand etc
+(local (include-book "kestrel/bv/intro" :dir :system)) ; todo, for logand-of-bvchop-becomes-bvand etc
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor-and-expt" :dir :system))
@@ -159,7 +159,8 @@
                             bvchop-upper-bound-strong
                             BVCHOP-BOUND-2)))))
 
-(defthm open-ash-positive-constants
+;; ;; just use a constant opener rule?  actually, this is built in to the x86 rewriter, but that is not used for loop lifting yet
+(defthmd open-ash-positive-constants
   (implies (and (syntaxp (and (quotep i)
                               (quotep c)))
                 (natp c)
@@ -168,27 +169,20 @@
                   (* i (expt 2 c))))
   :hints (("Goal" :in-theory (enable ash))))
 
-;gen
-(defthm strengthen-upper-bound-when-top-bit-0
-  (implies (and (syntaxp (want-to-strengthen (< x 9223372036854775808)))
-                (equal (getbit 63 x) 1)
-                (integerp x))
-           (equal (< x 9223372036854775808)
-                  (<= x 0)))
-  :hints (("Goal" :in-theory (e/d (getbit slice logtail)
-                                  (slice-becomes-getbit
-                                   bvchop-1-becomes-getbit
-                                   bvchop-of-logtail-becomes-slice)))))
+;; ;gen
+;; (defthmd strengthen-upper-bound-when-top-bit-0
+;;   (implies (and (syntaxp (want-to-strengthen (< x 9223372036854775808)))
+;;                 (equal (getbit 63 x) 1)
+;;                 (integerp x))
+;;            (equal (< x 9223372036854775808)
+;;                   (<= x 0)))
+;;   :hints (("Goal" :in-theory (e/d (getbit slice logtail)
+;;                                   (slice-becomes-getbit
+;;                                    bvchop-1-becomes-getbit
+;;                                    bvchop-of-logtail-becomes-slice)))))
 
-;; Since 0 and 1 are the only BVs less than 2
-(defthmd <-of-bvchop-and-2
-  (equal (< (bvchop size x) 2)
-         (or (equal (bvchop size x) 0)
-             (equal (bvchop size x) 1))))
-
-;;gen
-(defthm bvplus-subst-smaller-term
-  (implies (and (equal (bvchop 32 x) (bvchop 32 x2))
-                (syntaxp (smaller-termp x2 x)))
-           (equal (bvplus 32 x y)
-                  (bvplus 32 x2 y))))
+;; ;; Since 0 and 1 are the only BVs less than 2
+;; (defthmd <-of-bvchop-and-2
+;;   (equal (< (bvchop size x) 2)
+;;          (or (equal (bvchop size x) 0)
+;;              (equal (bvchop size x) 1))))

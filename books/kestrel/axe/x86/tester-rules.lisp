@@ -23,29 +23,31 @@
 ;(include-book "kestrel/bv/intro" :dir :system)
 ;(include-book "kestrel/axe/rules1" :dir :system)
 ;(include-book "kestrel/axe/axe-rules-mixed" :dir :system)
-(include-book "kestrel/x86/rflags-spec-sub" :dir :system)
-(include-book "kestrel/x86/read-and-write" :dir :system)
-(include-book "kestrel/x86/register-readers-and-writers64" :dir :system)
-(include-book "kestrel/utilities/def-constant-opener" :dir :system)
+;(include-book "kestrel/x86/rflags-spec-sub" :dir :system)
+;(include-book "kestrel/x86/read-and-write" :dir :system)
+(include-book "projects/x86isa/proofs/utilities/disjoint" :dir :system) ; for separate
+(include-book "projects/x86isa/machine/application-level-memory" :dir :system) ; for canonical-addressp
+(include-book "kestrel/x86/register-readers-and-writers64" :dir :system) ; for rsp
+(include-book "kestrel/bv/bvmult" :dir :system)
+;(include-book "kestrel/utilities/def-constant-opener" :dir :system)
 ;; todo: reduce:
 (local (include-book "kestrel/axe/axe-rules-mixed" :dir :system)) ; drop?
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
-(local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
-(local (include-book "kestrel/arithmetic-light/floor" :dir :system))
-(local (include-book "kestrel/arithmetic-light/mod" :dir :system))
-(local (include-book "kestrel/arithmetic-light/mod2" :dir :system)) ; reduce?
-(local (include-book "kestrel/arithmetic-light/divide" :dir :system))
+;; (local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
+;; (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
+;; (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
+;; (local (include-book "kestrel/arithmetic-light/mod2" :dir :system)) ; reduce?
+;; (local (include-book "kestrel/arithmetic-light/divide" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
-(local (include-book "kestrel/arithmetic-light/times-and-divide" :dir :system))
+;; (local (include-book "kestrel/arithmetic-light/times-and-divide" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
-(local (include-book "kestrel/arithmetic-light/expt" :dir :system))
-(local (include-book "kestrel/arithmetic-light/ash" :dir :system))
-(local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
+;; (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
+;; (local (include-book "kestrel/arithmetic-light/ash" :dir :system))
+;; (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 ;; (local (include-book "kestrel/bv/logand-b" :dir :system))
 ;; (local (include-book "kestrel/bv/logior" :dir :system))
 ;; (local (include-book "kestrel/bv/logxor-b" :dir :system))
-;; (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 ;; (local (include-book "kestrel/bv/bvsx-rules" :dir :system))
 
 ;(def-constant-opener bool-fix$inline) ; or build into axe?

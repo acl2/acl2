@@ -139,9 +139,7 @@
                 (natp size2))
            (equal (getbit size (* x (logapp size2 y z)))
                   (getbit size (* x y))))
-  :hints (("Goal" :in-theory (e/d (logapp getbit slice-alt-def)
-                                  (
-                                   )))))
+  :hints (("Goal" :in-theory (enable logapp getbit slice-alt-def))))
 
 (defthm getbit-of-*-of-bvchop
   (implies (and (< size size2)
@@ -151,9 +149,7 @@
                 (natp size2))
            (equal (getbit size (* x (bvchop size2 y)))
                   (getbit size (* x y))))
-  :hints (("Goal" :in-theory (e/d (getbit slice-alt-def)
-                                  (
-                                   )))))
+  :hints (("Goal" :in-theory (enable getbit slice-alt-def))))
 
 (defthm logext-of-*-of-logext-arg1
   (implies (and (integerp x)
@@ -217,9 +213,7 @@
                 (integerp n))
            (equal (logext m (logext n x))
                   (logext m x)))
-  :hints (("Goal" :in-theory (e/d (logext getbit slice)
-                                  (
-                                    )))))
+  :hints (("Goal" :in-theory (enable logext getbit slice))))
 
 (defthm logext-of-0
   (equal (logext size 0)
@@ -265,9 +259,7 @@
                                    getbit
                                    slice
                                    ) (BVCHOP-OF-LOGAPP-BIGGER
-
                                    MOD-EXPT-SPLIT ;bad?
-
                                    )))))
 
 (defthm bvchop-of-logext-same
@@ -304,12 +296,7 @@
   (implies (not (posp n))
            (equal (logext n x)
                   (logext 1 x)))
-  :hints (("Goal" :in-theory (e/d (logext getbit slice)
-                                  (
-
-                                   )))))
-
-
+  :hints (("Goal" :in-theory (enable logext getbit slice))))
 
 ;todo: prove without opening up so much stuff
 (defthm equal-of-0-and-bvchop
@@ -317,14 +304,11 @@
            (equal (equal 0 (logext n x))
                   (equal 0 (bvchop n x))))
   :otf-flg t
-  :hints (("Goal" :in-theory (e/d (logext bvchop getbit slice logtail
-                                          expt-of-+
-                                          ;mod-=-0
-                                          equal-of-0-and-mod
-                                          floor-when-integerp-of-quotient
-                                          )
-                                  (
-                                   )))))
+  :hints (("Goal" :in-theory (enable logext bvchop getbit slice logtail
+                                     expt-of-+
+                                     ;; mod-=-0
+                                     equal-of-0-and-mod
+                                     floor-when-integerp-of-quotient))))
 
 (defthm logext-of-expt-same
   (implies (posp size)
@@ -696,8 +680,7 @@
                     (- (logext size x)))))
   :hints (("Goal" :in-theory (e/d (logext logapp getbit slice logtail-of-bvchop bvchop-32-split-hack)
                                   (;anti-slice
-
-                                                           bvchop-of-logtail)))))
+                                   bvchop-of-logtail)))))
 
 (defthm bvchop-subst-constant-from-logext
   (implies (and (syntaxp (not (quotep x)))
@@ -713,8 +696,7 @@
            :cases ((equal size (+ -1 free))
                    (< size (+ -1 free)))
            :in-theory (e/d (logext logtail-of-bvchop)
-                           ( slice  BVCHOP-OF-LOGTAIL
-                                    )))))
+                           (slice bvchop-of-logtail)))))
 
 (defthm getbit-of-logext
   (implies (and (< n size)
@@ -803,8 +785,7 @@
   :hints (("Goal" :expand (slice highbit lowbit x)
            :cases ((and (integerp x) (<= lowbit highbit))
                    (and (integerp x) (> lowbit highbit)))
-           :in-theory (e/d (slice getbit logtail-of-bvchop logext)
-                           ()))))
+           :in-theory (enable slice getbit logtail-of-bvchop logext))))
 
 (defthm logext-of-truncate
   (implies (and (signed-byte-p size i)

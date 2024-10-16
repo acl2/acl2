@@ -472,7 +472,7 @@
            (equal (integerp (* 1/4 (bvchop 31 x)))
                   (integerp (* 1/4 x))))
   :hints (("Goal" :in-theory (e/d (bvchop)
-                                  (mod-by-4-becomes-bvchop)))))
+                                  ()))))
 
 (defthm integerp-of-*-of-1/4-of-logext
   (implies (integerp x)
@@ -520,9 +520,9 @@
                                    logext-of-plus
                                    truncate-becomes-floor-other
                                    truncate-becomes-floor
-                                   mod-by-4-becomes-bvchop)
+                                   mod-by-4-becomes-bvchop ; or handle (integerp (* 1/4 x))
+                                   )
                            (LOGEXT-MIN-VALUE
-
                             FLOOR-UNIQUE-EQUAL-VERSION
                             ;; bvchop-of-minus ;can this loop?
                             ;; if-backchain-rule
@@ -619,11 +619,9 @@
   (implies (integerp x)
            (equal (integerp (* 1/4 x))
                   (equal 0 (bvchop 2 x))))
-  :hints (("Goal" :in-theory (e/d (bvchop
-                                   ) (mod-by-4-becomes-bvchop ;fixme
-                                      MOD-OF-EXPT-OF-2-CONSTANT-VERSION
-                                      MOD-OF-EXPT-OF-2
-                                      )))))
+  :hints (("Goal" :in-theory (e/d (bvchop)
+                                  (MOD-OF-EXPT-OF-2-CONSTANT-VERSION
+                                   MOD-OF-EXPT-OF-2)))))
 
 (defthm unsigned-byte-p-of-times-1/4
  (implies (and (posp x)
@@ -1482,10 +1480,6 @@
   :hints (("Goal" :use (:instance UNSIGNED-BYTE-P-TIGHTEN)))
   :RULE-CLASSES ((:REWRITE :BACKCHAIN-LIMIT-LST (0))))
 
-
-(local (in-theory (disable MOD-BY-4-BECOMES-BVCHOP)))
-
-;new
 
 (defthm sbvmoddown-32-4-non-neg
   (implies (and (not (sbvlt '32 x '0))
