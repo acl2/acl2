@@ -72,6 +72,7 @@
              (equal (certificate->author cert?)
                     (address-fix author)))
     :hints (("Goal" :induct t)))
+  (in-theory (disable certificate->author-of-certificate-with-author+round))
 
   (defret certificate->round-of-certificate-with-author+round
     (implies cert?

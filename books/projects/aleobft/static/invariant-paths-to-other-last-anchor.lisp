@@ -117,7 +117,8 @@
                         (1+ max-faulty))))
     :enable (validator-last-anchor-voters-p
              last-anchor
-             cardinality-of-incoming-to-tally-leader-votes))
+             cardinality-of-incoming-to-tally-leader-votes
+             certificate->author-of-certificate-with-author+round))
 
   (defrule system-paths-to-other-last-anchor-p-when-other-invariants
     (implies (and (system-unequivocal-dag-p systate)
