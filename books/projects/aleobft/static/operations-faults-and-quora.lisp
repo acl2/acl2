@@ -147,10 +147,9 @@
     (>= (1+ max) (/ total 3))
     :hyp (natp total)
     :hints (("Goal" :in-theory (enable natp))))
-
   (in-theory (disable max-faulty-for-total-upper-bound-tight))
 
-  (defrule total-lower-bound-wrt-max-faulty
+  (defruled total-lower-bound-wrt-max-faulty
     (implies (not (zp total))
              (>= total
                  (1+ (* 3 (max-faulty-for-total total)))))
@@ -198,7 +197,8 @@
     (implies (> (number-validators systate) 0)
              (>= (number-validators systate)
                  (1+ (* 3 (max-faulty systate)))))
-    :rule-classes :linear))
+    :rule-classes :linear
+    :enable total-lower-bound-wrt-max-faulty))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
