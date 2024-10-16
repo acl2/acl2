@@ -582,7 +582,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled same-committees-p-when-nonforking-ordered-even-blockchains
+(defruled same-committees-p-invariant
   :short "Proof of the invariant from other invariants:
           if blockchains do not fork,
           and if blockchains have even ordered rounds,
