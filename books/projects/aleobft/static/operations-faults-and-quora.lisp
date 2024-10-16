@@ -193,7 +193,7 @@
   :hooks (:fix)
   ///
 
-  (defrule number-validators-lower-bound-wrt-max-faulty
+  (defruled number-validators-lower-bound-wrt-max-faulty
     (implies (> (number-validators systate) 0)
              (>= (number-validators systate)
                  (1+ (* 3 (max-faulty systate)))))
