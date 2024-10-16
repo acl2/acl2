@@ -108,7 +108,7 @@
                             (syntaxp (quotep rstobj2::index))
                             (syntaxp (quotep X86ISA::X86$A))))
 ;why?
-(acl2::defopeners x86p :hyps ((syntaxp (quotep x86))))
+;(acl2::defopeners x86p :hyps ((syntaxp (quotep x86))))
 
 ;tighten?
 (defthm x86isa::signed-byte-p-64-when-canonical-address-p-cheap
@@ -357,9 +357,6 @@
 (defthm canonical-address-listp-of-nil
   (x86isa::canonical-address-listp nil))
 
-(defthm integerp-of-xr-rgf
-  (implies (x86p x86)
-           (integerp (xr :rgf i x86))))
 
 ;see xr-xw-inter-field but that has a case-split
 (defthm xr-of-xw-diff

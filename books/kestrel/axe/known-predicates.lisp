@@ -33,7 +33,7 @@
 (include-book "kestrel/booleans/boolif" :dir :system)
 (include-book "kestrel/booleans/bool-fix" :dir :system)
 (include-book "kestrel/lists-light/memberp-def" :dir :system)
-(include-book "std/lists/list-defuns" :dir :system) ;for prefixp
+(include-book "kestrel/lists-light/prefixp-def" :dir :system)
 ;(include-book "std/osets/top" :dir :system) ;for set::in
 (include-book "oset-defs")
 

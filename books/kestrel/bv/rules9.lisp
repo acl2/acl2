@@ -809,6 +809,4 @@
                 (natp n))
            (equal (getbit n (+ x (* k bit)))
                   (bitxor bit (getbit n x))))
-  :hints (("Goal" :in-theory (e/d (getbit slice bitnot)
-                                  (
-                                   )))))
+  :hints (("Goal" :in-theory (enable getbit slice bitnot))))

@@ -14,6 +14,7 @@
 ;; This book focues on things that are not specific to 32-bit or 64-bit mode.
 
 (include-book "projects/x86isa/machine/state" :dir :system) ;for xr
+;(include-book "projects/x86isa/machine/register-readers-and-writers" :dir :system) ; has a ttag!
 ;(include-book "projects/x86isa/machine/instructions/fp/mxcsr" :dir :system) ; would support integerp-of-mxcsr, but it has a ttag
 (include-book "kestrel/utilities/myif" :dir :system)
 
@@ -24,6 +25,16 @@
   (equal (xr :undef nil x86)
          (undef x86))
   :hints (("Goal" :in-theory (enable undef))))
+
+(defthm x86isa::integerp-of-xr-rgf-type
+  (integerp (xr :rgf i x86))
+  :rule-classes :type-prescription
+  :hints (("Goal" :use (:instance x86isa::elem-p-of-xr-rgf (x86isa::x86$a x86))
+           :in-theory (e/d (xr) (x86isa::elem-p-of-xr-rgf)))))
+
+;; For Axe, since ACL2 will use the :type-prescription rule
+(defthmd x86isa::integerp-of-xr-rgf
+  (integerp (xr :rgf i x86)))
 
 (defthm undef-of-xw (implies (not (equal fld :undef)) (equal (undef (xw fld index value x86)) (undef x86))) :hints (("Goal" :in-theory (enable undef))))
 

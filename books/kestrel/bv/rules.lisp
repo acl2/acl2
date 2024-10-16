@@ -601,7 +601,7 @@
                 (integerp z))
            (equal (slice high low (+ (bvchop size y) z))
                   (slice high low (+ y z))))
-  :hints (("Goal" :in-theory (e/d (slice bvchop-of-logtail) ()))))
+  :hints (("Goal" :in-theory (enable slice bvchop-of-logtail))))
 
 (defthm slice-of-sum-drop-bvchop-alt
   (implies (and (< high size)
@@ -613,7 +613,7 @@
                 (integerp z))
            (equal (slice high low (+ z (bvchop size y)))
                   (slice high low (+ y z))))
-  :hints (("Goal" :in-theory (e/d (slice bvchop-of-logtail) ()))))
+  :hints (("Goal" :in-theory (enable slice bvchop-of-logtail))))
 
 ;make a general theory of cancellation for associative and commutative functions with an inverse and identity
 ;i guess you get left and right cancellation (but not more general cancellation) for non-abelian groups.
@@ -1228,8 +1228,8 @@
                 (integerp y))
            (equal (getbit 0 (logapp 1 y x))
                   (getbit 0 y)))
-  :hints (("Goal" :in-theory (e/d (getbit ;logapp
-                                   ) ()))))
+  :hints (("Goal" :in-theory (enable getbit ;logapp
+                                     ))))
 
 (defthm logand-even-of-logapp-1
   (implies (and ;(evenp k) ;drop somehow?
@@ -1636,8 +1636,7 @@
                           highval) lowsize
                    (bvand lowsize (bvchop lowsize x)
                           lowval))))
-  :hints (("Goal" :in-theory (e/d (bvcat bvand slice bvchop-of-logtail)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bvcat bvand slice bvchop-of-logtail))))
 
 ;(local (in-theory (disable LOGAPP-0-NEW2)));why?
 
@@ -1710,7 +1709,7 @@
 (defthm bvnot-equal-1-rewrite
   (equal (equal (bvnot 1 x) 1)
          (equal (getbit 0 x) 0))
-  :hints (("Goal" :in-theory (e/d (bitnot) ()))))
+  :hints (("Goal" :in-theory (enable bitnot))))
 
 ;fixme make a trim theory for bitnot (and all other operators!)
 (defthm bitnot-of-slice
@@ -1895,8 +1894,7 @@
 ;same for bitnot?
 (defthm equal-bvnot-1-getbit-0
   (not (equal (bvnot 1 y) (getbit 0 y)))
-  :hints (("Goal" :in-theory (e/d (bitnot bvnot-1-becomes-bitnot-better)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bitnot bvnot-1-becomes-bitnot-better))))
 
 ;this showed up in the unrolled aes spec
 (defthm bvif-1-equal-1-y-x-bitxor-1-x
@@ -1965,13 +1963,13 @@
   (implies (unsigned-byte-p 1 x)
            (equal (bvif 1 (equal 1 x) y 0)
                   (bitand x y)))
-  :hints (("Goal" :in-theory (e/d (bvif myif bool-to-bit) ()))))
+  :hints (("Goal" :in-theory (enable bvif myif bool-to-bit))))
 
 (defthm bvif-equal-1-usb1-2-gen
   (implies (unsigned-byte-p 1 x)
            (equal (bvif 1 (equal 1 x) 0 y)
                   (bitand y (bitnot x))))
-  :hints (("Goal" :in-theory (e/d (bvif myif bool-to-bit) ()))))
+  :hints (("Goal" :in-theory (enable bvif myif bool-to-bit))))
 
 (defthm bvand-of-logext-arg2
   (implies (and (<= size1 size2)
@@ -3246,7 +3244,7 @@
 
 (defthm equal-of-getbit-of-0-and-bitnot
   (not (equal (getbit 0 x) (bitnot x)))
-  :hints (("Goal" :in-theory (e/d (bitnot) ()))))
+  :hints (("Goal" :in-theory (enable bitnot))))
 
 (defthm equal-of-getbit-of-0-and-bitnot-alt
   (not (equal (bitnot x) (getbit 0 x)))
@@ -3255,7 +3253,7 @@
 
 (defthm equal-of-getbit-of-0-and-bitxor-of-1
   (not (equal (getbit 0 x) (bitxor 1 x)))
-  :hints (("Goal" :in-theory (e/d (bitxor-of-1-becomes-bitnot-arg1) ()))))
+  :hints (("Goal" :in-theory (enable bitxor-of-1-becomes-bitnot-arg1))))
 
 (defthm equal-of-getbit-of-0-and-bitxor-of-1-alt
   (not (equal (bitxor 1 x) (getbit 0 x)))
@@ -4742,7 +4740,7 @@
                   (if (equal 0 (GETBIT 31 x))
                       1
                     0)))
-  :hints (("Goal" :in-theory (e/d (getbit SLICE-OF-SUM-CASES) ()))))
+  :hints (("Goal" :in-theory (enable getbit SLICE-OF-SUM-CASES))))
 
 
 ;gen
@@ -4879,7 +4877,7 @@
  (implies (integerp x)
           (equal (GETBIT 31 (+ 4294967296 x))
                  (GETBIT 31 x)))
- :hints (("Goal" :in-theory (e/d (getbit) ()))))
+ :hints (("Goal" :in-theory (enable getbit))))
 
 ;drop since we have the gen version?
 ;many cases
