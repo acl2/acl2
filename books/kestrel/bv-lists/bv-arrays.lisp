@@ -336,7 +336,7 @@
                   0))
   :hints (("Goal" ;:cases ((< index len))
            :in-theory (e/d (bv-array-read-opener bv-array-write BV-ARRAY-READ-WHEN-INDEX-IS-TOO-LARGE)
-                           ( ;BVCHOP-OF-NTH-BECOMES-BV-ARRAY-READ
+                           (;BVCHOP-OF-NTH-BECOMES-BV-ARRAY-READ
 ;GETBIT-OF-NTH-BECOMES-BV-ARRAY-READ
 ;NTH-BECOMES-BV-ARRAY-READ2
                             )))))
@@ -427,7 +427,7 @@
 ;the bvchop-list should have no affect when lst is a bv-array-write nest with element-size2
                                   (bv-array-write element-size1 len index1 val1 (bvchop-list element-size2 lst)))))
   :hints
-  (("Goal" :cases ( (<= len (len lst)))
+  (("Goal" :cases ((<= len (len lst)))
     :in-theory (e/d (update-nth2 bv-array-write-opener
                                  bvchop-list-of-take-of-bvchop-list-gen
                                  )
