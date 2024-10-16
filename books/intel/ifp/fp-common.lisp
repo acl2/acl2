@@ -83,7 +83,7 @@
 
 (define rc->rounding-mode ((rc fp-rc-p))
   :returns (mode rounding-mode-p
-                 :hints (("goal" :in-theory (e/d (fp-rc-fix) ()))))
+                 :hints (("Goal" :in-theory (e/d (fp-rc-fix) ()))))
   :short "Convert rc (2-bit integer) to rounding-mode (keywords describing the equivalent
   rounding operation)"
   (case (fp-rc-fix rc)
@@ -109,7 +109,7 @@
                     (not (equal (rounding-mode-fix mode) :rmi))
                     (not (equal (rounding-mode-fix mode) :ri)))
                (equal (rounding-mode-fix mode) :rtz))
-      :hints (("goal" :in-theory (e/d (rounding-mode-fix) ()))))))
+      :hints (("Goal" :in-theory (e/d (rounding-mode-fix) ()))))))
 
   ///
   (local (in-theory (e/d (rc->rounding-mode) ())))
@@ -121,7 +121,7 @@
   (defthm rounding-mode->rc-of-rc->rounding-mode
     (equal (rounding-mode->rc (rc->rounding-mode rc))
            (fp-rc-fix rc))
-    :hints (("goal" :in-theory (e/d (fp-rc-fix) ())))))
+    :hints (("Goal" :in-theory (e/d (fp-rc-fix) ())))))
 
 (defsection fp-expsize
   :set-as-default-parent t
@@ -213,14 +213,14 @@
  (defthm ash-non-zero-lemma
    (implies (natp n)
             (not (equal (ash 1 n) 0)))
-   :hints (("goal" :in-theory (e/d* (bitops::ihsext-inductions
+   :hints (("Goal" :in-theory (e/d* (bitops::ihsext-inductions
                                      bitops::ihsext-recursive-redefs)
                                     ())))))
 
 (local (defthm ash-1-gt-1
          (implies (<= 1 (ifix n))
                   (< 1 (ash 1 n)))
-         :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
+         :hints (("Goal" :in-theory (enable* bitops::ihsext-inductions
                                             bitops::ihsext-recursive-redefs)))
          :rule-classes :linear))
 
@@ -281,7 +281,7 @@
   ;; (local (defthm unsigned-byte-p-of-logcons
   ;;          (implies (unsigned-byte-p n a)
   ;;                   (unsigned-byte-p (+ 1 n) (logcons b a)))
-  ;;          :hints(("Goal" :in-theory (enable unsigned-byte-p logcons)))))
+  ;;          :hints (("Goal" :in-theory (enable unsigned-byte-p logcons)))))
 
   (define fp-value ((frac integerp)
                     (exp integerp)
@@ -290,8 +290,8 @@
                     ((jbit maybe-bitp) 'nil)
                     ((size fp-size-p) 'size))
     :returns (val fp-value-p
-                  :hints(("Goal" :in-theory (enable fp-value-p fp-size-width
-                                                    bitops::unsigned-byte-p-logcons))))
+                  :hints (("Goal" :in-theory (enable fp-value-p fp-size-width
+                                                     bitops::unsigned-byte-p-logcons))))
     (b* (((fp-size size))
          (exp-sign (logapp size.exp-size exp
                            (lbfix sign))))
@@ -331,12 +331,12 @@
     (defthm fp-value->frac-of-fp-value
       (equal (fp-value->frac (fp-value frac exp sign :jbit jbit))
              (loghead (fp-size->frac-size size) frac))
-      :hints(("Goal" :in-theory (enable fp-value))))
+      :hints (("Goal" :in-theory (enable fp-value))))
 
     (defthm fp-value->frac-of-fp-value-fix
       (equal (fp-value->frac (fp-value-fix x))
              (fp-value->frac x))
-      :hints(("Goal" :in-theory (enable fp-value-fix fp-size-width))))
+      :hints (("Goal" :in-theory (enable fp-value-fix fp-size-width))))
 
     (defret width-of-<fn>
       (unsigned-byte-p (fp-size->frac-size size) frac)))
@@ -350,12 +350,12 @@
     (defthm fp-value->exp-of-fp-value
       (equal (fp-value->exp (fp-value frac exp sign :jbit jbit))
              (loghead (fp-size->exp-size size) exp))
-      :hints(("Goal" :in-theory (enable fp-value bitops::logtail**))))
+      :hints (("Goal" :in-theory (enable fp-value bitops::logtail**))))
 
     (defthm fp-value->exp-of-fp-value-fix
       (equal (fp-value->exp (fp-value-fix x))
              (fp-value->exp x))
-      :hints(("Goal" :in-theory (enable fp-value-fix fp-size-width))))
+      :hints (("Goal" :in-theory (enable fp-value-fix fp-size-width))))
 
     (defret width-of-<fn>
       (unsigned-byte-p (fp-size->exp-size size) exp)))
@@ -367,12 +367,12 @@
     (defthm fp-value->sign-of-fp-value
       (equal (fp-value->sign (fp-value frac exp sign :jbit jbit))
              (bfix sign))
-      :hints(("Goal" :in-theory (enable fp-value fp-size->width))))
+      :hints (("Goal" :in-theory (enable fp-value fp-size->width))))
 
     (defthm fp-value->sign-of-fp-value-fix
       (equal (fp-value->sign (fp-value-fix x))
              (fp-value->sign x))
-      :hints(("Goal" :in-theory (enable fp-value-fix fp-size-width)))))
+      :hints (("Goal" :in-theory (enable fp-value-fix fp-size-width)))))
 
   (define fp-value->jbit ((x fp-value-p) &key ((size fp-size-p) 'size))
     :returns (jbit bitp :rule-classes :type-prescription)
@@ -385,13 +385,13 @@
              (if (and (fp-size->explicit-jbit size) jbit)
                  (bfix jbit)
                (bool->bit (not (eql (loghead (fp-size->exp-size size) exp) 0)))))
-      :hints(("Goal" :in-theory (enable fp-value fp-value->exp))))
+      :hints (("Goal" :in-theory (enable fp-value fp-value->exp))))
 
     (defthm fp-value->jbit-of-fp-value-fix
       (equal (fp-value->jbit (fp-value-fix x))
              (fp-value->jbit x))
-      :hints((and stable-under-simplificationp
-                  '(:in-theory (enable fp-value-fix fp-size-width))))))
+      :hints ((and stable-under-simplificationp
+                   '(:in-theory (enable fp-value-fix fp-size-width))))))
 
   (define fp-value->man ((x fp-value-p) &key ((size fp-size-p) 'size))
     :returns (man natp :rule-classes :type-prescription)
@@ -407,7 +407,7 @@
                        (if (and size.explicit-jbit jbit)
                            (bfix jbit)
                          (bool->bit (not (equal (loghead size.exp-size exp) 0)))))))
-      :hints(("Goal" :in-theory (enable ))))
+      :hints (("Goal" :in-theory (enable ))))
 
     (defthm fp-value->man-of-fp-value-fix
       (equal (fp-value->man (fp-value-fix x))
@@ -426,7 +426,7 @@
                               (jbit . fp-value->jbit))))
 
   (std::defenum fp-type-p
-    (:zero :denorm :normal :inf :qnan :snan :pseudo-denorm :invalid))
+                (:zero :denorm :normal :inf :qnan :snan :pseudo-denorm :invalid))
 
   (fty::deflist fp-types :elt-type fp-type-p :true-listp t)
 
@@ -506,14 +506,14 @@ occur in explicit-jbit sizes.</p>
   (defthm fp-value-p-when-unsigned-byte-p
     (implies (unsigned-byte-p (fp-size->width size) x)
              (fp-value-p x))
-    :hints(("Goal" :in-theory (enable fp-value-p))))
+    :hints (("Goal" :in-theory (enable fp-value-p))))
 
 
   ;; (local (defthm logapp-logtail-logbitp-lemma
   ;;          (implies (natp sz1)
   ;;                   (equal (logapp sz1 x (bool->bit (logbitp sz1 x)))
   ;;                          (loghead (+ sz1 1) x)))
-  ;;          :hints (("goal" :in-theory (e/d* (bitops::ihsext-inductions
+  ;;          :hints (("Goal" :in-theory (e/d* (bitops::ihsext-inductions
   ;;                                            bitops::ihsext-recursive-redefs))))))
 
   (local (defthm logapp-logtail-logbitp
@@ -521,9 +521,9 @@ occur in explicit-jbit sizes.</p>
                          (equal sz3 (+ sz1 sz2)))
                     (equal (logapp sz1 (logtail sz2 x) (bool->bit (logbitp sz3 x)))
                            (loghead (+ sz1 1) (logtail sz2 x))))
-           :hints (("goal" :use ((:instance bitops::logapp-of-logtail
-                                  (n sz1)
-                                  (x (loghead (+ sz1 1) (logtail sz2 x)))))
+           :hints (("Goal" :use ((:instance bitops::logapp-of-logtail
+                                            (n sz1)
+                                            (x (loghead (+ sz1 1) (logtail sz2 x)))))
                     :in-theory (disable bitops::logapp-of-logtail)))))
 
   (local (defthm logapp-logtail-logbitp-2
@@ -531,9 +531,9 @@ occur in explicit-jbit sizes.</p>
                          (equal y (loghead sz1 (logtail sz2 x))))
                     (equal (logapp sz1 y (bool->bit (logbitp (+ sz1 sz2) x)))
                            (loghead (+ sz1 1) (logtail sz2 x))))
-           :hints (("goal" :use ((:instance bitops::logapp-of-logtail
-                                  (n sz1)
-                                  (x (loghead (+ sz1 1) (logtail sz2 x)))))
+           :hints (("Goal" :use ((:instance bitops::logapp-of-logtail
+                                            (n sz1)
+                                            (x (loghead (+ sz1 1) (logtail sz2 x)))))
                     :in-theory (disable bitops::logapp-of-logtail)))))
 
   (local (defthm logcons-logbitp-loghead-logtail
@@ -542,9 +542,9 @@ occur in explicit-jbit sizes.</p>
                     (equal (logcons c
                                     (loghead sz2 (logtail (+ 1 sz1) x)))
                            (loghead (+ 1 sz2) (logtail sz1 x))))
-           :hints (("goal" :use ((:instance bitops::logapp-of-logtail
-                                  (n 1)
-                                  (x (loghead (+ sz2 1) (logtail sz1 x)))))
+           :hints (("Goal" :use ((:instance bitops::logapp-of-logtail
+                                            (n 1)
+                                            (x (loghead (+ sz2 1) (logtail sz1 x)))))
                     :expand ((loghead (+ 1 sz2) (logtail sz1 x)))
                     :in-theory (disable bitops::logapp-of-logtail)))))
 
@@ -552,9 +552,9 @@ occur in explicit-jbit sizes.</p>
            (implies (and (natp sz1) (natp sz2))
                     (equal (logapp sz1 x (loghead sz2 (logtail sz1 x)))
                            (loghead (+ sz1 sz2) x)))
-           :hints (("goal" :use ((:instance bitops::logapp-of-logtail
-                                  (n sz1)
-                                  (x (loghead (+ sz2 sz1) x))))
+           :hints (("Goal" :use ((:instance bitops::logapp-of-logtail
+                                            (n sz1)
+                                            (x (loghead (+ sz2 sz1) x))))
                     :expand ((loghead (+ 1 sz2) (logtail sz1 x)))
                     :in-theory (disable bitops::logapp-of-logtail)))))
 
@@ -564,13 +564,13 @@ occur in explicit-jbit sizes.</p>
                      (fp-value->sign x)
                      :jbit (fp-value->jbit x))
            (fp-value-fix x))
-    :hints(("Goal" :in-theory (enable fp-value
-                                      fp-value->frac
-                                      fp-value->exp
-                                      fp-value->sign
-                                      fp-value->jbit
-                                      fp-value-fix
-                                      fp-size->width))))
+    :hints (("Goal" :in-theory (enable fp-value
+                                       fp-value->frac
+                                       fp-value->exp
+                                       fp-value->sign
+                                       fp-value->jbit
+                                       fp-value-fix
+                                       fp-size->width))))
 
   (defthm fp-value-of-fp-value-fields-without-jbit
     (implies (and (not (equal (fp-value->type x) :invalid))
@@ -579,17 +579,15 @@ occur in explicit-jbit sizes.</p>
                               (fp-value->exp x)
                               (fp-value->sign x))
                     (fp-value-fix x)))
-    :hints(("Goal" :in-theory (e/d (fp-value
-                                      fp-value->frac
-                                      fp-value->exp
-                                      fp-value->sign
-                                      fp-value->jbit
-                                      fp-value-fix
-                                      fp-size->width
-                                      fp-value->type)
-                                   (bitops::logapp-of-i-0)))))
-
-  
+    :hints (("Goal" :in-theory (e/d (fp-value
+                                     fp-value->frac
+                                     fp-value->exp
+                                     fp-value->sign
+                                     fp-value->jbit
+                                     fp-value-fix
+                                     fp-size->width
+                                     fp-value->type)
+                                    (bitops::logapp-of-i-0)))))
 
   (defthm fp-value-p-implies-unsigned-byte-p
     (and (implies (fp-value-p x :size *fp-size-sp*)
@@ -600,8 +598,7 @@ occur in explicit-jbit sizes.</p>
                   (unsigned-byte-p 16 x))
          (implies (fp-value-p x :size *fp-size-bf16*)
                   (unsigned-byte-p 16 x)))
-    :hints (("Goal"
-             :in-theory (e/d (fp-value-p) ())))))
+    :hints (("Goal" :in-theory (e/d (fp-value-p) ())))))
 
 (define fp-value-zero ((sign bitp)
                        &key
@@ -618,7 +615,7 @@ occur in explicit-jbit sizes.</p>
  (defthm non-zero-logmask-with-posp-input
    (implies (posp x)
             (equal (equal (logmask x) 0) nil))
-   :hints (("goal" :in-theory (e/d* (bitops::ihsext-recursive-redefs
+   :hints (("Goal" :in-theory (e/d* (bitops::ihsext-recursive-redefs
                                      bitops::ihsext-inductions)
                                     ())))))
 
@@ -639,7 +636,7 @@ occur in explicit-jbit sizes.</p>
  (defthm non-zero-logapp-lemma
    (implies (and (posp x) (posp z))
             (equal (equal (logapp (1- x) y z) 0) nil))
-   :hints (("goal" :in-theory (e/d* (logapp
+   :hints (("Goal" :in-theory (e/d* (logapp
                                      bitops::ihsext-recursive-redefs
                                      bitops::ihsext-inductions)
                                     ())))))
@@ -715,7 +712,7 @@ occur in explicit-jbit sizes.</p>
                            &key
                            ((size fp-size-p) 'size))
   :short "Create the largest :normal @(see fp-value)"
-  :guard-hints (("goal" :in-theory (e/d (make-fp-value) ())))
+  :guard-hints (("Goal" :in-theory (e/d (make-fp-value) ())))
   :returns (n_max fp-value-p)
   (b* (((fp-size size)))
     (make-fp-value :sign sign
@@ -728,7 +725,7 @@ occur in explicit-jbit sizes.</p>
    (defthm loghead-n-of-logmask-n-1-!=-0
      (implies (and (integerp n) (< 1 n))
               (not (equal (loghead n (+ -1 (logmask n))) 0)))
-     :hints (("goal" :in-theory (e/d* (bitops::ihsext-inductions
+     :hints (("Goal" :in-theory (e/d* (bitops::ihsext-inductions
                                        bitops::ihsext-recursive-redefs)
                                       ())))))
 
@@ -737,7 +734,7 @@ occur in explicit-jbit sizes.</p>
      (implies (and (integerp n) (< 0 n))
               (not (equal (loghead n (+ -1 (logmask n)))
                           (logmask n))))
-     :hints (("goal" :in-theory (e/d* (bitops::ihsext-inductions
+     :hints (("Goal" :in-theory (e/d* (bitops::ihsext-inductions
                                        bitops::ihsext-recursive-redefs)
                                       ())))))
 
@@ -746,7 +743,7 @@ occur in explicit-jbit sizes.</p>
          ((fp-size size)))
       (implies (< 1 size.exp-size) ;; posp not enough; see loghead-n-of-logmask-n-1-!=-0.
                (eql n_max.type :normal)))
-    :hints (("goal" :in-theory (e/d (make-fp-value fp-value->type) ())))))
+    :hints (("Goal" :in-theory (e/d (make-fp-value fp-value->type) ())))))
 
 (define fp-value-norm-min ((sign bitp)
                            &key
@@ -761,7 +758,7 @@ occur in explicit-jbit sizes.</p>
    (defthm loghead-n-1-!=0
      (implies (and (integerp n) (< 0 n))
               (not (equal (loghead n 1) 0)))
-     :hints (("goal" :in-theory (e/d* (bitops::ihsext-recursive-redefs
+     :hints (("Goal" :in-theory (e/d* (bitops::ihsext-recursive-redefs
                                        bitops::ihsext-inductions)
                                       ())))))
 
@@ -770,7 +767,7 @@ occur in explicit-jbit sizes.</p>
      (implies (and (integerp n) (< 1 n))
               (not (equal (loghead n 1)
                           (logmask n))))
-     :hints (("goal" :in-theory (e/d* (bitops::ihsext-recursive-redefs
+     :hints (("Goal" :in-theory (e/d* (bitops::ihsext-recursive-redefs
                                        bitops::ihsext-inductions
                                        logmask)
                                       ())))))
@@ -780,14 +777,14 @@ occur in explicit-jbit sizes.</p>
          ((fp-size size)))
       (implies (< 1 size.exp-size) ;; Posp not enough. See loghead-n-1-!=-logmask-n.
                (eql n_min.type :normal)))
-    :hints (("goal" :in-theory (e/d (make-fp-value fp-value->type) ())))))
+    :hints (("Goal" :in-theory (e/d (make-fp-value fp-value->type) ())))))
 
 ;; ----------------------------------------------------------------------
 
 (define fp-sign-value ((sign bitp))
   :short "Returns -1 when sign is 1, returns 1 otherwise."
   :returns (val (and (integerp val) (not (equal val 0)))
-                :hints(("Goal" :in-theory (enable bfix)))
+                :hints (("Goal" :in-theory (enable bfix)))
                 :rule-classes :type-prescription)
   (- 1 (* 2 (lbfix sign))))
 
@@ -861,7 +858,7 @@ occur in explicit-jbit sizes.</p>
 
 (defthm fp-value-p-of-0
   (fp-value-p 0)
-  :hints(("Goal" :in-theory (enable fp-value-p))))
+  :hints (("Goal" :in-theory (enable fp-value-p))))
 
 (define fp-sign ((x integerp))
   :short "Given an integer, returns 1 when the input is negative, 0 otherwise."
@@ -920,7 +917,7 @@ occur in explicit-jbit sizes.</p>
   (local (defthmd loghead-of-non-integer
            (implies (not (integerp x))
                     (equal (loghead n x) 0))
-           :hints (("goal" :use ((:instance
+           :hints (("Goal" :use ((:instance
                                   ACL2::INT-EQUIV-IMPLIES-EQUAL-LOGHEAD-2
                                   (x x) (x-equiv 0) (n n)))
                     :in-theory (disable ACL2::INT-EQUIV-IMPLIES-EQUAL-LOGHEAD-2)))))
@@ -929,7 +926,7 @@ occur in explicit-jbit sizes.</p>
            (implies (and (< (ifix x) (ash 1 (nfix sz)))
                          (<= 0 (ifix x)))
                     (equal (loghead sz x) (ifix x)))
-           :hints(("Goal" :in-theory (e/d (unsigned-byte-p
+           :hints (("Goal" :in-theory (e/d (unsigned-byte-p
                                            loghead-of-non-integer
                                            bitops::ash-is-expt-*-x)
                                           (bitops::loghead-identity))
@@ -941,7 +938,7 @@ occur in explicit-jbit sizes.</p>
            (implies (and (equal (logtail n x) (logtail n y))
                          (equal (loghead n x) (loghead n y)))
                     (equal (ifix x) (ifix y)))
-           :hints (("goal" :induct (equal (logtail n x) (logtail n y))
+           :hints (("Goal" :induct (equal (logtail n x) (logtail n y))
                     :in-theory (enable* bitops::ihsext-inductions
                                         bitops::ihsext-recursive-redefs)))
            :rule-classes nil))
@@ -949,7 +946,7 @@ occur in explicit-jbit sizes.</p>
   (local (defthm logtail-of-one-less-than-integer-length
            (implies (posp x)
                     (equal (logtail (+ -1 (integer-length x)) x) 1))
-           :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
+           :hints (("Goal" :in-theory (enable* bitops::ihsext-inductions
                                               bitops::ihsext-recursive-redefs)))))
 
   (local (defthm logapp-1-normalize
@@ -957,7 +954,7 @@ occur in explicit-jbit sizes.</p>
                          (natp size)
                          (equal (integer-length x) (+ 1 size)))
                     (equal (logapp size x 1) x))
-           :hints (("goal" :use ((:instance equal-by-logtail-loghead
+           :hints (("Goal" :use ((:instance equal-by-logtail-loghead
                                             (n size)
                                             (x (logapp size x 1))
                                             (y x))
@@ -970,7 +967,7 @@ occur in explicit-jbit sizes.</p>
            (implies (equal 0 (logcar x))
                     (equal (* 2 (logcdr x))
                            (ifix x)))
-           :hints (("goal" :use ((:instance bitops::logcons-destruct
+           :hints (("Goal" :use ((:instance bitops::logcons-destruct
                                             (x x)))
                     :in-theory (e/d (logcons)
                                     (bitops::logcons-destruct
@@ -980,7 +977,7 @@ occur in explicit-jbit sizes.</p>
            (implies (equal 0 (logcar x))
                     (equal (* 2 (logcdr x) y)
                            (* (ifix x) y)))
-           :hints (("goal" :use 2*logcdr-when-logcar-0
+           :hints (("Goal" :use 2*logcdr-when-logcar-0
                     :in-theory (disable 2*logcdr-when-logcar-0)))))
 
   (local (defthmd ash-when-loghead-equal-0
@@ -988,7 +985,7 @@ occur in explicit-jbit sizes.</p>
                         (<= 0 (ifix sh)))
                     (equal (ash x sh)
                            (* (expt 2 sh) (ifix x))))
-           :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
+           :hints (("Goal" :in-theory (enable* bitops::ihsext-inductions
                                               bitops::ihsext-recursive-redefs)
                    :induct t)
                   (and stable-under-simplificationp
@@ -1000,36 +997,36 @@ occur in explicit-jbit sizes.</p>
   ;; (local (defthmd integerp-when-loghead-equal-0
   ;;          (implies (equal (loghead (- (ifix sh)) x) 0)
   ;;                   (integerp (* (expt 2 sh) (ifix x))))
-  ;;          :hints (("goal" :use ash-when-loghead-equal-0))))
+  ;;          :hints (("Goal" :use ash-when-loghead-equal-0))))
 
   (local (defthmd integerp-when-loghead-equal-0
            (implies (and (equal (loghead (- (ifix sh)) x) 0)
                          (integerp x))
                     (integerp (* x (expt 2 sh))))
-           :hints (("goal" :use ash-when-loghead-equal-0))))
+           :hints (("Goal" :use ash-when-loghead-equal-0))))
 
   (local (defthmd integerp-when-loghead-equal-0-neg
            (implies (and (equal (loghead (- (ifix sh)) (- x)) 0)
                          (integerp x))
                     (integerp (- (* x (expt 2 sh)))))
-           :hints (("goal" :use ((:instance ash-when-loghead-equal-0 (x (- x))))))))
+           :hints (("Goal" :use ((:instance ash-when-loghead-equal-0 (x (- x))))))))
 
   (local (defthmd expt-2-distrib
            (implies (and (integerp x) (integerp y))
                     (equal (expt 2 (+ x y))
                            (* (expt 2 x) (expt 2 y))))
-           :hints(("Goal" :in-theory (enable expt)))))
+           :hints (("Goal" :in-theory (enable expt)))))
 
   (local (defthm integer-length-when-posp
            (implies (posp x)
                     (posp (integer-length x)))
-           :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
+           :hints (("Goal" :in-theory (enable* bitops::ihsext-inductions
                                               bitops::ihsext-recursive-redefs)))
            :rule-classes :type-prescription))
 
   ;; (local (defthm posp-integer-length-denom
   ;;          (posp (integer-length (denominator x)))
-  ;;          :hints (("goal" :use ((:instance rational-implies1 (x x)))))
+  ;;          :hints (("Goal" :use ((:instance rational-implies1 (x x)))))
   ;;          :rule-classes :type-prescription))
 
   ;; (local (defthm x-times-expt-2-integer-length-denom
@@ -1038,7 +1035,7 @@ occur in explicit-jbit sizes.</p>
   ;;                               (ash 1 (+ -1 (integer-length (denominator x))))))
   ;;                   (equal (* x (expt 2 (integer-length (denominator x))))
   ;;                          (* 2 (numerator x))))
-  ;;          :hints (("goal" :in-theory (e/d (bitops::ash-is-expt-*-x)
+  ;;          :hints (("Goal" :in-theory (e/d (bitops::ash-is-expt-*-x)
   ;;                                          (rational-implies2
   ;;                                           ACL2::*-R-DENOMINATOR-R))
   ;;                   :use ((:instance rational-implies2 (x x)))
@@ -1050,7 +1047,7 @@ occur in explicit-jbit sizes.</p>
   ;;                               (ash 1 (+ -1 (integer-length (denominator x))))))
   ;;                   (equal (* (numerator x) (/ (expt 2 (integer-length (denominator x)))))
   ;;                          (* 1/2 x)))
-  ;;          :hints (("goal" :in-theory (e/d (bitops::ash-is-expt-*-x)
+  ;;          :hints (("Goal" :in-theory (e/d (bitops::ash-is-expt-*-x)
   ;;                                          (rational-implies2
   ;;                                           ACL2::*-R-DENOMINATOR-R))
   ;;                   :use ((:instance rational-implies2 (x x)))
@@ -1062,7 +1059,7 @@ occur in explicit-jbit sizes.</p>
                                 (* 1/2 (expt 2 (integer-length (denominator x))))))
                     (equal (* (numerator x) (/ (expt 2 (integer-length (denominator x)))))
                            (* 1/2 x)))
-           :hints (("goal" :in-theory (e/d (bitops::ash-is-expt-*-x)
+           :hints (("Goal" :in-theory (e/d (bitops::ash-is-expt-*-x)
                                            (rational-implies2
                                             ACL2::*-R-DENOMINATOR-R))
                     :use ((:instance rational-implies2 (x x)))
@@ -1073,7 +1070,7 @@ occur in explicit-jbit sizes.</p>
                          (natp n)
                          (<= (integer-length x) n))
                     (unsigned-byte-p n x))
-           :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
+           :hints (("Goal" :in-theory (enable* bitops::ihsext-inductions
                                               bitops::ihsext-recursive-redefs)))))
 
   (local (in-theory (disable bitops::ash-of-ash
@@ -1091,24 +1088,24 @@ occur in explicit-jbit sizes.</p>
   (local (defthm posp-abs
            (implies (not (zip x))
                     (posp (abs x)))
-           :hints(("Goal" :in-theory (enable zip abs)))
+           :hints (("Goal" :in-theory (enable zip abs)))
            :rule-classes :type-prescription))
 
   (local (defthm abs-*-fp-sign-value
            (implies (integerp x)
                     (equal (* (abs x) (fp-sign-value (fp-sign x))) (fix x)))
-           :hints(("Goal" :in-theory (enable abs fp-sign-value fp-sign)))))
+           :hints (("Goal" :in-theory (enable abs fp-sign-value fp-sign)))))
 
   (local (defthm abs-*-fp-sign-value-2
            (implies (integerp x)
                     (equal (* (abs x) (fp-sign-value (fp-sign x)) y) (* (fix x) y)))
-           :hints(("Goal" :in-theory (enable abs fp-sign-value fp-sign)))))
+           :hints (("Goal" :in-theory (enable abs fp-sign-value fp-sign)))))
 
   (local (defthm max-when-gte
            (implies (and (<= y x)
                          (rationalp x) (rationalp y))
                     (equal (max x y) x))
-           :hints(("Goal" :in-theory (enable max)))))
+           :hints (("Goal" :in-theory (enable max)))))
 
   (local (in-theory (disable acl2::unsigned-byte-p-plus
                              not
@@ -1123,7 +1120,7 @@ occur in explicit-jbit sizes.</p>
   (defret fp-value->rational-of-<fn>
     (implies okp
              (equal (fp-value->rational ans) (rfix x)))
-    :hints(("Goal" :in-theory (enable fp-value->rational
+    :hints (("Goal" :in-theory (enable fp-value->rational
                                       loghead-identity-by-bounds
                                       acl2::loghead-identity))
            (and stable-under-simplificationp
@@ -1143,7 +1140,7 @@ occur in explicit-jbit sizes.</p>
   ;;   (implies (member-equal (fp-value->type x) '(:normal :denorm :zero))
   ;;            (equal (rational->fp-value (fp-value->rational x))
   ;;                   (mv t (loghead (fp-size-width size) x))))
-  ;;   :hints(("Goal" :in-theory (enable fp-value->rational
+  ;;   :hints (("Goal" :in-theory (enable fp-value->rational
   ;;                                     fp-size-width))))
   )
 
@@ -1160,13 +1157,13 @@ occur in explicit-jbit sizes.</p>
   :autodoc nil
 
   (fty::defprod
-    fp-arith-triple
-    :parents (fp-common)
-    :short "Our internal 'working' representation of an FP value:
+   fp-arith-triple
+   :parents (fp-common)
+   :short "Our internal 'working' representation of an FP value:
  @('exp') is the exponent of the least-significant bit of the mantissa
  @('man') (includes J-bit)."
 
-    :long "<p>We use @('fp-arith-triple') for all kinds of intermediate FP
+   :long "<p>We use @('fp-arith-triple') for all kinds of intermediate FP
 values (with the @('exp') adjusted as described above).  See document 'Floating
 Point Reference Sheet for Intel(R) Architecture' (available at
 https://software.intel.com/en-us/articles/floating-point-reference-sheet-for-intel-architecture)
@@ -1197,9 +1194,9 @@ for details.</p>
  exponent---it is NOT a general-purpose function that can convert an
  @('IPR') (say) to an appropriate @('fp-value').</p>"
 
-    ((sign bitp)
-     (exp integerp)
-     (man natp)))
+   ((sign bitp)
+    (exp integerp)
+    (man natp)))
 
   (define fp-arith-triple->rational ((x fp-arith-triple-p))
     :short "Return rational number equivalent of a given @(see fp-arith-triple)"
@@ -1232,7 +1229,7 @@ for details.</p>
                  (equal (equal (logapp n low high)
                                0)
                         nil))
-        :hints (("goal" :in-theory (e/d* (bitops::ihsext-inductions
+        :hints (("Goal" :in-theory (e/d* (bitops::ihsext-inductions
                                           bitops::ihsext-recursive-redefs)
                                          ())))))
      (local
@@ -1240,7 +1237,7 @@ for details.</p>
         (equal (loghead (fp-size->frac-size size)
                         (fp-value->frac x))
                (fp-value->frac x))
-        :hints (("goal" :in-theory (e/d (fp-value->frac)
+        :hints (("Goal" :in-theory (e/d (fp-value->frac)
                                         ())))))
 
      (local
@@ -1248,7 +1245,7 @@ for details.</p>
         (implies (equal (fp-value->man x) 0)
                  (and (not (equal (fp-value->type x) :normal))
                       (not (equal (fp-value->type x) :denorm))))
-        :hints (("goal" :in-theory (e/d (fp-value->type
+        :hints (("Goal" :in-theory (e/d (fp-value->type
                                          fp-value->man)
                                         ())))))
 
@@ -1256,7 +1253,7 @@ for details.</p>
       (defthm zero-type-implies-zero-man
         (implies (equal (fp-value->type x) :zero)
                  (equal (fp-value->man x) 0))
-        :hints (("goal" :in-theory (e/d (fp-value->type
+        :hints (("Goal" :in-theory (e/d (fp-value->type
                                          fp-value->man)
                                         ()))))))
     ///
@@ -1283,7 +1280,7 @@ for details.</p>
        (b* (((fp-size size))
             ((fp-value x)))
          (unsigned-byte-p size.exp-size x.exp))
-       :hints (("goal" :in-theory (e/d (fp-value->exp) ())))))
+       :hints (("Goal" :in-theory (e/d (fp-value->exp) ())))))
 
     (local (include-book "centaur/bitops/ash-bounds" :dir :system))
     ;; (local (include-book "arithmetic-3/top" :dir :system))
@@ -1294,7 +1291,7 @@ for details.</p>
                      (< 1 n))
                 (= (+ (ash 1 (+ -1 n)) (ash 1 (+ -1 n)))
                    (ash 1 n)))
-       :hints (("goal"
+       :hints (("Goal"
                 :use ((:instance bitops::expt-2-is-ash (n n))
                       (:instance bitops::expt-2-is-ash (n (1- n))))
                 :expand ((expt 2 n))))
@@ -1303,24 +1300,24 @@ for details.</p>
     (local (defthmd ash-of-n-greater-than-1
              (implies (< 1 (nfix n))
                       (< 2 (ash 1 n)))
-             :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
-                                                bitops::ihsext-recursive-redefs)))))
+             :hints (("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                                 bitops::ihsext-recursive-redefs)))))
 
     (local
      (defthm ash-helper-lemma-2
        (implies (natp n)
                 (equal (equal (ash 1 n) 2)
                        (equal n 1)))
-       :hints(("Goal" :use ash-of-n-greater-than-1
-               :cases ((equal n 0)
-                       (equal n 1))))))
+       :hints (("Goal" :use ash-of-n-greater-than-1
+                :cases ((equal n 0)
+                        (equal n 1))))))
 
     (defret lower-bound-of-<fn>.exp
       (b* (((fp-size size))
            ((fp-arith-triple arith-triple))
            (lsb-emin (+ size.emin (- size.frac-size))))
         (<= lsb-emin arith-triple.exp))
-      :hints (("goal" :in-theory (e/d (fp-value-to-arith-triple
+      :hints (("Goal" :in-theory (e/d (fp-value-to-arith-triple
                                        fp-size->emin
                                        fp-size->exp-bias)
                                       ())))
@@ -1335,7 +1332,7 @@ for details.</p>
                       (< x.exp (logmask size.exp-size))
                       (not (eql x.type :zero)))
                  (<= arith-triple.exp lsb-emax)))
-      :hints (("goal"
+      :hints (("Goal"
                :use ((:instance unsigned-byte-p-of-fp-value->exp))
                :in-theory (e/d (fp-value-to-arith-triple
                                 fp-size->emax
@@ -1351,8 +1348,8 @@ for details.</p>
         (implies (member-equal x.type '(:normal :denorm :pseudo-denorm :zero))
                  (equal (fp-arith-triple->rational arith-triple)
                         (fp-value->rational x))))
-      :hints(("Goal" :in-theory (enable fp-value->rational fp-value->type
-                                        fp-arith-triple->rational))))
+      :hints (("Goal" :in-theory (enable fp-value->rational fp-value->type
+                                         fp-arith-triple->rational))))
 
     (defret fp-arith-triple->exp-of-<fn>
       (equal (fp-arith-triple->exp arith-triple)
@@ -1362,7 +1359,8 @@ for details.</p>
                   (+ (fp-size->exp-bias)
                      (fp-size->frac-size size))))))
 
-    (in-theory (disable fp-arith-triple->exp-of-fp-value-to-arith-triple)))
+    (in-theory (disable fp-arith-triple->exp-of-fp-value-to-arith-triple))
+    )
 
   (define fp-arith-triple-to-value ((x fp-arith-triple-p)
                                     &key
@@ -1406,21 +1404,21 @@ for details.</p>
        (b* (((fp-size size)))
          (equal (logbitp size.frac-size (fp-value->man x))
                 (equal (fp-value->jbit x) 1)))
-       :hints (("goal" :in-theory (e/d (fp-value->man) ())))))
+       :hints (("Goal" :in-theory (e/d (fp-value->man) ())))))
 
     (local
      (defthm loghead-exp-size-of-fp-value->exp
        (b* (((fp-size size)))
          (equal (loghead size.exp-size (fp-value->exp x))
                 (fp-value->exp x)))
-       :hints (("goal" :in-theory (e/d (fp-value->exp) ())))))
+       :hints (("Goal" :in-theory (e/d (fp-value->exp) ())))))
 
     (local
      (defthm loghead-frac-size-of-fp-value->frac
        (b* (((fp-size size)))
          (equal (loghead size.frac-size (fp-value->frac x))
                 (fp-value->frac x)))
-       :hints (("goal" :in-theory (e/d (fp-value->frac)
+       :hints (("Goal" :in-theory (e/d (fp-value->frac)
                                        ())))))
 
     (local
@@ -1428,7 +1426,7 @@ for details.</p>
        (b* (((fp-size size)))
          (equal (loghead size.frac-size (fp-value->man x))
                 (fp-value->frac x)))
-       :hints (("goal" :in-theory (e/d (fp-value->frac
+       :hints (("Goal" :in-theory (e/d (fp-value->frac
                                         fp-value->man)
                                        ())))))
 
@@ -1437,15 +1435,15 @@ for details.</p>
        (iff (equal (logapp w x y) 0)
             (and (equal (loghead w x) 0)
                  (zip y)))
-       :hints(("Goal" :in-theory
-               (enable* bitops::ihsext-inductions
-                        bitops::ihsext-recursive-redefs)))))
+       :hints (("Goal" :in-theory
+                (enable* bitops::ihsext-inductions
+                         bitops::ihsext-recursive-redefs)))))
 
     (defthm normal-man-is-non-zero
       (b* (((fp-value x)))
         (implies (eql x.type :normal)
                  (not (equal x.man 0))))
-      :hints (("goal" :in-theory (e/d (fp-value->type
+      :hints (("Goal" :in-theory (e/d (fp-value->type
                                        fp-value->man)
                                       ()))))
 
@@ -1453,7 +1451,7 @@ for details.</p>
       (b* (((fp-value x)))
         (implies (eql x.type :denorm)
                  (not (equal x.man 0))))
-      :hints (("goal" :in-theory (e/d (fp-value->type
+      :hints (("Goal" :in-theory (e/d (fp-value->type
                                        fp-value->man
                                        fp-value->frac)
                                       ()))))
@@ -1462,7 +1460,7 @@ for details.</p>
       (b* (((fp-value x)))
         (implies (eql x.type :pseudo-denorm)
                  (not (equal x.man 0))))
-      :hints (("goal" :in-theory (e/d (fp-value->type
+      :hints (("Goal" :in-theory (e/d (fp-value->type
                                        fp-value->man
                                        fp-value->frac)
                                       ()))))
@@ -1473,7 +1471,7 @@ for details.</p>
         (implies (or (eql x.type :normal)
                      (eql x.type :pseudo-denorm))
                  (equal (integer-length x.man) (1+ size.frac-size))))
-      :hints (("goal" :in-theory (e/d (fp-value->type
+      :hints (("Goal" :in-theory (e/d (fp-value->type
                                        fp-value->man)
                                       ()))))
 
@@ -1486,7 +1484,7 @@ for details.</p>
                  (and
                   (< 0 (integer-length x.man))
                   (< (integer-length x.man) (1+ size.frac-size)))))
-      :hints (("goal" :in-theory (e/d (fp-value->type
+      :hints (("Goal" :in-theory (e/d (fp-value->type
                                        fp-value->man
                                        fp-value->frac)
                                       ())))
@@ -1496,7 +1494,7 @@ for details.</p>
      (defthm loghead-n-1
        (implies (posp n)
                 (equal (loghead n 1) 1))
-       :hints (("goal" :in-theory (e/d* (bitops::ihsext-recursive-redefs
+       :hints (("Goal" :in-theory (e/d* (bitops::ihsext-recursive-redefs
                                          bitops::ihsext-inductions)
                                         ())))))
 
@@ -1514,19 +1512,19 @@ for details.</p>
        (implies (and (equal (fp-value->jbit value) 0)
                      (not (equal 0 (fp-value->frac value))))
                 (not (equal (fp-value->man value) 0)))
-       :hints (("goal" :in-theory (e/d (fp-value->man fp-value->frac)
+       :hints (("Goal" :in-theory (e/d (fp-value->man fp-value->frac)
                                        ())))))
 
     (local (defthm unsigned-byte-p-of-1
              (implies (posp n)
                       (unsigned-byte-p n 1))
-             :hints(("Goal" :in-theory (enable unsigned-byte-p)))))
+             :hints (("Goal" :in-theory (enable unsigned-byte-p)))))
 
     (local (defthm unsigned-byte-p-of-max
              (implies (and (unsigned-byte-p n x)
                            (unsigned-byte-p n y))
                       (unsigned-byte-p n (max x y)))
-             :hints(("Goal" :in-theory (enable max unsigned-byte-p)))))
+             :hints (("Goal" :in-theory (enable max unsigned-byte-p)))))
 
     (defthmd fp-value-to-arith-triple-and-back
       ;; Sanity check
@@ -1541,7 +1539,7 @@ for details.</p>
                   (equal value1.sign value.sign)
                   (equal value1.exp value.exp)
                   (equal value1.frac value.frac))))
-      :hints (("goal" :in-theory (e/d (fp-size->emin
+      :hints (("Goal" :in-theory (e/d (fp-size->emin
                                        fp-size->emax)
                                       (max)))
               (and stable-under-simplificationp
@@ -1555,7 +1553,7 @@ for details.</p>
     ;;                 (<= (- (fp-size->emin size) (fp-size->frac-size size)) (fp-arith-triple->exp x)))
     ;;            (equal (fp-value->rational value)
     ;;                   (fp-arith-triple->rational x)))
-    ;;   :hints(("Goal" :in-theory (enable fp-value->rational
+    ;;   :hints (("Goal" :in-theory (enable fp-value->rational
     ;;                                     fp-arith-triple->rational))))
     )
 
@@ -1587,8 +1585,8 @@ for details.</p>
     (defret <fn>-preserves-rational-value
       (equal (fp-arith-triple->rational new-x)
              (fp-arith-triple->rational x))
-      :hints(("Goal" :in-theory (enable fp-arith-triple->rational
-                                        bitops::ash-is-expt-*-x)))))
+      :hints (("Goal" :in-theory (enable fp-arith-triple->rational
+                                         bitops::ash-is-expt-*-x)))))
 
   (define fp-arith-rightshift ((x fp-arith-triple-p)
                                (n natp))
@@ -1622,29 +1620,29 @@ for details.</p>
            ((fp-arith-triple x)))
         (implies (natp n)
                  (unsigned-byte-p (nfix (- (integer-length x.man) n)) new-x.man)))
-      :hints (("goal" :in-theory (e/d (unsigned-byte-p nfix) ()))))
+      :hints (("Goal" :in-theory (e/d (unsigned-byte-p nfix) ()))))
 
     (local (defthmd logcar-equals-x-minus-logcdr
              (equal (logcar x)
                     (- (ifix x)
                        (* 2 (logcdr x))))
-             :hints(("Goal" :use ((:instance bitops::logcons-destruct (x x)))
-                     :in-theory (e/d (logcons)
-                                     (acl2::logcar-logcdr-elim
-                                      bitops::logcons-destruct))))))
+             :hints (("Goal" :use ((:instance bitops::logcons-destruct (x x)))
+                      :in-theory (e/d (logcons)
+                                      (acl2::logcar-logcdr-elim
+                                       bitops::logcons-destruct))))))
 
     (local (defthmd loghead-equals-x-minus-logtail
              (equal (loghead n x)
                     (- (ifix x)
                        (* (expt 2 (nfix n)) (logtail n x))))
-             :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
-                                                bitops::ihsext-recursive-redefs
-                                                bitops::expt-2-is-ash)
-                     :induct (loghead n x))
-                    (and stable-under-simplificationp
-                         '(:in-theory (enable logcons)))
-                    (and stable-under-simplificationp
-                         '(:in-theory (enable logcar-equals-x-minus-logcdr))))))
+             :hints (("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                                 bitops::ihsext-recursive-redefs
+                                                 bitops::expt-2-is-ash)
+                      :induct (loghead n x))
+                     (and stable-under-simplificationp
+                          '(:in-theory (enable logcons)))
+                     (and stable-under-simplificationp
+                          '(:in-theory (enable logcar-equals-x-minus-logcdr))))))
 
     (defretd rational-value-of-<fn>
       (implies (natp n)
@@ -1652,9 +1650,9 @@ for details.</p>
                       (- (fp-arith-triple->rational x)
                          (fp-arith-triple->rational
                           (change-fp-arith-triple x :man (loghead n (fp-arith-triple->man x)))))))
-      :hints(("Goal" :in-theory (enable fp-arith-triple->rational))
-             (and stable-under-simplificationp
-                  '(:in-theory (enable loghead-equals-x-minus-logtail))))))
+      :hints (("Goal" :in-theory (enable fp-arith-triple->rational))
+              (and stable-under-simplificationp
+                   '(:in-theory (enable loghead-equals-x-minus-logtail))))))
 
   (define fp-arith-triple-incr ((x fp-arith-triple-p))
     :returns (inc fp-arith-triple-p)
@@ -1668,8 +1666,77 @@ for details.</p>
              (+ (fp-arith-triple->rational x)
                 (* (fp-sign-value (fp-arith-triple->sign x))
                    (expt 2 (fp-arith-triple->exp x)))))
-      :hints(("Goal" :in-theory (enable fp-arith-triple->rational
-                                        fp-sign-value))))))
+      :hints (("Goal" :in-theory (enable fp-arith-triple->rational
+                                         fp-sign-value))))))
+
+(define fp-arith-triple-negate ((x fp-arith-triple-p))
+  :returns (negx fp-arith-triple-p)
+  (change-fp-arith-triple x :sign (b-not (fp-arith-triple->sign x)))
+  ///
+  (defret <fn>-correct
+    (equal (fp-arith-triple->rational negx)
+           (- (fp-arith-triple->rational x)))
+    :hints (("Goal" :in-theory (enable fp-arith-triple->rational b-not))))
+
+  (defret sign-of-<fn>
+    (equal (fp-arith-triple->sign negx)
+           (b-not (fp-arith-triple->sign x))))
+
+  (defret exp-of-<fn>
+    (equal (fp-arith-triple->exp negx)
+           (fp-arith-triple->exp x)))
+
+  (defret man-of-<fn>
+    (equal (fp-arith-triple->man negx)
+           (fp-arith-triple->man x))))
+
+(define fp-value-negate ((x fp-value-p)
+                         &key
+                         ((size fp-size-p) 'size))
+  :returns (new-x fp-value-p)
+  (b* (((fp-value x)))
+    (make-fp-value :sign (b-not x.sign)
+                   :exp x.exp
+                   :frac x.frac
+                   :jbit x.jbit))
+  ///
+  (defret fp-value->frac-of-<fn>
+    (equal (fp-value->frac new-x)
+           (fp-value->frac x)))
+
+  (defret fp-value->exp-of-<fn>
+    (equal (fp-value->exp new-x)
+           (fp-value->exp x)))
+
+  (defret fp-value->jbit-of-<fn>
+    (equal (fp-value->jbit new-x)
+           (fp-value->jbit x))
+    :hints ((and stable-under-simplificationp
+                 '(:in-theory (enable fp-value->jbit)))))
+
+  (defret fp-value->man-of-<fn>
+    (equal (fp-value->man new-x)
+           (fp-value->man x))
+    :hints (("Goal" :in-theory (e/d (fp-value->man) (<fn>)))))
+
+  (defret fp-value->sign-of-<fn>
+    (equal (fp-value->sign new-x)
+           (b-not (fp-value->sign x))))
+
+  (defret fp-value->type-of-<fn>
+    (equal (fp-value->type new-x)
+           (fp-value->type x))
+    :hints (("Goal" :in-theory (enable fp-value->type))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable fp-value->jbit)))))
+
+  (defret fp-value-to-arith-triple-of-<fn>
+    (equal (fp-value-to-arith-triple new-x)
+           (fp-arith-triple-negate (fp-value-to-arith-triple x)))
+    :hints (("Goal" :in-theory (e/d (fp-value-to-arith-triple
+                                     fp-arith-triple-negate)
+                                    (<fn>)))))
+  )
 
 ;;--------------------------------------------------------------------------------
 
@@ -1747,7 +1814,7 @@ for details.</p>
              (if (eql x.man 0)
                  0
                (+ x.exp shiftCnt))))
-    :hints (("goal" :in-theory (e/d (fp-arith-leftshift
+    :hints (("Goal" :in-theory (e/d (fp-arith-leftshift
                                      fp-arith-rightshift)
                                     ()))))
 
@@ -1764,15 +1831,15 @@ for details.</p>
            (implies (and (posp x) (natp n))
                     (equal (integer-length (ash x n))
                            (+ n (integer-length x))))
-           :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
-                                              bitops::ihsext-recursive-redefs)))))
+           :hints (("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                               bitops::ihsext-recursive-redefs)))))
 
   (local (defthm left-shift-equal-0
            (implies (natp n)
                     (equal (Equal (ash x n) 0)
                            (equal (ifix x) 0)))
-           :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
-                                              bitops::ihsext-recursive-redefs)))))
+           :hints (("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                               bitops::ihsext-recursive-redefs)))))
 
   (local (defthm loghead-of-zp-width
            (implies (zp n)
@@ -1782,9 +1849,9 @@ for details.</p>
     (implies (not (equal 0 (fp-arith-triple->man x)))
              (equal (normalize-arith-triple (fp-arith-leftshift x shift) :verbosep verbosep)
                     (normalize-arith-triple x :verbosep verbosep)))
-    :hints(("Goal" :in-theory (enable fp-arith-leftshift
-                                      fp-arith-rightshift
-                                      bitops::loghead-of-ash))))
+    :hints (("Goal" :in-theory (enable fp-arith-leftshift
+                                       fp-arith-rightshift
+                                       bitops::loghead-of-ash))))
 
   ;; (local (Defthmd loghead-of-logtail
   ;;          (equal (loghead n (logtail m x))
@@ -1794,28 +1861,28 @@ for details.</p>
            (implies (equal 0 (loghead shift x))
                     (equal (equal 0 (loghead head (logtail shift x)))
                            (equal 0 (loghead (+ (nfix head) (nfix shift)) x))))
-           :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
-                                              bitops::ihsext-recursive-redefs)))))
+           :hints (("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                               bitops::ihsext-recursive-redefs)))))
 
   (local (defthm loghead-of-logtail-equal-0-2
            (implies (equal 0 (loghead (+ (nfix head) (nfix shift)) x))
                     (equal (equal 0 (loghead head (logtail shift x)))
                            t))
-           :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
-                                              bitops::ihsext-recursive-redefs)))))
+           :hints (("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                               bitops::ihsext-recursive-redefs)))))
 
   (local (defthmd loghead-equal-0-of-less
            (implies (and (equal (loghead n x) 0)
                          (<= (nfix m) (nfix n)))
                     (equal (equal (loghead m x) 0) t))
-           :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
-                                              bitops::ihsext-recursive-redefs)))))
+           :hints (("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                               bitops::ihsext-recursive-redefs)))))
 
   (local (defthm logtail-nonzero-by-integer-length
            (implies (< (nfix shift) (integer-length x))
                     (not (equal 0 (logtail shift x))))
-           :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
-                                              bitops::ihsext-recursive-redefs)))))
+           :hints (("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                               bitops::ihsext-recursive-redefs)))))
   
   
   (defret man-equal-0-of-<fn>
@@ -1823,15 +1890,15 @@ for details.</p>
          ((fp-arith-triple new-x)))
       (iff (equal new-x.man 0)
            (equal x.man 0)))
-    :hints(("Goal" :in-theory (enable fp-arith-leftshift
-                                      fp-arith-rightshift))))
+    :hints (("Goal" :in-theory (enable fp-arith-leftshift
+                                       fp-arith-rightshift))))
 
   
 
   (defret rational-equal-0-of-<fn>
     (iff (equal 0 (fp-arith-triple->rational new-x))
          (equal 0 (fp-arith-triple->rational x)))
-    :hints (("goal"
+    :hints (("Goal"
              :in-theory (e/d (fp-arith-triple->rational-equal-0)
                              (<fn>)))))
   
@@ -1847,8 +1914,8 @@ for details.</p>
                     (equal impl-round spec-round)
                     (implies (equal 0 (loghead shift x.man))
                              (equal impl-sticky spec-sticky)))))
-    :hints(("Goal" :in-theory (enable fp-arith-rightshift
-                                      bitops::loghead-of-ash))))
+    :hints (("Goal" :in-theory (enable fp-arith-rightshift
+                                       bitops::loghead-of-ash))))
 
   (defthm normalize-arith-triple-of-right-shift-sticky
     (b* (((fp-size size))
@@ -1860,10 +1927,10 @@ for details.</p>
       (implies (<= (+ 2 size.frac-size) (- (integer-length x.man) (nfix shift)))
                (equal (or impl-sticky (not (equal 0 (loghead shift x.man))))
                       spec-sticky)))
-    :hints(("Goal" :in-theory (enable fp-arith-rightshift
-                                      bitops::loghead-of-ash))
-           (and stable-under-simplificationp
-                '(:in-theory (enable loghead-equal-0-of-less))))
+    :hints (("Goal" :in-theory (enable fp-arith-rightshift
+                                       bitops::loghead-of-ash))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable loghead-equal-0-of-less))))
     :rule-classes nil) ;; not a good rewrite rule
 
   (defthm normalize-arith-triple-norm-verbosep
@@ -1882,8 +1949,8 @@ for details.</p>
                (and (equal new-x.man new-x-norm.man)
                     (equal roundp roundp-norm)
                     (equal stickyp stickyp-norm))))
-    :hints(("Goal" :in-theory (enable fp-arith-rightshift
-                                      fp-arith-leftshift))))
+    :hints (("Goal" :in-theory (enable fp-arith-rightshift
+                                       fp-arith-leftshift))))
 
   (defretd exponent-of-<fn>-norm
     (b* (((fp-arith-triple new-x))
@@ -1897,8 +1964,21 @@ for details.</p>
                       (if (eql 0 x.man)
                           0
                         (+ x.exp new-x-norm.exp)))))
-    :hints(("Goal" :in-theory (enable fp-arith-rightshift
-                                      fp-arith-leftshift)))))
+    :hints (("Goal" :in-theory (enable fp-arith-rightshift
+                                       fp-arith-leftshift))))
+
+  (defretd <fn>-when-shiftCnt-<=-0
+    (b* (((fp-arith-triple x))
+         ((fp-size size))
+         (man-len (integer-length x.man))
+         (shiftCnt (- man-len (1+ size.frac-size))))
+      (implies (and (<= shiftCnt 0)
+                    (not (equal x.man 0)))
+               (and (equal new-x (fp-arith-leftshift x (- shiftCnt)))
+                    (not roundp)
+                    (equal stickyp (acl2::bool-fix sticky-in)))))
+    :hints (("Goal" :in-theory (enable fp-arith-leftshift))))
+  )
 
 
 ;; Optimizations for symbolic simulation of normalize-arith-triple
@@ -1927,7 +2007,7 @@ for details.</p>
      (implies (and (<= (integer-length x) m) (natp m) (natp n) (natp x))
               (equal (loghead (+ m n) (ash x n))
                      (ash x n)))
-     :hints (("goal" :in-theory (e/d* (bitops::ihsext-inductions
+     :hints (("Goal" :in-theory (e/d* (bitops::ihsext-inductions
                                        bitops::ihsext-recursive-redefs)
                                       ())))))
 
@@ -1939,7 +2019,7 @@ for details.</p>
                    (natp x))
               (equal (loghead m (ash x n))
                      (ash x n)))
-     :hints (("goal"
+     :hints (("Goal"
               :use ((:instance loghead-of-integer-length-+-ash-simple
                                (x x)
                                (m (+ m (- n)))
@@ -1955,16 +2035,16 @@ for details.</p>
          ((fp-arith-triple new-x1) (fp-arith-leftshift x n)))
       (implies (<= (+ (nfix n) (integer-length x.man)) (nfix final-man-width))
                (equal new-x new-x1)))
-    :hints (("goal" :in-theory (e/d ()
+    :hints (("Goal" :in-theory (e/d ()
                                     (loghead-of-integer-length-+-ash))
              :use ((:Instance loghead-of-integer-length-+-ash
                               (m (nfix final-man-width))
                               (x (fp-arith-triple->man x))
-                    (n (nfix n))))))))
+                              (n (nfix n))))))))
 
 
 (define fp-arith-rightshift-opt ((final-man-width natp
-                                                    "Must be an upper bound for @('length(x.man) - n').
+                                                  "Must be an upper bound for @('length(x.man) - n').
                                                   Should be constant for best symbolic simulation performance.")
                                  (x fp-arith-triple-p)
                                  (n natp))
@@ -1987,16 +2067,16 @@ upper bits that may otherwise be always zero without being syntactically zero."
                          (natp x)
                          (<= (integer-length x) n))
                     (unsigned-byte-p n x))
-           :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
-                                              bitops::ihsext-recursive-redefs)))))
+           :hints (("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                               bitops::ihsext-recursive-redefs)))))
 
 
   (local (defthm integer-length-equal-0
            (implies (natp x)
                     (equal (Equal (integer-length x) 0)
                            (equal x 0)))
-           :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
-                                              bitops::ihsext-recursive-redefs)))))
+           :hints (("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                               bitops::ihsext-recursive-redefs)))))
 
   (defretd <fn>-is-fp-arith-rightshift
     (b* (((fp-arith-triple new-x))
@@ -2005,7 +2085,7 @@ upper bits that may otherwise be always zero without being syntactically zero."
       (implies (<= (- (integer-length x.man) (nfix n))
                    (nfix final-man-width))
                (equal new-x new-x1)))
-    :hints (("goal" :in-theory (e/d (fp-arith-rightshift))
+    :hints (("Goal" :in-theory (e/d (fp-arith-rightshift))
              :cases ((< (nfix final-man-width) (nfix n))))
             (and stable-under-simplificationp
                  '(:cases ((natp final-man-width)))))))
@@ -2015,7 +2095,7 @@ upper bits that may otherwise be always zero without being syntactically zero."
            (implies (zp n)
                     (equal (fp-arith-rightshift x n)
                            (fp-arith-triple-fix x)))
-           :hints(("Goal" :in-theory (enable fp-arith-rightshift)))))
+           :hints (("Goal" :in-theory (enable fp-arith-rightshift)))))
 
   (fgl::def-fgl-rewrite normalize-arith-triple-fgl
     (equal (normalize-arith-triple x :sticky-in sticky-in)
@@ -2037,10 +2117,10 @@ upper bits that may otherwise be always zero without being syntactically zero."
                          (not (eql (loghead round-idx x.man) 0)))
                    (mv nil nil))))
              (mv new-x roundp (or (and sticky-in t) stickyp))))
-    :hints(("Goal" :in-theory (enable normalize-arith-triple
-                                      fp-arith-leftshift-opt-is-fp-arith-leftshift
-                                      fp-arith-rightshift-opt-is-fp-arith-rightshift
-                                      fgl::binary-minus))))
+    :hints (("Goal" :in-theory (enable normalize-arith-triple
+                                       fp-arith-leftshift-opt-is-fp-arith-leftshift
+                                       fp-arith-rightshift-opt-is-fp-arith-rightshift
+                                       fgl::binary-minus))))
 
   (fgl::disable-definition normalize-arith-triple-fn))
 
@@ -2087,10 +2167,10 @@ upper bits that may otherwise be always zero without being syntactically zero."
   (defret rational-equal-0-of-<fn>
     (iff (equal 0 (fp-arith-triple->rational new-x))
          (equal 0 (fp-arith-triple->rational x)))
-    :hints (("goal"
+    :hints (("Goal"
              :in-theory (e/d (fp-arith-triple->rational-equal-0)
                              (<fn>)))))
-  
+
   (local
    (defthm integer-length-+-1-lemma
      (implies (and (not (equal (integer-length (+ 1 x))
@@ -2098,7 +2178,7 @@ upper bits that may otherwise be always zero without being syntactically zero."
                    (natp x))
               (equal (integer-length (+ 1 x))
                      (+ 1 (integer-length x))))
-     :hints (("goal" :in-theory (e/d* (bitops::ihsext-recursive-redefs
+     :hints (("Goal" :in-theory (e/d* (bitops::ihsext-recursive-redefs
                                        bitops::ihsext-inductions)
                                       ())))))
 
@@ -2124,7 +2204,7 @@ upper bits that may otherwise be always zero without being syntactically zero."
                     (equal (integer-length x.man) (integer-length (+ 1 x.man)))
                     (equal (integer-length x.man) (+ 1 size.frac-size)))
                (equal new-x.exp x.exp)))
-    :hints (("goal" :in-theory (e/d (normalize-arith-triple) ()))))
+    :hints (("Goal" :in-theory (e/d (normalize-arith-triple) ()))))
 
   (defret <fn>.exp-value-when-round-up-normalization-needed
     (b* (((fp-arith-triple new-x))
@@ -2135,7 +2215,7 @@ upper bits that may otherwise be always zero without being syntactically zero."
                     (< (integer-length x.man) (integer-length (+ 1 x.man)))
                     (equal (integer-length x.man) (+ 1 size.frac-size)))
                (equal new-x.exp (+ 1 x.exp))))
-    :hints (("goal" :in-theory (e/d (normalize-arith-triple
+    :hints (("Goal" :in-theory (e/d (normalize-arith-triple
                                      fp-arith-rightshift)
                                     ()))))
 
@@ -2146,7 +2226,7 @@ upper bits that may otherwise be always zero without being syntactically zero."
       (implies (equal (integer-length x.man) (+ 1 size.frac-size))
                (or (equal new-x.exp x.exp)
                    (equal new-x.exp (+ 1 x.exp)))))
-    :hints (("goal"
+    :hints (("Goal"
              :use ((:instance <fn>.exp-value-unchanged-when-not-round-up)
                    (:instance <fn>.exp-value-when-round-up-normalization-needed)
                    (:instance <fn>.exp-value-when-round-up-no-normalization-needed))
@@ -2174,14 +2254,14 @@ upper bits that may otherwise be always zero without being syntactically zero."
                (and (equal new-x.man new-x-norm.man)
                     (equal round-up round-up-norm)
                     (equal exp-bumped exp-bumped-norm))))
-    :hints(("Goal" :in-theory (enable round-up
-                                      mantissa-of-normalize-arith-triple-norm))))
+    :hints (("Goal" :in-theory (enable round-up
+                                       mantissa-of-normalize-arith-triple-norm))))
 
   (defretd exponent-of-<fn>-norm-round-nearest
     (b* (((fp-arith-triple new-x))
          ((fp-arith-triple x))
          ((mv (fp-arith-triple new-x-norm) ?round-up-norm ?exp-bumped-norm)
-          (round-arith-triple (make-fp-arith-triple :man x.man :sign 0 :Exp 0) roundp stickyp rc)))
+          (round-arith-triple (make-fp-arith-triple :man x.man :sign 0 :exp 0) roundp stickyp rc)))
       (implies (and (syntaxp (not (case-match x
                                     (('fp-arith-triple ''0 ''0 &) t)
                                     (('quote ('(sign . 0) '(exp . 0) &)) t))))
@@ -2190,8 +2270,32 @@ upper bits that may otherwise be always zero without being syntactically zero."
                       (if (equal x.man 0)
                           0
                         (+ x.exp new-x-norm.exp)))))
-    :hints(("Goal" :in-theory (enable round-up)))
-    :otf-flg t))
+    :hints (("Goal" :in-theory (enable round-up)))
+    :otf-flg t)
+
+  (defretd <fn>-of-zero
+    (b* (((fp-arith-triple x)))
+      (implies (equal x.man 0)
+               (and (equal new-x (change-fp-arith-triple x :exp 0))
+                    (not round-up)
+                    (not exp-bumped)))))
+
+  (defretd <fn>-when-shiftCnt-<=-0
+    (b* (((fp-arith-triple x))
+         ((fp-size size))
+         (man-len (integer-length x.man))
+         (shiftCnt (- man-len (1+ size.frac-size)))
+         ((mv norm roundp stickyp)
+          (normalize-arith-triple x :sticky-in nil :verbosep nil))
+         ((mv round & &)
+          (round-arith-triple norm roundp stickyp rc :verbosep nil)))
+      (implies (and (<= shiftCnt 0)
+                    (not (equal x.man 0)))
+               (equal round (fp-arith-leftshift x (- shiftCnt)))))
+    :hints (("Goal"
+             :in-theory (enable round-up
+                                normalize-arith-triple-when-shiftCnt-<=-0))))
+  )
 
 (defbitstruct fp-postproc-bits
   ((norm-lsb booleanp    "LSB from the RPR (normalized, unrounded result)")
@@ -2300,7 +2404,7 @@ upper bits that may otherwise be always zero without being syntactically zero."
          (lsb-emin (+ size.emin (- size.frac-size))))
       (implies (<= x.exp lsb-emin)
                (equal new-x.exp lsb-emin)))
-    :hints (("goal" :in-theory (e/d (fp-arith-rightshift) ()))))
+    :hints (("Goal" :in-theory (e/d (fp-arith-rightshift) ()))))
 
   (local
    (defthm logtail-by->=-integer-length==0
@@ -2308,7 +2412,7 @@ upper bits that may otherwise be always zero without being syntactically zero."
                    (natp n)
                    (natp x))
               (equal (logtail n x) 0))
-     :hints (("goal" :in-theory (e/d* (bitops::ihsext-inductions
+     :hints (("Goal" :in-theory (e/d* (bitops::ihsext-inductions
                                        bitops::ihsext-recursive-redefs)
                                       ())))))
 
@@ -2322,7 +2426,7 @@ upper bits that may otherwise be always zero without being syntactically zero."
        (implies (and (<= (1+ size.frac-size) denormalize-amt)
                      (equal (integer-length x.man) (1+ size.frac-size)))
                 (equal x-dnrm.man 0)))
-     :hints (("goal" :in-theory (e/d (fp-arith-rightshift) ())))))
+     :hints (("Goal" :in-theory (e/d (fp-arith-rightshift) ())))))
 
   (defret integer-length-of-<fn>.man-when-large-denormalize-amt
     (b* (((fp-size size))
@@ -2334,7 +2438,7 @@ upper bits that may otherwise be always zero without being syntactically zero."
                     (equal (integer-length x.man) (1+ size.frac-size)))
                (< (integer-length new-x.man)
                   (integer-length x.man))))
-    :hints (("goal"
+    :hints (("Goal"
              :use ((:instance mantissa-is-zero-when-denormalize-amt->-1+frac-size))
              :in-theory (e/d () (mantissa-is-zero-when-denormalize-amt->-1+frac-size))))
     :rule-classes :linear)
@@ -2344,7 +2448,7 @@ upper bits that may otherwise be always zero without being syntactically zero."
      (implies (and (posp n) (posp (integer-length (fp-arith-triple->man x))))
               (< (integer-length (fp-arith-triple->man (fp-arith-rightshift x n)))
                  (integer-length (fp-arith-triple->man x))))
-     :hints (("goal" :in-theory (e/d (fp-arith-rightshift nfix) ())))
+     :hints (("Goal" :in-theory (e/d (fp-arith-rightshift nfix) ())))
      :rule-classes :linear))
 
   (local (include-book "centaur/bitops/integer-length" :dir :system))
@@ -2355,7 +2459,7 @@ upper bits that may otherwise be always zero without being syntactically zero."
               (and
                (<= (integer-length x) (integer-length (1+ x)))
                (<= (integer-length (1+ x)) (1+ (integer-length x)))))
-     :hints (("goal" :in-theory (e/d* (bitops::ihsext-recursive-redefs
+     :hints (("Goal" :in-theory (e/d* (bitops::ihsext-recursive-redefs
                                        bitops::ihsext-inductions)
                                       ())))
      :rule-classes :linear))
@@ -2365,7 +2469,7 @@ upper bits that may otherwise be always zero without being syntactically zero."
      (implies (and (posp n) (posp (integer-length (fp-arith-triple->man x))))
               (<= (integer-length (+ 1 (fp-arith-triple->man (fp-arith-rightshift x n))))
                   (integer-length (fp-arith-triple->man x))))
-     :hints (("goal" :in-theory (e/d ()
+     :hints (("Goal" :in-theory (e/d ()
                                      (fp-arith-rightshift-man-integer-length-upper-bound
                                       integer-length-of-fp-arith-rightshift.man))
               :use ((:instance fp-arith-rightshift-man-integer-length-upper-bound))))
@@ -2394,7 +2498,7 @@ upper bits that may otherwise be always zero without being syntactically zero."
 
 
 ;; BOZO We should get rid of either fp-arith-triple-left-normalize or left-normalize-arith-triple
-(Define fp-arith-triple-left-normalize ((x fp-arith-triple-p)
+(define fp-arith-triple-left-normalize ((x fp-arith-triple-p)
                                         (width natp))
   :guard (unsigned-byte-p width (fp-arith-triple->man x))
   :prepwork ((local (defthm unsigned-byte-p-in-terms-of-integer-length
@@ -2402,8 +2506,8 @@ upper bits that may otherwise be always zero without being syntactically zero."
                              (And (natp n)
                                   (natp x)
                                   (<= (integer-length x) n)))
-                      :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
-                                                         bitops::ihsext-recursive-redefs))))))
+                      :hints (("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                                          bitops::ihsext-recursive-redefs))))))
   :returns (new-x fp-arith-triple-p)
   (b* (((fp-arith-triple x))
        (shift (lnfix (- (lnfix width) (integer-length x.man))))
@@ -2411,17 +2515,17 @@ upper bits that may otherwise be always zero without being syntactically zero."
         (bitops::limshift-loghead-of-ash width x.man shift))
        (new-exp (- x.exp shift)))
     (make-fp-arith-triple :sign x.sign
-                               :man new-man
-                               :exp new-exp))
+                          :man new-man
+                          :exp new-exp))
   ///
   (defret <fn>-correct
     (implies (unsigned-byte-p width (fp-arith-triple->man x))
              (equal (fp-arith-triple->rational new-x)
                     (fp-arith-triple->rational x)))
-    :hints(("Goal" :in-theory (enable fp-arith-triple->rational)
-            :cases ((equal 0 (fp-arith-triple->man x))))
-           (and stable-under-simplificationp
-                '(:in-theory (enable bitops::ash-is-expt-*-x)))))
+    :hints (("Goal" :in-theory (enable fp-arith-triple->rational)
+             :cases ((equal 0 (fp-arith-triple->man x))))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable bitops::ash-is-expt-*-x)))))
 
   (defret <fn>-normalized
     (implies (and (unsigned-byte-p width (fp-arith-triple->man x))
@@ -2452,52 +2556,52 @@ upper bits that may otherwise be always zero without being syntactically zero."
          ((fp-size size)))
       (implies (<= (integer-length x.man) (+ 1 size.frac-size))
                (equal norm (left-normalize-arith-triple x size.frac-size))))
-    :hints(("Goal" :in-theory (enable normalize-arith-triple))
-           (and stable-under-simplificationp
-                '(:in-theory (enable fp-arith-leftshift)))))
+    :hints (("Goal" :in-theory (enable normalize-arith-triple))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable fp-arith-leftshift)))))
 
   (defret fp-arith-triple->rational-of-<fn>
     (equal (fp-arith-triple->rational new-x)
            (fp-arith-triple->rational x))
-    :hints((and stable-under-simplificationp
-                '(:in-theory (enable fp-arith-triple->rational)))))
+    :hints ((and stable-under-simplificationp
+                 '(:in-theory (enable fp-arith-triple->rational)))))
 
   (defret man-when-0
     (b* (((fp-arith-triple x))
          ((fp-arith-triple new-x)))
       (implies (equal x.man 0)
                (equal new-x.man 0)))
-    :hints(("Goal" :in-theory (enable fp-arith-leftshift
-                                      bitops::ash-is-expt-*-x))))
+    :hints (("Goal" :in-theory (enable fp-arith-leftshift
+                                       bitops::ash-is-expt-*-x))))
 
   (defret man-equals-0
     (b* (((fp-arith-triple x))
          ((fp-arith-triple new-x)))
       (iff (equal new-x.man 0)
            (equal x.man 0)))
-    :hints(("Goal" :in-theory (enable fp-arith-leftshift
-                                      bitops::ash-is-expt-*-x))))
+    :hints (("Goal" :in-theory (enable fp-arith-leftshift
+                                       bitops::ash-is-expt-*-x))))
 
   (local (defthm integer-length-bounded-by-width
            (implies (unsigned-byte-p n x)
                     (<= (integer-length x) n))
-           :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
-                                              bitops::ihsext-recursive-redefs)))
+           :hints (("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                               bitops::ihsext-recursive-redefs)))
            :rule-classes :linear))
-  
+
   (defret man-length-of-<fn>
     (b* (((fp-arith-triple x))
          ((fp-arith-triple new-x)))
       (implies (and (not (equal x.man 0))
                     (unsigned-byte-p (+ 1 (pos-fix frac-size)) x.man))
                (equal (integer-length new-x.man) (+ 1 (pos-fix frac-size)))))
-    :hints(("Goal" :in-theory (enable fp-arith-leftshift))))
+    :hints (("Goal" :in-theory (enable fp-arith-leftshift))))
 
   (local (defthmd unsigned-byte-p-of-integer-length
            (implies (natp x)
                     (unsigned-byte-p (integer-length x) x))
-           :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
-                                              bitops::ihsext-recursive-redefs)))))
+           :hints (("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                               bitops::ihsext-recursive-redefs)))))
 
   (defret unsigned-byte-p-of-<fn>
     (b* (((fp-arith-triple x))
@@ -2506,6 +2610,6 @@ upper bits that may otherwise be always zero without being syntactically zero."
                     (<= (+ 1 (pos-fix frac-size)) size)
                     (unsigned-byte-p (+ 1 (pos-fix frac-size)) x.man))
                (unsigned-byte-p size new-x.man)))
-    :hints (("goal" :use ((:instance unsigned-byte-p-of-integer-length
-                           (x (fp-arith-triple->man new-x))))))
+    :hints (("Goal" :use ((:instance unsigned-byte-p-of-integer-length
+                                     (x (fp-arith-triple->man new-x))))))
     :hints-sub-returnnames t))
