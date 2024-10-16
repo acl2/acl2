@@ -121,7 +121,7 @@
 
 (defruled certificate-with-author+round-of-unequivocal-superset
   :short "If a certificate with a certain author and round
-          is retrieves from a subset of an unequivocal set of certificates,
+          is retrieved from a subset of an unequivocal set of certificates,
           the same certificate is retrieved from the superset."
   :long
   (xdoc::topstring
