@@ -84,7 +84,8 @@
                            (certificates-with-round round dag2)))))
        :enable (certificate-with-author+round-element-when-not-nil
                 certificate-with-author+round-when-author-in-certificates
-                certificate->author-of-certificate-with-author+round)
+                certificate->author-of-certificate-with-author+round
+                certificate->round-of-certificate-with-author+round)
        :disable certificate->author-in-certificate-set->author-set
        :use ((:instance certificate-sets-unequivocalp-necc
                         (cert1 (certificate-with-author+round
