@@ -338,7 +338,6 @@
            :in-theory (e/d (bv-array-read-opener bv-array-write BV-ARRAY-READ-WHEN-INDEX-IS-TOO-LARGE)
                            ( ;BVCHOP-OF-NTH-BECOMES-BV-ARRAY-READ
 ;GETBIT-OF-NTH-BECOMES-BV-ARRAY-READ
-;NTH-BECOMES-BV-ARRAY-READ2
                             )))))
 
 (defthm bvchop-list-of-repeat-of-nil
@@ -477,7 +476,7 @@
 ;          :induct (sub1-cdr-cdr-induct index vals1 vals2)
            :in-theory (e/d (BV-ARRAY-READ ;nth
                             )
-                           (;NTH-BECOMES-BV-ARRAY-READ2 GETBIT-OF-NTH-BECOMES-BV-ARRAY-READ BVCHOP-OF-NTH-BECOMES-BV-ARRAY-READ
+                           (; GETBIT-OF-NTH-BECOMES-BV-ARRAY-READ BVCHOP-OF-NTH-BECOMES-BV-ARRAY-READ
                             ;;BITXOR-OF-NTH-ARG1
                             ;;BITXOR-OF-NTH-ARG2
                             ;;NTH-OF-CDR

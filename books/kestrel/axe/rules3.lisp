@@ -31,7 +31,7 @@
 (include-book "kestrel/bv/trim-intro-rules" :dir :system)
 (include-book "axe-syntax") ;for work-hard -- TODO make non-work-hard versions of these
 (include-book "rules1") ;drop? for BV-ARRAY-WRITE-EQUAL-REWRITE-ALT, to prove EQUAL-OF-BV-ARRAY-WRITE-SAME
-(include-book "bv-array-rules") ; drop?
+;(include-book "bv-array-rules") ; drop?
 (include-book "kestrel/bv-lists/bvchop-list" :dir :system)
 (include-book "kestrel/bv-lists/bv-array-write" :dir :system)
 ;(include-book "kestrel/bv-lists/bv-array-clear" :dir :system)
@@ -108,8 +108,7 @@
 ;helps in the weird case where the test is a constant but we haven't simplified the myif (happens when we don't simplify the dag after merging nodes)
 (defthm equal-of-myif-same-2
   (equal (equal x (myif test y x))
-         ;rephrase rhs?
-         (or (not test) (equal x y)))
+         (if test (equal x y) t))
   :hints (("Goal" :in-theory (enable myif))))
 
 ;; may not be needed if we flip equalities to bring smaller terms first
@@ -121,8 +120,7 @@
 ;; may not be needed if we flip equalities to bring smaller terms first
 (defthm equal-of-myif-same-2-alt
   (equal (equal (myif test y x) x)
-         ;rephrase rhs?
-         (or (not test) (equal x y)))
+         (if test (equal x y) t))
   :hints (("Goal" :in-theory (enable myif))))
 
 
@@ -5421,8 +5419,9 @@
                   (bvplus size arg1 (bv-array-read size (len data) n data))))
   :hints (("Goal" :in-theory (e/d (bv-array-read-opener)
                                   (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ
-                                   NTH-BECOMES-BV-ARRAY-READ2
-                                   BVCHOP-OF-NTH-BECOMES-BV-ARRAY-READ)))))
+                                   ;
+                                   ;BVCHOP-OF-NTH-BECOMES-BV-ARRAY-READ
+                                   )))))
 
 ;move
 (defthmd bvmod-of-power-of-2-helper
@@ -9599,7 +9598,7 @@
 (defthm bv-array-read-trim-index
   (equal (BV-ARRAY-READ '32 '80 (BVPLUS '32 x y) lst)
          (BV-ARRAY-READ '32 '80 (BVPLUS '7 x y) lst))
-  :hints (("Goal" :in-theory (e/d (BV-ARRAY-READ) (NTH-BECOMES-BV-ARRAY-READ2)))))
+  :hints (("Goal" :in-theory (e/d (BV-ARRAY-READ) ()))))
 
 ;Mon Jul 19 21:06:14 2010
 ;; (defthm bv-array-write-with-index-and-len-same
@@ -10812,7 +10811,8 @@
                 )
            (equal (bv-array-read size len n x)
                   (bv-array-read size len n k)))
-  :hints (("Goal" :in-theory (e/d (bv-array-read-opener) (NTH-BECOMES-BV-ARRAY-READ2)))))
+  :hints (("Goal" :in-theory (e/d (bv-array-read-opener) (
+                                                          )))))
 
 (defthm equal-of-slice-and-constant-when-equal-of-bvchop-and-constant2
   (implies (and (syntaxp (quotep k))
@@ -11152,7 +11152,7 @@
            :in-theory (e/d (slice BVCHOP-OF-LOGTAIL BV-ARRAY-READ ;LIST::NTH-WITH-LARGE-INDEX
                                   ceiling-of-lg)
                            (;bvchop-of-nth-becomes-bv-array-read
-                            NTH-BECOMES-BV-ARRAY-READ2
+
                             anti-slice)))))
 
 ;more like this?!
@@ -11165,7 +11165,9 @@
                     (bvchop size y))))
   :hints (("Goal" :in-theory (e/d (bv-array-read-opener ;LIST::NTH-WITH-LARGE-INDEX
                                    )
-                                  (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ NTH-BECOMES-BV-ARRAY-READ2)))))
+                                  (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ
+
+                                   )))))
 
 (defthm bvxor-of-nth-arg3
   (implies (and ;(all-unsigned-byte-p free data) ;not logically necessary but helps prevent this rule from firing on heterogeneous lists
@@ -11176,7 +11178,9 @@
                     (bvchop size y))))
   :hints (("Goal" :in-theory (e/d (bv-array-read-opener ;LIST::NTH-WITH-LARGE-INDEX
                                    )
-                                  (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ NTH-BECOMES-BV-ARRAY-READ2)))))
+                                  (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ
+
+                                   )))))
 
 (defthm bitxor-of-nth-arg1
   (implies (and ;(all-unsigned-byte-p free data) ;not logically necessary but helps prevent this rule from firing on heterogeneous lists
@@ -11188,8 +11192,9 @@
   :hints (("Goal" :in-theory (e/d (bv-array-read-opener ;LIST::NTH-WITH-LARGE-INDEX
                                    GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER)
                                   (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ
-                                   BVCHOP-OF-NTH-BECOMES-BV-ARRAY-READ
-                                   NTH-BECOMES-BV-ARRAY-READ2)))))
+                                   ;BVCHOP-OF-NTH-BECOMES-BV-ARRAY-READ
+
+                                   )))))
 
 (defthm bitxor-of-nth-arg2
   (implies (and ;(all-unsigned-byte-p free data) ;not logically necessary but helps prevent this rule from firing on heterogeneous lists
@@ -11201,8 +11206,9 @@
   :hints (("Goal" :in-theory (e/d (bv-array-read-opener ;LIST::NTH-WITH-LARGE-INDEX
                                    GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER)
                                   (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ
-                                   BVCHOP-OF-NTH-BECOMES-BV-ARRAY-READ
-                                   NTH-BECOMES-BV-ARRAY-READ2)))))
+                                   ;BVCHOP-OF-NTH-BECOMES-BV-ARRAY-READ
+
+                                   )))))
 
 (defthm bvcat-of-nth-arg2
   (implies (and ;(all-unsigned-byte-p free data) ;not logically necessary but helps prevent this rule from firing on heterogeneous lists
@@ -11214,8 +11220,9 @@
   :hints (("Goal" :in-theory (e/d (bv-array-read-opener ;LIST::NTH-WITH-LARGE-INDEX
                                    )
                                   (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ
-                                   BVCHOP-OF-NTH-BECOMES-BV-ARRAY-READ
-                                   NTH-BECOMES-BV-ARRAY-READ2)))))
+                                   ;BVCHOP-OF-NTH-BECOMES-BV-ARRAY-READ
+
+                                   )))))
 
 (defthm bvcat-of-nth-arg4
   (implies (and ;(all-unsigned-byte-p free data) ;not logically necessary but helps prevent this rule from firing on heterogeneous lists
@@ -11227,8 +11234,9 @@
   :hints (("Goal" :in-theory (e/d (bv-array-read-opener ;LIST::NTH-WITH-LARGE-INDEX
                                    )
                                   (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ
-                                   BVCHOP-OF-NTH-BECOMES-BV-ARRAY-READ
-                                   NTH-BECOMES-BV-ARRAY-READ2)))))
+                                   ;BVCHOP-OF-NTH-BECOMES-BV-ARRAY-READ
+
+                                   )))))
 
 (defthmd bvplus-of-myif-arg3
   (equal (bvplus size x (myif test a b))
@@ -11240,7 +11248,7 @@
          (bvplus size (bvif size test a b) x))
   :hints (("Goal" :in-theory (enable bvplus myif))))
 
-(defthm getbit-of-nth-becomes-bv-array-read
+(defthmd getbit-of-nth-becomes-bv-array-read
   (implies (and ;(all-unsigned-byte-p free data) ;not logically necessary but helps prevent this rule from firing on heterogeneous lists.  this might be bad if the bvchop size is smaller than the array elems... fffixme - had size here -- now trying with free
                 (natp m)
                 (natp n))
@@ -11251,8 +11259,10 @@
   :hints (("Goal" :in-theory (e/d (bv-array-read-opener ;LIST::NTH-WITH-LARGE-INDEX
                                    GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER)
                                   (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ
-                                   BVCHOP-OF-NTH-BECOMES-BV-ARRAY-READ
-                                   NTH-BECOMES-BV-ARRAY-READ2)))))
+                                   ;BVCHOP-OF-NTH-BECOMES-BV-ARRAY-READ
+                                   )))))
+
+(theory-invariant (incompatible (:definition bv-array-read) (:rewrite getbit-of-nth-becomes-bv-array-read)))
 
 (defthm bvif-of-nth-arg4
   (implies (and ;(all-unsigned-byte-p free data) ;not logically necessary but helps prevent this rule from firing on heterogeneous lists
@@ -11263,7 +11273,9 @@
                     (bvif size test y 0))))
   :hints (("Goal" :in-theory (e/d (bv-array-read-opener ;LIST::NTH-WITH-LARGE-INDEX
                                    boolor boolif)
-                                  (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ NTH-BECOMES-BV-ARRAY-READ2)))))
+                                  (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ
+
+                                   )))))
 
 (defthm bvif-of-nth-arg3
   (implies (and ;(all-unsigned-byte-p free data) ;not logically necessary but helps prevent this rule from firing on heterogeneous lists
@@ -11274,10 +11286,10 @@
                     (bvif size test 0 y))))
   :hints (("Goal" :in-theory (e/d (bv-array-read-opener ;LIST::NTH-WITH-LARGE-INDEX
                                    boolor boolif)
-                                  (BVCHOP-OF-NTH-BECOMES-BV-ARRAY-READ
-                                   ;NTH-BECOMES-BV-ARRAY-READ2
+                                  (;BVCHOP-OF-NTH-BECOMES-BV-ARRAY-READ
+
                                    ;NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ
-                                   NTH-BECOMES-BV-ARRAY-READ2)))))
+                                   )))))
 
 ;can loop
 (defthmd nth-becomes-bv-array-read-strong
@@ -11290,8 +11302,9 @@
   :hints (("Goal" :in-theory (e/d (bv-array-read ceiling-of-lg ;LIST::NTH-WITH-LARGE-INDEX
                                                  )
                                   (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ
-                                                   BVCHOP-OF-NTH-BECOMES-BV-ARRAY-READ ;looped
-                                                   NTH-BECOMES-BV-ARRAY-READ2)))))
+                                   ;BVCHOP-OF-NTH-BECOMES-BV-ARRAY-READ ;looped
+                                   ;
+                                   )))))
 
 (defthm sha1-hack-four-million
   (implies (and (not (sbvlt '32
@@ -12034,7 +12047,8 @@
   (implies (integerp index)
            (equal (bv-array-read '32 '2 (unary-- index) data)
                   (bv-array-read '32 '2 (getbit 0 index) data)))
-  :hints (("Goal" :in-theory (e/d (bv-array-read) (NTH-BECOMES-BV-ARRAY-READ2)))))
+  :hints (("Goal" :in-theory (e/d (bv-array-read) (
+                                                   )))))
 
 (defthm bitxor-when-equal-of-constant-and-bvchop-arg2
   (implies (and (equal free (bvchop size x))
@@ -12117,7 +12131,8 @@
                                   (update-nth-becomes-update-nth2-extend-gen
                                    LEN-OF-CDR
                                    CDR-OF-TAKE
-                                   NTH-BECOMES-BV-ARRAY-READ2)))))
+                                   ;
+                                   )))))
 
 ;fixme gen the 0 (may not be true becuase of the clear)
 (defthm equal-of-repeat-of-0-and-bv-array-write
@@ -12248,7 +12263,8 @@
            (equal (equal (bv-array-read width len1 index data) (bv-array-read width len2 index data))
                   t))
   :hints (("Goal" :cases ((< len1 len2))
-           :in-theory (e/d (BV-ARRAY-READ-opener) (NTH-BECOMES-BV-ARRAY-READ2)))))
+           :in-theory (e/d (BV-ARRAY-READ-opener) (
+                                                   )))))
 
 ;fixme not equal when < of lens
 
@@ -12412,7 +12428,8 @@
                   (bvchop size val)))
   :hints (("Goal" :in-theory (e/d (bv-array-clear bv-array-read-opener update-nth2)
                                   (update-nth-becomes-update-nth2-extend-gen
-                                   NTH-BECOMES-BV-ARRAY-READ2)))))
+                                   ;
+                                   )))))
 
 ;gen the 0!
 (defthm sbvlt-of-bvplus-of-constant
@@ -13382,9 +13399,7 @@
              (bv-array-read width len 0 data)
            0))
   :hints (("Goal" :in-theory (e/d (bv-array-read ceiling-of-lg)
-                                  (nth-becomes-bv-array-read2
-                                   getbit-of-nth-becomes-bv-array-read ;looped?
-                                   )))))
+                                  ()))))
 
 (defthm unsigned-byte-p-of-minus
   (implies (and (integerp x)
@@ -13431,7 +13446,8 @@
   (equal (bv-array-read width '256 (bvcat highsize x '8 y) data)
          (bv-array-read width '256 y data))
   :hints (("Goal" :in-theory (e/d (bv-array-read
-                                   ) (nth-becomes-bv-array-read2)))))
+                                   ) (
+                                      )))))
 
 (defthm bv-array-read-of-firstn
   (implies (and (< index len)
@@ -13444,9 +13460,7 @@
                       (bv-array-read width len index x)
                     0)))
   :hints (("Goal" :in-theory (e/d (bv-array-read-opener)
-                                  (nth-becomes-bv-array-read2
-                                   getbit-of-nth-becomes-bv-array-read ;looped
-                                   )))))
+                                  ()))))
 
 (defthm bvlt-of-one-more-when-not-bvlt-helper
   (IMPLIES (AND (integerp z)
@@ -13516,7 +13530,8 @@
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (e/d (map-slice
                             natp posp bv-array-read SLICE-WHEN-VAL-IS-NOT-AN-INTEGER BVCHOP-WHEN-I-IS-NOT-AN-INTEGER)
-                           (NTH-BECOMES-BV-ARRAY-READ2)))))
+                           (
+                            )))))
 
 ;move
 (defthmd slice-of-bv-array-read
@@ -13659,12 +13674,7 @@
 (defthm equal-of-bv-array-read-and-bv-array-read-different-widths
   (equal (equal (bv-array-read '32 len index data) (bv-array-read '31 len index data))
          (unsigned-byte-p 31 (bv-array-read '32 len index data)))
-  :hints (("Goal" :in-theory (e/d (BV-ARRAY-READ) (NTH-BECOMES-BV-ARRAY-READ2
-                                                   GETBIT-OF-NTH-BECOMES-BV-ARRAY-READ ;looped
-                                                   UNSIGNED-BYTE-P-OF-BVCHOP-BIGGER)))))
-
-(theory-invariant (incompatible (:definition bv-array-read) (:rewrite GETBIT-OF-NTH-BECOMES-BV-ARRAY-READ)))
-(theory-invariant (incompatible (:definition bv-array-read) (:rewrite BVCHOP-OF-NTH-BECOMES-BV-ARRAY-READ)))
+  :hints (("Goal" :in-theory (e/d (BV-ARRAY-READ) (UNSIGNED-BYTE-P-OF-BVCHOP-BIGGER)))))
 
 (defthm getbit-of-bv-array-read-when-all-unsigned-byte-p
   (implies (all-unsigned-byte-p 31 x)
@@ -13674,9 +13684,8 @@
            :cases ((< (bvchop (ceiling-of-lg len) index) (len x)))
            :in-theory (e/d (bv-array-read getbit-too-high ;list::nth-with-large-index
                                           )
-                           (nth-becomes-bv-array-read2
-                            bvchop-of-nth-becomes-bv-array-read
-                            getbit-of-nth-becomes-bv-array-read)))))
+                           (;bvchop-of-nth-becomes-bv-array-read
+                            )))))
 
 (defthm bvplus-of-bvuminus-of-bvcat-of-slice32
   (implies (and (syntaxp (quotep k))
