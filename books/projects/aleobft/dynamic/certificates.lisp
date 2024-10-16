@@ -421,12 +421,12 @@
     :enable (certificate-set->author-set
              certificate-set->author-set-of-insert))
 
-  (defruled in-certificate-set->author-set-iff-certificates-with-author
+  (defruled in-certificate-set->author-set-to-nonempty-certs-with-author
     (implies (certificate-setp certs)
-             (iff (set::in author (certificate-set->author-set certs))
-                  (and (addressp author)
-                       (not (set::emptyp (certificates-with-author author
-                                                                   certs))))))
+             (equal (set::in author (certificate-set->author-set certs))
+                    (and (addressp author)
+                         (not (set::emptyp
+                               (certificates-with-author author certs))))))
     :induct t
     :enable certificate-set->author-set)
 
