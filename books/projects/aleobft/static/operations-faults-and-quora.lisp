@@ -132,7 +132,6 @@
            (if (zp n)
                0
              (floor (1- n) 3))))
-
   (in-theory (disable max-faulty-for-total-alt-def))
 
   (theory-invariant (incompatible (:definition max-faulty-for-total)
@@ -142,6 +141,7 @@
     (< max (/ total 3))
     :hyp (not (zp total))
     :rule-classes :linear)
+  (in-theory (disable max-faulty-for-total-upper-bound))
 
   (defret max-faulty-for-total-upper-bound-tight
     (>= (1+ max) (/ total 3))
