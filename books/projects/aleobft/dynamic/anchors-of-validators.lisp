@@ -150,3 +150,17 @@
              (equal (car (committed-anchors vstate vals))
                     (last-anchor vstate vals)))
     :enable car-of-collect-all-anchors))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled committed-anchors-when-init
+  :short "Initially, a validator has no committed anchors."
+  (implies (and (system-initp systate)
+                (set::in val (correct-addresses systate)))
+           (equal (committed-anchors (get-validator-state val systate)
+                                     (all-addresses systate))
+                  nil))
+  :enable (committed-anchors
+           system-initp
+           system-validators-initp-necc
+           validator-init))
