@@ -367,6 +367,23 @@
                 :in-theory (enable* set::expensive-rules))))
      (in-theory (disable successors-loop-subset))
 
+     (defruled in-of-successors-loop
+       (implies (certificate-setp certs)
+                (equal (set::in cert (successors-loop certs prev))
+                       (and (set::in cert certs)
+                            (set::in prev (certificate->previous cert)))))
+       :induct t)
+
+     (defruled successors-loop-monotone
+       (implies (and (certificate-setp certs1)
+                     (certificate-setp certs2)
+                     (set::subset certs1 certs2))
+                (set::subset (successors-loop certs1 prev)
+                             (successors-loop certs2 prev)))
+       :enable (in-of-successors-loop
+                set::expensive-rules)
+       :disable successors-loop)
+
      (defruled certificate-set->round-set-of-successors-loop
        (implies (equal (certificate-set->round-set certs)
                        (if (set::emptyp certs)
@@ -406,6 +423,15 @@
                                  (1+ (certificate->round cert)) dag))
                              (z dag)))))
   (in-theory (disable successors-subset-of-dag))
+
+  (defruled successors-monotone
+    (implies (and (certificate-setp dag1)
+                  (certificate-setp dag2)
+                  (set::subset dag1 dag2))
+             (set::subset (successors cert dag1)
+                          (successors cert dag2)))
+    :enable (successors-loop-monotone
+             certificates-with-round-monotone))
 
   (defruled certificate-set->round-set-of-successors
     (implies (certificate-setp dag)
