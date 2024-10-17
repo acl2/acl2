@@ -21,14 +21,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ anchors-of-validators
+(defxdoc+ anchors-of-validators-def-and-init
   :parents (correctness)
-  :short "Anchors committed by validators."
+  :short "Anchors committed by validators:
+          definition and initial result."
   :long
   (xdoc::topstring
    (xdoc::p
     "We introduce operations, and theorems about them,
-     about the anchors committed by validators."))
+     about the anchors committed by validators.")
+   (xdoc::p
+    "We prove theorems expressing the initial result of these operations.")
+   (xdoc::p
+    "Elsewhere, we prove how the events change the result.
+     We separate that because it needs theorems
+     that depend on the definition of the operations."))
   :order-subtopics t
   :default-parent t)
 

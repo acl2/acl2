@@ -33,7 +33,7 @@
 (include-book "unequivocal-accepted-certificates-next")
 (include-book "unequivocal-dags")
 (include-book "predecessor-cardinality")
-(include-book "anchors-of-validators")
+(include-book "anchors-of-validators-def-and-init")
 (include-book "last-anchor-present")
 (include-book "successor-predecessor-intersection")
 (include-book "dag-round-in-committee")
@@ -73,7 +73,7 @@
                     same-committees
                     unequivocal-accepted-certificates-next
                     unequivocal-dags
-                    anchors-of-validators
+                    anchors-of-validators-def-and-init
                     last-anchor-present
                     successor-predecessor-intersection
                     dag-round-in-committee
