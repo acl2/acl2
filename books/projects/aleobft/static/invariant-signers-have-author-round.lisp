@@ -186,7 +186,8 @@
              certificate->signers
              signer-has-author+round-p
              get-validator-state-iff-in-correct-addresses
-             get-validator-state-of-update-validator-state))
+             get-validator-state-of-update-validator-state
+             certificate-with-author+round-of-insert-iff))
 
   (defrule system-signers-have-author+round-p-of-create-certificate-next
     (implies (and (system-signers-have-author+round-p systate)
@@ -225,7 +226,8 @@
              receive-certificate-next
              receive-certificate-next-val
              signer-has-author+round-p
-             get-validator-state-of-update-validator-state))
+             get-validator-state-of-update-validator-state
+             certificate-with-author+round-of-insert-iff))
 
   (defrule system-signers-have-author+round-p-of-receive-certificate-next
     (implies (and (system-signers-have-author+round-p systate)
@@ -268,7 +270,8 @@
              store-certificate-next
              store-certificate-next-val
              signer-has-author+round-p
-             get-validator-state-of-update-validator-state)
+             get-validator-state-of-update-validator-state
+             certificate-with-author+round-of-insert-iff)
     :prep-lemmas
     ((defrule lemma
        (implies (and (certificate-with-author+round author round certs)
@@ -278,6 +281,7 @@
                      (equal (certificate->round cert) round)))
        :induct t
        :enable (certificate-with-author+round
+                certificate-with-author+round-of-insert-iff
                 set::delete))))
 
   (defrule system-signers-have-author+round-p-of-store-certificate-next

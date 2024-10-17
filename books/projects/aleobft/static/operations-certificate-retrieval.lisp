@@ -103,7 +103,7 @@
     :enable (certificate-with-author+round-when-element
              set::subset))
 
-  (defrule certificate-with-author+round-of-insert-iff
+  (defruled certificate-with-author+round-of-insert-iff
     (iff (certificate-with-author+round
           author round (set::insert cert certs))
          (or (and (equal (certificate->author cert) author)
@@ -122,7 +122,8 @@
                   (or (certificate-with-author+round author round certs1)
                       (certificate-with-author+round author round certs2))))
     :induct (set::union certs1 certs2)
-    :enable set::union
+    :enable (set::union
+             certificate-with-author+round-of-insert-iff)
     :hints ('(:use (:instance lemma (cert (set::head certs1)))))
     :prep-lemmas
     ((defrule lemma
