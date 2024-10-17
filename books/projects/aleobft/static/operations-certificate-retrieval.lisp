@@ -112,7 +112,7 @@
     :induct (set::weak-insert-induction cert certs)
     :enable (certificate-with-author+round-when-element))
 
-  (defrule certificate-with-author+round-of-union-iff
+  (defruled certificate-with-author+round-of-union-iff
     (implies (and (certificate-setp certs1)
                   (certificate-setp certs2)
                   (addressp author)
