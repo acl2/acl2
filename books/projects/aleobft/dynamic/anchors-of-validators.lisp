@@ -11,8 +11,8 @@
 
 (in-package "ALEOBFT-DYNAMIC")
 
-(include-book "validator-states")
 (include-book "anchors")
+(include-book "initialization")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -90,6 +90,20 @@
              (active-committee-at-round (validator-state->last vstate)
                                         (validator-state->blockchain vstate)
                                         all-vals))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled last-anchor-when-init
+  :short "Initially, a validator has no last committed anchor."
+  (implies (and (system-initp systate)
+                (set::in val (correct-addresses systate)))
+           (equal (last-anchor (get-validator-state val systate)
+                               (all-addresses systate))
+                  nil))
+  :enable (last-anchor
+           system-initp
+           system-validators-initp-necc
+           validator-init))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
