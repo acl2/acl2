@@ -6346,6 +6346,62 @@
 
   '(apply$-prim apply$-lambda))
 
+(defvar *proclaim-dfs-ht*
+
+; This table is updated whenever a new ACL2 function symbol is defined other
+; than one in *stobjs-out-invalid*, either by adding or deleting that function
+; symbol as a key.  Each key in this table is an ACL2 function symbol whose
+; stobjs-in or stobjs-out contains :df, indicating that the function takes or
+; returns the double-floats in those positions.
+
+; Each value is an ftype form, which has been proclaimed for the associated
+; key.  Any non-nil value would be acceptable, but the ftype form may make it
+; easier to debug problems, by being able to look up what was proclaimed for
+; the associated key.
+
+  (make-hash-table :test #'eq))
+
+(defun proclaim-dfs (fn &aux (wrld (w *the-live-state*)))
+
+; We understand, from Stas Boukarev, that the use of &optional to terminate the
+; input and output types allows SBCL to make use of these declarations to avoid
+; memory usage caused by double-floats crossing function boundaries.  This has
+; been the case since mid-October, 2024.  We could limit this proclaiming to
+; SBCL, but we make no such restriction in case it works for all Lisps.
+
+; We feel free to skip calling this function during the boot-strap, as df
+; primitives are typically inlined and we are happy to deal explicitly with any
+; df-related proclaiming.
+
+; Also see *proclaim-dfs-ht*.
+
+  (cond
+   ((member-eq fn *stobjs-out-invalid*)
+    nil)
+   (t (let ((stobjs-in (getpropc fn 'stobjs-in nil wrld))
+            (stobjs-out (getpropc fn 'stobjs-out '(nil) wrld)))
+        (assert stobjs-out) ; stobjs-in is nil in case of null formals
+        (cond ((or (member-eq :df stobjs-in)
+                   (member-eq :df stobjs-out))
+               (let ((dcl `(ftype (function
+                                   ,(nconc (loop for x in stobjs-in collect
+                                                 (if (eq x :df)
+                                                     'double-float
+                                                   t))
+                                           '(&optional))
+                                   (values ,@(loop for x in stobjs-out collect
+                                                   (if (eq x :df)
+                                                       'double-float
+                                                     t))
+                                           &optional))
+                                  ,fn)))
+                 (setf (gethash fn *proclaim-dfs-ht*)
+                       dcl)
+                 (proclaim dcl)))
+              ((gethash fn *proclaim-dfs-ht*)
+               (remhash fn *proclaim-dfs-ht*))
+              (t nil))))))
+
 (defun-one-output add-trip (world-name world-key trip status)
 
 ; Warning: If you change this function, consider making corresponding changes
@@ -6543,8 +6599,9 @@
 ; neither.  The code for installing a defstobj CLTL-COMMAND doesn't bother to
 ; do undo-stack work, because it knows both cells were saved by the defun.
 
-                        (or ignorep
-                            (setq new-defs (cons (cons 'defun def) new-defs)))
+                        (unless ignorep
+                          (proclaim-dfs (car def))
+                          (setq new-defs (cons (cons 'defun def) new-defs)))
                         (setq new-*1*-defs
                               (cons (list* 'oneify-cltl-code
                                            defun-mode
@@ -6728,7 +6785,8 @@
 
                                  (cons 'defabbrev
                                        (remove-stobj-inline-declare def)))
-                                (t (cons 'defun def)))))
+                                (t (proclaim-dfs (car def))
+                                   (cons 'defun def)))))
                       (setq new-defs (cons def new-defs))))))
            (dolist
              (def ax-defs)
