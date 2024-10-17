@@ -39,6 +39,7 @@
 (include-book "dag-round-in-committee")
 (include-book "dag-certificate-next")
 (include-book "anchors-of-validators-next")
+(include-book "last-anchor-voters")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -79,6 +80,7 @@
                     successor-predecessor-intersection
                     dag-round-in-committee
                     dag-certificate-next
-                    anchors-of-validators-next))
+                    anchors-of-validators-next
+                    last-anchor-voters))
 
 ; TODO: continue
