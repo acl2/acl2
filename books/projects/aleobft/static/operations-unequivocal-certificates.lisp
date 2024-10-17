@@ -71,7 +71,8 @@
                      (mv-nth 0 (certificate-set-unequivocalp-witness certs0)))
                     (cert2
                      (mv-nth 1 (certificate-set-unequivocalp-witness certs0))))
-    :enable set::expensive-rules
+    :enable (set::expensive-rules
+             in-of-certificates-with-author)
     :disable certificate-set-unequivocalp)
 
   (defruled certificate-set-unequivocalp-of-tail
@@ -126,7 +127,8 @@
                      (x (certificates-with-author
                          (certificate->author (head certs))
                          (tail certs)))))
-    :enable set::expensive-rules)
+    :enable (set::expensive-rules
+             in-of-certificates-with-author))
 
   ;; In an unequivocal set of certificates in the same round,
   ;; the number of certificates is the same as the number of their authors.
