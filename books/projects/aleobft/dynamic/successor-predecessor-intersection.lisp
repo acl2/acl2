@@ -317,6 +317,6 @@
                          (committee-quorum commtt)))
              (pick-successor/predecessor dag1 dag2 cert1 cert2))
     :use (successor-predecessor-intersection-not-empty
-          (:instance CONSP-WHEN-CERTIFICATEP
+          (:instance consp-when-certificatep
                      (x (pick-successor/predecessor dag1 dag2 cert1 cert2))))
     :disable consp-when-certificatep))
