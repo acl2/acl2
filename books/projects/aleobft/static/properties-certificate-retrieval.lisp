@@ -73,7 +73,9 @@
                                                      certs)
                   cert))
   :enable (certificate-with-author+round-element-when-not-nil
-           certificate-with-author+round-when-element)
+           certificate-with-author+round-when-element
+           certificate->author-of-certificate-with-author+round
+           certificate->round-of-certificate-with-author+round)
   :use (:instance certificate-set-unequivocalp-necc
                   (cert1 cert)
                   (cert2 (certificate-with-author+round
@@ -119,7 +121,7 @@
 
 (defruled certificate-with-author+round-of-unequivocal-superset
   :short "If a certificate with a certain author and round
-          is retrieves from a subset of an unequivocal set of certificates,
+          is retrieved from a subset of an unequivocal set of certificates,
           the same certificate is retrieved from the superset."
   :long
   (xdoc::topstring
@@ -144,6 +146,8 @@
                    (certificate-with-author+round author round certs2)))
   :enable (certificate-with-author+round-when-subset
            certificate-with-author+round-element-when-not-nil
+           certificate->author-of-certificate-with-author+round
+           certificate->round-of-certificate-with-author+round
            set::expensive-rules))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -169,7 +173,9 @@
                 (certificate-with-author+round author round certs2))
            (equal (certificate-with-author+round author round certs1)
                   (certificate-with-author+round author round certs2)))
-  :enable certificate-with-author+round-element-when-not-nil
+  :enable (certificate-with-author+round-element-when-not-nil
+           certificate->author-of-certificate-with-author+round
+           certificate->round-of-certificate-with-author+round)
   :use (:instance
         certificate-sets-unequivocalp-necc
         (cert1 (certificate-with-author+round author round certs1))
@@ -245,7 +251,9 @@
                              certs1)))
      :enable (set::expensive-rules
               certificate-with-author+round-element-when-not-nil
-              certificate-with-author+round-of-unequivocal-superset))))
+              certificate-with-author+round-of-unequivocal-superset
+              certificate->author-of-certificate-with-author+round
+              certificate->round-of-certificate-with-author+round))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -316,7 +324,9 @@
                               (certificate->round cert)
                               certs2))))
      :enable (set::expensive-rules
-              certificate-with-author+round-when-author-in-certificates))
+              certificate-with-author+round-when-author-in-certificates
+              certificate->author-of-certificate-with-author+round
+              certificate->round-of-certificate-with-author+round))
 
    (defrule lemma2
      (implies (and
@@ -345,7 +355,9 @@
                               certs1))
                       (cert2 cert)))
      :enable (set::expensive-rules
-              certificate-with-author+round-when-author-in-certificates))))
+              certificate-with-author+round-when-author-in-certificates
+              certificate->author-of-certificate-with-author+round
+              certificate->round-of-certificate-with-author+round))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -72,12 +72,14 @@
              (equal (certificate->author cert?)
                     (address-fix author)))
     :hints (("Goal" :induct t)))
+  (in-theory (disable certificate->author-of-certificate-with-author+round))
 
   (defret certificate->round-of-certificate-with-author+round
     (implies cert?
              (equal (certificate->round cert?)
                     (pos-fix round)))
     :hints (("Goal" :induct t)))
+  (in-theory (disable certificate->round-of-certificate-with-author+round))
 
   (defruled certificate-with-author+round-element-when-not-nil
     (implies (and (certificate-setp certs)

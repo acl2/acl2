@@ -225,7 +225,9 @@
            system-last-is-even-p-necc
            system-paths-to-last-anchor-p-necc
            anchorp
-           certificate-with-author+round-element-when-not-nil)
+           certificate-with-author+round-element-when-not-nil
+           certificate->author-of-certificate-with-author+round
+           certificate->round-of-certificate-with-author+round)
   :use (:instance collect-all-anchors-to-append-of-collect-anchors
                   (anchor (last-anchor (get-validator-state val systate)
                                        (all-addresses systate)))

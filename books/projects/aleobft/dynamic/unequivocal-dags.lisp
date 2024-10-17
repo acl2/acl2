@@ -81,7 +81,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled unequivocal-dags-p-when-unequivocal-accepted-certificates-p
+(defruled unequivocal-dags-p-invariant
   :short "Proof of the specialized invariant from the general invariant."
   :long
   (xdoc::topstring

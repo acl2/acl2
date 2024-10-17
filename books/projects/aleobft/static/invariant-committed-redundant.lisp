@@ -333,7 +333,9 @@
              system-paths-to-last-anchor-p-when-other-invariants
              set::expensive-rules
              evenp
-             get-validator-state-of-update-validator-state)
+             get-validator-state-of-update-validator-state
+             certificate->author-of-certificate-with-author+round
+             certificate->round-of-certificate-with-author+round)
     :use ((:instance
            dag-all-path-to-p-necc
            (cert (last-anchor (get-validator-state val systate)
