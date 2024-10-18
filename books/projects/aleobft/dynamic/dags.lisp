@@ -12,6 +12,7 @@
 (in-package "ALEOBFT-DYNAMIC")
 
 (include-book "certificates")
+(include-book "committees")
 
 (include-book "std/basic/two-nats-measure" :dir :system)
 
@@ -596,3 +597,65 @@
     :enable certificate-previous-in-dag-p-when-subset
     :use (:instance dag-closedp-necc
                     (cert (dag-closedp-witness (set::insert cert dag))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define-sk dag-committees-p ((dag certificate-setp)
+                             (blockchain block-listp)
+                             (all-vals address-setp))
+  :returns (yes/no booleanp)
+  :short "Check if the active committee
+          at the round of every certificate in a DAG
+          can be calculated from a given blockchain."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The intent is that the DAG and blockchain are the ones of a validator,
+     and that @('all-vals') are all the validator addresses in the system."))
+  (forall (cert)
+          (implies (set::in cert dag)
+                   (active-committee-at-round (certificate->round cert)
+                                              blockchain
+                                              all-vals))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define-sk dag-predecessor-cardinality-p ((dag certificate-setp)
+                                          (blockchain block-listp)
+                                          (all-vals address-setp))
+  :guard (dag-committees-p dag blockchain all-vals)
+  :returns (yes/no booleanp)
+  :short "Check if the number of precedessor certificates
+          of each certificate in a DAG
+          is 0 if the certificate's round is 1
+          or the quorum of the active committee at the previous round
+          if the certificate's round is not 1."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The guard ensures that the active committee can be calculated
+     for every certificate in the DAG,
+     and therefore for the round of the predecessors."))
+  (forall (cert)
+          (implies (set::in cert dag)
+                   (equal (set::cardinality (predecessors cert dag))
+                          (if (equal (certificate->round cert) 1)
+                              0
+                            (b* ((commtt (active-committee-at-round
+                                          (1- (certificate->round cert))
+                                          blockchain
+                                          all-vals)))
+                              (committee-quorum commtt))))))
+  :guard-hints
+  (("Goal"
+    :in-theory (enable posp
+                       pos-fix
+                       dag-committees-p-necc)
+    :use (:instance active-committee-at-earlier-round-when-at-later-round
+                    (later (certificate->round
+                            (dag-predecessor-cardinality-p-witness
+                             dag blockchain all-vals)))
+                    (earlier (1- (certificate->round
+                                  (dag-predecessor-cardinality-p-witness
+                                   dag blockchain all-vals))))
+                    (blocks blockchain)))))
