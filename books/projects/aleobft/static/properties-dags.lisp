@@ -85,7 +85,8 @@
        :enable (certificate-with-author+round-element-when-not-nil
                 certificate-with-author+round-when-author-in-certificates
                 certificate->author-of-certificate-with-author+round
-                certificate->round-of-certificate-with-author+round)
+                certificate->round-of-certificate-with-author+round
+                in-of-certificates-with-round)
        :disable certificate->author-in-certificate-set->author-set
        :use ((:instance certificate-sets-unequivocalp-necc
                         (cert1 (certificate-with-author+round
@@ -729,7 +730,8 @@
                                         dag)
                   cert))
   :enable (incoming
-           path-to-previous)
+           path-to-previous
+           in-of-certificates-with-round)
   :use (:instance incoming-loop-previous-and-member
                   (cert cert1)
                   (certs (certificates-with-round

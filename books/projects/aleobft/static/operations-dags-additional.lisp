@@ -127,7 +127,8 @@
     (set::subset certs dag)
     :hyp (certificate-setp dag)
     :hints (("Goal"
-             :in-theory (acl2::e/d* (set::expensive-rules)
+             :in-theory (acl2::e/d* (set::expensive-rules
+                                     in-of-certificates-with-round)
                                     (incoming-loop-subset))
              :use (:instance incoming-loop-subset
                              (certs (certificates-with-round
@@ -156,7 +157,8 @@
     (implies (and (certificate-setp dag)
                   (set::in cert1 (incoming cert dag)))
              (set::in cert1 dag))
-    :enable incoming
+    :enable (incoming
+             in-of-certificates-with-round)
     :use (:instance incoming-loop-previous-and-member
                     (cert cert1)
                     (certs (certificates-with-round
