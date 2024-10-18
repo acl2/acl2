@@ -103,8 +103,7 @@
   ///
 
   ;; If the DAG has at least one certificate at least two rounds after CERT,
-  ;; and if CERT is not NIL, then CERT must be in the DAG,
-  ;; because there is at least a path to it.
+  ;; then CERT must be in the DAG, because there is at least a path to it.
 
   (defruled dag-all-path-to-p-in-dag
     (implies (and (certificate-setp dag)
