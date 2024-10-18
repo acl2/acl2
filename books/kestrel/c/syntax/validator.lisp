@@ -1470,13 +1470,7 @@
       "We use separate functions to validate the various kinds of expressions,
        to minimize case splits in the mutually recursive clique of functions.
        But we need to calculate types for sub-expressions recursively here,
-       and pass the types to those separate functions.")
-     (xdoc::p
-      "For now we validate the components of generic selections
-       but we do not yet
-
-       allow all generic selections,
-       returning the unknown type for them."))
+       and pass the types to those separate functions."))
     (b* (((reterr) (irr-type) (irr-valid-table)))
       (expr-case
        expr
