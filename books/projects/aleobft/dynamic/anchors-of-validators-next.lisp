@@ -215,9 +215,7 @@
                 pos-fix
                 evenp
                 nfix
-                certificate->round-of-certificate-with-author+round
-                accepted-certificate-committee-p-necc-fixing-binding
-                accepted-certificates))))
+                certificate->round-of-certificate-with-author+round))))
 
   (defruled last-anchor-of-timer-expires-next
     (implies (and (set::in val (correct-addresses systate))
