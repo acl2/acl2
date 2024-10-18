@@ -148,7 +148,7 @@
              cardinality-of-certificates-with-authors+round-when-subset
              certificate-previous-in-dag-p))
 
-  (defruled predecessor-cardinality-p-when-previous-quorum
+  (defruled predecessor-cardinality-p-invariant
     (implies (and (previous-quorum-p systate)
                   (unequivocal-accepted-certificates-p systate)
                   (backward-closed-p systate))
