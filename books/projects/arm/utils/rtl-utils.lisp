@@ -2092,6 +2092,18 @@
   :hints (("Goal" :in-theory (enable rnd-ext ext-mode-p)))
   :rule-classes :linear)
 
+
+(defthmd rnd-ext-exactp-b
+  (implies (and (rationalp x)
+                (ext-mode-p mode)
+                (integerp n)
+                (> n 0))
+           (equal (exactp x n)
+                  (equal x (rnd-ext x mode n))))
+  :hints (("Goal"
+           :use (rnd-exactp-b rto-exactp-b)
+           :in-theory (enable rnd-ext ext-mode-p))))
+
 (defthm rnd-ext-exactp-c
   (implies (and (rationalp x)
                 (ext-mode-p mode)
@@ -2325,6 +2337,21 @@
                                  (expo (- x))
                                  (- (expo (spn f))))))
            :in-theory (enable drnd-ext expo))))
+
+(defthmd drnd-ext-exactp-c
+  (implies (and (formatp f)
+                (rationalp x)
+                (<= (expo x) (- (bias f)))
+                (>= (expo x) (+ 2 (- (bias f)) (- (prec f))))
+                (ext-mode-p mode))
+           (iff (equal x (drnd-ext x mode f))
+                (exactp x (+ (1- (prec f)) (bias f) (expo x)))))
+  :hints (("Goal"
+           :use (drnd-exactp-c
+                 (:instance rto-exactp-b
+                           (x x)
+                           (n (+ (1- (prec f)) (bias f) (expo x)))))
+           :in-theory (enable ext-mode-p drnd-ext rnd-ext drnd))))
 
 (local
  (defthm-nl++ drnd-ext-tiny-a-aux
