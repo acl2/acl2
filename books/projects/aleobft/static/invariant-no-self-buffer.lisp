@@ -265,7 +265,8 @@
              (validator-buffer-not-self-p
               val (receive-certificate-next-val cert vstate)))
     :enable (validator-buffer-not-self-p
-             receive-certificate-next-val))
+             receive-certificate-next-val
+             certificate-with-author-of-insert))
 
   (defrule system-buffer-not-self-p-of-receive-certificate-next
     (implies (and (system-buffer-not-self-p systate)

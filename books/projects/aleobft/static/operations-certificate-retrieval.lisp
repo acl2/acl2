@@ -168,7 +168,7 @@
              (equal (certificates-with-author author certs)
                     nil)))
 
-  (defrule certificate-with-author-of-insert
+  (defruled certificate-with-author-of-insert
     (implies (and (addressp author)
                   (certificatep cert)
                   (certificate-setp certs))
