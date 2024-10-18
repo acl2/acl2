@@ -104,8 +104,8 @@
                     (all-addresses systate))))
   :guard-hints
   (("Goal"
-    :in-theory (enable accepted-certificate-committee-p-necc
-                       accepted-certificates
+    :in-theory (enable dag-committees-p-when-accepted-certificate-committee-p
+                       dag-committees-p-necc-bind-dag
                        posp
                        active-committee-at-previous-round-when-at-round))))
 
