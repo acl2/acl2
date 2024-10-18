@@ -132,7 +132,6 @@
            (if (zp n)
                0
              (floor (1- n) 3))))
-
   (in-theory (disable max-faulty-for-total-alt-def))
 
   (theory-invariant (incompatible (:definition max-faulty-for-total)
@@ -142,15 +141,15 @@
     (< max (/ total 3))
     :hyp (not (zp total))
     :rule-classes :linear)
+  (in-theory (disable max-faulty-for-total-upper-bound))
 
   (defret max-faulty-for-total-upper-bound-tight
     (>= (1+ max) (/ total 3))
     :hyp (natp total)
     :hints (("Goal" :in-theory (enable natp))))
-
   (in-theory (disable max-faulty-for-total-upper-bound-tight))
 
-  (defrule total-lower-bound-wrt-max-faulty
+  (defruled total-lower-bound-wrt-max-faulty
     (implies (not (zp total))
              (>= total
                  (1+ (* 3 (max-faulty-for-total total)))))
@@ -194,11 +193,12 @@
   :hooks (:fix)
   ///
 
-  (defrule number-validators-lower-bound-wrt-max-faulty
+  (defruled number-validators-lower-bound-wrt-max-faulty
     (implies (> (number-validators systate) 0)
              (>= (number-validators systate)
                  (1+ (* 3 (max-faulty systate)))))
-    :rule-classes :linear))
+    :rule-classes :linear
+    :enable total-lower-bound-wrt-max-faulty))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -235,7 +235,7 @@
   :hooks (:fix)
   ///
 
-  (defrule posp-of-quorum-when-there-are-validators
+  (defruled posp-of-quorum-when-there-are-validators
     (implies (not (set::emptyp (all-addresses systate)))
              (posp (quorum systate)))
     :rule-classes (:rewrite :type-prescription)

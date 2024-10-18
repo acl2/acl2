@@ -63,12 +63,14 @@
   (defrule certificate->author-of-last-anchor
     (implies (last-anchor vstate vals)
              (equal (certificate->author (last-anchor vstate vals))
-                    (leader-at-round (validator-state->last vstate) vals))))
+                    (leader-at-round (validator-state->last vstate) vals)))
+    :enable certificate->author-of-certificate-with-author+round)
 
   (defrule certificate->round-of-last-anchor
     (implies (last-anchor vstate vals)
              (equal (certificate->round (last-anchor vstate vals))
-                    (validator-state->last vstate))))
+                    (validator-state->last vstate)))
+    :enable certificate->round-of-certificate-with-author+round)
 
   (defrule last-anchor-in-dag
     (implies (last-anchor vstate vals)

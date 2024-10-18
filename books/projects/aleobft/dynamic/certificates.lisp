@@ -421,11 +421,12 @@
     :enable (certificate-set->author-set
              certificate-set->author-set-of-insert))
 
-  (defruled in-certificate-set->author-set-iff-certificates-with-author
-    (implies (and (certificate-setp certs)
-                  (addressp author))
-             (iff (set::in author (certificate-set->author-set certs))
-                  (not (set::emptyp (certificates-with-author author certs)))))
+  (defruled in-certificate-set->author-set-to-nonempty-certs-with-author
+    (implies (certificate-setp certs)
+             (equal (set::in author (certificate-set->author-set certs))
+                    (and (addressp author)
+                         (not (set::emptyp
+                               (certificates-with-author author certs))))))
     :induct t
     :enable certificate-set->author-set)
 
@@ -532,6 +533,25 @@
     :enable (in-of-certificates-with-round
              set::expensive-rules)
     :disable certificates-with-round)
+
+  (defruled certificate-set->round-set-of-certificates-with-round
+    (implies (certificate-setp certs)
+             (equal (certificate-set->round-set
+                     (certificates-with-round round certs))
+                    (if (set::in (pos-fix round)
+                                 (certificate-set->round-set certs))
+                        (set::insert (pos-fix round) nil)
+                      nil)))
+    :induct t
+    :enable (certificate-set->round-set
+             certificate-set->round-set-of-insert))
+
+  (defruled emptyp-of-certificates-with-round-to-no-round
+    (equal (set::emptyp (certificates-with-round round certs))
+           (not (set::in (pos-fix round)
+                         (certificate-set->round-set certs))))
+    :induct t
+    :enable certificate-set->round-set)
 
   (defruled certificate-set->round-set-of-certificates-with-round-not-empty
     (b* ((rounds (certificate-set->round-set
@@ -1219,3 +1239,36 @@
        ((unless (> round (certificate->round (cadr certs)))) nil))
     (certificates-ordered-even-p (cdr certs)))
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection unequivocal-certificate-with-author+round
+  :short "Properties of @(tsee certificate-with-author+round)
+          when used on unequivocal certificate sets."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If a certificate with a certain author and round
+     is retrieved from a subset of an unequivocal set of certificates,
+     the same certificate is retrieved from the superset.
+     Note that the subset is also unequivocal,
+     but that is a consequence of the superset being unequivocal."))
+
+  (defruled certificate-with-author+round-of-unequivocal-superset
+    (implies (and (certificate-setp certs0)
+                  (certificate-setp certs)
+                  (set::subset certs0 certs)
+                  (certificate-set-unequivocalp certs)
+                  (certificate-with-author+round author round certs0))
+             (equal (certificate-with-author+round author round certs)
+                    (certificate-with-author+round author round certs0)))
+    :use (:instance certificate-set-unequivocalp-necc
+                    (cert1
+                     (certificate-with-author+round author round certs0))
+                    (cert2
+                     (certificate-with-author+round author round certs)))
+    :enable (certificate-with-author+round-when-subset
+             certificate-with-author+round-element
+             certificate->author-of-certificate-with-author+round
+             certificate->round-of-certificate-with-author+round
+             set::expensive-rules)))

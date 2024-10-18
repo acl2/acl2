@@ -124,7 +124,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection predecessor-cardinality-p-when-previous-quorum
+(defsection predecessor-cardinality-p-invariant
   :short "Proof of the invariant from other invariants."
   :long
   (xdoc::topstring

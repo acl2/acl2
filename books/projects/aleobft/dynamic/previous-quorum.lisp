@@ -285,7 +285,7 @@
        :enable (certificates-with-author-subset
                 in-of-certificates-with-author)
        :use ((:instance
-              in-certificate-set->author-set-iff-certificates-with-author
+              in-certificate-set->author-set-to-nonempty-certs-with-author
               (certs (certificates-with-round
                       round
                       (validator-state->dag (get-validator-state val systate)))))
