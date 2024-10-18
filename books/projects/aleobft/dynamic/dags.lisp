@@ -611,12 +611,27 @@
   (xdoc::topstring
    (xdoc::p
     "The intent is that the DAG and blockchain are the ones of a validator,
-     and that @('all-vals') are all the validator addresses in the system."))
+     and that @('all-vals') are all the validator addresses in the system.")
+   (xdoc::p
+    "Besides the auto-generated @('dag-committee-p-necc'),
+     we also introduce a variant that helps bind the free variable @('dag')
+     when there is a hypothesis saying that a certificate @('cert') is in it."))
   (forall (cert)
           (implies (set::in cert dag)
                    (active-committee-at-round (certificate->round cert)
                                               blockchain
-                                              all-vals))))
+                                              all-vals)))
+
+  ///
+
+  (defruled dag-committees-p-necc-bind-dag
+    (implies (and (set::in cert dag)
+                  (dag-committees-p dag blockchain all-vals))
+             (active-committee-at-round (certificate->round cert)
+                                        blockchain
+                                        all-vals))
+    :enable dag-committees-p-necc
+    :disable dag-committees-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
