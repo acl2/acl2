@@ -247,6 +247,7 @@
              :in-theory (enable* in-of-certificates-with-author
                                  set::subset
                                  set::expensive-rules))))
+  (in-theory (disable certificates-with-round-subset))
 
   (defrule in-of-certificates-with-round
     (implies (certificate-setp certs)
