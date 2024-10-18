@@ -261,7 +261,7 @@
              (equal (certificates-with-round round certs)
                     nil)))
 
-  (defrule certificates-with-round-of-insert
+  (defruled certificates-with-round-of-insert
     (implies (and (certificatep cert)
                   (certificate-setp certs))
              (equal (certificates-with-round round
