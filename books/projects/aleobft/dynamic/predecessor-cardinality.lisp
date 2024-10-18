@@ -13,7 +13,7 @@
 
 (include-book "previous-quorum")
 (include-book "backward-closure")
-(include-book "unequivocal-dags")
+(include-book "unequivocal-accepted-certificates-def-and-init")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -150,12 +150,12 @@
 
   (defruled predecessor-cardinality-p-when-previous-quorum
     (implies (and (previous-quorum-p systate)
-                  (unequivocal-dags-p systate)
+                  (unequivocal-accepted-certificates-p systate)
                   (backward-closed-p systate))
              (predecessor-cardinality-p systate))
     :enable (predecessor-cardinality-p
              previous-quorum-p-necc
-             unequivocal-dags-p-necc-single
+             certificate-set-unequivocalp-when-unequivocal-accepted
              backward-closed-p-necc
              validator-predecessor-cardinality-p-when-previous-quorum
              accepted-certificates)))

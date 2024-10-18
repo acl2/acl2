@@ -11,7 +11,6 @@
 
 (in-package "ALEOBFT-DYNAMIC")
 
-(include-book "unequivocal-dags")
 (include-book "unequivocal-accepted-certificates-next")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
@@ -62,10 +61,7 @@
    (xdoc::p
     "We need to assume a number of previously proved invariants,
      which are hypotheses for the preservation of non-equivocation,
-     specifically of @(tsee unequivocal-accepted-certificates-p).
-     For the DAG we need @(tsee unequivocal-dags-p),
-     which is a consequence of @(tsee unequivocal-accepted-certificates-p),
-     as already proved, and here we use that theorem as well.")
+     specifically of @(tsee unequivocal-accepted-certificates-p).")
    (xdoc::p
     "The other four kinds of events do not change the DAG,
      and thus the proof is easy."))
@@ -111,7 +107,7 @@
                              (get-validator-state
                               (certificate->author cert)
                               (create-certificate-next cert systate)))))
-          (:instance unequivocal-dags-p-necc
+          (:instance certificate-sets-unequivocalp-when-unequivocal-accepted
                      (val1 (certificate->author cert))
                      (val2 (certificate->author cert))
                      (systate (create-certificate-next cert systate)))))
@@ -204,7 +200,7 @@
                                  val1
                                  (store-certificate-next
                                   val1 cert systate)))))
-             (:instance unequivocal-dags-p-necc
+             (:instance certificate-sets-unequivocalp-when-unequivocal-accepted
                         (val2 val1)
                         (systate (store-certificate-next
                                   val1 cert systate)))))))

@@ -31,7 +31,6 @@
 (include-book "nonforking-blockchains-def-and-init")
 (include-book "same-committees")
 (include-book "unequivocal-accepted-certificates-next")
-(include-book "unequivocal-dags")
 (include-book "predecessor-cardinality")
 (include-book "anchors-of-validators-def-and-init")
 (include-book "last-anchor-present")
@@ -74,7 +73,6 @@
                     nonforking-blockchains-def-and-init
                     same-committees
                     unequivocal-accepted-certificates-next
-                    unequivocal-dags
                     anchors-of-validators-def-and-init
                     last-anchor-present
                     successor-predecessor-intersection
