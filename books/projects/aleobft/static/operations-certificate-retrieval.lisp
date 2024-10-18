@@ -256,9 +256,10 @@
                          (equal (certificate->round cert) round))))
     :induct t)
 
-  (defrule certificates-with-round-of-empty
-    (equal (certificates-with-round round nil)
-           nil))
+  (defruled certificates-with-round-when-emptyp
+    (implies (set::emptyp certs)
+             (equal (certificates-with-round round certs)
+                    nil)))
 
   (defrule certificates-with-round-of-insert
     (implies (and (certificatep cert)
