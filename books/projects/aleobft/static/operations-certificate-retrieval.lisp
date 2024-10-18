@@ -299,7 +299,7 @@
              emptyp-of-certificates-with-author-if-no-author)
     :disable set::in-head)
 
-  (defrule certificates-with-round-of-intersect
+  (defruled certificates-with-round-of-intersect
     (implies (and (certificate-setp certs1)
                   (certificate-setp certs2))
              (equal (certificates-with-round

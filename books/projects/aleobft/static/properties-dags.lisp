@@ -64,7 +64,8 @@
              (certificate-previous-in-dag-p cert (set::intersect dag1 dag2)))
     :enable (certificate-previous-in-dag-p
              set::expensive-rules
-             posp)
+             posp
+             certificates-with-round-of-intersect)
     :prep-lemmas
     ((defrule lemma
        (implies (and (certificate-setp dag1)
