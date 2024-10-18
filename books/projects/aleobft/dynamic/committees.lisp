@@ -657,6 +657,26 @@
                     (earlier (1- round)))
     :enable pos-fix)
 
+  (defruled active-committee-at-previous2-round-when-at-round
+    (implies (and (active-committee-at-round round blocks all-vals)
+                  (> (pos-fix round) 2))
+             (active-committee-at-round (- round 2) blocks all-vals))
+    :disable active-committee-at-round
+    :use (:instance active-committee-at-earlier-round-when-at-later-round
+                    (later round)
+                    (earlier (- round 2)))
+    :enable pos-fix)
+
+  (defruled active-committee-at-previous3-round-when-at-round
+    (implies (and (active-committee-at-round round blocks all-vals)
+                  (> (pos-fix round) 3))
+             (active-committee-at-round (- round 3) blocks all-vals))
+    :disable active-committee-at-round
+    :use (:instance active-committee-at-earlier-round-when-at-later-round
+                    (later round)
+                    (earlier (- round 3)))
+    :enable pos-fix)
+
   (defruled active-committee-at-round-when-no-blocks
     (implies (endp blocks)
              (b* ((commtt (active-committee-at-round round blocks all-vals)))
