@@ -183,7 +183,7 @@
              set::double-containment-no-backchain-limit
              set::pick-a-point-subset-strategy))
 
-  (defrule certificate-with-author-of-delete
+  (defruled certificate-with-author-of-delete
     (implies (and (addressp author)
                   (certificate-setp certs))
              (equal (certificates-with-author author

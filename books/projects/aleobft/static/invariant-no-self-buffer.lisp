@@ -299,7 +299,8 @@
              (validator-buffer-not-self-p
               val (store-certificate-next-val cert vstate)))
     :enable (validator-buffer-not-self-p
-             store-certificate-next-val))
+             store-certificate-next-val
+             certificate-with-author-of-delete))
 
   (defrule system-buffer-not-self-p-of-store-certificate-next
     (implies (and (system-buffer-not-self-p systate)
