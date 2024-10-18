@@ -104,23 +104,10 @@
                     (all-addresses systate))))
   :guard-hints
   (("Goal"
-    :use
-    (:instance active-committee-at-earlier-round-when-at-later-round
-               (earlier
-                (1- (certificate->round
-                     (mv-nth 1 (predecessor-cardinality-p-witness systate)))))
-               (later
-                (certificate->round
-                 (mv-nth 1 (predecessor-cardinality-p-witness systate))))
-               (blocks
-                (validator-state->blockchain
-                 (get-validator-state
-                  (mv-nth 0 (predecessor-cardinality-p-witness systate))
-                  systate)))
-               (all-vals (all-addresses systate)))
     :in-theory (enable accepted-certificate-committee-p-necc
                        accepted-certificates
-                       posp))))
+                       posp
+                       active-committee-at-previous-round-when-at-round))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

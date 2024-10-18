@@ -647,6 +647,16 @@
     :enable (bonded-committee-at-earlier-round-when-at-later-round
              posp))
 
+  (defruled active-committee-at-previous-round-when-at-round
+    (implies (and (active-committee-at-round round blocks all-vals)
+                  (> (pos-fix round) 1))
+             (active-committee-at-round (1- round) blocks all-vals))
+    :disable active-committee-at-round
+    :use (:instance active-committee-at-earlier-round-when-at-later-round
+                    (later round)
+                    (earlier (1- round)))
+    :enable pos-fix)
+
   (defruled active-committee-at-round-when-no-blocks
     (implies (endp blocks)
              (b* ((commtt (active-committee-at-round round blocks all-vals)))

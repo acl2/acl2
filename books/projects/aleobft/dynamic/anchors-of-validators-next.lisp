@@ -200,15 +200,8 @@
                                (get-validator-state val systate))))
                          (last-anchor (get-validator-state val systate)
                                       (all-addresses systate)))))
-       :use (:instance active-committee-at-earlier-round-when-at-later-round
-                       (earlier (1- (validator-state->round
-                                     (get-validator-state val systate))))
-                       (later (validator-state->round
-                               (get-validator-state val systate)))
-                       (blocks (validator-state->blockchain
-                                (get-validator-state val systate)))
-                       (all-vals (all-addresses systate)))
-       :enable (last-anchor
+       :enable (active-committee-at-previous-round-when-at-round
+                last-anchor
                 commit-anchors-possiblep
                 commit-anchors-next
                 active-committee-at-round-of-extend-blockchain-no-change

@@ -278,7 +278,7 @@
                 validator-state->last-of-commit-anchors-next
                 validator-state->blockchain-of-commit-anchors-next
                 validator-state->dag-of-commit-anchors-next
-                active-committee-at-earlier-round-when-at-later-round
+                active-committee-at-previous-round-when-at-round
                 active-committee-at-round-of-extend-blockchain-no-change
                 blocks-ordered-even-p-of-extend-blockchain
                 certificates-ordered-even-p-of-collect-anchors

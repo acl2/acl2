@@ -650,12 +650,5 @@
   (("Goal"
     :in-theory (enable posp
                        pos-fix
-                       dag-committees-p-necc)
-    :use (:instance active-committee-at-earlier-round-when-at-later-round
-                    (later (certificate->round
-                            (dag-predecessor-cardinality-p-witness
-                             dag blockchain all-vals)))
-                    (earlier (1- (certificate->round
-                                  (dag-predecessor-cardinality-p-witness
-                                   dag blockchain all-vals))))
-                    (blocks blockchain)))))
+                       dag-committees-p-necc
+                       active-committee-at-previous-round-when-at-round))))
