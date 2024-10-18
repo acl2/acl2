@@ -218,7 +218,25 @@
                       (pos-fix round)))
       :fn path-to-author+round-set))
   (in-theory (disable certificate->round-of-path-to-author+round
-                      certificate->round-of-path-to-author+round-set)))
+                      certificate->round-of-path-to-author+round-set))
+
+  (defret-mutual path-to-author+round-in-dag
+    (defret path-to-author+round-in-dag
+      (implies previous-cert?
+               (set::in previous-cert? dag))
+      :hyp (and (certificate-setp dag)
+                (set::in cert dag))
+      :fn path-to-author+round)
+    (defret path-to-author+round-set-in-dag
+      (implies previous-cert?
+               (set::in previous-cert? dag))
+      :hyp (and (certificate-setp dag)
+                (set::subset certs dag))
+      :fn path-to-author+round-set)
+    :hints (("Goal" :in-theory (enable* certificates-with-authors+round-subset
+                                        set::expensive-rules))))
+  (in-theory (disable path-to-author+round-in-dag
+                      path-to-author+round-set-in-dag)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
