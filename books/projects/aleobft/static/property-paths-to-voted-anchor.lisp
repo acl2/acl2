@@ -57,7 +57,7 @@
      Note that the above holds for every @($C$) two rounds after @($A$).
      Any certificate @($D$) in the round after @($C$)
      must have predecessors in the previous round,
-     which, as shownn, all have paths to @($A$),
+     which, as argued, all have paths to @($A$),
      and therefore every @($D$) has a path to @($A$) as well.
      Thus, every certificate at least two rounds after @($A$)
      has a path to @($A$).")
