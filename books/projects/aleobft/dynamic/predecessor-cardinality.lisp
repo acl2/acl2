@@ -13,7 +13,7 @@
 
 (include-book "previous-quorum")
 (include-book "backward-closure")
-(include-book "unequivocal-dags")
+(include-book "unequivocal-accepted-certificates-def-and-init")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -104,27 +104,14 @@
                     (all-addresses systate))))
   :guard-hints
   (("Goal"
-    :use
-    (:instance active-committee-at-earlier-round-when-at-later-round
-               (earlier
-                (1- (certificate->round
-                     (mv-nth 1 (predecessor-cardinality-p-witness systate)))))
-               (later
-                (certificate->round
-                 (mv-nth 1 (predecessor-cardinality-p-witness systate))))
-               (blocks
-                (validator-state->blockchain
-                 (get-validator-state
-                  (mv-nth 0 (predecessor-cardinality-p-witness systate))
-                  systate)))
-               (all-vals (all-addresses systate)))
     :in-theory (enable accepted-certificate-committee-p-necc
                        accepted-certificates
-                       posp))))
+                       posp
+                       active-committee-at-previous-round-when-at-round))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection predecessor-cardinality-p-when-previous-quorum
+(defsection predecessor-cardinality-p-invariant
   :short "Proof of the invariant from other invariants."
   :long
   (xdoc::topstring
@@ -161,14 +148,14 @@
              cardinality-of-certificates-with-authors+round-when-subset
              certificate-previous-in-dag-p))
 
-  (defruled predecessor-cardinality-p-when-previous-quorum
+  (defruled predecessor-cardinality-p-invariant
     (implies (and (previous-quorum-p systate)
-                  (unequivocal-dags-p systate)
+                  (unequivocal-accepted-certificates-p systate)
                   (backward-closed-p systate))
              (predecessor-cardinality-p systate))
     :enable (predecessor-cardinality-p
              previous-quorum-p-necc
-             unequivocal-dags-p-necc-single
+             certificate-set-unequivocalp-when-unequivocal-accepted
              backward-closed-p-necc
              validator-predecessor-cardinality-p-when-previous-quorum
              accepted-certificates)))

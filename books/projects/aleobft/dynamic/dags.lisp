@@ -12,8 +12,11 @@
 (in-package "ALEOBFT-DYNAMIC")
 
 (include-book "certificates")
+(include-book "committees")
 
 (include-book "std/basic/two-nats-measure" :dir :system)
+
+(local (include-book "../library-extensions/oset-theorems"))
 
 (local (include-book "kestrel/utilities/nfix" :dir :system))
 (local (include-book "std/lists/len" :dir :system))
@@ -363,7 +366,42 @@
        :hints (("Goal"
                 :induct t
                 :in-theory (enable* set::expensive-rules))))
-     (in-theory (disable successors-loop-subset))))
+     (in-theory (disable successors-loop-subset))
+
+     (defruled in-of-successors-loop
+       (implies (certificate-setp certs)
+                (equal (set::in cert (successors-loop certs prev))
+                       (and (set::in cert certs)
+                            (set::in prev (certificate->previous cert)))))
+       :induct t)
+
+     (defruled successors-loop-monotone
+       (implies (and (certificate-setp certs1)
+                     (certificate-setp certs2)
+                     (set::subset certs1 certs2))
+                (set::subset (successors-loop certs1 prev)
+                             (successors-loop certs2 prev)))
+       :enable (in-of-successors-loop
+                set::expensive-rules)
+       :disable successors-loop)
+
+     (defruled certificate-set->round-set-of-successors-loop
+       (implies (equal (certificate-set->round-set certs)
+                       (if (set::emptyp certs)
+                           nil
+                         (set::insert round nil)))
+                (equal (certificate-set->round-set (successors-loop certs prev))
+                       (if (set::emptyp (successors-loop certs prev))
+                           nil
+                         (set::insert round nil))))
+       :induct t
+       :enable (certificate-set->round-set
+                certificate-set->round-set-of-insert
+                emptyp-of-certificate-set->round-set
+                set::expensive-rules)
+       :hints ('(:use (:instance set::emptyp-when-proper-subset-of-singleton
+                                 (x (certificate-set->round-set (tail certs)))
+                                 (a (certificate->round (head certs)))))))))
 
   ///
 
@@ -385,7 +423,30 @@
                              (y (certificates-with-round
                                  (1+ (certificate->round cert)) dag))
                              (z dag)))))
-  (in-theory (disable successors-subset-of-dag)))
+  (in-theory (disable successors-subset-of-dag))
+
+  (defruled successors-monotone
+    (implies (and (certificate-setp dag1)
+                  (certificate-setp dag2)
+                  (set::subset dag1 dag2))
+             (set::subset (successors cert dag1)
+                          (successors cert dag2)))
+    :enable (successors-loop-monotone
+             certificates-with-round-monotone))
+
+  (defruled certificate-set->round-set-of-successors
+    (implies (certificate-setp dag)
+             (equal (certificate-set->round-set (successors cert dag))
+                    (if (set::emptyp (successors cert dag))
+                        nil
+                      (set::insert (1+ (certificate->round cert)) nil))))
+    :enable (emptyp-of-certificates-with-round-to-no-round
+             certificate-set->round-set-of-certificates-with-round)
+    :use (:instance certificate-set->round-set-of-successors-loop
+                    (prev (certificate->author cert))
+                    (certs (certificates-with-round
+                            (+ 1 (certificate->round cert)) dag))
+                    (round (+ 1 (certificate->round cert))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -421,12 +482,12 @@
 
   ///
 
-  (defret predecessors-subset
+  (defret predecessors-subset-of-dag
     (set::subset certs dag)
     :hyp (certificate-setp dag)
     :hints
     (("Goal" :in-theory (enable certificates-with-authors+round-subset))))
-  (in-theory (disable predecessors-subset))
+  (in-theory (disable predecessors-subset-of-dag))
 
   (defret predecessors-subset-of-previous-round
     (set::subset certs
@@ -437,7 +498,18 @@
       :in-theory (enable certificates-with-authors+round-to-round-of-authors
                          certificates-with-round-monotone
                          certificates-with-authors-subset))))
-  (in-theory (disable predecessors-subset-of-previous-round)))
+  (in-theory (disable predecessors-subset-of-previous-round))
+
+  (defruled certificate-set->round-set-of-predecessors
+    (implies (certificate-setp dag)
+             (equal (certificate-set->round-set (predecessors cert dag))
+                    (if (set::emptyp (predecessors cert dag))
+                        nil
+                      (set::insert (1- (certificate->round cert)) nil))))
+    :enable (certificates-with-authors+round-to-round-of-authors
+             emptyp-of-certificates-with-round-to-no-round
+             certificate-set->round-set-of-certificates-with-round
+             posp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -525,3 +597,58 @@
     :enable certificate-previous-in-dag-p-when-subset
     :use (:instance dag-closedp-necc
                     (cert (dag-closedp-witness (set::insert cert dag))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define-sk dag-committees-p ((dag certificate-setp)
+                             (blockchain block-listp)
+                             (all-vals address-setp))
+  :returns (yes/no booleanp)
+  :short "Check if the active committee
+          at the round of every certificate in a DAG
+          can be calculated from a given blockchain."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The intent is that the DAG and blockchain are the ones of a validator,
+     and that @('all-vals') are all the validator addresses in the system."))
+  (forall (cert)
+          (implies (set::in cert dag)
+                   (active-committee-at-round (certificate->round cert)
+                                              blockchain
+                                              all-vals))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define-sk dag-predecessor-cardinality-p ((dag certificate-setp)
+                                          (blockchain block-listp)
+                                          (all-vals address-setp))
+  :guard (dag-committees-p dag blockchain all-vals)
+  :returns (yes/no booleanp)
+  :short "Check if the number of precedessor certificates
+          of each certificate in a DAG
+          is 0 if the certificate's round is 1
+          or the quorum of the active committee at the previous round
+          if the certificate's round is not 1."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The guard ensures that the active committee can be calculated
+     for every certificate in the DAG,
+     and therefore for the round of the predecessors."))
+  (forall (cert)
+          (implies (set::in cert dag)
+                   (equal (set::cardinality (predecessors cert dag))
+                          (if (equal (certificate->round cert) 1)
+                              0
+                            (b* ((commtt (active-committee-at-round
+                                          (1- (certificate->round cert))
+                                          blockchain
+                                          all-vals)))
+                              (committee-quorum commtt))))))
+  :guard-hints
+  (("Goal"
+    :in-theory (enable posp
+                       pos-fix
+                       dag-committees-p-necc
+                       active-committee-at-previous-round-when-at-round))))

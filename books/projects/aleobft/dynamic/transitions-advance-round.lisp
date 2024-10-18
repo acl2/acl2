@@ -172,7 +172,7 @@
   :guard-hints
   (("Goal" :in-theory (enable
                        posp
-                       active-committee-at-earlier-round-when-at-later-round)))
+                       active-committee-at-previous-round-when-at-round)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

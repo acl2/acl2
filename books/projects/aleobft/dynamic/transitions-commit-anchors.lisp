@@ -142,7 +142,7 @@
   :guard-hints
   (("Goal"
     :in-theory (enable posp
-                       active-committee-at-earlier-round-when-at-later-round)))
+                       active-committee-at-previous-round-when-at-round)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -209,7 +209,8 @@
                        posp
                        natp
                        evenp
-                       active-committee-at-earlier-round-when-at-later-round
+                       active-committee-at-previous-round-when-at-round
+                       active-committee-at-previous3-round-when-at-round
                        certificate->round-of-certificate-with-author+round)))
   :hooks (:fix)
 

@@ -813,19 +813,23 @@
   :parents (ipasir)
   :short "How to obtain an ipasir backend implementation."
   :long #{""" <p>There are several SAT solver libraries that implement the
-IPASIR interface; in particular, the entrants in the <a
-href="http://baldur.iti.kit.edu/sat-competition-2016/">2016</a> and <a
-href="http://baldur.iti.kit.edu/sat-competition-2017/">2017</a> SAT
-Competitions are available, respectively, <a
-href="http://baldur.iti.kit.edu/sat-competition-2016/index.php?cat=solvers">here</a>
-and <a
-href="http://baldur.iti.kit.edu/sat-competition-2017/solvers/incremental/">here</a>.
-However, the build scripts for these libraries are configured to produce a
-static library, and we need a shared library so that we can link it into a
-running Lisp session.  We'll walk through the steps necessary to adapt the
-makefile to build a Linux shared library for glucose, whose sources are available <a
-href="https://baldur.iti.kit.edu/sat-competition-2017/solvers/incremental/glucose-ipasir.zip">here</a>.
-</p>
+IPASIR interface. One source is the <a
+href="https://github.com/biotomas/ipasir">ipasir distribution on github</a>,
+which includes a few compatible solvers.  Another source is the incremental
+solver submissions for the <a
+href="https://satcompetition.github.io/2020/downloads.html">2020 SAT
+competition</a>.  However, in most cases the build scripts for these libraries
+are configured to produce a static library, and we need a shared library in
+order to link it into a running Lisp session. We describe the steps below for
+patching the build scripts for the 2017 SAT competition version of
+Glucose. Unfortunately, the web pages for the 2017 and previous SAT
+competitions are offline. We preserve the instructions here in case they are
+applicable to other solvers in the distributions above.  For glucose, the
+binding and build files are available in the ACL2 distribution under
+books/centaur/ipasir/solver-glue/glucose4/.</p>
+
+<p>Instructions for building IPASIR-compatible Glucose shared library from the
+SAT competition 2017 distribution:</p>
 
 <p>First, ensure that you have gcc and g++ version 6 or greater.</p>
 

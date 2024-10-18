@@ -95,7 +95,8 @@
              (last-anchor (get-validator-state
                            val (create-certificate-next cert systate))
                           (all-addresses systate)))
-    :enable last-anchor)
+    :enable (last-anchor
+             certificate-with-author+round-of-insert-iff))
 
   (defrule system-last-anchor-present-p-of-create-certificate-next
     (implies (and (system-last-anchor-present-p systate)
@@ -154,7 +155,8 @@
              (last-anchor (get-validator-state
                            val (store-certificate-next cert val1 systate))
                           (all-addresses systate)))
-    :enable last-anchor)
+    :enable (last-anchor
+             certificate-with-author+round-of-insert-iff))
 
   (defrule system-last-anchor-present-p-of-store-certificate-next
     (implies (and (system-last-anchor-present-p systate)

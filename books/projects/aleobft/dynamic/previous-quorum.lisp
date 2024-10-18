@@ -114,18 +114,8 @@
                     (all-addresses systate))))
   :guard-hints
   (("Goal"
-    :use
-    (:instance active-committee-at-earlier-round-when-at-later-round
-               (earlier (1- (certificate->round
-                             (mv-nth 1 (previous-quorum-p-witness systate)))))
-               (later (certificate->round
-                       (mv-nth 1 (previous-quorum-p-witness systate))))
-               (blocks (validator-state->blockchain
-                        (get-validator-state
-                         (mv-nth 0 (previous-quorum-p-witness systate))
-                         systate)))
-               (all-vals (all-addresses systate)))
     :in-theory (enable accepted-certificate-committee-p-necc
+                       active-committee-at-previous-round-when-at-round
                        posp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -285,7 +275,7 @@
        :enable (certificates-with-author-subset
                 in-of-certificates-with-author)
        :use ((:instance
-              in-certificate-set->author-set-iff-certificates-with-author
+              in-certificate-set->author-set-to-nonempty-certs-with-author
               (certs (certificates-with-round
                       round
                       (validator-state->dag (get-validator-state val systate)))))
@@ -321,7 +311,7 @@
              create-certificate-author-possiblep
              create-certificate-signer-possiblep
              validator-state->blockchain-of-create-certificate-next
-             active-committee-at-earlier-round-when-at-later-round
+             active-committee-at-previous-round-when-at-round
              posp
              authors-in-committee-at-round-when-signer-quorum-p
              set::expensive-rules))
@@ -459,13 +449,8 @@
               (get-validator-state
                val1 (commit-anchors-next val systate))
               (all-addresses systate)))
-    :use (:instance active-committee-at-earlier-round-when-at-later-round
-                    (earlier (1- (certificate->round cert)))
-                    (later (certificate->round cert))
-                    (blocks (validator-state->blockchain
-                             (get-validator-state val systate)))
-                    (all-vals (all-addresses systate)))
-    :enable (validator-previous-quorum-p
+    :enable (active-committee-at-previous-round-when-at-round
+             validator-previous-quorum-p
              validator-state->blockchain-of-commit-anchors-next
              active-committee-at-round-of-extend-blockchain-no-change
              blocks-ordered-even-p-of-extend-blockchain

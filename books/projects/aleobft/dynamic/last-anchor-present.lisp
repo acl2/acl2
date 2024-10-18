@@ -12,7 +12,7 @@
 (in-package "ALEOBFT-DYNAMIC")
 
 (include-book "ordered-even-blocks")
-(include-book "anchors-of-validators")
+(include-book "anchors-of-validators-def-and-init")
 
 (local (include-book "arithmetic-3/top" :dir :system))
 
@@ -120,7 +120,7 @@
      The event is conditioned by @(tsee commit-anchors-possiblep),
      which requires the presence in the DAG of the certificate
      that becomes the new last anchor.
-     But we need to show the extension of the blockchain
+     But we need to show that the extension of the blockchain
      does not affect the choice of the leader for that round,
      so we use @('active-committee-at-round-of-extend-blockchain-no-change')
      and additional rules to discharge its hypotheses,
@@ -278,7 +278,7 @@
                 validator-state->last-of-commit-anchors-next
                 validator-state->blockchain-of-commit-anchors-next
                 validator-state->dag-of-commit-anchors-next
-                active-committee-at-earlier-round-when-at-later-round
+                active-committee-at-previous-round-when-at-round
                 active-committee-at-round-of-extend-blockchain-no-change
                 blocks-ordered-even-p-of-extend-blockchain
                 certificates-ordered-even-p-of-collect-anchors

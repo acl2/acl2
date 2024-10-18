@@ -8809,7 +8809,20 @@
                             ,(cond (stobj-creator
                                     (assert$ hashp `(,stobj-creator)))
                                    (init
-                                    (assert$ hashp `(quote ,init)))
+                                    (assert$
+                                     hashp
+                                     (if (eq etype0 'double-float)
+
+; For efficiency, it would be nice to write `(quote ,(to-df init)), to avoid
+; re-evaluating to-df each time there's a hash-table miss.  However, to-df is
+; not yet defined in the boot-strap.  It doesn't seem important enough to deal
+; with this issue in general, but init is probably often 0 so we optimize for
+; that case.
+
+                                         (if (eql init 0)
+                                             '(df0)
+                                           `(to-df (quote ,init)))
+                                       `(quote ,init))))
                                    (t
                                     (assert$ stobj-tablep 'v)))))))))
              (,updater-name

@@ -153,10 +153,13 @@
         :blockchain new-blockchain
         :last commit-round
         :committed new-committed-certs))
-     :guard-hints (("Goal" :in-theory (enable posp
-                                              natp
-                                              evenp
-                                              oddp)))
+     :guard-hints
+     (("Goal"
+       :in-theory (enable certificate->round-of-certificate-with-author+round
+                          posp
+                          natp
+                          evenp
+                          oddp)))
      :prepwork ((local (include-book "arithmetic-3/top" :dir :system)))))
 
   ///

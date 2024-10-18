@@ -11,8 +11,8 @@
 
 (in-package "ALEOBFT-DYNAMIC")
 
-(include-book "validator-states")
 (include-book "anchors")
+(include-book "initialization")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -21,14 +21,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ anchors-of-validators
+(defxdoc+ anchors-of-validators-def-and-init
   :parents (correctness)
-  :short "Anchors committed by validators."
+  :short "Anchors committed by validators:
+          definition and initial result."
   :long
   (xdoc::topstring
    (xdoc::p
     "We introduce operations, and theorems about them,
-     about the anchors committed by validators."))
+     about the anchors committed by validators.")
+   (xdoc::p
+    "We prove theorems expressing the initial result of these operations.")
+   (xdoc::p
+    "Elsewhere, we prove how the events change the result.
+     We separate that because it needs theorems
+     that depend on the definition of the operations."))
   :order-subtopics t
   :default-parent t)
 
@@ -91,6 +98,20 @@
                                         (validator-state->blockchain vstate)
                                         all-vals))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled last-anchor-when-init
+  :short "Initially, a validator has no last committed anchor."
+  (implies (and (system-initp systate)
+                (set::in val (correct-addresses systate)))
+           (equal (last-anchor (get-validator-state val systate)
+                               (all-addresses systate))
+                  nil))
+  :enable (last-anchor
+           system-initp
+           system-validators-initp-necc
+           validator-init))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define committed-anchors ((vstate validator-statep) (all-vals address-setp))
@@ -136,3 +157,17 @@
              (equal (car (committed-anchors vstate vals))
                     (last-anchor vstate vals)))
     :enable car-of-collect-all-anchors))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled committed-anchors-when-init
+  :short "Initially, a validator has no committed anchors."
+  (implies (and (system-initp systate)
+                (set::in val (correct-addresses systate)))
+           (equal (committed-anchors (get-validator-state val systate)
+                                     (all-addresses systate))
+                  nil))
+  :enable (committed-anchors
+           system-initp
+           system-validators-initp-necc
+           validator-init))
