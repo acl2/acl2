@@ -1470,7 +1470,17 @@
       "We use separate functions to validate the various kinds of expressions,
        to minimize case splits in the mutually recursive clique of functions.
        But we need to calculate types for sub-expressions recursively here,
-       and pass the types to those separate functions."))
+       and pass the types to those separate functions.")
+     (xdoc::p
+      "To validate a compound literal, first we validate the type name,
+       obtaining a type if that validation is successful.
+       Then we validate the initializers with optional designations,
+       passing the type because in general their validation depends on that;
+       however, in our currently approximate type system,
+       all the information we need back from
+       the validation of the initializers with optional designations
+       is the possibly updated validation table.
+       The type of the compound literal is the one denoted by the type name."))
     (b* (((reterr) (irr-type) (irr-valid-table)))
       (expr-case
        expr
@@ -1502,7 +1512,10 @@
        :memberp (b* (((erp type-arg table) (valid-expr expr.arg table ienv))
                      ((erp type) (valid-memberp expr type-arg)))
                   (retok type table))
-       :complit (reterr :todo)
+       :complit (b* (((erp type table) (valid-tyname expr.type table ienv))
+                     ((erp table)
+                      (valid-desiniter-list expr.elems type table ienv)))
+                  (retok type table))
        :unary (reterr :todo)
        :sizeof (reterr :todo)
        :alignof (reterr :todo)
@@ -1590,6 +1603,20 @@
           (valid-genassoc-list (cdr genassocs) table ienv)))
       (retok (acons tyname-type? expr-type type-alist) table))
     :measure (genassoc-list-count genassocs))
+
+  (define valid-desiniter-list ((desiniters desiniter-listp)
+                                (type typep)
+                                (table valid-tablep)
+                                (ienv ienvp))
+    :guard (desiniter-list-unambp desiniters)
+    :returns (mv erp (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate a list of zero or more
+            initializers with optional designations."
+    (declare (ignore desiniters type table ienv))
+    (b* (((reterr) (irr-valid-table)))
+      (reterr :todo))
+    :measure (desiniter-list-count desiniters))
 
   (define valid-tyname ((tyname tynamep) (table valid-tablep) (ienv ienvp))
     :guard (tyname-unambp tyname)
