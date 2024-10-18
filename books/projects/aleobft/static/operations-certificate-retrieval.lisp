@@ -163,9 +163,10 @@
     :induct t
     :enable certificate-set->author-set-of-insert)
 
-  (defrule certificates-with-author-of-empty
-    (equal (certificates-with-author author nil)
-           nil))
+  (defruled certificates-with-author-when-emptyp
+    (implies (set::emptyp certs)
+             (equal (certificates-with-author author certs)
+                    nil)))
 
   (defrule certificate-with-author-of-insert
     (implies (and (addressp author)
