@@ -200,12 +200,12 @@
     :induct t
     :enable certificate-set->author-set)
 
-  (defrule certificates-with-author-of-intersect
+  (defruled certificates-with-author-of-intersect
     (implies (and (certificate-setp certs1)
                   (certificate-setp certs2))
              (equal (certificates-with-author author
-                                                  (set::intersect certs1
-                                                                  certs2))
+                                              (set::intersect certs1
+                                                              certs2))
                     (set::intersect
                      (certificates-with-author author certs1)
                      (certificates-with-author author certs2))))
