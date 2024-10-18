@@ -1432,6 +1432,75 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define valid-unary ((expr exprp) (op unopp) (type-arg typep))
+  :guard (expr-case expr :unary)
+  :returns (mv erp (type typep))
+  :short "Validate a unary expression,
+          given the type of the sub-expression."
+  (declare (ignore expr type-arg))
+  (b* (((reterr) (irr-type)))
+    (unop-case
+     op
+     :address (reterr :todo)
+     :indir (reterr :todo)
+     :plus (reterr :todo)
+     :minus (reterr :todo)
+     :bitnot (reterr :todo)
+     :lognot (reterr :todo)
+     :preinc (reterr :todo)
+     :predec (reterr :todo)
+     :postinc (reterr :todo)
+     :postdec (reterr :todo)
+     :sizeof (reterr :todo)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define valid-binary ((expr exprp)
+                      (op binopp)
+                      (type-arg1 typep)
+                      (type-arg2 typep))
+  :guard (expr-case expr :binary)
+  :returns (mv erp (type typep))
+  :short "Validate a binary expression,
+          given the type of the sub-expression."
+  (declare (ignore expr type-arg1 type-arg2))
+  (b* (((reterr) (irr-type)))
+    (binop-case
+     op
+     :mul (reterr :todo)
+     :div (reterr :todo)
+     :rem (reterr :todo)
+     :add (reterr :todo)
+     :sub (reterr :todo)
+     :shl (reterr :todo)
+     :shr (reterr :todo)
+     :lt (reterr :todo)
+     :gt (reterr :todo)
+     :le (reterr :todo)
+     :ge (reterr :todo)
+     :eq (reterr :todo)
+     :ne (reterr :todo)
+     :bitand (reterr :todo)
+     :bitxor (reterr :todo)
+     :bitior (reterr :todo)
+     :logand (reterr :todo)
+     :logor (reterr :todo)
+     :asg (reterr :todo)
+     :asg-mul (reterr :todo)
+     :asg-div (reterr :todo)
+     :asg-rem (reterr :todo)
+     :asg-add (reterr :todo)
+     :asg-sub (reterr :todo)
+     :asg-shl (reterr :todo)
+     :asg-shr (reterr :todo)
+     :asg-and (reterr :todo)
+     :asg-xor (reterr :todo)
+     :asg-ior (reterr :todo)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines valid-exprs/decls/stmts
   :short "Validate expressions, declarations, statements,
           and related artifacts."
@@ -1516,11 +1585,17 @@
                      ((erp table)
                       (valid-desiniter-list expr.elems type table ienv)))
                   (retok type table))
-       :unary (reterr :todo)
+       :unary (b* (((erp type-arg table) (valid-expr expr.arg table ienv))
+                   ((erp type) (valid-unary expr expr.op type-arg)))
+                (retok type table))
        :sizeof (reterr :todo)
        :alignof (reterr :todo)
        :cast (reterr :todo)
-       :binary (reterr :todo)
+       :binary (b* (((erp type-arg1 table) (valid-expr expr.arg1 table ienv))
+                    ((erp type-arg2 table) (valid-expr expr.arg2 table ienv))
+                    ((erp type)
+                     (valid-binary expr expr.op type-arg1 type-arg2)))
+                 (retok type table))
        :cond (reterr :todo)
        :comma (reterr :todo)
        :stmt (reterr :todo)
