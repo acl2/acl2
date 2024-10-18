@@ -13,6 +13,8 @@
 
 (include-book "signer-quorum")
 (include-book "ordered-even-blocks")
+(include-book "backward-closure")
+(include-book "unequivocal-accepted-certificates-def-and-init")
 
 (local (include-book "arithmetic-3/top" :dir :system))
 
@@ -79,7 +81,26 @@
     "This is used by @(tsee previous-quorum-p) to define our invariant.
      The validator whose state is @('vstate') is
      the one that has the accepted certificate.
-     The guard ensures that the validator can calculate the committee."))
+     The guard ensures that the validator can calculate the committee.")
+   (xdoc::p
+    "We prove a theorem about the cardinality of the predecessors of @('cert'),
+     which we use to prove @(tsee dag-predecessor-cardinality-p)
+     from @(tsee previous-quorum-p) later.
+     Under certain invariant conditions,
+     the number of references to previous certificates
+     is the same as the number of predecessor certificates;
+     these invariant conditions are backward closure and non-equivocation.
+     The key rule is
+     @('cardinality-of-certificates-with-authors+round-when-subset'),
+     since @(tsee predecessors) is defined
+     in terms of @(tsee certificates-with-authors+round).
+     This rule gives us the desired equality to prove the theorem,
+     but we need to discharge the hypothesis that
+     the set of references to previous certificates
+     is a subset of the authors of
+     the certificates at the preceding round,
+     i.e. backward closure.
+     The non-equivocation is one of the hypothesis of that key rule too."))
   (b* (((validator-state vstate) vstate)
        ((certificate cert) cert))
     (if (= cert.round 1)
@@ -90,7 +111,27 @@
         (and (set::subset cert.previous (committee-members commtt))
              (equal (set::cardinality cert.previous)
                     (committee-quorum commtt))))))
-  :guard-hints (("Goal" :in-theory (enable posp))))
+  :guard-hints (("Goal" :in-theory (enable posp)))
+
+  ///
+
+  (defruled cardinality-of-predecessors-when-validator-previous-quorum-p
+    (implies (and (validator-previous-quorum-p cert vstate all-vals)
+                  (certificate-set-unequivocalp (validator-state->dag vstate))
+                  (certificate-previous-in-dag-p
+                   cert (validator-state->dag vstate)))
+             (equal (set::cardinality
+                     (predecessors cert (validator-state->dag vstate)))
+                    (if (equal (certificate->round cert) 1)
+                        0
+                      (b* ((commtt (active-committee-at-round
+                                    (1- (certificate->round cert))
+                                    (validator-state->blockchain vstate)
+                                    all-vals)))
+                        (committee-quorum commtt)))))
+    :enable (predecessors
+             cardinality-of-certificates-with-authors+round-when-subset
+             certificate-previous-in-dag-p)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -105,6 +146,16 @@
           and the references to previous certificates
           form a quorum in the committee of
           the preceding round of the certificate."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This invariant, along with backward closure and non-equivocation,
+     guarantees that @(tsee dag-predecessor-cardinality-p) holds.
+     The key lemma is
+     @('cardinality-of-predecessors-when-validator-previous-quorum-p')
+     proved in @(tsee validator-previous-quorum-p).
+     Here we just need to enable some rules
+     to establish the hypotheses of that lemma."))
   (forall (val cert)
           (implies (and (set::in val (correct-addresses systate))
                         (set::in cert (accepted-certificates val systate)))
@@ -116,7 +167,36 @@
   (("Goal"
     :in-theory (enable accepted-certificate-committee-p-necc
                        active-committee-at-previous-round-when-at-round
-                       posp))))
+                       posp)))
+
+  ///
+
+  (defruled dag-predecessor-cardinality-p-when-previous-quorum-p
+    (implies (and (previous-quorum-p systate)
+                  (backward-closed-p systate)
+                  (unequivocal-accepted-certificates-p systate)
+                  (set::in val (correct-addresses systate)))
+             (dag-predecessor-cardinality-p
+              (validator-state->dag (get-validator-state val systate))
+              (validator-state->blockchain (get-validator-state val systate))
+              (all-addresses systate)))
+    :use (:instance
+          cardinality-of-predecessors-when-validator-previous-quorum-p
+          (cert (dag-predecessor-cardinality-p-witness
+                 (validator-state->dag
+                  (get-validator-state val systate))
+                 (validator-state->blockchain
+                  (get-validator-state val systate))
+                 (all-addresses systate)))
+          (vstate (get-validator-state val systate))
+          (all-vals (all-addresses systate)))
+    :enable (predecessors
+             dag-predecessor-cardinality-p
+             previous-quorum-p-necc
+             accepted-certificates
+             certificate-set-unequivocalp-when-unequivocal-accepted
+             dag-closedp-necc
+             backward-closed-p-necc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
