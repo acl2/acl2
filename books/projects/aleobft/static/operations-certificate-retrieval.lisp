@@ -435,7 +435,7 @@
                                  set::expensive-rules))))
   (in-theory (disable certificates-with-authors+round-subset))
 
-  (defrule certificates-authors-of-certificates-with-authors+round-subset
+  (defruled certificates-authors-of-certificates-with-authors+round-subset
     (b* ((returned-authors
           (certificate-set->author-set
            (certificates-with-authors+round authors round certs))))
