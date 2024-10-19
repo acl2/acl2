@@ -376,6 +376,7 @@
              :in-theory (enable* certificates-with-author-subset
                                  set::subset
                                  set::expensive-rules))))
+  (in-theory (disable certificates-with-authors-subset))
 
   (defrule in-of-certificates-with-authors
     (implies (certificate-setp certs)

@@ -98,7 +98,8 @@
                 (certificate-set-unequivocalp certs))
            (certificate-set-unequivocalp
             (certificates-with-authors authors certs)))
-  :enable certificate-set-unequivocalp-when-subset)
+  :enable (certificate-set-unequivocalp-when-subset
+           certificates-with-authors-subset))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -385,4 +386,5 @@
                             (certificates-with-round round certs)))))
   :disable (cardinality-of-authors-when-same-round-and-unequiv)
   :enable (certificates-with-authors+round-to-authors-of-round
-           author-set-of-certificates-with-authors))
+           author-set-of-certificates-with-authors
+           certificates-with-authors-subset))
