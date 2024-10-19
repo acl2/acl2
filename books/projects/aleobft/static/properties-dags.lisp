@@ -284,7 +284,8 @@
      :hints (("Goal"
               :in-theory (enable* path-to-author+round
                                   path-to-author+round-set
-                                  set::expensive-rules))
+                                  set::expensive-rules
+                                  certificates-with-authors+round-subset))
              (cond
               ((acl2::occur-lst '(acl2::flag-is 'path-to-author+round) clause)
                '(:use (:instance
@@ -394,20 +395,20 @@
                 (equal (certificate-set-causal-history certs dag2)
                        (certificate-set-causal-history certs dag)))
        :flag certificate-set-causal-history)
-     :hints (("Goal" :in-theory (enable* certificate-causal-history
-                                         certificate-set-causal-history
-                                         set::expensive-rules))
-             (cond
-              ((acl2::occur-lst '(acl2::flag-is 'certificate-causal-history)
-                                clause)
-               '(:expand ((certificate-causal-history cert dag2)))))
-             (cond
-              ((acl2::occur-lst '(acl2::flag-is 'certificate-causal-history)
-                                clause)
-               '(:use (:instance
-                       get-previous-certificates-of-unequivocal-dag-superset
-                       (dag1 dag)
-                       (dag2 dag2))))))))
+     :hints
+     (("Goal" :in-theory (enable* certificate-causal-history
+                                  certificate-set-causal-history
+                                  set::expensive-rules
+                                  certificates-with-authors+round-subset))
+      (cond
+       ((acl2::occur-lst '(acl2::flag-is 'certificate-causal-history) clause)
+        '(:expand ((certificate-causal-history cert dag2)))))
+      (cond
+       ((acl2::occur-lst '(acl2::flag-is 'certificate-causal-history) clause)
+        '(:use (:instance
+                get-previous-certificates-of-unequivocal-dag-superset
+                (dag1 dag)
+                (dag2 dag2))))))))
 
   (defruled certificate-causal-history-of-unequivocal-dag-superset
     (implies (and (certificate-setp dag)
@@ -585,7 +586,8 @@
         path-to-author+round-to-certificate-with-author+round
         certificate-with-author+round-of-element-when-unequivocal
         set::expensive-rules
-        nil-not-in-certificate-set))
+        nil-not-in-certificate-set
+        certificates-with-authors+round-subset))
       '(:use ((:instance element-of-certificate-set-not-nil
                          (certs dag)
                          (cert (path-to-author+round cert1
@@ -705,7 +707,8 @@
                   (round (certificate->round cert)))
   :enable (path-to-author+round
            path-to-author+round-of-self
-           nil-not-in-certificate-set))
+           nil-not-in-certificate-set
+           certificates-with-authors+round-subset))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -881,9 +884,10 @@
                certificate-with-author+round-of-element-when-unequivocal
                round-set-of-certificates-with-authors+round
                pos-fix
-               nil-not-in-certificate-set))
+               nil-not-in-certificate-set
+               certificates-with-authors+round-subset))
      (cond
-      ((acl2::occur-lst '(ACL2::FLAG-IS 'CERTIFICATE-CAUSAL-HISTORY) clause)
+      ((acl2::occur-lst '(acl2::flag-is 'certificate-causal-history) clause)
        '(:use (:instance round-leq-when-path-to-author+round-set
                          (certs (certificates-with-authors+round
                                  (certificate->previous cert)

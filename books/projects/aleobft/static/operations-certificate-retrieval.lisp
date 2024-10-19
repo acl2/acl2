@@ -433,6 +433,7 @@
              :induct t
              :in-theory (enable* set::subset
                                  set::expensive-rules))))
+  (in-theory (disable certificates-with-authors+round-subset))
 
   (defrule certificates-authors-of-certificates-with-authors+round-subset
     (b* ((returned-authors

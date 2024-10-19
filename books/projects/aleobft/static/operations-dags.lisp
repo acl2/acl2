@@ -226,7 +226,9 @@
       :hyp (and (certificate-setp dag)
                 (set::subset certs dag))
       :fn path-to-author+round-set)
-    :hints (("Goal" :in-theory (enable* set::expensive-rules))))
+    :hints
+    (("Goal" :in-theory (enable* set::expensive-rules
+                                 certificates-with-authors+round-subset))))
 
   (defret-mutual round-leq-when-path-to-author+round
     (defret round-leq-when-path-to-author+round
@@ -383,4 +385,6 @@
       :hyp (and (certificate-setp dag)
                 (set::subset certs dag))
       :fn certificate-set-causal-history)
-    :hints (("Goal" :in-theory (enable* set::expensive-rules)))))
+    :hints
+    (("Goal" :in-theory (enable* set::expensive-rules
+                                 certificates-with-authors+round-subset)))))
