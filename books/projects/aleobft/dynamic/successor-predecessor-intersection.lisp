@@ -257,6 +257,15 @@
               (equal (certificate->round cert2)
                      (+ 2 (certificate->round cert1))))
   :returns (cert? certificate-optionp)
+  :short "Pick a certificate in the successor-predecessor intersection."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We pick the first one, but the exact choice does not matter.
+     We show that, under the assumptions in
+     @(tsee successor-predecessor-intersection-not-empty),
+     this function returns a certificate that is
+     in the successors, in the predecessors, and in both DAGs."))
   (b* ((common (set::intersect (successors cert1 dag1)
                                (predecessors cert2 dag2))))
     (if (set::emptyp common)
