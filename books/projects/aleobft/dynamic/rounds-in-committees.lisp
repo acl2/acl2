@@ -20,7 +20,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ dag-round-in-committee
+(defxdoc+ rounds-in-committees
   :parents (correctness)
   :short "Invariant that the authors of
           the certificates in each round of a validator's DAG
@@ -45,67 +45,33 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define-sk dag-round-in-committee-p ((systate system-statep))
+(define-sk rounds-in-committees-p ((systate system-statep))
   :guard (accepted-certificate-committee-p systate)
   :returns (yes/no booleanp)
   :short "Definition of the invariant:
           for every correct validator
           and every round in the DAG of the validator with certificates,
-          the authors of those certificates are members of
-          the active committee at that round."
+          the authors of those certificates, if there is at least one,
+          are members of the active committee at that round."
   :long
   (xdoc::topstring
    (xdoc::p
     "The previously proved invariant @(tsee accepted-certificate-committee-p),
      which is used as a guard here,
      guarantees that the validator can indeed calculate the committee,
-     if the DAG has any certificates at that round.
-     To verify the guards, we need to exhibit a witness certificate,
-     so we can use @('accepted-certificate-committee-p-necc'):
-     the witness certificate is
-     the first one in @(tsee certificates-with-round);
-     that set is not empty because of the equivalent hypotheses that
-     the set of authors of those certificates is not empty."))
-  (forall (val round)
-          (implies (and (set::in val (correct-addresses systate))
-                        (posp round))
-                   (b* (((validator-state vstate)
-                         (get-validator-state val systate))
-                        (commtt (active-committee-at-round
-                                 round
-                                 vstate.blockchain
-                                 (all-addresses systate)))
-                        (authors (certificate-set->author-set
-                                  (certificates-with-round round vstate.dag))))
-                     (implies (not (set::emptyp authors))
-                              (set::subset authors
-                                           (committee-members commtt))))))
+     if the DAG has any certificates at that round."))
+  (forall (val)
+          (implies (set::in val (correct-addresses systate))
+                   (dag-rounds-in-committees-p
+                    (validator-state->dag
+                     (get-validator-state val systate))
+                    (validator-state->blockchain
+                     (get-validator-state val systate))
+                    (all-addresses systate))))
   :guard-hints
   (("Goal"
-    :in-theory (acl2::e/d* (emptyp-of-certificate-set->author-set
-                            in-of-certificates-with-round
-                            accepted-certificates)
-                           (accepted-certificate-committee-p-necc
-                            set::in-head))
-    :use ((:instance
-           set::in-head
-           (x (certificates-with-round
-               (mv-nth 1 (dag-round-in-committee-p-witness systate))
-               (validator-state->dag
-                (get-validator-state
-                 (mv-nth 0 (dag-round-in-committee-p-witness systate))
-                 systate)))))
-          (:instance
-           accepted-certificate-committee-p-necc
-           (val (mv-nth 0 (dag-round-in-committee-p-witness
-                           systate)))
-           (cert (set::head
-                  (certificates-with-round
-                   (mv-nth 1 (dag-round-in-committee-p-witness systate))
-                   (validator-state->dag
-                    (get-validator-state
-                     (mv-nth 0 (dag-round-in-committee-p-witness systate))
-                     systate))))))))))
+    :in-theory
+    (enable dag-committees-p-when-accepted-certificate-committee-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -217,7 +183,8 @@
      @(tsee authors-in-committee-when-signer-quorum-p)."))
   (implies (and (accepted-certificate-committee-p systate)
                 (signer-quorum-p systate))
-           (dag-round-in-committee-p systate))
-  :enable (dag-round-in-committee-p
+           (rounds-in-committees-p systate))
+  :enable (rounds-in-committees-p
+           dag-rounds-in-committees-p
            emptyp-of-certificate-set->author-set
            authors-in-committee-when-signer-quorum-p))
