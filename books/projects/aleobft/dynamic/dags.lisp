@@ -464,7 +464,17 @@
                     (prev (certificate->author cert))
                     (certs (certificates-with-round
                             (+ 1 (certificate->round cert)) dag))
-                    (round (+ 1 (certificate->round cert))))))
+                    (round (+ 1 (certificate->round cert)))))
+
+  (defruled certificate->round-of-element-of-successors
+    (implies (and (certificate-setp dag)
+                  (set::in cert1 (successors cert dag)))
+             (equal (certificate->round cert1)
+                    (1+ (certificate->round cert))))
+    :enable (in-of-certificates-with-round
+             set::expensive-rules)
+    :disable successors
+    :use successors-subset-of-next-round))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
