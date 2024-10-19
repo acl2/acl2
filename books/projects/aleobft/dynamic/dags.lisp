@@ -619,7 +619,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define-sk dag-committees-p ((dag certificate-setp)
-                             (blockchain block-listp)
+                             (blocks block-listp)
                              (all-vals address-setp))
   :returns (yes/no booleanp)
   :short "Check if the active committee
@@ -637,16 +637,16 @@
   (forall (cert)
           (implies (set::in cert dag)
                    (active-committee-at-round (certificate->round cert)
-                                              blockchain
+                                              blocks
                                               all-vals)))
 
   ///
 
   (defruled dag-committees-p-necc-bind-dag
     (implies (and (set::in cert dag)
-                  (dag-committees-p dag blockchain all-vals))
+                  (dag-committees-p dag blocks all-vals))
              (active-committee-at-round (certificate->round cert)
-                                        blockchain
+                                        blocks
                                         all-vals))
     :enable dag-committees-p-necc
     :disable dag-committees-p))
@@ -654,9 +654,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define-sk dag-predecessor-cardinality-p ((dag certificate-setp)
-                                          (blockchain block-listp)
+                                          (blocks block-listp)
                                           (all-vals address-setp))
-  :guard (dag-committees-p dag blockchain all-vals)
+  :guard (dag-committees-p dag blocks all-vals)
   :returns (yes/no booleanp)
   :short "Check if the number of precedessor certificates
           of each certificate in a DAG
@@ -676,7 +676,7 @@
                               0
                             (b* ((commtt (active-committee-at-round
                                           (1- (certificate->round cert))
-                                          blockchain
+                                          blocks
                                           all-vals)))
                               (committee-quorum commtt))))))
   :guard-hints
