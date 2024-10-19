@@ -13,6 +13,8 @@
 
 (include-book "blocks")
 
+(include-book "std/util/define-sk" :dir :system)
+
 (local (include-book "arithmetic-3/top" :dir :system))
 (local (include-book "std/lists/append" :dir :system))
 
@@ -951,3 +953,61 @@
   (- (committee-total commtt)
      (committee-max-faulty commtt))
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define-sk same-bonded-committees-p ((blocks1 block-listp)
+                                     (blocks2 block-listp)
+                                     (all-vals address-setp))
+  :returns (yes/no booleanp)
+  :short "Check if two blockchains calculate consistent bonded committees."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The two blockchains may differ, in particular in length,
+     but the predicate checks that,
+     when they both calculate a bonded committeed at a round,
+     they calculate the same committee.
+     It allows only one blockchain to calculate
+     the bonded committee for a round,
+     with the other blockchain being too short for that."))
+  (forall (round)
+          (implies (posp round)
+                   (b* ((commtt1 (bonded-committee-at-round round
+                                                            blocks1
+                                                            all-vals))
+                        (commtt2 (bonded-committee-at-round round
+                                                            blocks2
+                                                            all-vals)))
+                     (implies (and commtt1
+                                   commtt2)
+                              (equal commtt1 commtt2))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define-sk same-active-committees-p ((blocks1 block-listp)
+                                     (blocks2 block-listp)
+                                     (all-vals address-setp))
+  :returns (yes/no booleanp)
+  :short "Check if two blockchains calculate consistent active committees."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The two blockchains may differ, in particular in length,
+     but the predicate checks that,
+     when they both calculate a active committeed at a round,
+     they calculate the same committee.
+     It allows only one blockchain to calculate
+     the active committee for a round,
+     with the other blockchain being too short for that."))
+  (forall (round)
+          (implies (posp round)
+                   (b* ((commtt1 (active-committee-at-round round
+                                                            blocks1
+                                                            all-vals))
+                        (commtt2 (active-committee-at-round round
+                                                            blocks2
+                                                            all-vals)))
+                     (implies (and commtt1
+                                   commtt2)
+                              (equal commtt1 commtt2))))))
