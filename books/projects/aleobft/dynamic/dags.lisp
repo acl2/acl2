@@ -685,3 +685,54 @@
                        pos-fix
                        dag-committees-p-necc
                        active-committee-at-previous-round-when-at-round))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define-sk dag-rounds-in-committees-p ((dag certificate-setp)
+                                       (blocks block-listp)
+                                       (all-vals address-setp))
+  :guard (dag-committees-p dag blocks all-vals)
+  :returns (yes/no booleanp)
+  :short "Check if the (one or more) authors of
+          the certificates in each round of a DAG
+          are members of the active committee at that round."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The guard guarantees that,
+     if there is at least one author in the set,
+     which means that there is at least one certificate at the round,
+     the active committee can be calculated.
+     Showing, as part of guard verification,
+     that the committees is not @('nil') requires a few hints:
+     we need to exhibit a witness certificate to use @('dag-committees-p-necc'):
+     the witness certificate is
+     the first one in @(tsee certificates-with-round);
+     that set is not empty because of the equivalent hypothesis that
+     the set of authors of those certificates is not empty."))
+  (forall (round)
+          (implies (posp round)
+                   (b* ((commtt (active-committee-at-round round
+                                                           blocks
+                                                           all-vals))
+                        (authors (certificate-set->author-set
+                                  (certificates-with-round round dag))))
+                     (implies (not (set::emptyp authors))
+                              (set::subset authors
+                                           (committee-members commtt))))))
+  :guard-hints
+  (("Goal"
+    :use ((:instance set::in-head
+                     (x (certificates-with-round
+                         (dag-rounds-in-committees-p-witness
+                          dag blocks all-vals)
+                         dag)))
+          (:instance dag-committees-p-necc
+                     (cert (set::head
+                            (certificates-with-round
+                             (dag-rounds-in-committees-p-witness
+                              dag blocks all-vals)
+                             dag)))))
+    :in-theory (e/d (emptyp-of-certificate-set->author-set
+                     in-of-certificates-with-round)
+                    (set::in-head)))))
