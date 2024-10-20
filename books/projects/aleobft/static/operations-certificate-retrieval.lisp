@@ -481,6 +481,7 @@
     (("Goal" :in-theory (enable* set::expensive-rules
                                  in-of-certificates-with-round
                                  in-of-certificates-with-authors+round))))
+  (in-theory (disable certificates-with-authors+round-subset-with-round))
 
   (defrule certificates-with-authors+round-of-empty-authors
     (implies (set::emptyp authors)

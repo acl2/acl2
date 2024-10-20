@@ -220,7 +220,10 @@
                  (certificates-with-round
                   (1- (certificate->round cert))
                   dag))
-    :hyp (certificate-setp dag))
+    :hyp (certificate-setp dag)
+    :hints
+    (("Goal"
+      :in-theory (enable certificates-with-authors+round-subset-with-round))))
 
   (defruled outgoing-in-dag
     (implies (and (certificate-setp dag)
