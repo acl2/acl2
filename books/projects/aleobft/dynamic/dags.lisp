@@ -769,3 +769,144 @@
     :in-theory (e/d (emptyp-of-certificate-set->author-set
                      in-of-certificates-with-round)
                     (set::in-head)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection paths-in-unequivocal-dags
+  :short "Some theorems about paths in unequivocal DAGs."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The theorem @('path-to-author+round-set-to-path-to-author+round')
+     says that if a certificate has a path to an author and round,
+     then any set including the certificate
+     has a path to that author and round,
+     and it results in the same certificate,
+     assuming the DAG is unequivocal.
+     The function @(tsee path-to-author+round-set)
+     is the mutually recursive companion of @(tsee path-to-author+round).
+     It is defined by going through every element in the set,
+     and calling @(tsee path-to-author+round) on each element.
+     Thus, if @(tsee path-to-author+round) returns some certificate
+     when called on @('cert'),
+     if we put @('cert') in a set @('certs')
+     and call @(tsee path-to-author+round-set),
+     we must certainly reach a certificate,
+     which must be the same because of non-equivocation.")
+   (xdoc::p
+    "The theorem @('path-to-previous')
+     says that in an unequivocal DAG,
+     there is always a path between a certificate and each of its predecessors.
+     This should be very intuitive,
+     since paths arise precisely from the edges of the DAG.
+     Here @('cert1') is a certificate and @('cert') is one of its predecessors,
+     as characterized by being in the immediately preceding round
+     and by being authored by one of the authors referenced in @('cert1').
+     We use @('path-to-author+round-set-to-path-to-author+round')
+     to prove this theorem,
+     because when @(tsee path-to-author+round) is opened,
+     it exposes @(tsee path-to-author+round-set).
+     We also need @('path-to-author+round-of-self'),
+     applied to the certificate in the set of predecessors.")
+   (xdoc::p
+    "The theorem @('path-from-successor')
+     says that there is a path to a certificate
+     from each of its successors.
+     This is also intuitively obvious,
+     since @(tsee successors) is based on the DAG edges,
+     which define the paths.
+     We use the @('path-to-previous') theorem to prove this,
+     unsurprisingly.")
+   (xdoc::p
+    "The theorem @('path-to-predecessor')
+     says that there is a path from a certificate
+     to each of its predecessors.
+     This is also intuitively obvious,
+     since @(tsee predecessors) is based on the DAG edges,
+     which define the paths.
+     We use the @('path-to-previous') theorem to prove this,
+     unsurprisingly."))
+
+  (defruled path-to-author+round-set-to-path-to-author+round
+    (implies (and (certificate-setp dag)
+                  (certificate-set-unequivocalp dag)
+                  (set::subset certs dag)
+                  (set::in cert certs)
+                  (path-to-author+round cert author round dag))
+             (equal (path-to-author+round-set certs author round dag)
+                    (path-to-author+round cert author round dag)))
+    :enable (set::expensive-rules
+             path-to-author+round-in-dag
+             path-to-author+round-set-in-dag
+             certificate->author-of-path-to-author+round
+             certificate->author-of-path-to-author+round-set
+             certificate->round-of-path-to-author+round
+             certificate->round-of-path-to-author+round-set)
+    :use (path-to-author+round-set-when-path-to-author+round-of-element
+          (:instance certificate-set-unequivocalp-necc
+                     (cert1 (path-to-author+round-set certs author round dag))
+                     (cert2 (path-to-author+round cert author round dag))
+                     (certs dag))))
+
+  (defruled path-to-previous
+    (implies (and (certificate-setp dag)
+                  (certificate-set-unequivocalp dag)
+                  (set::in cert dag)
+                  (set::in cert1 dag)
+                  (equal (certificate->round cert1)
+                         (1+ (certificate->round cert)))
+                  (set::in (certificate->author cert)
+                           (certificate->previous cert1)))
+             (equal (path-to-author+round cert1
+                                          (certificate->author cert)
+                                          (certificate->round cert)
+                                          dag)
+                    cert))
+    :use (:instance path-to-author+round-set-to-path-to-author+round
+                    (certs (certificates-with-authors+round
+                            (certificate->previous cert1)
+                            (+ -1 (certificate->round cert1))
+                            dag))
+                    (author (certificate->author cert))
+                    (round (certificate->round cert)))
+    :enable (path-to-author+round
+             path-to-author+round-of-self
+             nil-not-in-certificate-set
+             certificates-with-authors+round-subset
+             in-of-certificates-with-authors+round
+             posp))
+
+  (defruled path-from-successor
+    (implies (and (certificate-setp dag)
+                  (certificate-set-unequivocalp dag)
+                  (set::in cert dag)
+                  (set::in cert1 (successors cert dag)))
+             (equal (path-to-author+round cert1
+                                          (certificate->author cert)
+                                          (certificate->round cert)
+                                          dag)
+                    cert))
+    :enable (successors
+             path-to-previous
+             in-of-certificates-with-round)
+    :use (:instance successors-loop-member-and-previous
+                    (cert cert1)
+                    (certs (certificates-with-round
+                            (+ 1 (certificate->round cert))
+                            dag))
+                    (prev (certificate->author cert))))
+
+  (defruled path-to-predecessor
+    (implies (and (certificate-setp dag)
+                  (certificate-set-unequivocalp dag)
+                  (set::in cert1 dag)
+                  (set::in cert (predecessors cert1 dag)))
+             (equal (path-to-author+round cert1
+                                          (certificate->author cert)
+                                          (certificate->round cert)
+                                          dag)
+                    cert))
+    :enable (predecessors
+             path-to-previous
+             in-of-certificates-with-authors+round
+             posp)))
