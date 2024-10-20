@@ -120,7 +120,17 @@
   :short "Fixtype of sets of certificates."
   :elt-type certificate
   :elementp-of-nil nil
-  :pred certificate-setp)
+  :pred certificate-setp
+
+  ///
+
+  (defruled nil-not-in-certificate-set
+    (implies (certificate-setp certs)
+             (not (set::in nil certs)))
+    :use (:instance certificatep-when-in-certificate-setp-binds-free-x
+                    (a nil)
+                    (x certs))
+    :disable certificatep-when-in-certificate-setp-binds-free-x))
 
 ;;;;;;;;;;;;;;;;;;;;
 
