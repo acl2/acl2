@@ -483,7 +483,7 @@
                                  in-of-certificates-with-authors+round))))
   (in-theory (disable certificates-with-authors+round-subset-with-round))
 
-  (defrule certificates-with-authors+round-of-empty-authors
+  (defruled certificates-with-authors+round-of-empty-authors
     (implies (set::emptyp authors)
              (equal (certificates-with-authors+round authors round certs)
                     nil))
