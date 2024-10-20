@@ -231,7 +231,8 @@
                   (certificates-with-authors+round authors round certs1)))
   :enable (set::expensive-rules
            set::double-containment-no-backchain-limit
-           certificate-with-author+round-when-author-in-certificates)
+           certificate-with-author+round-when-author-in-certificates
+           in-of-certificates-with-authors+round)
 
   :prep-lemmas
   ((defrule lemma
@@ -287,7 +288,8 @@
            (equal (certificates-with-authors+round authors round certs1)
                   (certificates-with-authors+round authors round certs2)))
   :enable (set::expensive-rules
-           set::double-containment-no-backchain-limit)
+           set::double-containment-no-backchain-limit
+           in-of-certificates-with-authors+round)
 
   :prep-lemmas
 

@@ -225,13 +225,15 @@
   (defruled outgoing-in-dag
     (implies (and (certificate-setp dag)
                   (set::in cert1 (outgoing cert dag)))
-             (set::in cert1 dag)))
+             (set::in cert1 dag))
+    :enable in-of-certificates-with-authors+round)
 
   (defruled round-in-outgoing-is-one-less
     (implies (and (certificate-setp dag)
                   (set::in cert1 (outgoing cert dag)))
              (equal (certificate->round cert1)
-                    (1- (certificate->round cert)))))
+                    (1- (certificate->round cert))))
+    :enable in-of-certificates-with-authors+round)
 
   (defruled round-set-of-outgoing
     (equal (certificate-set->round-set (outgoing cert dag))

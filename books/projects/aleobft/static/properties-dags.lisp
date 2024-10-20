@@ -708,7 +708,8 @@
   :enable (path-to-author+round
            path-to-author+round-of-self
            nil-not-in-certificate-set
-           certificates-with-authors+round-subset))
+           certificates-with-authors+round-subset
+           in-of-certificates-with-authors+round))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -767,7 +768,8 @@
                                         dag)
                   cert))
   :enable (outgoing
-           path-to-previous))
+           path-to-previous
+           in-of-certificates-with-authors+round))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
