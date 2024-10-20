@@ -342,10 +342,14 @@
      by using stronger hypotheses on the DAGs
      that imply the specific properties used in those previous theorems.
      The hypotheses on the DAGs are all invariants, proved elsewhere.
-     The key properties is that the picked certificate
+     The key properties are that the picked certificate
      is among the successors of @('cert1') in the first DAG,
      among the precedessors of @('cert2') in the second DAG,
-     and also in both DAGs."))
+     and also in both DAGs.")
+   (xdoc::p
+    "We prove four lemmas that serve to establish
+     hypotheses in the theorems in @(tsee pick-successor/predecessor)
+     from the more general hypothesis in this theorem."))
   (implies (and (certificate-setp dag1)
                 (certificate-setp dag2)
                 (certificate-set-unequivocalp dag1)
