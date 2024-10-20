@@ -674,8 +674,8 @@
     "This should be very intuitive,
      since paths arise precisely from the edges of the DAG.")
    (xdoc::p
-    "Here @('cert') is a certificate
-     and @('cert1') is one of its predecessors,
+    "Here @('cert1') is a certificate
+     and @('cert') is one of its predecessors,
      as characterized by being in the immediately preceding round
      and by being authored by one of the authors referenced in @('cert1').")
    (xdoc::p
