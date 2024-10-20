@@ -753,7 +753,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is also intuitively obvious,
-     since @(tsee incoming) is based on the DAG edges,
+     since @(tsee outgoing) is based on the DAG edges,
      which define the paths.")
    (xdoc::p
     "We use the @(tsee path-to-previous) theorem to prove this,
