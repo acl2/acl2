@@ -236,7 +236,23 @@
     :hints (("Goal" :in-theory (enable* certificates-with-authors+round-subset
                                         set::expensive-rules))))
   (in-theory (disable path-to-author+round-in-dag
-                      path-to-author+round-set-in-dag)))
+                      path-to-author+round-set-in-dag))
+
+  (defruled path-to-author+round-of-self
+    (implies (and (certificate-setp dag)
+                  (set::in cert dag))
+             (equal (path-to-author+round cert
+                                          (certificate->author cert)
+                                          (certificate->round cert)
+                                          dag)
+                    cert)))
+
+  (defruled path-to-author+round-set-when-path-to-author+round-of-element
+    (implies (and (set::in cert certs)
+                  (path-to-author+round cert author round dag))
+             (path-to-author+round-set certs author round dag))
+    :induct (set::cardinality certs)
+    :enable set::cardinality))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -419,7 +435,14 @@
                 set::expensive-rules)
        :hints ('(:use (:instance set::emptyp-when-proper-subset-of-singleton
                                  (x (certificate-set->round-set (tail certs)))
-                                 (a (certificate->round (head certs)))))))))
+                                 (a (certificate->round (head certs)))))))
+
+     (defruled successors-loop-member-and-previous
+       (implies (and (certificate-setp certs)
+                     (set::in cert (successors-loop certs prev)))
+                (and (set::in cert certs)
+                     (set::in prev (certificate->previous cert))))
+       :induct t)))
 
   ///
 
