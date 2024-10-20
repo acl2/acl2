@@ -115,7 +115,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled get-previous-certificates-of-unequivocal-dag-superset
+(defruled previous-certificates-of-unequivocal-dag-superset
   :short "The predecessor cerfificates of a certificate
           in a backward-closed subset of a DAG of unequivocal certificates
           are the same in the superset."
@@ -142,7 +142,7 @@
     "This theorem says that, as the DAG of a validator grows,
      the predecessors of existing certificates do not change.")
    (xdoc::p
-    "See @(tsee get-previous-certificates-of-unequivocal-dags)
+    "See @(tsee previous-certificates-of-unequivocal-dags)
      for an analogous theorem involving two mutually unequivocal DAGs."))
   (implies (and (certificate-setp dag1)
                 (certificate-setp dag2)
@@ -172,7 +172,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled get-previous-certificates-of-unequivocal-dags
+(defruled previous-certificates-of-unequivocal-dags
   :short "The predecessor certificates of a common certificate
           of two backward-closed unequivocal and mutually unequivocal DAGs
           are the same in the two DAGs."
@@ -180,7 +180,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is analogous to
-     @(tsee get-previous-certificates-of-unequivocal-dag-superset),
+     @(tsee previous-certificates-of-unequivocal-dag-superset),
      but for two DAGs of different validators
      instead of a growing DAG of a single validator.")
    (xdoc::p
@@ -188,7 +188,7 @@
      @(tsee certificates-with-authors+round-of-unequivocal-sets)
      as the main application of that theorem.
      However, we actually prove this without using that theorem:
-     we use @(tsee get-previous-certificates-of-unequivocal-dag-superset) twice,
+     we use @(tsee previous-certificates-of-unequivocal-dag-superset) twice,
      where the subset is the intersection of the two DAGs both times,
      while the superset is either one or the other DAG.
      This uses the fact that backward closure
@@ -219,10 +219,10 @@
                    (certificate->previous cert)
                    (1- (certificate->round cert))
                    dag2)))
-  :use ((:instance get-previous-certificates-of-unequivocal-dag-superset
+  :use ((:instance previous-certificates-of-unequivocal-dag-superset
                    (dag1 (set::intersect dag1 dag2))
                    (dag2 dag1))
-        (:instance get-previous-certificates-of-unequivocal-dag-superset
+        (:instance previous-certificates-of-unequivocal-dag-superset
                    (dag1 (set::intersect dag1 dag2))
                    (dag2 dag2))))
 
@@ -235,7 +235,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "As proved in @(tsee get-previous-certificates-of-unequivocal-dag-superset),
+    "As proved in @(tsee previous-certificates-of-unequivocal-dag-superset),
      the predecessors are the same in the superset,
      because of the backward closure.
      The same argument can be applied to the predecessors or the predecessors,
@@ -289,7 +289,7 @@
              (cond
               ((acl2::occur-lst '(acl2::flag-is 'path-to-author+round) clause)
                '(:use (:instance
-                       get-previous-certificates-of-unequivocal-dag-superset
+                       previous-certificates-of-unequivocal-dag-superset
                        (dag1 dag)
                        (dag2 dag2))))))))
 
@@ -317,7 +317,7 @@
      but for two DAGs of different validators
      instead of a growing DAG of a single validator.")
    (xdoc::p
-    "Similarly to @(tsee get-previous-certificates-of-unequivocal-dags),
+    "Similarly to @(tsee previous-certificates-of-unequivocal-dags),
      we prove this from @(tsee path-to-author+round-of-unequivocal-dag-superset)
      using the closure of backward closure under intersection."))
   (implies (and (certificate-setp dag1)
@@ -406,7 +406,7 @@
       (cond
        ((acl2::occur-lst '(acl2::flag-is 'certificate-causal-history) clause)
         '(:use (:instance
-                get-previous-certificates-of-unequivocal-dag-superset
+                previous-certificates-of-unequivocal-dag-superset
                 (dag1 dag)
                 (dag2 dag2))))))))
 
@@ -677,7 +677,7 @@
     "Here @('cert') is a certificate
      and @('cert1') is one of its predecessors,
      as characterized by being in the immediately preceding round
-     and by being authors by one of the authors referenced in @('cert1').")
+     and by being authored by one of the authors referenced in @('cert1').")
    (xdoc::p
     "We use @(tsee path-to-author+round-set-to-path-to-author+round)
      to prove this theorem,
