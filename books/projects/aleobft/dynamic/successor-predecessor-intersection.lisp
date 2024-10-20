@@ -329,3 +329,162 @@
           (:instance consp-when-certificatep
                      (x (pick-successor/predecessor dag1 dag2 cert1 cert2))))
     :disable consp-when-certificatep))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled pick-successor/predecessor-properties
+  :short "Key properties of @(tsee pick-successor/predecessor)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This combines and generalizes
+     the theorems proved in @(tsee pick-successor/predecessor),
+     by using stronger hypotheses on the DAGs
+     that imply the specific properties used in those previous theorems.
+     The hypotheses on the DAGs are all invariants, proved elsewhere.
+     The key properties is that the picked certificate
+     is among the successors of @('cert1') in the first DAG,
+     among the precedessors of @('cert2') in the second DAG,
+     and also in both DAGs."))
+  (implies (and (certificate-setp dag1)
+                (certificate-setp dag2)
+                (certificate-set-unequivocalp dag1)
+                (certificate-set-unequivocalp dag2)
+                (certificate-sets-unequivocalp dag1 dag2)
+                (set::in cert2 dag2)
+                (equal (certificate->round cert2)
+                       (+ 2 (certificate->round cert1)))
+                (dag-committees-p dag1 blocks1 all-vals)
+                (dag-committees-p dag2 blocks2 all-vals)
+                (same-active-committees-p blocks1 blocks2 all-vals)
+                (dag-rounds-in-committees-p dag1 blocks1 all-vals)
+                (dag-rounds-in-committees-p dag2 blocks2 all-vals)
+                (dag-predecessor-cardinality-p dag2 blocks2 all-vals)
+                (>= (set::cardinality (successors cert1 dag1))
+                    (1+ (committee-max-faulty
+                         (active-committee-at-round
+                          (1+ (certificate->round cert1))
+                          blocks2
+                          all-vals)))))
+           (b* ((cert (pick-successor/predecessor dag1 dag2 cert1 cert2)))
+             (and (set::in cert (successors cert1 dag1))
+                  (set::in cert (predecessors cert2 dag2))
+                  (set::in cert dag1)
+                  (set::in cert dag2))))
+  :use ((:instance pick-successor/predecessor-when-cardinalities
+                   (commtt (active-committee-at-round
+                            (1+ (certificate->round cert1))
+                            blocks2
+                            all-vals)))
+        pick-successor/predecessor-in-successors
+        pick-successor/predecessor-in-predecessors
+        pick-successor/predecessor-in-dag1
+        pick-successor/predecessor-in-dag2
+        lemma1
+        lemma2
+        lemma3
+        lemma4)
+
+  :prep-lemmas
+
+  ((defruled lemma1
+     (implies (dag-rounds-in-committees-p dag1 blocks1 all-vals)
+              (set::subset (certificate-set->author-set
+                            (successors cert1 dag1))
+                           (committee-members
+                            (active-committee-at-round
+                             (1+ (certificate->round cert1)) blocks1 all-vals))))
+     :use ((:instance dag-rounds-in-committees-p-necc
+                      (dag dag1)
+                      (blocks blocks1)
+                      (round (1+ (certificate->round cert1))))
+           (:instance set::emptyp-subset-2
+                      (x (successors cert1 dag1))
+                      (y (certificates-with-round (1+ (certificate->round cert1))
+                                                  dag1))))
+     :enable (successors-subset-of-next-round
+              certificate-set->author-set-monotone
+              set::expensive-rules
+              emptyp-of-certificate-set->author-set)
+     :disable set::emptyp-subset-2)
+
+   (defruled lemma2
+     (implies (and (certificate-setp dag2)
+                   (dag-rounds-in-committees-p dag2 blocks2 all-vals)
+                   (equal (certificate->round cert2)
+                          (+ 2 (certificate->round cert1))))
+              (set::subset (certificate-set->author-set
+                            (predecessors cert2 dag2))
+                           (committee-members
+                            (active-committee-at-round
+                             (1- (certificate->round cert2)) blocks2 all-vals))))
+     :use ((:instance dag-rounds-in-committees-p-necc
+                      (dag dag2)
+                      (blocks blocks2)
+                      (round (1- (certificate->round cert2))))
+           (:instance set::emptyp-subset-2
+                      (x (predecessors cert2 dag2))
+                      (y (certificates-with-round (1- (certificate->round cert2))
+                                                  dag2))))
+     :enable (predecessors-subset-of-previous-round
+              certificate-set->author-set-monotone
+              set::expensive-rules
+              emptyp-of-certificate-set->author-set)
+     :disable set::emptyp-subset-2)
+
+   (defruled lemma3
+     (implies (and (certificate-setp dag1)
+                   (dag-committees-p dag1 blocks1 all-vals)
+                   (dag-committees-p dag2 blocks2 all-vals)
+                   (same-active-committees-p blocks1 blocks2 all-vals)
+                   (set::in cert2 dag2)
+                   (equal (certificate->round cert2)
+                          (+ 2 (certificate->round cert1)))
+                   (>= (set::cardinality (successors cert1 dag1))
+                       (1+ (committee-max-faulty
+                            (active-committee-at-round
+                             (1+ (certificate->round cert1))
+                             blocks2
+                             all-vals)))))
+              (equal (active-committee-at-round
+                      (1+ (certificate->round cert1)) blocks1 all-vals)
+                     (active-committee-at-round
+                      (1+ (certificate->round cert1)) blocks2 all-vals)))
+     :use ((:instance same-active-committees-p-necc
+                      (round (1+ (certificate->round cert1))))
+           (:instance dag-committees-p-necc
+                      (dag dag1)
+                      (blocks blocks1)
+                      (cert (set::head (successors cert1 dag1))))
+           (:instance dag-committees-p-necc
+                      (dag dag2)
+                      (blocks blocks2)
+                      (cert cert2))
+           (:instance set::in-head
+                      (x (successors cert1 dag1)))
+           (:instance active-committee-at-previous-round-when-at-round
+                      (blocks blocks2)
+                      (round (certificate->round cert2)))
+           (:instance set::cardinality-zero-emptyp
+                      (x (successors cert1 dag1))))
+     :enable (successors-subset-of-dag
+              set::expensive-rules
+              certificate->round-of-element-of-successors)
+     :disable (set::in-head
+               set::cardinality-zero-emptyp))
+
+   (defruled lemma4
+     (implies (and (set::in cert2 dag2)
+                   (equal (certificate->round cert2)
+                          (+ 2 (certificate->round cert1)))
+                   (dag-predecessor-cardinality-p dag2 blocks2 all-vals))
+              (equal (set::cardinality (predecessors cert2 dag2))
+                     (committee-quorum
+                      (active-committee-at-round
+                       (1+ (certificate->round cert1))
+                       blocks2
+                       all-vals))))
+     :use (:instance dag-predecessor-cardinality-p-necc
+                     (dag dag2)
+                     (blocks blocks2)
+                     (cert cert2)))))
