@@ -261,7 +261,7 @@
                   (path-to-author+round cert author round dag))
              (path-to-author+round-set certs author round dag))
     :induct (set::cardinality certs)
-    :enable (set::cardinality path-to-author+round-set))
+    :enable set::cardinality)
 
   (defrule path-to-author+round-round-lte
     (implies (path-to-author+round cert author round dag)
