@@ -713,7 +713,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled path-to-author+round-when-incoming
+(defruled path-from-incoming
   :short "There is a path to a certificate
           from each of its incoming certificates."
   :long

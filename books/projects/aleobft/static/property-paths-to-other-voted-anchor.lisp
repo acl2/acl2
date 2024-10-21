@@ -251,7 +251,7 @@
                                         dag2)
                   anchor))
   :enable (anchorp
-           path-to-author+round-when-incoming)
+           path-from-incoming)
   :use (common-in-incoming-and-outgoing-and-dags
         (:instance path-to-author+round-of-unequivocal-dags
                    (author (certificate->author anchor))

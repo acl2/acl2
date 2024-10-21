@@ -403,7 +403,7 @@
                    (cert2 anchor))
         common-in-incoming-and-outgoing-and-dag)
   :enable (path-to-author+round-when-outgoing
-           path-to-author+round-when-incoming
+           path-from-incoming
            anchorp))
 
 ; The previous theorem essentially proves the base case of our induction.
