@@ -1291,9 +1291,7 @@
     "The second theorem says that
      if a certificate with a certain author and round
      is retrieved from both of two mutually unequivocal certificate sets,
-     it is the same certificate from both sets.
-     This is similar to the first theorem,
-     but for two sets of certificates instead of one."))
+     it is the same certificate from both sets."))
 
   (defruled certificate-with-author+round-of-unequivocal-superset
     (implies (and (certificate-setp certs0)
@@ -1355,8 +1353,6 @@
      if certificates with certain authors and a certain round
      are retrieved from both of two mutually unequivocal certificate sets,
      the same certificates are retrieved from both sets.
-     This is similar to the first theorem,
-     but for two sets of certificates instead of one.
      For the proof, we introduce two local lemmas for
      the two containment membership subgoals
      from the pick-a-point strategy.
