@@ -238,7 +238,7 @@
     "As proved in @(tsee previous-certificates-of-unequivocal-dag-superset),
      the predecessors are the same in the superset,
      because of the backward closure.
-     The same argument can be applied to the predecessors or the predecessors,
+     The same argument can be applied to the predecessors of the predecessors,
      and that covers all paths.")
    (xdoc::p
     "That is the case not just for paths that reach certificates,

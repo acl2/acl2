@@ -329,7 +329,8 @@
                     (validator-state->buffer
                      (get-validator-state val systate))))
     :enable (create-certificate-next-val
-             get-validator-state-of-update-validator-state))
+             get-validator-state-of-update-validator-state
+             validator-state->buffer-of-add-endorsed))
 
   (defrule validator-state->last-of-create-certificate-next
     (implies (set::in val (correct-addresses systate))

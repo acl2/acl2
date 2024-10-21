@@ -188,7 +188,8 @@
              get-validator-state-iff-in-correct-addresses
              get-validator-state-of-update-validator-state
              certificate-with-author+round-of-insert-iff
-             validator-state->dag-of-add-endorsed))
+             validator-state->dag-of-add-endorsed
+             validator-state->buffer-of-add-endorsed))
 
   (defrule system-signers-have-author+round-p-of-create-certificate-next
     (implies (and (system-signers-have-author+round-p systate)

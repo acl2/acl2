@@ -258,7 +258,7 @@
              add-endorsed-val
              get-validator-state-of-update-validator-state))
 
-  (defrule validator-state->buffer-of-add-endorsed
+  (defruled validator-state->buffer-of-add-endorsed
     (equal (validator-state->buffer
             (get-validator-state
              val
