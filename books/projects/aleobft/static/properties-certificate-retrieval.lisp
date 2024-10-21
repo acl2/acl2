@@ -69,8 +69,8 @@
                 (certificate-set-unequivocalp certs)
                 (set::in cert certs))
            (equal (certificate-with-author+round (certificate->author cert)
-                                                     (certificate->round cert)
-                                                     certs)
+                                                 (certificate->round cert)
+                                                 certs)
                   cert))
   :enable (certificate-with-author+round-element-when-not-nil
            certificate-with-author+round-when-element
@@ -231,7 +231,7 @@
                   (certificates-with-authors+round authors round certs1)))
   :enable (set::expensive-rules
            set::double-containment-no-backchain-limit
-           certificate-with-author+round-when-author-in-certificates
+           certificate-with-author+round-when-author-in-round
            in-of-certificates-with-authors+round)
 
   :prep-lemmas
@@ -328,7 +328,7 @@
                               (certificate->round cert)
                               certs2))))
      :enable (set::expensive-rules
-              certificate-with-author+round-when-author-in-certificates
+              certificate-with-author+round-when-author-in-round
               certificate->author-of-certificate-with-author+round
               certificate->round-of-certificate-with-author+round))
 
@@ -359,7 +359,7 @@
                               certs1))
                       (cert2 cert)))
      :enable (set::expensive-rules
-              certificate-with-author+round-when-author-in-certificates
+              certificate-with-author+round-when-author-in-round
               certificate->author-of-certificate-with-author+round
               certificate->round-of-certificate-with-author+round))))
 

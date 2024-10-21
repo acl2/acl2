@@ -283,7 +283,7 @@
     :enable (set::expensive-rules
              in-of-certificates-with-round))
 
-  (defruled certificate-with-author+round-when-author-in-certificates
+  (defruled certificate-with-author+round-when-author-in-round
     (implies (and (certificate-setp certs)
                   (set::in author
                            (certificate-set->author-set
