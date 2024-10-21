@@ -985,7 +985,6 @@
   (defruled previous-certificates-of-unequivocal-dags
     (implies (and (certificate-setp dag1)
                   (certificate-setp dag2)
-                  (set::subset dag1 dag2)
                   (certificate-sets-unequivocalp dag1 dag2)
                   (certificate-set-unequivocalp dag1)
                   (certificate-set-unequivocalp dag2)
