@@ -330,7 +330,7 @@
         path-from-common-to-anchor
         anchor-also-in-dag2
         common-in-incoming-and-outgoing-and-dags)
-  :enable path-to-author+round-when-outgoing)
+  :enable path-to-outgoing)
 
 ; This is similar to the homonymous theorem in the single-DAG proof,
 ; but it involves the two DAGs.
@@ -418,7 +418,7 @@
                    dag)
                   (predecessor cert dag)))
   :enable (predecessor-in-outgoing
-           path-to-author+round-when-outgoing))
+           path-to-outgoing))
 
 ; This is similar to the homonymous theorem in the single-DAG proof,
 ; but with a slightly weaker assumption, namely that CERT is not NIL,

@@ -746,7 +746,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled path-to-author+round-when-outgoing
+(defruled path-to-outgoing
   :short "There is a path from a certificate
           to each of its outgoing certificates."
   :long

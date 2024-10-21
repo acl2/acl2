@@ -402,7 +402,7 @@
                    (cert1 (common anchor witness dag))
                    (cert2 anchor))
         common-in-incoming-and-outgoing-and-dag)
-  :enable (path-to-author+round-when-outgoing
+  :enable (path-to-outgoing
            path-from-incoming
            anchorp))
 
@@ -496,7 +496,7 @@
                    dag)
                   (predecessor cert dag)))
   :enable (predecessor-in-outgoing
-           path-to-author+round-when-outgoing))
+           path-to-outgoing))
 
 ; Now we prove the essence of the induction step.
 ; If DAG-ROUND-ALL-PATH-TO-P holds on a round r,
