@@ -145,6 +145,10 @@
 
    (xdoc::h3 "Miscellaneous")
 
+   (xdoc::p
+     "Books based on @(tsee run-script) now certify even when gag-mode has been
+      set in advance, say, by an @(see acl2-customization) file.")
+
    ))
 
 (defxdoc note-8-6-books
