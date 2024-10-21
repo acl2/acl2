@@ -702,16 +702,6 @@
                                  set::expensive-rules))))
   (in-theory (disable certificates-with-authors+round-subset))
 
-  (defruled
-    certificate-set->round-set-of-certificates-with-authors+round-not-empty
-    (b* ((rounds (certificate-set->round-set
-                  (certificates-with-authors+round authors round certs))))
-      (implies (not (set::emptyp rounds))
-               (equal rounds
-                      (set::insert (pos-fix round) nil))))
-    :induct t
-    :enable certificate-set->round-set-of-insert)
-
   (defruled in-of-certificates-with-authors+round
     (implies (certificate-setp certs)
              (equal (set::in cert
@@ -747,7 +737,17 @@
              in-of-certificates-with-authors+round
              in-of-certificates-with-authors
              in-of-certificates-with-round)
-    :disable certificates-with-authors+round))
+    :disable certificates-with-authors+round)
+
+  (defruled
+    certificate-set->round-set-of-certificates-with-authors+round-not-empty
+    (b* ((rounds (certificate-set->round-set
+                  (certificates-with-authors+round authors round certs))))
+      (implies (not (set::emptyp rounds))
+               (equal rounds
+                      (set::insert (pos-fix round) nil))))
+    :induct t
+    :enable certificate-set->round-set-of-insert))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
