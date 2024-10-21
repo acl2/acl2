@@ -236,7 +236,7 @@
       (enable* in-correct-validator-addresess-when-get-validator-state
                set::expensive-rules))))
 
-  (defrule validator-state->round-of-add-endorsed
+  (defruled validator-state->round-of-add-endorsed
     (equal (validator-state->round
             (get-validator-state
              val

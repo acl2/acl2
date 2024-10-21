@@ -277,7 +277,8 @@
                     (validator-state->round
                      (get-validator-state val systate))))
     :enable (create-certificate-next-val
-             get-validator-state-of-update-validator-state))
+             get-validator-state-of-update-validator-state
+             validator-state->round-of-add-endorsed))
 
   (defrule validator-state->dag-of-create-certificate-next
     (implies (and (certificatep cert)
