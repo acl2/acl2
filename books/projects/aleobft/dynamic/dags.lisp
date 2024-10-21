@@ -942,7 +942,8 @@
      does not imply the backward closure of the superset.
      The latter is not needed, in fact.
      The backward closure of the subset establishes the hypothesis of
-     @(tsee certificates-with-authors+round-of-unequivocal-superset)
+     @('certificates-with-authors+round-of-unequivocal-superset')
+     in @(see unequivocal-certificates-with-authors+round),
      that the previous authors of the certificate
      are all in the round just before the certificate.")
    (xdoc::p
