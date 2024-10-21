@@ -440,7 +440,7 @@
                 (dag-previous-in-dag-p dag)
                 (dag-previous-are-quorum-p dag quorum)
                 (not (zp quorum))
-                cert ; weaker thatn (set::in cert dag)
+                cert ; weaker than (set::in cert dag)
                 (posp round)
                 (dag-round-all-path-to-p round cert dag))
            (dag-round-all-path-to-p (1+ round) cert dag))
