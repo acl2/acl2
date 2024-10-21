@@ -715,6 +715,12 @@
                                   (address-set-fix authors)))))
     :induct t)
 
+  (defruled certificates-with-authors+round-when-emptyp
+    (implies (set::emptyp authors)
+             (equal (certificates-with-authors+round authors round certs)
+                    nil))
+    :induct t)
+
   (defruled certificates-with-authors+round-to-authors-of-round
     (implies (certificate-setp certs)
              (equal (certificates-with-authors+round authors round certs)
