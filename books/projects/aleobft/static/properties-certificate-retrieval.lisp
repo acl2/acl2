@@ -72,7 +72,7 @@
                                                  (certificate->round cert)
                                                  certs)
                   cert))
-  :enable (certificate-with-author+round-element-when-not-nil
+  :enable (certificate-with-author+round-element
            certificate-with-author+round-when-element
            certificate->author-of-certificate-with-author+round
            certificate->round-of-certificate-with-author+round)
@@ -147,7 +147,7 @@
                   (cert2
                    (certificate-with-author+round author round certs2)))
   :enable (certificate-with-author+round-when-subset
-           certificate-with-author+round-element-when-not-nil
+           certificate-with-author+round-element
            certificate->author-of-certificate-with-author+round
            certificate->round-of-certificate-with-author+round
            set::expensive-rules))
@@ -175,7 +175,7 @@
                 (certificate-with-author+round author round certs2))
            (equal (certificate-with-author+round author round certs1)
                   (certificate-with-author+round author round certs2)))
-  :enable (certificate-with-author+round-element-when-not-nil
+  :enable (certificate-with-author+round-element
            certificate->author-of-certificate-with-author+round
            certificate->round-of-certificate-with-author+round)
   :use (:instance
@@ -253,7 +253,7 @@
                              (certificate->round cert)
                              certs1)))
      :enable (set::expensive-rules
-              certificate-with-author+round-element-when-not-nil
+              certificate-with-author+round-element
               certificate-with-author+round-of-unequivocal-superset
               certificate->author-of-certificate-with-author+round
               certificate->round-of-certificate-with-author+round))))
@@ -317,7 +317,7 @@
                              (certificates-with-round
                               (certificate->round cert) certs2))))
               (set::in cert certs2))
-     :use ((:instance certificate-with-author+round-element-when-not-nil
+     :use ((:instance certificate-with-author+round-element
                       (certs certs2)
                       (author (certificate->author cert))
                       (round (certificate->round cert)))
@@ -348,7 +348,7 @@
                              (certificates-with-round
                               (certificate->round cert) certs1))))
               (set::in cert certs1))
-     :use ((:instance certificate-with-author+round-element-when-not-nil
+     :use ((:instance certificate-with-author+round-element
                       (certs certs1)
                       (author (certificate->author cert))
                       (round (certificate->round cert)))

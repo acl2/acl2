@@ -98,7 +98,7 @@
   :enable (collect-anchors
            anchorp
            certificate-with-author+round-of-element-when-unequivocal
-           certificate-with-author+round-element-when-not-nil
+           certificate-with-author+round-element
            certificate-with-author+round-when-path-to-author+round
            append
            natp)

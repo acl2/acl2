@@ -83,7 +83,7 @@
                           (set::intersect
                            (certificates-with-round round dag1)
                            (certificates-with-round round dag2)))))
-       :enable (certificate-with-author+round-element-when-not-nil
+       :enable (certificate-with-author+round-element
                 certificate-with-author+round-when-author-in-round
                 certificate->author-of-certificate-with-author+round
                 certificate->round-of-certificate-with-author+round

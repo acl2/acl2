@@ -81,7 +81,7 @@
     :hints (("Goal" :induct t)))
   (in-theory (disable certificate->round-of-certificate-with-author+round))
 
-  (defruled certificate-with-author+round-element-when-not-nil
+  (defruled certificate-with-author+round-element
     (implies (and (certificate-setp certs)
                   (certificate-with-author+round author round certs))
              (set::in (certificate-with-author+round author round certs)
