@@ -247,7 +247,7 @@
              in-correct-validator-addresess-when-get-validator-state
              get-validator-state-of-update-validator-state))
 
-  (defrule validator-state->dag-of-add-endorsed
+  (defruled validator-state->dag-of-add-endorsed
     (equal (validator-state->dag
             (get-validator-state
              val
