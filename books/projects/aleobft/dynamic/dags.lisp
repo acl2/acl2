@@ -922,3 +922,95 @@
            path-to-previous
            in-of-certificates-with-authors+round
            posp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection unequivocal-previous-certificates
+  :short "Some theorems about
+          retrieving the previous certificates of a certificate
+          in unequivocal DAGs."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The first theorem says that
+     the previous cerfificates referenced by a certificate
+     in a backward-closed subset of a DAG of unequivocal certificates
+     are the same in the superset.
+     Note that the non-equivocation of the superset
+     implies the non-equivocation of the subset,
+     but the backward closure of the subset
+     does not imply the backward closure of the superset.
+     The latter is not needed, in fact.
+     The backward closure of the subset establishes the hypothesis of
+     @(tsee certificates-with-authors+round-of-unequivocal-superset)
+     that the previous authors of the certificate
+     are all in the round just before the certificate.")
+   (xdoc::p
+    "The second theorem says that
+     the previous certificates referenced by a common certificate
+     of two backward-closed unequivocal and mutually unequivocal DAGs
+     are the same in the two DAGs.
+     This is similar to the first theorem,
+     but for two sets of certificates instead of one."))
+
+  (defruled previous-certificates-of-unequivocal-superdag
+    (implies (and (certificate-setp dag0)
+                  (certificate-setp dag)
+                  (set::subset dag0 dag)
+                  (certificate-set-unequivocalp dag)
+                  (dag-closedp dag0)
+                  (set::in cert dag0)
+                  (or (not (equal (certificate->round cert) 1))
+                      (set::emptyp (certificate->previous cert))))
+             (equal (certificates-with-authors+round
+                     (certificate->previous cert)
+                     (1- (certificate->round cert))
+                     dag)
+                    (certificates-with-authors+round
+                     (certificate->previous cert)
+                     (1- (certificate->round cert))
+                     dag0)))
+    :enable (certificate-previous-in-dag-p
+             certificates-with-authors+round-when-emptyp
+             posp)
+    :use ((:instance dag-closedp-necc
+                     (dag dag0))
+          (:instance certificates-with-authors+round-of-unequivocal-superset
+                     (certs0 dag0)
+                     (certs dag)
+                     (authors (certificate->previous cert))
+                     (round (1- (certificate->round cert))))))
+
+  (defruled previous-certificates-of-unequivocal-dags
+    (implies (and (certificate-setp dag1)
+                  (certificate-setp dag2)
+                  (set::subset dag1 dag2)
+                  (certificate-sets-unequivocalp dag1 dag2)
+                  (certificate-set-unequivocalp dag1)
+                  (certificate-set-unequivocalp dag2)
+                  (dag-closedp dag1)
+                  (dag-closedp dag2)
+                  (set::in cert dag1)
+                  (set::in cert dag2)
+                  (or (not (equal (certificate->round cert) 1))
+                      (set::emptyp (certificate->previous cert))))
+             (equal (certificates-with-authors+round
+                     (certificate->previous cert)
+                     (1- (certificate->round cert))
+                     dag1)
+                    (certificates-with-authors+round
+                     (certificate->previous cert)
+                     (1- (certificate->round cert))
+                     dag2)))
+    :enable (certificate-previous-in-dag-p
+             certificates-with-authors+round-when-emptyp
+             posp)
+    :use ((:instance dag-closedp-necc
+                     (dag dag1))
+          (:instance dag-closedp-necc
+                     (dag dag2))
+          (:instance certificates-with-authors+round-of-unequivocal-sets
+                     (certs1 dag1)
+                     (certs2 dag2)
+                     (authors (certificate->previous cert))
+                     (round (1- (certificate->round cert)))))))
