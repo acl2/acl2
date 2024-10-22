@@ -56,7 +56,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled certificate-with-author+round-of-element-when-unequivocal
-  :short "If a certificate is in an unequivocal sets,
+  :short "If a certificate is in an unequivocal set,
           retrieving a certificate with the certificate's author and round
           will return the certificate itself."
   :long
