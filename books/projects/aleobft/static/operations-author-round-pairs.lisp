@@ -269,7 +269,7 @@
              add-endorsed-val
              get-validator-state-of-update-validator-state))
 
-  (defrule validator-state->endorsed-of-add-endorsed
+  (defruled validator-state->endorsed-of-add-endorsed
     (equal (validator-state->endorsed
             (get-validator-state
              val
