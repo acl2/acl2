@@ -479,10 +479,10 @@
                 (path-to-author+round cert author round dag))
            (equal (path-to-author+round cert author round dag)
                   (certificate-with-author+round author round dag)))
-  :use ((:instance path-to-author+round-in-dag)
-        (:instance certificate-with-author+round-of-element-when-unequivocal
-                   (certs dag)
-                   (cert (path-to-author+round cert author round dag)))))
+  :enable path-to-author+round-in-dag
+  :use (:instance certificate-with-author+round-of-element-when-unequivocal
+                  (certs dag)
+                  (cert (path-to-author+round cert author round dag))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
