@@ -342,7 +342,8 @@
                      (get-validator-state val systate))))
     :enable (create-certificate-next-val
              get-validator-state-of-update-validator-state
-             nfix))
+             nfix
+             validator-state->last-of-add-endorsed))
 
   (defrule validator-state->blockchain-of-create-certificate-next
     (implies (set::in val (correct-addresses systate))

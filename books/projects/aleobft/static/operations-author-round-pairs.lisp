@@ -286,7 +286,7 @@
              add-endorsed-val
              get-validator-state-of-update-validator-state))
 
-  (defrule validator-state->last-of-add-endorsed
+  (defruled validator-state->last-of-add-endorsed
     (implies (set::in val (correct-addresses systate))
              (equal (validator-state->last
                      (get-validator-state val
