@@ -1437,12 +1437,29 @@
   :returns (mv erp (type typep))
   :short "Validate a unary expression,
           given the type of the sub-expression."
-  (declare (ignore expr type-arg))
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @('&') operator requires an lvalue of any type as operand
+     [C:6.5.3.2/1] [C:6.5.3.2/3],
+     but we are not yet distinguishing lvalues from non-lvalues,
+     so we allow any type of operand, and we return the (one) pointer type.")
+   (xdoc::p
+    "The @('*') unary operator requires an operand of a pointer type
+     [C:6.5.3.2/2],
+     after array-to-pointer and function-to-pointer conversions.
+     Since we only have one type for pointers for now,
+     the resulting type is unknown."))
   (b* (((reterr) (irr-type)))
     (unop-case
      op
-     :address (reterr :todo)
-     :indir (reterr :todo)
+     :address (retok (type-pointer))
+     :indir (b* ((type (type-fpconvert (type-apconvert type-arg)))
+                 ((unless (type-case type :pointer))
+                  (reterr (msg "In the unary expression ~x0, ~
+                                the sub-expression has type ~x1."
+                               (expr-fix expr) (type-fix type-arg)))))
+              (retok (type-unknown)))
      :plus (reterr :todo)
      :minus (reterr :todo)
      :bitnot (reterr :todo)
