@@ -562,7 +562,7 @@
   :disable (cardinality-of-authors-when-same-round-and-unequiv
             certificate-set->author-set-monotone))
 
-; The following is the actual base case,
+; The following is the actual step case,
 ; where instead of a generic round r and r+1
 ; we use a+2+d and a+2+d+1,
 ; where a is the round of the anchor and d is a generic 'delta' from a+2.
