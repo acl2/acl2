@@ -391,6 +391,44 @@
     (type-fix type))
   :hooks (:fix))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-promote ((type typep) (ienv ienvp))
+  :returns (new-type typep)
+  :short "Perform integer promotions on a type [C:6.3.1.1/2]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This only changes integer types of rank lower than @('int');
+     the other types are left unchanged.
+     We need the implementation environment
+     because the new type may depend on
+     the relative range of the initial type and @('signed int').
+     The range of @('_Bool') always fits within @('signed int'),
+     and so do @('signed char') and @('signed short').
+     For @('unsigned char') and @('unsigned short'),
+     as well as for @('char')
+     (which may have the same range as @('unsigned char')),
+     we need to compare the maxima,
+     and return either @('signed int') or @('unsigned int')
+     as the promoted type."))
+  (type-case
+   type
+   :bool (type-sint)
+   :char (if (<= (char-max ienv) (sint-max ienv))
+             (type-sint)
+           (type-uint))
+   :schar (type-sint)
+   :uchar (if (<= (uchar-max) (sint-max ienv))
+              (type-sint)
+            (type-uint))
+   :sshort (type-sint)
+   :ushort (if (<= (ushort-max ienv) (sint-max ienv))
+               (type-sint)
+             (type-uint))
+   :otherwise (type-fix type))
+  :hooks (:fix))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum linkage
