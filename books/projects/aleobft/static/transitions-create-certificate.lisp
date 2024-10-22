@@ -366,7 +366,8 @@
                     (validator-state->committed
                      (get-validator-state val systate))))
     :enable (create-certificate-next-val
-             get-validator-state-of-update-validator-state))
+             get-validator-state-of-update-validator-state
+             validator-state->committed-of-add-endorsed))
 
   (defrule get-network-state-of-create-certificate-next
     (implies (set::subset (certificate->endorsers cert)
