@@ -238,6 +238,30 @@
   (in-theory (disable path-to-author+round-in-dag
                       path-to-author+round-set-in-dag))
 
+  (defret-mutual round-leq-when-path-to-author+round
+    (defret round-leq-when-path-to-author+round
+      (implies previous-cert?
+               (<= round (certificate->round cert)))
+      :fn path-to-author+round
+      :rule-classes :linear)
+    (defret round-leq-when-path-to-author+round-set
+      (implies previous-cert?
+               (<= round (pos-set-max (certificate-set->round-set certs))))
+      :fn path-to-author+round-set
+      :rule-classes :linear)
+    :hints
+    (("Goal"
+      :in-theory (enable* certificate->round-in-certificate-set->round-set
+                          certificate-set->round-set-monotone))
+     '(:use ((:instance acl2::pos-set-max->=-element
+                        (set (certificate-set->round-set certs))
+                        (elem (certificate->round (set::head certs))))
+             (:instance acl2::pos-set-max->=-subset
+                        (set1 (certificate-set->round-set (tail certs)))
+                        (set2 (certificate-set->round-set certs)))))))
+  (in-theory (disable round-leq-when-path-to-author+round
+                      round-leq-when-path-to-author+round-set))
+
   (defruled path-to-author+round-of-self
     (implies (and (certificate-setp dag)
                   (set::in cert dag))
@@ -1160,3 +1184,131 @@
                           (certs dag2)
                           (authors (certificate->previous cert))
                           (round (1- (certificate->round cert)))))))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled path-to-author+round-to-certificate-with-author+round
+  :short "If a certificate in an unequivocal DAG
+          has a path to a certain author and round,
+          the path ends up at the certificate retrieved
+          via that author and round."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is a consequence of non-equivocation.
+     There can be at most one certiticate per author and round,
+     so the certificate returned by the path operation
+     must be the same as returned by the retrieval operation."))
+  (implies (and (certificate-setp dag)
+                (certificate-set-unequivocalp dag)
+                (set::in cert dag)
+                (addressp author)
+                (posp round)
+                (path-to-author+round cert author round dag))
+           (equal (path-to-author+round cert author round dag)
+                  (certificate-with-author+round author round dag)))
+  :enable (certificate->author-of-path-to-author+round
+           certificate->round-of-path-to-author+round
+           path-to-author+round-in-dag)
+  :use (:instance certificate-with-author+round-of-element-when-unequivocal
+                  (certs dag)
+                  (cert (path-to-author+round cert author round dag))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled path-to-author+round-transitive
+  :short "Transitivity of DAG paths."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If there is a path from @('cert') to @('cert1'),
+     and a there is a path from @('cert1') to @('cert2'),
+     then there is a path from @('cert') and @('cert2').
+     The property is quite intuitive,
+     but note that we have the hypothesis that the DAG is unequivocal.
+     If the DAG were not unequivocal,
+     paths to the same author and round from different certificates
+     could potentially return different certificates."))
+  (implies (and (certificate-setp dag)
+                (certificate-set-unequivocalp dag)
+                (set::in cert dag)
+                (set::in cert1 dag)
+                (set::in cert2 dag)
+                (equal (path-to-author+round cert
+                                             (certificate->author cert1)
+                                             (certificate->round cert1)
+                                             dag)
+                       cert1)
+                (equal (path-to-author+round cert1
+                                             (certificate->author cert2)
+                                             (certificate->round cert2)
+                                             dag)
+                       cert2))
+           (equal (path-to-author+round cert
+                                        (certificate->author cert2)
+                                        (certificate->round cert2)
+                                        dag)
+                  cert2))
+  :prep-lemmas
+  ((defthm-path-to-author+round-flag
+     (defthm path-to-author+round-transitive-lemma
+       (implies (and (certificate-setp dag)
+                     (certificate-set-unequivocalp dag)
+                     (set::in cert dag)
+                     (set::in cert1 dag)
+                     (set::in cert2 dag)
+                     (equal author (certificate->author cert1))
+                     (equal round (certificate->round cert1))
+                     (equal (path-to-author+round cert
+                                                  (certificate->author cert1)
+                                                  (certificate->round cert1)
+                                                  dag)
+                            cert1)
+                     (equal (path-to-author+round cert1
+                                                  (certificate->author cert2)
+                                                  (certificate->round cert2)
+                                                  dag)
+                            cert2))
+                (equal (path-to-author+round cert
+                                             (certificate->author cert2)
+                                             (certificate->round cert2)
+                                             dag)
+                       cert2))
+       :flag path-to-author+round)
+     (defthm path-to-author+round-set-transitive-lemma
+       (implies (and (certificate-setp dag)
+                     (certificate-set-unequivocalp dag)
+                     (set::subset certs dag)
+                     (set::in cert1 dag)
+                     (set::in cert2 dag)
+                     (equal author (certificate->author cert1))
+                     (equal round (certificate->round cert1))
+                     (equal (path-to-author+round-set certs
+                                                      (certificate->author cert1)
+                                                      (certificate->round cert1)
+                                                      dag)
+                            cert1)
+                     (equal (path-to-author+round cert1
+                                                  (certificate->author cert2)
+                                                  (certificate->round cert2)
+                                                  dag)
+                            cert2))
+                (equal (path-to-author+round-set certs
+                                                 (certificate->author cert2)
+                                                 (certificate->round cert2)
+                                                 dag)
+                       cert2))
+       :flag path-to-author+round-set)
+     :hints
+     (("Goal"
+       :in-theory
+       (enable*
+        path-to-author+round
+        path-to-author+round-set
+        path-to-author+round-to-certificate-with-author+round
+        certificate-with-author+round-of-element-when-unequivocal
+        set::expensive-rules
+        nil-not-in-certificate-set
+        certificates-with-authors+round-subset
+        element-of-certificate-set-not-nil
+        round-leq-when-path-to-author+round))))))
