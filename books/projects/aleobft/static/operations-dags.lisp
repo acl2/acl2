@@ -241,10 +241,7 @@
       :fn path-to-author+round-set)
     :hints
     (("Goal"
-      :in-theory (enable* path-to-author+round
-                          path-to-author+round-set
-                          set::expensive-rules
-                          certificate->round-in-certificate-set->round-set
+      :in-theory (enable* certificate->round-in-certificate-set->round-set
                           certificate-set->round-set-monotone))
      '(:use ((:instance acl2::pos-set-max->=-element
                         (set (certificate-set->round-set certs))
