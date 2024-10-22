@@ -61,15 +61,18 @@
      and that there are no padding bits
      or trap representations.
      Therefore, the characteristics of the integer types
-     are defined by four numbers,
+     are mainly defined by four numbers,
      i.e. the numbers of bytes of (signed and unsigned)
      @('short'), @('int'), @('long'), and @('long long').
      These correspond to the "
     (xdoc::seetopic "c::integer-formats" "integer formats")
     " of our C formalization:
      see that topic for more information,
-     also on the allowed ranges and relative constraints."))
-  ((short-bytes posp
+     also on the allowed ranges and relative constraints.
+     We also need a flag saying whether the plain @('char') type
+     has the same range as @('signed char') or not [C:6.2.5/15];
+     if the flag is false, it has the same range as @('unsigned char')."))
+  ((short-bytes pos
                 :reqfix (if (and (<= short-bytes int-bytes)
                                  (<= int-bytes long-bytes)
                                  (<= long-bytes llong-bytes)
@@ -79,7 +82,7 @@
                                  (<= 8 llong-bytes))
                             short-bytes
                           2))
-   (int-bytes posp
+   (int-bytes pos
               :reqfix (if (and (<= short-bytes int-bytes)
                                (<= int-bytes long-bytes)
                                (<= long-bytes llong-bytes)
@@ -89,7 +92,7 @@
                                (<= 8 llong-bytes))
                           int-bytes
                         4))
-   (long-bytes posp
+   (long-bytes pos
                :reqfix (if (and (<= short-bytes int-bytes)
                                 (<= int-bytes long-bytes)
                                 (<= long-bytes llong-bytes)
@@ -99,7 +102,7 @@
                                 (<= 8 llong-bytes))
                            long-bytes
                          8))
-   (llong-bytes posp
+   (llong-bytes pos
                 :reqfix (if (and (<= short-bytes int-bytes)
                                  (<= int-bytes long-bytes)
                                  (<= long-bytes llong-bytes)
@@ -108,7 +111,8 @@
                                  (<= 8 long-bytes)
                                  (<= 8 llong-bytes))
                             llong-bytes
-                          8)))
+                          8))
+   (plain-char-signedp bool))
   :require (and (<= short-bytes int-bytes)
                 (<= int-bytes long-bytes)
                 (<= long-bytes llong-bytes)
@@ -165,6 +169,36 @@
   255
   ///
   (in-theory (disable (:e schar-max))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define char-min ((ienv ienvp))
+  :returns (val integerp)
+  :short "Minimum mathematical integer value of the type @('char')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is either @(tsee schar-min) or 0,
+     based on the flag in the implementation environment."))
+  (if (ienv->plain-char-signedp ienv)
+      (schar-min)
+    0)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define char-max ((ienv ienvp))
+  :returns (val integerp)
+  :short "Maximum mathematical integer value of the type @('char')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is either @(tsee schar-max) or @(tsee uchar-max),
+     based on the flag in the implementation environment."))
+  (if (ienv->plain-char-signedp ienv)
+      (schar-max)
+    (uchar-max))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
