@@ -482,8 +482,7 @@
   :use ((:instance path-to-author+round-in-dag)
         (:instance certificate-with-author+round-of-element-when-unequivocal
                    (certs dag)
-                   (cert (path-to-author+round cert author round dag))))
-  :disable path-to-author+round-in-dag)
+                   (cert (path-to-author+round cert author round dag)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
