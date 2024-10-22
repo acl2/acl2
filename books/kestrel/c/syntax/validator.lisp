@@ -355,6 +355,15 @@
       (type-floatingp type))
   :hooks (:fix))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-scalarp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is a scalar type [C:6.2.5/21]."
+  (or (type-arithmeticp type)
+      (type-case type :pointer))
+  :hooks (:fix))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-apconvert ((type typep))
@@ -1470,7 +1479,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define valid-unary ((expr exprp) (op unopp) (type-arg typep))
+(define valid-unary ((expr exprp) (op unopp) (type-arg typep) (ienv ienvp))
   :guard (expr-case expr :unary)
   :returns (mv erp (type typep))
   :short "Validate a unary expression,
@@ -1485,23 +1494,59 @@
    (xdoc::p
     "The @('*') unary operator requires an operand of a pointer type
      [C:6.5.3.2/2],
-     after array-to-pointer and function-to-pointer conversions.
+     after array-to-pointer and function-to-pointer conversions;
+     as always, we also need to allow the unknown type.
      Since we only have one type for pointers for now,
-     the resulting type is unknown."))
+     the resulting type is unknown.")
+   (xdoc::p
+    "The @('+') and @('-') unary operators
+     require an operand of an arithmetic type [C:6.5.3.3/1],
+     and the result has the promoted type [C:6.5.3.3/2].
+     There is no need for array-to-pointer and function-to-pointer conversions,
+     because they never result in arithmetic types.")
+   (xdoc::p
+    "The @('~') operator requires an operand of an integer type [C:6.5.3.3/1],
+     and the result has the promoted type [C:.6.5.3.3/4].
+     There is no need for array-to-pointer and function-to-pointer conversions,
+     because they never result in arithmetic types.")
+   (xdoc::p
+    "The @('!') operator requires an operand of a scalar type [C:6.5.3.3/1],
+     and result is always @('signed int') [C:6.5.3.3/5]."))
   (b* (((reterr) (irr-type)))
     (unop-case
      op
      :address (retok (type-pointer))
      :indir (b* ((type (type-fpconvert (type-apconvert type-arg)))
-                 ((unless (type-case type :pointer))
+                 ((unless (or (type-case type :pointer)
+                              (type-case type :unknown)))
                   (reterr (msg "In the unary expression ~x0, ~
                                 the sub-expression has type ~x1."
                                (expr-fix expr) (type-fix type-arg)))))
               (retok (type-unknown)))
-     :plus (reterr :todo)
-     :minus (reterr :todo)
-     :bitnot (reterr :todo)
-     :lognot (reterr :todo)
+     :plus (b* (((unless (or (type-arithmeticp type-arg)
+                             (type-case type-arg :unknown)))
+                 (reterr (msg "In the unary expression ~x0, ~
+                               the sub-expression has type ~x1."
+                              (expr-fix expr) (type-fix type-arg)))))
+             (retok (type-promote type-arg ienv)))
+     :minus (b* (((unless (or (type-arithmeticp type-arg)
+                              (type-case type-arg :unknown)))
+                  (reterr (msg "In the unary expression ~x0, ~
+                                the sub-expression has type ~x1."
+                               (expr-fix expr) (type-fix type-arg)))))
+              (retok (type-promote type-arg ienv)))
+     :bitnot (b* (((unless (or (type-integerp type-arg)
+                               (type-case type-arg :unknown)))
+                   (reterr (msg "In the unary expression ~x0, ~
+                                 the sub-expression has type ~x1."
+                                (expr-fix expr) (type-fix type-arg)))))
+               (retok (type-promote type-arg ienv)))
+     :lognot (b* (((unless (or (type-scalarp type-arg)
+                               (type-case type-arg :unknown)))
+                   (reterr (msg "In the unary expression ~x0, ~
+                                 the sub-expression has type ~x1."
+                                (expr-fix expr) (type-fix type-arg)))))
+               (retok (type-sint)))
      :preinc (reterr :todo)
      :predec (reterr :todo)
      :postinc (reterr :todo)
@@ -1644,7 +1689,7 @@
                       (valid-desiniter-list expr.elems type table ienv)))
                   (retok type table))
        :unary (b* (((erp type-arg table) (valid-expr expr.arg table ienv))
-                   ((erp type) (valid-unary expr expr.op type-arg)))
+                   ((erp type) (valid-unary expr expr.op type-arg ienv)))
                 (retok type table))
        :sizeof (reterr :todo)
        :alignof (reterr :todo)
