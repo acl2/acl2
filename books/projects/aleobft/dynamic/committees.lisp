@@ -858,6 +858,13 @@
     :hints (("Goal" :in-theory (enable nfix))))
   (in-theory (disable max-faulty-for-total-leq-total))
 
+  (defret max-faulty-for-total-lt-total-when-posp
+    (< max total)
+    :hyp (posp total)
+    :rule-classes ((:linear :trigger-terms ((max-faulty-for-total total))))
+    :hints (("Goal" :in-theory (enable posp))))
+  (in-theory (disable max-faulty-for-total-lt-total-when-posp))
+
   (assert-event (= (max-faulty-for-total 0) 0))
   (assert-event (= (max-faulty-for-total 1) 0))
   (assert-event (= (max-faulty-for-total 2) 0))
@@ -920,14 +927,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define committee-quorum ((commtt committeep))
-  :returns (quorum natp
-                   :rule-classes (:rewrite :type-prescription)
-                   :hints (("Goal"
-                            :in-theory
-                            (enable natp
-                                    nfix
-                                    committee-max-faulty
-                                    max-faulty-for-total-leq-total))))
+  :returns (quorum
+            posp
+            :rule-classes (:rewrite :type-prescription)
+            :hints (("Goal"
+                     :in-theory
+                     (enable posp
+                             committee-max-faulty
+                             max-faulty-for-total-lt-total-when-posp))))
   :short "Quorum of validators in a committee."
   :long
   (xdoc::topstring
