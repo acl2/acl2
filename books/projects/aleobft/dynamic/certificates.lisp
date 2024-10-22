@@ -130,7 +130,14 @@
     :use (:instance certificatep-when-in-certificate-setp-binds-free-x
                     (a nil)
                     (x certs))
-    :disable certificatep-when-in-certificate-setp-binds-free-x))
+    :disable certificatep-when-in-certificate-setp-binds-free-x)
+
+  (defruled element-of-certificate-set-not-nil
+    (implies (and (certificate-setp certs)
+                  (set::in cert certs))
+             (not (equal cert nil)))
+    :rule-classes ((:forward-chaining :trigger-terms ((set::in cert certs))))
+    :enable nil-not-in-certificate-set))
 
 ;;;;;;;;;;;;;;;;;;;;
 
