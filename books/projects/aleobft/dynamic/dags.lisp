@@ -584,6 +584,14 @@
     :enable (certificates-with-authors+round-to-round-of-authors
              emptyp-of-certificates-with-round-to-no-round
              certificate-set->round-set-of-certificates-with-round
+             posp))
+
+  (defruled round-in-predecessors-is-one-less
+    (implies (and (certificate-setp dag)
+                  (set::in cert1 (predecessors cert dag)))
+             (equal (certificate->round cert1)
+                    (1- (certificate->round cert))))
+    :enable (in-of-certificates-with-authors+round
              posp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
