@@ -1411,7 +1411,8 @@
   (declare (ignore types-arg))
   (b* (((reterr) (irr-type))
        (type (type-fpconvert type-fun))
-       ((unless (type-case type :pointer))
+       ((unless (or (type-case type :pointer)
+                    (type-case type :unknown)))
         (reterr (msg "In the function call expression ~x0, ~
                       the first sub-expression has type ~x1."
                      (expr-fix expr)
@@ -1440,7 +1441,8 @@
      We cannot look up the member type, so we return the unknown type."))
   (b* (((reterr) (irr-type))
        ((unless (or (type-case type-arg :struct)
-                    (type-case type-arg :union)))
+                    (type-case type-arg :union)
+                    (type-case type-arg :unknown)))
         (reterr (msg "In the member expression ~x0, ~
                       the sub-expression has type ~x1."
                      (expr-fix expr) (type-fix type-arg)))))
@@ -1470,7 +1472,8 @@
      we return the unknown type."))
   (b* (((reterr) (irr-type))
        (type (type-apconvert type-arg))
-       ((unless (type-case type :pointer))
+       ((unless (and (type-case type :pointer)
+                     (type-case type :unknown)))
         (reterr (msg "In the member pointer expression ~x0, ~
                       the sub-expression has type ~x1."
                      (expr-fix expr) (type-fix type-arg)))))
