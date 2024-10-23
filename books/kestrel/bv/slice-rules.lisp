@@ -25,7 +25,7 @@
                             (+ (bvchop size x) (bvchop size y))))
   :hints (("Goal" :in-theory (enable unsigned-byte-p EXPT-OF-+))))
 
-(defthm logtail-of-plus-helper
+(defthmd logtail-of-plus-helper
   (implies (and (integerp x)
                 (natp size)
                 (integerp y))
@@ -39,7 +39,7 @@
                                            )
                                   (mod-of-expt-of-2)))))
 
-(defthm logtail-of-plus
+(defthmd logtail-of-plus
   (implies (and (integerp x)
                 (natp size)
                 (integerp y))
@@ -49,9 +49,8 @@
                       (+ 1 (logtail size x) (logtail size y))
                     (+ (logtail size x) (logtail size y)))))
   :hints (("Goal" :use logtail-of-plus-helper
-           :in-theory (e/d (bvplus expt-of-+) ( logtail-of-plus-helper
-                                      ;
-                                      )))))
+           :in-theory (e/d (bvplus expt-of-+)
+                           (logtail-of-plus-helper)))))
 
 (defthmd slice-of-sum-cases
   (implies (and (natp low)
@@ -73,9 +72,9 @@
                       (bvchop (+ 1 high (- low))
                               (+ (slice high low x)
                                  (slice high low y)))))))
-  :hints (("Goal" :in-theory (e/d (slice bvchop-of-sum-cases bvplus logtail-of-bvchop expt-of-+)
-                                  ( ;
-                                   ;anti-slice
+  :hints (("Goal" :in-theory (e/d (slice bvchop-of-sum-cases bvplus logtail-of-bvchop expt-of-+
+                                         logtail-of-plus)
+                                  (;anti-slice
                                    bvchop-of-logtail
                                    ;;logtail-of-sum
                                    )))))

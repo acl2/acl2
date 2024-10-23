@@ -79,8 +79,9 @@
                 (integerp highval))
            (equal (slice high low (logapp lowsize lowval highval))
                   (slice (+ (- lowsize) high) (+ (- lowsize) low) highval)))
-  :hints (("Goal" :in-theory (e/d (slice logapp) (logtail-of-plus
-                                                  unsigned-byte-p-of-logapp-large-case))
+  :hints (("Goal" :in-theory (e/d (slice logapp logtail-of-plus-helper)
+                                  (;logtail-of-plus
+                                   unsigned-byte-p-of-logapp-large-case))
            :use (:instance unsigned-byte-p-of-logapp-large-case
                            (size1 low)
                            (size lowsize)
@@ -97,16 +98,15 @@
                       -1
                     (bvcat highsize (+ -1 highval) lowsize (+ -1 (expt 2 lowsize))))))
   :hints (("Goal" :in-theory (e/d (bvcat bvplus bvchop-of-sum-cases)
-                                  (
-                                   ;equal-of-+-when-negative-constant
+                                  (;equal-of-+-when-negative-constant
                                    )))))
 
-;drop?
-(defthmd +-of-minus1-and-bvcat-of-0
-  (implies (natp size)
-           (equal (+ -1 (BVCAT 1 1 size 0))
-                  (+ -1 (expt 2 size))))
-  :hints (("Goal" :in-theory (enable bvcat))))
+;; ;drop?
+;; (defthmd +-of-minus1-and-bvcat-of-0
+;;   (implies (natp size)
+;;            (equal (+ -1 (BVCAT 1 1 size 0))
+;;                   (+ -1 (expt 2 size))))
+;;   :hints (("Goal" :in-theory (enable bvcat))))
 
 (defthm bvshr-of-logand-becomes-bvshr-of-bvand
   (implies (and (natp amt)
@@ -134,12 +134,6 @@
            (equal (mod x 256)
                   (bvchop 8 x)))
   :hints (("Goal" :in-theory (enable bvchop ifix))))
-
-;move
-(defthmd bvchop-upper-bound-strong
-  (implies (natp n)
-           (<= (bvchop n x) (+ -1 (expt 2 n))))
-  :hints (("Goal" :in-theory (enable bvchop))))
 
 (defthm bvplus-of-*-of-256
   (implies (and (natp size)
