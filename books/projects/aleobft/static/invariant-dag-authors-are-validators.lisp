@@ -109,6 +109,7 @@
                          author)))
     :use (:instance set::in-head (x (certificates-with-author author certs)))
     :enable (thecert
+             in-of-certificates-with-author
              emptyp-of-certificates-with-author-if-no-author))
 
   (defrulel subset-lemma

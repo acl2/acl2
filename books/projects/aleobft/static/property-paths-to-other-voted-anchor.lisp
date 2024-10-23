@@ -251,7 +251,7 @@
                                         dag2)
                   anchor))
   :enable (anchorp
-           path-to-author+round-when-incoming)
+           path-from-incoming)
   :use (common-in-incoming-and-outgoing-and-dags
         (:instance path-to-author+round-of-unequivocal-dags
                    (author (certificate->author anchor))
@@ -330,7 +330,7 @@
         path-from-common-to-anchor
         anchor-also-in-dag2
         common-in-incoming-and-outgoing-and-dags)
-  :enable path-to-author+round-when-outgoing)
+  :enable path-to-outgoing)
 
 ; This is similar to the homonymous theorem in the single-DAG proof,
 ; but it involves the two DAGs.
@@ -418,7 +418,7 @@
                    dag)
                   (predecessor cert dag)))
   :enable (predecessor-in-outgoing
-           path-to-author+round-when-outgoing))
+           path-to-outgoing))
 
 ; This is similar to the homonymous theorem in the single-DAG proof,
 ; but with a slightly weaker assumption, namely that CERT is not NIL,
@@ -440,7 +440,7 @@
                 (dag-previous-in-dag-p dag)
                 (dag-previous-are-quorum-p dag quorum)
                 (not (zp quorum))
-                cert ; weaker thatn (set::in cert dag)
+                cert ; weaker than (set::in cert dag)
                 (posp round)
                 (dag-round-all-path-to-p round cert dag))
            (dag-round-all-path-to-p (1+ round) cert dag))

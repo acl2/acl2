@@ -8964,6 +8964,33 @@
     (unary-- . -)
     (unary-/ . /)))
 
+(defun convert-to-dfs-fn (form stobjs-out index bound-vars-rev out-exprs-rev)
+  (cond ((endp stobjs-out)
+         `(mv-let ,(reverse bound-vars-rev)
+            ,form
+            (mv ,@(reverse out-exprs-rev))))
+        ((eq (car stobjs-out) :df)
+         (let ((var (packn (list 'x index))))
+           (convert-to-dfs-fn form (cdr stobjs-out) (1+ index)
+                              (cons var bound-vars-rev)
+                              (cons `(to-df ,var) out-exprs-rev))))
+        (t
+         (let ((var (packn (list 'x index))))
+           (convert-to-dfs-fn form (cdr stobjs-out) (1+ index)
+                              (cons var bound-vars-rev)
+                              (cons var out-exprs-rev))))))
+
+(defun convert-to-dfs (form stobjs-out)
+
+; Stobjs-out is the expected stobjs-out from the given form.  We return a
+; modification of form that converts each value in a df position to a df.
+
+  (cond ((not (member-eq :df stobjs-out))
+         form)
+        ((null (cdr stobjs-out))
+         `(to-df ,form))
+        (t (convert-to-dfs-fn form stobjs-out 0 nil nil))))
+
 (mutual-recursion
 
 (defun logic-code-to-runnable-code (already-in-mv-listp term wrld)
@@ -9012,12 +9039,15 @@
 ; We use ec-call here in case stobjs are involved, following the use of ec-call
 ; farther below.
 
-         (let ((call
-                `(ec-call (do$ ,@(logic-code-to-runnable-code-lst (fargs term)
-                                                                  wrld)))))
-           (if (cdr (do$-stobjs-out (fargs term)))
-               `(values-list ,call)
-             call)))
+         (let* ((do$-stobjs-out (do$-stobjs-out (fargs term)))
+                (call `(ec-call (do$ ,@(logic-code-to-runnable-code-lst
+                                        (fargs term)
+                                        wrld)))))
+           (convert-to-dfs
+            (if (cdr (do$-stobjs-out (fargs term)))
+                `(values-list ,call)
+              call)
+            do$-stobjs-out)))
         ((eq (ffn-symb term) 'mv-list)
 
 ; Since term is a fully translated term, we know it is of the form (mv-list 'k

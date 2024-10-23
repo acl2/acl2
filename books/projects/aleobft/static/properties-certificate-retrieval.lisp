@@ -56,7 +56,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled certificate-with-author+round-of-element-when-unequivocal
-  :short "If a certificate is in an unequivocal sets,
+  :short "If a certificate is in an unequivocal set,
           retrieving a certificate with the certificate's author and round
           will return the certificate itself."
   :long
@@ -69,10 +69,10 @@
                 (certificate-set-unequivocalp certs)
                 (set::in cert certs))
            (equal (certificate-with-author+round (certificate->author cert)
-                                                     (certificate->round cert)
-                                                     certs)
+                                                 (certificate->round cert)
+                                                 certs)
                   cert))
-  :enable (certificate-with-author+round-element-when-not-nil
+  :enable (certificate-with-author+round-element
            certificate-with-author+round-when-element
            certificate->author-of-certificate-with-author+round
            certificate->round-of-certificate-with-author+round)
@@ -98,7 +98,8 @@
                 (certificate-set-unequivocalp certs))
            (certificate-set-unequivocalp
             (certificates-with-authors authors certs)))
-  :enable certificate-set-unequivocalp-when-subset)
+  :enable (certificate-set-unequivocalp-when-subset
+           certificates-with-authors-subset))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -115,7 +116,8 @@
                 (certificate-set-unequivocalp certs))
            (certificate-set-unequivocalp
             (certificates-with-round round certs)))
-  :enable certificate-set-unequivocalp-when-subset)
+  :enable (certificate-set-unequivocalp-when-subset
+           certificates-with-round-subset))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -145,7 +147,7 @@
                   (cert2
                    (certificate-with-author+round author round certs2)))
   :enable (certificate-with-author+round-when-subset
-           certificate-with-author+round-element-when-not-nil
+           certificate-with-author+round-element
            certificate->author-of-certificate-with-author+round
            certificate->round-of-certificate-with-author+round
            set::expensive-rules))
@@ -173,7 +175,7 @@
                 (certificate-with-author+round author round certs2))
            (equal (certificate-with-author+round author round certs1)
                   (certificate-with-author+round author round certs2)))
-  :enable (certificate-with-author+round-element-when-not-nil
+  :enable (certificate-with-author+round-element
            certificate->author-of-certificate-with-author+round
            certificate->round-of-certificate-with-author+round)
   :use (:instance
@@ -229,7 +231,8 @@
                   (certificates-with-authors+round authors round certs1)))
   :enable (set::expensive-rules
            set::double-containment-no-backchain-limit
-           certificate-with-author+round-when-author-in-certificates)
+           certificate-with-author+round-when-author-in-round
+           in-of-certificates-with-authors+round)
 
   :prep-lemmas
   ((defrule lemma
@@ -250,7 +253,7 @@
                              (certificate->round cert)
                              certs1)))
      :enable (set::expensive-rules
-              certificate-with-author+round-element-when-not-nil
+              certificate-with-author+round-element
               certificate-with-author+round-of-unequivocal-superset
               certificate->author-of-certificate-with-author+round
               certificate->round-of-certificate-with-author+round))))
@@ -285,7 +288,8 @@
            (equal (certificates-with-authors+round authors round certs1)
                   (certificates-with-authors+round authors round certs2)))
   :enable (set::expensive-rules
-           set::double-containment-no-backchain-limit)
+           set::double-containment-no-backchain-limit
+           in-of-certificates-with-authors+round)
 
   :prep-lemmas
 
@@ -313,7 +317,7 @@
                              (certificates-with-round
                               (certificate->round cert) certs2))))
               (set::in cert certs2))
-     :use ((:instance certificate-with-author+round-element-when-not-nil
+     :use ((:instance certificate-with-author+round-element
                       (certs certs2)
                       (author (certificate->author cert))
                       (round (certificate->round cert)))
@@ -324,7 +328,7 @@
                               (certificate->round cert)
                               certs2))))
      :enable (set::expensive-rules
-              certificate-with-author+round-when-author-in-certificates
+              certificate-with-author+round-when-author-in-round
               certificate->author-of-certificate-with-author+round
               certificate->round-of-certificate-with-author+round))
 
@@ -344,7 +348,7 @@
                              (certificates-with-round
                               (certificate->round cert) certs1))))
               (set::in cert certs1))
-     :use ((:instance certificate-with-author+round-element-when-not-nil
+     :use ((:instance certificate-with-author+round-element
                       (certs certs1)
                       (author (certificate->author cert))
                       (round (certificate->round cert)))
@@ -355,7 +359,7 @@
                               certs1))
                       (cert2 cert)))
      :enable (set::expensive-rules
-              certificate-with-author+round-when-author-in-certificates
+              certificate-with-author+round-when-author-in-round
               certificate->author-of-certificate-with-author+round
               certificate->round-of-certificate-with-author+round))))
 
@@ -384,4 +388,5 @@
                             (certificates-with-round round certs)))))
   :disable (cardinality-of-authors-when-same-round-and-unequiv)
   :enable (certificates-with-authors+round-to-authors-of-round
-           author-set-of-certificates-with-authors))
+           author-set-of-certificates-with-authors
+           certificates-with-authors-subset))

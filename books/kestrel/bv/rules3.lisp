@@ -1060,8 +1060,9 @@
   :hints (("Goal" :in-theory (e/d ( ;BVPLUS-BECOMES-RIPPLE-CARRY-ADDER  ;slow! why?
                                    slice
                                    bvplus
-                                   bvchop-of-sum-cases)
-                                  (BVCHOP-OF-SUM-CASES
+                                   bvchop-of-sum-cases
+                                   logtail-of-plus)
+                                  (bvchop-of-sum-cases
                                    anti-slice)))))
 
 (defthm bvplus-disjoint-ones-32-24-8-two-alt ;bbozo gen!

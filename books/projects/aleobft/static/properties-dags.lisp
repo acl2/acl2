@@ -64,7 +64,8 @@
              (certificate-previous-in-dag-p cert (set::intersect dag1 dag2)))
     :enable (certificate-previous-in-dag-p
              set::expensive-rules
-             posp)
+             posp
+             certificates-with-round-of-intersect)
     :prep-lemmas
     ((defrule lemma
        (implies (and (certificate-setp dag1)
@@ -82,10 +83,11 @@
                           (set::intersect
                            (certificates-with-round round dag1)
                            (certificates-with-round round dag2)))))
-       :enable (certificate-with-author+round-element-when-not-nil
-                certificate-with-author+round-when-author-in-certificates
+       :enable (certificate-with-author+round-element
+                certificate-with-author+round-when-author-in-round
                 certificate->author-of-certificate-with-author+round
-                certificate->round-of-certificate-with-author+round)
+                certificate->round-of-certificate-with-author+round
+                in-of-certificates-with-round)
        :disable certificate->author-in-certificate-set->author-set
        :use ((:instance certificate-sets-unequivocalp-necc
                         (cert1 (certificate-with-author+round
@@ -113,7 +115,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled get-previous-certificates-of-unequivocal-dag-superset
+(defruled previous-certificates-of-unequivocal-dag-superset
   :short "The predecessor cerfificates of a certificate
           in a backward-closed subset of a DAG of unequivocal certificates
           are the same in the superset."
@@ -140,7 +142,7 @@
     "This theorem says that, as the DAG of a validator grows,
      the predecessors of existing certificates do not change.")
    (xdoc::p
-    "See @(tsee get-previous-certificates-of-unequivocal-dags)
+    "See @(tsee previous-certificates-of-unequivocal-dags)
      for an analogous theorem involving two mutually unequivocal DAGs."))
   (implies (and (certificate-setp dag1)
                 (certificate-setp dag2)
@@ -170,7 +172,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled get-previous-certificates-of-unequivocal-dags
+(defruled previous-certificates-of-unequivocal-dags
   :short "The predecessor certificates of a common certificate
           of two backward-closed unequivocal and mutually unequivocal DAGs
           are the same in the two DAGs."
@@ -178,7 +180,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is analogous to
-     @(tsee get-previous-certificates-of-unequivocal-dag-superset),
+     @(tsee previous-certificates-of-unequivocal-dag-superset),
      but for two DAGs of different validators
      instead of a growing DAG of a single validator.")
    (xdoc::p
@@ -186,7 +188,7 @@
      @(tsee certificates-with-authors+round-of-unequivocal-sets)
      as the main application of that theorem.
      However, we actually prove this without using that theorem:
-     we use @(tsee get-previous-certificates-of-unequivocal-dag-superset) twice,
+     we use @(tsee previous-certificates-of-unequivocal-dag-superset) twice,
      where the subset is the intersection of the two DAGs both times,
      while the superset is either one or the other DAG.
      This uses the fact that backward closure
@@ -217,10 +219,10 @@
                    (certificate->previous cert)
                    (1- (certificate->round cert))
                    dag2)))
-  :use ((:instance get-previous-certificates-of-unequivocal-dag-superset
+  :use ((:instance previous-certificates-of-unequivocal-dag-superset
                    (dag1 (set::intersect dag1 dag2))
                    (dag2 dag1))
-        (:instance get-previous-certificates-of-unequivocal-dag-superset
+        (:instance previous-certificates-of-unequivocal-dag-superset
                    (dag1 (set::intersect dag1 dag2))
                    (dag2 dag2))))
 
@@ -233,10 +235,10 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "As proved in @(tsee get-previous-certificates-of-unequivocal-dag-superset),
+    "As proved in @(tsee previous-certificates-of-unequivocal-dag-superset),
      the predecessors are the same in the superset,
      because of the backward closure.
-     The same argument can be applied to the predecessors or the predecessors,
+     The same argument can be applied to the predecessors of the predecessors,
      and that covers all paths.")
    (xdoc::p
     "That is the case not just for paths that reach certificates,
@@ -282,11 +284,12 @@
      :hints (("Goal"
               :in-theory (enable* path-to-author+round
                                   path-to-author+round-set
-                                  set::expensive-rules))
+                                  set::expensive-rules
+                                  certificates-with-authors+round-subset))
              (cond
               ((acl2::occur-lst '(acl2::flag-is 'path-to-author+round) clause)
                '(:use (:instance
-                       get-previous-certificates-of-unequivocal-dag-superset
+                       previous-certificates-of-unequivocal-dag-superset
                        (dag1 dag)
                        (dag2 dag2))))))))
 
@@ -314,7 +317,7 @@
      but for two DAGs of different validators
      instead of a growing DAG of a single validator.")
    (xdoc::p
-    "Similarly to @(tsee get-previous-certificates-of-unequivocal-dags),
+    "Similarly to @(tsee previous-certificates-of-unequivocal-dags),
      we prove this from @(tsee path-to-author+round-of-unequivocal-dag-superset)
      using the closure of backward closure under intersection."))
   (implies (and (certificate-setp dag1)
@@ -392,20 +395,20 @@
                 (equal (certificate-set-causal-history certs dag2)
                        (certificate-set-causal-history certs dag)))
        :flag certificate-set-causal-history)
-     :hints (("Goal" :in-theory (enable* certificate-causal-history
-                                         certificate-set-causal-history
-                                         set::expensive-rules))
-             (cond
-              ((acl2::occur-lst '(acl2::flag-is 'certificate-causal-history)
-                                clause)
-               '(:expand ((certificate-causal-history cert dag2)))))
-             (cond
-              ((acl2::occur-lst '(acl2::flag-is 'certificate-causal-history)
-                                clause)
-               '(:use (:instance
-                       get-previous-certificates-of-unequivocal-dag-superset
-                       (dag1 dag)
-                       (dag2 dag2))))))))
+     :hints
+     (("Goal" :in-theory (enable* certificate-causal-history
+                                  certificate-set-causal-history
+                                  set::expensive-rules
+                                  certificates-with-authors+round-subset))
+      (cond
+       ((acl2::occur-lst '(acl2::flag-is 'certificate-causal-history) clause)
+        '(:expand ((certificate-causal-history cert dag2)))))
+      (cond
+       ((acl2::occur-lst '(acl2::flag-is 'certificate-causal-history) clause)
+        '(:use (:instance
+                previous-certificates-of-unequivocal-dag-superset
+                (dag1 dag)
+                (dag2 dag2))))))))
 
   (defruled certificate-causal-history-of-unequivocal-dag-superset
     (implies (and (certificate-setp dag)
@@ -476,11 +479,10 @@
                 (path-to-author+round cert author round dag))
            (equal (path-to-author+round cert author round dag)
                   (certificate-with-author+round author round dag)))
-  :use ((:instance path-to-author+round-in-dag)
-        (:instance certificate-with-author+round-of-element-when-unequivocal
-                   (certs dag)
-                   (cert (path-to-author+round cert author round dag))))
-  :disable path-to-author+round-in-dag)
+  :enable path-to-author+round-in-dag
+  :use (:instance certificate-with-author+round-of-element-when-unequivocal
+                  (certs dag)
+                  (cert (path-to-author+round cert author round dag))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -583,7 +585,8 @@
         path-to-author+round-to-certificate-with-author+round
         certificate-with-author+round-of-element-when-unequivocal
         set::expensive-rules
-        nil-not-in-certificate-set))
+        nil-not-in-certificate-set
+        certificates-with-authors+round-subset))
       '(:use ((:instance element-of-certificate-set-not-nil
                          (certs dag)
                          (cert (path-to-author+round cert1
@@ -670,10 +673,10 @@
     "This should be very intuitive,
      since paths arise precisely from the edges of the DAG.")
    (xdoc::p
-    "Here @('cert') is a certificate
-     and @('cert1') is one of its predecessors,
+    "Here @('cert1') is a certificate
+     and @('cert') is one of its predecessors,
      as characterized by being in the immediately preceding round
-     and by being authors by one of the authors referenced in @('cert1').")
+     and by being authored by one of the authors referenced in @('cert1').")
    (xdoc::p
     "We use @(tsee path-to-author+round-set-to-path-to-author+round)
      to prove this theorem,
@@ -703,11 +706,13 @@
                   (round (certificate->round cert)))
   :enable (path-to-author+round
            path-to-author+round-of-self
-           nil-not-in-certificate-set))
+           nil-not-in-certificate-set
+           certificates-with-authors+round-subset
+           in-of-certificates-with-authors+round))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled path-to-author+round-when-incoming
+(defruled path-from-incoming
   :short "There is a path to a certificate
           from each of its incoming certificates."
   :long
@@ -729,7 +734,8 @@
                                         dag)
                   cert))
   :enable (incoming
-           path-to-previous)
+           path-to-previous
+           in-of-certificates-with-round)
   :use (:instance incoming-loop-previous-and-member
                   (cert cert1)
                   (certs (certificates-with-round
@@ -739,14 +745,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled path-to-author+round-when-outgoing
+(defruled path-to-outgoing
   :short "There is a path from a certificate
           to each of its outgoing certificates."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is also intuitively obvious,
-     since @(tsee incoming) is based on the DAG edges,
+     since @(tsee outgoing) is based on the DAG edges,
      which define the paths.")
    (xdoc::p
     "We use the @(tsee path-to-previous) theorem to prove this,
@@ -761,7 +767,8 @@
                                         dag)
                   cert))
   :enable (outgoing
-           path-to-previous))
+           path-to-previous
+           in-of-certificates-with-authors+round))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -878,9 +885,10 @@
                certificate-with-author+round-of-element-when-unequivocal
                round-set-of-certificates-with-authors+round
                pos-fix
-               nil-not-in-certificate-set))
+               nil-not-in-certificate-set
+               certificates-with-authors+round-subset))
      (cond
-      ((acl2::occur-lst '(ACL2::FLAG-IS 'CERTIFICATE-CAUSAL-HISTORY) clause)
+      ((acl2::occur-lst '(acl2::flag-is 'certificate-causal-history) clause)
        '(:use (:instance round-leq-when-path-to-author+round-set
                          (certs (certificates-with-authors+round
                                  (certificate->previous cert)

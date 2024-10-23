@@ -13,6 +13,8 @@
 
 (include-book "blocks")
 
+(include-book "std/util/define-sk" :dir :system)
+
 (local (include-book "arithmetic-3/top" :dir :system))
 (local (include-book "std/lists/append" :dir :system))
 
@@ -647,6 +649,36 @@
     :enable (bonded-committee-at-earlier-round-when-at-later-round
              posp))
 
+  (defruled active-committee-at-previous-round-when-at-round
+    (implies (and (active-committee-at-round round blocks all-vals)
+                  (> (pos-fix round) 1))
+             (active-committee-at-round (1- round) blocks all-vals))
+    :disable active-committee-at-round
+    :use (:instance active-committee-at-earlier-round-when-at-later-round
+                    (later round)
+                    (earlier (1- round)))
+    :enable pos-fix)
+
+  (defruled active-committee-at-previous2-round-when-at-round
+    (implies (and (active-committee-at-round round blocks all-vals)
+                  (> (pos-fix round) 2))
+             (active-committee-at-round (- round 2) blocks all-vals))
+    :disable active-committee-at-round
+    :use (:instance active-committee-at-earlier-round-when-at-later-round
+                    (later round)
+                    (earlier (- round 2)))
+    :enable pos-fix)
+
+  (defruled active-committee-at-previous3-round-when-at-round
+    (implies (and (active-committee-at-round round blocks all-vals)
+                  (> (pos-fix round) 3))
+             (active-committee-at-round (- round 3) blocks all-vals))
+    :disable active-committee-at-round
+    :use (:instance active-committee-at-earlier-round-when-at-later-round
+                    (later round)
+                    (earlier (- round 3)))
+    :enable pos-fix)
+
   (defruled active-committee-at-round-when-no-blocks
     (implies (endp blocks)
              (b* ((commtt (active-committee-at-round round blocks all-vals)))
@@ -826,6 +858,13 @@
     :hints (("Goal" :in-theory (enable nfix))))
   (in-theory (disable max-faulty-for-total-leq-total))
 
+  (defret max-faulty-for-total-lt-total-when-posp
+    (< max total)
+    :hyp (posp total)
+    :rule-classes ((:linear :trigger-terms ((max-faulty-for-total total))))
+    :hints (("Goal" :in-theory (enable posp))))
+  (in-theory (disable max-faulty-for-total-lt-total-when-posp))
+
   (assert-event (= (max-faulty-for-total 0) 0))
   (assert-event (= (max-faulty-for-total 1) 0))
   (assert-event (= (max-faulty-for-total 2) 0))
@@ -888,14 +927,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define committee-quorum ((commtt committeep))
-  :returns (quorum natp
-                   :rule-classes (:rewrite :type-prescription)
-                   :hints (("Goal"
-                            :in-theory
-                            (enable natp
-                                    nfix
-                                    committee-max-faulty
-                                    max-faulty-for-total-leq-total))))
+  :returns (quorum
+            posp
+            :rule-classes (:rewrite :type-prescription)
+            :hints (("Goal"
+                     :in-theory
+                     (enable posp
+                             committee-max-faulty
+                             max-faulty-for-total-lt-total-when-posp))))
   :short "Quorum of validators in a committee."
   :long
   (xdoc::topstring
@@ -921,3 +960,61 @@
   (- (committee-total commtt)
      (committee-max-faulty commtt))
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define-sk same-bonded-committees-p ((blocks1 block-listp)
+                                     (blocks2 block-listp)
+                                     (all-vals address-setp))
+  :returns (yes/no booleanp)
+  :short "Check if two blockchains calculate consistent bonded committees."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The two blockchains may differ, in particular in length,
+     but the predicate checks that,
+     when they both calculate a bonded committeed at a round,
+     they calculate the same committee.
+     It allows only one blockchain to calculate
+     the bonded committee for a round,
+     with the other blockchain being too short for that."))
+  (forall (round)
+          (implies (posp round)
+                   (b* ((commtt1 (bonded-committee-at-round round
+                                                            blocks1
+                                                            all-vals))
+                        (commtt2 (bonded-committee-at-round round
+                                                            blocks2
+                                                            all-vals)))
+                     (implies (and commtt1
+                                   commtt2)
+                              (equal commtt1 commtt2))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define-sk same-active-committees-p ((blocks1 block-listp)
+                                     (blocks2 block-listp)
+                                     (all-vals address-setp))
+  :returns (yes/no booleanp)
+  :short "Check if two blockchains calculate consistent active committees."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The two blockchains may differ, in particular in length,
+     but the predicate checks that,
+     when they both calculate a active committeed at a round,
+     they calculate the same committee.
+     It allows only one blockchain to calculate
+     the active committee for a round,
+     with the other blockchain being too short for that."))
+  (forall (round)
+          (implies (posp round)
+                   (b* ((commtt1 (active-committee-at-round round
+                                                            blocks1
+                                                            all-vals))
+                        (commtt2 (active-committee-at-round round
+                                                            blocks2
+                                                            all-vals)))
+                     (implies (and commtt1
+                                   commtt2)
+                              (equal commtt1 commtt2))))))

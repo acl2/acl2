@@ -2014,7 +2014,7 @@
 
   (fty::deflist desiniter-list
     :parents (abstract-syntax exprs/decls/stmts)
-    :short "Fixtype of lists of initializers with designations."
+    :short "Fixtype of lists of initializers with optional designations."
     :long
     (xdoc::topstring
      (xdoc::p

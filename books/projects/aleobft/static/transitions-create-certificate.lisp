@@ -277,7 +277,8 @@
                     (validator-state->round
                      (get-validator-state val systate))))
     :enable (create-certificate-next-val
-             get-validator-state-of-update-validator-state))
+             get-validator-state-of-update-validator-state
+             validator-state->round-of-add-endorsed))
 
   (defrule validator-state->dag-of-create-certificate-next
     (implies (and (certificatep cert)
@@ -292,7 +293,8 @@
                                       (get-validator-state val systate)))
                       (validator-state->dag
                        (get-validator-state val systate)))))
-    :enable create-certificate-next-val)
+    :enable (create-certificate-next-val
+             validator-state->dag-of-add-endorsed))
 
   (defrule validator-state->dag-subset-create-certificate-next
     (implies (and (set::in val (correct-addresses systate))
@@ -327,7 +329,8 @@
                     (validator-state->buffer
                      (get-validator-state val systate))))
     :enable (create-certificate-next-val
-             get-validator-state-of-update-validator-state))
+             get-validator-state-of-update-validator-state
+             validator-state->buffer-of-add-endorsed))
 
   (defrule validator-state->last-of-create-certificate-next
     (implies (set::in val (correct-addresses systate))
@@ -339,7 +342,8 @@
                      (get-validator-state val systate))))
     :enable (create-certificate-next-val
              get-validator-state-of-update-validator-state
-             nfix))
+             nfix
+             validator-state->last-of-add-endorsed))
 
   (defrule validator-state->blockchain-of-create-certificate-next
     (implies (set::in val (correct-addresses systate))
@@ -350,7 +354,8 @@
                     (validator-state->blockchain
                      (get-validator-state val systate))))
     :enable (create-certificate-next-val
-             get-validator-state-of-update-validator-state))
+             get-validator-state-of-update-validator-state
+             validator-state->blockchain-of-add-endorsed))
 
   (defrule validator-state->committed-of-create-certificate-next
     (implies (set::in val (correct-addresses systate))
@@ -361,7 +366,8 @@
                     (validator-state->committed
                      (get-validator-state val systate))))
     :enable (create-certificate-next-val
-             get-validator-state-of-update-validator-state))
+             get-validator-state-of-update-validator-state
+             validator-state->committed-of-add-endorsed))
 
   (defrule get-network-state-of-create-certificate-next
     (implies (set::subset (certificate->endorsers cert)

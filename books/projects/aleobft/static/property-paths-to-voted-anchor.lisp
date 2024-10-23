@@ -57,7 +57,7 @@
      Note that the above holds for every @($C$) two rounds after @($A$).
      Any certificate @($D$) in the round after @($C$)
      must have predecessors in the previous round,
-     which, as shownn, all have paths to @($A$),
+     which, as argued, all have paths to @($A$),
      and therefore every @($D$) has a path to @($A$) as well.
      Thus, every certificate at least two rounds after @($A$)
      has a path to @($A$).")
@@ -103,8 +103,7 @@
   ///
 
   ;; If the DAG has at least one certificate at least two rounds after CERT,
-  ;; and if CERT is not NIL, then CERT must be in the DAG,
-  ;; because there is at least a path to it.
+  ;; then CERT must be in the DAG, because there is at least a path to it.
 
   (defruled dag-all-path-to-p-in-dag
     (implies (and (certificate-setp dag)
@@ -403,8 +402,8 @@
                    (cert1 (common anchor witness dag))
                    (cert2 anchor))
         common-in-incoming-and-outgoing-and-dag)
-  :enable (path-to-author+round-when-outgoing
-           path-to-author+round-when-incoming
+  :enable (path-to-outgoing
+           path-from-incoming
            anchorp))
 
 ; The previous theorem essentially proves the base case of our induction.
@@ -497,7 +496,7 @@
                    dag)
                   (predecessor cert dag)))
   :enable (predecessor-in-outgoing
-           path-to-author+round-when-outgoing))
+           path-to-outgoing))
 
 ; Now we prove the essence of the induction step.
 ; If DAG-ROUND-ALL-PATH-TO-P holds on a round r,
@@ -563,7 +562,7 @@
   :disable (cardinality-of-authors-when-same-round-and-unequiv
             certificate-set->author-set-monotone))
 
-; The following is the actual base case,
+; The following is the actual step case,
 ; where instead of a generic round r and r+1
 ; we use a+2+d and a+2+d+1,
 ; where a is the round of the anchor and d is a generic 'delta' from a+2.

@@ -71,7 +71,16 @@
 
 (defthm bvchop-upper-bound
   (< (bvchop n x) (expt 2 n))
-  :rule-classes (:rewrite :linear)
+  :hints (("Goal" :in-theory (enable bvchop))))
+
+(defthmd bvchop-upper-bound-strong
+  (implies (natp n)
+           (<= (bvchop n x) (+ -1 (expt 2 n))))
+  :hints (("Goal" :in-theory (enable bvchop))))
+
+(defthm bvchop-upper-bound-linear
+  (< (bvchop n x) (expt 2 n))
+  :rule-classes :linear
   :hints (("Goal" :in-theory (enable bvchop))))
 
 (defthm bvchop-upper-bound-linear-strong

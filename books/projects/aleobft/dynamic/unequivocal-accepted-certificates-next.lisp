@@ -222,7 +222,8 @@
              in-owned-certificates-when-in-accepted-certificates
              in-signed-certificates-when-in-owned-and-signer
              certificate->author-of-certificate-with-author+round
-             certificate->round-of-certificate-with-author+round)
+             certificate->round-of-certificate-with-author+round
+             same-committees-p-necc)
     :use ((:instance accepted-certificate-committee-p-necc
                      (cert (certificate-with-author+round
                             (certificate->author cert)
@@ -246,9 +247,13 @@
                             (certificate->author cert)
                             (certificate->round cert)
                             (accepted-certificates val systate))))
-          (:instance same-committees-p-necc
-                     (val1 val)
-                     (val2 (certificate->author cert))
+          (:instance same-active-committees-p-necc
+                     (blocks1 (validator-state->blockchain
+                               (get-validator-state val systate)))
+                     (blocks2 (validator-state->blockchain
+                               (get-validator-state (certificate->author cert)
+                                                    systate)))
+                     (all-vals (all-addresses systate))
                      (round (certificate->round cert)))
           (:instance no-signer-record-when-create-certificate-possiblep
                      (signer
@@ -333,7 +338,8 @@
              in-signed-certificates-when-in-owned-and-signer
              message-certificate-in-owned-certificates
              certificate->author-of-certificate-with-author+round
-             certificate->round-of-certificate-with-author+round)
+             certificate->round-of-certificate-with-author+round
+             same-committees-p-necc)
     :use ((:instance accepted-certificate-committee-p-necc
                      (cert (certificate-with-author+round
                             (certificate->author (message->certificate msg))
@@ -358,9 +364,13 @@
                             (certificate->author (message->certificate msg))
                             (certificate->round (message->certificate msg))
                             (accepted-certificates val systate))))
-          (:instance same-committees-p-necc
-                     (val1 val)
-                     (val2 (message->destination msg))
+          (:instance same-active-committees-p-necc
+                     (blocks1 (validator-state->blockchain
+                               (get-validator-state val systate)))
+                     (blocks2 (validator-state->blockchain
+                               (get-validator-state (message->destination msg)
+                                                    systate)))
+                     (all-vals (all-addresses systate))
                      (round (certificate->round (message->certificate msg))))
           (:instance certificate-set-unequivocalp-necc
                      (cert1 (message->certificate msg))

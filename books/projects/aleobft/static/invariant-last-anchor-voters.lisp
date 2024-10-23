@@ -135,7 +135,8 @@
               (get-validator-state val (create-certificate-next cert systate))
               (max-faulty systate)
               (all-addresses systate)))
-    :enable validator-last-anchor-voters-p)
+    :enable (validator-last-anchor-voters-p
+             certificates-with-round-of-insert))
 
   (defrule system-last-anchor-voters-p-of-create-certificate-next
     (implies (and (system-last-anchor-voters-p systate)
@@ -202,7 +203,8 @@
                                    (store-certificate-next cert val1 systate))
               (max-faulty systate)
               (all-addresses systate)))
-    :enable validator-last-anchor-voters-p)
+    :enable (validator-last-anchor-voters-p
+             certificates-with-round-of-insert))
 
   (defrule system-last-anchor-voters-p-of-store-certificate-next
     (implies (and (system-last-anchor-voters-p systate)

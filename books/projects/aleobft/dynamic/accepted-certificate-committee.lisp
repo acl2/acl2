@@ -54,6 +54,16 @@
           for every certificate accepted by a validator,
           the validator can calculate the active committee
           at the round of the certificate."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We show that this invariant implies @(tsee dag-committees-p),
+     i.e. that every certificate in the DAG of every correct validator
+     has a calculable active committee at the certificate's round.
+     While we need to formulate and prove this invariant
+     on all accepted certificates
+     to have a sufficiently strong induction hypothesis,
+     we are mainly interested in the certificates in the DAG."))
   (forall (val cert)
           (implies (and (set::in val (correct-addresses systate))
                         (set::in cert (accepted-certificates val systate)))
@@ -76,7 +86,20 @@
                                         blockchain
                                         (all-addresses systate)))
     :use (:instance accepted-certificate-committee-p-necc
-                    (val (address-fix val)))))
+                    (val (address-fix val))))
+
+  (defruled dag-committees-p-when-accepted-certificate-committee-p
+    (implies (and (accepted-certificate-committee-p systate)
+                  (set::in val (correct-addresses systate)))
+             (dag-committees-p (validator-state->dag
+                                (get-validator-state val systate))
+                               (validator-state->blockchain
+                                (get-validator-state val systate))
+                               (all-addresses systate)))
+    :enable (dag-committees-p
+             accepted-certificate-committee-p-necc
+             accepted-certificates)
+    :disable accepted-certificate-committee-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
