@@ -34,10 +34,12 @@
 (include-book "anchors-of-validators-def-and-init")
 (include-book "last-anchor-present")
 (include-book "successor-predecessor-intersection")
+(include-book "dag-omni-paths")
 (include-book "rounds-in-committees")
 (include-book "dag-certificate-next")
 (include-book "anchors-of-validators-next")
 (include-book "last-anchor-voters")
+(include-book "omni-paths")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -75,9 +77,11 @@
                     anchors-of-validators-def-and-init
                     last-anchor-present
                     successor-predecessor-intersection
+                    dag-omni-paths
                     rounds-in-committees
                     dag-certificate-next
                     anchors-of-validators-next
-                    last-anchor-voters))
+                    last-anchor-voters
+                    omni-paths))
 
 ; TODO: continue

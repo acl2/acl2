@@ -70,6 +70,10 @@
 
   ///
 
+  (defruled last-not-0-when-last-anchor
+    (implies (last-anchor vstate all-vals)
+             (not (equal (validator-state->last vstate) 0))))
+
   (defruled certificate->author-of-last-anchor
     (implies (last-anchor vstate all-vals)
              (equal (certificate->author (last-anchor vstate all-vals))

@@ -353,6 +353,38 @@
   :short "Check if a type is an arithmetic type [C:6.2.5/18]."
   (or (type-integerp type)
       (type-floatingp type))
+  :hooks (:fix)
+
+  ///
+
+  (defrule type-arithmeticp-when-type-integerp
+    (implies (type-integerp type)
+             (type-arithmeticp type))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-scalarp ((type typep))
+  :returns (yes/no booleanp)
+  :short "Check if a type is a scalar type [C:6.2.5/21]."
+  (or (type-arithmeticp type)
+      (type-case type :pointer))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-promotedp ((type typep))
+  :guard (or (type-arithmeticp type)
+             (type-case type :unknown))
+  :returns (yes/no booleanp)
+  :short "Check if an arithmetic type is a promoted one."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "That is, check if it is a possible result of @(tsee type-promote).
+     This holds for all types except
+     the integer ones with rank below @('int')."))
+  (not (member-eq (type-kind type)
+                  '(:bool :char :schar :uchar :sshort :ushort :enum)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -389,6 +421,278 @@
   (if (type-case type :function)
       (type-pointer)
     (type-fix type))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-promote ((type typep) (ienv ienvp))
+  :guard (or (type-arithmeticp type)
+             (type-case type :unknown))
+  :returns (new-type typep)
+  :short "Perform integer promotions on an arithmetic type [C:6.3.1.1/2]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This only changes integer types of rank lower than @('int');
+     the other types are left unchanged.
+     We need the implementation environment
+     because the new type may depend on
+     the relative range of the initial type and @('signed int').
+     The range of @('_Bool') always fits within @('signed int'),
+     and so do @('signed char') and @('signed short').
+     For @('unsigned char') and @('unsigned short'),
+     as well as for @('char')
+     (which may have the same range as @('unsigned char')),
+     we need to compare the maxima,
+     and return either @('signed int') or @('unsigned int')
+     as the promoted type.")
+   (xdoc::p
+    "The rank of an enumerated type (which is an integer type)
+     is implementation-defined,
+     and could even vary based on the program,
+     as mentioned in footnote 131 of [C:6.7.2.2/4].
+     Thus, for now we promote the (one) enumerated type to unknown."))
+  (type-case
+   type
+   :bool (type-sint)
+   :char (if (<= (char-max ienv) (sint-max ienv))
+             (type-sint)
+           (type-uint))
+   :schar (type-sint)
+   :uchar (if (<= (uchar-max) (sint-max ienv))
+              (type-sint)
+            (type-uint))
+   :sshort (type-sint)
+   :ushort (if (<= (ushort-max ienv) (sint-max ienv))
+               (type-sint)
+             (type-uint))
+   :enum (type-unknown)
+   :otherwise (type-fix type))
+  :hooks (:fix)
+
+  ///
+
+  (more-returns
+   (new-type type-promotedp
+             :hints (("Goal" :in-theory (enable type-promotedp))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-uaconvert-signed ((type1 typep) (type2 typep))
+  :guard (and (type-signed-integerp type1)
+              (type-signed-integerp type2)
+              (type-promotedp type1)
+              (type-promotedp type2))
+  :returns (new-type typep)
+  :short "Convert two promoted signed integer types to their common type,
+          according to the usual arithmetic conversions [C:6.3.1.8]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "When the two promoted operands have (different) signed integer types,
+     the common type is the one with highest rank."))
+  (cond
+   ((or (type-case type1 :sllong)
+        (type-case type2 :sllong))
+    (type-sllong))
+   ((or (type-case type1 :slong)
+        (type-case type2 :slong))
+    (type-slong))
+   (t (type-sint)))
+  :guard-hints (("Goal" :in-theory (enable type-arithmeticp
+                                           type-integerp)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define type-uaconvert-unsigned ((type1 typep) (type2 typep))
+  :guard (and (type-unsigned-integerp type1)
+              (type-unsigned-integerp type2)
+              (type-promotedp type1)
+              (type-promotedp type2))
+  :returns (new-type typep)
+  :short "Convert two promoted unsigned integer types to their common type,
+          according to the usual arithmetic conversions [C:6.3.1.8]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "When the two promoted operands have (different) unsigned integer types,
+     the common type is the one with highest rank."))
+  (cond
+   ((or (type-case type1 :ullong)
+        (type-case type2 :ullong))
+    (type-ullong))
+   ((or (type-case type1 :ulong)
+        (type-case type2 :ulong))
+    (type-ulong))
+   (t (type-uint)))
+  :guard-hints (("Goal" :in-theory (enable type-arithmeticp
+                                           type-integerp)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define type-uaconvert-signed-unsigned ((type1 typep)
+                                        (type2 typep)
+                                        (ienv ienvp))
+  :guard (and (type-signed-integerp type1)
+              (type-unsigned-integerp type2)
+              (type-promotedp type1)
+              (type-promotedp type2))
+  :returns (new-type typep)
+  :short "Convert a promoted signed integer type
+          and a promoted unsigned integer type
+          to their common type,
+          according to the usual arithmetic conversions [C:6.3.1.8]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the unsigned type is @('unsigned long long int'),
+     its rank is always greater than or equal to
+     the rank of the signed integer type,
+     and thus the result is @('unsigned long long int').")
+   (xdoc::p
+    "If the unsigned type is @('unsigned long int'), there are two cases.
+     If the signed type is @('signed long long int'),
+     its rank is higher than the unsigned type, and we have two sub-cases:
+     if the signed type can represent the whole range of the unsigned type,
+     the result is the signed type;
+     otherwise, the result is the unsigned type
+     corresponding to the signed type, i.e. @('unsigned long long int').
+     If instead the signed type is not @('signed long long int'),
+     then its rank is less than or equal to @('unsigned long int'),
+     which is therefore the result.")
+   (xdoc::p
+    "If the unsigned type is @('unsigned int'),
+     there are three cases to consider instead of two as just above,
+     but the overall logic is similar to just above.")
+   (xdoc::p
+    "The unsigned type cannot be anything else,
+     so we have covered all the cases."))
+  (cond
+   ((type-case type2 :ullong)
+    (type-ullong))
+   ((type-case type2 :ulong)
+    (cond ((type-case type1 :sllong)
+           (if (<= (ulong-max ienv) (sllong-max ienv))
+               (type-sllong)
+             (type-ullong)))
+          (t (type-ulong))))
+   ((type-case type2 :uint)
+    (cond ((type-case type1 :sllong)
+           (if (<= (uint-max ienv) (sllong-max ienv))
+               (type-sllong)
+             (type-ullong)))
+          ((type-case type1 :slong)
+           (if (<= (uint-max ienv) (slong-max ienv))
+               (type-slong)
+             (type-ulong)))
+          (t (type-uint))))
+   (t (prog2$ (impossible) (irr-type))))
+  :guard-hints (("Goal" :in-theory (enable type-arithmeticp
+                                           type-integerp
+                                           type-promotedp
+                                           type-unsigned-integerp
+                                           type-signed-integerp
+                                           type-standard-unsigned-integerp
+                                           type-standard-signed-integerp)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define type-uaconvert ((type1 typep) (type2 typep) (ienv ienvp))
+  :guard (and (or (type-arithmeticp type1)
+                  (type-case type1 :unknown))
+              (or (type-arithmeticp type2)
+                  (type-case type2 :unknown)))
+  :returns (new-type typep)
+  :short "Perform the usual arithmetic conversions on two arithmetic types
+          [C:6.3.1.8]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This returns the common type to which the operands are converted,
+     which is normally also the type of
+     the result of the arithmetic operation.")
+   (xdoc::p
+    "If either type is unkwnon, the result is the unkwnon type too.
+     This case will eventually go away,
+     once we have a full type system in our validator.")
+   (xdoc::p
+    "If at least one type is @('long double _Complex'),
+     the result is @('long double _Complex');
+     note that [C:6.3.1.8] talks about a corresponding real type,
+     but adds that the result is complex if at least one operand is.
+     Otherwise, if at least one type is @('double _Complex'),
+     the result is @('double _Complex'),
+     according to analogous reasoning.
+     Otherwise, the same is the case for @('float _Complex').")
+   (xdoc::p
+    "Otherwise, none of the types is complex,
+     and we have three analogous cases for
+     @('long double'), @('double'), and @('float').")
+   (xdoc::p
+    "Otherwise, none of the types is floating,
+     and we apply the integer promotions to both types.
+     Then we apply the remaining rules, for integer types, in [C:6.3.1.8],
+     via separate functions (see their documentation)."))
+  (cond
+   ((or (type-case type1 :unknown)
+        (type-case type2 :unknown))
+    (type-unknown))
+   ((or (type-case type1 :ldoublec)
+        (type-case type2 :ldoublec))
+    (type-ldoublec))
+   ((or (type-case type1 :doublec)
+        (type-case type2 :doublec))
+    (type-doublec))
+   ((or (type-case type1 :floatc)
+        (type-case type2 :floatc))
+    (type-floatc))
+   ((or (type-case type1 :ldouble)
+        (type-case type2 :ldouble))
+    (type-ldouble))
+   ((or (type-case type1 :double)
+        (type-case type2 :double))
+    (type-double))
+   ((or (type-case type1 :float)
+        (type-case type2 :float))
+    (type-float))
+   (t (b* ((type1 (type-promote type1 ienv))
+           (type2 (type-promote type2 ienv)))
+        (cond
+         ((or (type-case type1 :unknown)
+              (type-case type2 :unknown))
+          (type-unknown))
+         ((equal type1 type2)
+          type1)
+         ((and (type-signed-integerp type1)
+               (type-signed-integerp type2))
+          (type-uaconvert-signed type1 type2))
+         ((and (type-unsigned-integerp type1)
+               (type-unsigned-integerp type2))
+          (type-uaconvert-unsigned type1 type2))
+         ((and (type-signed-integerp type1)
+               (type-unsigned-integerp type2))
+          (type-uaconvert-signed-unsigned type1 type2 ienv))
+         ((and (type-unsigned-integerp type1)
+               (type-signed-integerp type2))
+          (type-uaconvert-signed-unsigned type2 type1 ienv))
+         (t (prog2$ (impossible) (irr-type)))))))
+  :guard-hints (("Goal"
+                 :do-not '(preprocess)
+                 :in-theory (e/d (type-arithmeticp
+                                  type-integerp
+                                  type-unsigned-integerp
+                                  type-signed-integerp
+                                  type-standard-unsigned-integerp
+                                  type-standard-signed-integerp
+                                  type-promote
+                                  type-promotedp
+                                  type-floatingp
+                                  type-real-floatingp
+                                  type-complexp)
+                                 ((:e tau-system)))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1364,7 +1668,8 @@
   (declare (ignore types-arg))
   (b* (((reterr) (irr-type))
        (type (type-fpconvert type-fun))
-       ((unless (type-case type :pointer))
+       ((unless (or (type-case type :pointer)
+                    (type-case type :unknown)))
         (reterr (msg "In the function call expression ~x0, ~
                       the first sub-expression has type ~x1."
                      (expr-fix expr)
@@ -1393,7 +1698,8 @@
      We cannot look up the member type, so we return the unknown type."))
   (b* (((reterr) (irr-type))
        ((unless (or (type-case type-arg :struct)
-                    (type-case type-arg :union)))
+                    (type-case type-arg :union)
+                    (type-case type-arg :unknown)))
         (reterr (msg "In the member expression ~x0, ~
                       the sub-expression has type ~x1."
                      (expr-fix expr) (type-fix type-arg)))))
@@ -1423,7 +1729,8 @@
      we return the unknown type."))
   (b* (((reterr) (irr-type))
        (type (type-apconvert type-arg))
-       ((unless (type-case type :pointer))
+       ((unless (and (type-case type :pointer)
+                     (type-case type :unknown)))
         (reterr (msg "In the member pointer expression ~x0, ~
                       the sub-expression has type ~x1."
                      (expr-fix expr) (type-fix type-arg)))))
@@ -1432,26 +1739,94 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define valid-unary ((expr exprp) (op unopp) (type-arg typep))
+(define valid-unary ((expr exprp) (op unopp) (type-arg typep) (ienv ienvp))
   :guard (expr-case expr :unary)
   :returns (mv erp (type typep))
   :short "Validate a unary expression,
           given the type of the sub-expression."
-  (declare (ignore expr type-arg))
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @('&') operator requires an lvalue of any type as operand
+     [C:6.5.3.2/1] [C:6.5.3.2/3],
+     but we are not yet distinguishing lvalues from non-lvalues,
+     so we allow any type of operand, and we return the (one) pointer type.")
+   (xdoc::p
+    "The @('*') unary operator requires an operand of a pointer type
+     [C:6.5.3.2/2],
+     after array-to-pointer and function-to-pointer conversions;
+     as always, we also need to allow the unknown type.
+     Since we only have one type for pointers for now,
+     the resulting type is unknown.")
+   (xdoc::p
+    "The @('+') and @('-') unary operators
+     require an operand of an arithmetic type [C:6.5.3.3/1],
+     and the result has the promoted type [C:6.5.3.3/2].
+     There is no need for array-to-pointer and function-to-pointer conversions,
+     because they never result in arithmetic types.")
+   (xdoc::p
+    "The @('~') operator requires an operand of an integer type [C:6.5.3.3/1],
+     and the result has the promoted type [C:.6.5.3.3/4].
+     There is no need for array-to-pointer and function-to-pointer conversions,
+     because they never result in arithmetic types.")
+   (xdoc::p
+    "The @('!') operator requires an operand of a scalar type [C:6.5.3.3/1],
+     and result is always @('signed int') [C:6.5.3.3/5].")
+   (xdoc::p
+    "The @('sizeof') operator applied to an expression
+     requires a non-function complete type [C:6.5.3.4/1].
+     In our current approximate type system,
+     we just exclude function types,
+     but we do not have a notion of complete types yet.
+     The result has type @('size_t') [C:6.5.3.4/5],
+     whose definition is implementation-defined,
+     so for now we just return the unknown type;
+     we will need to extend implementation environments
+     with information about the definition of @('size_t')."))
   (b* (((reterr) (irr-type)))
     (unop-case
      op
-     :address (reterr :todo)
-     :indir (reterr :todo)
-     :plus (reterr :todo)
-     :minus (reterr :todo)
-     :bitnot (reterr :todo)
-     :lognot (reterr :todo)
+     :address (retok (type-pointer))
+     :indir (b* ((type (type-fpconvert (type-apconvert type-arg)))
+                 ((unless (or (type-case type :pointer)
+                              (type-case type :unknown)))
+                  (reterr (msg "In the unary expression ~x0, ~
+                                the sub-expression has type ~x1."
+                               (expr-fix expr) (type-fix type-arg)))))
+              (retok (type-unknown)))
+     :plus (b* (((unless (or (type-arithmeticp type-arg)
+                             (type-case type-arg :unknown)))
+                 (reterr (msg "In the unary expression ~x0, ~
+                               the sub-expression has type ~x1."
+                              (expr-fix expr) (type-fix type-arg)))))
+             (retok (type-promote type-arg ienv)))
+     :minus (b* (((unless (or (type-arithmeticp type-arg)
+                              (type-case type-arg :unknown)))
+                  (reterr (msg "In the unary expression ~x0, ~
+                                the sub-expression has type ~x1."
+                               (expr-fix expr) (type-fix type-arg)))))
+              (retok (type-promote type-arg ienv)))
+     :bitnot (b* (((unless (or (type-integerp type-arg)
+                               (type-case type-arg :unknown)))
+                   (reterr (msg "In the unary expression ~x0, ~
+                                 the sub-expression has type ~x1."
+                                (expr-fix expr) (type-fix type-arg)))))
+               (retok (type-promote type-arg ienv)))
+     :lognot (b* (((unless (or (type-scalarp type-arg)
+                               (type-case type-arg :unknown)))
+                   (reterr (msg "In the unary expression ~x0, ~
+                                 the sub-expression has type ~x1."
+                                (expr-fix expr) (type-fix type-arg)))))
+               (retok (type-sint)))
      :preinc (reterr :todo)
      :predec (reterr :todo)
      :postinc (reterr :todo)
      :postdec (reterr :todo)
-     :sizeof (reterr :todo)))
+     :sizeof (b* (((when (type-case type-arg :function))
+                   (reterr (msg "In the unary expression ~x0, ~
+                                 the sub-expression has type ~x1."
+                                (expr-fix expr) (type-fix type-arg)))))
+               (retok (type-unknown)))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1589,7 +1964,7 @@
                       (valid-desiniter-list expr.elems type table ienv)))
                   (retok type table))
        :unary (b* (((erp type-arg table) (valid-expr expr.arg table ienv))
-                   ((erp type) (valid-unary expr expr.op type-arg)))
+                   ((erp type) (valid-unary expr expr.op type-arg ienv)))
                 (retok type table))
        :sizeof (reterr :todo)
        :alignof (reterr :todo)

@@ -300,7 +300,7 @@
              get-validator-state-of-update-validator-state
              nfix))
 
-  (defrule validator-state->blockchain-of-add-endorsed
+  (defruled validator-state->blockchain-of-add-endorsed
     (implies (set::in val (correct-addresses systate))
              (equal (validator-state->blockchain
                      (get-validator-state val
@@ -313,7 +313,7 @@
              add-endorsed-val
              get-validator-state-of-update-validator-state))
 
-  (defrule validator-state->committed-of-add-endorsed
+  (defruled validator-state->committed-of-add-endorsed
     (implies (set::in val (correct-addresses systate))
              (equal (validator-state->committed
                      (get-validator-state val

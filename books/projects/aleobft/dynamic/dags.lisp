@@ -586,13 +586,38 @@
              certificate-set->round-set-of-certificates-with-round
              posp))
 
+  (defruled head-of-predecessors-in-predecessors
+    (implies (not (set::emptyp (predecessors cert dag)))
+             (set::in (set::head (predecessors cert dag))
+                      (predecessors cert dag)))
+    :enable predecessors)
+
+  (defruled head-of-predecessors-in-dag
+    (implies (and (certificate-setp dag)
+                  (not (set::emptyp (predecessors cert dag))))
+             (set::in (set::head (predecessors cert dag))
+                      dag))
+    :use predecessors-subset-of-dag
+    :enable set::expensive-rules
+    :disable predecessors)
+
   (defruled round-in-predecessors-is-one-less
     (implies (and (certificate-setp dag)
                   (set::in cert1 (predecessors cert dag)))
              (equal (certificate->round cert1)
                     (1- (certificate->round cert))))
     :enable (in-of-certificates-with-authors+round
-             posp)))
+             posp))
+
+  (defruled round-of-head-of-predecessors
+    (implies (and (certificate-setp dag)
+                  (not (set::emptyp (predecessors cert dag))))
+             (equal (certificate->round (set::head (predecessors cert dag)))
+                    (1- (certificate->round cert))))
+    :use (:instance round-in-predecessors-is-one-less
+                    (cert1 (set::head (predecessors cert dag))))
+    :enable head-of-predecessors-in-predecessors
+    :disable predecessors))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -733,7 +758,14 @@
    (xdoc::p
     "The guard ensures that the active committee can be calculated
      for every certificate in the DAG,
-     and therefore for the round of the predecessors."))
+     and therefore for the round of the predecessors.")
+   (xdoc::p
+    "Since committees are never empty by definition,
+     the quorum number is always positive,
+     as proved in the return theorem of @(tsee committee-quorum).
+     Thus, this predicate guarantees that
+     certificates in rounds above 1
+     have at least one predecessor."))
   (forall (cert)
           (implies (set::in cert dag)
                    (equal (set::cardinality (predecessors cert dag))
@@ -749,7 +781,19 @@
     :in-theory (enable posp
                        pos-fix
                        dag-committees-p-necc
-                       active-committee-at-previous-round-when-at-round))))
+                       active-committee-at-previous-round-when-at-round)))
+
+  ///
+
+  (defruled not-emptyp-predecessors-when-dag-predecessor-cardinality-p
+    (implies (and (dag-predecessor-cardinality-p dag blocks all-vals)
+                  (set::in cert dag)
+                  (not (equal (certificate->round cert) 1)))
+             (not (set::emptyp (predecessors cert dag))))
+    :use (dag-predecessor-cardinality-p-necc)
+    :enable set::cardinality
+    :disable (dag-predecessor-cardinality-p
+              dag-predecessor-cardinality-p-necc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -954,6 +998,30 @@
            path-to-previous
            in-of-certificates-with-authors+round
            posp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled path-to-head-of-predecessors
+  :short "There is a path from a certificate to
+          the first of its predecessors,
+          assuming that it has predecessors."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is a specialized version of @(tsee path-to-predecessor),
+     which we use to prove this theorem."))
+  (implies (and (certificate-setp dag)
+                (certificate-set-unequivocalp dag)
+                (set::in cert dag)
+                (not (set::emptyp (predecessors cert dag))))
+           (equal (path-to-author+round
+                   cert
+                   (certificate->author (set::head (predecessors cert dag)))
+                   (certificate->round (set::head (predecessors cert dag)))
+                   dag)
+                  (set::head (predecessors cert dag))))
+  :enable (head-of-predecessors-in-predecessors
+           path-to-predecessor))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
