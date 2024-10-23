@@ -1514,7 +1514,18 @@
      because they never result in arithmetic types.")
    (xdoc::p
     "The @('!') operator requires an operand of a scalar type [C:6.5.3.3/1],
-     and result is always @('signed int') [C:6.5.3.3/5]."))
+     and result is always @('signed int') [C:6.5.3.3/5].")
+   (xdoc::p
+    "The @('sizeof') operator applied to an expression
+     requires a non-function complete type [C:6.5.3.4/1].
+     In our current approximate type system,
+     we just exclude function types,
+     but we do not have a notion of complete types yet.
+     The result has type @('size_t') [C:6.5.3.4/5],
+     whose definition is implementation-defined,
+     so for now we just return the unknown type;
+     we will need to extend implementation environments
+     with information about the definition of @('size_t')."))
   (b* (((reterr) (irr-type)))
     (unop-case
      op
@@ -1554,7 +1565,11 @@
      :predec (reterr :todo)
      :postinc (reterr :todo)
      :postdec (reterr :todo)
-     :sizeof (reterr :todo)))
+     :sizeof (b* (((when (type-case type-arg :function))
+                   (reterr (msg "In the unary expression ~x0, ~
+                                 the sub-expression has type ~x1."
+                                (expr-fix expr) (type-fix type-arg)))))
+               (retok (type-unknown)))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
