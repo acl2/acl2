@@ -11,7 +11,7 @@
 
 (in-package "ALEOBFT-STATIC")
 
-(include-book "property-validator-anchors-of-next-event")
+(include-book "property-committed-anchors-of-next-event")
 (include-book "properties-blockchain")
 (include-book "invariant-previous-in-dag")
 (include-book "invariant-committed-redundant")
