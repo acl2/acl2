@@ -353,7 +353,13 @@
   :short "Check if a type is an arithmetic type [C:6.2.5/18]."
   (or (type-integerp type)
       (type-floatingp type))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defrule type-arithmeticp-when-type-integerp
+    (implies (type-integerp type)
+             (type-arithmeticp type))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -403,6 +409,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-promote ((type typep) (ienv ienvp))
+  :guard (or (type-arithmeticp type)
+             (type-case type :unknown))
   :returns (new-type typep)
   :short "Perform integer promotions on a type [C:6.3.1.1/2]."
   :long
