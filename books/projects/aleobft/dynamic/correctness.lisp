@@ -39,6 +39,7 @@
 (include-book "dag-certificate-next")
 (include-book "anchors-of-validators-next")
 (include-book "last-anchor-voters")
+(include-book "omni-paths")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -80,6 +81,7 @@
                     rounds-in-committees
                     dag-certificate-next
                     anchors-of-validators-next
-                    last-anchor-voters))
+                    last-anchor-voters
+                    omni-paths))
 
 ; TODO: continue
