@@ -93,9 +93,8 @@
                            (+ (- (EXPT 2 LOW))
                               (* (EXPT 2 LOW) (EXPT 2 WIDTH))))
                     0))
-    :hints (("Goal" :in-theory (e/d (slice GETBIT-OF-+)
-                                    (
-                                     <-OF-BVCHOP-HACK))))))
+    :hints (("Goal" :in-theory (e/d (slice GETBIT-OF-+ logtail-of-plus)
+                                    (<-OF-BVCHOP-HACK))))))
 
 (defthm part-select-width-low-becomes-slice
   (implies (and (integerp low)
