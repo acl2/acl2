@@ -264,7 +264,7 @@
                     (1+ (committee-max-faulty
                          (active-committee-at-round
                           (1+ (certificate->round cert1))
-                          blocks2
+                          blocks1
                           all-vals)))))
            (and (equal (path-to-author+round
                         (pick-successor/predecessor dag1 dag2 cert1 cert2)
@@ -320,7 +320,7 @@
                     (1+ (committee-max-faulty
                          (active-committee-at-round
                           (1+ (certificate->round cert1))
-                          blocks2
+                          blocks1
                           all-vals)))))
            (equal (path-to-author+round cert2
                                         (certificate->author cert1)
@@ -369,7 +369,7 @@
                     (1+ (committee-max-faulty
                          (active-committee-at-round
                           (1+ (certificate->round cert))
-                          blocks2
+                          blocks1
                           all-vals)))))
            (dag-omni-paths-round-p (+ 2 (certificate->round cert))
                                    cert
@@ -538,7 +538,7 @@
                     (1+ (committee-max-faulty
                          (active-committee-at-round
                           (1+ (certificate->round cert))
-                          blocks2
+                          blocks1
                           all-vals))))
                 (natp round-delta))
            (dag-omni-paths-round-p (+ round-delta
@@ -584,7 +584,7 @@
                     (1+ (committee-max-faulty
                          (active-committee-at-round
                           (1+ (certificate->round cert))
-                          blocks2
+                          blocks1
                           all-vals))))
                 (natp round)
                 (>= round
@@ -626,7 +626,7 @@
                     (1+ (committee-max-faulty
                          (active-committee-at-round
                           (1+ (certificate->round cert))
-                          blocks2
+                          blocks1
                           all-vals)))))
            (dag-omni-paths-p cert dag2))
   :enable (dag-omni-paths-p-alt-def

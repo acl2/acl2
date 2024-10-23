@@ -368,7 +368,7 @@
                     (1+ (committee-max-faulty
                          (active-committee-at-round
                           (1+ (certificate->round cert1))
-                          blocks2
+                          blocks1
                           all-vals)))))
            (b* ((cert (pick-successor/predecessor dag1 dag2 cert1 cert2)))
              (and (set::in cert (successors cert1 dag1))
@@ -448,7 +448,7 @@
                        (1+ (committee-max-faulty
                             (active-committee-at-round
                              (1+ (certificate->round cert1))
-                             blocks2
+                             blocks1
                              all-vals)))))
               (equal (active-committee-at-round
                       (1+ (certificate->round cert1)) blocks1 all-vals)
