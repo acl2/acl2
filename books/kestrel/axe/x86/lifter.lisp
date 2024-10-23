@@ -173,23 +173,26 @@
 ;; This version returns a term
 ;; TODO: Rename
 ;; Returns (mv erp term state).
-;why is this a macro?
-(defmacro acl2::simp-term-to-term (term rules &rest rest)
-  `(mv-let (erp dag)
-     (acl2::make-term-into-dag (acl2::check-arities ,term)
-                               nil ;fixme interpreted-function-alist
-                               )
-     (if erp
-         (mv erp nil state)
-       (mv-let (erp dag-lst-or-quotep state)
-         (simp-dag dag
-                   :rules ,rules
-                   ,@rest)
-         (if erp
-             (mv erp nil state)
-           (mv (erp-nil)
-               (dag-to-term dag-lst-or-quotep)
-               state))))))
+(defun acl2::simp-term-to-term (term rules assumptions monitor state)
+  (declare (xargs :stobjs state
+                  :mode :program ; todo
+                  ))
+  (mv-let (erp dag)
+    (acl2::make-term-into-dag (acl2::check-arities term)
+                              nil ;todo: interpreted-function-alist
+                              )
+    (if erp
+        (mv erp nil state)
+      (mv-let (erp dag-lst-or-quotep state)
+        (simp-dag dag
+                  :rules rules
+                  :assumptions assumptions
+                  :monitor monitor)
+        (if erp
+            (mv erp nil state)
+          (mv (erp-nil)
+              (dag-to-term dag-lst-or-quotep)
+              state))))))
 
 ;; Test whether the stack height of X86 is less than it was when the stack pointer was OLD-RSP.
 ;; Since the stack grows from high to low, the stack height is less when the RSP is greater.
@@ -559,7 +562,7 @@
                     '(x86isa::xr-of-myif ; maybe drop
                       x86isa::xr-of-if))
             remove-rules)
-           :assumptions assumptions))
+           assumptions nil state))
          ((when erp) (mv erp nil nil nil state)))
       (if (not (quotep exitp))
           (prog2$ (er hard 'analyze-loop-body-aux "Failed to decide whether branch has exited the loop.  Result: ~X01." exitp nil)
@@ -590,7 +593,8 @@
                 (acl2::simp-term-to-term exit-test-term
                                          (append lifter-rules
                                                  (myif-rules) ;simplify myif of t and t, myif of t and nil, etc.
-                                                 )))
+                                                 )
+                                         nil nil state))
                ((when erp) (mv erp nil nil nil state)))
             (mv (erp-nil) one-rep-term exit-term exit-test-term state)))))))
 
@@ -1045,8 +1049,8 @@
                                           lifter-rules
                                          extra-rules)
                                   remove-rules)
-                                 :assumptions assumptions
-                                 :monitor rules-to-monitor))
+                                 assumptions
+                                 rules-to-monitor state))
          ((when erp) (mv erp nil nil state)))
       (if (equal *t* simplified-invariant)
           (prog2$ (cw "Proved it!)~%")
