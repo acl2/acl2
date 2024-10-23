@@ -207,7 +207,7 @@
              :in-theory (enable last
                                 certificate->round-of-path-to-author+round))))
   (in-theory (disable collect-anchors-above-last-committed-round)))
-
+(i-am-here)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define collect-all-anchors ((last-anchor certificatep)

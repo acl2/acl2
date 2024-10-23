@@ -79,13 +79,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule certificate-list-pathp-of-validator-anchors
+(defrule certificate-list-pathp-of-committed-anchors
   (implies (or (equal (validator-state->last vstate) 0)
                (set::in (last-anchor vstate vals)
                         (validator-state->dag vstate)))
-           (certificate-list-pathp (validator-anchors vstate vals)
+           (certificate-list-pathp (committed-anchors vstate vals)
                                    (validator-state->dag vstate)))
-  :enable validator-anchors)
+  :enable committed-anchors)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

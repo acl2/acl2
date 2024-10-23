@@ -58,7 +58,7 @@
   :short "Check if the blockchain of a validator
           is equal to its calculation from the committed anchors and DAG."
   (equal (validator-state->blockchain vstate)
-         (calculate-blockchain (validator-anchors vstate vals)
+         (calculate-blockchain (committed-anchors vstate vals)
                                (validator-state->dag vstate))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -99,7 +99,7 @@
            validator-init
            system-blockchain-redundantp
            validator-blockchain-redundantp
-           validator-anchors))
+           committed-anchors))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -143,7 +143,7 @@
                     (dag2 (validator-state->dag
                            (get-validator-state
                             val (create-certificate-next cert systate))))
-                    (anchors (validator-anchors
+                    (anchors (committed-anchors
                               (get-validator-state val systate)
                               (all-addresses systate))))
     :disable validator-state->dag-of-create-certificate-next)
@@ -237,7 +237,7 @@
                     (dag2 (validator-state->dag
                            (get-validator-state
                             val (store-certificate-next cert val1 systate))))
-                    (anchors (validator-anchors
+                    (anchors (committed-anchors
                               (get-validator-state val systate)
                               (all-addresses systate))))
     :disable validator-state->dag-of-store-certificate-next)
@@ -303,7 +303,7 @@
      applied to the new anchors obtained via @(tsee collect-anchors).
      The blockchain calculated by @(tsee calculate-blockchain)
      also makes use of @(tsee extend-blockchain),
-     and the fact that the new @(tsee validator-anchors)
+     and the fact that the new @(tsee committed-anchors)
      expand to an @(tsee append) of the new ones with the old ones,
      results in the firing of the @('extend-blockchain-of-append') theorem.
      We also need the previously proved invariant that "

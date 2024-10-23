@@ -23,13 +23,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ property-validator-anchors-of-next-event
+(defxdoc+ property-committed-anchors-of-next-event
   :parents (correctness)
-  :short "How @(tsee validator-anchors) changes under each event."
+  :short "How @(tsee committed-anchors) changes under each event."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The sequence of committed anchors returned by @(tsee validator-anchors)
+    "The sequence of committed anchors returned by @(tsee committed-anchors)
      never changes,
      except under a @('commit-anchors') event,
      which updates extends the sequence with the new anchors."))
@@ -38,8 +38,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule validator-anchors-of-create-certificate-next
-  :short "There is no change in @(tsee validator-anchors)
+(defrule committed-anchors-of-create-certificate-next
+  :short "There is no change in @(tsee committed-anchors)
           under a @('create-certificate') event."
   :long
   (xdoc::topstring
@@ -59,13 +59,13 @@
                 (set::in val (correct-addresses systate))
                 (certificatep cert)
                 (create-certificate-possiblep cert systate))
-           (equal (validator-anchors
+           (equal (committed-anchors
                    (get-validator-state
                     val (create-certificate-next cert systate))
                    (all-addresses systate))
-                  (validator-anchors (get-validator-state val systate)
+                  (committed-anchors (get-validator-state val systate)
                                      (all-addresses systate))))
-  :enable (validator-anchors
+  :enable (committed-anchors
            system-unequivocal-dag-p-necc
            system-unequivocal-dag-p-when-system-unequivocal-certificates-p
            system-previous-in-dag-p-necc)
@@ -89,7 +89,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule validator-anchors-of-receive-certificate-next
+(defrule committed-anchors-of-receive-certificate-next
   :short "There is no change in @(tsee last-anchor)
           under a @('receive-certificate') event."
   :long
@@ -99,17 +99,17 @@
      so the proof is trivial."))
   (implies (and (set::in val (correct-addresses systate))
                 (receive-certificate-possiblep msg systate))
-           (equal (validator-anchors
+           (equal (committed-anchors
                    (get-validator-state
                     val (receive-certificate-next msg systate))
                    (all-addresses systate))
-                  (validator-anchors (get-validator-state val systate)
+                  (committed-anchors (get-validator-state val systate)
                                      (all-addresses systate))))
-  :enable validator-anchors)
+  :enable committed-anchors)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule validator-anchors-of-store-certificate-next
+(defrule committed-anchors-of-store-certificate-next
   :short "There is no change in @(tsee last-anchor)
           under a @('store-certificate') event."
   :long
@@ -129,13 +129,13 @@
                 (fault-tolerant-p systate)
                 (set::in val (correct-addresses systate))
                 (store-certificate-possiblep cert val1 systate))
-           (equal (validator-anchors
+           (equal (committed-anchors
                    (get-validator-state
                     val (store-certificate-next cert val1 systate))
                    (all-addresses systate))
-                  (validator-anchors (get-validator-state val systate)
+                  (committed-anchors (get-validator-state val systate)
                                      (all-addresses systate))))
-  :enable (validator-anchors
+  :enable (committed-anchors
            system-unequivocal-dag-p-necc
            system-unequivocal-dag-p-when-system-unequivocal-certificates-p
            system-previous-in-dag-p-necc
@@ -156,7 +156,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule validator-anchors-of-advance-round-next
+(defrule committed-anchors-of-advance-round-next
   :short "There is no change in @(tsee last-anchor)
           under a @('advance-round') event."
   :long
@@ -166,17 +166,17 @@
      so the proof is trivial."))
   (implies (and (set::in val (correct-addresses systate))
                 (advance-round-possiblep val1 systate))
-           (equal (validator-anchors
+           (equal (committed-anchors
                    (get-validator-state
                     val (advance-round-next val1 systate))
                    (all-addresses systate))
-                  (validator-anchors (get-validator-state val systate)
+                  (committed-anchors (get-validator-state val systate)
                                      (all-addresses systate))))
-  :enable validator-anchors)
+  :enable committed-anchors)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule validator-anchors-of-commit-anchors
+(defrule committed-anchors-of-commit-anchors
   :short "How the sequence of committed anchors changes
           under a @('commit-anchor') event."
   :long
@@ -194,7 +194,7 @@
         (system-paths-to-last-anchor-p systate)
         (set::in val (correct-addresses systate))
         (commit-anchors-possiblep val1 systate))
-   (equal (validator-anchors
+   (equal (committed-anchors
            (get-validator-state
             val (commit-anchors-next val1 systate))
            (all-addresses systate))
@@ -213,12 +213,12 @@
                                              vstate.dag
                                              (all-addresses systate))))
                 (append anchors
-                        (validator-anchors (get-validator-state val systate)
+                        (committed-anchors (get-validator-state val systate)
                                            (all-addresses systate))))
-            (validator-anchors (get-validator-state val systate)
+            (committed-anchors (get-validator-state val systate)
                                (all-addresses systate)))))
   :enable (commit-anchors-possiblep
-           validator-anchors
+           committed-anchors
            collect-all-anchors
            system-last-anchor-present-p-necc
            system-unequivocal-dag-p-necc
@@ -256,7 +256,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule validator-anchors-of-timer-expires-next
+(defrule committed-anchors-of-timer-expires-next
   :short "There is no change in @(tsee last-anchor)
           under a @('timer-expires') event."
   :long
@@ -266,10 +266,10 @@
      so the proof is trivial."))
   (implies (and (set::in val (correct-addresses systate))
                 (timer-expires-possiblep val1 systate))
-           (equal (validator-anchors
+           (equal (committed-anchors
                    (get-validator-state
                     val (timer-expires-next val1 systate))
                    (all-addresses systate))
-                  (validator-anchors (get-validator-state val systate)
+                  (committed-anchors (get-validator-state val systate)
                                      (all-addresses systate))))
-  :enable validator-anchors)
+  :enable committed-anchors)
