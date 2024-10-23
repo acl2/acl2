@@ -31,11 +31,10 @@
 (include-book "nonforking-blockchains-def-and-init")
 (include-book "same-committees")
 (include-book "unequivocal-accepted-certificates-next")
-(include-book "predecessor-cardinality")
 (include-book "anchors-of-validators-def-and-init")
 (include-book "last-anchor-present")
 (include-book "successor-predecessor-intersection")
-(include-book "dag-round-in-committee")
+(include-book "rounds-in-committees")
 (include-book "dag-certificate-next")
 (include-book "anchors-of-validators-next")
 (include-book "last-anchor-voters")
@@ -76,7 +75,7 @@
                     anchors-of-validators-def-and-init
                     last-anchor-present
                     successor-predecessor-intersection
-                    dag-round-in-committee
+                    rounds-in-committees
                     dag-certificate-next
                     anchors-of-validators-next
                     last-anchor-voters))

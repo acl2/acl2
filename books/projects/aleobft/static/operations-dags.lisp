@@ -226,7 +226,9 @@
       :hyp (and (certificate-setp dag)
                 (set::subset certs dag))
       :fn path-to-author+round-set)
-    :hints (("Goal" :in-theory (enable* set::expensive-rules))))
+    :hints
+    (("Goal" :in-theory (enable* set::expensive-rules
+                                 certificates-with-authors+round-subset))))
 
   (defret-mutual round-leq-when-path-to-author+round
     (defret round-leq-when-path-to-author+round
@@ -239,10 +241,7 @@
       :fn path-to-author+round-set)
     :hints
     (("Goal"
-      :in-theory (enable* path-to-author+round
-                          path-to-author+round-set
-                          set::expensive-rules
-                          certificate->round-in-certificate-set->round-set
+      :in-theory (enable* certificate->round-in-certificate-set->round-set
                           certificate-set->round-set-monotone))
      '(:use ((:instance acl2::pos-set-max->=-element
                         (set (certificate-set->round-set certs))
@@ -259,7 +258,7 @@
                   (path-to-author+round cert author round dag))
              (path-to-author+round-set certs author round dag))
     :induct (set::cardinality certs)
-    :enable (set::cardinality path-to-author+round-set))
+    :enable set::cardinality)
 
   (defrule path-to-author+round-round-lte
     (implies (path-to-author+round cert author round dag)
@@ -383,4 +382,6 @@
       :hyp (and (certificate-setp dag)
                 (set::subset certs dag))
       :fn certificate-set-causal-history)
-    :hints (("Goal" :in-theory (enable* set::expensive-rules)))))
+    :hints
+    (("Goal" :in-theory (enable* set::expensive-rules
+                                 certificates-with-authors+round-subset)))))

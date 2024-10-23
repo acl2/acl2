@@ -37,52 +37,52 @@ srcfile=
 acl2=
 rac=
 incdirs="-I $RAC/include"
+last=
 
-OPTS=`getopt hacrI: $@`
-if [ $? != 0 ]
-then
-    usage;
-    exit 1
-fi
-
-eval set -- "$OPTS"
-while true; do
-    case $1 in
+while [[ "$1" != "" ]]; do
+    case "$1" in
     -a | --acl2)
-        acl2=1;
-        shift 1;
+        acl2=1
         ;;
     -r | --rac)
-        rac=1;
-        shift 1;
+        rac=1
         ;;
     -I)
-        incdirs="$incdirs -I $2";
-        shift 2;
+        incdirs="$incdirs $2";
+        shift
         ;;
-    --)
-        shift 1;
-        break
+    -h)
+        usage
+        exit
+        ;;
+    -*)
+        echo "Unknow option $1"
+        usage
+        exit 1
+        ;;
+    *)
+        if [[ "$last" ]]; then
+          echo $1
+          usage
+          exit 1
+        else
+          last="$1"
+        fi
         ;;
     esac
+
+    shift
 done
 
 # Extract the source filename and
 # make sure only one of ctos, acl2, rac is specified
 
-if [[ -z "$1" ]]
+if [[ -z "$last" ]]
 then
     usage;
     exit 1
 else
-    srcfile=$1;
-    shift 1;
-    # extra input left over?
-    if [[ -n "$1" ]]
-    then
-        usage;
-        exit 1
-    fi
+    srcfile=$last;
 fi
 
 if [[ "$acl2" && "$rac" ]]

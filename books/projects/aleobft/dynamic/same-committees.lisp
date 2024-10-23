@@ -86,7 +86,7 @@
 (define-sk same-committees-p ((systate system-statep))
   :returns (yes/no booleanp)
   :short "Definition of the invariant:
-          any two correct validators in the system,
+          for any two correct validators in the system,
           if they both calculate an active committee at a round,
           compute the same active committee at that round."
   :long
@@ -95,24 +95,15 @@
     "Note that no requirement applies if
      only one validator can calculate the committee but not the other.
      A validator may be ahead of another one."))
-  (forall (val1 val2 round)
+  (forall (val1 val2)
           (implies (and (set::in val1 (correct-addresses systate))
-                        (set::in val2 (correct-addresses systate))
-                        (posp round))
-                   (b* ((commtt1
-                         (active-committee-at-round
-                          round
-                          (validator-state->blockchain
-                           (get-validator-state val1 systate))
-                          (all-addresses systate)))
-                        (commtt2
-                         (active-committee-at-round
-                          round
-                          (validator-state->blockchain
-                           (get-validator-state val2 systate))
-                          (all-addresses systate))))
-                     (implies (and commtt1 commtt2)
-                              (equal commtt1 commtt2))))))
+                        (set::in val2 (correct-addresses systate)))
+                   (same-active-committees-p
+                    (validator-state->blockchain
+                     (get-validator-state val1 systate))
+                    (validator-state->blockchain
+                     (get-validator-state val2 systate))
+                    (all-addresses systate)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -599,6 +590,7 @@
                 (ordered-even-p systate))
            (same-committees-p systate))
   :enable (same-committees-p
+           same-active-committees-p
            nonforking-blockchains-p-necc
            ordered-even-p-necc
            same-active-committees-when-nofork))

@@ -204,14 +204,25 @@
         (output-file (concatenate 'string name "-log.out")))
     `(prog2$
       (time-tracker nil)
-      (ld '((unset-waterfall-parallelism) ; avoid different output in ACL2(p)
-            (assign script-mode t)
-            (set-ld-prompt t state)
-            (set-inhibited-summary-types ,inhibited-summary-types)
-            (set-inhibit-output-lst ,inhibit-output-lst)
-            .
-            ,input-file)
-          :ld-prompt nil ; for (assign script-mode t)
-          :ld-verbose nil ; avoid absolute pathname printed for cbd
-          :ld-pre-eval-print t :ld-error-action ,ld-error-action
-          :standard-co ,output-file :proofs-co ,output-file))))
+      (pprogn
+
+; Bob Boyer expressed a desire in October 2024 to certify books while
+; generating all prover output.  So he set gag-mode to nil and also called
+; set-inhibit-output-lst on nil in his acl2-customization file.  But this
+; caused books to fail that use run-script, since PROVE output was not
+; inhibited.  Here we set gag-mode to its default.  By not including this
+; set-gag-mode command in what is supplied below to LD, we avoid having to
+; update some 57 run-script book logs.
+
+       (set-gag-mode :goals)
+       (ld '((unset-waterfall-parallelism) ; avoid different output in ACL2(p)
+             (assign script-mode t)
+             (set-ld-prompt t state)
+             (set-inhibited-summary-types ,inhibited-summary-types)
+             (set-inhibit-output-lst ,inhibit-output-lst)
+             .
+             ,input-file)
+           :ld-prompt nil ; for (assign script-mode t)
+           :ld-verbose nil ; avoid absolute pathname printed for cbd
+           :ld-pre-eval-print t :ld-error-action ,ld-error-action
+           :standard-co ,output-file :proofs-co ,output-file)))))

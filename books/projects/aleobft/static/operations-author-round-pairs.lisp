@@ -236,7 +236,7 @@
       (enable* in-correct-validator-addresess-when-get-validator-state
                set::expensive-rules))))
 
-  (defrule validator-state->round-of-add-endorsed
+  (defruled validator-state->round-of-add-endorsed
     (equal (validator-state->round
             (get-validator-state
              val
@@ -247,7 +247,7 @@
              in-correct-validator-addresess-when-get-validator-state
              get-validator-state-of-update-validator-state))
 
-  (defrule validator-state->dag-of-add-endorsed
+  (defruled validator-state->dag-of-add-endorsed
     (equal (validator-state->dag
             (get-validator-state
              val
@@ -258,7 +258,7 @@
              add-endorsed-val
              get-validator-state-of-update-validator-state))
 
-  (defrule validator-state->buffer-of-add-endorsed
+  (defruled validator-state->buffer-of-add-endorsed
     (equal (validator-state->buffer
             (get-validator-state
              val
@@ -269,7 +269,7 @@
              add-endorsed-val
              get-validator-state-of-update-validator-state))
 
-  (defrule validator-state->endorsed-of-add-endorsed
+  (defruled validator-state->endorsed-of-add-endorsed
     (equal (validator-state->endorsed
             (get-validator-state
              val
@@ -286,7 +286,7 @@
              add-endorsed-val
              get-validator-state-of-update-validator-state))
 
-  (defrule validator-state->last-of-add-endorsed
+  (defruled validator-state->last-of-add-endorsed
     (implies (set::in val (correct-addresses systate))
              (equal (validator-state->last
                      (get-validator-state val

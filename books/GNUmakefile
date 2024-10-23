@@ -428,6 +428,8 @@ ifneq ($(CERT_PL_ACL2R_AND_NON_ACL2R), )
 ${info Books appear that both require ACL2(r) but that do not work with ACL2(r): $(CERT_PL_ACL2R_AND_NON_ACL2R)}
 endif
 
+.PHONY: uses-acl2r
+uses-acl2r: $(filter $(CERT_PL_USES_ACL2R), $(OK_CERTS))
 
 ifneq ($(ACL2_HAS_REALS), )
 

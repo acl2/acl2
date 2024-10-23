@@ -81,7 +81,7 @@
     :hints (("Goal" :induct t)))
   (in-theory (disable certificate->round-of-certificate-with-author+round))
 
-  (defruled certificate-with-author+round-element-when-not-nil
+  (defruled certificate-with-author+round-element
     (implies (and (certificate-setp certs)
                   (certificate-with-author+round author round certs))
              (set::in (certificate-with-author+round author round certs)
@@ -247,19 +247,21 @@
              :in-theory (enable* in-of-certificates-with-author
                                  set::subset
                                  set::expensive-rules))))
+  (in-theory (disable certificates-with-round-subset))
 
-  (defrule in-of-certificates-with-round
+  (defruled in-of-certificates-with-round
     (implies (certificate-setp certs)
              (equal (set::in cert (certificates-with-round round certs))
                     (and (set::in cert certs)
                          (equal (certificate->round cert) round))))
     :induct t)
 
-  (defrule certificates-with-round-of-empty
-    (equal (certificates-with-round round nil)
-           nil))
+  (defruled certificates-with-round-when-emptyp
+    (implies (set::emptyp certs)
+             (equal (certificates-with-round round certs)
+                    nil)))
 
-  (defrule certificates-with-round-of-insert
+  (defruled certificates-with-round-of-insert
     (implies (and (certificatep cert)
                   (certificate-setp certs))
              (equal (certificates-with-round round
@@ -281,7 +283,7 @@
     :enable (set::expensive-rules
              in-of-certificates-with-round))
 
-  (defruled certificate-with-author+round-when-author-in-certificates
+  (defruled certificate-with-author+round-when-author-in-round
     (implies (and (certificate-setp certs)
                   (set::in author
                            (certificate-set->author-set
@@ -292,11 +294,12 @@
                         author (certificates-with-round round certs))))
     :enable (set::expensive-rules
              in-of-certificates-with-author
+             in-of-certificates-with-round
              certificate-with-author+round-when-element
              emptyp-of-certificates-with-author-if-no-author)
     :disable set::in-head)
 
-  (defrule certificates-with-round-of-intersect
+  (defruled certificates-with-round-of-intersect
     (implies (and (certificate-setp certs1)
                   (certificate-setp certs2))
              (equal (certificates-with-round
@@ -305,7 +308,8 @@
                      (certificates-with-round round certs1)
                      (certificates-with-round round certs2))))
     :enable (set::expensive-rules
-             set::double-containment-no-backchain-limit))
+             set::double-containment-no-backchain-limit
+             in-of-certificates-with-round))
 
   (defruled round-set-of-certificates-with-round
     (equal (certificate-set->round-set
@@ -372,8 +376,9 @@
              :in-theory (enable* certificates-with-author-subset
                                  set::subset
                                  set::expensive-rules))))
+  (in-theory (disable certificates-with-authors-subset))
 
-  (defrule in-of-certificates-with-authors
+  (defruled in-of-certificates-with-authors
     (implies (certificate-setp certs)
              (equal (set::in cert
                              (certificates-with-authors authors certs))
@@ -428,8 +433,9 @@
              :induct t
              :in-theory (enable* set::subset
                                  set::expensive-rules))))
+  (in-theory (disable certificates-with-authors+round-subset))
 
-  (defrule certificates-authors-of-certificates-with-authors+round-subset
+  (defruled certificates-authors-of-certificates-with-authors+round-subset
     (b* ((returned-authors
           (certificate-set->author-set
            (certificates-with-authors+round authors round certs))))
@@ -456,7 +462,7 @@
     :induct t
     :enable certificate-set->round-set-of-insert)
 
-  (defrule in-of-certificates-with-authors+round
+  (defruled in-of-certificates-with-authors+round
     (implies (certificate-setp certs)
              (equal (set::in cert
                              (certificates-with-authors+round authors
@@ -471,9 +477,13 @@
     (set::subset certs-with-authors-and-round
                  (certificates-with-round round certs))
     :hyp (certificate-setp certs)
-    :hints (("Goal" :in-theory (enable* set::expensive-rules))))
+    :hints
+    (("Goal" :in-theory (enable* set::expensive-rules
+                                 in-of-certificates-with-round
+                                 in-of-certificates-with-authors+round))))
+  (in-theory (disable certificates-with-authors+round-subset-with-round))
 
-  (defrule certificates-with-authors+round-of-empty-authors
+  (defruled certificates-with-authors+round-of-empty-authors
     (implies (set::emptyp authors)
              (equal (certificates-with-authors+round authors round certs)
                     nil))
@@ -485,7 +495,10 @@
                     (certificates-with-authors
                      authors (certificates-with-round round certs))))
     :enable (set::expensive-rules
-             set::double-containment-no-backchain-limit))
+             set::double-containment-no-backchain-limit
+             in-of-certificates-with-round
+             in-of-certificates-with-authors
+             in-of-certificates-with-authors+round))
 
   (defruled certificates-with-authors+round-to-round-of-authors
     (implies (certificate-setp certs)
@@ -493,4 +506,7 @@
                     (certificates-with-round
                      round (certificates-with-authors authors certs))))
     :enable (set::expensive-rules
-             set::double-containment-no-backchain-limit)))
+             set::double-containment-no-backchain-limit
+             in-of-certificates-with-round
+             in-of-certificates-with-authors
+             in-of-certificates-with-authors+round)))

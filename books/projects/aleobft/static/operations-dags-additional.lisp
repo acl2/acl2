@@ -127,7 +127,8 @@
     (set::subset certs dag)
     :hyp (certificate-setp dag)
     :hints (("Goal"
-             :in-theory (acl2::e/d* (set::expensive-rules)
+             :in-theory (acl2::e/d* (set::expensive-rules
+                                     in-of-certificates-with-round)
                                     (incoming-loop-subset))
              :use (:instance incoming-loop-subset
                              (certs (certificates-with-round
@@ -156,7 +157,8 @@
     (implies (and (certificate-setp dag)
                   (set::in cert1 (incoming cert dag)))
              (set::in cert1 dag))
-    :enable incoming
+    :enable (incoming
+             in-of-certificates-with-round)
     :use (:instance incoming-loop-previous-and-member
                     (cert cert1)
                     (certs (certificates-with-round
@@ -209,25 +211,32 @@
 
   (defret outgoing-subset
     (set::subset certs dag)
-    :hyp (certificate-setp dag))
+    :hyp (certificate-setp dag)
+    :hints
+    (("Goal" :in-theory (enable certificates-with-authors+round-subset))))
 
   (defret outgoing-subset-of-previous-round
     (set::subset certs
                  (certificates-with-round
                   (1- (certificate->round cert))
                   dag))
-    :hyp (certificate-setp dag))
+    :hyp (certificate-setp dag)
+    :hints
+    (("Goal"
+      :in-theory (enable certificates-with-authors+round-subset-with-round))))
 
   (defruled outgoing-in-dag
     (implies (and (certificate-setp dag)
                   (set::in cert1 (outgoing cert dag)))
-             (set::in cert1 dag)))
+             (set::in cert1 dag))
+    :enable in-of-certificates-with-authors+round)
 
   (defruled round-in-outgoing-is-one-less
     (implies (and (certificate-setp dag)
                   (set::in cert1 (outgoing cert dag)))
              (equal (certificate->round cert1)
-                    (1- (certificate->round cert)))))
+                    (1- (certificate->round cert))))
+    :enable in-of-certificates-with-authors+round)
 
   (defruled round-set-of-outgoing
     (equal (certificate-set->round-set (outgoing cert dag))

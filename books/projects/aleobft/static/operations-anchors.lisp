@@ -75,7 +75,7 @@
   (defrule last-anchor-in-dag
     (implies (last-anchor vstate vals)
              (set::in (last-anchor vstate vals) (validator-state->dag vstate)))
-    :enable certificate-with-author+round-element-when-not-nil))
+    :enable certificate-with-author+round-element))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -118,7 +118,7 @@
                       (validator-state->dag vstate)
                       vals))
     :enable (anchorp
-             certificate-with-author+round-element-when-not-nil)))
+             certificate-with-author+round-element)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
