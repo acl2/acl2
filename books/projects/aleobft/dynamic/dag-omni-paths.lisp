@@ -343,7 +343,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "With reference to the discussion in @(see da-omni-paths),
+    "With reference to the discussion in @(see dag-omni-paths),
      we want to show that there are paths to @($A$) in round @($r$)
      from certificates in every round @($r' \\geq r+2$).
      We do that by induction on the round,
