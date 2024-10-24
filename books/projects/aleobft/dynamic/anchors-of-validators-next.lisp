@@ -229,7 +229,3 @@
              validator-state->last-of-timer-expires-next
              validator-state->blockchain-of-timer-expires-next
              validator-state->dag-of-timer-expires-next)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; TODO: committed-anchors-of-next

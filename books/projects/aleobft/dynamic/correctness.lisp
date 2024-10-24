@@ -41,6 +41,7 @@
 (include-book "last-anchor-voters")
 (include-book "omni-paths")
 (include-book "anchors-extension")
+(include-book "committed-anchor-sequences")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -84,6 +85,7 @@
                     anchors-of-validators-next
                     last-anchor-voters
                     omni-paths
-                    anchors-extension))
+                    anchors-extension
+                    committed-anchors-sequences))
 
 ; TODO: continue
