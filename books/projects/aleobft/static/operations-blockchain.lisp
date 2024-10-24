@@ -106,7 +106,10 @@
                        vals)))
   :measure (nfix previous-round)
   :hints (("Goal" :in-theory (enable o-p o-finp o< nfix)))
-  :guard-hints (("Goal" :in-theory (enable natp evenp)))
+  :guard-hints
+  (("Goal" :in-theory (enable natp
+                              evenp
+                              certificate->round-of-path-to-author+round)))
 
   ///
 

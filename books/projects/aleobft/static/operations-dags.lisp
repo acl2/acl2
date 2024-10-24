@@ -214,6 +214,8 @@
                (equal (certificate->round previous-cert?)
                       (pos-fix round)))
       :fn path-to-author+round-set))
+  (in-theory (disable certificate->round-of-path-to-author+round
+                      certificate->round-of-path-to-author+round-set))
 
   (defret-mutual path-to-author+round-in-dag
     (defret path-to-author+round-in-dag

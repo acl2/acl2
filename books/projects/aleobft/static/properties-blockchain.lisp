@@ -60,7 +60,8 @@
   :induct t
   :enable (collect-anchors
            certificate-list-pathp
-           certificate->author-of-path-to-author+round)
+           certificate->author-of-path-to-author+round
+           certificate->round-of-path-to-author+round)
   :hints ('(:use (:instance path-to-author+round-in-dag
                             (cert current-anchor)
                             (author (leader-at-round previous-round vals))

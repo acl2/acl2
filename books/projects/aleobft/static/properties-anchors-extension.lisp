@@ -97,7 +97,8 @@
   :enable (collect-anchors
            anchorp
            append
-           natp)
+           natp
+           certificate->round-of-path-to-author+round)
   :hints ('(:use (:instance dag-all-path-to-p-necc
                             (cert1 anchor1)
                             (cert anchor))))
