@@ -2136,10 +2136,7 @@
        all the information we need back from
        the validation of the initializers with optional designations
        is the possibly updated validation table.
-       The type of the compound literal is the one denoted by the type name.")
-     (xdoc::p
-      "
-       "))
+       The type of the compound literal is the one denoted by the type name."))
     (b* (((reterr) (irr-type) (irr-valid-table)))
       (expr-case
        expr
