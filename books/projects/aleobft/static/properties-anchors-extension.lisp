@@ -16,6 +16,8 @@
 (include-book "property-paths-to-voted-anchor")
 (include-book "properties-anchors")
 
+(local (include-book "arithmetic-3/top" :dir :system))
+
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
@@ -97,34 +99,11 @@
   :enable (collect-anchors
            anchorp
            append
-           natp
+           evenp
            certificate->round-of-path-to-author+round)
   :hints ('(:use (:instance dag-all-path-to-p-necc
                             (cert1 anchor1)
-                            (cert anchor))))
-
-  :prep-lemmas
-
-  ((defrule even-lemma1
-     (implies (evenp x)
-              (evenp (- x 2)))
-     :enable evenp)
-
-   (defrule even-lemma2
-     (implies (and (integerp x)
-                   (integerp y)
-                   (evenp x)
-                   (evenp y))
-              (not (equal x (1+ y))))
-     :enable evenp)
-
-   (defrule even-lemma3
-     (implies (and (integerp x)
-                   (integerp y)
-                   (evenp x)
-                   (evenp y))
-              (not (equal x (1- y))))
-     :enable evenp)))
+                            (cert anchor)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -151,7 +130,6 @@
                                     vals)
                    (collect-all-anchors anchor dag vals))))
   :enable (collect-all-anchors
-           natp
            evenp
            anchorp)
   :use (:instance collect-anchors-to-append-of-collect-anchors
