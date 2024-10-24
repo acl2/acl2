@@ -77,9 +77,9 @@
           (implies (and (set::in val1 (correct-addresses systate))
                         (set::in val2 (correct-addresses systate)))
                    (lists-noforkp
-                    (validator-anchors (get-validator-state val1 systate)
+                    (committed-anchors (get-validator-state val1 systate)
                                        (all-addresses systate))
-                    (validator-anchors (get-validator-state val2 systate)
+                    (committed-anchors (get-validator-state val2 systate)
                                        (all-addresses systate)))))
   :guard-hints
   (("Goal" :in-theory (enable* system-last-is-even-p-necc
@@ -110,11 +110,11 @@
                      (get-validator-state val1 systate))
                     0)
              (lists-noforkp
-              (validator-anchors (get-validator-state val1 systate)
+              (committed-anchors (get-validator-state val1 systate)
                                  (all-addresses systate))
-              (validator-anchors (get-validator-state val2 systate)
+              (committed-anchors (get-validator-state val2 systate)
                                  (all-addresses systate))))
-    :enable validator-anchors)
+    :enable committed-anchors)
 
   ;; The case in which the second validator has not committed any anchor
   ;; is symmetric with respect to the previous one.
@@ -124,11 +124,11 @@
                      (get-validator-state val2 systate))
                     0)
              (lists-noforkp
-              (validator-anchors (get-validator-state val1 systate)
+              (committed-anchors (get-validator-state val1 systate)
                                  (all-addresses systate))
-              (validator-anchors (get-validator-state val2 systate)
+              (committed-anchors (get-validator-state val2 systate)
                                  (all-addresses systate))))
-    :enable validator-anchors)
+    :enable committed-anchors)
 
   ;; If the two validators have the same last committed round,
   ;; their last anchor must be the same (via SAME-LAST-ANCHOR-IF-SAME-LAST),
@@ -152,11 +152,11 @@
                          (validator-state->last
                           (get-validator-state val2 systate))))
              (lists-noforkp
-              (validator-anchors (get-validator-state val1 systate)
+              (committed-anchors (get-validator-state val1 systate)
                                  (all-addresses systate))
-              (validator-anchors (get-validator-state val2 systate)
+              (committed-anchors (get-validator-state val2 systate)
                                  (all-addresses systate))))
-    :enable (validator-anchors
+    :enable (committed-anchors
              system-unequivocal-dag-p-necc
              system-unequivocal-dags-p-necc
              system-previous-in-dag-p-necc
@@ -200,9 +200,9 @@
                      (validator-state->last
                       (get-validator-state val1 systate))))
              (lists-noforkp
-              (validator-anchors (get-validator-state val1 systate)
+              (committed-anchors (get-validator-state val1 systate)
                                  (all-addresses systate))
-              (validator-anchors (get-validator-state val2 systate)
+              (committed-anchors (get-validator-state val2 systate)
                                  (all-addresses systate))))
     :enable (system-unequivocal-dag-p-necc
              system-unequivocal-dags-p-necc
@@ -210,7 +210,7 @@
              system-last-is-even-p-necc
              system-last-anchor-present-p-necc
              system-paths-to-other-last-anchor-p-necc
-             validator-anchors)
+             committed-anchors)
     :use ((:instance collect-all-anchors-to-append-of-collect-anchors-other
                      (dag1 (validator-state->dag
                             (get-validator-state val1 systate)))
@@ -246,9 +246,9 @@
                      (validator-state->last
                       (get-validator-state val2 systate))))
              (lists-noforkp
-              (validator-anchors (get-validator-state val1 systate)
+              (committed-anchors (get-validator-state val1 systate)
                                  (all-addresses systate))
-              (validator-anchors (get-validator-state val2 systate)
+              (committed-anchors (get-validator-state val2 systate)
                                  (all-addresses systate))))
     :use (:instance case-last1-before-last2
                     (val1 val2)
@@ -261,7 +261,7 @@
   ;; So we just use a :USE hints,
   ;; which is in fact as compact as an :ENABLE hint.
 
-  (defrulel validator-anchors-nofork-p-holds
+  (defrulel committed-anchors-nofork-p-holds
     (implies (and (system-unequivocal-dag-p systate)
                   (system-unequivocal-dags-p systate)
                   (system-previous-in-dag-p systate)
@@ -271,9 +271,9 @@
                   (set::in val1 (correct-addresses systate))
                   (set::in val2 (correct-addresses systate)))
              (lists-noforkp
-              (validator-anchors (get-validator-state val1 systate)
+              (committed-anchors (get-validator-state val1 systate)
                                  (all-addresses systate))
-              (validator-anchors (get-validator-state val2 systate)
+              (committed-anchors (get-validator-state val2 systate)
                                  (all-addresses systate))))
     :use (case-last1-0
           case-last2-0

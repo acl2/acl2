@@ -18,7 +18,7 @@
 (include-book "properties-anchors-extension")
 (include-book "properties-blockchain")
 (include-book "property-last-anchor-of-next-event")
-(include-book "property-validator-anchors-of-next-event")
+(include-book "property-committed-anchors-of-next-event")
 (include-book "invariant-addresses")
 (include-book "invariant-max-faulty")
 (include-book "invariant-quorum")
@@ -83,6 +83,9 @@
                     property-paths-to-voted-anchor
                     property-paths-to-other-voted-anchor
                     properties-anchors-extension
+                    properties-blockchain
+                    property-last-anchor-of-next-event
+                    property-committed-anchors-of-next-event
                     invariant-addresses
                     invariant-max-faulty
                     invariant-quorum

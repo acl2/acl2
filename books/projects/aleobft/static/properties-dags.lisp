@@ -479,7 +479,9 @@
                 (path-to-author+round cert author round dag))
            (equal (path-to-author+round cert author round dag)
                   (certificate-with-author+round author round dag)))
-  :enable path-to-author+round-in-dag
+  :enable (path-to-author+round-in-dag
+           certificate->author-of-path-to-author+round
+           certificate->round-of-path-to-author+round)
   :use (:instance certificate-with-author+round-of-element-when-unequivocal
                   (certs dag)
                   (cert (path-to-author+round cert author round dag))))
@@ -654,7 +656,11 @@
                 (path-to-author+round cert author round dag))
            (equal (path-to-author+round-set certs author round dag)
                   (path-to-author+round cert author round dag)))
-  :enable set::expensive-rules
+  :enable (set::expensive-rules
+           certificate->author-of-path-to-author+round
+           certificate->author-of-path-to-author+round-set
+           certificate->round-of-path-to-author+round
+           certificate->round-of-path-to-author+round-set)
   :use (path-to-author+round-set-when-path-to-author+round-of-element
         (:instance certificate-set-unequivocalp-necc
                    (cert1 (path-to-author+round-set certs author round dag))
@@ -931,7 +937,9 @@
                              (path-to-author+round cert author round dag)
                              dag)))
               (set::in cert0 (certificate-causal-history cert dag)))
-     :enable (in-of-certificate-causal-history)
+     :enable (in-of-certificate-causal-history
+              certificate->author-of-path-to-author+round
+              certificate->round-of-path-to-author+round)
      :use (:instance path-to-author+round-transitive
                      (cert cert)
                      (cert1 (path-to-author+round cert author round dag))

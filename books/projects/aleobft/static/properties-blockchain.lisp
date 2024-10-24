@@ -59,7 +59,9 @@
                                    dag))
   :induct t
   :enable (collect-anchors
-           certificate-list-pathp)
+           certificate-list-pathp
+           certificate->author-of-path-to-author+round
+           certificate->round-of-path-to-author+round)
   :hints ('(:use (:instance path-to-author+round-in-dag
                             (cert current-anchor)
                             (author (leader-at-round previous-round vals))
@@ -79,13 +81,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule certificate-list-pathp-of-validator-anchors
+(defrule certificate-list-pathp-of-committed-anchors
   (implies (or (equal (validator-state->last vstate) 0)
                (set::in (last-anchor vstate vals)
                         (validator-state->dag vstate)))
-           (certificate-list-pathp (validator-anchors vstate vals)
+           (certificate-list-pathp (committed-anchors vstate vals)
                                    (validator-state->dag vstate)))
-  :enable validator-anchors)
+  :enable committed-anchors)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

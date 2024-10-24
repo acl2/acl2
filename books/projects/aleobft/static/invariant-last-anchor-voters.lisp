@@ -136,7 +136,8 @@
               (max-faulty systate)
               (all-addresses systate)))
     :enable (validator-last-anchor-voters-p
-             certificates-with-round-of-insert))
+             certificates-with-round-of-insert
+             tally-leader-votes-of-insert))
 
   (defrule system-last-anchor-voters-p-of-create-certificate-next
     (implies (and (system-last-anchor-voters-p systate)
@@ -204,7 +205,8 @@
               (max-faulty systate)
               (all-addresses systate)))
     :enable (validator-last-anchor-voters-p
-             certificates-with-round-of-insert))
+             certificates-with-round-of-insert
+             tally-leader-votes-of-insert))
 
   (defrule system-last-anchor-voters-p-of-store-certificate-next
     (implies (and (system-last-anchor-voters-p systate)

@@ -66,8 +66,9 @@
     :hints (("Goal"
              :induct t
              :in-theory (enable set::cardinality))))
+  (in-theory (disable tally-leader-votes-sum))
 
-  (defrule tally-leader-votes-of-insert
+  (defruled tally-leader-votes-of-insert
     (equal (tally-leader-votes leader (set::insert voter voters))
            (if (set::in voter voters)
                (tally-leader-votes leader voters)
