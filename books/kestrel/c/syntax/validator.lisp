@@ -1783,50 +1783,37 @@
      so for now we just return the unknown type;
      we will need to extend implementation environments
      with information about the definition of @('size_t')."))
-  (b* (((reterr) (irr-type)))
-    (unop-case
-     op
-     :address (retok (type-pointer))
-     :indir (b* ((type (type-fpconvert (type-apconvert type-arg)))
-                 ((unless (or (type-case type :pointer)
-                              (type-case type :unknown)))
-                  (reterr (msg "In the unary expression ~x0, ~
-                                the sub-expression has type ~x1."
-                               (expr-fix expr) (type-fix type-arg)))))
-              (retok (type-unknown)))
-     :plus (b* (((unless (or (type-arithmeticp type-arg)
-                             (type-case type-arg :unknown)))
-                 (reterr (msg "In the unary expression ~x0, ~
-                               the sub-expression has type ~x1."
-                              (expr-fix expr) (type-fix type-arg)))))
-             (retok (type-promote type-arg ienv)))
-     :minus (b* (((unless (or (type-arithmeticp type-arg)
-                              (type-case type-arg :unknown)))
-                  (reterr (msg "In the unary expression ~x0, ~
-                                the sub-expression has type ~x1."
-                               (expr-fix expr) (type-fix type-arg)))))
-              (retok (type-promote type-arg ienv)))
-     :bitnot (b* (((unless (or (type-integerp type-arg)
-                               (type-case type-arg :unknown)))
-                   (reterr (msg "In the unary expression ~x0, ~
-                                 the sub-expression has type ~x1."
-                                (expr-fix expr) (type-fix type-arg)))))
-               (retok (type-promote type-arg ienv)))
-     :lognot (b* (((unless (or (type-scalarp type-arg)
-                               (type-case type-arg :unknown)))
-                   (reterr (msg "In the unary expression ~x0, ~
-                                 the sub-expression has type ~x1."
-                                (expr-fix expr) (type-fix type-arg)))))
-               (retok (type-sint)))
-     :preinc (reterr :todo)
-     :predec (reterr :todo)
-     :postinc (reterr :todo)
-     :postdec (reterr :todo)
-     :sizeof (b* (((when (type-case type-arg :function))
-                   (reterr (msg "In the unary expression ~x0, ~
-                                 the sub-expression has type ~x1."
-                                (expr-fix expr) (type-fix type-arg)))))
-               (retok (type-unknown)))))
+  (b* (((reterr) (irr-type))
+       (msg (msg "In the unary expression ~x0, ~
+                  the sub-expression has type ~x1."
+                 (expr-fix expr) (type-fix type-arg))))
+    (case (unop-kind op)
+      (:address (retok (type-pointer)))
+      (:indir (b* ((type (type-fpconvert (type-apconvert type-arg)))
+                   ((unless (or (type-case type :pointer)
+                                (type-case type :unknown)))
+                    (reterr msg)))
+                (retok (type-unknown))))
+      ((:plus :minus) (b* (((unless (or (type-arithmeticp type-arg)
+                                        (type-case type-arg :unknown)))
+                            (reterr msg)))
+                        (retok (type-promote type-arg ienv))))
+      (:bitnot (b* (((unless (or (type-integerp type-arg)
+                                 (type-case type-arg :unknown)))
+                     (reterr msg)))
+                 (retok (type-promote type-arg ienv))))
+      (:lognot (b* (((unless (or (type-scalarp type-arg)
+                                 (type-case type-arg :unknown)))
+                     (reterr msg)))
+                 (retok (type-sint))))
+      (:preinc (reterr :todo))
+      (:predec (reterr :todo))
+      (:postinc (reterr :todo))
+      (:postdec (reterr :todo))
+      (:sizeof (b* (((when (type-case type-arg :function))
+                     (reterr msg)))
+                 (retok (type-unknown))))
+      (t (prog2$ (impossible) (reterr t)))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1834,44 +1821,269 @@
 (define valid-binary ((expr exprp)
                       (op binopp)
                       (type-arg1 typep)
-                      (type-arg2 typep))
+                      (type-arg2 typep)
+                      (ienv ienvp))
   :guard (expr-case expr :binary)
   :returns (mv erp (type typep))
   :short "Validate a binary expression,
           given the type of the sub-expression."
-  (declare (ignore expr type-arg1 type-arg2))
-  (b* (((reterr) (irr-type)))
-    (binop-case
-     op
-     :mul (reterr :todo)
-     :div (reterr :todo)
-     :rem (reterr :todo)
-     :add (reterr :todo)
-     :sub (reterr :todo)
-     :shl (reterr :todo)
-     :shr (reterr :todo)
-     :lt (reterr :todo)
-     :gt (reterr :todo)
-     :le (reterr :todo)
-     :ge (reterr :todo)
-     :eq (reterr :todo)
-     :ne (reterr :todo)
-     :bitand (reterr :todo)
-     :bitxor (reterr :todo)
-     :bitior (reterr :todo)
-     :logand (reterr :todo)
-     :logor (reterr :todo)
-     :asg (reterr :todo)
-     :asg-mul (reterr :todo)
-     :asg-div (reterr :todo)
-     :asg-rem (reterr :todo)
-     :asg-add (reterr :todo)
-     :asg-sub (reterr :todo)
-     :asg-shl (reterr :todo)
-     :asg-shr (reterr :todo)
-     :asg-and (reterr :todo)
-     :asg-xor (reterr :todo)
-     :asg-ior (reterr :todo)))
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @('*') binary and @('/') operators
+     require arithmetic operands [C:6.5.5/2].
+     The result is the common type according to
+     the usual arithmetic conversions [C:6.5.5/3].
+     There is no need for array-to-pointer or function-to-pointer conversions
+     because those never produce arithmetic types.")
+   (xdoc::p
+    "The @('%') operator requires integer operands [C:6.5.5/2].
+     The result is from the usual arithmetic conversions [C:6.5.5/3].
+     No array-to-pointer or function-to-pointer conversions are needed.")
+   (xdoc::p
+    "The @('+') binary operator requires
+     either two arithmetic operands
+     or an integer and a pointer operand
+     [C:6.5.6/2].
+     In the first case, the result is from the usual arithmetic conversions
+     [C:6.5.6/4].
+     In the second case, the result is the pointer type [C:6.5.6/8].
+     Because of that second case, which involves pointers,
+     we perform array-to-pointer and function-to-pointer conversion.")
+   (xdoc::p
+    "The @('-') binary operator requires
+     either two arithmetic operands,
+     or two pointer operands,
+     or a pointer first operand and an integer second operand
+     [C:6.5.6/3].
+     In the first case, the result is from the usual arithmetic conversions
+     [C:6.5.6/4].
+     In the second case, the result has type @('ptrdiff_t') [C:6.5.6/9],
+     which has an implementation-specific definition,
+     and so we return the unknown type in this case.
+     In the third case, the result has the pointer type [C:6.5.6/8].
+     Because of the second and third cases, which involve pointers,
+     we perform array-to-pointer and function-to-pointer conversions.")
+   (xdoc::p
+    "The @('<<') and @('>>') operators require integer operands [C:6.5.7/2].
+     The type of the result is the type of the promoted left operand
+     [C:6.5.7/3].
+     There is no need for
+     array-to-pointer or function-to-pointer conversions.")
+   (xdoc::p
+    "The @('<'), @('>'), @('<='), and @('>=') operators
+     require real types or pointer types [C:6.5.8/2].
+     The result is always @('signed int') [C:6.5.8/6].
+     Since pointers may be involved,
+     we perform array-to-pointer and function-to-pointer conversions.")
+   (xdoc::p
+    "The @('==') and @('!=') operators require
+     arithmetic types or pointer types [C:6.5.9/2];
+     since we currently have just one type for pointers,
+     the distinctions between the three cases involving pointers
+     reduce to just the simple case of two pointers for us for now.
+     The result is always @('signed int') [C:6.5.9/3].
+     Since pointers may be involved,
+     we perform array-to-pointer and function-to-pointer conversions.")
+   (xdoc::p
+    "The @('&'), @('^'), and @('|') operators require integer operands
+     [C:6.5.10/2] [C:6.5.11/2] [C:6.5.12/2].
+     The result has the type from the usual arithmetic conversions
+     [C:6.5.10/3] [C:6.5.11/3] [C:6.5.12/3].
+     No array-to-pointer or function-to-pointer conversion is needed.")
+   (xdoc::p
+    "The @('&&') and @('||') operators require scalar types
+     [C:6.5.13/2] [C:6.5.14/2].
+     The result has type @('signed int') [C:6.5.13/3] [C:6.5.14/3].
+     No array-to-pointer or function-to-pointer conversion is needed.")
+   (xdoc::p
+    "The @('=') simple assignment operator requires
+     an lvalue as left operand [C:6.5.16/2],
+     but currently we do not check that.
+     In our currently approximate type system,
+     the requirements in [C:6.5.16.1/1] reduce to the two operands having
+     both arithmetic types,
+     or both the structure type,
+     or both the union type,
+     or both pointer types.
+     Since pointers may be involved, we need to perform
+     array-to-pointer and function-to-pointer conversions.
+     The type of the result is the type of the left operand [C:6.5.16/3].")
+   (xdoc::p
+    "The @('*=') and @('/=') operators require arithmetic operands
+     [C:6.5.16.2/2],
+     and the result has the type of the first operand [C:6.5.16/3].
+     No array-to-pointer or function-to-pointer conversions are needed.")
+   (xdoc::p
+    "The @('%=') operator requires integer operands [C:6.5.16.2/2],
+     and the result has the type of the first operand [C:6.5.16/3].
+     No array-to-pointer or function-to-pointer conversions are needed.")
+   (xdoc::p
+    "The @('+=') and @('-=') operands require
+     either arithmetic operands
+     or a first pointer operand and a second integer operand
+     [C:6.5.16.2/1].
+     The result has the type of the first operand [C:6.5.16/3].
+     Since pointers may be involved,
+     we perform array-to-pointer and function-to-pointer conversions.")
+   (xdoc::p
+    "The @('<<='), @('>>='), @('&='), @('^='), and @('|=') operators
+     require integer operands [C:6.5.13.2/2].
+     The result has the type of the first operand [C:6.5.13/3].
+     No array-to-pointer or function-to-pointer conversions are needed."))
+  (b* (((reterr) (irr-type))
+       (msg (msg "In the binary expression ~x0, ~
+                  the sub-expressiona have types ~x1 and ~x2."
+                 (expr-fix expr) (type-fix type-arg1) (type-fix type-arg2))))
+    (case (binop-kind op)
+      ((:mul :div) (b* (((unless (and (or (type-arithmeticp type-arg1)
+                                          (type-case type-arg1 :unknown))
+                                      (or (type-arithmeticp type-arg2)
+                                          (type-case type-arg2 :unknown))))
+                         (reterr msg)))
+                     (retok (type-uaconvert type-arg1 type-arg2 ienv))))
+      (:rem (b* (((unless (and (or (type-arithmeticp type-arg1)
+                                   (type-case type-arg1 :unknown))
+                               (or (type-arithmeticp type-arg2)
+                                   (type-case type-arg2 :unknown))))
+                  (reterr msg)))
+              (retok (type-uaconvert type-arg1 type-arg2 ienv))))
+      (:add (b* ((type1 (type-fpconvert (type-apconvert type-arg1)))
+                 (type2 (type-fpconvert (type-apconvert type-arg2))))
+              (cond
+               ((and (or (type-arithmeticp type1)
+                         (type-case type1 :unknown))
+                     (or (type-arithmeticp type2)
+                         (type-case type2 :unknown)))
+                (retok (type-uaconvert type1 type2 ienv)))
+               ((or (and (or (type-integerp type1)
+                             (type-case type1 :unknown))
+                         (or (type-case type2 :pointer)
+                             (type-case type2 :unknown)))
+                    (and (or (type-case type1 :pointer)
+                             (type-case type1 :unknown))
+                         (or (type-integerp type2)
+                             (type-case type2 :unknown))))
+                (retok (type-pointer)))
+               (t (reterr msg)))))
+      (:sub (b* ((type1 (type-fpconvert (type-apconvert type-arg1)))
+                 (type2 (type-fpconvert (type-apconvert type-arg2))))
+              (cond
+               ((and (or (type-arithmeticp type1)
+                         (type-case type1 :unknown))
+                     (or (type-arithmeticp type2)
+                         (type-case type2 :unknown)))
+                (retok (type-uaconvert type1 type2 ienv)))
+               ((and (or (type-case type1 :pointer)
+                         (type-case type1 :unknown))
+                     (or (type-case type2 :pointer)
+                         (type-case type2 :unknown)))
+                (retok (type-unknown)))
+               ((and (or (type-case type1 :pointer)
+                         (type-case type1 :unknown))
+                     (or (type-integerp type2)
+                         (type-case type2 :unknown)))
+                (retok (type-pointer)))
+               (t (reterr msg)))))
+      ((:shl :shr) (b* (((unless (and (or (type-integerp type-arg1)
+                                          (type-case type-arg1 :unknown))
+                                      (or (type-integerp type-arg2)
+                                          (type-case type-arg2 :unknown))))
+                         (reterr msg)))
+                     (retok (type-promote type-arg1 ienv))))
+      ((:lt :gt :le :ge)
+       (b* ((type1 (type-fpconvert (type-apconvert type-arg1)))
+            (type2 (type-fpconvert (type-apconvert type-arg2)))
+            ((unless (or (and (or (type-realp type1)
+                                  (type-case type1 :unknown))
+                              (or (type-realp type2)
+                                  (type-case type2 :unknown)))
+                         (and (or (type-case type1 :pointer)
+                                  (type-case type1 :unknown))
+                              (or (type-case type2 :pointer)
+                                  (type-case type2 :unknown)))))
+             (reterr msg)))
+         (retok (type-sint))))
+      ((:eq :ne) (b* ((type1 (type-fpconvert (type-apconvert type-arg1)))
+                      (type2 (type-fpconvert (type-apconvert type-arg2)))
+                      ((unless (or (and (or (type-arithmeticp type1)
+                                            (type-case type1 :unknown))
+                                        (or (type-arithmeticp type2)
+                                            (type-case type2 :unknown)))
+                                   (and (or (type-case type1 :pointer)
+                                            (type-case type1 :unknown))
+                                        (or (type-case type2 :pointer)
+                                            (type-case type2 :unknown)))))
+                       (reterr msg)))
+                   (retok (type-sint))))
+      ((:bitand :bitxor :bitior)
+       (b* (((unless (and (or (type-integerp type-arg1)
+                              (type-case type-arg1 :unknown))
+                          (or (type-integerp type-arg2)
+                              (type-case type-arg2 :unknown))))
+             (reterr msg)))
+         (retok (type-uaconvert type-arg1 type-arg2 ienv))))
+      ((:logand :logor) (b* (((unless (and (or (type-scalarp type-arg1)
+                                               (type-case type-arg1 :unknown))
+                                           (or (type-scalarp type-arg2)
+                                               (type-case type-arg2 :unknown))))
+                              (reterr msg)))
+                          (retok (type-sint))))
+      (:asg (b* ((type1 (type-fpconvert (type-apconvert type-arg1)))
+                 (type2 (type-fpconvert (type-apconvert type-arg2)))
+                 ((unless (or (and (or (type-arithmeticp type1)
+                                       (type-case type1 :unknown))
+                                   (or (type-arithmeticp type2)
+                                       (type-case type2 :unknown)))
+                              (and (or (type-case type1 :struct)
+                                       (type-case type1 :unknown))
+                                   (or (type-case type2 :struct)
+                                       (type-case type2 :unknown)))
+                              (and (or (type-case type1 :union)
+                                       (type-case type1 :unknown))
+                                   (or (type-case type2 :union)
+                                       (type-case type2 :unknown)))
+                              (and (or (type-case type1 :pointer)
+                                       (type-case type1 :unknown))
+                                   (or (type-case type2 :pointer)
+                                       (type-case type2 :unknown)))))
+                  (reterr msg)))
+              (retok (type-fix type-arg1))))
+      ((:asg-mul :asg-div)
+       (b* (((unless (and (or (type-arithmeticp type-arg1)
+                              (type-case type-arg1 :unknown))
+                          (or (type-arithmeticp type-arg2)
+                              (type-case type-arg2 :unknown))))
+             (reterr msg)))
+         (retok (type-fix type-arg1))))
+      (:asg-rem (b* (((unless (and (or (type-integerp type-arg1)
+                                       (type-case type-arg1 :unknown))
+                                   (or (type-integerp type-arg2)
+                                       (type-case type-arg2 :unknown))))
+                      (reterr msg)))
+                  (retok (type-fix type-arg1))))
+      ((:asg-add :asg-sub)
+       (b* ((type1 (type-fpconvert (type-apconvert type-arg1)))
+            (type2 (type-fpconvert (type-apconvert type-arg2)))
+            ((unless (or (and (or (type-arithmeticp type1)
+                                  (type-case type1 :unknown))
+                              (or (type-arithmeticp type2)
+                                  (type-case type2 :unknown)))
+                         (and (or (type-case type1 :pointer)
+                                  (type-case type1 :unknown))
+                              (or (type-integerp type2)
+                                  (type-case type2 :unknown)))))
+             (reterr msg)))
+         (retok (type-fix type-arg1))))
+      ((:asg-shl :asg-shr :asg-and :asg-xor :asg-ior)
+       (b* (((unless (and (or (type-integerp type-arg1)
+                              (type-case type-arg1 :unknown))
+                          (or (type-integerp type-arg2)
+                              (type-case type-arg2 :unknown))))
+             (reterr msg)))
+         (retok (type-fix type-arg1))))
+      (t (prog2$ (impossible) (reterr t)))))
+  :guard-hints (("Goal" :in-theory (disable (:e tau-system))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1972,7 +2184,7 @@
        :binary (b* (((erp type-arg1 table) (valid-expr expr.arg1 table ienv))
                     ((erp type-arg2 table) (valid-expr expr.arg2 table ienv))
                     ((erp type)
-                     (valid-binary expr expr.op type-arg1 type-arg2)))
+                     (valid-binary expr expr.op type-arg1 type-arg2 ienv)))
                  (retok type table))
        :cond (reterr :todo)
        :comma (reterr :todo)
