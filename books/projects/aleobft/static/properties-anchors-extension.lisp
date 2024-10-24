@@ -65,7 +65,6 @@
     "This is proved by induction on
      the anchors that form the extension."))
   (implies (and (certificate-setp dag)
-                (certificate-set-unequivocalp dag)
                 (anchorp anchor dag vals)
                 (dag-all-path-to-p anchor dag)
                 (set::in anchor1 dag)
