@@ -2106,6 +2106,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define valid-sizeof ((expr exprp) (type typep))
+  :guard (expr-case expr :sizeof)
+  :returns (mv erp (type1 typep))
+  :short "Validate a @('sizeof') applied to a type name,
+          given the type denoted by the type name."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @('sizeof') operator applied to an expression
+     requires a non-function complete type [C:6.5.3.4/1].
+     In our current approximate type system,
+     we just exclude function types,
+     but we do not have a notion of complete types yet.
+     The result has type @('size_t') [C:6.5.3.4/5],
+     whose definition is implementation-defined,
+     so for now we just return the unknown type;
+     we will need to extend implementation environments
+     with information about the definition of @('size_t')."))
+  (b* (((reterr) (irr-type))
+       ((when (type-case type :function))
+        (reterr (msg "In the sizeof type expression ~x0, ~
+                      the argument ~x1 is a function type."
+                     (expr-fix expr) (type-fix type)))))
+    (retok (type-unknown)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines valid-exprs/decls/stmts
   :short "Validate expressions, declarations, statements,
           and related artifacts."
@@ -2193,7 +2221,9 @@
        :unary (b* (((erp type-arg table) (valid-expr expr.arg table ienv))
                    ((erp type) (valid-unary expr expr.op type-arg ienv)))
                 (retok type table))
-       :sizeof (reterr :todo)
+       :sizeof (b* (((erp type table) (valid-tyname expr.type table ienv))
+                    ((erp type1) (valid-sizeof expr type)))
+                 (retok type1 table))
        :alignof (reterr :todo)
        :cast (reterr :todo)
        :binary (b* (((erp type-arg1 table) (valid-expr expr.arg1 table ienv))
