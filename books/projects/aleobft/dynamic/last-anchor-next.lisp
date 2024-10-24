@@ -23,18 +23,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ anchors-of-validators-next
+(defxdoc+ last-anchor-next
   :parents (correctness)
-  :short "Anchors committed by validators:
-          how events change results."
+  :short "Last anchor committed by a validator:
+          how events change the result."
   :long
   (xdoc::topstring
    (xdoc::p
-    "As mentioned in @(see anchors-of-validators-def-and-init),
-     the theorems about the changes to the results of these operations
-     are separate from their definition and proofs of initial result.
+    "As mentioned in @(see last-anchor-def-and-init),
+     the theorems about the changes to the result of this operation
+     are separate from its definition and proofs of initial result.
      The reason is that the theorems about changes under events
-     need other theorems that depend on the definitions."))
+     need other theorems that depend on the definition."))
   :order-subtopics t
   :default-parent t)
 
