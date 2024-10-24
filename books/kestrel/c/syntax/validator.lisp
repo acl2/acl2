@@ -1782,7 +1782,22 @@
      whose definition is implementation-defined,
      so for now we just return the unknown type;
      we will need to extend implementation environments
-     with information about the definition of @('size_t')."))
+     with information about the definition of @('size_t').")
+   (xdoc::p
+    "The @('++') pre-increment and @('--') pre-decrement operators
+     require a real or pointer operand [C:6.5.3.1/1].
+     Since these expressions are equivalent to assignments
+     [C:6.5.3.1/2] [C:6.5.3.1/3],
+     the type of the result must be the type of the operand.
+     Since pointers may be involved,
+     we apply array-to-pointer and function-to-pointer conversions.")
+   (xdoc::p
+    "The @('++') post-increment and @('--') post-decrement operators
+     require a real or pointer operand [C:6.5.2.4/1].
+     The type of the result is the same as the operand
+     [C:6.5.2.4/2] [C:6.5.2.4/3].
+     Since pointers may be involved,
+     we apply array-to-pointer and function-to-pointer conversions."))
   (b* (((reterr) (irr-type))
        (msg (msg "In the unary expression ~x0, ~
                   the sub-expression has type ~x1."
@@ -1806,10 +1821,13 @@
                                  (type-case type-arg :unknown)))
                      (reterr msg)))
                  (retok (type-sint))))
-      (:preinc (reterr :todo))
-      (:predec (reterr :todo))
-      (:postinc (reterr :todo))
-      (:postdec (reterr :todo))
+      ((:preinc :predec :postinc :postdec)
+       (b* ((type (type-fpconvert (type-apconvert type-arg)))
+            ((unless (or (type-realp type)
+                         (type-case type :pointer)
+                         (type-case type :unknown)))
+             (reterr msg)))
+         (retok (type-fix type-arg))))
       (:sizeof (b* (((when (type-case type-arg :function))
                      (reterr msg)))
                  (retok (type-unknown))))
