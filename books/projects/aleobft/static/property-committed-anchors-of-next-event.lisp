@@ -205,8 +205,8 @@
                    (leader (leader-at-round commit-round
                                             (all-addresses systate)))
                    (anchor (certificate-with-author+round leader
-                                                              commit-round
-                                                              vstate.dag))
+                                                          commit-round
+                                                          vstate.dag))
                    (anchors (collect-anchors anchor
                                              (- commit-round 2)
                                              vstate.last
