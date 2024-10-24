@@ -265,7 +265,7 @@
     :induct (set::cardinality certs)
     :enable set::cardinality)
 
-  (defrule path-to-author+round-round-lte
+  (defruled path-to-author+round-round-lte
     (implies (path-to-author+round cert author round dag)
              (<= round (certificate->round cert)))
     :rule-classes :linear)

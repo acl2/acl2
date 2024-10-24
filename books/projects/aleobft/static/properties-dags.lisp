@@ -588,7 +588,8 @@
         certificate-with-author+round-of-element-when-unequivocal
         set::expensive-rules
         nil-not-in-certificate-set
-        certificates-with-authors+round-subset))
+        certificates-with-authors+round-subset
+        path-to-author+round-round-lte))
       '(:use ((:instance element-of-certificate-set-not-nil
                          (certs dag)
                          (cert (path-to-author+round cert1
