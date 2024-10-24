@@ -56,7 +56,8 @@
   (defret len-of-calculate-blockchain
     (equal (len blockchain)
            (len anchors))
-    :hints (("Goal" :in-theory (enable fix))))
+    :hints (("Goal" :in-theory (enable fix
+                                       len-of-extend-blockchain))))
 
   (defruled nthcdr-of-calculate-blockchain
     (implies (<= n (len anchors))

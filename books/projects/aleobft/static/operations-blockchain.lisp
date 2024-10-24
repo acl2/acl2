@@ -206,6 +206,7 @@
     :hints (("Goal"
              :induct t
              :in-theory (enable len fix))))
+  (in-theory (disable len-of-extend-blockchain))
 
   (defrule extend-blockchain-of-nil
     (equal (extend-blockchain nil dag blockchain committed-certs)
