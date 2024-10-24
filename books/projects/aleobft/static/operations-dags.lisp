@@ -200,6 +200,8 @@
                (equal (certificate->author previous-cert?)
                       (address-fix author)))
       :fn path-to-author+round-set))
+  (in-theory (disable certificate->author-of-path-to-author+round
+                      certificate->author-of-path-to-author+round-set))
 
   (defret-mutual certificate->round-of-path-to-author+round
     (defret certificate->round-of-path-to-author+round
