@@ -660,7 +660,9 @@
            certificate->author-of-path-to-author+round
            certificate->author-of-path-to-author+round-set
            certificate->round-of-path-to-author+round
-           certificate->round-of-path-to-author+round-set)
+           certificate->round-of-path-to-author+round-set
+           path-to-author+round-in-dag
+           path-to-author+round-set-in-dag)
   :use (path-to-author+round-set-when-path-to-author+round-of-element
         (:instance certificate-set-unequivocalp-necc
                    (cert1 (path-to-author+round-set certs author round dag))
@@ -939,7 +941,8 @@
               (set::in cert0 (certificate-causal-history cert dag)))
      :enable (in-of-certificate-causal-history
               certificate->author-of-path-to-author+round
-              certificate->round-of-path-to-author+round)
+              certificate->round-of-path-to-author+round
+              path-to-author+round-in-dag)
      :use (:instance path-to-author+round-transitive
                      (cert cert)
                      (cert1 (path-to-author+round cert author round dag))
