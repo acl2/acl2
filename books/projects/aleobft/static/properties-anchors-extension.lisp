@@ -136,7 +136,6 @@
      since @(tsee collect-all-anchors) is essentially
      a wrapper of @(tsee collect-anchors)."))
   (implies (and (certificate-setp dag)
-                (certificate-set-unequivocalp dag)
                 (anchorp anchor dag vals)
                 (dag-all-path-to-p anchor dag)
                 (anchorp anchor1 dag vals)
