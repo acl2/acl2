@@ -389,4 +389,6 @@
       :fn certificate-set-causal-history)
     :hints
     (("Goal" :in-theory (enable* set::expensive-rules
-                                 certificates-with-authors+round-subset)))))
+                                 certificates-with-authors+round-subset))))
+  (in-theory (disable certificate-causal-history-subset
+                      certificate-set-causal-history-subset)))

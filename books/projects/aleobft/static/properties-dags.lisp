@@ -895,7 +895,9 @@
                round-set-of-certificates-with-authors+round
                pos-fix
                nil-not-in-certificate-set
-               certificates-with-authors+round-subset))
+               certificates-with-authors+round-subset
+               certificate-causal-history-subset
+               certificate-set-causal-history-subset))
      (cond
       ((acl2::occur-lst '(acl2::flag-is 'certificate-causal-history) clause)
        '(:use (:instance round-leq-when-path-to-author+round-set
