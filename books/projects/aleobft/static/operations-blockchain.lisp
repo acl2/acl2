@@ -113,7 +113,7 @@
 
   ///
 
-  (defrule car-of-collect-anchors
+  (defruled car-of-collect-anchors
     (equal (car (collect-anchors current-anchor
                                  previous-round
                                  last-committed-round
