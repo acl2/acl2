@@ -208,7 +208,7 @@
              :in-theory (enable len fix))))
   (in-theory (disable len-of-extend-blockchain))
 
-  (defrule extend-blockchain-of-nil
+  (defruled extend-blockchain-of-nil
     (equal (extend-blockchain nil dag blockchain committed-certs)
            (mv (block-list-fix blockchain)
                (certificate-set-fix committed-certs))))

@@ -51,7 +51,8 @@
 
   (defrule calculate-blockchain-of-nil
     (equal (calculate-blockchain nil dag)
-           nil))
+           nil)
+    :enable extend-blockchain-of-nil)
 
   (defret len-of-calculate-blockchain
     (equal (len blockchain)
