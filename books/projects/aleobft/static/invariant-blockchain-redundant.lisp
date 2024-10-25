@@ -334,7 +334,8 @@
              system-unequivocal-dag-p-when-system-unequivocal-certificates-p
              system-unequivocal-dag-p-necc
              system-last-anchor-present-p-necc
-             extend-blockchain-of-nil)
+             extend-blockchain-of-nil
+             extend-blockchain-of-append)
     :use system-committed-redundantp-necc)
 
   (defrule system-blockchain-redundantp-of-commit-anchors-next
