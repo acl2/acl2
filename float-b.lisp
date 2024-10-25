@@ -46,7 +46,7 @@
 ; We want to support expressions like (df* 1/4 x) or (df-sin *df-pi*), where
 ; there is a constant argument whose value is a dfp (i.e., a rational that is
 ; representable as a double-float), yet the operation expects a double-float.
-; This utilitity applies to-df to numeric constants, since those cannot be of
+; This utility applies to-df to numeric constants, since those cannot be of
 ; type :DF.  This optimization applies not only to numbers but also constant
 ; symbols, to allow an expression like (df-sin *df-pi*), since *df-pi* is a
 ; rational.
@@ -133,7 +133,7 @@
               ,@rest-evs))))
 
 ; In the following comparison functions df<, df=, and df/=, we can simply call
-; the usual arithmetic comparitors, since numeric comparisons are based on the
+; the usual arithmetic comparators, since numeric comparisons are based on the
 ; mathematical value regardless of the type of the number (including rational
 ; vs. double-float).
 
@@ -208,7 +208,7 @@
   (declare (xargs :guard t))
   `((df-expt-fn (x y)
 
-; We cannot allow x to be negative, since te CL HyperSpec says that "expt is
+; We cannot allow x to be negative, since the CL HyperSpec says that "expt is
 ; defined as b^x = e^x log b" (here b is our x and x is our y), and ACL2 does
 ; not support complex floats.  Here are a couple of relevant examples in CCL.
 

@@ -12,7 +12,7 @@
 (in-package "ALEOBFT-DYNAMIC")
 
 (include-book "ordered-even-blocks")
-(include-book "anchors-of-validators-def-and-init")
+(include-book "last-anchor-def-and-init")
 
 (local (include-book "arithmetic-3/top" :dir :system))
 

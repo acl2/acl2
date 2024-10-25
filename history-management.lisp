@@ -9355,7 +9355,7 @@
 ; Indeed, it is hard to imagine rewriting this definition in a way that tests
 ; PIVOT as a ruler in the conventional machine because that would require
 ; avoiding the LET and computing LESS and MORE with two separate calls of
-; SEPARATE.  This example benefits from our conventional interpretion of
+; SEPARATE.  This example benefits from our conventional interpretation of
 ; ``rulers''.
 
 ; (2) During proof attempts the pre-computed induction machines are
@@ -12074,7 +12074,7 @@
 ; ruled by hyps2.  Note that the only free vars in lam-body are gv and iv.  But
 ; gv is always bound to globals as the fancy loop$ scion iterates across
 ; target.  Meanwhile, iv might occur outside the lambda and must be renamed.
-; So iv' be a new variable not occuring in hyps1 and let s be the substitution
+; So iv' be a new variable not occurring in hyps1 and let s be the substitution
 ; {gv <-- globals, iv <-- iv'}.  Then the measure conjecture generated for this
 ; call of (fn d1 ... dn) in lam-body is
 
@@ -13181,7 +13181,7 @@
 ; maintained on stobj-table fields, that each key 'st of the table is mapped to
 ; a stobj satisfying the recognizer of st.  It is thus sound to incorporate the
 ; environment into each clause in the clause-set returned as the first result,
-; though we heurstically limit which parts of the environment; see
+; though we heuristically limit which parts of the environment; see
 ; add-env-to-clause-set and its subroutine, split-env.  It would be silly, for
 ; example, to add the hypothesis (stp (tbl-get 'st parent (create-st))) to the
 ; goal (i.e., the negation of that as a literal in the returned clause-set)
@@ -13440,7 +13440,7 @@
 ; traffics in stobjs (and is not non-executablep!), then it was so translated
 ; (except in cases handled by the throw-nonexec-error-p case above), and we
 ; know that all those stobj recognizer calls are true.  We similarly know that
-; stobje-table field accesses return appropriate stobjs, and that knowledge is
+; stobj-table field accesses return appropriate stobjs, and that knowledge is
 ; reflected in the env returned.
 
 ; Once upon a time, we normalized the 'guard first.  Is that important?
@@ -15034,7 +15034,7 @@
                expr))
             (t nil)))
 
-; For the next case, see the correponding comment in
+; For the next case, see the corresponding comment in
 ; translate-in-theory-hint@par.
 
          (let* ((acl2-primitives-theory
@@ -18434,7 +18434,7 @@
                           ,(getpropc key 'stobjs-out t
 
 ; Normally we would avoid getting the stobjs-out of return-last.  But
-; return-last is rejected for mamoization anyhow (by memoize-table-chk).
+; return-last is rejected for memoization anyhow (by memoize-table-chk).
 
                                      wrld) ; stobjs-out
                           ,(and (symbolp condition)

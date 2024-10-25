@@ -6517,12 +6517,12 @@ its attachment is ignored during proofs"))))
 
 ; The Rewriter's ``Constant Argument'' -- rcnst
 
-; In nqthm the rewriter accessed many "special variables" -- variables
+; In Nqthm the rewriter accessed many "special variables" -- variables
 ; bound outside the rewriter.  Some of these were true specials in the
 ; rewriter, in the sense that the rewriter sometimes re-bound them in its
 ; recursion.  An example of such a variable is fnstack, which is nil
 ; outside the rewriter and re-bound inside the rewriter only when we
-; tentatively expand a function call.  But other nqthm special variables
+; tentatively expand a function call.  But other Nqthm special variables
 ; were just constants -- as far as the rewriter was concerned.  For example,
 ; current-lit, the literal on which rewrite-clause called rewrite, is
 ; set outside the call of rewrite and read but never written inside.
@@ -6676,7 +6676,7 @@ its attachment is ignored during proofs"))))
 
 ; WARNING: You must also change (at least) the definition of mfc-obj in
 ; books/arithmetic-5/lib/basic-ops/building-blocks.lisp.  Note that mfc-obj is
-; guard-veriable because it builds in the proper guard for (access
+; guard-verifiable because it builds in the proper guard for (access
 ; metafunction-context mfc :obj) and then uses (cadr mfc) instead of the access
 ; form.  Similar issues arise around the rewrite-constant.  See the warning
 ; there about nonlinearp-default-hint.
@@ -7593,7 +7593,7 @@ its attachment is ignored during proofs"))))
 ; silently exiting the wormhole.
 
 ; So now let's suppose we're in either near-miss-brkpt1 or brkpt1 and reading
-; input from the user.  Keyword commands are interpretted as specified by
+; input from the user.  Keyword commands are interpreted as specified by
 ; *brkpt1-aliases*.  See :doc brr-commands.  Most commands just display
 ; information like the :target being rewritten, the :path rewrite took to reach
 ; this target, etc.  Typically the user will inspect the current state of the
@@ -7615,7 +7615,7 @@ its attachment is ignored during proofs"))))
 
 ; If, on the other hand, the user proceeds from near-miss-brkpt1 or brkpt1,
 ; e.g., with :ok, :go, or :eval, this is what happens: First, we adjust the
-; current status by adding two new bindings to the :brr-local-alist.  THese
+; current status by adding two new bindings to the :brr-local-alist.  These
 ; bindings are intended to tell the eventual brkpt2 handler how to behave when
 ; it is called on the current brr-status.  The first new binding saves the
 ; current value of standard-oi so that if the user changes it in an inferior
@@ -10196,7 +10196,7 @@ its attachment is ignored during proofs"))))
        0 (lambda nil
            (explain-near-miss1
             (get-brr-local 'target state)
-            30 ; an object containint >= 30 conses is ``large''
+            30 ; an object containing >= 30 conses is ``large''
             (evisc-tuple 10 20 nil nil)
             state)))
       (:explain-near-miss+
@@ -12436,7 +12436,7 @@ its attachment is ignored during proofs"))))
 ;       ((zp n) lst)
 ;       (t (removeN (cdr lst) (1- n)))))
 ;
-;   (defthm len-removen  ; Needed to admint next fn.  If you disable this
+;   (defthm len-removen  ; Needed to admit next fn.  If you disable this
 ;     (implies (natp n)  ; lemma, the overflow no longer occurs.
 ;              (equal (len (removen lst n))
 ;                     (if (>= n (len lst))
@@ -13494,7 +13494,7 @@ its attachment is ignored during proofs"))))
 ;       - ev-anc is the canonical-ancestors of the rule's evaluator;
 ;       - extra-anc is the canonical-ancestors of the rule's meta-extract
 ;         functions if any, else nil; and
-;       - ev-fns is a list without duplicates containing the canonical sibings
+;       - ev-fns is a list without duplicates containing the canonical siblings
 ;         of the evaluator and any meta-extract functions of the rule.
 
 ;;;;;;;;;;
@@ -19465,7 +19465,7 @@ its attachment is ignored during proofs"))))
 
 ; Term is of the form (fn . args).
 
-; Nqthm Discrepancy: In nqthm, the caller of rewrite-fncall,
+; Nqthm Discrepancy: In Nqthm, the caller of rewrite-fncall,
 ; rewrite-with-lemmas, would ask whether the result was different from term and
 ; whether it contained rewritable calls.  If so, it called the rewriter on the
 ; result.  We have changed that here so that rewrite-fncall, in the case that
@@ -19475,7 +19475,7 @@ its attachment is ignored during proofs"))))
 ; all expansions.  It is possible the old code sometimes found a rewritable
 ; call of a non-recursive fn in the expansion of that fn's body because of uses
 ; of that fn in the arguments.  So this is a possible difference between ACL2
-; and nqthm, although we have no reason to believe it is significant and we do
+; and Nqthm, although we have no reason to believe it is significant and we do
 ; it only for recursive fns simply because the non-recursive case seems
 ; unlikely.
 
@@ -22215,7 +22215,7 @@ its attachment is ignored during proofs"))))
 
 ; We return two results: the standard contradictionp and a new pot-lst.
 
-; Important Observation about Applicative Programming: In nqthm, this
+; Important Observation about Applicative Programming: In Nqthm, this
 ; function was called add-equations-to-pot-lst.  Isn't this a better
 ; name?  The advantage to rewriting a megabyte of code applicatively
 ; is that you get to think of better names for everything!
@@ -22324,7 +22324,7 @@ its attachment is ignored during proofs"))))
 ; we visit the modified pot-lst after the fact, if lst2 is contradictory,
 ; and add the appropriate ttree.
 
-; Historical Note: In nqthm we handled this problem by infecting the
+; Historical Note: In Nqthm we handled this problem by infecting the
 ; polys of lst1 with a special mark (a fresh cons) in the lemmas field
 ; of the poly before we added them to the pot-lst.  If lst2 gave a
 ; contradiction, we scanned the pot-lst produced by lst1 looking for

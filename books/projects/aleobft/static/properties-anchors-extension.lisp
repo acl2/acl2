@@ -16,6 +16,8 @@
 (include-book "property-paths-to-voted-anchor")
 (include-book "properties-anchors")
 
+(local (include-book "arithmetic-3/top" :dir :system))
+
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
@@ -65,7 +67,6 @@
     "This is proved by induction on
      the anchors that form the extension."))
   (implies (and (certificate-setp dag)
-                (certificate-set-unequivocalp dag)
                 (anchorp anchor dag vals)
                 (dag-all-path-to-p anchor dag)
                 (set::in anchor1 dag)
@@ -97,37 +98,13 @@
                            vals)
   :enable (collect-anchors
            anchorp
-           certificate-with-author+round-of-element-when-unequivocal
-           certificate-with-author+round-element
-           certificate-with-author+round-when-path-to-author+round
            append
-           natp)
+           evenp
+           certificate->round-of-path-to-author+round
+           path-to-author+round-in-dag)
   :hints ('(:use (:instance dag-all-path-to-p-necc
                             (cert1 anchor1)
-                            (cert anchor))))
-
-  :prep-lemmas
-
-  ((defrule even-lemma1
-     (implies (evenp x)
-              (evenp (- x 2)))
-     :enable evenp)
-
-   (defrule even-lemma2
-     (implies (and (integerp x)
-                   (integerp y)
-                   (evenp x)
-                   (evenp y))
-              (not (equal x (1+ y))))
-     :enable evenp)
-
-   (defrule even-lemma3
-     (implies (and (integerp x)
-                   (integerp y)
-                   (evenp x)
-                   (evenp y))
-              (not (equal x (1- y))))
-     :enable evenp)))
+                            (cert anchor)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -140,7 +117,6 @@
      since @(tsee collect-all-anchors) is essentially
      a wrapper of @(tsee collect-anchors)."))
   (implies (and (certificate-setp dag)
-                (certificate-set-unequivocalp dag)
                 (anchorp anchor dag vals)
                 (dag-all-path-to-p anchor dag)
                 (anchorp anchor1 dag vals)
@@ -155,7 +131,6 @@
                                     vals)
                    (collect-all-anchors anchor dag vals))))
   :enable (collect-all-anchors
-           natp
            evenp
            anchorp)
   :use (:instance collect-anchors-to-append-of-collect-anchors

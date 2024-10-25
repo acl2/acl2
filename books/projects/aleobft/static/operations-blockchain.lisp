@@ -106,11 +106,14 @@
                        vals)))
   :measure (nfix previous-round)
   :hints (("Goal" :in-theory (enable o-p o-finp o< nfix)))
-  :guard-hints (("Goal" :in-theory (enable natp evenp)))
+  :guard-hints
+  (("Goal" :in-theory (enable natp
+                              evenp
+                              certificate->round-of-path-to-author+round)))
 
   ///
 
-  (defrule car-of-collect-anchors
+  (defruled car-of-collect-anchors
     (equal (car (collect-anchors current-anchor
                                  previous-round
                                  last-committed-round
@@ -203,8 +206,9 @@
     :hints (("Goal"
              :induct t
              :in-theory (enable len fix))))
+  (in-theory (disable len-of-extend-blockchain))
 
-  (defrule extend-blockchain-of-nil
+  (defruled extend-blockchain-of-nil
     (equal (extend-blockchain nil dag blockchain committed-certs)
            (mv (block-list-fix blockchain)
                (certificate-set-fix committed-certs))))

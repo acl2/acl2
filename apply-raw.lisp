@@ -524,7 +524,7 @@
 ; as given but whose virtual size is the number of entries from the beginning
 ; to the first nil.  The circularity gives us an extremely efficient way to add
 ; new entries at the front without consing.  This abstract view of the
-; *cl-cache* is violated in a very important way: the *cl-cache* is intially a
+; *cl-cache* is violated in a very important way: the *cl-cache* is initially a
 ; natural number greater than 2 that is the size of the circular alist.  The
 ; first time we need to add a lambda to the cache we allocate the full
 ; structure.
@@ -660,7 +660,7 @@
 
 ; We handle the possibility of interrupts rendering the cache inconsistent.
 ; Here is how: Before we modify the cache we render the global cache invalid
-; (by setqing it to its size) and restore the global cache only when
+; (by SETQing it to its size) and restore the global cache only when
 ; modification is complete.
 
 ; Specifically, imagine that a cache manipulation is interrupted and aborted by
@@ -1808,7 +1808,7 @@
 ; we don't have to move it the top as we do in general.  The (if vline ...)  is
 ; testing whether vline is a new, presumably valid, cache line built by our
 ; caller, or a line found in the cache.  When new, we always preserve the old
-; :hit count by transfering it into the new line.
+; :hit count by transferring it into the new line.
 
               (if vline
                   (progn

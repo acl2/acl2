@@ -181,7 +181,7 @@
                        (not (eq t (getpropc fn 'stobjs-out t
 
 ; Normally we would avoid getting the stobjs-out of return-last.  But
-; return-last will eventually be rejected for mamoization anyhow (by
+; return-last will eventually be rejected for memoization anyhow (by
 ; memoize-table-chk).
 
                                             wrld)))
