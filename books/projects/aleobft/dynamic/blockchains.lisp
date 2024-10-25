@@ -162,12 +162,12 @@
     :hyp (and (certificates-ordered-even-p anchors)
               (blocks-ordered-even-p blockchain)
               (consp anchors)
-              (or (endp blockchain)
-                  (> (certificate->round (car (last anchors)))
-                     (block->round (car blockchain)))))
+              (> (certificate->round (car (last anchors)))
+                 (blocks-last-round blockchain)))
     :hints (("Goal"
              :induct t
              :in-theory (enable blocks-ordered-even-p
+                                blocks-last-round
                                 certificates-ordered-even-p
                                 last))))
   (in-theory (disable blocks-ordered-even-p-of-extend-blockchain))
