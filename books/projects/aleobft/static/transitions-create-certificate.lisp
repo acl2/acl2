@@ -321,7 +321,7 @@
     :enable validator-state->dag-of-create-certificate-next
     :disable create-certificate-next)
 
-  (defrule validator-state->buffer-of-create-certificate-next
+  (defruled validator-state->buffer-of-create-certificate-next
     (implies (and (certificatep cert)
                   (set::in val (correct-addresses systate)))
              (equal (validator-state->buffer
