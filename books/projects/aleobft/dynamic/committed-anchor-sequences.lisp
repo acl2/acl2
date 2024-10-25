@@ -185,8 +185,9 @@
                      (get-validator-state
                       val (create-certificate-next cert systate))
                      (all-addresses systate))
-                    (committed-anchors (get-validator-state val systate)
-                                       (all-addresses systate))))
+                    (committed-anchors
+                     (get-validator-state val systate)
+                     (all-addresses systate))))
     :disable ((:e tau-system))
     :enable (committed-anchors
              last-anchor-of-create-certificate-next
@@ -259,8 +260,9 @@
                      (get-validator-state
                       val (store-certificate-next val1 cert systate))
                      (all-addresses systate))
-                    (committed-anchors (get-validator-state val systate)
-                                       (all-addresses systate))))
+                    (committed-anchors
+                     (get-validator-state val systate)
+                     (all-addresses systate))))
     :use (:instance lemma (val1 (address-fix val1)))
     :prep-lemmas
     ((defruled lemma
