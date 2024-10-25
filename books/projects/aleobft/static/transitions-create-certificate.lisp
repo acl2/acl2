@@ -267,7 +267,7 @@
   (fty::deffixequiv create-certificate-next
     :args ((systate system-statep)))
 
-  (defrule validator-state->round-of-create-certificate-next
+  (defruled validator-state->round-of-create-certificate-next
     (implies (and (certificatep cert)
                   (set::in val (correct-addresses systate)))
              (equal (validator-state->round
