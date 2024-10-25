@@ -2141,6 +2141,39 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define valid-cast ((expr exprp) (type-cast typep) (type-arg typep))
+  :guard (expr-case expr :cast)
+  :returns (mv erp (type1 typep))
+  :short "Validate a cast expression,
+          given the type denoted by the type name
+          and the type of the argument expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The type name must denote the @('void') type or a scalar type [C:6.5.4/2].
+     The expression must have scalar type [C:6.5.4/2].
+     Since scalar types involve pointers,
+     we perform array-to-pointer and function-to-pointer conversions.
+     The result is the type denoted by the type name."))
+  (b* (((reterr) (irr-type))
+       (type1-cast (type-fpconvert (type-apconvert type-cast)))
+       (type1-arg (type-fpconvert (type-apconvert type-cast)))
+       ((unless (or (type-case type1-cast :void)
+                    (type-scalarp type1-cast)
+                    (type-case type1-cast :unknown)))
+        (reterr (msg "In the cast expression ~x0, ~
+                      the cast type is ~x1."
+                     (expr-fix expr) (type-fix type-cast))))
+       ((unless (or (type-scalarp type1-arg)
+                    (type-case type1-arg :unknown)))
+        (reterr (msg "In the cast expression ~x0, ~
+                      the argument expression has type ~x1."
+                     (expr-fix expr) (type-fix type-arg)))))
+    (retok (type-fix type-cast)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines valid-exprs/decls/stmts
   :short "Validate expressions, declarations, statements,
           and related artifacts."
@@ -2234,7 +2267,10 @@
        :alignof (b* (((erp type table) (valid-tyname expr.type table ienv))
                      ((erp type1) (valid-sizeof/alignof expr type)))
                   (retok type1 table))
-       :cast (reterr :todo)
+       :cast (b* (((erp type-cast table) (valid-tyname expr.type table ienv))
+                  ((erp type-arg table) (valid-expr expr.arg table ienv))
+                  ((erp type) (valid-cast expr type-cast type-arg)))
+               (retok type table))
        :binary (b* (((erp type-arg1 table) (valid-expr expr.arg1 table ienv))
                     ((erp type-arg2 table) (valid-expr expr.arg2 table ienv))
                     ((erp type)
