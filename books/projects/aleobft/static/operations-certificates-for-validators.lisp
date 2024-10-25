@@ -193,6 +193,7 @@
   :enable (create-certificate-possiblep
            create-certificate-next-val
            certificates-for-validator
+           validator-state->dag-of-create-certificate-next
            set::expensive-rules))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
