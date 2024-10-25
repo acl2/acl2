@@ -613,3 +613,101 @@
              validator-state->dag-of-timer-expires-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled committed-anchors-of-commit-anchors-next-to-collect-all-anchors
+  :short "Rewriting of @(tsee committed-anchors) after @('commit-anchors')
+          to @(tsee collect-all-anchors) on the old system state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "While the theorem @('committed-anchors-of-commit-next')
+     in @(see committed-anchors-of-next)
+     expresses the new committed anchor sequence in terms of the old one,
+     specifically as the @(tsee append) of the new anchors to the old ones,
+     this theorem provides a different expression for
+     the committed anchor sequence after a @('commit-anchors') event.
+     This is only for the target validator, the one that commits new anchors.
+     The right side of this rewrite rule is
+     a call of @(tsee collect-all-anchors)
+     solely in terms of the old system state.
+     This is used for certain proofs, elsewhere.")
+   (xdoc::p
+    "The main issue in this proof is to eliminate the extended blockchain,
+     since @(tsee committed-anchors) on the new state
+     makes use of the new blockchain.
+     However, as also proved elsewhere, the addition to the blockchain
+     does not affect the computation of the committees,
+     and thus of the anchor sequence."))
+  (implies (and (ordered-even-p systate)
+                (last-blockchain-round-p systate)
+                (accepted-certificate-committee-p systate)
+                (unequivocal-accepted-certificates-p systate)
+                (omni-paths-p systate)
+                (last-anchor-present-p systate)
+                (accepted-certificate-committee-p systate)
+                (commit-anchors-possiblep val systate))
+           (equal (committed-anchors
+                   (get-validator-state
+                    val (commit-anchors-next val systate))
+                   (all-addresses systate))
+                  (b* (((validator-state vstate)
+                        (get-validator-state val systate))
+                       (round (1- vstate.round)))
+                    (collect-all-anchors
+                     (certificate-with-author+round
+                      (leader-at-round
+                       round
+                       (active-committee-at-round
+                        round vstate.blockchain (all-addresses systate)))
+                      round
+                      vstate.dag)
+                     vstate.dag
+                     vstate.blockchain
+                     (all-addresses systate)))))
+  :use (:instance lemma (val (address-fix val)))
+  :prep-lemmas
+  ((defruled lemma
+     (implies (and (ordered-even-p systate)
+                   (last-blockchain-round-p systate)
+                   (accepted-certificate-committee-p systate)
+                   (unequivocal-accepted-certificates-p systate)
+                   (omni-paths-p systate)
+                   (last-anchor-present-p systate)
+                   (accepted-certificate-committee-p systate)
+                   (addressp val)
+                   (commit-anchors-possiblep val systate))
+              (equal (committed-anchors
+                      (get-validator-state
+                       val (commit-anchors-next val systate))
+                      (all-addresses systate))
+                     (b* (((validator-state vstate)
+                           (get-validator-state val systate))
+                          (round (1- vstate.round)))
+                       (collect-all-anchors
+                        (certificate-with-author+round
+                         (leader-at-round
+                          round
+                          (active-committee-at-round
+                           round vstate.blockchain (all-addresses systate)))
+                         round
+                         vstate.dag)
+                        vstate.dag
+                        vstate.blockchain
+                        (all-addresses systate)))))
+     :enable (commit-anchors-possiblep
+              committed-anchors
+              validator-state->last-of-commit-anchors-next
+              validator-state->blockchain-of-commit-anchors-next
+              validator-state->dag-of-commit-anchors-next
+              last-anchor-of-commit-anchors-next
+              collect-all-anchors-of-extend-blockchain-no-change
+              ordered-even-p-necc
+              blocks-ordered-even-p-of-extend-blockchain
+              certificates-ordered-even-p-of-collect-anchors
+              certificate->round-of-certificate-with-author+round
+              evenp-of-1-less-when-not-evenp
+              evenp-of-3-less-when-not-evenp
+              posp
+              last-blockchain-round-p-necc
+              collect-anchors-above-last-committed-round
+              active-committee-at-previous-round-when-at-round))))
