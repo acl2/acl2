@@ -2174,6 +2174,74 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define valid-cond ((expr exprp)
+                    (type-test typep)
+                    (type-then typep)
+                    (type-else typep)
+                    (ienv ienvp))
+  :guard (expr-case expr :cond)
+  :returns (mv erp (type typep))
+  :short "Validate a conditional expression,
+          given types for its operands."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The first operand must have scalar type [C:6.5.15/2].
+     In our currently approximate type system,
+     the other two operands must have
+     both arithmetic type,
+     or both the structure type,
+     or both the union type,
+     or both the @('void') type,
+     or both the pointer type
+     [C:6.5.15/3].
+     The type of the result is
+     the one from the usual arithmetic converions
+     in the first case,
+     and the common type in the other cases
+     [C:6.5.15/5].
+     Since pointers may be involved, we need to perform
+     array-to-pointer and function-to-pointer conversions."))
+  (b* (((reterr) (irr-type))
+       (type1 (type-fpconvert (type-apconvert type-test)))
+       (type2 (type-fpconvert (type-apconvert type-then)))
+       (type3 (type-fpconvert (type-apconvert type-else)))
+       ((unless (or (type-scalarp type1)
+                    (type-case type1 :unknown)))
+        (reterr (msg "In the conditional expression ~x0, ~
+                      the first operand has type ~x1."
+                     (expr-fix expr) (type-fix type-test))))
+       ((when (and (type-case type2 :unknown)
+                   (type-case type3 :unknown)))
+        (retok (type-unknown)))
+       ((when (and (or (type-arithmeticp type2)
+                       (type-case type2 :unknown))
+                   (or (type-arithmeticp type3)
+                       (type-case type3 :unknown))))
+        (retok (type-uaconvert type2 type3 ienv)))
+       ((when (and (or (type-case type2 :struct)
+                       (type-case type2 :unknown))
+                   (or (type-case type3 :struct)
+                       (type-case type3 :unknown))))
+        (retok (type-struct)))
+       ((when (and (or (type-case type2 :union)
+                       (type-case type2 :unknown))
+                   (or (type-case type3 :union)
+                       (type-case type3 :unknown))))
+        (retok (type-union)))
+       ((when (and (or (type-case type2 :pointer)
+                       (type-case type2 :unknown))
+                   (or (type-case type3 :pointer)
+                       (type-case type3 :unknown))))
+        (retok (type-pointer))))
+    (reterr (msg "In the conditional expression ~x0, ~
+                  the second operand has type ~x1 ~
+                  and the third operand has type ~x2."
+                 (expr-fix expr) (type-fix type-then) (type-fix type-else))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines valid-exprs/decls/stmts
   :short "Validate expressions, declarations, statements,
           and related artifacts."
@@ -2222,7 +2290,14 @@
        all the information we need back from
        the validation of the initializers with optional designations
        is the possibly updated validation table.
-       The type of the compound literal is the one denoted by the type name."))
+       The type of the compound literal is the one denoted by the type name.")
+     (xdoc::p
+      "In a conditional expression, the second operand may be absent;
+       this is a GCC extension.
+       However, for validation, we normalize the situation
+       by replicating the type of the first operand for the second operand,
+       when there is no second operand,
+       according to the semantics of the absence of the second operand."))
     (b* (((reterr) (irr-type) (irr-valid-table)))
       (expr-case
        expr
@@ -2276,7 +2351,15 @@
                     ((erp type)
                      (valid-binary expr expr.op type-arg1 type-arg2 ienv)))
                  (retok type table))
-       :cond (reterr :todo)
+       :cond (b* (((erp type-test table) (valid-expr expr.test table ienv))
+                  ((erp type-then? table) (valid-expr-option expr.then
+                                                             table
+                                                             ienv))
+                  (type-then (or type-then? type-test))
+                  ((erp type-else table) (valid-expr expr.else table ienv))
+                  ((erp type)
+                   (valid-cond expr type-test type-then type-else ienv)))
+               (retok type table))
        :comma (reterr :todo)
        :stmt (reterr :todo)
        :tycompat (reterr :todo)
@@ -2301,6 +2384,20 @@
          ((erp types table) (valid-expr-list (cdr exprs) table ienv)))
       (retok (cons type types) table))
     :measure (expr-list-count exprs))
+
+  (define valid-expr-option ((expr? expr-optionp)
+                             (table valid-tablep)
+                             (ienv ienvp))
+    :guard (expr-option-unambp expr?)
+    :returns (mv erp (type? type-optionp) (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate an optional expression."
+    (b* (((reterr) nil (irr-valid-table)))
+      (expr-option-case
+       expr?
+       :some (valid-expr expr?.val table ienv)
+       :none (retok nil (valid-table-fix table))))
+    :measure (expr-option-count expr?))
 
   (define valid-genassoc ((genassoc genassocp)
                           (table valid-tablep)
