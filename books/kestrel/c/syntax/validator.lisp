@@ -2318,7 +2318,11 @@
        However, for validation, we normalize the situation
        by replicating the type of the first operand for the second operand,
        when there is no second operand,
-       according to the semantics of the absence of the second operand."))
+       according to the semantics of the absence of the second operand.")
+     (xdoc::p
+      "For the comma operator, we validate both sub-expressions,
+       and the resulting type is the one of the second sub-expression
+       [C:6.5.17/2]."))
     (b* (((reterr) (irr-type) (irr-valid-table)))
       (expr-case
        expr
@@ -2381,7 +2385,9 @@
                   ((erp type)
                    (valid-cond expr type-test type-then type-else ienv)))
                (retok type table))
-       :comma (reterr :todo)
+       :comma (b* (((erp & table) (valid-expr expr.first table ienv))
+                   ((erp type table) (valid-expr expr.next table ienv)))
+                (retok type table))
        :stmt (reterr :todo)
        :tycompat (reterr :todo)
        :offsetof (reterr :todo)
