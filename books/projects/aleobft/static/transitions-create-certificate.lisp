@@ -296,7 +296,7 @@
     :enable (create-certificate-next-val
              validator-state->dag-of-add-endorsed))
 
-  (defrule validator-state->dag-subset-create-certificate-next
+  (defruled validator-state->dag-subset-create-certificate-next
     (implies (and (set::in val (correct-addresses systate))
                   (certificatep cert)
                   (create-certificate-possiblep cert systate))
