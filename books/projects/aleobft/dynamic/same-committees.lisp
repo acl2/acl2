@@ -399,7 +399,6 @@
                                       blocks2))
                    blocks1)
                   (block-list-fix blocks1)))
-  :enable blocks-last-round
   :use
   ((:instance trim-blocks-for-round-no-change
               (round (block->round (nth (1- (- (len blocks2)
