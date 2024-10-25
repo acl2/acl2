@@ -2905,7 +2905,7 @@
 ; performance counting is implemented.
 
 ; This code is what sets the special variable, *caller*, to the appropriate
-; index for fn into *memoize-call-array* (namey fn-col-base, which points to
+; index for fn into *memoize-call-array* (namely fn-col-base, which points to
 ; the column for fn).  So, any immediately subsidiary calls of memoized
 ; functions will be "charged" to fn, and *caller* will only be re-assigned by
 ; subsidiary top-level calls of other memoized functions.

@@ -100,7 +100,8 @@
            anchorp
            append
            evenp
-           certificate->round-of-path-to-author+round)
+           certificate->round-of-path-to-author+round
+           path-to-author+round-in-dag)
   :hints ('(:use (:instance dag-all-path-to-p-necc
                             (cert1 anchor1)
                             (cert anchor)))))

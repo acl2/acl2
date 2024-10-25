@@ -2866,7 +2866,7 @@
        (alistp (table-alist 'evisc-table (w state)))
        (eviscerate-top-state-p state)
 ; Probably unnecessary, but makes some proofs easier since compress1 is the
-; indentity for arrays like this:
+; identity for arrays like this:
        (equal (array-order (header 'iprint-ar
                                    (f-get-global 'iprint-ar state)))
               nil)
@@ -7747,7 +7747,7 @@
          (let ((str (cond ((consp str) ; see handling of str+ in warning1-body
                            (car str))
                           (t str))))
-; See comment above about not usingn io?.
+; See comment above about not using io?.
            ,(cond
              (commentp
               `(and (not (ec-call ; for guard verification of warning1-cw
@@ -9095,7 +9095,7 @@
 ; We expect array-size to be a natural number, as this is checked by
 ; chk-stobj-field-descriptor (using fix-stobj-array-type).  It is important
 ; that array-size not be a Lisp form that references the variable AR, even
-; after macroexpasion, in order to avoid capture by the binding of AR below.
+; after macroexpansion, in order to avoid capture by the binding of AR below.
 
                          (natp array-size)
                          `(let ((ar (make-array$ ,array-size
@@ -10710,7 +10710,7 @@
 (defun book-name-to-filename (x wrld ctx)
 
 ; If x is a sysfile then we return the absolute pathname obtained by
-; concenating the absolute directory string represented by the sysfile-key of
+; concatenating the absolute directory string represented by the sysfile-key of
 ; x with the sysfile-filename of x, which should be a relative pathname.
 
 ; If x is a sysfile whose key is not in the project-dir-alist of wrld, then a

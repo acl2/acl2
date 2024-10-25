@@ -168,6 +168,11 @@
 
   ///
 
+  (defruled evenp-of-blocks-last-round
+    (implies (blocks-ordered-even-p blocks)
+             (evenp (blocks-last-round blocks)))
+    :enable evenp-of-car-when-blocks-ordered-even-p)
+
   (defruled oldest-of-prefix-gt-newest-of-suffix-when-blocks-ordered-even-p
     (implies (and (blocks-ordered-even-p (append blocks1 blocks2))
                   (consp blocks1))

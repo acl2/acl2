@@ -6912,7 +6912,7 @@
                                    (cadr cltl-cmd)))
 
 ; In the boot-strap, there are constants that will not get the necessary
-; 'redundant-raw-lisp-discriminator proprerty without the following code.  In
+; 'redundant-raw-lisp-discriminator property without the following code.  In
 ; particular, the constant *badge-prim-falist* is defined under when-pass-2, so
 ; its defconst form is not processed in raw Lisp.  As a result, without the
 ; following code we get an error: "The following raw Lisp error occurred when
@@ -8303,7 +8303,7 @@
 
 ; We test against *initial-untouchable-fns* because if the point is to avoid
 ; directly setting untouchable vars, it makes sense not to do so by calling
-; untouchalbe fns.
+; untouchable fns.
 
   (let (fn
         (wrld (w *the-live-state*))
@@ -9903,7 +9903,7 @@
 
 ; We want to add :acl2-loop-only to *features*.  But let-binding *features*
 ; would be a mistake; in fact we did that for awhile in June 2023, but Sol
-; Swords reported a problem when quicklisp's additions to *features* in the
+; Swords reported a problem when Quicklisp's additions to *features* in the
 ; loop would be lost when using :q followed by (lp).  So we use unwind-protect
 ; to remove :acl2-loop-only from *features* when leaving the loop.  Although
 ; it's rare that the loop is exited with other than :q or (value :q), that can

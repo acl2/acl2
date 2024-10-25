@@ -91,7 +91,8 @@
                                    vals)))
   :induct t
   :enable (collect-anchors
-           path-to-author+round-of-unequivocal-dag-superset))
+           path-to-author+round-of-unequivocal-dag-superset
+           path-to-author+round-in-dag))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

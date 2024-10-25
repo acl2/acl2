@@ -104,7 +104,7 @@
 ; *ts-other*, denoting all the ``irregular'' objects.  We cannot
 ; reconstruct exactly why we did this, though we believe it had to do
 ; with the misapprehension that use of the so-called ``sign bit'' (as
-; in nqthm) would limit type sets to fixnums.  The fallacy of course
+; in Nqthm) would limit type sets to fixnums.  The fallacy of course
 ; is that in Common Lisp there is no sign bit, there is an infinite
 ; sequence of them.  In any case, the introduction of *ts-other* had
 ; several bad effects on our thinking, although it did not cause
@@ -119,7 +119,7 @@
 ; course, this invariant would have been violated had we ever created
 ; a type-set by logioring *ts-other* into another type-set, but we
 ; never did that.  In any case, we now realize that the use of the
-; infinite sequence of sign bits a la nqthm is really cleaner because
+; infinite sequence of sign bits a la Nqthm is really cleaner because
 ; it gives us no way to turn on the irregular bits except by
 ; complementing known bits.
 

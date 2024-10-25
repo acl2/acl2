@@ -1857,10 +1857,10 @@
 ; email exchange with Robert Krug, who did the research and initial coding
 ; leading to this version of linear).  Here is Robert's reply.
 
-;   Matt is right, I did inadvertantly change ACL2's meaning for
+;   Matt is right, I did inadvertently change ACL2's meaning for
 ;   descends-from-not-equalityp.  Perhaps this change is also responsible
 ;   for some of the patches required for the regression suite.  However,
-;   this change was inadvertant only because I did not properly understand
+;   this change was inadvertent only because I did not properly understand
 ;   the old behaviour which seems odd to me.  I believe that the new
 ;   behaviour is the ``correct'' one.  Let us look at an example:
 ;
@@ -1888,7 +1888,7 @@
 ;   expect ACL2 to know and use.  Under the old regime however, since (1b)
 ;   was used in the derivation of (4), this was not allowed.
 ;
-;   This raises the qestion of whether the new test is too liberal.  For
+;   This raises the question of whether the new test is too liberal.  For
 ;   example, from
 ;
 ;   input:
@@ -2166,7 +2166,7 @@
 ; Otherwise we just accumulate them into ans.  We return two values:
 ; the standard indication of contradiction and, otherwise in the
 ; second, the filtered list.  This list in the reverse order from that
-; produced by nqthm.
+; produced by Nqthm.
 
   (cond ((null lst)
          (mv nil ans))

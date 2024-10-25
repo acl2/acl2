@@ -410,7 +410,7 @@
 (table pc-command-table nil nil
        :guard
 
-; Since there isn't any documentation particularlly relevant to this table, we
+; Since there isn't any documentation particularly relevant to this table, we
 ; avoid using set-table-guard here.
 
 ; Before adding this table guard after Version_4.3, we were able to certify the

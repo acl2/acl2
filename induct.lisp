@@ -1900,7 +1900,7 @@
 ; in a pathological clause set, ({term}), for example because there was an
 ; :induct t hint on "Goal" or because the simplifier abandoned its work on the
 ; clauses and pushed the original goal for induction.  In this case, in order
-; to find q, we have to use clausify-input to convert this pathlogical
+; to find q, we have to use clausify-input to convert this pathological
 ; clause-set into a non-trivial one even though we form the instance of the do$
 ; induction scheme with the unit clause set.
 
@@ -2192,7 +2192,7 @@
 
 (defrec tests-and-call (tests call) nil)
 
-; In nqthm the record above was called TEST-AND-CASE and the second component
+; In Nqthm the record above was called TEST-AND-CASE and the second component
 ; was the arglist of a recursive call of the function being analyzed.  Because
 ; of the presence of mutual recursion, we have renamed it tests-and-call and
 ; the second component is a "recursive" call (possibly mutually recursive).
@@ -2279,7 +2279,7 @@
          (consp (unquote (fargn term 1)))
          (eq (car (unquote (fargn term 1))) 'lambda))
 
-; We pay the price of instantiatiating the loop$ scion term now with the alist
+; We pay the price of instantiating the loop$ scion term now with the alist
 ; even though it might not have any recursions in it.  C'est la vie.
 
     (list (sublis-var alist term)))
@@ -2586,7 +2586,7 @@
                     (termination-machine-rec loop$-recursion
                                              names
                                              lamb-body
-; Note: The only free var in lamb-body is v, so we can ignore the subsitutions
+; Note: The only free var in lamb-body is v, so we can ignore the substitutions
 ; in alist!
                                              (list (cons v newvar))
                                              (add-test-smart inst-test tests)
@@ -3725,7 +3725,7 @@
 ; candidate constructed.  Calls are always function calls and the fn-symb of
 ; any call produced by a do$ induction is *do$-induction-fn*, which is a
 ; keyword.  So if you're looking at a candidate and want to know whether it was
-; suggested as the instrinsic induction of a particular do$, check to see if
+; suggested as the intrinsic induction of a particular do$, check to see if
 ; (ffn-symb (access candidate cand :induction-term)) is *do$-induction-fn*.
 
          (intrinsic-suggested-induction-cand1
@@ -4933,7 +4933,7 @@
 ; Return the subset of lst that have the highest score as computed by
 ; fn.  The functional parameter fn must be known to maximal-elements-apply.
 ; We reverse the accumulated elements to preserve the order used by
-; nqthm.
+; Nqthm.
 
   (cond ((null lst) nil)
         ((null (cdr lst)) lst)
@@ -5452,7 +5452,7 @@
 ; Pockets is a list of pockets, each pocket containing 0 or more
 ; objects.  We return a list of all the possible ways you can pick one
 ; thing from each pocket.  If rflg is nil initially, then the order of
-; the resulting list is exactly the same as it was in nqthm.  There is
+; the resulting list is exactly the same as it was in Nqthm.  There is
 ; not much else to recommend this particular choice of definition!
 
 ; Historical Plaque from Nqthm:
@@ -5478,7 +5478,7 @@
 ; order, we introduced rflg.  Rflg causes us either to reverse or not
 ; reverse a certain intermediate result every other recursion.  It
 ; would be reassuring to see a mechanically checked proof that this
-; definition of all-picks is equivalent to nqthm's.
+; definition of all-picks is equivalent to Nqthm's.
 
   (cond ((null pockets) '(nil))
         (t (all-picks1 (car pockets)
@@ -5973,7 +5973,7 @@
                :measure))
 
 ; Otherwise, the measure (which was stored on the property list of the fn) is
-; in terms of the formals of the fn, but we need to substitue the actuals in
+; in terms of the formals of the fn, but we need to substitute the actuals in
 ; the call of the the fn in the conjecture.
 
       (all-vars1-lst
@@ -6302,7 +6302,7 @@
 
 ; Lst1 and lst2 are augmented runic theories.  This is similar to
 ; set-difference-augmented-theories-fn1 and
-; set-difference-augmented-theories-fn1+, except here we return an augumented
+; set-difference-augmented-theories-fn1+, except here we return an augmented
 ; runic theory (not a runic theory) when ans is nil.
 
   (cond ((endp lst1) (reverse ans))
@@ -6635,11 +6635,11 @@
               (flushed-candidates
                (m&m candidates 'flush-candidates))
 
-; In nqthm we flushed and merged at the same time.  However, flushing
+; In Nqthm we flushed and merged at the same time.  However, flushing
 ; is a mate and merge function that has the distributive and non-preclusion
 ; properties and hence can be done with a simple m&m.  Merging on the other
 ; hand is preclusive and so we wait and run m&m-over-powerset to do
-; that.  In nqthm, we did preclusive merging with m&m (then called
+; that.  In Nqthm, we did preclusive merging with m&m (then called
 ; TRANSITIVE-CLOSURE) and just didn't worry about the fact that we
 ; messed up some potential merges by earlier merges.  Of course, the
 ; powerset computation is so expensive for large sets that we can't

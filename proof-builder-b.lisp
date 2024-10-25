@@ -3950,7 +3950,7 @@
   `(retrieve-fn ',name state))
 
 (define-pc-macro retrieve ()
-  (pprogn (print-no-change "RETRIEVE can only be used ouside the ~
+  (pprogn (print-no-change "RETRIEVE can only be used outside the ~
                             interactive loop.  Please exit first.  To ~
                             save your state upon exit, use EX rather than EXIT.")
           (value :fail)))

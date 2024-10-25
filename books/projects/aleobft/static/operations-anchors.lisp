@@ -193,4 +193,5 @@
                   (last-anchor vstate vals))
              (equal (car (committed-anchors vstate vals))
                     (last-anchor vstate vals)))
-    :enable collect-all-anchors))
+    :enable (collect-all-anchors
+             car-of-collect-anchors)))

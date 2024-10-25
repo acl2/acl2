@@ -11,7 +11,7 @@
 
 (in-package "ALEOBFT-DYNAMIC")
 
-(include-book "anchors-of-validators-next")
+(include-book "last-anchor-next")
 
 (local (include-book "arithmetic-3/top" :dir :system))
 

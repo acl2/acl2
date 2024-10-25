@@ -588,7 +588,8 @@
         certificate-with-author+round-of-element-when-unequivocal
         set::expensive-rules
         nil-not-in-certificate-set
-        certificates-with-authors+round-subset))
+        certificates-with-authors+round-subset
+        path-to-author+round-round-lte))
       '(:use ((:instance element-of-certificate-set-not-nil
                          (certs dag)
                          (cert (path-to-author+round cert1
@@ -660,7 +661,9 @@
            certificate->author-of-path-to-author+round
            certificate->author-of-path-to-author+round-set
            certificate->round-of-path-to-author+round
-           certificate->round-of-path-to-author+round-set)
+           certificate->round-of-path-to-author+round-set
+           path-to-author+round-in-dag
+           path-to-author+round-set-in-dag)
   :use (path-to-author+round-set-when-path-to-author+round-of-element
         (:instance certificate-set-unequivocalp-necc
                    (cert1 (path-to-author+round-set certs author round dag))
@@ -892,7 +895,9 @@
                round-set-of-certificates-with-authors+round
                pos-fix
                nil-not-in-certificate-set
-               certificates-with-authors+round-subset))
+               certificates-with-authors+round-subset
+               certificate-causal-history-subset
+               certificate-set-causal-history-subset))
      (cond
       ((acl2::occur-lst '(acl2::flag-is 'certificate-causal-history) clause)
        '(:use (:instance round-leq-when-path-to-author+round-set
@@ -939,7 +944,8 @@
               (set::in cert0 (certificate-causal-history cert dag)))
      :enable (in-of-certificate-causal-history
               certificate->author-of-path-to-author+round
-              certificate->round-of-path-to-author+round)
+              certificate->round-of-path-to-author+round
+              path-to-author+round-in-dag)
      :use (:instance path-to-author+round-transitive
                      (cert cert)
                      (cert1 (path-to-author+round cert author round dag))

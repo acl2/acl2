@@ -233,6 +233,8 @@
     :hints
     (("Goal" :in-theory (enable* set::expensive-rules
                                  certificates-with-authors+round-subset))))
+  (in-theory (disable path-to-author+round-in-dag
+                      path-to-author+round-set-in-dag))
 
   (defret-mutual round-leq-when-path-to-author+round
     (defret round-leq-when-path-to-author+round
@@ -253,7 +255,6 @@
              (:instance acl2::pos-set-max->=-subset
                         (set1 (certificate-set->round-set (tail certs)))
                         (set2 (certificate-set->round-set certs)))))))
-
   (in-theory (disable round-leq-when-path-to-author+round
                       round-leq-when-path-to-author+round-set))
 
@@ -264,7 +265,7 @@
     :induct (set::cardinality certs)
     :enable set::cardinality)
 
-  (defrule path-to-author+round-round-lte
+  (defruled path-to-author+round-round-lte
     (implies (path-to-author+round cert author round dag)
              (<= round (certificate->round cert)))
     :rule-classes :linear)
@@ -388,4 +389,6 @@
       :fn certificate-set-causal-history)
     :hints
     (("Goal" :in-theory (enable* set::expensive-rules
-                                 certificates-with-authors+round-subset)))))
+                                 certificates-with-authors+round-subset))))
+  (in-theory (disable certificate-causal-history-subset
+                      certificate-set-causal-history-subset)))
