@@ -147,7 +147,6 @@
              pos-fix
              posp
              evenp
-             blocks-last-round
              certificate->round-of-certificate-with-author+round))
 
   (defruled ordered-even-p-of-timer-expires-next
