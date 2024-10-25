@@ -334,7 +334,7 @@
              get-validator-state-of-update-validator-state
              validator-state->buffer-of-add-endorsed))
 
-  (defrule validator-state->last-of-create-certificate-next
+  (defruled validator-state->last-of-create-certificate-next
     (implies (set::in val (correct-addresses systate))
              (equal (validator-state->last
                      (get-validator-state val

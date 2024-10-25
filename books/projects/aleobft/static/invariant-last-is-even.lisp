@@ -81,7 +81,8 @@
             (create-certificate-next cert systate)))
   :expand (system-last-is-even-p
            (create-certificate-next cert systate))
-  :enable system-last-is-even-p-necc)
+  :enable (system-last-is-even-p-necc
+           validator-state->last-of-create-certificate-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

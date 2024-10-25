@@ -138,7 +138,8 @@
     :enable (validator-last-anchor-voters-p
              certificates-with-round-of-insert
              tally-leader-votes-of-insert
-             validator-state->dag-of-create-certificate-next))
+             validator-state->dag-of-create-certificate-next
+             validator-state->last-of-create-certificate-next))
 
   (defrule system-last-anchor-voters-p-of-create-certificate-next
     (implies (and (system-last-anchor-voters-p systate)

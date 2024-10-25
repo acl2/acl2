@@ -151,7 +151,8 @@
               (get-validator-state val (create-certificate-next cert systate))
               (all-addresses systate)))
     :enable (validator-committed-redundantp
-             system-last-anchor-present-p-necc)
+             system-last-anchor-present-p-necc
+             validator-state->last-of-create-certificate-next)
     :disable validator-state->dag-of-create-certificate-next)
 
   (defrule system-committed-redundantp-of-create-certificate-next

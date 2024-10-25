@@ -70,7 +70,8 @@
            system-unequivocal-dag-p-when-system-unequivocal-certificates-p
            system-previous-in-dag-p-necc
            validator-state->dag-subset-create-certificate-next
-           validator-state->dag-of-create-certificate-next-same)
+           validator-state->dag-of-create-certificate-next-same
+           validator-state->last-of-create-certificate-next)
   :cases ((equal val (certificate->author cert)))
   :use ((:instance collect-all-anchors-of-unequivocal-dag-superset
                    (vals (all-addresses systate))
