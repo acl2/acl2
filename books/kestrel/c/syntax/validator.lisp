@@ -2106,15 +2106,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define valid-sizeof ((expr exprp) (type typep))
-  :guard (expr-case expr :sizeof)
+(define valid-sizeof/alignof ((expr exprp) (type typep))
+  :guard (or (expr-case expr :sizeof)
+             (expr-case expr :alignof))
   :returns (mv erp (type1 typep))
-  :short "Validate a @('sizeof') applied to a type name,
-          given the type denoted by the type name."
+  :short "Validate a @('sizeof') operator applied to a type name,
+          or an @('alignof') operator,
+          given the type denoted by the argument type name."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The @('sizeof') operator applied to an expression
+    "The @('sizeof') operator applied to an type name
      requires a non-function complete type [C:6.5.3.4/1].
      In our current approximate type system,
      we just exclude function types,
@@ -2126,9 +2128,14 @@
      with information about the definition of @('size_t')."))
   (b* (((reterr) (irr-type))
        ((when (type-case type :function))
-        (reterr (msg "In the sizeof type expression ~x0, ~
-                      the argument ~x1 is a function type."
-                     (expr-fix expr) (type-fix type)))))
+        (reterr (msg "In the ~s0 type expression ~x1, ~
+                      the argument ~x2 is a function type."
+                     (case (expr-kind expr)
+                       (:sizeof "sizeof")
+                       (:alignof "_Alignof")
+                       (t (impossible)))
+                     (expr-fix expr)
+                     (type-fix type)))))
     (retok (type-unknown)))
   :hooks (:fix))
 
@@ -2222,9 +2229,11 @@
                    ((erp type) (valid-unary expr expr.op type-arg ienv)))
                 (retok type table))
        :sizeof (b* (((erp type table) (valid-tyname expr.type table ienv))
-                    ((erp type1) (valid-sizeof expr type)))
+                    ((erp type1) (valid-sizeof/alignof expr type)))
                  (retok type1 table))
-       :alignof (reterr :todo)
+       :alignof (b* (((erp type table) (valid-tyname expr.type table ienv))
+                     ((erp type1) (valid-sizeof/alignof expr type)))
+                  (retok type1 table))
        :cast (reterr :todo)
        :binary (b* (((erp type-arg1 table) (valid-expr expr.arg1 table ienv))
                     ((erp type-arg2 table) (valid-expr expr.arg2 table ienv))
