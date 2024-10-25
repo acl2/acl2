@@ -142,7 +142,7 @@
 
 ; This additional conjunct can probably be easily added, though it would
 ; require rearranging the order of some things in the sources as well as in the
-; model so we can use them when we introduce the contraint.
+; model so we can use them when we introduce the constraint.
 
 ; On the other hand, so far, we haven't seen a proof where the stronger
 ; constraint is required.  It is just odd that, for all we know, (badge-userfn

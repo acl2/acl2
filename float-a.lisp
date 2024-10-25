@@ -172,7 +172,7 @@
 ;    floating-point behavior.
 
 ; The situation seems to be similar for SBCL, though we have not found a
-; documentated guarantee.  SBCL source file src/code/float-trap.lisp led us to
+; documented guarantee.  SBCL source file src/code/float-trap.lisp led us to
 ; produce the following log using ACL2 built on SBCL, after dropping into raw
 ; lisp.
 
@@ -426,7 +426,7 @@
 
 ; Now we show that WDF, as defined above, satisfies this defthm.  The
 ; hypothesis for WDF, (and (rationalp x) (equal (WDF x) x)), implies that x is
-; a rational for whicch the following holds in Lisp.
+; a rational for which the following holds in Lisp.
 
 ; [1]  (rational (float x 0.0D0)) = x.
 
@@ -573,7 +573,7 @@
 (defun dfp (x)
 
 ; We need the #-acl2-loop-only case below.  For example, without it, then after
-; we evaluatate (defun f (x) (declare (type double-float x)) (dfp x)) we'll see
+; we evaluate (defun f (x) (declare (type double-float x)) (dfp x)) we'll see
 ; that (f (to-df 3)) evaluates (wrongly) to nil.  See the comment in
 ; translate11-call-1 about allowing dfp to be applied to a :df; that's why we
 ; need the #-acl2-loop-only case below.

@@ -22,7 +22,7 @@
 
 ; A quick sketch of the three main functions here
 
-; We renamed these functions because their nqthm names were confusing to
+; We renamed these functions because their Nqthm names were confusing to
 ; one of us.
 
 ; ACL2                   Nqthm
@@ -6423,7 +6423,7 @@
                                      nil nil))
    (t (mv nil cl pt-lst ttree))))
 
-; In a break with nqthm, we implement a really trivial theorem prover which
+; In a break with Nqthm, we implement a really trivial theorem prover which
 ; gets the first shot at any conjecture we have to prove.  The idea is to build
 ; into this function whatever is necessary for boot-strap to work.  It will
 ; also speed up the acceptance of commonly used recursive schemas.  The idea is
@@ -7271,7 +7271,7 @@
                             simplify-clause-pot-lst rcnst flg ecnt ans ttree
                             fttree splitp state step-limit)
 
-; In nqthm this function was called SIMPLIFY-CLAUSE1.
+; In Nqthm this function was called SIMPLIFY-CLAUSE1.
 
 ; We are to rewrite the literals of the clause cl formed by appending tail to
 ; new-clause.  We assume rcnst has the correct top-clause and pt and the
@@ -8653,7 +8653,7 @@
 ; The clause has not settled down yet.  So we arrange to ignore the
 ; induction-hyp-terms when appropriate, and to expand the induction-concl-terms
 ; without question.  The rewrite-constant created below is not passed out of
-; simpify-clause.
+; simplify-clause.
 
            (let* ((new-force-info (if (ffnnamep-lst 'if cl)
                                       'weak
