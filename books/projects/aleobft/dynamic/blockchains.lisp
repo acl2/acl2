@@ -151,23 +151,25 @@
     :hints (("Goal" :induct t)))
   (in-theory (disable consp-of-extend-blockchain))
 
-  (defret round-of-car-of-extend-blockchain
-    (equal (block->round (car new-blockchain))
+  (defret blocks-last-round-of-extend-blockchain
+    (equal (blocks-last-round new-blockchain)
            (certificate->round (car anchors)))
-    :hyp (consp anchors))
-  (in-theory (disable round-of-car-of-extend-blockchain))
+    :hyp (consp anchors)
+    :hints (("Goal" :in-theory (enable blocks-last-round
+                                       consp-of-extend-blockchain))))
+  (in-theory (disable blocks-last-round-of-extend-blockchain))
 
   (defret blocks-ordered-even-p-of-extend-blockchain
     (blocks-ordered-even-p new-blockchain)
     :hyp (and (certificates-ordered-even-p anchors)
               (blocks-ordered-even-p blockchain)
               (consp anchors)
-              (or (endp blockchain)
-                  (> (certificate->round (car (last anchors)))
-                     (block->round (car blockchain)))))
+              (> (certificate->round (car (last anchors)))
+                 (blocks-last-round blockchain)))
     :hints (("Goal"
              :induct t
              :in-theory (enable blocks-ordered-even-p
+                                blocks-last-round
                                 certificates-ordered-even-p
                                 last))))
   (in-theory (disable blocks-ordered-even-p-of-extend-blockchain))

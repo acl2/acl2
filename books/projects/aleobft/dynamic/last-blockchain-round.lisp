@@ -166,9 +166,8 @@
              validator-state->last-of-commit-anchors-next
              commit-anchors-possiblep
              consp-of-extend-blockchain
-             round-of-car-of-extend-blockchain
              car-of-collect-anchors
-             blocks-last-round
+             blocks-last-round-of-extend-blockchain
              certificate->round-of-certificate-with-author+round))
 
   (defruled last-blockchain-round-p-of-timer-expires-next

@@ -213,7 +213,7 @@
            (mv (block-list-fix blockchain)
                (certificate-set-fix committed-certs))))
 
-  (defrule extend-blockchain-of-append
+  (defruled extend-blockchain-of-append
     (b* (((mv blocks comms)
           (extend-blockchain (append anchors2 anchors1) dag blocks0 comms0))
          ((mv blocks1 comms1)
