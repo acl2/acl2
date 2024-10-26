@@ -2280,6 +2280,8 @@
      to no longer be approximate and include the unknown type,
      we will rescind this extra allowance for the unknown type."))
 
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define valid-expr ((expr exprp) (table valid-tablep) (ienv ienvp))
     :guard (expr-unambp expr)
     :returns (mv erp (type typep) (new-table valid-tablep))
@@ -2322,7 +2324,20 @@
      (xdoc::p
       "For the comma operator, we validate both sub-expressions,
        and the resulting type is the one of the second sub-expression
-       [C:6.5.17/2]."))
+       [C:6.5.17/2].")
+     (xdoc::p
+      "The GCC extension @('__builtin_types_compatible_p')
+       is validated by validating its argument type names.
+       The result is @('signed int'), according to the GCC manual.")
+     (xdoc::p
+      "For the GCC extension @('__builtin_offsetof'),
+       for now we just validate
+       its component type names and expressions (if any),
+       but without checking that the member designators are valid;
+       for that, we need a more refined type system.
+       The result has type @('size_t') [C:7.19],
+       whose definition is implementation-dependent,
+       and thus for now we return the unknown type."))
     (b* (((reterr) (irr-type) (irr-valid-table)))
       (expr-case
        expr
@@ -2392,9 +2407,14 @@
        :tycompat (b* (((erp & table) (valid-tyname expr.type1 table ienv))
                       ((erp & table) (valid-tyname expr.type2 table ienv)))
                    (retok (type-sint) table))
-       :offsetof (reterr :todo)
+       :offsetof (b* (((erp & table) (valid-tyname expr.type table ienv))
+                      ((erp table)
+                       (valid-member-designor expr.member table ienv)))
+                   (retok (type-unknown) table))
        :otherwise (prog2$ (impossible) (reterr t))))
     :measure (expr-count expr))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define valid-expr-list ((exprs expr-listp) (table valid-tablep) (ienv ienvp))
     :guard (expr-list-unambp exprs)
@@ -2414,6 +2434,8 @@
       (retok (cons type types) table))
     :measure (expr-list-count exprs))
 
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define valid-expr-option ((expr? expr-optionp)
                              (table valid-tablep)
                              (ienv ienvp))
@@ -2427,6 +2449,30 @@
        :some (valid-expr expr?.val table ienv)
        :none (retok nil (valid-table-fix table))))
     :measure (expr-option-count expr?))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define valid-const-expr ((cexpr const-exprp)
+                            (table valid-tablep)
+                            (ienv ienvp))
+    :guard (const-expr-unambp cexpr)
+    :returns (mv erp (type typep) (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate a constant expression."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "Besides being valid expressions,
+       constant expression must satisfy other requirements [C:6.6].
+       Fow now we do not check these requirements,
+       but when we do we may need to extend this validation function
+       to return not only a type but also a value,
+       namely the value of the constant expression."))
+    (b* (((reterr) (irr-type) (irr-valid-table)))
+      (valid-expr (const-expr->unwrap cexpr) table ienv))
+    :measure (const-expr-count cexpr))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define valid-genassoc ((genassoc genassocp)
                           (table valid-tablep)
@@ -2459,6 +2505,8 @@
                   (retok nil expr-type table))))
     :measure (genassoc-count genassoc))
 
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define valid-genassoc-list ((genassocs genassoc-listp)
                                (table valid-tablep)
                                (ienv ienvp))
@@ -2485,8 +2533,77 @@
       (retok (acons tyname-type? expr-type type-alist) table))
     :measure (genassoc-list-count genassocs))
 
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define valid-member-designor ((memdesign member-designorp)
+                                 (table valid-tablep)
+                                 (ienv ienvp))
+    :guard (member-designor-unambp memdesign)
+    :returns (mv erp (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate a member designator."
+    (b* (((reterr) (irr-valid-table)))
+      (member-designor-case
+       memdesign
+       :ident (retok (valid-table-fix table))
+       :dot (valid-member-designor memdesign.member table ienv)
+       :sub (b* (((erp table) (valid-member-designor
+                               memdesign.member table ienv))
+                 ((erp & table) (valid-expr memdesign.index table ienv)))
+              (retok table))))
+    :measure (member-designor-count memdesign))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define valid-initer ((initer initerp)
+                        (target-type typep)
+                        (table valid-tablep)
+                        (ienv ienvp))
+    :guard (initer-unambp initer)
+    :returns (mv erp (type typep) (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate an initializer."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The target type passed as input is
+       the type of the object being initialized.")
+     (xdoc::p
+      "If validation is successful, we return the type of the initializer."))
+    (declare (ignore initer target-type table ienv))
+    (b* (((reterr) (irr-type) (irr-valid-table)))
+      (reterr :todo))
+    :measure (initer-count initer))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define valid-desiniter ((desiniter desiniterp)
+                           (target-type typep)
+                           (table valid-tablep)
+                           (ienv ienvp))
+    :guard (desiniter-unambp desiniter)
+    :returns (mv erp (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate an initializer with optional designation."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The target type passed as argument is the type
+       that the list of designators must be applicable to.
+       For now we do not make use of the type of the initializer."))
+    (b* (((reterr) (irr-valid-table))
+         ((desiniter desiniter) desiniter)
+         ((erp & table) (valid-designor-list
+                         desiniter.design target-type table ienv))
+         ((erp & table) (valid-initer
+                         desiniter.init target-type table ienv)))
+      (retok table))
+    :measure (desiniter-count desiniter))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define valid-desiniter-list ((desiniters desiniter-listp)
-                                (type typep)
+                                (target-type typep)
                                 (table valid-tablep)
                                 (ienv ienvp))
     :guard (desiniter-list-unambp desiniters)
@@ -2494,10 +2611,72 @@
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate a list of zero or more
             initializers with optional designations."
-    (declare (ignore desiniters type table ienv))
-    (b* (((reterr) (irr-valid-table)))
-      (reterr :todo))
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The target type passed as argument is the type
+       that each list of designators must be applicable to."))
+    (b* (((reterr) (irr-valid-table))
+         ((when (endp desiniters)) (retok (valid-table-fix table)))
+         ((erp table) (valid-desiniter
+                       (car desiniters) target-type table ienv))
+         ((erp table) (valid-desiniter-list
+                       (cdr desiniters) target-type table ienv)))
+      (retok table))
     :measure (desiniter-list-count desiniters))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define valid-designor ((designor designorp)
+                          (target-type typep)
+                          (table valid-tablep)
+                          (ienv ienvp))
+    :guard (designor-unambp designor)
+    :returns (mv erp (new-target-type typep) (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate a designator."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The target type passed as input is
+       the one that the designator must apply to.
+       The target type returned as result is
+       the one that results from applying the designator to it.
+       However, for now we do not actually perform this check,
+       and just return the unknown type."))
+    (declare (ignore target-type))
+    (b* (((reterr) (irr-type) (irr-valid-table)))
+      (designor-case
+       designor
+       :sub (b* (((erp & table)
+                  (valid-const-expr designor.index table ienv)))
+              (retok (type-unknown) table))
+       :dot (retok (type-unknown) (valid-table-fix table))))
+    :measure (designor-count designor))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define valid-designor-list ((designors designor-listp)
+                               (target-type typep)
+                               (table valid-tablep)
+                               (ienv ienvp))
+    :guard (designor-list-unambp designors)
+    :returns (mv erp (new-type typep) (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate a list of zero or more designators."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The target type passed as argument is the current type
+       that the designators must be applicable to.
+       The new target type returned as result is the one resulting from
+       applying the designators to it."))
+    (declare (ignore designors target-type table ienv))
+    (b* (((reterr) (irr-type) (irr-valid-table)))
+      (reterr :todo))
+    :measure (designor-list-count designors))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define valid-tyname ((tyname tynamep) (table valid-tablep) (ienv ienvp))
     :guard (tyname-unambp tyname)
@@ -2513,6 +2692,8 @@
     (b* (((reterr) (irr-type) (irr-valid-table)))
       (reterr :todo))
     :measure (tyname-count tyname))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   :hints (("Goal" :in-theory (enable o< o-finp)))
 
