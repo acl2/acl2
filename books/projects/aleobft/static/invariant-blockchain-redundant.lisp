@@ -137,7 +137,8 @@
              system-previous-in-dag-p-necc
              system-last-anchor-present-p-necc
              list-in-when-certificate-list-pathp
-             validator-state->dag-subset-create-certificate-next)
+             validator-state->dag-subset-create-certificate-next
+             validator-state->blockchain-of-create-certificate-next)
     :use (:instance calculate-blockchain-of-unequivocal-dag-superset
                     (dag (validator-state->dag
                           (get-validator-state val systate)))

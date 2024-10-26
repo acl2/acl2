@@ -347,7 +347,7 @@
              nfix
              validator-state->last-of-add-endorsed))
 
-  (defrule validator-state->blockchain-of-create-certificate-next
+  (defruled validator-state->blockchain-of-create-certificate-next
     (implies (set::in val (correct-addresses systate))
              (equal (validator-state->blockchain
                      (get-validator-state val
