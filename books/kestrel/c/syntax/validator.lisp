@@ -359,7 +359,14 @@
 
   (defrule type-arithmeticp-when-type-integerp
     (implies (type-integerp type)
-             (type-arithmeticp type))))
+             (type-arithmeticp type)))
+
+  (defrule type-arithmeticp-when-bool
+    (implies (type-case type :bool)
+             (type-arithmeticp type))
+    :enable (type-integerp
+             type-unsigned-integerp
+             type-standard-unsigned-integerp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2172,7 +2179,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The type name must denote the @('void') type or a scalar type [C:6.5.4/2].
+    "The type name must denote the void type or a scalar type [C:6.5.4/2].
      The expression must have scalar type [C:6.5.4/2].
      Since scalar types involve pointers,
      we perform array-to-pointer and function-to-pointer conversions.
@@ -2213,7 +2220,7 @@
      both arithmetic type,
      or both the structure type,
      or both the union type,
-     or both the @('void') type,
+     or both the void type,
      or both the pointer type
      [C:6.5.15/3].
      The type of the result is
@@ -2370,6 +2377,14 @@
                      ((erp type) (valid-memberp expr type-arg)))
                   (retok type table))
        :complit (b* (((erp type table) (valid-tyname expr.type table ienv))
+                     ((when (type-case type :function))
+                      (reterr (msg "The type of the compound literal ~x0 ~
+                                    is a function type."
+                                   (expr-fix expr))))
+                     ((when (type-case type :void))
+                      (reterr (msg "The type of the compound literal ~x0 ~
+                                    is void."
+                                   (expr-fix expr))))
                      ((erp table)
                       (valid-desiniter-list expr.elems type table ienv)))
                   (retok type table))
@@ -2443,6 +2458,12 @@
     :returns (mv erp (type? type-optionp) (new-table valid-tablep))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate an optional expression."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "If there is no expression,
+       we return @('nil') as the optional type,
+       and the validation table unchanged."))
     (b* (((reterr) nil (irr-valid-table)))
       (expr-option-case
        expr?
@@ -2559,20 +2580,93 @@
                         (target-type typep)
                         (table valid-tablep)
                         (ienv ienvp))
-    :guard (initer-unambp initer)
-    :returns (mv erp (type typep) (new-table valid-tablep))
+    :guard (and (initer-unambp initer)
+                (not (type-case target-type :function))
+                (not (type-case target-type :void)))
+    :returns (mv erp (new-table valid-tablep))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate an initializer."
     :long
     (xdoc::topstring
      (xdoc::p
       "The target type passed as input is
-       the type of the object being initialized.")
+       the type of the object being initialized,
+       which must not be a function or void type [C:6.7.9/3].")
      (xdoc::p
-      "If validation is successful, we return the type of the initializer."))
-    (declare (ignore initer target-type table ienv))
-    (b* (((reterr) (irr-type) (irr-valid-table)))
-      (reterr :todo))
+      "If the target type is a scalar,
+       the initializer must be either a single expression,
+       or a singleton initializer list without designators
+       [C:6.7.9/11];
+       the latter is an expression enclosed in braces;
+       experiments show that the final comma is allowed.
+       The same constraints as in assignments apply here
+       [C:6.7.9/11] [C:6.5.16.1/1].
+       We perform array-to-pointer and function-to-pointer conversions
+       on the expression, as pointers may be required."))
+    (b* (((reterr) (irr-valid-table)))
+      (cond
+       ((type-case target-type :unknown)
+        (initer-case
+         initer
+         :single (b* (((erp & table) (valid-expr initer.expr table ienv)))
+                   (retok table))
+         :list (valid-desiniter-list initer.elems (type-unknown) table ienv)))
+       ((type-scalarp target-type)
+        (b* (((mv erp expr)
+              (initer-case
+               initer
+               :single (mv nil initer.expr)
+               :list (b* (((unless (and (consp initer.elems)
+                                        (endp (cdr initer.elems))))
+                           (mv (msg "The initializer list ~x0 ~
+                                     for the target type ~x1 ~
+                                     is not a singleton."
+                                    (initer-fix initer)
+                                    (type-fix target-type))
+                               (irr-expr)))
+                          ((desiniter desiniter) (car initer.elems))
+                          ((unless (endp desiniter.design))
+                           (mv (msg "The initializer list ~x0 ~
+                                     for the target type ~x1 ~
+                                     is a singleton ~
+                                     but it has designators."
+                                    (initer-fix initer)
+                                    (type-fix target-type))
+                               (irr-expr)))
+                          ((unless (initer-case desiniter.init :single))
+                           (mv (msg "The initializer list ~x0 ~
+                                     for the target type ~x1 ~
+                                     is a singleton without designators ~
+                                     but the inner initializer ~
+                                     is not a single expression."
+                                    (initer-fix initer)
+                                    (type-fix target-type))
+                               (irr-expr))))
+                       (mv nil (initer-single->expr desiniter.init)))))
+             ((when erp) (reterr erp))
+             ((erp init-type table) (valid-expr expr table ienv))
+             (type (type-fpconvert (type-apconvert init-type)))
+             ((unless (or (and (or (type-arithmeticp target-type)
+                                   (type-case target-type :unknown))
+                               (or (type-arithmeticp type)
+                                   (type-case type :unknown)))
+                          (and (or (type-case target-type :pointer)
+                                   (type-case target-type :bool)
+                                   (type-case target-type :unknown))
+                               (or (type-case type :pointer)
+                                   (type-case type :unknown)))))
+              (reterr (msg "The initializer ~x0 ~
+                            for the target type ~x1 ~
+                            has type ~x2."
+                           (initer-fix initer)
+                           (type-fix target-type)
+                           init-type))))
+          (retok table)))
+       ((and (or (type-case target-type :struct)
+                 (type-case target-type :union))
+             (initer-case initer :single))
+        (reterr :todo))
+       (t (reterr :todo))))
     :measure (initer-count initer))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2581,7 +2675,9 @@
                            (target-type typep)
                            (table valid-tablep)
                            (ienv ienvp))
-    :guard (desiniter-unambp desiniter)
+    :guard (and (desiniter-unambp desiniter)
+                (not (type-case target-type :function))
+                (not (type-case target-type :void)))
     :returns (mv erp (new-table valid-tablep))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate an initializer with optional designation."
@@ -2589,14 +2685,12 @@
     (xdoc::topstring
      (xdoc::p
       "The target type passed as argument is the type
-       that the list of designators must be applicable to.
-       For now we do not make use of the type of the initializer."))
+       that the list of designators must be applicable to."))
     (b* (((reterr) (irr-valid-table))
          ((desiniter desiniter) desiniter)
          ((erp & table) (valid-designor-list
                          desiniter.design target-type table ienv))
-         ((erp & table) (valid-initer
-                         desiniter.init target-type table ienv)))
+         ((erp table) (valid-initer desiniter.init target-type table ienv)))
       (retok table))
     :measure (desiniter-count desiniter))
 
@@ -2606,7 +2700,9 @@
                                 (target-type typep)
                                 (table valid-tablep)
                                 (ienv ienvp))
-    :guard (desiniter-list-unambp desiniters)
+    :guard (and (desiniter-list-unambp desiniters)
+                (not (type-case target-type :function))
+                (not (type-case target-type :void)))
     :returns (mv erp (new-table valid-tablep))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate a list of zero or more
@@ -2631,7 +2727,9 @@
                           (target-type typep)
                           (table valid-tablep)
                           (ienv ienvp))
-    :guard (designor-unambp designor)
+    :guard (and (designor-unambp designor)
+                (not (type-case target-type :function))
+                (not (type-case target-type :void)))
     :returns (mv erp (new-target-type typep) (new-table valid-tablep))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate a designator."
@@ -2639,20 +2737,58 @@
     (xdoc::topstring
      (xdoc::p
       "The target type passed as input is
-       the one that the designator must apply to.
-       The target type returned as result is
+       the one that the designator must apply to;
+       the target type returned as result is
        the one that results from applying the designator to it.
-       However, for now we do not actually perform this check,
-       and just return the unknown type."))
-    (declare (ignore target-type))
+       The target type is the type of the current object [C:6.7.9/17].
+       A subscript designator requires an array target type,
+       and must have an integer expression [C:6.7.9/6];
+       the result is the unknown type,
+       because currently we have just one array type
+       without information about the element type.
+       A dotted designator requires a struct or union type [C:6.7.9/7];
+       the result is the unknown type,
+       because currently we do not have information about the members."))
     (b* (((reterr) (irr-type) (irr-valid-table)))
       (designor-case
        designor
-       :sub (b* (((erp & table)
-                  (valid-const-expr designor.index table ienv)))
+       :sub (b* (((erp index-type table)
+                  (valid-const-expr designor.index table ienv))
+                 ((unless (or (type-integerp index-type)
+                              (type-case index-type :unknown)))
+                  (reterr (msg "The index of the designator ~x0 has type ~x1."
+                               (designor-fix designor)
+                               index-type)))
+                 ((unless (or (type-case target-type :array)
+                              (type-case target-type :unknown)))
+                  (reterr (msg "The target type of the designator ~x0 is ~x1."
+                               (designor-fix designor)
+                               (type-fix target-type)))))
               (retok (type-unknown) table))
-       :dot (retok (type-unknown) (valid-table-fix table))))
-    :measure (designor-count designor))
+       :dot (b* (((unless (or (type-case target-type :struct)
+                              (type-case target-type :union)
+                              (type-case target-type :unknown)))
+                  (reterr (msg "The target type of the designator ~x0 is ~x1."
+                               (designor-fix designor)
+                               (type-fix target-type)))))
+              (retok (type-unknown) (valid-table-fix table)))))
+    :measure (designor-count designor)
+
+    ///
+
+    (defret valid-designor.new-target-type-not-function
+      (implies (not erp)
+               (not (equal (type-kind new-target-type)
+                           :function)))
+      :hints
+      (("Goal" :expand (valid-designor designor target-type table ienv))))
+
+    (defret valid-designor.new-target-type-not-void
+      (implies (not erp)
+               (not (equal (type-kind new-target-type)
+                           :void)))
+      :hints
+      (("Goal" :expand (valid-designor designor target-type table ienv)))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2660,8 +2796,10 @@
                                (target-type typep)
                                (table valid-tablep)
                                (ienv ienvp))
-    :guard (designor-list-unambp designors)
-    :returns (mv erp (new-type typep) (new-table valid-tablep))
+    :guard (and (designor-list-unambp designors)
+                (not (type-case target-type :function))
+                (not (type-case target-type :void)))
+    :returns (mv erp (new-target-type typep) (new-table valid-tablep))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate a list of zero or more designators."
     :long
@@ -2669,11 +2807,14 @@
      (xdoc::p
       "The target type passed as argument is the current type
        that the designators must be applicable to.
-       The new target type returned as result is the one resulting from
-       applying the designators to it."))
-    (declare (ignore designors target-type table ienv))
-    (b* (((reterr) (irr-type) (irr-valid-table)))
-      (reterr :todo))
+       The target type returned as result is the type
+       resulting from the application of the designators."))
+    (b* (((reterr) (irr-type) (irr-valid-table))
+         ((when (endp designors))
+          (retok (type-fix target-type) (valid-table-fix table)))
+         ((erp target-type table)
+          (valid-designor (car designors) target-type table ienv)))
+      (valid-designor-list (cdr designors) target-type table ienv))
     :measure (designor-list-count designors))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
