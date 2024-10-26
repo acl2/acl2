@@ -212,7 +212,6 @@
              ordered-even-p-necc-fixing
              collect-anchors-above-last-committed-round
              last-blockchain-round-p-necc-fixing
-             blocks-last-round
              posp
              evenp
              certificate->round-of-certificate-with-author+round))

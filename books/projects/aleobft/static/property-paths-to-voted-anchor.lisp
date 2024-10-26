@@ -113,6 +113,7 @@
                       (+ 2 (certificate->round cert)))
                   cert)
              (set::in cert dag))
+    :enable path-to-author+round-in-dag
     :disable (dag-all-path-to-p
               dag-all-path-to-p-necc)
     :use dag-all-path-to-p-necc))

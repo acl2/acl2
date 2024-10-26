@@ -1969,7 +1969,7 @@
 ; else with lst2 if it is a runic theory.  Argument lst1-known-to-be-runic is
 ; an optimization: if it is true, then lst1 is known to be a runic theory, so
 ; we can skip its runic-theoryp check.  If furthermore lst1-known-to-be-runic
-; is 'both then lst2 is also knowwn to be a runic theory and we can skip its
+; is 'both then lst2 is also known to be a runic theory and we can skip its
 ; check, too.
 
   (cond
@@ -3394,7 +3394,7 @@
 
 ; If :CLASSICALP or :TRANSPARENT is not bound in kwd-value-list, then the
 ; corresponding assoc-keyword call above reduces to (not (booleanp nil)), which
-; is false, which is appropropriate.
+; is false, which is appropriate.
 
           (mv (msg "The object ~x0 is not a legal signature.  The value of ~
                     the ~x1 keyword must be Boolean; see :DOC signature."
@@ -3466,7 +3466,7 @@
 
 ; If :CLASSICALP or :TRANSPARENT is not bound in kwd-value-list, then the
 ; corresponding assoc-keyword call above reduces to (not (booleanp nil)), which
-; is false, which is appropropriate.
+; is false, which is appropriate.
 
           (mv (msg "The object ~x0 is not a legal signature.  The value of ~
                     the ~x1 keyword must be Boolean; see :DOC signature."
@@ -4580,7 +4580,7 @@
 
 (table acl2-system-table nil nil
 
-; Since there isn't any documentation particularlly relevant to this table, we
+; Since there isn't any documentation particularly relevant to this table, we
 ; avoid using set-table-guard here.
 
 ; This table is used when we need to lay down an event marker.  We may find
@@ -6359,7 +6359,7 @@
 
 ; The following contains sig-fns.  That is arranged by
 ; set-unknown-constraints-supporters, and is enforced (in case the table is set
-; directly rather than with set-unknown-constraints-supporters) aby
+; directly rather than with set-unknown-constraints-supporters) by
 ; unknown-constraints-table-guard.
 
                                            (cdr (assoc-eq
@@ -9586,7 +9586,7 @@
 ; If full-book-string0 doesn't end in .lisp, yet it was computed from dir/x by
 ; extend-pathname, which we believe can only change the extension if the result
 ; is a canonical pathname.  If our thinking is wrong on this, then we'll learn
-; sommething when we get a complaint about the following error!
+; something when we get a complaint about the following error!
 
                     (er hard ctx
                         "A file with pathname ~x0 appears to have canonical ~
@@ -11889,7 +11889,7 @@
 ; Caller is 'include-book-raw during the early loading of compiled files; see
 ; the Essay on Hash Table Support for Compilation, especially the Appendix,
 ; "Saving space by eliding certain defconst forms".  In that case, failures are
-; silent: in case a problem, there is no warning generated and nil is the
+; silent: in case of a problem, there is no warning generated and nil is the
 ; returned value.  Also, the input suspect-book-action-alist is irrelevant if
 ; caller is 'include-book-raw.
 
@@ -11929,7 +11929,8 @@
               "Certificate is unavailable."
               state)
           (include-book-er file1 file2
-                           "There is no certificate on file for ~x0."
+                           "There is no certificate on file for ~x0.  See ~
+                            :DOC uncertified-books."
                            :uncertified-okp
                            suspect-book-action-alist
                            ctx state)))
@@ -16466,7 +16467,7 @@
              ldp))
 
 ; If :useless-runes was supplied explicitly as nil to certify-book, or was
-; supplied as any value to ld, then ignore environment variabless.
+; supplied as any value to ld, then ignore environment variables.
 
     (value nil))
    ((null ldp)
@@ -17466,7 +17467,7 @@
                              ctx state)
 
 ; This function completes book certification when cert-op is not
-; :convert-pcert, starting at step 3, hence starting by possibly rolling backk
+; :convert-pcert, starting at step 3, hence starting by possibly rolling back
 ; the world and including the book.
 
   #+acl2-loop-only
@@ -20865,7 +20866,7 @@
 ; particular, we expect that when an input term evaluates to an abstract stobj,
 ; s, then the evaluation result "corresponds" (in the E*-correspondence
 ; relation) to the value provably equal to the input term with respect to the
-; curernt logical state.  In summary: evaluation uses foundational stobjs and
+; current logical state.  In summary: evaluation uses foundational stobjs and
 ; :EXEC primitives for abstract stobjs, and this Essay formalizes this notion
 ; of evaluation and shows how it corresponds to purely logical computation
 ; using :LOGIC functions for each abstract stobj.
@@ -21040,7 +21041,7 @@
 ;     ev+ carry over of course since we are not changing the structure of its
 ;     definition (only changing the guards, ignoring stobjs, and "completing"
 ;     the axioms).  Note that since we never get a guard violation during such
-;     evalution, the stobjs-out are irrelevant if A is empty.
+;     evaluation, the stobjs-out are irrelevant if A is empty.
 
 ; - CASE (ev+ (f t1 ... tk) a0 A), where f is a stobj primitive for a stobj s0
 ;   in A (hence s0 is an abstract stobj)
@@ -22176,7 +22177,7 @@
 ; stobjs st-old and st-new, respectively.  We check that the :absstobj-tuples
 ; fields of respective members of old and new represent the same logical
 ; skeleton, as defined in the the Essay on Attachable Stobjs.  If so, we return
-; nil; otherwise we return a message explaing their difference.
+; nil; otherwise we return a message explaining their difference.
 
   (cond ((endp old)
          (cond
@@ -22643,7 +22644,7 @@
 ; attaching an implementation stobj to a generic stobj, since this check passed
 ; when the attached implementation stobj was admitted.  But just in case this
 ; check somehow does fail, the error message uses actual-name and st-new so
-; tha the message is about the proposed, (attached) generic stobj.
+; that the message is about the proposed, (attached) generic stobj.
 
                               (er-cmp ctx
                                       "the :LOGIC function ~x0 for export ~x1 ~
@@ -24844,7 +24845,7 @@
 
 ; Warning: Keep this in sync with evisceration-stobj-mark.
 
-; This version of evisceration-stobj-mark assues that name is a stobj name and
+; This version of evisceration-stobj-mark assumes that name is a stobj name and
 ; not :DF.
 
   (cond
@@ -27180,7 +27181,7 @@
       (fms "It is only possible to apply ~#0~[rewrite rules to terms that are ~
             not variables or applications of lambda expressions~/linear rules ~
             for triggers that are not variables, quoted constants, or ~
-            applications of lambda expessions~].  However, the current term ~
+            applications of lambda expressions~].  However, the current term ~
             is:~%~ ~ ~y1.~|"
            (list (cons #\0 (if (eq caller 'show-rewrites) 0 1))
                  (cons #\1 current-term))
@@ -33777,9 +33778,9 @@
                                   (list* 'make-event form
 
 ; Note that we deliberately omit :expansion? here, even if it was supplied
-; originally.  If :expansion? had been supplied and appropropriate, then we
-; would be in the previous case, where we don't generate a make-event around
-; the expansion.
+; originally.  If :expansion? had been supplied and appropriate, then we would
+; be in the previous case, where we don't generate a make-event around the
+; expansion.
 
                                          :check-expansion expansion2
                                          (and on-behalf-of
@@ -33919,7 +33920,7 @@
                                  (eq (car form) 'make-event)
                                  (consp (cdr form))
                                  (keyword-value-listp (cddr form))))
-           (macrop (and (not make-event-case) ; optmimzation
+           (macrop (and (not make-event-case) ; optimization
                         (consp form)
                         (symbolp (car form))
                         (getpropc (car form) 'macro-body))))
@@ -34175,7 +34176,7 @@
 ; 'macros-with-raw-code, but that also seems the right thing to do.
 
 ; Thus, this function is essentially (eval form), except that instead of
-; returning the value(s) from that evaluation, it retuns a new state where the
+; returning the value(s) from that evaluation, it returns a new state where the
 ; xxx-with-raw-code state globals are extended, according to the definitions of
 ; ACL2 macros and functions that have changed when form is evaluated.
 
@@ -34345,7 +34346,7 @@
 
 ; We ensure that the state is protected from inappropriate changes, much as
 ; we do in protected-eval.  If you change this protection below, consider
-; whether corresponding chcanges should be made to protected-eval.
+; whether corresponding changes should be made to protected-eval.
 
                     (revert-world
                      (state-global-let*
@@ -34786,7 +34787,7 @@
 ; the desired executable partial function.  At the event level, memoization
 ; events are unchanged except to take an additional argument, :total.  This is
 ; a bit of a challenge for the mutual-recursion case, however, since in general
-; one needs to memoizize each functions in the nest in order to get
+; one needs to memoize each functions in the nest in order to get
 ; executability, yet the precondition for each such function involves all
 ; functions in the nest.  Therefore it is natural to separate out a table event
 ; (using a new table, partial-functions-table) that stores all the information
@@ -35664,9 +35665,9 @@
                           non-memoizable.  See :DOC defabsstobj."
                          str key abs))
                    (t
-                    (msg "~@0~x1 has input fondational stobj~#2~[ ~&2~/s ~&2, ~
-                          each~] introduced as non-memoizable.  ~x1 also has ~
-                          input abstract stobj~#3~[ ~&2~/s ~&3, each of~] ~
+                    (msg "~@0~x1 has input foundational stobj~#2~[ ~&2~/s ~
+                          ~&2, each~] introduced as non-memoizable.  ~x1 also ~
+                          has input abstract stobj~#3~[ ~&2~/s ~&3, each of~] ~
                           whose corresponding foundational stobj is ~
                           non-memoizable.  See :DOC defstobj."
                          str key conc abs)))))

@@ -168,7 +168,7 @@
 ; . 2), and (:ELIM ASSOC-OF-APP).  This use of event names allows them
 ; to be confused with rule names.
 
-; Historical Footnote: In nqthm, the executable-counterpart of the
+; Historical Footnote: In Nqthm, the executable-counterpart of the
 ; function APP actually had a distinct name, *1*APP, and hence we
 ; established the expectation that one could prevent the use of that
 ; "rule" while allowing the use of the other.  We now use the runes
@@ -854,7 +854,7 @@
 ; Historical Note about Nqthm
 
 ; Nqthm had no explicit notion of the current theory.  However, implicitly,
-; nqthm contained a current theory and the events ENABLE and DISABLE allowed
+; Nqthm contained a current theory and the events ENABLE and DISABLE allowed
 ; the user to add a name to it or delete a name from it.  The experimental
 ; xnqthm, mentioned elsewhere in this system, introduced the notion of theories
 ; and tied them to enabling and disabling, following suggestions and patches
@@ -959,7 +959,7 @@
 
 ; Historical Note about Nqthm
 
-; In nqthm we solved this problem by having a list of temporarily disabled
+; In Nqthm we solved this problem by having a list of temporarily disabled
 ; names which was bound when there were local enabling hint settings.  That
 ; implementation suffered because if hundreds of names were enabled locally the
 ; time spent searching the list was excessive.  In xnqthm we solved that
@@ -1758,7 +1758,7 @@
 
 ; Forcing-round is a natural number, pool-lst and case-lst are generally
 ; true-lists of non-zero naturals (though elements of case-lst can be of the
-; form Dk in the case of a dijunctive split) and primes is a natural.  The
+; form Dk in the case of a disjunctive split) and primes is a natural.  The
 ; pool-lst is indeed a pool-lst.  (See the function pool-lst.) The case-lst is
 ; structurally analogous.
 
@@ -3421,7 +3421,7 @@
 ; virtue of its being an equivalence relation.  But this position has
 ; never been seriously scrutinized.
 
-; In a break with nqthm, we have decided to let type-set expand some
+; In a break with Nqthm, we have decided to let type-set expand some
 ; function applications to get better type-sets for them.  The
 ; functions in question are those listed above.
 
@@ -5252,7 +5252,7 @@
 ; For purposes of guard checking all we assume about ancestors is
 ; ancestor-listp.
 
-; Historical Note:  In nqthm, this function was named relieve-hyps-not-ok.
+; Historical Note:  In Nqthm, this function was named relieve-hyps-not-ok.
 
   (declare (xargs :guard (and (pseudo-termp lit)
                               (ancestor-listp ancestors)
@@ -7787,11 +7787,11 @@
 
 ; X is a term and type-alist is a type alist mapping terms to their type-sets
 ; (and some ttrees) and thus encoding the current assumptions.  In a break with
-; nqthm, the ACL2 type-set function tracks dependencies among the entries on
+; Nqthm, the ACL2 type-set function tracks dependencies among the entries on
 ; the type-alist.  In particular, the type-alist here contains pairs of the
 ; form (term ts . ttree), where ttree is a tag-tree generally containing 'PT
 ; tags.  (There may be other tags, e.g., 'LEMMA and maybe even 'FC-DERIVATION
-; during forward- chaining.)  In nqthm, the type-alist contained pairs of the
+; during forward- chaining.)  In Nqthm, the type-alist contained pairs of the
 ; form (term . ts).  The ttree argument to type-set is an accumulator onto
 ; which we add all of the ttrees attached to the facts we use from the
 ; type-alist and the wrld.  We return two results, the final type set of term
@@ -7883,7 +7883,7 @@
 ; type-set, I decided simply to implement the double whammy method,
 ; i.e., always using both ways and intersecting the results.  To my
 ; surprise, the double whammy method is 3 times slower than the
-; ordinary type-set.  That number was obtained by running nqthm.lisp,
+; ordinary type-set.  That number was obtained by running Nqthm.lisp,
 ; which ordinarily takes 3460 seconds but which takes 10300 seconds
 ; under double whammy.  I then backed off the full blown double whammy
 ; and limited its use to the special case where (a) the type-set
@@ -12818,7 +12818,7 @@
 ; is in normal form, its test is not an if.  We split on that test and
 ; distribute the if.
 
-; Note: In nqthm, instead of using subst-for-nth-arg as below, we used
+; Note: In Nqthm, instead of using subst-for-nth-arg as below, we used
 ; subst-expr and hence hit not only the top-level occurrence of the
 ; bad if but every occurrence of it in the term.  This seems better
 ; because it doesn't search the term for (unlikely) occurrences and

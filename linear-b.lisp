@@ -502,11 +502,11 @@
 ; suppose poly2 is silly and we are to return (list (list poly1) (list poly2)).
 ; Then the silliness of poly2 means the second disjunct is true, which
 ; is represented here as (list (list poly1) nil).  That, by the way, was
-; nqthm's answer in this case.  However, this disjunct gives the caller
+; Nqthm's answer in this case.  However, this disjunct gives the caller
 ; no help because it means either poly1 is true or T is true.  So we
 ; just tell the caller "no information".
 
-; Note about Nqthm:  As remarked above, nqthm's linearize can return
+; Note about Nqthm:  As remarked above, Nqthm's linearize can return
 ; (list (list poly1) nil).  How is this used?  It is put on the
 ; split-lst when we start adding polynomials to the pot.  We then see if
 ; we can get a contradiction from one side and if so, we assume the other.

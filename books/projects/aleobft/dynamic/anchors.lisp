@@ -210,6 +210,141 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection collect-anchors-in-unequivocal-closed-dags
+  :short "Some theorems about @(tsee collect-anchors)
+          applied on unequivocal, backward-closed DAGs."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The first theorem says that
+     the anchors collected, starting from an anchor,
+     from a backward-closed subset of an unequivocal DAG
+     are the same in the superset.
+     The anchor collection in question is the one
+     expressed by the @(tsee collect-anchors) operation,
+     which collects anchors starting from a given one
+     down to a given round (or 0 for all rounds).
+     If the starting anchor is in the subset,
+     it must also be in the superset,
+     and collecting the anchors in the superset
+     yields the same result as collecting the anchors in the subset.
+     That is, the collection of anchors is stable under DAG growth.
+     This builds on the stability property of paths under DAG growth,
+     expressed by the theorem @('path-to-author+round-of-unequivocal-superdag')
+     in @(see paths-in-unequivocal-closed-dags);
+     the collection of anchors is based on the paths,
+     both present and absent paths,
+     which that theorem shows to be stable under DAG growth.
+     The proof is fairly simple, by induction on @(tsee collect-anchors).")
+   (xdoc::p
+    "The second theorem says that
+     the anchors collected, starting from a common anchor,
+     from two backward-closed, (individually and mutually) unequivocal DAGs
+     are the same in the two DAGs.
+     The proof is also by induction on @(tsee collect-anchors):
+     although there are two calls with different arguments,
+     the measured subset (i.e. @('previous-round')) is the same in both calls.
+     We need more hypotheses (which are implied by already proved invariants),
+     to ensure that the two blockchains result in the same committees,
+     and thus in the same leaders at each round of interest."))
+
+  (defruled collect-anchors-of-unequivocal-superdag
+    (implies (and (certificate-setp dag0)
+                  (certificate-setp dag)
+                  (set::subset dag0 dag)
+                  (certificate-set-unequivocalp dag)
+                  (dag-closedp dag0)
+                  (set::in current-anchor dag0))
+             (equal (collect-anchors current-anchor
+                                     previous-round
+                                     last-committed-round
+                                     dag
+                                     blockchain
+                                     all-vals)
+                    (collect-anchors current-anchor
+                                     previous-round
+                                     last-committed-round
+                                     dag0
+                                     blockchain
+                                     all-vals)))
+    :induct t
+    :enable (collect-anchors
+             path-to-author+round-of-unequivocal-superdag
+             path-to-author+round-in-dag))
+
+  (defruled collect-anchors-of-unequivocal-dags
+    (implies (and (certificate-setp dag1)
+                  (certificate-setp dag2)
+                  (certificate-set-unequivocalp dag1)
+                  (certificate-set-unequivocalp dag2)
+                  (certificate-sets-unequivocalp dag1 dag2)
+                  (dag-closedp dag1)
+                  (dag-closedp dag2)
+                  (dag-committees-p dag1 blockchain1 all-vals)
+                  (dag-committees-p dag2 blockchain2 all-vals)
+                  (same-active-committees-p blockchain1 blockchain2 all-vals)
+                  (set::in current-anchor dag1)
+                  (set::in current-anchor dag2)
+                  (< previous-round (certificate->round current-anchor)))
+             (equal (collect-anchors current-anchor
+                                     previous-round
+                                     last-committed-round
+                                     dag1
+                                     blockchain1
+                                     all-vals)
+                    (collect-anchors current-anchor
+                                     previous-round
+                                     last-committed-round
+                                     dag2
+                                     blockchain2
+                                     all-vals)))
+    :induct t
+    :enable (collect-anchors
+             dag-committees-p-necc
+             path-to-author+round-of-unequivocal-dags
+             certificate->round-of-path-to-author+round)
+    :hints ('(:use ((:instance
+                     active-committee-at-earlier-round-when-at-later-round
+                     (later (certificate->round current-anchor))
+                     (earlier previous-round)
+                     (blocks blockchain1))
+                    (:instance
+                     active-committee-at-earlier-round-when-at-later-round
+                     (later (certificate->round current-anchor))
+                     (earlier previous-round)
+                     (blocks blockchain2))
+                    (:instance
+                     same-active-committees-p-necc
+                     (blocks1 blockchain1)
+                     (blocks2 blockchain2)
+                     (round previous-round))
+                    (:instance
+                     path-to-author+round-in-dag
+                     (cert current-anchor)
+                     (author (leader-at-round
+                              previous-round
+                              (active-committee-at-round
+                               previous-round blockchain1 all-vals)))
+                     (round previous-round)
+                     (dag dag1))
+                    (:instance
+                     path-to-author+round-in-dag
+                     (cert current-anchor)
+                     (author (leader-at-round
+                              previous-round
+                              (active-committee-at-round
+                               previous-round blockchain1 all-vals)))
+                     (round previous-round)
+                     (dag dag2)))
+              :expand ((collect-anchors current-anchor
+                                        previous-round
+                                        last-committed-round
+                                        dag2
+                                        blockchain2
+                                        all-vals))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define collect-all-anchors ((last-anchor certificatep)
                              (dag certificate-setp)
                              (blockchain block-listp)
@@ -261,5 +396,68 @@
     (equal (car all-anchors)
            (certificate-fix last-anchor))
     :hints (("Goal" :in-theory (enable car-of-collect-anchors))))
-
   (in-theory (disable car-of-collect-all-anchors)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection collect-all-anchors-in-equivocal-closed-dags
+  :short "Some theorems about @(tsee collect-all-anchors)
+          applied on unequivocal, backward-closed DAGs."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The first theorem says that
+     all the anchors collected, starting from an anchor,
+     from a backward-closed subset of an unequivocal DAG
+     are the same in the superset.
+     This is a simple consequence of the analogous theorem
+     about @(tsee collect-anchors).")
+   (xdoc::p
+    "The second theorem says that
+     all the anchors collected, starting from a common anchor,
+     from two backward-closed, (individually and mutually) unequivocal DAGs
+     are the same in the two DAGS.
+     This is a simple consequence of the analogous theorem
+     about @(tsee collect-anchors)."))
+
+  (defruled collect-all-anchors-of-unequivocal-superdag
+    (implies (and (certificate-setp dag0)
+                  (certificate-setp dag)
+                  (set::subset dag0 dag)
+                  (certificate-set-unequivocalp dag)
+                  (dag-closedp dag0)
+                  (set::in last-anchor dag0))
+             (equal (collect-all-anchors last-anchor
+                                         dag
+                                         blockchain
+                                         all-vals)
+                    (collect-all-anchors last-anchor
+                                         dag0
+                                         blockchain
+                                         all-vals)))
+    :enable (collect-all-anchors
+             collect-anchors-of-unequivocal-superdag))
+
+  (defruled collect-all-anchors-of-unequivocal-dags
+    (implies (and (certificate-setp dag1)
+                  (certificate-setp dag2)
+                  (certificate-set-unequivocalp dag1)
+                  (certificate-set-unequivocalp dag2)
+                  (certificate-sets-unequivocalp dag1 dag2)
+                  (dag-closedp dag1)
+                  (dag-closedp dag2)
+                  (dag-committees-p dag1 blockchain1 all-vals)
+                  (dag-committees-p dag2 blockchain2 all-vals)
+                  (same-active-committees-p blockchain1 blockchain2 all-vals)
+                  (set::in last-anchor dag1)
+                  (set::in last-anchor dag2))
+             (equal (collect-all-anchors last-anchor
+                                         dag1
+                                         blockchain1
+                                         all-vals)
+                    (collect-all-anchors last-anchor
+                                         dag2
+                                         blockchain2
+                                         all-vals)))
+    :enable (collect-all-anchors
+             collect-anchors-of-unequivocal-dags)))

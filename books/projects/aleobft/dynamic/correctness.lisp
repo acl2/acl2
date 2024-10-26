@@ -31,15 +31,17 @@
 (include-book "nonforking-blockchains-def-and-init")
 (include-book "same-committees")
 (include-book "unequivocal-accepted-certificates-next")
-(include-book "anchors-of-validators-def-and-init")
+(include-book "last-anchor-def-and-init")
 (include-book "last-anchor-present")
 (include-book "successor-predecessor-intersection")
 (include-book "dag-omni-paths")
 (include-book "rounds-in-committees")
 (include-book "dag-certificate-next")
-(include-book "anchors-of-validators-next")
+(include-book "last-anchor-next")
 (include-book "last-anchor-voters")
 (include-book "omni-paths")
+(include-book "anchors-extension")
+(include-book "committed-anchor-sequences")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -74,14 +76,16 @@
                     nonforking-blockchains-def-and-init
                     same-committees
                     unequivocal-accepted-certificates-next
-                    anchors-of-validators-def-and-init
+                    last-anchor-def-and-init
                     last-anchor-present
                     successor-predecessor-intersection
                     dag-omni-paths
                     rounds-in-committees
                     dag-certificate-next
-                    anchors-of-validators-next
+                    last-anchor-next
                     last-anchor-voters
-                    omni-paths))
+                    omni-paths
+                    anchors-extension
+                    committed-anchors-sequences))
 
 ; TODO: continue

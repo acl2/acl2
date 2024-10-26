@@ -48,7 +48,7 @@
 ; 5. BADGER and the Badge-Table
 ;    Define the :PROGRAM mode function BADGER, which infers the badge (if any)
 ;    of a defined function.  The key routine in BADGER is a :PROGRAM mode
-;    interative inference mechanism called GUESS-ILKS-ALIST.
+;    iterative inference mechanism called GUESS-ILKS-ALIST.
 
 ; 6. Essay on CHECK-ILKS
 ;    For purposes of reassurance only, we locally convert GUESS-ILKS-ALIST to a
@@ -868,12 +868,12 @@
 (defun guess-ilks-alist (fn new-badge term ilk wrld alist)
 
 ; Fn is the name of a function being defined.  New-badge is either nil or a
-; proposed badge for fn and term is a term (initally the body of fn) occuring
+; proposed badge for fn and term is a term (initially the body of fn) occurring
 ; in a slot of ilk ilk.  Note: term contains no ACL2 lambda applications!  We
 ; try to determine the ilks of the free vars in term, extending alist to record
 ; what we find.  We return (mv msg alist'), where either msg is an error
 ; message and alist' is nil, or msg is nil and alist' is extension of alist
-; assiging ilks to free vars occurring in term.
+; assigning ilks to free vars occurring in term.
 
 ; Foreshadowing: We will call this function twice on every name being badged:
 ; the first time new-badge is nil and the initial alist is nil, and the
@@ -941,7 +941,7 @@
 ; non-nil.  This means fn was admitted with :LOOP$-RECURSION.  But at the
 ; moment, a loop like (loop$ for x in lst collect (fn x)) translates to
 ; (collect$ (lambda$ (x)(fn x)) lst), not (collect$ 'fn lst), so technically
-; loop$ recursion has not occured!  But the user who knows what is going on
+; loop$ recursion has not occurred!  But the user who knows what is going on
 ; could well type (collect$ 'fn lst) if she wanted to, since it is logically
 ; equivalent to the loop$ translation and more succinct!  So we allow it.
 
@@ -1573,7 +1573,7 @@
 ; was NIL (T), that the badge fields are the same, and that the remaining
 ; tuples in the two lists are equal.  This guarantees that the change was
 ; merely flipping the warrantp flag of an existing function from nil to t.  The
-; recognition phase ends non-errorneously by returning the op token and the
+; recognition phase ends non-erroneously by returning the op token and the
 ; tuple in question.
 
 ; The more sophisticated checks are then done depending on the op.  If the op

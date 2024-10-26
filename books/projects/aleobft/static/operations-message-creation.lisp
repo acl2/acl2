@@ -59,7 +59,7 @@
              (equal (message->certificate msg) cert))
     :induct t)
 
-  (defrule in-of-messages-for-certificate
+  (defruled in-of-messages-for-certificate
     (implies (address-setp dests)
              (equal (set::in msg
                              (messages-for-certificate cert dests))
