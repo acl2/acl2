@@ -8142,7 +8142,7 @@
 
 ; We try to prove term using the given hints and the rules in wrld.
 
-; Note: Having prove use hints is a break from nqthm, where only
+; Note: Having prove use hints is a break from Nqthm, where only
 ; prove-lemma used hints.
 
 ; This function returns the traditional three values of an error
@@ -8180,7 +8180,7 @@
 ; coding or not.
 
 ; The system as it stood November 3, 1989, contained the complete
-; nqthm rewriter and simplifier (including metafunctions, compound
+; Nqthm rewriter and simplifier (including metafunctions, compound
 ; recognizers, linear and a trivial cut at congruence relations that
 ; did not connect to the user-interface) and induction.  It did not
 ; include destructor elimination, cross-fertilization, generalization

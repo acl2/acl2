@@ -11,7 +11,7 @@
 
 (in-package "ALEOBFT-DYNAMIC")
 
-(include-book "anchors-of-validators-next")
+(include-book "last-anchor-next")
 
 (local (include-book "arithmetic-3/top" :dir :system))
 
@@ -377,7 +377,6 @@
              ordered-even-p-necc-fixing
              collect-anchors-above-last-committed-round
              last-blockchain-round-p-necc-fixing
-             blocks-last-round
              posp
              pos-fix
              evenp

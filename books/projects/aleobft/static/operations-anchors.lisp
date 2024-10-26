@@ -154,7 +154,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define validator-anchors ((vstate validator-statep) (vals address-setp))
+(define committed-anchors ((vstate validator-statep) (vals address-setp))
   :guard (and (not (set::emptyp vals))
               (evenp (validator-state->last vstate))
               (or (equal (validator-state->last vstate) 0)
@@ -178,19 +178,20 @@
 
   ///
 
-  (defrule validator-anchors-when-last-is-0
+  (defrule committed-anchors-when-last-is-0
     (implies (equal (validator-state->last vstate) 0)
-             (equal (validator-anchors vstate vals)
+             (equal (committed-anchors vstate vals)
                     nil)))
 
-  (defrule consp-of-validator-anchors-when-last-not-0
+  (defrule consp-of-committed-anchors-when-last-not-0
     (implies (not (equal (validator-state->last vstate) 0))
-             (consp (validator-anchors vstate vals)))
+             (consp (committed-anchors vstate vals)))
     :rule-classes :type-prescription)
 
-  (defrule car-of-validator-anchors
+  (defrule car-of-committed-anchors
     (implies (and (not (equal (validator-state->last vstate) 0))
                   (last-anchor vstate vals))
-             (equal (car (validator-anchors vstate vals))
+             (equal (car (committed-anchors vstate vals))
                     (last-anchor vstate vals)))
-    :enable collect-all-anchors))
+    :enable (collect-all-anchors
+             car-of-collect-anchors)))

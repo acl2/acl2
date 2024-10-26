@@ -64,7 +64,8 @@
                    (all-addresses systate))
                   (last-anchor (get-validator-state val systate)
                                (all-addresses systate))))
-  :enable last-anchor
+  :enable (last-anchor
+           validator-state->last-of-create-certificate-next)
   :disable validator-state->dag-of-create-certificate-next
   :use system-last-anchor-present-p-necc)
 

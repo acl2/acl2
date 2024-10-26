@@ -28,9 +28,9 @@
 ; right-associated binary operations; for example, (df+ x y z) is treated
 ; identically to (df+ x (df+ y z)).
 
-; For ACL2, transcendental functions traffic completely in double-floatas.  For
+; For ACL2, transcendental functions traffic completely in double-floats.  For
 ; example, if x is of double-float type, (sqrt x) is also of double-float type
-; even if x and its square root both have rational mathemmatical values.  See
+; even if x and its square root both have rational mathematical values.  See
 ; also the CL HyperSpec Section 12.1.4.4.  Of course, we need guards checked in
 ; some cases before calling such functions.  For example, if x is negative then
 ; we can (or must?) get a complex float for (expt x y) when y is not an

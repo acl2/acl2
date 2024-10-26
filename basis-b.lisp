@@ -2753,7 +2753,7 @@
 
 ; "Subcor" stands for "substitute corresponding elements".  Vars and terms are
 ; in 1:1 correspondence, and we substitute terms for corresponding vars into
-; form.  This function was called sub-pair-var in nqthm.
+; form.  This function was called sub-pair-var in Nqthm.
 
   (declare (xargs :guard (and (symbol-listp vars)
                               (pseudo-term-listp terms)

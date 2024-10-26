@@ -359,7 +359,14 @@
 
   (defrule type-arithmeticp-when-type-integerp
     (implies (type-integerp type)
-             (type-arithmeticp type))))
+             (type-arithmeticp type)))
+
+  (defrule type-arithmeticp-when-bool
+    (implies (type-case type :bool)
+             (type-arithmeticp type))
+    :enable (type-integerp
+             type-unsigned-integerp
+             type-standard-unsigned-integerp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -373,8 +380,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-promotedp ((type typep))
-  :guard (or (type-arithmeticp type)
-             (type-case type :unknown))
+  :guard (type-arithmeticp type)
   :returns (yes/no booleanp)
   :short "Check if an arithmetic type is a promoted one."
   :long
@@ -426,8 +432,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define type-promote ((type typep) (ienv ienvp))
-  :guard (or (type-arithmeticp type)
-             (type-case type :unknown))
+  :guard (type-arithmeticp type)
   :returns (new-type typep)
   :short "Perform integer promotions on an arithmetic type [C:6.3.1.1/2]."
   :long
@@ -601,10 +606,8 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (define type-uaconvert ((type1 typep) (type2 typep) (ienv ienvp))
-  :guard (and (or (type-arithmeticp type1)
-                  (type-case type1 :unknown))
-              (or (type-arithmeticp type2)
-                  (type-case type2 :unknown)))
+  :guard (and (type-arithmeticp type1)
+              (type-arithmeticp type2))
   :returns (new-type typep)
   :short "Perform the usual arithmetic conversions on two arithmetic types
           [C:6.3.1.8]."
@@ -637,9 +640,6 @@
      Then we apply the remaining rules, for integer types, in [C:6.3.1.8],
      via separate functions (see their documentation)."))
   (cond
-   ((or (type-case type1 :unknown)
-        (type-case type2 :unknown))
-    (type-unknown))
    ((or (type-case type1 :ldoublec)
         (type-case type2 :ldoublec))
     (type-ldoublec))
@@ -1613,27 +1613,29 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The types of the two sub-expressions are
-     calculated (recursively) by @(tsee valid-expr).")
-   (xdoc::p
-    "After converting array types to pointer types [C:6.3.2.1/3],
+    "After converting array types to pointer types,
      one sub-expression must have pointer type,
      and the other sub-expression must have integer type
      [C:6.5.2.1/1].
      The expression should have the type referenced by the pointer type,
      but since for now we model just one pointer type,
-     the type of the expression is unknown."))
+     the type of the expression is unknown.")
+   (xdoc::p
+    "There is no need to perform function-to-pointer conversion,
+     because that would result in a pointer to function,
+     which is disallowed,
+     as it has to be a pointer to a complete object type [C:6.5.2.1/1].
+     So by leaving function types as such, we automatically disallow them."))
   (b* (((reterr) (irr-type))
+       ((when (or (type-case type-arg1 :unknown)
+                  (type-case type-arg2 :unknown)))
+        (retok (type-unknown)))
        (type1 (type-apconvert type-arg1))
        (type2 (type-apconvert type-arg2))
-       ((unless (or (and (or (type-case type1 :pointer)
-                             (type-case type1 :unknown))
-                         (or (type-integerp type2)
-                             (type-case type2 :unknown)))
-                    (and (or (type-integerp type1)
-                             (type-case type1 :unknown))
-                         (or (type-case type2 :pointer)
-                             (type-case type2 :unknown)))))
+       ((unless (or (and (type-case type1 :pointer)
+                         (type-integerp type2))
+                    (and (type-integerp type1)
+                         (type-case type2 :pointer))))
         (reterr (msg "In the array subscripting expression ~x0, ~
                       the first sub-expression has type ~x1, ~
                       and the second sub-expression has type ~x2."
@@ -1653,9 +1655,6 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The types of the two sub-expressions are
-     calculated (recursively) by @(tsee valid-expr).")
-   (xdoc::p
     "After converting function types to pointer types,
      the first sub-expression must have pointer type [C:6.5.2.2/1];
      since we currently have just one pointer type,
@@ -1664,12 +1663,18 @@
      we do not check the argument types against the function type [C:6.5.2.2/2].
      Also for the same reason,
      we return the unknown type,
-     because we do not have information about the result type."))
-  (declare (ignore types-arg))
+     because we do not have information about the result type.")
+   (xdoc::p
+    "There is no need to perform array-to-pointer conversion,
+     because array types cannot have function element types,
+     but only (complete) object element types [C:6.2.5/20].
+     Thus, the conversion could never result into a pointer to a function."))
   (b* (((reterr) (irr-type))
+       ((when (or (type-case type-fun :unknown)
+                  (member-equal (type-unknown) (type-list-fix types-arg))))
+        (retok (type-unknown)))
        (type (type-fpconvert type-fun))
-       ((unless (or (type-case type :pointer)
-                    (type-case type :unknown)))
+       ((unless (type-case type :pointer))
         (reterr (msg "In the function call expression ~x0, ~
                       the first sub-expression has type ~x1."
                      (expr-fix expr)
@@ -1687,19 +1692,17 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The type of the sub-expression is
-     calculated (recursively) by @(tsee valid-expr).")
-   (xdoc::p
     "The argument type must be a structure or union type [C:6.5.2.3/1].
      Since a pointer type is not allowed here,
-     there is no need to convert arrays to pointers [C:6.3.2.1/3].")
+     there is no need to convert arrays or functions to pointers.")
    (xdoc::p
     "For now we only have one type for structures and one type for unions.
      We cannot look up the member type, so we return the unknown type."))
   (b* (((reterr) (irr-type))
+       ((when (type-case type-arg :unknown))
+        (retok (type-unknown)))
        ((unless (or (type-case type-arg :struct)
-                    (type-case type-arg :union)
-                    (type-case type-arg :unknown)))
+                    (type-case type-arg :union)))
         (reterr (msg "In the member expression ~x0, ~
                       the sub-expression has type ~x1."
                      (expr-fix expr) (type-fix type-arg)))))
@@ -1723,14 +1726,19 @@
      [C:6.5.2.3/2].
      We need to convert arrays to pointers,
      and then we just check that we have the (one) pointer type;
-     we will refine this when we refine our type system.")
+     we will refine this when we refine our type system.
+     We do not conver functions to pointers,
+     because that would result into a pointer to function,
+     which is not a pointer to structure or union as required;
+     thus, by leaving function types unchanged, we reject them here.")
    (xdoc::p
     "Since we cannot yet look up members in structure and union types,
      we return the unknown type."))
   (b* (((reterr) (irr-type))
+       ((when (type-case type-arg :unknown))
+        (retok (type-unknown)))
        (type (type-apconvert type-arg))
-       ((unless (and (type-case type :pointer)
-                     (type-case type :unknown)))
+       ((unless (type-case type :pointer))
         (reterr (msg "In the member pointer expression ~x0, ~
                       the sub-expression has type ~x1."
                      (expr-fix expr) (type-fix type-arg)))))
@@ -1771,7 +1779,9 @@
      because they never result in arithmetic types.")
    (xdoc::p
     "The @('!') operator requires an operand of a scalar type [C:6.5.3.3/1],
-     and result is always @('signed int') [C:6.5.3.3/5].")
+     and result is always @('signed int') [C:6.5.3.3/5].
+     Since pointers may be involved, we perform
+     array-to-pointer and function-to-pointer conversions.")
    (xdoc::p
     "The @('sizeof') operator applied to an expression
      requires a non-function complete type [C:6.5.3.4/1].
@@ -1782,51 +1792,53 @@
      whose definition is implementation-defined,
      so for now we just return the unknown type;
      we will need to extend implementation environments
-     with information about the definition of @('size_t')."))
-  (b* (((reterr) (irr-type)))
-    (unop-case
-     op
-     :address (retok (type-pointer))
-     :indir (b* ((type (type-fpconvert (type-apconvert type-arg)))
-                 ((unless (or (type-case type :pointer)
-                              (type-case type :unknown)))
-                  (reterr (msg "In the unary expression ~x0, ~
-                                the sub-expression has type ~x1."
-                               (expr-fix expr) (type-fix type-arg)))))
-              (retok (type-unknown)))
-     :plus (b* (((unless (or (type-arithmeticp type-arg)
-                             (type-case type-arg :unknown)))
-                 (reterr (msg "In the unary expression ~x0, ~
-                               the sub-expression has type ~x1."
-                              (expr-fix expr) (type-fix type-arg)))))
-             (retok (type-promote type-arg ienv)))
-     :minus (b* (((unless (or (type-arithmeticp type-arg)
-                              (type-case type-arg :unknown)))
-                  (reterr (msg "In the unary expression ~x0, ~
-                                the sub-expression has type ~x1."
-                               (expr-fix expr) (type-fix type-arg)))))
-              (retok (type-promote type-arg ienv)))
-     :bitnot (b* (((unless (or (type-integerp type-arg)
-                               (type-case type-arg :unknown)))
-                   (reterr (msg "In the unary expression ~x0, ~
-                                 the sub-expression has type ~x1."
-                                (expr-fix expr) (type-fix type-arg)))))
-               (retok (type-promote type-arg ienv)))
-     :lognot (b* (((unless (or (type-scalarp type-arg)
-                               (type-case type-arg :unknown)))
-                   (reterr (msg "In the unary expression ~x0, ~
-                                 the sub-expression has type ~x1."
-                                (expr-fix expr) (type-fix type-arg)))))
-               (retok (type-sint)))
-     :preinc (reterr :todo)
-     :predec (reterr :todo)
-     :postinc (reterr :todo)
-     :postdec (reterr :todo)
-     :sizeof (b* (((when (type-case type-arg :function))
-                   (reterr (msg "In the unary expression ~x0, ~
-                                 the sub-expression has type ~x1."
-                                (expr-fix expr) (type-fix type-arg)))))
-               (retok (type-unknown)))))
+     with information about the definition of @('size_t').")
+   (xdoc::p
+    "The @('++') pre-increment and @('--') pre-decrement operators
+     require a real or pointer operand [C:6.5.3.1/1].
+     Since these expressions are equivalent to assignments
+     [C:6.5.3.1/2] [C:6.5.3.1/3],
+     the type of the result must be the type of the operand.
+     We do not perform array-to-pointer or function-to-pointer conversions,
+     because those result in pointers, not lvalues as required [C:6.5.3.1/1].")
+   (xdoc::p
+    "The @('++') post-increment and @('--') post-decrement operators
+     require a real or pointer operand [C:6.5.2.4/1].
+     The type of the result is the same as the operand
+     [C:6.5.2.4/2] [C:6.5.2.4/3].
+     We do not perform array-to-pointer or function-to-pointer conversions,
+     because those result in pointers, not lvalues as required [C:6.5.2.4/1]."))
+  (b* (((reterr) (irr-type))
+       ((when (type-case type-arg :unknown))
+        (retok (type-unknown)))
+       (msg (msg "In the unary expression ~x0, ~
+                  the sub-expression has type ~x1."
+                 (expr-fix expr) (type-fix type-arg))))
+    (case (unop-kind op)
+      (:address (retok (type-pointer)))
+      (:indir (b* ((type (type-fpconvert (type-apconvert type-arg)))
+                   ((unless (type-case type :pointer))
+                    (reterr msg)))
+                (retok (type-unknown))))
+      ((:plus :minus) (b* (((unless (type-arithmeticp type-arg))
+                            (reterr msg)))
+                        (retok (type-promote type-arg ienv))))
+      (:bitnot (b* (((unless (type-integerp type-arg))
+                     (reterr msg)))
+                 (retok (type-promote type-arg ienv))))
+      (:lognot (b* ((type (type-fpconvert (type-apconvert type-arg)))
+                    ((unless (type-scalarp type))
+                     (reterr msg)))
+                 (retok (type-sint))))
+      ((:preinc :predec :postinc :postdec)
+       (b* (((unless (or (type-realp type-arg)
+                         (type-case type-arg :pointer)))
+             (reterr msg)))
+         (retok (type-fix type-arg))))
+      (:sizeof (b* (((when (type-case type-arg :function))
+                     (reterr msg)))
+                 (retok (type-unknown))))
+      (t (prog2$ (impossible) (reterr t)))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1834,44 +1846,366 @@
 (define valid-binary ((expr exprp)
                       (op binopp)
                       (type-arg1 typep)
-                      (type-arg2 typep))
+                      (type-arg2 typep)
+                      (ienv ienvp))
   :guard (expr-case expr :binary)
   :returns (mv erp (type typep))
   :short "Validate a binary expression,
           given the type of the sub-expression."
-  (declare (ignore expr type-arg1 type-arg2))
-  (b* (((reterr) (irr-type)))
-    (binop-case
-     op
-     :mul (reterr :todo)
-     :div (reterr :todo)
-     :rem (reterr :todo)
-     :add (reterr :todo)
-     :sub (reterr :todo)
-     :shl (reterr :todo)
-     :shr (reterr :todo)
-     :lt (reterr :todo)
-     :gt (reterr :todo)
-     :le (reterr :todo)
-     :ge (reterr :todo)
-     :eq (reterr :todo)
-     :ne (reterr :todo)
-     :bitand (reterr :todo)
-     :bitxor (reterr :todo)
-     :bitior (reterr :todo)
-     :logand (reterr :todo)
-     :logor (reterr :todo)
-     :asg (reterr :todo)
-     :asg-mul (reterr :todo)
-     :asg-div (reterr :todo)
-     :asg-rem (reterr :todo)
-     :asg-add (reterr :todo)
-     :asg-sub (reterr :todo)
-     :asg-shl (reterr :todo)
-     :asg-shr (reterr :todo)
-     :asg-and (reterr :todo)
-     :asg-xor (reterr :todo)
-     :asg-ior (reterr :todo)))
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @('*') binary and @('/') operators
+     require arithmetic operands [C:6.5.5/2].
+     The result is the common type according to
+     the usual arithmetic conversions [C:6.5.5/3].
+     There is no need for array-to-pointer or function-to-pointer conversions
+     because those never produce arithmetic types.")
+   (xdoc::p
+    "The @('%') operator requires integer operands [C:6.5.5/2].
+     The result is from the usual arithmetic conversions [C:6.5.5/3].
+     No array-to-pointer or function-to-pointer conversions are needed.")
+   (xdoc::p
+    "The @('+') binary operator requires
+     either two arithmetic operands
+     or an integer and a pointer operand
+     [C:6.5.6/2].
+     In the first case, the result is from the usual arithmetic conversions
+     [C:6.5.6/4].
+     In the second case, the result is the pointer type [C:6.5.6/8].
+     Because of that second case, which involves pointers,
+     we perform array-to-pointer conversion.
+     We not perform function-to-pointer conversion,
+     because that would result in a pointer to function,
+     while a pointer to complete object type is required.")
+   (xdoc::p
+    "The @('-') binary operator requires
+     either two arithmetic operands,
+     or two pointer operands,
+     or a pointer first operand and an integer second operand
+     [C:6.5.6/3].
+     In the first case, the result is from the usual arithmetic conversions
+     [C:6.5.6/4].
+     In the second case, the result has type @('ptrdiff_t') [C:6.5.6/9],
+     which has an implementation-specific definition,
+     and so we return the unknown type in this case.
+     In the third case, the result has the pointer type [C:6.5.6/8].
+     Because of the second and third cases, which involve pointers,
+     we perform array-to-pointer conversion.
+     We not perform function-to-pointer conversion,
+     because that would result in a pointer to function,
+     while a pointer to complete object type is required.")
+   (xdoc::p
+    "The @('<<') and @('>>') operators require integer operands [C:6.5.7/2].
+     The type of the result is the type of the promoted left operand
+     [C:6.5.7/3].
+     There is no need for
+     array-to-pointer or function-to-pointer conversions.")
+   (xdoc::p
+    "The @('<'), @('>'), @('<='), and @('>=') operators
+     require real types or pointer types [C:6.5.8/2].
+     The result is always @('signed int') [C:6.5.8/6].
+     Since pointers may be involved,
+     we perform array-to-pointer conversion.
+     We not perform function-to-pointer conversion,
+     because that would result in a pointer to function,
+     while a pointer to object type is required.")
+   (xdoc::p
+    "The @('==') and @('!=') operators require
+     arithmetic types or pointer types [C:6.5.9/2];
+     since we currently have just one type for pointers,
+     the distinctions between the three cases involving pointers
+     reduce to just the simple case of two pointers for us for now.
+     The result is always @('signed int') [C:6.5.9/3].
+     Since pointers may be involved,
+     we perform array-to-pointer and function-to-pointer conversions.")
+   (xdoc::p
+    "The @('&'), @('^'), and @('|') operators require integer operands
+     [C:6.5.10/2] [C:6.5.11/2] [C:6.5.12/2].
+     The result has the type from the usual arithmetic conversions
+     [C:6.5.10/3] [C:6.5.11/3] [C:6.5.12/3].
+     No array-to-pointer or function-to-pointer conversion is needed.")
+   (xdoc::p
+    "The @('&&') and @('||') operators require scalar types
+     [C:6.5.13/2] [C:6.5.14/2].
+     The result has type @('signed int') [C:6.5.13/3] [C:6.5.14/3].
+     Since pointers may be involved, we need to perform
+     array-to-pointer and function-to-pointer conversions.")
+   (xdoc::p
+    "The @('=') simple assignment operator requires
+     an lvalue as left operand [C:6.5.16/2],
+     but currently we do not check that.
+     In our currently approximate type system,
+     the requirements in [C:6.5.16.1/1] reduce to the two operands having
+     both arithmetic types,
+     or both the structure type,
+     or both the union type,
+     or both pointer types.
+     We do not perform array-to-pointer or function-to-pointer conversion
+     on the left operand, because the result would not be an lvalue.
+     The type of the result is the type of the left operand [C:6.5.16/3].")
+   (xdoc::p
+    "The @('*=') and @('/=') operators require arithmetic operands
+     [C:6.5.16.2/2],
+     and the result has the type of the first operand [C:6.5.16/3].
+     No array-to-pointer or function-to-pointer conversions are needed.")
+   (xdoc::p
+    "The @('%=') operator requires integer operands [C:6.5.16.2/2],
+     and the result has the type of the first operand [C:6.5.16/3].
+     No array-to-pointer or function-to-pointer conversions are needed.")
+   (xdoc::p
+    "The @('+=') and @('-=') operands require
+     either arithmetic operands
+     or a first pointer operand and a second integer operand
+     [C:6.5.16.2/1].
+     The result has the type of the first operand [C:6.5.16/3].
+     Since pointers may be involved,
+     we perform array-to-pointer and function-to-pointer conversions.")
+   (xdoc::p
+    "The @('<<='), @('>>='), @('&='), @('^='), and @('|=') operators
+     require integer operands [C:6.5.13.2/2].
+     The result has the type of the first operand [C:6.5.13/3].
+     No array-to-pointer or function-to-pointer conversions are needed."))
+  (b* (((reterr) (irr-type))
+       ((when (or (type-case type-arg1 :unknown)
+                  (type-case type-arg2 :unknown)))
+        (retok (type-unknown)))
+       (msg (msg "In the binary expression ~x0, ~
+                  the sub-expressiona have types ~x1 and ~x2."
+                 (expr-fix expr) (type-fix type-arg1) (type-fix type-arg2))))
+    (case (binop-kind op)
+      ((:mul :div) (b* (((unless (and (type-arithmeticp type-arg1)
+                                      (type-arithmeticp type-arg2)))
+                         (reterr msg)))
+                     (retok (type-uaconvert type-arg1 type-arg2 ienv))))
+      (:rem (b* (((unless (and (type-arithmeticp type-arg1)
+                               (type-arithmeticp type-arg2)))
+                  (reterr msg)))
+              (retok (type-uaconvert type-arg1 type-arg2 ienv))))
+      (:add (b* ((type1 (type-apconvert type-arg1))
+                 (type2 (type-apconvert type-arg2)))
+              (cond
+               ((and (type-arithmeticp type1)
+                     (type-arithmeticp type2))
+                (retok (type-uaconvert type1 type2 ienv)))
+               ((or (and (type-integerp type1)
+                         (type-case type2 :pointer))
+                    (and (type-case type1 :pointer)
+                         (type-integerp type2)))
+                (retok (type-pointer)))
+               (t (reterr msg)))))
+      (:sub (b* ((type1 (type-apconvert type-arg1))
+                 (type2 (type-apconvert type-arg2)))
+              (cond
+               ((and (type-arithmeticp type1)
+                     (type-arithmeticp type2))
+                (retok (type-uaconvert type1 type2 ienv)))
+               ((and (type-case type1 :pointer)
+                     (type-case type2 :pointer))
+                (retok (type-unknown)))
+               ((and (type-case type1 :pointer)
+                     (type-integerp type2))
+                (retok (type-pointer)))
+               (t (reterr msg)))))
+      ((:shl :shr) (b* (((unless (and (type-integerp type-arg1)
+                                      (type-integerp type-arg2)))
+                         (reterr msg)))
+                     (retok (type-promote type-arg1 ienv))))
+      ((:lt :gt :le :ge)
+       (b* ((type1 (type-apconvert type-arg1))
+            (type2 (type-apconvert type-arg2))
+            ((unless (or (and (type-realp type1)
+                              (type-realp type2))
+                         (and (type-case type1 :pointer)
+                              (type-case type2 :pointer))))
+             (reterr msg)))
+         (retok (type-sint))))
+      ((:eq :ne) (b* ((type1 (type-fpconvert (type-apconvert type-arg1)))
+                      (type2 (type-fpconvert (type-apconvert type-arg2)))
+                      ((unless (or (and (type-arithmeticp type1)
+                                        (type-arithmeticp type2))
+                                   (and (type-case type1 :pointer)
+                                        (type-case type2 :pointer))))
+                       (reterr msg)))
+                   (retok (type-sint))))
+      ((:bitand :bitxor :bitior)
+       (b* (((unless (and (type-integerp type-arg1)
+                          (type-integerp type-arg2)))
+             (reterr msg)))
+         (retok (type-uaconvert type-arg1 type-arg2 ienv))))
+      ((:logand :logor)
+       (b* ((type1 (type-fpconvert (type-apconvert type-arg1)))
+            (type2 (type-fpconvert (type-apconvert type-arg2)))
+            ((unless (and (type-scalarp type1)
+                          (type-scalarp type2)))
+             (reterr msg)))
+         (retok (type-sint))))
+      (:asg (b* ((type1 type-arg1)
+                 (type2 (type-fpconvert (type-apconvert type-arg2)))
+                 ((unless (or (and (type-arithmeticp type1)
+                                   (type-arithmeticp type2))
+                              (and (type-case type1 :struct)
+                                   (type-case type2 :struct))
+                              (and (type-case type1 :union)
+                                   (type-case type2 :union))
+                              (and (or (type-case type1 :pointer)
+                                       (type-case type1 :bool))
+                                   (type-case type2 :pointer))))
+                  (reterr msg)))
+              (retok (type-fix type-arg1))))
+      ((:asg-mul :asg-div)
+       (b* (((unless (and (type-arithmeticp type-arg1)
+                          (type-arithmeticp type-arg2)))
+             (reterr msg)))
+         (retok (type-fix type-arg1))))
+      (:asg-rem (b* (((unless (and (type-integerp type-arg1)
+                                   (type-integerp type-arg2)))
+                      (reterr msg)))
+                  (retok (type-fix type-arg1))))
+      ((:asg-add :asg-sub)
+       (b* ((type1 (type-fpconvert (type-apconvert type-arg1)))
+            (type2 (type-fpconvert (type-apconvert type-arg2)))
+            ((unless (or (and (type-arithmeticp type1)
+                              (type-arithmeticp type2))
+                         (and (type-case type1 :pointer)
+                              (type-integerp type2))))
+             (reterr msg)))
+         (retok (type-fix type-arg1))))
+      ((:asg-shl :asg-shr :asg-and :asg-xor :asg-ior)
+       (b* (((unless (and (type-integerp type-arg1)
+                          (type-integerp type-arg2)))
+             (reterr msg)))
+         (retok (type-fix type-arg1))))
+      (t (prog2$ (impossible) (reterr t)))))
+  :guard-hints (("Goal" :in-theory (disable (:e tau-system))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define valid-sizeof/alignof ((expr exprp) (type typep))
+  :guard (or (expr-case expr :sizeof)
+             (expr-case expr :alignof))
+  :returns (mv erp (type1 typep))
+  :short "Validate a @('sizeof') operator applied to a type name,
+          or an @('alignof') operator,
+          given the type denoted by the argument type name."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @('sizeof') operator applied to an type name
+     requires a non-function complete type [C:6.5.3.4/1].
+     In our current approximate type system,
+     we just exclude function types,
+     but we do not have a notion of complete types yet.
+     The result has type @('size_t') [C:6.5.3.4/5],
+     whose definition is implementation-defined,
+     so for now we just return the unknown type;
+     we will need to extend implementation environments
+     with information about the definition of @('size_t')."))
+  (b* (((reterr) (irr-type))
+       ((when (type-case type :function))
+        (reterr (msg "In the ~s0 type expression ~x1, ~
+                      the argument ~x2 is a function type."
+                     (case (expr-kind expr)
+                       (:sizeof "sizeof")
+                       (:alignof "_Alignof")
+                       (t (impossible)))
+                     (expr-fix expr)
+                     (type-fix type)))))
+    (retok (type-unknown)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define valid-cast ((expr exprp) (type-cast typep) (type-arg typep))
+  :guard (expr-case expr :cast)
+  :returns (mv erp (type1 typep))
+  :short "Validate a cast expression,
+          given the type denoted by the type name
+          and the type of the argument expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The type name must denote the void type or a scalar type [C:6.5.4/2].
+     The expression must have scalar type [C:6.5.4/2].
+     Since scalar types involve pointers,
+     we perform array-to-pointer and function-to-pointer conversions.
+     The result is the type denoted by the type name."))
+  (b* (((reterr) (irr-type))
+       ((when (or (type-case type-cast :unknown)
+                  (type-case type-arg :unknown)))
+        (retok (type-unknown)))
+       (type1-arg (type-fpconvert (type-apconvert type-cast)))
+       ((unless (or (type-case type-cast :void)
+                    (type-scalarp type-cast)))
+        (reterr (msg "In the cast expression ~x0, ~
+                      the cast type is ~x1."
+                     (expr-fix expr) (type-fix type-cast))))
+       ((unless (type-scalarp type1-arg))
+        (reterr (msg "In the cast expression ~x0, ~
+                      the argument expression has type ~x1."
+                     (expr-fix expr) (type-fix type-arg)))))
+    (retok (type-fix type-cast)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define valid-cond ((expr exprp)
+                    (type-test typep)
+                    (type-then typep)
+                    (type-else typep)
+                    (ienv ienvp))
+  :guard (expr-case expr :cond)
+  :returns (mv erp (type typep))
+  :short "Validate a conditional expression,
+          given types for its operands."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The first operand must have scalar type [C:6.5.15/2].
+     In our currently approximate type system,
+     the other two operands must have
+     both arithmetic type,
+     or both the structure type,
+     or both the union type,
+     or both the void type,
+     or both the pointer type
+     [C:6.5.15/3].
+     The type of the result is
+     the one from the usual arithmetic converions
+     in the first case,
+     and the common type in the other cases
+     [C:6.5.15/5].
+     Since pointers may be involved, we need to perform
+     array-to-pointer and function-to-pointer conversions."))
+  (b* (((reterr) (irr-type))
+       ((when (or (type-case type-test :unknown)
+                  (type-case type-then :unknown)
+                  (type-case type-else :unknown)))
+        (retok (type-unknown)))
+       (type1 (type-fpconvert (type-apconvert type-test)))
+       (type2 (type-fpconvert (type-apconvert type-then)))
+       (type3 (type-fpconvert (type-apconvert type-else)))
+       ((unless (type-scalarp type1))
+        (reterr (msg "In the conditional expression ~x0, ~
+                      the first operand has type ~x1."
+                     (expr-fix expr) (type-fix type-test))))
+       ((when (and (type-arithmeticp type2)
+                   (type-arithmeticp type3)))
+        (retok (type-uaconvert type2 type3 ienv)))
+       ((when (and (type-case type2 :struct)
+                   (type-case type3 :struct)))
+        (retok (type-struct)))
+       ((when (and (type-case type2 :union)
+                   (type-case type3 :union)))
+        (retok (type-union)))
+       ((when (and (type-case type2 :pointer)
+                   (type-case type3 :pointer)))
+        (retok (type-pointer))))
+    (reterr (msg "In the conditional expression ~x0, ~
+                  the second operand has type ~x1 ~
+                  and the third operand has type ~x2."
+                 (expr-fix expr) (type-fix type-then) (type-fix type-else))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1892,6 +2226,8 @@
      Eventually, when we refine our validator and our model of types
      to no longer be approximate and include the unknown type,
      we will rescind this extra allowance for the unknown type."))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define valid-expr ((expr exprp) (table valid-tablep) (ienv ienvp))
     :guard (expr-unambp expr)
@@ -1926,8 +2262,29 @@
        is the possibly updated validation table.
        The type of the compound literal is the one denoted by the type name.")
      (xdoc::p
-      "
-       "))
+      "In a conditional expression, the second operand may be absent;
+       this is a GCC extension.
+       However, for validation, we normalize the situation
+       by replicating the type of the first operand for the second operand,
+       when there is no second operand,
+       according to the semantics of the absence of the second operand.")
+     (xdoc::p
+      "For the comma operator, we validate both sub-expressions,
+       and the resulting type is the one of the second sub-expression
+       [C:6.5.17/2].")
+     (xdoc::p
+      "The GCC extension @('__builtin_types_compatible_p')
+       is validated by validating its argument type names.
+       The result is @('signed int'), according to the GCC manual.")
+     (xdoc::p
+      "For the GCC extension @('__builtin_offsetof'),
+       for now we just validate
+       its component type names and expressions (if any),
+       but without checking that the member designators are valid;
+       for that, we need a more refined type system.
+       The result has type @('size_t') [C:7.19],
+       whose definition is implementation-dependent,
+       and thus for now we return the unknown type."))
     (b* (((reterr) (irr-type) (irr-valid-table)))
       (expr-case
        expr
@@ -1960,27 +2317,59 @@
                      ((erp type) (valid-memberp expr type-arg)))
                   (retok type table))
        :complit (b* (((erp type table) (valid-tyname expr.type table ienv))
+                     ((when (type-case type :function))
+                      (reterr (msg "The type of the compound literal ~x0 ~
+                                    is a function type."
+                                   (expr-fix expr))))
+                     ((when (type-case type :void))
+                      (reterr (msg "The type of the compound literal ~x0 ~
+                                    is void."
+                                   (expr-fix expr))))
                      ((erp table)
                       (valid-desiniter-list expr.elems type table ienv)))
                   (retok type table))
        :unary (b* (((erp type-arg table) (valid-expr expr.arg table ienv))
                    ((erp type) (valid-unary expr expr.op type-arg ienv)))
                 (retok type table))
-       :sizeof (reterr :todo)
-       :alignof (reterr :todo)
-       :cast (reterr :todo)
+       :sizeof (b* (((erp type table) (valid-tyname expr.type table ienv))
+                    ((erp type1) (valid-sizeof/alignof expr type)))
+                 (retok type1 table))
+       :alignof (b* (((erp type table) (valid-tyname expr.type table ienv))
+                     ((erp type1) (valid-sizeof/alignof expr type)))
+                  (retok type1 table))
+       :cast (b* (((erp type-cast table) (valid-tyname expr.type table ienv))
+                  ((erp type-arg table) (valid-expr expr.arg table ienv))
+                  ((erp type) (valid-cast expr type-cast type-arg)))
+               (retok type table))
        :binary (b* (((erp type-arg1 table) (valid-expr expr.arg1 table ienv))
                     ((erp type-arg2 table) (valid-expr expr.arg2 table ienv))
                     ((erp type)
-                     (valid-binary expr expr.op type-arg1 type-arg2)))
+                     (valid-binary expr expr.op type-arg1 type-arg2 ienv)))
                  (retok type table))
-       :cond (reterr :todo)
-       :comma (reterr :todo)
+       :cond (b* (((erp type-test table) (valid-expr expr.test table ienv))
+                  ((erp type-then? table) (valid-expr-option expr.then
+                                                             table
+                                                             ienv))
+                  (type-then (or type-then? type-test))
+                  ((erp type-else table) (valid-expr expr.else table ienv))
+                  ((erp type)
+                   (valid-cond expr type-test type-then type-else ienv)))
+               (retok type table))
+       :comma (b* (((erp & table) (valid-expr expr.first table ienv))
+                   ((erp type table) (valid-expr expr.next table ienv)))
+                (retok type table))
        :stmt (reterr :todo)
-       :tycompat (reterr :todo)
-       :offsetof (reterr :todo)
+       :tycompat (b* (((erp & table) (valid-tyname expr.type1 table ienv))
+                      ((erp & table) (valid-tyname expr.type2 table ienv)))
+                   (retok (type-sint) table))
+       :offsetof (b* (((erp & table) (valid-tyname expr.type table ienv))
+                      ((erp table)
+                       (valid-member-designor expr.member table ienv)))
+                   (retok (type-unknown) table))
        :otherwise (prog2$ (impossible) (reterr t))))
     :measure (expr-count expr))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define valid-expr-list ((exprs expr-listp) (table valid-tablep) (ienv ienvp))
     :guard (expr-list-unambp exprs)
@@ -1999,6 +2388,52 @@
          ((erp types table) (valid-expr-list (cdr exprs) table ienv)))
       (retok (cons type types) table))
     :measure (expr-list-count exprs))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define valid-expr-option ((expr? expr-optionp)
+                             (table valid-tablep)
+                             (ienv ienvp))
+    :guard (expr-option-unambp expr?)
+    :returns (mv erp (type? type-optionp) (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate an optional expression."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "If there is no expression,
+       we return @('nil') as the optional type,
+       and the validation table unchanged."))
+    (b* (((reterr) nil (irr-valid-table)))
+      (expr-option-case
+       expr?
+       :some (valid-expr expr?.val table ienv)
+       :none (retok nil (valid-table-fix table))))
+    :measure (expr-option-count expr?))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define valid-const-expr ((cexpr const-exprp)
+                            (table valid-tablep)
+                            (ienv ienvp))
+    :guard (const-expr-unambp cexpr)
+    :returns (mv erp (type typep) (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate a constant expression."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "Besides being valid expressions,
+       constant expression must satisfy other requirements [C:6.6].
+       Fow now we do not check these requirements,
+       but when we do we may need to extend this validation function
+       to return not only a type but also a value,
+       namely the value of the constant expression."))
+    (b* (((reterr) (irr-type) (irr-valid-table)))
+      (valid-expr (const-expr->unwrap cexpr) table ienv))
+    :measure (const-expr-count cexpr))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define valid-genassoc ((genassoc genassocp)
                           (table valid-tablep)
@@ -2031,6 +2466,8 @@
                   (retok nil expr-type table))))
     :measure (genassoc-count genassoc))
 
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define valid-genassoc-list ((genassocs genassoc-listp)
                                (table valid-tablep)
                                (ienv ienvp))
@@ -2057,19 +2494,270 @@
       (retok (acons tyname-type? expr-type type-alist) table))
     :measure (genassoc-list-count genassocs))
 
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define valid-member-designor ((memdesign member-designorp)
+                                 (table valid-tablep)
+                                 (ienv ienvp))
+    :guard (member-designor-unambp memdesign)
+    :returns (mv erp (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate a member designator."
+    (b* (((reterr) (irr-valid-table)))
+      (member-designor-case
+       memdesign
+       :ident (retok (valid-table-fix table))
+       :dot (valid-member-designor memdesign.member table ienv)
+       :sub (b* (((erp table) (valid-member-designor
+                               memdesign.member table ienv))
+                 ((erp & table) (valid-expr memdesign.index table ienv)))
+              (retok table))))
+    :measure (member-designor-count memdesign))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define valid-initer ((initer initerp)
+                        (target-type typep)
+                        (table valid-tablep)
+                        (ienv ienvp))
+    :guard (and (initer-unambp initer)
+                (not (type-case target-type :function))
+                (not (type-case target-type :void)))
+    :returns (mv erp (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate an initializer."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The target type passed as input is
+       the type of the object being initialized,
+       which must not be a function or void type [C:6.7.9/3].")
+     (xdoc::p
+      "If the target type is a scalar,
+       the initializer must be either a single expression,
+       or a singleton initializer list without designators
+       [C:6.7.9/11];
+       the latter is an expression enclosed in braces;
+       experiments show that the final comma is allowed.
+       The same constraints as in assignments apply here
+       [C:6.7.9/11] [C:6.5.16.1/1].
+       We perform array-to-pointer and function-to-pointer conversions
+       on the expression, as pointers may be required."))
+    (b* (((reterr) (irr-valid-table)))
+      (cond
+       ((type-case target-type :unknown)
+        (initer-case
+         initer
+         :single (b* (((erp & table) (valid-expr initer.expr table ienv)))
+                   (retok table))
+         :list (valid-desiniter-list initer.elems (type-unknown) table ienv)))
+       ((type-scalarp target-type)
+        (b* (((mv erp expr)
+              (initer-case
+               initer
+               :single (mv nil initer.expr)
+               :list (b* (((unless (and (consp initer.elems)
+                                        (endp (cdr initer.elems))))
+                           (mv (msg "The initializer list ~x0 ~
+                                     for the target type ~x1 ~
+                                     is not a singleton."
+                                    (initer-fix initer)
+                                    (type-fix target-type))
+                               (irr-expr)))
+                          ((desiniter desiniter) (car initer.elems))
+                          ((unless (endp desiniter.design))
+                           (mv (msg "The initializer list ~x0 ~
+                                     for the target type ~x1 ~
+                                     is a singleton ~
+                                     but it has designators."
+                                    (initer-fix initer)
+                                    (type-fix target-type))
+                               (irr-expr)))
+                          ((unless (initer-case desiniter.init :single))
+                           (mv (msg "The initializer list ~x0 ~
+                                     for the target type ~x1 ~
+                                     is a singleton without designators ~
+                                     but the inner initializer ~
+                                     is not a single expression."
+                                    (initer-fix initer)
+                                    (type-fix target-type))
+                               (irr-expr))))
+                       (mv nil (initer-single->expr desiniter.init)))))
+             ((when erp) (reterr erp))
+             ((erp init-type table) (valid-expr expr table ienv))
+             (type (type-fpconvert (type-apconvert init-type)))
+             ((unless (or (and (or (type-arithmeticp target-type)
+                                   (type-case target-type :unknown))
+                               (or (type-arithmeticp type)
+                                   (type-case type :unknown)))
+                          (and (or (type-case target-type :pointer)
+                                   (type-case target-type :bool)
+                                   (type-case target-type :unknown))
+                               (or (type-case type :pointer)
+                                   (type-case type :unknown)))))
+              (reterr (msg "The initializer ~x0 ~
+                            for the target type ~x1 ~
+                            has type ~x2."
+                           (initer-fix initer)
+                           (type-fix target-type)
+                           init-type))))
+          (retok table)))
+       ((and (or (type-case target-type :struct)
+                 (type-case target-type :union))
+             (initer-case initer :single))
+        (reterr :todo))
+       (t (reterr :todo))))
+    :measure (initer-count initer))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define valid-desiniter ((desiniter desiniterp)
+                           (target-type typep)
+                           (table valid-tablep)
+                           (ienv ienvp))
+    :guard (and (desiniter-unambp desiniter)
+                (not (type-case target-type :function))
+                (not (type-case target-type :void)))
+    :returns (mv erp (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate an initializer with optional designation."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The target type passed as argument is the type
+       that the list of designators must be applicable to."))
+    (b* (((reterr) (irr-valid-table))
+         ((desiniter desiniter) desiniter)
+         ((erp & table) (valid-designor-list
+                         desiniter.design target-type table ienv))
+         ((erp table) (valid-initer desiniter.init target-type table ienv)))
+      (retok table))
+    :measure (desiniter-count desiniter))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define valid-desiniter-list ((desiniters desiniter-listp)
-                                (type typep)
+                                (target-type typep)
                                 (table valid-tablep)
                                 (ienv ienvp))
-    :guard (desiniter-list-unambp desiniters)
+    :guard (and (desiniter-list-unambp desiniters)
+                (not (type-case target-type :function))
+                (not (type-case target-type :void)))
     :returns (mv erp (new-table valid-tablep))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate a list of zero or more
             initializers with optional designations."
-    (declare (ignore desiniters type table ienv))
-    (b* (((reterr) (irr-valid-table)))
-      (reterr :todo))
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The target type passed as argument is the type
+       that each list of designators must be applicable to."))
+    (b* (((reterr) (irr-valid-table))
+         ((when (endp desiniters)) (retok (valid-table-fix table)))
+         ((erp table) (valid-desiniter
+                       (car desiniters) target-type table ienv))
+         ((erp table) (valid-desiniter-list
+                       (cdr desiniters) target-type table ienv)))
+      (retok table))
     :measure (desiniter-list-count desiniters))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define valid-designor ((designor designorp)
+                          (target-type typep)
+                          (table valid-tablep)
+                          (ienv ienvp))
+    :guard (and (designor-unambp designor)
+                (not (type-case target-type :function))
+                (not (type-case target-type :void)))
+    :returns (mv erp (new-target-type typep) (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate a designator."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The target type passed as input is
+       the one that the designator must apply to;
+       the target type returned as result is
+       the one that results from applying the designator to it.
+       The target type is the type of the current object [C:6.7.9/17].
+       A subscript designator requires an array target type,
+       and must have an integer expression [C:6.7.9/6];
+       the result is the unknown type,
+       because currently we have just one array type
+       without information about the element type.
+       A dotted designator requires a struct or union type [C:6.7.9/7];
+       the result is the unknown type,
+       because currently we do not have information about the members."))
+    (b* (((reterr) (irr-type) (irr-valid-table)))
+      (designor-case
+       designor
+       :sub (b* (((erp index-type table)
+                  (valid-const-expr designor.index table ienv))
+                 ((unless (or (type-integerp index-type)
+                              (type-case index-type :unknown)))
+                  (reterr (msg "The index of the designator ~x0 has type ~x1."
+                               (designor-fix designor)
+                               index-type)))
+                 ((unless (or (type-case target-type :array)
+                              (type-case target-type :unknown)))
+                  (reterr (msg "The target type of the designator ~x0 is ~x1."
+                               (designor-fix designor)
+                               (type-fix target-type)))))
+              (retok (type-unknown) table))
+       :dot (b* (((unless (or (type-case target-type :struct)
+                              (type-case target-type :union)
+                              (type-case target-type :unknown)))
+                  (reterr (msg "The target type of the designator ~x0 is ~x1."
+                               (designor-fix designor)
+                               (type-fix target-type)))))
+              (retok (type-unknown) (valid-table-fix table)))))
+    :measure (designor-count designor)
+
+    ///
+
+    (defret valid-designor.new-target-type-not-function
+      (implies (not erp)
+               (not (equal (type-kind new-target-type)
+                           :function)))
+      :hints
+      (("Goal" :expand (valid-designor designor target-type table ienv))))
+
+    (defret valid-designor.new-target-type-not-void
+      (implies (not erp)
+               (not (equal (type-kind new-target-type)
+                           :void)))
+      :hints
+      (("Goal" :expand (valid-designor designor target-type table ienv)))))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define valid-designor-list ((designors designor-listp)
+                               (target-type typep)
+                               (table valid-tablep)
+                               (ienv ienvp))
+    :guard (and (designor-list-unambp designors)
+                (not (type-case target-type :function))
+                (not (type-case target-type :void)))
+    :returns (mv erp (new-target-type typep) (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate a list of zero or more designators."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The target type passed as argument is the current type
+       that the designators must be applicable to.
+       The target type returned as result is the type
+       resulting from the application of the designators."))
+    (b* (((reterr) (irr-type) (irr-valid-table))
+         ((when (endp designors))
+          (retok (type-fix target-type) (valid-table-fix table)))
+         ((erp target-type table)
+          (valid-designor (car designors) target-type table ienv)))
+      (valid-designor-list (cdr designors) target-type table ienv))
+    :measure (designor-list-count designors))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define valid-tyname ((tyname tynamep) (table valid-tablep) (ienv ienvp))
     :guard (tyname-unambp tyname)
@@ -2085,6 +2773,8 @@
     (b* (((reterr) (irr-type) (irr-valid-table)))
       (reterr :todo))
     :measure (tyname-count tyname))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   :hints (("Goal" :in-theory (enable o< o-finp)))
 

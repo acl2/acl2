@@ -94,6 +94,13 @@
                    (append list1 list2))
     :enable (fix nfix))
 
+  (defrule lists-noforkp-of-append-more-right
+    (implies (and (lists-noforkp list1 list2)
+                  (<= (len list1) (len list2)))
+             (lists-noforkp list1 (append list list2)))
+    :induct t
+    :enable (append fix))
+
   (defrule lists-noforkp-commutative
     (equal (lists-noforkp list1 list2)
            (lists-noforkp list2 list1))

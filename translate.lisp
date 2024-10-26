@@ -353,7 +353,7 @@
 ; is considered a loop$ scion.
 
 ; Built into our FOR loop$ code, e.g., make-plain-loop$, make-fancy-loop$,
-; chk-lambdas-for-loop$-recursion, etc, is the knowlege that every plain scion
+; chk-lambdas-for-loop$-recursion, etc, is the knowledge that every plain scion
 ; takes the lambda expression in arg 1 and the domain (over which mapping
 ; occurs) in arg 2.  Every fancy scion takes the lambda expression in arg 1 and
 ; the domain in arg 3.  (do$ is handled differently: it takes three functional
@@ -706,7 +706,7 @@
 
 ; Warning: It is critical that we not allow loop$s containing :guard as the
 ; test of a WHEN, as in (loop$ for v in lst when :guard collect v).  See the
-; warning in remove-loop$-guards.  We test expliticly for this below, but it
+; warning in remove-loop$-guards.  We test explicitly for this below, but it
 ; can only happen on loop$s that are ill-formed anyway!  See the comment below.
 
   (case-match args
@@ -795,7 +795,7 @@
 
 ; Warning: It is critical that we not allow loop$s containing :guard as the
 ; test of a WHEN, as in (loop$ for v in lst when :guard collect v).  See the
-; warning in remove-loop$-guards.  We test expliticly for this below, but it
+; warning in remove-loop$-guards.  We test explicitly for this below, but it
 ; can only happen on loop$s that are ill-formed anyway!  See the comment below.
 
   (case-match args
@@ -1551,7 +1551,7 @@
 ;      that evaluation of an mbe call provably returns the result from its
 ;      :logic code.  Of course, for guard-verified code evaluating in raw Lisp
 ;      we can expect the :exec code to be executed; but guard verification
-;      guarnatees that this gives the same result as evaluation of the :logic
+;      guarantees that this gives the same result as evaluation of the :logic
 ;      code.]
 ;
 ; (d) Oneify binds **1*-as-raw* to nil when ec-call is applied to a :logic
@@ -5388,7 +5388,7 @@
 ; Aside from applications in the prover, remove-guard-holders is used
 ; extensively to process rules before they are stored, to eliminate cruft that
 ; might make a rule inapplicable.  It is also used to clean up termination and
-; induction machines and contraints.
+; induction machines and constraints.
 
 ; Note that remove-guard-holders-weak does not take world.  It is called from
 ; some contexts in which world is not available or is inconvenient, i.e., in
@@ -5775,7 +5775,7 @@
 ; we define functions to clean up lambda objects found in terms, lists of
 ; terms, etc.
 
-; The so-called ``excutable-tamep'' family of functions, e.g.,
+; The so-called ``executable-tamep'' family of functions, e.g.,
 ; executable-tamep-lambdap, executable-tamep, etc.  determine whether some
 ; function, term, lambda object, or lists thereof, is tame.  But a term, for
 ; example, can be tame without all the relevant symbols in it having warrants,
@@ -6854,7 +6854,7 @@
 ; succeeded.
 
 ; The use of the phrase ``unify'' here is somewhat opaque but is
-; historically justified by its usage in nqthm.  Really, all we are
+; historically justified by its usage in Nqthm.  Really, all we are
 ; doing is matching because we do not treat the ``variable symbols''
 ; in term as instantiable.
 
@@ -7082,7 +7082,7 @@
 ; succeeded.
 
 ; The use of the phrase ``unify'' here is somewhat opaque but is
-; historically justified by its usage in nqthm.  Really, all we are
+; historically justified by its usage in Nqthm.  Really, all we are
 ; doing is matching because we do not treat the ``variable symbols''
 ; in term as instantiable.
 
@@ -9596,7 +9596,7 @@
 (defun ev-fncall (fn arg-values arg-exprs state latches hard-error-returns-nilp
                      aok)
 
-; See raw-ev-fncall for a discussion of hte arguments, in particular arg-exprs.
+; See raw-ev-fncall for a discussion of the arguments, in particular arg-exprs.
 
   (declare (xargs :guard (state-p state)))
   (let #-acl2-loop-only ((*ev-shortcut-okp* (live-state-p state)))
@@ -10301,7 +10301,7 @@
 
 (defmacro prog2$-call (x y)
 
-; Warning: Keep this in sync with the handlng of 'return-last in oneify.
+; Warning: Keep this in sync with the handling of 'return-last in oneify.
 
   `(fcons-term* 'return-last ''progn ,x ,y))
 
@@ -12126,7 +12126,7 @@
 ; such an object as merely :BAD is that every time the world is extended and we
 ; subsequently try to apply the object, we will attempt again to verify its
 ; guards.  It would be more efficient to classify it as :UGLY.  Ah, if only we
-; could solve the decideability problem of this logic!
+; could solve the decidability problem of this logic!
 
 ; The rest of this essay is an assortment of random details that may help fill
 ; in the gaps.  Topics are separated by three hyphens.
@@ -12583,7 +12583,7 @@
 
 ; This has the advantage of allowing the user to provide :hints for the
 ; successful guard verification of lambda objects used in defuns.  It also
-; surreptiously adds those lambda objects to the cache.
+; surreptitiously adds those lambda objects to the cache.
 
 ; But it is possible that a :GOOD lambda object in the cache gets pushed out by
 ; 1000 other lambda objects.  To avoid having to re-verify the guards of lambda
@@ -13217,7 +13217,7 @@
 ; called from within defun (or verify-guards on behalf of a function symbol),
 ; and when called on a LAMBDA object (as by the raw Lisp apply$-lambda and
 ; *cl-cache* machinery).  In these situations -- where raw Lisp code will be
-; run -- guard-clauses treats certains calls of loop$ scions specially.  In
+; run -- guard-clauses treats certain calls of loop$ scions specially.  In
 ; particular, if the FOR loop$ scion's function object is a quoted tame
 ; function symbol of the appropriate arity (depending on whether the loop$
 ; scion is plain or fancy) or is a quoted well-formed LAMBDA object of the
@@ -14108,7 +14108,7 @@
 ; ERSATZ-MV-SETQ, ERSATZ-RETURN, and ERSATZ-LOOP-FINISH above.
 
 ; ersatz: [adjective] being a usually artificial and inferior substitute or
-;         imitation -- Merrian-Webster Dictionary.
+;         imitation -- Merriam-Webster Dictionary.
 
 ; When translate is in ``do-expressionp'' mode, i.e., (access state-vars
 ; state-vars :do-expressionp) is non-nil, and sees one of the CLTL names above
@@ -14608,7 +14608,7 @@
 ; allocated 128,004,080 bytes each time and took an average of
 ; (/ (+ 0.81 0.79 0.80) 3) = 0.80 seconds
 
-; while three succesive runs of the special-purpose semantics
+; while three successive runs of the special-purpose semantics
 
 ;  (time$                                                             ; [2]
 ;   (sum$-until$-when$-from-to-by-ac
@@ -18903,7 +18903,7 @@
 ; This variant of (sublis-var nil form) avoids looking inside HIDE calls.  It
 ; is used for putting form into quote-normal form so that for example if form
 ; is (cons '1 '2) then '(1 . 2) is returned.  The following two comments come
-; from the nqthm version of sublis-var.
+; from the Nqthm version of sublis-var.
 
 ;     In REWRITE-WITH-LEMMAS we use this function with the nil alist
 ;     to put form into quote normal form.  Do not optimize this
@@ -19620,7 +19620,7 @@
 
 ; Accumulate into acc a path from some function in fns down the call tree to a
 ; function that contains a with-global-stobj call binding st, where if upd is
-; true then this is an updataing with-global-stobj call.  If we hit a loop,
+; true then this is an updating with-global-stobj call.  If we hit a loop,
 ; which should only happen with redefinition, then we push :loop onto the
 ; path accumulated before hitting the loop.  If we fail to complete the path,
 ; we push :fail onto the accumulated path to indicate that this shouldn't
@@ -20276,7 +20276,7 @@
 ; well-formed lambda object hidden inside an ill-formed one?  We wouldn't
 ; verify the guards of the hidden well-formed lambda object at defun-time.  If
 ; the ill-formed one is ever applied, the cache will force apply$ to use *1*
-; apply$.  As the axiomatic interpretion of the ill-formed lambda object
+; apply$.  As the axiomatic interpretation of the ill-formed lambda object
 ; proceeds it may encounter the well-formed one and not find it in the
 ; pre-loaded cache.  But the cache will add a line for the just-found lambda
 ; object, attempting guard verification then and there just as though the user
@@ -20339,7 +20339,7 @@
 ; Caller is a symbol or a string.  Guard and body should either both be terms
 ; or both be nil.  If both are nil, caller must be a function symbol and guard
 ; and body default to the guard and body of caller.  If guard and body are
-; non-nil, then they are used as the guard and body of some ficticious function
+; non-nil, then they are used as the guard and body of some fictitious function
 ; described by the string, caller (which will ultimately be printed by a ~s fmt
 ; directive).
 
@@ -21722,7 +21722,7 @@
              (t
 
 ; It seems safest just to use the original error, rather than to trust that the
-; new error is meaninful.
+; new error is meaningful.
 
               (mv erp1 flet-alist bindings)))))
          (t (mv erp1 flet-alist bindings)))))))
@@ -21866,7 +21866,7 @@
              (t
 
 ; It seems safest just to use the original error, rather than to trust that the
-; new error is meaninful.
+; new error is meaningful.
 
               (mv erp1 flet-alist bindings)))))
          (t (mv erp1 flet-alist bindings)))))))
@@ -22462,7 +22462,7 @@
 
 ; So we translate again, this time with a stobjs-out list.  That could result
 ; in an error, but so be it; in that case the user needs to cope, for example
-; by adding double-float declarations for the appriate bound variables.  It
+; by adding double-float declarations for the appropriate bound variables.  It
 ; might be nice for that error message to point to :DOC df or even suggest
 ; directly that using a type declaration or THE could help, but for now we'll
 ; assume that users of dfs can figure that out.
@@ -22953,7 +22953,7 @@
            (member-eq (car args) known-stobjs))
 
 ; See the comment above about applying dfp or a stobj recognizer to be applied
-; to an ordinary object.  Translation shoud succeed in this case.
+; to an ordinary object.  Translation should succeed in this case.
 
          (mv-let (erp val bindings)
            (translate11-lst args
@@ -23187,7 +23187,7 @@
 
         (let ((bindings
                (translate-bind stobjs-out-fn
-                               (if (consp alist-in-out) ; optimizationa
+                               (if (consp alist-in-out) ; optimization
 
 ; Since stobjs-out-fn is a symbol, alist-in-out represents a one-to-one
 ; mapping; see stobjs-in-out.  So inverting alist-in-out makes sense.
@@ -23819,7 +23819,7 @@
 ; Tuples is a true-listp of 4-tuples of the form (var spec init-flg init-form),
 ; returned by parse-loop$ on DO loop$s.  We check that each var is legal, that
 ; they're all distinct, that each spec is legal type spec, and that the
-; init-forms are terms.  Note: the variables occuring in the init-forms may
+; init-forms are terms.  Note: the variables occurring in the init-forms may
 ; include those bound by earlier WITHs, e.g., in raw CLTL:
 
 ; (loop with a = '(1 2 3)

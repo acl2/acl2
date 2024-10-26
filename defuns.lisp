@@ -1936,7 +1936,7 @@
 
 ; If only one function is being defined and it is non-recursive, we can quit.
 ; But we have to store the symbol-class and we have to print out the
-; program/unwarrated warning and the admission messages with prove-termination
+; program/unwarranted warning and the admission messages with prove-termination
 ; so the rest of our processing is uniform.
 
            (er-progn
@@ -1985,7 +1985,7 @@
                              measures)
                          bodies
                          ctx wrld1 state))
-; Temp is intentially ignored; it is nil and a warning may have been printed.
+; Temp is intentionally ignored; it is nil and a warning may have been printed.
                   (triple (prove-termination-recursive
                            names arglists measures t-machines mp rel hints
                            otf-flg bodies measure-debug ctx ens wrld1 state)))
@@ -2080,7 +2080,7 @@
 
 (defun preprocess-hyp (hyp wrld)
 
-; In nqthm, this function also replaced (not (zerop x)) by
+; In Nqthm, this function also replaced (not (zerop x)) by
 ; ((numberp x) (not (equal x '0))).
 
 ; Lemma replace-consts-cp-correct1 in community book
@@ -2236,7 +2236,7 @@
 ; that term and term' are equivalent.  Thus, if we are allowed to add the axiom
 ; (fn x) = term then we may add (fn x) = term' too.  But while term and term'
 ; are equivalent they are not interchangeable from the perspective of defun
-; processing.  For example, as nqthm taught us, the measure conjectures
+; processing.  For example, as Nqthm taught us, the measure conjectures
 ; generated from term' may be inadequate to justify the admission of a function
 ; whose body is term.  A classic example is (fn x) = (if (fn x) t t), where the
 ; normalized body is just t.  The Historical Plaque below contains a proof that
@@ -2249,7 +2249,7 @@
 ; Historical Plaque from Nqthm
 
 ; The following extensive comment used to guard the definition of
-; DEFN0 in nqthm and is placed here partly as a nostalgic reminder of
+; DEFN0 in Nqthm and is placed here partly as a nostalgic reminder of
 ; decades of work and partly because it has some good statistics in it
 ; that we might still want to look at.
 
@@ -2910,7 +2910,7 @@
 
 ; Historical Plaque from Nqthm.
 
-; In nqthm, the root of the guessing process was DEFN-TYPE-SET, which was
+; In Nqthm, the root of the guessing process was DEFN-TYPE-SET, which was
 ; mutually recursive with DEFN-ASSUME-TRUE-FALSE.  The following comment could
 ; be found at the entrance to the guessing process:
 
@@ -2923,7 +2923,7 @@
 ;   *************************************************************
 
 ; We now believe that this dreadful warning is an overstatement of the case.
-; It is true that in nqthm the type-alist used in DEFN-TYPE-SET would cause
+; It is true that in Nqthm the type-alist used in DEFN-TYPE-SET would cause
 ; trouble if it found its way into TYPE-SET, because it bound vars to "defn
 ; type-sets" (pairs of type-sets and variables) instead of to type-sets.  But
 ; the fear of the inaccurate TYPE-PRESCRIPTIONs above is misplaced we think.
@@ -2932,7 +2932,7 @@
 ; correct.  Therefore, in ACL2, far from fencing type-set away from
 ; "defun-type-set" we use it explicitly.  This has the wonderful advantage that
 ; we do not duplicate the type-set code (which is even worse in ACL2 than it
-; was in nqthm).
+; was in Nqthm).
 
   (cond
    ((variablep term)
@@ -8998,7 +8998,7 @@
 ; Note: This function used to be called ``twoify''.
 
 ; This function converts a translated term into something that can be executed
-; in raw Lisp.  The logic translation of an mv is a list, with the comcommitant
+; in raw Lisp.  The logic translation of an mv is a list, with the concomitant
 ; translation of mv-let into bindings expressed in terms of car/cdr nests.  A
 ; minor problem is that + and other primitive arithmetic expressions are turned
 ; into binary-+, etc., which if allowed to persist would prevent the compiler
@@ -10215,7 +10215,7 @@
 ; subset of) the type-prescription represented by the pair (basic-ts . vars) at
 ; the corresponding position in type-prescription-lst, but we skip the check
 ; when there is nil rather than a pair at that position.  We issue a warning
-; when thse are not equal.
+; when these are not equal.
 
 ; Note that wrld is a world constructed during admission of definitions of
 ; names, after type-prescriptions for names have been placed into wrld.  So we
@@ -10267,7 +10267,7 @@
                            prescription for ~x0."))
                  (cond ((f-get-global 'including-uncertified-p state)
 
-; See commennt below about including uncertified books.
+; See comment below about including uncertified books.
 
                         (pprogn (warning$ ctx "Uncertified"
                                           "~@0  ~@1"

@@ -91,7 +91,8 @@
                                    vals)))
   :induct t
   :enable (collect-anchors
-           path-to-author+round-of-unequivocal-dag-superset))
+           path-to-author+round-of-unequivocal-dag-superset
+           path-to-author+round-in-dag))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -208,7 +209,7 @@
 (defruled same-last-anchor-if-same-last
   :short "If two validator states have unequivocal DAGs,
           the same last committed round,
-          and anchors present that that last committed round if not 0,
+          and anchors present when that last committed round if not 0,
           then their last anchors are the same."
   :long
   (xdoc::topstring
