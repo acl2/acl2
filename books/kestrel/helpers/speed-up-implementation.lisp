@@ -541,7 +541,7 @@
             (if throw-errorp
                 (prog2$ (er hard? 'speed-up-event-fn "Unsupported event: ~s0.~%" (abbreviate-event event))
                         (mv :unsupported-event state))
-              (prog2$ (cw "~%Unsupported event: ~s0.~%" (abbreviate-event event))
+              (prog2$ (cw "~%Unsupported event: ~s0." (abbreviate-event event))
                               ;; For speed, we skip the proofs (todo: can this interfere with calls to make-event?) when submitting the event:
                       (submit-event `(skip-proofs ,event) nil t state)))))))))
 
