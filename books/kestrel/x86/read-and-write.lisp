@@ -157,6 +157,12 @@
                   :guard (integerp addr)))
   (bvchop 8 (memi (bvchop 48 addr) X86)))
 
+(defthm read-byte-when-not-integerp
+  (implies (not (integerp addr))
+           (equal (read-byte addr x86)
+                  (read-byte 0 x86)))
+  :hints (("Goal" :in-theory (enable read-byte))))
+
 ;rename to have 8 in the name?
 (defthmd unsigned-byte-p-of-read-byte-simple
   (unsigned-byte-p 8 (read-byte addr x86))
@@ -377,12 +383,12 @@
                               (integerp addr))))
   (if (zp n)
       0
-    (let ((byte (read-byte addr x86))
-          (rest-bytes (read (- n 1) (+ 1 addr) x86)))
+    (let ((addr (mbe :logic (ifix addr) :exec addr)) ; treats non-integer address as 0
+          )
       (bvcat (* 8 (- n 1))
-             rest-bytes
+             (read (- n 1) (+ 1 addr) x86)
              8
-             byte))))
+             (read-byte addr x86)))))
 
 ;; includes the n=0 case
 (defthm read-when-not-posp-cheap
@@ -401,8 +407,8 @@
 ;;           ("Goal" :in-theory (enable read))))
 
 ;todo: gen!
-(defthm read-when-not-acl2-numberp-cheap
-  (implies (not (acl2-numberp addr))
+(defthm read-when-not-integerp-cheap
+  (implies (not (integerp addr))
            (equal (read n addr x86)
                   (read n 0 x86)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
@@ -453,13 +459,13 @@
 (defthmd read-byte-becomes-read
   (equal (read-byte addr x86)
          (read 1 addr x86))
-  :hints (("Goal" :in-theory (enable read))))
+  :hints (("Goal" :in-theory (enable read ifix))))
 
 ;; todo: same as read-of-1-becomes-read-byte
 (defthmd read-becomes-read-byte
   (equal (read 1 addr x86)
          (read-byte addr x86))
-  :hints (("Goal" :in-theory (enable read))))
+  :hints (("Goal" :in-theory (enable read ifix))))
 
 (theory-invariant (incompatible (:rewrite read-byte-becomes-read) (:rewrite read-becomes-read-byte)))
 
@@ -867,6 +873,7 @@
 ;rename ...read-1
 (defthm slice-of-read-one-byte
   (implies (and (natp low)
+                (integerp addr)
                 (natp n)
                 (< low n))
            (equal (acl2::slice (+ 7 (* 8 low)) (* 8 low) (read n addr x86))
@@ -879,10 +886,10 @@
                               (quotep high)))
                 (equal 0 (mod low 8))
                 (equal high (+ 7 low))
+                (integerp addr)
                 (< (/ low 8) n)
                 (natp low)
-                (natp n)
-                )
+                (natp n))
            (equal (acl2::slice high low (read n addr x86))
                   (read 1 (+ (/ low 8) addr) x86)))
   :hints (("Goal" :use (:instance slice-of-read-one-byte
@@ -895,7 +902,7 @@
   (defun bvchop-of-read-induct (numbits numbytes addr)
     (if (zp numbytes)
         (list numbits numbytes addr)
-      (bvchop-of-read-induct (+ -8 numbits) (+ -1 numbytes) (+ 1 addr)))))
+      (bvchop-of-read-induct (+ -8 numbits) (+ -1 numbytes) (+ 1 (ifix addr))))))
 
 (defthm bvchop-of-read
   (implies (and (equal 0 (mod numbits 8))
@@ -906,7 +913,8 @@
                       (read (/ numbits 8) addr x86)
                     (read numbytes addr x86))))
   :hints (("Goal" :induct (bvchop-of-read-induct numbits numbytes addr)
-           :in-theory (enable READ acl2::trim))))
+           :expand (read numbytes addr x86)
+           :in-theory (enable READ acl2::trim ifix))))
 
 (local
   (defun read-high-low-induct (n addr x86 high low)
@@ -1097,9 +1105,9 @@
 ;; TODO: Instead, resolve a read of 2 bytes when we have an appropriate program-at claim
 (defthm read-2-blast
   (equal (read 2 addr x86)
-         (bvcat 8 (read 1 (+ 1 addr) x86)
+         (bvcat 8 (read 1 (+ 1 (ifix addr)) x86) ; todo: or use bvplus?
                 8 (read 1 addr x86)))
-  :hints (("Goal" :in-theory (enable read))))
+  :hints (("Goal" :in-theory (enable read ifix))))
 
 (defthmd equal-of-read-and-read-helper
   (implies (and (equal (bvchop 48 addr1) (bvchop 48 addr2))
@@ -1223,6 +1231,12 @@
   (!memi (bvchop 48 addr)
          (bvchop 8 byte)
          X86))
+
+(defthm write-byte-when-not-integerp
+  (implies (not (integerp addr))
+           (equal (write-byte addr byte x86)
+                  (write-byte 0 byte x86)))
+  :hints (("Goal" :in-theory (enable write-byte))))
 
 (defthm write-byte-of-bvchop-arg2
   (equal (write-byte ad (bvchop 8 val) x86)
@@ -1401,7 +1415,7 @@
       x86
     (let ((x86 (write-byte addr (bvchop 8 val) X86)))
       (write (+ -1 n)
-             (+ 1 addr)
+             (+ 1 (mbe :logic (ifix addr) :exec addr))
              (logtail 8 val) ;(slice (+ -1 (* 8 n)) 8 val)
              x86))))
 
@@ -1414,6 +1428,12 @@
   (implies (not (posp n))
            (equal (write n ad val x86)
                   x86))
+  :hints (("Goal" :in-theory (enable write))))
+
+(defthm write-when-not-integerp
+  (implies (not (integerp ad))
+           (equal (write n ad val x86)
+                  (write n 0 val x86)))
   :hints (("Goal" :in-theory (enable write))))
 
 (defthmd write-of-1-becomes-write-byte
@@ -2257,7 +2277,7 @@
 (defthm write-of-read-same
   (equal (write n ad (read n ad x86) x86)
          x86)
-  :hints (("Goal" :in-theory (enable read write))))
+  :hints (("Goal" :in-theory (enable read write ifix))))
 
 (defthm read-of-write-1-within
   (implies (and (bvlt 48 (bvminus 48 addr2 addr1) n)
@@ -2268,6 +2288,7 @@
                   (putbyte n (bvminus 48 addr2 addr1) val (read n addr1 x86))))
   :hints (("Goal" :induct (read n addr1 x86)
            :do-not '(generalize eliminate-destructors)
+           :expand (read n addr1 (write-byte 0 val x86))
            :in-theory (e/d (read
                             write-of-1-becomes-write-byte
                             ;bvminus
@@ -2663,7 +2684,7 @@
   (if (zp n)
       nil
     (cons (read-byte addr x86)
-          (read-bytes (+ 1 addr) (+ -1 n) x86))))
+          (read-bytes (+ 1 (mbe :logic (ifix addr) :exec addr)) (+ -1 n) x86))))
 
 (defthm car-of-read-bytes
   (implies (and (posp n)
@@ -2699,9 +2720,9 @@
   (if (endp bytes)
       x86
     (let ((x86 (write-byte addr (first bytes) X86)))
-      (write-bytes (+ 1 addr)
-                  (rest bytes)
-                  x86))))
+      (write-bytes (+ 1 (mbe :logic (ifix addr) :exec addr))
+                   (rest bytes)
+                   x86))))
 
 (defthm write-bytes-of-nil
   (equal (write-bytes addr nil x86)

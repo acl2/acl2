@@ -91,7 +91,7 @@
 ;; (thm
 ;;  (implies (cdr x)
 ;;          (> (len x) 0))
-;;  :hints (("Goal" :in-theory (e/d (len) (list::len-of-cdr)))))
+;;  :hints (("Goal" :in-theory (e/d (len) ()))))
 
 ;; ;use polarities!
 ;; (defthmd consp-len-bound-hack
