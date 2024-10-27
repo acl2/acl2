@@ -132,8 +132,8 @@
 (defthm read-when-bytes-loadedp
     (implies (and (bytes-loadedp addr2 bytes x86)
                   ;; We expect any common addends in ADDR and ADDR2 to be removed when simplifying the difference:
-                  (bvlt 48 (bvminus 48 addr addr2) (+ 1 (len bytes) (- n))) ; use bvlt?
-                  (integerp addr)
+                  (bvlt 48 (bvminus 48 addr addr2) (+ 1 (len bytes) (- n)))
+                  (integerp addr) ; drop?
                   (unsigned-byte-p 48 (len bytes))
                   (<= n (len bytes)))
              (equal (read n addr x86)
