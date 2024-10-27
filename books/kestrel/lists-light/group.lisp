@@ -173,7 +173,7 @@
                 (NATP I))
            (< I (* 2 J)))
   :hints (("Goal"
-           :use ( ;(:instance FLOOR-UPPER-BOUND-better (x i) (y j))
+           :use (;(:instance FLOOR-UPPER-BOUND-better (x i) (y j))
                  my-FLOOR-lower-BOUND)
            :in-theory (disable my-FLOOR-UPPER-BOUND
                                my-FLOOR-UPPER-BOUND

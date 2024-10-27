@@ -487,7 +487,7 @@
 ;;                       (equal lst1 (list (car lst2)))
 ;;                       )))
 ;;   :hints (("Goal"
-;;            :in-theory (e/d (SUBSETP-EQUAL) ( ;SUBSETP-EQUAL-CDR-REMOVE-1-REWRITE
+;;            :in-theory (e/d (SUBSETP-EQUAL) (;SUBSETP-EQUAL-CDR-REMOVE-1-REWRITE
 ;;                                             )))))
 
 ;; (defthm subsetp-equal-of-singleton-alt
@@ -967,8 +967,8 @@
                     (items-have-len n (subrange start end lst))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
 ;           :induct (ind2 start end lst)
-           :in-theory (e/d ( subrange ITEMS-HAVE-LEN) (TAKE-OF-CDR-BECOMES-SUBRANGE
-                                                       )))))
+           :in-theory (e/d (subrange items-have-len)
+                           (take-of-cdr-becomes-subrange)))))
 
 
 ;; ;bozo gen
@@ -982,7 +982,7 @@
 ;;                                                 lst))))
 ;;   :hints (("Goal" :do-not '(generalize eliminate-destructors)
 ;; ;           :induct (ind2 start end lst)
-;;            :in-theory (e/d ( subrange ITEMS-HAVE-LEN) ()))))
+;;            :in-theory (e/d (subrange ITEMS-HAVE-LEN) ()))))
 
 ;move
 ;restrict to non-constants?
@@ -1692,7 +1692,7 @@
                          (update-subrange n end (cons val2 rst) lst2))
                   t))
   :hints (("Goal" :in-theory (e/d (;list::update-nth-equal-rewrite
-                                   update-subrange) ( update-nth-of-update-subrange-diff)))))
+                                   update-subrange) (update-nth-of-update-subrange-diff)))))
 
 (defthm subrange-of-update-subrange-contained
   (implies (and (<= start2 start1)
@@ -1919,4 +1919,7 @@
                   (update-subrange start2 end2 vals2 (update-subrange start1 end1 vals1 lst))))
   :rule-classes ((:rewrite :loop-stopper nil))
   :hints (("Goal" :in-theory (e/d (update-subrange-rewrite-better take-of-nthcdr-becomes-subrange)
-                                  (equal-of-append natp)))))
+                                  (equal-of-append
+                                   natp
+                                   ;; for speed:
+                                   <-of-+-combine-constants-2)))))

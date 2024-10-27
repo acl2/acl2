@@ -187,7 +187,7 @@
                 )
            (equal (subrange start (+ -1 len) lst)
                   (true-list-fix (nthcdr start lst))))
-  :hints (("Goal" :in-theory (e/d (subrange) ()))))
+  :hints (("Goal" :in-theory (enable subrange))))
 
 (defthmd subrange-up-to-end-becomes-nthcdr-strong
   (implies (and (equal k (+ -1 (len lst)))
