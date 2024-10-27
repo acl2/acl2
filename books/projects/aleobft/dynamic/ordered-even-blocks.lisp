@@ -57,7 +57,17 @@
              (blocks-ordered-even-p
               (validator-state->blockchain
                (get-validator-state val systate))))
-    :use (:instance ordered-even-p-necc (val (address-fix val)))))
+    :use (:instance ordered-even-p-necc (val (address-fix val))))
+
+  (defruled evenp-of-last-when-ordered-even-p
+    (implies (and (ordered-even-p systate)
+                  (last-blockchain-round-p systate)
+                  (set::in val (correct-addresses systate)))
+             (evenp (validator-state->last
+                     (get-validator-state val systate))))
+    :enable (evenp-of-blocks-last-round
+             last-blockchain-round-p-necc)
+    :disable ordered-even-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -147,7 +157,6 @@
              pos-fix
              posp
              evenp
-             blocks-last-round
              certificate->round-of-certificate-with-author+round))
 
   (defruled ordered-even-p-of-timer-expires-next

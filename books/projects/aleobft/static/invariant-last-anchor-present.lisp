@@ -96,7 +96,9 @@
                            val (create-certificate-next cert systate))
                           (all-addresses systate)))
     :enable (last-anchor
-             certificate-with-author+round-of-insert-iff))
+             certificate-with-author+round-of-insert-iff
+             validator-state->dag-of-create-certificate-next
+             validator-state->last-of-create-certificate-next))
 
   (defrule system-last-anchor-present-p-of-create-certificate-next
     (implies (and (system-last-anchor-present-p systate)
@@ -106,7 +108,8 @@
               (create-certificate-next cert systate)))
     :expand (system-last-anchor-present-p
              (create-certificate-next cert systate))
-    :enable system-last-anchor-present-p-necc))
+    :enable (system-last-anchor-present-p-necc
+             validator-state->last-of-create-certificate-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
