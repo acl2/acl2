@@ -456,7 +456,8 @@
 
 (theory-invariant (incompatible (:definition bv-array-read) (:rewrite NTH-BECOMES-BV-ARRAY-READ2)))
 
-(defthm bvchop-of-nth-becomes-bv-array-read
+;disable?
+(defthmd bvchop-of-nth-becomes-bv-array-read
   (implies (and (all-unsigned-byte-p size data) ;not logically necessary but helps prevent this rule from firing on heterogeneous lists.  this might be bad if the bvchop size is smaller than the array elems... fffixme - had size here -- now trying with free
                 (natp n))
            (equal (bvchop size (nth n data))
@@ -465,8 +466,9 @@
                     0)))
   :hints (("Goal" :in-theory (e/d (bv-array-read-opener ;list::nth-with-large-index
                                    )
-                                  (nth-of-bv-array-write-becomes-bv-array-read
-                                   NTH-BECOMES-BV-ARRAY-READ2)))))
+                                  (nth-of-bv-array-write-becomes-bv-array-read)))))
+
+(theory-invariant (incompatible (:definition bv-array-read) (:rewrite bvchop-of-nth-becomes-bv-array-read)))
 
 (defthmd bvchop-of-nth-becomes-bv-array-read2
   (implies (and ;(all-unsigned-byte-p size data) ;not logically necessary but helps prevent this rule from firing on heterogeneous lists.  this might be bad if the bvchop size is smaller than the array elems... fffixme - had size here -- now trying with free
@@ -477,8 +479,9 @@
                     0)))
   :hints (("Goal" :in-theory (e/d (bv-array-read-opener ;LIST::NTH-WITH-LARGE-INDEX
                                    )
-                                  (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ
-                                   NTH-BECOMES-BV-ARRAY-READ2)))))
+                                  (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ)))))
+
+(theory-invariant (incompatible (:definition bv-array-read) (:rewrite bvchop-of-nth-becomes-bv-array-read2)))
 
 (defthm bv-array-clear-range-of-bv-array-write-both
   (implies (and (< high len)
