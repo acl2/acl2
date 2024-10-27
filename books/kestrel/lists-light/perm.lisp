@@ -317,7 +317,6 @@
                                  subsetp-equal-of-remove1-equal-arg2-irrel
                                  set-difference-equal-of-remove1-equal-arg1-irrel
                                  set-difference-equal-of-remove1-equal-arg2-irrel
-                                 set-difference-equal-redef
-                                 )
-                           ( ;SET-DIFFERENCE-EQUAL
+                                 set-difference-equal-redef)
+                           (;SET-DIFFERENCE-EQUAL
                             )))))
