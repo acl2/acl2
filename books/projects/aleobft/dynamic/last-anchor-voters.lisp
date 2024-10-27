@@ -341,7 +341,7 @@
              in-of-successors-loop
              set::expensive-rules))
 
-  (defruled cardinality-of-incoming-to-tally-leader-votes
+  (defruled cardinality-of-successors-to-tally-leader-votes
     (equal (set::cardinality (successors cert dag))
            (mv-nth 0 (tally-leader-votes
                       (certificate->author cert)
@@ -381,7 +381,7 @@
              pos-fix
              evenp
              certificate->round-of-certificate-with-author+round
-             cardinality-of-incoming-to-tally-leader-votes
+             cardinality-of-successors-to-tally-leader-votes
              certificate->author-of-certificate-with-author+round))
 
   (defruled last-anchor-voters-p-of-commit-anchors-next
