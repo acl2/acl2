@@ -306,8 +306,8 @@
          ;; functions after the main mutual-recursion:
          (simplify-dag-expr-name (pack$ 'simplify-dag-expr- suffix))
          (simplify-dag-aux-name (pack$ 'simplify-dag-aux- suffix)) ; rename simplify-dag-nodes...
-         (simplify-dag-name (pack$ 'simplify-dag- suffix))
          (simplify-dag-core-name (pack$ 'simplify-dag-core- suffix))
+         (simplify-dag-name (pack$ 'simplify-dag- suffix))
          (simplify-term-name (pack$ 'simplify-term- suffix)) ; produces a DAG
          (simp-term-name (pack$ 'simp-term- suffix))         ; produces a term
          (simp-terms-name (pack$ 'simp-terms- suffix)) ; produces a list of terms
