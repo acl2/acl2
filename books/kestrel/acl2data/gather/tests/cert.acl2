@@ -1,3 +1,13 @@
+; Copyright (C) 2024, ForrestHunt, Inc.
+; Written by Matt Kaufmann
+; License: A 3-clause BSD license.  See the LICENSE file distributed with ACL2.
+
 ; Avoid randomness (see ../permute-randomly.lisp):
 (f-put-global 'acl2data-testing t state)
-(ld "kestrel/acl2data/gather/tests/runs/customize-tests.lsp" :dir :system :ld-missing-input-ok t)
+
+; When the following was on one line, there was a report of "Bad path" in the
+; runs/ directory during a regression attempt.  For that reason I'm putting in
+; linebreaks below.
+(ld
+ "kestrel/acl2data/gather/tests/runs/customize-tests.lsp"
+ :dir :system :ld-missing-input-ok t)
