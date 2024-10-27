@@ -377,8 +377,9 @@
                                                    vstate.blockchain
                                                    (all-addresses systate))))
                       (append anchors
-                              (committed-anchors (get-validator-state val systate)
-                                                 (all-addresses systate))))))
+                              (committed-anchors
+                               (get-validator-state val systate)
+                               (all-addresses systate))))))
     :enable (committed-anchors
              validator-state->last-of-commit-anchors-next
              validator-state->blockchain-of-commit-anchors-next
@@ -463,8 +464,9 @@
                                                    vstate.blockchain
                                                    (all-addresses systate))))
                       (append anchors
-                              (committed-anchors (get-validator-state val systate)
-                                                 (all-addresses systate))))))
+                              (committed-anchors
+                               (get-validator-state val systate)
+                               (all-addresses systate))))))
     :enable (committed-anchors
              validator-state->last-of-commit-anchors-next
              validator-state->blockchain-of-commit-anchors-next
@@ -532,15 +534,17 @@
                                       vstate.blockchain
                                       (all-addresses systate)))
                              (leader (leader-at-round round commtt))
-                             (anchor (certificate-with-author+round leader
-                                                                    round
-                                                                    vstate.dag))
-                             (anchors (collect-anchors anchor
-                                                       (- round 2)
-                                                       vstate.last
-                                                       vstate.dag
-                                                       vstate.blockchain
-                                                       (all-addresses systate))))
+                             (anchor (certificate-with-author+round
+                                      leader
+                                      round
+                                      vstate.dag))
+                             (anchors (collect-anchors
+                                       anchor
+                                       (- round 2)
+                                       vstate.last
+                                       vstate.dag
+                                       vstate.blockchain
+                                       (all-addresses systate))))
                           (append anchors
                                   (committed-anchors
                                    (get-validator-state val1 systate)
@@ -574,15 +578,17 @@
                                          vstate.blockchain
                                          (all-addresses systate)))
                                 (leader (leader-at-round round commtt))
-                                (anchor (certificate-with-author+round leader
-                                                                       round
-                                                                       vstate.dag))
-                                (anchors (collect-anchors anchor
-                                                          (- round 2)
-                                                          vstate.last
-                                                          vstate.dag
-                                                          vstate.blockchain
-                                                          (all-addresses systate))))
+                                (anchor (certificate-with-author+round
+                                         leader
+                                         round
+                                         vstate.dag))
+                                (anchors (collect-anchors
+                                          anchor
+                                          (- round 2)
+                                          vstate.last
+                                          vstate.dag
+                                          vstate.blockchain
+                                          (all-addresses systate))))
                              (append anchors
                                      (committed-anchors
                                       (get-validator-state val1 systate)
