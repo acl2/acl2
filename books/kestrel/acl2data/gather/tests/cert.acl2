@@ -1,2 +1,3 @@
 ; Avoid randomness (see ../permute-randomly.lisp):
 (f-put-global 'acl2data-testing t state)
+(ld "kestrel/acl2data/gather/tests/runs/customize-tests.lsp" :dir :system :ld-missing-input-ok t)
