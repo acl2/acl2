@@ -48,6 +48,13 @@
 (include-book "x86-rules")
 (include-book "../bitops-rules")
 (include-book "../logops-rules-axe")
+;(include-book "../rules2") ;for BACKCHAIN-SIGNED-BYTE-P-TO-UNSIGNED-BYTE-P-NON-CONST
+;(include-book "../basic-rules")
+(include-book "../rewriter") ; todo: for simp-term
+(include-book "../rules-in-rule-lists")
+;(include-book "../rules1") ;for ACL2::FORCE-OF-NON-NIL, etc.
+(include-book "../dags2") ; for compose-term-and-dags
+(include-book "../arithmetic-rules-axe")
 ;(include-book "kestrel/x86/if-lowering" :dir :system)
 (include-book "kestrel/utilities/get-vars-from-term" :dir :system)
 (include-book "kestrel/x86/readers-and-writers64" :dir :system)
@@ -71,23 +78,15 @@
 (include-book "kestrel/x86/floats" :dir :system)
 (include-book "kestrel/x86/conditions" :dir :system)
 (include-book "kestrel/x86/if-lowering" :dir :system)
-(include-book "kestrel/axe/rewriter" :dir :system)
 (include-book "kestrel/utilities/ints-in-range" :dir :system)
 (include-book "kestrel/utilities/doublets2" :dir :system)
 (include-book "kestrel/utilities/if" :dir :system)
 (include-book "kestrel/utilities/if-rules" :dir :system)
 (include-book "kestrel/booleans/booleans" :dir :system)
-(include-book "kestrel/axe/rules-in-rule-lists" :dir :system)
-;(include-book "kestrel/axe/rules2" :dir :system) ;for BACKCHAIN-SIGNED-BYTE-P-TO-UNSIGNED-BYTE-P-NON-CONST
-;(include-book "axe/basic-rules" :dir :kestrel-acl2)
 (include-book "kestrel/bv/arith" :dir :system) ;todo
 (include-book "kestrel/bv/intro" :dir :system)
 (include-book "kestrel/bv/rtl" :dir :system)
 (include-book "kestrel/bv/convert-to-bv-rules" :dir :system)
-;(include-book "kestrel/arithmetic-light/mod" :dir :system)
-;(include-book "kestrel/axe/rules1" :dir :system) ;for ACL2::FORCE-OF-NON-NIL, etc.
-(include-book "../dags2") ; for compose-term-and-dags
-(include-book "../arithmetic-rules-axe")
 (include-book "kestrel/utilities/progn" :dir :system)
 (include-book "kestrel/utilities/unify" :dir :system)
 (include-book "kestrel/alists-light/lookup-safe" :dir :system)
