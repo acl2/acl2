@@ -3126,7 +3126,8 @@
           (read-byte-rules)
           (linear-memory-rules)
           (get-prefixes-rules64)
-          '(x86isa::x86-fetch-decode-execute-base-new ; x86-fetch-decode-execute-opener-safe-64 ; todo: put this in?
+          '(;x86isa::x86-fetch-decode-execute-base-new
+            x86-fetch-decode-execute-opener-safe-64 ; trying
             ;; !rip-becomes-set-rip ; todo: uncomment for non-loop case
             x86isa::rme08-of-0-when-not-fs/gs-becomes-read ;; x86isa::rme08-when-64-bit-modep-and-not-fs/gs ; puts in rml08, todo: rules for other sizes?
             x86isa::rme-size-when-64-bit-modep-and-not-fs/gs-strong ; puts in rml-size
@@ -4395,6 +4396,15 @@
 ;; ;;             code-segment-assumptions32-of-write-to-segment-of-ss
 ;;             )
 
+;; Used to add limits
+(defund step-opener-rules ()
+  (declare (xargs :guard t))
+  '(;; todo: just use one of these 2:
+    ;; x86isa::x86-fetch-decode-execute-base
+    x86isa::x86-fetch-decode-execute-base-new
+    x86-fetch-decode-execute-opener-safe-64
+    ))
+
 (defun debug-rules-common ()
   (declare (xargs :guard t))
   '(run-until-stack-shorter-than-opener
@@ -4403,14 +4413,14 @@
     mv-nth-1-of-rb-becomes-read
     mv-nth-1-of-rb-1-becomes-read
     ;; x86isa::x86-fetch-decode-execute-base
-    x86isa::x86-fetch-decode-execute-base-new
     ))
 
 (defun debug-rules32 ()
   (declare (xargs :guard t))
   (append (debug-rules-common)
           '(not-mv-nth-0-of-add-to-*sp-gen
-            mv-nth-1-of-add-to-*sp-gen)))
+            mv-nth-1-of-add-to-*sp-gen
+            x86isa::x86-fetch-decode-execute-base-new)))
 
 (defun debug-rules64 ()
   (declare (xargs :guard t))
@@ -4421,6 +4431,7 @@
             x86isa::rme-size-when-64-bit-modep-and-not-fs/gs-strong
             ;; could consider things like these:
             ;; READ-OF-WRITE-DISJOINT2
+            x86-fetch-decode-execute-opener-safe-64
             )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4759,15 +4770,6 @@
           (acl2::bv-of-logext-rules)
           (acl2::unsigned-byte-p-rules)
           (acl2::unsigned-byte-p-forced-rules)))
-
-
-(defund step-opener-rules ()
-  (declare (xargs :guard t))
-  '(;; todo: just use one of these 2:
-    ;; x86isa::x86-fetch-decode-execute-base
-    x86isa::x86-fetch-decode-execute-base-new
-    ;; x86-fetch-decode-execute-opener-safe-64
-    ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
