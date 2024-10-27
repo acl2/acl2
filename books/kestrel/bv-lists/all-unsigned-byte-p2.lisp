@@ -81,7 +81,7 @@
 ;;                 )
 ;;            (equal (all-unsigned-byte-p width (take i (subrange start end x)))
 ;;                   (all-unsigned-byte-p width (take i (subrange start end (repeat (len x) 0))))))
-;;   :hints (("Goal" :cases ( (< (+ 1 (- end start)) i)))))
+;;   :hints (("Goal" :cases ((< (+ 1 (- end start)) i)))))
 
 
 (defthm all-unsigned-byte-p-of-update-subrange

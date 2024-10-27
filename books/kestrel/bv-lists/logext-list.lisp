@@ -151,10 +151,7 @@
                 (<= (len data) i))
            (equal (nth i (logext-list esize data))
                   nil))
-  :hints
-  (("Goal" :do-not '(generalize eliminate-destructors)
-    :in-theory (enable ;LIST::NTH-WITH-LARGE-INDEX-2
-                ))))
+  :hints (("Goal" :do-not '(generalize eliminate-destructors))))
 
 (defthm nth-of-logext-list-better
   (equal (nth i (logext-list esize data))
