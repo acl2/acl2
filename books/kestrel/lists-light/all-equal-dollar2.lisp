@@ -27,7 +27,7 @@
            (equal (all-equal$ (car lst) lst)
                   (equal lst (repeat (len lst) (car lst)))))
   :hints (("Goal" :in-theory (e/d (repeat)
-                                  ( ;DAGIFY-INSIDE-HIDE-META-RULE
+                                  (;DAGIFY-INSIDE-HIDE-META-RULE
                                    )))))
 
 (defthmd all-equal$-when-true-listp
