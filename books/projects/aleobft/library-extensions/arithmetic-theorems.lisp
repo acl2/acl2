@@ -11,10 +11,9 @@
 
 (in-package "ALEOBFT")
 
-(include-book "arithmetic-theorems")
-(include-book "oset-theorems")
-(include-book "omap-theorems")
-(include-book "lists-noforkp")
+(include-book "std/util/defrule" :dir :system)
+
+(local (include-book "arithmetic-3/top" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -23,17 +22,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ library-extensions
-  :parents (aleobft)
-  :short "Library extensions."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These are not specific to AleoBFT,
-     so they will be moved to more general libraries.
-     This is a convenient place to collect them temporarily."))
-  :order-subtopics (arithmetic-theorems
-                    oset-theorems
-                    omap-theorems
-                    lists-noforkp)
-  :default-parent t)
+(defsection arithmetic-theorems
+  :parents (library-extensions)
+  :short "Some theorems about arithmetic."
+
+  (defruled evenp-of-1-less-when-not-evenp
+    (implies (and (integerp x)
+                  (not (evenp x)))
+             (evenp (1- x)))
+    :enable evenp)
+
+  (defruled evenp-of-3-less-when-not-evenp
+    (implies (and (integerp x)
+                  (not (evenp x)))
+             (evenp (- x 3)))
+    :enable evenp))
