@@ -1293,10 +1293,10 @@
                    remove-rules
                    rules-to-monitor
                    loop-alist
-                   print
                    measure-alist
                    base-name
                    lifter-rules
+                   print
                    state)
    (declare (xargs :stobjs (state)
                    :mode :program
@@ -1310,7 +1310,8 @@
                                (symbolp base-name)
                                ;; todo: strengthen:
                                (or (eq :skip measure-alist)
-                                   (alistp measure-alist)))))
+                                   (alistp measure-alist))
+                               (acl2::print-levelp print))))
    (b* ((- (cw "(Lifting loop ~x0 (depth ~x1).~%" next-loop-num loop-depth))
         (this-loop-num next-loop-num)
         (next-loop-num (+ 1 next-loop-num))
@@ -1432,7 +1433,7 @@
         ;; Symbolically execute the loop body:
         ((mv erp loop-body-dag generated-events next-loop-num state)
          (lift-code-segment loop-depth generated-events next-loop-num this-loop-offsets-no-header loop-body-assumptions extra-rules
-                            remove-rules rules-to-monitor loop-alist print measure-alist base-name lifter-rules state))
+                            remove-rules rules-to-monitor loop-alist measure-alist base-name lifter-rules print state))
         ((when erp) (mv erp nil nil nil state))
         (- (cw "(Loop body DAG: ~x0)~%" loop-body-dag))
         (loop-body-term (dag-to-term loop-body-dag)) ;todo: watch for blow-up here
@@ -1692,12 +1693,11 @@
                           remove-rules
                           rules-to-monitor ; rules to monitor
                           loop-alist ; maps loop headers (PC offsets) to lists of PC offsets in the corresponding loops
-                          print
                           measure-alist
                           base-name
                           lifter-rules
-                          state
-                          )
+                          print
+                          state)
    (declare (xargs :stobjs (state)
                    :mode :program
                    :guard (and (posp loop-depth)
@@ -1710,7 +1710,8 @@
                                (symbolp base-name)
                                ;; todo: strengthen:
                                (or (eq :skip measure-alist)
-                                   (alistp measure-alist)))))
+                                   (alistp measure-alist))
+                               (acl2::print-levelp print))))
    (if (not (consp state-term)) ;is this case possible?
        (mv-let (erp state-dag)
          (dagify-term state-term)
@@ -1732,10 +1733,10 @@
                                  remove-rules
                                  rules-to-monitor
                                  loop-alist
-                                 print
                                  measure-alist
                                  base-name
                                  lifter-rules
+                                 print
                                  state))
               ((when erp) (mv erp nil nil nil nil state))
               ((mv erp changep else-branch-dag generated-events next-loop-num state)
@@ -1750,10 +1751,10 @@
                                  remove-rules
                                  rules-to-monitor
                                  loop-alist
-                                 print
                                  measure-alist
                                  base-name
                                  lifter-rules
+                                 print
                                  state))
               ((when erp) (mv erp nil nil nil nil state))
               (all-state-nums (acl2::ints-in-range 0 loop-depth))
@@ -1824,12 +1825,11 @@
                               remove-rules
                               rules-to-monitor
                               loop-alist
-                              print
                               measure-alist
                               base-name
                               lifter-rules
-                              state
-                              ))
+                              print
+                              state))
                   ((when erp) (mv erp nil nil nil nil state)))
                (mv (erp-nil)
                    t ;we made a change
@@ -1850,12 +1850,11 @@
                                remove-rules
                                rules-to-monitor
                                loop-alist
-                               print
                                measure-alist
                                base-name
                                lifter-rules
-                               state
-                              )
+                               print
+                               state)
    (declare (xargs :mode :program
                    :guard (and (natp loop-depth)
                                (posp next-loop-num)
@@ -1864,7 +1863,8 @@
                                (nat-listp segment-offsets)
                                ;; todo: strengthen:
                                (or (eq :skip measure-alist)
-                                   (alistp measure-alist)))
+                                   (alistp measure-alist))
+                               (acl2::print-levelp print))
                    :stobjs (state)))
    (b* ((segment-pc-terms (relative-pc-terms segment-offsets 'text-offset))
         (all-loop-header-offsets (strip-cars loop-alist))
@@ -1922,12 +1922,11 @@
                            remove-rules
                            rules-to-monitor
                            loop-alist
-                           print
                            measure-alist
                            base-name
                            lifter-rules
-                           state
-                          ))
+                           print
+                           state))
         ((when erp) (mv erp nil nil nil state)))
      (if changep
          (lift-code-segment-aux state-dag
@@ -1943,12 +1942,11 @@
                                 remove-rules
                                 rules-to-monitor
                                 loop-alist
-                                print
                                 measure-alist
                                 base-name
                                 lifter-rules
-                                state
-                               )
+                                print
+                                state)
        ;; No loops were lifted, so we are done
        (mv nil state-dag generated-events next-loop-num state))))
 
@@ -1969,12 +1967,11 @@
                            rules-to-monitor ; rules to monitor
 ;                          starting-rsp ;tells us the stack height of the current subroutine
                            loop-alist ; maps loop headers (PC offsets) to lists of PC offsets in the corresponding loops
-                           print
                            measure-alist ;may be :skip
                            base-name
                            lifter-rules
-                           state
-                          )
+                           print
+                           state)
    (declare (xargs :mode :program
                    :guard (and (natp loop-depth)
                                (posp next-loop-num)
@@ -1983,7 +1980,8 @@
                                (nat-listp segment-offsets)
                                ;; todo: strengthen:
                                (or (eq :skip measure-alist)
-                                   (alistp measure-alist)))
+                                   (alistp measure-alist))
+                               (acl2::print-levelp print))
                    :stobjs (state)))
    (b* ((- (cw "(Unsimplified assumptions for lifting: ~x0)~%" assumptions)) ;todo: untranslate these and other things that get printed
         ;; Simplify the assumptions: TODO: Pull this out into the caller?
@@ -2042,12 +2040,11 @@
                                 remove-rules
                                 rules-to-monitor
                                 loop-alist
-                                print
                                 measure-alist
                                 base-name
                                 lifter-rules
-                                state
-                               ))
+                                print
+                                state))
         ((when erp) (mv erp nil nil nil state))
         (- (cw "(DAG after code segment: ~x0)~%" new-state-dag)))
      (mv nil ;no error
@@ -2072,18 +2069,18 @@
                            non-executable
                            ;;restrict-theory
                            monitor
-                           print
                            measures
                            whole-form
-                           state
-                          )
+                           print
+                           state)
   (declare (xargs :stobjs (state)
                   :guard (and (symbolp lifted-name)
                               (stringp subroutine-name)
 ;                              (output-indicatorp output)
                               (booleanp non-executable)
                               (or (symbol-listp monitor)
-                                  (eq :debug monitor)))
+                                  (eq :debug monitor))
+                              (acl2::print-levelp print))
                   :mode :program)
            (ignore produce-theorem non-executable))
   (b* ( ;; Check whether this call to the lifter has already been made:
@@ -2161,12 +2158,11 @@
          remove-rules
          rules-to-monitor
          loop-alist
-         print
          measure-alist
          lifted-name
          lifter-rules
-         state
-         ))
+         print
+         state))
        ((when erp) (mv erp nil state))
        ;; Extract the output (TODO: generalize!)
        ((mv erp output-dag) (compose-term-and-dag '(xr ':rgf '0 :dag) :dag dag))
@@ -2249,9 +2245,8 @@
                            (non-executable 'nil)
                            ;;restrict-theory
                            (monitor 'nil)
-                           (print 't)
                            (measures ':skip) ;; :skip or a list of doublets indexed by nats (PC offsets), giving measures for the loops
-                           )
+                           (print 't))
   `(make-event (lift-subroutine-fn ',lifted-name
                                    ',subroutine-name
                                    ,executable
@@ -2266,9 +2261,9 @@
                                    ',non-executable
                                    ;;restrict-theory
                                    ,monitor
-                                   ',print
                                    ',measures
                                    ',whole-form
+                                   ',print
                                    state
                                   )))
 
