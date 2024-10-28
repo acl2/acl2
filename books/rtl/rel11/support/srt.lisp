@@ -271,7 +271,9 @@
                 (= (q$ (1+ j)) (select-digit-d4 a))
                 (< (q$ (1+ j)) 2))
            (< (* 4 (rem$ j)) (md4 (1+ (q$ (1+ j))))))
-  :hints (("Goal" :in-theory (enable select-digit-d4)
+  :hints (("Goal" :in-theory (e/d (select-digit-d4)
+                                  (;; for speed:
+                                   select-digit-d4))
                   :use (r-bound-inv-2 (:instance r-bound-inv-3 (m (md4 (1+ (q$ (1+ j))))))))))
 
 (local-defthmd r-bound-inv-5
@@ -302,7 +304,10 @@
                 (= (q$ (1+ j)) (select-digit-d4 a)))
 	   (and (<= (sel-lower-div (q$ (1+ j)) (d$)) (* 4 (rem$ j)))
 	        (>= (sel-upper-div (q$ (1+ j)) (d$)) (* 4 (rem$ j)))))
-  :hints (("Goal" :in-theory (enable select-digit-d4)
+  :hints (("Goal" :in-theory (e/d (select-digit-d4)
+                                  (;; for speed:
+                                   select-digit-d4
+                                   abs))
                   :use (r-bound-inv-1 r-bound-inv-4 r-bound-inv-5
 		        (:instance md4-k-bounds (k (q$ (1+ j))))))))
 
@@ -318,7 +323,10 @@
                 (< (abs (- approx (* 4 (rem$ j)))) 1/8)
                 (= (q$ (1+ j)) (select-digit-d4 approx)))
 	   (<= (abs (rem$ (1+ j))) (* 2/3 (d$))))
-  :hints (("Goal" :in-theory (enable rho$ select-digit-d4)
+  :hints (("Goal" :in-theory (e/d (rho$ select-digit-d4)
+                                  (;; for speed:
+                                   abs
+                                   r-bound-inv-4))
                   :use (rem-div-bnd-next (:instance r-bound-inv-6 (a approx))))))
 
 ;;------------------------------------------------------------------------------------------------------------------
@@ -519,7 +527,10 @@
                 (= (q$ (1+ j)) (select-digit-d8 a (i64 (d$)))))
 	   (and (<= (sel-lower-div (q$ (1+ j)) (d$)) (* 8 (rem$ j)))
 	        (>= (sel-upper-div (q$ (1+ j)) (d$)) (* 8 (rem$ j)))))
-  :hints (("Goal" :in-theory (enable rho$ select-digit-d8)
+  :hints (("Goal" :in-theory (e/d (rho$ select-digit-d8)
+                                  ;; for speed:
+                                  (select-digit-d8
+                                   abs))
                   :use (r-bound-inv-8-1 r-bound-inv-8-4 r-bound-inv-8-5
 		        (:instance md8-k-bounds (k (q$ (1+ j))))))))
 
@@ -535,7 +546,10 @@
                 (< (abs (- approx (* 8 (rem$ j)))) 1/64)
                 (= (q$ (1+ j)) (select-digit-d8 approx (i64 (d$)))))
 	   (<= (abs (rem$ (1+ j))) (* 4/7 (d$))))
-  :hints (("Goal" :in-theory (enable rho$ select-digit-d8)
+  :hints (("Goal" :in-theory (e/d (rho$ select-digit-d8)
+                                  (;; for speed:
+                                   select-digit-d8
+                                   abs))
                   :use (rem-div-bnd-next (:instance r-bound-inv-8-6 (a approx))))))
 
 ;;------------------------------------------------------------------------------------------------------------------
@@ -1731,7 +1745,7 @@
 	        (or (= (q% 3) -4)
 		    (>= (ms8 (i8% 2) 2 (q% 3)) (+ (sel-lower-sqrt (q% 3) 2) 1/128)))))
   :rule-classes ()
-  :hints (("Goal" :in-theory (enable rho% sel-lower-sqrt sel-upper-sqrt i8% select-digit-s8 ms8)
+  :hints (("Goal" :in-theory (enable rho% sel-lower-sqrt sel-upper-sqrt select-digit-s8 ms8)
                   :use (rem%-8-bnds-6 rem%-8-bnds-7 (:instance q%-8-vals (j 3))))))
 
 (local-defthmd rem%-8-bnds-10
@@ -1838,7 +1852,9 @@
 		(<= (sel-lower-sqrt k j)
 		   (+ (* 2 (qmax8 (i8% 2)) (- k 4/7))
 		      (* 1/4096 (- k 4/7) (- k 4/7))))))
-  :hints (("Goal" :in-theory (enable rho% sel-lower-sqrt sel-upper-sqrt qmin8 qmax8)
+  :hints (("Goal" :in-theory (e/d (rho% sel-lower-sqrt sel-upper-sqrt qmin8 qmax8)
+                                  (;; for speed:
+                                   (:e nats)))
                   :use (rem%-8-bnds-7 rem%-8-bnds-18)
 		  :nonlinearp t)))
 
@@ -1855,7 +1871,9 @@
 		(<= (sel-lower-sqrt k j)
 		   (+ (* 2 (qmin8 (i8% 2)) (- k 4/7))
 		      (* 1/4096 (- k 4/7) (- k 4/7))))))
-  :hints (("Goal" :in-theory (enable rho% sel-lower-sqrt sel-upper-sqrt qmin8 qmax8)
+  :hints (("Goal" :in-theory (e/d (rho% sel-lower-sqrt sel-upper-sqrt qmin8 qmax8)
+                                  (;; for speed:
+                                   (:e nats)))
                   :use (rem%-8-bnds-7 rem%-8-bnds-18)
 		  :nonlinearp t)))
 
@@ -2001,7 +2019,7 @@
 	               (>= a (ms8 i j k)))
 	           (or (= k 4)
 		       (< a (ms8 i j (1+ k)))))))
-  :hints (("Goal" :in-theory (enable ms8 select-digit-s8))))
+  :hints (("Goal" :in-theory (enable select-digit-s8))))
 
 (local-defthm rem%-8-bnds-43
   (implies (and (= (r%) 8) (= (a%) 4)
@@ -2152,7 +2170,9 @@
                          (>= (select-digit-s8 a (i8% j) j) 0))
 	        (implies (< a (ms8 (i8% j) j 1))
                          (<= (select-digit-s8 a (i8% j) j) 0))))
-  :hints (("Goal" :use (rem%-8-bnds-37 quot8%-bnds-1-1 quot8%-bnds-1-2 quot8%-bnds-1-4))))
+  :hints (("Goal" :use (rem%-8-bnds-37 quot8%-bnds-1-1 quot8%-bnds-1-2 quot8%-bnds-1-4)
+           :in-theory (disable ms8 ;for speed
+                               ))))
 
 (local-defthmd quot8%-bnds-1-6
   (implies (and (= (r%) 8) (= (a%) 4)
