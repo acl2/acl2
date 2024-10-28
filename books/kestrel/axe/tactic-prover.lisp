@@ -513,9 +513,9 @@
        ((mv erp dag) ; todo: call dag dag-or-quotep
         (simplify-dag-basic dag
                             assumptions
+                            rule-alist
                             interpreted-function-alist
                             nil ; limits
-                            rule-alist
                             nil ; count-hits
                             print
                             (known-booleans (w state))

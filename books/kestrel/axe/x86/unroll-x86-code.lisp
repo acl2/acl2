@@ -416,17 +416,17 @@
           ;;                     :check-inputs nil)
             (mv-let (erp result)
               (acl2::simplify-dag-x86 dag
-                                        assumptions
-                                        nil ; interpreted-function-alist
-                                        limits
-                                        rule-alist
-                                        t ; count-hints ; todo: think about this
-                                        print
-                                        (acl2::known-booleans (w state))
-                                        rules-to-monitor
-                                        '(program-at) ; fns-to-elide
-                                        t ; normalize-xors
-                                        memoizep)
+                                      assumptions
+                                      rule-alist
+                                      nil ; interpreted-function-alist
+                                      limits
+                                      t ; count-hints ; todo: think about this
+                                      print
+                                      (acl2::known-booleans (w state))
+                                      rules-to-monitor
+                                      '(program-at) ; fns-to-elide
+                                      t             ; normalize-xors
+                                      memoizep)
               (mv erp result state))
             ;)
             )
@@ -507,9 +507,9 @@
                   (mv-let (erp result)
                     (acl2::simplify-dag-x86 dag
                                             assumptions
+                                            rule-alist
                                             nil ; interpreted-function-alist
                                             limits
-                                            rule-alist
                                             t ; count-hints ; todo: think about this
                                             print
                                             (acl2::known-booleans (w state))
