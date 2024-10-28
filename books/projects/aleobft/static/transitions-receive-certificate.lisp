@@ -109,7 +109,7 @@
   (fty::deffixequiv receive-certificate-next
     :args ((systate system-statep)))
 
-  (defrule validator-state->round-of-receive-certificate-next
+  (defruled validator-state->round-of-receive-certificate-next
     (implies (and (set::in val (correct-addresses systate))
                   (receive-certificate-possiblep msg systate))
              (equal (validator-state->round
