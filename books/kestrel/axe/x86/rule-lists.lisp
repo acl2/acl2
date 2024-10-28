@@ -4774,6 +4774,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun extra-loop-lifter-rules ()
+  (declare (xargs :guard t))
   (append ;or put these in symbolic-execution-rules-loop ?:
    '(stack-height-increased-wrt
      stack-height-decreased-wrt
@@ -4837,11 +4838,23 @@
 
 ;; Eventually we may add these rules about read to extra-loop-lifter-rules.
 (defun loop-lifter-invariant-preservation-rules ()
+  (declare (xargs :guard t))
   (append (extra-loop-lifter-rules)
           '(mv-nth-1-of-rb-becomes-read
             read-of-write-disjoint
             read-of-write-same
             )))
+
+;todo: add more?
+(defun loop-lifter-state-component-extraction-rules ()
+  (declare (xargs :guard t))
+  '(acl2::integerp-of-+
+    x86isa::x86-elem-fix
+    x86isa::canonical-address-p-between-special1
+    x86isa::xr-of-xw-intra-field
+    acl2::ifix-when-integerp
+    x86isa::integerp-of-xr-rgf
+    x86isa::logext-64-does-nothing-when-canonical-address-p))
 
 (defun loop-lifter-rules32 ()
   (declare (xargs :guard t))

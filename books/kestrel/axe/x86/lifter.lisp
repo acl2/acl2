@@ -329,14 +329,12 @@
 ;;              (cons b x)
 ;;              (member-equal a x))))
 
-;; some of these (e.g., about non-loop symbolic execution functions) may not be needed:
-
 ;; Returns (mv erp rsp-dag state).
 (defun extract-rsp-dag (state-dag
                         assumptions ; avoids a logext because we know the rsp is canonical
-                        lifter-rules
-                        extra-rules
-                        remove-rules
+                        ;lifter-rules
+                        ;extra-rules
+                        ;remove-rules
                         ;;rules-to-monitor
                         ;; state-var
                         state)
@@ -346,16 +344,17 @@
        ((when erp) (mv erp nil state)))
     (simp-dag dag
               :assumptions assumptions
-              :rules (set-difference-eq (append '(x86isa::logext-64-does-nothing-when-canonical-address-p)
-                                                lifter-rules extra-rules) remove-rules)
+              :rules (loop-lifter-state-component-extraction-rules)
+              ;; (set-difference-eq (append '(x86isa::logext-64-does-nothing-when-canonical-address-p)
+              ;;                                   lifter-rules extra-rules) remove-rules)
               :check-inputs nil)))
 
 ;; Returns (mv erp rbp-dag state).
 (defun extract-rbp-dag (state-dag
                         assumptions ; avoids a logext because we know the rbp is canonical
-                        lifter-rules
-                        extra-rules
-                        remove-rules
+                        ;lifter-rules
+                        ;extra-rules
+                        ;remove-rules
                         ;;rules-to-monitor
                         ;; state-var
                         state)
@@ -365,8 +364,9 @@
        ((when erp) (mv erp nil state)))
     (simp-dag dag
               :assumptions assumptions
-              :rules (set-difference-eq (append '(x86isa::logext-64-does-nothing-when-canonical-address-p)
-                                                lifter-rules extra-rules) remove-rules)
+              :rules (loop-lifter-state-component-extraction-rules)
+              ;; (set-difference-eq (append '(x86isa::logext-64-does-nothing-when-canonical-address-p)
+              ;;                                   lifter-rules extra-rules) remove-rules)
               :check-inputs nil)))
 
 ;; Returns (mv erp pc-dag state).
@@ -465,7 +465,7 @@
          (- (cw "(Attempting to prove assumption ~x0.~%" updated-assumption))
          ((mv erp dag-to-prove) (compose-term-and-dag updated-assumption state-var state-dag))
          ((when erp) (mv erp nil nil state))
-         (- (and (acl2::print-level-at-least-tp print) (cw "(DAG to prove: ~x0.)~%" dag-to-prove)))
+         ;; (- (and (acl2::print-level-at-least-tp print) (cw "(DAG to prove: ~x0.)~%" dag-to-prove)))
          (- (cw "(Using ~x0 assumptions.)~%" (len all-assumptions)))
          ;; prove that the original assumptions imply that the updated assumption holds over state-dag
          ((mv erp res state)
@@ -1051,7 +1051,7 @@
          (- (cw "(Attempting to prove invariant ~X01:~%" invariant nil))
          (term-to-prove (acl2::sublis-var-simple (acons state-var one-rep-term nil) invariant))
          (- (and (acl2::print-level-at-least-tp print) (cw "(Term to prove: ~x0.)~%" term-to-prove)))
-         (- (and (acl2::print-level-at-least-tp print) (cw "(Assumptions to prove: ~x0.)~%" assumptions)))
+         (- (and (acl2::print-level-at-least-tp print) (cw "(Assumptions to use: ~x0.)~%" assumptions)))
          (rules (set-difference-eq
                   (append (loop-lifter-invariant-preservation-rules) ; optimze?
                           lifter-rules
@@ -1342,9 +1342,9 @@
         ((mv erp loop-top-rsp-dag state)
          (extract-rsp-dag loop-top-state-dag
                           assumptions
-                          lifter-rules
-                          extra-rules
-                          remove-rules
+                          ;lifter-rules
+                          ;extra-rules
+                          ;remove-rules
                           state))
         ((when erp) (mv erp nil nil nil state))
         (loop-top-rsp-term (dag-to-term loop-top-rsp-dag))
@@ -1369,9 +1369,9 @@
         ((mv erp loop-top-rbp-dag state)
          (extract-rbp-dag loop-top-state-dag
                           assumptions
-                          lifter-rules
-                          extra-rules
-                          remove-rules
+                          ;lifter-rules
+                          ;extra-rules
+                          ;remove-rules
                           state))
         ((when erp) (mv erp nil nil nil state))
         (loop-top-rbp-term (dag-to-term loop-top-rbp-dag))
@@ -2005,9 +2005,9 @@
         ((mv erp rsp-dag state)
          (extract-rsp-dag state-dag
                           assumptions
-                          lifter-rules
-                          extra-rules
-                          remove-rules
+                         ;lifter-rules
+                          ;extra-rules
+                          ;remove-rules
                           state))
         ((when erp) (mv erp nil nil nil state))
         (rsp-term (dag-to-term rsp-dag))
@@ -2243,7 +2243,7 @@
                            ;;restrict-theory
                            (monitor 'nil)
                            (measures ':skip) ;; :skip or a list of doublets indexed by nats (PC offsets), giving measures for the loops
-                           (print 't))
+                           (print ':brief))
   `(make-event (lift-subroutine-fn ',lifted-name
                                    ',subroutine-name
                                    ,executable
