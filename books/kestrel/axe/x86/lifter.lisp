@@ -332,13 +332,13 @@
 ;; some of these (e.g., about non-loop symbolic execution functions) may not be needed:
 
 ;; Returns (mv erp rsp-dag state).
-(defun extract-rsp-dag (assumptions ; avoids a logext because we know the rsp is canonical
+(defun extract-rsp-dag (state-dag
+                        assumptions ; avoids a logext because we know the rsp is canonical
+                        lifter-rules
                         extra-rules
                         remove-rules
                         ;;rules-to-monitor
-                        state-dag
                         ;; state-var
-                        lifter-rules
                         state)
   (declare (xargs :stobjs (state)
                   :mode :program))
@@ -351,13 +351,13 @@
               :check-inputs nil)))
 
 ;; Returns (mv erp rbp-dag state).
-(defun extract-rbp-dag (assumptions ; avoids a logext because we know the rbp is canonical
+(defun extract-rbp-dag (state-dag
+                        assumptions ; avoids a logext because we know the rbp is canonical
+                        lifter-rules
                         extra-rules
                         remove-rules
                         ;;rules-to-monitor
-                        state-dag
                         ;; state-var
-                        lifter-rules
                         state)
   (declare (xargs :stobjs (state)
                   :mode :program))
@@ -1340,13 +1340,12 @@
         (- (cw "(Loop top PC assumption: ~x0.)~%" pc-assumption))
         ;; Extract the RSP at the loop top:
         ((mv erp loop-top-rsp-dag state)
-         (extract-rsp-dag assumptions
+         (extract-rsp-dag loop-top-state-dag
+                          assumptions
+                          lifter-rules
                           extra-rules
                           remove-rules
-                          loop-top-state-dag
-                          lifter-rules
-                          state
-                          ))
+                          state))
         ((when erp) (mv erp nil nil nil state))
         (loop-top-rsp-term (dag-to-term loop-top-rsp-dag))
         ;; (- (cw "(Original RSP was ~x0.)~%" original-rsp-term)) ;will always be (xr ':rgf '4 x86_0) ?
@@ -1368,13 +1367,12 @@
 
         ;; Extract the RBP at the loop top:
         ((mv erp loop-top-rbp-dag state)
-         (extract-rbp-dag assumptions
+         (extract-rbp-dag loop-top-state-dag
+                          assumptions
+                          lifter-rules
                           extra-rules
                           remove-rules
-                          loop-top-state-dag
-                          lifter-rules
-                          state
-                          ))
+                          state))
         ((when erp) (mv erp nil nil nil state))
         (loop-top-rbp-term (dag-to-term loop-top-rbp-dag))
         (- (cw "(Loop top RBP is ~x0.)~%" loop-top-rbp-term))
@@ -2005,13 +2003,12 @@
 
         ;; Extract the RSP:
         ((mv erp rsp-dag state)
-         (extract-rsp-dag assumptions
+         (extract-rsp-dag state-dag
+                          assumptions
+                          lifter-rules
                           extra-rules
                           remove-rules
-                          state-dag
-                          lifter-rules
-                          state
-                          ))
+                          state))
         ((when erp) (mv erp nil nil nil state))
         (rsp-term (dag-to-term rsp-dag))
         (- (cw "(RSP is ~x0.)~%" rsp-term))
