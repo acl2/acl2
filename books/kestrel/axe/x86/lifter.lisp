@@ -332,35 +332,41 @@
 ;; some of these (e.g., about non-loop symbolic execution functions) may not be needed:
 
 ;; Returns (mv erp rsp-dag state).
-(defun extract-rsp-dag (;;assumptions
-                          extra-rules
-                          remove-rules
-                          ;;rules-to-monitor
-                          state-dag
-                          ;; state-var
-                          lifter-rules
-                          state)
+(defun extract-rsp-dag (assumptions ; avoids a logext because we know the rsp is canonical
+                        extra-rules
+                        remove-rules
+                        ;;rules-to-monitor
+                        state-dag
+                        ;; state-var
+                        lifter-rules
+                        state)
   (declare (xargs :stobjs (state)
                   :mode :program))
   (b* (((mv erp dag) (compose-term-and-dag '(xr ':rgf '4 :x86) :x86 state-dag)) ;todo make a version of compose-term-and-dag that translates and checks its arg
        ((when erp) (mv erp nil state)))
-    (simp-dag dag :rules (set-difference-eq (append lifter-rules extra-rules) remove-rules)
+    (simp-dag dag
+              :assumptions assumptions
+              :rules (set-difference-eq (append '(x86isa::logext-64-does-nothing-when-canonical-address-p)
+                                                lifter-rules extra-rules) remove-rules)
               :check-inputs nil)))
 
 ;; Returns (mv erp rbp-dag state).
-(defun extract-rbp-dag (;;assumptions
-                          extra-rules
-                          remove-rules
-                          ;;rules-to-monitor
-                          state-dag
-                          ;; state-var
-                          lifter-rules
-                          state)
+(defun extract-rbp-dag (assumptions ; avoids a logext because we know the rbp is canonical
+                        extra-rules
+                        remove-rules
+                        ;;rules-to-monitor
+                        state-dag
+                        ;; state-var
+                        lifter-rules
+                        state)
   (declare (xargs :stobjs (state)
                   :mode :program))
   (b* (((mv erp dag) (compose-term-and-dag '(xr ':rgf '5 :x86) :x86 state-dag)) ;todo make a version of compose-term-and-dag that translates and checks its arg
        ((when erp) (mv erp nil state)))
-    (simp-dag dag :rules (set-difference-eq (append lifter-rules extra-rules) remove-rules)
+    (simp-dag dag
+              :assumptions assumptions
+              :rules (set-difference-eq (append '(x86isa::logext-64-does-nothing-when-canonical-address-p)
+                                                lifter-rules extra-rules) remove-rules)
               :check-inputs nil)))
 
 ;; Returns (mv erp pc-dag state).
@@ -377,7 +383,7 @@
   (b* (((mv erp dag) (compose-term-and-dag '(xr ':rip 'nil :x86) :x86 state-dag))
        ((when erp) (mv erp nil state)))
     (simp-dag dag
-              :rules (set-difference-eq (append '(xr-of-if) lifter-rules extra-rules) remove-rules)
+              :rules (set-difference-eq (append '(xr-of-if) lifter-rules extra-rules) remove-rules) ; do we need x86isa::logext-64-does-nothing-when-canonical-address-p?
               :assumptions assumptions ;need to know that text offset is reasonable
               :monitor '(x86isa::logext-48-does-nothing-when-canonical-address-p)
               :check-inputs nil)))
@@ -1317,7 +1323,8 @@
         (- (cw "(Loop top PC assumption: ~x0.)~%" pc-assumption))
         ;; Extract the RSP at the loop top:
         ((mv erp loop-top-rsp-dag state)
-         (extract-rsp-dag extra-rules
+         (extract-rsp-dag assumptions
+                          extra-rules
                           remove-rules
                           loop-top-state-dag
                           lifter-rules
@@ -1344,7 +1351,8 @@
 
         ;; Extract the RBP at the loop top:
         ((mv erp loop-top-rbp-dag state)
-         (extract-rbp-dag extra-rules
+         (extract-rbp-dag assumptions
+                          extra-rules
                           remove-rules
                           loop-top-state-dag
                           lifter-rules
@@ -1964,7 +1972,7 @@
    (b* ((- (cw "(Unsimplified assumptions for lifting: ~x0)~%" assumptions)) ;todo: untranslate these and other things that get printed
         ;; Simplify the assumptions: TODO: Pull this out into the caller?
         ((mv erp rule-alist)  ;todo: include the extra-rules?
-         (make-rule-alist (append '(x86isa::rip) ;why was this not needed before?
+         (make-rule-alist (append '(x86isa::rip x86isa::rip$a) ;why was this not needed before?
                                   (reader-and-writer-opener-rules) ; don't use the new normal forms
                                   (assumption-simplification-rules))
                           (w state)))
@@ -1983,7 +1991,8 @@
 
         ;; Extract the RSP:
         ((mv erp rsp-dag state)
-         (extract-rsp-dag extra-rules
+         (extract-rsp-dag assumptions
+                          extra-rules
                           remove-rules
                           state-dag
                           lifter-rules
