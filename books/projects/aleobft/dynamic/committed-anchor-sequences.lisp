@@ -183,7 +183,6 @@
              validator-state->dag-of-create-certificate-next
              validator-state->blockchain-of-create-certificate-next
              backward-closed-p-necc
-             certificate-sets-unequivocalp-of-same-set
              last-anchor-present-p-necc
              last-anchor-in-dag
              unequivocal-accepted-certificates-p-of-create-certificate-next)
@@ -204,9 +203,8 @@
                                     (certificate->author cert) systate)
                                    (all-addresses systate)))
                      (all-vals (all-addresses systate)))
-          (:instance certificate-sets-unequivocalp-when-unequivocal-accepted
-                     (val1 (certificate->author cert))
-                     (val2 (certificate->author cert))
+          (:instance certificate-set-unequivocalp-when-unequivocal-accepted
+                     (val (certificate->author cert))
                      (systate (create-certificate-next cert systate)))))
 
   ;; receive certificate:
@@ -283,7 +281,6 @@
                 validator-state->dag-of-store-certificate-next
                 validator-state->blockchain-of-store-certificate-next
                 backward-closed-p-necc
-                certificate-sets-unequivocalp-of-same-set
                 last-anchor-present-p-necc
                 last-anchor-in-dag
                 unequivocal-accepted-certificates-p-of-store-certificate-next)
@@ -304,9 +301,8 @@
                                        val1 systate)
                                       (all-addresses systate)))
                         (all-vals (all-addresses systate)))
-             (:instance certificate-sets-unequivocalp-when-unequivocal-accepted
-                        (val1 val1)
-                        (val2 val1)
+             (:instance certificate-set-unequivocalp-when-unequivocal-accepted
+                        (val val1)
                         (systate
                          (store-certificate-next val1 cert systate)))))))
 
