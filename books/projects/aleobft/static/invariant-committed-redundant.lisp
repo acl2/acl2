@@ -192,7 +192,8 @@
              (validator-committed-redundantp
               (get-validator-state val (receive-certificate-next msg systate))
               (all-addresses systate)))
-    :enable validator-committed-redundantp)
+    :enable (validator-committed-redundantp
+             validator-state->last-of-receive-certificate-next))
 
   (defrule system-committed-redundantp-of-receive-certificate-next
     (implies (and (system-committed-redundantp systate)

@@ -99,7 +99,8 @@
             (receive-certificate-next msg systate)))
   :expand (system-last-is-even-p
            (receive-certificate-next msg systate))
-  :enable system-last-is-even-p-necc)
+  :enable (system-last-is-even-p-necc
+           validator-state->last-of-receive-certificate-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

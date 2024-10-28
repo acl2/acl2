@@ -115,7 +115,8 @@
   :expand (system-last-before-current-p
            (receive-certificate-next msg systate))
   :enable (system-last-before-current-p-necc
-           validator-state->round-of-receive-certificate-next))
+           validator-state->round-of-receive-certificate-next
+           validator-state->last-of-receive-certificate-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

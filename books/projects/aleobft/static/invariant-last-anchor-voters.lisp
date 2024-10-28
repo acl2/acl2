@@ -172,7 +172,8 @@
               (max-faulty systate)
               (all-addresses systate)))
     :enable (validator-last-anchor-voters-p
-             validator-state->dag-of-receive-certificate-next))
+             validator-state->dag-of-receive-certificate-next
+             validator-state->last-of-receive-certificate-next))
 
   (defrule system-last-anchor-voters-p-of-receive-certificate-next
     (implies (and (system-last-anchor-voters-p systate)
