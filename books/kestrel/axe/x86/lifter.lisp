@@ -444,6 +444,7 @@
                                   proved-assumptions-acc
                                   failed-assumptions-acc
                                   lifter-rules
+                                  print
                                   state)
   (declare (xargs :stobjs (state)
                   :mode :program
@@ -452,7 +453,8 @@
                               (symbol-listp previous-state-vars)
                               (symbol-listp extra-rules)
                               (symbol-listp remove-rules)
-                              (symbol-listp rules-to-monitor))))
+                              (symbol-listp rules-to-monitor)
+                              (acl2::print-levelp print))))
   (if (endp assumptions)
       (mv (erp-nil)
           (reverse proved-assumptions-acc)
@@ -463,7 +465,7 @@
          (- (cw "(Attempting to prove assumption ~x0.~%" updated-assumption))
          ((mv erp dag-to-prove) (compose-term-and-dag updated-assumption state-var state-dag))
          ((when erp) (mv erp nil nil state))
-         (- (cw "(DAG to prove: ~x0.)~%" dag-to-prove))
+         (- (and (acl2::print-level-at-least-tp print) (cw "(DAG to prove: ~x0.)~%" dag-to-prove)))
          (- (cw "(Using ~x0 assumptions.)~%" (len all-assumptions)))
          ;; prove that the original assumptions imply that the updated assumption holds over state-dag
          ((mv erp res state)
@@ -489,6 +491,7 @@
                                              (cons updated-assumption proved-assumptions-acc)
                                              failed-assumptions-acc
                                              lifter-rules
+                                             print
                                              state))
         (prog2$ (cw "Failed.  Candidate assumption rewrote to ~x0.)~%" (dag-to-term res)) ;todo: think about blowup
                 (try-to-update-assumptions (rest assumptions)
@@ -499,6 +502,7 @@
                                            proved-assumptions-acc
                                            (cons updated-assumption failed-assumptions-acc)
                                            lifter-rules
+                                           print
                                            state))))))
 
 (defun get-added-offset (term base-var)
@@ -1031,28 +1035,38 @@
                                    rules-to-monitor
                                    proved-invariants-acc failed-invariants-acc
                                    lifter-rules
+                                   print
                                    state)
   (declare (xargs :stobjs (state)
                   :guard (and (pseudo-term-listp invariants)
                               (symbolp state-var)
                               (pseudo-termp one-rep-term)
                               (pseudo-term-listp assumptions)
-                              (symbol-listp rules-to-monitor))
+                              (symbol-listp rules-to-monitor)
+                              (acl2::print-levelp print))
                   :mode :program))
   (if (endp invariants)
       (mv (erp-nil) proved-invariants-acc failed-invariants-acc state)
     (b* ((invariant (first invariants))
          (- (cw "(Attempting to prove invariant ~X01:~%" invariant nil))
          (term-to-prove (acl2::sublis-var-simple (acons state-var one-rep-term nil) invariant))
+         (- (and (acl2::print-level-at-least-tp print) (cw "(Term to prove: ~x0.)~%" term-to-prove)))
+         (- (and (acl2::print-level-at-least-tp print) (cw "(Assumptions to prove: ~x0.)~%" assumptions)))
+         (rules (set-difference-eq
+                  (append (loop-lifter-invariant-preservation-rules) ; optimze?
+                          lifter-rules
+                          extra-rules)
+                  remove-rules))
+         (- (and (acl2::print-level-at-least-tp print) (cw "(Using ~x0 rules.)~%" (len rules))))
+         (- (and rules-to-monitor (cw "(Monitoring ~x0 rules.)~%" (len rules-to-monitor))))
+         (- (and (not (subsetp-equal rules-to-monitor rules))
+                 (cw "Missing :monitored rules: ~x0.~%" (set-difference-eq rules-to-monitor rules))))
+         ;; Try to prove the invariant by rewriting:
          ((mv erp simplified-invariant state)
           (acl2::simp-term-to-term term-to-prove
-                                 (set-difference-eq
-                                  (append (loop-lifter-invariant-preservation-rules)
-                                          lifter-rules
-                                         extra-rules)
-                                  remove-rules)
-                                 :assumptions assumptions
-                                 :monitor rules-to-monitor))
+                                   rules
+                                   :assumptions assumptions
+                                   :monitor rules-to-monitor))
          ((when erp) (mv erp nil nil state)))
       (if (equal *t* simplified-invariant)
           (prog2$ (cw "Proved it!)~%")
@@ -1066,6 +1080,7 @@
                                               (cons invariant proved-invariants-acc)
                                               failed-invariants-acc
                                               lifter-rules
+                                              print
                                               state))
         (prog2$ (cw "Failed.  Candidate invariant rewrote to ~X01)~%" simplified-invariant nil)
                 (prove-invariants-preserved (rest invariants)
@@ -1078,6 +1093,7 @@
                                             proved-invariants-acc
                                             (cons invariant failed-invariants-acc)
                                             lifter-rules
+                                            print
                                             state))))))
 (defforall-simple nat-listp)
 
@@ -1382,7 +1398,7 @@
                                     remove-rules
                                     rules-to-monitor loop-top-state-dag state-var previous-state-vars
                                     assumptions
-                                    nil nil lifter-rules state))
+                                    nil nil lifter-rules print state))
         ((when erp) (mv erp nil nil nil state))
         (- (cw "Done determining which assumptions hold before the loop)~%"))
         (- (cw "(~x0 assumptions hold before the loop: ~x1.)~%" (len loop-top-assumptions) loop-top-assumptions))
@@ -1442,7 +1458,7 @@
              state)
          ;; TODO: In general, we may need to assume the negation of the exit test here:
          (prove-invariants-preserved loop-invariants state-var one-rep-term loop-invariants ;assume the invariants hold on the state-var
-                                     extra-rules remove-rules rules-to-monitor nil nil lifter-rules state))
+                                     extra-rules remove-rules rules-to-monitor nil nil lifter-rules print state))
         ((when erp) (mv erp nil nil nil state))
         ((when failed-invariants) ;todo: be more flexible: throw out failed invariants and try again?
          (prog2$ (er hard? 'lift-loop "An invariant failed (see above).")
