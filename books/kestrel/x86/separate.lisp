@@ -585,3 +585,22 @@
            (not (equal (acl2::bvchop 48 rsp) k)))
   :hints (("Goal" :use not-equal-constant-and-bvchop-48-when-separate-of-constants
            :in-theory (disable not-equal-constant-and-bvchop-48-when-separate-of-constants))))
+
+;; It would be nice if something like this was true, but separate doesn't
+;; handle ranges that wrap around past the 2^48 boundary.
+;; (defthmd separate-becomes-bvlt-claims
+;;   (implies (and (unsigned-byte-p 48 addr1) ; todo
+;;                 (unsigned-byte-p 48 addr2) ; todo
+;;                 (unsigned-byte-p 40 n1) ; gen
+;;                 (posp n1)
+;;                 (unsigned-byte-p 40 n2) ; gen
+;;                 (posp n2))
+;;            (implies (separate rwx1 n1 addr1 rwx2 n2 addr2)
+;;                     (and (acl2::bvlt 48 (acl2::bvminus 48 addr1 addr2) n2)
+;;                          (acl2::bvlt 48 (acl2::bvminus 48 addr2 addr1) n1))))
+;;   :hints (("Goal"  :cases ((< addr2 0))
+;;            :in-theory (e/d (separate acl2::bvlt acl2::bvuminus acl2::bvminus acl2::bvplus acl2::bvchop-of-sum-cases
+;;                                      signed-byte-p)
+;;                            (;acl2::bvcat-of-unary-minus-low
+;;                             ;acl2::bvminus-becomes-bvplus-of-bvuminus
+;;                             )))))

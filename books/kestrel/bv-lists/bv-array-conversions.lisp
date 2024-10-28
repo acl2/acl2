@@ -130,8 +130,7 @@
                 (< n (- len i)))
            (equal (nth n (bv-array-to-list-aux width len i x))
                   (bv-array-read width len (+ n i) x)))
-  :hints (("Goal" :in-theory (e/d (;LIST::NTH-OF-CONS
-                                   bv-array-to-list-aux
+  :hints (("Goal" :in-theory (e/d (bv-array-to-list-aux
                                    nth) (;NTH-OF-CDR
                                          ))
            :induct (ind size len i arr n)

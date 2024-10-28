@@ -11289,12 +11289,6 @@
          (wrld nil))
      (warning$-cw1 ,ctx ,summary ,@args)))
 
-(defmacro warning$-cw (ctx &rest args)
-  (prog2$
-   (cw "~|***NOTE***: Warning$-cw is deprecated.  Use warning$-cw0 or ~
-        warning$-cw1.")
-   `(warning$-cw0 ,ctx nil *default-state-vars* ,@args)))
-
 (defun chk-length-and-keys (actuals form wrld)
   (declare (xargs :guard (and (true-listp actuals)
                               (true-listp form)

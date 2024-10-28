@@ -413,7 +413,7 @@
                                        (cons (cons var (empty-eval replacement a))
                                              a)))))
 
-  :hints ( ;; (and stable-under-simplificationp `(:in-theory (e/d (alists-equiv-on-when-agree-on-bad-guy
+  :hints (;; (and stable-under-simplificationp `(:in-theory (e/d (alists-equiv-on-when-agree-on-bad-guy
           ;;                                                      lookup-equal-of-append)
           ;;                                                     (EMPTY-EVAL-OF-LOOKUP-EQUAL-OF-PAIRLIS$
           ;;                                                      ))))
@@ -452,16 +452,16 @@
                                         (empty-eval-list args
                                                          (cons (cons var (empty-eval replacement a))
                                                                a)))))))
-           :in-theory (e/d ( ;alists-equiv-on-when-agree-on-bad-guy
-     ;                                   lookup-equal-of-append
-                            ) ( ;STRIP-CARS-OF-PAIRLIS$
+           :in-theory (e/d (;alists-equiv-on-when-agree-on-bad-guy
+                            ;; lookup-equal-of-append
+                            )
+                           (;STRIP-CARS-OF-PAIRLIS$
                             EMPTY-EVAL-OF-LOOKUP-EQUAL-OF-PAIRLIS$ ;bad
                             member-equal
 ;                            LOOKUP-EQUAL-OF-EMPTY-EVAL-CDRS
                             ALISTS-EQUIV-ON-OF-APPEND-ARG1
                             ALISTS-EQUIV-ON-OF-CONS-ARG2
-                            main.help.help
-                            ))))
+                            main.help.help))))
   :otf-flg t)
 
 

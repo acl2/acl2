@@ -122,7 +122,7 @@
            :in-theory (e/d (group2 ;nthcdr
                             ;LIST::NTH-OF-CONS
                             )
-                           ( ;NTHCDR-OF-CDR-COMBINE-strong NTHCDR-OF-CDR-COMBINE
+                           (;NTHCDR-OF-CDR-COMBINE-strong NTHCDR-OF-CDR-COMBINE
                             )))))
 
 (defthm len-of-group2

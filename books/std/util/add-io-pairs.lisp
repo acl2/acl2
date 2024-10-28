@@ -1326,7 +1326,7 @@
 (defmacro remove-io-pairs (&rest fns)
   (declare (xargs :guard (symbol-listp fns)))
   `(with-output
-     :stack :push ; for warning$-cw call in remove-io-pairs-event
+     :stack :push ; for warning$-cw0 call in remove-io-pairs-event
      :off :all :on error :gag-mode nil
      (make-event (remove-io-pairs-event ',fns 'remove-io-pairs state)
                  :on-behalf-of :quiet!)))
