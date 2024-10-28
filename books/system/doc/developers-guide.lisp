@@ -3558,8 +3558,9 @@
  warning$
  })
 
- <p>Another issue: @('warning$-cw') returns @('nil'), which makes it impossible
- to convert to a soft error (returning @('state')).  More on that is below.</p>
+ <p>Another issue: @('warning$-cw0') returns @('nil'), which makes it
+ impossible to convert to a soft error (returning @('state')).  More on that is
+ below.</p>
 
  <p><b>SOLUTION</b>.  Convert warnings to hard errors, @('(er hard ...)'),
  which are really aborts.</p>
@@ -3582,7 +3583,7 @@
  <h4>COMPLICATION 1: COMMENT-WINDOW WARNINGS</h4>
 
  <p>Note that while @('warning$') takes and returns @(tsee state),
- @('warning$-cw') does &ldquo;comment window&rdquo; printing without taking or
+ @('warning$-cw0') does &ldquo;comment window&rdquo; printing without taking or
  returning state.</p>
 
  <p>The definitions of @('warning$') and @('warning$-cw1') lead to similar

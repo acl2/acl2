@@ -14,26 +14,14 @@
 (include-book "omni-paths")
 (include-book "anchors-extension")
 
+(local (include-book "../library-extensions/arithmetic-theorems"))
+
 (local (include-book "arithmetic-3/top" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
 (set-induction-depth-limit 0)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defruledl evenp-of-1-less-when-not-evenp
-  (implies (and (integerp x)
-                (not (evenp x)))
-           (evenp (1- x)))
-  :enable evenp)
-
-(defruledl evenp-of-3-less-when-not-evenp
-  (implies (and (integerp x)
-                (not (evenp x)))
-           (evenp (- x 3)))
-  :enable evenp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -377,8 +365,9 @@
                                                    vstate.blockchain
                                                    (all-addresses systate))))
                       (append anchors
-                              (committed-anchors (get-validator-state val systate)
-                                                 (all-addresses systate))))))
+                              (committed-anchors
+                               (get-validator-state val systate)
+                               (all-addresses systate))))))
     :enable (committed-anchors
              validator-state->last-of-commit-anchors-next
              validator-state->blockchain-of-commit-anchors-next
@@ -389,8 +378,8 @@
              certificates-ordered-even-p-of-collect-anchors
              certificate->round-of-certificate-with-author+round
              commit-anchors-possiblep
-             evenp-of-1-less-when-not-evenp
-             evenp-of-3-less-when-not-evenp
+             aleobft::evenp-of-1-less-when-not-evenp
+             aleobft::evenp-of-3-less-when-not-evenp
              active-committee-at-previous-round-when-at-round
              evenp-of-blocks-last-round
              pos-fix
@@ -463,8 +452,9 @@
                                                    vstate.blockchain
                                                    (all-addresses systate))))
                       (append anchors
-                              (committed-anchors (get-validator-state val systate)
-                                                 (all-addresses systate))))))
+                              (committed-anchors
+                               (get-validator-state val systate)
+                               (all-addresses systate))))))
     :enable (committed-anchors
              validator-state->last-of-commit-anchors-next
              validator-state->blockchain-of-commit-anchors-next
@@ -532,15 +522,17 @@
                                       vstate.blockchain
                                       (all-addresses systate)))
                              (leader (leader-at-round round commtt))
-                             (anchor (certificate-with-author+round leader
-                                                                    round
-                                                                    vstate.dag))
-                             (anchors (collect-anchors anchor
-                                                       (- round 2)
-                                                       vstate.last
-                                                       vstate.dag
-                                                       vstate.blockchain
-                                                       (all-addresses systate))))
+                             (anchor (certificate-with-author+round
+                                      leader
+                                      round
+                                      vstate.dag))
+                             (anchors (collect-anchors
+                                       anchor
+                                       (- round 2)
+                                       vstate.last
+                                       vstate.dag
+                                       vstate.blockchain
+                                       (all-addresses systate))))
                           (append anchors
                                   (committed-anchors
                                    (get-validator-state val1 systate)
@@ -574,15 +566,17 @@
                                          vstate.blockchain
                                          (all-addresses systate)))
                                 (leader (leader-at-round round commtt))
-                                (anchor (certificate-with-author+round leader
-                                                                       round
-                                                                       vstate.dag))
-                                (anchors (collect-anchors anchor
-                                                          (- round 2)
-                                                          vstate.last
-                                                          vstate.dag
-                                                          vstate.blockchain
-                                                          (all-addresses systate))))
+                                (anchor (certificate-with-author+round
+                                         leader
+                                         round
+                                         vstate.dag))
+                                (anchors (collect-anchors
+                                          anchor
+                                          (- round 2)
+                                          vstate.last
+                                          vstate.dag
+                                          vstate.blockchain
+                                          (all-addresses systate))))
                              (append anchors
                                      (committed-anchors
                                       (get-validator-state val1 systate)
@@ -705,8 +699,8 @@
               blocks-ordered-even-p-of-extend-blockchain
               certificates-ordered-even-p-of-collect-anchors
               certificate->round-of-certificate-with-author+round
-              evenp-of-1-less-when-not-evenp
-              evenp-of-3-less-when-not-evenp
+              aleobft::evenp-of-1-less-when-not-evenp
+              aleobft::evenp-of-3-less-when-not-evenp
               posp
               last-blockchain-round-p-necc
               collect-anchors-above-last-committed-round

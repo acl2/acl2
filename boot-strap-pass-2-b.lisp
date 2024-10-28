@@ -733,8 +733,6 @@
      (add-macro-alias ,old ,new)
      (value-triple ',old)))
 
-(defdeprecate get-wormhole-status get-persistent-whs "8.5")
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; End
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

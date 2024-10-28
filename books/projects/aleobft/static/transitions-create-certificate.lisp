@@ -347,7 +347,7 @@
              nfix
              validator-state->last-of-add-endorsed))
 
-  (defrule validator-state->blockchain-of-create-certificate-next
+  (defruled validator-state->blockchain-of-create-certificate-next
     (implies (set::in val (correct-addresses systate))
              (equal (validator-state->blockchain
                      (get-validator-state val
@@ -359,7 +359,7 @@
              get-validator-state-of-update-validator-state
              validator-state->blockchain-of-add-endorsed))
 
-  (defrule validator-state->committed-of-create-certificate-next
+  (defruled validator-state->committed-of-create-certificate-next
     (implies (set::in val (correct-addresses systate))
              (equal (validator-state->committed
                      (get-validator-state val
@@ -371,7 +371,7 @@
              get-validator-state-of-update-validator-state
              validator-state->committed-of-add-endorsed))
 
-  (defrule get-network-state-of-create-certificate-next
+  (defruled get-network-state-of-create-certificate-next
     (implies (set::subset (certificate->endorsers cert)
                           (all-addresses systate))
              (equal (get-network-state

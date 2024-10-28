@@ -28861,7 +28861,7 @@ Lisp definition."
 #+acl2-par
 (defmacro warning$@par (&rest rst)
 
-; We do not simply just call warning$-cw, because we actually have state
+; We do not simply just call warning$0-cw, because we actually have state
 ; available when we use warning$@par.
 
   `(let ((state-vars (default-state-vars t))

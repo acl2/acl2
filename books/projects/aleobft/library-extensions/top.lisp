@@ -11,6 +11,7 @@
 
 (in-package "ALEOBFT")
 
+(include-book "arithmetic-theorems")
 (include-book "oset-theorems")
 (include-book "omap-theorems")
 (include-book "lists-noforkp")
@@ -31,7 +32,8 @@
     "These are not specific to AleoBFT,
      so they will be moved to more general libraries.
      This is a convenient place to collect them temporarily."))
-  :order-subtopics (oset-theorems
+  :order-subtopics (arithmetic-theorems
+                    oset-theorems
                     omap-theorems
                     lists-noforkp)
   :default-parent t)

@@ -174,7 +174,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled dag-round-in-committee-p-invariant
+(defruled rounds-in-committees-p-invariant
   :short "Proof of the invariant from other invariants."
   :long
   (xdoc::topstring
