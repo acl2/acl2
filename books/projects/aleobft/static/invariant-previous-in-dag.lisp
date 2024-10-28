@@ -163,7 +163,8 @@
             (receive-certificate-next msg systate)))
   :expand (system-previous-in-dag-p
            (receive-certificate-next msg systate))
-  :enable system-previous-in-dag-p-necc)
+  :enable (system-previous-in-dag-p-necc
+           validator-state->dag-of-receive-certificate-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

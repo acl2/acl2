@@ -146,8 +146,13 @@
    (xdoc::h3 "Miscellaneous")
 
    (xdoc::p
-     "Books based on @(tsee run-script) now certify even when gag-mode has been
-      set in advance, say, by an @(see acl2-customization) file.")
+    "Books based on @(tsee run-script) now certify even when gag-mode has been
+     set in advance, say, by an @(see acl2-customization) file.")
+
+   (xdoc::p
+    "Tests run by certifying @('kestrel/acl2data/gather/tests/run-tests.lisp')
+     would fail when environment variable @('ACL2_CUSTOMIZATION') was set.
+     That bug has been fixed.")
 
    ))
 

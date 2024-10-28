@@ -128,7 +128,8 @@
              (last-anchor (get-validator-state
                            val (receive-certificate-next msg systate))
                           (all-addresses systate)))
-    :enable last-anchor)
+    :enable (last-anchor
+             validator-state->dag-of-receive-certificate-next))
 
   (defrule system-last-anchor-present-p-of-receive-certificate-next
     (implies (and (system-last-anchor-present-p systate)

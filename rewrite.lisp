@@ -19600,8 +19600,15 @@ its attachment is ignored during proofs"))))
 ; open.
 
                     (prog2$
+
+; As of this writing (shortly after the Version_8.6 release) the brr-result,
+; :rewritten-rhs-avoided, supplied below, is not referenced elsewhere in our
+; code or documentation.  However, it may be occasionally printed as the result
+; of rewriting and is intended to be self-explanatory.
+
                      (brkpt2 nil 'too-many-ifs-pre-rewrite unify-subst gstack
-                             :rewriten-rhs-avoided ttree rcnst ancestors state)
+                             :rewritten-rhs-avoided ttree rcnst ancestors
+                             state)
                      (prepend-step-limit
                       2
                       (rewrite-solidify term type-alist obj geneqv

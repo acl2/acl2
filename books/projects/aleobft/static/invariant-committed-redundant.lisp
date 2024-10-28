@@ -152,8 +152,8 @@
               (all-addresses systate)))
     :enable (validator-committed-redundantp
              system-last-anchor-present-p-necc
-             validator-state->last-of-create-certificate-next)
-    :disable validator-state->dag-of-create-certificate-next)
+             validator-state->last-of-create-certificate-next
+             validator-state->committed-of-create-certificate-next))
 
   (defrule system-committed-redundantp-of-create-certificate-next
     (implies (and (system-committed-redundantp systate)

@@ -532,13 +532,18 @@
     (equal (validator-state->blockchain new-vstate)
            (validator-state->blockchain vstate)))
 
+  (defret validator-state->committed-of-create-certificate-author-next
+    (equal (validator-state->committed new-vstate)
+           (validator-state->committed vstate)))
+
   (in-theory
    (disable
     validator-state->dag-of-create-certificate-author-next
     validator-state->buffer-of-create-certificate-author-next
     validator-state->endorsed-of-create-certificate-author-next
     validator-state->last-of-create-certificate-author-next
-    validator-state->blockchain-of-create-certificate-author-next)))
+    validator-state->blockchain-of-create-certificate-author-next
+    validator-state->committed-of-create-certificate-author-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -593,13 +598,18 @@
     (equal (validator-state->blockchain new-vstate)
            (validator-state->blockchain vstate)))
 
+  (defret validator-state->committed-of-create-certificate-endorser-next
+    (equal (validator-state->committed new-vstate)
+           (validator-state->committed vstate)))
+
   (in-theory
    (disable
     validator-state->dag-of-create-certificate-endorser-next
     validator-state->buffer-of-create-certificate-endorser-next
     validator-state->endorsed-of-create-certificate-endorser-next
     validator-state->last-of-create-certificate-endorser-next
-    validator-state->blockchain-of-create-certificate-endorser-next)))
+    validator-state->blockchain-of-create-certificate-endorser-next
+    validator-state->committed-of-create-certificate-endorser-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -723,6 +733,17 @@
           validator-state->blockchain-of-create-certificate-endorser-next
           get-validator-state-of-update-validator-state))))
 
+     (defret validator-state->committed-of-create-certificate-endorsers-next-loop
+       (equal (validator-state->committed (get-validator-state val new-systate))
+              (validator-state->committed (get-validator-state val systate)))
+       :hints
+       (("Goal"
+         :induct t
+         :in-theory
+         (enable
+          validator-state->committed-of-create-certificate-endorser-next
+          get-validator-state-of-update-validator-state))))
+
      (defret get-network-state-of-create-certificate-endorsers-next-loop
        (equal (get-network-state new-systate)
               (get-network-state systate))
@@ -770,6 +791,10 @@
     (equal (validator-state->blockchain (get-validator-state val new-systate))
            (validator-state->blockchain (get-validator-state val systate))))
 
+  (defret validator-state->committed-of-create-certificate-endorsers-next
+    (equal (validator-state->committed (get-validator-state val new-systate))
+           (validator-state->committed (get-validator-state val systate))))
+
   (defret get-network-state-of-create-certificate-endorsers-next
     (equal (get-network-state new-systate)
            (get-network-state systate)))
@@ -781,12 +806,14 @@
     validator-state->endorsed-of-create-certificate-endorsers-next-loop
     validator-state->last-of-create-certificate-endorsers-next-loop
     validator-state->blockchain-of-create-certificate-endorsers-next-loop
+    validator-state->committed-of-create-certificate-endorsers-next-loop
     get-network-state-of-create-certificate-endorsers-next-loop
     validator-state->dag-of-create-certificate-endorsers-next
     validator-state->buffer-of-create-certificate-endorsers-next
     validator-state->endorsed-of-create-certificate-endorsers-next
     validator-state->last-of-create-certificate-endorsers-next
     validator-state->blockchain-of-create-certificate-endorsers-next
+    validator-state->committed-of-create-certificate-endorsers-next
     get-network-state-of-create-certificate-endorsers-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -974,6 +1001,17 @@
        validator-state->blockchain-of-create-certificate-endorsers-next
        get-validator-state-of-update-validator-state))))
 
+  (defret validator-state->committed-of-create-certificate-next
+    (equal (validator-state->committed (get-validator-state val new-systate))
+           (validator-state->committed (get-validator-state val systate)))
+    :hints
+    (("Goal"
+      :in-theory
+      (enable
+       validator-state->committed-of-create-certificate-author-next
+       validator-state->committed-of-create-certificate-endorsers-next
+       get-validator-state-of-update-validator-state))))
+
   (defret get-network-state-of-create-certificate-next
     (equal (get-network-state new-systate)
            (set::union (get-network-state systate)
@@ -990,4 +1028,5 @@
                       validator-state->endorsed-of-create-certificate-next
                       validator-state->last-of-create-certificate-next
                       validator-state->blockchain-of-create-certificate-next
+                      validator-state->committed-of-create-certificate-next
                       get-network-state-of-create-certificate-next)))

@@ -97,11 +97,7 @@
 (defthm bv-array-clear-1-0
   (equal (bv-array-clear width 1 0 data)
          '(0))
-  :hints (("Goal" :in-theory (e/d (bv-array-clear update-nth2 ;list::clear-nth
-                                                  )
-                                  (;LIST::UPDATE-NTH-BECOMES-CLEAR-NTH
-                                   ;;LIST::UPDATE-NTH-EQUAL-REWRITE
-                                   )))))
+  :hints (("Goal" :in-theory (enable bv-array-clear update-nth2))))
 
 (defun bv-array-clear-range (esize len lowindex highindex data)
   (declare (xargs :measure (+ 1 (nfix (+ 1 (- highindex lowindex))))
