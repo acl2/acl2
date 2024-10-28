@@ -371,7 +371,7 @@
              get-validator-state-of-update-validator-state
              validator-state->committed-of-add-endorsed))
 
-  (defrule get-network-state-of-create-certificate-next
+  (defruled get-network-state-of-create-certificate-next
     (implies (set::subset (certificate->endorsers cert)
                           (all-addresses systate))
              (equal (get-network-state
