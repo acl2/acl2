@@ -353,6 +353,11 @@
         (er hard? 'make-rule-alist! "Error making rule alist.")
       rule-alist)))
 
+(defthm rule-alistp-of-make-rule-alist!
+  (implies (symbol-listp rule-names)
+           (rule-alistp (make-rule-alist! rule-names wrld)))
+  :hints (("Goal" :in-theory (enable make-rule-alist!))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp rule-alist).
