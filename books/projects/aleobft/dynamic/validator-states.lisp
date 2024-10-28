@@ -256,7 +256,7 @@
       we have proved that this committed certificates state component
       is redundant, calculable from other state components.
       The same should be the case for dynamic committees.
-      However, for the same reason outlines above for the blockchain component,
+      However, for the same reason outlined above for the blockchain component,
       it is best to leave this component in the state,
       for a more natural definition of the state transitions,
       and to prove later its redundancy.")

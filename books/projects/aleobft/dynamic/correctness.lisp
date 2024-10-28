@@ -42,6 +42,7 @@
 (include-book "omni-paths")
 (include-book "anchors-extension")
 (include-book "committed-anchor-sequences")
+(include-book "nonforking-anchors")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -86,6 +87,7 @@
                     last-anchor-voters
                     omni-paths
                     anchors-extension
-                    committed-anchors-sequences))
+                    committed-anchors-sequences
+                    nonforking-anchors))
 
 ; TODO: continue

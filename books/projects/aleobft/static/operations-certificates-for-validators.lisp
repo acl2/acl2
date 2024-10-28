@@ -195,6 +195,7 @@
            certificates-for-validator
            validator-state->dag-of-create-certificate-next
            validator-state->buffer-of-create-certificate-next
+           get-network-state-of-create-certificate-next
            set::expensive-rules))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

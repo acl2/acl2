@@ -49,8 +49,7 @@ cd runs
 # "warning: -jN forced in submake: disabling jobserver mode."
 # But I'm leaving it in, below, in case some day this issue is
 # resolved; it's certainly harmless to leave it in.
-(export ACL2_CUSTOMIZATION=`pwd`/customize-tests.lsp ; \
-$ACL2_SYSTEM_BOOKS/build/cert.pl $par --acl2 $ACL2 test test2 test2a test2b test3 test3a test4 test5 test6 test7a test7b test8 $test9 test-empty) || echo "Failure for kestrel/acl2data/gather/tests/"
+($ACL2_SYSTEM_BOOKS/build/cert.pl $par --acl2 $ACL2 test test2 test2a test2b test3 test3a test4 test5 test6 test7a test7b test8 $test9 test-empty) || echo "Failure for kestrel/acl2data/gather/tests/"
 
 # Avoid any future certification in runs.  The directory will be
 # deleted before the next attempt to run tests (see "rm -rf runs"

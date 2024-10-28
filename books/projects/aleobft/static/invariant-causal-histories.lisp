@@ -94,7 +94,8 @@
                     (certificate-causal-history
                      cert1
                      (validator-state->dag
-                      (get-validator-state val systate))))))
+                      (get-validator-state val systate)))))
+    :enable validator-state->dag-of-receive-certificate-next)
 
   (defrule certificate-causal-history-of-store-certificate-next
     (implies (and (system-signers-are-validators-p systate)
