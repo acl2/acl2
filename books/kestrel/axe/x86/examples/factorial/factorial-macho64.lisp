@@ -1,7 +1,7 @@
 ; Lifts and verifies an x86 factorial, without unrolling loops
 ;
 ; Copyright (C) 2017-2021 Kestrel Technology, LLC
-; Copyright (C) 2023 Kestrel Institute
+; Copyright (C) 2023-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -33,7 +33,6 @@
 (apt::set-default-input-old-to-new-enable t) ; for tailrec
 
 (local (in-theory (enable acl2::bvchop-of-+-becomes-bvplus)))
-(local (in-theory (disable acl2::sbvlt-rewrite))) ;todo
 
 ;; TODO: Consider using a higher-level spec that doesn't use BV operations.
 (defund factorial-spec (n)
@@ -81,7 +80,7 @@
 
 ;; Rename the params to match the spec:
 (def factorial-loop-1.4
-  (acl2::rename-params factorial-loop-1.3 ((var20 n) (var16 acc))))
+  (rename-params factorial-loop-1.3 ((var20 n) (var16 acc))))
 
 ;; needed for final theorem below
 (defthm unsigned-byte-p-32-of-factorial-loop-1.4
