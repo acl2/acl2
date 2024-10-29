@@ -3064,7 +3064,15 @@
       "Since our currently approximate type system
        does not handle @('typedef') types,
        we just regard it as denoting an unknown type.
-       No type specifier may precede this one."))
+       No type specifier may precede this one.")
+     (xdoc::p
+      "For now, for simplicity, we regard
+       all the type specifiers that are GCC extensions
+       to determine the unknown type;
+       except for an empty structure type specifier,
+       which determines the structure type.
+       None of them may be preceded by other type specifiers,
+       so we check that."))
     (b* (((reterr) nil nil (irr-valid-table))
          ((when type?)
           (reterr (msg "Since the type ~x0 has been determined, ~
@@ -3242,7 +3250,35 @@
                        (retok (type-unknown) nil same-table))
                       (t ; other typedef...
                        (reterr msg-bad-preceding)))
-       :otherwise (reterr :todo)))
+       :int128 (cond ((endp tyspecs) ; __int128
+                      (retok (type-unknown) nil same-table))
+                     (t ; other __int128
+                      (reterr msg-bad-preceding)))
+       :float128 (cond ((endp tyspecs) ; _Float128
+                        (retok (type-unknown) nil same-table))
+                       (t ; other _Float128
+                        (reterr msg-bad-preceding)))
+       :builtin-va-list (cond ((endp tyspecs) ; __buildin_va_list
+                               (retok (type-unknown) nil same-table))
+                              (t ; other __buildin_va_list
+                               (reterr msg-bad-preceding)))
+       :struct-empty (cond ((endp tyspecs) ; struct... {}
+                            (retok (type-struct) nil same-table))
+                           (t ; other struct... {}
+                            (reterr msg-bad-preceding)))
+       :typeof-expr (cond ((endp tyspecs) ; typeof...
+                           (retok (type-unknown) nil same-table))
+                          (t ; other typeof...
+                           (reterr msg-bad-preceding)))
+       :typeof-type (cond ((endp tyspecs) ; typeof...
+                           (retok (type-unknown) nil same-table))
+                          (t ; other typeof...
+                           (reterr msg-bad-preceding)))
+       :auto-type (cond ((endp tyspecs) ; __auto_type
+                         (retok (type-unknown) nil same-table))
+                        (t ; other __auto_type
+                         (reterr msg-bad-preceding)))
+       :otherwise (prog2$ (impossible) (reterr t))))
     :measure (type-spec-count tyspec)
 
     ///
