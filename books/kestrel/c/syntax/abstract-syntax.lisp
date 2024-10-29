@@ -1823,7 +1823,7 @@
     (:tyspec ((unwrap type-spec)))
     (:tyqual ((unwrap type-qual)))
     (:align ((unwrap align-spec)))
-    (:attrib ((unwrap attrib-spec)))
+    (:attrib ((unwrap attrib-spec))) ; GCC extension
     :pred spec/qual-p
     :measure (two-nats-measure (acl2-count x) 0))
 
