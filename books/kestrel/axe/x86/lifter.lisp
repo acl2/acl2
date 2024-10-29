@@ -48,6 +48,13 @@
 (include-book "x86-rules")
 (include-book "../bitops-rules")
 (include-book "../logops-rules-axe")
+;(include-book "../rules2") ;for BACKCHAIN-SIGNED-BYTE-P-TO-UNSIGNED-BYTE-P-NON-CONST
+;(include-book "../basic-rules")
+(include-book "../rewriter") ; todo: for simp-term
+(include-book "../rules-in-rule-lists")
+;(include-book "../rules1") ;for ACL2::FORCE-OF-NON-NIL, etc.
+(include-book "../dags2") ; for compose-term-and-dags
+(include-book "../arithmetic-rules-axe")
 ;(include-book "kestrel/x86/if-lowering" :dir :system)
 (include-book "kestrel/utilities/get-vars-from-term" :dir :system)
 (include-book "kestrel/x86/readers-and-writers64" :dir :system)
@@ -71,23 +78,15 @@
 (include-book "kestrel/x86/floats" :dir :system)
 (include-book "kestrel/x86/conditions" :dir :system)
 (include-book "kestrel/x86/if-lowering" :dir :system)
-(include-book "kestrel/axe/rewriter" :dir :system)
 (include-book "kestrel/utilities/ints-in-range" :dir :system)
 (include-book "kestrel/utilities/doublets2" :dir :system)
 (include-book "kestrel/utilities/if" :dir :system)
 (include-book "kestrel/utilities/if-rules" :dir :system)
 (include-book "kestrel/booleans/booleans" :dir :system)
-(include-book "kestrel/axe/rules-in-rule-lists" :dir :system)
-;(include-book "kestrel/axe/rules2" :dir :system) ;for BACKCHAIN-SIGNED-BYTE-P-TO-UNSIGNED-BYTE-P-NON-CONST
-;(include-book "axe/basic-rules" :dir :kestrel-acl2)
 (include-book "kestrel/bv/arith" :dir :system) ;todo
 (include-book "kestrel/bv/intro" :dir :system)
 (include-book "kestrel/bv/rtl" :dir :system)
 (include-book "kestrel/bv/convert-to-bv-rules" :dir :system)
-;(include-book "kestrel/arithmetic-light/mod" :dir :system)
-;(include-book "kestrel/axe/rules1" :dir :system) ;for ACL2::FORCE-OF-NON-NIL, etc.
-(include-book "../dags2") ; for compose-term-and-dags
-(include-book "../arithmetic-rules-axe")
 (include-book "kestrel/utilities/progn" :dir :system)
 (include-book "kestrel/utilities/unify" :dir :system)
 (include-book "kestrel/alists-light/lookup-safe" :dir :system)
@@ -173,23 +172,26 @@
 ;; This version returns a term
 ;; TODO: Rename
 ;; Returns (mv erp term state).
-;why is this a macro?
-(defmacro acl2::simp-term-to-term (term rules &rest rest)
-  `(mv-let (erp dag)
-     (acl2::make-term-into-dag (acl2::check-arities ,term)
-                               nil ;fixme interpreted-function-alist
-                               )
-     (if erp
-         (mv erp nil state)
-       (mv-let (erp dag-lst-or-quotep state)
-         (simp-dag dag
-                   :rules ,rules
-                   ,@rest)
-         (if erp
-             (mv erp nil state)
-           (mv (erp-nil)
-               (dag-to-term dag-lst-or-quotep)
-               state))))))
+(defun acl2::simp-term-to-term (term rules assumptions monitor state)
+  (declare (xargs :stobjs state
+                  :mode :program ; todo
+                  ))
+  (mv-let (erp dag)
+    (acl2::make-term-into-dag (acl2::check-arities term)
+                              nil ;todo: interpreted-function-alist
+                              )
+    (if erp
+        (mv erp nil state)
+      (mv-let (erp dag-lst-or-quotep state)
+        (simp-dag dag
+                  :rules rules
+                  :assumptions assumptions
+                  :monitor monitor)
+        (if erp
+            (mv erp nil state)
+          (mv (erp-nil)
+              (dag-to-term dag-lst-or-quotep)
+              state))))))
 
 ;; Test whether the stack height of X86 is less than it was when the stack pointer was OLD-RSP.
 ;; Since the stack grows from high to low, the stack height is less when the RSP is greater.
@@ -569,7 +571,7 @@
                     '(x86isa::xr-of-myif ; maybe drop
                       x86isa::xr-of-if))
             remove-rules)
-           :assumptions assumptions))
+           assumptions nil state))
          ((when erp) (mv erp nil nil nil state)))
       (if (not (quotep exitp))
           (prog2$ (er hard 'analyze-loop-body-aux "Failed to decide whether branch has exited the loop.  Result: ~X01." exitp nil)
@@ -600,7 +602,8 @@
                 (acl2::simp-term-to-term exit-test-term
                                          (append lifter-rules
                                                  (myif-rules) ;simplify myif of t and t, myif of t and nil, etc.
-                                                 )))
+                                                 )
+                                         nil nil state))
                ((when erp) (mv erp nil nil nil state)))
             (mv (erp-nil) one-rep-term exit-term exit-test-term state)))))))
 
@@ -1063,10 +1066,7 @@
                  (cw "Missing :monitored rules: ~x0.~%" (set-difference-eq rules-to-monitor rules))))
          ;; Try to prove the invariant by rewriting:
          ((mv erp simplified-invariant state)
-          (acl2::simp-term-to-term term-to-prove
-                                   rules
-                                   :assumptions assumptions
-                                   :monitor rules-to-monitor))
+          (acl2::simp-term-to-term term-to-prove rules assumptions rules-to-monitor state))
          ((when erp) (mv erp nil nil state)))
       (if (equal *t* simplified-invariant)
           (prog2$ (cw "Proved it!)~%")

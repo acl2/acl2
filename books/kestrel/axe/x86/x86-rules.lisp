@@ -22,10 +22,10 @@
 (include-book "kestrel/x86/assumptions32" :dir :system) ; for return-address-okp
 (include-book "kestrel/x86/conditions" :dir :system) ; for jnl-condition
 (include-book "kestrel/x86/run-until-return" :dir :system)
-(include-book "kestrel/axe/axe-syntax" :dir :system)
-(include-book "kestrel/axe/known-booleans" :dir :system)
-(include-book "kestrel/axe/axe-syntax-functions-bv" :dir :system) ; for term-should-be-trimmed-axe
-(include-book "kestrel/axe/axe-syntax-functions" :dir :system)
+(include-book "../axe-syntax")
+(include-book "../known-booleans")
+(include-book "../axe-syntax-functions-bv") ; for term-should-be-trimmed-axe
+(include-book "../axe-syntax-functions")
 (include-book "kestrel/bv-lists/bv-array-read-chunk-little" :dir :system)
 (local (include-book "kestrel/utilities/mv-nth" :dir :system))
 
