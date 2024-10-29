@@ -660,7 +660,7 @@
 ;; (defun dag-equal-term (dag term state)
 ;;   (declare (xargs :guard (pseudo-termp term)
 ;;                   :mode :program
-;;                   :stobjs (state)
+;;                   :stobjs state
 ;;                   :verify-guards nil)) ;add a guard about dag
 ;;   (mv-let (simplified-equality-dag state)
 ;; ;call simplify-dag or something (like a quick version)?
@@ -713,7 +713,7 @@
 
 ;returns (mv erp res state)
 (defun ads-dont-aliasp (ad1 ad2 assumptions rule-alist state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (b* ((- (cw "(Proving that ads ~x0 and ~x1 don't alias.~%" ad1 ad2))
        ((mv erp disequality-dag) (make-disequality-dag ad1 ad2))
        ((when erp) (mv erp nil state))
@@ -736,7 +736,7 @@
 
 ;returns (mv erp res state)
 (defun ad-doesnt-alias-anyp (ad ads assumptions rule-alist state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (if (endp ads)
       (mv (erp-nil) t state)
     (mv-let (erp result state)
@@ -752,7 +752,7 @@
 ;really this takes a list, not a set
 ;returns (mv erp res state)
 (defun no-aliases-in-setp (set-of-ads assumptions rule-alist state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (if (endp set-of-ads)
       (mv (erp-nil) t state)
     (mv-let (erp result state)
@@ -765,7 +765,7 @@
 
 ;returns (mv erp res state)
 (defun no-aliases-in-setsp (sets-of-ads assumptions rule-alist state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (if (endp sets-of-ads)
       (mv (erp-nil) t state)
     (mv-let (erp result state)
@@ -782,7 +782,7 @@
 ;then for each set of addresses, try to prove each pair distinct - TTODO: might need additional invariants for this?
 ;each pair is of the form (list address-dag class-and-field-name)
 (defun no-aliasesp (heap-pairs assumptions state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (if (no-duplicatesp-equal heap-pairs)
       (no-aliases-in-setsp (separate-pairs-by-class-name-and-field-name heap-pairs) assumptions
                            (make-rule-alist! (append ;(new-ad-rules) drop
@@ -2445,7 +2445,7 @@
 ;returns (mv erp result state)
 ;pass in the thread id?
 (defun get-dag-pc (dag hyps state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (b* (((mv erp dag2)
         (compose-term-and-dag `(JVM::pc (jvm::thread-top-frame (th) replace-me))
                               'replace-me
@@ -2503,7 +2503,7 @@
 ;for each expr we make a claim that it is equal to the result of putting in initial-state-dag for state-var
 ;fixme - should we simplify these?
 (defun make-unchangedness-invariants-for-exprs (exprs state-var initial-state-dag acc extra-vars state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (if (endp exprs)
       (mv (erp-nil) acc state)
     (let* ((expr (first exprs))
@@ -2531,7 +2531,7 @@
 ;returns (mv erp result state)
 ;fixme pass in ifns?
 (defun simplify-all-terms-with-assumption (terms assumption-term state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (if (endp terms)
       (mv (erp-nil) nil state)
     (b* ((term (first terms))
@@ -2561,7 +2561,7 @@
                                   rule-alist
                                   state-var interpreted-function-alist
                                   print state)
-  (declare (xargs :mode :program :stobjs (state))
+  (declare (xargs :mode :program :stobjs state)
 ;           (irrelevant print)
            )
   (if (endp conjuncts)
@@ -2617,7 +2617,7 @@
                                this-loop-number
                                failed-candidate-invars-acc ;the ones that have failed so far
                                state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (if (endp candidate-invars)
       (mv (erp-nil) failed-candidate-invars-acc state)
     (b* ((conjunct-term (first candidate-invars))
@@ -2696,7 +2696,7 @@
                                                         generated-events-acc ;to be stored in the state in case of failure, covers the entire lift
                                                         state)
   (declare (xargs :mode :program
-                  :stobjs (state)))
+                  :stobjs state))
   (if (endp candidate-invars)
       (mv (erp-nil) candidate-invars-acc state)
     (b* ((candidate-invar (first candidate-invars))
@@ -2752,7 +2752,7 @@
                                                     generated-events-acc ;to be stored in the state in case of failure, covers the entire lift
                                                     state)
   (declare (xargs :mode :program
-                  :stobjs (state)))
+                  :stobjs state))
   (b* ((- (cw "(Checking that candidate invariants hold initially:~%"))
        ((mv erp candidate-invars-that-hold-initially state)
         (filter-candidate-invars-that-hold-initially-aux candidate-invars
@@ -2831,7 +2831,7 @@
 ;result may be quoted
 ;returns (mv erp result state)
 (defun get-pc-of-nodenum (nodenum dag state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (get-dag-pc (drop-nodes-past nodenum dag) nil ;bozo
               state))
 
@@ -2841,7 +2841,7 @@
 ;use this more?
 ;state-var must not be replace-me
 (defun stack-height-comparison (dag state-var state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (b* (((mv erp dag2)
         (compose-term-and-dag-safe `(comparison (jvm::call-stack-size (jvm::call-stack (th) replace-me))
                                                 (jvm::call-stack-size (jvm::call-stack (th) ,state-var)))
@@ -2857,7 +2857,7 @@
 
 ;; Returns (mv erp res state).
 (defun stack-height-comparison-for-nodenum (nodenum dag state-var state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (stack-height-comparison (drop-nodes-past nodenum dag) state-var state))
 
 ; dag is a myif nest with states at the leaves.
@@ -2868,7 +2868,7 @@
 ;; Returns (mv erp dag state).
 (defun replace-states-with-t-and-nil (dag loop-pc ;other-loop-pcs ;fixme use this to determine whether we have exited the loop?
                                           state-var state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (if (endp dag)
       (mv (erp-nil) nil state)
     (let* ((entry (car dag))
@@ -2931,7 +2931,7 @@
 ;; to compute the termination test, we put in t for all states that have exited the loop and nil for all states that have not
 (defun get-termination-test-dag (body-dag loop-pc ;other-loop-pcs
                                           state-var state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (if (quotep body-dag)
       (mv (erp-t) (hard-error 'get-termination-test-dag "unexpected quotep" nil) state)
     (mv-let (erp body-dag state)
@@ -2947,7 +2947,7 @@
 ;puts in 'replace-me-dont-reuse for states that are back at the top of the loop
 (defun replace-loop-states (dag loop-pc ;other-loop-pcs
                                 state-var state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (if (endp dag)
       (mv (erp-nil) nil state)
     (let* ((entry (car dag))
@@ -3012,7 +3012,7 @@
 ;fixme instead of handling every node in the dag, walk through the top ite nest?
 (defun replace-non-loop-states (dag loop-pc ;other-loop-pcs
                                     state-var state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (if (endp dag)
       (mv (erp-nil) nil state)
     (let* ((entry (car dag))
@@ -3077,7 +3077,7 @@
 ;; Returns (mv erp one-rep-dag state).
 (defun get-one-rep-dag (body-dag loop-pc ;other-loop-pcs
                                  state-var state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (if (quotep body-dag)
       (mv (erp-t) (hard-error 'get-one-rep-dag "unexpected quotep" nil) state)
 ;this uses rewriting to get rid of the non-loop branches - a bit awkward?
@@ -3093,7 +3093,7 @@
 ;; Returns (mv erp exit-dag state).
 (defun get-exit-dag (body-dag loop-pc ;other-loop-pcs
                               state-var state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (if (quotep body-dag)
       (mv (erp-t) (hard-error 'get-exit-dag "unexpected quotep" nil) state)
     ;;this uses rewriting to get rid of the loop branches - a bit awkward?
@@ -3111,13 +3111,13 @@
 
 ;; Returns (mv erp heap-dag state).
 (defun get-heap-dag (state-dag state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (quick-simp-composed-term-and-dag `(jvm::heap replace-me) 'replace-me state-dag
                                     :rule-alist *state-component-extraction-axe-rule-alist*))
 
 ;returns (mv erp local-dag state)
 (defun get-local-dag (localnum state-dag state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (quick-simp-composed-term-and-dag `(jvm::nth-local ',localnum (jvm::locals (jvm::thread-top-frame (th) s))) 's state-dag
                                     :rule-alist *get-local-axe-rule-alist*
                                     :remove-duplicate-rulesp nil))
@@ -3140,7 +3140,7 @@
                                         paramnum-extractor-alist
                                         paramnum-name-alist
                                         state)
-  (declare (xargs :mode :program :measure (nfix (+ 1 local-num)) :stobjs (state)))
+  (declare (xargs :mode :program :measure (nfix (+ 1 local-num)) :stobjs state))
   (if (not (natp local-num))
       (mv (erp-nil) next-param-number updated-state-term paramnum-update-alist paramnum-extractor-alist paramnum-name-alist state)
     (b* ((local-name-and-type (lookup-in-local-variable-table local-num pc local-variable-table)) ;might be nil
@@ -3342,7 +3342,7 @@
 ;;TTTODO: This seems to depend on brittle node ordering in the DAG.  Do something better?
 ;(skip-proofs
 (defun find-read-only-params (dag dag-paramnum-alist next-param-number paramnum-name-alist state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (if (quotep dag) ;fixme this is new - add support for quotep dags elsewhere?
       (mv (erp-nil) dag dag-paramnum-alist next-param-number paramnum-name-alist state)
     (let* ((dag-var-array (make-dag-var-array dag))
@@ -3398,7 +3398,7 @@
 
 ;;returns (mv erp dags new-param-term-alist next-param-number paramnum-name-alist state)
 (defun find-read-only-params-lst (dags dag-paramnum-alist next-param-number dags-acc paramnum-name-alist state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (if (endp dags)
       (mv (erp-nil) (reverse dags-acc) (swap-pairs dag-paramnum-alist) next-param-number paramnum-name-alist state)
     (mv-let (erp dag dag-paramnum-alist next-param-number paramnum-name-alist state)
@@ -3421,7 +3421,7 @@
              (make-replacement-alist (cdr paramnum-dag-alist))))))
 
 ;; (defun make-initial-value-dags (param-term-alist loop-top-state-dag state-var state)
-;;    (declare (xargs :mode :program :stobjs (state)))
+;;    (declare (xargs :mode :program :stobjs state))
 ;;    (if (endp param-term-alist)
 ;;       (mv nil state)
 ;;     (let* ((entry (car param-term-alist))
@@ -3599,7 +3599,7 @@
 ;; dRreturns (mv erp invars state).
 ;(skip-proofs
 (defun invariants-about-heap-aux (nodenum dag heap-core class-table-map extra-invarsp interpreted-function-alist acc state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (if (quotep nodenum)
       (mv (erp-t)
           (hard-error 'invariants-about-heap-aux "I am surprised to see a constant heap." nil)
@@ -3727,7 +3727,7 @@
 ;fixme also adapt any hyps about the heap?
 ;fixme also add unchangedness hyps about locals.. - analyze the code segment?
 (defun invariants-about-heap (state-dag state-var class-table-map extra-invarsp interpreted-function-alist state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (mv-let (erp heap-dag state)
     (get-heap-dag state-dag state) ;if it's a make-state, we could just extract the right component
     (if erp
@@ -3754,7 +3754,7 @@
                                     state-var
                                     loop-top-state-dag interpreted-function-alist
                                     acc state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (if (not (natp local-slot-num))
       (mv (erp-nil) acc state)
     (mv-let
@@ -3835,7 +3835,7 @@
 ;facts are moved into acc
 ;fixme don't stop iterating after a change? keep a change flag?
 (defun find-a-fact-to-push-back (facts-to-push-back print acc hyps state)
-  (declare (xargs :mode :program :stobjs (state))
+  (declare (xargs :mode :program :stobjs state)
            (ignorable print))
   (if (endp facts-to-push-back)
       (mv nil nil nil state) ;failed to push-back anything
@@ -3859,7 +3859,7 @@
 ;fixme handle boolands?
 ;returns (mv erp new-facts state) where new-facts is a set of facts whose conjunction is equal to the conjunction of facts
 (defun push-back-facts (facts hyps print state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (mv-let (erp old-fact new-fact state)
     (find-a-fact-to-push-back facts print nil hyps state)
     (if erp
@@ -3896,7 +3896,7 @@
 
 ;; Returns (mv erp invars state), where invars may contain a non-nullity invar.
 (defun maybe-non-null-invar-for-local (local-num state-var loop-top-state-dag hyps state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (mv-let
     (erp non-null-result-dag state)
     (quick-simp-composed-term-and-dag `(not (null-refp (jvm::nth-local ',local-num (jvm::locals (jvm::thread-top-frame (th) replace-me))))) 'replace-me
@@ -3917,7 +3917,7 @@
 
 ;; Returns (mv erp invars state), where invars may have a been extended with a non-negativity invar.
 (defun maybe-add-non-negative-invar-for-local (local-num width state-var loop-top-state-dag hyps invars options print state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (b* ((extra-rules (g :extra-rules options))
        (remove-rules (g :remove-rules options))
        ;;(- (cw "Using extra rules: ~x0.~%" extra-rules))
@@ -3947,7 +3947,7 @@
 
 ;; Returns (mv erp dag state).
 (defun extract-class-of-local (local-num state-dag hyps state)
-  (declare (xargs :stobjs (state)
+  (declare (xargs :stobjs state
                   :mode :program))
   (quick-simp-composed-term-and-dag `(get-class (jvm::nth-local ',local-num (jvm::locals (jvm::thread-top-frame (th) replace-me))) (jvm::heap replace-me)) 'replace-me
                                     state-dag
@@ -3956,7 +3956,7 @@
                                     :remove-duplicate-rulesp nil))
 
 ;; (defun extract-heap (state-dag hyps state)
-;;   (declare (xargs :stobjs (state)
+;;   (declare (xargs :stobjs state
 ;;                   :mode :program))
 ;;   (quick-simplify-dag3
 ;;    (compose-term-and-dag `(jvm::heap replace-me) 'replace-me state-dag)
@@ -3967,7 +3967,7 @@
 ;; Returns (mv erp heap-dag state).
 (defun extract-heap-dag (state-dag ; hyps
                          state)
-  (declare (xargs :stobjs (state)
+  (declare (xargs :stobjs state
                   :mode :program))
   (quick-simp-composed-term-and-dag '(jvm::heap s) 's state-dag
                                     :rules (append (get-local-rules)
@@ -3976,7 +3976,7 @@
 
 ;; Returns (mv erp invars state).
 (defun maybe-array-ref-invar-for-local (local-num state-var loop-top-state-dag hyps state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (b* (((mv erp class-result-dag state)
         (extract-class-of-local local-num loop-top-state-dag hyps state))
        ((when erp) (mv erp nil state))
@@ -4012,7 +4012,7 @@
 ;todo: add bit vector types, array-refp claims, etc.
 ;; Returns (mv erp type-invars-for-locals state).
 (defun make-type-invars-for-local (local-num type state-var loop-top-state-dag hyps options print state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (if (jvm::reference-typep type)
       (b* ( ;;we always put in the address-or-nullp invar
            (address-or-nullp-invars (list `(address-or-nullp (jvm::nth-local ',local-num (jvm::locals (jvm::thread-top-frame (th) ,state-var))))))
@@ -4036,7 +4036,7 @@
 
 ;; Returns (mv erp type-invars-for-locals state).
 (defun make-type-invars-for-locals-aux (local-variable-table loop-pc state-var loop-top-state-dag hyps options print state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (if (endp local-variable-table)
       (mv (erp-nil) nil state)
     (let* ((entry (first local-variable-table))
@@ -4065,7 +4065,7 @@
 ;; Returns (mv erp type-invars-for-locals state).
 ;This uses state because it tries to prove that references are non-null
 (defun make-type-invars-for-locals (local-variable-table loop-pc state-var loop-top-state-dag hyps options print state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (if (not local-variable-table)
       (prog2$ (cw "WARNING: local variable table is empty. Not generating type invars for locals.~%") ;only print this if there are some local vars
               (mv (erp-nil) nil state))
@@ -4292,7 +4292,7 @@
                               (string-listp initialized-class-names)
                               (symbol-listp extra-rules))
                   :mode :program ;todo
-                  :stobjs (state)))
+                  :stobjs state))
   (b* (((mv erp state-dag) ;; (dagify-term 's0) ;this was bad when no classes were to be initialized because the hyp about (jvm::initialized-classes s0) never fired..
         (dagify-term `(JVM::MAKE-STATE (JVM::THREAD-TABLE s0) ;fixme do we need a dummy frame below the current one?
                                         (JVM::HEAP s0)
@@ -4544,7 +4544,7 @@
   (declare (xargs :mode :program
                   :guard (and (output-indicatorp output-indicator)
                               (class-table-alistp class-table-alist))
-                  :stobjs (state)))
+                  :stobjs state))
   (b* ((term (output-extraction-term output-indicator initial-locals-term return-type class-table-alist))
        ((mv erp dag2) (compose-term-and-dag term 'replace-me dag))
        ((when erp) (mv erp nil state)))
@@ -4661,7 +4661,7 @@
                             state-var
                             state
                             )
-  (declare (xargs :stobjs (state)
+  (declare (xargs :stobjs state
                   :mode :program))
   (b* ((before-term term)
        ((mv erp before-dag) (dagify-term before-term))
@@ -4690,7 +4690,7 @@
                              state-var
                              state
                              )
-  (declare (xargs :stobjs (state)
+  (declare (xargs :stobjs state
                   :mode :program))
   (if (endp terms)
       (mv (erp-nil) t state)
@@ -4713,7 +4713,7 @@
 (defun submit-postlude (postlude-event this-loop-number
                                        generated-events-acc ;to store in the state upon failure
                                        state)
-  (declare (xargs :stobjs (state)
+  (declare (xargs :stobjs state
                   :mode :program))
   (b* ((- (cw "(Submitting :postlude event for loop number ~x0:~%" this-loop-number))
        ((mv erp state) (submit-event postlude-event
@@ -4731,7 +4731,7 @@
 ;; Throws a hard error if something goes wrong
 ;; todo: call something from the unroller instead of this?
 (defun decompile-loop-by-unrolling (loop-pcs loop-top-state-dag hyps this-loop-number next-loop-number generated-rules-acc interpreted-function-alist-alist interpreted-function-alist print options generated-events-acc state)
-  (declare (xargs :stobjs (state)
+  (declare (xargs :stobjs state
                   :mode :program))
   (b* ((- (cw "(Unrolling loop number ~x0:...~%" this-loop-number))
        ((mv erp dag-to-run)
@@ -4848,7 +4848,7 @@
                                          generated-events-acc ;; Accumulator for all events generated by this lift so far.
                                          state)
    (declare (xargs :mode :program
-                   :stobjs (state)
+                   :stobjs state
                    :guard (<= 1 loop-depth)))
    (b* ( ;; Decompile the loop body completely, including any nested loops and subroutine calls, assuming the candidate invars:
         ((mv erp state-var-dag) (dagify-term state-var))
@@ -4982,7 +4982,7 @@
                         options
                         generated-events-acc
                         state)
-   (declare (xargs :mode :program :stobjs (state) :guard (<= 1 loop-depth)))
+   (declare (xargs :mode :program :stobjs state :guard (<= 1 loop-depth)))
 ;fffixme - what if we can resolve the loop test? might save a whole lot of work? (maybe only if the loop does not execute)
 ;did this check on the old decompiler - best way to tell is to just try running through the loop.
    (b* ( ;; Extract the method-info:
@@ -5763,7 +5763,7 @@
                                  options
                                  generated-events-acc
                                  state)
-   (declare (xargs :mode :program :stobjs (state)))
+   (declare (xargs :mode :program :stobjs state))
    (let* ((expr (lookup (top-nodenum state-dag) state-dag)))
      (if (call-of 'jvm::make-state expr)
          ;; it's a make-state, so determine whether it has exited the segment (if not, it's at a loop header of a nested loop)
@@ -5912,7 +5912,7 @@
                                     other-input-vars
                                     interpreted-function-alist-alist interpreted-function-alist
                                     class-table-map unroll-nested-loopsp extra-invarsp print options generated-events-acc state)
-   (declare (xargs :mode :program :stobjs (state)))
+   (declare (xargs :mode :program :stobjs state))
    ;;First we run until we exit the segment or hit a loop header:
    ;; fixme - could check first whether we even need to run..
    (b* ((- (cw "(Attempting to run until all branches hit a loop or exit the segment.~%(stack height: ~x0)~%(ifns ~x1)~%(hyps: ~x2)~%"
@@ -6116,7 +6116,7 @@
                                 generated-events-acc
                                 state)
    (declare (xargs :mode :program
-                   :stobjs (state)
+                   :stobjs state
                    :guard (and (pseudo-term-listp hyps) ;TODO add more to the guard
                                ;(invariant-alistp (g :invariant-alist options) state) ;TODO: Make a decompiler-optionsp?
                                )))
@@ -6186,7 +6186,7 @@
                           options
                           state)
   (declare (xargs :mode :program
-                  :stobjs (state)
+                  :stobjs state
                   :guard (and (symbolp tag)
                               ;(invariant-alistp (g :invariant-alist options) state)
                               (subsetp-eq (get-vars-from-terms hyps) (cons 's0 other-input-vars))
@@ -6346,7 +6346,7 @@
                           disable-loop-openers
                           whole-form
                           state)
-  (declare (xargs :stobjs (state)
+  (declare (xargs :stobjs state
                   :guard (and ;;(pseudo-term-listp user-assumptions) ;now these can be untranslated terms, so we translate them below
                           (jvm::method-indicatorp method-indicator)
                           (booleanp ignore-exceptions)
@@ -6707,7 +6707,7 @@
                                   use-lets-in-terms
                                   whole-form
                                   state)
-  (declare (xargs :stobjs (state)
+  (declare (xargs :stobjs state
                   :guard (and (jvm::method-indicatorp method-indicator)
                               (invariantsp invariants)
                               (measuresp measures state)

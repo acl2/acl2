@@ -338,7 +338,7 @@
                         ;;rules-to-monitor
                         ;; state-var
                         state)
-  (declare (xargs :stobjs (state)
+  (declare (xargs :stobjs state
                   :mode :program))
   (b* (((mv erp dag) (compose-term-and-dag '(xr ':rgf '4 :x86) :x86 state-dag)) ;todo make a version of compose-term-and-dag that translates and checks its arg
        ((when erp) (mv erp nil state)))
@@ -358,7 +358,7 @@
                         ;;rules-to-monitor
                         ;; state-var
                         state)
-  (declare (xargs :stobjs (state)
+  (declare (xargs :stobjs state
                   :mode :program))
   (b* (((mv erp dag) (compose-term-and-dag '(xr ':rgf '5 :x86) :x86 state-dag)) ;todo make a version of compose-term-and-dag that translates and checks its arg
        ((when erp) (mv erp nil state)))
@@ -378,7 +378,7 @@
                        ;; state-var
                        lifter-rules
                        state)
-  (declare (xargs :stobjs (state)
+  (declare (xargs :stobjs state
                   :mode :program))
   (b* (((mv erp dag) (compose-term-and-dag '(xr ':rip 'nil :x86) :x86 state-dag))
        ((when erp) (mv erp nil state)))
@@ -446,7 +446,7 @@
                                   lifter-rules
                                   print
                                   state)
-  (declare (xargs :stobjs (state)
+  (declare (xargs :stobjs state
                   :mode :program
                   :guard (and (pseudo-term-listp assumptions)
                               (pseudo-term-listp all-assumptions)
@@ -523,7 +523,7 @@
 ;; branches exit the loop.  loop-body-term is a myif nest with x86 states at
 ;; the leaves.
 (defun analyze-loop-body-aux (loop-body-term loop-top-pc-term loop-top-rsp-term extra-rules remove-rules lifter-rules assumptions state)
-  (declare (xargs :stobjs (state)
+  (declare (xargs :stobjs state
                   :mode :program)
            (irrelevant loop-top-rsp-term) ;todo
            )
@@ -584,7 +584,7 @@
 ;; loop, and exit-test-term represents the test governing the branches that
 ;; exit the loop.
 (defun analyze-loop-body (loop-body-term loop-top-pc-term loop-top-rsp-term extra-rules remove-rules lifter-rules assumptions state)
-  (declare (xargs :stobjs (state)
+  (declare (xargs :stobjs state
                   :mode :program))
   (mv-let (erp one-rep-term exit-term exit-test-term state)
     (analyze-loop-body-aux loop-body-term loop-top-pc-term loop-top-rsp-term extra-rules remove-rules lifter-rules assumptions state)
@@ -723,7 +723,7 @@
                                        assumptions
                                        rules
                                        state)
-  (declare (xargs :stobjs (state)
+  (declare (xargs :stobjs state
                   :mode :program))
   ;; make a dag
   (b* ((num-bytes1 (first write-pair1))
@@ -754,7 +754,7 @@
                                                       assumptions
                                                       rules
                                                       state)
-  (declare (xargs :stobjs (state)
+  (declare (xargs :stobjs state
                   :mode :program))
   (if (endp write-pairs)
       (mv nil t state)
@@ -781,7 +781,7 @@
                                   assumptions
                                   rules
                                   state)
-  (declare (xargs :stobjs (state)
+  (declare (xargs :stobjs state
                   :mode :program))
   (if (endp write-pairs)
       (mv nil t state)
@@ -800,7 +800,7 @@
                                            ;; assumptions
                                            rules
                                            state)
-  (declare (xargs :stobjs (state)
+  (declare (xargs :stobjs state
                   :mode :program))
   (if (endp address-terms)
       (mv nil t state)
@@ -1037,7 +1037,7 @@
                                    lifter-rules
                                    print
                                    state)
-  (declare (xargs :stobjs (state)
+  (declare (xargs :stobjs state
                   :guard (and (pseudo-term-listp invariants)
                               (symbolp state-var)
                               (pseudo-termp one-rep-term)
@@ -1298,7 +1298,7 @@
                    lifter-rules
                    print
                    state)
-   (declare (xargs :stobjs (state)
+   (declare (xargs :stobjs state
                    :mode :program
                    :guard (and (posp loop-depth)
                                (pseudo-term-listp assumptions)
@@ -1696,7 +1696,7 @@
                           lifter-rules
                           print
                           state)
-   (declare (xargs :stobjs (state)
+   (declare (xargs :stobjs state
                    :mode :program
                    :guard (and (posp loop-depth)
                                (pseudo-term-listp assumptions)
@@ -1863,7 +1863,7 @@
                                (or (eq :skip measure-alist)
                                    (alistp measure-alist))
                                (acl2::print-levelp print))
-                   :stobjs (state)))
+                   :stobjs state))
    (b* ((segment-pc-terms (relative-pc-terms segment-offsets 'text-offset))
         (all-loop-header-offsets (strip-cars loop-alist))
         (all-loop-header-pc-terms (relative-pc-terms all-loop-header-offsets 'text-offset))
@@ -1980,7 +1980,7 @@
                                (or (eq :skip measure-alist)
                                    (alistp measure-alist))
                                (acl2::print-levelp print))
-                   :stobjs (state)))
+                   :stobjs state))
    (b* ((- (cw "(Unsimplified assumptions for lifting: ~x0)~%" assumptions)) ;todo: untranslate these and other things that get printed
         ;; Simplify the assumptions: TODO: Pull this out into the caller?
         ((mv erp rule-alist)  ;todo: include the extra-rules?
@@ -2070,7 +2070,7 @@
                            whole-form
                            print
                            state)
-  (declare (xargs :stobjs (state)
+  (declare (xargs :stobjs state
                   :guard (and (symbolp lifted-name)
                               (stringp subroutine-name)
 ;                              (output-indicatorp output)

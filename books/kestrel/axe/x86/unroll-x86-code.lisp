@@ -386,7 +386,7 @@
                               (booleanp memoizep)
                               (natp total-steps))
                   :mode :program
-                  :stobjs (state)))
+                  :stobjs state))
   (if (zp steps-left)
       (mv (erp-nil) dag state)
     (b* ((this-step-increment (acl2::this-step-increment step-increment total-steps))
@@ -602,7 +602,7 @@
                               (acl2::print-levelp print)
                               (member print-base '(10 16))
                               (booleanp untranslatep))
-                  :stobjs (state)
+                  :stobjs state
                   :mode :program))
   (b* ((- (cw "(Lifting ~s0.~%" target)) ;todo: print the executable name
        ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
@@ -845,7 +845,7 @@
                               (booleanp produce-theorem)
                               (booleanp prove-theorem)
                               (booleanp restrict-theory))
-                  :stobjs (state)
+                  :stobjs state
                   :mode :program))
   (b* (;; Check whether this call to the lifter has already been made:
        (previous-result (previous-lifter-result whole-form state))

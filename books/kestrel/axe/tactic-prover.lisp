@@ -179,7 +179,7 @@
 
 ;; A common helper function.  Returns (mv result info state).
 (defund make-tactic-result (new-dag old-dag assumptions state)
-  (declare (xargs :stobjs (state)
+  (declare (xargs :stobjs state
                   :guard (and (pseudo-dag-or-quotep new-dag)
                               (pseudo-dag-or-quotep old-dag)
                               (pseudo-term-listp assumptions)
@@ -218,7 +218,7 @@
 ;; Returns (mv result info state) where RESULT is a tactic-resultp.
 ;; Could return the rules used as the INFO return value.
 (defun apply-tactic-rewrite (problem rule-alist interpreted-function-alist monitor normalize-xors print state)
-  (declare (xargs :stobjs (state)
+  (declare (xargs :stobjs state
                   :mode :program ;todo ;because of simp-dag
                   :guard (and (proof-problemp problem)
                               (rule-alistp rule-alist)
@@ -415,7 +415,7 @@
 ;; Returns (mv result info state) where RESULT is a tactic-resultp.
 (defun apply-tactic-acl2 (problem print state)
   (declare (xargs :guard (proof-problemp problem)
-                  :stobjs (state)
+                  :stobjs state
                   :mode :program ;; because this calls prove$-fn
                   ))
   (b* ((dag (first problem))

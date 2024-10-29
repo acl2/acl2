@@ -120,4 +120,4 @@
 (defmacro assert-query-result (query expected-result)
   `(assert-equal-with-stobjs ,query
                              ',expected-result
-                             :stobjs (state)))
+                             :stobjs state))

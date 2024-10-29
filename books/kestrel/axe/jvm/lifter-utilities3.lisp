@@ -81,7 +81,7 @@
 (defund run-static-initializer-for-next-class (class-name th s-dag hyps ;class-table-map
                                                          extra-rules monitored-rules
                                                          state)
-  (declare (xargs :mode :program :stobjs (state))
+  (declare (xargs :mode :program :stobjs state)
            (ignore th) ;todo!
            )
   (b* ((- (cw "(Running initializer for ~x0.~%" class-name))
@@ -122,7 +122,7 @@
                                     extra-rules monitored-rules
                                     state)
   (declare (xargs :mode :program
-                  :stobjs (state)
+                  :stobjs state
                   :guard (and (jvm::class-namep class-name)
                               (symbol-listp extra-rules))))
   (b* (((mv erp dag)
@@ -183,7 +183,7 @@
                                        extra-rules monitored-rules
                                        state)
   (declare (xargs :mode :program
-                  :stobjs (state)
+                  :stobjs state
                   :guard (and (symbol-listp extra-rules)
                               (jvm::all-class-namesp class-names)
                               ;; what about th?
@@ -220,7 +220,7 @@
 ;; TODO: the order of the calls to set-static-field may depend on DAG node number if we use the current rules...
 ;; Returns (mv erp term state).
 (defun initialize-classes-in-arbitrary-state-fn (class-names assumptions extra-rules monitored-rules state)
-  (declare (xargs :stobjs (state)
+  (declare (xargs :stobjs state
                   :mode :program))
   (b* ((state-var 's0)
        (assumptions (translate-terms assumptions 'initialize-classes-in-arbitrary-state-fn (w state)))
@@ -833,7 +833,7 @@
 ;; ;; Returns (mv erp :ok-or-nil state).
 ;; (defun sanity-check-assumptions (generated-assumptions state-var initialized-state-dag state)
 ;;   (declare (xargs :mode :program
-;;                   :stobjs (state)
+;;                   :stobjs state
 ;;                   :guard (pseudo-term-listp generated-assumptions)))
 ;;   (if (endp generated-assumptions)
 ;;       (mv (erp-nil) :ok state)
@@ -860,7 +860,7 @@
                                          monitored-rules
                                          state)
   (declare (xargs :mode :program
-                  :stobjs (state)
+                  :stobjs state
                   :guard (and (true-listp class-names)
                               (jvm::all-class-namesp class-names))))
   (b* ((- (cw "(Generating assumptions established by the static initializers of ~x0:~%" class-names))
