@@ -175,6 +175,18 @@
            (mv (block-list-fix blockchain)
                (certificate-set-fix committed-certs))))
 
+  (defruled extend-blockchain-of-append
+    (b* (((mv blocks comms)
+          (extend-blockchain (append anchors2 anchors1) dag blocks0 comms0))
+         ((mv blocks1 comms1)
+          (extend-blockchain anchors1 dag blocks0 comms0))
+         ((mv blocks2 comms2)
+          (extend-blockchain anchors2 dag blocks1 comms1)))
+      (and (equal blocks blocks2)
+           (equal comms comms2)))
+    :induct t
+    :enable append)
+
   (defret consp-of-extend-blockchain
     (equal (consp new-blockchain)
            (or (consp blockchain)
