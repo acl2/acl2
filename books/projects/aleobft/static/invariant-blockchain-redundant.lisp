@@ -188,7 +188,8 @@
                val (receive-certificate-next msg systate))
               (all-addresses systate)))
     :enable (validator-blockchain-redundantp
-             validator-state->dag-of-receive-certificate-next))
+             validator-state->dag-of-receive-certificate-next
+             validator-state->blockchain-of-receive-certificate-next))
 
   (defrule system-blockchain-redundantp-of-receive-certificate-next
     (implies (and (receive-certificate-possiblep msg systate)
