@@ -32,7 +32,7 @@
     "The state of each validator includes (their view of) the blockchain.
      This is initially empty, and gets extended, one or more blocks at a time,
      when anchors are committed.
-     However, because the stability properties of
+     However, because of the stability properties of
      paths in the DAG, causal histories, etc.,
      the full blockchain can always be recalculated from scratch,
      from the sequence of committed anchors and from the DAG.")
@@ -234,7 +234,8 @@
              system-unequivocal-dag-p-necc
              system-previous-in-dag-p-necc
              system-last-anchor-present-p-necc
-             list-in-when-certificate-list-pathp)
+             list-in-when-certificate-list-pathp
+             validator-state->dag-subset-store-certificate-next)
     :use (:instance calculate-blockchain-of-unequivocal-dag-superset
                     (dag (validator-state->dag
                           (get-validator-state val systate)))
@@ -243,8 +244,7 @@
                             val (store-certificate-next cert val1 systate))))
                     (anchors (committed-anchors
                               (get-validator-state val systate)
-                              (all-addresses systate))))
-    :disable validator-state->dag-of-store-certificate-next)
+                              (all-addresses systate)))))
 
   (defrule system-blockchain-redundantp-of-store-certificate-next
     (implies (and (system-signers-are-validators-p systate)

@@ -176,7 +176,7 @@
     :enable (store-certificate-next-val
              store-certificate-possiblep))
 
-  (defrule validator-state->dag-subset-store-certificate-next
+  (defruled validator-state->dag-subset-store-certificate-next
     (implies (and (set::in val (correct-addresses systate))
                   (store-certificate-possiblep cert val1 systate))
              (set::subset (validator-state->dag
