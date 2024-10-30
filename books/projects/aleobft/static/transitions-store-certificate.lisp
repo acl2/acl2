@@ -159,7 +159,7 @@
              get-validator-state-of-update-validator-state
              posp))
 
-  (defrule validator-state->dag-of-store-certificate-next
+  (defruled validator-state->dag-of-store-certificate-next
     (implies (and (set::in val (correct-addresses systate))
                   (store-certificate-possiblep cert val1 systate))
              (equal (validator-state->dag
@@ -184,6 +184,7 @@
                           (validator-state->dag
                            (get-validator-state
                             val (store-certificate-next cert val1 systate)))))
+    :enable validator-state->dag-of-store-certificate-next
     :disable store-certificate-next)
 
   (defrule validator-state->dag-of-store-certificate-next-same
@@ -197,6 +198,7 @@
                                                                   systate)))
                     (validator-state->dag
                      (get-validator-state val systate))))
+    :enable validator-state->dag-of-store-certificate-next
     :disable store-certificate-next)
 
   (defrule validator-state->last-of-store-certificate-next

@@ -116,7 +116,8 @@
                      cert1
                      (validator-state->dag
                       (get-validator-state val systate)))))
-    :enable system-previous-in-dag-p-necc
+    :enable (system-previous-in-dag-p-necc
+             validator-state->dag-of-store-certificate-next)
     :use ((:instance certificate-causal-history-of-unequivocal-dag-superset
                      (cert cert1)
                      (dag (validator-state->dag

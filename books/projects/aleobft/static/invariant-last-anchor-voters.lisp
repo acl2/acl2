@@ -210,7 +210,8 @@
               (all-addresses systate)))
     :enable (validator-last-anchor-voters-p
              certificates-with-round-of-insert
-             tally-leader-votes-of-insert))
+             tally-leader-votes-of-insert
+             validator-state->dag-of-store-certificate-next))
 
   (defrule system-last-anchor-voters-p-of-store-certificate-next
     (implies (and (system-last-anchor-voters-p systate)

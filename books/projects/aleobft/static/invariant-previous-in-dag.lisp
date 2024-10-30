@@ -199,7 +199,8 @@
               (store-certificate-next cert val systate)))
     :expand (system-previous-in-dag-p
              (store-certificate-next cert val systate))
-    :enable system-previous-in-dag-p-necc))
+    :enable (system-previous-in-dag-p-necc
+             validator-state->dag-of-store-certificate-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
