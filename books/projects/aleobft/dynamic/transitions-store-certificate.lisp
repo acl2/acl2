@@ -244,6 +244,18 @@
       (enable store-certificate-possiblep
               get-validator-state-of-update-validator-state))))
 
+  (defret validator-state->committed-of-store-certificate-next
+    (equal (validator-state->committed
+            (get-validator-state val1 new-systate))
+           (validator-state->committed
+            (get-validator-state val1 systate)))
+    :hyp (store-certificate-possiblep val cert systate)
+    :hints
+    (("Goal"
+      :in-theory
+      (enable store-certificate-possiblep
+              get-validator-state-of-update-validator-state))))
+
   (defret get-network-state-of-store-certificate-next
     (equal (get-network-state (store-certificate-next val cert systate))
            (get-network-state systate)))
@@ -253,4 +265,5 @@
                       validator-state->endorsed-of-store-certificate-next
                       validator-state->last-of-store-certificate-next
                       validator-state->blockchain-of-store-certificate-next
+                      validator-state->committed-of-store-certificate-next
                       get-network-state-of-store-certificate-next)))

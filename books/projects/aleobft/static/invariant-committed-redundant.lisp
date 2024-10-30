@@ -151,8 +151,9 @@
               (get-validator-state val (create-certificate-next cert systate))
               (all-addresses systate)))
     :enable (validator-committed-redundantp
-             system-last-anchor-present-p-necc)
-    :disable validator-state->dag-of-create-certificate-next)
+             system-last-anchor-present-p-necc
+             validator-state->last-of-create-certificate-next
+             validator-state->committed-of-create-certificate-next))
 
   (defrule system-committed-redundantp-of-create-certificate-next
     (implies (and (system-committed-redundantp systate)
@@ -335,7 +336,8 @@
              evenp
              get-validator-state-of-update-validator-state
              certificate->author-of-certificate-with-author+round
-             certificate->round-of-certificate-with-author+round)
+             certificate->round-of-certificate-with-author+round
+             car-of-collect-anchors)
     :use ((:instance
            dag-all-path-to-p-necc
            (cert (last-anchor (get-validator-state val systate)

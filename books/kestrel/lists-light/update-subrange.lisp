@@ -93,7 +93,7 @@
            (equal (nth n (update-subrange start end vals lst))
                   (nth (- n start) vals)))
   :hints (("subgoal *1/2" :expand  (UPDATE-SUBRANGE N END VALS LST))
-          ("Goal" :in-theory (e/d ( update-subrange ;nth
+          ("Goal" :in-theory (e/d (update-subrange ;nth
                                    ) (UPDATE-NTH-OF-UPDATE-SUBRANGE-DIFF)))))
 
 (defthmd nth-of-update-subrange-diff-1
@@ -141,8 +141,8 @@
            (equal (update-subrange start1 end1 vals1 (update-subrange start2 end2 vals2 lst))
                   (update-subrange start1 end2 (append vals1 vals2) lst)))
   :hints (("Goal" :in-theory (e/d (update-subrange)
-                                  ( ;LEN-OF-CDR ;why? changes the induction scheme?
-                                      )))))
+                                  (;LEN-OF-CDR ;why? changes the induction scheme?
+                                   )))))
 
 (defthm take-of-update-subrange-irrel
   (implies (and (<= n start)
@@ -176,12 +176,12 @@
                 )
            (equal (update-subrange start (+ 1 end) (append vals (list val)) lst)
                   (update-nth (+ 1 end) val (update-subrange start end vals lst))))
-  :hints ( ;("Subgoal *1/4" :cases ((equal end start)))
+  :hints (;("Subgoal *1/4" :cases ((equal end start)))
           ("Goal" :expand ((UPDATE-SUBRANGE (+ 2 END)
                                             (+ 1 END)
                                             NIL LST))
            :in-theory (e/d (update-subrange)
-                           (    ;LIST::LEN-WHEN-AT-MOST-1        ;for speed
+                           (;LIST::LEN-WHEN-AT-MOST-1        ;for speed
                             len ;for speed
                             UPDATE-NTH-OF-UPDATE-SUBRANGE-DIFF)))))
 
@@ -203,16 +203,16 @@
                 (natp end))
            (equal (update-subrange start end vals1 (update-subrange start end vals2 lst))
                   (update-subrange start end vals1 lst)))
-  :hints (("Goal" :expand (     (UPDATE-SUBRANGE START END VALS1
-                                                 (UPDATE-SUBRANGE (+ 1 START)
-                                                                  END (CDR VALS2)
-                                                                  (UPDATE-NTH START (NTH 0 VALS2) LST)))
+  :hints (("Goal" :expand ((UPDATE-SUBRANGE START END VALS1
+                                            (UPDATE-SUBRANGE (+ 1 START)
+                                                             END (CDR VALS2)
+                                                             (UPDATE-NTH START (NTH 0 VALS2) LST)))
 
-                                (update-subrange start end val1
-                                                 (update-subrange (+ 1 start)
-                                                                  end (cdr vals2)
-                                                                  (update-nth start (nth 0 vals2) lst))))
-           :in-theory (e/d (update-subrange update-nth-of-update-subrange-diff-back) ( update-nth-of-update-subrange-diff))
+                           (update-subrange start end val1
+                                            (update-subrange (+ 1 start)
+                                                             end (cdr vals2)
+                                                             (update-nth start (nth 0 vals2) lst))))
+           :in-theory (e/d (update-subrange update-nth-of-update-subrange-diff-back) (update-nth-of-update-subrange-diff))
            :do-not '(generalize eliminate-destructors))))
 
 (defthm update-subrange-of-take
@@ -253,10 +253,10 @@
             )
            (equal (nthcdr n (update-subrange start end vals lst))
                   (nthcdr n lst)))
-  :hints (("Goal" :in-theory ( e/d (update-subrange update-nth-of-update-subrange-diff-back)
-                                   (update-nth-of-update-subrange-diff
+  :hints (("Goal" :in-theory (e/d (update-subrange update-nth-of-update-subrange-diff-back)
+                                  (update-nth-of-update-subrange-diff
                                     ;;take-of-nthcdr-becomes-subrange
-                                    )))))
+                                   )))))
 
 (defthm UPDATE-SUBRANGE-out-of-order
   (implies (> START END)
@@ -436,7 +436,7 @@
                   (NTHCDR N LST)))
   :HINTS (("Goal"
            :IN-THEORY
-           (E/D ( UPDATE-NTH-OF-UPDATE-SUBRANGE-DIFF-BACK UPDATE-SUBRANGE)
+           (E/D (UPDATE-NTH-OF-UPDATE-SUBRANGE-DIFF-BACK UPDATE-SUBRANGE)
                 (UPDATE-NTH-OF-UPDATE-SUBRANGE-DIFF)))))
 
 (in-theory (disable NTHCDR-OF-UPDATE-SUBRANGE))

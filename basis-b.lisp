@@ -2753,7 +2753,7 @@
 
 ; "Subcor" stands for "substitute corresponding elements".  Vars and terms are
 ; in 1:1 correspondence, and we substitute terms for corresponding vars into
-; form.  This function was called sub-pair-var in nqthm.
+; form.  This function was called sub-pair-var in Nqthm.
 
   (declare (xargs :guard (and (symbol-listp vars)
                               (pseudo-term-listp terms)
@@ -5197,7 +5197,7 @@
           (when (< new-threshold (expt 2 20))
             (let ((state *the-live-state*))
 
-; Avoid warning$-cw, since this function is called by LP outside the loop.
+; Avoid warning$-cw0, since this function is called by LP outside the loop.
 
               (warning$ 'set-gc-threshold$ nil
                         "Using default thresholds that are greater than the ~
@@ -5225,7 +5225,7 @@
         (when verbose-p
           (let ((state *the-live-state*))
 
-; Avoid warning$-cw, since this function is called by LP outside the loop.
+; Avoid warning$-cw0, since this function is called by LP outside the loop.
 
             (warning$ 'set-gc-threshold$ nil
                       "We have not yet implemented setting the garbage ~

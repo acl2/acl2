@@ -11,7 +11,7 @@
 
 (in-package "ALEOBFT-DYNAMIC")
 
-(include-book "anchors-of-validators-next")
+(include-book "last-anchor-next")
 
 (local (include-book "arithmetic-3/top" :dir :system))
 
@@ -341,7 +341,7 @@
              in-of-successors-loop
              set::expensive-rules))
 
-  (defruled cardinality-of-incoming-to-tally-leader-votes
+  (defruled cardinality-of-successors-to-tally-leader-votes
     (equal (set::cardinality (successors cert dag))
            (mv-nth 0 (tally-leader-votes
                       (certificate->author cert)
@@ -377,12 +377,11 @@
              ordered-even-p-necc-fixing
              collect-anchors-above-last-committed-round
              last-blockchain-round-p-necc-fixing
-             blocks-last-round
              posp
              pos-fix
              evenp
              certificate->round-of-certificate-with-author+round
-             cardinality-of-incoming-to-tally-leader-votes
+             cardinality-of-successors-to-tally-leader-votes
              certificate->author-of-certificate-with-author+round))
 
   (defruled last-anchor-voters-p-of-commit-anchors-next

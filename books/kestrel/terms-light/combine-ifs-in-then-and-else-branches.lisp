@@ -95,7 +95,7 @@
 (mutual-recursion
  (defund combine-ifs-in-then-and-else-branches (term count)
    (declare (xargs :guard (pseudo-termp term)
-                   :hints (("Goal" ;; :cases ( ;(EQUAL 'if (CAR TERM))
+                   :hints (("Goal" ;; :cases (;(EQUAL 'if (CAR TERM))
                                    ;;         )
                             :in-theory (enable ;COMBINE-IF-FROM-THEN-PART
                                         ;;COMBINE-IF-FROM-else-PART

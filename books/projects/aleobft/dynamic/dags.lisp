@@ -1215,7 +1215,7 @@
                     (path-to-author+round cert author round dag2)))
     :prep-lemmas
     ((defthm-path-to-author+round-flag
-       (defthm path-to-author+round-of-unequivocal-dags-lemma
+       (defthm path-to-author+round-lemma
          (implies (and (certificate-setp dag)
                        (certificate-setp dag2)
                        (certificate-set-unequivocalp dag)
@@ -1228,7 +1228,7 @@
                   (equal (path-to-author+round cert author round dag2)
                          (path-to-author+round cert author round dag)))
          :flag path-to-author+round)
-       (defthm path-to-author+round-set-of-unequivocal-dags-lemma
+       (defthm path-to-author+round-set-lemma
          (implies (and (certificate-setp dag)
                        (certificate-setp dag2)
                        (certificate-set-unequivocalp dag)
@@ -1249,8 +1249,7 @@
                          previous-certificates-of-unequivocal-dags))
                (cond
                 ((acl2::occur-lst '(acl2::flag-is 'path-to-author+round) clause)
-                 '(:use (
-                         (:instance
+                 '(:use ((:instance
                           certificates-with-authors+round-subset
                           (certs dag)
                           (authors (certificate->previous cert))
@@ -1388,3 +1387,129 @@
         certificates-with-authors+round-subset
         element-of-certificate-set-not-nil
         round-leq-when-path-to-author+round))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection causal-histories-in-unequivocal-closed-dags
+  :short "Some theorems about causal histories in
+          unequivocal, backward-closed DAGs."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The first theorem says that
+     the causal history of a certificate
+     in a backward-closed subset of an unequivocal DAG
+     is the same in the superset.
+     That is, causal histories are ``stable'' as DAGs of validators grow.
+     New certificates, with their own causal histories,
+     may be added as the DAG grows,
+     but without affecting histories of certificates already there.")
+   (xdoc::p
+    "The second theorem says that
+     the causal histories of a common certificate
+     of two backward-closed, individually and mutually unequivocal DAGs,
+     are the same in the two DAGs.
+     This is an important property for consistency of blockchains
+     across different validators:
+     if two validators had different causal histories for the same certificate,
+     they could commit different transactions to their blockchains;
+     yhis theorem rules out that situation."))
+
+  (defruled certificate-causal-history-of-unequivocal-superdag
+    (implies (and (certificate-setp dag0)
+                  (certificate-setp dag)
+                  (set::subset dag0 dag)
+                  (certificate-set-unequivocalp dag)
+                  (dag-closedp dag0)
+                  (set::in cert dag0))
+             (equal (certificate-causal-history cert dag)
+                    (certificate-causal-history cert dag0)))
+    :prep-lemmas
+    ((defthm-certificate-causal-history-flag
+       (defthm certificate-causal-history-lemma
+         (implies (and (certificate-setp dag)
+                       (certificate-setp dag1)
+                       (set::subset dag dag1)
+                       (certificate-set-unequivocalp dag1)
+                       (dag-closedp dag)
+                       (set::in cert dag))
+                  (equal (certificate-causal-history cert dag1)
+                         (certificate-causal-history cert dag)))
+         :flag certificate-causal-history)
+       (defthm certificate-set-causal-history-lemma
+         (implies (and (certificate-setp dag)
+                       (certificate-setp dag1)
+                       (set::subset dag dag1)
+                       (certificate-set-unequivocalp dag1)
+                       (dag-closedp dag)
+                       (set::subset certs dag))
+                  (equal (certificate-set-causal-history certs dag1)
+                         (certificate-set-causal-history certs dag)))
+         :flag certificate-set-causal-history)
+       :hints (("Goal"
+                :in-theory
+                (enable* certificate-causal-history
+                         certificate-set-causal-history
+                         set::expensive-rules
+                         certificates-with-authors+round-subset
+                         previous-certificates-of-unequivocal-superdag))))))
+
+  (defruled certificate-causal-history-of-unequivocal-dags
+    (implies (and (certificate-setp dag1)
+                  (certificate-setp dag2)
+                  (certificate-sets-unequivocalp dag1 dag2)
+                  (certificate-set-unequivocalp dag1)
+                  (certificate-set-unequivocalp dag2)
+                  (dag-closedp dag1)
+                  (dag-closedp dag2)
+                  (set::in cert dag1)
+                  (set::in cert dag2))
+             (equal (certificate-causal-history cert dag1)
+                    (certificate-causal-history cert dag2)))
+    :prep-lemmas
+    ((defthm-certificate-causal-history-flag
+       (defthm certificate-causal-history-lemma
+         (implies (and (certificate-setp dag)
+                       (certificate-setp dag2)
+                       (certificate-set-unequivocalp dag)
+                       (certificate-set-unequivocalp dag2)
+                       (certificate-sets-unequivocalp dag dag2)
+                       (dag-closedp dag)
+                       (dag-closedp dag2)
+                       (set::in cert dag)
+                       (set::in cert dag2))
+                  (equal (certificate-causal-history cert dag2)
+                         (certificate-causal-history cert dag)))
+         :flag certificate-causal-history)
+       (defthm certificate-set-causal-history-lemma
+         (implies (and (certificate-setp dag)
+                       (certificate-setp dag2)
+                       (certificate-set-unequivocalp dag)
+                       (certificate-set-unequivocalp dag2)
+                       (certificate-sets-unequivocalp dag dag2)
+                       (dag-closedp dag)
+                       (dag-closedp dag2)
+                       (set::subset certs dag)
+                       (set::subset certs dag2))
+                  (equal (certificate-set-causal-history certs dag2)
+                         (certificate-set-causal-history certs dag)))
+         :flag certificate-set-causal-history)
+       :hints (("Goal"
+                :in-theory
+                (enable* certificate-causal-history
+                         certificate-set-causal-history
+                         set::expensive-rules
+                         previous-certificates-of-unequivocal-dags))
+               (cond
+                ((acl2::occur-lst
+                  '(acl2::flag-is 'certificate-causal-history) clause)
+                 '(:use ((:instance
+                          certificates-with-authors+round-subset
+                          (certs dag)
+                          (authors (certificate->previous cert))
+                          (round (1- (certificate->round cert))))
+                         (:instance
+                          certificates-with-authors+round-subset
+                          (certs dag2)
+                          (authors (certificate->previous cert))
+                          (round (1- (certificate->round cert)))))))))))))

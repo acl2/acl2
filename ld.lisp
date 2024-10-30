@@ -3620,7 +3620,7 @@
                      (cdr cmd-wrld)
                      (access-command-tuple-form (cddr (car cmd-wrld)))
 
-; A non-trivial encapsulate is puffabble by :puff but not by :puff*.  There are
+; A non-trivial encapsulate is puffable by :puff but not by :puff*.  There are
 ; two reasons why we are nervous about puffing non-trivial encapsulates.  One
 ; reason is that this will mess up the recording of constraints, in particular
 ; for later functional-instantiation.  The other is that in a non-trivial

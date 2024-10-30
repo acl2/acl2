@@ -106,11 +106,11 @@
                 (set::in val2 (correct-addresses systate)))
            (lists-noforkp
             (calculate-blockchain
-             (validator-anchors (get-validator-state val1 systate)
+             (committed-anchors (get-validator-state val1 systate)
                                 (all-addresses systate))
              (validator-state->dag (get-validator-state val1 systate)))
             (calculate-blockchain
-             (validator-anchors (get-validator-state val2 systate)
+             (committed-anchors (get-validator-state val2 systate)
                                 (all-addresses systate))
              (validator-state->dag (get-validator-state val2 systate)))))
   :enable (lists-noforkp
@@ -126,7 +126,7 @@
                           (get-validator-state val1 systate)))
                    (dag2 (validator-state->dag
                           (get-validator-state val2 systate)))
-                   (anchors (validator-anchors
+                   (anchors (committed-anchors
                              (get-validator-state val1 systate)
                              (all-addresses systate))))
         (:instance calculate-blockchain-of-unequivocal-dags
@@ -134,7 +134,7 @@
                           (get-validator-state val1 systate)))
                    (dag2 (validator-state->dag
                           (get-validator-state val2 systate)))
-                   (anchors (validator-anchors
+                   (anchors (committed-anchors
                              (get-validator-state val2 systate)
                              (all-addresses systate))))
         (:instance system-last-anchor-present-p-necc (val val1))

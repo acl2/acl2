@@ -146,7 +146,8 @@
               (create-certificate-next cert systate)))
     :expand (system-previous-in-dag-p
              (create-certificate-next cert systate))
-    :enable system-previous-in-dag-p-necc))
+    :enable (system-previous-in-dag-p-necc
+             validator-state->dag-of-create-certificate-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -162,7 +163,8 @@
             (receive-certificate-next msg systate)))
   :expand (system-previous-in-dag-p
            (receive-certificate-next msg systate))
-  :enable system-previous-in-dag-p-necc)
+  :enable (system-previous-in-dag-p-necc
+           validator-state->dag-of-receive-certificate-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

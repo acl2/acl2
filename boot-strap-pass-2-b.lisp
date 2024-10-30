@@ -309,7 +309,7 @@
     (let ((event-book-alist (table-alist 'system-event-table (w state))))
       `(progn (include-book ,*devel-check-book* :dir :system)
               (set-enforce-redundancy t)
-              (DEFTHM WELL-FOUNDED-L< ; "ordinals/lexicographic-book.lisp" Thi
+              (DEFTHM WELL-FOUNDED-L< ; "ordinals/lexicographic-book.lisp" This
 ; event justifies a comment about it in primordial-world-globals.
                 (AND (IMPLIES (LEXP X) (O-P (LTOO X)))
                      (IMPLIES (AND (LEXP X) (LEXP Y) (L< X Y))
@@ -733,14 +733,12 @@
      (add-macro-alias ,old ,new)
      (value-triple ',old)))
 
-(defdeprecate get-wormhole-status get-persistent-whs "8.5")
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; End
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-theory
-; See the coment about this in the defun of all-boundp-initial-global-table.
+; See the comment about this in the defun of all-boundp-initial-global-table.
  (disable all-boundp-initial-global-table))
 
 ; To see our reason for putting this here, see the comment containing this form

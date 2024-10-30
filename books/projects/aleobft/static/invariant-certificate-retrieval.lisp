@@ -72,6 +72,7 @@
                      round
                      (validator-state->dag
                       (get-validator-state val systate)))))
+    :enable validator-state->dag-of-create-certificate-next
     :use ((:instance certificate-with-author+round-of-unequivocal-superset
                      (certs1 (validator-state->dag
                               (get-validator-state
@@ -98,7 +99,8 @@
                      author
                      round
                      (validator-state->dag
-                      (get-validator-state val systate))))))
+                      (get-validator-state val systate)))))
+    :enable validator-state->dag-of-receive-certificate-next)
 
   (defrule certificate-with-author+round-of-store-certificate-next
     (implies (and (system-signers-are-validators-p systate)

@@ -323,7 +323,7 @@ TAGS-acl2-doc: $(ACL2_DEPS)
 	find books -name '*.lisp' -print | (time xargs etags -o TAGS-acl2-doc --append --)
 
 # The targets acl2r and acl2r.lisp were originally created to support
-# ACL2(r) builds.  It has more uses that that now.
+# ACL2(r) builds.  It has more uses than that now.
 
 .PHONY: acl2r
 acl2r:

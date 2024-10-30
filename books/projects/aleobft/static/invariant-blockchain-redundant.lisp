@@ -11,7 +11,7 @@
 
 (in-package "ALEOBFT-STATIC")
 
-(include-book "property-validator-anchors-of-next-event")
+(include-book "property-committed-anchors-of-next-event")
 (include-book "properties-blockchain")
 (include-book "invariant-previous-in-dag")
 (include-book "invariant-committed-redundant")
@@ -58,7 +58,7 @@
   :short "Check if the blockchain of a validator
           is equal to its calculation from the committed anchors and DAG."
   (equal (validator-state->blockchain vstate)
-         (calculate-blockchain (validator-anchors vstate vals)
+         (calculate-blockchain (committed-anchors vstate vals)
                                (validator-state->dag vstate))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -99,7 +99,7 @@
            validator-init
            system-blockchain-redundantp
            validator-blockchain-redundantp
-           validator-anchors))
+           committed-anchors))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -136,14 +136,16 @@
              system-unequivocal-dag-p-necc
              system-previous-in-dag-p-necc
              system-last-anchor-present-p-necc
-             list-in-when-certificate-list-pathp)
+             list-in-when-certificate-list-pathp
+             validator-state->dag-subset-create-certificate-next
+             validator-state->blockchain-of-create-certificate-next)
     :use (:instance calculate-blockchain-of-unequivocal-dag-superset
                     (dag (validator-state->dag
                           (get-validator-state val systate)))
                     (dag2 (validator-state->dag
                            (get-validator-state
                             val (create-certificate-next cert systate))))
-                    (anchors (validator-anchors
+                    (anchors (committed-anchors
                               (get-validator-state val systate)
                               (all-addresses systate))))
     :disable validator-state->dag-of-create-certificate-next)
@@ -185,7 +187,8 @@
               (get-validator-state
                val (receive-certificate-next msg systate))
               (all-addresses systate)))
-    :enable (validator-blockchain-redundantp))
+    :enable (validator-blockchain-redundantp
+             validator-state->dag-of-receive-certificate-next))
 
   (defrule system-blockchain-redundantp-of-receive-certificate-next
     (implies (and (receive-certificate-possiblep msg systate)
@@ -237,7 +240,7 @@
                     (dag2 (validator-state->dag
                            (get-validator-state
                             val (store-certificate-next cert val1 systate))))
-                    (anchors (validator-anchors
+                    (anchors (committed-anchors
                               (get-validator-state val systate)
                               (all-addresses systate))))
     :disable validator-state->dag-of-store-certificate-next)
@@ -303,7 +306,7 @@
      applied to the new anchors obtained via @(tsee collect-anchors).
      The blockchain calculated by @(tsee calculate-blockchain)
      also makes use of @(tsee extend-blockchain),
-     and the fact that the new @(tsee validator-anchors)
+     and the fact that the new @(tsee committed-anchors)
      expand to an @(tsee append) of the new ones with the old ones,
      results in the firing of the @('extend-blockchain-of-append') theorem.
      We also need the previously proved invariant that "
@@ -333,7 +336,9 @@
              new-committed-certs-of-extend-blockchain
              system-unequivocal-dag-p-when-system-unequivocal-certificates-p
              system-unequivocal-dag-p-necc
-             system-last-anchor-present-p-necc)
+             system-last-anchor-present-p-necc
+             extend-blockchain-of-nil
+             extend-blockchain-of-append)
     :use system-committed-redundantp-necc)
 
   (defrule system-blockchain-redundantp-of-commit-anchors-next

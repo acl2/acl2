@@ -20172,7 +20172,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
       (f-put-global 'iprint-soft-bound *wormhole-iprint-soft-bound* state)
       (setq *wormhole-iprint-ar* nil))
 
-; We are presumably not in the middle of a read, from the standpoing of
+; We are presumably not in the middle of a read, from the standpoint of
 ; reading, we are at the top level.  So it is fine to set *iprint-read-state*
 ; to t or nil.
 
@@ -21020,7 +21020,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;  ; As examples, the following tokens are potential numbers, but they are not
 ;  ; actually numbers as defined below, and so are reserved tokens. (They do
 ;  ; indicate some interesting possibilities for future extensions.)  So all
-;  ; should have verticle bars.
+;  ; should have vertical bars.
 ;
 ;    '(|1B5000| ; oddly, GCL skips the vertical bars for this first one
 ;      |777777Q| |1.7J| |-3/4+6.7J| |12/25/83| |27^19| |3^4/5| |6//7| |3.1.2.6|
@@ -22594,7 +22594,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
     update-enabled-structure-array ; many assumptions for calling correctly
 
-    apply-user-stobj-alist-or-kwote ; extra-logical EQ use; see its commments
+    apply-user-stobj-alist-or-kwote ; extra-logical EQ use; see its comments
 
 ; See the Essay on Memoization with Attachments for why
 ; doppelganger-apply$-userfn and doppelganger-badge-userfn are untouchable.
@@ -22843,7 +22843,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; types of fixnum and bignum do in fact form an exhaustive partition of the
 ; type integer; more precisely, they voted to specify that the type bignum is
 ; by definition equivalent to (and integer (not fixnum)).  I interpret this to
-; mean that implementators (sic) could still experiment with such extensions as
+; mean that implementators [sic] could still experiment with such extensions as
 ; adding explicit representations of infinity, but such infinities would
 ; necessarily be of type bignum''
 
@@ -28861,7 +28861,7 @@ Lisp definition."
 #+acl2-par
 (defmacro warning$@par (&rest rst)
 
-; We do not simply just call warning$-cw, because we actually have state
+; We do not simply just call warning$0-cw, because we actually have state
 ; available when we use warning$@par.
 
   `(let ((state-vars (default-state-vars t))
@@ -29266,7 +29266,7 @@ Lisp definition."
 
 ; If an execution is incomplete, there was presumably an error or a call of
 ; throw that took us out of the execution.  Because we extend the content of
-; *inside-absstobj-update* on entry to a non-interruptable abstract stobj
+; *inside-absstobj-update* on entry to a non-interruptible abstract stobj
 ; update (by adding 1 or pushing onto a stack) and revert only on exit, a
 ; record of that interruption will persist until we clear it.  A key idea is
 ; that we only transition to an illegal state near the end of book
@@ -30066,7 +30066,7 @@ Lisp definition."
 ; where we want to avoid compilation because of the use of make-event, and we
 ; also want to avoid evaluation during pass 1 of initialization, because we are
 ; waiting for a suitable function-theory.  We cannot simply define when-logic
-; to be nil in raw Lisp, becase its use is not limited to the definition of
+; to be nil in raw Lisp, because its use is not limited to the definition of
 ; local.
 
   #-acl2-loop-only

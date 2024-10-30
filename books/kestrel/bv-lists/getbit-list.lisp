@@ -36,8 +36,7 @@
                     nil)))
   :hints
   (("Goal" :do-not '(generalize eliminate-destructors)
-    :in-theory (e/d (;list::nth-of-cons
-                     nth getbit-list)
+    :in-theory (e/d (nth getbit-list)
                     (;nth-of-cdr
                      )))))
 

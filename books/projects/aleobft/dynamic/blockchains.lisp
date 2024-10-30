@@ -13,6 +13,7 @@
 
 (include-book "anchors")
 
+(local (include-book "arithmetic/top" :dir :system))
 (local (include-book "std/lists/top" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
@@ -121,7 +122,10 @@
    (xdoc::p
     "We show that extending the blockchain
      does not change the active committee at a round,
-     if that committee can be calculated in the original blockchain."))
+     if that committee can be calculated in the original blockchain.
+     As a consequence, collecting anchors is not affected
+     by the extension of the blockchain,
+     as proved for @(tsee collect-anchors) and @(tsee collect-all-anchors)."))
   (b* (((when (endp anchors))
         (mv (block-list-fix blockchain)
             (certificate-set-fix committed-certs)))
@@ -147,23 +151,25 @@
     :hints (("Goal" :induct t)))
   (in-theory (disable consp-of-extend-blockchain))
 
-  (defret round-of-car-of-extend-blockchain
-    (equal (block->round (car new-blockchain))
+  (defret blocks-last-round-of-extend-blockchain
+    (equal (blocks-last-round new-blockchain)
            (certificate->round (car anchors)))
-    :hyp (consp anchors))
-  (in-theory (disable round-of-car-of-extend-blockchain))
+    :hyp (consp anchors)
+    :hints (("Goal" :in-theory (enable blocks-last-round
+                                       consp-of-extend-blockchain))))
+  (in-theory (disable blocks-last-round-of-extend-blockchain))
 
   (defret blocks-ordered-even-p-of-extend-blockchain
     (blocks-ordered-even-p new-blockchain)
     :hyp (and (certificates-ordered-even-p anchors)
               (blocks-ordered-even-p blockchain)
               (consp anchors)
-              (or (endp blockchain)
-                  (> (certificate->round (car (last anchors)))
-                     (block->round (car blockchain)))))
+              (> (certificate->round (car (last anchors)))
+                 (blocks-last-round blockchain)))
     :hints (("Goal"
              :induct t
              :in-theory (enable blocks-ordered-even-p
+                                blocks-last-round
                                 certificates-ordered-even-p
                                 last))))
   (in-theory (disable blocks-ordered-even-p-of-extend-blockchain))
@@ -199,4 +205,56 @@
                                 (take (- (len new-blockchain)
                                          (len blockchain))
                                       new-blockchain)))
-                     (blocks blockchain)))))
+                     (blocks blockchain))))
+
+  (defruled collect-anchors-of-extend-blockchain-no-change
+    (b* (((mv new-blockchain &)
+          (extend-blockchain anchors dag blockchain committed-certs)))
+      (implies (and (block-listp blockchain)
+                    (blocks-ordered-even-p new-blockchain)
+                    (or (zp previous-round)
+                        (active-committee-at-round previous-round
+                                                   blockchain
+                                                   all-vals)))
+               (equal (collect-anchors current-anchor
+                                       previous-round
+                                       last-committed-round
+                                       dag
+                                       new-blockchain
+                                       all-vals)
+                      (collect-anchors current-anchor
+                                       previous-round
+                                       last-committed-round
+                                       dag
+                                       blockchain
+                                       all-vals))))
+    :induct (collect-anchors current-anchor
+                             previous-round
+                             last-committed-round
+                             dag
+                             blockchain
+                             all-vals)
+    :enable (collect-anchors
+             active-committee-at-round-of-extend-blockchain-no-change
+             active-committee-at-previous2-round-when-at-round)
+    :disable extend-blockchain)
+
+  (defruled collect-all-anchors-of-extend-blockchain-no-change
+    (b* (((mv new-blockchain &)
+          (extend-blockchain anchors dag blockchain committed-certs)))
+      (implies (and (block-listp blockchain)
+                    (blocks-ordered-even-p new-blockchain)
+                    (active-committee-at-round (certificate->round last-anchor)
+                                               blockchain
+                                               all-vals))
+               (equal (collect-all-anchors last-anchor
+                                           dag
+                                           new-blockchain
+                                           all-vals)
+                      (collect-all-anchors last-anchor
+                                           dag
+                                           blockchain
+                                           all-vals))))
+    :enable (collect-all-anchors
+             collect-anchors-of-extend-blockchain-no-change
+             active-committee-at-previous2-round-when-at-round)))

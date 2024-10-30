@@ -94,7 +94,9 @@
             (create-certificate-next cert systate)))
   :expand (system-last-before-current-p
            (create-certificate-next cert systate))
-  :enable system-last-before-current-p-necc)
+  :enable (system-last-before-current-p-necc
+           validator-state->round-of-create-certificate-next
+           validator-state->last-of-create-certificate-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -112,7 +114,8 @@
             (receive-certificate-next msg systate)))
   :expand (system-last-before-current-p
            (receive-certificate-next msg systate))
-  :enable system-last-before-current-p-necc)
+  :enable (system-last-before-current-p-necc
+           validator-state->round-of-receive-certificate-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

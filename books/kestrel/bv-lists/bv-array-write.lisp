@@ -143,9 +143,7 @@
            (equal (bv-array-write size 1 index val data)
                   (bv-array-write size 1 0 val '(0))))
   :hints (("Goal" :in-theory (e/d (bv-array-write update-nth2 UPDATE-NTH)
-                                  ( ;update-nth-becomes-update-nth2-extend-gen
-                                   ;LIST::UPDATE-NTH-EQUAL-REWRITE
-                                   ;LIST::UPDATE-NTH-EQUAL-UPDATE-NTH-REWRITE
+                                  (;update-nth-becomes-update-nth2-extend-gen
                                    )))))
 
 (defthm bv-array-write-when-len-is-not-natp
@@ -162,9 +160,7 @@
               (equal (car k) (bvchop size val))))
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (e/d (bv-array-write update-nth2 UPDATE-NTH)
-                           ( ;update-nth-becomes-update-nth2-extend-gen
-                            ;LIST::UPDATE-NTH-EQUAL-REWRITE
-                            ;LIST::UPDATE-NTH-EQUAL-UPDATE-NTH-REWRITE
+                           (;update-nth-becomes-update-nth2-extend-gen
                             )))))
 
 ;move
@@ -176,9 +172,7 @@
                        (equal (car k) (bvchop size val)))))
   :hints (("Goal" :do-not '(preprocess)
            :in-theory (e/d (bv-array-write update-nth2 UPDATE-NTH)
-                           ( ;update-nth-becomes-update-nth2-extend-gen
-                            ;LIST::UPDATE-NTH-EQUAL-REWRITE
-                            ;LIST::UPDATE-NTH-EQUAL-UPDATE-NTH-REWRITE
+                           (;update-nth-becomes-update-nth2-extend-gen
                             )))))
 
 ;; width is a free var
