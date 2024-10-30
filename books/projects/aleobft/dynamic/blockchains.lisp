@@ -295,3 +295,19 @@
                               (cert (car anchors))
                               (author (certificate->author (cadr anchors)))
                               (round (certificate->round (cadr anchors))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define calculate-blockchain ((anchors certificate-listp)
+                              (dag certificate-setp))
+  :returns (blockchain block-listp)
+  :short "Calculate a blockchain from a sequence of anchors and a DAG."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We call @(tsee extend-blockchain)
+     starting with the empty blockchain and no committed certificates.
+     We only returns the blockchain,
+     discarding the committed certificate set."))
+  (b* (((mv blockchain &) (extend-blockchain anchors dag nil nil)))
+    blockchain))
