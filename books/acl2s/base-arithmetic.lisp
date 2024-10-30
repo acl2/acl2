@@ -834,6 +834,25 @@ I commented out some disabled theorems that seem fine to me.
            (equal (equal (* (/ y) (mod (* x y) m)) x)
                   (equal (mod (* x y) m) (* x y)))))
 
+(defthm odd-times-odd-is-odd
+  (implies (and (integerp n)
+                (integerp m))
+           (equal (integerp (* 1/2 n m))
+                  (or (integerp (* 1/2 n))
+                      (integerp (* 1/2 m)))))
+  :hints (("goal" :induct (int-ind m))))
+
+(defthm expt-n-m-even-if-n-even
+  (implies (and (integerp n)
+                (integerp m)
+                (< 0 m))
+           (equal (integerp (* 1/2 (expt n m)))
+                  (integerp (* 1/2 n))))
+  :hints (("goal" :induct (nat-ind m))
+          ("subgoal *1/2.2" :in-theory (disable acl2::normalize-factors-gather-exponents)
+           :expand ((expt n m)))
+          ("subgoal *1/2.1" :in-theory (disable acl2::normalize-factors-gather-exponents)
+           :expand ((expt n m)))))
 
 (in-theory
  #!acl2(disable
