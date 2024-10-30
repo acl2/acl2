@@ -125,7 +125,23 @@
      if that committee can be calculated in the original blockchain.
      As a consequence, collecting anchors is not affected
      by the extension of the blockchain,
-     as proved for @(tsee collect-anchors) and @(tsee collect-all-anchors)."))
+     as proved for @(tsee collect-anchors) and @(tsee collect-all-anchors).")
+   (xdoc::p
+    "We show that if a blockchain is extended using anchors
+     that are all in the DAG and connected by paths
+     (i.e. satisfying @(tsee certificates-dag-paths-p),
+     the set of all new committed certificates is the union of
+     the old ones with the causal history of the latest anchor.
+     Based on just the definition of @('extend-blockchain'),
+     we should take the union of the causal histories of all the anchors,
+     but since they are all connected by paths,
+     the causal history of the latest anchor (the @(tsee car))
+     includes the causal history of all the other anchors,
+     and therefore the final set of committed certificates is
+     the union of that latest causal history
+     with the previous committed certificates.
+     But this theorem also covers the case of an empty list of anchors,
+     in which case there is no change in the set of committed certificates."))
   (b* (((when (endp anchors))
         (mv (block-list-fix blockchain)
             (certificate-set-fix committed-certs)))
@@ -257,4 +273,26 @@
                                            all-vals))))
     :enable (collect-all-anchors
              collect-anchors-of-extend-blockchain-no-change
-             active-committee-at-previous2-round-when-at-round)))
+             active-committee-at-previous2-round-when-at-round))
+
+  (defruled new-committed-certs-of-extend-blockchain
+    (implies (and (certificate-setp dag)
+                  (certificate-set-unequivocalp dag)
+                  (certificates-dag-paths-p anchors dag)
+                  (certificate-setp committed-certs))
+             (b* (((mv & new-committed-certs)
+                   (extend-blockchain anchors dag blockchain committed-certs)))
+               (equal new-committed-certs
+                      (if (consp anchors)
+                          (set::union
+                           (certificate-causal-history (car anchors) dag)
+                           committed-certs)
+                        committed-certs))))
+    :induct t
+    :enable (certificates-dag-paths-p
+             nil-not-in-certificate-set
+             set::expensive-rules)
+    :hints ('(:use (:instance certificate-causal-history-subset-when-path
+                              (cert (car anchors))
+                              (author (certificate->author (cadr anchors)))
+                              (round (certificate->round (cadr anchors))))))))
