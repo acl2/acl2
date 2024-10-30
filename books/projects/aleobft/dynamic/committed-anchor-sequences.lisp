@@ -81,7 +81,18 @@
                   (last-anchor vstate vals))
              (equal (car (committed-anchors vstate vals))
                     (last-anchor vstate vals)))
-    :enable car-of-collect-all-anchors))
+    :enable car-of-collect-all-anchors)
+
+  (defret certificates-dag-paths-p-of-committed-anchors
+    (certificates-dag-paths-p anchors (validator-state->dag vstate))
+    :hyp (or (equal (validator-state->last vstate) 0)
+             (set::in (last-anchor vstate all-vals)
+                      (validator-state->dag vstate)))
+    :hints
+    (("Goal"
+      :in-theory (enable certificates-dag-paths-p-of-nil
+                         certificates-dag-paths-p-of-collect-all-anchors))))
+  (in-theory (disable certificates-dag-paths-p-of-committed-anchors)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
