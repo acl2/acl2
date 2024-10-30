@@ -215,7 +215,7 @@
              get-validator-state-of-update-validator-state
              nfix))
 
-  (defrule validator-state->blockchain-of-store-certificate-next
+  (defruled validator-state->blockchain-of-store-certificate-next
     (implies (and (set::in val (correct-addresses systate))
                   (store-certificate-possiblep cert val1 systate))
              (equal (validator-state->blockchain
