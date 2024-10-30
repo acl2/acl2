@@ -825,6 +825,7 @@
            :in-theory (enable merge-trees-into-dag-array))))
 
 (defthm-flag-merge-tree-into-dag-array
+  ;drop?  produced by def-dag-builder-theorems?
   (defthm <=-of-mv-nth-3-of-merge-tree-into-dag-array
     (implies (natp dag-len)
              (<= dag-len
@@ -1145,6 +1146,8 @@
   :dag-parent-array-name dag-parent-array-name
   :dag-array-name dag-array-name)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;returns (mv erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
 ;will nodenum-or-quotep always be a quotep or the top node?
 ;; Handles embedded DAGs in TERM.
@@ -1177,16 +1180,11 @@
 
 ;edited from what def-dag-builder-theorems produces
 (DEFTHM TYPE-OF-MAKE-TERM-INTO-DAG-ARRAY
-  (IMPLIES (AND
-                (NOT
-                 (MV-NTH 0
-                         (MAKE-TERM-INTO-DAG-ARRAY TERM
-                                                   DAG-ARRAY-NAME DAG-PARENT-ARRAY-NAME
-                                                   INTERPRETED-FUNCTION-ALIST)))
+  (IMPLIES (AND (NOT (MV-NTH 0 (MAKE-TERM-INTO-DAG-ARRAY TERM DAG-ARRAY-NAME DAG-PARENT-ARRAY-NAME INTERPRETED-FUNCTION-ALIST))) ; no error
                 (PSEUDO-TERMP TERM)
                 (SYMBOLP DAG-ARRAY-NAME)
                 (SYMBOLP DAG-PARENT-ARRAY-NAME)
-                  ;(INTERPRETED-FUNCTION-ALISTP INTERPRETED-FUNCTION-ALIST)
+                ;;(INTERPRETED-FUNCTION-ALISTP INTERPRETED-FUNCTION-ALIST)
                 )
            (AND
             (WF-DAGP
@@ -1235,6 +1233,8 @@
   :hints (("Goal" :use (:instance TYPE-OF-MAKE-TERM-INTO-DAG-ARRAY)
            :in-theory (disable TYPE-OF-MAKE-TERM-INTO-DAG-ARRAY))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;returns (mv erp nodenums-or-quoteps dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
 (defund make-terms-into-dag-array (terms dag-array-name dag-parent-array-name interpreted-function-alist)
   (declare (xargs :guard (and (pseudo-term-listp terms)
@@ -1250,6 +1250,8 @@
                               (empty-dag-variable-alist)
                               dag-array-name dag-parent-array-name
                               interpreted-function-alist))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp dag-or-quotep).  Uses arrays to do the work.
 (defund make-term-into-dag (term interpreted-function-alist)
@@ -1268,6 +1270,8 @@
       (if (consp nodenum-or-quotep)
           (mv (erp-nil) nodenum-or-quotep)
         (mv (erp-nil) (array-to-alist 'make-term-into-dag-array dag-array dag-len))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp dag-or-quotep).
 ;; Convert term to a DAG (or quoted constant).  Uses arrays to do the work.
@@ -1299,15 +1303,18 @@
            (not (< (len dag) (binary-+ '1 (car (car dag))))))
   :hints (("Goal" :in-theory (enable len-when-pseudo-dagp))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns (mv erp nodenum-or-quotep dag).  Uses arrays to do the work.
 ;leaves pre-existing nodenums in dag unchanged
 ;; Nodenums in TREE refer to DAG-OR-QUOTEP.  Vars in tree may be replaced by
 ;; var-replacement-alist; otherwise, they are the same as the vars in DAG-OR-QUOTEP.
 ;; todo: make a specialized version of this for terms?
-(defund merge-tree-into-dag (tree dag-or-quotep ;can now be a quotep
-                                  ;;interpreted-function-alist
-                                  var-replacement-alist
-                                  )
+(defund merge-tree-into-dag (tree
+                             dag-or-quotep ;can now be a quotep
+                             ;;interpreted-function-alist
+                             var-replacement-alist
+                             )
   (declare (xargs :guard (and ;(axe-treep tree)
                               (or (myquotep dag-or-quotep)
                                   (and (pseudo-dagp dag-or-quotep)
@@ -1337,23 +1344,35 @@
         (declare (ignore dag-parent-array dag-constant-alist dag-variable-alist))
         (if erp
             (mv erp nil nil)
-          (mv (erp-nil) nodenum-or-quotep (array-to-alist dag-array-name dag-array dag-len)))))))
+          (mv (erp-nil) nodenum-or-quotep
+              (array-to-alist dag-array-name dag-array dag-len) ; todo: make a wrapper of array-to-alist with dag in the name
+              ))))))
+
+;; todo: return-type theorems
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Merge the TREE into the dag and drop from the result any DAG nodes that don't support the top node of the tree.
 ;; Returns (mv erp res) where res is a dag-lst or quotep.  Uses arrays to do the work.
 ;; If the tree contains integers, they are nodenums in DAG.
-(defund compose-tree-and-dag (tree dag ;can now be a quotep
-                                   ;;interpreted-function-alist
-                                   var-replacement-alist
-                                   )
-  (declare (xargs :guard (and (axe-treep tree)
-                              (or (myquotep dag)
-                                  (pseudo-dagp dag))
+(defund compose-tree-and-dag (tree
+                              dag ;can now be a quotep
+                              ;;interpreted-function-alist
+                              var-replacement-alist)
+  (declare (xargs :guard (and (or (myquotep dag)
+                                  (and (pseudo-dagp dag)
+                                       (<= (len dag) 1152921504606846974)))
+                              ;;(axe-treep tree)
+                              (if (quotep dag)
+                                  (bounded-axe-treep tree 0)
+                                (bounded-axe-treep tree (+ 1 (top-nodenum dag))))
                               (symbol-alistp var-replacement-alist)
                               (if (quotep dag)
-                                  t
+                                  ;; cannot mention any dag nodes because there aren't any:
+                                  (all-myquotep (strip-cdrs var-replacement-alist))
                                 (bounded-darg-listp (strip-cdrs var-replacement-alist) (+ 1 (top-nodenum dag)))))
-                  :verify-guards nil))
+                  :verify-guards nil ; todo
+                  ))
   (mv-let (erp nodenum-or-quotep new-dag)
     (merge-tree-into-dag tree dag var-replacement-alist) ;todo: this converts the array back to a list, but get-subdag converts it back to an array
     (if erp
@@ -1367,16 +1386,17 @@
 ;; VAR-TO-REPLACE replaced by DAG. Other vars in term are left unchanged. Node
 ;; numbers in DAG are not preserved.
 ;TODO: Generalize to take an alist from vars to dags instead of a single var and DAG.
-;could easily add support for term being an axe tree?
+;TODO: Don't go via trees?  Use merge-term-into-dag-array-basic?
 ;does not inline embedded dags with ifns (since no ifns are passed in to this)?
 (defun compose-term-and-dag (term var-to-replace dag)
   (declare (xargs :guard (and (pseudo-termp term)
                               (symbolp var-to-replace)
                               (or (myquotep dag)
                                   (pseudo-dagp dag)))
-                  :verify-guards nil))
+                  :verify-guards nil ; todo
+                  ))
   (if (quotep dag) ;do we need this special case?
-      ;; Unusual case (dag is just a constant):
+      ;; Unusual case (dag is just a constant): ; todo: do we still need this case?
       (dagify-term (sublis-var-simple ;-and-eval   ;todo: call something simpler that doesn't use arrays?  ;consider sublis-var-and-eval?
                     (acons var-to-replace dag nil)
                     term))
