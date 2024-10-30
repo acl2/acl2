@@ -43,6 +43,7 @@
 (include-book "anchors-extension")
 (include-book "committed-anchor-sequences")
 (include-book "nonforking-anchors")
+(include-book "committed-redundant")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -88,6 +89,7 @@
                     omni-paths
                     anchors-extension
                     committed-anchors-sequences
-                    nonforking-anchors))
+                    nonforking-anchors
+                    committed-redundant))
 
 ; TODO: continue
