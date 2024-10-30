@@ -139,7 +139,7 @@
   (fty::deffixequiv store-certificate-next
     :args ((systate system-statep)))
 
-  (defrule validator-state->round-of-store-certificate-next
+  (defruled validator-state->round-of-store-certificate-next
     (implies (and (set::in val (correct-addresses systate))
                   (store-certificate-possiblep cert val1 systate))
              (equal (validator-state->round
