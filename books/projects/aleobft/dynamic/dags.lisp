@@ -14,6 +14,7 @@
 (include-book "certificates")
 (include-book "committees")
 
+(include-book "kestrel/utilities/osets" :dir :system)
 (include-book "std/basic/two-nats-measure" :dir :system)
 
 (local (include-book "../library-extensions/oset-theorems"))
@@ -1640,3 +1641,56 @@
                      (cert cert)
                      (cert1 (path-to-author+round cert author round dag))
                      (cert2 cert0)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define certificates-dag-paths-p ((certs certificate-listp)
+                                  (dag certificate-setp))
+  :returns (yes/no booleanp)
+  :short "Check if a list of zero or more certificates
+          are all in a DAG and are connected by paths."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "That is, if the list is @('(c1 .. cn)'),
+     this predicate says whether
+     each @('ci') is in the DAG
+     and there is a path from each @('ci') to @('ci+1').
+     The predicate is @('t') if the list is empty.
+     The predicate is @('t') if the list is a singleton
+     whose element is in the DAG;
+     no paths are required in this case.
+     If there are two or more certificates in the list,
+     then there must be paths between each contiguous elements."))
+  (b* (((when (endp certs)) t)
+       (cert (car certs))
+       ((unless (set::in cert dag)) nil)
+       ((when (endp (cdr certs))) t)
+       (cert1 (cadr certs))
+       ((unless (<= (certificate->round cert1)
+                    (certificate->round cert)))
+        nil)
+       ((unless (equal (path-to-author+round cert
+                                             (certificate->author cert1)
+                                             (certificate->round cert1)
+                                             dag)
+                       cert1))
+        nil))
+    (certificates-dag-paths-p (cdr certs) dag))
+
+  ///
+
+  (defruled certificates-dag-paths-p-of-nil
+    (certificates-dag-paths-p nil dag))
+
+  (defruled certificates-dag-paths-p-member-in-dag
+    (implies (and (certificates-dag-paths-p certs dag)
+                  (member-equal cert certs))
+             (set::in cert dag))
+    :induct t
+    :enable member-equal)
+
+  (defruled list-in-when-certificates-dag-paths-p
+    (implies (certificates-dag-paths-p certs dag)
+             (set::list-in certs dag))
+    :induct t))
