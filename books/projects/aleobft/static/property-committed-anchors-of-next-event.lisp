@@ -145,7 +145,8 @@
            system-unequivocal-dag-p-when-system-unequivocal-certificates-p
            system-previous-in-dag-p-necc
            system-last-anchor-present-p-necc
-           validator-state->dag-subset-store-certificate-next)
+           validator-state->dag-subset-store-certificate-next
+           validator-state->last-of-store-certificate-next)
   :use (:instance collect-all-anchors-of-unequivocal-dag-superset
                   (vals (all-addresses systate))
                   (last-anchor

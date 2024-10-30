@@ -133,7 +133,8 @@
             (store-certificate-next cert val systate)))
   :expand (system-last-before-current-p
            (store-certificate-next cert val systate))
-  :enable validator-state->round-of-store-certificate-next
+  :enable (validator-state->round-of-store-certificate-next
+           validator-state->last-of-store-certificate-next)
   :use (:instance system-last-before-current-p-necc
                   (val (system-last-before-current-p-witness
                         (store-certificate-next cert val systate)))))

@@ -201,7 +201,7 @@
     :enable validator-state->dag-of-store-certificate-next
     :disable store-certificate-next)
 
-  (defrule validator-state->last-of-store-certificate-next
+  (defruled validator-state->last-of-store-certificate-next
     (implies (and (set::in val (correct-addresses systate))
                   (store-certificate-possiblep cert val1 systate))
              (equal (validator-state->last

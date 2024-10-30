@@ -163,7 +163,8 @@
                           (all-addresses systate)))
     :enable (last-anchor
              certificate-with-author+round-of-insert-iff
-             validator-state->dag-of-store-certificate-next))
+             validator-state->dag-of-store-certificate-next
+             validator-state->last-of-store-certificate-next))
 
   (defrule system-last-anchor-present-p-of-store-certificate-next
     (implies (and (system-last-anchor-present-p systate)
@@ -172,7 +173,8 @@
               (store-certificate-next cert val systate)))
     :expand (system-last-anchor-present-p
              (store-certificate-next cert val systate))
-    :enable system-last-anchor-present-p-necc))
+    :enable (system-last-anchor-present-p-necc
+             validator-state->last-of-store-certificate-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

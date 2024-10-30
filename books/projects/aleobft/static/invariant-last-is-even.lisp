@@ -117,7 +117,8 @@
             (store-certificate-next cert val systate)))
   :expand (system-last-is-even-p
            (store-certificate-next cert val systate))
-  :enable system-last-is-even-p-necc)
+  :enable (system-last-is-even-p-necc
+           validator-state->last-of-store-certificate-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
