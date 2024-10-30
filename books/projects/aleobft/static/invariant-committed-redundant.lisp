@@ -234,7 +234,8 @@
               (all-addresses systate)))
     :enable (validator-committed-redundantp
              system-last-anchor-present-p-necc
-             validator-state->last-of-store-certificate-next))
+             validator-state->last-of-store-certificate-next
+             validator-state->committed-of-store-certificate-next))
 
   (defrule system-committed-redundantp-of-store-certificate-next
     (implies (and (system-committed-redundantp systate)
