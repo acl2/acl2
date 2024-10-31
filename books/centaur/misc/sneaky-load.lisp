@@ -112,7 +112,7 @@ values.</p>
 @(see sneaky-incf), allow you to manipulate the values in this hash table, but
 only indirectly.  This keeps the @('*sneaky-state*') as a purely Common Lisp
 variable that exists outside of ACL2, so the effects of manipulating this state
-is logically invisible.  That is, in the logic, all of these functions just
+are logically invisible.  That is, in the logic, all of these functions just
 return @('nil').</p>
 
 <p>Meanwhile, to be able to retrieve values, the special operations @(see

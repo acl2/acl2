@@ -69,7 +69,7 @@
   (sm-data      :type (array t (0))
                 :resizable t
                 ;; the default element for something that's bound but
-                ;; did not have its data explicitily set
+                ;; did not have its data explicitly set
                 :initially t)
   (sm-count     :type (unsigned-byte 32)
                 :initially 0)

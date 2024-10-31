@@ -97,7 +97,7 @@ that generally performs very well.</p>"
     :parents (4v-sexpr-vars)
     :short "Extension of @(see 4v-sexpr-vars) to a sexpr list."
 
-    :long "<p>@(call 4v-sexpr-vars-list) is is the mutually recursive
+    :long "<p>@(call 4v-sexpr-vars-list) is the mutually recursive
 counterpart of @(see 4v-sexpr-vars).  It is given a list of sexprs, and returns
 a single set containing all the variables in these sexprs.</p>")
 
