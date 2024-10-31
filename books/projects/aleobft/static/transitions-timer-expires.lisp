@@ -84,7 +84,7 @@
   (fty::deffixequiv timer-expires-next
     :args ((systate system-statep)))
 
-  (defrule validator-state->round-of-timer-expires-next
+  (defruled validator-state->round-of-timer-expires-next
     (implies (and (set::in val (correct-addresses systate))
                   (timer-expires-possiblep val1 systate))
              (equal (validator-state->round
