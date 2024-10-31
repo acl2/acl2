@@ -154,6 +154,7 @@
             (advance-round-next val systate)))
   :expand (system-last-before-current-p
            (advance-round-next val systate))
+  :enable validator-state->round-of-advance-round-next
   :use (:instance system-last-before-current-p-necc
                   (val (system-last-before-current-p-witness
                         (advance-round-next val systate)))))

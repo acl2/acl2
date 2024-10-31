@@ -140,7 +140,7 @@
   (fty::deffixequiv advance-round-next
     :args ((systate system-statep)))
 
-  (defrule validator-state->round-of-advance-round-next
+  (defruled validator-state->round-of-advance-round-next
     (implies (and (set::in val (correct-addresses systate))
                   (advance-round-possiblep val1 systate))
              (equal (validator-state->round
