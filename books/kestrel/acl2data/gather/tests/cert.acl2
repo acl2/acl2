@@ -8,9 +8,24 @@
 ; When the following was on one line, there was a report of "Bad path" in the
 ; runs/ directory during a regression attempt.  For that reason I added
 ; linebreaks below (after ld and also before :dir) at one point.  But then some
-; dependencies were missing.  Now the "bad path" message seems to be gone, so
-; I've removed the linebreaks (10/31/2024).  If "bad path" happens again, a
-; solution could be to add a multi-line comment with the include-book forms
-; near the top of books/kestrel/acl2data/gather/patch-book.lisp, including the
-; one at the end for "my-advice" that's commented out there.
-(ld "kestrel/acl2data/gather/tests/runs/customize-tests.lsp" :dir :system :ld-missing-input-ok t)
+; dependencies were missing.  The "bad path" message seemed to be gone, but
+; Eric Smith pointed out how it can happen -- namely, when runs/ doesn't exist.
+; So I've put the linebreaks back in, and I'll add the necessary dependencies
+; via a multi-line comment below.
+(ld
+ "kestrel/acl2data/gather/tests/runs/customize-tests.lsp"
+ :dir :system :ld-missing-input-ok t)
+
+; See above for an explanation of the following comment, which is intended to
+; support dependency tracking.  It is based on the include-book forms near the
+; top of books/kestrel/acl2data/gather/patch-book.lisp, including the one at
+; the end for "my-advice" that's commented out there.
+#|
+(include-book "kestrel/acl2data/gather/remove-hyp-checkpoints" :dir :system)
+(include-book "kestrel/acl2data/gather/remove-hint-setting-checkpoints" :dir :system)
+(include-book "kestrel/acl2data/gather/remove-rune-checkpoints" :dir :system)
+(include-book "kestrel/acl2data/gather/remove-book-runes-checkpoints" :dir :system)
+(include-book "kestrel/acl2data/gather/count-acl2data" :dir :system)
+(include-book "kestrel/acl2data/gather/event-symbol-table" :dir :system)
+(include-book "kestrel/acl2data/gather/my-advice" :dir :system)
+|#

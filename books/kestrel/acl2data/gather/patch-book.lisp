@@ -9,7 +9,8 @@
 (depends-on "patch.lsp")
 |#
 
-; Warning: Keep this in sync with the include-book forms in patch.lsp.
+; Warning: Keep this in sync with the include-book forms in patch.lsp
+; and in tests/cert.acl2.
 (include-book "remove-hyp-checkpoints")
 (include-book "remove-hint-setting-checkpoints")
 (include-book "remove-rune-checkpoints")
