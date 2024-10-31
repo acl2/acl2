@@ -157,7 +157,8 @@
   :expand (system-last-is-even-p
            (commit-anchors-next val systate))
   :enable (system-last-is-even-p-necc
-           commit-anchors-possiblep)
+           commit-anchors-possiblep
+           validator-state->last-of-commit-anchors-next)
   :prep-lemmas
   ((defrule lemma
      (implies (and (natp x)

@@ -285,7 +285,8 @@
     :enable (validator-last-anchor-voters-p
              fix
              commit-anchors-possiblep
-             validator-state->dag-of-commit-anchors-next))
+             validator-state->dag-of-commit-anchors-next
+             validator-state->last-of-commit-anchors-next))
 
   (defrule system-last-anchor-voters-p-of-commit-anchors-next
     (implies (and (system-last-anchor-voters-p systate)

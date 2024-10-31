@@ -230,7 +230,8 @@
                           (all-addresses systate)))
     :enable (last-anchor
              commit-anchors-possiblep
-             validator-state->dag-of-commit-anchors-next))
+             validator-state->dag-of-commit-anchors-next
+             validator-state->last-of-commit-anchors-next))
 
   (defrule system-last-anchor-present-p-of-commit-anchors-next
     (implies (and (system-last-anchor-present-p systate)
@@ -239,7 +240,8 @@
               (commit-anchors-next val systate)))
     :expand (system-last-anchor-present-p
              (commit-anchors-next val systate))
-    :enable system-last-anchor-present-p-necc))
+    :enable (system-last-anchor-present-p-necc
+             validator-state->last-of-commit-anchors-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
