@@ -166,7 +166,7 @@
              advance-round-possiblep
              get-validator-state-of-update-validator-state))
 
-  (defrule validator-state->last-of-advance-round-next
+  (defruled validator-state->last-of-advance-round-next
     (implies (and (set::in val (correct-addresses systate))
                   (advance-round-possiblep val1 systate))
              (equal (validator-state->last

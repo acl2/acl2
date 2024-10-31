@@ -246,7 +246,8 @@
               (max-faulty systate)
               (all-addresses systate)))
     :enable (validator-last-anchor-voters-p
-             validator-state->dag-of-advance-round-next))
+             validator-state->dag-of-advance-round-next
+             validator-state->last-of-advance-round-next))
 
   (defrule system-last-anchor-voters-p-of-advance-round-next
     (implies (and (system-last-anchor-voters-p systate)

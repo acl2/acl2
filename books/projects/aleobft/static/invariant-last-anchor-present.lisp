@@ -194,7 +194,8 @@
                            val (advance-round-next val1 systate))
                           (all-addresses systate)))
     :enable (last-anchor
-             validator-state->dag-of-advance-round-next))
+             validator-state->dag-of-advance-round-next
+             validator-state->last-of-advance-round-next))
 
   (defrule system-last-anchor-present-p-of-advance-round-next
     (implies (and (system-last-anchor-present-p systate)
@@ -203,7 +204,8 @@
               (advance-round-next val systate)))
     :expand (system-last-anchor-present-p
              (advance-round-next val systate))
-    :enable system-last-anchor-present-p-necc))
+    :enable (system-last-anchor-present-p-necc
+             validator-state->last-of-advance-round-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

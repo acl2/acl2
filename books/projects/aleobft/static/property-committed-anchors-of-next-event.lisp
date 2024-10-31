@@ -179,7 +179,8 @@
                   (committed-anchors (get-validator-state val systate)
                                      (all-addresses systate))))
   :enable (committed-anchors
-           validator-state->dag-of-advance-round-next))
+           validator-state->dag-of-advance-round-next
+           validator-state->last-of-advance-round-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

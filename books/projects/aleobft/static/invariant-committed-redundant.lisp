@@ -272,7 +272,8 @@
              (validator-committed-redundantp
               (get-validator-state val (advance-round-next val1 systate))
               (all-addresses systate)))
-    :enable validator-committed-redundantp)
+    :enable (validator-committed-redundantp
+             validator-state->last-of-advance-round-next))
 
   (defrule system-committed-redundantp-of-advance-round-next
     (implies (and (system-committed-redundantp systate)

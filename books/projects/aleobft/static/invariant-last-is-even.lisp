@@ -135,7 +135,8 @@
             (advance-round-next val systate)))
   :expand (system-last-is-even-p
            (advance-round-next val systate))
-  :enable system-last-is-even-p-necc)
+  :enable (system-last-is-even-p-necc
+           validator-state->last-of-advance-round-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
