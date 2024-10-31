@@ -416,7 +416,8 @@
               (get-validator-state val (timer-expires-next val1 systate))
               (all-addresses systate)))
     :enable (validator-committed-redundantp
-             validator-state->last-of-timer-expires-next))
+             validator-state->last-of-timer-expires-next
+             validator-state->committed-of-timer-expires-next))
 
   (defrule system-committed-redundantp-of-timer-expires-next
     (implies (and (system-committed-redundantp systate)
