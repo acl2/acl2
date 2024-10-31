@@ -250,7 +250,8 @@
             (timer-expires-next val systate)))
   :expand (system-previous-in-dag-p
            (timer-expires-next val systate))
-  :enable system-previous-in-dag-p-necc)
+  :enable (system-previous-in-dag-p-necc
+           validator-state->dag-of-timer-expires-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

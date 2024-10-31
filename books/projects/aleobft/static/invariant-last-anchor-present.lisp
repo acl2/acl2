@@ -260,7 +260,8 @@
              (last-anchor (get-validator-state
                            val (timer-expires-next val1 systate))
                           (all-addresses systate)))
-    :enable last-anchor)
+    :enable (last-anchor
+             validator-state->dag-of-timer-expires-next))
 
   (defrule system-last-anchor-present-p-of-timer-expires-next
     (implies (and (system-last-anchor-present-p systate)

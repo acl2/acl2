@@ -171,7 +171,8 @@
                     (certificate-causal-history
                      cert1
                      (validator-state->dag
-                      (get-validator-state val systate))))))
+                      (get-validator-state val systate)))))
+    :enable validator-state->dag-of-timer-expires-next)
 
   (defrule certificate-causal-history-of-event-next
     (implies (and (system-signers-are-validators-p systate)

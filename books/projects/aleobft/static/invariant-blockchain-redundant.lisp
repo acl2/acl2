@@ -381,7 +381,8 @@
               (get-validator-state
                val (timer-expires-next val1 systate))
               (all-addresses systate)))
-    :enable (validator-blockchain-redundantp))
+    :enable (validator-blockchain-redundantp
+             validator-state->dag-of-timer-expires-next))
 
   (defrule system-blockchain-redundantp-of-timer-expires-next
     (implies (and (timer-expires-possiblep val1 systate)
