@@ -143,7 +143,8 @@
                     (certificate-causal-history
                      cert1
                      (validator-state->dag
-                      (get-validator-state val systate))))))
+                      (get-validator-state val systate)))))
+    :enable validator-state->dag-of-advance-round-next)
 
   (defrule certificate-causal-history-of-commit-anchors-next
     (implies (and (set::in val (correct-addresses systate))

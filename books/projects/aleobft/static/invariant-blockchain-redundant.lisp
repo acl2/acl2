@@ -283,7 +283,8 @@
               (get-validator-state
                val (advance-round-next val1 systate))
               (all-addresses systate)))
-    :enable (validator-blockchain-redundantp))
+    :enable (validator-blockchain-redundantp
+             validator-state->dag-of-advance-round-next))
 
   (defrule system-blockchain-redundantp-of-advance-round-next
     (implies (and (advance-round-possiblep val1 systate)

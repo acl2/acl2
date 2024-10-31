@@ -193,7 +193,8 @@
              (last-anchor (get-validator-state
                            val (advance-round-next val1 systate))
                           (all-addresses systate)))
-    :enable last-anchor)
+    :enable (last-anchor
+             validator-state->dag-of-advance-round-next))
 
   (defrule system-last-anchor-present-p-of-advance-round-next
     (implies (and (system-last-anchor-present-p systate)

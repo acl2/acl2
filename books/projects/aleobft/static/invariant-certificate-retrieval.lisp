@@ -152,7 +152,8 @@
                      author
                      round
                      (validator-state->dag
-                      (get-validator-state val systate))))))
+                      (get-validator-state val systate)))))
+    :enable validator-state->dag-of-advance-round-next)
 
   (defrule certificate-with-author+round-of-commit-anchors-next
     (implies (and (set::in val (correct-addresses systate))

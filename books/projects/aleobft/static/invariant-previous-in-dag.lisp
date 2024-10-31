@@ -216,7 +216,8 @@
             (advance-round-next val systate)))
   :expand (system-previous-in-dag-p
            (advance-round-next val systate))
-  :enable system-previous-in-dag-p-necc)
+  :enable (system-previous-in-dag-p-necc
+           validator-state->dag-of-advance-round-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
