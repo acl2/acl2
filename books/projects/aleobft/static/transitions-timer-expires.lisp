@@ -122,7 +122,7 @@
              get-validator-state-of-update-validator-state
              nfix))
 
-  (defrule validator-state->blockchain-of-timer-expires-next
+  (defruled validator-state->blockchain-of-timer-expires-next
     (implies (and (set::in val (correct-addresses systate))
                   (timer-expires-possiblep val1 systate))
              (equal (validator-state->blockchain
