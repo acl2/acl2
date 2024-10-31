@@ -1043,6 +1043,17 @@
   (:none ())
   :pred linkagep)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption linkage-option
+  linkage
+  :short "Fixtype of optional linkages."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Linkages are defined in @(tsee linkage)."))
+  :pred linkage-optionp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum lifetime
@@ -1066,6 +1077,17 @@
   (:thread ())
   (:auto ())
   :pred lifetimep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption lifetime-option
+  lifetime
+  :short "Fixtype of optional lifetimes."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Lifetimes are defined in @(tsee lifetime)."))
+  :pred lifetime-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2564,6 +2586,167 @@
                   the second operand has type ~x1 ~
                   and the third operand has type ~x2."
                  (expr-fix expr) (type-fix type-then) (type-fix type-else))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define valid-stor-spec ((storspec stor-specp)
+                         (storspecs stor-spec-listp))
+  :returns (mv erp
+               (typedefp booleanp)
+               (linkage? linkage-optionp)
+               (lifetime? lifetime-optionp)
+               (new-storspecs stor-spec-listp))
+  :short "Validate a storage class specifier."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Storage class specifiers [C:6.7.1]
+     appear as declaration specifiers,
+     which appear in declarations.
+     Declaration specifiers indicate the linkage and storage duration
+     of the declared identifiers [C:6.7/6];
+     more precisely, it is storage class specifiers that indicate that.
+     But storage class specifiers also include @('typedef'),
+     mainly for syntactic convenience [C:6.7.1/5],
+     which does not determine any linkage or storage duration,
+     but indicates that a @('typedef') name is being declared.
+     Thus, storage class specifiers may indicate various kinds of information,
+     which we return as results,
+     along with the list of preceding storage class specifiers.")
+   (xdoc::p
+    "A @('typedef') must be preceded by no storage class specifier [C:6.7.1/2].
+     A @('typedef') specifies that a @('typedef') name is being declared,
+     so we return @('t') as the @('typedef') flag result.
+     A @('typedef') name is not an object or function,
+     and thus it has no linkage [C:6.2.2/6]:
+     so we return that as the linkage result.
+     Since a @('typedef') name is not an object,
+     it does not have a storage duration [C:6.2.4/1],
+     so we return @('nil') as the liftetime result.")
+   (xdoc::p
+    "An @('extern') may be only preceded by @('_Thread_local') [C:6.7.1/2].
+     An @('extern') does not specify a @('typedef') name,
+     so we return @('nil') as the @('typedef') flag result.
+     An @('extern') normally specifies external linkage
+     if it is in the first or only declaration of the identifier [C:6.2.2/4],
+     so we return external linkage as result;
+     this may be overridden (in other validation code)
+     if the declaration is not the first or only one [C:6.2.2/4].
+     If there is a preceding @('_Thread_local'),
+     the storage duration is thread [C:6.2.4/4]
+     (in this case the input @('lifetime?') would be already that,
+     although we do not explicate this invariant).
+     If there is no preceding @('_Thread_local'),
+     we return the static storage duration [C:6.2.4/3],
+     but this will be changed to thread if a @('_Thread_local') follows.")
+   (xdoc::p
+    "A @('static') is treated similarly to an @('extern'),
+     except that the linkage is internal [C:6.2.2/3].")
+   (xdoc::p
+    "A @('_Thread_local') may be preceded
+     only by an @('extern') or a @('static')
+     [C:6.7.1/2].
+     If nothing precedes it,
+     we only determine the storage duration as thread,
+     without determining the linkage.
+     If it is preceded by @('extern') or @('static'),
+     we also determine the linkage, as external or internal,
+     in analogy with the situations, discussed above,
+     in which the order of the two storage class specifiers is swapped.")
+   (xdoc::p
+    "An @('auto') or @('register') may not be preceded by anything [C:6.7.1/2].
+     These two give the same results:
+     no linkage, and automatic storage duration."))
+  (b* (((reterr) nil nil nil nil)
+       (msg-bad-preceding (msg "The storage class specifier ~x0 ~
+                                must not be preceded by ~x1."
+                               (stor-spec-fix storspec)
+                               (stor-spec-list-fix storspecs)))
+       (ext-storspecs (rcons (stor-spec-fix storspec)
+                             (stor-spec-list-fix storspecs))))
+    (stor-spec-case
+     storspec
+     :typedef (cond
+               ((endp storspecs) ; typedef
+                (retok t
+                       (linkage-none)
+                       nil
+                       ext-storspecs))
+               (t ; other typedef
+                (reterr msg-bad-preceding)))
+     :extern (cond
+              ((endp storspecs) ; extern
+               (retok nil
+                      (linkage-external)
+                      (lifetime-static)
+                      ext-storspecs))
+              ((and (consp storspecs)
+                    (endp (cdr storspecs))
+                    (stor-spec-case (car storspecs)
+                                    :threadloc)) ; _Thread_local extern
+               (retok nil
+                      (linkage-external)
+                      (lifetime-thread)
+                      ext-storspecs))
+              (t ; other extern
+               (reterr msg-bad-preceding)))
+     :static (cond
+              ((endp storspecs) ; static
+               (retok nil
+                      (linkage-internal)
+                      (lifetime-static)
+                      ext-storspecs))
+              ((and (consp storspecs)
+                    (endp (cdr storspecs))
+                    (stor-spec-case (car storspecs)
+                                    :threadloc)) ; _Thread_local static
+               (retok nil
+                      (linkage-internal)
+                      (lifetime-thread)
+                      ext-storspecs))
+              (t ; other static
+               (reterr msg-bad-preceding)))
+     :threadloc (cond
+                 ((endp storspecs) ; _Thread_local
+                  (retok nil
+                         nil
+                         (lifetime-thread)
+                         ext-storspecs))
+                 ((and (consp storspecs)
+                       (endp (cdr storspecs))
+                       (stor-spec-case (car storspecs)
+                                       :extern)) ; extern _Thread_local
+                  (retok nil
+                         (linkage-external)
+                         (lifetime-thread)
+                         ext-storspecs))
+                 ((and (consp storspecs)
+                       (endp (cdr storspecs))
+                       (stor-spec-case (car storspecs)
+                                       :static)) ; static _Thread_local
+                  (retok nil
+                         (linkage-internal)
+                         (lifetime-thread)
+                         ext-storspecs))
+                 (t ; other _Thread_local
+                  (reterr msg-bad-preceding)))
+     :auto (cond
+            ((endp storspecs) ; auto
+             (retok nil
+                    (linkage-none)
+                    (lifetime-auto)
+                    ext-storspecs))
+            (t ; other auto
+             (reterr msg-bad-preceding)))
+     :register (cond
+                ((endp storspecs) ; register
+                 (retok nil
+                        (linkage-none)
+                        (lifetime-auto)
+                        ext-storspecs))
+                (t ; other register
+                 (reterr msg-bad-preceding)))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
