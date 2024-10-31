@@ -45,6 +45,7 @@
 (include-book "nonforking-anchors")
 (include-book "committed-redundant")
 (include-book "blockchain-redundant")
+(include-book "nonforking-blockchains-next")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -92,6 +93,7 @@
                     committed-anchors-sequences
                     nonforking-anchors
                     committed-redundant
-                    blockchain-redundant))
+                    blockchain-redundant
+                    nonforking-blockchains-next))
 
 ; TODO: continue
