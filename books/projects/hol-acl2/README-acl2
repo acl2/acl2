@@ -1,0 +1,58 @@
+This directory contains replacements for portions of the
+examples/acl2/ directory in the Kananaskis release of HOL4 that has
+been obtained as follows.
+
+git clone https://github.com/HOL-Theorem-Prover/HOL.git .
+
+Normal regression testing will certify the books in this directory
+(and, recursively, in subdirectories).  To run an additional test, run
+the script file, doit, in the tests/ subdirectory -- but first set
+environment variables as explained in file .acl2holrc.bash in the
+present directory.  That doit script can be run after certifying
+appropriate books in the regression; optionally, you can first clean
+the books under the present directory or under tests/.
+
+Here is a summary of those replacements.  (The present file,
+README-acl2, is new here.)
+
+----------
+
+The script .acl2holrc.bash has been modified so that the user is
+required to supply the value of variable ACL2_SRC, e.g., as
+/Users/kaufmann/acl2/acl2 .
+
+----------
+
+In tests/gold/, the following changed because prog2$ was previously a
+function in ACL2 but it is now a macro.
+
+tests/gold/defund-test.lisp
+tests/gold/defund_test.sml
+
+----------
+
+The process of generating a .sml file from a .lisp file includes
+transformation to an "essence" version of the .lisp file, which
+includes performing macroexpansion and throwing away extra-logical
+information such as the rule-classes of a defthm event.  The following
+files were updated to get the script tests/.doit to work with ACL2
+versions 8.6 and beyond.
+
+lisp/book-essence.lisp
+lisp/pkg-alist-to-alist.lisp
+lisp/untranslate-file.lisp
+
+tests/inputs/Makefile
+tests/inputs/PKGS.lsp
+tests/inputs/PKGS.sml
+tests/inputs/m1-story.lisp
+
+----------
+
+The script tests/doit has been modified to avoid so-called "round-trip
+testing" for axioms.lisp.  That testing would need to be updated in
+order to avoid failure with the previous tests/doit.  That script also
+puts a file cert_pl_exclude into the tests/results/ directory, to
+avoid any attempt at certifying files in that directory.
+
+----------
