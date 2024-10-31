@@ -43,6 +43,9 @@
 (include-book "anchors-extension")
 (include-book "committed-anchor-sequences")
 (include-book "nonforking-anchors")
+(include-book "committed-redundant")
+(include-book "blockchain-redundant")
+(include-book "nonforking-blockchains-next")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -88,6 +91,9 @@
                     omni-paths
                     anchors-extension
                     committed-anchors-sequences
-                    nonforking-anchors))
+                    nonforking-anchors
+                    committed-redundant
+                    blockchain-redundant
+                    nonforking-blockchains-next))
 
 ; TODO: continue

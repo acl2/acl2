@@ -81,7 +81,18 @@
                   (last-anchor vstate vals))
              (equal (car (committed-anchors vstate vals))
                     (last-anchor vstate vals)))
-    :enable car-of-collect-all-anchors))
+    :enable car-of-collect-all-anchors)
+
+  (defret certificates-dag-paths-p-of-committed-anchors
+    (certificates-dag-paths-p anchors (validator-state->dag vstate))
+    :hyp (or (equal (validator-state->last vstate) 0)
+             (set::in (last-anchor vstate all-vals)
+                      (validator-state->dag vstate)))
+    :hints
+    (("Goal"
+      :in-theory (enable certificates-dag-paths-p-of-nil
+                         certificates-dag-paths-p-of-collect-all-anchors))))
+  (in-theory (disable certificates-dag-paths-p-of-committed-anchors)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -183,7 +194,6 @@
              validator-state->dag-of-create-certificate-next
              validator-state->blockchain-of-create-certificate-next
              backward-closed-p-necc
-             certificate-sets-unequivocalp-of-same-set
              last-anchor-present-p-necc
              last-anchor-in-dag
              unequivocal-accepted-certificates-p-of-create-certificate-next)
@@ -204,9 +214,8 @@
                                     (certificate->author cert) systate)
                                    (all-addresses systate)))
                      (all-vals (all-addresses systate)))
-          (:instance certificate-sets-unequivocalp-when-unequivocal-accepted
-                     (val1 (certificate->author cert))
-                     (val2 (certificate->author cert))
+          (:instance certificate-set-unequivocalp-when-unequivocal-accepted
+                     (val (certificate->author cert))
                      (systate (create-certificate-next cert systate)))))
 
   ;; receive certificate:
@@ -283,7 +292,6 @@
                 validator-state->dag-of-store-certificate-next
                 validator-state->blockchain-of-store-certificate-next
                 backward-closed-p-necc
-                certificate-sets-unequivocalp-of-same-set
                 last-anchor-present-p-necc
                 last-anchor-in-dag
                 unequivocal-accepted-certificates-p-of-store-certificate-next)
@@ -304,9 +312,8 @@
                                        val1 systate)
                                       (all-addresses systate)))
                         (all-vals (all-addresses systate)))
-             (:instance certificate-sets-unequivocalp-when-unequivocal-accepted
-                        (val1 val1)
-                        (val2 val1)
+             (:instance certificate-set-unequivocalp-when-unequivocal-accepted
+                        (val val1)
                         (systate
                          (store-certificate-next val1 cert systate)))))))
 

@@ -116,7 +116,8 @@
                      cert1
                      (validator-state->dag
                       (get-validator-state val systate)))))
-    :enable system-previous-in-dag-p-necc
+    :enable (system-previous-in-dag-p-necc
+             validator-state->dag-of-store-certificate-next)
     :use ((:instance certificate-causal-history-of-unequivocal-dag-superset
                      (cert cert1)
                      (dag (validator-state->dag
@@ -142,7 +143,8 @@
                     (certificate-causal-history
                      cert1
                      (validator-state->dag
-                      (get-validator-state val systate))))))
+                      (get-validator-state val systate)))))
+    :enable validator-state->dag-of-advance-round-next)
 
   (defrule certificate-causal-history-of-commit-anchors-next
     (implies (and (set::in val (correct-addresses systate))
@@ -155,7 +157,8 @@
                     (certificate-causal-history
                      cert1
                      (validator-state->dag
-                      (get-validator-state val systate))))))
+                      (get-validator-state val systate)))))
+    :enable validator-state->dag-of-commit-anchors-next)
 
   (defrule certificate-causal-history-of-timer-expires-next
     (implies (and (set::in val (correct-addresses systate))
@@ -168,7 +171,8 @@
                     (certificate-causal-history
                      cert1
                      (validator-state->dag
-                      (get-validator-state val systate))))))
+                      (get-validator-state val systate)))))
+    :enable validator-state->dag-of-timer-expires-next)
 
   (defrule certificate-causal-history-of-event-next
     (implies (and (system-signers-are-validators-p systate)

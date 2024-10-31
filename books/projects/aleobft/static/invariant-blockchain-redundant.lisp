@@ -32,7 +32,7 @@
     "The state of each validator includes (their view of) the blockchain.
      This is initially empty, and gets extended, one or more blocks at a time,
      when anchors are committed.
-     However, because the stability properties of
+     However, because of the stability properties of
      paths in the DAG, causal histories, etc.,
      the full blockchain can always be recalculated from scratch,
      from the sequence of committed anchors and from the DAG.")
@@ -188,7 +188,8 @@
                val (receive-certificate-next msg systate))
               (all-addresses systate)))
     :enable (validator-blockchain-redundantp
-             validator-state->dag-of-receive-certificate-next))
+             validator-state->dag-of-receive-certificate-next
+             validator-state->blockchain-of-receive-certificate-next))
 
   (defrule system-blockchain-redundantp-of-receive-certificate-next
     (implies (and (receive-certificate-possiblep msg systate)
@@ -233,7 +234,9 @@
              system-unequivocal-dag-p-necc
              system-previous-in-dag-p-necc
              system-last-anchor-present-p-necc
-             list-in-when-certificate-list-pathp)
+             list-in-when-certificate-list-pathp
+             validator-state->dag-subset-store-certificate-next
+             validator-state->blockchain-of-store-certificate-next)
     :use (:instance calculate-blockchain-of-unequivocal-dag-superset
                     (dag (validator-state->dag
                           (get-validator-state val systate)))
@@ -242,8 +245,7 @@
                             val (store-certificate-next cert val1 systate))))
                     (anchors (committed-anchors
                               (get-validator-state val systate)
-                              (all-addresses systate))))
-    :disable validator-state->dag-of-store-certificate-next)
+                              (all-addresses systate)))))
 
   (defrule system-blockchain-redundantp-of-store-certificate-next
     (implies (and (system-signers-are-validators-p systate)
@@ -281,7 +283,9 @@
               (get-validator-state
                val (advance-round-next val1 systate))
               (all-addresses systate)))
-    :enable (validator-blockchain-redundantp))
+    :enable (validator-blockchain-redundantp
+             validator-state->dag-of-advance-round-next
+             validator-state->blockchain-of-advance-round-next))
 
   (defrule system-blockchain-redundantp-of-advance-round-next
     (implies (and (advance-round-possiblep val1 systate)
@@ -338,7 +342,9 @@
              system-unequivocal-dag-p-necc
              system-last-anchor-present-p-necc
              extend-blockchain-of-nil
-             extend-blockchain-of-append)
+             extend-blockchain-of-append
+             validator-state->dag-of-commit-anchors-next
+             validator-state->blockchain-of-commit-anchors-next)
     :use system-committed-redundantp-necc)
 
   (defrule system-blockchain-redundantp-of-commit-anchors-next
@@ -375,7 +381,9 @@
               (get-validator-state
                val (timer-expires-next val1 systate))
               (all-addresses systate)))
-    :enable (validator-blockchain-redundantp))
+    :enable (validator-blockchain-redundantp
+             validator-state->dag-of-timer-expires-next
+             validator-state->blockchain-of-timer-expires-next))
 
   (defrule system-blockchain-redundantp-of-timer-expires-next
     (implies (and (timer-expires-possiblep val1 systate)

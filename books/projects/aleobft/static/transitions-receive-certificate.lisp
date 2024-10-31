@@ -135,7 +135,7 @@
              receive-certificate-possiblep
              get-validator-state-of-update-validator-state))
 
-  (defrule validator-state->last-of-receive-certificate-next
+  (defruled validator-state->last-of-receive-certificate-next
     (implies (and (set::in val (correct-addresses systate))
                   (receive-certificate-possiblep msg systate))
              (equal (validator-state->last
@@ -149,7 +149,7 @@
              get-validator-state-of-update-validator-state
              nfix))
 
-  (defrule validator-state->blockchain-of-receive-certificate-next
+  (defruled validator-state->blockchain-of-receive-certificate-next
     (implies (and (set::in val (correct-addresses systate))
                   (receive-certificate-possiblep msg systate))
              (equal (validator-state->blockchain
@@ -162,7 +162,7 @@
              receive-certificate-next-val
              get-validator-state-of-update-validator-state))
 
-  (defrule validator-state->committed-of-receive-certificate-next
+  (defruled validator-state->committed-of-receive-certificate-next
     (implies (and (set::in val (correct-addresses systate))
                   (receive-certificate-possiblep msg systate))
              (equal (validator-state->committed

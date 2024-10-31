@@ -95,8 +95,7 @@
                      round
                      (validator-state->dag
                       (get-validator-state val systate)))))
-    :enable (certificate-sets-unequivocalp-of-same-set
-             unequivocal-accepted-certificates-p-of-create-certificate-next
+    :enable (unequivocal-accepted-certificates-p-of-create-certificate-next
              validator-state->dag-of-create-certificate-next)
     :use ((:instance certificate-with-author+round-of-unequivocal-superset
                      (certs0 (validator-state->dag
@@ -107,9 +106,8 @@
                              (get-validator-state
                               (certificate->author cert)
                               (create-certificate-next cert systate)))))
-          (:instance certificate-sets-unequivocalp-when-unequivocal-accepted
-                     (val1 (certificate->author cert))
-                     (val2 (certificate->author cert))
+          (:instance certificate-set-unequivocalp-when-unequivocal-accepted
+                     (val (certificate->author cert))
                      (systate (create-certificate-next cert systate)))))
 
   (defruled certificate-with-author+round-of-receive-certificate-next
@@ -189,8 +187,7 @@
                         round
                         (validator-state->dag
                          (get-validator-state val systate)))))
-       :enable (certificate-sets-unequivocalp-of-same-set
-                unequivocal-accepted-certificates-p-of-store-certificate-next
+       :enable (unequivocal-accepted-certificates-p-of-store-certificate-next
                 validator-state->dag-of-store-certificate-next)
        :use ((:instance certificate-with-author+round-of-unequivocal-superset
                         (certs0 (validator-state->dag
@@ -200,8 +197,8 @@
                                  val1
                                  (store-certificate-next
                                   val1 cert systate)))))
-             (:instance certificate-sets-unequivocalp-when-unequivocal-accepted
-                        (val2 val1)
+             (:instance certificate-set-unequivocalp-when-unequivocal-accepted
+                        (val val1)
                         (systate (store-certificate-next
                                   val1 cert systate)))))))
 

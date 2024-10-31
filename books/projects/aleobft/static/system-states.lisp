@@ -101,6 +101,17 @@
    (network message-set))
   :pred system-statep)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption system-state-option
+  system-state
+  :short "Fixtype of optional system states."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "System states are defined in @(tsee system-state)."))
+  :pred system-state-optionp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define all-addresses ((systate system-statep))

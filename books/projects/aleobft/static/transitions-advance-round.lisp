@@ -140,7 +140,7 @@
   (fty::deffixequiv advance-round-next
     :args ((systate system-statep)))
 
-  (defrule validator-state->round-of-advance-round-next
+  (defruled validator-state->round-of-advance-round-next
     (implies (and (set::in val (correct-addresses systate))
                   (advance-round-possiblep val1 systate))
              (equal (validator-state->round
@@ -154,7 +154,7 @@
     :enable (advance-round-next-val
              advance-round-possiblep))
 
-  (defrule validator-state->dag-of-advance-round-next
+  (defruled validator-state->dag-of-advance-round-next
     (implies (and (set::in val (correct-addresses systate))
                   (advance-round-possiblep val1 systate))
              (equal (validator-state->dag
@@ -166,7 +166,7 @@
              advance-round-possiblep
              get-validator-state-of-update-validator-state))
 
-  (defrule validator-state->last-of-advance-round-next
+  (defruled validator-state->last-of-advance-round-next
     (implies (and (set::in val (correct-addresses systate))
                   (advance-round-possiblep val1 systate))
              (equal (validator-state->last
@@ -180,7 +180,7 @@
              get-validator-state-of-update-validator-state
              nfix))
 
-  (defrule validator-state->blockchain-of-advance-round-next
+  (defruled validator-state->blockchain-of-advance-round-next
     (implies (and (set::in val (correct-addresses systate))
                   (advance-round-possiblep val1 systate))
              (equal (validator-state->blockchain
@@ -193,7 +193,7 @@
              advance-round-next-val
              get-validator-state-of-update-validator-state))
 
-  (defrule validator-state->committed-of-advance-round-next
+  (defruled validator-state->committed-of-advance-round-next
     (implies (and (set::in val (correct-addresses systate))
                   (advance-round-possiblep val1 systate))
              (equal (validator-state->committed

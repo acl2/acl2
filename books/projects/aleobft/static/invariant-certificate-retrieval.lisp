@@ -125,6 +125,7 @@
                      round
                      (validator-state->dag
                       (get-validator-state val systate)))))
+    :enable validator-state->dag-of-store-certificate-next
     :use ((:instance certificate-with-author+round-of-unequivocal-superset
                      (certs1 (validator-state->dag
                               (get-validator-state
@@ -151,7 +152,8 @@
                      author
                      round
                      (validator-state->dag
-                      (get-validator-state val systate))))))
+                      (get-validator-state val systate)))))
+    :enable validator-state->dag-of-advance-round-next)
 
   (defrule certificate-with-author+round-of-commit-anchors-next
     (implies (and (set::in val (correct-addresses systate))
@@ -166,7 +168,8 @@
                      author
                      round
                      (validator-state->dag
-                      (get-validator-state val systate))))))
+                      (get-validator-state val systate)))))
+    :enable validator-state->dag-of-commit-anchors-next)
 
   (defrule certificate-with-author+round-of-timer-expires-next
     (implies (and (set::in val (correct-addresses systate))
@@ -181,7 +184,8 @@
                      author
                      round
                      (validator-state->dag
-                      (get-validator-state val systate))))))
+                      (get-validator-state val systate)))))
+    :enable validator-state->dag-of-timer-expires-next)
 
   (defrule certificate-with-author+round-of-event-next
     (implies (and (system-signers-are-validators-p systate)

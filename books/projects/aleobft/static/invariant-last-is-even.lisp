@@ -99,7 +99,8 @@
             (receive-certificate-next msg systate)))
   :expand (system-last-is-even-p
            (receive-certificate-next msg systate))
-  :enable system-last-is-even-p-necc)
+  :enable (system-last-is-even-p-necc
+           validator-state->last-of-receive-certificate-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -116,7 +117,8 @@
             (store-certificate-next cert val systate)))
   :expand (system-last-is-even-p
            (store-certificate-next cert val systate))
-  :enable system-last-is-even-p-necc)
+  :enable (system-last-is-even-p-necc
+           validator-state->last-of-store-certificate-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -133,7 +135,8 @@
             (advance-round-next val systate)))
   :expand (system-last-is-even-p
            (advance-round-next val systate))
-  :enable system-last-is-even-p-necc)
+  :enable (system-last-is-even-p-necc
+           validator-state->last-of-advance-round-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -154,7 +157,8 @@
   :expand (system-last-is-even-p
            (commit-anchors-next val systate))
   :enable (system-last-is-even-p-necc
-           commit-anchors-possiblep)
+           commit-anchors-possiblep
+           validator-state->last-of-commit-anchors-next)
   :prep-lemmas
   ((defrule lemma
      (implies (and (natp x)
@@ -178,7 +182,8 @@
             (timer-expires-next val systate)))
   :expand (system-last-is-even-p
            (timer-expires-next val systate))
-  :enable system-last-is-even-p-necc)
+  :enable (system-last-is-even-p-necc
+           validator-state->last-of-timer-expires-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

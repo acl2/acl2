@@ -752,6 +752,16 @@
              in-of-certificates-with-round)
     :disable certificates-with-authors+round)
 
+  (defruled certificate-set->round-set-of-certificates-with-authors+round
+    (equal (certificate-set->round-set
+            (certificates-with-authors+round authors round certs))
+           (if (set::emptyp
+                (certificates-with-authors+round authors round certs))
+               nil
+             (set::insert (pos-fix round) nil)))
+    :induct t
+    :enable certificate-set->round-set-of-insert)
+
   (defruled
     certificate-set->round-set-of-certificates-with-authors+round-not-empty
     (b* ((rounds (certificate-set->round-set

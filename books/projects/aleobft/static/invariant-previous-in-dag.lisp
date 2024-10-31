@@ -199,7 +199,8 @@
               (store-certificate-next cert val systate)))
     :expand (system-previous-in-dag-p
              (store-certificate-next cert val systate))
-    :enable system-previous-in-dag-p-necc))
+    :enable (system-previous-in-dag-p-necc
+             validator-state->dag-of-store-certificate-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -215,7 +216,8 @@
             (advance-round-next val systate)))
   :expand (system-previous-in-dag-p
            (advance-round-next val systate))
-  :enable system-previous-in-dag-p-necc)
+  :enable (system-previous-in-dag-p-necc
+           validator-state->dag-of-advance-round-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -231,7 +233,8 @@
             (commit-anchors-next val systate)))
   :expand (system-previous-in-dag-p
            (commit-anchors-next val systate))
-  :enable system-previous-in-dag-p-necc)
+  :enable (system-previous-in-dag-p-necc
+           validator-state->dag-of-commit-anchors-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -247,7 +250,8 @@
             (timer-expires-next val systate)))
   :expand (system-previous-in-dag-p
            (timer-expires-next val systate))
-  :enable system-previous-in-dag-p-necc)
+  :enable (system-previous-in-dag-p-necc
+           validator-state->dag-of-timer-expires-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

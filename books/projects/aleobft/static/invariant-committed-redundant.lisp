@@ -192,7 +192,9 @@
              (validator-committed-redundantp
               (get-validator-state val (receive-certificate-next msg systate))
               (all-addresses systate)))
-    :enable validator-committed-redundantp)
+    :enable (validator-committed-redundantp
+             validator-state->last-of-receive-certificate-next
+             validator-state->committed-of-receive-certificate-next))
 
   (defrule system-committed-redundantp-of-receive-certificate-next
     (implies (and (system-committed-redundantp systate)
@@ -231,8 +233,9 @@
                val (store-certificate-next cert val1 systate))
               (all-addresses systate)))
     :enable (validator-committed-redundantp
-             system-last-anchor-present-p-necc)
-    :disable validator-state->dag-of-store-certificate-next)
+             system-last-anchor-present-p-necc
+             validator-state->last-of-store-certificate-next
+             validator-state->committed-of-store-certificate-next))
 
   (defrule system-committed-redundantp-of-store-certificate-next
     (implies (and (system-committed-redundantp systate)
@@ -269,7 +272,9 @@
              (validator-committed-redundantp
               (get-validator-state val (advance-round-next val1 systate))
               (all-addresses systate)))
-    :enable validator-committed-redundantp)
+    :enable (validator-committed-redundantp
+             validator-state->last-of-advance-round-next
+             validator-state->committed-of-advance-round-next))
 
   (defrule system-committed-redundantp-of-advance-round-next
     (implies (and (system-committed-redundantp systate)
@@ -410,7 +415,9 @@
              (validator-committed-redundantp
               (get-validator-state val (timer-expires-next val1 systate))
               (all-addresses systate)))
-    :enable validator-committed-redundantp)
+    :enable (validator-committed-redundantp
+             validator-state->last-of-timer-expires-next
+             validator-state->committed-of-timer-expires-next))
 
   (defrule system-committed-redundantp-of-timer-expires-next
     (implies (and (system-committed-redundantp systate)

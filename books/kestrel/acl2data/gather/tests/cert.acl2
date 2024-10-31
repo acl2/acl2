@@ -6,8 +6,11 @@
 (f-put-global 'acl2data-testing t state)
 
 ; When the following was on one line, there was a report of "Bad path" in the
-; runs/ directory during a regression attempt.  For that reason I'm putting in
-; linebreaks below.
-(ld
- "kestrel/acl2data/gather/tests/runs/customize-tests.lsp"
- :dir :system :ld-missing-input-ok t)
+; runs/ directory during a regression attempt.  For that reason I added
+; linebreaks below (after ld and also before :dir) at one point.  But then some
+; dependencies were missing.  Now the "bad path" message seems to be gone, so
+; I've removed the linebreaks (10/31/2024).  If "bad path" happens again, a
+; solution could be to add a multi-line comment with the include-book forms
+; near the top of books/kestrel/acl2data/gather/patch-book.lisp, including the
+; one at the end for "my-advice" that's commented out there.
+(ld "kestrel/acl2data/gather/tests/runs/customize-tests.lsp" :dir :system :ld-missing-input-ok t)

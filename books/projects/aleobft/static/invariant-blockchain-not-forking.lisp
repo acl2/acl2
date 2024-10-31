@@ -114,6 +114,7 @@
                                 (all-addresses systate))
              (validator-state->dag (get-validator-state val2 systate)))))
   :enable (lists-noforkp
+           len-of-calculate-blockchain
            nthcdr-of-calculate-blockchain
            system-unequivocal-dag-p-necc
            system-unequivocal-dags-p-necc

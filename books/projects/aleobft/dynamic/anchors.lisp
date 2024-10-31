@@ -115,9 +115,13 @@
      the @('current-anchor') input,
      as we prove below.")
    (xdoc::p
-    "we also prove that the returned list of anchors has even,
+    "The returned list of anchors has even,
      strictly increasing (right to left) round numbers,
      under suitable assumptions on some of the inputs.")
+   (xdoc::p
+    "The returned list of anchors consists of certificates
+     that are all in the DAG and are connected by paths;
+     see @(tsee certificates-dag-paths-p).")
    (xdoc::p
     "We also show that the rounds of the returned anchors
      are all above the last committed round,
@@ -196,6 +200,22 @@
                                 car-of-collect-anchors
                                 certificate->round-of-path-to-author+round))))
   (in-theory (disable certificates-ordered-even-p-of-collect-anchors))
+
+  (defret certificates-dag-paths-p-of-collect-anchors
+    (certificates-dag-paths-p anchors dag)
+    :hyp (and (certificate-setp dag)
+              (set::in current-anchor dag)
+              (< previous-round
+                 (certificate->round current-anchor)))
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable collect-anchors
+                                certificates-dag-paths-p
+                                certificate->author-of-path-to-author+round
+                                certificate->round-of-path-to-author+round
+                                car-of-collect-anchors
+                                path-to-author+round-in-dag))))
+  (in-theory (disable certificates-dag-paths-p-of-collect-anchors))
 
   (defret collect-anchors-above-last-committed-round
     (> (certificate->round (car (last anchors)))
@@ -377,7 +397,9 @@
      to satisfy the guard of @(tsee collect-anchors)
      (which just need the committee for two rounds before that one),
      but it is slightly simpler,
-     and in fact satisfied when we call @('collect-all-anchors')."))
+     and in fact satisfied when we call @('collect-all-anchors').")
+   (xdoc::p
+    "The returned list of anchors satisfies @(tsee certificates-dag-paths-p)."))
   (collect-anchors last-anchor
                    (- (certificate->round last-anchor) 2)
                    0
@@ -396,7 +418,15 @@
     (equal (car all-anchors)
            (certificate-fix last-anchor))
     :hints (("Goal" :in-theory (enable car-of-collect-anchors))))
-  (in-theory (disable car-of-collect-all-anchors)))
+  (in-theory (disable car-of-collect-all-anchors))
+
+  (defret certificates-dag-paths-p-of-collect-all-anchors
+    (certificates-dag-paths-p all-anchors dag)
+    :hyp (and (certificate-setp dag)
+              (set::in last-anchor dag))
+    :hints
+    (("Goal" :in-theory (enable certificates-dag-paths-p-of-collect-anchors))))
+  (in-theory (disable certificates-dag-paths-p-of-collect-all-anchors)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -14,6 +14,7 @@
 (include-book "certificates")
 (include-book "committees")
 
+(include-book "kestrel/utilities/osets" :dir :system)
 (include-book "std/basic/two-nats-measure" :dir :system)
 
 (local (include-book "../library-extensions/oset-theorems"))
@@ -375,7 +376,24 @@
   ///
 
   (verify-guards certificate-causal-history
-    :hints (("Goal" :in-theory (enable posp)))))
+    :hints (("Goal" :in-theory (enable posp))))
+
+  (defret-mutual certificate-causal-history-subset
+    (defret certificate-causal-history-subset
+      (set::subset hist dag)
+      :hyp (and (certificate-setp dag)
+                (set::in cert dag))
+      :fn certificate-causal-history)
+    (defret certificate-set-causal-history-subset
+      (set::subset hist dag)
+      :hyp (and (certificate-setp dag)
+                (set::subset certs dag))
+      :fn certificate-set-causal-history)
+    :hints
+    (("Goal" :in-theory (enable* set::expensive-rules
+                                 certificates-with-authors+round-subset))))
+  (in-theory (disable certificate-causal-history-subset
+                      certificate-set-causal-history-subset)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1513,3 +1531,166 @@
                           (certs dag2)
                           (authors (certificate->previous cert))
                           (round (1- (certificate->round cert)))))))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection in-of-certificate-causal-history
+  :short "Characterization of the members of a certificate's causal history."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Given an unequivocal DAG and a certificate in it,
+     the elements of the causal history of the certificate in the DAG
+     consist exactly of the certificates reachable from the certificate."))
+
+  (defthm-certificate-causal-history-flag
+
+    (defthm in-of-certificate-causal-history
+      (implies (and (certificate-setp dag)
+                    (certificate-set-unequivocalp dag)
+                    (set::in cert dag))
+               (equal (set::in cert0 (certificate-causal-history cert dag))
+                      (and cert0
+                           (equal (path-to-author+round
+                                   cert
+                                   (certificate->author cert0)
+                                   (certificate->round cert0)
+                                   dag)
+                                  cert0))))
+      :flag certificate-causal-history)
+
+    (defthm in-of-certificate-set-causal-history
+      (implies (and (certificate-setp dag)
+                    (certificate-set-unequivocalp dag)
+                    (set::subset certs dag))
+               (equal (set::in cert0 (certificate-set-causal-history certs dag))
+                      (and cert0
+                           (equal (path-to-author+round-set
+                                   certs
+                                   (certificate->author cert0)
+                                   (certificate->round cert0)
+                                   dag)
+                                  cert0))))
+      :flag certificate-set-causal-history)
+
+    :hints
+    (("Goal"
+      :in-theory
+      (enable* certificate-causal-history
+               certificate-set-causal-history
+               path-to-author+round
+               path-to-author+round-set
+               set::expensive-rules
+               path-to-author+round-to-certificate-with-author+round
+               certificate-with-author+round-of-element-when-unequivocal
+               certificate-set->round-set-of-certificates-with-authors+round
+               pos-fix
+               posp
+               nil-not-in-certificate-set
+               certificates-with-authors+round-subset
+               certificate-causal-history-subset
+               certificate-set-causal-history-subset))
+     (cond
+      ((acl2::occur-lst '(acl2::flag-is 'certificate-causal-history) clause)
+       '(:use (:instance round-leq-when-path-to-author+round-set
+                         (certs (certificates-with-authors+round
+                                 (certificate->previous cert)
+                                 (+ -1 (certificate->round cert))
+                                 dag))
+                         (author (certificate->author cert0))
+                         (round (certificate->round cert0))))))))
+
+  (in-theory (disable in-of-certificate-causal-history
+                      in-of-certificate-set-causal-history)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled certificate-causal-history-subset-when-path
+  :short "In an unequivocal DAG, if there is a path between two certificates,
+          the causal history of the destination of the path is a subset of
+          the causal history of the source of the path."
+  (implies (and (certificate-setp dag)
+                (certificate-set-unequivocalp dag)
+                (set::in cert dag)
+                (addressp author)
+                (posp round)
+                (path-to-author+round cert author round dag))
+           (set::subset (certificate-causal-history
+                         (path-to-author+round cert author round dag)
+                         dag)
+                        (certificate-causal-history cert dag)))
+  :enable set::expensive-rules
+  :prep-lemmas
+  ((defrule lemma
+     (implies (and (certificate-setp dag)
+                   (certificate-set-unequivocalp dag)
+                   (set::in cert dag)
+                   (addressp author)
+                   (posp round)
+                   (path-to-author+round cert author round dag)
+                   (set::in cert0
+                            (certificate-causal-history
+                             (path-to-author+round cert author round dag)
+                             dag)))
+              (set::in cert0 (certificate-causal-history cert dag)))
+     :enable (in-of-certificate-causal-history
+              certificate->author-of-path-to-author+round
+              certificate->round-of-path-to-author+round
+              path-to-author+round-in-dag)
+     :use (:instance path-to-author+round-transitive
+                     (cert cert)
+                     (cert1 (path-to-author+round cert author round dag))
+                     (cert2 cert0)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define certificates-dag-paths-p ((certs certificate-listp)
+                                  (dag certificate-setp))
+  :returns (yes/no booleanp)
+  :short "Check if a list of zero or more certificates
+          are all in a DAG and are connected by paths."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "That is, if the list is @('(c1 .. cn)'),
+     this predicate says whether
+     each @('ci') is in the DAG
+     and there is a path from each @('ci') to @('ci+1').
+     The predicate is @('t') if the list is empty.
+     The predicate is @('t') if the list is a singleton
+     whose element is in the DAG;
+     no paths are required in this case.
+     If there are two or more certificates in the list,
+     then there must be paths between each contiguous elements."))
+  (b* (((when (endp certs)) t)
+       (cert (car certs))
+       ((unless (set::in cert dag)) nil)
+       ((when (endp (cdr certs))) t)
+       (cert1 (cadr certs))
+       ((unless (<= (certificate->round cert1)
+                    (certificate->round cert)))
+        nil)
+       ((unless (equal (path-to-author+round cert
+                                             (certificate->author cert1)
+                                             (certificate->round cert1)
+                                             dag)
+                       cert1))
+        nil))
+    (certificates-dag-paths-p (cdr certs) dag))
+
+  ///
+
+  (defruled certificates-dag-paths-p-of-nil
+    (certificates-dag-paths-p nil dag))
+
+  (defruled certificates-dag-paths-p-member-in-dag
+    (implies (and (certificates-dag-paths-p certs dag)
+                  (member-equal cert certs))
+             (set::in cert dag))
+    :induct t
+    :enable member-equal)
+
+  (defruled list-in-when-certificates-dag-paths-p
+    (implies (certificates-dag-paths-p certs dag)
+             (set::list-in certs dag))
+    :induct t))
