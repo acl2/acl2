@@ -399,7 +399,7 @@
      but it is slightly simpler,
      and in fact satisfied when we call @('collect-all-anchors').")
    (xdoc::p
-    "The returned list of anchors satisfies @(tsee certificates-dag-pathsp)."))
+    "The returned list of anchors satisfies @(tsee certificates-dag-paths-p)."))
   (collect-anchors last-anchor
                    (- (certificate->round last-anchor) 2)
                    0
