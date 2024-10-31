@@ -170,6 +170,15 @@
 
   ///
 
+  (defret len-of-extend-blockchain
+    (equal (len new-blockchain)
+           (+ (len blockchain)
+              (len anchors)))
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable len fix))))
+  (in-theory (disable len-of-extend-blockchain))
+
   (defruled extend-blockchain-of-nil
     (equal (extend-blockchain nil dag blockchain committed-certs)
            (mv (block-list-fix blockchain)
@@ -204,6 +213,14 @@
                      (block-list-fix blockchain))))
     :induct t
     :enable (len fix))
+
+  (defruled nthcdr-of-extend-blockchain
+    (implies
+     (<= n (len anchors))
+     (equal (nthcdr n (mv-nth 0 (extend-blockchain anchors dag blocks comms)))
+            (mv-nth 0 (extend-blockchain (nthcdr n anchors) dag blocks comms))))
+    :induct t
+    :enable (nthcdr len))
 
   (defret blocks-last-round-of-extend-blockchain
     (equal (blocks-last-round new-blockchain)
@@ -382,10 +399,22 @@
 
   ///
 
+  (defret len-of-calculate-blockchain
+    (equal (len blockchain)
+           (len anchors))
+    :hints (("Goal" :in-theory (enable fix len-of-extend-blockchain))))
+  (in-theory (disable len-of-calculate-blockchain))
+
   (defruled calculate-blockchain-of-nil
     (equal (calculate-blockchain nil dag)
            nil)
     :enable extend-blockchain-of-nil)
+
+  (defruled nthcdr-of-calculate-blockchain
+    (implies (<= n (len anchors))
+             (equal (nthcdr n (calculate-blockchain anchors dag))
+                    (calculate-blockchain (nthcdr n anchors) dag)))
+    :enable nthcdr-of-extend-blockchain)
 
   (defruled calculate-blockchain-of-unequivocal-superdag
     (implies (and (certificate-setp dag0)
