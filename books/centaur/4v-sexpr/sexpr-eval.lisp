@@ -683,7 +683,7 @@ alist.</p>
 <p>This is just slightly different than @(see fal-extract): whereas fal-extract
 omits missing keys, this binds them to nil.</p>
 
-<p>This function can be a useful for removing any \"extraneous\" bindings from
+<p>This function can be useful for removing any \"extraneous\" bindings from
 an the sexpr-alist @('al').  Some equivalence relations like @(see
 4v-sexpr-alist-equiv) check whether alists have the same bindings because this
 allows for powerful composition theorems.  For instance, the following rule

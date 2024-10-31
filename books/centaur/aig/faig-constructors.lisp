@@ -88,7 +88,7 @@ Because of this, we typically have two versions of each FAIG constructor:</p>
 
 <ul>
 
-<li>@('t-aig-*') functions make the assumption that their inputs are can never
+<li>@('t-aig-*') functions make the assumption that their inputs can never
 evaluate to Z.  These are generally more efficient, and will produce smaller
 AIGs that are easier to analyze with SAT solvers.</li>
 

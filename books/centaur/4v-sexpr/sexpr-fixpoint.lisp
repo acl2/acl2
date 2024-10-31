@@ -115,7 +115,7 @@
            (ignorable sig-number ndeps))
   (progn$
    (cw "Note: signal ~x0 depends on ~x1 previous signals.~%" sig-number ndeps)
-   (cw "Consider installnig the loop-debugger.~%")
+   (cw "Consider installing the loop-debugger.~%")
    nil))
 
 (defattach sneaky-loop-debugger default-sneaky-loop-debugger)
@@ -165,7 +165,7 @@
 ;
 ;
 ; From now on, suppose we are working with natural variabled UPDATE-FNS.  The
-; auxilliary function in step 2 can also be regarded as our top-level function
+; auxiliary function in step 2 can also be regarded as our top-level function
 ; for finding fixpoints of these kinds of update-fns, and is:
 ;
 ;    (SEXPR-FIXPOINTS UPDATE-FNS)

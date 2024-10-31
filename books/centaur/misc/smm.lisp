@@ -40,7 +40,7 @@
 (set-enforce-redundancy t)
 
 ;; this is a dumb "memory manager" which can allocate new blocks at will, but
-;; only frees blocks by deletig all blocks or by deleting all but the first n
+;; only frees blocks by deleting all blocks or by deleting all but the first n
 ;; blocks created.  The blocks each contain some number of unsigned 32-bit
 ;; integers.  (This makes storage/retrieval efficient in CCL.)
 
