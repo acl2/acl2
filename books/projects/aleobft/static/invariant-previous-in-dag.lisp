@@ -233,7 +233,8 @@
             (commit-anchors-next val systate)))
   :expand (system-previous-in-dag-p
            (commit-anchors-next val systate))
-  :enable system-previous-in-dag-p-necc)
+  :enable (system-previous-in-dag-p-necc
+           validator-state->dag-of-commit-anchors-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

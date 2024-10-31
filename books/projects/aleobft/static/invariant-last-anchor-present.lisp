@@ -229,7 +229,8 @@
                            val (commit-anchors-next val1 systate))
                           (all-addresses systate)))
     :enable (last-anchor
-             commit-anchors-possiblep))
+             commit-anchors-possiblep
+             validator-state->dag-of-commit-anchors-next))
 
   (defrule system-last-anchor-present-p-of-commit-anchors-next
     (implies (and (system-last-anchor-present-p systate)

@@ -179,7 +179,7 @@
              commit-anchors-possiblep
              get-validator-state-of-update-validator-state))
 
-  (defrule validator-state->dag-of-commit-anchors-next
+  (defruled validator-state->dag-of-commit-anchors-next
     (implies (and (set::in val (correct-addresses systate))
                   (commit-anchors-possiblep val1 systate))
              (equal (validator-state->dag
