@@ -17,15 +17,9 @@
  :dir :system :ld-missing-input-ok t)
 
 ; See above for an explanation of the following comment, which is intended to
-; support dependency tracking.  It is based on the include-book forms near the
-; top of books/kestrel/acl2data/gather/patch-book.lisp, including the one at
-; the end for "my-advice" that's commented out there.
+; support dependency tracking.  It is based on the include-book forms in
+; the file LDed just above.
 #|
-(include-book "kestrel/acl2data/gather/remove-hyp-checkpoints" :dir :system)
-(include-book "kestrel/acl2data/gather/remove-hint-setting-checkpoints" :dir :system)
-(include-book "kestrel/acl2data/gather/remove-rune-checkpoints" :dir :system)
-(include-book "kestrel/acl2data/gather/remove-book-runes-checkpoints" :dir :system)
-(include-book "kestrel/acl2data/gather/count-acl2data" :dir :system)
-(include-book "kestrel/acl2data/gather/event-symbol-table" :dir :system)
-(include-book "kestrel/acl2data/gather/my-advice" :dir :system)
+(include-book "kestrel/acl2data/gather/patch-book" :dir :system :ttags :all :load-compiled-file nil)
+(include-book "kestrel/acl2data/gather/patch-book-advice" :dir :system :ttags :all :load-compiled-file nil)
 |#
