@@ -207,7 +207,7 @@
              commit-anchors-next-val
              nfix))
 
-  (defrule validator-state->blockchain-of-commit-anchors-next
+  (defruled validator-state->blockchain-of-commit-anchors-next
     (implies
      (and (set::in val (correct-addresses systate))
           (commit-anchors-possiblep val1 systate))
