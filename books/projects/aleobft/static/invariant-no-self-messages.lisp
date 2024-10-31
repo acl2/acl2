@@ -93,19 +93,19 @@
     :enable (set::subset
              message-set-not-self-p-element))
 
-  (defrule message-set-not-self-of-delete
+  (defruled message-set-not-self-of-delete
     (implies (message-set-not-self-p msgs)
              (message-set-not-self-p (set::delete msg msgs)))
     :enable message-set-not-self-p-subset)
 
-  (defrule message-set-not-self-p-of-insert
+  (defruled message-set-not-self-p-of-insert
     (equal (message-set-not-self-p (set::insert msg msgs))
            (and (message-not-self-p msg)
                 (message-set-not-self-p msgs)))
     :induct (set::weak-insert-induction msg msgs)
     :enable message-set-not-self-p-element)
 
-  (defrule message-set-not-self-p-of-union
+  (defruled message-set-not-self-p-of-union
     (equal (message-set-not-self-p (set::union msgs1 msgs2))
            (and (message-set-not-self-p msgs1)
                 (message-set-not-self-p msgs2)))
@@ -123,7 +123,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule system-messages-not-self-p-when-system-state-initp
+(defruled system-messages-not-self-p-when-system-state-initp
   :short "Establishment of the invariant:
           the invariant holds on any initial system state."
   :long
@@ -140,7 +140,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule message-set-not-self-p-of-messages-for-certificates
+(defruled message-set-not-self-p-of-messages-for-certificates
   :short "Auxiliary property about message creation."
   :long
   (xdoc::topstring
@@ -156,11 +156,12 @@
   :induct t
   :enable (messages-for-certificate
            message-set-not-self-p
-           message-not-self-p))
+           message-not-self-p
+           message-set-not-self-p-of-insert))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule system-messages-not-self-p-of-event-next
+(defruled system-messages-not-self-p-of-event-next
   :short "Preservation of the invariant by every event."
   :long
   (xdoc::topstring
@@ -193,4 +194,6 @@
            commit-anchors-next
            timer-expires-possiblep
            timer-expires-next
-           system-messages-not-self-p))
+           system-messages-not-self-p
+           message-set-not-self-p-of-union
+           message-set-not-self-p-of-messages-for-certificates))
