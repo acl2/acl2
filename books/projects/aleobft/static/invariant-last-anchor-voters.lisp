@@ -319,7 +319,8 @@
               (max-faulty systate)
               (all-addresses systate)))
     :enable (validator-last-anchor-voters-p
-             validator-state->dag-of-timer-expires-next))
+             validator-state->dag-of-timer-expires-next
+             validator-state->last-of-timer-expires-next))
 
   (defrule system-last-anchor-voters-p-of-timer-expires-next
     (implies (and (system-last-anchor-voters-p systate)

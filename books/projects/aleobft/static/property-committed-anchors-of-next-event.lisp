@@ -283,4 +283,5 @@
                   (committed-anchors (get-validator-state val systate)
                                      (all-addresses systate))))
   :enable (committed-anchors
-           validator-state->dag-of-timer-expires-next))
+           validator-state->dag-of-timer-expires-next
+           validator-state->last-of-timer-expires-next))

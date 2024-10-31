@@ -197,7 +197,8 @@
   :expand (system-last-before-current-p
            (timer-expires-next val systate))
   :enable (system-last-before-current-p-necc
-           validator-state->round-of-timer-expires-next))
+           validator-state->round-of-timer-expires-next
+           validator-state->last-of-timer-expires-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

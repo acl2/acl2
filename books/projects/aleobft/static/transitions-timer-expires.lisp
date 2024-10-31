@@ -108,7 +108,7 @@
              timer-expires-possiblep
              get-validator-state-of-update-validator-state))
 
-  (defrule validator-state->last-of-timer-expires-next
+  (defruled validator-state->last-of-timer-expires-next
     (implies (and (set::in val (correct-addresses systate))
                   (timer-expires-possiblep val1 systate))
              (equal (validator-state->last

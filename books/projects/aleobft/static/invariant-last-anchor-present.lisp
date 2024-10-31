@@ -261,7 +261,8 @@
                            val (timer-expires-next val1 systate))
                           (all-addresses systate)))
     :enable (last-anchor
-             validator-state->dag-of-timer-expires-next))
+             validator-state->dag-of-timer-expires-next
+             validator-state->last-of-timer-expires-next))
 
   (defrule system-last-anchor-present-p-of-timer-expires-next
     (implies (and (system-last-anchor-present-p systate)
@@ -270,7 +271,8 @@
               (timer-expires-next val systate)))
     :expand (system-last-anchor-present-p
              (timer-expires-next val systate))
-    :enable system-last-anchor-present-p-necc))
+    :enable (system-last-anchor-present-p-necc
+             validator-state->last-of-timer-expires-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

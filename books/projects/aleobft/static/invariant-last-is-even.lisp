@@ -182,7 +182,8 @@
             (timer-expires-next val systate)))
   :expand (system-last-is-even-p
            (timer-expires-next val systate))
-  :enable system-last-is-even-p-necc)
+  :enable (system-last-is-even-p-necc
+           validator-state->last-of-timer-expires-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
