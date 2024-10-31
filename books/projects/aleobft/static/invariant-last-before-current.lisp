@@ -176,7 +176,8 @@
             (commit-anchors-next val systate)))
   :expand (system-last-before-current-p
            (commit-anchors-next val systate))
-  :enable system-last-before-current-p-necc)
+  :enable (system-last-before-current-p-necc
+           validator-state->round-of-commit-anchors-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

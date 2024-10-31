@@ -167,7 +167,7 @@
   (fty::deffixequiv commit-anchors-next
     :args ((systate system-statep)))
 
-  (defrule validator-state->round-of-commit-anchors-next
+  (defruled validator-state->round-of-commit-anchors-next
     (implies (and (set::in val (correct-addresses systate))
                   (commit-anchors-possiblep val1 systate))
              (equal (validator-state->round
