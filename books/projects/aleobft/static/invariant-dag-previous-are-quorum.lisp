@@ -69,3 +69,20 @@
            dag-previous-are-quorum-p
            in-certificates-for-validator-when-in-dag
            system-previous-are-quorum-p-necc))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled system-dag-previous-are-quorum-p-when-reachable
+  :short "The invariant holds in every reachable state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Reachable states are characterized by an initial state and
+     a sequence of possible events from that initial state."))
+  (implies (and (system-statep systate)
+                (system-state-initp systate)
+                (events-possiblep events systate))
+           (system-dag-previous-are-quorum-p (events-next events systate)))
+  :disable ((:e tau-system))
+  :enable (system-dag-previous-are-quorum-p-when-all-previous-are-quorum
+           system-previous-are-quorum-p-when-reachable))

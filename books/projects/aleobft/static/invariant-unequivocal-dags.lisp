@@ -124,3 +124,22 @@
          same-certificates-p-necc
          (val1 (mv-nth 0 (system-unequivocal-dags-p-witness systate)))
          (val2 (mv-nth 1 (system-unequivocal-dags-p-witness systate))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled system-unequivocal-dags-p-when-reachable
+  :short "The invariant holds in every reachable state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Reachable states are characterized by an initial state and
+     a sequence of possible events from that initial state."))
+  (implies (and (system-statep systate)
+                (system-state-initp systate)
+                (events-possiblep events systate)
+                (fault-tolerant-p systate))
+           (system-unequivocal-dags-p (events-next events systate)))
+  :disable ((:e tau-system))
+  :enable (system-unequivocal-dags-p-when-unequivocal-and-same
+           system-unequivocal-certificates-p-when-reachable
+           same-certificates-p-when-reachable))

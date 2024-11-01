@@ -453,3 +453,95 @@
            (system-committed-redundantp (event-next event systate)))
   :enable (event-possiblep
            event-next))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled system-committed-redundantp-of-events-next
+  :short "Preservation of the invariant by every sequence of events."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Since this invariant's single-event preservation
+     depends on other invariants,
+     we need to include all invariants to prove
+     multi-event preservation by induction.")
+   (xdoc::p
+    "We explicitly include only the invariants
+     that have theorems about the next state after an event;
+     the invariants that are proved directly from other invariants,
+     which are among the hypotheses of the single-event preservation theorem,
+     are handled using the theorems that prove those invariants from others."))
+  (implies
+   (and (system-statep systate)
+        (system-committed-redundantp systate)
+        (system-signers-are-validators-p systate)
+        (system-previous-are-quorum-p systate)
+        (system-last-anchor-present-p systate)
+        (system-last-anchor-voters-p systate)
+        (system-last-is-even-p systate)
+        (system-previous-in-dag-p systate)
+        (system-signers-are-quorum-p systate)
+        (system-signers-have-author+round-p systate)
+        (system-unequivocal-certificates-p systate)
+        (events-possiblep events systate)
+        (fault-tolerant-p systate))
+   (and (system-committed-redundantp (events-next events systate))
+        (system-signers-are-validators-p (events-next events systate))
+        (system-previous-are-quorum-p (events-next events systate))
+        (system-last-anchor-present-p (events-next events systate))
+        (system-last-anchor-voters-p (events-next events systate))
+        (system-last-is-even-p (events-next events systate))
+        (system-previous-in-dag-p (events-next events systate))
+        (system-signers-are-quorum-p (events-next events systate))
+        (system-signers-have-author+round-p (events-next events systate))
+        (system-unequivocal-certificates-p (events-next events systate))))
+  :induct t
+  :disable ((:e tau-system))
+  :enable (events-next
+           events-possiblep
+           system-committed-redundantp-of-event-next
+           system-signers-are-validators-p-of-event-next
+           system-previous-are-quorum-p-of-event-next
+           system-last-anchor-present-p-of-event-next
+           system-last-anchor-voters-p-of-event-next
+           system-last-is-even-p-of-event-next
+           system-previous-in-dag-p-of-event-next
+           system-signers-are-quorum-p-of-event-next
+           system-signers-have-author+round-p-of-event-next
+           system-unequivocal-certificates-p-of-event-next
+           system-authors-are-validators-p-when-signers-are-validators
+           system-dag-previous-are-quorum-p-when-all-previous-are-quorum
+           system-paths-to-last-anchor-p-when-other-invariants
+           system-unequivocal-dag-p-when-system-unequivocal-certificates-p))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled system-committed-redundantp-when-reachable
+  :short "The invariant holds in every reachable state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Reachable states are characterized by an initial state and
+     a sequence of possible events from that initial state.")
+   (xdoc::p
+    "This does not mention the other invariant,
+     because it holds in the initial state
+     and that it establishes the hypothesis of
+     the multi-event preservation theorem."))
+  (implies (and (system-statep systate)
+                (system-state-initp systate)
+                (events-possiblep events systate)
+                (fault-tolerant-p systate))
+           (system-committed-redundantp (events-next events systate)))
+  :disable ((:e tau-system))
+  :enable (system-committed-redundantp-when-system-state-initp
+           system-signers-are-validators-p-when-system-state-initp
+           system-previous-are-quorum-p-when-system-state-initp
+           system-last-anchor-present-p-when-system-state-initp
+           system-last-anchor-voters-p-when-system-state-initp
+           system-last-is-even-p-when-system-state-initp
+           system-previous-in-dag-p-when-system-state-initp
+           system-signers-are-quorum-p-when-system-state-initp
+           system-signers-have-author+round-p-when-system-state-initp
+           system-unequivocal-certificates-p-when-system-state-initp
+           system-committed-redundantp-of-events-next))

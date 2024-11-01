@@ -197,3 +197,34 @@
            system-messages-not-self-p
            message-set-not-self-p-of-union
            message-set-not-self-p-of-messages-for-certificates))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled system-messages-not-self-p-of-events-next
+  :short "Preservation of the invariant by every sequence of events."
+  (implies (and (system-statep systate)
+                (system-messages-not-self-p systate)
+                (events-possiblep events systate))
+           (system-messages-not-self-p (events-next events systate)))
+  :induct t
+  :disable ((:e tau-system))
+  :enable (events-next
+           events-possiblep
+           system-messages-not-self-p-of-event-next))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled system-messages-not-self-p-when-reachable
+  :short "The invariant holds in every reachable state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Reachable states are characterized by an initial state and
+     a sequence of possible events from that initial state."))
+  (implies (and (system-statep systate)
+                (system-state-initp systate)
+                (events-possiblep events systate))
+           (system-messages-not-self-p (events-next events systate)))
+  :disable ((:e tau-system))
+  :enable (system-messages-not-self-p-when-system-state-initp
+           system-messages-not-self-p-of-events-next))
