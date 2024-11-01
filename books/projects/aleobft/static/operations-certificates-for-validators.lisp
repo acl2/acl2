@@ -68,7 +68,7 @@
   :verify-guards :after-returns
   ///
 
-  (defrule in-of-message-certificates-for-validator
+  (defruled in-of-message-certificates-for-validator
     (implies (and (addressp dest)
                   (message-setp msgs))
              (equal (set::in cert
@@ -95,7 +95,8 @@
                                       dest msgs))
                       (message-certificates-for-validator dest msgs))))
     :enable (set::expensive-rules
-             set::double-containment-no-backchain-limit))
+             set::double-containment-no-backchain-limit
+             in-of-message-certificates-for-validator))
 
   (defrule message-certificates-for-validator-of-delete
     (implies (and (message-setp msgs)
@@ -109,7 +110,8 @@
                                       dest msgs))
                       (message-certificates-for-validator dest msgs))))
     :enable (set::expensive-rules
-             set::double-containment-no-backchain-limit))
+             set::double-containment-no-backchain-limit
+             in-of-message-certificates-for-validator))
 
   (defrule message-certificates-for-validator-of-union
     (implies (and (message-setp msgs1)
@@ -120,7 +122,8 @@
                     (set::union (message-certificates-for-validator dest msgs1)
                                 (message-certificates-for-validator dest msgs2))))
     :enable (set::expensive-rules
-             set::double-containment-no-backchain-limit)))
+             set::double-containment-no-backchain-limit
+             in-of-message-certificates-for-validator)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -212,7 +215,8 @@
            receive-certificate-next
            receive-certificate-next-val
            certificates-for-validator
-           set::expensive-rules))
+           set::expensive-rules
+           in-of-message-certificates-for-validator))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
