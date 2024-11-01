@@ -60,11 +60,34 @@
   :returns (yes/no booleanp)
   :short "Definition of the invariant:
           any two correct validators in the system own the same certificates."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If all validators own the same certificates,
+     then any certificate owned by any validator
+     is among the certificates signed by each signer of the certificate."))
   (forall (val1 val2)
           (implies (and (set::in val1 (correct-addresses systate))
                         (set::in val2 (correct-addresses systate)))
                    (equal (owned-certificates val1 systate)
-                          (owned-certificates val2 systate)))))
+                          (owned-certificates val2 systate))))
+
+  ///
+
+  (defruled in-signed-certificates-when-in-owned-and-signer
+    (implies (and (same-owned-certificates-p systate)
+                  (set::in val (correct-addresses systate))
+                  (set::in cert (owned-certificates val systate))
+                  (set::in signer (certificate->signers cert))
+                  (set::in signer (correct-addresses systate)))
+             (set::in cert (signed-certificates signer systate)))
+    :enable (signed-certificates
+             in-of-certificates-with-signer)
+    :disable (same-owned-certificates-p
+              same-owned-certificates-p-necc)
+    :use (:instance same-owned-certificates-p-necc
+                    (val1 val)
+                    (val2 signer))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -215,21 +238,3 @@
              (same-owned-certificates-p (event-next event systate)))
     :enable (event-possiblep
              event-next)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defruled in-signed-certificates-when-in-owned-and-signer
-  :short "If all validators own the same certificates,
-          then any certificate owned by any validator
-          is among the certificates signed by each signer of the certificate."
-  (implies (and (same-owned-certificates-p systate)
-                (set::in val (correct-addresses systate))
-                (set::in cert (owned-certificates val systate))
-                (set::in signer (certificate->signers cert))
-                (set::in signer (correct-addresses systate)))
-           (set::in cert (signed-certificates signer systate)))
-  :enable (signed-certificates
-           in-of-certificates-with-signer)
-  :use (:instance same-owned-certificates-p-necc
-                  (val1 val)
-                  (val2 signer)))
