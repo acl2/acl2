@@ -46,11 +46,13 @@
 (include-book "kestrel/x86/x86-changes" :dir :system)
 (include-book "kestrel/x86/support" :dir :system)
 (include-book "x86-rules")
+(include-book "../merge-term-into-dag-array-simple")
 (include-book "../bitops-rules")
 (include-book "../logops-rules-axe")
 ;(include-book "../rules2") ;for BACKCHAIN-SIGNED-BYTE-P-TO-UNSIGNED-BYTE-P-NON-CONST
 ;(include-book "../basic-rules")
-(include-book "../rewriter") ; todo: for simp-term
+(include-book "../rewriter") ; todo: for simp-term, simp-dag, etc.
+(include-book "rewriter-x86")
 (include-book "../rules-in-rule-lists")
 ;(include-book "../rules1") ;for ACL2::FORCE-OF-NON-NIL, etc.
 (include-book "../dags2") ; for compose-term-and-dags
@@ -100,6 +102,8 @@
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 
 (local (in-theory (enable acl2::member-equal-becomes-memberp))) ;todo
+
+(local (in-theory (disable w state-p acl2::ilks-plist-worldp))) ;move
 
 (acl2::ensure-rules-known (loop-lifter-rules32))
 (acl2::ensure-rules-known (loop-lifter-rules64))
@@ -334,22 +338,30 @@
 ;; Returns (mv erp rsp-dag state).
 (defun extract-rsp-dag (state-dag
                         assumptions ; avoids a logext because we know the rsp is canonical
-                        ;lifter-rules
-                        ;extra-rules
-                        ;remove-rules
-                        ;;rules-to-monitor
+                        ;; rules-to-monitor
                         ;; state-var
-                        state)
-  (declare (xargs :stobjs state
-                  :mode :program))
-  (b* (((mv erp dag) (compose-term-and-dag '(xr ':rgf '4 :x86) :x86 state-dag)) ;todo make a version of compose-term-and-dag that translates and checks its arg
-       ((when erp) (mv erp nil state)))
-    (simp-dag dag
-              :assumptions assumptions
-              :rules (loop-lifter-state-component-extraction-rules)
-              ;; (set-difference-eq (append '(x86isa::logext-64-does-nothing-when-canonical-address-p)
-              ;;                                   lifter-rules extra-rules) remove-rules)
-              :check-inputs nil)))
+                        wrld
+                        )
+  (declare (xargs :guard (and (pseudo-term-listp assumptions)
+                              (acl2::pseudo-dagp state-dag)
+                              (acl2::ilks-plist-worldp wrld))
+                  :mode :program ; todo
+                  ))
+  (b* (((mv erp dag) (acl2::wrap-term-around-dag '(xr ':rgf '4 :x86) :x86 state-dag))
+       ((when erp) (mv erp nil)))
+    (acl2::simplify-dag-x86 dag
+                            assumptions
+                            (acl2::make-rule-alist! (loop-lifter-state-component-extraction-rules) wrld)
+                            ;; (set-difference-eq (append '(x86isa::logext-64-does-nothing-when-canonical-address-p)
+                            ;;                                   lifter-rules extra-rules) remove-rules)
+                            nil nil
+                            t ; count-hints
+                            nil ;print
+                            nil ; known-booleans
+                            nil
+                            nil
+                            nil
+                            nil)))
 
 ;; Returns (mv erp rbp-dag state).
 (defun extract-rbp-dag (state-dag
@@ -361,8 +373,9 @@
                         ;; state-var
                         state)
   (declare (xargs :stobjs state
-                  :mode :program))
-  (b* (((mv erp dag) (compose-term-and-dag '(xr ':rgf '5 :x86) :x86 state-dag)) ;todo make a version of compose-term-and-dag that translates and checks its arg
+                  :mode :program ; todo
+                  ))
+  (b* (((mv erp dag) (acl2::wrap-term-around-dag '(xr ':rgf '5 :x86) :x86 state-dag)) ;todo make a version of compose-term-and-dag that translates and checks its arg
        ((when erp) (mv erp nil state)))
     (simp-dag dag
               :assumptions assumptions
@@ -382,7 +395,7 @@
                        state)
   (declare (xargs :stobjs state
                   :mode :program))
-  (b* (((mv erp dag) (compose-term-and-dag '(xr ':rip 'nil :x86) :x86 state-dag))
+  (b* (((mv erp dag) (acl2::wrap-term-around-dag '(xr ':rip 'nil :x86) :x86 state-dag))
        ((when erp) (mv erp nil state)))
     (simp-dag dag
               :rules (set-difference-eq (append '(xr-of-if) lifter-rules extra-rules) remove-rules) ; do we need x86isa::logext-64-does-nothing-when-canonical-address-p?
@@ -465,7 +478,7 @@
     (b* ((assumption (first assumptions))
          (updated-assumption (acl2::sublis-var-simple (map-all-to-val previous-state-vars state-var) assumption))
          (- (cw "(Attempting to prove assumption ~x0.~%" updated-assumption))
-         ((mv erp dag-to-prove) (compose-term-and-dag updated-assumption state-var state-dag))
+         ((mv erp dag-to-prove) (acl2::wrap-term-around-dag updated-assumption state-var state-dag))
          ((when erp) (mv erp nil nil state))
          ;; (- (and (acl2::print-level-at-least-tp print) (cw "(DAG to prove: ~x0.)~%" dag-to-prove)))
          (- (cw "(Using ~x0 assumptions.)~%" (len all-assumptions)))
@@ -1339,13 +1352,8 @@
         (pc-assumption `(equal (xr ':rip 'nil ,state-var) ,loop-top-pc-term))
         (- (cw "(Loop top PC assumption: ~x0.)~%" pc-assumption))
         ;; Extract the RSP at the loop top:
-        ((mv erp loop-top-rsp-dag state)
-         (extract-rsp-dag loop-top-state-dag
-                          assumptions
-                          ;lifter-rules
-                          ;extra-rules
-                          ;remove-rules
-                          state))
+        ((mv erp loop-top-rsp-dag)
+         (extract-rsp-dag loop-top-state-dag assumptions (w state)))
         ((when erp) (mv erp nil nil nil state))
         (loop-top-rsp-term (dag-to-term loop-top-rsp-dag))
         ;; (- (cw "(Original RSP was ~x0.)~%" original-rsp-term)) ;will always be (xr ':rgf '4 x86_0) ?
@@ -1651,10 +1659,10 @@
          (acl2::simp-term loop-function-call-term :rules (append (extra-loop-lifter-rules) lifter-rules)))
         ((when erp) (mv erp nil nil nil state))
         ;; Write the values computed by the loop back into the state:
-        ((mv erp new-state-dag) (compose-term-and-dag updated-state-term :loop-function-result loop-function-call-dag))
+        ((mv erp new-state-dag) (acl2::wrap-term-around-dag updated-state-term :loop-function-result loop-function-call-dag))
         ((when erp) (mv erp nil nil nil state))
         ;; Apply the effect of the exit branches:
-        ((mv erp new-state-dag) (compose-term-and-dag exit-term state-var new-state-dag))
+        ((mv erp new-state-dag) (acl2::wrap-term-around-dag exit-term state-var new-state-dag))
         ((when erp) (mv erp nil nil nil state))
         ;; Apply the effect of the loop to the initial loop-top-state-dag:
         ((mv erp new-state-dag) (compose-dags new-state-dag :initial-loop-top-state loop-top-state-dag t))
@@ -2002,13 +2010,8 @@
         ((when erp) (mv erp nil nil nil state))
 
         ;; Extract the RSP:
-        ((mv erp rsp-dag state)
-         (extract-rsp-dag state-dag
-                          assumptions
-                         ;lifter-rules
-                          ;extra-rules
-                          ;remove-rules
-                          state))
+        ((mv erp rsp-dag)
+         (extract-rsp-dag state-dag assumptions (w state)))
         ((when erp) (mv erp nil nil nil state))
         (rsp-term (dag-to-term rsp-dag))
         (- (cw "(RSP is ~x0.)~%" rsp-term))
@@ -2162,7 +2165,7 @@
          state))
        ((when erp) (mv erp nil state))
        ;; Extract the output (TODO: generalize!)
-       ((mv erp output-dag) (compose-term-and-dag '(xr ':rgf '0 :dag) :dag dag))
+       ((mv erp output-dag) (acl2::wrap-term-around-dag '(xr ':rgf '0 :dag) :dag dag))
        ((when erp) (mv erp nil state))
        (- (cw "(output-dag: ~x0)~%" output-dag))
        ((mv erp output-dag state)
