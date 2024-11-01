@@ -165,4 +165,24 @@
   (b* (((when (endp events)) (system-state-fix systate))
        (systate (event-next (car events) systate)))
     (events-next (cdr events) systate))
-  :guard-hints (("Goal" :in-theory (enable events-possiblep))))
+  :guard-hints (("Goal" :in-theory (enable events-possiblep)))
+
+  ///
+
+  (defret all-addresses-of-events-next
+    (equal (all-addresses new-systate)
+           (all-addresses systate))
+    :hyp (events-possiblep events systate)
+    :hints (("Goal" :induct t :in-theory (enable events-possiblep))))
+
+  (defret correct-addresses-of-events-next
+    (equal (correct-addresses new-systate)
+           (correct-addresses systate))
+    :hyp (events-possiblep events systate)
+    :hints (("Goal" :induct t :in-theory (enable events-possiblep))))
+
+  (defret faulty-addresses-of-events-next
+    (equal (faulty-addresses new-systate)
+           (faulty-addresses systate))
+    :hyp (events-possiblep events systate)
+    :hints (("Goal" :induct t :in-theory (enable events-possiblep)))))
