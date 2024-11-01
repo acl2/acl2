@@ -224,4 +224,13 @@
     :enable (accepted-certificate-committee-p
              accepted-certificate-committee-p-necc
              validator-state->blockchain-of-timer-expires-next
-             accepted-certificates-of-timer-expires-next)))
+             accepted-certificates-of-timer-expires-next))
+
+  (defruled accepted-certificate-committee-p-of-event-next
+    (implies (and (accepted-certificate-committee-p systate)
+                  (ordered-even-p systate)
+                  (last-blockchain-round-p systate)
+                  (event-possiblep event systate))
+             (accepted-certificate-committee-p (event-next event systate)))
+    :enable (event-possiblep
+             event-next)))
