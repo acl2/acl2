@@ -22,6 +22,7 @@
 (include-book "invariant-addresses")
 (include-book "invariant-max-faulty")
 (include-book "invariant-quorum")
+(include-book "invariant-fault-tolerance")
 (include-book "invariant-no-self-messages")
 (include-book "invariant-no-self-buffer")
 (include-book "invariant-no-self-endorsed")
@@ -89,6 +90,7 @@
                     invariant-addresses
                     invariant-max-faulty
                     invariant-quorum
+                    invariant-fault-tolerance
                     invariant-no-self-messages
                     invariant-no-self-buffer
                     invariant-no-self-endorsed
