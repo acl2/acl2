@@ -178,3 +178,33 @@
              (no-self-buffer-p (event-next event systate)))
     :enable (event-possiblep
              event-next)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection no-self-buffer-p-always
+  :short "The invariant holds in every state
+          reachable from an initial state via a sequence of events."
+
+  (defruled no-self-buffer-p-of-events-next
+    (implies (and (system-statep systate)
+                  (no-self-buffer-p systate)
+                  (no-self-messages-p systate)
+                  (events-possiblep events systate))
+             (and (no-self-buffer-p (events-next events systate))
+                  (no-self-messages-p (events-next events systate))))
+    :induct t
+    :disable ((:e tau-system))
+    :enable (events-possiblep
+             events-next
+             no-self-buffer-p-of-event-next
+             no-self-messages-p-of-event-next))
+
+  (defruled no-self-buffer-p-when-reachable
+    (implies (and (system-statep systate)
+                  (system-initp systate)
+                  (events-possiblep events systate))
+             (no-self-buffer-p (events-next events systate)))
+    :disable ((:e tau-system))
+    :enable (no-self-buffer-p-when-init
+             no-self-messages-p-when-init
+             no-self-buffer-p-of-events-next)))

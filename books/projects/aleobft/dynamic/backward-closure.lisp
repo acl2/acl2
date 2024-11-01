@@ -218,3 +218,29 @@
                   (event-possiblep event systate))
              (backward-closed-p (event-next event systate)))
     :enable (event-possiblep event-next)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection backward-closed-p-always
+  :short "The invariant holds in every state
+          reachable from an initial state via a sequence of events."
+
+  (defruled backward-closed-p-of-events-next
+    (implies (and (system-statep systate)
+                  (backward-closed-p systate)
+                  (events-possiblep events systate))
+             (backward-closed-p (events-next events systate)))
+    :induct t
+    :disable ((:e tau-system))
+    :enable (events-possiblep
+             events-next
+             backward-closed-p-of-event-next))
+
+  (defruled backward-closed-p-when-reachable
+    (implies (and (system-statep systate)
+                  (system-initp systate)
+                  (events-possiblep events systate))
+             (backward-closed-p (events-next events systate)))
+    :disable ((:e tau-system))
+    :enable (backward-closed-p-when-init
+             backward-closed-p-of-events-next)))

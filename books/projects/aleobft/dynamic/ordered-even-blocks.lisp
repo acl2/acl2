@@ -174,3 +174,33 @@
              (ordered-even-p (event-next event systate)))
     :enable (event-possiblep
              event-next)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection ordered-even-p-always
+  :short "The invariant holds in every state
+          reachable from an initial state via a sequence of events."
+
+  (defruled ordered-even-p-of-events-next
+    (implies (and (system-statep systate)
+                  (ordered-even-p systate)
+                  (last-blockchain-round-p systate)
+                  (events-possiblep events systate))
+             (and (ordered-even-p (events-next events systate))
+                  (last-blockchain-round-p (events-next events systate))))
+    :induct t
+    :disable ((:e tau-system))
+    :enable (events-possiblep
+             events-next
+             ordered-even-p-of-event-next
+             last-blockchain-round-p-of-event-next))
+
+  (defruled ordered-even-p-when-reachable
+    (implies (and (system-statep systate)
+                  (system-initp systate)
+                  (events-possiblep events systate))
+             (ordered-even-p (events-next events systate)))
+    :disable ((:e tau-system))
+    :enable (ordered-even-p-when-init
+             last-blockchain-round-p-when-init
+             ordered-even-p-of-events-next)))

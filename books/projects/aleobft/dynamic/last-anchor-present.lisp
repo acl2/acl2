@@ -337,3 +337,38 @@
              (last-anchor-present-p (event-next event systate)))
     :enable (event-possiblep
              event-next)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection last-anchor-present-p-always
+  :short "The invariant holds in every state
+          reachable from an initial state via a sequence of events."
+
+  (defruled last-anchor-present-p-of-events-next
+    (implies
+     (and (system-statep systate)
+          (last-anchor-present-p systate)
+          (ordered-even-p systate)
+          (last-blockchain-round-p systate)
+          (events-possiblep events systate))
+     (and (last-anchor-present-p (events-next events systate))
+          (ordered-even-p (events-next events systate))
+          (last-blockchain-round-p (events-next events systate))))
+    :induct t
+    :disable ((:e tau-system))
+    :enable (events-possiblep
+             events-next
+             last-anchor-present-p-of-event-next
+             ordered-even-p-of-event-next
+             last-blockchain-round-p-of-event-next))
+
+  (defruled last-anchor-present-p-when-reachable
+    (implies (and (system-statep systate)
+                  (system-initp systate)
+                  (events-possiblep events systate))
+             (last-anchor-present-p (events-next events systate)))
+    :disable ((:e tau-system))
+    :enable (last-anchor-present-p-when-init
+             ordered-even-p-when-init
+             last-blockchain-round-p-when-init
+             last-anchor-present-p-of-events-next)))

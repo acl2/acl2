@@ -146,3 +146,17 @@
                   (event-possiblep event systate))
              (set::subset (committee-members (genesis-committee))
                           (all-addresses (event-next event systate))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection committees-in-system-p-always
+  :short "The invariant holds in every state
+          reachable from an initial state via a sequence of events."
+
+  (defruled committees-in-system-p-when-reachable
+    (implies (and (system-statep systate)
+                  (system-initp systate)
+                  (events-possiblep events systate))
+             (committees-in-system-p (events-next events systate)))
+    :enable (committees-in-system-p-when-genesis
+             system-initp)))

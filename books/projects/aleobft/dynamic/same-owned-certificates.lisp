@@ -238,3 +238,29 @@
              (same-owned-certificates-p (event-next event systate)))
     :enable (event-possiblep
              event-next)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection same-owned-certificates-p-always
+  :short "The invariant holds in every state
+          reachable from an initial state via a sequence of events."
+
+  (defruled same-owned-certificates-p-of-events-next
+    (implies (and (system-statep systate)
+                  (same-owned-certificates-p systate)
+                  (events-possiblep events systate))
+             (same-owned-certificates-p (events-next events systate)))
+    :induct t
+    :disable ((:e tau-system))
+    :enable (events-possiblep
+             events-next
+             same-owned-certificates-p-of-event-next))
+
+  (defruled same-owned-certificates-p-when-reachable
+    (implies (and (system-statep systate)
+                  (system-initp systate)
+                  (events-possiblep events systate))
+             (same-owned-certificates-p (events-next events systate)))
+    :disable ((:e tau-system))
+    :enable (same-owned-certificates-p-when-init
+             same-owned-certificates-p-of-events-next)))

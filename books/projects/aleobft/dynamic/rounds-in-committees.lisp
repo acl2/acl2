@@ -188,3 +188,19 @@
            dag-rounds-in-committees-p
            emptyp-of-certificate-set->author-set
            authors-in-committee-when-signer-quorum-p))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection rounds-in-committees-p-invariant-always
+  :short "The invariant holds in every state
+          reachable from an initial state via a sequence of events."
+
+  (defruled rounds-in-committees-p-when-reachable
+    (implies (and (system-statep systate)
+                  (system-initp systate)
+                  (events-possiblep events systate))
+             (rounds-in-committees-p (events-next events systate)))
+    :disable ((:e tau-system))
+    :enable (rounds-in-committees-p-invariant
+             accepted-certificate-committee-p-when-reachable
+             signer-quorum-p-when-reachable)))
