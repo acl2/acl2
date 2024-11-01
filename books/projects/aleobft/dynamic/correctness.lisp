@@ -57,11 +57,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We formulate and prove a number of properties of the protocol.
-     The main property that we are initially interested in
-     is the non-forking of blockchains,
-     which we have already proved for static committees;
-     here we are generalizing it for dynamic committees."))
+    "We formulate and prove a number of properties of the protocol,
+     culminating in the main property that we are interested in,
+     namely the non-forking of blockchains."))
   :order-subtopics (certificates-of-validators
                     same-owned-certificates
                     no-self-messages

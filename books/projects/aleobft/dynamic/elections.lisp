@@ -29,8 +29,8 @@
    (xdoc::p
     "Each even round has a deterministically chosen leader
      among the validators that form the active committee at that round.
-     If all validators agree on the committee at that round
-     (as we plan to prove as one of the key properties of the protocol),
+     If all validators agree on the committee at that round,
+     which we prove in @(see same-committees),
      then they choose the same leader.
      Given this common leader, each validator uses
      the certificates at the immediately following odd round
@@ -71,7 +71,7 @@
      But in our model we can just use a constrained function,
      as the details do not matter,
      at least for the kind of properties that
-     we plan to prove in the near future."))
+     we are proving in the near future."))
 
   (encapsulate
     (((leader-at-round * *) => *
