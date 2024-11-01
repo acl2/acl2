@@ -664,7 +664,7 @@
 ;;                   :verify-guards nil)) ;add a guard about dag
 ;;   (mv-let (simplified-equality-dag state)
 ;; ;call simplify-dag or something (like a quick version)?
-;;     (simplify-with-rule-sets (compose-term-and-dag `(equal ,term x) 'x dag)
+;;     (simplify-with-rule-sets (wrap-term-around-dag `(equal ,term x) 'x dag)
 ;;                              (list (cons :rules (make-axe-rules '(equal-same) (w state))))
 ;;                              (binary-* '2 (len dag))
 ;;                              'NIL
@@ -701,7 +701,7 @@
 
 ;; Returns (mv erp dag).
 (defun negate-dag (dag)
-  (compose-term-and-dag '(not x) 'x dag))
+  (wrap-term-around-dag '(not x) 'x dag))
 
 ;; Returns (mv erp dag).
 (defun make-disequality-dag (dag1 dag2)
@@ -921,13 +921,13 @@
 ;;           (not (integerp locals-count)))
 ;;       (mv state-update-dag param-new-val-alist param-initial-val-alist replacement-equalities param-count state)
 ;;     (mv-let (new-local-dag state)
-;;             (quick-simplify-dag (compose-term-and-dag `(get-local ',locals-count s) 's one-rep-dag state)
+;;             (quick-simplify-dag (wrap-term-around-dag `(get-local ',locals-count s) 's one-rep-dag state)
 ;;                                 ;;fixme - do this just once?
 ;;                                 (make-axe-rules (get-local-rules) (w state)))
 ;;             (let* ((get-local-term `(get-local ',locals-count ,state-var)))
 ;;               (mv-let (result state)
 ;;                       (quick-simplify-dag
-;;                        (compose-term-and-dag `(equal ,get-local-term xx) 'xx new-local-dag)
+;;                        (wrap-term-around-dag `(equal ,get-local-term xx) 'xx new-local-dag)
 ;;                        (make-axe-rules (get-local-rules) (w state)))
 
 
@@ -938,12 +938,12 @@
 ;;                         (let* ((dummy (cw "Param ~x0 is local ~x1.~%" param-count locals-count))
 ;;                                (get-local-term `(nth ',locals-count (jvm::locals (jvm::thread-top-frame (th) ,state-var))))
 ;;                                (initial-value-of-local (quick-simplify-dag ;-print
-;;                                                         (compose-term-and-dag get-local-term state-var first-loop-top-dag)
+;;                                                         (wrap-term-around-dag get-local-term state-var first-loop-top-dag)
 ;;                                                         (make-axe-rules (get-local-rules)
 ;;                                                                      (w state)))))
 ;;                           (declare (ignore dummy))
 ;;                           (process-locals (+ -1 locals-count)
-;;                                           (compose-term-and-dag
+;;                                           (wrap-term-around-dag
 ;;                                            `(update-local-in-state ',locals-count (nth ',param-count params) (th) s)
 ;;                                            's
 ;;                                            state-update-dag)
@@ -978,7 +978,7 @@
 ;;            )
 ;;       (declare (ignore dummy))
 ;;       (process-heap (cdr heap-update-triples)
-;;                     (compose-term-and-dag
+;;                     (wrap-term-around-dag
 ;; ;fixme consider adding a take with the old length if
 ;; ;we are setting the array contents field?  since array
 ;; ;lengths can't change - otherwise we'd need to prove a
@@ -995,7 +995,7 @@
 ;;                     (acons param-count value-dag param-new-val-alist) ;or simplify the get-field expression applied to the arbitrary state?
 ;;                     (acons param-count
 ;;                            ;(dag-to-term
-;;                             (simplify-dag5 (compose-term-and-dag getfield-term state-var first-loop-top-dag)
+;;                             (simplify-dag5 (wrap-term-around-dag getfield-term state-var first-loop-top-dag)
 ;;                                                          (append (get-local-rules)
 ;;                                                                                '(LIST::APPEND-ASSOCIATIVE))
 ;;                                                                        )
@@ -1024,7 +1024,7 @@
 ;;            )
 ;;       (declare (ignore dummy))
 ;;       (process-static-field-updates (cdr static-field-update-pairs)
-;;                                     (compose-term-and-dag
+;;                                     (wrap-term-around-dag
 ;;                                      `(jvm::setstaticfield ,class-name ,field-name (nth ',param-count params) s)
 ;;                                      's
 ;;                                      state-update-dag)
@@ -1034,7 +1034,7 @@
 ;;                                     (acons param-count value-dag param-new-val-alist)
 ;;                                     (acons param-count
 ;;                                            ;(dag-to-term
-;;                                             (simplify-dag (compose-term-and-dag get-static-field-term
+;;                                             (simplify-dag (wrap-term-around-dag get-static-field-term
 ;;                                                                                                 's
 ;;                                                                                                 first-loop-top-dag)
 ;;                                                                           (make-axe-rules (append
@@ -1301,12 +1301,12 @@
 ;; ;; state-update-dag mentions params, so now we need to bind params
 ;; ;exit-pc is already quoted
 ;; (defun make-new-state-dag (state-update-dag exit-pc param-initial-val-alist fn-name)
-;;   (let* ((state-update-dag (compose-term-and-dag `(set-pc ,exit-pc s) 's state-update-dag))
+;;   (let* ((state-update-dag (wrap-term-around-dag `(set-pc ,exit-pc s) 's state-update-dag))
 ;;          (num-params (len param-initial-val-alist)) ;hope there are no dups... ;can this be 0?
 ;;          ;;inefficient:
 ;;          (initial-value-dags (lookup-ints 0 (+ -1 num-params) param-initial-val-alist))
 ;;          (initial-params (make-cons-nest-dag initial-value-dags))
-;;          (function-call-dag (compose-term-and-dag `(,fn-name params) 'params initial-params)) ;slow?
+;;          (function-call-dag (wrap-term-around-dag `(,fn-name params) 'params initial-params)) ;slow?
 ;; ;         (function-call-dag (dagify-term function-call-term))
 ;;          (final-dag (compose-dags state-update-dag 'params function-call-dag))
 ;;          )
@@ -1413,7 +1413,7 @@
 ;;                    (subdag-for-node (check-dag-vars '(s) (get-subdag nodenum-whose-class-is-needed arbitrary-iteration-dag)))
 ;;                    (term-for-node (dag-to-term subdag-for-node))
 ;;                    (class-of-node (check-quotep (simplify-dag
-;;                                                  (compose-term-and-dag `(get-class ,term-for-node (jvm::heap s)) 's state-dag-at-loop-header)
+;;                                                  (wrap-term-around-dag `(get-class ,term-for-node (jvm::heap s)) 's state-dag-at-loop-header)
 ;;                                                  (make-axe-rules (get-local-rules) (w state)) ;fixme, these get rid of error states!
 ;;                                                  ;; :print :brief
 ;;                                                  )))
@@ -1510,7 +1510,7 @@
 ;;                   :guard (and (pseudo-term-listp initial-state-hyps)
 ;;                               (pseudo-term-listp loop-top-hyps))))
 ;;   (let* ((intialized-classes (check-quotep (simplify-dag
-;;                                             (compose-term-and-dag '(JVM::initialized-classes s) 's state-dag-at-loop-header)
+;;                                             (wrap-term-around-dag '(JVM::initialized-classes s) 's state-dag-at-loop-header)
 ;;                                             (make-axe-rules (append (get-local-rules)
 ;;                                                                  ;;add to get-local-rules (and rename to something more generic)
 ;;                                                                  '((:REWRITE JVM::INITIALIZED-CLASSES-OF-MAKE-STATE)))
@@ -1564,11 +1564,11 @@
 ;;                      (else-part-nodenum (third (fargs top-expr-of-arbitrary-iteration-no-exceptions)))
 ;;                      (then-part-dag (get-subdag then-part-nodenum arbitrary-iteration-no-exceptions-dag))
 ;;                      ;; this is quoted:
-;;                      (then-part-pc (simplify-dag (compose-term-and-dag '(get-pc x) 'x then-part-dag)
+;;                      (then-part-pc (simplify-dag (wrap-term-around-dag '(get-pc x) 'x then-part-dag)
 ;;                                                      *GET-PC-FROM-DAG-AXE-RULE-SET*))
 ;;                      (else-part-dag (get-subdag else-part-nodenum arbitrary-iteration-no-exceptions-dag))
 ;;                      ;; this is quoted:
-;;                      (else-part-pc (simplify-dag (compose-term-and-dag '(get-pc x) 'x else-part-dag)
+;;                      (else-part-pc (simplify-dag (wrap-term-around-dag '(get-pc x) 'x else-part-dag)
 ;;                                                      *GET-PC-FROM-DAG-AXE-RULE-SET*)))
 ;;                   (if (not (and (quotep then-part-pc)
 ;;                                 (quotep else-part-pc)
@@ -1732,7 +1732,7 @@
 ;;                              (let*
 ;;                                  ((static-field-map-dag (simplify-dag
 ;;                                                          ;;fixme what about ifs?
-;;                                                          (compose-term-and-dag '(jvm::static-field-map s)
+;;                                                          (wrap-term-around-dag '(jvm::static-field-map s)
 ;;                                                                                's simplified-arbitrary-iteration-dag)
 ;;                                                          (make-axe-rules (get-local-rules)
 ;;                                                                       (w state))))
@@ -1740,7 +1740,7 @@
 
 ;; ;do we have to make this, or can we pass the main dag and a nodenum?
 ;; ;fffixme - what do we do if this has a myif for a heap subterm?
-;;                                   (heap-dag (simplify-dag (compose-term-and-dag '(heap s)
+;;                                   (heap-dag (simplify-dag (wrap-term-around-dag '(heap s)
 ;;                                                                                     's simplified-arbitrary-iteration-dag)
 ;;                                                               (make-axe-rules (append (get-local-rules)
 ;;                                                                                    '((:rewrite jvm::myif-of-set-field-1-strong)
@@ -1805,7 +1805,7 @@
 ;;                                               ;; this uses the test-dag simplied using the invariant
 ;;                                               (termination-test-dag (if (eql (unquote then-part-pc) loop-pc)
 ;;                                                                         ;;fixme simplify this (maybe with not-of-not)?
-;;                                                                         (compose-term-and-dag '(not x) 'x test-dag)
+;;                                                                         (wrap-term-around-dag '(not x) 'x test-dag)
 ;;                                                                       test-dag))
 ;;                                               (dummy2 (cw "Termination test: ~x0~%" termination-test-dag))
 ;;                                               ;;replace the vars in the termination test (fixme make sure none remain):
@@ -1974,7 +1974,7 @@
 ;; (defun can-prove-we-are-not-in-the-loop (state-dag class-name method-name method-descriptor loop-pcs state)
 ;;   (let ((loop-designator-from-state
 ;;          (simplify-dag
-;;           (compose-term-and-dag `(loop-designator-from-state s)
+;;           (wrap-term-around-dag `(loop-designator-from-state s)
 ;;                                 's
 ;;                                 state-dag)
 ;;           ;;fixme?
@@ -1993,7 +1993,7 @@
 ;;  (defun skip-loops-that-dont-execute (state-dag si-hyps loop-infos generated-rules state)
 ;;    ;;see whether we've exited:
 ;;    (let ((call-stack-less-than-flg (simplify-dag
-;;                                     (compose-term-and-dag '(< (len (JVM::CALL-STACK (th) s)) (len (JVM::CALL-STACK (th) si)))
+;;                                     (wrap-term-around-dag '(< (len (JVM::CALL-STACK (th) s)) (len (JVM::CALL-STACK (th) si)))
 ;;                                                           's
 ;;                                                           state-dag)
 ;;                                     (append generated-rules
@@ -2016,7 +2016,7 @@
 ;;          (let* ( ;figure out which loop we are in:
 ;;                 (loop-loop-designator-from-state (safe-unquote2 'skip-loops-that-dont-execute
 ;;                                                                       (simplify-dag
-;;                                                                        (compose-term-and-dag '(loop-designator-from-state s)
+;;                                                                        (wrap-term-around-dag '(loop-designator-from-state s)
 ;;                                                                                              's
 ;;                                                                                              state-dag)
 ;;                                                                        (make-axe-rules (first-loop-top-rules) (w state)) ;ffixme
@@ -2030,7 +2030,7 @@
 ;;                 ;;now try to execute past it:
 ;;                 (possible-state-at-next-loop-header-dag
 ;;                  (simplify-dag
-;;                   (compose-term-and-dag
+;;                   (wrap-term-around-dag
 ;;                    `(run-until-return-from-stack-height-or-until-hit-loop-header
 ;;                      (len (jvm::call-stack (th) si))
 ;;                      ',(strip-cars loop-infos) ;these are the loop-headers
@@ -2077,7 +2077,7 @@
 ;;           (loop-headers (strip-cars loop-infos))
 ;;           (state-dag
 ;;            (simplify-dag
-;;             (compose-term-and-dag
+;;             (wrap-term-around-dag
 ;;              `(run-until-return-from-stack-height-or-until-hit-loop-header
 ;;                (len (jvm::call-stack (th) si))
 ;;                ',loop-headers
@@ -2103,7 +2103,7 @@
 ;;         (let* ( ;(dummy2 (cw "State at loop header: ~x0~%" state-at-loop-header-dag))
 ;;                (loop-loop-designator-from-state (safe-unquote2 'decompile-loops-aux
 ;;                                                                      (simplify-dag
-;;                                                                       (compose-term-and-dag '(loop-designator-from-state s)
+;;                                                                       (wrap-term-around-dag '(loop-designator-from-state s)
 ;;                                                                                             's
 ;;                                                                                             state-dag)
 ;;                                                                       (make-axe-rules (first-loop-top-rules) (w state)) ;ffixme
@@ -2447,7 +2447,7 @@
 (defun get-dag-pc (dag hyps state)
   (declare (xargs :mode :program :stobjs state))
   (b* (((mv erp dag2)
-        (compose-term-and-dag `(JVM::pc (jvm::thread-top-frame (th) replace-me))
+        (wrap-term-around-dag `(jvm::pc (jvm::thread-top-frame (th) replace-me))
                               'replace-me
                               dag))
        ((when erp) (mv erp nil state)))
@@ -2571,7 +2571,7 @@
                     (if print (cw "~x0~%" conjunct) (cw ":elided~%"))))
          (assumptions (append conjuncts-to-simplify ;hope this is okay
                               hyps))
-         ((mv erp conjunct-after-one-rep-dag) (compose-term-and-dag conjunct state-var one-rep-dag)) ;return a dag-array to avoid converting back to an array below?
+         ((mv erp conjunct-after-one-rep-dag) (wrap-term-around-dag conjunct state-var one-rep-dag)) ;return a dag-array to avoid converting back to an array below?
          ((when erp) (mv erp nil nil state))
          ((mv erp simplified-conjunct-after-one-rep state)
           (simp-dag
@@ -2622,7 +2622,7 @@
       (mv (erp-nil) failed-candidate-invars-acc state)
     (b* ((conjunct-term (first candidate-invars))
          (- (cw " (Attempting to prove candidate invariant for loop ~x0: ~x1~%" this-loop-number conjunct-term))
-         ((mv erp conjunct-after-one-rep-dag) (compose-term-and-dag conjunct-term state-var one-rep-dag)) ;return a dag-array to avoid converting back to an array below?
+         ((mv erp conjunct-after-one-rep-dag) (wrap-term-around-dag conjunct-term state-var one-rep-dag)) ;return a dag-array to avoid converting back to an array below?
          ((when erp) (mv erp nil state))
          ((mv erp simplified-conjunct-after-one-rep state)
           (simp-dag
@@ -2702,7 +2702,7 @@
     (b* ((candidate-invar (first candidate-invars))
          (- (cw " (Attempting to prove that candidate invariant holds initially ~x0.~%" candidate-invar))
          ((mv erp candidate-invar-at-loop-top-dag)
-          (compose-term-and-dag candidate-invar state-var loop-top-state-dag)) ;return a dag-array to avoid converting back to an array below?
+          (wrap-term-around-dag candidate-invar state-var loop-top-state-dag)) ;return a dag-array to avoid converting back to an array below?
          ((when erp) (mv erp nil state))
          ((mv erp simplified-candidate-invar-at-loop-top state)
           (simp-dag candidate-invar-at-loop-top-dag
@@ -3427,7 +3427,7 @@
 ;;     (let* ((entry (car param-term-alist))
 ;;            (term (cdr entry)))
 ;;       (mv-let (result state)
-;;               (quick-simplify-dag3 (compose-term-and-dag term state-var loop-top-state-dag)
+;;               (quick-simplify-dag3 (wrap-term-around-dag term state-var loop-top-state-dag)
 ;;                                   *get-local-axe-rule-alist*
 ;;                                   :remove-duplicate-rulesp nil)
 ;;               (mv-let (result2 state)
@@ -3959,7 +3959,7 @@
 ;;   (declare (xargs :stobjs state
 ;;                   :mode :program))
 ;;   (quick-simplify-dag3
-;;    (compose-term-and-dag `(jvm::heap replace-me) 'replace-me state-dag)
+;;    (wrap-term-around-dag `(jvm::heap replace-me) 'replace-me state-dag)
 ;;    *state-component-extraction-axe-rule-alist*
 ;;    :assumptions hyps
 ;;    :remove-duplicate-rulesp nil))
@@ -4546,7 +4546,7 @@
                               (class-table-alistp class-table-alist))
                   :stobjs state))
   (b* ((term (output-extraction-term output-indicator initial-locals-term return-type class-table-alist))
-       ((mv erp dag2) (compose-term-and-dag term 'replace-me dag))
+       ((mv erp dag2) (wrap-term-around-dag term 'replace-me dag))
        ((when erp) (mv erp nil state)))
     (simp-dag dag2
               :rules (state-component-extraction-rules)
@@ -4666,7 +4666,7 @@
   (b* ((before-term term)
        ((mv erp before-dag) (dagify-term before-term))
        ((when erp) (mv erp nil state))
-       ((mv erp after-dag) (compose-term-and-dag term state-var one-rep-dag))
+       ((mv erp after-dag) (wrap-term-around-dag term state-var one-rep-dag))
        ((when erp) (mv erp nil state))
        ((mv erp equality-dag) (make-equality-dag before-dag after-dag))
        ((when erp) (mv erp nil state))
@@ -4735,7 +4735,7 @@
                   :mode :program))
   (b* ((- (cw "(Unrolling loop number ~x0:...~%" this-loop-number))
        ((mv erp dag-to-run)
-        (compose-term-and-dag
+        (wrap-term-around-dag
          `(run-until-exit-segment (stack-height replace-me) ',loop-pcs replace-me)
          'replace-me
          loop-top-state-dag))
@@ -5492,12 +5492,12 @@
               ;; Build the term that represents the loop:
 
               ;; Apply the loop function to the intial values of the params:
-              ((mv erp loop-function-call-dag) (compose-term-and-dag `(,loop-function-name :inital-params)
+              ((mv erp loop-function-call-dag) (wrap-term-around-dag `(,loop-function-name :inital-params)
                                                                  :inital-params
                                                                  initial-params-dag))
               ((when erp) (mv erp nil nil nil nil nil nil nil state))
               ;; Write the values computed by the loop back into the state:
-              ((mv erp new-state-dag) (compose-term-and-dag updated-state-term :loop-function-result loop-function-call-dag))
+              ((mv erp new-state-dag) (wrap-term-around-dag updated-state-term :loop-function-result loop-function-call-dag))
               ((when erp) (mv erp nil nil nil nil nil nil nil state))
               ;; Apply the effect of the exit branches around it:
               ((mv erp new-state-dag) (compose-dags exit-dag state-var new-state-dag t)) ;can this be a constant?
@@ -5922,7 +5922,7 @@
         ;; (- (cw "(Rules: ~x0)" generated-rules-acc))
         (loop-headers (strip-cars loop-alist))
         ;; (- (cw "(Loop headers: ~x0)" loop-headers)) ;we could print these just for this class
-        ((mv erp dag-to-run) (compose-term-and-dag
+        ((mv erp dag-to-run) (wrap-term-around-dag
                      `(run-until-exit-segment-or-hit-loop-header
                        ,segment-call-stack-height
                        ',segment-pcs ;does not include the header of the current loop
@@ -6222,7 +6222,7 @@
        ((when erp) (mv erp nil nil nil nil nil state))
        ;; Extract the list of initialized classes, after class initialization:
        ((mv erp ic-dag)
-        (compose-term-and-dag `(jvm::initialized-classes replace-me) 'replace-me initialized-state-dag))
+        (wrap-term-around-dag `(jvm::initialized-classes replace-me) 'replace-me initialized-state-dag))
        ((when erp) (mv erp nil nil nil nil nil state))
        ((mv erp initialized-class-names state) ;fixme don't we know what these should be, since we just ran the initializers?  (maybe some more have gotten sucked in?)
         (simp-dag ic-dag
@@ -6234,7 +6234,7 @@
        (initialized-class-names (safe-unquote initialized-class-names))
        ;; Extract the heap after class initialization:
        ((mv erp h-dag)
-        (compose-term-and-dag `(jvm::heap replace-me) 'replace-me initialized-state-dag))
+        (wrap-term-around-dag `(jvm::heap replace-me) 'replace-me initialized-state-dag))
        ((when erp) (mv erp nil nil nil nil nil state))
        ((mv erp heap-dag state)
         (simp-dag h-dag
@@ -6247,7 +6247,7 @@
        (heap (dag-to-term heap-dag))
        ;; Extract the static-field-map after class initialization: (can we do this better somehow?)
        ((mv erp sfm-dag)
-        (compose-term-and-dag `(jvm::static-field-map replace-me)
+        (wrap-term-around-dag `(jvm::static-field-map replace-me)
                               'replace-me
                               initialized-state-dag))
        ((when erp) (mv erp nil nil nil nil nil state))
