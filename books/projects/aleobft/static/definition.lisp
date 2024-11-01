@@ -16,7 +16,6 @@
 (include-book "initialization")
 (include-book "operations")
 (include-book "transitions")
-(include-book "executions")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -33,11 +32,9 @@
      the possible initial states,
      and the possible transitions by which
      an event takes a state to a new state
-     (the events `label' the transitions between states).
-     We also define notions of executions and reachable states."))
+     (the events `label' the transitions between states)."))
   :order-subtopics (states
                     events
                     initialization
                     operations
-                    transitions
-                    executions))
+                    transitions))
