@@ -87,7 +87,7 @@
                                            systate))
   :hooks (:fix))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define event-next ((event eventp) (systate system-statep))
   :guard (event-possiblep event systate)
@@ -129,3 +129,40 @@
            (faulty-addresses systate))
     :hyp (event-possiblep event systate)
     :hints (("Goal" :in-theory (enable event-possiblep)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define events-possiblep ((events event-listp) (systate system-statep))
+  :returns (yes/no booleanp)
+  :short "Check if a sequence of events is possible."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Each event must be possible in the state that immediately precedes it,
+     starting with the input @('systate') for the first state in @('events')
+     (i.e. the @(tsee car), because we consider these events left to right),
+     and using @(tsee event-next) to calculate the state
+     for each successive event.
+     This predicate returns @('t') on the empty list of events,
+     since no events can always happen, so to speak."))
+  (b* (((when (endp events)) t)
+       ((unless (event-possiblep (car events) systate)) nil))
+    (events-possiblep (cdr events) (event-next (car events) systate))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define events-next ((events event-listp) (systate system-statep))
+  :guard (events-possiblep events systate)
+  :returns (new-systate system-statep)
+  :short "New state resulting from a sequence of events."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The sequence of events must be possible,
+     as expressed by @(tsee events-possiblep) in the guard.
+     If the sequence is empty, we return the input state.
+     Otherwise, we execute the events from left to right."))
+  (b* (((when (endp events)) (system-state-fix systate))
+       (systate (event-next (car events) systate)))
+    (events-next (cdr events) systate))
+  :guard-hints (("Goal" :in-theory (enable events-possiblep))))
