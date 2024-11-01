@@ -485,7 +485,7 @@
 
 ;; Returns (mv erp failedp state)
 (defun run-formal-test-on-method (method-id methods-expected-to-fail error-on-unexpectedp method-info-alist class-name assumptions root-of-class-hierarchy print extra-rules remove-rules prune-branches-approximately prune-branches-precisely monitor state)
-  (declare (xargs :stobjs (state)
+  (declare (xargs :stobjs state
                   :guard (and (jvm::method-idp method-id)
                               (or (eq :any methods-expected-to-fail)
                                   (eq :auto methods-expected-to-fail)
@@ -701,7 +701,7 @@
                        (natp prune-branches-approximately))
                    (or (booleanp prune-branches-precisely)
                        (natp prune-branches-precisely)))
-                  :stobjs (state)
+                  :stobjs state
                   :mode :program))
   (if (endp method-ids)
       (mv (erp-nil) (reverse results-acc) state)

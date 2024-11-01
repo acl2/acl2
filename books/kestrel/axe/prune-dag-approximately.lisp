@@ -561,9 +561,9 @@
        ((when erp) (mv erp nil state))
        ((mv erp result-dag-or-quotep) (simplify-dag-basic dag
                                                           nil ; assumptions
+                                                          rule-alist
                                                           nil ; interpreted-function-alist
                                                           nil ; limits
-                                                          rule-alist
                                                           nil ; count-hits
                                                           nil ; print
                                                           (acl2::known-booleans (w state))

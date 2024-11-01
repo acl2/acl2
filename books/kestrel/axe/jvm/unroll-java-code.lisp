@@ -333,7 +333,7 @@
                               (booleanp chunkedp)
                               (booleanp error-on-incomplete-runsp)
                               (booleanp normalize-xors))
-                  :stobjs (state)
+                  :stobjs state
                   :mode :program ;because of FRESH-NAME-IN-WORLD-WITH-$S, SIMP-TERM-FN and TRANSLATE-TERMS
                   ))
   (b* ((method-class (extract-method-class method-designator-string))
@@ -579,7 +579,7 @@
                                   (symbol-listp param-names)) ;todo: check for dups and keywords and case clashes
                               (booleanp chunkedp)
                               (booleanp normalize-xors))
-                  :stobjs (state)
+                  :stobjs state
                   :mode :program ;because of FRESH-NAME-IN-WORLD-WITH-$S, SIMP-TERM-FN and TRANSLATE-TERMS
                   ))
   (b* (((when (command-is-redundantp whole-form state))

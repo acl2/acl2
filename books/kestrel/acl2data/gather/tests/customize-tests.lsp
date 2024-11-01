@@ -21,7 +21,8 @@
  `((,(make-sysfile :system "kestrel/acl2data/gather/tests/runs/test2b.lisp") :rune))
  state)
 
-(include-book #-acl2-advice "../../patch-book"
-              #+acl2-advice "../../patch-book-advice"
-              :ttags :all
-              :load-compiled-file nil)
+#-acl2-advice
+(include-book "kestrel/acl2data/gather/patch-book" :dir :system :ttags :all :load-compiled-file nil)
+
+#+acl2-advice
+(include-book "kestrel/acl2data/gather/patch-book-advice" :dir :system :ttags :all :load-compiled-file nil)

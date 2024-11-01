@@ -397,6 +397,9 @@
 (defthmd integerp-of-ctri
   (integerp (ctri i x86)))
 
+;; probably only needed for axe
+(defthmd booleanp-of-canonical-address-p (booleanp (canonical-address-p lin-addr)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Warning: Do not prove a rule to open this on non-constants, even though it is provably always true.
@@ -408,6 +411,7 @@
 ;; Creates x86-fetch-decode-execute-base-new.
 ;; We tried just testing whether RIP is a constant, but sometimes RIP can be the variable TEXT-OFFSET.
 ;; Could simplify this for 64-bit mode (use rip and read) but then what about 32-bit mode?
+;; ttodo: try using a binding hyp for proc-mode
 (defopeners x86-fetch-decode-execute :suffix -new
   :hyps (;(poor-mans-quotep (rip x86))
          ;;(canonical-address-p (rip x86)) ; could drop, but this clarifies failures
@@ -587,10 +591,5 @@
                     )))
   :hints (("Goal" :in-theory (enable x86-fetch-decode-execute
                                      x86-operation-mode))))
-
-
-
-
-(defthmd booleanp-of-canonical-address-p (booleanp (canonical-address-p lin-addr)))
 
 (defopeners bv-array-read-chunk-little)

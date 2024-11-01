@@ -78,7 +78,7 @@
                           disable-loop-openers
                           whole-form
                           state)
-  (declare (xargs :stobjs (state)
+  (declare (xargs :stobjs state
                   :guard (and
                           (jvm::method-indicatorp method-indicator)
                           ;;(pseudo-term-listp user-assumptions) ;now these can be untranslated terms, so we translate them below

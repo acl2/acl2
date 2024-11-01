@@ -386,7 +386,7 @@
                               (booleanp memoizep)
                               (natp total-steps))
                   :mode :program
-                  :stobjs (state)))
+                  :stobjs state))
   (if (zp steps-left)
       (mv (erp-nil) dag state)
     (b* ((this-step-increment (acl2::this-step-increment step-increment total-steps))
@@ -416,17 +416,17 @@
           ;;                     :check-inputs nil)
             (mv-let (erp result)
               (acl2::simplify-dag-x86 dag
-                                        assumptions
-                                        nil ; interpreted-function-alist
-                                        limits
-                                        rule-alist
-                                        t ; count-hints ; todo: think about this
-                                        print
-                                        (acl2::known-booleans (w state))
-                                        rules-to-monitor
-                                        '(program-at) ; fns-to-elide
-                                        t ; normalize-xors
-                                        memoizep)
+                                      assumptions
+                                      rule-alist
+                                      nil ; interpreted-function-alist
+                                      limits
+                                      t ; count-hints ; todo: think about this
+                                      print
+                                      (acl2::known-booleans (w state))
+                                      rules-to-monitor
+                                      '(program-at) ; fns-to-elide
+                                      t             ; normalize-xors
+                                      memoizep)
               (mv erp result state))
             ;)
             )
@@ -507,9 +507,9 @@
                   (mv-let (erp result)
                     (acl2::simplify-dag-x86 dag
                                             assumptions
+                                            rule-alist
                                             nil ; interpreted-function-alist
                                             limits
-                                            rule-alist
                                             t ; count-hints ; todo: think about this
                                             print
                                             (acl2::known-booleans (w state))
@@ -602,7 +602,7 @@
                               (acl2::print-levelp print)
                               (member print-base '(10 16))
                               (booleanp untranslatep))
-                  :stobjs (state)
+                  :stobjs state
                   :mode :program))
   (b* ((- (cw "(Lifting ~s0.~%" target)) ;todo: print the executable name
        ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
@@ -845,7 +845,7 @@
                               (booleanp produce-theorem)
                               (booleanp prove-theorem)
                               (booleanp restrict-theory))
-                  :stobjs (state)
+                  :stobjs state
                   :mode :program))
   (b* (;; Check whether this call to the lifter has already been made:
        (previous-result (previous-lifter-result whole-form state))

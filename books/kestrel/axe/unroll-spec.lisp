@@ -49,7 +49,7 @@
                         print
                         whole-form
                         state)
-  (declare (xargs :stobjs (state)
+  (declare (xargs :stobjs state
                   :mode :program ;; because this calls translate
                   :guard (and (symbolp defconst-name)
                               ;; (pseudo-termp term) ;; really an untranlated term

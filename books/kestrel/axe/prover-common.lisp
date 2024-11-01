@@ -528,9 +528,9 @@
 ;; ;            context-indicator-list-array ;associates each nodenum with a context-indicator-list (one context-indicator for each predicate-nodenum)
 ;; ;            )
 ;; ;this one takes a dag-lst
-;; ;smashes array 'dag-array-name-for-make-context-indicator-list - also the parent array?  what else?
+;; ;smashes array 'dag-array-for-make-context-indicator-list - also the parent array?  what else?
 ;; (defun make-context-indicator-lists (dag-lst dag-len tag-array2)
-;;   (let* ((dag-array-name 'dag-array-name-for-make-context-indicator-lists)
+;;   (let* ((dag-array-name 'dag-array-for-make-context-indicator-lists)
 ;;          (dag-array (make-into-array dag-array-name dag-lst)))
 ;;     (make-context-indicator-list-array dag-array-name dag-array dag-len tag-array2)))
 
