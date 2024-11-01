@@ -203,15 +203,59 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Unlike for the other validator address sets (all and correct),
-     here we just prove one theorem for all kinds of events.
-     The set of addresses of faulty validator
-     is not used much in formulating and proving other invariants so far.
-     If that changes, we can add similar theorems for faulty validators
-     for each different kind of events."))
+    "We prove that for each kind of event, and then for generic events.
+     That last theorem could be proved directly
+     by enabling all the @('-possiblep') and @('-next') functions,
+     but the theorems about the different kinds of events
+     are useful in proofs of other invariants,
+     which are formulated and proved separately
+     for the different kinds of events."))
+
+  (defrule faulty-addresses-of-create-certificate-next
+    (implies (create-certificate-possiblep cert systate)
+             (equal (faulty-addresses
+                     (create-certificate-next cert systate))
+                    (faulty-addresses systate)))
+    :enable faulty-addresses)
+
+  (defrule faulty-addresses-of-receive-certificate-next
+    (implies (receive-certificate-possiblep msg systate)
+             (equal (faulty-addresses
+                     (receive-certificate-next msg systate))
+                    (faulty-addresses systate)))
+    :enable faulty-addresses)
+
+  (defrule faulty-addresses-of-store-certificate-next
+    (implies (store-certificate-possiblep cert val systate)
+             (equal (faulty-addresses
+                     (store-certificate-next cert val systate))
+                    (faulty-addresses systate)))
+    :enable faulty-addresses)
+
+  (defrule faulty-addresses-of-advance-round-next
+    (implies (advance-round-possiblep val systate)
+             (equal (faulty-addresses
+                     (advance-round-next val systate))
+                    (faulty-addresses systate)))
+    :enable faulty-addresses)
+
+  (defrule faulty-addresses-of-commit-anchors-next
+    (implies (commit-anchors-possiblep val systate)
+             (equal (faulty-addresses
+                     (commit-anchors-next val systate))
+                    (faulty-addresses systate)))
+    :enable faulty-addresses)
+
+  (defrule faulty-addresses-of-timer-expires-next
+    (implies (timer-expires-possiblep val systate)
+             (equal (faulty-addresses
+                     (timer-expires-next val systate))
+                    (faulty-addresses systate)))
+    :enable faulty-addresses)
 
   (defrule faulty-addresses-of-event-next
     (implies (event-possiblep event systate)
              (equal (faulty-addresses (event-next event systate))
                     (faulty-addresses systate)))
-    :enable faulty-addresses))
+    :enable (event-possiblep
+             event-next)))
