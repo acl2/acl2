@@ -99,5 +99,3 @@
                     nonforking-blockchains-next
                     simultaneous-induction
                     nonforking-blockchains))
-
-; TODO: continue
