@@ -47,6 +47,7 @@
 (include-book "blockchain-redundant")
 (include-book "nonforking-blockchains-next")
 (include-book "simultaneous-induction")
+(include-book "nonforking-blockchains")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -96,6 +97,7 @@
                     committed-redundant
                     blockchain-redundant
                     nonforking-blockchains-next
-                    simultaneous-induction))
+                    simultaneous-induction
+                    nonforking-blockchains))
 
 ; TODO: continue
