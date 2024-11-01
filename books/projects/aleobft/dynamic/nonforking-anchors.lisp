@@ -737,4 +737,29 @@
              (nonforking-anchors-p (timer-expires-next val systate)))
     :enable (nonforking-anchors-p
              nonforking-anchors-p-necc
-             committed-anchors-of-timer-expires-next)))
+             committed-anchors-of-timer-expires-next))
+
+  ;; all events:
+
+  (defruled nonforking-anchors-p-of-event-next
+    (implies (and (nonforking-anchors-p systate)
+                  (ordered-even-p systate)
+                  (last-blockchain-round-p systate)
+                  (accepted-certificate-committee-p systate)
+                  (unequivocal-accepted-certificates-p systate)
+                  (omni-paths-p systate)
+                  (last-anchor-present-p systate)
+                  (backward-closed-p systate)
+                  (same-committees-p systate)
+                  (signer-quorum-p systate)
+                  (previous-quorum-p systate)
+                  (signer-records-p systate)
+                  (committees-in-system-p systate)
+                  (no-self-buffer-p systate)
+                  (no-self-endorsed-p systate)
+                  (same-owned-certificates-p systate)
+                  (system-fault-tolerant-p systate)
+                  (event-possiblep event systate))
+             (nonforking-anchors-p (event-next event systate)))
+    :enable (event-possiblep
+             event-next)))
