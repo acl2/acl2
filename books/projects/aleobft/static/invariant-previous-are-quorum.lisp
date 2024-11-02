@@ -114,7 +114,8 @@
               (create-certificate-next cert systate)))
     :expand (system-previous-are-quorum-p
              (create-certificate-next cert systate))
-    :enable (system-previous-are-quorum-p-necc)
+    :enable (system-previous-are-quorum-p-necc
+             certificates-for-validator-of-create-certificate-next)
     :disable set::cardinality-zero-emptyp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

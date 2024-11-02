@@ -186,7 +186,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule certificates-for-validator-of-create-certificate-next
+(defruled certificates-for-validator-of-create-certificate-next
   :short "A @('create-certificate') event
           adds a certificate (the same one) for each validator."
   (implies (and (certificatep cert)

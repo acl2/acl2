@@ -103,7 +103,8 @@
               (create-certificate-next cert systate)))
     :expand (system-signers-are-quorum-p
              (create-certificate-next cert systate))
-    :enable system-signers-are-quorum-p-necc))
+    :enable (system-signers-are-quorum-p-necc
+             certificates-for-validator-of-create-certificate-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

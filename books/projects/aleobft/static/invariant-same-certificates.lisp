@@ -112,6 +112,7 @@
                 (certificatep cert))
            (same-certificates-p (create-certificate-next cert systate)))
   :expand (same-certificates-p (create-certificate-next cert systate))
+  :enable certificates-for-validator-of-create-certificate-next
   :use (:instance same-certificates-p-necc
                   (val1 (mv-nth
                          0

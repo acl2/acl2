@@ -115,7 +115,8 @@
            (create-certificate-next cert systate))
   :enable (certificate-signers-are-validators-p
            create-certificate-possiblep
-           certificate->signers)
+           certificate->signers
+           certificates-for-validator-of-create-certificate-next)
   :use (:instance system-signers-are-validators-p-necc
                   (val (mv-nth 0
                                (system-signers-are-validators-p-witness

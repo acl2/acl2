@@ -494,6 +494,7 @@
               (create-certificate-next cert systate)))
     :expand (system-unequivocal-certificates-p
              (create-certificate-next cert systate))
+    :enable certificates-for-validator-of-create-certificate-next
     :use (:instance system-unequivocal-certificates-p-necc
                     (val
                      (mv-nth 0 (system-unequivocal-certificates-p-witness

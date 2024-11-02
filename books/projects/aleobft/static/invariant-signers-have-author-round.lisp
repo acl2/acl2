@@ -203,7 +203,8 @@
               (create-certificate-next cert systate)))
     :expand (system-signers-have-author+round-p
              (create-certificate-next cert systate))
-    :enable system-signers-have-author+round-p-necc))
+    :enable (system-signers-have-author+round-p-necc
+             certificates-for-validator-of-create-certificate-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
