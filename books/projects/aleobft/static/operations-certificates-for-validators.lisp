@@ -114,7 +114,7 @@
              set::double-containment-no-backchain-limit
              in-of-message-certificates-for-validator))
 
-  (defrule message-certificates-for-validator-of-union
+  (defruled message-certificates-for-validator-of-union
     (implies (and (message-setp msgs1)
                   (message-setp msgs2)
                   (addressp dest))
@@ -201,7 +201,8 @@
            validator-state->dag-of-create-certificate-next
            validator-state->buffer-of-create-certificate-next
            get-network-state-of-create-certificate-next
-           set::expensive-rules))
+           set::expensive-rules
+           message-certificates-for-validator-of-union))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
