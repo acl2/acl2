@@ -14,6 +14,7 @@
 (include-book "library-extensions/top")
 (include-book "static/top")
 (include-book "dynamic/top")
+(include-book "stake/top")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -48,10 +49,12 @@
      The subdirectory @('dynamic') contains a version for
      AleoBFT with dynamic committees but without stake,
      which is a significant extension of the static version.
+     The subdirectory @('stake') contains a version for
+     AleoBFT with dynamic committees and with stake,
+     which mainly extends the previous one with stake.
      We plan to add other subdirectories,
-     parallel to @('static') and @('dynamic'),
      for versions that cover additional aspects of AleoBFT,
-     such as stake and syncing.")
+     such as syncing.")
    (xdoc::p
     "In each version,
      we formally specify AleoBFT as a labeled state transition system:
@@ -80,4 +83,5 @@
      and to be preserved by state transitions."))
   :order-subtopics (library-extensions
                     aleobft-static::aleobft-static
-                    aleobft-dynamic::aleobft-dynamic))
+                    aleobft-dynamic::aleobft-dynamic
+                    aleobft-stake::aleobft-stake))
