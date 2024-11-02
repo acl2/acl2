@@ -84,7 +84,7 @@
              (equal (message-certificates-for-validator dest msgs)
                     nil)))
 
-  (defrule message-certificates-for-validator-of-insert
+  (defruled message-certificates-for-validator-of-insert
     (implies (and (message-setp msgs)
                   (messagep msg)
                   (addressp dest))
@@ -181,7 +181,8 @@
                     nil)))
   :induct t
   :enable (message-certificates-for-validator
-           messages-for-certificate))
+           messages-for-certificate
+           message-certificates-for-validator-of-insert))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
