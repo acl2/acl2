@@ -405,7 +405,7 @@
            (equal (disjoint-from-allp z ys)
                   t)))
 
-;; BOZO rename vars  (im not going to keep writing this, through teh file)
+;; BOZO rename vars  (im not going to keep writing this, through the file)
 (defthm disjoint-from-allp-when-memberp
   (implies (memberp x ys)
            (equal (disjoint-from-allp x ys)

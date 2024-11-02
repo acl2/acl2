@@ -312,7 +312,7 @@ the variable name and the type, e.g., x:nat will lead to errors.
 </p>
 
 <p>
-As the examples above show, the paramater types and the return type
+As the examples above show, the parameter types and the return type
 are used to generate @(see defunc) contracts and then the rest of
 the arguments are passed to @(see defunc), so you can use all the
 bells and whistles of @(see defunc).

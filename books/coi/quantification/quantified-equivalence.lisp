@@ -394,14 +394,14 @@
    ))
    
 (acl2::defxdoc quant::equiv
-  :short "A macro to prove that a universally quantified formula is a paramaterized equivalence relation"
+  :short "A macro to prove that a universally quantified formula is a parameterized equivalence relation"
   :parents (defun-sk defequiv)
   :long "<p> 
 The @('quant::equiv') macro can be used to prove that a universally
 quantified formula satisfies the properties of a parameterized
 equivalence relation.  This macro is similar in nature to @(tsee
 acl2::def-universal-equiv) except that parameterized equivalences are
-supported.  If no paramaters are specified, however, we prove that the
+supported.  If no parameters are specified, however, we prove that the
 quantified formula is in fact a standard @(tsee acl2::equivalence) relation.
 </p> 
 <p>Usage:</p> @({

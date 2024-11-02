@@ -218,7 +218,7 @@
 
 ;;; REMARK: In ACL2, nil and the empty list are the same thing. To
 ;;; distinguish fail from the empty list, we apply subsumption with an
-;;; non-nil atom (0 in this case) and at teh end we fix the final tail.
+;;; non-nil atom (0 in this case) and at the end we fix the final tail.
 
 ;;; =================
 ;;; SOUNDNESS OF SUBS
