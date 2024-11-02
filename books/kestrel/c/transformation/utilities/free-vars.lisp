@@ -79,9 +79,9 @@
     :returns (free-vars ident-setp)
     (expr-case
      expr
-     :ident (if (in expr.unwrap bound-vars)
+     :ident (if (in expr.ident bound-vars)
                 nil
-              (insert expr.unwrap nil))
+              (insert expr.ident nil))
      :paren (free-vars-expr expr.unwrap bound-vars)
      :gensel (union (free-vars-expr expr.control bound-vars)
                     (free-vars-genassoc-list expr.assocs bound-vars))

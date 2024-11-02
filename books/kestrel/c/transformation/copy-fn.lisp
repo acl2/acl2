@@ -78,7 +78,7 @@
     :returns (new-expr exprp)
     (expr-case
      expr
-     :ident (if (equal expr.unwrap old-fn)
+     :ident (if (equal expr.ident old-fn)
                 (expr-ident new-fn)
               (expr-fix expr))
      :paren (expr-paren (rename-fn-funcall-fun expr.unwrap old-fn new-fn))

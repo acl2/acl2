@@ -910,7 +910,7 @@
   :short "Check if an expression is an identifier,
           returning the identifier if the check passes."
   (and (expr-case expr :ident)
-       (expr-ident->unwrap expr))
+       (expr-ident->ident expr))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

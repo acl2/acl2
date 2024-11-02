@@ -1551,7 +1551,7 @@
        because its first argument is a type name, not an expression.
        The second argument is a member designator,
        which is a restricted form of expression."))
-    (:ident ((unwrap ident)))
+    (:ident ((ident ident)))
     (:const ((unwrap const)))
     (:string ((literals stringlit-list)))
     (:paren ((unwrap expr)))

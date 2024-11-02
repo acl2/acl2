@@ -881,19 +881,19 @@
       (expr-case
        expr
        :ident
-       (b* ((kind (dimb-lookup-ident expr.unwrap table))
+       (b* ((kind (dimb-lookup-ident expr.ident table))
             ((unless kind)
              (reterr (msg "The identifier ~x0 is used as an expression ~
                            but is not in scope."
-                          (ident->unwrap expr.unwrap)))))
+                          (ident->unwrap expr.ident)))))
          (dimb-kind-case
           kind
           :typedef (reterr (msg "The identifier ~x0 denotes a typedef ~
                                  but it is used as an expression."
-                                (ident->unwrap expr.unwrap)))
+                                (ident->unwrap expr.ident)))
           :objfun (retok (expr-fix expr)
                          (dimb-table-fix table))
-          :enumconst (retok (expr-const (const-enum expr.unwrap))
+          :enumconst (retok (expr-const (const-enum expr.ident))
                             (dimb-table-fix table))))
        :const
        (retok (expr-fix expr) (dimb-table-fix table))

@@ -310,7 +310,7 @@
      then we could make this check more precise."))
   (expr-case
    expr
-   :ident (ident-formalp expr.unwrap)
+   :ident (ident-formalp expr.ident)
    :const (const-formalp expr.unwrap)
    :string nil
    :paren (expr-pure-formalp expr.unwrap)

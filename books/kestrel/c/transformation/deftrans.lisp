@@ -651,7 +651,7 @@
    extra-args
    `(expr-case
       expr
-      :ident (expr-ident (,(cdr (assoc-eq 'ident names)) expr.unwrap ,@extra-args-names))
+      :ident (expr-ident (,(cdr (assoc-eq 'ident names)) expr.ident ,@extra-args-names))
       :const (expr-fix expr)
       :string (expr-fix expr)
       :paren (expr-paren (,(cdr (assoc-eq 'expr names)) expr.unwrap ,@extra-args-names))

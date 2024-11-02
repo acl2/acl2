@@ -2837,7 +2837,7 @@
     (b* (((reterr) (irr-type) (irr-valid-table)))
       (expr-case
        expr
-       :ident (b* (((erp type) (valid-var expr.unwrap table)))
+       :ident (b* (((erp type) (valid-var expr.ident table)))
                 (retok type (valid-table-fix table)))
        :const (b* (((erp type) (valid-const expr.unwrap table ienv)))
                 (retok type (valid-table-fix table)))

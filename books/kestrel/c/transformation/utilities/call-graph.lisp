@@ -132,7 +132,7 @@
      :funcall (call-graph-update fn-name
                                  (expr-case
                                    expr.fun
-                                   :ident expr.fun.unwrap
+                                   :ident expr.fun.ident
                                    :otherwise nil)
                                  acc)
      :member (call-graph-expr

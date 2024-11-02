@@ -620,7 +620,7 @@
     (b* (((reterr) (c::expr-ident (c::ident "irrelevant"))))
       (expr-case
        expr
-       :ident (b* (((erp ident1) (ldm-ident expr.unwrap)))
+       :ident (b* (((erp ident1) (ldm-ident expr.ident)))
                 (retok (c::expr-ident ident1)))
        :const (b* (((erp const1) (ldm-const expr.unwrap)))
                 (retok (c::expr-const const1)))

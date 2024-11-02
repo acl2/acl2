@@ -1611,7 +1611,7 @@
          (pstate
           (expr-case
            expr
-           :ident (print-ident expr.unwrap pstate)
+           :ident (print-ident expr.ident pstate)
            :const (print-const expr.unwrap pstate)
            :string
            (b* (((unless expr.literals)
