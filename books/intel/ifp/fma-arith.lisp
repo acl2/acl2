@@ -51,7 +51,7 @@
              (equal (fp-arith-triple->rational prod)
                     (* (fp-arith-triple->rational x)
                        (fp-arith-triple->rational y))))
-    :hints(("Goal" :in-theory (enable fp-arith-triple->rational
+    :hints (("Goal" :in-theory (enable fp-arith-triple->rational
                                       b-xor))))
 
   (local (defthm posp-expt
@@ -65,7 +65,7 @@
                    (unsigned-byte-p x-width (fp-arith-triple->man x))
                    (unsigned-byte-p y-width (fp-arith-triple->man y)))
               (unsigned-byte-p (+ x-width y-width) (fp-arith-triple->man prod)))
-     :hints(("Goal" :in-theory (enable unsigned-byte-p))
+     :hints (("Goal" :in-theory (enable unsigned-byte-p))
             (and stable-under-simplificationp
                  '(:nonlinearp t)))))
 
@@ -76,20 +76,20 @@
                   (<= (+ x-width y-width) width)
                   (natp width))
              (unsigned-byte-p width (fp-arith-triple->man prod)))
-    :hints(("Goal" :use <fn>-unsigned-byte-p-lemma
+    :hints (("Goal" :use <fn>-unsigned-byte-p-lemma
             :in-theory (disable <fn>-unsigned-byte-p-lemma <fn>)))))
 
 (local (defthm equal-0-of-leftshift
          (implies (natp sh)
                   (equal (equal 0 (ash x sh))
                          (zip x)))
-         :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
+         :hints (("Goal" :in-theory (enable* bitops::ihsext-inductions
                                             bitops::ihsext-recursive-redefs)))))
 
 (local (defthm logtail-nonzero-by-integer-length
          (implies (< (nfix n) (integer-length x))
                   (not (equal 0 (logtail n x))))
-         :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
+         :hints (("Goal" :in-theory (enable* bitops::ihsext-inductions
                                             bitops::ihsext-recursive-redefs)))))
 
 (local
@@ -105,7 +105,7 @@
                  ((fp-arith-triple sum)))
               (implies (not (equal sum-spec.man 0))
                        (not (equal sum.man 0)))))
-   :hints(("Goal" :use ((:instance fp-add-core2-correct-by-normalization-when-big-leftshift
+   :hints (("Goal" :use ((:instance fp-add-core2-correct-by-normalization-when-big-leftshift
                                    (size (fp-size 2 nil 1))))
            :in-theory (e/d (normalize-arith-triple
                             fp-arith-leftshift
@@ -127,16 +127,16 @@
                   (equal (* (fp-arith-triple->rational y)
                             (fp-arith-triple->rational z))
                          0))
-         :hints(("Goal" :use ((:instance fp-mul-arith-correct
+         :hints (("Goal" :use ((:instance fp-mul-arith-correct
                                          (x y) (y z)
                                          (product-man-override nil)))
                  :expand ((fp-arith-triple->rational (fp-mul-arith y z)))
                  :in-theory (disable fp-mul-arith-correct)))))
 
 (local (defthm fp-arith-triple->rational-when-man-0
-         (implies (Equal (fp-arith-triple->man x) 0)
+         (implies (equal (fp-arith-triple->man x) 0)
                   (equal (fp-arith-triple->rational x) 0))
-         :hints(("Goal" :in-theory (enable fp-arith-triple->rational)))))
+         :hints (("Goal" :in-theory (enable fp-arith-triple->rational)))))
 
 (define fp-muladd-arith-naive ((x fp-arith-triple-p)
                                (y fp-arith-triple-p)
@@ -166,10 +166,10 @@
                             (* (fp-arith-triple->rational y)
                                (fp-arith-triple->rational z)))
                          0)))
-    :hints(("Goal" :use <fn>-correct
-            :expand ((fp-arith-triple->rational (fp-muladd-arith-naive x y z rc)))
-            :in-theory (e/d ()
-                            (<fn> <fn>-correct))))))
+    :hints (("Goal" :use <fn>-correct
+             :expand ((fp-arith-triple->rational (fp-muladd-arith-naive x y z rc)))
+             :in-theory (e/d ()
+                             (<fn> <fn>-correct))))))
 
 (define fp-muladd-arith ((x fp-arith-triple-p)
                          (y fp-arith-triple-p)
@@ -195,8 +195,8 @@
   (local (defthm unsigned-byte-p-integer-length
            (implies (natp x)
                     (unsigned-byte-p (integer-length x) x))
-           :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
-                                              bitops::ihsext-recursive-redefs)))))
+           :hints (("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                               bitops::ihsext-recursive-redefs)))))
 
   (defret <fn>-in-terms-of-add-naive
     (implies (and (not product-man-override)
@@ -209,7 +209,7 @@
                      (fp-muladd-arith-naive x y z rc
                                             :product-man-override product-man-override)
                      :sticky-in nil :verbosep nil)))
-    :hints(("Goal" :in-theory (enable fp-muladd-arith-naive))))
+    :hints (("Goal" :in-theory (enable fp-muladd-arith-naive))))
 
   (defret <fn>-is-zero
     (implies (and (not product-man-override)
@@ -219,7 +219,7 @@
                   (posp frac-size))
              (iff (equal 0 (fp-arith-triple->man res))
                   (equal 0 (fp-arith-triple->man (fp-muladd-arith-naive x y z rc)))))
-    :hints (("goal" :use ((:instance <fn>-in-terms-of-add-naive
+    :hints (("Goal" :use ((:instance <fn>-in-terms-of-add-naive
                                      (size (make-fp-size :exp-size 2 :frac-size (pos-fix frac-size)))
                                      (frac-size (pos-fix frac-size))))
              :in-theory (e/d (normalize-arith-triple
@@ -258,19 +258,19 @@
                                                    :sign (if (and (eql acc.man 0) (not (eql acc.sign prod.sign)))
                                                              (BOOL->BIT (EQL (RC->ROUNDING-MODE RC) :RMI))
                                                            acc.sign)))))
-           :hints(("Goal" :in-theory (enable fp-add-core-naive
-                                             fp-arith-leftshift)))
+           :hints (("Goal" :in-theory (enable fp-add-core-naive
+                                              fp-arith-leftshift)))
            :fn fp-add-core-naive))
 
   (local (defthmd man-zero-iff-rational-zero
            (iff (equal (fp-arith-triple->man x) 0)
                 (equal (fp-arith-triple->rational x) 0))
-           :hints(("Goal" :in-theory (enable fp-arith-triple->rational-equal-0)))))
+           :hints (("Goal" :in-theory (enable fp-arith-triple->rational-equal-0)))))
 
   (local (defretd mant-when-rational-equal-0
            (implies (equal (fp-arith-triple->rational x) 0)
                     (equal (fp-arith-triple->man x) 0))
-           :hints(("Goal" :in-theory (enable fp-arith-triple->rational-equal-0)))))
+           :hints (("Goal" :in-theory (enable fp-arith-triple->rational-equal-0)))))
 
   (defret <fn>-mantissa-zero-of-add-zero
     (b* (((fp-arith-triple res))
@@ -284,10 +284,10 @@
                (iff (equal res.man 0)
                     (or (equal y.man 0)
                         (equal z.man 0)))))
-    :hints(("Goal" :in-theory (e/d (man-zero-iff-rational-zero
-                                    mant-when-rational-equal-0
-                                    fp-sign-value)
-                                   (fp-arith-triple->rational-equal-0)))))
+    :hints (("Goal" :in-theory (e/d (man-zero-iff-rational-zero
+                                     mant-when-rational-equal-0
+                                     fp-sign-value)
+                                    (fp-arith-triple->rational-equal-0)))))
 
   (defretd mantissa-of-<fn>-norm-add-zero
     (b* (((fp-arith-triple res))
@@ -311,13 +311,13 @@
                     (unsigned-byte-p (+ 1 (pos-fix frac-size)) z.man)
                     (posp frac-size))
                (equal res.man res-norm.man)))
-    :hints(("Goal" :in-theory (enable fp-muladd-arith-naive
-                                      fp-mul-arith
-                                      ))
-           (and stable-under-simplificationp
-                '(:in-theory (enable mantissa-of-normalize-arith-triple-norm
-                                     fp-add-core-naive-mantissa-sign-normalize-exponent
-                                     mantissa-of-round-arith-triple-norm-round-nearest)))))
+    :hints (("Goal" :in-theory (enable fp-muladd-arith-naive
+                                       fp-mul-arith
+                                       ))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable mantissa-of-normalize-arith-triple-norm
+                                      fp-add-core-naive-mantissa-sign-normalize-exponent
+                                      mantissa-of-round-arith-triple-norm-round-nearest)))))
 
   (defretd exponent-of-<fn>-norm-add-zero
     (b* (((fp-arith-triple res))
@@ -344,16 +344,15 @@
                       (if (eql res-norm.man 0)
                           0
                         (+ y.exp z.exp res-norm.exp)))))
-    :hints(("Goal" :in-theory (enable fp-muladd-arith-naive
-                                      fp-add-core-naive
-                                      fp-mul-arith
-                                      ))
-           (and stable-under-simplificationp
-                '(:in-theory (enable exponent-of-normalize-arith-triple-norm
-                                     exponent-of-round-arith-triple-norm-round-nearest
-                                     fp-add-core-naive-exponent-norm
-                                     mantissa-of-normalize-arith-triple-norm
-                                     fp-mul-arith)))))
+    :hints (("Goal" :in-theory (enable fp-muladd-arith-naive
+                                       fp-add-core-naive
+                                       fp-mul-arith))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable exponent-of-normalize-arith-triple-norm
+                                      exponent-of-round-arith-triple-norm-round-nearest
+                                      fp-add-core-naive-exponent-norm
+                                      mantissa-of-normalize-arith-triple-norm
+                                      fp-mul-arith)))))
 
   (defretd sign-of-<fn>-add-zero
     (b* (((fp-arith-triple res))
@@ -368,12 +367,12 @@
                     (posp frac-size))
                (equal res.sign
                       (b-xor y.sign z.sign))))
-    :hints(("Goal" :in-theory (e/d (fp-muladd-arith-naive
-                                    fp-add-core-naive
-                                    fp-mul-arith)
-                                   (normalize-arith-triple.sign-unchanged)))
-           (and stable-under-simplificationp
-                '(:in-theory (enable normalize-arith-triple.sign-unchanged)))))
+    :hints (("Goal" :in-theory (e/d (fp-muladd-arith-naive
+                                     fp-add-core-naive
+                                     fp-mul-arith)
+                                    (normalize-arith-triple.sign-unchanged)))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable normalize-arith-triple.sign-unchanged)))))
 
   (defretd mantissa-of-<fn>-norm
     (b* (((fp-arith-triple res))
@@ -400,13 +399,13 @@
                     (unsigned-byte-p (+ 1 (pos-fix frac-size)) z.man)
                     (posp frac-size))
                (equal res.man res-norm.man)))
-    :hints(("Goal" :in-theory (enable fp-muladd-arith-naive
-                                      fp-mul-arith
-                                      ))
-           (and stable-under-simplificationp
-                '(:in-theory (enable mantissa-of-normalize-arith-triple-norm
-                                     mantissa-of-round-arith-triple-norm-round-nearest
-                                     fp-add-core-naive-mantissa-normalize-sign-exponent))))
+    :hints (("Goal" :in-theory (enable fp-muladd-arith-naive
+                                       fp-mul-arith
+                                       ))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable mantissa-of-normalize-arith-triple-norm
+                                      mantissa-of-round-arith-triple-norm-round-nearest
+                                      fp-add-core-naive-mantissa-normalize-sign-exponent))))
     :fn fp-muladd-arith-round)
 
   (defretd <fn>-normalize-z-when-y-0
@@ -427,9 +426,9 @@
                     (unsigned-byte-p (+ 1 (pos-fix frac-size)) z.man)
                     (posp frac-size))
                (equal res res-norm)))
-    :hints(("Goal" :in-theory (enable fp-muladd-arith-naive
-                                      fp-mul-arith
-                                      fp-add-core-naive))))
+    :hints (("Goal" :in-theory (enable fp-muladd-arith-naive
+                                       fp-mul-arith
+                                       fp-add-core-naive))))
 
   (defretd sign-of-<fn>-norm
     (b* (((fp-arith-triple res))
@@ -462,14 +461,14 @@
                             (bool->bit (equal (rc->rounding-mode rc) :rmi)))
                         (b-xor (if (eql x.man 0) 0 x.sign)
                                res-norm.sign)))))
-    :hints(("Goal" :in-theory (e/d (fp-muladd-arith-naive
-                                    fp-mul-arith
-                                    )
-                                   (normalize-arith-triple.sign-unchanged)))
-           (and stable-under-simplificationp
-                '(:in-theory (enable mantissa-of-normalize-arith-triple-norm
-                                     mantissa-of-round-arith-triple-norm-round-nearest
-                                     fp-add-core-naive-mantissa-normalize-sign-exponent))))
+    :hints (("Goal" :in-theory (e/d (fp-muladd-arith-naive
+                                     fp-mul-arith
+                                     )
+                                    (normalize-arith-triple.sign-unchanged)))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable mantissa-of-normalize-arith-triple-norm
+                                      mantissa-of-round-arith-triple-norm-round-nearest
+                                      fp-add-core-naive-mantissa-normalize-sign-exponent))))
     :fn fp-muladd-arith-round)
 
   (defretd exponent-of-<fn>-norm
@@ -501,18 +500,18 @@
                                      0
                                    x.exp)
                                  res-norm.exp))))
-    :hints(("Goal" :in-theory (enable fp-muladd-arith-naive
+    :hints (("Goal" :in-theory (enable fp-muladd-arith-naive
+                                       fp-add-core-naive-exponent-norm
+                                       ))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable exponent-of-normalize-arith-triple-norm
+                                      exponent-of-round-arith-triple-norm-round-nearest
                                       fp-add-core-naive-exponent-norm
-                                      ))
-           (and stable-under-simplificationp
-                '(:in-theory (enable exponent-of-normalize-arith-triple-norm
-                                     exponent-of-round-arith-triple-norm-round-nearest
-                                     fp-add-core-naive-exponent-norm
-                                     fp-mul-arith)))
-           (and stable-under-simplificationp
-                '(:in-theory (enable fp-add-core-naive-mantissa-normalize-sign-exponent
-                                     fp-add-core-naive-exponent-norm
-                                     mantissa-of-normalize-arith-triple-norm))))
+                                      fp-mul-arith)))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable fp-add-core-naive-mantissa-normalize-sign-exponent
+                                      fp-add-core-naive-exponent-norm
+                                      mantissa-of-normalize-arith-triple-norm))))
     :fn fp-muladd-arith-round)
 
   (defretd <fn>-norm-multiplied-exp-sign
@@ -534,35 +533,35 @@
                     (unsigned-byte-p (+ 1 (pos-fix frac-size)) z.man)
                     (posp frac-size))
                (equal res res-norm)))
-    :hints(("Goal" :in-theory (enable fp-muladd-arith-naive
-                                      fp-mul-arith
-                                      fp-add-core-naive-mantissa-sign-normalize-exponent
-                                      ))
-           ;; (and stable-under-simplificationp
-           ;;      '(:in-theory (enable mantissa-of-normalize-arith-triple-norm
-           ;;                           mantissa-of-round-arith-triple-norm-round-nearest
-           ;;                           fp-add-core-naive-mantissa-sign-normalize-exponent)))
-           ))
+    :hints (("Goal" :in-theory (enable fp-muladd-arith-naive
+                                       fp-mul-arith
+                                       fp-add-core-naive-mantissa-sign-normalize-exponent
+                                       ))
+            ;; (and stable-under-simplificationp
+            ;;      '(:in-theory (enable mantissa-of-normalize-arith-triple-norm
+            ;;                           mantissa-of-round-arith-triple-norm-round-nearest
+            ;;                           fp-add-core-naive-mantissa-sign-normalize-exponent)))
+            ))
 
   (local (defthm unsigned-byte-p-integer-length
            (implies (natp x)
                     (unsigned-byte-p (integer-length x) x))
-           :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
-                                              bitops::ihsext-recursive-redefs)))))
+           :hints (("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                               bitops::ihsext-recursive-redefs)))))
 
   (local (defret width-of-normalize-arith-triple
            (implies (equal w (+ 1 (fp-size->frac-size size)))
                     (unsigned-byte-p w (fp-arith-triple->man new-x)))
-           :hints(("Goal" :in-theory (enable normalize-arith-triple
-                                             fp-arith-rightshift
-                                             fp-arith-leftshift)))
+           :hints (("Goal" :in-theory (enable normalize-arith-triple
+                                              fp-arith-rightshift
+                                              fp-arith-leftshift)))
            :fn normalize-arith-triple))
 
   (local (defret width-of-round-arith-triple
            (implies (and (equal w (+ 1 (fp-size->frac-size size)))
                          (unsigned-byte-p w (fp-arith-triple->man x)))
                     (unsigned-byte-p w (fp-arith-triple->man new-x)))
-           :hints(("Goal" :in-theory (enable round-arith-triple)))
+           :hints (("Goal" :in-theory (enable round-arith-triple)))
            :fn round-arith-triple))
 
   (local
@@ -579,16 +578,16 @@
                   (integerp w)
                   (<= (+ 1 (acl2::pos-fix frac-size)) w))
              (unsigned-byte-p w (fp-arith-triple->man res)))
-    :hints (("goal" :use width-of-<fn>-lemma
+    :hints (("Goal" :use width-of-<fn>-lemma
              :in-theory (disable <fn>
                                  width-of-<fn>-lemma))))
 
   (local (defret normalize-arith-triple-nonzero
            (implies (not (equal (fp-arith-triple->man x) 0))
-                    (not (Equal (fp-arith-triple->man new-x) 0)))
-           :hints(("Goal" :in-theory (enable normalize-arith-triple
-                                             fp-arith-rightshift
-                                             fp-arith-leftshift)))
+                    (not (equal (fp-arith-triple->man new-x) 0)))
+           :hints (("Goal" :in-theory (enable normalize-arith-triple
+                                              fp-arith-rightshift
+                                              fp-arith-leftshift)))
            :rule-classes :type-prescription
            :fn normalize-arith-triple))
 
@@ -611,8 +610,8 @@
                     (<= val
                         (+ (expt 2 exp)
                            exact)))))
-    :hints(("Goal" :in-theory (e/d (fp-muladd-arith-in-terms-of-add-naive)
-                                   (FP-ARITH-TRIPLE->RATIONAL-OF-NORMALIZE-ARITH-TRIPLE-WHEN-NOT-STICKY)))))
+    :hints (("Goal" :in-theory (e/d (fp-muladd-arith-in-terms-of-add-naive)
+                                    (FP-ARITH-TRIPLE->RATIONAL-OF-NORMALIZE-ARITH-TRIPLE-WHEN-NOT-STICKY)))))
 
   (defret <fn>-when-exact
     (implies (and (integerp (* (expt 2 frac-size)
@@ -623,7 +622,7 @@
                   (unsigned-byte-p (+ 1 (acl2::pos-fix frac-size)) (fp-arith-triple->man y))
                   (unsigned-byte-p (+ 1 (acl2::pos-fix frac-size)) (fp-arith-triple->man z))
                   (posp frac-size))
-             (Equal (fp-arith-triple->rational res)
+             (equal (fp-arith-triple->rational res)
                     (+ (fp-arith-triple->rational x)
                        (* (fp-arith-triple->rational y)
                           (fp-arith-triple->rational z))))))
@@ -639,7 +638,7 @@
                                         (fp-arith-triple->rational z))))))
                (equal (integer-length res.man)
                       (+ 1 frac-size))))
-    :hints(("Goal" :in-theory (enable fp-muladd-arith-round)))
+    :hints (("Goal" :in-theory (enable fp-muladd-arith-round)))
     :fn fp-muladd-arith-round)
 
   (defret <fn>-mantissa-lower-bound
@@ -653,12 +652,12 @@
                                         (fp-arith-triple->rational z))))))
                (<= (expt 2 frac-size)
                    res.man)))
-    :hints(("Goal"
-            :use ((:instance equal-integer-length-of-positive
-                   (x (fp-arith-triple->man
-                       (fp-muladd-arith-round x y z rc frac-size)))
-                   (n (+ 1 frac-size))))
-            :in-theory (disable fp-muladd-arith-round)))
+    :hints (("Goal"
+             :use ((:instance equal-integer-length-of-positive
+                              (x (fp-arith-triple->man
+                                  (fp-muladd-arith-round x y z rc frac-size)))
+                              (n (+ 1 frac-size))))
+             :in-theory (disable fp-muladd-arith-round)))
     :fn fp-muladd-arith-round
     :rule-classes :linear)
 
@@ -674,14 +673,14 @@
                                    (fp-arith-triple->rational z))))))))
 
   (defret <fn>-value-equal-zero
-      (implies (and (unsigned-byte-p (+ 1 (acl2::pos-fix frac-size)) (fp-arith-triple->man x))
-                    (unsigned-byte-p (+ 1 (acl2::pos-fix frac-size)) (fp-arith-triple->man y))
-                    (unsigned-byte-p (+ 1 (acl2::pos-fix frac-size)) (fp-arith-triple->man z))
-                    (posp frac-size))
-               (iff (equal (fp-arith-triple->rational res) 0)
-                    (equal 0 (+ (fp-arith-triple->rational x)
-                                (* (fp-arith-triple->rational y)
-                                   (fp-arith-triple->rational z)))))))
+    (implies (and (unsigned-byte-p (+ 1 (acl2::pos-fix frac-size)) (fp-arith-triple->man x))
+                  (unsigned-byte-p (+ 1 (acl2::pos-fix frac-size)) (fp-arith-triple->man y))
+                  (unsigned-byte-p (+ 1 (acl2::pos-fix frac-size)) (fp-arith-triple->man z))
+                  (posp frac-size))
+             (iff (equal (fp-arith-triple->rational res) 0)
+                  (equal 0 (+ (fp-arith-triple->rational x)
+                              (* (fp-arith-triple->rational y)
+                                 (fp-arith-triple->rational z)))))))
   
   ;; (defret <fn>-gte-exact
   ;;   (implies (and (integerp (* (expt 2 frac-size)
@@ -711,7 +710,8 @@
   ;;   :rule-classes nil)
   )
 
-(encapsulate nil
+(encapsulate
+  nil
 
   (local (defun multiply-add-of-arith (x y z)
            (+ (fp-arith-triple->rational x)
@@ -766,7 +766,7 @@
                (implies (not (equal exact 0))
                         (<= (abs (- (/ val exact) 1))
                             (expt 2 (- (+ 1 frac-size)))))))
-    :hints (("goal" :use ((:instance acl2::rational-sign-significand-exponent-correct
+    :hints (("Goal" :use ((:instance acl2::rational-sign-significand-exponent-correct
                                      (x (multiply-add-of-arith x y z)))
                           (:instance <fn>-bounds-when-rne))
              :in-theory (disable <fn>-bounds-when-rne
@@ -808,7 +808,7 @@
                   (posp frac-size))
              (and (<= (- (expt 2 (- (+ 1 frac-size)))) error)
                   (<= error (expt 2 (- (+ 1 frac-size))))))
-    :hints (("goal" :use fp-muladd-arith-round-relative-error
+    :hints (("Goal" :use fp-muladd-arith-round-relative-error
              :in-theory (disable fp-muladd-arith-round-relative-error)))
     :rule-classes :linear)
 
@@ -843,7 +843,7 @@
                   (eq (rc->rounding-mode rc) :rne))
              (and (<= (- (expt 2 -24)) error)
                   (<= error (expt 2 -24))))
-    :hints(("Goal" :in-theory (disable <fn>)))
+    :hints (("Goal" :in-theory (disable <fn>)))
     :rule-classes :linear)
 
   (defret <fn>-bounds-dp
@@ -854,7 +854,7 @@
                   (eq (rc->rounding-mode rc) :rne))
              (and (<= (- (expt 2 -53)) error)
                   (<= error (expt 2 -53))))
-    :hints(("Goal" :in-theory (disable <fn>)))
+    :hints (("Goal" :in-theory (disable <fn>)))
     :rule-classes :linear))
 
 
@@ -882,7 +882,7 @@
                   (posp frac-size))
              (and (<= -1/2 error)
                   (<= error 1/2)))
-    :hints (("goal" :use fp-muladd-arith-round-bounds-when-rne
+    :hints (("Goal" :use fp-muladd-arith-round-bounds-when-rne
              :in-theory (e/d (acl2::exponents-add-unrestricted)
                              (fp-muladd-arith-round-bounds-when-rne))))
     :rule-classes :linear)
@@ -917,21 +917,24 @@
 
 (defsection fp-muladd-arith-round-of-left-normalize
 
-  (encapsulate nil
+  (encapsulate
+    nil
+
     (local (defthmd fp-arith-triple->sign-by-rational-when-nan-nonzero
              (implies (not (equal (fp-arith-triple->man x) 0))
                       (equal (fp-arith-triple->sign x)
                              (bool->bit (< (fp-arith-triple->rational x) 0))))
-             :hints(("Goal" :in-theory (enable fp-arith-triple->rational)))))
+             :hints (("Goal" :in-theory (enable fp-arith-triple->rational)))))
+
     ;; (local (defthm fp-arith-triple->rational-0
     ;;          (implies (equal 0 (fp-arith-triple->man x))
     ;;                   (equal (fp-arith-triple->rational x) 0))
-    ;;          :hints(("Goal" :in-theory (enable fp-arith-triple->rational)))))
+    ;;          :hints (("Goal" :in-theory (enable fp-arith-triple->rational)))))
 
     (local (defthmd fp-arith-triple->rational-0-iff-man-0
              (iff (equal (fp-arith-triple->rational x) 0)
                   (equal 0 (fp-arith-triple->man x)))
-             :hints(("Goal" :in-theory (enable fp-arith-triple->rational)))))
+             :hints (("Goal" :in-theory (enable fp-arith-triple->rational)))))
 
     (local (defthm sign-of-fp-add-core-naive-when-mantissa-0
              (b* (((fp-arith-triple sum)
@@ -943,70 +946,71 @@
                                (if (equal x.sign y.sign)
                                    x.sign
                                  (bool->bit (eq (rc->rounding-mode rc) :rmi))))))
-             :hints(("Goal" :in-theory (enable fp-add-core-naive)))))
+             :hints (("Goal" :in-theory (enable fp-add-core-naive)))))
 
     (defcong fp-arith-triple->rational-and-sign-equiv
       fp-arith-triple->rational-and-sign-equiv (fp-add-core-naive x y rc) 1
-      :hints(("Goal" :in-theory (e/d (fp-arith-triple->rational-and-sign-equiv)
-                                     ())
-              :use ((:instance fp-arith-triple->sign-by-rational-when-nan-nonzero
-                               (x (fp-add-core-naive x y rc)))
-                    (:instance fp-arith-triple->sign-by-rational-when-nan-nonzero
-                               (x (fp-add-core-naive x-equiv y rc)))
-                    (:instance fp-arith-triple->rational-0-iff-man-0
-                               (x (fp-add-core-naive x y rc)))
-                    (:instance fp-arith-triple->rational-0-iff-man-0
-                               (x (fp-add-core-naive x-equiv y rc))))))
+      :hints (("Goal"
+               :in-theory (e/d (fp-arith-triple->rational-and-sign-equiv)
+                               ())
+               :use ((:instance fp-arith-triple->sign-by-rational-when-nan-nonzero
+                                (x (fp-add-core-naive x y rc)))
+                     (:instance fp-arith-triple->sign-by-rational-when-nan-nonzero
+                                (x (fp-add-core-naive x-equiv y rc)))
+                     (:instance fp-arith-triple->rational-0-iff-man-0
+                                (x (fp-add-core-naive x y rc)))
+                     (:instance fp-arith-triple->rational-0-iff-man-0
+                                (x (fp-add-core-naive x-equiv y rc))))))
       :otf-flg t)
 
     (defcong fp-arith-triple->rational-and-sign-equiv
       fp-arith-triple->rational-and-sign-equiv (fp-add-core-naive x y rc) 2
-      :hints(("Goal" :in-theory (e/d (fp-arith-triple->rational-and-sign-equiv)
-                                     ())
-              :use ((:instance fp-arith-triple->sign-by-rational-when-nan-nonzero
-                               (x (fp-add-core-naive x y rc)))
-                    (:instance fp-arith-triple->sign-by-rational-when-nan-nonzero
-                               (x (fp-add-core-naive x y-equiv rc)))
-                    (:instance fp-arith-triple->rational-0-iff-man-0
-                               (x (fp-add-core-naive x y rc)))
-                    (:instance fp-arith-triple->rational-0-iff-man-0
-                               (x (fp-add-core-naive x y-equiv rc))))))
+      :hints (("Goal" :in-theory (e/d (fp-arith-triple->rational-and-sign-equiv)
+                                      ())
+               :use ((:instance fp-arith-triple->sign-by-rational-when-nan-nonzero
+                                (x (fp-add-core-naive x y rc)))
+                     (:instance fp-arith-triple->sign-by-rational-when-nan-nonzero
+                                (x (fp-add-core-naive x y-equiv rc)))
+                     (:instance fp-arith-triple->rational-0-iff-man-0
+                                (x (fp-add-core-naive x y rc)))
+                     (:instance fp-arith-triple->rational-0-iff-man-0
+                                (x (fp-add-core-naive x y-equiv rc))))))
       :otf-flg t))
 
   (defcong fp-arith-triple->rational-and-sign-equiv
     fp-arith-triple->rational-and-sign-equiv (fp-mul-arith x y) 1
-    :hints((and stable-under-simplificationp
-                `(:expand (,(car (last clause)))))
-           (and stable-under-simplificationp
-                '(:in-theory (enable fp-mul-arith)))))
+    :hints ((and stable-under-simplificationp
+                 `(:expand (,(car (last clause)))))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable fp-mul-arith)))))
 
   (defcong fp-arith-triple->rational-and-sign-equiv
     fp-arith-triple->rational-and-sign-equiv (fp-mul-arith x y) 2
-    :hints((and stable-under-simplificationp
-                `(:expand (,(car (last clause)))))
-           (and stable-under-simplificationp
-                '(:in-theory (enable fp-mul-arith)))))
+    :hints ((and stable-under-simplificationp
+                 `(:expand (,(car (last clause)))))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable fp-mul-arith)))))
 
   (defcong fp-arith-triple->rational-and-sign-equiv
     fp-arith-triple->rational-and-sign-equiv (fp-muladd-arith-naive x y z rc) 1
-    :hints((and stable-under-simplificationp
-                `(:expand (,(car (last clause)))))
-           (and stable-under-simplificationp
-                '(:in-theory (enable fp-muladd-arith-naive)))))
+    :hints ((and stable-under-simplificationp
+                 `(:expand (,(car (last clause)))))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable fp-muladd-arith-naive)))))
 
   (defcong fp-arith-triple->rational-and-sign-equiv
     fp-arith-triple->rational-and-sign-equiv (fp-muladd-arith-naive x y z rc) 2
-    :hints((and stable-under-simplificationp
-                `(:expand (,(car (last clause)))))
-           (and stable-under-simplificationp
-                '(:in-theory (enable fp-muladd-arith-naive)))))
+    :hints ((and stable-under-simplificationp
+                 `(:expand (,(car (last clause)))))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable fp-muladd-arith-naive)))))
 
   (defcong fp-arith-triple->rational-and-sign-equiv
     fp-arith-triple->rational-and-sign-equiv (fp-muladd-arith-naive x y z rc) 3
-    :hints((and stable-under-simplificationp
-                `(:expand (,(car (last clause)))))
-           (and stable-under-simplificationp
-                '(:in-theory (enable fp-muladd-arith-naive)))))
+    :hints ((and stable-under-simplificationp
+                 `(:expand (,(car (last clause)))))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable fp-muladd-arith-naive)))))
 
   (defthm fp-muladd-arith-round-of-left-normalize
     (b* (((fp-arith-triple a))
@@ -1023,7 +1027,7 @@
                     (unsigned-byte-p (1+ frac-size) c.man)
                     (posp frac-size))
                (equal norm spec)))
-    :hints(("Goal" :in-theory (enable fp-muladd-arith-round))))
+    :hints (("Goal" :in-theory (enable fp-muladd-arith-round))))
 
   (defthm fp-muladd-arith-round-of-left-normalize-a
     (b* (((fp-arith-triple a))
@@ -1038,7 +1042,7 @@
                     (unsigned-byte-p (1+ frac-size) c.man)
                     (posp frac-size))
                (equal norm spec)))
-    :hints(("Goal" :in-theory (enable fp-muladd-arith-round))))
+    :hints (("Goal" :in-theory (enable fp-muladd-arith-round))))
 
   (defthm fp-muladd-arith-round-of-left-normalize-b
     (b* (((fp-arith-triple a))
@@ -1053,7 +1057,7 @@
                     (unsigned-byte-p (1+ frac-size) c.man)
                     (posp frac-size))
                (equal norm spec)))
-    :hints(("Goal" :in-theory (enable fp-muladd-arith-round))))
+    :hints (("Goal" :in-theory (enable fp-muladd-arith-round))))
 
   (defthm fp-muladd-arith-round-of-left-normalize-c
     (b* (((fp-arith-triple a))
@@ -1068,4 +1072,4 @@
                     (unsigned-byte-p (1+ frac-size) c.man)
                     (posp frac-size))
                (equal norm spec)))
-    :hints(("Goal" :in-theory (enable fp-muladd-arith-round)))))
+    :hints (("Goal" :in-theory (enable fp-muladd-arith-round)))))
