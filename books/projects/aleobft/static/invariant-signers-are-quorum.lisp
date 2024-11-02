@@ -121,7 +121,8 @@
             (receive-certificate-next msg systate)))
   :expand (system-signers-are-quorum-p
            (receive-certificate-next msg systate))
-  :enable system-signers-are-quorum-p-necc)
+  :enable (system-signers-are-quorum-p-necc
+           certificates-for-validator-of-receive-certificate-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -133,7 +133,8 @@
             (receive-certificate-next msg systate)))
   :expand (system-previous-are-quorum-p
            (receive-certificate-next msg systate))
-  :enable (system-previous-are-quorum-p-necc))
+  :enable (system-previous-are-quorum-p-necc
+           certificates-for-validator-of-receive-certificate-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

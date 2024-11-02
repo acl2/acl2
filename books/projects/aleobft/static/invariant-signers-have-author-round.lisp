@@ -243,7 +243,8 @@
               (receive-certificate-next msg systate)))
     :expand (system-signers-have-author+round-p
              (receive-certificate-next msg systate))
-    :enable system-signers-have-author+round-p-necc))
+    :enable (system-signers-have-author+round-p-necc
+             certificates-for-validator-of-receive-certificate-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

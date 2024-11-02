@@ -139,6 +139,7 @@
                 (receive-certificate-possiblep msg systate))
            (same-certificates-p (receive-certificate-next msg systate)))
   :expand (same-certificates-p (receive-certificate-next msg systate))
+  :enable certificates-for-validator-of-receive-certificate-next
   :use (:instance same-certificates-p-necc
                   (val1 (mv-nth
                          0

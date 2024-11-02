@@ -521,6 +521,7 @@
             (receive-certificate-next msg systate)))
   :expand (system-unequivocal-certificates-p
            (receive-certificate-next msg systate))
+  :enable certificates-for-validator-of-receive-certificate-next
   :use (:instance system-unequivocal-certificates-p-necc
                   (val
                    (mv-nth 0 (system-unequivocal-certificates-p-witness

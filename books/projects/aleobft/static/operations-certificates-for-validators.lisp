@@ -207,7 +207,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule certificates-for-validator-of-receive-certificate-next
+(defruled certificates-for-validator-of-receive-certificate-next
   :short "A @('receive-certificate') event
           does not change the certificates for validators."
   (implies (and (receive-certificate-possiblep msg systate)
