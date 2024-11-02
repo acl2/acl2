@@ -11,7 +11,7 @@
 
 (in-package "ALEOBFT-STAKE")
 
-(include-book "xdoc/defxdoc-plus" :dir :system)
+(include-book "addresses")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
