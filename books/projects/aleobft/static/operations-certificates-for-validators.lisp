@@ -79,9 +79,10 @@
     :enable (set::expensive-rules
              set::in))
 
-  (defrule message-certificates-for-validator-of-empty
-    (equal (message-certificates-for-validator dest nil)
-           nil))
+  (defruled message-certificates-for-validator-when-emptyp
+    (implies (set::emptyp msgs)
+             (equal (message-certificates-for-validator dest msgs)
+                    nil)))
 
   (defrule message-certificates-for-validator-of-insert
     (implies (and (message-setp msgs)
