@@ -1,27 +1,26 @@
-;;;
-;;;  INTEL CONFIDENTIAL
-;;;
-;;;  Copyright 2022 Intel Corporation All Rights Reserved.
-;;;
-;;;  The source code contained or described herein and all documents related
-;;;  to the source code ("Material") are owned by Intel Corporation or its
-;;;  suppliers or licensors. Title to the Material remains with Intel
-;;;  Corporation or its suppliers and licensors. The Material contains trade
-;;;  secrets and proprietary and confidential information of Intel or its
-;;;  suppliers and licensors. The Material is protected by worldwide copyright
-;;;  and trade secret laws and treaty provisions. No part of the Material may
-;;;  be used, copied, reproduced, modified, published, uploaded, posted,
-;;;  transmitted, distributed, or disclosed in any way without Intel's prior
-;;;  express written permission.
-;;;
-;;;  No license under any patent, copyright, trade secret or other intellectual
-;;;  property right is granted to or conferred upon you by disclosure or
-;;;  delivery of the Materials, either expressly, by implication, inducement,
-;;;  estoppel or otherwise. Any license under such intellectual property rights
-;;;  must be express and approved by Intel in writing.
-;;;
-;;;================================================================================================
+; Copyright (C) 2024 Intel Corporation
+;
+; License: (An MIT/X11-style license)
+;
+;   Permission is hereby granted, free of charge, to any person obtaining a
+;   copy of this software and associated documentation files (the "Software"),
+;   to deal in the Software without restriction, including without limitation
+;   the rights to use, copy, modify, merge, publish, distribute, sublicense,
+;   and/or sell copies of the Software, and to permit persons to whom the
+;   Software is furnished to do so, subject to the following conditions:
+;
+;   The above copyright notice and this permission notice shall be included in
+;   all copies or substantial portions of the Software.
+;
+;   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+;   DEALINGS IN THE SOFTWARE.
 
+;;;================================================================================================
 
 (include-book "centaur/sv/portcullis" :dir :system)
 (include-book "centaur/fgl/portcullis" :dir :system)
@@ -31,8 +30,7 @@
   (append '(enable* disable* e/d* e/d**
                     fgl::def-fgl-thm fgl::def-fgl-rewrite)
           `(acl2::i acl2::make-packed-spec
-                    acl2::packed acl2::iter
-                    )
+                    acl2::packed acl2::iter)
           *standard-acl2-imports*
           set::*sets-exports*
           std::*std-exports*
