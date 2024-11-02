@@ -2839,7 +2839,7 @@
        expr
        :ident (b* (((erp type) (valid-var expr.ident table)))
                 (retok type (valid-table-fix table)))
-       :const (b* (((erp type) (valid-const expr.unwrap table ienv)))
+       :const (b* (((erp type) (valid-const expr.const table ienv)))
                 (retok type (valid-table-fix table)))
        :string (b* (((erp type) (valid-stringlit-list expr.literals)))
                  (retok type (valid-table-fix table)))

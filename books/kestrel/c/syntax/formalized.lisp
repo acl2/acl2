@@ -311,7 +311,7 @@
   (expr-case
    expr
    :ident (ident-formalp expr.ident)
-   :const (const-formalp expr.unwrap)
+   :const (const-formalp expr.const)
    :string nil
    :paren (expr-pure-formalp expr.unwrap)
    :gensel nil

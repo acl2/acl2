@@ -1552,7 +1552,7 @@
        The second argument is a member designator,
        which is a restricted form of expression."))
     (:ident ((ident ident)))
-    (:const ((unwrap const)))
+    (:const ((const const)))
     (:string ((literals stringlit-list)))
     (:paren ((unwrap expr)))
     (:gensel ((control expr)
