@@ -169,7 +169,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule message-certificates-for-validator-of-messages-for-certificate
+(defruled message-certificates-for-validator-of-messages-for-certificate
   :short "Relation between message creation and certificates for validators."
   (implies (and (certificatep cert)
                 (address-setp dests)
@@ -202,7 +202,8 @@
            validator-state->buffer-of-create-certificate-next
            get-network-state-of-create-certificate-next
            set::expensive-rules
-           message-certificates-for-validator-of-union))
+           message-certificates-for-validator-of-union
+           message-certificates-for-validator-of-messages-for-certificate))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
