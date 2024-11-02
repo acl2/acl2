@@ -99,7 +99,7 @@
              set::double-containment-no-backchain-limit
              in-of-message-certificates-for-validator))
 
-  (defrule message-certificates-for-validator-of-delete
+  (defruled message-certificates-for-validator-of-delete
     (implies (and (message-setp msgs)
                   (addressp dest))
              (equal (message-certificates-for-validator
@@ -218,7 +218,8 @@
            receive-certificate-next-val
            certificates-for-validator
            set::expensive-rules
-           in-of-message-certificates-for-validator))
+           in-of-message-certificates-for-validator
+           message-certificates-for-validator-of-delete))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
