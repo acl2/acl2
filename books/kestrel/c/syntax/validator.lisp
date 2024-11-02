@@ -716,321 +716,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-spec-list-signed-p ((tyspecs type-spec-listp))
-  :returns (yes/no booleanp)
-  :short "Check if a list of type specifiers has the form @('signed')."
-  (and (= (len tyspecs) 1)
-       (type-spec-case (nth 0 tyspecs) :signed))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-spec-list-unsigned-p ((tyspecs type-spec-listp))
-  :returns (yes/no booleanp)
-  :short "Check if a list of type specifiers has the form @('unsigned')."
-  (and (= (len tyspecs) 1)
-       (type-spec-case (nth 0 tyspecs) :unsigned))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-spec-list-int-p ((tyspecs type-spec-listp))
-  :returns (yes/no booleanp)
-  :short "Check if a list of type specifiers has the form @('int')."
-  (and (= (len tyspecs) 1)
-       (type-spec-case (nth 0 tyspecs) :int))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-spec-list-short-p ((tyspecs type-spec-listp))
-  :returns (yes/no booleanp)
-  :short "Check if a list of type specifiers has the form @('short')."
-  (and (= (len tyspecs) 1)
-       (type-spec-case (nth 0 tyspecs) :short))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-spec-list-long-p ((tyspecs type-spec-listp))
-  :returns (yes/no booleanp)
-  :short "Check if a list of type specifiers has the form @('long')."
-  (and (= (len tyspecs) 1)
-       (type-spec-case (nth 0 tyspecs) :long))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-spec-list-float-p ((tyspecs type-spec-listp))
-  :returns (yes/no booleanp)
-  :short "Check if a list of type specifiers has the form @('float')."
-  (and (= (len tyspecs) 1)
-       (type-spec-case (nth 0 tyspecs) :float))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-spec-list-double-p ((tyspecs type-spec-listp))
-  :returns (yes/no booleanp)
-  :short "Check if a list of type specifiers has the form @('double')."
-  (and (= (len tyspecs) 1)
-       (type-spec-case (nth 0 tyspecs) :double))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-spec-list-complex-p ((tyspecs type-spec-listp))
-  :returns (yes/no booleanp)
-  :short "Check if a list of type specifiers has the form @('_Complex')."
-  (and (= (len tyspecs) 1)
-       (type-spec-case (nth 0 tyspecs) :complex))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-spec-list-signed-int-p ((tyspecs type-spec-listp))
-  :returns (yes/no booleanp)
-  :short "Check if a list of type specifiers has the form
-          @('signed int') or @('int signed')."
-  (and (= (len tyspecs) 2)
-       (or (and (type-spec-case (nth 0 tyspecs) :signed)
-                (type-spec-case (nth 1 tyspecs) :int))
-           (and (type-spec-case (nth 0 tyspecs) :int)
-                (type-spec-case (nth 1 tyspecs) :signed))))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-spec-list-unsigned-int-p ((tyspecs type-spec-listp))
-  :returns (yes/no booleanp)
-  :short "Check if a list of type specifiers has the form
-          @('unsigned int') or @('int unsigned')."
-  (and (= (len tyspecs) 2)
-       (or (and (type-spec-case (nth 0 tyspecs) :unsigned)
-                (type-spec-case (nth 1 tyspecs) :int))
-           (and (type-spec-case (nth 0 tyspecs) :int)
-                (type-spec-case (nth 1 tyspecs) :unsigned))))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-spec-list-signed-short-p ((tyspecs type-spec-listp))
-  :returns (yes/no booleanp)
-  :short "Check if a list of type specifiers has the form
-          @('signed short') or @('short signed')."
-  (and (= (len tyspecs) 2)
-       (or (and (type-spec-case (nth 0 tyspecs) :signed)
-                (type-spec-case (nth 1 tyspecs) :short))
-           (and (type-spec-case (nth 0 tyspecs) :short)
-                (type-spec-case (nth 1 tyspecs) :signed))))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-spec-list-unsigned-short-p ((tyspecs type-spec-listp))
-  :returns (yes/no booleanp)
-  :short "Check if a list of type specifiers has the form
-          @('unsigned short') or @('short unsigned')."
-  (and (= (len tyspecs) 2)
-       (or (and (type-spec-case (nth 0 tyspecs) :unsigned)
-                (type-spec-case (nth 1 tyspecs) :short))
-           (and (type-spec-case (nth 0 tyspecs) :short)
-                (type-spec-case (nth 1 tyspecs) :unsigned))))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-spec-list-signed-long-p ((tyspecs type-spec-listp))
-  :returns (yes/no booleanp)
-  :short "Check if a list of type specifiers has the form
-          @('signed long') or @('long signed')."
-  (and (= (len tyspecs) 2)
-       (or (and (type-spec-case (nth 0 tyspecs) :signed)
-                (type-spec-case (nth 1 tyspecs) :long))
-           (and (type-spec-case (nth 0 tyspecs) :long)
-                (type-spec-case (nth 1 tyspecs) :signed))))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-spec-list-unsigned-long-p ((tyspecs type-spec-listp))
-  :returns (yes/no booleanp)
-  :short "Check if a list of type specifiers has the form
-          @('unsigned long') or @('long unsigned')."
-  (and (= (len tyspecs) 2)
-       (or (and (type-spec-case (nth 0 tyspecs) :unsigned)
-                (type-spec-case (nth 1 tyspecs) :long))
-           (and (type-spec-case (nth 0 tyspecs) :long)
-                (type-spec-case (nth 1 tyspecs) :unsigned))))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-spec-list-signed-long-long-p ((tyspecs type-spec-listp))
-  :returns (yes/no booleanp)
-  :short "Check if a list of type specifiers has the form
-          @('signed long long')
-          or @('long signed long')
-          or @('long long signed')."
-  (and (= (len tyspecs) 3)
-       (or (and (type-spec-case (nth 0 tyspecs) :signed)
-                (type-spec-case (nth 1 tyspecs) :long)
-                (type-spec-case (nth 2 tyspecs) :long))
-           (and (type-spec-case (nth 0 tyspecs) :long)
-                (type-spec-case (nth 1 tyspecs) :signed)
-                (type-spec-case (nth 2 tyspecs) :long))
-           (and (type-spec-case (nth 0 tyspecs) :long)
-                (type-spec-case (nth 1 tyspecs) :long)
-                (type-spec-case (nth 2 tyspecs) :signed))))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-spec-list-unsigned-long-long-p ((tyspecs type-spec-listp))
-  :returns (yes/no booleanp)
-  :short "Check if a list of type specifiers has the form
-          @('unsigned long long')
-          or @('long unsigned long')
-          or @('long long unsigned')."
-  (and (= (len tyspecs) 3)
-       (or (and (type-spec-case (nth 0 tyspecs) :unsigned)
-                (type-spec-case (nth 1 tyspecs) :long)
-                (type-spec-case (nth 2 tyspecs) :long))
-           (and (type-spec-case (nth 0 tyspecs) :long)
-                (type-spec-case (nth 1 tyspecs) :unsigned)
-                (type-spec-case (nth 2 tyspecs) :long))
-           (and (type-spec-case (nth 0 tyspecs) :long)
-                (type-spec-case (nth 1 tyspecs) :long)
-                (type-spec-case (nth 2 tyspecs) :unsigned))))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-spec-list-signed-long-int-p ((tyspecs type-spec-listp))
-  :returns (yes/no booleanp)
-  :short "Check if a list of type specifiers has the form
-          @('signed long int')
-          or @('int signed long')
-          or @('long int signed')."
-  (and (= (len tyspecs) 3)
-       (or (and (type-spec-case (nth 0 tyspecs) :signed)
-                (type-spec-case (nth 1 tyspecs) :long)
-                (type-spec-case (nth 2 tyspecs) :int))
-           (and (type-spec-case (nth 0 tyspecs) :int)
-                (type-spec-case (nth 1 tyspecs) :signed)
-                (type-spec-case (nth 2 tyspecs) :long))
-           (and (type-spec-case (nth 0 tyspecs) :long)
-                (type-spec-case (nth 1 tyspecs) :int)
-                (type-spec-case (nth 2 tyspecs) :signed))))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-spec-list-unsigned-long-int-p ((tyspecs type-spec-listp))
-  :returns (yes/no booleanp)
-  :short "Check if a list of type specifiers has the form
-          @('unsigned long int')
-          or @('int unsigned long')
-          or @('long int unsigned')."
-  (and (= (len tyspecs) 3)
-       (or (and (type-spec-case (nth 0 tyspecs) :unsigned)
-                (type-spec-case (nth 1 tyspecs) :long)
-                (type-spec-case (nth 2 tyspecs) :int))
-           (and (type-spec-case (nth 0 tyspecs) :int)
-                (type-spec-case (nth 1 tyspecs) :unsigned)
-                (type-spec-case (nth 2 tyspecs) :long))
-           (and (type-spec-case (nth 0 tyspecs) :long)
-                (type-spec-case (nth 1 tyspecs) :int)
-                (type-spec-case (nth 2 tyspecs) :unsigned))))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-spec-list-short-int-p ((tyspecs type-spec-listp))
-  :returns (yes/no booleanp)
-  :short "Check if a list of type specifiers has the form
-          @('short int') or @('int short')."
-  (and (= (len tyspecs) 2)
-       (or (and (type-spec-case (nth 0 tyspecs) :short)
-                (type-spec-case (nth 1 tyspecs) :int))
-           (and (type-spec-case (nth 0 tyspecs) :int)
-                (type-spec-case (nth 1 tyspecs) :short))))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-spec-list-long-int-p ((tyspecs type-spec-listp))
-  :returns (yes/no booleanp)
-  :short "Check if a list of type specifiers has the form
-          @('long int') or @('int long')."
-  (and (= (len tyspecs) 2)
-       (or (and (type-spec-case (nth 0 tyspecs) :long)
-                (type-spec-case (nth 1 tyspecs) :int))
-           (and (type-spec-case (nth 0 tyspecs) :int)
-                (type-spec-case (nth 1 tyspecs) :long))))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-spec-list-long-long-int-p ((tyspecs type-spec-listp))
-  :returns (yes/no booleanp)
-  :short "Check if a list of type specifiers has the form
-          @('long long int')
-          or @('int long long')
-          or @('long int long')."
-  (and (= (len tyspecs) 3)
-       (or (and (type-spec-case (nth 0 tyspecs) :long)
-                (type-spec-case (nth 1 tyspecs) :long)
-                (type-spec-case (nth 2 tyspecs) :int))
-           (and (type-spec-case (nth 0 tyspecs) :int)
-                (type-spec-case (nth 1 tyspecs) :long)
-                (type-spec-case (nth 2 tyspecs) :long))
-           (and (type-spec-case (nth 0 tyspecs) :long)
-                (type-spec-case (nth 1 tyspecs) :int)
-                (type-spec-case (nth 2 tyspecs) :long))))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-spec-list-double-complex-p ((tyspecs type-spec-listp))
-  :returns (yes/no booleanp)
-  :short "Check if a list of type specifiers has the form
-          @('double _Complex') or @('_Complex double')."
-  (and (= (len tyspecs) 2)
-       (or (and (type-spec-case (nth 0 tyspecs) :double)
-                (type-spec-case (nth 1 tyspecs) :complex))
-           (and (type-spec-case (nth 0 tyspecs) :complex)
-                (type-spec-case (nth 1 tyspecs) :double))))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-spec-list-long-complex-p ((tyspecs type-spec-listp))
-  :returns (yes/no booleanp)
-  :short "Check if a list of type specifiers has the form
-          @('long _Complex') or @('_Complex long')."
-  (and (= (len tyspecs) 2)
-       (or (and (type-spec-case (nth 0 tyspecs) :long)
-                (type-spec-case (nth 1 tyspecs) :complex))
-           (and (type-spec-case (nth 0 tyspecs) :complex)
-                (type-spec-case (nth 1 tyspecs) :long))))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-spec-list-long-double-p ((tyspecs type-spec-listp))
-  :returns (yes/no booleanp)
-  :short "Check if a list of type specifiers has the form
-          @('long double') or @('double long')."
-  (and (= (len tyspecs) 2)
-       (or (and (type-spec-case (nth 0 tyspecs) :long)
-                (type-spec-case (nth 1 tyspecs) :double))
-           (and (type-spec-case (nth 0 tyspecs) :double)
-                (type-spec-case (nth 1 tyspecs) :long))))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::deftagsum linkage
   :short "Fixtype of linkages."
   :long
@@ -2590,167 +2275,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define valid-stor-spec ((storspec stor-specp)
-                         (storspecs stor-spec-listp))
-  :returns (mv erp
-               (typedefp booleanp)
-               (linkage? linkage-optionp)
-               (lifetime? lifetime-optionp)
-               (new-storspecs stor-spec-listp))
-  :short "Validate a storage class specifier."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Storage class specifiers [C:6.7.1]
-     appear as declaration specifiers,
-     which appear in declarations.
-     Declaration specifiers indicate the linkage and storage duration
-     of the declared identifiers [C:6.7/6];
-     more precisely, it is storage class specifiers that indicate that.
-     But storage class specifiers also include @('typedef'),
-     mainly for syntactic convenience [C:6.7.1/5],
-     which does not determine any linkage or storage duration,
-     but indicates that a @('typedef') name is being declared.
-     Thus, storage class specifiers may indicate various kinds of information,
-     which we return as results,
-     along with the list of preceding storage class specifiers.")
-   (xdoc::p
-    "A @('typedef') must be preceded by no storage class specifier [C:6.7.1/2].
-     A @('typedef') specifies that a @('typedef') name is being declared,
-     so we return @('t') as the @('typedef') flag result.
-     A @('typedef') name is not an object or function,
-     and thus it has no linkage [C:6.2.2/6]:
-     so we return that as the linkage result.
-     Since a @('typedef') name is not an object,
-     it does not have a storage duration [C:6.2.4/1],
-     so we return @('nil') as the liftetime result.")
-   (xdoc::p
-    "An @('extern') may be only preceded by @('_Thread_local') [C:6.7.1/2].
-     An @('extern') does not specify a @('typedef') name,
-     so we return @('nil') as the @('typedef') flag result.
-     An @('extern') normally specifies external linkage
-     if it is in the first or only declaration of the identifier [C:6.2.2/4],
-     so we return external linkage as result;
-     this may be overridden (in other validation code)
-     if the declaration is not the first or only one [C:6.2.2/4].
-     If there is a preceding @('_Thread_local'),
-     the storage duration is thread [C:6.2.4/4]
-     (in this case the input @('lifetime?') would be already that,
-     although we do not explicate this invariant).
-     If there is no preceding @('_Thread_local'),
-     we return the static storage duration [C:6.2.4/3],
-     but this will be changed to thread if a @('_Thread_local') follows.")
-   (xdoc::p
-    "A @('static') is treated similarly to an @('extern'),
-     except that the linkage is internal [C:6.2.2/3].")
-   (xdoc::p
-    "A @('_Thread_local') may be preceded
-     only by an @('extern') or a @('static')
-     [C:6.7.1/2].
-     If nothing precedes it,
-     we only determine the storage duration as thread,
-     without determining the linkage.
-     If it is preceded by @('extern') or @('static'),
-     we also determine the linkage, as external or internal,
-     in analogy with the situations, discussed above,
-     in which the order of the two storage class specifiers is swapped.")
-   (xdoc::p
-    "An @('auto') or @('register') may not be preceded by anything [C:6.7.1/2].
-     These two give the same results:
-     no linkage, and automatic storage duration."))
-  (b* (((reterr) nil nil nil nil)
-       (msg-bad-preceding (msg "The storage class specifier ~x0 ~
-                                must not be preceded by ~x1."
-                               (stor-spec-fix storspec)
-                               (stor-spec-list-fix storspecs)))
-       (ext-storspecs (rcons (stor-spec-fix storspec)
-                             (stor-spec-list-fix storspecs))))
-    (stor-spec-case
-     storspec
-     :typedef (cond
-               ((endp storspecs) ; typedef
-                (retok t
-                       (linkage-none)
-                       nil
-                       ext-storspecs))
-               (t ; other typedef
-                (reterr msg-bad-preceding)))
-     :extern (cond
-              ((endp storspecs) ; extern
-               (retok nil
-                      (linkage-external)
-                      (lifetime-static)
-                      ext-storspecs))
-              ((and (consp storspecs)
-                    (endp (cdr storspecs))
-                    (stor-spec-case (car storspecs)
-                                    :threadloc)) ; _Thread_local extern
-               (retok nil
-                      (linkage-external)
-                      (lifetime-thread)
-                      ext-storspecs))
-              (t ; other extern
-               (reterr msg-bad-preceding)))
-     :static (cond
-              ((endp storspecs) ; static
-               (retok nil
-                      (linkage-internal)
-                      (lifetime-static)
-                      ext-storspecs))
-              ((and (consp storspecs)
-                    (endp (cdr storspecs))
-                    (stor-spec-case (car storspecs)
-                                    :threadloc)) ; _Thread_local static
-               (retok nil
-                      (linkage-internal)
-                      (lifetime-thread)
-                      ext-storspecs))
-              (t ; other static
-               (reterr msg-bad-preceding)))
-     :threadloc (cond
-                 ((endp storspecs) ; _Thread_local
-                  (retok nil
-                         nil
-                         (lifetime-thread)
-                         ext-storspecs))
-                 ((and (consp storspecs)
-                       (endp (cdr storspecs))
-                       (stor-spec-case (car storspecs)
-                                       :extern)) ; extern _Thread_local
-                  (retok nil
-                         (linkage-external)
-                         (lifetime-thread)
-                         ext-storspecs))
-                 ((and (consp storspecs)
-                       (endp (cdr storspecs))
-                       (stor-spec-case (car storspecs)
-                                       :static)) ; static _Thread_local
-                  (retok nil
-                         (linkage-internal)
-                         (lifetime-thread)
-                         ext-storspecs))
-                 (t ; other _Thread_local
-                  (reterr msg-bad-preceding)))
-     :auto (cond
-            ((endp storspecs) ; auto
-             (retok nil
-                    (linkage-none)
-                    (lifetime-auto)
-                    ext-storspecs))
-            (t ; other auto
-             (reterr msg-bad-preceding)))
-     :register (cond
-                ((endp storspecs) ; register
-                 (retok nil
-                        (linkage-none)
-                        (lifetime-auto)
-                        ext-storspecs))
-                (t ; other register
-                 (reterr msg-bad-preceding)))))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defines valid-exprs/decls/stmts
   :short "Validate expressions, declarations, statements,
           and related artifacts."
@@ -3098,164 +2622,50 @@
      (xdoc::p
       "Given these possibilities,
        our approach is to validate type specifiers in order,
-       threading though information about
-       either a definitely determined type (e.g. the void type),
-       or type specifiers that may (or not) already specifiy a type
-       but that would specify a different type if additional ones are found.
-       This information consists of the @('type?') and @('tyspecs') inputs,
-       which the guard requires to be not both non-@('nil'):
-       if we have determined a type,
-       we do not need to track preceding type specifiers;
-       and if we are tracking preceding type specifiers,
-       we have not determined a type yet.
-       Initially they are both @('nil').")
+       while going through the declaration specifiers,
+       or the specifier and qualifier lists,
+       where they occur.
+       As we go through them, we thread through two pieces of information:
+       an optional type,
+       non-@('nil') when a type has been definitely determined,
+       and a list of type specifiers encountered so far.
+       These two cannot be non-@('nil') at the same time, as the guard requires:
+       if a type has been determined,
+       there is no need to keep track of the type specifiers so far;
+       and if we are keeping track of the type specifiers so far,
+       we must not have determined a type yet.")
      (xdoc::p
-      "After going through all the type specifiers,
-       we will either have a type or a list of type specifiers:
-       the latter may or may not denote a type,
-       and our validation will check that.
-       But that is done elsewhere:
-       this validation function operates on a single type specifier.")
-     (xdoc::p
-      "Although we do not explicate that in the guard,
-       the @('tyspecs') list always satisfies certain invariants,
-       such as the fact that it does not contain
-       both @('signed') and @('unsigned'),
-       because validation would have failed before reaching this point.
-       But our code in this validation function relies on these invariants.")
-     (xdoc::p
-      "When this function is called with a non-@('nil') @('type?'),
-       it means that the type has been determined,
-       and no more type specifiers can follow.
-       So we return an error in this case.")
-     (xdoc::p
-      "A @('void') or @('_Bool') type specifier
-       determines a type,
-       and cannot be preceded by any other type specifier.")
-     (xdoc::p
-      "A @('char') type specifier can be only preceded by
-       a single @('signed') or @('unsigned') type specifier,
-       in which case they together specify a type.
-       If there is no preceding type specifier,
-       @('char') alone does not specify a definite type,
-       because it may be followed by @('signed') or @('unsigned').")
-     (xdoc::p
-      "A @('short') type specifier may be preceded
-       by @('signed') and @('int') (in any order),
-       or by @('unsigned') and @('int') (in any order),
-       in which cases the type is determined
-       and no more type specifiers are allowed.
-       If @('short') is preceded only by @('signed') or @('unsigned'),
-       the type is also determined,
-       but @('int') may be allowed after that,
-       so we delay the determination of the type in this case,
-       otherwise we could not check for duplicate @('int')s.
-       If @('short') is preceded by @('int'),
-       the type is not determined yet,
-       because an @('unsigned') may follow or not.
-       If @('short') is not preceded by anything,
-       the type is not determined yet either,
-       because an @('unsigned') may follow or not.
-       Any other preceding type specifiers are disallowed.")
-     (xdoc::p
-      "An @('int') type specifier may be preceded
-       by @('signed') and @('short') (in any order),
-       or by @('unsigned') and @('short') (in any order),
-       or by @('signed') and @('long') and @('long') (in any order),
-       or by @('unsigned') and @('long') and @('long') (in any order),
-       in which cases the type is determined
-       and no more type specifiers are allowed.
-       If @('int') is preceded only
-       by @('signed') or @('unsigned') or @('long') or @('short'),
-       or by @('signed') and @('long') (in any order),
-       or by @('unsigned') and @('long') (in any order),
-       the type is not determined, so we add the type specifier to the list.
-       If @('int') is not preceded by anything,
-       the type is not determined yet either,
-       because an @('unsigned') or a @('short') or a @('long') or two @('long')s
-       may follow or not.
-       Any other preceding type specifiers are disallowed.")
-     (xdoc::p
-      "A @('long') type specifier may be preceded
-       by @('signed') and @('long') and @('int') (in any order),
-       or by @('unsigned') and @('long') and @('int') (in any order),
-       or by @('double') and @('_Complex') (in any order),
-       in which cases the type is determined
-       and no more type specifiers are allowed.
-       If @('long') is preceded only
-       by @('signed') or @('unsigned')
-       or @('int') or @('long')
-       or @('double') or @('_Complex'),
-       or by @('signed') and @('int') (in any order),
-       or by @('unsigned') and @('int') (in any order),
-       or by @('signed') and @('short') (in any order),
-       or by @('unsigned') and @('short') (in any order),
-       or by @('signed') and @('long') (in any order),
-       or by @('unsigned') and @('long') (in any order),
-       the type is not determined, so we add the type specifier to the list.
-       If @('long') is preceded only
-       by @('signed') and @('long') (in any order)
-       or by @('unsigned') and @('long') (in any order),
-       the type is determined, but we delay its determination so that
-       we can allow an @('int') to follow
-       while enforcing that there are no duplicate @('int')s.
-       If @('long') is not preceded by anything,
-       the type is not determined yet either,
-       because an @('unsigned') or another @('long') may follow.
-       Any other preceding type specifiers are disallowed.")
-     (xdoc::p
-      "A @('float') type specifier
-       may be preceded by a @('_Complex') type specifier,
-       in which case the type is determined.
-       If the @('float') is not preceded by anything,
-       the type is not determined yet, because @('_Complex') may follow.
-       Nothing else can precede @('float').")
-     (xdoc::p
-      "A @('double') type specifier may be preceded
-       by @('long') and @('_Complex') (in any order),
-       in which case the type is determined.
-       If @('double') is preceded only by @('long') or @('_Complex'),
-       the type is not determined.
-       Nothing else can precede @('double').")
-     (xdoc::p
-      "A @('signed') or @('unsigned') type specifier may be preceded
-       by @('short') and @('int') (in any order)
-       or by @('long') and @('long') and @('int') (in any order),
-       in which cases the type is determined.
-       If it is preceded only by subsequences of those,
-       including the empty subsequence,
-       the type is not determined,
-       or it is but there may be an additional type specifier
-       to allow without duplicates.")
-     (xdoc::p
-      "A @('_Complex') type specifier may be preceded
-       by @('long') and @('double') (in any order),
-       in which case the type is determined.
-       If it is preceded by any subsequence of those,
-       the type is not determined yet.")
+      "Initially,
+       the optional type and the list of type specifiers are both @('nil'),
+       because we neither have encountered any type specifiers
+       nor determined a type.
+       If we encounter a type specifier like @('void')
+       that individually denotes a type,
+       we ensure that no other type specifiers were encountered before,
+       and we determine the type.
+       Once a type is determined, any type specifier will cause an error.
+       We may get at the end without a determined type yet,
+       but we will have the list of all the type specifiers,
+       which is used, in another validation function,
+       to determined the type if any.")
      (xdoc::p
       "Our current type system does not model atomic types,
        so for an atomic type we validate the type name
-       and we regard the atomic type as denoting the same type.
-       No type specifier may precede an atomic type.")
+       and we regard the atomic type as denoting the same type.")
      (xdoc::p
       "For a structure or union or enumeration type specifier,
        we recursively validate their sub-structures,
-       and the type is determined in all cases.
-       No type specifier may precede this one.")
+       and the type is determined in all cases.")
      (xdoc::p
       "Since our currently approximate type system
        does not handle @('typedef') types,
-       we just regard it as denoting an unknown type.
-       No type specifier may precede this one.")
+       we just regard it as denoting an unknown type.")
      (xdoc::p
       "For now, for simplicity, we regard
        all the type specifiers that are GCC extensions
        to determine the unknown type;
        except for an empty structure type specifier,
-       which determines the structure type.
-       None of them may be preceded by other type specifiers,
-       so we check that."))
+       which determines the structure type."))
     (b* (((reterr) nil nil (irr-valid-table))
          ((when type?)
           (reterr (msg "Since the type ~x0 has been determined, ~
@@ -3271,196 +2681,57 @@
                                  (type-spec-list-fix tyspecs))))
       (type-spec-case
        tyspec
-       :void (cond ((endp tyspecs) ; void
-                    (retok (type-void) nil same-table))
-                   (t ; other void
-                    (reterr msg-bad-preceding)))
-       :char (cond ((endp tyspecs) ; char
-                    (retok nil (list (type-spec-fix tyspec)) same-table))
-                   ((type-spec-list-signed-p tyspecs) ; signed char
-                    (retok (type-schar) nil same-table))
-                   ((type-spec-list-unsigned-p tyspecs) ; unsigned char
-                    (retok (type-uchar) nil same-table))
-                   (t ; other char
-                    (reterr msg-bad-preceding)))
-       :short (cond
-               ((endp tyspecs) ; short
-                (retok nil ext-tyspecs same-table))
-               ((or (type-spec-list-signed-p tyspecs) ; signed short
-                    (type-spec-list-unsigned-p tyspecs) ; unsigned short
-                    (type-spec-list-int-p tyspecs)) ; int short
-                (retok nil ext-tyspecs same-table))
-               ((type-spec-list-signed-int-p tyspecs) ; signed int short
-                (retok (type-sshort) nil same-table))
-               ((type-spec-list-unsigned-int-p tyspecs) ; unsigned int short
-                (retok (type-ushort) nil same-table))
-               (t ; other short
-                (reterr msg-bad-preceding)))
-       :int (cond
-             ((endp tyspecs) ; short
-              (retok nil ext-tyspecs same-table))
-             ((or (type-spec-list-signed-p tyspecs) ; signed int
-                  (type-spec-list-unsigned-p tyspecs) ; unsigned int
-                  (type-spec-list-short-p tyspecs) ; short int
-                  (type-spec-list-long-p tyspecs)) ; long int
-              (retok nil ext-tyspecs same-table))
-             ((type-spec-list-signed-short-p tyspecs) ; signed short int
-              (retok (type-sshort) nil same-table))
-             ((type-spec-list-unsigned-short-p tyspecs) ; unsigned short int
-              (retok (type-ushort) nil same-table))
-             ((or (type-spec-list-signed-long-p tyspecs) ; signed long int
-                  (type-spec-list-unsigned-long-p tyspecs)) ; unsigned long int
-              (retok nil ext-tyspecs same-table))
-             ((type-spec-list-signed-long-long-p ; signed long long int
-               tyspecs)
-              (retok (type-sllong) nil same-table))
-             ((type-spec-list-unsigned-long-long-p ; unsigned long long int
-               tyspecs)
-              (retok (type-ullong) nil same-table))
-             (t ; other int
-              (reterr msg-bad-preceding)))
-       :long (cond
-              ((endp tyspecs) ; long
-               (retok nil ext-tyspecs same-table))
-              ((or (type-spec-list-signed-p tyspecs) ; signed long
-                   (type-spec-list-unsigned-p tyspecs) ; unsigned long
-                   (type-spec-list-int-p tyspecs) ; int long
-                   (type-spec-list-long-p tyspecs) ; long long
-                   (type-spec-list-double-p tyspecs) ; double long
-                   (type-spec-list-complex-p tyspecs)) ; _Complex long
-               (retok nil ext-tyspecs same-table))
-              ((or (type-spec-list-signed-int-p ; signed int long
-                    tyspecs)
-                   (type-spec-list-unsigned-int-p ; unsigned int long
-                    tyspecs)
-                   (type-spec-list-signed-long-p ; signed long long
-                    tyspecs)
-                   (type-spec-list-unsigned-long-p ; unsigned long long
-                    tyspecs))
-               (retok nil ext-tyspecs same-table))
-              ((type-spec-list-signed-long-int-p ; signed long int long
-                tyspecs)
-               (retok (type-sllong) nil same-table))
-              ((type-spec-list-unsigned-long-int-p ; unsigned long int long
-                tyspecs)
-               (retok (type-ullong) nil same-table))
-              ((type-spec-list-double-complex-p tyspecs) ; double _Complex long
-               (retok (type-doublec) nil same-table))
-              (t ; other long
-               (reterr msg-bad-preceding)))
-       :float (cond
-               ((endp tyspecs) ; float
-                (retok nil ext-tyspecs same-table))
-               ((type-spec-list-complex-p tyspecs) ; _Complex float
-                (retok (type-floatc) nil same-table))
-               (t ; other float
-                (reterr msg-bad-preceding)))
-       :double (cond
-                ((endp tyspecs) ; double
-                 (retok nil ext-tyspecs same-table))
-                ((or (type-spec-list-long-p tyspecs) ; long double
-                     (type-spec-list-complex-p tyspecs)) ; _Complex double
-                 (retok nil ext-tyspecs same-table))
-                ((type-spec-list-long-complex-p tyspecs) ; long _Complex double
-                 (retok (type-ldoublec) nil same-table))
-                (t ; other double
-                 (reterr msg-bad-preceding)))
-       :signed (cond
-                ((endp tyspecs) ; signed
-                 (retok nil ext-tyspecs same-table))
-                ((or (type-spec-list-int-p tyspecs) ; int signed
-                     (type-spec-list-short-p tyspecs) ; short signed
-                     (type-spec-list-long-p tyspecs)) ; long signed
-                 (retok nil ext-tyspecs same-table))
-                ((type-spec-list-short-int-p tyspecs) ; short int signed
-                 (retok (type-sshort) nil same-table))
-                ((type-spec-list-long-int-p tyspecs) ; long int signed
-                 (retok nil ext-tyspecs same-table))
-                ((type-spec-list-long-long-int-p tyspecs) ; long long int signed
-                 (retok (type-sllong) nil same-table))
-                (t ; other signed
-                 (reterr msg-bad-preceding)))
-       :unsigned (cond
-                  ((endp tyspecs) ; unsigned
-                   (retok nil ext-tyspecs same-table))
-                  ((or (type-spec-list-int-p tyspecs) ; int unsigned
-                       (type-spec-list-short-p tyspecs) ; short unsigned
-                       (type-spec-list-long-p tyspecs)) ; long unsigned
-                   (retok nil ext-tyspecs same-table))
-                  ((type-spec-list-short-int-p tyspecs) ; short int unsigned
-                   (retok (type-ushort) nil same-table))
-                  ((type-spec-list-long-int-p tyspecs) ; long int unsigned
-                   (retok nil ext-tyspecs same-table))
-                  ((type-spec-list-long-long-int-p ; long long int unsigned
-                    tyspecs)
-                   (retok (type-ullong) nil same-table))
-                  (t ; other unsigned
-                   (reterr msg-bad-preceding)))
-       :bool (cond ((endp tyspecs) ; _Bool
-                    (retok (type-bool) nil same-table))
-                   (t ; other _Bool
-                    (reterr msg-bad-preceding)))
-       :complex (cond
-                 ((endp tyspecs) ; _Complex
-                  (retok nil ext-tyspecs same-table))
-                 ((or (type-spec-list-double-p tyspecs) ; double _Complex
-                      (type-spec-list-long-p tyspecs)) ; long _Complex
-                  (retok nil ext-tyspecs same-table))
-                 ((type-spec-list-long-double-p tyspecs) ; long double _Complex
-                  (retok (type-ldoublec) nil same-table))
-                 (t ; other _Complex
-                  (reterr msg-bad-preceding)))
-       :atomic (b* (((erp type table)
-                     (valid-tyname tyspec.type table ienv))
-                    ((unless (endp tyspecs)) (reterr msg-bad-preceding)))
+       :void (if (endp tyspecs)
+                 (retok (type-void) nil same-table)
+               (reterr msg-bad-preceding))
+       :char (retok nil ext-tyspecs same-table)
+       :short (retok nil ext-tyspecs same-table)
+       :int (retok nil ext-tyspecs same-table)
+       :long (retok nil ext-tyspecs same-table)
+       :float (retok nil ext-tyspecs same-table)
+       :double (retok nil ext-tyspecs same-table)
+       :signed (retok nil ext-tyspecs same-table)
+       :unsigned (retok nil ext-tyspecs same-table)
+       :bool (if (endp tyspecs)
+                 (retok (type-bool) nil same-table)
+               (reterr msg-bad-preceding))
+       :complex (retok nil ext-tyspecs same-table)
+       :atomic (b* (((unless (endp tyspecs)) (reterr msg-bad-preceding))
+                    ((erp type table) (valid-tyname tyspec.type table ienv)))
                  (retok type nil table))
-       :struct (cond ((endp tyspecs) ; struct...
-                      (b* (((erp table) (mv :todo-strunispec same-table)))
-                        (retok (type-struct) nil table)))
-                     (t ; other struct...
-                      (reterr msg-bad-preceding)))
-       :union (cond ((endp tyspecs) ; union...
-                     (b* (((erp table) (mv :todo-strunispec same-table)))
-                       (retok (type-union) nil table)))
-                    (t ; other union...
-                     (reterr msg-bad-preceding)))
-       :enum (cond ((endp tyspecs) ; enum...
-                    (b* (((erp table) (mv :todo-enumspec same-table)))
-                      (retok (type-enum) nil table)))
-                   (t ; other enum...
-                    (reterr msg-bad-preceding)))
-       :typedef (cond ((endp tyspecs) ; typedef...
-                       (retok (type-unknown) nil same-table))
-                      (t ; other typedef...
-                       (reterr msg-bad-preceding)))
-       :int128 (cond ((endp tyspecs) ; __int128
-                      (retok (type-unknown) nil same-table))
-                     (t ; other __int128
-                      (reterr msg-bad-preceding)))
-       :float128 (cond ((endp tyspecs) ; _Float128
-                        (retok (type-unknown) nil same-table))
-                       (t ; other _Float128
-                        (reterr msg-bad-preceding)))
-       :builtin-va-list (cond ((endp tyspecs) ; __buildin_va_list
-                               (retok (type-unknown) nil same-table))
-                              (t ; other __buildin_va_list
-                               (reterr msg-bad-preceding)))
-       :struct-empty (cond ((endp tyspecs) ; struct... {}
-                            (retok (type-struct) nil same-table))
-                           (t ; other struct... {}
-                            (reterr msg-bad-preceding)))
-       :typeof-expr (cond ((endp tyspecs) ; typeof...
-                           (retok (type-unknown) nil same-table))
-                          (t ; other typeof...
-                           (reterr msg-bad-preceding)))
-       :typeof-type (cond ((endp tyspecs) ; typeof...
-                           (retok (type-unknown) nil same-table))
-                          (t ; other typeof...
-                           (reterr msg-bad-preceding)))
-       :auto-type (cond ((endp tyspecs) ; __auto_type
-                         (retok (type-unknown) nil same-table))
-                        (t ; other __auto_type
-                         (reterr msg-bad-preceding)))
+       :struct (b* (((unless (endp tyspecs)) (reterr msg-bad-preceding))
+                    ((erp table) (mv :todo-strunispec same-table)))
+                 (retok (type-struct) nil table))
+       :union (b* (((unless (endp tyspecs)) (reterr msg-bad-preceding))
+                   ((erp table) (mv :todo-strunispec same-table)))
+                (retok (type-union) nil table))
+       :enum (b* (((when (endp tyspecs)) (reterr msg-bad-preceding))
+                  ((erp table) (mv :todo-enumspec same-table)))
+               (retok (type-enum) nil table))
+       :typedef (if (endp tyspecs)
+                    (retok (type-unknown) nil same-table)
+                  (reterr msg-bad-preceding))
+       :int128 (if (endp tyspecs)
+                   (retok (type-unknown) nil same-table)
+                 (reterr msg-bad-preceding))
+       :float128 (if (endp tyspecs)
+                     (retok (type-unknown) nil same-table)
+                   (reterr msg-bad-preceding))
+       :builtin-va-list (if (endp tyspecs)
+                            (retok (type-unknown) nil same-table)
+                          (reterr msg-bad-preceding))
+       :struct-empty (if (endp tyspecs)
+                         (retok (type-struct) nil same-table)
+                       (reterr msg-bad-preceding))
+       :typeof-expr (if (endp tyspecs)
+                        (retok (type-unknown) nil same-table)
+                      (reterr msg-bad-preceding))
+       :typeof-type (if (endp tyspecs)
+                        (retok (type-unknown) nil same-table)
+                      (reterr msg-bad-preceding))
+       :auto-type (if (endp tyspecs)
+                      (retok (type-unknown) nil same-table)
+                    (reterr msg-bad-preceding))
        :otherwise (prog2$ (impossible) (reterr t))))
     :measure (type-spec-count tyspec)
 
@@ -3471,6 +2742,104 @@
       :hints
       (("Goal"
         :expand (valid-type-spec tyspec type? tyspecs table ienv)))))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define valid-spec/qual ((specqual spec/qual-p)
+                           (type? type-optionp)
+                           (tyspecs type-spec-listp)
+                           (table valid-tablep)
+                           (ienv ienvp))
+    :guard (and (spec/qual-unambp specqual)
+                (not (and type? tyspecs)))
+    :returns (mv erp
+                 (new-type? type-optionp)
+                 (new-tyspecs type-spec-listp)
+                 (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate a specifier or qualifier."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "For now we ignore type qualifiers [C:6.7.3],
+       as they do not have any impact on our approximate type system.
+       We validate alignment specifiers (in a separate validation function),
+       but make no use of them in our approximate type system.
+       Thus, the validation of a specifier or qualifier
+       returns the same results as
+       the validation of a type specifier (see @(tsee valid-type-spec)).
+       For now we also skip over attributes completely;
+       see the ABNF grammar for @('specifier-qualifier-list')."))
+    (b* (((reterr) nil nil (irr-valid-table)))
+      (spec/qual-case
+       specqual
+       :tyspec (valid-type-spec specqual.unwrap type? tyspecs table ienv)
+       :tyqual (retok (type-option-fix type?)
+                      (type-spec-list-fix tyspecs)
+                      (valid-table-fix table))
+       :align (b* (((erp table) (valid-align-spec specqual.unwrap table ienv)))
+                (retok (type-option-fix type?)
+                       (type-spec-list-fix tyspecs)
+                       table))
+       :attrib (retok (type-option-fix type?)
+                      (type-spec-list-fix tyspecs)
+                      (valid-table-fix table))))
+    :measure (spec/qual-count specqual)
+
+    ///
+
+    (defret not-type-and-type-spec-list-of-valid-spec/qual
+      (not (and new-type? new-tyspecs))
+      :hyp (not (and type? tyspecs))
+      :hints
+      (("Goal"
+        :expand ((valid-spec/qual specqual nil tyspecs table ienv)
+                 (valid-spec/qual specqual type? nil table ienv))))))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define valid-align-spec ((align align-specp)
+                            (table valid-tablep)
+                            (ienv ienvp))
+    :guard (align-spec-unambp align)
+    :returns (mv erp (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate an alignment specifier."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "For now we just validate the type name or expression,
+       possibly extending the validation table,
+       but we do not check whether the alignment specifier
+       is appropriate for the place where it occurs [C:6.7.5].")
+     (xdoc::p
+      "In the version with the expression,
+       the latter must have integer type [C:6.7.5/3].
+       The version with the type name
+       is equivalent to @('_Alignas(_Alignof(typename))'),
+       and thus we perform the same checks as in
+       the @(':alignof') case of @(tsee valid-expr),
+       including @(tsee valid-sizeof/alignof)."))
+    (b* (((reterr) (irr-valid-table)))
+      (align-spec-case
+       align
+       :alignas-type
+       (b* (((erp type table) (valid-tyname align.type table ienv))
+            ((when (type-case type :function))
+             (reterr (msg "In the alignment specifier ~x0, ~
+                           the argument ~x2 is a function type."
+                          (align-spec-fix align) type))))
+         (retok table))
+       :alignas-expr
+       (b* (((erp type table) (valid-const-expr align.arg table ienv))
+            ((unless (or (type-integerp type)
+                         (type-case type :unknown)))
+             (reterr (msg "In the alignment specifier ~x0, ~
+                           the argument has type ~x1."
+                          (align-spec-fix align) type))))
+         (retok table))
+       :alignas-ambig (prog2$ (impossible) (reterr t))))
+    :measure (align-spec-count align))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
