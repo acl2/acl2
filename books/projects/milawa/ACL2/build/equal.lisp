@@ -268,7 +268,7 @@
                  ;; Optimization.  Just use the proof of (equal b c) = t.
                  (logic.appeal-identity y))
                 ((equal (@term (? b)) (@term (? c)))
-                 ;; Optimization.  Just use teh proof of (equal a b) = t.
+                 ;; Optimization.  Just use the proof of (equal a b) = t.
                  (logic.appeal-identity x))
                 (t
                  (@derive ((v (!= (equal x y) t) (v (!= (equal y z) t) (= (equal x z) t)))                           (build.theorem (theorem-transitivity-of-equal)))
