@@ -129,7 +129,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The @('corrvals') paramater of @(tsee message-set-to-correct-p)
+    "The @('corrvals') parameter of @(tsee message-set-to-correct-p)
      is instantiated with the correct validator addresses in the system."))
   (message-set-to-correct-p (get-network-state systate)
                             (correct-addresses systate)))
