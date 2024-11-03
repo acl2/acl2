@@ -1776,7 +1776,7 @@
             acl2::<-of-+-cancel-2-1
             acl2::integerp-of-+-when-integerp-1-cheap
             acl2::fix-when-integerp
-            x86isa::integerp-when-canonical-address-p-cheap
+            x86isa::integerp-when-canonical-address-p-cheap ; requires acl2::equal-same
             x86isa::member-p-canonical-address-listp
             acl2::fold-consts-in-+
             acl2::<-of-+-cancel-2-1
@@ -2292,7 +2292,7 @@
      acl2::integerp-of-+-when-integerp-1-cheap
      x86isa::integerp-of-xr-rgf-4
      x86isa::fix-of-xr-rgf-4
-     x86isa::integerp-when-canonical-address-p-cheap
+     x86isa::integerp-when-canonical-address-p-cheap ; requires acl2::equal-same
      acl2::fix-when-integerp
      acl2::equal-same)
    (acl2::lookup-rules)))
@@ -4851,10 +4851,16 @@
   '(acl2::integerp-of-+
     x86isa::x86-elem-fix
     x86isa::canonical-address-p-between-special1
+    x86isa::xr-of-xw-diff
     x86isa::xr-of-xw-intra-field
     acl2::ifix-when-integerp
     x86isa::integerp-of-xr-rgf
-    x86isa::logext-64-does-nothing-when-canonical-address-p))
+    x86isa::logext-64-does-nothing-when-canonical-address-p
+    xr-of-write-when-not-mem ; add 32-bit versions too?
+    xr-of-set-flag
+    xr-of-set-undef-irrel ; maybe this normal form is not used?
+    xr-of-set-mxcsr-irrel ; maybe this normal form is not used?
+    ))
 
 (defun loop-lifter-rules32 ()
   (declare (xargs :guard t))
