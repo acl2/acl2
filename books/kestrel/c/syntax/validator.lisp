@@ -2283,7 +2283,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define valid-type-spec-list-residual ((tyspecs type-spec-listp))
-  :guard (type-spec-list-unambp tyspecs)
+  :guard (and (type-spec-list-unambp tyspecs)
+              (consp tyspecs))
   :returns (mv erp (type typep))
   :short "Validate a residual list of type specifiers."
   :long
@@ -2935,7 +2936,12 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "We validate them from left to right, threading the results through.
+      "If validation is successful,
+       we return the type determined by
+       the type specifiers in the sequence.")
+     (xdoc::p
+      "We validate specifiers and qualifiers from left to right,
+       threading the partial results through.
        When we reach the end, if the type has not been determined yet,
        we look at the collected type specifiers and determine the type,
        via a separate validation function.
@@ -2943,11 +2949,14 @@
        it means that there were no type specifiers at all [C:6.7.2/2]."))
     (b* (((reterr) (irr-type) (irr-valid-table))
          ((when (endp specquals))
-          (b* (((erp type)
-                (if type?
-                    (retok (type-option-fix type?))
-                  (valid-type-spec-list-residual tyspecs))))
-            (retok type (valid-table-fix table))))
+          (cond
+           (type? (retok (type-option-fix type?) (valid-table-fix table)))
+           ((consp tyspecs)
+            (b* (((erp type) (valid-type-spec-list-residual tyspecs)))
+              (retok type (valid-table-fix table))))
+           (t (reterr (msg "The specifier and qualifier list ~x0 ~
+                            contains no type specifiers."
+                           (spec/qual-list-fix specquals))))))
          ((erp type? tyspecs table)
           (valid-spec/qual (car specquals) type? tyspecs table ienv)))
       (valid-spec/qual-list (cdr specquals) type? tyspecs table ienv))
