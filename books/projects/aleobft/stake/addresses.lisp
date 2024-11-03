@@ -37,7 +37,7 @@
      Our model only needs to compare addresses for equality.")
    (xdoc::p
     "In our model, addresses are also used to represent signatures:
-     see our model of @(see certificates)."))
+     see our model of certificates."))
   :order-subtopics t
   :default-parent t)
 
@@ -53,9 +53,15 @@
      In other words, we can use any ACL2 value as an address,
      e.g. to construct examples and simulations."))
   ((unwrap any))
-  :tag :address
   :pred addressp
   :prepwork ((local (in-theory (enable identity)))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption address-option
+  address
+  :short "Fixtype of optional addresses."
+  :pred address-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -71,10 +77,3 @@
     (implies (and (address-setp set)
                   (not (addressp elem)))
              (not (set::in elem set)))))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(fty::defoption address-option
-  address
-  :short "Fixtype of optional addresses."
-  :pred address-optionp)
