@@ -13,6 +13,7 @@
 
 (include-book "addresses")
 (include-book "transactions")
+(include-book "blocks")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -37,4 +38,5 @@
    (xdoc::p
     "This is work in progress."))
   :order-subtopics (addresses
-                    transactions))
+                    transactions
+                    blocks))
