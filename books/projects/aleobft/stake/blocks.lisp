@@ -71,8 +71,7 @@
   (xdoc::topstring
    (xdoc::p
     "The state of each (correct) validator includes
-     a list of blocks that models the blockchain (as seen by the validator):
-     see @(tsee validator-state).
+     a list of blocks that models the blockchain (as seen by the validator).
      As explained there, blocks go from right to left,
      i.e. the @(tsee car) is the latest block.")
    (xdoc::p
@@ -93,7 +92,7 @@
 
   ///
 
-  (defruled blocks-ordered-even-p-of-cdr
+  (defrule blocks-ordered-even-p-of-cdr
     (implies (blocks-ordered-even-p blocks)
              (blocks-ordered-even-p (cdr blocks))))
 
