@@ -29,7 +29,7 @@
 (include-book "unequivocal-signed-certificates")
 (include-book "unequivocal-accepted-certificates-def-and-init")
 (include-book "nonforking-blockchains-def-and-init")
-(include-book "same-committees")
+(include-book "same-committees-def-and-implied")
 (include-book "unequivocal-accepted-certificates-next")
 (include-book "last-anchor-def-and-init")
 (include-book "last-anchor-present")
@@ -49,6 +49,7 @@
 (include-book "simultaneous-induction")
 (include-book "unequivocal-accepted-certificates")
 (include-book "nonforking-blockchains")
+(include-book "same-committees")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -79,7 +80,7 @@
                     unequivocal-signed-certificates
                     unequivocal-accepted-certificates-def-and-init
                     nonforking-blockchains-def-and-init
-                    same-committees
+                    same-committees-def-and-implied
                     unequivocal-accepted-certificates-next
                     last-anchor-def-and-init
                     last-anchor-present
@@ -98,4 +99,5 @@
                     nonforking-blockchains-next
                     simultaneous-induction
                     unequivocal-accepted-certificates
-                    nonforking-blockchains))
+                    nonforking-blockchains
+                    same-committees))

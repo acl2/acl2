@@ -13,7 +13,7 @@
 
 (include-book "unequivocal-accepted-certificates-def-and-init")
 (include-book "nonforking-blockchains-def-and-init")
-(include-book "same-committees")
+(include-book "same-committees-def-and-implied")
 (include-book "unequivocal-signed-certificates")
 (include-book "committees-in-system")
 (include-book "quorum-intersection")
