@@ -14,6 +14,8 @@
 (include-book "validator-states")
 (include-book "messages")
 
+(local (include-book "../library-extensions/omap-theorems"))
+
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
@@ -253,8 +255,7 @@
               (if (equal (address-fix val) (address-fix val1))
                   (validator-state-fix vstate)
                 (get-validator-state val1 systate))))
-    :enable (get-validator-state
-             omap::lookup))
+    :enable get-validator-state)
 
   (defrule get-validator-state-of-update-validator-state-same
     (implies (set::in (address-fix val) (correct-addresses systate))
@@ -264,8 +265,7 @@
                                                            vstate
                                                            systate))
               (validator-state-fix vstate)))
-    :enable (get-validator-state
-             omap::lookup))
+    :enable get-validator-state)
 
   (defrule get-validator-state-of-update-validator-state-diff
     (implies (and (set::in (address-fix val) (correct-addresses systate))
@@ -276,8 +276,7 @@
                                                            vstate
                                                            systate))
               (get-validator-state val1 systate)))
-    :enable (get-validator-state
-             omap::lookup)))
+    :enable get-validator-state))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
