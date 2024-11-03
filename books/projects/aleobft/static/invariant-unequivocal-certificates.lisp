@@ -548,6 +548,7 @@
             (store-certificate-next cert val systate)))
   :expand (system-unequivocal-certificates-p
            (store-certificate-next cert val systate))
+  :enable certificates-for-validator-of-store-certificate-next
   :use (:instance system-unequivocal-certificates-p-necc
                   (val
                    (mv-nth 0 (system-unequivocal-certificates-p-witness

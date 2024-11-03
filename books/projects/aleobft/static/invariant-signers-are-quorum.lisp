@@ -139,7 +139,8 @@
             (store-certificate-next cert val systate)))
   :expand (system-signers-are-quorum-p
            (store-certificate-next cert val systate))
-  :enable system-signers-are-quorum-p-necc)
+  :enable (system-signers-are-quorum-p-necc
+           certificates-for-validator-of-store-certificate-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

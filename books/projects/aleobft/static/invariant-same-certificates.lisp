@@ -166,6 +166,7 @@
                 (store-certificate-possiblep cert val systate))
            (same-certificates-p (store-certificate-next cert val systate)))
   :expand (same-certificates-p (store-certificate-next cert val systate))
+  :enable certificates-for-validator-of-store-certificate-next
   :use (:instance same-certificates-p-necc
                   (val1 (mv-nth
                          0

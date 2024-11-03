@@ -151,7 +151,8 @@
             (store-certificate-next cert val systate)))
   :expand (system-previous-are-quorum-p
            (store-certificate-next cert val systate))
-  :enable (system-previous-are-quorum-p-necc))
+  :enable (system-previous-are-quorum-p-necc
+           certificates-for-validator-of-store-certificate-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

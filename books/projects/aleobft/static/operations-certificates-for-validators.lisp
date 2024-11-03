@@ -225,7 +225,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule certificates-for-validator-of-store-certificate-next
+(defruled certificates-for-validator-of-store-certificate-next
   :short "A @('store-certificate') event
           does not change the certificates for validators."
   (implies (store-certificate-possiblep cert event-val systate)

@@ -169,7 +169,8 @@
             (store-certificate-next cert val systate)))
   :expand (system-signers-are-validators-p
            (store-certificate-next cert val systate))
-  :enable certificate-signers-are-validators-p
+  :enable (certificate-signers-are-validators-p
+           certificates-for-validator-of-store-certificate-next)
   :use (:instance system-signers-are-validators-p-necc
                   (val (mv-nth 0
                                (system-signers-are-validators-p-witness
