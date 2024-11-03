@@ -66,6 +66,13 @@
     (xdoc::seetopic "acl2::error-value-tuples" "error-value tuples")
     " to handle errors in the validator.")
    (xdoc::p
+    "The ACL2 functions that validate the various parts of the abstract syntax
+     follow the @('valid-<fixtype>') naming scheme,
+     where @('<fixtype>') is the name of
+     the fixtype of the abstract syntax part,
+     and where @('valid') is best read as an abbreviation of `validate'
+     rather than as the adjective `valid'.")
+   (xdoc::p
     "This validator is work in progress."))
   :order-subtopics t
   :default-parent t)
@@ -2275,6 +2282,100 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define valid-type-spec-list-residual ((tyspecs type-spec-listp))
+  :guard (type-spec-list-unambp tyspecs)
+  :returns (mv erp (type typep))
+  :short "Validate a residual list of type specifiers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Type specifiers occur as elements of
+     declaration specifiers
+     (see grammar rule @('declaration-specifiers'))
+     and specifier and qualifier lists
+     (see grammar rule @('specifier-qualifier-list')).
+     As we validate those two kinds of lists,
+     when we encounter type specifiers that, like for example @('void'),
+     uniquely determine a type,
+     and must be the only type specifier occurring in the list,
+     we perform all the necessary checks on type specifiers
+     as part of validating those lists.")
+   (xdoc::p
+    "But when instead we encounter type specifiers that
+     do not uniquely and solely determine a type,
+     such as @('unsigned') and @('char'),
+     we collect all of them and then we call this validation function
+     to validate whether this residual sequence of type specifier
+     determines a unique type or not.
+     If it does not, it is an error,
+     because every type specifier sub-sequence
+     of a sequence of declaration specifiers
+     or of a sequence of specifiers and qualifiers
+     must denote a type.
+     Here, `residual' refers not to the list of type specifiers,
+     which are in fact all the ones occurring as sub-sequence,
+     but to the fact that we perform the ``residual'' validation.")
+   (xdoc::p
+    "Here we accept all the lists of type specifiers in [C:6.7.2/2]
+     except for those that are singletons determining a type
+     and that may not be part of longer sequences."))
+  (b* (((reterr) (irr-type)))
+    (cond
+     ((type-spec-list-char-p tyspecs)
+      (retok (type-char)))
+     ((type-spec-list-signed-char-p tyspecs)
+      (retok (type-schar)))
+     ((type-spec-list-unsigned-char-p tyspecs)
+      (retok (type-uchar)))
+     ((or (type-spec-list-short-p tyspecs)
+          (type-spec-list-signed-short-p tyspecs)
+          (type-spec-list-short-int-p tyspecs)
+          (type-spec-list-signed-short-int-p tyspecs))
+      (retok (type-sshort)))
+     ((or (type-spec-list-unsigned-short-p tyspecs)
+          (type-spec-list-unsigned-short-int-p tyspecs))
+      (retok (type-ushort)))
+     ((or (type-spec-list-int-p tyspecs)
+          (type-spec-list-signed-p tyspecs)
+          (type-spec-list-signed-int-p tyspecs))
+      (retok (type-sint)))
+     ((or (type-spec-list-unsigned-p tyspecs)
+          (type-spec-list-unsigned-int-p tyspecs))
+      (retok (type-uint)))
+     ((or (type-spec-list-long-p tyspecs)
+          (type-spec-list-signed-long-p tyspecs)
+          (type-spec-list-long-int-p tyspecs)
+          (type-spec-list-signed-long-int-p tyspecs))
+      (retok (type-slong)))
+     ((or (type-spec-list-unsigned-long-p tyspecs)
+          (type-spec-list-unsigned-long-int-p tyspecs))
+      (retok (type-ulong)))
+     ((or (type-spec-list-long-long-p tyspecs)
+          (type-spec-list-signed-long-long-p tyspecs)
+          (type-spec-list-long-long-int-p tyspecs)
+          (type-spec-list-signed-long-long-int-p tyspecs))
+      (retok (type-sllong)))
+     ((or (type-spec-list-unsigned-long-long-p tyspecs)
+          (type-spec-list-unsigned-long-long-int-p tyspecs))
+      (retok (type-ullong)))
+     ((type-spec-list-float-p tyspecs)
+      (retok (type-float)))
+     ((type-spec-list-double-p tyspecs)
+      (retok (type-double)))
+     ((type-spec-list-long-double-p tyspecs)
+      (retok (type-ldouble)))
+     ((type-spec-list-float-complex-p tyspecs)
+      (retok (type-floatc)))
+     ((type-spec-list-double-complex-p tyspecs)
+      (retok (type-doublec)))
+     ((type-spec-list-long-double-complex-p tyspecs)
+      (retok (type-ldoublec)))
+     (t (reterr (msg "The type specifier sequence ~x0 is invalid."
+                     (type-spec-list-fix tyspecs))))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines valid-exprs/decls/stmts
   :short "Validate expressions, declarations, statements,
           and related artifacts."
@@ -2599,6 +2700,7 @@
                            (table valid-tablep)
                            (ienv ienvp))
     :guard (and (type-spec-unambp tyspec)
+                (type-spec-list-unambp tyspecs)
                 (not (and type? tyspecs)))
     :returns (mv erp
                  (new-type? type-optionp)
@@ -2737,7 +2839,13 @@
 
     ///
 
-    (defret not-type-and-type-spec-list-of-valid-type-spec
+    (defret type-spec-list-unambp-of-valid-type-spec
+      (type-spec-list-unambp new-tyspecs)
+      :hyp (type-spec-list-unambp tyspecs)
+      :hints
+      (("Goal" :expand (valid-type-spec tyspec type? tyspecs table ienv))))
+
+    (defret not-type-and-type-specs-of-valid-type-spec
       (not (and new-type? new-tyspecs))
       :hints
       (("Goal"
@@ -2751,6 +2859,7 @@
                            (table valid-tablep)
                            (ienv ienvp))
     :guard (and (spec/qual-unambp specqual)
+                (type-spec-list-unambp tyspecs)
                 (not (and type? tyspecs)))
     :returns (mv erp
                  (new-type? type-optionp)
@@ -2788,13 +2897,61 @@
 
     ///
 
-    (defret not-type-and-type-spec-list-of-valid-spec/qual
+    (defret type-spec-list-unambp-of-valid-spec/qual
+      (type-spec-list-unambp new-tyspecs)
+      :hyp (type-spec-list-unambp tyspecs)
+      :hints
+      (("Goal" :expand (valid-spec/qual specqual type? tyspecs table ienv))))
+
+    (defret not-type-and-type-specs-of-valid-spec/qual
       (not (and new-type? new-tyspecs))
       :hyp (not (and type? tyspecs))
       :hints
       (("Goal"
         :expand ((valid-spec/qual specqual nil tyspecs table ienv)
-                 (valid-spec/qual specqual type? nil table ienv))))))
+                 (valid-spec/qual specqual type? nil table ienv)))))
+
+    (defret not-type-specs-of-valid-spec/qual-when-type
+      (implies new-type?
+               (not new-tyspecs))
+      :hyp (not (and type? tyspecs))
+      :hints (("Goal" :use not-type-and-type-specs-of-valid-spec/qual))))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define valid-spec/qual-list ((specquals spec/qual-listp)
+                                (type? type-optionp)
+                                (tyspecs type-spec-listp)
+                                (table valid-tablep)
+                                (ienv ienvp))
+    :guard (and (spec/qual-list-unambp specquals)
+                (type-spec-list-unambp tyspecs)
+                (not (and type? tyspecs)))
+    :returns (mv erp
+                 (type typep)
+                 (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate a list of specifiers and qualifiers."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We validate them from left to right, threading the results through.
+       When we reach the end, if the type has not been determined yet,
+       we look at the collected type specifiers and determine the type,
+       via a separate validation function.
+       If there are no type specifiers, but no type has been determined,
+       it means that there were no type specifiers at all [C:6.7.2/2]."))
+    (b* (((reterr) (irr-type) (irr-valid-table))
+         ((when (endp specquals))
+          (b* (((erp type)
+                (if type?
+                    (retok (type-option-fix type?))
+                  (valid-type-spec-list-residual tyspecs))))
+            (retok type (valid-table-fix table))))
+         ((erp type? tyspecs table)
+          (valid-spec/qual (car specquals) type? tyspecs table ienv)))
+      (valid-spec/qual-list (cdr specquals) type? tyspecs table ienv))
+    :measure (spec/qual-list-count specquals))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
