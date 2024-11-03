@@ -41,7 +41,7 @@
      For faulty validators,
      i.e. the ones that do not (always) follow the protcol,
      we do not need to model the internal state,
-     because what matter in our model is only
+     because what matters in our model is only
      the effect that faulty validators may have on correct ones,
      via messages exchanged over the network."))
   :order-subtopics t
