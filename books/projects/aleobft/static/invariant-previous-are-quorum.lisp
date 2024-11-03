@@ -169,7 +169,8 @@
             (advance-round-next val systate)))
   :expand (system-previous-are-quorum-p
            (advance-round-next val systate))
-  :enable (system-previous-are-quorum-p-necc))
+  :enable (system-previous-are-quorum-p-necc
+           certificates-for-validator-of-advance-round-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

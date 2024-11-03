@@ -332,7 +332,8 @@
               (advance-round-next val systate)))
     :expand (system-signers-have-author+round-p
              (advance-round-next val systate))
-    :enable (system-signers-have-author+round-p-necc)))
+    :enable (system-signers-have-author+round-p-necc
+             certificates-for-validator-of-advance-round-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -241,7 +241,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule certificates-for-validator-of-advance-round-next
+(defruled certificates-for-validator-of-advance-round-next
   :short "A @('advance-round') event
           does not change the certificates for validators."
   (implies (advance-round-possiblep event-val systate)

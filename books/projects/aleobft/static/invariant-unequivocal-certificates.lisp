@@ -575,6 +575,7 @@
             (advance-round-next val systate)))
   :expand (system-unequivocal-certificates-p
            (advance-round-next val systate))
+  :enable certificates-for-validator-of-advance-round-next
   :use (:instance system-unequivocal-certificates-p-necc
                   (val
                    (mv-nth 0 (system-unequivocal-certificates-p-witness

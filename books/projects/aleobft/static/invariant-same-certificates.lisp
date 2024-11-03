@@ -193,6 +193,7 @@
                 (advance-round-possiblep val systate))
            (same-certificates-p (advance-round-next val systate)))
   :expand (same-certificates-p (advance-round-next val systate))
+  :enable certificates-for-validator-of-advance-round-next
   :use (:instance same-certificates-p-necc
                   (val1 (mv-nth
                          0

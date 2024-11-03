@@ -196,7 +196,8 @@
             (advance-round-next val systate)))
   :expand (system-signers-are-validators-p
            (advance-round-next val systate))
-  :enable certificate-signers-are-validators-p
+  :enable (certificate-signers-are-validators-p
+           certificates-for-validator-of-advance-round-next)
   :use (:instance system-signers-are-validators-p-necc
                   (val (mv-nth 0
                                (system-signers-are-validators-p-witness
