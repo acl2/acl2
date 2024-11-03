@@ -38,8 +38,8 @@
      Since every validator has its own view of the blockchain,
      it also has its own view of how the committees evolves.
      The agreement on the blockchains of the validators
-     should also provide an agreement on how the committee evolves;
-     this is what we are in the progress of formally proving.")
+     also provides an agreement on how the committee evolves,
+     as proved in @(see same-committees).")
    (xdoc::p
     "In our model a committee consists of
      a non-empty set of validator addresses.
