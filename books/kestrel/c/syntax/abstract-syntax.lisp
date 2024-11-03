@@ -1553,7 +1553,7 @@
        which is a restricted form of expression."))
     (:ident ((ident ident)))
     (:const ((const const)))
-    (:string ((literals stringlit-list)))
+    (:string ((strings stringlit-list)))
     (:paren ((unwrap expr)))
     (:gensel ((control expr)
               (assocs genassoc-list)))

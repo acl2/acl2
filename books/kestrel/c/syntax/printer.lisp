@@ -1614,11 +1614,11 @@
            :ident (print-ident expr.ident pstate)
            :const (print-const expr.const pstate)
            :string
-           (b* (((unless expr.literals)
+           (b* (((unless expr.strings)
                  (raise "Misusage error: ~
                          empty list of string literals.")
                  (pristate-fix pstate)))
-             (print-stringlit-list expr.literals pstate))
+             (print-stringlit-list expr.strings pstate))
            :paren
            (b* ((pstate (print-astring "(" pstate))
                 (pstate (print-expr expr.unwrap (expr-priority-expr) pstate))
