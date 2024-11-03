@@ -105,7 +105,7 @@
   (xdoc::topstring
    (xdoc::p
     "In our model, a committee is just a set of addresses,
-     but we wrap it in a fixtype for greater abstract and extensibility.
+     but we wrap it in a fixtype for greater abstraction and extensibility.
      When we generalize the model with stake,
      this committee fixtype will need to include the stake of each validator,
      besides the addresses of the validators."))
