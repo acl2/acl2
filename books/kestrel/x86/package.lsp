@@ -275,6 +275,7 @@
     x86isa::rgfi
     x86isa::!rgfi
     x86isa::rip
+    x86isa::rip$a
     x86isa::x86-run
     x86isa::x86-run-halt
     x86isa::prefixes-slice
@@ -869,7 +870,10 @@
     ;; x86 stuff (move to x package?):
     elf-info
     parse-elf-file-bytes ; helpful for tracing
-    ))
+
+    ;; Testing utilities:
+    assert-equal
+    deftest))
 
 ;; Ideally, these would all be rewritten to BV ops
 (defconst *symbols-from-bitops*
