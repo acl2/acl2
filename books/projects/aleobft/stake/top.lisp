@@ -11,12 +11,7 @@
 
 (in-package "ALEOBFT-STAKE")
 
-(include-book "addresses")
-(include-book "transactions")
-(include-book "blocks")
-(include-book "certificates")
-(include-book "validator-states")
-(include-book "messages")
+(include-book "definition")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -40,9 +35,4 @@
      This model does not capture garbage collection or syncing.")
    (xdoc::p
     "This is work in progress."))
-  :order-subtopics (addresses
-                    transactions
-                    blocks
-                    certificates
-                    validator-states
-                    messages))
+  :order-subtopics (definition))
