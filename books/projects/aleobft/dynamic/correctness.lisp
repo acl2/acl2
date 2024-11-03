@@ -47,6 +47,7 @@
 (include-book "blockchain-redundant")
 (include-book "nonforking-blockchains-next")
 (include-book "simultaneous-induction")
+(include-book "unequivocal-accepted-certificates")
 (include-book "nonforking-blockchains")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -96,4 +97,5 @@
                     blockchain-redundant
                     nonforking-blockchains-next
                     simultaneous-induction
+                    unequivocal-accepted-certificates
                     nonforking-blockchains))
