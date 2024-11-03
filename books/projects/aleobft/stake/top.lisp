@@ -14,6 +14,7 @@
 (include-book "addresses")
 (include-book "transactions")
 (include-book "blocks")
+(include-book "certificates")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -39,4 +40,5 @@
     "This is work in progress."))
   :order-subtopics (addresses
                     transactions
-                    blocks))
+                    blocks
+                    certificates))
