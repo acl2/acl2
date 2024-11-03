@@ -1536,7 +1536,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-spec-signed-long-long-p ((tyspecs type-spec-listp))
+(define type-spec-list-signed-long-long-p ((tyspecs type-spec-listp))
   :returns (yes/no booleanp)
   :short "Check if a list of type specifiers has the form
           @('signed long long') or any permutation of it,
@@ -1557,7 +1557,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-spec-long-long-int-p ((tyspecs type-spec-listp))
+(define type-spec-list-long-long-int-p ((tyspecs type-spec-listp))
   :returns (yes/no booleanp)
   :short "Check if a list of type specifiers has the form
           @('long long int') or any permutation of it."
@@ -1569,7 +1569,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-spec-signed-long-long-int-p ((tyspecs type-spec-listp))
+(define type-spec-list-signed-long-long-int-p ((tyspecs type-spec-listp))
   :returns (yes/no booleanp)
   :short "Check if a list of type specifiers has the form
           @('signed long long int') or any permutation of it,
