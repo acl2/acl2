@@ -18,6 +18,7 @@
 (include-book "validator-states")
 (include-book "messages")
 (include-book "system-states")
+(include-book "committees")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -36,4 +37,5 @@
                     certificates
                     validator-states
                     messages
-                    system-states))
+                    system-states
+                    committees))
