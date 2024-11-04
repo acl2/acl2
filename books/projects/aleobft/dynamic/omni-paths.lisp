@@ -12,7 +12,7 @@
 (in-package "ALEOBFT-DYNAMIC")
 
 (include-book "dag-omni-paths")
-(include-book "last-anchor-voters")
+(include-book "last-anchor-voters-def-and-init-and-next")
 (include-book "backward-closure")
 (include-book "rounds-in-committees")
 (include-book "previous-quorum")

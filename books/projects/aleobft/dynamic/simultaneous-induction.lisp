@@ -13,7 +13,7 @@
 
 (include-book "same-committees-def-and-implied")
 (include-book "unequivocal-accepted-certificates-next")
-(include-book "last-anchor-voters")
+(include-book "last-anchor-voters-def-and-init-and-next")
 (include-book "omni-paths")
 (include-book "nonforking-anchors")
 (include-book "committed-redundant")

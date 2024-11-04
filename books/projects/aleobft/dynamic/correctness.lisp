@@ -38,7 +38,7 @@
 (include-book "rounds-in-committees")
 (include-book "dag-certificate-next")
 (include-book "last-anchor-next")
-(include-book "last-anchor-voters")
+(include-book "last-anchor-voters-def-and-init-and-next")
 (include-book "omni-paths")
 (include-book "anchors-extension")
 (include-book "committed-anchor-sequences")
@@ -50,6 +50,7 @@
 (include-book "unequivocal-accepted-certificates")
 (include-book "nonforking-blockchains")
 (include-book "same-committees")
+(include-book "last-anchor-voters")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -89,7 +90,7 @@
                     rounds-in-committees
                     dag-certificate-next
                     last-anchor-next
-                    last-anchor-voters
+                    last-anchor-voters-def-and-init-and-next
                     omni-paths
                     anchors-extension
                     committed-anchors-sequences
@@ -100,4 +101,5 @@
                     simultaneous-induction
                     unequivocal-accepted-certificates
                     nonforking-blockchains
-                    same-committees))
+                    same-committees
+                    last-anchor-voters))

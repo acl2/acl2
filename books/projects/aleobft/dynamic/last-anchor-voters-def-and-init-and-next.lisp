@@ -22,10 +22,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ last-anchor-voters
+(defxdoc+ last-anchor-voters-def-and-init-and-next
   :parents (correctness)
   :short "Invariant that the last committed anchor
-          has at least a certain number of successors."
+          has at least a certain number of successors:
+          definition, establishment, and preservation."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -45,7 +46,13 @@
      are @('create-certificate') and @('store-certificate'),
      which may add certificates to the DAG:
      this certificate may or may not be a successor,
-     but if it is, it can only increase the votes, never decrease them."))
+     but if it is, it can only increase the votes, never decrease them.")
+   (xdoc::p
+    "Here we define the invariant,
+     we prove that it holds in all initial states,
+     and we prove that it is preserved by all transitions.
+     In @(see last-anchor-voters) we prove that
+     the invariant holds in every reachable state."))
   :order-subtopics t
   :default-parent t)
 
