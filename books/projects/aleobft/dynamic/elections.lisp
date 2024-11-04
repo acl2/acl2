@@ -119,9 +119,9 @@
      between the even and odd round,
      if it changed between the two rounds
      exactly at the @(tsee lookback) distance.
-     This possible change of committee should be unproblematic
+     This possible change of committee is unproblematic
      for the purpose of the correctness of the protocol,
-     but we ensure that by way of formal proofs.")
+     as we ensure by way of formal proofs.")
    (xdoc::p
     "We go through the voters, and check whether the leader address
      is among the refernced previous certificates or not,
