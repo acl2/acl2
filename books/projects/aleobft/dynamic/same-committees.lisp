@@ -23,7 +23,7 @@
 (defxdoc+ same-committees
   :parents (correctness)
   :short "Invariant that correct validators calculate the same committees:
-          proof that it holds on every reachable state."
+          proof that it holds in every reachable state."
   :long
   (xdoc::topstring
    (xdoc::p

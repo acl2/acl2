@@ -23,7 +23,7 @@
 (defxdoc+ nonforking-blockchains
   :parents (correctness)
   :short "Invariant that blockchains do not fork:
-          proof that it holds on every reachable state."
+          proof that it holds in every reachable state."
   :long
   (xdoc::topstring
    (xdoc::p
