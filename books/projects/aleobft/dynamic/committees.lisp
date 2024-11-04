@@ -351,7 +351,7 @@
      First, the bonded committee at round 1 is certainly the genesis committee.
      If there is a block at round 2,
      with transactions that change the committee,
-     so we have two choices for the bonded committee at round 2:
+     we have two choices for the bonded committee at round 2:
      it could be still the genesis committee,
      or it could be the new committee after the block;
      this depends on whether we consider the new committee
@@ -364,9 +364,9 @@
      or with blocks that do not change the committee.")
    (xdoc::p
     "There seems to be no real criterion to choose between the two options,
-     and it probably does not matter, but we will establish whether it does
-     as we develop formal proofs.
-     For now, we choose to change committee at the end of the even round.
+     and it should no matter to correctness,
+     i.e. the protocol should be correct either way.
+     We choose to change committee at the end of the even round.
      Thus, the bonded committee at round 2 is always the genesis committee,
      which may change in round 3.")
    (xdoc::p
@@ -565,7 +565,7 @@
      When @('R <= B'), the genesis committee is used.")
    (xdoc::p
     "The idea behind this lookback approach is that,
-     by going sufficiently back in rounds (e.g. @('B = 100'),
+     by going sufficiently back in rounds (e.g. @('B = 100')),
      all validators should have blocks for those rounds,
      and should be able to calculate (and agree on)
      the committee bonded at those rounds.
@@ -605,17 +605,8 @@
      is the one bonded at the earlier round
      whose distance is @('B') from the round of interest,
      or the genesis committee if such earlier round does not exist
-     (i.e. it would be 0 or negative, before round 1).")
-   (xdoc::p
-    "This ACL2 function formalizes this notion of active committee.
-     The exact notion of `being in charge of a round'
-     must of course be formalized, which we are doing in this model.
-     It should make intuitive sense,
-     but there may be subtle details involved.
-     Ultimately, we need certain high-level properties,
-     such as the non-forking of blockchains,
-     to be provable (and proved) in this formal model;
-     those will guide our fleshing out of the necessary details.")
+     (i.e. it would be 0 or negative, before round 1).
+     This ACL2 function formalizes this notion of active committee.")
    (xdoc::p
     "Note that there is no guarantee that there is a bonded committee
      at round @('R - B'), where @('R') is the round of interest.
