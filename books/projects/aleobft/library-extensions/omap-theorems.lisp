@@ -29,4 +29,10 @@
            (if (equal key key1)
                val
              (omap::lookup key map)))
-    :enable omap::lookup))
+    :enable omap::lookup)
+
+  (defruled omap::emptyp-of-keys-to-emptyp
+    (equal (set::emptyp (omap::keys map))
+           (omap::emptyp map))
+    :induct t
+    :enable omap::keys))
