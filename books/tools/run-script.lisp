@@ -127,6 +127,9 @@
  @('*-input.lsp') file.  See @(see community-book) file
  @('demos/floating-point-input.lsp') for an example.</li>
 
+ <li>@('Run-script') always sets @(tsee gag-mode) to its default,
+ @(':goals').</li>
+
  </ul>")
 
 (include-book "xdoc/top" :dir :system)
