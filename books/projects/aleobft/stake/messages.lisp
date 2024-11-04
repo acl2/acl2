@@ -9,7 +9,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ALEOBFT-DYNAMIC")
+(in-package "ALEOBFT-STAKE")
 
 (include-book "certificates")
 
@@ -33,7 +33,7 @@
      is the exchange of certificates among validators.
      Since we model the exchange of proposals and signatures
      at an abstract level here,
-     there are no explicit batch headers, signatures, etc.
+     there are no explicit proposals, signatures, etc.
      exchanged in messages.
      Instead, validators may (nondeterministically) broadcast certificates,
      as formalized in the state transitions of the system.
@@ -119,7 +119,8 @@
 (define message-certificates-with-destination ((dest addressp)
                                                (msgs message-setp))
   :returns (certs certificate-setp)
-  :short "Filter the messages with a given destination from a set of messages,
+  :short "Extract, from a set of messages,
+          the ones with a given destination,
           and return their certificates."
   :long
   (xdoc::topstring
@@ -140,6 +141,10 @@
   (fty::deffixequiv message-certificates-with-destination
     :args ((dest addressp)))
 
+  (defrule message-certificates-with-destination-of-nil
+    (equal (message-certificates-with-destination dest nil)
+           nil))
+
   (defruled in-of-message-certificates-with-destination
     (implies (message-setp msgs)
              (equal (set::in cert
@@ -148,11 +153,6 @@
                          (certificatep cert))))
     :induct t
     :enable set::in)
-
-  (defruled message-certificates-with-destination-when-emptyp
-    (implies (set::emptyp msgs)
-             (equal (message-certificates-with-destination dest msgs)
-                    nil)))
 
   (defruled message-certificates-with-destination-of-insert
     (implies (and (messagep msg)

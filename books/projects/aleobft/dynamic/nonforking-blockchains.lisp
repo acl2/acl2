@@ -45,7 +45,7 @@
                   (events-possiblep events systate)
                   (all-system-fault-tolerant-p events systate))
              (nonforking-blockchains-p (events-next events systate)))
-    :enable (same-committees-p-invariant
+    :enable (same-committees-p-implied
              unequivocal-accepted-certificates-p-when-init
              last-anchor-voters-p-when-init
              omni-paths-p-invariant

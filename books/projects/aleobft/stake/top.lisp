@@ -9,23 +9,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ALEOBFT-DYNAMIC")
+(in-package "ALEOBFT-STAKE")
 
 (include-book "definition")
-(include-book "correctness")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ aleobft-dynamic
+(defxdoc+ aleobft-stake
   :parents (aleobft::aleobft)
   :short "Formal specification and correctness proofs of
-          AleoBFT with dynamic committees."
+          AleoBFT with dynamic committees with stake."
   :long
   (xdoc::topstring
    (xdoc::p
     "We define a formal model of an abstraction of the AleoBFT protocol
      that mainly captures the Bullshark aspects of the protocol,
-     but with dynamic committees,
+     but with dynamic committees and with stake,
      which is a significant extension to Bullshark.
      The Narwhal aspects of AleoBFT
      are modeled only at an abstract level,
@@ -33,8 +32,7 @@
      the underlying DAG consensus layer.
      The level of abstraction of this model
      is about the same as the Bullshark papers.
-     This model does not capture garbage collection or syncing.
-     It also does not capture stake, but only numbers of validators
-     (i.e. every validator has the same stake)."))
-  :order-subtopics (definition
-                    correctness))
+     This model does not capture garbage collection or syncing.")
+   (xdoc::p
+    "This is work in progress."))
+  :order-subtopics (definition))

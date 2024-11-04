@@ -9,7 +9,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ALEOBFT-DYNAMIC")
+(in-package "ALEOBFT-STAKE")
 
 (include-book "transactions")
 
@@ -31,7 +31,7 @@
      blocks are simply containers of transactions.
      We also explicate the round number at which each block is generated:
      there is a natural association of round numbers to blocks,
-     which is also needed to calculate dynamic committees from the blocks."))
+     which is also used to calculate dynamic committees from the blocks."))
   :order-subtopics t
   :default-parent t)
 
@@ -46,7 +46,7 @@
      a list of transactions and a round number.
      The round number is always even,
      since blocks are only produced at even rounds,
-     but we do not capture that constraint here."))
+     but we do not capture that constraint in this fixtype."))
   ((transactions transaction-list)
    (round pos))
   :pred blockp)
@@ -71,10 +71,9 @@
   (xdoc::topstring
    (xdoc::p
     "The state of each (correct) validator includes
-     a list of blocks that models the blockchain (as seen by the validator):
-     see @(tsee validator-state).
+     a list of blocks that models the blockchain (as seen by the validator).
      As explained there, blocks go from right to left,
-     i.e. the @(tsee car) is the newest block.")
+     i.e. the @(tsee car) is the latest block.")
    (xdoc::p
     "Blocks are committed at even rounds,
      using increasingly higher round numbers,
@@ -93,7 +92,7 @@
 
   ///
 
-  (defruled blocks-ordered-even-p-of-cdr
+  (defrule blocks-ordered-even-p-of-cdr
     (implies (blocks-ordered-even-p blocks)
              (blocks-ordered-even-p (cdr blocks))))
 
@@ -102,7 +101,9 @@
                   (consp blocks))
              (>= (block->round (car blocks))
                  (block->round (car (last blocks)))))
-    :rule-classes :linear
+    :rule-classes ((:linear
+                    :trigger-terms ((block->round (car blocks))
+                                    (block->round (car (last blocks))))))
     :induct t
     :enable last)
 
@@ -158,7 +159,7 @@
    (xdoc::p
     "If @(tsee blocks-ordered-even-p) holds,
      block rounds are in strictly increading order from right to left.
-     This function then returns the latest, i.e. highest, round.
+     This function returns the latest, i.e. highest, round.
      If there are no blocks, we totalize this function to return 0.
      However, we do not require @(tsee blocks-ordered-even-p) in the guard."))
   (if (consp blocks)
@@ -178,4 +179,7 @@
                   (consp blocks1))
              (> (block->round (car (last blocks1)))
                 (blocks-last-round blocks2)))
+    :rule-classes ((:linear
+                    :trigger-terms ((block->round (car (last blocks1)))
+                                    (blocks-last-round blocks2))))
     :enable blocks-ordered-even-p-of-append))

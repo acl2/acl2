@@ -9,11 +9,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ALEOBFT-DYNAMIC")
+(in-package "ALEOBFT-STAKE")
 
 (include-book "blocks")
 
 (include-book "std/util/define-sk" :dir :system)
+
+(local (include-book "../library-extensions/omap-theorems"))
 
 (local (include-book "arithmetic-3/top" :dir :system))
 (local (include-book "std/lists/append" :dir :system))
@@ -39,16 +41,14 @@
      it also has its own view of how the committees evolves.
      The agreement on the blockchains of the validators
      also provides an agreement on how the committee evolves,
-     as proved in @(see same-committees).")
+     as proved elsewhere.")
    (xdoc::p
     "In our model a committee consists of
-     a non-empty set of validator addresses.
+     a finite map from validator addresses to their bonded stake,
+     the latter expressed as a positive integer
+     whose exact units is irrelevant (cf. @(tsee transaction)).
      We introduce a fixtype to wrap that, to enforce non-emptiness,
      and also for greater abstraction and extensibility.")
-   (xdoc::p
-    "Membership in a committee is simply set membership,
-     but we introduce a slightly more abstract operation for that,
-     also for future extensibility.")
    (xdoc::p
     "The genesis committee is arbitrary,
      but fixed for each execution of the protocol.
@@ -76,20 +76,18 @@
      includes or excludes the transactions in that block.
      That is, do we consider the committee resulting at the end of that block
      to be the committee at that even round, or at the odd round that follows?
-     The exact choice might affect the correctness properties,
-     so we will need to be careful about the choice.")
+     The exact choice should not actually matter to correctness:
+     so long as committees are used consistently,
+     the two key intersection arguments for correctness,
+     namely quorum intersection and successor-predecessor intersection,
+     should work fine either way.")
    (xdoc::p
     "The other notion is that of the committee active at each round,
      i.e. the committee that is in charge of that round.
      This is the lookback committee: it is the bonded committee
      at a fixed number of previous rounds (``lookback'').
      The choice of when a bonded committee starts vs. ends discussed above
-     affects the choice of when an active committee starts vs. ends,
-     and that is what most directly may affect the correctness properties.")
-   (xdoc::p
-    "Here we define both notions, of bonded and active committee.
-     We might need to revise them slightly
-     as we investigate the correctness properties.")
+     affects the choice of when an active committee starts vs. ends.")
    (xdoc::p
     "Committees are not explicit components of the "
     (xdoc::seetopic "system-states" "system states")
@@ -99,21 +97,40 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(encapsulate
+  ()
+
+  (set-induction-depth-limit 1)
+
+  (fty::defomap address-pos-map
+    :short "Fixtype of maps from addresses to positive integers."
+    :key-type address
+    :val-type pos
+    :pred address-pos-mapp
+
+    ///
+
+    (defrule address-setp-of-keys-when-address-pos-mapp
+      (implies (address-pos-mapp map)
+               (address-setp (omap::keys map)))
+      :induct t
+      :enable omap::keys)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod committee
   :short "Fixtype of committees."
   :long
   (xdoc::topstring
    (xdoc::p
-    "In our model, a committee is just a set of addresses,
-     but we wrap it in a fixtype for greater abstraction and extensibility.
-     When we generalize the model with stake,
-     this committee fixtype will need to include the stake of each validator,
-     besides the addresses of the validators."))
-  ((addresses address-set
-              :reqfix (if (set::emptyp addresses)
-                          (set::insert (address nil) nil)
-                        addresses)))
-  :require (not (set::emptyp addresses))
+    "In our model, a committee is a map from addresses to bonded stake
+     (the latter modeled as positive integers),
+     but we wrap it in a fixtype for greater abstraction and extensibility."))
+  ((members address-pos-map
+            :reqfix (if (omap::emptyp members)
+                        (omap::update (address nil) 1 nil)
+                      members)))
+  :require (not (omap::emptyp members))
   :pred committeep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -131,18 +148,15 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is a synonym of the fixtype deconstructor,
-     but it provides a bit of abstract,
-     especially facilitating the extension of the model with stake,
-     in which a committee will be not just a set of addresses."))
-  (committee->addresses commtt)
+    "The members of a committees are the keys of the map."))
+  (omap::keys (committee->members commtt))
   :hooks (:fix)
 
   ///
 
   (defret not-emptyp-of-committee-members
-    (not (set::emptyp addresses)))
-  (in-theory (disable not-emptyp-of-committee-members)))
+    (not (set::emptyp addresses))
+    :hints (("Goal" :in-theory (enable omap::emptyp-of-keys-to-emptyp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -160,7 +174,7 @@
 
     (local
      (defun genesis-committee ()
-       (make-committee :addresses (set::insert (address nil) nil))))
+       (make-committee :members (omap::update (address nil) 1 nil))))
 
     (defrule committeep-of-genesis-committee
       (committeep (genesis-committee)))))
@@ -168,8 +182,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define update-committee-with-transaction ((trans transactionp)
-                                           (commtt committeep)
-                                           (all-vals address-setp))
+                                           (commtt committeep))
   :returns (new-commtt committeep)
   :short "Update a committee with a transaction."
   :long
@@ -177,10 +190,16 @@
    (xdoc::p
     "There are three kinds of transactions:
      bonding, unbonding, and other.
-     A bonding transaction adds the validator address to the committee;
-     there is no change if the validator is already in the committee.
-     An unbonding transaction removes the validator address from the committee
-     (except in a case explained below);
+     A bonding transaction has a different effect
+     depending on whether the validator is already in the committee or not:
+     if it is not already in the committee,
+     it is added to the committee,
+     with associated the stake indicated in the transaction;
+     if the validator is already in the committee,
+     its associated stake is increased by
+     the amount indicated in the transaction.
+     An unbonding transaction removes the validator from the committee,
+     along with its stake;
      there is no change if the validator is not in the committee.
      The other kind of transaction leaves the committee unchanged.")
    (xdoc::p
@@ -203,95 +222,54 @@
      If that is the case, our model of unbonding is still adequate to capture
      the situation in which the whole network has not failed;
      as mentioned above, the unbonding transaction that does not unbond
-     can be simply regarded as if it were an @(':other') kind of transaction.")
-   (xdoc::p
-    "In order to maintain the fact that
-     the committee is a subset of all the validators in the system,
-     we pass to this function an input @('all-vals')
-     that consists of the set of all validator addresses in the system.
-     If a bonding transaction references an address outside that set,
-     the committee is unchanged by that transaction,
-     i.e. it is ignored.
-     This is just a technical device in our formal model;
-     it does not mean that validators need to know @('all-vals')
-     in order to calculate committees.
-     In an AleoBFT implementation,
-     the existence of a bonding transaction with a certain address
-     means that a validator with that address is part of the system,
-     which in our model consists of all possible validators,
-     and the one with that address is certainly a possibly validator.
-     Thus, this is more of a constraint on
-     the system of all validators
-     than on the calculation of committees per se.")
-   (xdoc::p
-    "We prove that, if the old committee's members are in @('all-vals'),
-     then the same holds for the new committee's members.
-     That is, the invariant is maintained."))
+     can be simply regarded as if it were an @(':other') kind of transaction."))
   (transaction-case
    trans
-   :bond (b* ((addresses (committee->addresses commtt))
-              (new-addresses (set::insert trans.validator addresses)))
-           (if (set::in trans.validator (address-set-fix all-vals))
-               (change-committee commtt :addresses new-addresses)
-             (committee-fix commtt)))
-   :unbond (b* ((addresses (committee->addresses commtt))
-                (new-addresses (set::delete trans.validator addresses)))
-             (if (set::emptyp new-addresses)
+   :bond (b* ((members (committee->members commtt))
+              (member (omap::assoc trans.validator members))
+              (new-stake (if member
+                             (+ trans.stake (cdr member))
+                           trans.stake))
+              (new-members (omap::update trans.validator new-stake members)))
+           (committee new-members))
+   :unbond (b* ((members (committee->members commtt))
+                (new-members (omap::delete trans.validator members)))
+             (if (omap::emptyp new-members)
                  (committee-fix commtt)
-               (change-committee commtt :addresses new-addresses)))
+               (committee new-members)))
    :other (committee-fix commtt))
   :hooks (:fix)
 
-  ///
+  :prepwork
 
-  (defret update-committee-with-transactions-subset-all-vals
-    (set::subset (committee-members new-commtt) all-vals)
-    :hyp (and (address-setp all-vals)
-              (set::subset (committee-members commtt) all-vals))
-    :hints (("Goal" :in-theory (enable* committee-members
-                                        set::expensive-rules))))
-  (in-theory (disable update-committee-with-transactions-subset-all-vals)))
+  ((defrulel verify-guards-lemma1
+     (implies (and (posp x)
+                   (posp y))
+              (posp (+ x y))))
+
+   (defrulel verify-guards-lemma2
+     (implies (posp x)
+              (acl2-numberp x)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define update-committee-with-transaction-list ((transs transaction-listp)
-                                                (commtt committeep)
-                                                (all-vals address-setp))
+                                                (commtt committeep))
   :returns (new-commtt committeep)
   :short "Update a committee with a list of transactions."
   :long
   (xdoc::topstring
    (xdoc::p
     "We update the committee with each transaction in the list,
-     from left to right.")
-   (xdoc::p
-    "The role of the @('all-vals') input is
-     explained in @(tsee update-committee-with-transaction).")
-   (xdoc::p
-    "We prove that, if the old committee's members are in @('all-vals'),
-     then the same holds for the new committee's members.
-     That is, the invariant is maintained."))
+     from left to right."))
   (b* (((when (endp transs)) (committee-fix commtt))
-       (commtt
-        (update-committee-with-transaction (car transs) commtt all-vals)))
-    (update-committee-with-transaction-list (cdr transs) commtt all-vals))
-  :hooks (:fix)
-
-  ///
-
-  (defret update-committee-with-transaction-list-subset-all-vals
-    (set::subset (committee-members new-commtt) all-vals)
-    :hyp (and (address-setp all-vals)
-              (set::subset (committee-members commtt) all-vals))
-    :hints (("Goal"
-             :induct t
-             :in-theory
-             (enable update-committee-with-transactions-subset-all-vals))))
-  (in-theory (disable update-committee-with-transaction-list-subset-all-vals)))
+       (commtt (update-committee-with-transaction (car transs) commtt)))
+    (update-committee-with-transaction-list (cdr transs) commtt))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define committee-after-blocks ((blocks block-listp) (all-vals address-setp))
+(define committee-after-blocks ((blocks block-listp))
   :returns (commtt committeep)
   :short "Calculate the committee after a list of blocks."
   :long
@@ -306,40 +284,17 @@
      (i.e. the leftmost block is the newest
      and the rightmost block is the oldest),
      we update the genesis committee from right to left
-     to arrive at the resulting committee.")
-   (xdoc::p
-    "The role of the @('all-vals') input is
-     explained in @(tsee update-committee-with-transaction).")
-   (xdoc::p
-    "We show that the committee's members are in @('all-vals'),
-     so long as the genesis committee's members are."))
+     to arrive at the resulting committee."))
   (b* (((when (endp blocks)) (genesis-committee))
-       (commtt (committee-after-blocks (cdr blocks) all-vals)))
+       (commtt (committee-after-blocks (cdr blocks))))
     (update-committee-with-transaction-list (block->transactions (car blocks))
-                                            commtt
-                                            all-vals))
+                                            commtt))
   :verify-guards :after-returns
-  :hooks (:fix)
-
-  ///
-
-  (defret committee-after-blocks-subset-all-vals
-    (set::subset (committee-members commtt) all-vals)
-    :hyp (and (address-setp all-vals)
-              (set::subset (committee-members (genesis-committee))
-                           all-vals))
-    :hints (("Goal"
-             :induct t
-             :in-theory
-             (enable
-              update-committee-with-transaction-list-subset-all-vals))))
-  (in-theory (disable committee-after-blocks-subset-all-vals)))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define bonded-committee-at-round ((round posp)
-                                   (blocks block-listp)
-                                   (all-vals address-setp))
+(define bonded-committee-at-round ((round posp) (blocks block-listp))
   :returns (commtt? committee-optionp)
   :short "Bonded committee at a given round."
   :long
@@ -389,7 +344,7 @@
    (xdoc::p
     "The above also works if we take @('R = 0'),
      which is not a round number because round numbers are positive,
-     but it can be regarded as somewhat of a pseudo-round number.
+     but it can be regarded as a pseudo-round number.
      If the blockchain is empty, we know the bonded committee at rounds 1 and 2,
      namely the genesis committee;
      but we do not know the bonded committee at round 3 and later,
@@ -424,54 +379,40 @@
      But in order to understand this function, it is best to think of
      the @('blocks') input forming a well-formed blockchain.")
    (xdoc::p
-    "The role of the @('all-vals') input is
-     explained in @(tsee update-committee-with-transaction).")
-   (xdoc::p
-    "We show that the bonded committee, if calculable,
-     has members in @('all-vals'), so long as the genesis committee does.
-     This derives from the analogous property
-     of @(tsee committee-after-blocks)."))
+    "Among other properties, we prove that
+     if a round has a bonded committeed,
+     then every round before that round does as well.
+     We also show that extending a blockchain
+     does not affect the bonded committee at rounds
+     that have a bonded committee calculable from the original blockchain."))
   (b* (((when (> (pos-fix round)
                  (+ 2 (blocks-last-round blocks))))
         nil))
-    (bonded-committee-at-round-loop round blocks all-vals))
+    (bonded-committee-at-round-loop round blocks))
   :hooks (:fix)
 
   :prepwork
-  ((define bonded-committee-at-round-loop ((round posp)
-                                           (blocks block-listp)
-                                           (all-vals address-setp))
+  ((define bonded-committee-at-round-loop ((round posp) (blocks block-listp))
      :returns (commtt committeep)
      :parents nil
      (b* (((when (endp blocks)) (genesis-committee))
           ((when (> (pos-fix round)
                     (block->round (car blocks))))
-           (committee-after-blocks blocks all-vals)))
-       (bonded-committee-at-round-loop round (cdr blocks) all-vals))
+           (committee-after-blocks blocks)))
+       (bonded-committee-at-round-loop round (cdr blocks)))
      :hooks (:fix)
 
      ///
 
      (defruled bonded-committee-at-round-loop-when-no-blocks
        (implies (endp blocks)
-                (equal (bonded-committee-at-round-loop round blocks all-vals)
+                (equal (bonded-committee-at-round-loop round blocks)
                        (genesis-committee))))
-
-     (defret bonded-committee-at-round-loop-subset-all-vals
-       (set::subset (committee-members commtt) all-vals)
-       :hyp (and (address-setp all-vals)
-                 (set::subset (committee-members (genesis-committee))
-                              all-vals))
-       :hints (("Goal"
-                :induct t
-                :in-theory
-                (enable committee-after-blocks-subset-all-vals))))
-     (in-theory (disable bonded-committee-at-round-loop-subset-all-vals))
 
      (defruled bonded-committee-at-round-loop-of-round-leq-2
        (implies (and (blocks-ordered-even-p blocks)
                      (<= (pos-fix round) 2))
-                (equal (bonded-committee-at-round-loop round blocks all-vals)
+                (equal (bonded-committee-at-round-loop round blocks)
                        (genesis-committee)))
        :induct t
        :hints ('(:use evenp-of-car-when-blocks-ordered-even-p)))
@@ -482,9 +423,8 @@
                          (<= (pos-fix round)
                              (block->round (car (last blocks1))))))
                 (equal (bonded-committee-at-round-loop round
-                                                       (append blocks1 blocks)
-                                                       all-vals)
-                       (bonded-committee-at-round-loop round blocks all-vals)))
+                                                       (append blocks1 blocks))
+                       (bonded-committee-at-round-loop round blocks)))
        :induct t
        :enable (blocks-ordered-even-p-of-append
                 last)
@@ -493,55 +433,43 @@
 
   ///
 
-  (defruled bonded-committee-at-earlier-round-when-at-later-round
-    (implies (and (bonded-committee-at-round later blocks all-vals)
-                  (< (pos-fix earlier)
-                     (pos-fix later)))
-             (bonded-committee-at-round earlier blocks all-vals)))
-
   (defruled bonded-committee-at-round-when-no-blocks
     (implies (endp blocks)
-             (b* ((commtt (bonded-committee-at-round round blocks all-vals)))
+             (b* ((commtt (bonded-committee-at-round round blocks)))
                (implies commtt
                         (equal commtt (genesis-committee)))))
     :enable bonded-committee-at-round-loop-when-no-blocks)
 
-  (defret bonded-committee-at-round-subset-all-vals
-    (implies commtt?
-             (set::subset (committee-members commtt?) all-vals))
-    :hyp (and (address-setp all-vals)
-              (set::subset (committee-members (genesis-committee))
-                           all-vals))
-    :hints
-    (("Goal"
-      :in-theory (enable bonded-committee-at-round-loop-subset-all-vals))))
-  (in-theory (disable bonded-committee-at-round-subset-all-vals))
-
-  (defruled bonded-committee-at-round-iff-round-upper-bound
-    (iff (bonded-committee-at-round round blocks all-vals)
-         (<= (pos-fix round)
-             (+ 2 (blocks-last-round blocks)))))
-
   (defruled bonded-committee-at-round-of-round-leq-2
     (implies (and (blocks-ordered-even-p blocks)
                   (<= (pos-fix round) 2))
-             (equal (bonded-committee-at-round round blocks all-vals)
+             (equal (bonded-committee-at-round round blocks)
                     (genesis-committee)))
     :enable bonded-committee-at-round-loop-of-round-leq-2)
 
   (defruled bonded-committee-at-round-of-append-no-change
     (implies (and (blocks-ordered-even-p (append blocks1 blocks))
-                  (bonded-committee-at-round round blocks all-vals))
+                  (bonded-committee-at-round round blocks))
              (equal (bonded-committee-at-round round
-                                               (append blocks1 blocks)
-                                               all-vals)
-                    (bonded-committee-at-round round blocks all-vals)))
+                                               (append blocks1 blocks))
+                    (bonded-committee-at-round round blocks)))
     :enable (blocks-last-round
              blocks-ordered-even-p-of-append
              bonded-committee-at-round-loop-of-append-no-change
              bonded-committee-at-round-loop-of-round-leq-2)
     :hints ('(:use ((:instance newest-geq-oldest-when-blocks-ordered-even-p
-                               (blocks blocks1)))))))
+                               (blocks blocks1))))))
+
+  (defruled bonded-committee-at-earlier-round-when-at-later-round
+    (implies (and (bonded-committee-at-round later blocks)
+                  (< (pos-fix earlier)
+                     (pos-fix later)))
+             (bonded-committee-at-round earlier blocks)))
+
+  (defruled bonded-committee-at-round-iff-round-upper-bound
+    (iff (bonded-committee-at-round round blocks)
+         (<= (pos-fix round)
+             (+ 2 (blocks-last-round blocks))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -591,9 +519,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define active-committee-at-round ((round posp)
-                                   (blocks block-listp)
-                                   (all-vals address-setp))
+(define active-committee-at-round ((round posp) (blocks block-listp))
   :returns (commtt? committee-optionp)
   :short "Active committee at a given round."
   :long
@@ -613,35 +539,57 @@
      Thus, this function returns an optional committee,
      @('nil') if no committee is available.")
    (xdoc::p
-    "The role of the @('all-vals') input is
-     explained in @(tsee update-committee-with-transaction).")
-   (xdoc::p
-    "We show that the bonded committee, if calculable,
-     has members in @('all-vals'), so long as the genesis committee does.
-     This derives from the analogous property
-     of @(tsee bonded-committee-at-round)."))
+    "We prove some properties of active committees
+     analogous to certain properties of bonded committees,
+     using in fact those previously proved theorems in the proofs.
+     We also prove some specializations of the theorem that says that
+     if a round has an active committee
+     then every round before that round does as well;
+     the specializations are for the 1, 2, and 3 rounds before."))
   (if (> (pos-fix round) (lookback))
       (bonded-committee-at-round (- (pos-fix round) (lookback))
-                                 blocks
-                                 all-vals)
+                                 blocks)
     (genesis-committee))
   :guard-hints (("Goal" :in-theory (enable posp)))
   :hooks (:fix)
 
   ///
 
+  (defruled active-committee-at-round-when-no-blocks
+    (implies (endp blocks)
+             (b* ((commtt (active-committee-at-round round blocks)))
+               (implies commtt
+                        (equal commtt (genesis-committee)))))
+    :enable bonded-committee-at-round-when-no-blocks)
+
+  (defruled active-committee-at-round-of-round-leq-2+lookback
+    (implies (and (blocks-ordered-even-p blocks)
+                  (<= (pos-fix round) (+ 2 (lookback))))
+             (equal (active-committee-at-round round blocks)
+                    (genesis-committee)))
+    :enable (bonded-committee-at-round-of-round-leq-2
+             posp))
+
+  (defruled active-committee-at-round-of-append-no-change
+    (implies (and (blocks-ordered-even-p (append blocks1 blocks))
+                  (active-committee-at-round round blocks))
+             (equal (active-committee-at-round round
+                                               (append blocks1 blocks))
+                    (active-committee-at-round round blocks)))
+    :enable bonded-committee-at-round-of-append-no-change)
+
   (defruled active-committee-at-earlier-round-when-at-later-round
-    (implies (and (active-committee-at-round later blocks all-vals)
+    (implies (and (active-committee-at-round later blocks)
                   (< (pos-fix earlier)
                      (pos-fix later)))
-             (active-committee-at-round earlier blocks all-vals))
+             (active-committee-at-round earlier blocks))
     :enable (bonded-committee-at-earlier-round-when-at-later-round
              posp))
 
   (defruled active-committee-at-previous-round-when-at-round
-    (implies (and (active-committee-at-round round blocks all-vals)
+    (implies (and (active-committee-at-round round blocks)
                   (> (pos-fix round) 1))
-             (active-committee-at-round (1- round) blocks all-vals))
+             (active-committee-at-round (1- round) blocks))
     :disable active-committee-at-round
     :use (:instance active-committee-at-earlier-round-when-at-later-round
                     (later round)
@@ -649,9 +597,9 @@
     :enable pos-fix)
 
   (defruled active-committee-at-previous2-round-when-at-round
-    (implies (and (active-committee-at-round round blocks all-vals)
+    (implies (and (active-committee-at-round round blocks)
                   (> (pos-fix round) 2))
-             (active-committee-at-round (- round 2) blocks all-vals))
+             (active-committee-at-round (- round 2) blocks))
     :disable active-committee-at-round
     :use (:instance active-committee-at-earlier-round-when-at-later-round
                     (later round)
@@ -659,59 +607,23 @@
     :enable pos-fix)
 
   (defruled active-committee-at-previous3-round-when-at-round
-    (implies (and (active-committee-at-round round blocks all-vals)
+    (implies (and (active-committee-at-round round blocks)
                   (> (pos-fix round) 3))
-             (active-committee-at-round (- round 3) blocks all-vals))
+             (active-committee-at-round (- round 3) blocks))
     :disable active-committee-at-round
     :use (:instance active-committee-at-earlier-round-when-at-later-round
                     (later round)
                     (earlier (- round 3)))
     :enable pos-fix)
 
-  (defruled active-committee-at-round-when-no-blocks
-    (implies (endp blocks)
-             (b* ((commtt (active-committee-at-round round blocks all-vals)))
-               (implies commtt
-                        (equal commtt (genesis-committee)))))
-    :enable bonded-committee-at-round-when-no-blocks)
-
-  (defret active-committee-at-round-subset-all-vals
-    (implies commtt?
-             (set::subset (committee-members commtt?)
-                          all-vals))
-    :hyp (and (address-setp all-vals)
-              (set::subset (committee-members (genesis-committee))
-                           all-vals))
-    :hints
-    (("Goal"
-      :in-theory (enable bonded-committee-at-round-subset-all-vals))))
-  (in-theory (disable active-committee-at-round-subset-all-vals))
-
   (defruled active-committee-at-round-iff-round-upper-bound
-    (iff (active-committee-at-round round blocks all-vals)
+    (iff (active-committee-at-round round blocks)
          (<= (nfix (- (pos-fix round) (lookback)))
              (+ 2 (blocks-last-round blocks))))
     :enable (bonded-committee-at-round-iff-round-upper-bound
              nfix
              pos-fix
-             posp))
-
-  (defruled active-committee-at-round-of-round-leq-2+lookback
-    (implies (and (blocks-ordered-even-p blocks)
-                  (<= (pos-fix round) (+ 2 (lookback))))
-             (equal (active-committee-at-round round blocks all-vals)
-                    (genesis-committee)))
-    :enable bonded-committee-at-round-of-round-leq-2
-    :prep-books ((include-book "arithmetic/top" :dir :system)))
-
-  (defruled active-committee-at-round-of-append
-    (implies (and (blocks-ordered-even-p (append blocks1 blocks))
-                  (active-committee-at-round round blocks all-vals))
-             (equal (active-committee-at-round round
-                                               (append blocks1 blocks)
-                                               all-vals)
-                    (active-committee-at-round round blocks all-vals)))
-    :enable bonded-committee-at-round-of-append-no-change))
+             posp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -719,14 +631,14 @@
   :returns (max natp
                 :rule-classes (:rewrite :type-prescription)
                 :hints (("Goal" :in-theory (enable natp zp))))
-  :short "Maximum number of faulty validators, out of a total,
-          for the protocol to be fault-tolerant."
+  :short "Maximum number of units of stake associated to faulty validators,
+          out of a total, for the protocol to be fault-tolerant."
   :long
   (xdoc::topstring
    (xdoc::p
     "The classic BFT condition for fault tolerance is that
-     the number of faulty validators is (strictly) less than
-     one third of the total number of validators:
+     the number of faulty participants is (strictly) less than
+     one third of the total number of participants:
      @($f < n/3$), using the common symbols
      @($f$) and @($n$) for the two numbers.
      This relation works for every positive @($n$),
@@ -739,19 +651,33 @@
      because it forces @($n$) to be one more than a multiple of 3.
      The other possibilities are @($n = 3f + 2$) and @($n = 3f + 3$).")
    (xdoc::p
+    "In AleoBFT, the participants are not fixed,
+     because they are the members of the changing committee;
+     so @($n$) and @($f$) vary with the committee.
+     Furthermore, AleoBFT uses not numbers of validators,
+     but units of stake associated to the validators;
+     thus @($n$) is the sum of the units of stake
+     of all the validators in the committee,
+     and @($f$) is the sum of the units of stake
+     of the faulty validators in the committee.")
+   (xdoc::p
     "The distinction between the maximum @($f$)
      and possibly smaller values of @($f$)
      is worth emphasizing,
      because recent BFT literature
      does not always state things clearly in this respect.
-     The actual number of faulty validators
-     is not something that validators know.
-     In contrast, the total number @($n$) of validators is known,
-     and thus the maximum @($f$) satisfying @($f < n/3$)
+     The stake associated to the faulty validators in a committee
+     is not something that validators know,
+     because validators do not know which validators are faulty.
+     In contrast, the stake @($n$) associated to
+     all the validators in a committee is known,
+     because the committee is known (calculated from the blockchain).
+     Thus the maximum @($f$) satisfying @($f < n/3$)
      can be calculated from @($n$).
      So when a validator needs to use @($f$) in some computation,
      it is the maximum such @($f$), calculable from @($n$),
-     not the (unknowable to the validator) number of faulty validators.")
+     not the (unknowable to the validator)
+     stake of the faulty validators in the committee.")
    (xdoc::p
     "Some BFT literature uses phrases like
      ``up to @($f < n/3$) faulty validators'',
@@ -760,7 +686,7 @@
      as is the case for AleoBFT,
      it makes more sense for @($f$) to be the maximum value
      that satisfies the inequality,
-     because it allows for the maximum possible number of faulty validators.
+     because it allows for the maximum possible stake faulty validators.
      So in our model @($f$) is always that maximum,
      and it is calculable from @($n$).")
    (xdoc::p
@@ -785,7 +711,7 @@
      or equivalently as the floor of @($(n-1)/3$).
      We prove the two equivalent, in fact.
      We also prove that this function returns something below @($n/3$),
-     and one more is not below @($n/3$):
+     and that one more than that is not below @($n/3$):
      that is, we prove that it returns the maximum.
      We could have alternatively defined this function in terms of maximum,
      via a recursion to find it, or even in a non-executable way,
@@ -801,8 +727,8 @@
      but since they tolerate no failures,
      they are not used in practice.
      If @($n$) is 4 or more, we can tolerate
-     an increasing number of faulty validators,
-     any number less than or equal to $f$,
+     an increasing amount of faulty validators,
+     any amount whose stake is less than or equal to $f$,
      so that is usually the practical minimum for @($n$)."))
   (if (zp total)
       0
@@ -881,50 +807,63 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define committee-total ((commtt committeep))
+(define committee-total-stake ((commtt committeep))
   :returns (total posp
                   :rule-classes (:rewrite :type-prescription)
                   :hints (("Goal" :in-theory (enable posp))))
-  :short "Total number of validators in a committee."
+  :short "Total stake of validators in a committee."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is just the number of addresses.")
-   (xdoc::p
     "This is @($n$), using the notation in @(tsee max-faulty-for-total).
-     But note that, unlike typical BFT literature,
-     where there is a fixed set of validators,
-     in AleoBFT we have dynamic committees,
-     and so @($n$) is a function of the committee."))
-  (set::cardinality (committee-members commtt))
-  :hooks (:fix))
+     It is the sum of all the units of stake
+     associated to members of the committee."))
+  (committee-total-stake-loop (committee->members commtt))
+  :hooks (:fix)
+
+  :prepwork
+  ((define committee-total-stake-loop ((members address-pos-mapp))
+     :returns (total natp :rule-classes (:rewrite :type-prescription))
+     :parents nil
+     (b* (((when (omap::emptyp members)) 0)
+          ((mv & stake) (omap::head members)))
+       (+ (lnfix stake)
+          (committee-total-stake-loop (omap::tail members))))
+
+     ///
+
+     (more-returns
+      (total posp
+             :hyp (and (address-pos-mapp members)
+                       (not (omap::emptyp members)))
+             :hints (("Goal" :induct t :in-theory (enable nfix))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define committee-max-faulty ((commtt committeep))
+(define committee-max-faulty-stake ((commtt committeep))
   :returns (maxf natp :rule-classes (:rewrite :type-prescription))
-  :short "Maximum tolerated number of faulty validators in a committee."
+  :short "Maximum tolerated stake of faulty validators in a committee."
   :long
   (xdoc::topstring
    (xdoc::p
     "The @($f$) discussed in @(tsee max-faulty-for-total)
      applies to a committee, not to the whole system,
      in the same way as @($n$)."))
-  (max-faulty-for-total (committee-total commtt))
+  (max-faulty-for-total (committee-total-stake commtt))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define committee-quorum ((commtt committeep))
+(define committee-quorum-stake ((commtt committeep))
   :returns (quorum
             posp
             :rule-classes (:rewrite :type-prescription)
             :hints (("Goal"
                      :in-theory
                      (enable posp
-                             committee-max-faulty
+                             committee-max-faulty-stake
                              max-faulty-for-total-lt-total-when-posp))))
-  :short "Quorum of validators in a committee."
+  :short "Quorum stake in a committee."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -946,15 +885,14 @@
      which is unnecessarily restrictive,
      given that the more general quorum @($n - f$)
      works for any value of @($n$)."))
-  (- (committee-total commtt)
-     (committee-max-faulty commtt))
+  (- (committee-total-stake commtt)
+     (committee-max-faulty-stake commtt))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define-sk same-bonded-committees-p ((blocks1 block-listp)
-                                     (blocks2 block-listp)
-                                     (all-vals address-setp))
+                                     (blocks2 block-listp))
   :returns (yes/no booleanp)
   :short "Check if two blockchains calculate consistent bonded committees."
   :long
@@ -969,12 +907,8 @@
      with the other blockchain being too short for that."))
   (forall (round)
           (implies (posp round)
-                   (b* ((commtt1 (bonded-committee-at-round round
-                                                            blocks1
-                                                            all-vals))
-                        (commtt2 (bonded-committee-at-round round
-                                                            blocks2
-                                                            all-vals)))
+                   (b* ((commtt1 (bonded-committee-at-round round blocks1))
+                        (commtt2 (bonded-committee-at-round round blocks2)))
                      (implies (and commtt1
                                    commtt2)
                               (equal commtt1 commtt2))))))
@@ -982,8 +916,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define-sk same-active-committees-p ((blocks1 block-listp)
-                                     (blocks2 block-listp)
-                                     (all-vals address-setp))
+                                     (blocks2 block-listp))
   :returns (yes/no booleanp)
   :short "Check if two blockchains calculate consistent active committees."
   :long
@@ -998,12 +931,8 @@
      with the other blockchain being too short for that."))
   (forall (round)
           (implies (posp round)
-                   (b* ((commtt1 (active-committee-at-round round
-                                                            blocks1
-                                                            all-vals))
-                        (commtt2 (active-committee-at-round round
-                                                            blocks2
-                                                            all-vals)))
+                   (b* ((commtt1 (active-committee-at-round round blocks1))
+                        (commtt2 (active-committee-at-round round blocks2)))
                      (implies (and commtt1
                                    commtt2)
                               (equal commtt1 commtt2))))))

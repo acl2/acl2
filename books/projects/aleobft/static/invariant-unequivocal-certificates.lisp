@@ -113,7 +113,8 @@
            certificates-for-validator
            get-network-state
            validator-init-when-system-initp
-           validator-init))
+           validator-init
+           in-of-message-certificates-for-validator))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -493,6 +494,7 @@
               (create-certificate-next cert systate)))
     :expand (system-unequivocal-certificates-p
              (create-certificate-next cert systate))
+    :enable certificates-for-validator-of-create-certificate-next
     :use (:instance system-unequivocal-certificates-p-necc
                     (val
                      (mv-nth 0 (system-unequivocal-certificates-p-witness
@@ -519,6 +521,7 @@
             (receive-certificate-next msg systate)))
   :expand (system-unequivocal-certificates-p
            (receive-certificate-next msg systate))
+  :enable certificates-for-validator-of-receive-certificate-next
   :use (:instance system-unequivocal-certificates-p-necc
                   (val
                    (mv-nth 0 (system-unequivocal-certificates-p-witness
@@ -545,6 +548,7 @@
             (store-certificate-next cert val systate)))
   :expand (system-unequivocal-certificates-p
            (store-certificate-next cert val systate))
+  :enable certificates-for-validator-of-store-certificate-next
   :use (:instance system-unequivocal-certificates-p-necc
                   (val
                    (mv-nth 0 (system-unequivocal-certificates-p-witness
@@ -571,6 +575,7 @@
             (advance-round-next val systate)))
   :expand (system-unequivocal-certificates-p
            (advance-round-next val systate))
+  :enable certificates-for-validator-of-advance-round-next
   :use (:instance system-unequivocal-certificates-p-necc
                   (val
                    (mv-nth 0 (system-unequivocal-certificates-p-witness
