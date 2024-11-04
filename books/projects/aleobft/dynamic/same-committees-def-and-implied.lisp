@@ -78,7 +78,12 @@
      and therefore they must return the same committees.
      This is all for bonded committees,
      but the same easily follows for active committees,
-     which are defined in terms of bonded committees."))
+     which are defined in terms of bonded committees.")
+   (xdoc::p
+    "Here we define the invariant,
+     and we prove that is is implied by other invariants.
+     In @(see same-committees) we prove that
+     this invariant holds in every reachable state."))
   :order-subtopics t
   :default-parent t)
 
