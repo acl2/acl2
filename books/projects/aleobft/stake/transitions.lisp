@@ -12,6 +12,7 @@
 (in-package "ALEOBFT-STAKE")
 
 (include-book "events")
+(include-book "elections")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -39,5 +40,6 @@
      The execution is not necessarily fast,
      because the definition of the labeled state transition system
      prioritizes clearity over efficiency."))
-  :order-subtopics (t)
+  :order-subtopics (elections
+                    t)
   :default-parent t)
