@@ -101,11 +101,10 @@
      which this operation is not extending;
      this operation is just collecting the anchors
      with which the blockchain is (elsewhere) extended.
-     It should be an invariant (not captured here)
+     It is an invariant (not captured here)
      that @('last-committed-round') is in fact the round of the latest block
-     (or 0 if the blockchain is empty);
-     we plan to prove this invariant, as done for
-     the model of AleoBFT with static committees.")
+     (or 0 if the blockchain is empty):
+     this is proved in @(see last-blockchain-round).")
    (xdoc::p
     "The role of the @('all-vals') input is
      explained in @(tsee update-committee-with-transaction).")

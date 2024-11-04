@@ -148,17 +148,36 @@ lowercase-letter = %x61-7A ; a-z
 
 letter = uppercase-letter / lowercase-letter
 
+binary-digit = %x30-31 ; 0-1
+
+octal-digit = %x30-37 ; 0-7
+
 decimal-digit = %x30-39 ; 0-9
 
 nonzero-decimal-digit = %x31-39 ; 1-9
 
+hexadecimal-digit = decimal-digit
+                  / %x41-46 ; A-F (uppercase)
+                  ; no a-f (lowercase)
+
 identifier = letter *( letter / decimal-digit / "_" )
              ; but not a keyword or a boolean literal or aleo1...
 
-numeral = 1*( decimal-digit *"_" )
+binary-numeral = %s"0b" 1*( binary-digit *"_" )
+
+octal-numeral = %s"0o" 1*( octal-digit *"_" )
+
+decimal-numeral = 1*( decimal-digit *"_" )
+
+hexadecimal-numeral = %s"0x" 1*( hexadecimal-digit *"_" )
+
+numeral = binary-numeral
+        / octal-numeral
+        / decimal-numeral
+        / hexadecimal-numeral
 
 tuple-index = "0" / nonzero-decimal-digit *( decimal-digit )
-              ; i.e. numeral without extra leading zeros
+              ; i.e. decimal-numeral without extra leading zeros
 
 unsigned-literal = numeral ( %s"u8" / %s"u16" / %s"u32" / %s"u64" / %s"u128" )
 
@@ -167,11 +186,11 @@ signed-literal = numeral ( %s"i8" / %s"i16" / %s"i32" / %s"i64" / %s"i128" )
 integer-literal = unsigned-literal
                 / signed-literal
 
-field-literal = numeral %s"field"
+field-literal = decimal-numeral %s"field"
 
-product-group-literal = numeral %s"group"
+product-group-literal = decimal-numeral %s"group"
 
-scalar-literal = numeral %s"scalar"
+scalar-literal = decimal-numeral %s"scalar"
 
 numeric-literal = integer-literal
                 / field-literal
@@ -225,7 +244,7 @@ symbol = "!"
 token = keyword
       / identifier
       / atomic-literal
-      / numeral
+      / decimal-numeral
       / annotation
       / symbol
 
@@ -283,7 +302,7 @@ future-type = untyped-future-type / typed-future-type
 
 tuple-type = "(" type 1*( "," type ) [ "," ] ")"
 
-array-type = "[" type ";" numeral "]"
+array-type = "[" type ";" decimal-numeral "]"
 
 type = primitive-type
      / future-type
@@ -294,7 +313,7 @@ named-type = named-primitive-type
            / untyped-future-type
            / identifier
 
-group-coordinate = ( [ "-" ] numeral ) / "+" / "-" / "_"
+group-coordinate = ( [ "-" ] decimal-numeral ) / "+" / "-" / "_"
 
 affine-group-literal = "(" group-coordinate "," group-coordinate %s")group"
 
@@ -373,7 +392,8 @@ unary-expression = postfix-expression
                  / "!" unary-expression
                  / "-" unary-expression
 
-cast-expression = unary-expression %s"as" named-primitive-type
+cast-expression = unary-expression
+                / unary-expression %s"as" named-primitive-type
 
 exponential-expression = cast-expression
                        / cast-expression "**" exponential-expression

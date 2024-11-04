@@ -9,7 +9,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ALEOBFT-DYNAMIC")
+(in-package "ALEOBFT-STAKE")
 
 (include-book "addresses")
 (include-book "transactions")
@@ -38,22 +38,22 @@
      in the Narwhal part of AleoBFT.")
    (xdoc::p
     "Certificates have a rich structure,
-     but as usual here we model just what is needed for our purposes.")
+     but most of that structure is irrelevant to our model.
+     We model just what is needed for our purposes.")
    (xdoc::p
     "In AleoBFT, there is a distinction between proposals and certificates,
      with the latter being an extension of the former with signatures.
      Currently we do not model proposals, but just certificates,
-     because we treat the Narwhal aspects of AleoBFT abstractly here;
-     the generation of certificates, and its relation to the ``real'' AleoBFT,
+     because we treat the Narwhal aspects of AleoBFT abstractly;
+     our model of the the generation of certificates
      is explained in the definition of the state transitions.")
    (xdoc::p
     "Beside defining certificates,
      we also introduce operations on (sets of) certificates,
      particularly to retrieve certificates from sets
      according to author and/or round criteria.
-     Since DAGs are represented as sets in "
-    (xdoc::seetopic "validator-states" "validator states")
-    ", these operations are usable (and in fact mainly used) on DAGs."))
+     Since DAGs are represented as sets in validator states,
+     these operations are usable (and in fact mainly used) on DAGs."))
   :order-subtopics t
   :default-parent t)
 
@@ -86,7 +86,7 @@
      Thus, the combination of author and round number identifies
      (at most) a unique certificate in a DAG.
      This is a critical and non-trivial property,
-     which we prove as an invariant (elsewhere).")
+     which we prove as an invariant elsewhere.")
    (xdoc::p
     "A certificate is a vertex of the DAG.
      The @('previous') component of this fixtype models
@@ -98,21 +98,28 @@
    (xdoc::p
     "Since we model the exchange of proposals and signatures
      at a high level here,
-     we do not distinguish between batch headers and batch certificates,
-     and instead model certificates directly,
+     we do not distinguish between proposals and certificates,
+     and instead model certificates
      as containing the information that is relevant to our model.")
    (xdoc::p
     "We do not model cryptographic signatures explicitly.
      The presence of the author and endorser addresses in a certificate
      models the fact that they signed the certificate
-     (more precisely, the proposal that the certificate extends,
-     but again we do not model proposals, only certificates)."))
+     (more precisely, the proposal that the certificate extends;
+     but again, we do not model proposals, only certificates)."))
   ((author address)
    (round pos)
    (transactions transaction-list)
    (previous address-set)
    (endorsers address-set))
   :pred certificatep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption certificate-option
+  certificate
+  :short "Fixtype of optional certificates."
+  :pred certificate-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -148,7 +155,13 @@
         (t (set::insert (certificate->author (set::head certs))
                         (certificate-set->author-set (set::tail certs)))))
   :verify-guards :after-returns
+
   ///
+
+  (defrule emptyp-of-certificate-set->author-set
+    (equal (set::emptyp (certificate-set->author-set certs))
+           (set::emptyp certs))
+    :induct t)
 
   (defruled certificate->author-in-certificate-set->author-set
     (implies (set::in cert certs)
@@ -171,11 +184,6 @@
     :induct t
     :enable (set::union
              certificate-set->author-set-of-insert))
-
-  (defruled emptyp-of-certificate-set->author-set
-    (equal (set::emptyp (certificate-set->author-set certs))
-           (set::emptyp certs))
-    :induct t)
 
   (defruled certificate-set->author-set-monotone
     (implies (set::subset certs1 certs2)
@@ -206,7 +214,13 @@
         (t (set::insert (certificate->round (set::head certs))
                         (certificate-set->round-set (set::tail certs)))))
   :verify-guards :after-returns
+
   ///
+
+  (defrule emptyp-of-certificate-set->round-set
+    (equal (set::emptyp (certificate-set->round-set certs))
+           (set::emptyp certs))
+    :induct t)
 
   (defruled certificate->round-in-certificate-set->round-set
     (implies (set::in cert certs)
@@ -230,11 +244,6 @@
     :enable (set::union
              certificate-set->round-set-of-insert))
 
-  (defruled emptyp-of-certificate-set->round-set
-    (equal (set::emptyp (certificate-set->round-set certs))
-           (set::emptyp certs))
-    :induct t)
-
   (defruled certificate-set->round-set-monotone
     (implies (set::subset certs1 certs2)
              (set::subset (certificate-set->round-set certs1)
@@ -254,13 +263,6 @@
                     (elem1 (certificate->round cert1))
                     (elem2 (certificate->round cert2))
                     (set (certificate-set->round-set certs)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defoption certificate-option
-  certificate
-  :short "Fixtype of optional certificates."
-  :pred certificate-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -308,26 +310,27 @@
      the first certificate found is the only one."))
   (b* (((when (set::emptyp certs)) nil)
        ((certificate cert) (set::head certs))
-       ((when (and (equal author cert.author)
-                   (equal round cert.round)))
+       ((when (and (equal (address-fix author) cert.author)
+                   (equal (pos-fix round) cert.round)))
         (certificate-fix cert)))
     (certificate-with-author+round author round (set::tail certs)))
 
   ///
+
+  (fty::deffixequiv certificate-with-author+round
+    :args ((author addressp) (round posp)))
 
   (defret certificate->author-of-certificate-with-author+round
     (implies cert?
              (equal (certificate->author cert?)
                     (address-fix author)))
     :hints (("Goal" :induct t)))
-  (in-theory (disable certificate->author-of-certificate-with-author+round))
 
   (defret certificate->round-of-certificate-with-author+round
     (implies cert?
              (equal (certificate->round cert?)
                     (pos-fix round)))
     :hints (("Goal" :induct t)))
-  (in-theory (disable certificate->round-of-certificate-with-author+round))
 
   (defruled certificate-with-author+round-element
     (implies (and (certificate-setp certs)
@@ -338,8 +341,10 @@
 
   (defruled certificate-with-author+round-when-element
     (implies (and (set::in cert certs)
-                  (equal (certificate->author cert) author)
-                  (equal (certificate->round cert) round))
+                  (equal (certificate->author cert)
+                         (address-fix author))
+                  (equal (certificate->round cert)
+                         (pos-fix round)))
              (certificate-with-author+round author round certs))
     :induct t)
 
@@ -354,8 +359,10 @@
   (defruled certificate-with-author+round-of-insert-iff
     (iff (certificate-with-author+round
           author round (set::insert cert certs))
-         (or (and (equal (certificate->author cert) author)
-                  (equal (certificate->round cert) round))
+         (or (and (equal (certificate->author cert)
+                         (address-fix author))
+                  (equal (certificate->round cert)
+                         (pos-fix round)))
              (certificate-with-author+round author round certs)))
     :induct (set::weak-insert-induction cert certs)
     :enable (certificate-with-author+round-when-element))
@@ -380,8 +387,10 @@
 
   (defruled certificate-with-author+round-of-delete
     (implies (and (certificate-with-author+round author round certs)
-                  (or (not (equal (certificate->author cert) author))
-                      (not (equal (certificate->round cert) round))))
+                  (or (not (equal (certificate->author cert)
+                                  (address-fix author)))
+                      (not (equal (certificate->round cert)
+                                  (pos-fix round)))))
              (certificate-with-author+round author
                                             round
                                             (set::delete cert certs)))
@@ -416,7 +425,17 @@
              :induct t
              :in-theory (enable* set::subset
                                  set::expensive-rules))))
-  (in-theory (disable certificates-with-author-subset))
+
+  (defrule certificates-with-author-of-nil
+    (equal (certificates-with-author author nil)
+           nil))
+
+  (defruled emptyp-of-certificates-with-author-to-no-author
+    (equal (set::emptyp (certificates-with-author author certs))
+           (not (set::in (address-fix author)
+                         (certificate-set->author-set certs))))
+    :induct t
+    :enable certificate-set->author-set)
 
   (defruled in-of-certificates-with-author
     (implies (certificate-setp certs)
@@ -446,11 +465,6 @@
                                (certificates-with-author author certs))))))
     :induct t
     :enable certificate-set->author-set)
-
-  (defruled certificates-with-author-when-emptyp
-    (implies (set::emptyp certs)
-             (equal (certificates-with-author author certs)
-                    nil)))
 
   (defruled certificates-with-author-of-insert
     (implies (and (certificatep cert)
@@ -485,8 +499,7 @@
              (set::in (certificate-with-author+round author round certs)
                       (certificates-with-author author certs)))
     :enable (in-of-certificates-with-author
-             certificate-with-author+round-element
-             certificate->author-of-certificate-with-author+round)
+             certificate-with-author+round-element)
     :disable certificates-with-author)
 
   (defruled no-certificate-with-author+round-if-no-certificates-with-author
@@ -495,14 +508,7 @@
                          nil))
              (not (certificate-with-author+round author round certs)))
     :use certificate-with-author+round-in-certificates-with-author
-    :disable certificates-with-author)
-
-  (defruled emptyp-of-certificates-with-author-if-no-author
-    (equal (set::emptyp (certificates-with-author author certs))
-           (not (set::in (address-fix author)
-                         (certificate-set->author-set certs))))
-    :induct t
-    :enable certificate-set->author-set))
+    :disable certificates-with-author))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -531,7 +537,17 @@
              :induct t
              :in-theory (enable* set::subset
                                  set::expensive-rules))))
-  (in-theory (disable certificates-with-round-subset))
+
+  (defrule certificates-with-round-of-nil
+    (equal (certificates-with-round round nil)
+           nil))
+
+  (defruled emptyp-of-certificates-with-round-to-no-round
+    (equal (set::emptyp (certificates-with-round round certs))
+           (not (set::in (pos-fix round)
+                         (certificate-set->round-set certs))))
+    :induct t
+    :enable certificate-set->round-set)
 
   (defruled in-of-certificates-with-round
     (implies (certificate-setp certs)
@@ -540,16 +556,6 @@
                          (equal (certificate->round cert)
                                 (pos-fix round)))))
     :induct t)
-
-  (defruled certificates-with-round-monotone
-    (implies (and (certificate-setp certs1)
-                  (certificate-setp certs2)
-                  (set::subset certs1 certs2))
-             (set::subset (certificates-with-round round certs1)
-                          (certificates-with-round round certs2)))
-    :enable (in-of-certificates-with-round
-             set::expensive-rules)
-    :disable certificates-with-round)
 
   (defruled certificate-set->round-set-of-certificates-with-round
     (implies (certificate-setp certs)
@@ -563,12 +569,15 @@
     :enable (certificate-set->round-set
              certificate-set->round-set-of-insert))
 
-  (defruled emptyp-of-certificates-with-round-to-no-round
-    (equal (set::emptyp (certificates-with-round round certs))
-           (not (set::in (pos-fix round)
-                         (certificate-set->round-set certs))))
-    :induct t
-    :enable certificate-set->round-set)
+  (defruled certificates-with-round-monotone
+    (implies (and (certificate-setp certs1)
+                  (certificate-setp certs2)
+                  (set::subset certs1 certs2))
+             (set::subset (certificates-with-round round certs1)
+                          (certificates-with-round round certs2)))
+    :enable (in-of-certificates-with-round
+             set::expensive-rules)
+    :disable certificates-with-round)
 
   (defruled certificate-set->round-set-of-certificates-with-round-not-empty
     (b* ((rounds (certificate-set->round-set
@@ -579,7 +588,7 @@
     :induct t
     :enable certificate-set->round-set-of-insert)
 
-  (defruled cardinality-of-round-set-of-certificates-with-round
+  (defruled cardinality-of-round-set-of-certificates-with-round-leq-1
     (<= (set::cardinality
          (certificate-set->round-set
           (certificates-with-round round certs)))
@@ -591,14 +600,14 @@
     :enable certificate-set->round-set-of-certificates-with-round-not-empty
     :disable certificates-with-round)
 
-  (defruled cardinality-of-subset-of-round-set-of-round
+  (defruled cardinality-of-subset-of-round-set-of-round-leq-1
     (implies (set::subset certs0
                           (certificates-with-round round certs))
              (<= (set::cardinality
                   (certificate-set->round-set certs0))
                  1))
     :rule-classes :linear
-    :enable (cardinality-of-round-set-of-certificates-with-round
+    :enable (cardinality-of-round-set-of-certificates-with-round-leq-1
              certificate-set->round-set-monotone)
     :use ((:instance set::subset-cardinality
                      (x (certificate-set->round-set certs0))
@@ -620,7 +629,7 @@
     :enable (in-of-certificates-with-author
              in-of-certificates-with-round
              certificate-with-author+round-when-element
-             emptyp-of-certificates-with-author-if-no-author)
+             emptyp-of-certificates-with-author-to-no-author)
     :disable (set::in-head
               certificates-with-round)))
 
@@ -651,7 +660,10 @@
              :induct t
              :in-theory (enable* set::subset
                                  set::expensive-rules))))
-  (in-theory (disable certificates-with-authors-subset))
+
+  (defrule certificates-with-authors-of-nil
+    (equal (certificates-with-author authors nil)
+           nil))
 
   (defruled in-of-certificates-with-authors
     (implies (certificate-setp certs)
@@ -707,7 +719,10 @@
              :induct t
              :in-theory (enable* set::subset
                                  set::expensive-rules))))
-  (in-theory (disable certificates-with-authors+round-subset))
+
+  (defruled certificates-with-authors+round-of-nil
+    (equal (certificates-with-authors+round authors round nil)
+           nil))
 
   (defruled in-of-certificates-with-authors+round
     (implies (certificate-setp certs)
@@ -720,12 +735,6 @@
                                 (pos-fix round))
                          (set::in (certificate->author cert)
                                   (address-set-fix authors)))))
-    :induct t)
-
-  (defruled certificates-with-authors+round-when-emptyp
-    (implies (set::emptyp authors)
-             (equal (certificates-with-authors+round authors round certs)
-                    nil))
     :induct t)
 
   (defruled certificates-with-authors+round-to-authors-of-round
@@ -802,10 +811,9 @@
                                   (certificate->signers cert)))))
     :induct t)
 
-  (defruled certificates-with-signer-when-emptyp
-    (implies (set::emptyp certs)
-             (equal (certificates-with-signer signer certs)
-                    nil)))
+  (defruled certificates-with-signer-of-nil
+    (equal (certificates-with-signer signer nil)
+           nil))
 
   (defruled certificates-with-signer-of-insert
     (implies (and (certificatep cert)
@@ -821,7 +829,7 @@
     :enable (in-of-certificates-with-signer
              set::double-containment-no-backchain-limit
              set::pick-a-point-subset-strategy)
-    :disable (certificates-with-signer)))
+    :disable certificates-with-signer))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -839,10 +847,8 @@
      This means that the certificates in the set
      are uniquely identified by their author and round.")
    (xdoc::p
-    "This is an invariant on DAGs,
-     and in fact on all the certificates in the system,
-     enforced by the protocol under suitable fault tolerance conditions.
-     Here we formulate the invariant.")
+    "This is an invariant that applies to the DAGs in the system.
+     Here we just define the predicate.")
    (xdoc::p
     "The rule @('certificate-set-unequivocalp-of-insert')
      is useful to prove the preservation of non-equivocation
@@ -891,6 +897,9 @@
 
   ///
 
+  (defrule certificate-set-unequivocalp-of-nil
+    (certificate-set-unequivocalp nil))
+
   (defruled certificate-set-unequivocalp-when-subset
     (implies (and (certificate-set-unequivocalp certs)
                   (set::subset certs0 certs))
@@ -901,10 +910,6 @@
                     (cert2
                      (mv-nth 1 (certificate-set-unequivocalp-witness certs0))))
     :enable set::expensive-rules)
-
-  (defruled certificate-set-unequivocalp-when-emptyp
-    (implies (set::emptyp certs)
-             (certificate-set-unequivocalp certs)))
 
   (defruled certificate-set-unequivocalp-of-insert
     (implies (certificate-setp certs)
@@ -980,7 +985,7 @@
                      (x certs)))
     :enable (certificates-with-author-subset
              in-of-certificates-with-author
-             emptyp-of-certificates-with-author-if-no-author
+             emptyp-of-certificates-with-author-to-no-author
              equal-certificate-authors-when-unequiv-and-same-round)
     :disable (set::in-head
               certificate-set-unequivocalp
@@ -1017,7 +1022,7 @@
     :use ((:instance cardinality-of-authors-when-unequiv-and-all-same-rounds
                      (certs
                       (certificates-with-authors+round authors round certs)))
-          (:instance cardinality-of-subset-of-round-set-of-round
+          (:instance cardinality-of-subset-of-round-set-of-round-leq-1
                      (certs0 (certificates-with-authors
                               authors
                               (certificates-with-round round certs))))
@@ -1046,13 +1051,13 @@
    (xdoc::p
     "This is similar to @(tsee certificate-set-unequivocalp)
      (note the singular `set' vs. the plural `sets'),
-     but checks certificates from different sets.
+     but it checks certificates from different sets.
      It requires that
      if both sets have certificates with the same author and round,
-     the certificates must be equal.")
+     the certificates are equal.")
    (xdoc::p
     "This is an invariant that applies across DAGs of different validators.
-     Here we just formulate that invariant.")
+     Here we just define the predicate.")
    (xdoc::p
     "Note that this invariant does not imply that the two sets are unequivocal:
      one set may well have multiple different certificates
@@ -1269,7 +1274,7 @@
 (define certificates-ordered-even-p ((certs certificate-listp))
   :returns (yes/no booleanp)
   :short "Check if a list of certificates has
-          strictly increasing (right to left), even round numbers."
+          even and strictly increasing (right to left) round numbers."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1278,7 +1283,7 @@
      The reason for having this predicate on certificates is that
      blockchains are extended from sequences of anchors,
      which are lists of certificates;
-     the reason why blocks have strictly increasing, even round numbers
+     the reason why blocks have even and strictly increasing round numbers
      is that the collected lists of anchors also have
      strictly increasing, even round numbers."))
   (b* (((when (endp certs)) t)
@@ -1311,7 +1316,7 @@
      is retrieved from a subset of an unequivocal set of certificates,
      the same certificate is retrieved from the superset.
      Note that the subset is also unequivocal,
-     but that is a consequence of the superset being unequivocal.")
+     as a consequence of the superset being unequivocal.")
    (xdoc::p
     "The third theorem says that
      if a certificate with a certain author and round
@@ -1327,9 +1332,7 @@
                                                    certs)
                     cert))
     :enable (certificate-with-author+round-element
-             certificate-with-author+round-when-element
-             certificate->author-of-certificate-with-author+round
-             certificate->round-of-certificate-with-author+round)
+             certificate-with-author+round-when-element)
     :use (:instance certificate-set-unequivocalp-necc
                     (cert1 cert)
                     (cert2 (certificate-with-author+round
@@ -1352,8 +1355,6 @@
                      (certificate-with-author+round author round certs)))
     :enable (certificate-with-author+round-when-subset
              certificate-with-author+round-element
-             certificate->author-of-certificate-with-author+round
-             certificate->round-of-certificate-with-author+round
              set::expensive-rules))
 
   (defruled certificate-with-author+round-of-unequivocal-sets
@@ -1364,9 +1365,7 @@
                   (certificate-with-author+round author round certs2))
              (equal (certificate-with-author+round author round certs1)
                     (certificate-with-author+round author round certs2)))
-    :enable (certificate-with-author+round-element
-             certificate->author-of-certificate-with-author+round
-             certificate->round-of-certificate-with-author+round)
+    :enable certificate-with-author+round-element
     :use (:instance
           certificate-sets-unequivocalp-necc
           (cert1 (certificate-with-author+round author round certs1))
@@ -1439,9 +1438,7 @@
                                (certificate->round cert)
                                certs0)))
        :enable (set::expensive-rules
-                certificate-with-author+round-element
-                certificate->author-of-certificate-with-author+round
-                certificate->round-of-certificate-with-author+round))))
+                certificate-with-author+round-element))))
 
   (defruled certificates-with-authors+round-of-unequivocal-sets
     (implies (and (certificate-setp certs1)
@@ -1488,9 +1485,7 @@
                                 (certificate->round cert)
                                 certs2))))
        :enable (set::expensive-rules
-                certificate-with-author+round-when-author-in-round
-                certificate->author-of-certificate-with-author+round
-                certificate->round-of-certificate-with-author+round))
+                certificate-with-author+round-when-author-in-round))
      (defrule lemma2
        (implies (and ; binds authors & certs2
                  (set::subset authors
@@ -1518,6 +1513,4 @@
                                 certs1))
                         (cert2 cert)))
        :enable (set::expensive-rules
-                certificate-with-author+round-when-author-in-round
-                certificate->author-of-certificate-with-author+round
-                certificate->round-of-certificate-with-author+round)))))
+                certificate-with-author+round-when-author-in-round)))))

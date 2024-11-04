@@ -11,7 +11,7 @@
 
 (in-package "ALEOBFT-DYNAMIC")
 
-(include-book "same-committees")
+(include-book "same-committees-def-and-implied")
 (include-book "unequivocal-accepted-certificates-next")
 (include-book "last-anchor-voters")
 (include-book "omni-paths")
@@ -121,7 +121,7 @@
            all-system-fault-tolerant-p
            committees-in-system-p-when-genesis
            rounds-in-committees-p-invariant
-           same-committees-p-invariant
+           same-committees-p-implied
            unequivocal-accepted-certificates-p-of-event-next
            last-anchor-voters-p-of-event-next
            omni-paths-p-invariant

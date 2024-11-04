@@ -29,7 +29,7 @@
 (include-book "unequivocal-signed-certificates")
 (include-book "unequivocal-accepted-certificates-def-and-init")
 (include-book "nonforking-blockchains-def-and-init")
-(include-book "same-committees")
+(include-book "same-committees-def-and-implied")
 (include-book "unequivocal-accepted-certificates-next")
 (include-book "last-anchor-def-and-init")
 (include-book "last-anchor-present")
@@ -47,7 +47,9 @@
 (include-book "blockchain-redundant")
 (include-book "nonforking-blockchains-next")
 (include-book "simultaneous-induction")
+(include-book "unequivocal-accepted-certificates")
 (include-book "nonforking-blockchains")
+(include-book "same-committees")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -57,11 +59,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We formulate and prove a number of properties of the protocol.
-     The main property that we are initially interested in
-     is the non-forking of blockchains,
-     which we have already proved for static committees;
-     here we are generalizing it for dynamic committees."))
+    "We formulate and prove a number of properties of the protocol,
+     culminating in the main property that we are interested in,
+     namely the non-forking of blockchains."))
   :order-subtopics (certificates-of-validators
                     same-owned-certificates
                     no-self-messages
@@ -80,7 +80,7 @@
                     unequivocal-signed-certificates
                     unequivocal-accepted-certificates-def-and-init
                     nonforking-blockchains-def-and-init
-                    same-committees
+                    same-committees-def-and-implied
                     unequivocal-accepted-certificates-next
                     last-anchor-def-and-init
                     last-anchor-present
@@ -98,6 +98,6 @@
                     blockchain-redundant
                     nonforking-blockchains-next
                     simultaneous-induction
-                    nonforking-blockchains))
-
-; TODO: continue
+                    unequivocal-accepted-certificates
+                    nonforking-blockchains
+                    same-committees))

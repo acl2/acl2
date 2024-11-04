@@ -20,30 +20,31 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ same-committees
+(defxdoc+ unequivocal-accepted-certificates
   :parents (correctness)
-  :short "Invariant that correct validators calculate the same committees:
+  :short "Invariant that accepted certificates are unequivocal:
           proof that it holds on every reachable state."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This completes @(see same-committees-def-and-implied)
+    "This completes @(see unequivocal-accepted-certificates-def-and-init)
+     and @(see unequivocal-accepted-certificates-next)
      by showing that the invariant holds in every reachable state."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection same-committees-p-always
+(defsection unequivocal-accepted-certificates-p-always
   :short "The invariant holds in every state
           reachable from an initial state via a sequence of events."
 
-  (defruled same-committees-p-when-reachable
+  (defruled unequivocal-accepted-certificates-p-when-reachable
     (implies (and (system-statep systate)
                   (system-initp systate)
                   (events-possiblep events systate)
                   (all-system-fault-tolerant-p events systate))
-             (same-committees-p (events-next events systate)))
+             (unequivocal-accepted-certificates-p (events-next events systate)))
     :enable (same-committees-p-implied
              unequivocal-accepted-certificates-p-when-init
              last-anchor-voters-p-when-init

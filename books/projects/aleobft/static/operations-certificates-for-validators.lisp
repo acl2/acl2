@@ -68,7 +68,7 @@
   :verify-guards :after-returns
   ///
 
-  (defrule in-of-message-certificates-for-validator
+  (defruled in-of-message-certificates-for-validator
     (implies (and (addressp dest)
                   (message-setp msgs))
              (equal (set::in cert
@@ -79,11 +79,12 @@
     :enable (set::expensive-rules
              set::in))
 
-  (defrule message-certificates-for-validator-of-empty
-    (equal (message-certificates-for-validator dest nil)
-           nil))
+  (defruled message-certificates-for-validator-when-emptyp
+    (implies (set::emptyp msgs)
+             (equal (message-certificates-for-validator dest msgs)
+                    nil)))
 
-  (defrule message-certificates-for-validator-of-insert
+  (defruled message-certificates-for-validator-of-insert
     (implies (and (message-setp msgs)
                   (messagep msg)
                   (addressp dest))
@@ -95,9 +96,10 @@
                                       dest msgs))
                       (message-certificates-for-validator dest msgs))))
     :enable (set::expensive-rules
-             set::double-containment-no-backchain-limit))
+             set::double-containment-no-backchain-limit
+             in-of-message-certificates-for-validator))
 
-  (defrule message-certificates-for-validator-of-delete
+  (defruled message-certificates-for-validator-of-delete
     (implies (and (message-setp msgs)
                   (addressp dest))
              (equal (message-certificates-for-validator
@@ -109,9 +111,10 @@
                                       dest msgs))
                       (message-certificates-for-validator dest msgs))))
     :enable (set::expensive-rules
-             set::double-containment-no-backchain-limit))
+             set::double-containment-no-backchain-limit
+             in-of-message-certificates-for-validator))
 
-  (defrule message-certificates-for-validator-of-union
+  (defruled message-certificates-for-validator-of-union
     (implies (and (message-setp msgs1)
                   (message-setp msgs2)
                   (addressp dest))
@@ -120,7 +123,8 @@
                     (set::union (message-certificates-for-validator dest msgs1)
                                 (message-certificates-for-validator dest msgs2))))
     :enable (set::expensive-rules
-             set::double-containment-no-backchain-limit)))
+             set::double-containment-no-backchain-limit
+             in-of-message-certificates-for-validator)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -165,7 +169,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule message-certificates-for-validator-of-messages-for-certificate
+(defruled message-certificates-for-validator-of-messages-for-certificate
   :short "Relation between message creation and certificates for validators."
   (implies (and (certificatep cert)
                 (address-setp dests)
@@ -177,11 +181,12 @@
                     nil)))
   :induct t
   :enable (message-certificates-for-validator
-           messages-for-certificate))
+           messages-for-certificate
+           message-certificates-for-validator-of-insert))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule certificates-for-validator-of-create-certificate-next
+(defruled certificates-for-validator-of-create-certificate-next
   :short "A @('create-certificate') event
           adds a certificate (the same one) for each validator."
   (implies (and (certificatep cert)
@@ -196,11 +201,13 @@
            validator-state->dag-of-create-certificate-next
            validator-state->buffer-of-create-certificate-next
            get-network-state-of-create-certificate-next
-           set::expensive-rules))
+           set::expensive-rules
+           message-certificates-for-validator-of-union
+           message-certificates-for-validator-of-messages-for-certificate))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule certificates-for-validator-of-receive-certificate-next
+(defruled certificates-for-validator-of-receive-certificate-next
   :short "A @('receive-certificate') event
           does not change the certificates for validators."
   (implies (and (receive-certificate-possiblep msg systate)
@@ -212,11 +219,13 @@
            receive-certificate-next
            receive-certificate-next-val
            certificates-for-validator
-           set::expensive-rules))
+           set::expensive-rules
+           in-of-message-certificates-for-validator
+           message-certificates-for-validator-of-delete))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule certificates-for-validator-of-store-certificate-next
+(defruled certificates-for-validator-of-store-certificate-next
   :short "A @('store-certificate') event
           does not change the certificates for validators."
   (implies (store-certificate-possiblep cert event-val systate)
@@ -232,7 +241,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule certificates-for-validator-of-advance-round-next
+(defruled certificates-for-validator-of-advance-round-next
   :short "A @('advance-round') event
           does not change the certificates for validators."
   (implies (advance-round-possiblep event-val systate)

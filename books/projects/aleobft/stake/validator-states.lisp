@@ -9,9 +9,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ALEOBFT-DYNAMIC")
+(in-package "ALEOBFT-STAKE")
 
-; Added 10/6/2024 by Matt K. after 3 successive ACL2(p) certification failures:
 (acl2::set-waterfall-parallelism nil)
 
 (include-book "blocks")
@@ -55,7 +54,7 @@
   (xdoc::topstring
    (xdoc::p
     "These pairs serve to record, in a validator state,
-     which certificates have been endorsed
+     which certificates have been endorsed by the validator,
      but not received from the network yet.
      See @(tsee validator-state) and the definition of state transitions
      for details about the exact use of these pairs."))
@@ -79,8 +78,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define get-address+pos-pairs-with-address ((addr addressp)
-                                            (pairs address+pos-setp))
+(define address+pos-pairs-with-address ((addr addressp)
+                                        (pairs address+pos-setp))
   :returns (pairs-with-addr address+pos-setp)
   :short "Retrieve, from a set of pairs of addresses and positive integers,
           the pairs with a given address."
@@ -88,74 +87,73 @@
        (pair (set::head pairs)))
     (if (equal (address-fix addr) (address+pos->address pair))
         (set::insert (address+pos-fix pair)
-                     (get-address+pos-pairs-with-address addr
-                                                         (set::tail pairs)))
-      (get-address+pos-pairs-with-address addr
-                                          (set::tail pairs))))
+                     (address+pos-pairs-with-address addr
+                                                     (set::tail pairs)))
+      (address+pos-pairs-with-address addr
+                                      (set::tail pairs))))
   :verify-guards :after-returns
 
   ///
 
-  (fty::deffixequiv get-address+pos-pairs-with-address
+  (fty::deffixequiv address+pos-pairs-with-address
     :args ((addr addressp)))
 
-  (defruled in-of-get-address+pos-pairs-with-address
+  (defrule address+pos-pairs-with-address-of-nil
+    (equal (address+pos-pairs-with-address addr nil)
+           nil))
+
+  (defruled in-of-address+pos-pairs-with-address
     (implies (address+pos-setp pairs)
              (equal (set::in pair
-                             (get-address+pos-pairs-with-address addr pairs))
+                             (address+pos-pairs-with-address addr pairs))
                     (and (set::in pair pairs)
                          (equal (address+pos->address pair)
                                 (address-fix addr)))))
     :induct t)
 
-  (defruled get-address+pos-pairs-with-address-when-emptyp
-    (implies (set::emptyp pairs)
-             (equal (get-address+pos-pairs-with-address addr pairs)
-                    nil)))
-
-  (defruled get-address+pos-pairs-with-address-of-insert
+  (defruled address+pos-pairs-with-address-of-insert
     (implies (and (address+pos-p pair)
                   (address+pos-setp pairs))
-             (equal (get-address+pos-pairs-with-address
+             (equal (address+pos-pairs-with-address
                      addr (set::insert pair pairs))
                     (if (equal (address+pos->address pair)
                                (address-fix addr))
                         (set::insert pair
-                                     (get-address+pos-pairs-with-address
+                                     (address+pos-pairs-with-address
                                       addr pairs))
-                      (get-address+pos-pairs-with-address addr pairs))))
-    :enable (in-of-get-address+pos-pairs-with-address
+                      (address+pos-pairs-with-address addr pairs))))
+    :enable (in-of-address+pos-pairs-with-address
              set::double-containment-no-backchain-limit
              set::pick-a-point-subset-strategy)
-    :disable get-address+pos-pairs-with-address)
+    :disable address+pos-pairs-with-address)
 
-  (defruled get-address+pos-pairs-with-address-of-delete
+  (defruled address+pos-pairs-with-address-of-delete
     (implies (address+pos-setp pairs)
-             (equal (get-address+pos-pairs-with-address
+             (equal (address+pos-pairs-with-address
                      addr (set::delete pair pairs))
                     (set::delete pair
-                                 (get-address+pos-pairs-with-address
+                                 (address+pos-pairs-with-address
                                   addr pairs))))
-    :enable (in-of-get-address+pos-pairs-with-address
+    :enable (in-of-address+pos-pairs-with-address
              set::double-containment-no-backchain-limit
              set::pick-a-point-subset-strategy)
-    :disable get-address+pos-pairs-with-address)
+    :disable address+pos-pairs-with-address)
 
   (defruled author+round-pair-in-pairs-with-author
     (implies (and (address+pos-setp pairs)
                   (set::in (address+pos author round) pairs))
              (set::in (address+pos author round)
-                      (get-address+pos-pairs-with-address author pairs)))
-    :enable in-of-get-address+pos-pairs-with-address
-    :disable get-address+pos-pairs-with-address)
+                      (address+pos-pairs-with-address author pairs)))
+    :enable in-of-address+pos-pairs-with-address
+    :disable address+pos-pairs-with-address)
 
   (defruled no-author+round-pair-if-no-pairs-with-author
     (implies (and (address+pos-setp pairs)
-                  (equal (get-address+pos-pairs-with-address author pairs)
+                  (equal (address+pos-pairs-with-address author pairs)
                          nil))
              (not (set::in (address+pos author round) pairs)))
     :use author+round-pair-in-pairs-with-author
-    :disable get-address+pos-pairs-with-address))
+    :disable address+pos-pairs-with-address))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -218,7 +216,7 @@
       Here we model the exchange of proposals and signatures
       at a more abstract level, not explicitly,
       but we still need to model this aspect to enforce that
-      there will not be different certificates, in the system,
+      there will not be equivocal certificates,
       with the same combination of author and round number.
       The use of this component of the state of a correct validator
       is explained in the definition of
@@ -229,40 +227,37 @@
     (xdoc::li
      "The blockchain as seen by the validator.
       We model it as a list of blocks from right to left,
-      i.e. the rightmost block is the oldest one
-      and the leftmost block is the newest one.
+      i.e. the rightmost block is the oldest/earliest one
+      and the leftmost block is the newest/latest one.
       We leave the genesis block implicit:
       the rightmost block in our list is actually
       the block just after the genesis block.
-      This is actually calculable from other state components,
-      as proved in @(see blockchain-redundant).
+      The blockchain is actually calculable from other state components,
+      as proved elsewhere.
       However, the reasons (i.e. proof) of this redundancy are somewhat complex,
       and thus it is better to include the blockchain in the validator state,
-      so that the state transitions can be defined in a more natural way,
-      closer to how the protocol is thought of and implemented.")
+      so that the state transitions can be defined in a more natural way.")
     (xdoc::li
      "The set of all the certificates that have been committed so far,
       i.e. whose transactions have been included in the blockchain.
       These include not just the anchors,
-      but also the nodes reachable from the anchors
-      via the DAG edges.
+      but also the nodes reachable from the anchors via the DAG edges.
       This state component serves to calculate the new certificates
       to be committed the next time anchors are committed,
       by computing the full causal history
       but removing the already committed certificates.
       This is actually calculable from other state components,
-      as proved in @(see committed-redundant).
+      as proved elsewhere.
       However, for the same reason outlined above for the blockchain component,
       it is best to leave this component in the state,
-      for a more natural definition of the state transitions,
-      and to prove later its redundancy.")
+      for a more natural definition of the state transitions.")
     (xdoc::li
      "The state of the timer; see @(tsee timer)."))
    (xdoc::p
     "The address of the validator, which never changes,
      is captured outside this fixtype,
      in the map from validator addresses to validator states
-     in @(tsee system-state).")
+     that is in the system state.")
    (xdoc::p
     "There are many invariants on validator states,
      such as the ones mentioned above.
@@ -276,10 +271,3 @@
    (committed certificate-set)
    (timer timer))
   :pred validator-statep)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defoption validator-state-option
-  validator-state
-  :short "Fixtype of optional states of a (correct) validator."
-  :pred validator-state-optionp)
