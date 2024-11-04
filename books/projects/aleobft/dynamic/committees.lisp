@@ -153,9 +153,7 @@
    (xdoc::p
     "As explained in @(see committees),
      there is an arbitrary but fixed genesis committee,
-     which we capture via a constrained nullary function.
-     We require the function to return a committee
-     with a non-empty set of addresses."))
+     which we capture via a constrained nullary function."))
 
   (encapsulate
     (((genesis-committee) => *))
