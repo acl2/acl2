@@ -1916,7 +1916,7 @@
   (let* ((sbits     (hl-hspace-sbits hs))
          (curr-len  (length sbits))
          (want-len  (floor (* 1.3 (max curr-len idx))))
-         (new-len   (min (1- array-total-size-limit) want-len)))
+         (new-len   (min (1- array-dimension-limit) want-len)))
     (when (<= new-len curr-len)
       (error "Unable to grow static hons bit array."))
     ;; CHANGE -- added a growth message
@@ -3854,7 +3854,7 @@ To avoid the following break and get only the above warning:~%  ~s~%"
       ;; Tricky.  Need to be sure that all 1-valued sbits are preserved.
       ;; We won't try to support shrinking sbits.
       (let* ((sbits    (hl-hspace-sbits hs))
-             (new-len  (min (1- array-total-size-limit) sbits-size))
+             (new-len  (min (1- array-dimension-limit) sbits-size))
              (curr-len (length sbits)))
         (when (> sbits-size curr-len)
           ;; User wants to grow sbits, so that's okay.
