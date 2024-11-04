@@ -602,6 +602,7 @@
             (commit-anchors-next val systate)))
   :expand (system-unequivocal-certificates-p
            (commit-anchors-next val systate))
+  :enable certificates-for-validator-of-commit-anchors-next
   :use (:instance system-unequivocal-certificates-p-necc
                   (val
                    (mv-nth 0 (system-unequivocal-certificates-p-witness

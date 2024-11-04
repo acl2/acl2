@@ -256,7 +256,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule certificates-for-validator-of-commit-anchors-next
+(defruled certificates-for-validator-of-commit-anchors-next
   :short "A @('commit-anchors') event
           does not change the certificates for validators."
   (implies (commit-anchors-possiblep event-val systate)

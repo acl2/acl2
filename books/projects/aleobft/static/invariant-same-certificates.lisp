@@ -220,6 +220,7 @@
                 (commit-anchors-possiblep val systate))
            (same-certificates-p (commit-anchors-next val systate)))
   :expand (same-certificates-p (commit-anchors-next val systate))
+  :enable certificates-for-validator-of-commit-anchors-next
   :use (:instance same-certificates-p-necc
                   (val1 (mv-nth
                          0

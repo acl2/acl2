@@ -365,7 +365,8 @@
               (commit-anchors-next val systate)))
     :expand (system-signers-have-author+round-p
              (commit-anchors-next val systate))
-    :enable system-signers-have-author+round-p-necc))
+    :enable (system-signers-have-author+round-p-necc
+             certificates-for-validator-of-commit-anchors-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

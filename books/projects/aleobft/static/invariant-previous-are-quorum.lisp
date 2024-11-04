@@ -187,7 +187,8 @@
             (commit-anchors-next val systate)))
   :expand (system-previous-are-quorum-p
            (commit-anchors-next val systate))
-  :enable (system-previous-are-quorum-p-necc))
+  :enable (system-previous-are-quorum-p-necc
+           certificates-for-validator-of-commit-anchors-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

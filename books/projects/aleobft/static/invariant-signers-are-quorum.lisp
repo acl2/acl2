@@ -175,7 +175,8 @@
             (commit-anchors-next val systate)))
   :expand (system-signers-are-quorum-p
            (commit-anchors-next val systate))
-  :enable system-signers-are-quorum-p-necc)
+  :enable (system-signers-are-quorum-p-necc
+           certificates-for-validator-of-commit-anchors-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
