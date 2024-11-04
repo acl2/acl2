@@ -31,7 +31,7 @@
      blocks are simply containers of transactions.
      We also explicate the round number at which each block is generated:
      there is a natural association of round numbers to blocks,
-     which is also needed to calculate dynamic committees from the blocks.."))
+     which is also needed to calculate dynamic committees from the blocks."))
   :order-subtopics t
   :default-parent t)
 

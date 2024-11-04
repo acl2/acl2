@@ -28,7 +28,7 @@
    (xdoc::p
     "We model the network that connects the validators
      as eventually reliable with authenticated senders,
-     as commonly assumes in the BFT literature.
+     as commonly assumed in the BFT literature.
      The only kind of network communication that is relevant to our model
      is the exchange of certificates among validators.
      Since we model the exchange of proposals and signatures
