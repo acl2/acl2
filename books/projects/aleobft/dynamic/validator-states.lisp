@@ -41,7 +41,7 @@
      For faulty validators,
      i.e. the ones that do not (always) follow the protcol,
      we do not need to model the internal state,
-     because what matter in our model is only
+     because what matters in our model is only
      the effect that faulty validators may have on correct ones,
      via messages exchanged over the network."))
   :order-subtopics t
@@ -234,14 +234,12 @@
       We leave the genesis block implicit:
       the rightmost block in our list is actually
       the block just after the genesis block.
-      In the model of AleoBFT with static committees,
-      we have proved that this blockchain state component is redundant,
-      calculable from other state components.
-      The same should be the case for dynamic committees as well.
+      This is actually calculable from other state components,
+      as proved in @(see blockchain-redundant).
       However, the reasons (i.e. proof) of this redundancy are somewhat complex,
       and thus it is better to include the blockchain in the validator state,
-      so that the state transitions can be formally defined
-      in a way that is closer to AleoBFT's implementation.")
+      so that the state transitions can be defined in a more natural way,
+      closer to how the protocol is thought of and implemented.")
     (xdoc::li
      "The set of all the certificates that have been committed so far,
       i.e. whose transactions have been included in the blockchain.
@@ -252,10 +250,8 @@
       to be committed the next time anchors are committed,
       by computing the full causal history
       but removing the already committed certificates.
-      In the model of AleoBFT with static committees,
-      we have proved that this committed certificates state component
-      is redundant, calculable from other state components.
-      The same should be the case for dynamic committees.
+      This is actually calculable from other state components,
+      as proved in @(see committed-redundant).
       However, for the same reason outlined above for the blockchain component,
       it is best to leave this component in the state,
       for a more natural definition of the state transitions,

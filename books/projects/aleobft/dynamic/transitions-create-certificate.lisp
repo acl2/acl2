@@ -308,8 +308,7 @@
    (xdoc::p
     "For the certificate author, in @(tsee create-certificate-author-possiblep),
      it is not necessary to check the buffer and author-round pairs:
-     as already proved for AleoBFT with static committees,
-     and as we plan to prove for AleoBFT with dynamic committees as well,
+     as proved in @(see no-self-buffer),
      a validator never has a certificate authored by itself in the buffer,
      or an author-round pair whose author component is the validator's address.
      So it suffices to check the DAG for the author.")
@@ -352,7 +351,8 @@
      the conditions involving committees as viewed by the endorsers
      imply at least some agreement among the blockchains of the validators,
      enough to make consistent checks involving the committee.
-     But as we plan to prove, it is a system invariant that
+     As proved in @(see same-committees),
+     it is a system invariant that
      different validators agree on the committees they can both calculate,
      because of the invariant that blockchains never fork.
      Thus, in each state, which satisfies the invariant,
@@ -432,8 +432,7 @@
      there are enough signers to guarantee that
      the new certificate does not cause equivocation,
      i.e. does not have the same author and round as an existing certificate.
-     This has been proved for AleoBFT with static committees,
-     and we are working on proving it for dynamic committees.
+     This is proved as the non-equivocation of certificates.
      Here the fault tolerance conditions has to be stated for each committee.")
    (xdoc::p
     "Note that we instantiate the @('all-vals') parameter
