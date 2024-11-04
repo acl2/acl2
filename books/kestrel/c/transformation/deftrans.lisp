@@ -101,7 +101,7 @@
        "            :ident (expr-fix expr)"
        "            :const (expr-fix expr)"
        "            :string (expr-fix expr)"
-       "            :paren (expr-paren (my-simpadd0-expr expr.unwrap))"
+       "            :paren (expr-paren (my-simpadd0-expr expr.inner))"
        "            :gensel (make-expr-gensel"
        "                      :control (my-simpadd0-expr expr.control)"
        "                      :assocs (my-simpadd0-genassoc-list expr.assocs))"
@@ -283,7 +283,7 @@
     (:linear c$::expr-count-of-expr-member->arg)
     (:linear c$::expr-count-of-expr-memberp->arg)
     (:linear c$::expr-count-of-expr-option-some->val)
-    (:linear c$::expr-count-of-expr-paren->unwrap)
+    (:linear c$::expr-count-of-expr-paren->inner)
     (:linear c$::expr-count-of-expr-unary->arg)
     (:linear c$::expr-count-of-genassoc-default->expr)
     (:linear c$::expr-count-of-genassoc-type->expr)
@@ -654,7 +654,7 @@
       :ident (expr-ident (,(cdr (assoc-eq 'ident names)) expr.ident ,@extra-args-names))
       :const (expr-fix expr)
       :string (expr-fix expr)
-      :paren (expr-paren (,(cdr (assoc-eq 'expr names)) expr.unwrap ,@extra-args-names))
+      :paren (expr-paren (,(cdr (assoc-eq 'expr names)) expr.inner ,@extra-args-names))
       :gensel (make-expr-gensel
                 :control (,(cdr (assoc-eq 'expr names)) expr.control ,@extra-args-names)
                 :assocs (,(cdr (assoc-eq 'genassoc-list names)) expr.assocs ,@extra-args-names))

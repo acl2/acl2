@@ -450,7 +450,7 @@
      :returns (new-expr exprp)
      :parents nil
      (b* (((when (expr-case rest :paren))
-           (b* ((args (expr-to-asg-expr-list (expr-paren->unwrap rest))))
+           (b* ((args (expr-to-asg-expr-list (expr-paren->inner rest))))
              (make-expr-funcall :fun fun :args args)))
           ((when (expr-case rest :arrsub))
            (b* ((expr
@@ -900,7 +900,7 @@
        :string
        (retok (expr-fix expr) (dimb-table-fix table))
        :paren
-       (b* (((erp new-expr table) (dimb-expr expr.unwrap table)))
+       (b* (((erp new-expr table) (dimb-expr expr.inner table)))
          (retok (expr-paren new-expr) table))
        :gensel
        (b* (((erp new-control table) (dimb-expr expr.control table))

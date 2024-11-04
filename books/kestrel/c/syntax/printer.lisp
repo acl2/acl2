@@ -1621,7 +1621,7 @@
              (print-stringlit-list expr.strings pstate))
            :paren
            (b* ((pstate (print-astring "(" pstate))
-                (pstate (print-expr expr.unwrap (expr-priority-expr) pstate))
+                (pstate (print-expr expr.inner (expr-priority-expr) pstate))
                 (pstate (print-astring ")" pstate)))
              pstate)
            :gensel

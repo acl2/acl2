@@ -625,7 +625,7 @@
        :const (b* (((erp const1) (ldm-const expr.const)))
                 (retok (c::expr-const const1)))
        :string (reterr (msg "Unsupported expression ~x0." (expr-fix expr)))
-       :paren (ldm-expr expr.unwrap)
+       :paren (ldm-expr expr.inner)
        :gensel (reterr (msg "Unsupported expression ~x0." (expr-fix expr)))
        :arrsub (b* (((erp arr1) (ldm-expr expr.arg1))
                     ((erp sub1) (ldm-expr expr.arg2)))

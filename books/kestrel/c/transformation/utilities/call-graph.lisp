@@ -120,7 +120,7 @@
     :returns (call-graph ident-ident-option-set-mapp)
     (expr-case
      expr
-     :paren (call-graph-expr expr.unwrap fn-name acc)
+     :paren (call-graph-expr expr.inner fn-name acc)
      ;; :gensel?
      :arrsub (call-graph-expr
                expr.arg2

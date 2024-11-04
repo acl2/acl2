@@ -1554,7 +1554,7 @@
     (:ident ((ident ident)))
     (:const ((const const)))
     (:string ((strings stringlit-list)))
-    (:paren ((unwrap expr)))
+    (:paren ((inner expr)))
     (:gensel ((control expr)
               (assocs genassoc-list)))
     (:arrsub ((arg1 expr)

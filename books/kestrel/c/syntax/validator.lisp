@@ -2843,7 +2843,7 @@
                 (retok type (valid-table-fix table)))
        :string (b* (((erp type) (valid-stringlit-list expr.strings)))
                  (retok type (valid-table-fix table)))
-       :paren (valid-expr expr.unwrap table ienv)
+       :paren (valid-expr expr.inner table ienv)
        :gensel (b* (((erp type table) (valid-expr expr.control table ienv))
                     ((erp type-alist table)
                      (valid-genassoc-list expr.assocs table ienv))
