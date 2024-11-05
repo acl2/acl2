@@ -1551,10 +1551,10 @@
        because its first argument is a type name, not an expression.
        The second argument is a member designator,
        which is a restricted form of expression."))
-    (:ident ((unwrap ident)))
-    (:const ((unwrap const)))
-    (:string ((literals stringlit-list)))
-    (:paren ((unwrap expr)))
+    (:ident ((ident ident)))
+    (:const ((const const)))
+    (:string ((strings stringlit-list)))
+    (:paren ((inner expr)))
     (:gensel ((control expr)
               (assocs genassoc-list)))
     (:arrsub ((arg1 expr)

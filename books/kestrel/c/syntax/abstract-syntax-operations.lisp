@@ -798,7 +798,7 @@
      So this operation is very limited in scope,
      but sufficient for its current usage (elsewhere)."))
   (b* (((unless (expr-case expr :const)) nil)
-       (const (expr-const->unwrap expr))
+       (const (expr-const->const expr))
        ((unless (const-case const :int)) nil)
        ((iconst iconst) (const-int->unwrap const))
        ((when iconst.suffix?) nil)
@@ -910,7 +910,7 @@
   :short "Check if an expression is an identifier,
           returning the identifier if the check passes."
   (and (expr-case expr :ident)
-       (expr-ident->unwrap expr))
+       (expr-ident->ident expr))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -920,7 +920,7 @@
   :short "Check if an expression is an integer constant,
           returning the integer constant if the check passes."
   (b* (((unless (expr-case expr :const)) nil)
-       (const (expr-const->unwrap expr))
+       (const (expr-const->const expr))
        ((unless (const-case const :int)))
        (iconst (const-int->unwrap const)))
     iconst)

@@ -2680,13 +2680,13 @@
     (b* (((reterr) (irr-type) (irr-valid-table)))
       (expr-case
        expr
-       :ident (b* (((erp type) (valid-var expr.unwrap table)))
+       :ident (b* (((erp type) (valid-var expr.ident table)))
                 (retok type (valid-table-fix table)))
-       :const (b* (((erp type) (valid-const expr.unwrap table ienv)))
+       :const (b* (((erp type) (valid-const expr.const table ienv)))
                 (retok type (valid-table-fix table)))
-       :string (b* (((erp type) (valid-stringlit-list expr.literals)))
+       :string (b* (((erp type) (valid-stringlit-list expr.strings)))
                  (retok type (valid-table-fix table)))
-       :paren (valid-expr expr.unwrap table ienv)
+       :paren (valid-expr expr.inner table ienv)
        :gensel (b* (((erp type table) (valid-expr expr.control table ienv))
                     ((erp type-alist table)
                      (valid-genassoc-list expr.assocs table ienv))
@@ -3499,7 +3499,7 @@
              (initer-case initer :single)
              (expr-case (initer-single->expr initer) :string))
         (b* (((erp &) (valid-stringlit-list
-                       (expr-string->literals (initer-single->expr initer)))))
+                       (expr-string->strings (initer-single->expr initer)))))
           (retok (valid-table-fix table))))
        ((and (or (type-aggregatep target-type)
                  (type-case target-type :union))
