@@ -2826,7 +2826,7 @@
        to return not only a type but also a value,
        namely the value of the constant expression."))
     (b* (((reterr) (irr-type) (irr-valid-table)))
-      (valid-expr (const-expr->unwrap cexpr) table ienv))
+      (valid-expr (const-expr->expr cexpr) table ienv))
     :measure (const-expr-count cexpr))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

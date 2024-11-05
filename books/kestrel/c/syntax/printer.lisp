@@ -1845,7 +1845,7 @@
       "A constant expression is
        a synonym of a conditional expression in the grammar,
        so we use that as priority."))
-    (print-expr (const-expr->unwrap cexpr) (expr-priority-cond) pstate)
+    (print-expr (const-expr->expr cexpr) (expr-priority-cond) pstate)
     :measure (two-nats-measure (const-expr-count cexpr) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

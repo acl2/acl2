@@ -264,7 +264,7 @@
     (:linear c$::enumer-list-count-of-enumspec->list)
     (:linear c$::enumspec-count-of-type-spec-enum->unwrap)
     (:linear c$::expr-count-of-car)
-    (:linear c$::expr-count-of-const-expr->unwrap)
+    (:linear c$::expr-count-of-const-expr->expr)
     (:linear c$::expr-count-of-dirabsdeclor-array-static1->expr)
     (:linear c$::expr-count-of-dirabsdeclor-array-static2->expr)
     (:linear c$::expr-count-of-dirdeclor-array-static1->expr)
@@ -771,7 +771,7 @@
    bodies
    '((cexpr const-exprp))
    extra-args
-   `(const-expr (,(cdr (assoc-eq 'expr names)) (const-expr->unwrap cexpr) ,@extra-args-names))
+   `(const-expr (,(cdr (assoc-eq 'expr names)) (const-expr->expr cexpr) ,@extra-args-names))
    '(:returns (new-cexpr const-exprp)
      :measure (const-expr-count cexpr))))
 

@@ -1648,7 +1648,7 @@
        it does not actually constrain the expression to be constant,
        but it may be useful to mark expressions to be constant,
        with separate predicates that enforce that."))
-    ((unwrap expr))
+    ((expr expr))
     :pred const-exprp
     :measure (two-nats-measure (acl2-count x) 1))
 
