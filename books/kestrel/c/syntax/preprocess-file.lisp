@@ -129,8 +129,8 @@
                          "The output filename if it is saved, or @('\"\"')
                           otherwise.")
                (filedata filedatap
-                         "The preprocessed @(see filedata) if read, or @('nil')
-                          otherwise.")
+                         "The preprocessed @(see filedata) if read, or
+                          @('(filedata nil)') otherwise.")
                state)
   :parents (preprocessing)
   :short "Preprocess a single file."
@@ -227,8 +227,8 @@
    ((out-dir (or (not out-dir)
                  (stringp out-dir))
              "This specifies the directory that preprocessed output files are
-              saved to with posfix \".i\". If @('nil'), temporary files will be
-              created (see @(see oslib::tempfile))).")
+              saved to with posfix @('\".i\"'). If @('nil'), temporary files will be
+              created (see @(see oslib::tempfile)).")
     'nil)
    ((save "If @('t'), the output files are saved. If @('nil'), the files are
            removed after reading them in. If @(':auto'), the default value,
