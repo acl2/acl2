@@ -735,6 +735,13 @@
   (:none ())
   :pred linkagep)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-linkage
+  :short "An irrelevant linkage."
+  :type linkagep
+  :body (linkage-none))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defoption linkage-option
@@ -769,6 +776,13 @@
   (:thread ())
   (:auto ())
   :pred lifetimep)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-lifetime
+  :short "An irrelevant lifetime."
+  :type lifetimep
+  :body (lifetime-auto))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2377,6 +2391,209 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define valid-stor-spec-list ((storspecs stor-spec-listp)
+                              (block-scope-p booleanp))
+  :returns (mv erp
+               (typedefp booleanp)
+               (linkage linkagep)
+               (lifetime? lifetime-optionp))
+  :short "Validate a list of storage class specifiers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This function is called on the sub-list of storage class specifiers
+     of a list of declaration specifiers.")
+   (xdoc::p
+    "Only a few sequences of storage class specifiers are allowed [C:6.7.1/2],
+     also depending on whether the declaration is in a block or file scope
+     [C:6.7.1/3];
+     we pass a flag saying whether the declaration is in a block scope or not.
+     Each allowed sequence of storage class specifiers may determine
+     that a @('typedef') name is being declared,
+     or that an object or function is being declared,
+     with a certain linkage and lifetime.
+     So we return as results
+     a flag saying that a @('typedef') name is being declared,
+     a linkage,
+     and an optional lifetime.
+     We explain all the possibilities below,
+     for each allowed sequence of storage class specifiers.")
+   (xdoc::p
+    "If the storage class specifier sequence is @('typedef'),
+     a @('typedef') name is being declared,
+     so we return @('t') as the @('typedef') flag result.
+     This is the only case in which this result is @('t');
+     in all other cases, that result is @('nil'),
+     because we are not declaring a @('typedef') name.
+     A @('typedef') name (which is an identifier) has no linkage
+     [C:6.2.2/1] [C:6.2.2/6].
+     Since lifetime (i.e. storage duration) only applied to objects [C:6.2.4/1],
+     we return @('nil') as lifetime, i.e. no lifetime.")
+   (xdoc::p
+    "If the storage class specifier sequence is @('extern'),
+     linkage may be external or not [C:6.2.2/4],
+     based on whether there is already
+     a declaration of the same identifiers in scope or not
+     and whether that previous declaration specifies a linkage or not.
+     When this ACL2 function is called,
+     we do not know yet the identifier being declared,
+     because its declarator follows the declaration specifiers,
+     and we validate things in order.
+     Thus, we do not know whether there is a previous declaration in scope.
+     Therefore, we provisionally assume that this is the only declaration,
+     in which case the linkage is external [C:6.2.2/4].
+     When, in other code, we obtain the identifier being declared,
+     we may revise this determination according to the additional rules.
+     Note that this ACL2 validation function
+     returns external linkage if and only if
+     the storage class specifier sequence
+     is @('extern') or @('extern _Thread_local') or @('_Thread_local'),
+     i.e. the sequence includes @('extern').
+     Based on this provisional determination of external linkage,
+     we also determine the lifetime as static [C:6.2.4/3],
+     since there is no @('_Thread_local') in this case.
+     The lifetime only applies to objects;
+     it is ignored by further validation code
+     if the declaration turns out to be for a function.")
+   (xdoc::p
+    "If the storage class specifier sequence is
+     @('extern _Thread_local') or @('_Thread_local extern'),
+     we also provisionally determine external linkage,
+     since the presence of @('_Thread_local') does not affect linkage [C:6.2.2].
+     However, the lifetime is definitely thread [C:6.2.4/4].")
+   (xdoc::p
+    "If the storage class specifier sequence is @('static'),
+     things differ whether the identifier is declared
+     in the file scope or in a block scope.
+     If we are in the file scope, the linkage is internal [C:6.2.2/3].
+     If we are in a block scope, it depends on whether
+     we are declaring an object or a function,
+     which we do not know at this point of the validation process.
+     If it is an object, it has no linkage [C:6.2.2/6],
+     because it does not have @('extern').
+     But if it is a function, it has an implicit @('extern') [C:6.2.2/5].
+     So here we provisionally determine no linkage,
+     which is correct for the object case,
+     and which other validation code will revise as needed
+     if the declaration turns out to be for a function.
+     The lifetime is static [C:6.2.4/3];
+     this only applies to objects,
+     so further validation code will ignore this
+     if the declaration turns out to be for a function.")
+   (xdoc::p
+    "If the storage class specifier sequence is
+     @('static _Thread_local') or @('_Thread_local static'),
+     linkage is determined as in the previous case
+     (provisionally for no linkage),
+     but the lifetime is thread.")
+   (xdoc::p
+    "If the storage class specifier sequence is @('_Thread_local'),
+     the lifetime is definitely thread [C:6.2.4/4],
+     which again is only applicable to objects.
+     In fact, @('_Thread_local') cannot be used for a function [C:6.7.1/4],
+     but we defer this check to further validation code,
+     after determining whether an object or function is being declared.
+     If we are in a block scope, it is an error,
+     because an @('extern') or a @('static') is required [C:6.7.1/3];
+     this only applied to objects,
+     but as mentioned above @('_Thread_local') cannot be used with functions,
+     so there is no loss in raising an error in this case,
+     whether the identifier will turn out to be for an object or a function.
+     Given that we must not be in a block scope, we must be in the file scope.
+     [C:6.2.2] does not seem to specify the linkage for this case,
+     perhaps because @('_Thread_local') was added at some point,
+     but [C:6.2.2] was not updated accordingly:
+     [C:6.2.2/5] specifies external linkage
+     for the case of an object in a file scope without storage class specifiers,
+     but this should be probably interpreted as
+     including the @('_Thread_local') case,
+     which makes sense, and is consistent with some clearer wording
+     in the newly released C23 standard.")
+   (xdoc::p
+    "If the storage class specifier sequence is @('auto') or @('register'),
+     we must not be in a file scope [C:6.9/2];
+     so we must be in a block scope.
+     Thus, it has no linkage [C:6.2.2/6].
+     The lifetime is automatic [C:6.2.4/5].")
+   (xdoc::p
+    "If there are no storage class specifiers (i.e. the sequence is empty),
+     things differ based on whether we are in the file scope or a block scope,
+     and whether the identifier declares an object or a function
+     (which at this time is not known yet).
+     For a function with file scope,
+     the situation of no storage class specifiers
+     is equivalent to having the @('extern') storage class specifier
+     [C:6.2.2/5];
+     for an object with file scope,
+     the linkage is external [C:6.2.2/5].
+     Thus we treat the file scope case in the same way as
+     the case of @('extern') explained above:
+     we provisionally determine external linkage,
+     which further validation code may revise.
+     Since the linkage is external, the lifetime is static [C:6.2.4/3].
+     For a block scope, there is no linkage [C:6.2.2/6],
+     and the lifetime is automatic [C:6.2.4/5];
+     this assumes an object, but further validation code
+     can revise things if a function is being declared instead."))
+  (b* (((reterr) nil (linkage-none) nil))
+    (cond
+     ((stor-spec-list-typedef-p storspecs)
+      (retok t
+             (linkage-none)
+             nil))
+     ((stor-spec-list-extern-p storspecs)
+      (retok nil
+             (linkage-external)
+             (lifetime-static)))
+     ((stor-spec-list-extern-threadloc-p storspecs)
+      (retok nil
+             (linkage-external)
+             (lifetime-thread)))
+     ((stor-spec-list-static-p storspecs)
+      (retok nil
+             (if block-scope-p
+                 (linkage-none)
+               (linkage-internal))
+             (lifetime-static)))
+     ((stor-spec-list-static-threadloc-p storspecs)
+      (retok nil
+             (if block-scope-p
+                 (linkage-none)
+               (linkage-internal))
+             (lifetime-thread)))
+     ((stor-spec-list-threadloc-p storspecs)
+      (if block-scope-p
+          (reterr (msg "The storage class specifier '_Thread_local' ~
+                        cannot be used in a block scope ~
+                        without 'extern' or 'static'."))
+        (retok nil
+               (linkage-external)
+               (lifetime-thread))))
+     ((or (stor-spec-list-auto-p storspecs)
+          (stor-spec-list-register-p storspecs))
+      (if block-scope-p
+          (retok nil
+                 (linkage-none)
+                 (lifetime-auto))
+        (reterr (msg "The storage class specifier '~s0' ~
+                      cannot be used in the file scope."
+                     (if (stor-spec-list-auto-p storspecs)
+                         "auto"
+                       "register")))))
+     ((endp storspecs)
+      (if block-scope-p
+          (retok nil
+                 (linkage-none)
+                 (lifetime-auto))
+        (retok nil
+               (linkage-external)
+               (lifetime-static))))
+     (t (reterr (msg "The storage class specifier sequence ~x0 is invalid."
+                     (stor-spec-list-fix storspecs))))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines valid-exprs/decls/stmts
   :short "Validate expressions, declarations, statements,
           and related artifacts."
@@ -3006,6 +3223,150 @@
          (retok table))
        :alignas-ambig (prog2$ (impossible) (reterr t))))
     :measure (align-spec-count align))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define valid-declspec ((declspec declspecp)
+                          (type? type-optionp)
+                          (tyspecs type-spec-listp)
+                          (storspecs stor-spec-listp)
+                          (table valid-tablep)
+                          (ienv ienvp))
+    :guard (and (declspec-unambp declspec)
+                (type-spec-list-unambp tyspecs)
+                (not (and type? tyspecs)))
+    :returns (mv erp
+                 (new-type? type-optionp)
+                 (new-tyspecs type-spec-listp)
+                 (new-storspecs stor-spec-listp)
+                 (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate a declaration specifier."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "For now we ignore
+       type qualifiers,
+       function specifiers,
+       and attributes.
+       We validate alignment specifiers but we do not make any use of them
+       in our currently approximate type system.
+       We handle type specifiers similarly to @(tsee valid-spec/qual).
+       In addition, we collect all the storage class specifiers
+       encountered as we go through the declaration specifiers."))
+    (b* (((reterr) nil nil nil (irr-valid-table)))
+      (declspec-case
+       declspec
+       :stocla (retok (type-option-fix type?)
+                      (type-spec-list-fix tyspecs)
+                      (rcons declspec.unwrap (stor-spec-list-fix storspecs))
+                      (valid-table-fix table))
+       :tyspec (b* (((erp type? tyspecs table)
+                     (valid-type-spec
+                      declspec.unwrap type? tyspecs table ienv)))
+                 (retok type? tyspecs (stor-spec-list-fix storspecs) table))
+       :tyqual (retok (type-option-fix type?)
+                      (type-spec-list-fix tyspecs)
+                      (stor-spec-list-fix storspecs)
+                      (valid-table-fix table))
+       :funspec (retok (type-option-fix type?)
+                       (type-spec-list-fix tyspecs)
+                       (stor-spec-list-fix storspecs)
+                       (valid-table-fix table))
+       :align (b* (((erp table) (valid-align-spec declspec.unwrap table ienv)))
+                (retok (type-option-fix type?)
+                       (type-spec-list-fix tyspecs)
+                       (stor-spec-list-fix storspecs)
+                       table))
+       :attrib (retok (type-option-fix type?)
+                      (type-spec-list-fix tyspecs)
+                      (stor-spec-list-fix storspecs)
+                      (valid-table-fix table))))
+    :measure (declspec-count declspec)
+
+    ///
+
+    (defret type-spec-list-unambp-of-valid-declspec
+      (type-spec-list-unambp new-tyspecs)
+      :hyp (type-spec-list-unambp tyspecs)
+      :hints
+      (("Goal"
+        :expand (valid-declspec declspec type? tyspecs storspecs table ienv))))
+
+    (defret not-type-and-type-specs-of-valid-declspec
+      (not (and new-type? new-tyspecs))
+      :hyp (not (and type? tyspecs))
+      :hints
+      (("Goal"
+        :expand ((valid-declspec declspec nil tyspecs storspecs table ienv)
+                 (valid-declspec declspec type? nil storspecs table ienv)))))
+
+    (defret not-type-specs-of-valid-declspec-when-type
+      (implies new-type?
+               (not new-tyspecs))
+      :hyp (not (and type? tyspecs))
+      :hints (("Goal" :use not-type-and-type-specs-of-valid-declspec))))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define valid-declspec-list ((declspecs declspec-listp)
+                               (type? type-optionp)
+                               (tyspecs type-spec-listp)
+                               (storspecs stor-spec-listp)
+                               (table valid-tablep)
+                               (ienv ienvp))
+    :guard (and (declspec-list-unambp declspecs)
+                (type-spec-list-unambp tyspecs)
+                (not (and type? tyspecs)))
+    :returns (mv erp
+                 (type typep)
+                 (typedefp booleanp)
+                 (linkage linkagep)
+                 (lifetime? lifetime-optionp)
+                 (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate a list of declaration specifiers."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "If validation is successful, we return
+       the type determined by the type specifiers,
+       and the linkage and storage duration (lifetime)
+       determined by the storage class specifiers.")
+     (xdoc::p
+      "We go through each element of the list,
+       threading the partial results through.
+       When we reach the end of the list,
+       if a type has been determined, we return it.
+       Otherwise, we use a separate function to attempt to determine it
+       from the collected type specifiers.
+       The linkage and lifetime are determined using a separate function,
+       from the collected storage class specifiers."))
+    (b* (((reterr) (irr-type) nil (irr-linkage) nil (irr-valid-table))
+         ((when (endp declspecs))
+          (b* (((erp typedefp linkage lifetime?)
+                (valid-stor-spec-list storspecs
+                                      (> (valid-table-num-scopes table) 1))))
+            (cond
+             (type? (retok (type-option-fix type?)
+                           typedefp
+                           linkage
+                           lifetime?
+                           (valid-table-fix table)))
+             ((consp tyspecs)
+              (b* (((erp type) (valid-type-spec-list-residual tyspecs)))
+                (retok type
+                       typedefp
+                       linkage
+                       lifetime?
+                       (valid-table-fix table))))
+             (t (reterr (msg "The declaration specifiers ~x0 ~
+                              contain no type specifiers."
+                             (declspec-list-fix declspecs)))))))
+         ((erp type? tyspecs storspecs table)
+          (valid-declspec (car declspecs) type? tyspecs storspecs table ienv)))
+      (valid-declspec-list (cdr declspecs) type? tyspecs storspecs table ienv))
+    :measure (declspec-list-count declspecs))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
