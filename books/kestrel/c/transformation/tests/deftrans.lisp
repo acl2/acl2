@@ -29,7 +29,7 @@
             :ident (expr-fix expr)
             :const (expr-fix expr)
             :string (expr-fix expr)
-            :paren (expr-paren (my-simpadd0-expr expr.unwrap))
+            :paren (expr-paren (my-simpadd0-expr expr.inner))
             :gensel (make-expr-gensel
                       :control (my-simpadd0-expr expr.control)
                       :assocs (my-simpadd0-genassoc-list expr.assocs))

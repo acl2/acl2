@@ -127,8 +127,8 @@
      Note that, as required in @(tsee store-certificate-possiblep),
      the DAG must contain all the previous certificates,
      which must form a quorum because of the way certificates are created
-     (it needs to be proved that there is agreement on the quorum,
-     as we indeed plan to do);
+     (that there is an agreement on the quorum
+     is proved via @(see same-committees));
      thus, if the validator's round is advanced to the certificate's round,
      the validator can immediately generate its own new certificate
      for that round in our model (or a proposal in a more detailed model).

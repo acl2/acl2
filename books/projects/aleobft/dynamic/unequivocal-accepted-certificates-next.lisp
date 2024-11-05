@@ -13,7 +13,7 @@
 
 (include-book "unequivocal-accepted-certificates-def-and-init")
 (include-book "nonforking-blockchains-def-and-init")
-(include-book "same-committees")
+(include-book "same-committees-def-and-implied")
 (include-book "unequivocal-signed-certificates")
 (include-book "committees-in-system")
 (include-book "quorum-intersection")
@@ -87,7 +87,10 @@
      a different certificate with the same author and round,
      the two certificates must have at least one common correct signer,
      whose signed certificates would thus be equivocal,
-     but we know they are not as already proved."))
+     but we know they are not as already proved.")
+   (xdoc::p
+    "In @(see unequivocal-accepted-certificates), we prove that
+     the invariant holds in every reachable state."))
   :order-subtopics t
   :default-parent t)
 

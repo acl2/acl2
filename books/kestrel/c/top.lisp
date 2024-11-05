@@ -46,7 +46,8 @@
     "This library is based on the "
     (xdoc::ahref "https://www.iso.org/standard/74528.html"
                  "ISO/IEC 9899:2018 specification of C")
-    ". In the documentation of this library,
+    ", i.e. the C17 standard.
+     In the documentation of this library,
      this standard is referenced as `[C]';
      sections are referenced
      by appending their designations separated by colon,

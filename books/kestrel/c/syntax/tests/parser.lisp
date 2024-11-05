@@ -1160,8 +1160,8 @@
  parse-cast-expression
  "(( __be16)(__u16)f());"
  :cond (and (expr-case ast :paren)
-            (expr-case (expr-paren->unwrap ast) :cast)
-            (expr-case (expr-cast->arg (expr-paren->unwrap ast)) :cast)))
+            (expr-case (expr-paren->inner ast) :cast)
+            (expr-case (expr-cast->arg (expr-paren->inner ast)) :cast)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
