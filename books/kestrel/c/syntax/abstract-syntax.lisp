@@ -1551,10 +1551,10 @@
        because its first argument is a type name, not an expression.
        The second argument is a member designator,
        which is a restricted form of expression."))
-    (:ident ((unwrap ident)))
-    (:const ((unwrap const)))
-    (:string ((literals stringlit-list)))
-    (:paren ((unwrap expr)))
+    (:ident ((ident ident)))
+    (:const ((const const)))
+    (:string ((strings stringlit-list)))
+    (:paren ((inner expr)))
     (:gensel ((control expr)
               (assocs genassoc-list)))
     (:arrsub ((arg1 expr)
@@ -1808,7 +1808,7 @@
 
   (fty::deftagsum spec/qual
     :parents (abstract-syntax exprs/decls/stmts)
-    :short "Fixtype of type specifiers and type qualifiers
+    :short "Fixtype of specifiers and qualifiers
             [C:6.7.2.1] [C:A.2.2]."
     :long
     (xdoc::topstring
@@ -1831,7 +1831,7 @@
 
   (fty::deflist spec/qual-list
     :parents (abstract-syntax exprs/decls/stmts)
-    :short "Fixtype of lists of type specifiers and type qualifiers."
+    :short "Fixtype of lists of specifiers and qualifiers."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -3042,7 +3042,15 @@
   :elt-type type-spec
   :true-listp t
   :elementp-of-nil nil
-  :pred type-spec-listp)
+  :pred type-spec-listp
+
+  ///
+
+  (defruled type-spec-listp-of-remove1-equal
+    (implies (type-spec-listp tyspecs)
+             (type-spec-listp (remove1-equal tyspec tyspecs)))
+    :induct t
+    :enable remove1-equal))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

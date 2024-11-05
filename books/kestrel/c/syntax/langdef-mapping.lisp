@@ -620,12 +620,12 @@
     (b* (((reterr) (c::expr-ident (c::ident "irrelevant"))))
       (expr-case
        expr
-       :ident (b* (((erp ident1) (ldm-ident expr.unwrap)))
+       :ident (b* (((erp ident1) (ldm-ident expr.ident)))
                 (retok (c::expr-ident ident1)))
-       :const (b* (((erp const1) (ldm-const expr.unwrap)))
+       :const (b* (((erp const1) (ldm-const expr.const)))
                 (retok (c::expr-const const1)))
        :string (reterr (msg "Unsupported expression ~x0." (expr-fix expr)))
-       :paren (ldm-expr expr.unwrap)
+       :paren (ldm-expr expr.inner)
        :gensel (reterr (msg "Unsupported expression ~x0." (expr-fix expr)))
        :arrsub (b* (((erp arr1) (ldm-expr expr.arg1))
                     ((erp sub1) (ldm-expr expr.arg2)))
