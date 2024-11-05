@@ -2534,7 +2534,10 @@
      For a block scope, there is no linkage [C:6.2.2/6],
      and the lifetime is automatic [C:6.2.4/5];
      this assumes an object, but further validation code
-     can revise things if a function is being declared instead."))
+     can revise things if a function is being declared instead.")
+   (xdoc::p
+    "We prove that at most one of the @('typedefp') and @('lifetime?') results
+     can be non-@('nil')."))
   (b* (((reterr) nil (linkage-none) nil))
     (cond
      ((stor-spec-list-typedef-p storspecs)
@@ -2590,7 +2593,12 @@
                (lifetime-static))))
      (t (reterr (msg "The storage class specifier sequence ~x0 is invalid."
                      (stor-spec-list-fix storspecs))))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret not-typedef-and-lifetime-of-valid-stor-spec-list
+    (not (and typedefp lifetime?))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
