@@ -151,7 +151,8 @@
            certificates-for-validator
            get-network-state
            validator-init-when-system-initp
-           validator-init))
+           validator-init
+           in-of-message-certificates-for-validator))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -202,7 +203,8 @@
               (create-certificate-next cert systate)))
     :expand (system-signers-have-author+round-p
              (create-certificate-next cert systate))
-    :enable system-signers-have-author+round-p-necc))
+    :enable (system-signers-have-author+round-p-necc
+             certificates-for-validator-of-create-certificate-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -241,7 +243,8 @@
               (receive-certificate-next msg systate)))
     :expand (system-signers-have-author+round-p
              (receive-certificate-next msg systate))
-    :enable system-signers-have-author+round-p-necc))
+    :enable (system-signers-have-author+round-p-necc
+             certificates-for-validator-of-receive-certificate-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -296,7 +299,8 @@
               (store-certificate-next cert val systate)))
     :expand (system-signers-have-author+round-p
              (store-certificate-next cert val systate))
-    :enable system-signers-have-author+round-p-necc))
+    :enable (system-signers-have-author+round-p-necc
+             certificates-for-validator-of-store-certificate-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -328,7 +332,8 @@
               (advance-round-next val systate)))
     :expand (system-signers-have-author+round-p
              (advance-round-next val systate))
-    :enable system-signers-have-author+round-p-necc))
+    :enable (system-signers-have-author+round-p-necc
+             certificates-for-validator-of-advance-round-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -360,7 +365,8 @@
               (commit-anchors-next val systate)))
     :expand (system-signers-have-author+round-p
              (commit-anchors-next val systate))
-    :enable system-signers-have-author+round-p-necc))
+    :enable (system-signers-have-author+round-p-necc
+             certificates-for-validator-of-commit-anchors-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -35,6 +35,7 @@
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
+(local (include-book "kestrel/terms-light/all-vars1" :dir :system))
 
 (local (in-theory (e/d (integerp-when-natp)
                        (consp-from-len-cheap
@@ -737,6 +738,20 @@
        (dag (drop-non-supporters-array-with-name dag-array-name dag-array nodenum-or-quotep nil)))
     (mv (erp-nil) dag)))
 
+;todo
+;; (defthm merge-term-into-dag-simple-return-type
+;;   (implies (and (not (quotep (mv-nth 1 (merge-term-into-dag-simple term var-replacement-alist dag-or-quotep))))
+;;                 (pseudo-termp term)
+;;                 (or (myquotep dag-or-quotep)
+;;                     (and (pseudo-dagp dag-or-quotep)
+;;                          (<= (len dag-or-quotep) *max-1d-array-length*)))
+;;                 (symbol-alistp var-replacement-alist)
+;;                 (if (myquotep dag-or-quotep)
+;;                     (bounded-darg-listp (strip-cdrs var-replacement-alist) 0) ; simplify: they must all be constants
+;;                   (bounded-darg-listp (strip-cdrs var-replacement-alist) (len dag-or-quotep))))
+;;            (pseudo-dagp (mv-nth 1 (merge-term-into-dag-simple term var-replacement-alist dag-or-quotep))))
+;;   :hints (("Goal" :in-theory (enable merge-term-into-dag-simple <-of-+-of-1-when-integers))))
+
 ;; todo: return type theorems
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -757,3 +772,29 @@
                               dag-or-quotep))
 
 ;; todo: return type theorems
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Ensures that VAR is a free var of TERM and that TERM contains no free vars except VAR and the EXTRA-VARS.
+;; Returns (mv erp dag-or-quotep).
+;; Similar to compose-term-and-dag-safe.
+(defund wrap-term-around-dag-safe (term var dag-or-quotep extra-vars)
+  (declare (xargs :guard (and (pseudo-termp term)
+                              (symbolp var)
+                              (or (myquotep dag-or-quotep)
+                                  (and (pseudo-dagp dag-or-quotep)
+                                       (<= (len dag-or-quotep) *max-1d-array-length*)))
+                              (symbol-listp extra-vars))))
+  (let ((term-vars (all-vars term)))
+    (if (not (member-eq var term-vars))
+        (prog2$ (er hard? 'wrap-term-around-dag-safe "Var to be replaced, ~x0, is not among the vars in the term ~x1." var term)
+                (mv (erp-t) dag-or-quotep))
+      (let ((expected-vars (cons var extra-vars)))
+        (if (not (subsetp-eq term-vars expected-vars))
+            (prog2$ (er hard? 'wrap-term-around-dag-safe "Term ~x0 contains unexpected vars ~x1." term (set-difference-eq term-vars expected-vars))
+                    (mv (erp-t) dag-or-quotep))
+          (wrap-term-around-dag term var dag-or-quotep))))))
+
+;; todo: return type theorems
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

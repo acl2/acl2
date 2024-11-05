@@ -751,7 +751,7 @@
                                       ;; The instantiated-hyp is 'nil, so it failed to be relieved:
                                       (progn$ (and (member-eq rule-symbol (get-monitored-symbols rewrite-stobj))
                                                    ;; We don't print much here, because a hyp that turns out to be nil (as opposed to some term for which we need a rewrite rule) is not very interesting.
-                                                   (cw "(Failed to relieve hyp ~x0 for ~x1.~% Reason: Instantiated to nil.~%" hyp rule-symbol))
+                                                   (cw "(Failed to relieve hyp ~x0 for ~x1.~% Reason: Instantiated to nil.)~%" hyp rule-symbol))
                                               (mv (erp-nil) nil rewrite-stobj2 memoization hit-counts tries limits node-replacement-array))))
                                    ;; There are no free vars, so we try to relieve the (fully-instantiated) hyp by simplifying it:
                                    ((mv erp new-nodenum-or-quotep rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)
@@ -770,7 +770,7 @@
                                       ;;hyp rewrote to 'nil, so it failed to be relieved:
                                       (progn$ (and (member-eq rule-symbol (get-monitored-symbols rewrite-stobj))
                                                    ;; We don't print much here, because a hyp that turns out to be nil (as opposed to some term for which we need a rewrite rule) is not very interesting.
-                                                   (cw "(Failed to relieve hyp ~x0 for ~x1.~% Reason: Rewrote to nil.~%" hyp rule-symbol))
+                                                   (cw "(Failed to relieve hyp ~x0 for ~x1.~% Reason: Rewrote to nil.)~%" hyp rule-symbol))
                                               (mv (erp-nil) nil rewrite-stobj2 memoization hit-counts tries limits node-replacement-array))))
                                    ;; hyp didn't rewrite to a constant, new-nodenum-or-quotep is a node number):
                                    ;; Check whether the rewritten hyp is one of the known assumptions (todo: would be better to rewrite it using IFF).  TODO: Do the other versions of the rewriter/prover do something like this?

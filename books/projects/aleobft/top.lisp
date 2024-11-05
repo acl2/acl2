@@ -14,6 +14,7 @@
 (include-book "library-extensions/top")
 (include-book "static/top")
 (include-book "dynamic/top")
+(include-book "stake/top")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -39,30 +40,24 @@
     (xdoc::ahref "https://github.com/AleoNet/snarkVM" "snarkVM")
     " (for some functionality).")
    (xdoc::p
-    "This directory contains works in progress towards
-     a formal specification and correctness proofs of AleoBFT.
-     The subdirectory @('static') contains
-     a formal specification and correctness proofs
-     of a version of AleoBFT with static committees and without stake,
+    "This directory contains various versions of
+     formal specification and correctness proofs of AleoBFT.
+     The subdirectory @('static') contains a version for
+     AleoBFT with static committees and without stake,
      which is therefore similar to Bullshark,
      but with some differences unique to AleoBFT.
-     We have also started another directory @('dynamic'),
-     for a version of AleoBFT with dynamic committees.
+     The subdirectory @('dynamic') contains a version for
+     AleoBFT with dynamic committees but without stake,
+     which is a significant extension of the static version.
+     The subdirectory @('stake') contains a version for
+     AleoBFT with dynamic committees and with stake,
+     which mainly extends the previous one with stake.
      We plan to add other subdirectories,
-     parallel to @('static') and @('dynamic'),
-     for versions of the formal specification and correctness proofs
-     that cover additional aspects of AleoBFT,
-     such as stake and syncing.
-     While this work is in progress,
-     we may have these multiple subdirectories for different versions,
-     but eventually we may converge to one version,
-     in this directory (not in any subdirectory),
-     which subsumes all the previous versions.
-     The overall reason for tackling increasingly complex versions
-     of the formal specification and correctness proofs of AleoBFT
-     is to better manage the inherent complexity of the protocol.")
+     for versions that cover additional aspects of AleoBFT,
+     such as syncing.")
    (xdoc::p
-    "We formally specify AleoBFT as a labeled state transition system:
+    "In each version,
+     we formally specify AleoBFT as a labeled state transition system:
      we define the possible states of the system (of all validators),
      the possible events that can take place in the system,
      and then we define, in essence, a ternary transition relation
@@ -88,4 +83,5 @@
      and to be preserved by state transitions."))
   :order-subtopics (library-extensions
                     aleobft-static::aleobft-static
-                    aleobft-dynamic::aleobft-dynamic))
+                    aleobft-dynamic::aleobft-dynamic
+                    aleobft-stake::aleobft-stake))

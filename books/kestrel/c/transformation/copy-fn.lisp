@@ -78,10 +78,10 @@
     :returns (new-expr exprp)
     (expr-case
      expr
-     :ident (if (equal expr.unwrap old-fn)
+     :ident (if (equal expr.ident old-fn)
                 (expr-ident new-fn)
               (expr-fix expr))
-     :paren (expr-paren (rename-fn-funcall-fun expr.unwrap old-fn new-fn))
+     :paren (expr-paren (rename-fn-funcall-fun expr.inner old-fn new-fn))
      :gensel
      (make-expr-gensel
        :control expr.control
@@ -125,7 +125,7 @@
   (lambda (expr old-fn new-fn)
     (expr-case
       expr
-      :paren (expr-paren (rename-fn-expr expr.unwrap old-fn new-fn))
+      :paren (expr-paren (rename-fn-expr expr.inner old-fn new-fn))
       :gensel
       (make-expr-gensel :control (rename-fn-expr expr.control old-fn new-fn)
                         :assocs (rename-fn-genassoc-list expr.assocs old-fn new-fn))

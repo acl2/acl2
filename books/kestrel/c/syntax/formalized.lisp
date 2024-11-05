@@ -310,10 +310,10 @@
      then we could make this check more precise."))
   (expr-case
    expr
-   :ident (ident-formalp expr.unwrap)
-   :const (const-formalp expr.unwrap)
+   :ident (ident-formalp expr.ident)
+   :const (const-formalp expr.const)
    :string nil
-   :paren (expr-pure-formalp expr.unwrap)
+   :paren (expr-pure-formalp expr.inner)
    :gensel nil
    :arrsub (and (expr-pure-formalp expr.arg1)
                 (expr-pure-formalp expr.arg2))

@@ -1,4 +1,4 @@
-This directory contains a formal specification and correctness proofs of AleoBFT,
+This directory contains formal specifications and correctness proofs of AleoBFT,
 the Byzantine-fault-tolerant consensus protocol of the Aleo blockchain.
 
 This AleoBFT library is documented in the manual at:

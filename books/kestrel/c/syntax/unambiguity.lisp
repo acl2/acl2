@@ -69,7 +69,7 @@
                :ident t
                :const t
                :string t
-               :paren (expr-unambp expr.unwrap)
+               :paren (expr-unambp expr.inner)
                :gensel (and (expr-unambp expr.control)
                             (genassoc-list-unambp expr.assocs))
                :arrsub (and (expr-unambp expr.arg1)
@@ -1459,10 +1459,10 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defrule expr-unambp-of-expr-paren->unwrap
+  (defrule expr-unambp-of-expr-paren->inner
     (implies (and (expr-unambp expr)
                   (expr-case expr :paren))
-             (expr-unambp (expr-paren->unwrap expr)))
+             (expr-unambp (expr-paren->inner expr)))
     :expand (expr-unambp expr))
 
   (defrule expr-unambp-of-expr-gensel->control

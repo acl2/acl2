@@ -42,7 +42,10 @@
      Instead, as also done for anchors non-forking
      (see @(see nonforking-anchors)),
      we need to prove the preservation of blockchain non-forking
-     from old state to new state."))
+     from old state to new state.")
+   (xdoc::p
+    "In @(see nonforking-blockchains) we prove that
+     the invariant holds in every reachable state."))
   :order-subtopics t
   :default-parent t)
 

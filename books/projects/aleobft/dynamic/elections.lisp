@@ -29,8 +29,8 @@
    (xdoc::p
     "Each even round has a deterministically chosen leader
      among the validators that form the active committee at that round.
-     If all validators agree on the committee at that round
-     (as we plan to prove as one of the key properties of the protocol),
+     If all validators agree on the committee at that round,
+     which we prove in @(see same-committees),
      then they choose the same leader.
      Given this common leader, each validator uses
      the certificates at the immediately following odd round
@@ -71,7 +71,7 @@
      But in our model we can just use a constrained function,
      as the details do not matter,
      at least for the kind of properties that
-     we plan to prove in the near future."))
+     we are proving in the near future."))
 
   (encapsulate
     (((leader-at-round * *) => *
@@ -119,9 +119,9 @@
      between the even and odd round,
      if it changed between the two rounds
      exactly at the @(tsee lookback) distance.
-     This possible change of committee should be unproblematic
+     This possible change of committee is unproblematic
      for the purpose of the correctness of the protocol,
-     but we ensure that by way of formal proofs.")
+     as we ensure by way of formal proofs.")
    (xdoc::p
     "We go through the voters, and check whether the leader address
      is among the refernced previous certificates or not,

@@ -486,7 +486,7 @@
        The generated function is accompanied by the following theorems:")
      (xdoc::ul
       (xdoc::li
-       "@('<prefix>-<rulename>-conc<i>-rep-elem-match'),
+       "@('<prefix>-<rulename>-conc-rep-elem-match'),
         which asserts that the result of the function
         matches the rule name of the element.")
       (xdoc::li

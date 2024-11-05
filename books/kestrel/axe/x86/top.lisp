@@ -22,7 +22,7 @@
 
 ;;Lifters:
 (include-book "unroll-x86-code")
-(include-book "lifter")
+(include-book "loop-lifter")
 
 ;; Formal Unit Tester:
 (include-book "tester")
