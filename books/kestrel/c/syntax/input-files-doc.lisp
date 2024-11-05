@@ -130,7 +130,7 @@
        (xdoc::seetopic "parser" "parse")
        " the files into an "
        (xdoc::seetopic "abstract-syntax" "abstract syntax")
-       "representation, which may contain ambiguous constructs.")
+       " representation, which may contain ambiguous constructs.")
       (xdoc::li
        "@(':disamb') (the default),
         to parse the files as with @(':parse'),
