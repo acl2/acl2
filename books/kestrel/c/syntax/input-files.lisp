@@ -306,13 +306,10 @@
                  events))
        ;; Preprocess if required;
        ;; either way, after this, FILES contains the files to process.
-       ((mv erp files state) (if preprocessor
+       ((erp files state) (if preprocessor
                                  (preprocess-files paths
                                                    :preprocessor preprocessor)
                                (retok files state)))
-       ((when erp)
-        (reterr (msg "Preprocessing of ~x0 failed with error ~x1."
-                     paths erp)))
        ;; Generate :CONST-PREPROC if required.
        (events (if const-preproc
                    (cons `(defconst ,const-preproc ',files) events)
