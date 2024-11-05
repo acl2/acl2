@@ -17,7 +17,7 @@ be IFDEF'd out:
 
   # bash:
   export SRTDIV_HAS_IMPLEMENTATION=1
-  
+
   # csh:
   setenv SRTDIV_HAS_IMPLEMENTATION 1
 

@@ -87,7 +87,7 @@
   :hints ((and stable-under-simplificationp
                '(:nonlinearp t))))
 
-(local (Defthm a/a*x
+(local (defthm a/a*x
          (implies (and (acl2-numberp a)
                        (not (equal a 0)))
                   (equal (* a (/ a) x) (fix x)))
@@ -172,9 +172,6 @@
     :hints ((and stable-under-simplificationp
                  '(:nonlinearp t))))
 
-
-
-
 (defthmd quad-negative-outside
     (implies (and (rationalp x)
                   (rationalp a)
@@ -182,7 +179,7 @@
                   (rationalp c)
                   (< a 0)
                   ;; we don't need to assume that the zeros are real for this theorem
-                  
+
                   ;;  x is outside the roots of the quadratic
                   (> (* (+ (* 2 a x) b) (+ (* 2 a x) b))
                      (- (* b b) (* 4 a c))))
@@ -203,4 +200,3 @@
              (< 0 (quad x a b c)))
     :hints ((and stable-under-simplificationp
                  '(:nonlinearp t))))
-

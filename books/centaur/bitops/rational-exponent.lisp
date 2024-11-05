@@ -39,15 +39,15 @@
          (implies (natp sh)
                   (equal (equal 0 (ash x sh))
                          (zip x)))
-         :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
-                                            bitops::ihsext-recursive-redefs)))))
+         :hints (("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                             bitops::ihsext-recursive-redefs)))))
 
 (local (defthm posp-of-leftshift
          (implies (and (natp sh)
                        (posp x))
                   (posp (ash x sh)))
-         :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
-                                            bitops::ihsext-recursive-redefs)))
+         :hints (("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                             bitops::ihsext-recursive-redefs)))
          :rule-classes :type-prescription))
 
 (local
@@ -57,7 +57,7 @@
                                  (ash 1 (1- (integer-length (abs x))))))))
               (and (<= 1 scand)
                    (< scand 2))))
-   :hints (("goal"
+   :hints (("Goal"
             :in-theory (enable* bitops::ihsext-inductions)
             :induct (integer-length x)
             :expand ((integer-length x)
@@ -69,7 +69,7 @@
   :returns (exp integerp :rule-classes :type-prescription)
   ;; We want the integer e such that x = sign * scand * 2^e, 1 <= scand < 2, sign = 1 or -1.
   ;; If x is an integer, e is (1- (integer-length (abs x))) by integer-length-minus-1-is-exponent above.
-  
+
   ;; In general, we have x = n / d, integers.  Let en / ed be their respective
   ;; exponents, scn / scd their significands, and signn the sign of n (d is
   ;; always positive).  n / d = signn * scn * 2^en / (scd * 2^ed) = signn *
@@ -95,8 +95,8 @@
   (local (defthm integer-length-<-0
            (implies (posp x)
                     (posp (integer-length x)))
-           :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
-                                              bitops::ihsext-recursive-redefs)))
+           :hints (("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                               bitops::ihsext-recursive-redefs)))
            :rule-classes :type-prescription))
 
   (defthm rational-exponent-correct-positive
@@ -105,23 +105,23 @@
              (let ((scand (/ x (expt 2 (rational-exponent x)))))
                (and (<= 1 scand)
                     (< scand 2))))
-    :hints(("Goal" :in-theory (e/d (bitops::ash-is-expt-*-x
-                                    acl2::exponents-add-unrestricted)
-                                   (rational-implies2
-                                    ACL2::*-R-DENOMINATOR-R))
-            :use ((:instance integer-length-minus-1-is-exponent
-                   (x (abs (numerator x))))
-                  (:instance integer-length-minus-1-is-exponent
-                   (x (denominator x)))
-                  (:instance rational-implies2 (x x))))
-           (and stable-under-simplificationp
-                '(:nonlinearp t))))
+    :hints (("Goal" :in-theory (e/d (bitops::ash-is-expt-*-x
+                                     acl2::exponents-add-unrestricted)
+                                    (rational-implies2
+                                     ACL2::*-R-DENOMINATOR-R))
+             :use ((:instance integer-length-minus-1-is-exponent
+                              (x (abs (numerator x))))
+                   (:instance integer-length-minus-1-is-exponent
+                              (x (denominator x)))
+                   (:instance rational-implies2 (x x))))
+            (and stable-under-simplificationp
+                 '(:nonlinearp t))))
 
   (defthm denominator-of-neg
     (equal (denominator (- x))
            (denominator x))
-    :hints (("goal" :cases ((rationalp x)))))
-  
+    :hints (("Goal" :cases ((rationalp x)))))
+
   (defthm rational-exponent-of-negate
     (equal (rational-exponent (- x))
            (rational-exponent x)))
@@ -129,15 +129,15 @@
   (defthm rational-exponent-of-rfix
     (equal (rational-exponent (rfix x))
            (rational-exponent x)))
-  
+
   (defthm rational-exponent-correct-negative
     (implies (and (rationalp x)
                   (< x 0))
              (let ((scand (- (/ x (expt 2 (rational-exponent x))))))
                (and (<= 1 scand)
                     (< scand 2))))
-    :hints (("goal" :use ((:instance rational-exponent-correct-positive
-                           (x (- x))))
+    :hints (("Goal" :use ((:instance rational-exponent-correct-positive
+                                     (x (- x))))
              :in-theory (disable rational-exponent)))))
 
 (define rational-significand ((x rationalp))
@@ -152,7 +152,7 @@
     (implies (not (equal (rfix x) 0))
              (and (<= 1 scand)
                   (< scand 2)))
-    :hints (("goal" :cases ((< (rfix x) 0))))
+    :hints (("Goal" :cases ((< (rfix x) 0))))
     :rule-classes :linear)
 
   (defret rational-significand-type
@@ -168,7 +168,7 @@
     (equal (rational-significand (rfix x))
            (rational-significand x)))
 
-  (Defret rational-significand-equal-0
+  (defret rational-significand-equal-0
     (equal (equal 0 scand)
            (equal 0 (rfix x)))))
 
@@ -201,43 +201,47 @@
             (rational-significand x)
             (expt 2 (rational-exponent x)))
          (rfix x))
-  :hints(("Goal" :in-theory (enable rational-significand
-                                    rational-sign))))
+  :hints (("Goal" :in-theory (enable rational-significand
+                                     rational-sign))))
 
 (defthmd rational-exponent-in-terms-of-rational-significand
   (implies (and (rationalp x)
                 (not (equal x 0)))
            (equal (expt 2 (rational-exponent x))
                   (* (rational-sign x) (/ x (rational-significand x)))))
-  :hints(("Goal" :in-theory (enable rational-significand
-                                    rational-sign))))
+  :hints (("Goal" :in-theory (enable rational-significand
+                                     rational-sign))))
 
 (defthmd rational-exponent-in-terms-of-rational-significand-abs
   (implies (and (rationalp x)
                 (not (equal x 0)))
            (equal (expt 2 (rational-exponent x))
                   (/ (abs x) (rational-significand x))))
-  :hints(("Goal" :in-theory (enable rational-exponent-in-terms-of-rational-significand
-                                    rational-sign))))
+  :hints (("Goal"
+           :in-theory (enable rational-exponent-in-terms-of-rational-significand
+                              rational-sign))))
 
 (defthmd rational-significand-in-terms-of-rational-exponent
   (implies (and (rationalp x)
                 (not (equal x 0)))
            (equal (rational-significand x)
                   (* (rational-sign x) (/ x (expt 2 (rational-exponent x))))))
-  :hints(("Goal" :in-theory (enable rational-significand
-                                    rational-sign))))
+  :hints (("Goal" :in-theory (enable rational-significand
+                                     rational-sign))))
 
 (defthmd rational-significand-in-terms-of-rational-exponent-abs
   (implies (and (rationalp x)
                 (not (equal x 0)))
            (equal (rational-significand x)
                   (/ (abs x) (expt 2 (rational-exponent x)))))
-  :hints(("Goal" :in-theory (enable rational-significand-in-terms-of-rational-exponent
-                                    rational-sign))))
+  :hints (("Goal"
+           :in-theory (enable rational-significand-in-terms-of-rational-exponent
+                              rational-sign))))
 
 
-(encapsulate nil
+(encapsulate
+  nil
+
   (local (defthm divide-out-exponent
            (implies (and (rationalp r)
                          (rationalp s)
@@ -247,8 +251,8 @@
                          (equal r s)))))
 
   (local (defun rational-exponent-diff (significand exponent)
-           (- (rational-exponent (* significand (expt 2 exponent))) (ifix Exponent))))
-  
+           (- (rational-exponent (* significand (expt 2 exponent))) (ifix exponent))))
+
   (local (defthm rewrite-rational-exponent-in-terms-of-diff
            (implies (integerp exponent)
                     (equal (rational-exponent (* significand (expt 2 exponent)))
@@ -260,9 +264,9 @@
            (implies (and (integerp x)
                          (< x 0))
                     (<= (expt 2 x) 1/2))
-           :hints(("Goal" :in-theory (enable expt)))
+           :hints (("Goal" :in-theory (enable expt)))
            :rule-classes :linear))
-  
+
   (defthm rational-sign-significand-exponent-unique
     (implies (and (or (equal sign 1) (equal sign -1))
                   (rationalp significand)
@@ -273,10 +277,11 @@
                (and (equal (rational-sign x) sign)
                     (equal (rational-significand x) significand)
                     (equal (rational-exponent x) exponent))))
-    :hints (("Goal" :in-theory (e/d (rational-sign)
-                                    (rational-sign-significand-exponent-correct))
+    :hints (("Goal"
+             :in-theory (e/d (rational-sign)
+                             (rational-sign-significand-exponent-correct))
              :use ((:instance rational-sign-significand-exponent-correct
-                    (x (* sign significand (expt 2 exponent)))))
+                              (x (* sign significand (expt 2 exponent)))))
              :cases ((equal (rational-exponent (* sign significand (expt 2 exponent)))
                             exponent)))
             (and stable-under-simplificationp
@@ -288,7 +293,7 @@
 
 
   (local (in-theory (disable rewrite-rational-exponent-in-terms-of-diff)))
-  
+
   (defthm rational-sign-significand-exponent-of-double
     (and (equal (rational-sign (* 2 x))
                 (rational-sign x))
@@ -297,12 +302,13 @@
          (implies (not (equal (rfix x) 0))
                   (equal (rational-exponent (* 2 x))
                          (+ 1 (rational-exponent x)))))
-    :hints (("goal" :use ((:instance rational-sign-significand-exponent-unique
-                           (exponent (+ 1 (rational-exponent x)))
-                           (significand (rational-significand x))
-                           (sign (rational-sign x)))
-                          (:instance rational-sign-significand-exponent-correct
-                           (x x)))
+    :hints (("Goal"
+             :use ((:instance rational-sign-significand-exponent-unique
+                              (exponent (+ 1 (rational-exponent x)))
+                              (significand (rational-significand x))
+                              (sign (rational-sign x)))
+                   (:instance rational-sign-significand-exponent-correct
+                              (x x)))
              :in-theory (e/d (rational-sign
                               acl2::exponents-add-unrestricted)
                              (rational-sign-significand-exponent-unique
@@ -316,15 +322,16 @@
                 (rational-sign x))
          (equal (rational-significand (* 1/2 x))
                 (rational-significand x))
-         (implies (not (Equal (rfix x) 0))
+         (implies (not (equal (rfix x) 0))
                   (equal (rational-exponent (* 1/2 x))
                          (+ -1 (rational-exponent x)))))
-    :hints (("goal" :use ((:instance rational-sign-significand-exponent-unique
-                           (exponent (+ -1 (rational-exponent x)))
-                           (significand (rational-significand x))
-                           (sign (rational-sign x)))
-                          (:instance rational-sign-significand-exponent-correct
-                           (x x)))
+    :hints (("Goal"
+             :use ((:instance rational-sign-significand-exponent-unique
+                              (exponent (+ -1 (rational-exponent x)))
+                              (significand (rational-significand x))
+                              (sign (rational-sign x)))
+                   (:instance rational-sign-significand-exponent-correct
+                              (x x)))
              :in-theory (e/d (rational-sign
                               acl2::exponents-add-unrestricted)
                              (rational-sign-significand-exponent-unique
@@ -339,20 +346,20 @@
                   (<= 1 (abs x))
                   (< (abs x) 2))
              (equal (rational-exponent x) 0))
-    :hints (("goal" :use ((:instance rational-sign-significand-exponent-unique
-                           (sign (if (< x 0) -1 1))
-                           (significand (abs x))
-                           (exponent 0))))))
+    :hints (("Goal" :use ((:instance rational-sign-significand-exponent-unique
+                                     (sign (if (< x 0) -1 1))
+                                     (significand (abs x))
+                                     (exponent 0))))))
 
   (defthm rational-significand-base-case
     (implies (and (rationalp x)
                   (<= 1 (abs x))
                   (< (abs x) 2))
              (equal (rational-significand x) (abs x)))
-    :hints (("goal" :use ((:instance rational-sign-significand-exponent-unique
-                           (sign (if (< x 0) -1 1))
-                           (significand (abs x))
-                           (exponent 0))))))
+    :hints (("Goal" :use ((:instance rational-sign-significand-exponent-unique
+                                     (sign (if (< x 0) -1 1))
+                                     (significand (abs x))
+                                     (exponent 0))))))
 
   (local (defund rational-exponent-x-y-diff (x y)
            (acl2::pos-fix (- (rational-exponent x) (rational-exponent y)))))
@@ -364,8 +371,7 @@
                          (< (rational-exponent y) (rational-exponent x)))
                     (equal (rational-exponent x)
                            (+ (rational-exponent y) (rational-exponent-x-y-diff x y))))
-           :hints(("Goal" :in-theory (enable rational-exponent-x-y-diff)))))
-  
+           :hints (("Goal" :in-theory (enable rational-exponent-x-y-diff)))))
 
   (defthm rational-exponent-monotonic
     (implies (and (<= (abs x) (abs y))
@@ -373,10 +379,11 @@
                   (rationalp y)
                   (not (equal x 0)))
              (<= (rational-exponent x) (rational-exponent y)))
-    :hints (("goal" :use ((:instance rational-sign-significand-exponent-correct
-                           (x x))
-                          (:instance rational-sign-significand-exponent-correct
-                           (x y)))
+    :hints (("Goal"
+             :use ((:instance rational-sign-significand-exponent-correct
+                              (x x))
+                   (:instance rational-sign-significand-exponent-correct
+                              (x y)))
              :in-theory (e/d (rewrite-rational-exponent-in-terms-of-x-y-diff
                               rational-sign)
                              (rational-sign-significand-exponent-correct)))
@@ -395,7 +402,7 @@
                          (<= n (rational-exponent x)))
                     (equal (rational-exponent x)
                            (+ n (rational-exponent-x-n-diff x n))))
-           :hints(("Goal" :in-theory (enable rational-exponent-x-n-diff)))))
+           :hints (("Goal" :in-theory (enable rational-exponent-x-n-diff)))))
 
   (defthm rational-exponent-less-than-power-of-2
     (implies (and (< (abs x) (expt 2 n))
@@ -403,8 +410,9 @@
                   (rationalp x)
                   (not (equal x 0)))
              (< (rational-exponent x) n))
-    :hints (("goal" :use ((:instance rational-sign-significand-exponent-correct
-                           (x x)))
+    :hints (("Goal"
+             :use ((:instance rational-sign-significand-exponent-correct
+                              (x x)))
              :in-theory (e/d (rational-sign
                               rewrite-rational-exponent-in-terms-of-x-n-diff)
                              (rational-sign-significand-exponent-correct)))
@@ -415,8 +423,9 @@
   (defthm rational-exponent-of-expt-2
     (equal (rational-exponent (expt 2 n))
            (ifix n))
-    :hints (("goal" :use ((:instance rational-sign-significand-exponent-unique
-                           (sign 1) (significand 1) (exponent (ifix n))))
+    :hints (("Goal"
+             :use ((:instance rational-sign-significand-exponent-unique
+                              (sign 1) (significand 1) (exponent (ifix n))))
              :in-theory (disable rational-sign-significand-exponent-unique))))
 
   (defthm rational-exponent-gte-power-of-2
@@ -424,8 +433,8 @@
                   (integerp n)
                   (rationalp x))
              (<= n (rational-exponent x)))
-    :hints (("goal" :use ((:instance rational-exponent-monotonic
-                           (y x) (x (expt 2 n))))
+    :hints (("Goal" :use ((:instance rational-exponent-monotonic
+                                     (y x) (x (expt 2 n))))
              :in-theory (e/d (rational-sign)
                              (rational-exponent-monotonic)))
             (and stable-under-simplificationp
@@ -436,8 +445,8 @@
     (implies (and (<= 2 (abs x))
                   (rationalp x))
              (< 0 (rational-exponent x)))
-    :hints (("goal" :use ((:instance rational-exponent-gte-power-of-2
-                           (n 1)))))
+    :hints (("Goal" :use ((:instance rational-exponent-gte-power-of-2
+                                     (n 1)))))
     :rule-classes :linear)
 
   (defthm rational-exponent-negative
@@ -445,8 +454,8 @@
                   (rationalp x)
                   (not (equal x 0)))
              (< (rational-exponent x) 0))
-    :hints (("goal" :use ((:instance rational-exponent-less-than-power-of-2
-                           (n 0)))))
+    :hints (("Goal" :use ((:instance rational-exponent-less-than-power-of-2
+                                     (n 0)))))
     :rule-classes :linear))
 
 
@@ -461,7 +470,7 @@
   (defthmd rational-exponent-in-terms-of-rec
     (equal (rational-exponent x)
            (rational-exponent-rec x))
-    :hints (("goal" :induct t)
+    :hints (("Goal" :induct t)
             (and stable-under-simplificationp
                  '(:in-theory (enable rational-exponent)))))
 
@@ -472,14 +481,14 @@
              (cond ((< xa 1) (1- (rational-exponent (* x 2))))
                    ((< xa 2) 0)
                    (t (1+ (rational-exponent (/ x 2)))))))
-    :hints(("Goal" :in-theory (enable rational-exponent-rec
-                                      rational-exponent-in-terms-of-rec)))
+    :hints (("Goal" :in-theory (enable rational-exponent-rec
+                                       rational-exponent-in-terms-of-rec)))
     :rule-classes ((:definition :controller-alist ((rational-exponent t)))))
 
   (defthmd rational-exponent-induct
     t
     :rule-classes ((:induction :pattern (rational-exponent x)
-                    :scheme (rational-exponent-rec x)))))
+                               :scheme (rational-exponent-rec x)))))
 
 (define rational-significand-rec ((x rationalp))
   :guard (not (eql x 0))
@@ -493,7 +502,7 @@
   (defthmd rational-significand-in-terms-of-rec
     (equal (rational-significand x)
            (rational-significand-rec x))
-    :hints (("goal" :induct t)
+    :hints (("Goal" :induct t)
             (and stable-under-simplificationp
                  '(:in-theory (enable rational-significand)))))
 
@@ -504,14 +513,14 @@
              (cond ((< xa 1) (rational-significand (* x 2)))
                    ((< xa 2) xa)
                    (t (rational-significand (/ x 2))))))
-    :hints(("Goal" :in-theory (enable rational-significand-rec
-                                      rational-significand-in-terms-of-rec)))
+    :hints (("Goal" :in-theory (enable rational-significand-rec
+                                       rational-significand-in-terms-of-rec)))
     :rule-classes ((:definition :controller-alist ((rational-significand t)))))
 
   (defthmd rational-significand-induct
     t
     :rule-classes ((:induction :pattern (rational-significand x)
-                    :scheme (rational-significand-rec x)))))
+                               :scheme (rational-significand-rec x)))))
 
 
 
@@ -524,7 +533,7 @@
                   (< x y)
                   (equal (rational-exponent x) (rational-exponent y)))
              (< (rational-significand x) (rational-significand y)))
-    :hints (("goal" :use ((:instance rational-sign-significand-exponent-correct (x x))
+    :hints (("Goal" :use ((:instance rational-sign-significand-exponent-correct (x x))
                           (:instance rational-sign-significand-exponent-correct (x y)))
              :in-theory (e/d (rational-sign)
                              (rational-sign-significand-exponent-correct)))
@@ -538,8 +547,9 @@
                   (< x y)
                   (equal (rational-exponent x) (rational-exponent y)))
              (< (rational-significand y) (rational-significand x)))
-    :hints (("goal" :use ((:instance rational-sign-significand-exponent-correct (x x))
-                          (:instance rational-sign-significand-exponent-correct (x y)))
+    :hints (("Goal"
+             :use ((:instance rational-sign-significand-exponent-correct (x x))
+                   (:instance rational-sign-significand-exponent-correct (x y)))
              :in-theory (e/d (rational-sign)
                              (rational-sign-significand-exponent-correct)))
             (and stable-under-simplificationp
@@ -550,7 +560,7 @@
                 (not (equal x 0)))
            (equal (rational-exponent (* (expt 2 n) x))
                   (+ (ifix n) (rational-exponent x))))
-  :hints(("Goal" :in-theory (enable expt))))
+  :hints (("Goal" :in-theory (enable expt))))
 
 
 
@@ -559,18 +569,20 @@
                 (not (equal x 0)))
            (equal (rational-significand (* (expt 2 n) x))
                   (rational-significand x)))
-  :hints(("Goal" :in-theory (enable expt))))
+  :hints (("Goal" :in-theory (enable expt))))
 
 (defthm rational-significand-of-expt-2
   (implies (and (rationalp x)
                 (not (equal x 0)))
            (equal (rational-significand (expt 2 n))
                   1))
-  :hints(("Goal" :use ((:instance rational-significand-of-expt-2-prod (x 1)))
-          :in-theory (disable rational-significand-of-expt-2-prod))))
+  :hints (("Goal"
+           :use ((:instance rational-significand-of-expt-2-prod (x 1)))
+           :in-theory (disable rational-significand-of-expt-2-prod))))
 
 
-(encapsulate nil
+(encapsulate
+  nil
 
   (local (defthm rational-exponent-of-expt-2-prod-third
            (implies (and (rationalp x)
@@ -578,11 +590,12 @@
                          (rationalp z)
                          (not (equal x 0))
                          (not (equal y 0))
-                         (not (Equal z 0)))
+                         (not (equal z 0)))
                     (equal (rational-exponent (* x y (expt 2 n) z))
                            (+ (ifix n) (rational-exponent (* x y z)))))
-           :hints (("goal" :use ((:instance rational-exponent-of-expt-2-prod
-                                  (x (* x y z))))
+           :hints (("Goal"
+                    :use ((:instance rational-exponent-of-expt-2-prod
+                                     (x (* x y z))))
                     :in-theory (disable rational-exponent-of-expt-2-prod)))))
 
   (local (defthm rational-exponent-of-expt-2-prod-third2
@@ -592,8 +605,9 @@
                          (not (equal y 0)))
                     (equal (rational-exponent (* x y (expt 2 n)))
                            (+ (ifix n) (rational-exponent (* x y)))))
-           :hints (("goal" :use ((:instance rational-exponent-of-expt-2-prod
-                                  (x (* x y))))
+           :hints (("Goal"
+                    :use ((:instance rational-exponent-of-expt-2-prod
+                                     (x (* x y))))
                     :in-theory (disable rational-exponent-of-expt-2-prod)))))
 
   (local (defthm rational-significand-of-expt-2-prod-third
@@ -602,11 +616,12 @@
                          (rationalp z)
                          (not (equal x 0))
                          (not (equal y 0))
-                         (not (Equal z 0)))
+                         (not (equal z 0)))
                     (equal (rational-significand (* x y (expt 2 n) z))
                            (rational-significand (* x y z))))
-           :hints (("goal" :use ((:instance rational-significand-of-expt-2-prod
-                                  (x (* x y z))))
+           :hints (("Goal"
+                    :use ((:instance rational-significand-of-expt-2-prod
+                                     (x (* x y z))))
                     :in-theory (disable rational-significand-of-expt-2-prod)))))
 
   (local (defthm rational-significand-of-expt-2-prod-third2
@@ -616,35 +631,41 @@
                          (not (equal y 0)))
                     (equal (rational-significand (* x y (expt 2 n)))
                            (rational-significand (* x y))))
-           :hints (("goal" :use ((:instance rational-significand-of-expt-2-prod
-                                  (x (* x y))))
+           :hints (("Goal"
+                    :use ((:instance rational-significand-of-expt-2-prod
+                                     (x (* x y))))
                     :in-theory (disable rational-significand-of-expt-2-prod)))))
-  
-  (local (defthmd x*y-equals-exponent-prod
-           (implies (and (syntaxp (and (equal x 'x)
-                                       (equal y 'y)))
-                         (rationalp x)
-                         (rationalp y)
-                         (not (equal x 0))
-                         (not (equal y 0)))
-                    (equal (* x y)
-                           (* (expt 2 (rational-exponent x))
-                              (expt 2 (rational-exponent y))
-                              (rational-significand x)
-                              (rational-significand y)
-                              (rational-sign x)
-                              (rational-sign y))))
-           :hints(("Goal" :in-theory (enable rational-significand-in-terms-of-rational-exponent
-                                             rational-sign)))))
+
+  (local
+   (defthmd x*y-equals-exponent-prod
+     (implies (and (syntaxp (and (equal x 'x)
+                                 (equal y 'y)))
+                   (rationalp x)
+                   (rationalp y)
+                   (not (equal x 0))
+                   (not (equal y 0)))
+              (equal (* x y)
+                     (* (expt 2 (rational-exponent x))
+                        (expt 2 (rational-exponent y))
+                        (rational-significand x)
+                        (rational-significand y)
+                        (rational-sign x)
+                        (rational-sign y))))
+     :hints (("Goal"
+              :in-theory (enable rational-significand-in-terms-of-rational-exponent
+                                 rational-sign)))))
 
   (local (defthm rational-significand-prod-bounds
            (implies (and (not (equal (rfix x) 0))
                          (not (equal (rfix y) 0)))
-                    (and (<= 1 (* (rational-significand x) (rational-significand y)))
-                         (< (* (rational-significand x) (rational-significand y)) 4)))
-           :hints (("goal" :nonlinearp t))
+                    (and (<= 1 (* (rational-significand x)
+                                  (rational-significand y)))
+                         (< (* (rational-significand x)
+                               (rational-significand y))
+                            4)))
+           :hints (("Goal" :nonlinearp t))
            :rule-classes :linear))
-  
+
   (defthmd rational-exponent/significand-of-multiply
     (implies (and (rationalp x)
                   (rationalp y)
@@ -654,25 +675,29 @@
                          (b* ((xsig (rational-significand x))
                               (ysig (rational-significand y))
                               (over (<= 2 (* xsig ysig))))
-                           (+ (if over 1 0) (rational-exponent x) (rational-exponent y))))
+                           (+ (if over 1 0)
+                              (rational-exponent x)
+                              (rational-exponent y))))
                   (equal (rational-significand (* x y))
                          (b* ((xsig (rational-significand x))
                               (ysig (rational-significand y))
                               (over (<= 2 (* xsig ysig))))
                            (* (if over 1/2 1)
-                              (rational-significand x) (rational-significand y))))))
-    :hints (("goal" :use ((:instance rational-sign-significand-exponent-correct (x x))
-                          (:instance rational-sign-significand-exponent-correct (x y)))
+                              (rational-significand x)
+                              (rational-significand y))))))
+    :hints (("Goal"
+             :use ((:instance rational-sign-significand-exponent-correct (x x))
+                   (:instance rational-sign-significand-exponent-correct (x y)))
              :in-theory (e/d (rational-sign
                               x*y-equals-exponent-prod)
                              (rational-sign-significand-exponent-correct)))
             (and stable-under-simplificationp
                  '(:expand ((:with rational-exponent-recursive
-                             (rational-exponent (* (rational-significand x)
-                                                   (rational-significand y))))
+                                   (rational-exponent (* (rational-significand x)
+                                                         (rational-significand y))))
                             (:with rational-significand-recursive
-                             (rational-significand (* (rational-significand x)
-                                                      (rational-significand y))))))))))
+                                   (rational-significand (* (rational-significand x)
+                                                            (rational-significand y))))))))))
 
 (defthmd rational-exponent/significand-of-recip
   (implies (and (rationalp x)
@@ -685,7 +710,8 @@
                        (if (equal (rational-significand x) 1)
                            1
                          (* 2 (/ (rational-significand x)))))))
-  :hints (("goal" :in-theory (enable rational-exponent-induct)
+  :hints (("Goal"
+           :in-theory (enable rational-exponent-induct)
            :induct (rational-exponent x)
            :expand ((:with rational-exponent-recursive (rational-exponent (/ x)))
                     (:with rational-exponent-recursive (rational-exponent x))
@@ -708,6 +734,6 @@
                                (/ (rational-significand x) (rational-significand y)))))
                   (and (equal (rational-significand (* (/ y) x)) signif)
                        (equal (rational-significand (* x (/ y))) signif)))))
-  :hints(("Goal" :in-theory (enable rational-exponent/significand-of-multiply
-                                    rational-exponent/significand-of-recip)))
+  :hints (("Goal" :in-theory (enable rational-exponent/significand-of-multiply
+                                     rational-exponent/significand-of-recip)))
   :otf-flg t)

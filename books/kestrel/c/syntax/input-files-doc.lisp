@@ -34,6 +34,11 @@
    (xdoc::evmac-section-intro
 
     (xdoc::p
+     "In the name of this macro,
+      @('input') is best read as a verb:
+      the macro inputs files into ACL2.")
+
+    (xdoc::p
      "This macro takes as input a list of file paths
       (which must contain C code),
       reads those files from the file system,

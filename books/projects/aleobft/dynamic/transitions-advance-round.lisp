@@ -93,7 +93,7 @@
      which was in turn based on a probably now outdated snarkOS implementation.
      We will probably need to revise these conditions,
      but there is no urgency, because they do not affect
-     the properties that we plan to prove in the short term:
+     the properties that we have proved so far:
      for those properties, we could simply define that
      round advancement is always possible.")
    (xdoc::p
