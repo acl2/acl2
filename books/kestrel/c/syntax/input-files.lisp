@@ -16,6 +16,7 @@
 
 (include-book "kestrel/event-macros/make-event-terse" :dir :system)
 (include-book "kestrel/fty/string-option" :dir :system)
+(include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "system/pseudo-event-form-listp" :dir :system)
 
 (local (include-book "std/system/partition-rest-and-keyword-args" :dir :system))

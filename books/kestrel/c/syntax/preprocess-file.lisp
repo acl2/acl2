@@ -16,7 +16,6 @@
 (include-book "centaur/misc/tshell" :dir :system)
 (include-book "kestrel/file-io-light/read-file-into-byte-list" :dir :system)
 (include-book "kestrel/strings-light/split-string-last" :dir :system)
-(include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "oslib/dirname" :dir :system)
 (include-book "oslib/mkdir" :dir :system)
 (include-book "oslib/rmtree" :dir :system)
@@ -24,6 +23,7 @@
 (include-book "std/strings/cat" :dir :system)
 (include-book "std/util/bstar" :dir :system)
 (include-book "std/util/define" :dir :system)
+(include-book "std/util/error-value-tuples" :dir :system)
 
 (local (include-book "kestrel/typed-lists-light/string-listp" :dir :system))
 
@@ -32,7 +32,6 @@
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
 (set-induction-depth-limit 0)
 
-(local (in-theory (disable acl2::error1+)))
 (local (in-theory (disable (:e acl2::tshell-call))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -94,21 +93,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro er-soft-with (val str &rest str-args)
-  `(acl2::er-soft+ __function__ t ,val ,str ,@str-args))
-
-(defrulel mv-nth-0-of-error1+
-  (equal (mv-nth 0 (acl2::error1+ ctx erp val str alist state))
-         erp)
-  :enable (acl2::error1+))
-
-(defrulel mv-nth-1-of-error1+
-  (equal (mv-nth 1 (acl2::error1+ ctx erp val str alist state))
-         val)
-  :enable (acl2::error1+))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define preprocess-file
   ((file filepathp
          "The C file to preprocess.")
@@ -139,11 +123,14 @@
                  @('\"-P\"') suppresses the generation of linemarkers).")
     ''("-P"))
    (state 'state))
-  :returns (mv erp
-               (pair "A pair whose first value is the output file (if it is
-                      saved, @('nil') otherwise), and whose second value is the
-                      preprocessed @(see filedata) (if read, @('nil')
-                      otherwise).")
+  :returns (mv (erp "@('nil') if successful, or the error @('msgp')
+                     otherwise.")
+               (filename stringp
+                         "The output filename if it is saved, or @('\"\"')
+                          otherwise.")
+               (filedata filedatap
+                         "The preprocessed @(see filedata) if read, or @('nil')
+                          otherwise.")
                state)
   :parents (preprocessing)
   :short "Preprocess a single file."
@@ -157,113 +144,79 @@
      "By default, we pass the @('\"-P\"') flag to the preprocessor to disable
       linemarkers. This behavior may be overriden by explicitly providing a
       @(':extra-args') value."))
-  (macrolet
-   ((iferr () '(cons "" (filepath nil))))
-   (b* ((filename (filepath->unwrap file))
-        ((unless (stringp filename))
-         (er-soft-with (iferr)
-                       "Filepath is not a string: ~x0"
-                       filename))
-        (canonical-filename (canonical-pathname filename nil state))
-        ((unless (stringp canonical-filename))
-         (er-soft-with (iferr)
-                       "Filepath does not exist: ~x0"
-                       filename))
-        (filename canonical-filename)
-        (- (acl2::tshell-ensure))
-        (save (if (eq :auto save)
-                  (and out t)
-                save))
-        ((er out :iferr (iferr))
-         (if out
-             (value (mbe :exec out
-                         :logic (if (stringp out) out "")))
-           (b* (((mv temp state)
-                 (oslib::tempfile filename)))
-             (if temp
-                 (value temp)
-               (er-soft-with (iferr)
-                             "Could not create temporary file for ~x0"
-                             filename)))))
-        ((er out-dirname :iferr (iferr))
-         (oslib::dirname out))
-        ((er -)
-         (b* (((mv success state)
-               (oslib::mkdir out-dirname)))
-           (if success
-               (value nil)
-             (er-soft-with (iferr)
-                           "Could not make directory: ~x0" out-dirname))))
-        (preprocess-cmd
-          (str::join (append (list* preprocessor "-E" extra-args)
-                             (list filename ">" out))
-                     " "))
-        ((mv exit-status - state)
-         (acl2::tshell-call preprocess-cmd :print nil :save nil))
-        ((unless (int= 0 exit-status))
-         (er-soft-with
-           (iferr)
-           "Preprocessing command ~x0 failed with nonzero exit status: ~x1"
-           preprocess-cmd
-           exit-status))
-        ((er bytes :iferr (iferr))
-         (if read
-             (acl2::read-file-into-byte-list out state)
-           (value nil)))
-        ((when (stringp bytes))
-         (er-soft-with
-           (iferr)
-           "Error reading output file ~x0: ~x1"
-           out
-           bytes))
-        ((er - :iferr (iferr))
-         (if save
-             (value nil)
-           (b* (((mv success state)
-                 (oslib::rmtree out)))
-             (if success
-                 (value nil)
-               (er-soft-with (iferr)
-                             "Could not remove output file: ~x0"
-                             out))))))
-     (value (cons (and save out)
-                  (and read (filedata bytes))))))
-
-  ///
-
-  (defrule consp-of-mv-nth-1-of-preprocess-file
-    (consp (mv-nth 1 (preprocess-file-fn filename
-                                         save
-                                         out
-                                         read
-                                         preprocessor
-                                         extra-args
-                                         state)))
-    :rule-classes ((:rewrite) (:type-prescription))
-    :enable (preprocess-file-fn))
-
-  (defrule stringp-of-car-of-mv-nth-1-of-preprocess-file
-    (implies (and out save)
-             (stringp (car (mv-nth 1 (preprocess-file-fn filename
-                                                         save
-                                                         out
-                                                         read
-                                                         preprocessor
-                                                         extra-args
-                                                         state)))))
-    :rule-classes ((:rewrite) (:type-prescription))
-    :enable (preprocess-file-fn))
-
-  (defrule filedatap-of-cdr-of-mv-nth-1-of-preprocess-file
-    (implies read
-             (filedatap (cdr (mv-nth 1 (preprocess-file-fn filename
-                                                           save
-                                                           out
-                                                           read
-                                                           preprocessor
-                                                           extra-args
-                                                           state)))))
-    :enable (preprocess-file-fn)))
+  (b* (((reterr) "" (filedata nil) state)
+       (filename (filepath->unwrap file))
+       ((unless (stringp filename))
+        (reterr (msg "Filepath is not a string: ~x0"
+                     filename)))
+       (canonical-filename (canonical-pathname filename nil state))
+       ((unless (stringp canonical-filename))
+        (reterr (msg "Filepath does not exist: ~x0"
+                     filename)))
+       (filename canonical-filename)
+       (- (acl2::tshell-ensure))
+       (save (if (eq :auto save)
+                 (and out t)
+               save))
+       ((erp out state)
+        (b* (((reterr) nil state)
+             ((when out)
+              (retok (mbe :exec out
+                          :logic (if (stringp out) out ""))
+                     state))
+             ((mv temp state)
+              (oslib::tempfile filename))
+             ((unless temp)
+              (reterr (msg "Could not create temporary file for ~x0"
+                           filename))))
+          (retok temp state)))
+       ((erp out-dirname state)
+        (oslib::dirname out))
+       ((erp state)
+        (b* (((reterr) state)
+             ((mv success state)
+              (oslib::mkdir out-dirname))
+             ((unless success)
+              (reterr (msg "Could not make directory: ~x0"
+                           out-dirname))))
+          (retok state)))
+       (preprocess-cmd
+         (str::join (append (list* preprocessor "-E" extra-args)
+                            (list filename ">" out))
+                    " "))
+       ((mv exit-status lines state)
+        (acl2::tshell-call preprocess-cmd :print nil))
+       ((unless (int= 0 exit-status))
+        (reterr
+          (msg
+            "Preprocessing command ~x0 failed with nonzero exit status: ~x1~%~x2"
+            preprocess-cmd
+            exit-status
+            (str::join lines
+                       (string #\Newline)))))
+       ((erp bytes state)
+        (b* (((unless read)
+              (retok nil state)))
+          (acl2::read-file-into-byte-list out state)))
+       ((when (stringp bytes))
+        (reterr (msg "Error reading output file ~x0: ~x1"
+                     out
+                     bytes)))
+       ((erp state)
+        (b* (((reterr) state)
+             ((when save)
+              (retok state))
+             ((mv success state)
+              (oslib::rmtree out))
+             ((unless success)
+              (reterr (msg "Could not remove output file: ~x0"
+                           out))))
+          (retok state))))
+    (retok (if save
+               out
+             "")
+           (filedata (and read bytes))
+           state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -293,7 +246,8 @@
                  @('\"-P\"') suppresses the generation of linemarkers).")
     ''("-P"))
    (state 'state))
-  :returns (mv erp
+  :returns (mv (erp "@('nil') if successful, or the first error @('msgp')
+                     otherwise.")
                (map filesetp
                     "The map from filepaths to preprocessed filedata.")
                state)
@@ -305,8 +259,9 @@
      "This function preprocesses a @(see filepath-setp). See @(see
       preprocess-file) for a similar utility which operates on individuals
       files."))
-  (b* (((when (emptyp files))
-        (value (fileset nil)))
+  (b* (((reterr) (fileset nil) state)
+       ((when (emptyp files))
+        (retok (fileset nil) state))
        (out (and out-dir
                  (b* ((filename (filepath->unwrap (head files))))
                    (and (stringp filename)
@@ -315,22 +270,23 @@
                                      "/"
                                      filename
                                      ".i")))))
-       ((er (cons - filedata) :iferr (fileset nil))
+       ((erp - filedata state)
         (preprocess-file (head files)
                          :out out
                          :save save
                          :preprocessor preprocessor
                          :extra-args extra-args
                          :state state))
-       ((er (fileset fileset) :iferr (fileset nil))
+       ((erp (fileset fileset) state)
         (preprocess-files (rest files)
                           :out-dir out-dir
                           :save save
                           :preprocessor preprocessor
                           :extra-args extra-args
                           :state state)))
-    (value (fileset (omap::update (head files)
+    (retok (fileset (omap::update (head files)
                                   filedata
-                                  fileset.unwrap))))
+                                  fileset.unwrap))
+           state))
   :hints (("Goal" :in-theory (enable o< o-finp emptyp)))
   :verify-guards :after-returns)
