@@ -1678,3 +1678,91 @@
                               (type-spec-double)
                               (type-spec-complex)))
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define stor-spec-list-typedef-p ((storspecs stor-spec-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a list of storage class specifiers
+          has the form @('typedef')."
+  (equal (stor-spec-list-fix storspecs)
+         (list (stor-spec-typedef)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define stor-spec-list-extern-p ((storspecs stor-spec-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a list of storage class specifiers
+          has the form @('extern')."
+  (equal (stor-spec-list-fix storspecs)
+         (list (stor-spec-extern)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define stor-spec-list-static-p ((storspecs stor-spec-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a list of storage class specifiers
+          has the form @('static')."
+  (equal (stor-spec-list-fix storspecs)
+         (list (stor-spec-static)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define stor-spec-list-threadloc-p ((storspecs stor-spec-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a list of storage class specifiers
+          has the form @('_Thread_local')."
+  (equal (stor-spec-list-fix storspecs)
+         (list (stor-spec-threadloc)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define stor-spec-list-auto-p ((storspecs stor-spec-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a list of storage class specifiers
+          has the form @('auto')."
+  (equal (stor-spec-list-fix storspecs)
+         (list (stor-spec-auto)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define stor-spec-list-register-p ((storspecs stor-spec-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a list of storage class specifiers
+          has the form @('register')."
+  (equal (stor-spec-list-fix storspecs)
+         (list (stor-spec-register)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define stor-spec-list-extern-threadloc-p ((storspecs stor-spec-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a list of storage class specifiers
+          has the form @('extern _Thread_local') or @('_Thread_local extern')."
+  (or (equal (stor-spec-list-fix storspecs)
+             (list (stor-spec-extern)
+                   (stor-spec-threadloc)))
+      (equal (stor-spec-list-fix storspecs)
+             (list (stor-spec-threadloc)
+                   (stor-spec-extern))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define stor-spec-list-static-threadloc-p ((storspecs stor-spec-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a list of storage class specifiers
+          has the form @('static _Thread_local') or @('_Thread_local static')."
+  (or (equal (stor-spec-list-fix storspecs)
+             (list (stor-spec-static)
+                   (stor-spec-threadloc)))
+      (equal (stor-spec-list-fix storspecs)
+             (list (stor-spec-threadloc)
+                   (stor-spec-static))))
+  :hooks (:fix))
