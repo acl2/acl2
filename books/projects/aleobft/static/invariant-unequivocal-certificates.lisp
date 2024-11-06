@@ -629,6 +629,7 @@
             (timer-expires-next val systate)))
   :expand (system-unequivocal-certificates-p
            (timer-expires-next val systate))
+  :enable certificates-for-validator-of-timer-expires-next
   :use (:instance system-unequivocal-certificates-p-necc
                   (val
                    (mv-nth 0 (system-unequivocal-certificates-p-witness

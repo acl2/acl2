@@ -205,7 +205,8 @@
             (timer-expires-next val systate)))
   :expand (system-previous-are-quorum-p
            (timer-expires-next val systate))
-  :enable (system-previous-are-quorum-p-necc))
+  :enable (system-previous-are-quorum-p-necc
+           certificates-for-validator-of-timer-expires-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
