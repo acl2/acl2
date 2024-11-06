@@ -2444,11 +2444,6 @@
      in which case the linkage is external [C:6.2.2/4].
      When, in other code, we obtain the identifier being declared,
      we may revise this determination according to the additional rules.
-     Note that this ACL2 validation function
-     returns external linkage if and only if
-     the storage class specifier sequence
-     is @('extern') or @('extern _Thread_local') or @('_Thread_local'),
-     i.e. the sequence includes @('extern').
      Based on this provisional determination of external linkage,
      we also determine the lifetime as static [C:6.2.4/3],
      since there is no @('_Thread_local') in this case.
@@ -2536,8 +2531,9 @@
      this assumes an object, but further validation code
      can revise things if a function is being declared instead.")
    (xdoc::p
-    "We prove that at most one of the @('typedefp') and @('lifetime?') results
-     can be non-@('nil')."))
+    "We prove that if @('typedefp') is @('t') then @('lifetime?') is @('nil'),
+     and that if @('typedefp') is @('nil') then @('lifetime?') is not @('nil').
+     That is, the two are mutually exclusive."))
   (b* (((reterr) nil (linkage-none) nil))
     (cond
      ((stor-spec-list-typedef-p storspecs)
@@ -2597,8 +2593,15 @@
 
   ///
 
-  (defret not-typedef-and-lifetime-of-valid-stor-spec-list
-    (not (and typedefp lifetime?))))
+  (defret typedefp-iff-not-lifetime?-of-valid-stor-spec-list
+    (implies (not erp)
+             (iff typedefp
+                  (not lifetime?))))
+
+  (defret linkage-none-if-typedefp-of-valid-stor-spec-list
+    (implies (and (not erp)
+                  typedefp)
+             (equal (linkage-kind linkage) :none))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2762,7 +2765,7 @@
        :comma (b* (((erp & table) (valid-expr expr.first table ienv))
                    ((erp type table) (valid-expr expr.next table ienv)))
                 (retok type table))
-       :stmt (reterr :todo)
+       :stmt (reterr :todo-stmt)
        :tycompat (b* (((erp & table) (valid-tyname expr.type1 table ienv))
                       ((erp & table) (valid-tyname expr.type2 table ienv)))
                    (retok (type-sint) table))
@@ -3374,7 +3377,32 @@
          ((erp type? tyspecs storspecs table)
           (valid-declspec (car declspecs) type? tyspecs storspecs table ienv)))
       (valid-declspec-list (cdr declspecs) type? tyspecs storspecs table ienv))
-    :measure (declspec-list-count declspecs))
+    :measure (declspec-list-count declspecs)
+
+    ///
+
+    (local
+     (defun ind (declspecs type? tyspecs storspecs table ienv)
+       (b* (((when (endp declspecs))
+             (list type? tyspecs storspecs table ienv))
+            ((mv erp type? tyspecs storspecs table)
+             (valid-declspec
+              (car declspecs) type? tyspecs storspecs table ienv)))
+         (ind (cdr declspecs) type? tyspecs storspecs table ienv))))
+
+    (defret typedefp-iff-not-lifetime-of-valid-declspec-list
+      (implies (not erp)
+               (iff typedefp
+                    (not lifetime?)))
+      :hints (("Goal"
+               :induct (ind declspecs type? tyspecs storspecs table ienv))))
+
+    (defret linkage-none-if-typedefp-of-valid-declspec-list
+      (implies (and (not erp)
+                    typedefp)
+               (equal (linkage-kind linkage) :none))
+      :hints (("Goal"
+               :induct (ind declspecs type? tyspecs storspecs table ienv)))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3673,11 +3701,140 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  ;; TODO: valid-declor
+  (define valid-declor ((declor declorp)
+                        (type typep)
+                        (typedefp booleanp)
+                        (linkage? linkage-optionp)
+                        (lifetime? lifetime-optionp)
+                        (table valid-tablep)
+                        (ienv ienvp))
+    :guard (and (declor-unambp declor)
+                (not (and typedefp lifetime?)))
+    :returns (mv erp (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate a declarator."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This function is called after validating
+       a list of declaration specifiers,
+       or a list of specifiers and qualifiers.
+       If the validation of those lists is successful,
+       they determine a type, which the declarator can further refine.
+       In the case of a list of declaration specifiers,
+       they also determine
+       a flag saying whether a @('typedef') name is being declared,
+       and a linkage,
+       and an optional lifetime,
+       subject to the restriction that
+       the @('typedef') flag and optional lifetime cannot both be non-@('nil');
+       see @(tsee valid-declspec-list).")
+     (xdoc::p
+      "Here we use that information to validate the declarator that follows.
+       If validation is successful, we return an updated validation table,
+       which contains at least the identifier being declared,
+       but it may also contain additional identifiers
+       encountered in sub-constructs of the declarator.")
+     (xdoc::p
+      "In our currently approximate type system,
+       we do not validate type qualifiers, or attributes.
+       So the only role of the @('pointers') component of @(tsee declor)
+       is to refine the type taken as input
+       (coming from the declaration specifier list,
+       or the specifier and qualifier list),
+       and possibly further refined by the direct declarator
+       [C:6.7.6.1/1].
+       So we start by validating the direct declarator,
+       which results, if successful, in
+       a possibly refined type (based on @('type')),
+       as well as possibly modified linkage and lifetime
+       (as noted in @(tsee valid-stor-spec-list),
+       full determination depends on some information
+       not available in that validation function).
+       If the declarator has at least one pointer
+       (syntactically, i.e. @('*') possibly followed
+       by type qualifiers and attributes),
+       we further refine the type into the pointer type
+       (of which there is just one in our approximate type system)."))
+    (declare (ignore declor type typedefp linkage? lifetime? table ienv))
+    (b* (((reterr) (irr-valid-table)))
+      (reterr :todo))
+    :measure (declor-count declor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  ;; TODO: valid-dirdeclor
+  (define valid-dirdeclor ((dirdeclor dirdeclorp)
+                           (type typep)
+                           (typedefp booleanp)
+                           (linkage? linkage-optionp)
+                           (lifetime? lifetime-optionp)
+                           (table valid-tablep)
+                           (ienv ienvp))
+    :guard (and (dirdeclor-unambp dirdeclor)
+                (iff typedefp (not lifetime?))
+                (implies typedefp
+                         (and linkage?
+                              (equal (linkage-kind linkage?) :none))))
+    :returns (mv erp
+                 (new-type typep)
+                 (new-typedefp booleanp)
+                 (new-linkage? linkage-optionp)
+                 (new-lifetime? lifetime-optionp)
+                 (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate a direct declarator."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "As in @(tsee valid-declor),
+       the type, @('typedef') flag, linkage, and optional lifetime inputs
+       come from the validation of
+       the list of declaration specifiers,
+       or the list of specifiers and qualifiers.
+       Possibly modified versions of these inputs are returned by this function
+       if the validation of the direct declarator is successful;
+       the caller, @(tsee valid-declor),
+       makes use of these results to complete
+       the validation of the declarator.")
+     (xdoc::p
+      "If the direct declarator is just an identifier,
+       the type is not further refined by this direct declarator.
+       If the @('typedef') flag is @('t'),
+       we know that the identifier has no linkage and no lifetime,
+       as proved for @(tsee valid-decl-spec-list);
+       but we need to check that the identifier
+       is not already declared in the same scope [C:6.7/3],
+       unless it is a @('typedef') [C:6.7/3]."))
+    (declare (ignore linkage? lifetime? ienv))
+    (b* (((reterr) (irr-type) nil nil nil (irr-valid-table)))
+      (dirdeclor-case
+       dirdeclor
+       :ident
+       (cond
+        (typedefp
+         (b* (((mv info? currentp) (valid-lookup-ord dirdeclor.unwrap table))
+              ((when (and info?
+                          currentp
+                          (not (valid-ord-info-case info? :typedef))))
+               (reterr (msg "The typedef ~x0 is already declared ~
+                             in the same scope as something else."
+                            dirdeclor.unwrap))))
+           (retok (type-fix type)
+                  t
+                  (linkage-none)
+                  nil
+                  (valid-table-fix table))))
+        ((type-case type :function)
+         (reterr :todo))
+        (t (reterr :todo)))
+       :paren (reterr :todo)
+       :array (reterr :todo)
+       :array-static1 (reterr :todo)
+       :array-static2 (reterr :todo)
+       :array-star (reterr :todo)
+       :function-params (reterr :todo)
+       :function-names (reterr :todo)))
+    :measure (dirdeclor-count dirdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
