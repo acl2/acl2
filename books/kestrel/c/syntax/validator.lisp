@@ -2392,7 +2392,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define valid-stor-spec-list ((storspecs stor-spec-listp)
-                              (block-scope-p booleanp))
+                              (ident identp)
+                              (type typep)
+                              (table valid-tablep))
   :returns (mv erp
                (typedefp booleanp)
                (linkage linkagep)
@@ -2402,12 +2404,15 @@
   (xdoc::topstring
    (xdoc::p
     "This function is called on the sub-list of storage class specifiers
-     of a list of declaration specifiers.")
+     of a list of declaration specifiers,
+     after determining the identifier being declared and its type,
+     which are both passed as input to this function,
+     along with the current validation table..")
    (xdoc::p
     "Only a few sequences of storage class specifiers are allowed [C:6.7.1/2],
      also depending on whether the declaration is in a block or file scope
-     [C:6.7.1/3];
-     we pass a flag saying whether the declaration is in a block scope or not.
+     [C:6.7.1/3],
+     which we can see from the validation table.
      Each allowed sequence of storage class specifiers may determine
      that a @('typedef') name is being declared,
      or that an object or function is being declared,
@@ -2424,77 +2429,66 @@
      so we return @('t') as the @('typedef') flag result.
      This is the only case in which this result is @('t');
      in all other cases, that result is @('nil'),
-     because we are not declaring a @('typedef') name.
+     because in all other cases we are not declaring a @('typedef') name.
      A @('typedef') name (which is an identifier) has no linkage
      [C:6.2.2/1] [C:6.2.2/6].
-     Since lifetime (i.e. storage duration) only applied to objects [C:6.2.4/1],
+     Since lifetime (i.e. storage duration) only applies to objects [C:6.2.4/1],
      we return @('nil') as lifetime, i.e. no lifetime.")
    (xdoc::p
     "If the storage class specifier sequence is @('extern'),
-     linkage may be external or not [C:6.2.2/4],
+     linkage may be external or not,
      based on whether there is already
      a declaration of the same identifiers in scope or not
-     and whether that previous declaration specifies a linkage or not.
-     When this ACL2 function is called,
-     we do not know yet the identifier being declared,
-     because its declarator follows the declaration specifiers,
-     and we validate things in order.
-     Thus, we do not know whether there is a previous declaration in scope.
-     Therefore, we provisionally assume that this is the only declaration,
-     in which case the linkage is external [C:6.2.2/4].
-     When, in other code, we obtain the identifier being declared,
-     we may revise this determination according to the additional rules.
-     Based on this provisional determination of external linkage,
-     we also determine the lifetime as static [C:6.2.4/3],
-     since there is no @('_Thread_local') in this case.
-     The lifetime only applies to objects;
-     it is ignored by further validation code
-     if the declaration turns out to be for a function.")
+     and whether that previous declaration specifies a linkage or not
+     [C:6.2.2/4].
+     So we look up the identifier in the validation table.
+     If nothing is found, then the linkage is external.
+     If an object or function is found with external or internal linkage,
+     then the linkage of the new declaration
+     is the one of that object or function.
+     If an object or function is found with no linkage,
+     or if an enumeration constant or a @('typedef') are found,
+     both of which have no linkage [C:6.2.2/6],
+     then the linkage of the new declaration is external.
+     Thus, the linkage is always either internal or external.
+     If the type is that of a function,
+     there is no lifetime, which only applies to objects [C:6.2.4/1].
+     If the type is that of an object,
+     the lifetime is static [C:6.2.4/3],
+     because as mentioned above the linkage is always internal or external.")
    (xdoc::p
     "If the storage class specifier sequence is
      @('extern _Thread_local') or @('_Thread_local extern'),
-     we also provisionally determine external linkage,
-     since the presence of @('_Thread_local') does not affect linkage [C:6.2.2].
-     However, the lifetime is definitely thread [C:6.2.4/4].")
+     then the type must not be that of a function [C:6.7.1/4].
+     The lifetime is thread [C:6.2.4/4],
+     while the linkage is determined as in the @('extern') case above.")
    (xdoc::p
     "If the storage class specifier sequence is @('static'),
      things differ whether the identifier is declared
      in the file scope or in a block scope.
      If we are in the file scope, the linkage is internal [C:6.2.2/3].
      If we are in a block scope, it depends on whether
-     we are declaring an object or a function,
-     which we do not know at this point of the validation process.
+     we are declaring an object or a function.
      If it is an object, it has no linkage [C:6.2.2/6],
      because it does not have @('extern').
-     But if it is a function, it has an implicit @('extern') [C:6.2.2/5].
-     So here we provisionally determine no linkage,
-     which is correct for the object case,
-     and which other validation code will revise as needed
-     if the declaration turns out to be for a function.
-     The lifetime is static [C:6.2.4/3];
-     this only applies to objects,
-     so further validation code will ignore this
-     if the declaration turns out to be for a function.")
+     If it is a function it is an error [C:6.7.1/7].
+     The lifetime is absent (i.e. @('nil')) for a function,
+     since lifetimes only apply to objects [C:6.2.4/1];
+     it is static otherwise [C:6.2.4/3].")
    (xdoc::p
     "If the storage class specifier sequence is
      @('static _Thread_local') or @('_Thread_local static'),
-     linkage is determined as in the previous case
-     (provisionally for no linkage),
-     but the lifetime is thread.")
+     then the type must not be that of a function [C:6.7.1/4].
+     Linkage is determined as in the previous case.
+     The lifetime is thread.")
    (xdoc::p
     "If the storage class specifier sequence is @('_Thread_local'),
-     the lifetime is definitely thread [C:6.2.4/4],
-     which again is only applicable to objects.
-     In fact, @('_Thread_local') cannot be used for a function [C:6.7.1/4],
-     but we defer this check to further validation code,
-     after determining whether an object or function is being declared.
+     the type must not be one of a function [C:6.7.1/4].
+     Since we must have an object, the lifetime is thread.
      If we are in a block scope, it is an error,
-     because an @('extern') or a @('static') is required [C:6.7.1/3];
-     this only applied to objects,
-     but as mentioned above @('_Thread_local') cannot be used with functions,
-     so there is no loss in raising an error in this case,
-     whether the identifier will turn out to be for an object or a function.
-     Given that we must not be in a block scope, we must be in the file scope.
+     because in that case there must also be @('extern') or @('storage')
+     [C:6.7.1/3].
+     Since we cannot be in a block scope, we must be in the file scope.
      [C:6.2.2] does not seem to specify the linkage for this case,
      perhaps because @('_Thread_local') was added at some point,
      but [C:6.2.2] was not updated accordingly:
@@ -2512,95 +2506,133 @@
      The lifetime is automatic [C:6.2.4/5].")
    (xdoc::p
     "If there are no storage class specifiers (i.e. the sequence is empty),
-     things differ based on whether we are in the file scope or a block scope,
-     and whether the identifier declares an object or a function
-     (which at this time is not known yet).
-     For a function with file scope,
-     the situation of no storage class specifiers
-     is equivalent to having the @('extern') storage class specifier
-     [C:6.2.2/5];
-     for an object with file scope,
-     the linkage is external [C:6.2.2/5].
-     Thus we treat the file scope case in the same way as
-     the case of @('extern') explained above:
-     we provisionally determine external linkage,
-     which further validation code may revise.
-     Since the linkage is external, the lifetime is static [C:6.2.4/3].
-     For a block scope, there is no linkage [C:6.2.2/6],
-     and the lifetime is automatic [C:6.2.4/5];
-     this assumes an object, but further validation code
-     can revise things if a function is being declared instead.")
+     things differ based on
+     whether the identifier declares an object or a function,
+     and whether we are in the file scope or a block scope.
+     If the type is that of a function,
+     linkage is determined as if it had the @('extern') specifier [C:6.2.2/5];
+     in this case, there is no lifetime.
+     For an object with file scope,
+     the linkage is external [C:6.2.2/5],
+     and thus the lifetime is static [C:6.2.4/3].
+     For an object block scope, there is no linkage [C:6.2.2/6],
+     and the lifetime is automatic [C:6.2.4/5].")
    (xdoc::p
     "We prove that if @('typedefp') is @('t') then @('lifetime?') is @('nil'),
      and that if @('typedefp') is @('nil') then @('lifetime?') is not @('nil').
      That is, the two are mutually exclusive."))
-  (b* (((reterr) nil (linkage-none) nil))
+  (b* (((reterr) nil (irr-linkage) nil))
     (cond
      ((stor-spec-list-typedef-p storspecs)
-      (retok t
-             (linkage-none)
-             nil))
+      (retok t (linkage-none) nil))
      ((stor-spec-list-extern-p storspecs)
-      (retok nil
-             (linkage-external)
-             (lifetime-static)))
+      (b* ((linkage
+            (b* (((mv info? &) (valid-lookup-ord ident table))
+                 ((unless info?)
+                  (linkage-external))
+                 ((unless (valid-ord-info-case info? :objfun))
+                  (linkage-external))
+                 (previous-linkage (valid-ord-info-objfun->linkage info?)))
+              (if (linkage-case previous-linkage :none)
+                  (linkage-external)
+                previous-linkage)))
+           (lifetime? (if (type-case type :function)
+                          nil
+                        (lifetime-static))))
+        (retok nil linkage lifetime?)))
      ((stor-spec-list-extern-threadloc-p storspecs)
-      (retok nil
-             (linkage-external)
-             (lifetime-thread)))
+      (b* (((when (type-case type :function))
+            (reterr (msg "The storage class specifier '_Thread_local' ~
+                          cannot be used in the declaration of
+                          the function ~x0."
+                         (ident-fix ident))))
+           (linkage
+            (b* (((mv info? &) (valid-lookup-ord ident table))
+                 ((unless info?) (linkage-external))
+                 ((unless (valid-ord-info-case info? :objfun))
+                  (linkage-external))
+                 (previous-linkage (valid-ord-info-objfun->linkage info?)))
+              (if (linkage-case previous-linkage :none)
+                  (linkage-external)
+                previous-linkage))))
+        (retok nil linkage (lifetime-thread))))
      ((stor-spec-list-static-p storspecs)
-      (retok nil
-             (if block-scope-p
-                 (linkage-none)
-               (linkage-internal))
-             (lifetime-static)))
+      (b* ((block-scope-p (> (valid-table-num-scopes table) 1))
+           ((when (and block-scope-p
+                       (type-case type :function)))
+            (reterr (msg "The storage class specifier 'static' ~
+                          cannot be used in the declaration of ~
+                          the function ~x0."
+                         (ident-fix ident))))
+           (linkage (if block-scope-p
+                        (linkage-none)
+                      (linkage-internal)))
+           (lifetime? (if (type-case type :function)
+                          nil
+                        (lifetime-static))))
+        (retok nil linkage lifetime?)))
      ((stor-spec-list-static-threadloc-p storspecs)
-      (retok nil
-             (if block-scope-p
-                 (linkage-none)
-               (linkage-internal))
-             (lifetime-thread)))
+      (b* (((when (type-case type :function))
+            (reterr (msg "The storage class specifier '_Thread_local' ~
+                          cannot be used in the declaration of
+                          the function ~x0."
+                         (ident-fix ident))))
+           (block-scope-p (> (valid-table-num-scopes table) 1))
+           (linkage (if block-scope-p
+                        (linkage-none)
+                      (linkage-internal)))
+           (lifetime? (lifetime-thread)))
+        (retok nil linkage lifetime?)))
      ((stor-spec-list-threadloc-p storspecs)
-      (if block-scope-p
-          (reterr (msg "The storage class specifier '_Thread_local' ~
-                        cannot be used in a block scope ~
-                        without 'extern' or 'static'."))
-        (retok nil
-               (linkage-external)
-               (lifetime-thread))))
+      (b* (((when (type-case type :function))
+            (reterr (msg "The storage class specifier '_Thread_local' ~
+                          cannot be used in the declaration of
+                          the function ~x0."
+                         (ident-fix ident))))
+           ((when (> (valid-table-num-scopes table) 1))
+            (reterr (msg "The storage class specifier '_Thread_local' ~
+                          cannot be used in a block scope ~
+                          without 'extern' or 'static', ~
+                          for the declaration of the object ~x0."
+                         (ident-fix ident)))))
+        (retok nil (linkage-external) (lifetime-thread))))
      ((or (stor-spec-list-auto-p storspecs)
           (stor-spec-list-register-p storspecs))
-      (if block-scope-p
-          (retok nil
-                 (linkage-none)
-                 (lifetime-auto))
-        (reterr (msg "The storage class specifier '~s0' ~
-                      cannot be used in the file scope."
-                     (if (stor-spec-list-auto-p storspecs)
-                         "auto"
-                       "register")))))
+      (b* (((unless (> (valid-table-num-scopes table) 1))
+            (reterr (msg "The storage class specifier '~s0' ~
+                          cannot be used in the file scope, ~
+                          for identifier ~x1."
+                         (if (stor-spec-list-auto-p storspecs)
+                             "auto"
+                           "register")
+                         (ident-fix ident)))))
+        (retok nil (linkage-none) (lifetime-auto))))
      ((endp storspecs)
-      (if block-scope-p
-          (retok nil
-                 (linkage-none)
-                 (lifetime-auto))
-        (retok nil
-               (linkage-external)
-               (lifetime-static))))
+      (if (type-case type :function)
+          (b* (((mv info? &) (valid-lookup-ord ident table))
+               ((unless info?)
+                (retok nil (linkage-external) nil))
+               ((unless (valid-ord-info-case info? :objfun))
+                (retok nil (linkage-external) nil))
+               (previous-linkage (valid-ord-info-objfun->linkage info?)))
+            (if (linkage-case previous-linkage :none)
+                (retok nil (linkage-external) nil)
+              (retok nil previous-linkage nil)))
+        (if (> (valid-table-num-scopes table) 1)
+            (retok nil (linkage-none) (lifetime-auto))
+          (retok nil (linkage-external) (lifetime-static)))))
      (t (reterr (msg "The storage class specifier sequence ~x0 is invalid."
                      (stor-spec-list-fix storspecs))))))
   :hooks (:fix)
 
   ///
 
-  (defret typedefp-iff-not-lifetime?-of-valid-stor-spec-list
-    (implies (not erp)
-             (iff typedefp
-                  (not lifetime?))))
+  (defret no-lifetime-if-typedef-of-valid-stor-spec-list
+    (implies typedefp
+             (not lifetime?)))
 
-  (defret linkage-none-if-typedefp-of-valid-stor-spec-list
-    (implies (and (not erp)
-                  typedefp)
+  (defret no-linkage-if-typedef-of-valid-stor-spec-list
+    (implies typedefp
              (equal (linkage-kind linkage) :none))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3331,9 +3363,7 @@
                 (not (and type? tyspecs)))
     :returns (mv erp
                  (type typep)
-                 (typedefp booleanp)
-                 (linkage linkagep)
-                 (lifetime? lifetime-optionp)
+                 (all-storspecs stor-spec-listp)
                  (new-table valid-tablep))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate a list of declaration specifiers."
@@ -3342,67 +3372,33 @@
      (xdoc::p
       "If validation is successful, we return
        the type determined by the type specifiers,
-       and the linkage and storage duration (lifetime)
-       determined by the storage class specifiers.")
+       and the list of storage class specifiers
+       extracted from the declaration specifiers.")
      (xdoc::p
       "We go through each element of the list,
        threading the partial results through.
        When we reach the end of the list,
        if a type has been determined, we return it.
        Otherwise, we use a separate function to attempt to determine it
-       from the collected type specifiers.
-       The linkage and lifetime are determined using a separate function,
-       from the collected storage class specifiers."))
-    (b* (((reterr) (irr-type) nil (irr-linkage) nil (irr-valid-table))
+       from the collected type specifiers."))
+    (b* (((reterr) (irr-type) nil (irr-valid-table))
          ((when (endp declspecs))
-          (b* (((erp typedefp linkage lifetime?)
-                (valid-stor-spec-list storspecs
-                                      (> (valid-table-num-scopes table) 1))))
-            (cond
-             (type? (retok (type-option-fix type?)
-                           typedefp
-                           linkage
-                           lifetime?
-                           (valid-table-fix table)))
-             ((consp tyspecs)
-              (b* (((erp type) (valid-type-spec-list-residual tyspecs)))
-                (retok type
-                       typedefp
-                       linkage
-                       lifetime?
-                       (valid-table-fix table))))
-             (t (reterr (msg "The declaration specifiers ~x0 ~
-                              contain no type specifiers."
-                             (declspec-list-fix declspecs)))))))
+          (cond
+           (type? (retok (type-option-fix type?)
+                         (stor-spec-list-fix storspecs)
+                         (valid-table-fix table)))
+           ((consp tyspecs)
+            (b* (((erp type) (valid-type-spec-list-residual tyspecs)))
+              (retok type
+                     (stor-spec-list-fix storspecs)
+                     (valid-table-fix table))))
+           (t (reterr (msg "The declaration specifiers ~x0 ~
+                            contain no type specifiers."
+                           (declspec-list-fix declspecs))))))
          ((erp type? tyspecs storspecs table)
           (valid-declspec (car declspecs) type? tyspecs storspecs table ienv)))
       (valid-declspec-list (cdr declspecs) type? tyspecs storspecs table ienv))
-    :measure (declspec-list-count declspecs)
-
-    ///
-
-    (local
-     (defun ind (declspecs type? tyspecs storspecs table ienv)
-       (b* (((when (endp declspecs))
-             (list type? tyspecs storspecs table ienv))
-            ((mv erp type? tyspecs storspecs table)
-             (valid-declspec
-              (car declspecs) type? tyspecs storspecs table ienv)))
-         (ind (cdr declspecs) type? tyspecs storspecs table ienv))))
-
-    (defret typedefp-iff-not-lifetime-of-valid-declspec-list
-      (implies (not erp)
-               (iff typedefp
-                    (not lifetime?)))
-      :hints (("Goal"
-               :induct (ind declspecs type? tyspecs storspecs table ienv))))
-
-    (defret linkage-none-if-typedefp-of-valid-declspec-list
-      (implies (and (not erp)
-                    typedefp)
-               (equal (linkage-kind linkage) :none))
-      :hints (("Goal"
-               :induct (ind declspecs type? tyspecs storspecs table ienv)))))
+    :measure (declspec-list-count declspecs))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3703,13 +3699,10 @@
 
   (define valid-declor ((declor declorp)
                         (type typep)
-                        (typedefp booleanp)
-                        (linkage? linkage-optionp)
-                        (lifetime? lifetime-optionp)
+                        (storspecs stor-spec-listp)
                         (table valid-tablep)
                         (ienv ienvp))
-    :guard (and (declor-unambp declor)
-                (not (and typedefp lifetime?)))
+    :guard (declor-unambp declor)
     :returns (mv erp (new-table valid-tablep))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate a declarator."
@@ -3720,113 +3713,66 @@
        a list of declaration specifiers,
        or a list of specifiers and qualifiers.
        If the validation of those lists is successful,
-       they determine a type, which the declarator can further refine.
-       In the case of a list of declaration specifiers,
-       they also determine
-       a flag saying whether a @('typedef') name is being declared,
-       and a linkage,
-       and an optional lifetime,
-       subject to the restriction that
-       the @('typedef') flag and optional lifetime cannot both be non-@('nil');
-       see @(tsee valid-declspec-list).")
+       they determine a type, which the declarator can further refine:
+       we pass that type as input to this validation function.")
      (xdoc::p
-      "Here we use that information to validate the declarator that follows.
-       If validation is successful, we return an updated validation table,
-       which contains at least the identifier being declared,
-       but it may also contain additional identifiers
-       encountered in sub-constructs of the declarator.")
+      "First we validate the direct declarator,
+       which returns the identifier being declared,
+       along with a possibly refined type.")
      (xdoc::p
       "In our currently approximate type system,
        we do not validate type qualifiers, or attributes.
        So the only role of the @('pointers') component of @(tsee declor)
-       is to refine the type taken as input
-       (coming from the declaration specifier list,
-       or the specifier and qualifier list),
-       and possibly further refined by the direct declarator
+       is to refine the type resulting from
+       the validation of the direct declarator
        [C:6.7.6.1/1].
-       So we start by validating the direct declarator,
-       which results, if successful, in
-       a possibly refined type (based on @('type')),
-       as well as possibly modified linkage and lifetime
-       (as noted in @(tsee valid-stor-spec-list),
-       full determination depends on some information
-       not available in that validation function).
        If the declarator has at least one pointer
        (syntactically, i.e. @('*') possibly followed
        by type qualifiers and attributes),
        we further refine the type into the pointer type
        (of which there is just one in our approximate type system)."))
-    (declare (ignore declor type typedefp linkage? lifetime? table ienv))
-    (b* (((reterr) (irr-valid-table)))
-      (reterr :todo))
+    (declare (ignore storspecs))
+    (b* (((reterr) (irr-valid-table))
+         ((declor declor) declor)
+         ((erp type ident table) (valid-dirdeclor declor.decl type table ienv))
+         (type (if (consp declor.pointers)
+                   (type-pointer)
+                 type)))
+      (reterr (list :todo type ident table)))
     :measure (declor-count declor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define valid-dirdeclor ((dirdeclor dirdeclorp)
                            (type typep)
-                           (typedefp booleanp)
-                           (linkage? linkage-optionp)
-                           (lifetime? lifetime-optionp)
                            (table valid-tablep)
                            (ienv ienvp))
-    :guard (and (dirdeclor-unambp dirdeclor)
-                (iff typedefp (not lifetime?))
-                (implies typedefp
-                         (and linkage?
-                              (equal (linkage-kind linkage?) :none))))
+    :guard (dirdeclor-unambp dirdeclor)
     :returns (mv erp
                  (new-type typep)
-                 (new-typedefp booleanp)
-                 (new-linkage? linkage-optionp)
-                 (new-lifetime? lifetime-optionp)
+                 (ident identp)
                  (new-table valid-tablep))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate a direct declarator."
     :long
     (xdoc::topstring
      (xdoc::p
-      "As in @(tsee valid-declor),
-       the type, @('typedef') flag, linkage, and optional lifetime inputs
-       come from the validation of
-       the list of declaration specifiers,
+      "The type passed as input is the one resulting from the validation of
+       the list of declaration specifiers
        or the list of specifiers and qualifiers.
-       Possibly modified versions of these inputs are returned by this function
-       if the validation of the direct declarator is successful;
-       the caller, @(tsee valid-declor),
-       makes use of these results to complete
-       the validation of the declarator.")
+       This type is refined according to the direct declarator,
+       and we return the refined type,
+       along with the declared identifier.")
      (xdoc::p
       "If the direct declarator is just an identifier,
-       the type is not further refined by this direct declarator.
-       If the @('typedef') flag is @('t'),
-       we know that the identifier has no linkage and no lifetime,
-       as proved for @(tsee valid-decl-spec-list);
-       but we need to check that the identifier
-       is not already declared in the same scope [C:6.7/3],
-       unless it is a @('typedef') [C:6.7/3]."))
-    (declare (ignore linkage? lifetime? ienv))
-    (b* (((reterr) (irr-type) nil nil nil (irr-valid-table)))
+       the type is not further refined by this direct declarator."))
+    (declare (ignore ienv))
+    (b* (((reterr) (irr-type) (irr-ident) (irr-valid-table)))
       (dirdeclor-case
        dirdeclor
-       :ident
-       (cond
-        (typedefp
-         (b* (((mv info? currentp) (valid-lookup-ord dirdeclor.unwrap table))
-              ((when (and info?
-                          currentp
-                          (not (valid-ord-info-case info? :typedef))))
-               (reterr (msg "The typedef ~x0 is already declared ~
-                             in the same scope as something else."
-                            dirdeclor.unwrap))))
-           (retok (type-fix type)
-                  t
-                  (linkage-none)
-                  nil
-                  (valid-table-fix table))))
-        ((type-case type :function)
-         (reterr :todo))
-        (t (reterr :todo)))
+       :ident (retok (type-fix type)
+                     dirdeclor.unwrap
+                     (valid-table-fix table))
        :paren (reterr :todo)
        :array (reterr :todo)
        :array-static1 (reterr :todo)
