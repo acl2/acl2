@@ -90,7 +90,7 @@
     const-exprp
     const-expr-count
     const-expr
-    const-expr->unwrap
+    const-expr->expr
     irr-const-expr
 
     const-expr-optionp
