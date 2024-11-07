@@ -247,7 +247,7 @@
    (acc ident-ident-option-set-mapp))
   :returns (call-graph ident-ident-option-set-mapp)
   (b* (((const-expr const-expr) const-expr))
-    (call-graph-expr const-expr.unwrap fn-name acc)))
+    (call-graph-expr const-expr.expr fn-name acc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

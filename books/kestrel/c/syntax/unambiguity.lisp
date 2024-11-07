@@ -133,7 +133,7 @@
     :returns (yes/no booleanp)
     :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if a constant expression is unambiguous."
-    (expr-unambp (const-expr->unwrap cexpr))
+    (expr-unambp (const-expr->expr cexpr))
     :measure (const-expr-count cexpr))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1652,9 +1652,9 @@
                   (expr-case expr :offsetof))
              (member-designor-unambp (expr-offsetof->member expr))))
 
-  (defrule expr-unambp-of-expr-const-expr->unwrap
+  (defrule expr-unambp-of-expr-const-expr->expr
     (implies (const-expr-unambp cexpr)
-             (expr-unambp (const-expr->unwrap cexpr)))
+             (expr-unambp (const-expr->expr cexpr)))
     :expand (const-expr-unambp cexpr))
 
   (defrule tyname-unambp-of-genassoc-type->type
