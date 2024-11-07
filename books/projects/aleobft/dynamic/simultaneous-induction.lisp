@@ -15,7 +15,7 @@
 (include-book "unequivocal-accepted-certificates-next")
 (include-book "last-anchor-voters-def-and-init-and-next")
 (include-book "omni-paths-def-and-implied")
-(include-book "nonforking-anchors")
+(include-book "nonforking-anchors-def-and-init-and-next")
 (include-book "committed-redundant")
 (include-book "blockchain-redundant")
 (include-book "nonforking-blockchains-next")

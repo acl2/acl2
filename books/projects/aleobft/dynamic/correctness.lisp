@@ -42,7 +42,7 @@
 (include-book "omni-paths-def-and-implied")
 (include-book "anchors-extension")
 (include-book "committed-anchor-sequences")
-(include-book "nonforking-anchors")
+(include-book "nonforking-anchors-def-and-init-and-next")
 (include-book "committed-redundant")
 (include-book "blockchain-redundant")
 (include-book "nonforking-blockchains-next")
@@ -52,6 +52,7 @@
 (include-book "same-committees")
 (include-book "last-anchor-voters")
 (include-book "omni-paths")
+(include-book "nonforking-anchors")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -95,7 +96,7 @@
                     omni-paths-def-and-implied
                     anchors-extension
                     committed-anchors-sequences
-                    nonforking-anchors
+                    nonforking-anchors-def-and-init-and-next
                     committed-redundant
                     blockchain-redundant
                     nonforking-blockchains-next
@@ -104,4 +105,5 @@
                     nonforking-blockchains
                     same-committees
                     last-anchor-voters
-                    omni-paths))
+                    omni-paths
+                    nonforking-anchors))
