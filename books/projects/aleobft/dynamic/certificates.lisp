@@ -452,7 +452,7 @@
              (equal (certificates-with-author author certs)
                     nil)))
 
-  (defruled certificate-with-author-of-insert
+  (defruled certificates-with-author-of-insert
     (implies (and (certificatep cert)
                   (certificate-setp certs))
              (equal (certificates-with-author author
@@ -468,7 +468,7 @@
              set::pick-a-point-subset-strategy)
     :disable (certificates-with-author))
 
-  (defruled certificate-with-author-of-delete
+  (defruled certificates-with-author-of-delete
     (implies (certificate-setp certs)
              (equal (certificates-with-author author
                                               (set::delete cert certs))
@@ -751,6 +751,16 @@
              in-of-certificates-with-authors
              in-of-certificates-with-round)
     :disable certificates-with-authors+round)
+
+  (defruled certificate-set->round-set-of-certificates-with-authors+round
+    (equal (certificate-set->round-set
+            (certificates-with-authors+round authors round certs))
+           (if (set::emptyp
+                (certificates-with-authors+round authors round certs))
+               nil
+             (set::insert (pos-fix round) nil)))
+    :induct t
+    :enable certificate-set->round-set-of-insert)
 
   (defruled
     certificate-set->round-set-of-certificates-with-authors+round-not-empty

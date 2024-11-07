@@ -450,7 +450,7 @@
      :returns (new-expr exprp)
      :parents nil
      (b* (((when (expr-case rest :paren))
-           (b* ((args (expr-to-asg-expr-list (expr-paren->unwrap rest))))
+           (b* ((args (expr-to-asg-expr-list (expr-paren->inner rest))))
              (make-expr-funcall :fun fun :args args)))
           ((when (expr-case rest :arrsub))
            (b* ((expr
@@ -881,26 +881,26 @@
       (expr-case
        expr
        :ident
-       (b* ((kind (dimb-lookup-ident expr.unwrap table))
+       (b* ((kind (dimb-lookup-ident expr.ident table))
             ((unless kind)
              (reterr (msg "The identifier ~x0 is used as an expression ~
                            but is not in scope."
-                          (ident->unwrap expr.unwrap)))))
+                          (ident->unwrap expr.ident)))))
          (dimb-kind-case
           kind
           :typedef (reterr (msg "The identifier ~x0 denotes a typedef ~
                                  but it is used as an expression."
-                                (ident->unwrap expr.unwrap)))
+                                (ident->unwrap expr.ident)))
           :objfun (retok (expr-fix expr)
                          (dimb-table-fix table))
-          :enumconst (retok (expr-const (const-enum expr.unwrap))
+          :enumconst (retok (expr-const (const-enum expr.ident))
                             (dimb-table-fix table))))
        :const
        (retok (expr-fix expr) (dimb-table-fix table))
        :string
        (retok (expr-fix expr) (dimb-table-fix table))
        :paren
-       (b* (((erp new-expr table) (dimb-expr expr.unwrap table)))
+       (b* (((erp new-expr table) (dimb-expr expr.inner table)))
          (retok (expr-paren new-expr) table))
        :gensel
        (b* (((erp new-control table) (dimb-expr expr.control table))
@@ -1124,7 +1124,7 @@
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a constant expression."
     (b* (((reterr) (irr-const-expr) (irr-dimb-table))
-         ((erp new-expr table) (dimb-expr (const-expr->unwrap cexpr) table)))
+         ((erp new-expr table) (dimb-expr (const-expr->expr cexpr) table)))
       (retok (const-expr new-expr) table))
     :measure (const-expr-count cexpr))
 

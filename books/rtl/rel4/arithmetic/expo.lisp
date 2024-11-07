@@ -7,7 +7,7 @@
 
 ;Todo:
 ;1. Write a more general version of EXPO that isn't tied to using 2 as the base?
-;2. Use more consistent names for lemmas, including using expt2 for lemmas which only apply when the r paramater
+;2. Use more consistent names for lemmas, including using expt2 for lemmas which only apply when the r parameter
 ;to expt is 2.
 
 (include-book "ground-zero")

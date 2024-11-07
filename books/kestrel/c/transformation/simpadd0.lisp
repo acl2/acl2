@@ -68,7 +68,7 @@
      :ident (expr-fix expr)
      :const (expr-fix expr)
      :string (expr-fix expr)
-     :paren (expr-paren (simpadd0-expr expr.unwrap))
+     :paren (expr-paren (simpadd0-expr expr.inner))
      :gensel (make-expr-gensel
               :control (simpadd0-expr expr.control)
               :assocs (simpadd0-genassoc-list expr.assocs))
@@ -159,7 +159,7 @@
     :returns (new-cexpr const-exprp)
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
     :short "Transform a constant expression."
-    (const-expr (simpadd0-expr (const-expr->unwrap cexpr)))
+    (const-expr (simpadd0-expr (const-expr->expr cexpr)))
     :measure (const-expr-count cexpr))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

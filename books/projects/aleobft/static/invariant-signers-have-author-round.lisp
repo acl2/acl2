@@ -13,6 +13,8 @@
 
 (include-book "invariant-signers-are-validators")
 
+(include-book "std/util/define-sk" :dir :system)
+
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
@@ -149,7 +151,8 @@
            certificates-for-validator
            get-network-state
            validator-init-when-system-initp
-           validator-init))
+           validator-init
+           in-of-message-certificates-for-validator))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -200,7 +203,8 @@
               (create-certificate-next cert systate)))
     :expand (system-signers-have-author+round-p
              (create-certificate-next cert systate))
-    :enable system-signers-have-author+round-p-necc))
+    :enable (system-signers-have-author+round-p-necc
+             certificates-for-validator-of-create-certificate-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -239,7 +243,8 @@
               (receive-certificate-next msg systate)))
     :expand (system-signers-have-author+round-p
              (receive-certificate-next msg systate))
-    :enable system-signers-have-author+round-p-necc))
+    :enable (system-signers-have-author+round-p-necc
+             certificates-for-validator-of-receive-certificate-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -294,7 +299,8 @@
               (store-certificate-next cert val systate)))
     :expand (system-signers-have-author+round-p
              (store-certificate-next cert val systate))
-    :enable system-signers-have-author+round-p-necc))
+    :enable (system-signers-have-author+round-p-necc
+             certificates-for-validator-of-store-certificate-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -326,7 +332,8 @@
               (advance-round-next val systate)))
     :expand (system-signers-have-author+round-p
              (advance-round-next val systate))
-    :enable system-signers-have-author+round-p-necc))
+    :enable (system-signers-have-author+round-p-necc
+             certificates-for-validator-of-advance-round-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -358,7 +365,8 @@
               (commit-anchors-next val systate)))
     :expand (system-signers-have-author+round-p
              (commit-anchors-next val systate))
-    :enable system-signers-have-author+round-p-necc))
+    :enable (system-signers-have-author+round-p-necc
+             certificates-for-validator-of-commit-anchors-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -405,3 +413,34 @@
            (system-signers-have-author+round-p (event-next event systate)))
   :enable (event-possiblep
            event-next))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled system-signers-have-author+round-p-of-events-next
+  :short "Preservation of the invariant by every sequence of events."
+  (implies (and (system-statep systate)
+                (system-signers-have-author+round-p systate)
+                (events-possiblep events systate))
+           (system-signers-have-author+round-p (events-next events systate)))
+  :induct t
+  :disable ((:e tau-system))
+  :enable (events-next
+           events-possiblep
+           system-signers-have-author+round-p-of-event-next))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled system-signers-have-author+round-p-when-reachable
+  :short "The invariant holds in every reachable state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Reachable states are characterized by an initial state and
+     a sequence of possible events from that initial state."))
+  (implies (and (system-statep systate)
+                (system-state-initp systate)
+                (events-possiblep events systate))
+           (system-signers-have-author+round-p (events-next events systate)))
+  :disable ((:e tau-system))
+  :enable (system-signers-have-author+round-p-when-system-state-initp
+           system-signers-have-author+round-p-of-events-next))

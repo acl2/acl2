@@ -32,7 +32,7 @@
     "The state of each validator includes (their view of) the blockchain.
      This is initially empty, and gets extended, one or more blocks at a time,
      when anchors are committed.
-     However, because the stability properties of
+     However, because of the stability properties of
      paths in the DAG, causal histories, etc.,
      the full blockchain can always be recalculated from scratch,
      from the sequence of committed anchors and from the DAG.")
@@ -188,7 +188,8 @@
                val (receive-certificate-next msg systate))
               (all-addresses systate)))
     :enable (validator-blockchain-redundantp
-             validator-state->dag-of-receive-certificate-next))
+             validator-state->dag-of-receive-certificate-next
+             validator-state->blockchain-of-receive-certificate-next))
 
   (defrule system-blockchain-redundantp-of-receive-certificate-next
     (implies (and (receive-certificate-possiblep msg systate)
@@ -233,7 +234,9 @@
              system-unequivocal-dag-p-necc
              system-previous-in-dag-p-necc
              system-last-anchor-present-p-necc
-             list-in-when-certificate-list-pathp)
+             list-in-when-certificate-list-pathp
+             validator-state->dag-subset-store-certificate-next
+             validator-state->blockchain-of-store-certificate-next)
     :use (:instance calculate-blockchain-of-unequivocal-dag-superset
                     (dag (validator-state->dag
                           (get-validator-state val systate)))
@@ -242,8 +245,7 @@
                             val (store-certificate-next cert val1 systate))))
                     (anchors (committed-anchors
                               (get-validator-state val systate)
-                              (all-addresses systate))))
-    :disable validator-state->dag-of-store-certificate-next)
+                              (all-addresses systate)))))
 
   (defrule system-blockchain-redundantp-of-store-certificate-next
     (implies (and (system-signers-are-validators-p systate)
@@ -281,7 +283,9 @@
               (get-validator-state
                val (advance-round-next val1 systate))
               (all-addresses systate)))
-    :enable (validator-blockchain-redundantp))
+    :enable (validator-blockchain-redundantp
+             validator-state->dag-of-advance-round-next
+             validator-state->blockchain-of-advance-round-next))
 
   (defrule system-blockchain-redundantp-of-advance-round-next
     (implies (and (advance-round-possiblep val1 systate)
@@ -338,7 +342,9 @@
              system-unequivocal-dag-p-necc
              system-last-anchor-present-p-necc
              extend-blockchain-of-nil
-             extend-blockchain-of-append)
+             extend-blockchain-of-append
+             validator-state->dag-of-commit-anchors-next
+             validator-state->blockchain-of-commit-anchors-next)
     :use system-committed-redundantp-necc)
 
   (defrule system-blockchain-redundantp-of-commit-anchors-next
@@ -375,7 +381,9 @@
               (get-validator-state
                val (timer-expires-next val1 systate))
               (all-addresses systate)))
-    :enable (validator-blockchain-redundantp))
+    :enable (validator-blockchain-redundantp
+             validator-state->dag-of-timer-expires-next
+             validator-state->blockchain-of-timer-expires-next))
 
   (defrule system-blockchain-redundantp-of-timer-expires-next
     (implies (and (timer-expires-possiblep val1 systate)
@@ -412,3 +420,99 @@
            (system-blockchain-redundantp (event-next event systate)))
   :enable (event-possiblep
            event-next))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled system-blockchain-redundantp-of-events-next
+  :short "Preservation of the invariant by every sequence of events."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Since this invariant's single-event preservation
+     depends on other invariants,
+     we need to include all invariants to prove
+     multi-event preservation by induction.")
+   (xdoc::p
+    "We explicitly include only the invariants
+     that have theorems about the next state after an event;
+     the invariants that are proved directly from other invariants,
+     which are among the hypotheses of the single-event preservation theorem,
+     are handled using the theorems that prove those invariants from others."))
+  (implies
+   (and (system-statep systate)
+        (system-blockchain-redundantp systate)
+        (system-signers-are-validators-p systate)
+        (system-previous-are-quorum-p systate)
+        (system-last-anchor-present-p systate)
+        (system-last-anchor-voters-p systate)
+        (system-last-is-even-p systate)
+        (system-previous-in-dag-p systate)
+        (system-signers-are-quorum-p systate)
+        (system-signers-have-author+round-p systate)
+        (system-unequivocal-certificates-p systate)
+        (system-committed-redundantp systate)
+        (events-possiblep events systate)
+        (fault-tolerant-p systate))
+   (and (system-blockchain-redundantp (events-next events systate))
+        (system-signers-are-validators-p (events-next events systate))
+        (system-previous-are-quorum-p (events-next events systate))
+        (system-last-anchor-present-p (events-next events systate))
+        (system-last-anchor-voters-p (events-next events systate))
+        (system-last-is-even-p (events-next events systate))
+        (system-previous-in-dag-p (events-next events systate))
+        (system-signers-are-quorum-p (events-next events systate))
+        (system-signers-have-author+round-p (events-next events systate))
+        (system-unequivocal-certificates-p (events-next events systate))
+        (system-committed-redundantp (events-next events systate))))
+  :induct t
+  :disable ((:e tau-system))
+  :enable (events-next
+           events-possiblep
+           system-blockchain-redundantp-of-event-next
+           system-signers-are-validators-p-of-event-next
+           system-previous-are-quorum-p-of-event-next
+           system-last-anchor-present-p-of-event-next
+           system-last-anchor-voters-p-of-event-next
+           system-last-is-even-p-of-event-next
+           system-previous-in-dag-p-of-event-next
+           system-signers-are-quorum-p-of-event-next
+           system-signers-have-author+round-p-of-event-next
+           system-unequivocal-certificates-p-of-event-next
+           system-blockchain-redundantp-of-event-next
+           system-authors-are-validators-p-when-signers-are-validators
+           system-dag-previous-are-quorum-p-when-all-previous-are-quorum
+           system-paths-to-last-anchor-p-when-other-invariants
+           system-unequivocal-dag-p-when-system-unequivocal-certificates-p))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled system-blockchain-redundantp-when-reachable
+  :short "The invariant holds in every reachable state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Reachable states are characterized by an initial state and
+     a sequence of possible events from that initial state.")
+   (xdoc::p
+    "This does not mention the other invariant,
+     because it holds in the initial state
+     and that it establishes the hypothesis of
+     the multi-event preservation theorem."))
+  (implies (and (system-statep systate)
+                (system-state-initp systate)
+                (events-possiblep events systate)
+                (fault-tolerant-p systate))
+           (system-blockchain-redundantp (events-next events systate)))
+  :disable ((:e tau-system))
+  :enable (system-blockchain-redundantp-when-system-state-initp
+           system-signers-are-validators-p-when-system-state-initp
+           system-previous-are-quorum-p-when-system-state-initp
+           system-last-anchor-present-p-when-system-state-initp
+           system-last-anchor-voters-p-when-system-state-initp
+           system-last-is-even-p-when-system-state-initp
+           system-previous-in-dag-p-when-system-state-initp
+           system-signers-are-quorum-p-when-system-state-initp
+           system-signers-have-author+round-p-when-system-state-initp
+           system-unequivocal-certificates-p-when-system-state-initp
+           system-committed-redundantp-when-system-state-initp
+           system-blockchain-redundantp-of-events-next))

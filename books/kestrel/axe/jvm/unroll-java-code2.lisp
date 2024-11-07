@@ -384,7 +384,7 @@
                              whole-form
                              state
                             )
-  (declare (xargs :stobjs (state)
+  (declare (xargs :stobjs state
                   :mode :program
                   :guard (and (symbolp fn)
                               (jvm::method-indicatorp method-indicator)

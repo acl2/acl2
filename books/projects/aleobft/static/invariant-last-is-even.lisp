@@ -99,7 +99,8 @@
             (receive-certificate-next msg systate)))
   :expand (system-last-is-even-p
            (receive-certificate-next msg systate))
-  :enable system-last-is-even-p-necc)
+  :enable (system-last-is-even-p-necc
+           validator-state->last-of-receive-certificate-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -116,7 +117,8 @@
             (store-certificate-next cert val systate)))
   :expand (system-last-is-even-p
            (store-certificate-next cert val systate))
-  :enable system-last-is-even-p-necc)
+  :enable (system-last-is-even-p-necc
+           validator-state->last-of-store-certificate-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -133,7 +135,8 @@
             (advance-round-next val systate)))
   :expand (system-last-is-even-p
            (advance-round-next val systate))
-  :enable system-last-is-even-p-necc)
+  :enable (system-last-is-even-p-necc
+           validator-state->last-of-advance-round-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -154,7 +157,8 @@
   :expand (system-last-is-even-p
            (commit-anchors-next val systate))
   :enable (system-last-is-even-p-necc
-           commit-anchors-possiblep)
+           commit-anchors-possiblep
+           validator-state->last-of-commit-anchors-next)
   :prep-lemmas
   ((defrule lemma
      (implies (and (natp x)
@@ -178,7 +182,8 @@
             (timer-expires-next val systate)))
   :expand (system-last-is-even-p
            (timer-expires-next val systate))
-  :enable system-last-is-even-p-necc)
+  :enable (system-last-is-even-p-necc
+           validator-state->last-of-timer-expires-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -193,3 +198,34 @@
            (system-last-is-even-p (event-next event systate)))
   :enable (event-possiblep
            event-next))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled system-last-is-even-p-of-events-next
+  :short "Preservation of the invariant by every sequence of events."
+  (implies (and (system-statep systate)
+                (system-last-is-even-p systate)
+                (events-possiblep events systate))
+           (system-last-is-even-p (events-next events systate)))
+  :induct t
+  :disable ((:e tau-system))
+  :enable (events-next
+           events-possiblep
+           system-last-is-even-p-of-event-next))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled system-last-is-even-p-when-reachable
+  :short "The invariant holds in every reachable state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Reachable states are characterized by an initial state and
+     a sequence of possible events from that initial state."))
+  (implies (and (system-statep systate)
+                (system-state-initp systate)
+                (events-possiblep events systate))
+           (system-last-is-even-p (events-next events systate)))
+  :disable ((:e tau-system))
+  :enable (system-last-is-even-p-when-system-state-initp
+           system-last-is-even-p-of-events-next))

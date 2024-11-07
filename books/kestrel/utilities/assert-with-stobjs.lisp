@@ -1,6 +1,6 @@
 ; An assert utility that supports stobjs
 ;
-; Copyright (C) 2017-2021 Kestrel Institute
+; Copyright (C) 2017-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -24,20 +24,25 @@
                                     expected-result
                                     stobjs
                                     whole-form)
-  `(make-event
-    (mv-let (result ,@stobjs)
-      ,form
-      (if (equal result ,expected-result)
-          (mv nil ;; no error
-              '(value-triple ':success)
-               ,@stobjs)
-        (mv t ;; error
-            (er hard 'assert-equal-with-stobjs-fn
-                "Result of ~x0 is ~x1, but we expected ~x2."
-                ',whole-form
-                result
-                ,expected-result)
-             ,@stobjs)))))
+  (let (;; Handle a single stobj not given in a list:
+        (stobjs (if (and (symbolp stobjs)
+                         (not (equal nil stobjs)))
+                    (list stobjs)
+                  stobjs)))
+    `(make-event
+       (mv-let (result ,@stobjs)
+         ,form
+         (if (equal result ,expected-result)
+             (mv nil ;; no error
+                 '(value-triple ':success)
+                 ,@stobjs)
+           (mv t ;; error
+               (er hard 'assert-equal-with-stobjs-fn
+                   "Result of ~x0 is ~x1, but we expected ~x2."
+                   ',whole-form
+                   result
+                   ,expected-result)
+               ,@stobjs))))))
 
 ;; FORM should return (mv result ...) where the ... stands for the indicated
 ;; stobjs.  This checks whether the RESULT returned is equal to EXPECTED-RESULT
@@ -63,24 +68,29 @@
                                      expected-result
                                      stobjs
                                      whole-form)
-  `(make-event
-    (mv-let (erp result ,@stobjs)
-      ,form
-      (if erp
-          (mv t
-              (er hard 'assert-equal-with-stobjs2-fn"Calling ~x0 returned an error." ',whole-form)
-              ,@stobjs)
-        (if (equal result ,expected-result)
-            (mv nil ;; no error
-                '(value-triple ':success)
-                ,@stobjs)
-          (mv t ;; error
-              (er hard 'assert-equal-with-stobjs2-fn
-                  "Result of ~x0 is ~x1, but we expected ~x2."
-                  ',whole-form
-                  result
-                  ,expected-result)
-              ,@stobjs))))))
+  (let (;; Handle a single stobj not given in a list:
+        (stobjs (if (and (symbolp stobjs)
+                         (not (equal nil stobjs)))
+                    (list stobjs)
+                  stobjs)))
+    `(make-event
+       (mv-let (erp result ,@stobjs)
+         ,form
+         (if erp
+             (mv t
+                 (er hard 'assert-equal-with-stobjs2-fn"Calling ~x0 returned an error." ',whole-form)
+                 ,@stobjs)
+           (if (equal result ,expected-result)
+               (mv nil ;; no error
+                   '(value-triple ':success)
+                   ,@stobjs)
+             (mv t ;; error
+                 (er hard 'assert-equal-with-stobjs2-fn
+                     "Result of ~x0 is ~x1, but we expected ~x2."
+                     ',whole-form
+                     result
+                     ,expected-result)
+                 ,@stobjs)))))))
 
 ;; FORM should return (mv erp result ...) where the ... stands for the indicated
 ;; stobjs.  This checks whether the RESULT returned is equal to EXPECTED-RESULT

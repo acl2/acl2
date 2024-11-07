@@ -399,7 +399,7 @@
 
 ;hope this is okay
 (defund recursive-functionp (name state)
-  (declare (xargs :stobjs (state)
+  (declare (xargs :stobjs state
                   :guard (symbolp name)))
   (let* ((props (getprops name 'current-acl2-world (w state))))
     (if (not (alistp props))
@@ -835,7 +835,7 @@
 ;fixme note that the update-expr-list may contain the same call of the update function in each update-expr (for example, call is-a-nice-tail-function on process-blocks for md5)
 ;--consider trying to recover that sharing?!
 (defun is-a-nice-tail-function (fn state)
-  (declare (xargs :stobjs (state)
+  (declare (xargs :stobjs state
                   :verify-guards nil))
   (let* ((props (getprops-non-nil fn state))
          (body (lookup-eq 'unnormalized-body props)))
@@ -4546,7 +4546,7 @@
 ;; ;if for-axe-proverp is nil, these are put in rule-classes :nil, since I don't know how to disable them to keep them from firing during non-dag proofs -- fixme try my-disable-fn above
 ;; ;;returns state
 ;; (defun make-hide-opener-and-dropper (function-name desired-args for-axe-proverp opener-name dropper-name state)
-;;   (declare (xargs :stobjs (state)
+;;   (declare (xargs :stobjs state
 ;;                   :mode :program
 ;;                   ))
 ;;   (let ((props (GETPROPS function-name 'CURRENT-ACL2-WORLD (W STATE))))
@@ -8796,7 +8796,7 @@
           (report-cdred-formals (rest formals) (rest update-expr-list))))))
 
 (defun find-cdred-formals (fn state)
-    (declare (xargs :stobjs (state) :verify-guards nil))
+    (declare (xargs :stobjs state :verify-guards nil))
   (let* ((is-a-nice-tail-function-result (is-a-nice-tail-function fn state))
          (nice-tail-recp (first is-a-nice-tail-function-result)))
     (if (not nice-tail-recp)
@@ -8951,7 +8951,7 @@
 ;; :failed means that none of the fns were unrolled
 (defun try-to-completely-unroll-rec-fns (nodenums fns-at-nodenums miter-array-name miter-array interpreted-function-alist extra-stuff test-cases
                                                   test-case-array-alist analyzed-function-table new-runes-acc new-fns-acc nodenums-not-to-unroll-acc state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (if (endp nodenums)
       (mv (if (endp new-fns-acc) ;nothing was unrolled:
               :failed
@@ -9365,7 +9365,7 @@
 (defun prove-final-claims-aux (claims
                                hyps ;will be the exit test and invar?
                                base-name count max-conflicts rule-alist interpreted-function-alist proved-claims-acc defthm-names-acc state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (if (endp claims)
       (mv (erp-nil) proved-claims-acc defthm-names-acc state)
     (let* ((claim (first claims))
@@ -9398,7 +9398,7 @@
 (defun prove-final-claims (rv-claims
                            hyps ;the simplified, expanded exit test and invariant-call
                            base-name max-conflicts prover-rule-alist runes interpreted-function-alist state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (b* ((- (cw "(Trying to prove final claims ~x0 (Assumptions:~%~x1):~%" rv-claims hyps))
        ((mv erp rule-alist)
         (add-to-rule-alist runes ;this isn't done by the parent, is it?
@@ -9433,7 +9433,7 @@
                                                         dag-lst formal-shape-alist
                                                         runes-acc
                                                         state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (if (endp formals)
       (mv runes-acc state)
     (let* ((formal (first formals))
@@ -9485,7 +9485,7 @@
 ;walks down the dag
 ;returns (mv runes state)
 (defun make-rules-to-expose-tuple-elements (dag-lst analyzed-function-table acc state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (if (endp dag-lst)
       (mv acc state)
     (let* ((entry (car dag-lst))
@@ -9592,7 +9592,7 @@
 
 ;don't bother to check the formals?
 (defun expand-update-fn-calls (terms formals state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (if (endp terms)
       nil
     (let ((term (first terms)))
@@ -9810,7 +9810,7 @@
 ;; Returns state
 ;handle defthm name clases?
 (defun prove-embedded-dags-equal (dag1 dag2 hyps defthm-name interpreted-function-alist state)
-  (declare (xargs :mode :program :stobjs (state)))
+  (declare (xargs :mode :program :stobjs state))
   (prove-theorem-with-axe-prover2 `(equal ,(embed-dag-as-term dag1 interpreted-function-alist)
                                           ,(embed-dag-as-term dag2 interpreted-function-alist))
                                   hyps defthm-name 3
@@ -9825,7 +9825,7 @@
 ;returns state
 ;handle defthm name clases?
 (defun prove-embedded-dag-equalities (lhses rhses hyps defthm-names interpreted-function-alist print state)
-  (declare (xargs :mode :program :stobjs (state))
+  (declare (xargs :mode :program :stobjs state)
            (irrelevant print))
   (if (endp lhses)
       state

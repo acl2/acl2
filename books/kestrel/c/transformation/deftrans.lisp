@@ -101,7 +101,7 @@
        "            :ident (expr-fix expr)"
        "            :const (expr-fix expr)"
        "            :string (expr-fix expr)"
-       "            :paren (expr-paren (my-simpadd0-expr expr.unwrap))"
+       "            :paren (expr-paren (my-simpadd0-expr expr.inner))"
        "            :gensel (make-expr-gensel"
        "                      :control (my-simpadd0-expr expr.control)"
        "                      :assocs (my-simpadd0-genassoc-list expr.assocs))"
@@ -264,7 +264,7 @@
     (:linear c$::enumer-list-count-of-enumspec->list)
     (:linear c$::enumspec-count-of-type-spec-enum->unwrap)
     (:linear c$::expr-count-of-car)
-    (:linear c$::expr-count-of-const-expr->unwrap)
+    (:linear c$::expr-count-of-const-expr->expr)
     (:linear c$::expr-count-of-dirabsdeclor-array-static1->expr)
     (:linear c$::expr-count-of-dirabsdeclor-array-static2->expr)
     (:linear c$::expr-count-of-dirdeclor-array-static1->expr)
@@ -283,7 +283,7 @@
     (:linear c$::expr-count-of-expr-member->arg)
     (:linear c$::expr-count-of-expr-memberp->arg)
     (:linear c$::expr-count-of-expr-option-some->val)
-    (:linear c$::expr-count-of-expr-paren->unwrap)
+    (:linear c$::expr-count-of-expr-paren->inner)
     (:linear c$::expr-count-of-expr-unary->arg)
     (:linear c$::expr-count-of-genassoc-default->expr)
     (:linear c$::expr-count-of-genassoc-type->expr)
@@ -651,10 +651,10 @@
    extra-args
    `(expr-case
       expr
-      :ident (expr-ident (,(cdr (assoc-eq 'ident names)) expr.unwrap ,@extra-args-names))
+      :ident (expr-ident (,(cdr (assoc-eq 'ident names)) expr.ident ,@extra-args-names))
       :const (expr-fix expr)
       :string (expr-fix expr)
-      :paren (expr-paren (,(cdr (assoc-eq 'expr names)) expr.unwrap ,@extra-args-names))
+      :paren (expr-paren (,(cdr (assoc-eq 'expr names)) expr.inner ,@extra-args-names))
       :gensel (make-expr-gensel
                 :control (,(cdr (assoc-eq 'expr names)) expr.control ,@extra-args-names)
                 :assocs (,(cdr (assoc-eq 'genassoc-list names)) expr.assocs ,@extra-args-names))
@@ -771,7 +771,7 @@
    bodies
    '((cexpr const-exprp))
    extra-args
-   `(const-expr (,(cdr (assoc-eq 'expr names)) (const-expr->unwrap cexpr) ,@extra-args-names))
+   `(const-expr (,(cdr (assoc-eq 'expr names)) (const-expr->expr cexpr) ,@extra-args-names))
    '(:returns (new-cexpr const-exprp)
      :measure (const-expr-count cexpr))))
 

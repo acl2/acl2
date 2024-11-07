@@ -26,7 +26,7 @@
 ;; Test assert-equal-with-stobjs:
 (assert-equal-with-stobjs (query (equal (bvplus 8 1 x) 3))
                           :sat
-                          :stobjs (state))
+                          :stobjs state)
 
 
 ;; TODO: For tests with a unique solution, that that value is returned:

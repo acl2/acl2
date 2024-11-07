@@ -14,6 +14,7 @@
 (include-book "operations-fault-tolerance")
 (include-book "invariant-signers-have-author-round")
 (include-book "invariant-signers-are-quorum")
+(include-book "invariant-fault-tolerance")
 
 (local (include-book "../library-extensions/oset-theorems"))
 
@@ -112,7 +113,8 @@
            certificates-for-validator
            get-network-state
            validator-init-when-system-initp
-           validator-init))
+           validator-init
+           in-of-message-certificates-for-validator))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -492,6 +494,7 @@
               (create-certificate-next cert systate)))
     :expand (system-unequivocal-certificates-p
              (create-certificate-next cert systate))
+    :enable certificates-for-validator-of-create-certificate-next
     :use (:instance system-unequivocal-certificates-p-necc
                     (val
                      (mv-nth 0 (system-unequivocal-certificates-p-witness
@@ -518,6 +521,7 @@
             (receive-certificate-next msg systate)))
   :expand (system-unequivocal-certificates-p
            (receive-certificate-next msg systate))
+  :enable certificates-for-validator-of-receive-certificate-next
   :use (:instance system-unequivocal-certificates-p-necc
                   (val
                    (mv-nth 0 (system-unequivocal-certificates-p-witness
@@ -544,6 +548,7 @@
             (store-certificate-next cert val systate)))
   :expand (system-unequivocal-certificates-p
            (store-certificate-next cert val systate))
+  :enable certificates-for-validator-of-store-certificate-next
   :use (:instance system-unequivocal-certificates-p-necc
                   (val
                    (mv-nth 0 (system-unequivocal-certificates-p-witness
@@ -570,6 +575,7 @@
             (advance-round-next val systate)))
   :expand (system-unequivocal-certificates-p
            (advance-round-next val systate))
+  :enable certificates-for-validator-of-advance-round-next
   :use (:instance system-unequivocal-certificates-p-necc
                   (val
                    (mv-nth 0 (system-unequivocal-certificates-p-witness
@@ -596,6 +602,7 @@
             (commit-anchors-next val systate)))
   :expand (system-unequivocal-certificates-p
            (commit-anchors-next val systate))
+  :enable certificates-for-validator-of-commit-anchors-next
   :use (:instance system-unequivocal-certificates-p-necc
                   (val
                    (mv-nth 0 (system-unequivocal-certificates-p-witness
@@ -654,3 +661,61 @@
             (event-next event systate)))
   :enable (event-possiblep
            event-next))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled system-unequivocal-certificates-p-of-events-next
+  :short "Preservation of the invariant by every sequence of events."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Since this invariant's single-event preservation
+     depends on other invariants,
+     we need to include all invariants to prove
+     multi-event preservation by induction."))
+  (implies
+   (and (system-statep systate)
+        (system-unequivocal-certificates-p systate)
+        (system-signers-are-validators-p systate)
+        (system-signers-are-quorum-p systate)
+        (system-signers-have-author+round-p systate)
+        (events-possiblep events systate)
+        (fault-tolerant-p systate))
+   (and (system-unequivocal-certificates-p (events-next events systate))
+        (system-signers-are-validators-p (events-next events systate))
+        (system-signers-are-quorum-p (events-next events systate))
+        (system-signers-have-author+round-p (events-next events systate))))
+  :induct t
+  :disable ((:e tau-system))
+  :enable (events-next
+           events-possiblep
+           system-unequivocal-certificates-p-of-event-next
+           system-signers-are-validators-p-of-event-next
+           system-signers-are-quorum-p-of-event-next
+           system-signers-have-author+round-p-of-event-next))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled system-unequivocal-certificates-p-when-reachable
+  :short "The invariant holds in every reachable state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Reachable states are characterized by an initial state and
+     a sequence of possible events from that initial state.")
+   (xdoc::p
+    "This does not mention the other invariant,
+     because it holds in the initial state
+     and that it establishes the hypothesis of
+     the multi-event preservation theorem."))
+  (implies (and (system-statep systate)
+                (system-state-initp systate)
+                (events-possiblep events systate)
+                (fault-tolerant-p systate))
+           (system-unequivocal-certificates-p (events-next events systate)))
+  :disable ((:e tau-system))
+  :enable (system-unequivocal-certificates-p-when-system-state-initp
+           system-signers-are-validators-p-when-system-state-initp
+           system-signers-are-quorum-p-when-system-state-initp
+           system-signers-have-author+round-p-when-system-state-initp
+           system-unequivocal-certificates-p-of-events-next))

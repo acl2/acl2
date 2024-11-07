@@ -115,34 +115,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection genesis-committee-members-subset-invariant
-  :short "Invariance of the condition on the genesis committee."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "To show that our invariant of interest, @(tsee committees-in-system-p),
-     is indeed an invariant,
-     given that we have proved @(tsee committees-in-system-p-when-genesis),
-     it suffices to show that
-     the condition on the genesis committee is itself an invariant.
-     While the genesis committee does not change,
-     the set of addresses @(tsee all-addresses) of validators in the system
-     depends on the system state.
-     But we have already proved that that set is an invariant,
-     so it is easy to prove that it is preserved by transitions.
-     Its establishment follows from the definition of @(tsee system-initp),
-     which includes the condition that
-     the genesis committee's members are validators in the system."))
+(defsection committees-in-system-p-always
+  :short "The invariant holds in every state
+          reachable from an initial state via a sequence of events."
 
-  (defruled genesis-committee-members-subset-when-init
-    (implies (system-initp systate)
-             (set::subset (committee-members (genesis-committee))
-                          (all-addresses systate)))
-    :enable system-initp)
-
-  (defruled genesis-committee-members-subset-of-next
-    (implies (and (set::subset (committee-members (genesis-committee))
-                               (all-addresses systate))
-                  (event-possiblep event systate))
-             (set::subset (committee-members (genesis-committee))
-                          (all-addresses (event-next event systate))))))
+  (defruled committees-in-system-p-when-reachable
+    (implies (and (system-statep systate)
+                  (system-initp systate)
+                  (events-possiblep events systate))
+             (committees-in-system-p (events-next events systate)))
+    :enable (committees-in-system-p-when-genesis
+             system-initp)))

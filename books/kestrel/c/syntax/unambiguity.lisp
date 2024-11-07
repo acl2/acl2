@@ -69,7 +69,7 @@
                :ident t
                :const t
                :string t
-               :paren (expr-unambp expr.unwrap)
+               :paren (expr-unambp expr.inner)
                :gensel (and (expr-unambp expr.control)
                             (genassoc-list-unambp expr.assocs))
                :arrsub (and (expr-unambp expr.arg1)
@@ -133,7 +133,7 @@
     :returns (yes/no booleanp)
     :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if a constant expression is unambiguous."
-    (expr-unambp (const-expr->unwrap cexpr))
+    (expr-unambp (const-expr->expr cexpr))
     :measure (const-expr-count cexpr))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1459,10 +1459,10 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defrule expr-unambp-of-expr-paren->unwrap
+  (defrule expr-unambp-of-expr-paren->inner
     (implies (and (expr-unambp expr)
                   (expr-case expr :paren))
-             (expr-unambp (expr-paren->unwrap expr)))
+             (expr-unambp (expr-paren->inner expr)))
     :expand (expr-unambp expr))
 
   (defrule expr-unambp-of-expr-gensel->control
@@ -1652,9 +1652,9 @@
                   (expr-case expr :offsetof))
              (member-designor-unambp (expr-offsetof->member expr))))
 
-  (defrule expr-unambp-of-expr-const-expr->unwrap
+  (defrule expr-unambp-of-expr-const-expr->expr
     (implies (const-expr-unambp cexpr)
-             (expr-unambp (const-expr->unwrap cexpr)))
+             (expr-unambp (const-expr->expr cexpr)))
     :expand (const-expr-unambp cexpr))
 
   (defrule tyname-unambp-of-genassoc-type->type

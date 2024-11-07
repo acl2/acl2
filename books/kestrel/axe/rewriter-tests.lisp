@@ -58,7 +58,7 @@
 
   (assert-equal-with-stobjs2 (simp-term '(< '0 (len x)) :rules '(test) :assumptions '((consp2 x)))
                             ''t
-                            :stobjs (state)))
+                            :stobjs state))
 
 ;; Utility for testing the simplification functions.
 ;; FORM must return (mv erp result state).

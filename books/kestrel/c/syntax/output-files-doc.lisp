@@ -34,6 +34,11 @@
    (xdoc::evmac-section-intro
 
     (xdoc::p
+     "In the name of this macro,
+      @('output') is best read as a verb:
+      the macro outputs files from ACL2.")
+
+    (xdoc::p
      "This macro takes as input an ACL2 representation of C code
       and writes that C code to the file system.
       The ACL2 representation of the C code could be

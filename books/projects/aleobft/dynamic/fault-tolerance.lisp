@@ -239,3 +239,33 @@
                    (validator-fault-tolerant-p
                     (get-validator-state val systate)
                     systate))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define all-system-fault-tolerant-p ((events event-listp)
+                                     (systate system-statep))
+  :guard (events-possiblep events systate)
+  :returns (yes/no booleanp)
+  :short "Check if all the system states
+          in an execution corresponding to a sequence of events
+          are fault-tolerant."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "When talking about properties of executions,
+     i.e. sequences of states from a starting state
+     through a serie of states that result from a sequence of events,
+     we need to make the hypothesis that
+     all the committees along the way are fault-tolerant.
+     This predicate expresses that.")
+   (xdoc::p
+    "The input state must be fault-tolerant.
+     If there are no events, there is no other requirement.
+     Otherwise, we execute the event
+     and we recursively call this predicate with the resulting state:
+     this covers all the states in the execution."))
+  (b* (((unless (system-fault-tolerant-p systate)) nil)
+       ((when (endp events)) t))
+    (all-system-fault-tolerant-p (cdr events)
+                                 (event-next (car events) systate)))
+  :guard-hints (("Goal" :in-theory (enable events-possiblep))))

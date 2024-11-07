@@ -224,4 +224,48 @@
     :enable (accepted-certificate-committee-p
              accepted-certificate-committee-p-necc
              validator-state->blockchain-of-timer-expires-next
-             accepted-certificates-of-timer-expires-next)))
+             accepted-certificates-of-timer-expires-next))
+
+  (defruled accepted-certificate-committee-p-of-event-next
+    (implies (and (accepted-certificate-committee-p systate)
+                  (ordered-even-p systate)
+                  (last-blockchain-round-p systate)
+                  (event-possiblep event systate))
+             (accepted-certificate-committee-p (event-next event systate)))
+    :enable (event-possiblep
+             event-next)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection accepted-certificate-committee-p-always
+  :short "The invariant holds in every state
+          reachable from an initial state via a sequence of events."
+
+  (defruled accepted-certificate-committee-p-of-events-next
+    (implies
+     (and (system-statep systate)
+          (accepted-certificate-committee-p systate)
+          (ordered-even-p systate)
+          (last-blockchain-round-p systate)
+          (events-possiblep events systate))
+     (and (accepted-certificate-committee-p (events-next events systate))
+          (ordered-even-p (events-next events systate))
+          (last-blockchain-round-p (events-next events systate))))
+    :induct t
+    :disable ((:e tau-system))
+    :enable (events-possiblep
+             events-next
+             accepted-certificate-committee-p-of-event-next
+             ordered-even-p-of-event-next
+             last-blockchain-round-p-of-event-next))
+
+  (defruled accepted-certificate-committee-p-when-reachable
+    (implies (and (system-statep systate)
+                  (system-initp systate)
+                  (events-possiblep events systate))
+             (accepted-certificate-committee-p (events-next events systate)))
+    :disable ((:e tau-system))
+    :enable (accepted-certificate-committee-p-when-init
+             ordered-even-p-when-init
+             last-blockchain-round-p-when-init
+             accepted-certificate-committee-p-of-events-next)))

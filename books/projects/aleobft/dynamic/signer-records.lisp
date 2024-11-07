@@ -401,3 +401,29 @@
              (signer-records-p (event-next event systate)))
     :enable (event-possiblep
              event-next)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection signer-records-p-always
+  :short "The invariant holds in every state
+          reachable from an initial state via a sequence of events."
+
+  (defruled signer-records-p-of-events-next
+    (implies (and (system-statep systate)
+                  (signer-records-p systate)
+                  (events-possiblep events systate))
+             (signer-records-p (events-next events systate)))
+    :induct t
+    :disable ((:e tau-system))
+    :enable (events-possiblep
+             events-next
+             signer-records-p-of-event-next))
+
+  (defruled signer-records-p-when-reachable
+    (implies (and (system-statep systate)
+                  (system-initp systate)
+                  (events-possiblep events systate))
+             (signer-records-p (events-next events systate)))
+    :disable ((:e tau-system))
+    :enable (signer-records-p-when-init
+             signer-records-p-of-events-next)))

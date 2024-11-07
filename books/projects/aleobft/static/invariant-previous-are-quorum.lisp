@@ -79,7 +79,8 @@
            certificates-for-validator
            get-network-state
            validator-init-when-system-initp
-           validator-init))
+           validator-init
+           in-of-message-certificates-for-validator))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -113,7 +114,8 @@
               (create-certificate-next cert systate)))
     :expand (system-previous-are-quorum-p
              (create-certificate-next cert systate))
-    :enable (system-previous-are-quorum-p-necc)
+    :enable (system-previous-are-quorum-p-necc
+             certificates-for-validator-of-create-certificate-next)
     :disable set::cardinality-zero-emptyp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -131,7 +133,8 @@
             (receive-certificate-next msg systate)))
   :expand (system-previous-are-quorum-p
            (receive-certificate-next msg systate))
-  :enable (system-previous-are-quorum-p-necc))
+  :enable (system-previous-are-quorum-p-necc
+           certificates-for-validator-of-receive-certificate-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -148,7 +151,8 @@
             (store-certificate-next cert val systate)))
   :expand (system-previous-are-quorum-p
            (store-certificate-next cert val systate))
-  :enable (system-previous-are-quorum-p-necc))
+  :enable (system-previous-are-quorum-p-necc
+           certificates-for-validator-of-store-certificate-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -165,7 +169,8 @@
             (advance-round-next val systate)))
   :expand (system-previous-are-quorum-p
            (advance-round-next val systate))
-  :enable (system-previous-are-quorum-p-necc))
+  :enable (system-previous-are-quorum-p-necc
+           certificates-for-validator-of-advance-round-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -182,7 +187,8 @@
             (commit-anchors-next val systate)))
   :expand (system-previous-are-quorum-p
            (commit-anchors-next val systate))
-  :enable (system-previous-are-quorum-p-necc))
+  :enable (system-previous-are-quorum-p-necc
+           certificates-for-validator-of-commit-anchors-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -215,3 +221,34 @@
             (event-next event systate)))
   :enable (event-possiblep
            event-next))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled system-previous-are-quorum-p-of-events-next
+  :short "Preservation of the invariant by every sequence of events."
+  (implies (and (system-statep systate)
+                (system-previous-are-quorum-p systate)
+                (events-possiblep events systate))
+           (system-previous-are-quorum-p (events-next events systate)))
+  :induct t
+  :disable ((:e tau-system))
+  :enable (events-next
+           events-possiblep
+           system-previous-are-quorum-p-of-event-next))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled system-previous-are-quorum-p-when-reachable
+  :short "The invariant holds in every reachable state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Reachable states are characterized by an initial state and
+     a sequence of possible events from that initial state."))
+  (implies (and (system-statep systate)
+                (system-state-initp systate)
+                (events-possiblep events systate))
+           (system-previous-are-quorum-p (events-next events systate)))
+  :disable ((:e tau-system))
+  :enable (system-previous-are-quorum-p-when-system-state-initp
+           system-previous-are-quorum-p-of-events-next))

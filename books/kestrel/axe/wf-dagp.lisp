@@ -1,7 +1,7 @@
 ; A recognizer for a well-formed DAG
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -19,15 +19,12 @@
 (include-book "make-dag-constant-alist")
 (include-book "dag-parent-array-with-name")
 
-;;;
-;;; wf-dagp ("well-formed DAG")
-;;;
-
+;; Recognizes a "well-formed DAG".
 ;; TODO: Strengthen to say that the dag-parent-array is actually correct.
 ;; TODO: Rename wf-dag-arrayp ("well-formed DAG array")
 (defund wf-dagp (dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
   (declare (xargs :guard t))
-  (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
+  (and (pseudo-dag-arrayp dag-array-name dag-array dag-len) ; implies (natp dag-len)
        (bounded-dag-parent-arrayp dag-parent-array-name dag-parent-array dag-len)
        ;; Says that the dag-constant-alist is in sync with the dag:
        (equal dag-constant-alist (make-dag-constant-alist dag-array-name dag-array dag-len)) ;;(bounded-dag-constant-alistp dag-constant-alist dag-len)
@@ -69,13 +66,8 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable wf-dagp))))
 
-(defthmd <-of-len-when-wf-dagp
-  (implies (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
-           (<= dag-len *max-1d-array-length*))
-  :rule-classes :forward-chaining
-  :hints (("Goal" :in-theory (enable wf-dagp))))
-
-;; drop if we switch to using empty-dag-array or empty-dag-array-with-name instead of make-empty-array.
+;; An empty dag is well-formed.
+;; maybe drop if we switch to using empty-dag-array or empty-dag-array-with-name instead of make-empty-array.
 (defthm wf-dagp-of-make-empty-array
   (implies (and (symbolp dag-array-name)
                 (symbolp dag-parent-array-name)
@@ -91,7 +83,7 @@
   :hints (("Goal" :in-theory (enable wf-dagp))))
 
 ;drop?
-(defthm wf-dagp-of-make-into-array-etc
+(defthmd wf-dagp-of-make-into-array-etc
   (implies (and (pseudo-dagp dag)
                 (<= (LEN DAG) *max-1d-array-length*))
            (WF-DAGP 'DAG-ARRAY

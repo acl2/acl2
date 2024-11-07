@@ -115,7 +115,8 @@
   :expand (system-last-before-current-p
            (receive-certificate-next msg systate))
   :enable (system-last-before-current-p-necc
-           validator-state->round-of-receive-certificate-next))
+           validator-state->round-of-receive-certificate-next
+           validator-state->last-of-receive-certificate-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -132,6 +133,8 @@
             (store-certificate-next cert val systate)))
   :expand (system-last-before-current-p
            (store-certificate-next cert val systate))
+  :enable (validator-state->round-of-store-certificate-next
+           validator-state->last-of-store-certificate-next)
   :use (:instance system-last-before-current-p-necc
                   (val (system-last-before-current-p-witness
                         (store-certificate-next cert val systate)))))
@@ -151,6 +154,8 @@
             (advance-round-next val systate)))
   :expand (system-last-before-current-p
            (advance-round-next val systate))
+  :enable (validator-state->round-of-advance-round-next
+           validator-state->last-of-advance-round-next)
   :use (:instance system-last-before-current-p-necc
                   (val (system-last-before-current-p-witness
                         (advance-round-next val systate)))))
@@ -171,7 +176,9 @@
             (commit-anchors-next val systate)))
   :expand (system-last-before-current-p
            (commit-anchors-next val systate))
-  :enable system-last-before-current-p-necc)
+  :enable (system-last-before-current-p-necc
+           validator-state->round-of-commit-anchors-next
+           validator-state->last-of-commit-anchors-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -189,7 +196,9 @@
             (timer-expires-next val systate)))
   :expand (system-last-before-current-p
            (timer-expires-next val systate))
-  :enable system-last-before-current-p-necc)
+  :enable (system-last-before-current-p-necc
+           validator-state->round-of-timer-expires-next
+           validator-state->last-of-timer-expires-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -204,3 +213,34 @@
            (system-last-before-current-p (event-next event systate)))
   :enable (event-possiblep
            event-next))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled system-last-before-current-p-of-events-next
+  :short "Preservation of the invariant by every sequence of events."
+  (implies (and (system-statep systate)
+                (system-last-before-current-p systate)
+                (events-possiblep events systate))
+           (system-last-before-current-p (events-next events systate)))
+  :induct t
+  :disable ((:e tau-system))
+  :enable (events-next
+           events-possiblep
+           system-last-before-current-p-of-event-next))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled system-last-before-current-p-when-reachable
+  :short "The invariant holds in every reachable state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Reachable states are characterized by an initial state and
+     a sequence of possible events from that initial state."))
+  (implies (and (system-statep systate)
+                (system-state-initp systate)
+                (events-possiblep events systate))
+           (system-last-before-current-p (events-next events systate)))
+  :disable ((:e tau-system))
+  :enable (system-last-before-current-p-when-system-state-initp
+           system-last-before-current-p-of-events-next))

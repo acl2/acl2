@@ -11,7 +11,10 @@
 
 (in-package "ALEOBFT-STATIC")
 
-(include-book "invariant-same-certificates")
+(include-book "invariant-addresses")
+(include-book "operations-certificates-for-validators")
+
+(include-book "std/util/define-sk" :dir :system)
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -88,7 +91,8 @@
            certificates-for-validator
            get-network-state
            validator-init-when-system-initp
-           validator-init))
+           validator-init
+           in-of-message-certificates-for-validator))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -111,7 +115,8 @@
            (create-certificate-next cert systate))
   :enable (certificate-signers-are-validators-p
            create-certificate-possiblep
-           certificate->signers)
+           certificate->signers
+           certificates-for-validator-of-create-certificate-next)
   :use (:instance system-signers-are-validators-p-necc
                   (val (mv-nth 0
                                (system-signers-are-validators-p-witness
@@ -137,7 +142,8 @@
             (receive-certificate-next msg systate)))
   :expand (system-signers-are-validators-p
            (receive-certificate-next msg systate))
-  :enable certificate-signers-are-validators-p
+  :enable (certificate-signers-are-validators-p
+           certificates-for-validator-of-receive-certificate-next)
   :use (:instance system-signers-are-validators-p-necc
                   (val (mv-nth 0
                                (system-signers-are-validators-p-witness
@@ -163,7 +169,8 @@
             (store-certificate-next cert val systate)))
   :expand (system-signers-are-validators-p
            (store-certificate-next cert val systate))
-  :enable certificate-signers-are-validators-p
+  :enable (certificate-signers-are-validators-p
+           certificates-for-validator-of-store-certificate-next)
   :use (:instance system-signers-are-validators-p-necc
                   (val (mv-nth 0
                                (system-signers-are-validators-p-witness
@@ -189,7 +196,8 @@
             (advance-round-next val systate)))
   :expand (system-signers-are-validators-p
            (advance-round-next val systate))
-  :enable certificate-signers-are-validators-p
+  :enable (certificate-signers-are-validators-p
+           certificates-for-validator-of-advance-round-next)
   :use (:instance system-signers-are-validators-p-necc
                   (val (mv-nth 0
                                (system-signers-are-validators-p-witness
@@ -215,7 +223,8 @@
             (commit-anchors-next val systate)))
   :expand (system-signers-are-validators-p
            (commit-anchors-next val systate))
-  :enable certificate-signers-are-validators-p
+  :enable (certificate-signers-are-validators-p
+           certificates-for-validator-of-commit-anchors-next)
   :use (:instance system-signers-are-validators-p-necc
                   (val (mv-nth 0
                                (system-signers-are-validators-p-witness
@@ -263,3 +272,34 @@
            (system-signers-are-validators-p (event-next event systate)))
   :enable (event-possiblep
            event-next))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled system-signers-are-validators-p-of-events-next
+  :short "Preservation of the invariant by every sequence of events."
+  (implies (and (system-statep systate)
+                (system-signers-are-validators-p systate)
+                (events-possiblep events systate))
+           (system-signers-are-validators-p (events-next events systate)))
+  :induct t
+  :disable ((:e tau-system))
+  :enable (events-next
+           events-possiblep
+           system-signers-are-validators-p-of-event-next))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled system-signers-are-validators-p-when-reachable
+  :short "The invariant holds in every reachable state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Reachable states are characterized by an initial state and
+     a sequence of possible events from that initial state."))
+  (implies (and (system-statep systate)
+                (system-state-initp systate)
+                (events-possiblep events systate))
+           (system-signers-are-validators-p (events-next events systate)))
+  :disable ((:e tau-system))
+  :enable (system-signers-are-validators-p-when-system-state-initp
+           system-signers-are-validators-p-of-events-next))

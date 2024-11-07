@@ -186,3 +186,29 @@
              (last-blockchain-round-p (event-next event systate)))
     :enable (event-possiblep
              event-next)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection last-blockchain-round-p-always
+  :short "The invariant holds in every state
+          reachable from an initial state via a sequence of events."
+
+  (defruled last-blockchain-round-p-of-events-next
+    (implies (and (system-statep systate)
+                  (last-blockchain-round-p systate)
+                  (events-possiblep events systate))
+             (last-blockchain-round-p (events-next events systate)))
+    :induct t
+    :disable ((:e tau-system))
+    :enable (events-possiblep
+             events-next
+             last-blockchain-round-p-of-event-next))
+
+  (defruled last-blockchain-round-p-when-reachable
+    (implies (and (system-statep systate)
+                  (system-initp systate)
+                  (events-possiblep events systate))
+             (last-blockchain-round-p (events-next events systate)))
+    :disable ((:e tau-system))
+    :enable (last-blockchain-round-p-when-init
+             last-blockchain-round-p-of-events-next)))

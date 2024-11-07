@@ -401,3 +401,50 @@
            (system-buffer-not-self-p
             (event-next event systate)))
   :enable (event-possiblep event-next))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled system-buffer-not-self-p-of-events-next
+  :short "Preservation of the invariant by every sequence of events."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Since this invariant's single-event preservation
+     depends on another invariant,
+     we need to include both invariants to prove
+     multi-event preservation by induction."))
+  (implies (and (system-statep systate)
+                (system-buffer-not-self-p systate)
+                (system-messages-not-self-p systate)
+                (events-possiblep events systate))
+           (and (system-buffer-not-self-p (events-next events systate))
+                (system-messages-not-self-p (events-next events systate))))
+  :induct t
+  :disable ((:e tau-system))
+  :enable (events-next
+           events-possiblep
+           system-buffer-not-self-p-of-event-next
+           system-messages-not-self-p-of-event-next))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled system-buffer-not-self-p-when-reachable
+  :short "The invariant holds in every reachable state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Reachable states are characterized by an initial state and
+     a sequence of possible events from that initial state.")
+   (xdoc::p
+    "This does not mention the other invariant,
+     because it holds in the initial state
+     and that it establishes the hypothesis of
+     the multi-event preservation theorem."))
+  (implies (and (system-statep systate)
+                (system-state-initp systate)
+                (events-possiblep events systate))
+           (system-buffer-not-self-p (events-next events systate)))
+  :disable ((:e tau-system))
+  :enable (system-buffer-not-self-p-when-system-state-initp
+           system-messages-not-self-p-when-system-state-initp
+           system-buffer-not-self-p-of-events-next))

@@ -172,7 +172,8 @@
               (max-faulty systate)
               (all-addresses systate)))
     :enable (validator-last-anchor-voters-p
-             validator-state->dag-of-receive-certificate-next))
+             validator-state->dag-of-receive-certificate-next
+             validator-state->last-of-receive-certificate-next))
 
   (defrule system-last-anchor-voters-p-of-receive-certificate-next
     (implies (and (system-last-anchor-voters-p systate)
@@ -209,7 +210,9 @@
               (all-addresses systate)))
     :enable (validator-last-anchor-voters-p
              certificates-with-round-of-insert
-             tally-leader-votes-of-insert))
+             tally-leader-votes-of-insert
+             validator-state->dag-of-store-certificate-next
+             validator-state->last-of-store-certificate-next))
 
   (defrule system-last-anchor-voters-p-of-store-certificate-next
     (implies (and (system-last-anchor-voters-p systate)
@@ -242,7 +245,9 @@
                                    (advance-round-next val1 systate))
               (max-faulty systate)
               (all-addresses systate)))
-    :enable validator-last-anchor-voters-p)
+    :enable (validator-last-anchor-voters-p
+             validator-state->dag-of-advance-round-next
+             validator-state->last-of-advance-round-next))
 
   (defrule system-last-anchor-voters-p-of-advance-round-next
     (implies (and (system-last-anchor-voters-p systate)
@@ -279,7 +284,9 @@
               (all-addresses systate)))
     :enable (validator-last-anchor-voters-p
              fix
-             commit-anchors-possiblep))
+             commit-anchors-possiblep
+             validator-state->dag-of-commit-anchors-next
+             validator-state->last-of-commit-anchors-next))
 
   (defrule system-last-anchor-voters-p-of-commit-anchors-next
     (implies (and (system-last-anchor-voters-p systate)
@@ -311,7 +318,9 @@
                                    (timer-expires-next val1 systate))
               (max-faulty systate)
               (all-addresses systate)))
-    :enable validator-last-anchor-voters-p)
+    :enable (validator-last-anchor-voters-p
+             validator-state->dag-of-timer-expires-next
+             validator-state->last-of-timer-expires-next))
 
   (defrule system-last-anchor-voters-p-of-timer-expires-next
     (implies (and (system-last-anchor-voters-p systate)
@@ -336,3 +345,34 @@
             (event-next event systate)))
   :enable (event-possiblep
            event-next))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled system-last-anchor-voters-p-of-events-next
+  :short "Preservation of the invariant by every sequence of events."
+  (implies (and (system-statep systate)
+                (system-last-anchor-voters-p systate)
+                (events-possiblep events systate))
+           (system-last-anchor-voters-p (events-next events systate)))
+  :induct t
+  :disable ((:e tau-system))
+  :enable (events-next
+           events-possiblep
+           system-last-anchor-voters-p-of-event-next))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled system-last-anchor-voters-p-when-reachable
+  :short "The invariant holds in every reachable state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Reachable states are characterized by an initial state and
+     a sequence of possible events from that initial state."))
+  (implies (and (system-statep systate)
+                (system-state-initp systate)
+                (events-possiblep events systate))
+           (system-last-anchor-voters-p (events-next events systate)))
+  :disable ((:e tau-system))
+  :enable (system-last-anchor-voters-p-when-system-state-initp
+           system-last-anchor-voters-p-of-events-next))

@@ -87,7 +87,8 @@
                    (all-addresses systate))
                   (last-anchor (get-validator-state val systate)
                                (all-addresses systate))))
-  :enable last-anchor)
+  :enable (last-anchor
+           validator-state->last-of-receive-certificate-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -115,8 +116,8 @@
                    (all-addresses systate))
                   (last-anchor (get-validator-state val systate)
                                (all-addresses systate))))
-  :enable last-anchor
-  :disable validator-state->dag-of-store-certificate-next
+  :enable (last-anchor
+           validator-state->last-of-store-certificate-next)
   :use system-last-anchor-present-p-necc)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -137,7 +138,8 @@
                    (all-addresses systate))
                   (last-anchor (get-validator-state val systate)
                                (all-addresses systate))))
-  :enable last-anchor)
+  :enable (last-anchor
+           validator-state->last-of-advance-round-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -195,4 +197,5 @@
                    (all-addresses systate))
                   (last-anchor (get-validator-state val systate)
                                (all-addresses systate))))
-  :enable last-anchor)
+  :enable (last-anchor
+           validator-state->last-of-timer-expires-next))

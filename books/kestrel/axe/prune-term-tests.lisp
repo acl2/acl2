@@ -31,7 +31,7 @@
                                                        nil
                                                        state)
                            '(myif (equal x y) v z)
-                           :stobjs (state))
+                           :stobjs state)
 
 ;; TODO: Simplify the (booland 't ...) below
 (assert-equal-with-stobjs2 (prune-term-test-wrapper '(myif (equal x y) (booland (equal x y) z) w)
@@ -42,7 +42,7 @@
                                                        nil
                                                        state)
                            '(myif (equal x y) (booland 't z) w)
-                           :stobjs (state))
+                           :stobjs state)
 
 (assert-equal-with-stobjs2 (prune-term-test-wrapper '(boolif 't x y)
                                                        nil
@@ -52,7 +52,7 @@
                                                        nil
                                                        state)
                            '(bool-fix$inline x)
-                           :stobjs (state))
+                           :stobjs state)
 
 (assert-equal-with-stobjs2 (prune-term-test-wrapper '(boolif 'nil x y)
                                                        nil
@@ -62,7 +62,7 @@
                                                        nil
                                                        state)
                            '(bool-fix$inline y)
-                           :stobjs (state))
+                           :stobjs state)
 
 ;; todo:
 ;; (assert-equal-with-stobjs2 (prune-term-test-wrapper '(boolif '3 x y)
@@ -72,4 +72,4 @@
 ;;                                                        nil
 ;;                                                        state)
 ;;                            '(bool-fix$inline x)
-;;                            :stobjs (state))
+;;                            :stobjs state)

@@ -134,3 +134,20 @@
     :enable (system-authors-are-validators-p
              dag-authors-are-validators-p
              set::expensive-rules)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled system-authors-are-validators-p-when-reachable
+  :short "The invariant holds in every reachable state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Reachable states are characterized by an initial state and
+     a sequence of possible events from that initial state."))
+  (implies (and (system-statep systate)
+                (system-state-initp systate)
+                (events-possiblep events systate))
+           (system-authors-are-validators-p (events-next events systate)))
+  :disable ((:e tau-system))
+  :enable (system-authors-are-validators-p-when-signers-are-validators
+           system-signers-are-validators-p-when-reachable))

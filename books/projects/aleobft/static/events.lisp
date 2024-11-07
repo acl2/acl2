@@ -79,3 +79,17 @@
   (:commit-anchors ((validator address)))
   (:timer-expires ((validator address)))
   :pred eventp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist event-list
+  :short "Fixtype of lists of events."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Events are defined in @(tsee event)."))
+  :elt-type event
+  :true-listp t
+  :elementp-of-nil nil
+  :pred event-listp
+  :prepwork ((local (in-theory (enable nfix)))))

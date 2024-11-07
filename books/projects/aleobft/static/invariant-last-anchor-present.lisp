@@ -129,7 +129,8 @@
                            val (receive-certificate-next msg systate))
                           (all-addresses systate)))
     :enable (last-anchor
-             validator-state->dag-of-receive-certificate-next))
+             validator-state->dag-of-receive-certificate-next
+             validator-state->last-of-receive-certificate-next))
 
   (defrule system-last-anchor-present-p-of-receive-certificate-next
     (implies (and (system-last-anchor-present-p systate)
@@ -138,7 +139,8 @@
               (receive-certificate-next msg systate)))
     :expand (system-last-anchor-present-p
              (receive-certificate-next msg systate))
-    :enable system-last-anchor-present-p-necc))
+    :enable (system-last-anchor-present-p-necc
+             validator-state->last-of-receive-certificate-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -160,7 +162,9 @@
                            val (store-certificate-next cert val1 systate))
                           (all-addresses systate)))
     :enable (last-anchor
-             certificate-with-author+round-of-insert-iff))
+             certificate-with-author+round-of-insert-iff
+             validator-state->dag-of-store-certificate-next
+             validator-state->last-of-store-certificate-next))
 
   (defrule system-last-anchor-present-p-of-store-certificate-next
     (implies (and (system-last-anchor-present-p systate)
@@ -169,7 +173,8 @@
               (store-certificate-next cert val systate)))
     :expand (system-last-anchor-present-p
              (store-certificate-next cert val systate))
-    :enable system-last-anchor-present-p-necc))
+    :enable (system-last-anchor-present-p-necc
+             validator-state->last-of-store-certificate-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -188,7 +193,9 @@
              (last-anchor (get-validator-state
                            val (advance-round-next val1 systate))
                           (all-addresses systate)))
-    :enable last-anchor)
+    :enable (last-anchor
+             validator-state->dag-of-advance-round-next
+             validator-state->last-of-advance-round-next))
 
   (defrule system-last-anchor-present-p-of-advance-round-next
     (implies (and (system-last-anchor-present-p systate)
@@ -197,7 +204,8 @@
               (advance-round-next val systate)))
     :expand (system-last-anchor-present-p
              (advance-round-next val systate))
-    :enable system-last-anchor-present-p-necc))
+    :enable (system-last-anchor-present-p-necc
+             validator-state->last-of-advance-round-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -221,7 +229,9 @@
                            val (commit-anchors-next val1 systate))
                           (all-addresses systate)))
     :enable (last-anchor
-             commit-anchors-possiblep))
+             commit-anchors-possiblep
+             validator-state->dag-of-commit-anchors-next
+             validator-state->last-of-commit-anchors-next))
 
   (defrule system-last-anchor-present-p-of-commit-anchors-next
     (implies (and (system-last-anchor-present-p systate)
@@ -230,7 +240,8 @@
               (commit-anchors-next val systate)))
     :expand (system-last-anchor-present-p
              (commit-anchors-next val systate))
-    :enable system-last-anchor-present-p-necc))
+    :enable (system-last-anchor-present-p-necc
+             validator-state->last-of-commit-anchors-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -249,7 +260,9 @@
              (last-anchor (get-validator-state
                            val (timer-expires-next val1 systate))
                           (all-addresses systate)))
-    :enable last-anchor)
+    :enable (last-anchor
+             validator-state->dag-of-timer-expires-next
+             validator-state->last-of-timer-expires-next))
 
   (defrule system-last-anchor-present-p-of-timer-expires-next
     (implies (and (system-last-anchor-present-p systate)
@@ -258,7 +271,8 @@
               (timer-expires-next val systate)))
     :expand (system-last-anchor-present-p
              (timer-expires-next val systate))
-    :enable system-last-anchor-present-p-necc))
+    :enable (system-last-anchor-present-p-necc
+             validator-state->last-of-timer-expires-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -274,3 +288,34 @@
             (event-next event systate)))
   :enable (event-possiblep
            event-next))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled system-last-anchor-present-p-of-events-next
+  :short "Preservation of the invariant by every sequence of events."
+  (implies (and (system-statep systate)
+                (system-last-anchor-present-p systate)
+                (events-possiblep events systate))
+           (system-last-anchor-present-p (events-next events systate)))
+  :induct t
+  :disable ((:e tau-system))
+  :enable (events-next
+           events-possiblep
+           system-last-anchor-present-p-of-event-next))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled system-last-anchor-present-p-when-reachable
+  :short "The invariant holds in every reachable state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Reachable states are characterized by an initial state and
+     a sequence of possible events from that initial state."))
+  (implies (and (system-statep systate)
+                (system-state-initp systate)
+                (events-possiblep events systate))
+           (system-last-anchor-present-p (events-next events systate)))
+  :disable ((:e tau-system))
+  :enable (system-last-anchor-present-p-when-system-state-initp
+           system-last-anchor-present-p-of-events-next))

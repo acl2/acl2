@@ -21,5 +21,5 @@
 
 ;; Returns the global-class-table as an alist.
 (defund global-class-alist (state)
-  (declare (xargs :stobjs (state)))
+  (declare (xargs :stobjs state))
   (table-alist 'acl2::global-class-table (w state)))

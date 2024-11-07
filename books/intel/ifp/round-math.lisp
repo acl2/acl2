@@ -34,19 +34,19 @@
 (defthmd fp-sign-value-redef
   (equal (fp-sign-value x)
          (if (equal x 1) -1 1))
-  :hints(("Goal" :in-theory (enable fp-sign-value))))
+  :hints (("Goal" :in-theory (enable fp-sign-value))))
 
 (local (defthm equal-0-of-leftshift
          (implies (natp sh)
                   (equal (equal 0 (ash x sh))
                          (zip x)))
-         :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
-                                            bitops::ihsext-recursive-redefs)))))
+         :hints (("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                             bitops::ihsext-recursive-redefs)))))
 
 (local (defthm fp-arith-triple->rational-is-0-when-man
          (implies (equal 0 (fp-arith-triple->man x))
                   (equal (fp-arith-triple->rational x) 0))
-         :hints(("Goal" :in-theory (enable fp-arith-triple->rational)))))
+         :hints (("Goal" :in-theory (enable fp-arith-triple->rational)))))
 
 (defsection rational-sign-significand-exponent-of-fp-arith-triple->rational
 
@@ -55,26 +55,26 @@
                     (b* ((norm (* x (/ (expt 2 (+ -1 (integer-length x)))))))
                       (and (<= 1 norm)
                            (< norm 2))))
-           :hints (("goal" :in-theory (enable* bitops::ihsext-inductions
+           :hints (("Goal" :in-theory (enable* bitops::ihsext-inductions
                                                logcons
                                                expt)
                     :expand ((integer-length x))))
            :rule-classes :linear))
 
   (defthm bounds-of-normalize-significand
-           (implies (posp x)
-                    (b* ((norm (* x (expt 2 (+ 1 (- (integer-length x)))))))
-                      (and (<= 1 norm)
-                           (< norm 2))))
-           :hints (("goal" :use ((:instance acl2::expt-minus
-                                  (r 2) (i (+ -1 (integer-length x))))
-                                 bounds-of-normalize-significand-1)
-                    :in-theory (disable ;; acl2::expt-minus
-                                bounds-of-normalize-significand-1
-                                acl2::<-*-/-left
-                                acl2::equal-/)))
-           :rule-classes :linear)
-  
+    (implies (posp x)
+             (b* ((norm (* x (expt 2 (+ 1 (- (integer-length x)))))))
+               (and (<= 1 norm)
+                    (< norm 2))))
+    :hints (("Goal" :use ((:instance acl2::expt-minus
+                                     (r 2) (i (+ -1 (integer-length x))))
+                          bounds-of-normalize-significand-1)
+             :in-theory (disable ;; acl2::expt-minus
+                         bounds-of-normalize-significand-1
+                         acl2::<-*-/-left
+                         acl2::equal-/)))
+    :rule-classes :linear)
+
   (defthmd rational-sign-significand-exponent-of-fp-arith-triple->rational
     (b* (((fp-arith-triple x))
          (val (fp-arith-triple->rational x)))
@@ -88,54 +88,56 @@
                               (integer-length x.man)
                               x.exp)))))
     :hints (("Goal" :use ((:instance acl2::rational-sign-significand-exponent-unique
-                           (sign (fp-sign-value (fp-arith-triple->sign x)))
-                           (significand
-                            (* (fp-arith-triple->man x)
-                               (expt 2 (- 1 (integer-length (fp-arith-triple->man x))))))
-                           (exponent
-                            (+ -1
-                              (integer-length (fp-arith-triple->man x))
-                              (fp-arith-triple->exp x)))))
+                                     (sign (fp-sign-value (fp-arith-triple->sign x)))
+                                     (significand
+                                      (* (fp-arith-triple->man x)
+                                         (expt 2 (- 1 (integer-length (fp-arith-triple->man x))))))
+                                     (exponent
+                                      (+ -1
+                                         (integer-length (fp-arith-triple->man x))
+                                         (fp-arith-triple->exp x)))))
              :cases ((equal 0 (fp-arith-triple->man x)))
              :in-theory (enable fp-arith-triple->rational
                                 rational-sign))
             (and stable-under-simplificationp
                  '(:in-theory (enable
-                                fp-sign-value
-                                acl2::exponents-add-unrestricted))))))
+                               fp-sign-value
+                               acl2::exponents-add-unrestricted))))))
 
 
 
 (local (defthm logtail-nonzero-by-integer-length
          (implies (< (nfix n) (integer-length x))
                   (not (equal 0 (logtail n x))))
-         :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
-                                            bitops::ihsext-recursive-redefs)))))
+         :hints (("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                             bitops::ihsext-recursive-redefs)))))
 
 (local
- (encapsulate nil
+ (encapsulate
+   nil
+
    (local (in-theory (disable bitops::logbitp-when-bitmaskp)))
-   
+
    (local (defthm 1+logcons-0
             (equal (+ 1 (logcons 0 x))
                    (logcons 1 x))
-            :hints(("Goal" :in-theory (enable logcons)))))
+            :hints (("Goal" :in-theory (enable logcons)))))
 
    (defthm ash-of-logtail-no-round-no-sticky
-         (implies (and (natp n)
-                       (equal 0 (loghead (+ -1 n) x))
-                       (not (logbitp (+ -1 n) x)))
-                  (equal (ash (logtail n x) n)
-                         (ifix x)))
-         :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
-                                            bitops::equal-logcons-strong)
-                 :induct (logtail n x)
-                 :expand ((logtail n x)
-                             (:free (x) (ash x n))
-                             (ash 1 (+ -1 n))
-                             (loghead (+ -1 n) x)
-                             (logbitp (+ -1 n) x)))))
-   
+     (implies (and (natp n)
+                   (equal 0 (loghead (+ -1 n) x))
+                   (not (logbitp (+ -1 n) x)))
+              (equal (ash (logtail n x) n)
+                     (ifix x)))
+     :hints (("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                         bitops::equal-logcons-strong)
+              :induct (logtail n x)
+              :expand ((logtail n x)
+                       (:free (x) (ash x n))
+                       (ash 1 (+ -1 n))
+                       (loghead (+ -1 n) x)
+                       (logbitp (+ -1 n) x)))))
+
    (local (defthmd ash-of-logtail-round-no-sticky-lemma
             (implies (and (natp n)
                           (equal 0 (loghead (+ -1 n) x))
@@ -143,14 +145,14 @@
                      (equal (+ (ash (logtail n x) n)
                                (ash 1 (+ -1 n)))
                             (ifix x)))
-            :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
-                                               bitops::equal-logcons-strong)
-                    :induct (logtail n x)
-                    :expand ((logtail n x)
-                             (:free (x) (ash x n))
-                             (ash 1 (+ -1 n))
-                             (loghead (+ -1 n) x)
-                             (logbitp (+ -1 n) x))))))
+            :hints (("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                                bitops::equal-logcons-strong)
+                     :induct (logtail n x)
+                     :expand ((logtail n x)
+                              (:free (x) (ash x n))
+                              (ash 1 (+ -1 n))
+                              (loghead (+ -1 n) x)
+                              (logbitp (+ -1 n) x))))))
    (defthm ash-of-logtail-round-no-sticky
      (implies (and (natp n)
                    (equal 0 (loghead (+ -1 n) x))
@@ -158,7 +160,7 @@
               (equal (ash (logtail n x) n)
                      (+ (- (ash 1 (+ -1 n)))
                         (ifix x))))
-     :hints (("goal" :use ash-of-logtail-round-no-sticky-lemma)))
+     :hints (("Goal" :use ash-of-logtail-round-no-sticky-lemma)))
 
    (local (defthmd ash-of-logtail-no-round-sticky-lemma
             (implies (and (natp n)
@@ -169,15 +171,15 @@
                                 (ash 1 (+ -1 n))))
                           (< (ash (logtail n x) n)
                              (ifix x))))
-            :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
-                                               bitops::logcons->-n-strong
-                                               bitops::logcons-<-n-strong)
-                    :induct (logtail n x)
-                    :expand ((logtail n x)
-                             (:free (x) (ash x n))
-                             (ash 1 (+ -1 n))
-                             (loghead (+ -1 n) x)
-                             (logbitp (+ -1 n) x))))))
+            :hints (("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                                bitops::logcons->-n-strong
+                                                bitops::logcons-<-n-strong)
+                     :induct (logtail n x)
+                     :expand ((logtail n x)
+                              (:free (x) (ash x n))
+                              (ash 1 (+ -1 n))
+                              (loghead (+ -1 n) x)
+                              (logbitp (+ -1 n) x))))))
 
    (defthm ash-of-logtail-no-round-sticky
      (implies (and (natp n)
@@ -188,14 +190,14 @@
                    (< (+ (- (ash 1 (+ -1 n)))
                          (ifix x))
                       (ash (logtail n x) n))))
-     :hints(("Goal" :use ash-of-logtail-no-round-sticky-lemma)))
+     :hints (("Goal" :use ash-of-logtail-no-round-sticky-lemma)))
 
    (local (defthm minus-plus-logcons-0
             (implies (integerp x)
                      (equal (+ (- x) (logcons 0 x))
                             x))
-            :hints(("Goal" :in-theory (enable logcons)))))
-   
+            :hints (("Goal" :in-theory (enable logcons)))))
+
    (local (defthmd ash-of-logtail-round-sticky-lemma
             (implies (and (natp n)
                           (not (equal 0 (loghead (+ -1 n) x)))
@@ -206,15 +208,15 @@
                           (< (ifix x)
                              (+ (ash 1 n)
                                 (ash (logtail n x) n)))))
-            :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
-                                               bitops::logcons->-n-strong
-                                               bitops::logcons-<-n-strong)
-                    :induct (logtail n x)
-                    :expand ((logtail n x)
-                             (:free (x) (ash x n))
-                             (ash 1 (+ -1 n))
-                             (loghead (+ -1 n) x)
-                             (logbitp (+ -1 n) x))))))
+            :hints (("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                                bitops::logcons->-n-strong
+                                                bitops::logcons-<-n-strong)
+                     :induct (logtail n x)
+                     :expand ((logtail n x)
+                              (:free (x) (ash x n))
+                              (ash 1 (+ -1 n))
+                              (loghead (+ -1 n) x)
+                              (logbitp (+ -1 n) x))))))
 
    (defthm ash-of-logtail-round-sticky
      (implies (and (natp n)
@@ -226,7 +228,7 @@
                    (< (+ (- (ash 1 n))
                          (ifix x))
                       (ash (logtail n x) n))))
-     :hints(("Goal" :use ash-of-logtail-round-sticky-lemma)))))
+     :hints (("Goal" :use ash-of-logtail-round-sticky-lemma)))))
 
 
 
@@ -235,7 +237,7 @@
 ;;                   (<= (* (expt 2 (nfix n))
 ;;                          (logtail n x))
 ;;                       x))
-;;          :hints (("goal" :use ((:instance ash-of-logtail-bounds (n (nfix n))))
+;;          :hints (("Goal" :use ((:instance ash-of-logtail-bounds (n (nfix n))))
 ;;                   :in-theory (e/d (bitops::ash-is-expt-*-x)
 ;;                                   (ash-of-logtail-bounds))))
 ;;          :rule-classes :linear))
@@ -247,9 +249,9 @@
           (fp-arith-triple->rational
            (change-fp-arith-triple x
                                    :man (ash (logtail n (fp-arith-triple->man x)) (nfix n)))))
-   :hints(("Goal" :in-theory (enable fp-arith-triple->rational
-                                     fp-arith-rightshift
-                                     bitops::ash-is-expt-*-x)))))
+   :hints (("Goal" :in-theory (enable fp-arith-triple->rational
+                                      fp-arith-rightshift
+                                      bitops::ash-is-expt-*-x)))))
 
 
 (local (defthm ash-1-lte-when-logbitp
@@ -257,7 +259,7 @@
                        (natp n)
                        (natp x))
                   (<= (ash 1 n) x))
-         :hints (("goal" :in-theory (enable* bitops::ihsext-inductions)
+         :hints (("Goal" :in-theory (enable* bitops::ihsext-inductions)
                   :induct (logbitp n x)
                   :expand ((logbitp n x)
                            (ash 1 n))))))
@@ -266,7 +268,7 @@
 ;;   (implies (<= 0 (fp-arith-triple->rational x))
 ;;            (<= (fp-arith-triple->rational new-x)
 ;;                (fp-arith-triple->rational x)))
-;;   :hints(("Goal" :in-theory (e/d (<fn>
+;;   :hints (("Goal" :in-theory (e/d (<fn>
 ;;                                   fp-arith-triple->rational)
 ;;                                  (expt-*-logtail-bounds))
 ;;           :use ((:instance expt-*-logtail-bounds
@@ -282,7 +284,7 @@
 ;;            (<= (fp-arith-triple->rational new-x)
 ;;                (- (fp-arith-triple->rational x)
 ;;                   (expt 2 (+ -1 (fp-arith-triple->exp x) n)))))
-;;   :hints(("Goal" :in-theory (e/d (<fn>
+;;   :hints (("Goal" :in-theory (e/d (<fn>
 ;;                                   fp-arith-triple->rational)))
 ;;          (and stable-under-simplificationp
 ;;               '(:nonlinearp t)))
@@ -291,7 +293,7 @@
 (local (defthm fp-arith-triple->exp-of-fp-arith-rightshift
          (equal (fp-arith-triple->exp (fp-arith-rightshift x n))
                 (+ (fp-arith-triple->exp x) (nfix n)))
-         :hints(("Goal" :in-theory (enable fp-arith-rightshift)))))
+         :hints (("Goal" :in-theory (enable fp-arith-rightshift)))))
 
 
 
@@ -299,7 +301,7 @@
          (implies (natp n)
                   (equal (ash 1 n)
                          (expt 2 n)))
-         :hints(("Goal" :in-theory (enable bitops::ash-is-expt-*-x)))))
+         :hints (("Goal" :in-theory (enable bitops::ash-is-expt-*-x)))))
 
 
 (local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
@@ -324,7 +326,7 @@
                                   (and (equal xexp yexp)
                                        (< ysig xsig)))))
                         (t (not (and (equal x 0) (equal y 0))))))))
-  :hints (("goal" :use ((:instance acl2::rational-exponent-monotonic (x x) (y y))
+  :hints (("Goal" :use ((:instance acl2::rational-exponent-monotonic (x x) (y y))
                         (:instance acl2::rational-exponent-monotonic (x y) (y x))
                         (:instance acl2::rational-significand-compare-nonneg (x x) (y y))
                         (:instance acl2::rational-significand-compare-nonneg (x y) (y x))
@@ -333,7 +335,7 @@
            :in-theory (disable acl2::rational-significand-compare-neg
                                acl2::rational-significand-compare-nonneg
                                acl2::rational-exponent-monotonic))))
-                    
+
 
 
 
@@ -351,17 +353,20 @@
                              (* (fp-sign-value (fp-arith-triple->sign x))
                                 (expt 2 (1- (fp-arith-triple->exp new-x))))
                            0)))))
-    :hints(("Goal" :in-theory (enable normalize-arith-triple)
-            :do-not-induct t)
-           (and stable-under-simplificationp
-                '(:in-theory (enable fp-arith-triple->rational)))
-           (and stable-under-simplificationp
-                '(:in-theory (enable bitops::ash-is-expt-*-x)))
-           )
+    :hints (("Goal"
+             :in-theory (enable normalize-arith-triple)
+             :do-not-induct t)
+            (and stable-under-simplificationp
+                 '(:in-theory (enable fp-arith-triple->rational)))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable bitops::ash-is-expt-*-x)))
+            )
     :otf-flg t
     :fn normalize-arith-triple)
 
-  (encapsulate nil
+  (encapsulate
+    nil
+
     (local (defthm divide-out-expt2exp
              (implies (and (rationalp x) (rationalp y))
                       (iff (< x (* (expt 2 exp) y))
@@ -383,20 +388,21 @@
                       (< (+ (- (expt 2 (1- (fp-arith-triple->exp new-x))))
                             spec-val)
                          val))))
-      :hints(("Goal" :in-theory (enable normalize-arith-triple)
-              :do-not-induct t)
-             (and stable-under-simplificationp
-                  '(:in-theory (enable fp-arith-triple->rational)))
-             (and stable-under-simplificationp
-                  '(:use ((:instance ash-of-logtail-no-round-sticky
-                           (x (fp-arith-triple->man x))
-                           (n (+ -1 (- (FP-SIZE->FRAC-SIZE SIZE))
-                                 (INTEGER-LENGTH (FP-ARITH-TRIPLE->MAN X))))))
-                    :in-theory (e/d (ash-1-to-expt)
-                                    (ash-of-logtail-no-round-sticky)))))
+      :hints (("Goal"
+               :in-theory (enable normalize-arith-triple)
+               :do-not-induct t)
+              (and stable-under-simplificationp
+                   '(:in-theory (enable fp-arith-triple->rational)))
+              (and stable-under-simplificationp
+                   '(:use ((:instance ash-of-logtail-no-round-sticky
+                                      (x (fp-arith-triple->man x))
+                                      (n (+ -1 (- (FP-SIZE->FRAC-SIZE SIZE))
+                                            (INTEGER-LENGTH (FP-ARITH-TRIPLE->MAN X))))))
+                          :in-theory (e/d (ash-1-to-expt)
+                                          (ash-of-logtail-no-round-sticky)))))
       :otf-flg t
       :rule-classes :linear
-      :fn normalize-arith-triple) 
+      :fn normalize-arith-triple)
 
     (local (defthm divide-out-expt2exp-3
              (implies (and (rationalp x) (rationalp y))
@@ -407,8 +413,6 @@
              (implies (and (rationalp x) (rationalp y))
                       (iff (< (* y (expt 2 exp)) x)
                            (< y (* (/ (expt 2 exp)) x))))))
-
-  
 
     (defret fp-arith-triple->rational-of-normalize-arith-triple-nonneg-when-round-sticky
       (b* ((val (fp-arith-triple->rational new-x))
@@ -423,24 +427,27 @@
                       (< (+ (- (expt 2 (fp-arith-triple->exp new-x)))
                             spec-val)
                          val))))
-      :hints(("Goal" :in-theory (enable normalize-arith-triple)
-              :do-not-induct t)
-             (and stable-under-simplificationp
-                  '(:in-theory (enable fp-arith-triple->rational)))
-             (and stable-under-simplificationp
-                  '(:use ((:instance ash-of-logtail-round-sticky
-                           (x (fp-arith-triple->man x))
-                           (n (+ -1 (- (FP-SIZE->FRAC-SIZE SIZE))
-                                 (INTEGER-LENGTH (FP-ARITH-TRIPLE->MAN X))))))
-                    :in-theory (e/d (ash-1-to-expt
-                                     acl2::exponents-add-unrestricted)
-                                    (ash-of-logtail-round-sticky)))))
+      :hints (("Goal"
+               :in-theory (enable normalize-arith-triple)
+               :do-not-induct t)
+              (and stable-under-simplificationp
+                   '(:in-theory (enable fp-arith-triple->rational)))
+              (and stable-under-simplificationp
+                   '(:use ((:instance ash-of-logtail-round-sticky
+                                      (x (fp-arith-triple->man x))
+                                      (n (+ -1 (- (FP-SIZE->FRAC-SIZE SIZE))
+                                            (INTEGER-LENGTH (FP-ARITH-TRIPLE->MAN X))))))
+                          :in-theory (e/d (ash-1-to-expt
+                                           acl2::exponents-add-unrestricted)
+                                          (ash-of-logtail-round-sticky)))))
       :otf-flg t
       :rule-classes :linear
       :fn normalize-arith-triple))
 
 
-  (encapsulate nil
+  (encapsulate
+    nil
+
     (local (defthm divide-out-expt2exp
              (implies (and (rationalp x) (rationalp y))
                       (iff (< (- (* (expt 2 exp) y)) x)
@@ -462,17 +469,17 @@
                       (< val
                          (+ (expt 2 (1- (fp-arith-triple->exp new-x)))
                             spec-val)))))
-      :hints(("Goal" :in-theory (enable normalize-arith-triple)
-              :do-not-induct t)
-             (and stable-under-simplificationp
-                  '(:in-theory (enable fp-arith-triple->rational)))
-             (and stable-under-simplificationp
-                  '(:use ((:instance ash-of-logtail-no-round-sticky
-                           (x (fp-arith-triple->man x))
-                           (n (+ -1 (- (FP-SIZE->FRAC-SIZE SIZE))
-                                 (INTEGER-LENGTH (FP-ARITH-TRIPLE->MAN X))))))
-                    :in-theory (e/d (ash-1-to-expt)
-                                    (ash-of-logtail-no-round-sticky)))))
+      :hints (("Goal" :in-theory (enable normalize-arith-triple)
+               :do-not-induct t)
+              (and stable-under-simplificationp
+                   '(:in-theory (enable fp-arith-triple->rational)))
+              (and stable-under-simplificationp
+                   '(:use ((:instance ash-of-logtail-no-round-sticky
+                                      (x (fp-arith-triple->man x))
+                                      (n (+ -1 (- (FP-SIZE->FRAC-SIZE SIZE))
+                                            (INTEGER-LENGTH (FP-ARITH-TRIPLE->MAN X))))))
+                          :in-theory (e/d (ash-1-to-expt)
+                                          (ash-of-logtail-no-round-sticky)))))
       :otf-flg t
       :rule-classes :linear
       :fn normalize-arith-triple)
@@ -488,7 +495,7 @@
                       (iff (< x (- (* y (expt 2 exp))))
                            (< (* (/ (expt 2 exp)) x) (- y))))))
 
-  
+
 
     (defret fp-arith-triple->rational-of-normalize-arith-triple-neg-when-round-sticky
       (b* ((val (fp-arith-triple->rational new-x))
@@ -503,18 +510,18 @@
                       (< val
                          (+ (expt 2 (fp-arith-triple->exp new-x))
                             spec-val)))))
-      :hints(("Goal" :in-theory (enable normalize-arith-triple)
-              :do-not-induct t)
-             (and stable-under-simplificationp
-                  '(:in-theory (enable fp-arith-triple->rational)))
-             (and stable-under-simplificationp
-                  '(:use ((:instance ash-of-logtail-round-sticky
-                           (x (fp-arith-triple->man x))
-                           (n (+ -1 (- (FP-SIZE->FRAC-SIZE SIZE))
-                                 (INTEGER-LENGTH (FP-ARITH-TRIPLE->MAN X))))))
-                    :in-theory (e/d (ash-1-to-expt
-                                     acl2::exponents-add-unrestricted)
-                                    (ash-of-logtail-round-sticky)))))
+      :hints (("Goal" :in-theory (enable normalize-arith-triple)
+               :do-not-induct t)
+              (and stable-under-simplificationp
+                   '(:in-theory (enable fp-arith-triple->rational)))
+              (and stable-under-simplificationp
+                   '(:use ((:instance ash-of-logtail-round-sticky
+                                      (x (fp-arith-triple->man x))
+                                      (n (+ -1 (- (FP-SIZE->FRAC-SIZE SIZE))
+                                            (INTEGER-LENGTH (FP-ARITH-TRIPLE->MAN X))))))
+                          :in-theory (e/d (ash-1-to-expt
+                                           acl2::exponents-add-unrestricted)
+                                          (ash-of-logtail-round-sticky)))))
       :otf-flg t
       :rule-classes ((:linear :trigger-terms ((fp-arith-triple->rational new-x))))
       :fn normalize-arith-triple))
@@ -524,25 +531,25 @@
             (fp-arith-triple->rational new-x))
            (rational-exponent
             (fp-arith-triple->rational x)))
-    :hints(("Goal" :in-theory (enable rational-sign-significand-exponent-of-fp-arith-triple->rational
-                                      normalize-arith-triple)
-            :cases ((equal (fp-arith-triple->man x) 0))))
+    :hints (("Goal" :in-theory (enable rational-sign-significand-exponent-of-fp-arith-triple->rational
+                                       normalize-arith-triple)
+             :cases ((equal (fp-arith-triple->man x) 0))))
     :fn normalize-arith-triple)
 
   (local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
 
   (local (include-book "centaur/misc/multiply-out" :dir :system))
-  
+
   (local (defthm denominator-/-integer
            (implies (and (integerp x)
-                         (not (Equal 0 x)))
+                         (not (equal 0 x)))
                     (equal (denominator (/ x))
                            (abs x)))
-           :hints (("goal" :use ((:instance rational-implies2
-                                  (x (/ x)))
+           :hints (("Goal" :use ((:instance rational-implies2
+                                            (x (/ x)))
                                  (:instance lowest-terms
-                                  (x (/ x)) (n (denominator x))
-                                  (r (if (< x 0) -1 1)) (q x)))
+                                            (x (/ x)) (n (denominator x))
+                                            (r (if (< x 0) -1 1)) (q x)))
                     :in-theory (disable rational-implies2
                                         acl2::equal-*-/-1
                                         acl2::*-r-denominator-r)))
@@ -550,7 +557,7 @@
 
   (local (in-theory (disable acl2::multiply-out-<
                              acl2::<-unary-/-positive-right)))
-  
+
   (defret normalize-arith-triple-exact-in-terms-of-rational
     (implies (and (integerp (* (expt 2 (fp-size->frac-size size))
                                (rational-significand (fp-arith-triple->rational x))))
@@ -559,18 +566,18 @@
                   (not stickyp)
                   (equal (fp-arith-triple->rational new-x)
                          (fp-arith-triple->rational x))))
-    :hints(("Goal" :in-theory (e/d (normalize-arith-triple
-                                    loghead
-                                    logbitp
-                                    oddp evenp)
-                                   (acl2::exponents-add
-                                    acl2::expt-minus))
-            :cases ((Equal 0 (fp-arith-triple->man x))))
-           (and stable-under-simplificationp
-                '(:in-theory (enable 
-                              rational-sign-significand-exponent-of-fp-arith-triple->rational
-                              acl2::exponents-add-unrestricted)))
-           )
+    :hints (("Goal" :in-theory (e/d (normalize-arith-triple
+                                     loghead
+                                     logbitp
+                                     oddp evenp)
+                                    (acl2::exponents-add
+                                     acl2::expt-minus))
+             :cases ((equal 0 (fp-arith-triple->man x))))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable
+                               rational-sign-significand-exponent-of-fp-arith-triple->rational
+                               acl2::exponents-add-unrestricted)))
+            )
     :fn normalize-arith-triple)
 
 
@@ -595,28 +602,28 @@
   ;;                                 (implies (and (<= (fp-arith-triple->rational a2) 0)
   ;;                                               sticky2)
   ;;                                          sticky1))))))
-  ;;   :hints(("Goal" :in-theory (enable normalize-arith-triple
+  ;;   :hints (("Goal" :in-theory (enable normalize-arith-triple
   ;;                                     fp-arith-triple->rational
   ;;                                     fp-arith-rightshift
   ;;                                     fp-arith-leftshift
   ;;                                     fp-sign-value-redef)
   ;;           :do-not-induct t))
   ;;   :otf-flg t)
-  
-    
-    
 
-  
+
+
+
+
   ;; (defret normalize-arith-triple-gte-exact
   ;;   (implies (and (integerp (* (expt 2 (fp-size->frac-size size))
   ;;                              (rational-significand r)))
   ;;                 (<= r (fp-arith-triple->rational x)))
   ;;            (<= r (fp-arith-triple->rational new-x)))
-  ;;   :hints(("Goal" :in-theory (e/d (normalize-arith-triple
+  ;;   :hints (("Goal" :in-theory (e/d (normalize-arith-triple
   ;;                                   fp-arith-triple->rational
   ;;                                   ;; fp-arith-rightshift
   ;;                                   fp-arith-leftshift))
-  ;;           :cases ((Equal 0 (fp-arith-triple->man x))
+  ;;           :cases ((equal 0 (fp-arith-triple->man x))
   ;;                   (< 0 (fp-arith-triple->rational x))
   ;;                   (> 0 (fp-arith-triple->rational x))))
   ;;          )
@@ -633,27 +640,27 @@
   (local (defthmd +-1-logcons-1
            (equal (+ 1 (logcons 1 x))
                   (logcons 0 (+ 1 (ifix x))))
-           :hints(("Goal" :in-theory (enable logcons)))))
-  
+           :hints (("Goal" :in-theory (enable logcons)))))
+
   (local (defthm logmask+1
-           (Equal (+ 1 (logmask n))
+           (equal (+ 1 (logmask n))
                   (ash 1 (nfix n)))
-           :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
-                                              +-1-logcons-1)
-                   :induct (logmask n)
-                   :expand ((logmask n)
-                            (ash 1 n))))))
-  
+           :hints (("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                               +-1-logcons-1)
+                    :induct (logmask n)
+                    :expand ((logmask n)
+                             (ash 1 n))))))
+
   (local (defthm integer-length-of-plus-1
            (implies (natp x)
                     (equal (integer-length (+ 1 x))
                            (+ (if (equal x (logmask (integer-length x))) 1 0)
                               (integer-length x))))
-           :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions)
-                   :induct (integer-length x)
-                   :expand ((integer-length x)
-                            (integer-length (+ 1 x))
-                            (:free (x) (logmask (+ 1 x))))))))
+           :hints (("Goal" :in-theory (enable* bitops::ihsext-inductions)
+                    :induct (integer-length x)
+                    :expand ((integer-length x)
+                             (integer-length (+ 1 x))
+                             (:free (x) (logmask (+ 1 x))))))))
 
   (define my-round-arith-triple ((x fp-arith-triple-p)
                                  (roundp booleanp)
@@ -671,9 +678,9 @@
       (change-fp-arith-triple x :man (+ 1 x.man)))
     ///
     (local (defthm distrib2
-               (equal (* (+ x y) z)
-                      (+ (* x z) (* y z)))))
-    
+             (equal (* (+ x y) z)
+                    (+ (* x z) (* y z)))))
+
     (defret fp-arith-triple->rational-of-my-round-arith-triple
       (equal (fp-arith-triple->rational new-x)
              (b* (((fp-arith-triple x))
@@ -683,36 +690,36 @@
                       (* (fp-sign-value x.sign)
                          (expt 2 x.exp))
                     0))))
-      :hints(("Goal" :in-theory (enable fp-arith-triple->rational))
-             (and stable-under-simplificationp
-                  '(:in-theory (enable logmask
-                                       ash-1-to-expt
-                                       acl2::exponents-add-unrestricted))))))
+      :hints (("Goal" :in-theory (enable fp-arith-triple->rational))
+              (and stable-under-simplificationp
+                   '(:in-theory (enable logmask
+                                        ash-1-to-expt
+                                        acl2::exponents-add-unrestricted))))))
 
   (local (defthm round-up-of-no-round-sticky
            (equal (round-up sign l nil nil rc) nil)
-           :hints(("Goal" :in-theory (enable round-up)))))
-  
+           :hints (("Goal" :in-theory (enable round-up)))))
+
   (defretd round-arith-triple-of-normalize
     :pre-bind (((mv x roundp stickyp1) (normalize-arith-triple in :verbosep verbp)))
     (implies (and ;; (not (equal (fp-arith-triple->man in) 0))
-                  (Equal stickyp stickyp1))
+              (equal stickyp stickyp1))
              (equal new-x
                     (my-round-arith-triple x roundp stickyp rc)))
-    :hints(("Goal" :in-theory (enable round-arith-triple
-                                      my-round-arith-triple)
-            :cases ((equal (fp-arith-triple->man in) 0)))
-           (and stable-under-simplificationp
-                '(:expand ((:free (sign exp man verbosep)
-                            (normalize-arith-triple
-                             (fp-arith-triple sign exp man))))
-                  :in-theory (enable fp-arith-rightshift))))
+    :hints (("Goal" :in-theory (enable round-arith-triple
+                                       my-round-arith-triple)
+             :cases ((equal (fp-arith-triple->man in) 0)))
+            (and stable-under-simplificationp
+                 '(:expand ((:free (sign exp man verbosep)
+                                   (normalize-arith-triple
+                                    (fp-arith-triple sign exp man))))
+                           :in-theory (enable fp-arith-rightshift))))
     :fn round-arith-triple)
 
   (defretd fp-arith-triple->rational-of-round
     :pre-bind (((mv x roundp1 stickyp1) (normalize-arith-triple in :verbosep verbp)))
     (implies (and (equal roundp roundp1)
-                  (Equal stickyp stickyp1))
+                  (equal stickyp stickyp1))
              (equal (fp-arith-triple->rational new-x)
                     (b* (((fp-arith-triple x))
                          (round-up? (round-up x.sign (logbitp 0 x.man) roundp stickyp rc)))
@@ -721,11 +728,11 @@
                              (* (fp-sign-value x.sign)
                                 (expt 2 x.exp))
                            0)))))
-    :hints(("Goal" :in-theory (e/d (round-arith-triple-of-normalize)
-                                   (my-round-arith-triple))))
+    :hints (("Goal" :in-theory (e/d (round-arith-triple-of-normalize)
+                                    (my-round-arith-triple))))
     :fn round-arith-triple)
-    
-           
+
+
   (local (in-theory (enable round-arith-triple-of-normalize)))
   (local (in-theory (disable normalize-arith-triple.exp-value)))
 
@@ -733,16 +740,16 @@
            (implies (syntaxp (and (Quotep c1) (quotep c2)))
                     (equal (+ (- (* c1 x)) (* c2 x))
                            (* (- c2 c1) x)))))
-  
+
   ;; Focus on RNE since we need this for most
   (local (defretd exp-of-round-arith-triple
            :pre-bind (((mv x roundp stickyp) (normalize-arith-triple in)))
            (implies (and ;; (not (equal (fp-arith-triple->man in) 0))
-                         (not (equal (fp-arith-triple->exp new-x)
-                                     (fp-arith-triple->exp x))))
+                     (not (equal (fp-arith-triple->exp new-x)
+                                 (fp-arith-triple->exp x))))
                     (equal (fp-arith-triple->exp new-x)
                            (+ 1 (fp-arith-triple->exp x))))
-           :hints(("Goal" :in-theory (enable my-round-arith-triple)))
+           :hints (("Goal" :in-theory (enable my-round-arith-triple)))
            :fn round-arith-triple))
 
   (defret round-arith-triple-of-normalize-exact
@@ -750,13 +757,13 @@
                (roundp nil)
                (stickyp nil))
     (implies (and ;; (not (equal (fp-arith-triple->man in) 0))
-                  (integerp (* (expt 2 (fp-size->frac-size size))
-                               (rational-significand (fp-arith-triple->rational in)))))
+              (integerp (* (expt 2 (fp-size->frac-size size))
+                           (rational-significand (fp-arith-triple->rational in)))))
              (equal (fp-arith-triple->rational new-x)
                     (fp-arith-triple->rational in)))
-    :hints(("Goal" :in-theory (e/d (my-round-arith-triple)
-                                   (round-arith-triple-of-normalize))
-            :use ((:instance round-arith-triple-of-normalize (stickyp nil)))))
+    :hints (("Goal" :in-theory (e/d (my-round-arith-triple)
+                                    (round-arith-triple-of-normalize))
+             :use ((:instance round-arith-triple-of-normalize (stickyp nil)))))
     :fn round-arith-triple)
 
   ;; (defret round-arith-triple-of-normalize-gte-exact
@@ -766,7 +773,7 @@
   ;;                 (rationalp r)
   ;;                 (<= r (+ (fp-arith-triple->rational in))))
   ;;            (<= r (fp-arith-triple->rational new-x)))
-  ;;   :hints(("Goal" :in-theory (e/d (my-round-arith-triple
+  ;;   :hints (("Goal" :in-theory (e/d (my-round-arith-triple
   ;;                                   round-arith-triple-of-normalize
   ;;                                   round-up)
   ;;                                  ())))
@@ -776,7 +783,7 @@
   (defret round-arith-triple-bounds-in-terms-of-norm-exp-when-rne
     :pre-bind (((mv x roundp stickyp) (normalize-arith-triple in)))
     (implies (and ;; (not (equal (fp-arith-triple->man in) 0))
-                  (eq (rc->rounding-mode rc) :rne))
+              (eq (rc->rounding-mode rc) :rne))
              (b* (((fp-arith-triple x))
                   ((fp-size size))
                   (val (fp-arith-triple->rational new-x)))
@@ -786,47 +793,47 @@
                     (<= val
                         (+ (expt 2 (+ -1 x.exp))
                            (fp-arith-triple->rational in))))))
-    :hints(("Goal" :in-theory (enable round-up))
-           (and stable-under-simplificationp
-                '(:cases ((equal (fp-arith-triple->sign in) 0))
-                  :in-theory (enable acl2::exponents-add-unrestricted)))
-           (and stable-under-simplificationp
-                (b* ((neg (member-equal '(not (equal (fp-arith-triple->sign$inline in) '1)) clause))
-                     (roundp (member-equal '(not (MV-NTH '1 (NORMALIZE-ARITH-TRIPLE-FN IN SIZE 'NIL 'NIL))) clause))
-                     (stickyp (member-equal '(not (MV-NTH '2 (NORMALIZE-ARITH-TRIPLE-FN IN SIZE 'NIL 'NIL))) clause))
-                     (rule
-                      (if neg
-                          (if roundp
-                              'fp-arith-triple->rational-of-normalize-arith-triple-neg-when-round-sticky
-                            'fp-arith-triple->rational-of-normalize-arith-triple-neg-when-no-round-sticky)
-                        (if roundp
-                            'fp-arith-triple->rational-of-normalize-arith-triple-nonneg-when-round-sticky
-                          'fp-arith-triple->rational-of-normalize-arith-triple-nonneg-when-no-round-sticky)))
-                     (hint
-                      (if stickyp
-                          `(:use ((:instance ,rule (x in) (sticky-in nil) (verbosep nil)))
-                            :in-theory (e/d (acl2::exponents-add-unrestricted)
-                                            (,rule)))
-                        '(:in-theory (enable normalize-arith-triple.exp-value
-                                             acl2::exponents-add-unrestricted)))))
-                  ;; (cw "hint: ~x0~%" hint)
-                  hint)))
-                  
+    :hints (("Goal" :in-theory (enable round-up))
+            (and stable-under-simplificationp
+                 '(:cases ((equal (fp-arith-triple->sign in) 0))
+                          :in-theory (enable acl2::exponents-add-unrestricted)))
+            (and stable-under-simplificationp
+                 (b* ((neg (member-equal '(not (equal (fp-arith-triple->sign$inline in) '1)) clause))
+                      (roundp (member-equal '(not (MV-NTH '1 (NORMALIZE-ARITH-TRIPLE-FN IN SIZE 'NIL 'NIL))) clause))
+                      (stickyp (member-equal '(not (MV-NTH '2 (NORMALIZE-ARITH-TRIPLE-FN IN SIZE 'NIL 'NIL))) clause))
+                      (rule
+                       (if neg
+                           (if roundp
+                               'fp-arith-triple->rational-of-normalize-arith-triple-neg-when-round-sticky
+                             'fp-arith-triple->rational-of-normalize-arith-triple-neg-when-no-round-sticky)
+                         (if roundp
+                             'fp-arith-triple->rational-of-normalize-arith-triple-nonneg-when-round-sticky
+                           'fp-arith-triple->rational-of-normalize-arith-triple-nonneg-when-no-round-sticky)))
+                      (hint
+                       (if stickyp
+                           `(:use ((:instance ,rule (x in) (sticky-in nil) (verbosep nil)))
+                                  :in-theory (e/d (acl2::exponents-add-unrestricted)
+                                                  (,rule)))
+                         '(:in-theory (enable normalize-arith-triple.exp-value
+                                              acl2::exponents-add-unrestricted)))))
+                   ;; (cw "hint: ~x0~%" hint)
+                   hint)))
+
     :fn round-arith-triple)
 
   (local (defret normalize-arith-triple-nonzero
            (implies (not (equal (fp-arith-triple->man x) 0))
-                    (not (Equal (fp-arith-triple->man new-x) 0)))
-           :hints(("Goal" :in-theory (enable normalize-arith-triple
-                                             fp-arith-rightshift
-                                             fp-arith-leftshift)))
+                    (not (equal (fp-arith-triple->man new-x) 0)))
+           :hints (("Goal" :in-theory (enable normalize-arith-triple
+                                              fp-arith-rightshift
+                                              fp-arith-leftshift)))
            :fn normalize-arith-triple))
-           
-  
+
+
   (defret round-arith-triple-bounds-in-terms-of-input-rational-exponent-when-rne
     :pre-bind (((mv x roundp stickyp) (normalize-arith-triple in)))
     (implies (and ;; (not (equal (fp-arith-triple->man in) 0))
-                  (eq (rc->rounding-mode rc) :rne))
+              (eq (rc->rounding-mode rc) :rne))
              (b* (((fp-arith-triple x))
                   ((fp-size size))
                   (val (fp-arith-triple->rational new-x))
@@ -838,24 +845,24 @@
                     (<= val
                         (+ (expt 2 exp)
                            (fp-arith-triple->rational in))))))
-    :hints(("Goal" :use (round-arith-triple-bounds-in-terms-of-norm-exp-when-rne)
-            :in-theory (e/d (rational-sign-significand-exponent-of-fp-arith-triple->rational
-                             NORMALIZE-ARITH-TRIPLE.EXP-VALUE)
-                            (rational-exponent-of-normalize-arith-triple
-                             round-arith-triple-bounds-in-terms-of-norm-exp-when-rne))))
+    :hints (("Goal" :use (round-arith-triple-bounds-in-terms-of-norm-exp-when-rne)
+             :in-theory (e/d (rational-sign-significand-exponent-of-fp-arith-triple->rational
+                              NORMALIZE-ARITH-TRIPLE.EXP-VALUE)
+                             (rational-exponent-of-normalize-arith-triple
+                              round-arith-triple-bounds-in-terms-of-norm-exp-when-rne))))
     :rule-classes ((:linear :trigger-terms
-                    ((fp-arith-triple->rational
-                      (mv-nth 0 (round-arith-triple
-                                 (mv-nth 0 (normalize-arith-triple in))
-                                 (mv-nth 1 (normalize-arith-triple in))
-                                 (mv-nth 2 (normalize-arith-triple in))
-                                 rc))))))
+                            ((fp-arith-triple->rational
+                              (mv-nth 0 (round-arith-triple
+                                         (mv-nth 0 (normalize-arith-triple in))
+                                         (mv-nth 1 (normalize-arith-triple in))
+                                         (mv-nth 2 (normalize-arith-triple in))
+                                         rc))))))
     :fn round-arith-triple)
-  
+
   (defret round-arith-triple-bounds-in-terms-of-final-exponent-when-rne
     :pre-bind (((mv x roundp stickyp) (normalize-arith-triple in)))
     (implies (and ;; (not (equal (fp-arith-triple->man in) 0))
-                  (eq (rc->rounding-mode rc) :rne))
+              (eq (rc->rounding-mode rc) :rne))
              (b* (((fp-arith-triple new-x))
                   ((fp-size size))
                   (val (fp-arith-triple->rational new-x)))
@@ -865,19 +872,19 @@
                     (<= val
                         (+ (expt 2 (+ -1 new-x.exp))
                            (fp-arith-triple->rational in))))))
-    :hints (("goal" :use ((:instance exp-of-round-arith-triple)
+    :hints (("Goal" :use ((:instance exp-of-round-arith-triple)
                           (:instance round-arith-triple-bounds-in-terms-of-norm-exp-when-rne))
              :in-theory (e/d (acl2::exponents-add-unrestricted)
                              (exp-of-round-arith-triple
                               round-arith-triple-bounds-in-terms-of-norm-exp-when-rne
                               round-arith-triple-of-normalize))))
     :rule-classes ((:linear :trigger-terms
-                    ((fp-arith-triple->rational
-                      (mv-nth 0 (round-arith-triple
-                                 (mv-nth 0 (normalize-arith-triple in))
-                                 (mv-nth 1 (normalize-arith-triple in))
-                                 (mv-nth 2 (normalize-arith-triple in))
-                                 rc))))))
+                            ((fp-arith-triple->rational
+                              (mv-nth 0 (round-arith-triple
+                                         (mv-nth 0 (normalize-arith-triple in))
+                                         (mv-nth 1 (normalize-arith-triple in))
+                                         (mv-nth 2 (normalize-arith-triple in))
+                                         rc))))))
     :fn round-arith-triple)
 
   (defret integer-length-of-normalize-round-arith-triple
@@ -885,7 +892,7 @@
     (implies (not (equal (fp-arith-triple->man in) 0))
              (equal (integer-length (fp-arith-triple->man new-x))
                     (+ 1 (fp-size->frac-size size))))
-    :hints(("Goal" :in-theory (enable my-round-arith-triple)))
+    :hints (("Goal" :in-theory (enable my-round-arith-triple)))
     :fn round-arith-triple))
 
 
@@ -904,13 +911,14 @@
   ///
   (local (in-theory (disable ACL2::/R-WHEN-ABS-NUMERATOR=1)))
   (local (include-book "centaur/misc/multiply-out" :dir :system))
-  
+
   (defret <fn>-bounds-when-rne
     (implies (eq (rc->rounding-mode rc) :rne)
              (and (<= -1/2 error)
                   (<= error 1/2)))
-    :hints (("goal" :use ((:instance round-arith-triple-bounds-in-terms-of-input-rational-exponent-when-rne
-                           (verbosep nil)))
+    :hints (("Goal"
+             :use ((:instance round-arith-triple-bounds-in-terms-of-input-rational-exponent-when-rne
+                              (verbosep nil)))
              :in-theory (e/d (acl2::exponents-add-unrestricted
                               acl2::multiply-out-<)
                              (round-arith-triple-bounds-in-terms-of-input-rational-exponent-when-rne)))
@@ -928,11 +936,12 @@
       (implies (and (equal roundp1 roundp)
                     (equal stickyp1 stickyp))
                (equal round-val (+ in-val (* error ulp)))))
-    :hints(("Goal" :in-theory (enable round-arith-triple-normalize-verbosep)))))
+    :hints (("Goal" :in-theory (enable round-arith-triple-normalize-verbosep)))))
 
 
-(encapsulate nil
-  
+(encapsulate
+  nil
+
   (local (defthmd equal-integer-length-of-positive-by-ash
            (implies (and (syntaxp (quotep n))
                          (posp n)
@@ -940,11 +949,11 @@
                     (iff (equal (integer-length x) n)
                          (and (<= (ash 1 (1- n)) x)
                               (< x (ash 1 n)))))
-           :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
-                                              bitops::ihsext-recursive-redefs
-                                              bitops::logcons->-n-strong
-                                              bitops::logcons-<-n-strong)
-                   :induct (loghead n x)))))
+           :hints (("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                               bitops::ihsext-recursive-redefs
+                                               bitops::logcons->-n-strong
+                                               bitops::logcons-<-n-strong)
+                    :induct (loghead n x)))))
 
   (defthmd equal-integer-length-of-positive
     (implies (and ;; (syntaxp (quotep n))
@@ -953,18 +962,18 @@
              (iff (equal (integer-length x) n)
                   (and (<= (expt 2 (1- n)) x)
                        (<= x (+ -1 (expt 2 n))))))
-    :hints(("Goal" :use equal-integer-length-of-positive-by-ash
-            :in-theory (enable bitops::ash-is-expt-*-x)))))
+    :hints (("Goal" :use equal-integer-length-of-positive-by-ash
+             :in-theory (enable bitops::ash-is-expt-*-x)))))
 
 
 (defsection left-normalize-arith-triple
   (local (std::set-define-current-function left-normalize-arith-triple))
-  
+
   (local (defthmd unsigned-byte-p-of-integer-length
            (implies (natp x)
                     (unsigned-byte-p (integer-length x) x))
-           :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
-                                              bitops::ihsext-recursive-redefs)))))
+           :hints (("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                               bitops::ihsext-recursive-redefs)))))
 
   (defret bounds-of-<fn>
     (b* (((fp-arith-triple x))
@@ -973,16 +982,16 @@
                     (unsigned-byte-p (+ 1 (pos-fix frac-size)) x.man))
                (and (<= (expt 2 (pos-fix frac-size)) new-x.man)
                     (<= new-x.man (+ -1 (expt 2 (+ 1 (pos-fix frac-size))))))))
-    :hints(("Goal" :use man-length-of-<fn>
-            :in-theory (e/d (equal-integer-length-of-positive)
-                            (man-length-of-<fn> <fn>))))
+    :hints (("Goal" :use man-length-of-<fn>
+             :in-theory (e/d (equal-integer-length-of-positive)
+                             (man-length-of-<fn> <fn>))))
     :rule-classes :linear))
 
 
 (define normalize-arith-triple-round+sticky ((x fp-arith-triple-p)
                                              (frac-size posp))
   :returns (round+sticky rationalp :rule-classes :type-prescription)
-  :prepwork 
+  :prepwork
   ((local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
    (local (include-book "centaur/misc/multiply-out" :dir :system)))
   (b* (((fp-arith-triple x))
@@ -1007,8 +1016,8 @@
            (implies (equal 0 (loghead w x))
                     (equal (logapp w x y)
                            (ash y (nfix w))))
-           :hints((bitops::logbitp-reasoning))))
-  
+           :hints ((bitops::logbitp-reasoning))))
+
   ;; (local (defretd stickypart-size-lemma
   ;;          (b* (((fp-arith-triple x)))
   ;;            (implies (<= 0 (- (integer-length x.man) (+ 2 (pos-fix frac-size))))
@@ -1020,7 +1029,7 @@
   ;;     (implies (and (<= (- (integer-length x.man) (+ 2 (pos-fix frac-size))) n)
   ;;                   (natp n))
   ;;              (unsigned-byte-p n sticky)))
-  ;;   :hints (("goal" :use ((:instance stickypart-size-lemma))
+  ;;   :hints (("Goal" :use ((:instance stickypart-size-lemma))
   ;;            :in-theory (disable <fn>))
   ;;           (and stable-under-simplificationp
   ;;                '(:in-theory (enable <fn>)))))
@@ -1028,15 +1037,15 @@
   (defret <fn>-lower-bound
     (<= 0 round+sticky)
     :rule-classes (:linear :type-prescription))
-  
+
   (defret <fn>-upper-bound
     (< round+sticky 2)
-    :hints (("goal" :use ((:instance unsigned-byte-p-of-loghead
-                           (size (+ -1 (- (POS-FIX FRAC-SIZE))
-                                    (INTEGER-LENGTH (FP-ARITH-TRIPLE->MAN X))))
-                           (size1 (+ -1 (- (POS-FIX FRAC-SIZE))
-                                     (INTEGER-LENGTH (FP-ARITH-TRIPLE->MAN X))))
-                           (i (fp-arith-triple->man x))))
+    :hints (("Goal" :use ((:instance unsigned-byte-p-of-loghead
+                                     (size (+ -1 (- (POS-FIX FRAC-SIZE))
+                                              (INTEGER-LENGTH (FP-ARITH-TRIPLE->MAN X))))
+                                     (size1 (+ -1 (- (POS-FIX FRAC-SIZE))
+                                               (INTEGER-LENGTH (FP-ARITH-TRIPLE->MAN X))))
+                                     (i (fp-arith-triple->man x))))
              :in-theory (e/d (unsigned-byte-p
                               acl2::exponents-add-unrestricted)
                              (unsigned-byte-p-of-loghead
@@ -1049,7 +1058,7 @@
            (implies (<= 0 (- (integer-length x.man) (+ 1 (pos-fix frac-size))))
                     (unsigned-byte-p (- (integer-length x.man) (+ 1 (pos-fix frac-size)))
                                      (* (expt 2 (- (integer-length x.man) (+ 2 (pos-fix frac-size)))) round+sticky))))))
-  
+
   (defthmd normalize-round+sticky-logapp-decomp
     (b* (((mv (fp-arith-triple norm) & &)
           (normalize-arith-triple x))
@@ -1061,10 +1070,10 @@
                               (* (expt 2 (- (integer-length x.man) (+ 2 size.frac-size))) round+sticky)
                               norm.man)
                       x.man)))
-    :hints (("goal" :use ((:instance decompose-as-logapp
-                           (x (fp-arith-triple->man x))
-                           (w (- (integer-length (fp-arith-triple->man x))
-                                 (+ 1 (fp-size->frac-size size))))))
+    :hints (("Goal" :use ((:instance decompose-as-logapp
+                                     (x (fp-arith-triple->man x))
+                                     (w (- (integer-length (fp-arith-triple->man x))
+                                           (+ 1 (fp-size->frac-size size))))))
              :in-theory (enable normalize-arith-triple
                                 fp-arith-rightshift
                                 fp-arith-leftshift))))
@@ -1079,9 +1088,10 @@
              (* (expt 2 (- (- (integer-length x.man) (+ 1 size.frac-size))))
                 (+ x.man
                    (- (* (expt 2 (- (integer-length x.man) (+ 2 size.frac-size))) round+sticky))))))
-    :hints (("goal" :use ((:instance normalize-round+sticky-logapp-decomp)
-                          (:instance integer-bits-of-normalize-arith-triple-round+sticky
-                           (frac-size (fp-size->frac-size size))))
+    :hints (("Goal"
+             :use ((:instance normalize-round+sticky-logapp-decomp)
+                   (:instance integer-bits-of-normalize-arith-triple-round+sticky
+                              (frac-size (fp-size->frac-size size))))
              :cases ((<= (+ 2 (fp-size->frac-size size))
                          (integer-length (fp-arith-triple->man x))))
              :in-theory (enable logapp))
@@ -1092,8 +1102,8 @@
             (and stable-under-simplificationp
                  '(:in-theory (enable bitops::ash-is-expt-*-x
                                       acl2::exponents-add-unrestricted)))))
-  
-  
+
+
   (defthmd normalize-round+sticky-value-decomp
     (b* (((mv (fp-arith-triple norm) & &)
           (normalize-arith-triple x))
@@ -1104,24 +1114,24 @@
              (* (fp-sign-value x.sign)
                 (* (expt 2 (+ x.exp (- (integer-length x.man) (+ 2 size.frac-size))))
                    (+ round+sticky (* 2 norm.man))))))
-    :hints (("goal" :in-theory (enable fp-arith-triple->rational
+    :hints (("Goal" :in-theory (enable fp-arith-triple->rational
                                        normalize-round+sticky-decomp
                                        acl2::exponents-add-unrestricted))))
 
-  
 
-  (local (Defthmd loghead-in-terms-of-loghead-of-one-less
+
+  (local (defthmd loghead-in-terms-of-loghead-of-one-less
            (implies (posp n)
                     (equal (loghead n x)
                            (+ (ash (logbit (1- n) x) (1- n))
                               (loghead (1- n) x))))
-           :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions)
-                   :induct t
-                   :expand ((loghead n x)
-                            (loghead (+ -1 n) x)
-                            (logbitp 0 x)
-                            (:free (x) (ash x (+ -1 n)))
-                            (logbitp (+ -1 n) x))))))
+           :hints (("Goal" :in-theory (enable* bitops::ihsext-inductions)
+                    :induct t
+                    :expand ((loghead n x)
+                             (loghead (+ -1 n) x)
+                             (logbitp 0 x)
+                             (:free (x) (ash x (+ -1 n)))
+                             (logbitp (+ -1 n) x))))))
 
   (local (defthmd expand-this-loghead
            (b* ((n (+ -1 (- (fp-size->frac-size size))
@@ -1131,80 +1141,80 @@
                       (equal (loghead n x)
                              (+ (ash (logbit (1- n) x) (1- n))
                                 (loghead (1- n) x)))))
-           :hints(("Goal" :use ((:instance loghead-in-terms-of-loghead-of-one-less
-                                 (n (+ -1 (- (fp-size->frac-size size))
-                                       (integer-length (fp-arith-triple->man x))))
-                                 (x (fp-arith-triple->man x))))))))
-  
+           :hints (("Goal" :use ((:instance loghead-in-terms-of-loghead-of-one-less
+                                            (n (+ -1 (- (fp-size->frac-size size))
+                                                  (integer-length (fp-arith-triple->man x))))
+                                            (x (fp-arith-triple->man x))))))))
+
 
   (local (defthm integerp-of-plus-integer
            (implies (and (rationalp x)
                          (integerp y))
                     (equal (integerp (+ y x))
                            (integerp x)))
-           :hints (("goal" :cases ((integerp x))))))
+           :hints (("Goal" :cases ((integerp x))))))
 
   (local (defthmd integerp-of-loghead-divided
            (implies (not (equal (loghead n x) 0))
                     (not (integerp (* (expt 2 (- n)) (loghead n x)))))
-           :hints (("goal" :use ((:instance acl2::loghead-upper-bound
-                                  (size n) (i x)))
+           :hints (("Goal" :use ((:instance acl2::loghead-upper-bound
+                                            (size n) (i x)))
                     :in-theory (disable acl2::loghead-upper-bound))
                    '(:cases ((and (< 0 (* (expt 2 (- n)) (loghead n x)))
                                   (< (* (expt 2 (- n)) (loghead n x)) 1)))))))
-  
+
   (defthmd normalize-in-terms-of-round+sticky
     (b* (((mv & roundp stickyp) (normalize-arith-triple x :sticky-in sticky-in))
          ((fp-size size))
          (round+sticky (normalize-arith-triple-round+sticky x size.frac-size)))
       (and (equal roundp
-                (<= 1 round+sticky))
+                  (<= 1 round+sticky))
            (equal stickyp
                   (or (and sticky-in t)
                       (not (integerp round+sticky))))))
-    :hints(("Goal" :in-theory (enable normalize-arith-triple))
-           (and stable-under-simplificationp
-                '(:in-theory (e/d (expand-this-loghead
-                                   bitops::ash-is-expt-*-x)
-                                  (acl2::loghead-upper-bound))
-                  :use ((:instance integerp-of-loghead-divided
-                         (n (+ -2 (- (FP-SIZE->FRAC-SIZE SIZE))
-                               (INTEGER-LENGTH (FP-ARITH-TRIPLE->MAN X))))
-                         (x (fp-arith-triple->man x)))
-                        (:instance acl2::loghead-upper-bound
-                         (size (+ -2 (- (FP-SIZE->FRAC-SIZE SIZE))
-                                  (INTEGER-LENGTH (FP-ARITH-TRIPLE->MAN X))))
-                         (i (fp-arith-triple->man x)))))))
+    :hints (("Goal" :in-theory (enable normalize-arith-triple))
+            (and stable-under-simplificationp
+                 '(:in-theory (e/d (expand-this-loghead
+                                    bitops::ash-is-expt-*-x)
+                                   (acl2::loghead-upper-bound))
+                              :use ((:instance integerp-of-loghead-divided
+                                               (n (+ -2 (- (FP-SIZE->FRAC-SIZE SIZE))
+                                                     (INTEGER-LENGTH (FP-ARITH-TRIPLE->MAN X))))
+                                               (x (fp-arith-triple->man x)))
+                                    (:instance acl2::loghead-upper-bound
+                                               (size (+ -2 (- (FP-SIZE->FRAC-SIZE SIZE))
+                                                        (INTEGER-LENGTH (FP-ARITH-TRIPLE->MAN X))))
+                                               (i (fp-arith-triple->man x)))))))
     :otf-flg t)
 
   (local
    (defthm normalize-round+sticky-value-decomp-here
-    (b* (((mv (fp-arith-triple norm) & &)
-          (normalize-arith-triple x))
-         ((fp-arith-triple x))
-         ((fp-size size))
-         (round+sticky (normalize-arith-triple-round+sticky x size.frac-size)))
-      (implies (syntaxp (equal x 'x))
-               (equal (fp-arith-triple->rational x)
-                      (* (fp-sign-value x.sign)
-                         (* (expt 2 (+ x.exp (- (integer-length x.man) (+ 2 size.frac-size))))
-                            (+ round+sticky (* 2 norm.man)))))))
-    :hints (("goal" :in-theory (enable fp-arith-triple->rational
-                                       normalize-round+sticky-decomp
-                                       acl2::exponents-add-unrestricted)))))
+     (b* (((mv (fp-arith-triple norm) & &)
+           (normalize-arith-triple x))
+          ((fp-arith-triple x))
+          ((fp-size size))
+          (round+sticky (normalize-arith-triple-round+sticky x size.frac-size)))
+       (implies (syntaxp (equal x 'x))
+                (equal (fp-arith-triple->rational x)
+                       (* (fp-sign-value x.sign)
+                          (* (expt 2 (+ x.exp (- (integer-length x.man) (+ 2 size.frac-size))))
+                             (+ round+sticky (* 2 norm.man)))))))
+     :hints (("Goal" :in-theory (enable fp-arith-triple->rational
+                                        normalize-round+sticky-decomp
+                                        acl2::exponents-add-unrestricted)))))
 
   (defthmd normalize-arith-triple-round+sticky-when-0
     (implies (equal (fp-arith-triple->man x) 0)
              (equal (normalize-arith-triple-round+sticky x frac-size) 0))
-    :hints(("Goal" :in-theory (enable normalize-arith-triple-round+sticky))))
+    :hints (("Goal" :in-theory (enable normalize-arith-triple-round+sticky))))
 
   ;; (local (defthm integer-length-of-plus-one
   ;;          (implies (natp x)
   ;;                   (<= (integer-length x) (integer-length (+ 1 x))))
-  ;;          :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
+  ;;          :hints (("Goal" :in-theory (enable* bitops::ihsext-inductions
   ;;                                             bitops::ihsext-recursive-redefs)))
   ;;          :rule-classes ((:linear :trigger-terms ((integer-length (+ 1 x)))))))
-  
+
   (defthmd round-nearest-in-terms-of-round+sticky
     (b* (((mv (fp-arith-triple norm) roundp1 stickyp1) (normalize-arith-triple x :verbosep verbosep1))
          ((mv new-x & &) (round-arith-triple norm roundp stickyp rc))
@@ -1220,18 +1230,18 @@
                     (implies (case-split (< round+sticky 1))
                              (equal (fp-arith-triple->rational new-x)
                                     (fp-arith-triple->rational norm))))))
-    :hints(("goal" :in-theory (e/d (normalize-in-terms-of-round+sticky
-                                    normalize-arith-triple-round+sticky-when-0
-                                    round-up
-                                    fp-arith-triple->rational-of-round
-                                    acl2::exponents-add-unrestricted)
-                                   (normalize-arith-triple-round+sticky
-                                    logmask
-                                    fp-arith-triple->rational-of-normalize-arith-triple-when-not-sticky)))
-           (and stable-under-simplificationp
-                '(
-                  :expand ((:free (sign exp man) (fp-arith-triple->rational (fp-arith-triple sign exp man)))
-                           (fp-arith-triple->rational (mv-nth 0 (normalize-arith-triple x :verbosep nil)))))))
+    :hints (("Goal" :in-theory (e/d (normalize-in-terms-of-round+sticky
+                                     normalize-arith-triple-round+sticky-when-0
+                                     round-up
+                                     fp-arith-triple->rational-of-round
+                                     acl2::exponents-add-unrestricted)
+                                    (normalize-arith-triple-round+sticky
+                                     logmask
+                                     fp-arith-triple->rational-of-normalize-arith-triple-when-not-sticky)))
+            (and stable-under-simplificationp
+                 '(
+                   :expand ((:free (sign exp man) (fp-arith-triple->rational (fp-arith-triple sign exp man)))
+                            (fp-arith-triple->rational (mv-nth 0 (normalize-arith-triple x :verbosep nil)))))))
     :otf-flg t)
 
   (defthmd round-in-terms-of-round+sticky
@@ -1253,17 +1263,17 @@
                              (t nil))
                            (change-fp-arith-triple norm :man (+ 1 norm.man))
                          norm)))))
-    :hints(("goal" :in-theory (e/d (normalize-in-terms-of-round+sticky
-                                    normalize-arith-triple-round+sticky-when-0
-                                    round-up
-                                    fp-arith-triple->rational-of-round
-                                    acl2::exponents-add-unrestricted)
-                                   (normalize-arith-triple-round+sticky
-                                    logmask
-                                    fp-arith-triple->rational-of-normalize-arith-triple-when-not-sticky)))
-           (and stable-under-simplificationp
-                '(:expand ((:free (sign exp man) (fp-arith-triple->rational (fp-arith-triple sign exp man)))
-                           (fp-arith-triple->rational (mv-nth 0 (normalize-arith-triple x :verbosep nil)))))))
+    :hints (("Goal" :in-theory (e/d (normalize-in-terms-of-round+sticky
+                                     normalize-arith-triple-round+sticky-when-0
+                                     round-up
+                                     fp-arith-triple->rational-of-round
+                                     acl2::exponents-add-unrestricted)
+                                    (normalize-arith-triple-round+sticky
+                                     logmask
+                                     fp-arith-triple->rational-of-normalize-arith-triple-when-not-sticky)))
+            (and stable-under-simplificationp
+                 '(:expand ((:free (sign exp man) (fp-arith-triple->rational (fp-arith-triple sign exp man)))
+                            (fp-arith-triple->rational (mv-nth 0 (normalize-arith-triple x :verbosep nil)))))))
     :otf-flg t)
 
   (defthmd round-in-terms-of-round+sticky2
@@ -1290,20 +1300,20 @@
                                   (t nil))
                                 (- 2 round+sticky)
                               (- round+sticky)))))))
-    :hints(("goal" :in-theory (e/d (normalize-in-terms-of-round+sticky
-                                    normalize-arith-triple-round+sticky-when-0
-                                    round-up
-                                    fp-arith-triple->rational-of-round
-                                    acl2::exponents-add-unrestricted)
-                                   (normalize-arith-triple-round+sticky
-                                    logmask
-                                    fp-arith-triple->rational-of-normalize-arith-triple-when-not-sticky)))
-           (and stable-under-simplificationp
-                '(:expand ((:free (sign exp man) (fp-arith-triple->rational (fp-arith-triple sign exp man)))
-                           (fp-arith-triple->rational (mv-nth 0 (normalize-arith-triple x :verbosep nil))))))
-           (and stable-under-simplificationp
-                ;; just to deal with the case where mant = 0
-                '(:in-theory (enable normalize-arith-triple))))
+    :hints (("Goal" :in-theory (e/d (normalize-in-terms-of-round+sticky
+                                     normalize-arith-triple-round+sticky-when-0
+                                     round-up
+                                     fp-arith-triple->rational-of-round
+                                     acl2::exponents-add-unrestricted)
+                                    (normalize-arith-triple-round+sticky
+                                     logmask
+                                     fp-arith-triple->rational-of-normalize-arith-triple-when-not-sticky)))
+            (and stable-under-simplificationp
+                 '(:expand ((:free (sign exp man) (fp-arith-triple->rational (fp-arith-triple sign exp man)))
+                            (fp-arith-triple->rational (mv-nth 0 (normalize-arith-triple x :verbosep nil))))))
+            (and stable-under-simplificationp
+                 ;; just to deal with the case where mant = 0
+                 '(:in-theory (enable normalize-arith-triple))))
     :otf-flg t))
 
 
@@ -1315,13 +1325,13 @@
 
 
 (defret integer-length-of-normalize-arith-triple
-    (implies (not (equal 0 (fp-arith-triple->man x)))
-             (equal (integer-length (fp-arith-triple->man new-x))
-                    (+ 1 (fp-size->frac-size size))))
-    :hints(("Goal" :in-theory (enable normalize-arith-triple
-                                      fp-arith-rightshift
-                                      fp-arith-leftshift)))
-    :fn normalize-arith-triple)
+  (implies (not (equal 0 (fp-arith-triple->man x)))
+           (equal (integer-length (fp-arith-triple->man new-x))
+                  (+ 1 (fp-size->frac-size size))))
+  :hints (("Goal" :in-theory (enable normalize-arith-triple
+                                     fp-arith-rightshift
+                                     fp-arith-leftshift)))
+  :fn normalize-arith-triple)
 
 (defret normalize-arith-triple-bounds
   (implies (not (equal 0 (fp-arith-triple->man x)))
@@ -1329,8 +1339,9 @@
                     (fp-arith-triple->man new-x))
                 (<= (fp-arith-triple->man new-x)
                     (1- (* 2 (expt 2 (fp-size->frac-size size)))))))
-  :hints(("Goal" :use integer-length-of-normalize-arith-triple
-          :in-theory (enable equal-integer-length-of-positive)))
+  :hints (("Goal"
+           :use integer-length-of-normalize-arith-triple
+           :in-theory (enable equal-integer-length-of-positive)))
   :fn normalize-arith-triple
   :rule-classes :linear)
 
@@ -1351,7 +1362,7 @@
     (fp-arith-triple->rational-and-sign-equiv
      (left-normalize-arith-triple x frac-size)
      x)
-    :hints ((And stable-under-simplificationp
+    :hints ((and stable-under-simplificationp
                  '(:in-theory (enable left-normalize-arith-triple))))))
 
 
@@ -1365,18 +1376,18 @@
   (local (defthm fp-arith-triple->rational-equals-0
            (equal (equal 0 (fp-arith-triple->rational x))
                   (equal 0 (fp-arith-triple->man x)))
-           :hints(("Goal" :in-theory (enable fp-arith-triple->rational)))))
+           :hints (("Goal" :in-theory (enable fp-arith-triple->rational)))))
 
   (local (defthm floor-divide-out
-         (implies (and (not (equal (rfix y) 0))
-                       (syntaxp (not (equal y ''1)))
-                       (rationalp x))
-                  (equal (floor x y)
-                         (floor (/ x y) 1)))
-         :hints(("Goal" :in-theory (enable rfix)))))
+           (implies (and (not (equal (rfix y) 0))
+                         (syntaxp (not (equal y ''1)))
+                         (rationalp x))
+                    (equal (floor x y)
+                           (floor (/ x y) 1)))
+           :hints (("Goal" :in-theory (enable rfix)))))
 
   (local (in-theory (disable ACL2::/R-WHEN-ABS-NUMERATOR=1)))
-  
+
   (defthmd normalize-arith-triple-in-terms-of-rational
     (b* (((mv norm ?roundp ?stickyp) (normalize-arith-triple x :sticky-in sticky-in))
          ((fp-arith-triple x))
@@ -1393,26 +1404,26 @@
                      (floor (* (expt 2 size.frac-size)
                                (rational-significand xval))
                             1)))))
-    :hints(("Goal" :in-theory (enable normalize-arith-triple
-                                      fp-arith-rightshift
-                                      fp-arith-leftshift
-                                      rational-sign-significand-exponent-of-fp-arith-triple->rational
-                                      acl2::exponents-add-unrestricted))
-           (and stable-under-simplificationp
-                '(:in-theory (enable logtail ash)))
-           (and stable-under-simplificationp
-                '(:in-theory (enable acl2::exponents-add-unrestricted)))))
+    :hints (("Goal" :in-theory (enable normalize-arith-triple
+                                       fp-arith-rightshift
+                                       fp-arith-leftshift
+                                       rational-sign-significand-exponent-of-fp-arith-triple->rational
+                                       acl2::exponents-add-unrestricted))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable logtail ash)))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable acl2::exponents-add-unrestricted)))))
 
   (local (defthm mod-divide-out
-         (implies (and (not (equal (rfix y) 0))
-                       (syntaxp (not (equal y ''1)))
-                        (rationalp x))
-                  (equal (mod x y)
-                         (* y (mod (/ x y) 1))))
-         :hints(("Goal" :in-theory (enable mod rfix)))))
+           (implies (and (not (equal (rfix y) 0))
+                         (syntaxp (not (equal y ''1)))
+                         (rationalp x))
+                    (equal (mod x y)
+                           (* y (mod (/ x y) 1))))
+           :hints (("Goal" :in-theory (enable mod rfix)))))
 
-  
-  
+
+
   (defthmd normalize-arith-triple-round+sticky-in-terms-of-rational
     (b* ((r+s (normalize-arith-triple-round+sticky x frac-size))
          ((fp-arith-triple x))
@@ -1423,15 +1434,15 @@
                (* (expt 2 (+ 1 (pos-fix frac-size)))
                   (mod (rational-significand xval)
                        (expt 2 (- (pos-fix frac-size))))))))
-    :hints(("Goal" :in-theory (enable normalize-arith-triple-round+sticky
-                                      rational-sign-significand-exponent-of-fp-arith-triple->rational))
-           (and stable-under-simplificationp
-                '(:in-theory (enable loghead)))
-           (and stable-under-simplificationp
-                '(:in-theory (enable acl2::exponents-add-unrestricted)
-                  :use ((:instance acl2::expt-type-prescription-integerp
-                         (r 2) (i (- (pos-fix frac-size)
-                                     (integer-length (fp-arith-triple->man x))))))))))
+    :hints (("Goal" :in-theory (enable normalize-arith-triple-round+sticky
+                                       rational-sign-significand-exponent-of-fp-arith-triple->rational))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable loghead)))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable acl2::exponents-add-unrestricted)
+                              :use ((:instance acl2::expt-type-prescription-integerp
+                                               (r 2) (i (- (pos-fix frac-size)
+                                                           (integer-length (fp-arith-triple->man x))))))))))
 
 
   (local (defthm normalize-arith-triple-multivalues
@@ -1439,10 +1450,10 @@
                         (mv-nth 1 (normalize-arith-triple x :sticky-in sticky-in))
                         (mv-nth 2 (normalize-arith-triple x :sticky-in sticky-in)))
                   (normalize-arith-triple x :sticky-in sticky-in))
-           :hints(("Goal" :in-theory (enable normalize-arith-triple)))))
+           :hints (("Goal" :in-theory (enable normalize-arith-triple)))))
 
   (defcong fp-arith-triple->rational-and-sign-equiv equal (normalize-arith-triple x :sticky-in sticky-in) 1
-    :hints (("goal" :use ((:instance normalize-arith-triple-multivalues)
+    :hints (("Goal" :use ((:instance normalize-arith-triple-multivalues)
                           (:instance normalize-arith-triple-multivalues (x x-equiv)))
              :in-theory (e/d (normalize-arith-triple-in-terms-of-rational
                               normalize-in-terms-of-round+sticky
@@ -1478,51 +1489,51 @@
                          (not (equal x 0)))
                     (equal (rational-exponent (* x (expt 2 y)))
                            (+ (ifix y) (rational-exponent x))))
-           :hints(("Goal" :in-theory (enable acl2::rational-exponent/significand-of-multiply)))))
+           :hints (("Goal" :in-theory (enable acl2::rational-exponent/significand-of-multiply)))))
 
   (local (defthm rational-significand-of-times-power
            (implies (and (rationalp x)
                          (not (equal x 0)))
                     (equal (rational-significand (* x (expt 2 y)))
                            (rational-significand x)))
-           :hints(("Goal" :in-theory (enable acl2::rational-exponent/significand-of-multiply)))))
+           :hints (("Goal" :in-theory (enable acl2::rational-exponent/significand-of-multiply)))))
 
-  (local (Defthm ash-1-integer-length-minus-1-lte-x
+  (local (defthm ash-1-integer-length-minus-1-lte-x
            (implies (posp x)
                     (<= (ash 1 (+ -1 (integer-length x))) x))
-           :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
-                                              bitops::ihsext-recursive-redefs)))))
-  
+           :hints (("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                               bitops::ihsext-recursive-redefs)))))
+
   (local (defthm rational-exponent-of-pos
            (implies (posp x)
                     (equal (rational-exponent x)
                            (1- (integer-length x))))
-           :hints(("Goal" :in-theory (enable rational-exponent)
-                   :expand ((rational-exponent x))))))
-                         
+           :hints (("Goal" :in-theory (enable rational-exponent)
+                    :expand ((rational-exponent x))))))
+
   (local (defthm floor-divide-out
            (implies (and (not (equal (rfix y) 0))
                          (syntaxp (not (equal y ''1)))
                          (rationalp x))
                     (equal (floor x y)
                            (floor (/ x y) 1)))
-           :hints(("Goal" :in-theory (enable rfix)))))
+           :hints (("Goal" :in-theory (enable rfix)))))
 
-  
+
   (local (defthm mod-divide-out
            (implies (and (not (equal (rfix y) 0))
                          (syntaxp (not (equal y ''1)))
                          (rationalp x))
                     (equal (mod x y)
                            (* y (mod (/ x y) 1))))
-           :hints(("Goal" :in-theory (enable mod rfix)))))
+           :hints (("Goal" :in-theory (enable mod rfix)))))
 
   (local (in-theory (disable acl2::/r-when-abs-numerator=1
                              ;; acl2::floor-bounded-by-/
                              acl2::x*y>1-positive
                              acl2::0-<-*
                              acl2::floor-=-x/y)))
-  
+
   (defretd <fn>-correct-for-arith-triples
     :pre-bind ((x (fp-arith-triple->rational in))
                (frac-size (fp-size->frac-size size)))
@@ -1530,19 +1541,19 @@
              (b* (((mv norm-spec & &)
                    (normalize-arith-triple in :sticky-in sticky-in)))
                (equal norm-spec norm)))
-    :hints(("Goal" :in-theory (enable normalize-arith-triple
-                                      fp-arith-rightshift
-                                      fp-arith-leftshift
-                                      fp-arith-triple->rational
-                                      fp-sign-value-redef))
-           (and stable-under-simplificationp
-                '(:in-theory (enable rational-sign
-                                     acl2::rational-significand-in-terms-of-rational-exponent
-                                     logtail
-                                     loghead)))
-           (and stable-under-simplificationp
-                '(:in-theory (enable acl2::exponents-add-unrestricted
-                                     ash))))
+    :hints (("Goal" :in-theory (enable normalize-arith-triple
+                                       fp-arith-rightshift
+                                       fp-arith-leftshift
+                                       fp-arith-triple->rational
+                                       fp-sign-value-redef))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable rational-sign
+                                      acl2::rational-significand-in-terms-of-rational-exponent
+                                      logtail
+                                      loghead)))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable acl2::exponents-add-unrestricted
+                                      ash))))
     :otf-flg t))
 
 
@@ -1561,44 +1572,45 @@
                          (not (equal x 0)))
                     (equal (rational-exponent (* x (expt 2 y)))
                            (+ (ifix y) (rational-exponent x))))
-           :hints(("Goal" :in-theory (enable acl2::rational-exponent/significand-of-multiply)))))
+           :hints (("Goal" :in-theory (enable acl2::rational-exponent/significand-of-multiply)))))
 
   (local (defthm rational-significand-of-times-power
            (implies (and (rationalp x)
                          (not (equal x 0)))
                     (equal (rational-significand (* x (expt 2 y)))
                            (rational-significand x)))
-           :hints(("Goal" :in-theory (enable acl2::rational-exponent/significand-of-multiply)))))
+           :hints (("Goal" :in-theory (enable acl2::rational-exponent/significand-of-multiply)))))
 
-  (local (Defthm ash-1-integer-length-minus-1-lte-x
+  (local (defthm ash-1-integer-length-minus-1-lte-x
            (implies (posp x)
                     (<= (ash 1 (+ -1 (integer-length x))) x))
-           :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions
-                                              bitops::ihsext-recursive-redefs)))))
-  
+           :hints (("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                               bitops::ihsext-recursive-redefs)))))
+
   (local (defthm rational-exponent-of-pos
            (implies (posp x)
                     (equal (rational-exponent x)
                            (1- (integer-length x))))
-           :hints(("Goal" :in-theory (enable rational-exponent)
-                   :expand ((rational-exponent x))))))
-                         
-  (local (defthm floor-divide-out
-         (implies (and (not (equal (rfix y) 0))
-                       (syntaxp (not (equal y ''1)))
-                       (rationalp x))
-                  (equal (floor x y)
-                         (floor (/ x y) 1)))
-         :hints(("Goal" :in-theory (enable rfix)))))
+           :hints (("Goal"
+                    :in-theory (enable rational-exponent)
+                    :expand ((rational-exponent x))))))
 
-  
+  (local (defthm floor-divide-out
+           (implies (and (not (equal (rfix y) 0))
+                         (syntaxp (not (equal y ''1)))
+                         (rationalp x))
+                    (equal (floor x y)
+                           (floor (/ x y) 1)))
+           :hints (("Goal" :in-theory (enable rfix)))))
+
+
   (local (defthm mod-divide-out
-         (implies (and (not (equal (rfix y) 0))
-                       (syntaxp (not (equal y ''1)))
-                        (rationalp x))
-                  (equal (mod x y)
-                         (* y (mod (/ x y) 1))))
-         :hints(("Goal" :in-theory (enable mod rfix)))))
+           (implies (and (not (equal (rfix y) 0))
+                         (syntaxp (not (equal y ''1)))
+                         (rationalp x))
+                    (equal (mod x y)
+                           (* y (mod (/ x y) 1))))
+           :hints (("Goal" :in-theory (enable mod rfix)))))
 
   (local (in-theory (disable acl2::/r-when-abs-numerator=1)))
 
@@ -1608,45 +1620,47 @@
                          (integerp x)
                          (integerp z))
                     (integerp (* 2 z (expt 2 x) (/ (expt 2 y)))))
-           :hints (("goal" :use ((:instance (:theorem (implies (natp x) (integerp (expt 2 x))))
-                                  (x (+ 1 x (- y))))
-                                 (:instance (:theorem (implies (and (integerp x) (integerp y)) (integerp (* x y))))
-                                  (x z) (y (* 2 (expt 2 x) (/ (expt 2 y))))))
+           :hints (("Goal"
+                    :use ((:instance (:theorem (implies (natp x) (integerp (expt 2 x))))
+                                     (x (+ 1 x (- y))))
+                          (:instance (:theorem (implies (and (integerp x) (integerp y)) (integerp (* x y))))
+                                     (x z) (y (* 2 (expt 2 x) (/ (expt 2 y))))))
                     :in-theory (e/d (acl2::exponents-add-unrestricted))))))
-                    
-  
+
+
   (defretd <fn>-correct-for-arith-triples
     :pre-bind ((x (fp-arith-triple->rational in)))
     (implies (not (equal x 0))
              (equal (normalize-arith-triple-round+sticky in frac-size)
                     round+sticky))
-    :hints(("Goal" :in-theory (enable normalize-arith-triple-round+sticky
-                                      fp-arith-triple->rational
-                                      fp-sign-value-redef))
-           (and stable-under-simplificationp
-                '(:in-theory (enable rational-sign
+    :hints (("Goal" :in-theory (enable normalize-arith-triple-round+sticky
+                                       fp-arith-triple->rational
+                                       fp-sign-value-redef))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable rational-sign
                                       acl2::rational-significand-in-terms-of-rational-exponent
                                       logtail
                                       loghead)))
-           (and stable-under-simplificationp
-                '(:in-theory (enable ;; acl2::exponents-add-unrestricted
-                                     ash nfix)))
-           (And stable-under-simplificationp
-                '(:in-theory (enable acl2::exponents-add-unrestricted))))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable ;; acl2::exponents-add-unrestricted
+                               ash nfix)))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable acl2::exponents-add-unrestricted))))
     :otf-flg t)
 
   (defret <fn>-lower-bound
     (<= 0 round+sticky)
     :rule-classes (:linear :type-prescription))
-  
+
   (defret <fn>-upper-bound
     (< round+sticky 2)
-    :hints (("goal" :use ((:instance unsigned-byte-p-of-loghead
-                           (size (+ -1 (- (POS-FIX FRAC-SIZE))
-                                    (INTEGER-LENGTH (FP-ARITH-TRIPLE->MAN X))))
-                           (size1 (+ -1 (- (POS-FIX FRAC-SIZE))
-                                     (INTEGER-LENGTH (FP-ARITH-TRIPLE->MAN X))))
-                           (i (fp-arith-triple->man x))))
+    :hints (("Goal"
+             :use ((:instance unsigned-byte-p-of-loghead
+                              (size (+ -1 (- (POS-FIX FRAC-SIZE))
+                                       (INTEGER-LENGTH (FP-ARITH-TRIPLE->MAN X))))
+                              (size1 (+ -1 (- (POS-FIX FRAC-SIZE))
+                                        (INTEGER-LENGTH (FP-ARITH-TRIPLE->MAN X))))
+                              (i (fp-arith-triple->man x))))
              :in-theory (e/d (unsigned-byte-p
                               acl2::exponents-add-unrestricted)
                              (unsigned-byte-p-of-loghead
@@ -1661,10 +1675,10 @@
                       (* (fp-sign-value norm.sign)
                          (* (expt 2 norm.exp)
                             (+ (* 1/2 round+sticky) norm.man))))))
-    :hints(("Goal" :in-theory (enable normalize-rational-to-arith-triple
-                                      mod
-                                      acl2::rational-exponent-in-terms-of-rational-significand
-                                      rational-sign)))
+    :hints (("Goal" :in-theory (enable normalize-rational-to-arith-triple
+                                       mod
+                                       acl2::rational-exponent-in-terms-of-rational-significand
+                                       rational-sign)))
     :rule-classes nil)
 
   (defretd normalize-rational-in-terms-of-round+sticky
@@ -1674,5 +1688,4 @@
            (equal stickyp
                   (or (and sticky-in t)
                       (not (integerp round+sticky))))))
-    :hints(("Goal" :in-theory (enable normalize-rational-to-arith-triple)))))
-
+    :hints (("Goal" :in-theory (enable normalize-rational-to-arith-triple)))))

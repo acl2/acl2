@@ -109,7 +109,8 @@
                   (committed-anchors (get-validator-state val systate)
                                      (all-addresses systate))))
   :enable (committed-anchors
-           validator-state->dag-of-receive-certificate-next))
+           validator-state->dag-of-receive-certificate-next
+           validator-state->last-of-receive-certificate-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -143,7 +144,9 @@
            system-unequivocal-dag-p-necc
            system-unequivocal-dag-p-when-system-unequivocal-certificates-p
            system-previous-in-dag-p-necc
-           system-last-anchor-present-p-necc)
+           system-last-anchor-present-p-necc
+           validator-state->dag-subset-store-certificate-next
+           validator-state->last-of-store-certificate-next)
   :use (:instance collect-all-anchors-of-unequivocal-dag-superset
                   (vals (all-addresses systate))
                   (last-anchor
@@ -155,8 +158,7 @@
                   (dag2 (validator-state->dag
                          (get-validator-state
                           val
-                          (store-certificate-next cert val1 systate)))))
-  :disable validator-state->dag-of-store-certificate-next)
+                          (store-certificate-next cert val1 systate))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -176,7 +178,9 @@
                    (all-addresses systate))
                   (committed-anchors (get-validator-state val systate)
                                      (all-addresses systate))))
-  :enable committed-anchors)
+  :enable (committed-anchors
+           validator-state->dag-of-advance-round-next
+           validator-state->last-of-advance-round-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -231,7 +235,9 @@
            anchorp
            certificate-with-author+round-element
            certificate->author-of-certificate-with-author+round
-           certificate->round-of-certificate-with-author+round)
+           certificate->round-of-certificate-with-author+round
+           validator-state->dag-of-commit-anchors-next
+           validator-state->last-of-commit-anchors-next)
   :use (:instance collect-all-anchors-to-append-of-collect-anchors
                   (anchor (last-anchor (get-validator-state val systate)
                                        (all-addresses systate)))
@@ -276,4 +282,6 @@
                    (all-addresses systate))
                   (committed-anchors (get-validator-state val systate)
                                      (all-addresses systate))))
-  :enable committed-anchors)
+  :enable (committed-anchors
+           validator-state->dag-of-timer-expires-next
+           validator-state->last-of-timer-expires-next))

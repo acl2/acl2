@@ -167,7 +167,7 @@
   (fty::deffixequiv commit-anchors-next
     :args ((systate system-statep)))
 
-  (defrule validator-state->round-of-commit-anchors-next
+  (defruled validator-state->round-of-commit-anchors-next
     (implies (and (set::in val (correct-addresses systate))
                   (commit-anchors-possiblep val1 systate))
              (equal (validator-state->round
@@ -179,7 +179,7 @@
              commit-anchors-possiblep
              get-validator-state-of-update-validator-state))
 
-  (defrule validator-state->dag-of-commit-anchors-next
+  (defruled validator-state->dag-of-commit-anchors-next
     (implies (and (set::in val (correct-addresses systate))
                   (commit-anchors-possiblep val1 systate))
              (equal (validator-state->dag
@@ -191,7 +191,7 @@
              commit-anchors-possiblep
              get-validator-state-of-update-validator-state))
 
-  (defrule validator-state->last-of-commit-anchors-next
+  (defruled validator-state->last-of-commit-anchors-next
     (implies (and (set::in val (correct-addresses systate))
                   (commit-anchors-possiblep val1 systate))
              (equal (validator-state->last
@@ -207,7 +207,7 @@
              commit-anchors-next-val
              nfix))
 
-  (defrule validator-state->blockchain-of-commit-anchors-next
+  (defruled validator-state->blockchain-of-commit-anchors-next
     (implies
      (and (set::in val (correct-addresses systate))
           (commit-anchors-possiblep val1 systate))

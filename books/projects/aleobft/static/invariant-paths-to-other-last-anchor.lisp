@@ -178,3 +178,28 @@
       system-authors-are-validators-p-necc
       (val (mv-nth 1
                    (system-paths-to-other-last-anchor-p-witness systate)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled system-paths-to-other-last-anchor-p-when-reachable
+  :short "The invariant holds in every reachable state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Reachable states are characterized by an initial state and
+     a sequence of possible events from that initial state."))
+  (implies (and (system-statep systate)
+                (system-state-initp systate)
+                (events-possiblep events systate)
+                (fault-tolerant-p systate))
+           (system-paths-to-other-last-anchor-p (events-next events systate)))
+  :disable ((:e tau-system))
+  :enable (system-paths-to-other-last-anchor-p-when-other-invariants
+           system-unequivocal-dag-p-when-reachable
+           system-unequivocal-dags-p-when-reachable
+           system-previous-in-dag-p-when-reachable
+           system-dag-previous-are-quorum-p-when-reachable
+           system-authors-are-validators-p-when-reachable
+           system-last-is-even-p-when-reachable
+           system-last-anchor-present-p-when-reachable
+           system-last-anchor-voters-p-when-reachable))

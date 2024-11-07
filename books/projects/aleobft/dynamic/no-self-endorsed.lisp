@@ -66,7 +66,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled no-self-endorsed-p-when-system-initp
+(defruled no-self-endorsed-p-when-init
   :short "Establishment of the invariant:
           the invariant holds in any initial system state."
   :long
@@ -182,3 +182,29 @@
              (no-self-endorsed-p (event-next event systate)))
     :enable (event-next
              event-possiblep)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection no-self-endorsed-p-always
+  :short "The invariant holds in every state
+          reachable from an initial state via a sequence of events."
+
+  (defruled no-self-endorsed-p-of-events-next
+    (implies (and (system-statep systate)
+                  (no-self-endorsed-p systate)
+                  (events-possiblep events systate))
+             (no-self-endorsed-p (events-next events systate)))
+    :induct t
+    :disable ((:e tau-system))
+    :enable (events-possiblep
+             events-next
+             no-self-endorsed-p-of-event-next))
+
+  (defruled no-self-endorsed-p-when-reachable
+    (implies (and (system-statep systate)
+                  (system-initp systate)
+                  (events-possiblep events systate))
+             (no-self-endorsed-p (events-next events systate)))
+    :disable ((:e tau-system))
+    :enable (no-self-endorsed-p-when-init
+             no-self-endorsed-p-of-events-next)))

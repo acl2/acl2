@@ -199,7 +199,8 @@
               (store-certificate-next cert val systate)))
     :expand (system-previous-in-dag-p
              (store-certificate-next cert val systate))
-    :enable system-previous-in-dag-p-necc))
+    :enable (system-previous-in-dag-p-necc
+             validator-state->dag-of-store-certificate-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -215,7 +216,8 @@
             (advance-round-next val systate)))
   :expand (system-previous-in-dag-p
            (advance-round-next val systate))
-  :enable system-previous-in-dag-p-necc)
+  :enable (system-previous-in-dag-p-necc
+           validator-state->dag-of-advance-round-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -231,7 +233,8 @@
             (commit-anchors-next val systate)))
   :expand (system-previous-in-dag-p
            (commit-anchors-next val systate))
-  :enable system-previous-in-dag-p-necc)
+  :enable (system-previous-in-dag-p-necc
+           validator-state->dag-of-commit-anchors-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -247,7 +250,8 @@
             (timer-expires-next val systate)))
   :expand (system-previous-in-dag-p
            (timer-expires-next val systate))
-  :enable system-previous-in-dag-p-necc)
+  :enable (system-previous-in-dag-p-necc
+           validator-state->dag-of-timer-expires-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -263,3 +267,34 @@
             (event-next val systate)))
   :enable (event-possiblep
            event-next))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled system-previous-in-dag-p-of-events-next
+  :short "Preservation of the invariant by every sequence of events."
+  (implies (and (system-statep systate)
+                (system-previous-in-dag-p systate)
+                (events-possiblep events systate))
+           (system-previous-in-dag-p (events-next events systate)))
+  :induct t
+  :disable ((:e tau-system))
+  :enable (events-next
+           events-possiblep
+           system-previous-in-dag-p-of-event-next))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled system-previous-in-dag-p-when-reachable
+  :short "The invariant holds in every reachable state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Reachable states are characterized by an initial state and
+     a sequence of possible events from that initial state."))
+  (implies (and (system-statep systate)
+                (system-state-initp systate)
+                (events-possiblep events systate))
+           (system-previous-in-dag-p (events-next events systate)))
+  :disable ((:e tau-system))
+  :enable (system-previous-in-dag-p-when-system-state-initp
+           system-previous-in-dag-p-of-events-next))

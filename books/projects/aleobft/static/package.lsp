@@ -34,6 +34,7 @@
                                                       parse-integer
                                                       pprint-indent
                                                       program
+                                                      step
                                                       type
                                                       typep
                                                       value

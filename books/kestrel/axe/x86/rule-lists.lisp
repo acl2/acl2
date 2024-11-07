@@ -1776,7 +1776,7 @@
             acl2::<-of-+-cancel-2-1
             acl2::integerp-of-+-when-integerp-1-cheap
             acl2::fix-when-integerp
-            x86isa::integerp-when-canonical-address-p-cheap
+            x86isa::integerp-when-canonical-address-p-cheap ; requires acl2::equal-same
             x86isa::member-p-canonical-address-listp
             acl2::fold-consts-in-+
             acl2::<-of-+-cancel-2-1
@@ -2292,7 +2292,7 @@
      acl2::integerp-of-+-when-integerp-1-cheap
      x86isa::integerp-of-xr-rgf-4
      x86isa::fix-of-xr-rgf-4
-     x86isa::integerp-when-canonical-address-p-cheap
+     x86isa::integerp-when-canonical-address-p-cheap ; requires acl2::equal-same
      acl2::fix-when-integerp
      acl2::equal-same)
    (acl2::lookup-rules)))
@@ -3126,7 +3126,8 @@
           (read-byte-rules)
           (linear-memory-rules)
           (get-prefixes-rules64)
-          '(x86isa::x86-fetch-decode-execute-base-new ; x86-fetch-decode-execute-opener-safe-64 ; todo: put this in?
+          '(;x86isa::x86-fetch-decode-execute-base-new
+            x86-fetch-decode-execute-opener-safe-64 ; trying
             ;; !rip-becomes-set-rip ; todo: uncomment for non-loop case
             x86isa::rme08-of-0-when-not-fs/gs-becomes-read ;; x86isa::rme08-when-64-bit-modep-and-not-fs/gs ; puts in rml08, todo: rules for other sizes?
             x86isa::rme-size-when-64-bit-modep-and-not-fs/gs-strong ; puts in rml-size
@@ -4395,6 +4396,15 @@
 ;; ;;             code-segment-assumptions32-of-write-to-segment-of-ss
 ;;             )
 
+;; Used to add limits
+(defund step-opener-rules ()
+  (declare (xargs :guard t))
+  '(;; todo: just use one of these 2:
+    ;; x86isa::x86-fetch-decode-execute-base
+    x86isa::x86-fetch-decode-execute-base-new
+    x86-fetch-decode-execute-opener-safe-64
+    ))
+
 (defun debug-rules-common ()
   (declare (xargs :guard t))
   '(run-until-stack-shorter-than-opener
@@ -4403,14 +4413,14 @@
     mv-nth-1-of-rb-becomes-read
     mv-nth-1-of-rb-1-becomes-read
     ;; x86isa::x86-fetch-decode-execute-base
-    x86isa::x86-fetch-decode-execute-base-new
     ))
 
 (defun debug-rules32 ()
   (declare (xargs :guard t))
   (append (debug-rules-common)
           '(not-mv-nth-0-of-add-to-*sp-gen
-            mv-nth-1-of-add-to-*sp-gen)))
+            mv-nth-1-of-add-to-*sp-gen
+            x86isa::x86-fetch-decode-execute-base-new)))
 
 (defun debug-rules64 ()
   (declare (xargs :guard t))
@@ -4421,6 +4431,7 @@
             x86isa::rme-size-when-64-bit-modep-and-not-fs/gs-strong
             ;; could consider things like these:
             ;; READ-OF-WRITE-DISJOINT2
+            x86-fetch-decode-execute-opener-safe-64
             )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4760,18 +4771,10 @@
           (acl2::unsigned-byte-p-rules)
           (acl2::unsigned-byte-p-forced-rules)))
 
-
-(defund step-opener-rules ()
-  (declare (xargs :guard t))
-  '(;; todo: just use one of these 2:
-    ;; x86isa::x86-fetch-decode-execute-base
-    x86isa::x86-fetch-decode-execute-base-new
-    ;; x86-fetch-decode-execute-opener-safe-64
-    ))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun extra-loop-lifter-rules ()
+  (declare (xargs :guard t))
   (append ;or put these in symbolic-execution-rules-loop ?:
    '(stack-height-increased-wrt
      stack-height-decreased-wrt
@@ -4835,11 +4838,29 @@
 
 ;; Eventually we may add these rules about read to extra-loop-lifter-rules.
 (defun loop-lifter-invariant-preservation-rules ()
+  (declare (xargs :guard t))
   (append (extra-loop-lifter-rules)
           '(mv-nth-1-of-rb-becomes-read
             read-of-write-disjoint
             read-of-write-same
             )))
+
+;todo: add more?
+(defun loop-lifter-state-component-extraction-rules ()
+  (declare (xargs :guard t))
+  '(acl2::integerp-of-+
+    x86isa::x86-elem-fix
+    x86isa::canonical-address-p-between-special1
+    x86isa::xr-of-xw-diff
+    x86isa::xr-of-xw-intra-field
+    acl2::ifix-when-integerp
+    x86isa::integerp-of-xr-rgf
+    x86isa::logext-64-does-nothing-when-canonical-address-p
+    xr-of-write-when-not-mem ; add 32-bit versions too?
+    xr-of-set-flag
+    xr-of-set-undef-irrel ; maybe this normal form is not used?
+    xr-of-set-mxcsr-irrel ; maybe this normal form is not used?
+    ))
 
 (defun loop-lifter-rules32 ()
   (declare (xargs :guard t))

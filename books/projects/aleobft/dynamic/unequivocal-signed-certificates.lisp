@@ -350,7 +350,7 @@
              unequivocal-signed-certificates-p-necc
              signed-certificates-of-timer-expires-next))
 
-; all events:
+  ;; all events:
 
   (defruled unequivocal-signed-certificates-p-of-event-next
     (implies (and (unequivocal-signed-certificates-p systate)
@@ -362,3 +362,46 @@
               (event-next event systate)))
     :enable (event-possiblep
              event-next)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection unequivocal-signed-certificates-p-always
+  :short "The invariant holds in every state
+          reachable from an initial state via a sequence of events."
+
+  (defruled unequivocal-signed-certificates-p-of-events-next
+    (implies
+     (and (system-statep systate)
+          (unequivocal-signed-certificates-p systate)
+          (signer-records-p systate)
+          (no-self-messages-p systate)
+          (no-self-buffer-p systate)
+          (no-self-endorsed-p systate)
+          (events-possiblep events systate))
+     (and (unequivocal-signed-certificates-p (events-next events systate))
+          (signer-records-p (events-next events systate))
+          (no-self-messages-p (events-next events systate))
+          (no-self-buffer-p (events-next events systate))
+          (no-self-endorsed-p (events-next events systate))))
+    :induct t
+    :disable ((:e tau-system))
+    :enable (events-possiblep
+             events-next
+             unequivocal-signed-certificates-p-of-event-next
+             signer-records-p-of-event-next
+             no-self-messages-p-of-event-next
+             no-self-buffer-p-of-event-next
+             no-self-endorsed-p-of-event-next))
+
+  (defruled unequivocal-signed-certificates-p-when-reachable
+    (implies (and (system-statep systate)
+                  (system-initp systate)
+                  (events-possiblep events systate))
+             (unequivocal-signed-certificates-p (events-next events systate)))
+    :disable ((:e tau-system))
+    :enable (unequivocal-signed-certificates-p-when-init
+             signer-records-p-when-init
+             no-self-messages-p-when-init
+             no-self-buffer-p-when-init
+             no-self-endorsed-p-when-init
+             unequivocal-signed-certificates-p-of-events-next)))

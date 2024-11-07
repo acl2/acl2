@@ -4706,7 +4706,7 @@
 
 ;think about how to auto-populate table
 ;; (defun bind-var-to-size-from-table (var term mfc state)
-;;   (declare (xargs :stobjs (state)
+;;   (declare (xargs :stobjs state
 ;;                   :verify-guards nil
 ;;                   )
 ;;            (ignore mfc))
@@ -4717,7 +4717,7 @@
 ;;       nil)))
 
 ;; (defun bind-var-to-list-size-from-table (var term mfc state)
-;;   (declare (xargs :stobjs (state)
+;;   (declare (xargs :stobjs state
 ;;                   :verify-guards nil
 ;;                   )
 ;;            (ignore mfc))

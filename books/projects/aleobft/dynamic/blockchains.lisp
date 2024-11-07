@@ -125,7 +125,33 @@
      if that committee can be calculated in the original blockchain.
      As a consequence, collecting anchors is not affected
      by the extension of the blockchain,
-     as proved for @(tsee collect-anchors) and @(tsee collect-all-anchors)."))
+     as proved for @(tsee collect-anchors) and @(tsee collect-all-anchors).")
+   (xdoc::p
+    "We show that if a blockchain is extended using anchors
+     that are all in the DAG and connected by paths
+     (i.e. satisfying @(tsee certificates-dag-paths-p),
+     the set of all new committed certificates is the union of
+     the old ones with the causal history of the latest anchor.
+     Based on just the definition of @('extend-blockchain'),
+     we should take the union of the causal histories of all the anchors,
+     but since they are all connected by paths,
+     the causal history of the latest anchor (the @(tsee car))
+     includes the causal history of all the other anchors,
+     and therefore the final set of committed certificates is
+     the union of that latest causal history
+     with the previous committed certificates.
+     But this theorem also covers the case of an empty list of anchors,
+     in which case there is no change in the set of committed certificates.")
+   (xdoc::p
+    "The extension of a blockchain with some anchors
+     in a backward-closed subset of an unequivocal DAG
+     is the same in the superset.
+     This is because causal histories satisfy a similar property.")
+   (xdoc::p
+    "The extensions of a blockchain with some anchors
+     in two backward-closed, individualy and mutually unequivocal DAGs
+     are the same in the two DAGs.
+     This is because causal histories satisfy a similar property."))
   (b* (((when (endp anchors))
         (mv (block-list-fix blockchain)
             (certificate-set-fix committed-certs)))
@@ -144,12 +170,57 @@
 
   ///
 
+  (defret len-of-extend-blockchain
+    (equal (len new-blockchain)
+           (+ (len blockchain)
+              (len anchors)))
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable len fix))))
+  (in-theory (disable len-of-extend-blockchain))
+
+  (defruled extend-blockchain-of-nil
+    (equal (extend-blockchain nil dag blockchain committed-certs)
+           (mv (block-list-fix blockchain)
+               (certificate-set-fix committed-certs))))
+
+  (defruled extend-blockchain-of-append
+    (b* (((mv blocks comms)
+          (extend-blockchain (append anchors2 anchors1) dag blocks0 comms0))
+         ((mv blocks1 comms1)
+          (extend-blockchain anchors1 dag blocks0 comms0))
+         ((mv blocks2 comms2)
+          (extend-blockchain anchors2 dag blocks1 comms1)))
+      (and (equal blocks blocks2)
+           (equal comms comms2)))
+    :induct t
+    :enable append)
+
   (defret consp-of-extend-blockchain
     (equal (consp new-blockchain)
            (or (consp blockchain)
                (consp anchors)))
     :hints (("Goal" :induct t)))
   (in-theory (disable consp-of-extend-blockchain))
+
+  (defruled extend-blockchain-as-append
+    (b* (((mv new-blockchain &)
+          (extend-blockchain anchors dag blockchain committed-certs)))
+      (equal new-blockchain
+             (append (take (- (len new-blockchain)
+                              (len blockchain))
+                           new-blockchain)
+                     (block-list-fix blockchain))))
+    :induct t
+    :enable (len fix))
+
+  (defruled nthcdr-of-extend-blockchain
+    (implies
+     (<= n (len anchors))
+     (equal (nthcdr n (mv-nth 0 (extend-blockchain anchors dag blocks comms)))
+            (mv-nth 0 (extend-blockchain (nthcdr n anchors) dag blocks comms))))
+    :induct t
+    :enable (nthcdr len))
 
   (defret blocks-last-round-of-extend-blockchain
     (equal (blocks-last-round new-blockchain)
@@ -173,18 +244,6 @@
                                 certificates-ordered-even-p
                                 last))))
   (in-theory (disable blocks-ordered-even-p-of-extend-blockchain))
-
-  (defruled extend-blockchain-as-append
-    (b* (((mv new-blockchain &)
-          (extend-blockchain anchors dag blockchain committed-certs)))
-      (equal new-blockchain
-             (append (take (- (len new-blockchain)
-                              (len blockchain))
-                           new-blockchain)
-                     (block-list-fix blockchain))))
-    :induct t
-    :enable (len
-             fix))
 
   (defruled active-committee-at-round-of-extend-blockchain-no-change
     (b* (((mv new-blockchain &)
@@ -257,4 +316,127 @@
                                            all-vals))))
     :enable (collect-all-anchors
              collect-anchors-of-extend-blockchain-no-change
-             active-committee-at-previous2-round-when-at-round)))
+             active-committee-at-previous2-round-when-at-round))
+
+  (defruled new-committed-certs-of-extend-blockchain
+    (implies (and (certificate-setp dag)
+                  (certificate-set-unequivocalp dag)
+                  (certificates-dag-paths-p anchors dag)
+                  (certificate-setp committed-certs))
+             (b* (((mv & new-committed-certs)
+                   (extend-blockchain anchors dag blockchain committed-certs)))
+               (equal new-committed-certs
+                      (if (consp anchors)
+                          (set::union
+                           (certificate-causal-history (car anchors) dag)
+                           committed-certs)
+                        committed-certs))))
+    :induct t
+    :enable (certificates-dag-paths-p
+             nil-not-in-certificate-set
+             set::expensive-rules)
+    :hints ('(:use (:instance certificate-causal-history-subset-when-path
+                              (cert (car anchors))
+                              (author (certificate->author (cadr anchors)))
+                              (round (certificate->round (cadr anchors)))))))
+
+  (defruled extend-blockchain-of-unequivocal-superdag
+    (implies (and (certificate-setp dag0)
+                  (certificate-setp dag)
+                  (set::subset dag0 dag)
+                  (certificate-set-unequivocalp dag)
+                  (dag-closedp dag0)
+                  (set::list-in anchors dag0))
+             (equal (extend-blockchain
+                     anchors dag blockchain committed-certs)
+                    (extend-blockchain
+                     anchors dag0 blockchain committed-certs)))
+    :induct t
+    :enable certificate-causal-history-of-unequivocal-superdag)
+
+  (defruled extend-blockchain-of-unequivocal-dags
+    (implies (and (certificate-setp dag1)
+                  (certificate-setp dag2)
+                  (certificate-sets-unequivocalp dag1 dag2)
+                  (certificate-set-unequivocalp dag1)
+                  (certificate-set-unequivocalp dag2)
+                  (dag-closedp dag1)
+                  (dag-closedp dag2)
+                  (set::list-in anchors dag1)
+                  (set::list-in anchors dag2))
+             (equal (extend-blockchain
+                     anchors dag1 blockchain committed-certs)
+                    (extend-blockchain
+                     anchors dag2 blockchain committed-certs)))
+    :induct t
+    :enable certificate-causal-history-of-unequivocal-dags))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define calculate-blockchain ((anchors certificate-listp)
+                              (dag certificate-setp))
+  :returns (blockchain block-listp)
+  :short "Calculate a blockchain from a sequence of anchors and a DAG."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We call @(tsee extend-blockchain)
+     starting with the empty blockchain and no committed certificates.
+     We only returns the blockchain,
+     discarding the committed certificate set.")
+   (xdoc::p
+    "The blockchain calculated from a sequence of anchors
+     in a backward-closed subset of an unequivocal DAG
+     is the same in the superset.
+     This is based on the analogous property of @(tsee extend-blockchain).")
+   (xdoc::p
+    "The blockchains calculated from a sequence of anchors
+     in two backward-closed, individually and mutually unequivocal DAGs
+     are the same in the two DAGs.
+     This is based on the analogous property of @(tsee extend-blockchain)."))
+  (b* (((mv blockchain &) (extend-blockchain anchors dag nil nil)))
+    blockchain)
+
+  ///
+
+  (defret len-of-calculate-blockchain
+    (equal (len blockchain)
+           (len anchors))
+    :hints (("Goal" :in-theory (enable fix len-of-extend-blockchain))))
+  (in-theory (disable len-of-calculate-blockchain))
+
+  (defruled calculate-blockchain-of-nil
+    (equal (calculate-blockchain nil dag)
+           nil)
+    :enable extend-blockchain-of-nil)
+
+  (defruled nthcdr-of-calculate-blockchain
+    (implies (<= n (len anchors))
+             (equal (nthcdr n (calculate-blockchain anchors dag))
+                    (calculate-blockchain (nthcdr n anchors) dag)))
+    :enable nthcdr-of-extend-blockchain)
+
+  (defruled calculate-blockchain-of-unequivocal-superdag
+    (implies (and (certificate-setp dag0)
+                  (certificate-setp dag)
+                  (set::subset dag0 dag)
+                  (certificate-set-unequivocalp dag)
+                  (dag-closedp dag0)
+                  (set::list-in anchors dag0))
+             (equal (calculate-blockchain anchors dag)
+                    (calculate-blockchain anchors dag0)))
+    :enable extend-blockchain-of-unequivocal-superdag)
+
+  (defruled calculate-blockchain-of-unequivocal-dags
+    (implies (and (certificate-setp dag1)
+                  (certificate-setp dag2)
+                  (certificate-sets-unequivocalp dag1 dag2)
+                  (certificate-set-unequivocalp dag1)
+                  (certificate-set-unequivocalp dag2)
+                  (dag-closedp dag1)
+                  (dag-closedp dag2)
+                  (set::list-in anchors dag1)
+                  (set::list-in anchors dag2))
+             (equal (calculate-blockchain anchors dag1)
+                    (calculate-blockchain anchors dag2)))
+    :enable extend-blockchain-of-unequivocal-dags))

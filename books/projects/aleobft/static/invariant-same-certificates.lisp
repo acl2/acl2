@@ -112,6 +112,7 @@
                 (certificatep cert))
            (same-certificates-p (create-certificate-next cert systate)))
   :expand (same-certificates-p (create-certificate-next cert systate))
+  :enable certificates-for-validator-of-create-certificate-next
   :use (:instance same-certificates-p-necc
                   (val1 (mv-nth
                          0
@@ -138,6 +139,7 @@
                 (receive-certificate-possiblep msg systate))
            (same-certificates-p (receive-certificate-next msg systate)))
   :expand (same-certificates-p (receive-certificate-next msg systate))
+  :enable certificates-for-validator-of-receive-certificate-next
   :use (:instance same-certificates-p-necc
                   (val1 (mv-nth
                          0
@@ -164,6 +166,7 @@
                 (store-certificate-possiblep cert val systate))
            (same-certificates-p (store-certificate-next cert val systate)))
   :expand (same-certificates-p (store-certificate-next cert val systate))
+  :enable certificates-for-validator-of-store-certificate-next
   :use (:instance same-certificates-p-necc
                   (val1 (mv-nth
                          0
@@ -190,6 +193,7 @@
                 (advance-round-possiblep val systate))
            (same-certificates-p (advance-round-next val systate)))
   :expand (same-certificates-p (advance-round-next val systate))
+  :enable certificates-for-validator-of-advance-round-next
   :use (:instance same-certificates-p-necc
                   (val1 (mv-nth
                          0
@@ -216,6 +220,7 @@
                 (commit-anchors-possiblep val systate))
            (same-certificates-p (commit-anchors-next val systate)))
   :expand (same-certificates-p (commit-anchors-next val systate))
+  :enable certificates-for-validator-of-commit-anchors-next
   :use (:instance same-certificates-p-necc
                   (val1 (mv-nth
                          0
@@ -265,3 +270,34 @@
            (same-certificates-p (event-next event systate)))
   :enable (event-possiblep
            event-next))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled same-certificates-p-of-events-next
+  :short "Preservation of the invariant by every sequence of events."
+  (implies (and (system-statep systate)
+                (same-certificates-p systate)
+                (events-possiblep events systate))
+           (same-certificates-p (events-next events systate)))
+  :induct t
+  :disable ((:e tau-system))
+  :enable (events-next
+           events-possiblep
+           same-certificates-p-of-event-next))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled same-certificates-p-when-reachable
+  :short "The invariant holds in every reachable state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Reachable states are characterized by an initial state and
+     a sequence of possible events from that initial state."))
+  (implies (and (system-statep systate)
+                (system-state-initp systate)
+                (events-possiblep events systate))
+           (same-certificates-p (events-next events systate)))
+  :disable ((:e tau-system))
+  :enable (same-certificates-p-when-system-state-initp
+           same-certificates-p-of-events-next))

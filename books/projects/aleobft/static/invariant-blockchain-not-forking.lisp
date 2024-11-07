@@ -114,6 +114,7 @@
                                 (all-addresses systate))
              (validator-state->dag (get-validator-state val2 systate)))))
   :enable (lists-noforkp
+           len-of-calculate-blockchain
            nthcdr-of-calculate-blockchain
            system-unequivocal-dag-p-necc
            system-unequivocal-dags-p-necc
@@ -189,3 +190,26 @@
            (system-blockchain-nofork-p systate))
   :enable (system-blockchain-nofork-p
            lists-noforkp-of-validator-state->blockchain))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled system-blockchain-nofork-p-when-reachable
+  :short "The invariant holds in every reachable state."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Reachable states are characterized by an initial state and
+     a sequence of possible events from that initial state."))
+  (implies (and (system-statep systate)
+                (system-state-initp systate)
+                (events-possiblep events systate)
+                (fault-tolerant-p systate))
+           (system-blockchain-nofork-p (events-next events systate)))
+  :disable ((:e tau-system))
+  :enable (system-blockchain-nofork-p-when-anchors-nofork-p
+           system-anchors-nofork-p-when-reachable
+           system-unequivocal-dag-p-when-reachable
+           system-unequivocal-dags-p-when-reachable
+           system-previous-in-dag-p-when-reachable
+           system-last-anchor-present-p-when-reachable
+           system-blockchain-redundantp-when-reachable))

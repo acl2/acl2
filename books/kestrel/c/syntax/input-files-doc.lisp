@@ -34,6 +34,11 @@
    (xdoc::evmac-section-intro
 
     (xdoc::p
+     "In the name of this macro,
+      @('input') is best read as a verb:
+      the macro inputs files into ACL2.")
+
+    (xdoc::p
      "This macro takes as input a list of file paths
       (which must contain C code),
       reads those files from the file system,
@@ -125,7 +130,7 @@
        (xdoc::seetopic "parser" "parse")
        " the files into an "
        (xdoc::seetopic "abstract-syntax" "abstract syntax")
-       "representation, which may contain ambiguous constructs.")
+       " representation, which may contain ambiguous constructs.")
       (xdoc::li
        "@(':disamb') (the default),
         to parse the files as with @(':parse'),
