@@ -204,7 +204,7 @@
     "In the lemma @('case-other-behind'),
      the last anchor committed by @('val0') (which does not change)
      is behind the new anchor committed by @('val').
-     We already proved in @(tsee omni-paths-p-invariant)
+     We already proved in @(tsee omni-paths-p-implied)
      that, since the last anchor of @('val0') has at least @($f+1$) votes,
      there are paths to it in every DAG (including the one of @('val')),
      from certificates at least two rounds ahead.

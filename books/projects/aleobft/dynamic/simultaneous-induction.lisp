@@ -14,7 +14,7 @@
 (include-book "same-committees-def-and-implied")
 (include-book "unequivocal-accepted-certificates-next")
 (include-book "last-anchor-voters-def-and-init-and-next")
-(include-book "omni-paths")
+(include-book "omni-paths-def-and-implied")
 (include-book "nonforking-anchors")
 (include-book "committed-redundant")
 (include-book "blockchain-redundant")
@@ -124,7 +124,7 @@
            same-committees-p-implied
            unequivocal-accepted-certificates-p-of-event-next
            last-anchor-voters-p-of-event-next
-           omni-paths-p-invariant
+           omni-paths-p-implied
            nonforking-anchors-p-of-event-next
            committed-redundant-p-of-event-next
            blockchain-redundant-p-of-event-next
