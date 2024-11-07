@@ -292,7 +292,7 @@
   (implies (formatp k p)
            (< (largest-subnormal k p)
               (infinity-threshold k p)))
-  :hints (("Goal" :use (:instance <-of-largest-normal-and-infinity-threshold)
+  :hints (("Goal" :use <-of-largest-normal-and-infinity-threshold
            :in-theory (disable <-of-largest-normal-and-infinity-threshold))))
 
 (defthm infinity-threshold-linear

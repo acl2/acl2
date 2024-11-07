@@ -232,7 +232,7 @@
                          n (bvxor n (slice high1minus1 low1 x) (slice high2minus1 low2 y)))
                   (bvxor (+ 1 n)
                          (slice high1 low1 x) (slice high2 low2 y))))
-  :hints (("Goal" :use (:instance bvcat-of-bitxor-and-bvxor-adjacent-bits)
+  :hints (("Goal" :use bvcat-of-bitxor-and-bvxor-adjacent-bits
            :in-theory (disable bvcat-of-bitxor-and-bvxor-adjacent-bits))))
 
 (defthmd bvcat-of-bvxor-and-bvxor-adjacent-bits
@@ -425,7 +425,7 @@
                                (+ n1 n2)
                                (bvxor (+ n1 n2)
                                       (slice high1 low1 x) (slice high2 low2 y)))))
-  :hints (("Goal" :use (:instance bvcat-of-bvxor-and-bvxor-adjacent-bits-extra-left-assoc)
+  :hints (("Goal" :use bvcat-of-bvxor-and-bvxor-adjacent-bits-extra-left-assoc
            :in-theory (disable bvcat-of-bvxor-and-bvxor-adjacent-bits-extra-left-assoc))))
 
 (defthmd bvcat-of-bitxor-and-bitxor-adjacent-bits-extra-left-assoc

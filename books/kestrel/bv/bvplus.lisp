@@ -146,7 +146,7 @@
                               (not (quotep x)))))
            (equal (bvplus n x y)
                   (bvplus n k y)))
-  :hints (("Goal" :use (:instance bvplus-subst-value)
+  :hints (("Goal" :use bvplus-subst-value
            :in-theory (disable bvplus-subst-value))))
 
 (defthm bvplus-of-1-subst
@@ -163,7 +163,7 @@
                               (not (quotep x)))))
            (equal (bvplus 1 x y)
                   (bvplus 1 k y)))
-  :hints (("Goal" :use (:instance bvplus-of-1-subst))))
+  :hints (("Goal" :use bvplus-of-1-subst)))
 
 ;avoid re-consing (bvplus size1 y z) when the sizes are equal?
 (defthm bvchop-of-bvplus
@@ -205,7 +205,7 @@
 (defthm equal-of-bvplus-and-bvplus-cancel-arg1-arg2
   (equal (equal (bvplus size x y) (bvplus size z x))
          (equal (bvchop size y) (bvchop size z)))
-  :hints (("Goal" :use (:instance equal-of-bvplus-and-bvplus-cancel-arg2-arg1)
+  :hints (("Goal" :use equal-of-bvplus-and-bvplus-cancel-arg2-arg1
            :in-theory (disable equal-of-bvplus-and-bvplus-cancel-arg2-arg1))))
 
 (defthm equal-of-bvplus-and-bvplus-cancel-arg2-arg2
@@ -235,7 +235,7 @@
            (equal (equal x (bvplus size y x))
                   (and (unsigned-byte-p size x)
                        (equal (bvchop size y) 0))))
-  :hints (("Goal" :use (:instance equal-of-bvplus-cancel-arg2)
+  :hints (("Goal" :use equal-of-bvplus-cancel-arg2
            :in-theory (disable equal-of-bvplus-cancel-arg2))))
 
 (defthm equal-of-bvplus-cancel-arg1
@@ -243,14 +243,14 @@
            (equal (equal x (bvplus size x y))
                   (and (unsigned-byte-p size x)
                        (equal (bvchop size y) 0))))
-  :hints (("Goal" :use (:instance equal-of-bvplus-cancel-arg2)
+  :hints (("Goal" :use equal-of-bvplus-cancel-arg2
            :in-theory (disable equal-of-bvplus-cancel-arg2))))
 
 ;fixme same as bvplus-cancel
 (defthm equal-of-bvplus-and-bvplus-cancel-arg1-arg1
   (equal (equal (bvplus size x y) (bvplus size x z))
          (equal (bvchop size y) (bvchop size z)))
-  :hints (("Goal" :use (:instance equal-of-bvplus-and-bvplus-cancel-arg2-arg2)
+  :hints (("Goal" :use equal-of-bvplus-and-bvplus-cancel-arg2-arg2
            :in-theory (disable equal-of-bvplus-and-bvplus-cancel-arg2-arg2))))
 
 (defthm equal-of-bvplus-and-bvplus-cancel-arg2-and-arg3
@@ -278,7 +278,7 @@
            (equal (equal (bvplus size y x) (bvplus size2 k x))
                   (and (unsigned-byte-p size (bvplus size2 k x))
                        (equal (bvchop size y) (bvchop size k)))))
-  :hints (("Goal" :use (:instance bvchop-identity  (i (bvplus size2 k x))))))
+  :hints (("Goal" :use (:instance bvchop-identity (i (bvplus size2 k x))))))
 
 (defthm equal-of-bvplus-and-bvplus-cancel-gen-alt
   (implies (and (<= size size2)
@@ -289,7 +289,7 @@
                   (and (unsigned-byte-p size (bvplus size2 k x))
                        (equal (bvchop size y)
                               (bvchop size k)))))
-  :hints (("Goal" :use (:instance equal-of-bvplus-and-bvplus-cancel-gen)
+  :hints (("Goal" :use equal-of-bvplus-and-bvplus-cancel-gen
            :in-theory (disable equal-of-bvplus-and-bvplus-cancel-gen))))
 
 (defthm equal-of-bvplus-cancel-2-of-more-and-1-of-more
@@ -321,7 +321,7 @@
                 (integerp freesize))
            (equal (bvplus size y x)
                   (bvplus size y freeval)))
-  :hints (("Goal" :use (:instance bvplus-when-equal-of-constant-and-bvchop-arg2)
+  :hints (("Goal" :use bvplus-when-equal-of-constant-and-bvchop-arg2
            :in-theory (disable bvplus-when-equal-of-constant-and-bvchop-arg2))))
 
 
@@ -393,7 +393,7 @@
                 (integerp z))
            (equal (bvplus size (+ y z) x)
                   (bvplus size (bvplus size y z) x)))
-  :hints (("Goal" :use (:instance bvplus-of-+-arg3))))
+  :hints (("Goal" :use bvplus-of-+-arg3)))
 
 (theory-invariant (incompatible (:rewrite bvplus-of-+-arg3) (:definition bvplus)))
 (theory-invariant (incompatible (:rewrite bvplus-of-+-arg2) (:definition bvplus)))
