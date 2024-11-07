@@ -64,7 +64,7 @@
   (if (endp vars)
       nil
     (let ((var (first vars)))
-      (if (<= (count-free-occurences-in-term var term) 1)
+      (if (<= (count-free-occurences-in-term var term) 1) ; optimize?
           (cons var (vars-that-appear-only-once (rest vars) term))
         (vars-that-appear-only-once (rest vars) term)))))
 
