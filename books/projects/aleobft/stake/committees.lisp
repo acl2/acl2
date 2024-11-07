@@ -126,11 +126,11 @@
     "In our model, a committee is a map from addresses to bonded stake
      (the latter modeled as positive integers),
      but we wrap it in a fixtype for greater abstraction and extensibility."))
-  ((members address-pos-map
-            :reqfix (if (omap::emptyp members)
-                        (omap::update (address nil) 1 nil)
-                      members)))
-  :require (not (omap::emptyp members))
+  ((members-with-stake address-pos-map
+                       :reqfix (if (omap::emptyp members-with-stake)
+                                   (omap::update (address nil) 1 nil)
+                                 members-with-stake)))
+  :require (not (omap::emptyp members-with-stake))
   :pred committeep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -149,7 +149,7 @@
   (xdoc::topstring
    (xdoc::p
     "The members of a committees are the keys of the map."))
-  (omap::keys (committee->members commtt))
+  (omap::keys (committee->members-with-stake commtt))
   :hooks (:fix)
 
   ///
@@ -168,7 +168,8 @@
   (xdoc::topstring
    (xdoc::p
     "We look up the member's address in the map."))
-  (pos-fix (omap::lookup (address-fix member) (committee->members commtt)))
+  (pos-fix (omap::lookup (address-fix member)
+                         (committee->members-with-stake commtt)))
   :guard-hints (("Goal" :in-theory (enable committee-members
                                            omap::in-of-keys-to-assoc)))
   :hooks (:fix))
@@ -205,7 +206,7 @@
 
     (local
      (defun genesis-committee ()
-       (make-committee :members (omap::update (address nil) 1 nil))))
+       (make-committee :members-with-stake (omap::update (address nil) 1 nil))))
 
     (defrule committeep-of-genesis-committee
       (committeep (genesis-committee)))))
@@ -256,14 +257,14 @@
      can be simply regarded as if it were an @(':other') kind of transaction."))
   (transaction-case
    trans
-   :bond (b* ((members (committee->members commtt))
+   :bond (b* ((members (committee->members-with-stake commtt))
               (member (omap::assoc trans.validator members))
               (new-stake (if member
                              (+ trans.stake (cdr member))
                            trans.stake))
               (new-members (omap::update trans.validator new-stake members)))
            (committee new-members))
-   :unbond (b* ((members (committee->members commtt))
+   :unbond (b* ((members (committee->members-with-stake commtt))
                 (new-members (omap::delete trans.validator members)))
              (if (omap::emptyp new-members)
                  (committee-fix commtt)
@@ -849,7 +850,7 @@
     "This is @($n$), using the notation in @(tsee max-faulty-for-total).
      It is the sum of all the units of stake
      associated to members of the committee."))
-  (committee-total-stake-loop (committee->members commtt))
+  (committee-total-stake-loop (committee->members-with-stake commtt))
   :hooks (:fix)
 
   :prepwork
