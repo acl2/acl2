@@ -503,10 +503,8 @@
                                   proved-assumptions-acc
                                   failed-assumptions-acc
                                   print
-                                  state)
-  (declare (xargs :stobjs state
-                  :mode :program ; todo, see todo below
-                  :guard (and (pseudo-term-listp assumptions)
+                                  known-booleans)
+  (declare (xargs :guard (and (pseudo-term-listp assumptions)
                               (acl2::rule-alistp rule-alist)
                               (symbol-listp rules-to-monitor)
                               (acl2::pseudo-dagp state-dag)
@@ -516,32 +514,33 @@
                               (pseudo-term-listp all-assumptions)
                               (pseudo-term-listp proved-assumptions-acc)
                               (pseudo-term-listp failed-assumptions-acc)
-                              (acl2::print-levelp print))))
+                              (acl2::print-levelp print)
+                              (symbol-listp known-booleans))))
   (if (endp assumptions)
       (mv (erp-nil)
           (reverse proved-assumptions-acc)
-          (reverse failed-assumptions-acc)
-          state)
+          (reverse failed-assumptions-acc))
     (b* ((assumption (first assumptions))
          (updated-assumption (acl2::sublis-var-simple (map-all-to-val previous-state-vars state-var) assumption))
          (- (cw "(Attempting to prove assumption ~x0.~%" updated-assumption))
          ((mv erp dag-to-prove) (acl2::wrap-term-around-dag updated-assumption state-var state-dag))
-         ((when erp) (mv erp nil nil state))
-         ;; todo: handle a constant dag-to-prove
+         ((when erp) (mv erp nil nil))
          ;; (- (and (acl2::print-level-at-least-tp print) (cw "(DAG to prove: ~x0.)~%" dag-to-prove)))
          (- (cw "(Using ~x0 assumptions.)~%" (len all-assumptions)))
          ;; prove that the original assumptions imply that the updated assumption holds over state-dag
          ((mv erp res)
-          (acl2::simplify-dag-x86 dag-to-prove
-                                  all-assumptions
-                                  rule-alist
-                                  nil nil nil nil
-                                  (acl2::known-booleans (w state))
-                                  (append '( ;xr-wb-in-app-view
-                                            )
-                                          rules-to-monitor)
-                                  nil nil nil))
-         ((when erp) (mv erp nil nil state)))
+          (if (quotep dag-to-prove)
+              (mv nil dag-to-prove) ; todo: bool-fix it?
+            (acl2::simplify-dag-x86 dag-to-prove
+                                    all-assumptions
+                                    rule-alist
+                                    nil nil nil nil
+                                    known-booleans
+                                    (append '( ;xr-wb-in-app-view
+                                              )
+                                            rules-to-monitor)
+                                    nil nil nil)))
+         ((when erp) (mv erp nil nil)))
       (if (equal res *t*) ;todo: allow other non-nil constants?
           (prog2$ (cw "Success.)~%")
                   (try-to-update-assumptions (rest assumptions)
@@ -551,7 +550,7 @@
                                              (cons updated-assumption proved-assumptions-acc)
                                              failed-assumptions-acc
                                              print
-                                             state))
+                                             known-booleans))
         (prog2$ (cw "Failed.  Candidate assumption rewrote to ~x0.)~%" (dag-to-term res)) ;todo: think about blowup
                 (try-to-update-assumptions (rest assumptions)
                                            rule-alist
@@ -560,7 +559,7 @@
                                            proved-assumptions-acc
                                            (cons updated-assumption failed-assumptions-acc)
                                            print
-                                           state))))))
+                                           known-booleans))))))
 
 (defun get-added-offset (term base-var)
   (if (eq term base-var)
@@ -1434,7 +1433,7 @@
         (- (cw "(Candidate assumptions: ~x0)~%" candidate-assumptions)) ;these are still over the old state-var?
 
         ;; The assumption about the RIP almost certainly won't still hold.
-        ((mv erp loop-top-assumptions failed-loop-top-assumptions state)
+        ((mv erp loop-top-assumptions failed-loop-top-assumptions)
          (try-to-update-assumptions candidate-assumptions
                                     (acl2::make-rule-alist! (set-difference-eq
                                                         (append (loop-lifter-invariant-preservation-rules)
@@ -1444,7 +1443,8 @@
                                                       (w state))
                                     rules-to-monitor loop-top-state-dag state-var previous-state-vars
                                     assumptions
-                                    nil nil print state))
+                                    nil nil print
+                                    (acl2::known-booleans (w state))))
         ((when erp) (mv erp nil nil nil state))
         (- (cw "Done determining which assumptions hold before the loop)~%"))
         (- (cw "(~x0 assumptions hold before the loop: ~x1.)~%" (len loop-top-assumptions) loop-top-assumptions))
