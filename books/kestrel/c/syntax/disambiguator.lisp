@@ -1124,7 +1124,7 @@
     :parents (disambiguator dimb-exprs/decls/stmts)
     :short "Disambiguate a constant expression."
     (b* (((reterr) (irr-const-expr) (irr-dimb-table))
-         ((erp new-expr table) (dimb-expr (const-expr->unwrap cexpr) table)))
+         ((erp new-expr table) (dimb-expr (const-expr->expr cexpr) table)))
       (retok (const-expr new-expr) table))
     :measure (const-expr-count cexpr))
 

@@ -159,7 +159,7 @@
     :returns (new-cexpr const-exprp)
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
     :short "Transform a constant expression."
-    (const-expr (simpadd0-expr (const-expr->unwrap cexpr)))
+    (const-expr (simpadd0-expr (const-expr->expr cexpr)))
     :measure (const-expr-count cexpr))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
