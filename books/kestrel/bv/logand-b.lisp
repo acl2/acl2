@@ -37,7 +37,7 @@
   (implies (natp size)
            (equal (logand i (+ -1 (expt 2 size)))
                   (bvchop size i)))
-  :hints (("Goal" :use (:instance logand-with-mask-better)
+  :hints (("Goal" :use logand-with-mask-better
            :in-theory (disable logand-with-mask-better))))
 
 ;; todo: consider enabling

@@ -170,7 +170,7 @@
                 (unsigned-byte-p size x))
            (equal (mod x y)
                   (bvmod size x y)))
-  :hints (("Goal" :use (:instance mod-becomes-bvmod-free-arg1))))
+  :hints (("Goal" :use mod-becomes-bvmod-free-arg1)))
 
 (theory-invariant (incompatible (:rewrite mod-becomes-bvmod-free-arg2) (:definition bvmod)))
 

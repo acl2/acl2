@@ -279,7 +279,7 @@
                 (natp size))
            (equal (bvand size x y)
                   y))
-  :hints (("Goal" :use (:instance bvand-with-constant-mask-arg2)
+  :hints (("Goal" :use bvand-with-constant-mask-arg2
            :in-theory (disable bvand-with-constant-mask-arg2))))
 
 ;; ;doesn't bind any free vars
