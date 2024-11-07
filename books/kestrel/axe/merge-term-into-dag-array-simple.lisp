@@ -62,7 +62,9 @@
                         use-all-<-for-car
                         bounded-darg-listp-when-<-of-largest-non-quotep
                         ;;bounded-darg-listp-when-all-consp
-                        strip-cdrs))))
+                        strip-cdrs
+                        ;; for speed:
+                        pseudo-termp))))
 
 ;move!
 (defthm dargp-less-than-of-car-of-car-and-len
@@ -352,7 +354,7 @@
     :flag merge-terms-into-dag-array-simple)
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (e/d (merge-term-into-dag-array-simple merge-terms-into-dag-array-simple car-becomes-nth-of-0)
-                           (natp dargp pseudo-term-listp pseudo-termp)))))
+                           (natp dargp pseudo-term-listp)))))
 
 (defthm dargp-of-mv-nth-1-of-merge-term-into-dag-array-simple
   (implies (and (pseudo-termp term)
@@ -460,7 +462,7 @@
                                                       <-of-nth-when-bounded-darg-listp
                                                       true-listp-of-nth-1-of-nth-0-when-pseudo-termp
                                                       ALL-MYQUOTEP-WHEN-DARG-LISTP)
-                           (natp dargp pseudo-term-listp pseudo-termp)))))
+                           (natp dargp pseudo-term-listp)))))
 
 ;; ;; how does this differ from the return type theorem?
 ;; (defthm wf-dagp-of-merge-term-into-dag-array-simple
