@@ -248,7 +248,7 @@
                              count-hits
                              print
                              normalize-xors
-                             (w state)))
+                             (known-booleans (w state))))
        ((when erp) (mv erp nil state))
        ((when (quotep dag)) ;; TODO: Should we allow this?
         (er hard? 'unroll-spec-basic-fn "Spec unexpectedly rewrote to the constant ~x0." dag)
