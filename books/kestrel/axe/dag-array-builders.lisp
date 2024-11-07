@@ -787,12 +787,27 @@
       nil ; empty-dag-constant-alist ; todo: name that notion
       (empty-dag-variable-alist)))
 
+(defthm mv-nth-1-of-empty-dag-array
+  (equal (mv-nth 1 (empty-dag-array slack-amount))
+         0)
+  :hints (("Goal" :in-theory (enable empty-dag-array))))
+
 (defthm wf-dagp-after-empty-dag-array
   (implies (and (posp slack-amount)
                 (<= slack-amount *max-1d-array-length*))
            (mv-let (dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
              (empty-dag-array slack-amount)
              (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)))
+  :hints (("Goal" :in-theory (enable wf-dagp empty-dag-array))))
+
+;builds in the 0
+(defthm wf-dagp-after-empty-dag-array-alt
+  (implies (and (posp slack-amount)
+                (<= slack-amount *max-1d-array-length*))
+           (mv-let (dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+             (empty-dag-array slack-amount)
+             (declare (ignore dag-len))
+             (wf-dagp 'dag-array dag-array 0 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)))
   :hints (("Goal" :in-theory (enable wf-dagp empty-dag-array))))
 
 ;; Avoid making huge dags during proofs

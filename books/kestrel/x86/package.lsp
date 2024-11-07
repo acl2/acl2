@@ -794,6 +794,7 @@
     make-cons-nest
     dag-fns
     make-rule-alist
+    make-rule-alist!
     dagify-term
     dagify-term2
     axe-syntaxp

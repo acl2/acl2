@@ -138,7 +138,7 @@
                              count-hits
                              print
                              normalize-xors
-                             (w state)))
+                             (known-booleans (w state))))
        ((when erp)
         (mv erp nil state)))
     (mv (erp-nil)
