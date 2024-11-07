@@ -160,6 +160,37 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define committee-member-stake ((member addressp) (commtt committeep))
+  :guard (set::in (address-fix member) (committee-members commtt))
+  :returns (stake posp :rule-classes (:rewrite :type-prescription))
+  :short "Stake of a member of the committee."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We look up the member's address in the map."))
+  (pos-fix (omap::lookup (address-fix member) (committee->members commtt)))
+  :guard-hints (("Goal" :in-theory (enable committee-members
+                                           omap::in-of-keys-to-assoc)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define committee-members-stake ((members address-setp) (commtt committeep))
+  :guard (set::subset members (committee-members commtt))
+  :returns (stake natp)
+  :short "Total stake of a set of members of the committee."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We add up all the stakes of the members."))
+  (cond ((set::emptyp members) 0)
+        (t (+ (committee-member-stake (set::head members) commtt)
+              (committee-members-stake (set::tail members) commtt))))
+  :guard-hints (("Goal" :in-theory (enable set::subset)))
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection genesis-committee
   :short "Genesis committee."
   :long
