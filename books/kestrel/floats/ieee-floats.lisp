@@ -880,7 +880,7 @@
   (implies (and (formatp k p)
                 (representable-nonzero-rationalp k p rat))
            (integerp (mv-nth 2 (encode-nonzero-rational k p rat))))
-  :hints (("Goal" :use (:instance unsigned-byte-p-of-mv-nth-2-of-encode-nonzero-rational)
+  :hints (("Goal" :use unsigned-byte-p-of-mv-nth-2-of-encode-nonzero-rational
            :in-theory (disable unsigned-byte-p-of-mv-nth-2-of-encode-nonzero-rational))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -908,7 +908,7 @@
 (defthm integerp-of-mv-nth-1-of-choose-bits-for-nan
   (implies (formatp k p)
            (integerp (mv-nth 1 (choose-bits-for-nan k p oracle))))
-  :hints (("Goal" :use (:instance unsigned-byte-p-of-mv-nth-1-of-choose-bits-for-nan)
+  :hints (("Goal" :use unsigned-byte-p-of-mv-nth-1-of-choose-bits-for-nan
            :in-theory (disable unsigned-byte-p-of-mv-nth-1-of-choose-bits-for-nan))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -956,7 +956,7 @@
                 (formatp k p)
                 (floating-point-datump k p datum))
            (unsigned-byte-p size (mv-nth 1 (encode k p datum oracle))))
-  :hints (("Goal" :use (:instance unsigned-byte-p-of-mv-nth-1-of-encode)
+  :hints (("Goal" :use unsigned-byte-p-of-mv-nth-1-of-encode
            :in-theory (disable unsigned-byte-p-of-mv-nth-1-of-encode))))
 
 (defthm integerp-of-mv-nth-1-of-encode
@@ -964,7 +964,7 @@
                 (floating-point-datump k p datum))
            (integerp (mv-nth 1 (encode k p datum oracle))))
   :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :use (:instance unsigned-byte-p-of-mv-nth-1-of-encode)
+  :hints (("Goal" :use unsigned-byte-p-of-mv-nth-1-of-encode
            :in-theory (disable unsigned-byte-p-of-mv-nth-1-of-encode
                                unsigned-byte-p-of-mv-nth-1-of-encode-gen))))
 

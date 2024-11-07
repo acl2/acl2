@@ -50,7 +50,7 @@
                 (not (equal *float-negative-zero* (decode-bv-float k p bv)))
                 (formatp k p))
            (rationalp (decode-bv-float k p bv)))
-  :hints (("Goal" :use (:instance floating-point-datump-of-decode-bv-float)
+  :hints (("Goal" :use floating-point-datump-of-decode-bv-float
            :in-theory (e/d (floating-point-datump representable-nonzero-rationalp)
                            (floating-point-datump-of-decode-bv-float)))))
 
