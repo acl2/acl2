@@ -113,7 +113,7 @@
 (defthmd bitnot-becomes-bvnot
   (equal (bitnot x)
          (bvnot 1 x))
-  :hints (("Goal" :use (:instance bvnot-1-becomes-bitnot-better))))
+  :hints (("Goal" :use bvnot-1-becomes-bitnot-better)))
 
 (theory-invariant (incompatible (:rewrite bitnot-becomes-bvnot) (:rewrite bvnot-1-becomes-bitnot-better)))
 
