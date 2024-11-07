@@ -571,27 +571,34 @@
         (unquote (farg1 term))
       (er hard 'get-added-offset "Unexpected term: ~x0." term))))
 
-
 ;; Returns (mv erp one-rep-term exit-term exit-test-term state) where one-rep-term
 ;; represents the branches that return to the loop top, exit-term represents
 ;; the branches that exit the loop, and exit-test-term represents the test
-;; governing the branches that exit the loop.  :one-rep-term can be :none if no
+;; governing the branches that exit the loop.  The one-rep-term can be :none if no
 ;; branches return to the loop top.  Likewise, exit-term can be :none if no
 ;; branches exit the loop.  loop-body-term is a myif nest with x86 states at
 ;; the leaves.
-(defun analyze-loop-body-aux (loop-body-term assumptions loop-top-pc-term loop-top-rsp-term extra-rules remove-rules lifter-rules state)
-  (declare (xargs :stobjs state
-                  :mode :program)
+(defun analyze-loop-body-aux (loop-body-term loop-top-pc-term loop-top-rsp-term assumptions extra-rules remove-rules lifter-rules state)
+  (declare (xargs :guard (and (pseudo-termp loop-body-term)
+                              (pseudo-termp loop-top-pc-term)
+                              ;; (pseudo-termp loop-top-rsp-term)
+                              (pseudo-term-listp assumptions)
+                              (symbol-listp extra-rules)
+                              (symbol-listp remove-rules)
+                              (symbol-listp lifter-rules))
+                  :stobjs state
+                  :mode :program ; todo
+                  )
            (irrelevant loop-top-rsp-term) ;todo
            )
   (if (or (call-of 'myif loop-body-term)
           (call-of 'if loop-body-term))
       (b* ((test (farg1 loop-body-term))
            ((mv erp one-rep-term1 exit-term1 exit-test-term1 state)
-            (analyze-loop-body-aux (farg2 loop-body-term) assumptions loop-top-pc-term loop-top-rsp-term extra-rules remove-rules lifter-rules state))
+            (analyze-loop-body-aux (farg2 loop-body-term) loop-top-pc-term loop-top-rsp-term assumptions extra-rules remove-rules lifter-rules state))
            ((when erp) (mv erp nil nil nil state))
            ((mv erp one-rep-term2 exit-term2 exit-test-term2 state)
-            (analyze-loop-body-aux (farg3 loop-body-term) assumptions loop-top-pc-term loop-top-rsp-term extra-rules remove-rules lifter-rules state))
+            (analyze-loop-body-aux (farg3 loop-body-term) loop-top-pc-term loop-top-rsp-term assumptions extra-rules remove-rules lifter-rules state))
            ((when erp) (mv erp nil nil nil state))
            (if-variant (ffn-symb loop-body-term)) ;myif or if
            )
@@ -619,6 +626,7 @@
            ;; assuming no recursion, we don't need to check the stack height:
            `(not (equal (get-pc ,loop-body-term) ,loop-top-pc-term))
            assumptions
+;;           *loop-lifter-pc-extraction-rule-alist* ; todo: get this to work -- what is get-pc?
            (acl2::make-rule-alist!
              (set-difference-eq
                (append (extra-loop-lifter-rules)
@@ -643,18 +651,18 @@
 ;; return to the loop top, exit-term represents the branches that exit the
 ;; loop, and exit-test-term represents the test governing the branches that
 ;; exit the loop.
-(defun analyze-loop-body (loop-body-term assumptions loop-top-pc-term loop-top-rsp-term extra-rules remove-rules lifter-rules state)
+(defun analyze-loop-body (loop-body-term loop-top-pc-term loop-top-rsp-term assumptions extra-rules remove-rules lifter-rules state)
   (declare (xargs :stobjs state
                   :mode :program))
   (mv-let (erp one-rep-term exit-term exit-test-term state)
-    (analyze-loop-body-aux loop-body-term assumptions loop-top-pc-term loop-top-rsp-term extra-rules remove-rules lifter-rules state)
+    (analyze-loop-body-aux loop-body-term loop-top-pc-term loop-top-rsp-term assumptions extra-rules remove-rules lifter-rules state)
     (if erp
         (mv erp nil nil nil state)
       (if (eq :none one-rep-term)
-          (prog2$ (er hard 'analyze-loop-body-aux "There appear to be no branches that return to the loop top.")
+          (prog2$ (er hard 'analyze-loop-body "There appear to be no branches that return to the loop top.")
                   (mv (erp-t) nil nil nil state))
         (if (eq :none exit-term)
-            (prog2$ (er hard 'analyze-loop-body-aux "There appear to be no branches that exit the loop.")
+            (prog2$ (er hard 'analyze-loop-body "There appear to be no branches that exit the loop.")
                     (mv (erp-t) nil nil nil state))
           (b* (((mv erp exit-test-term)
                 (acl2::simp-term-to-term exit-test-term
@@ -1483,7 +1491,7 @@
         ;; Ananlyze the lifted loop body (e.g., Figure out which leaves returned to the loop top):
         ;; TODO: Maybe use dags instead of terms here
         ((mv erp one-rep-term exit-term exit-test-term state)
-         (analyze-loop-body loop-body-term assumptions loop-top-pc-term '(xr ':rgf '4 x86_1) extra-rules remove-rules lifter-rules state))
+         (analyze-loop-body loop-body-term loop-top-pc-term '(xr ':rgf '4 x86_1) assumptions extra-rules remove-rules lifter-rules state))
         ((when erp) (mv erp nil nil nil state))
         (- (cw "(one-rep-term: ~x0)~%" (untranslate one-rep-term nil (w state))))
         (- (cw "(exit-term: ~x0)~%" (untranslate exit-term nil (w state))))
