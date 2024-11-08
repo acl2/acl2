@@ -11,7 +11,7 @@
 
 (in-package "ALEOBFT-DYNAMIC")
 
-(include-book "nonforking-anchors")
+(include-book "nonforking-anchors-def-and-init-and-next")
 (include-book "blockchain-redundant")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))

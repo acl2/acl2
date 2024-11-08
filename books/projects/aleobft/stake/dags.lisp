@@ -9,7 +9,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ALEOBFT-DYNAMIC")
+(in-package "ALEOBFT-STAKE")
 
 (include-book "certificates")
 (include-book "committees")
@@ -42,7 +42,7 @@
      defined in @(see certificates).
      By `DAG-specific' we mean that take into account the edges of the DAG,
      as opposed to treating the DAG as just a set of vertices
-     as the operations in @(see certificates).
+     as the operations in @(see certificates) do.
      The edges are represented as the @('previous') component of certificates,
      so they are part of the vertices, in terms of data structures."))
   :order-subtopics t
@@ -86,7 +86,7 @@
    (xdoc::p
     "The mutually recursive function terminates when the set is empty:
      no path has been found in this case.
-     If the set is not empty, it first tries to find a path
+     If the set is not empty, we first try to find a path
      from the minimal (head) element of the set,
      using the mutually recursive companion (the main function).
      If that fails, it recursively tries the rest of the set.")
@@ -122,7 +122,7 @@
                                 (author addressp)
                                 (round posp)
                                 (dag certificate-setp))
-    :guard (>= (certificate->round cert) round)
+    :guard (<= round (certificate->round cert))
     :returns (previous-cert? certificate-optionp)
     (b* (((unless (mbt (and (posp round)
                             (<= round (certificate->round cert)))))
@@ -158,7 +158,6 @@
     :in-theory (enable set::cardinality
                        pos-fix
                        certificate-set->round-set-monotone
-                       emptyp-of-certificate-set->round-set
                        certificate->round-in-certificate-set->round-set)
     :use
     ((:instance acl2::pos-set-max->=-element
@@ -204,8 +203,6 @@
                (equal (certificate->author previous-cert?)
                       (address-fix author)))
       :fn path-to-author+round-set))
-  (in-theory (disable certificate->author-of-path-to-author+round
-                      certificate->author-of-path-to-author+round-set))
 
   (defret-mutual certificate->round-of-path-to-author+round
     (defret certificate->round-of-path-to-author+round
@@ -218,8 +215,6 @@
                (equal (certificate->round previous-cert?)
                       (pos-fix round)))
       :fn path-to-author+round-set))
-  (in-theory (disable certificate->round-of-path-to-author+round
-                      certificate->round-of-path-to-author+round-set))
 
   (defret-mutual path-to-author+round-in-dag
     (defret path-to-author+round-in-dag
@@ -234,10 +229,7 @@
       :hyp (and (certificate-setp dag)
                 (set::subset certs dag))
       :fn path-to-author+round-set)
-    :hints (("Goal" :in-theory (enable* certificates-with-authors+round-subset
-                                        set::expensive-rules))))
-  (in-theory (disable path-to-author+round-in-dag
-                      path-to-author+round-set-in-dag))
+    :hints (("Goal" :in-theory (enable* set::expensive-rules))))
 
   (defret-mutual round-leq-when-path-to-author+round
     (defret round-leq-when-path-to-author+round
@@ -260,8 +252,6 @@
              (:instance acl2::pos-set-max->=-subset
                         (set1 (certificate-set->round-set (tail certs)))
                         (set2 (certificate-set->round-set certs)))))))
-  (in-theory (disable round-leq-when-path-to-author+round
-                      round-leq-when-path-to-author+round-set))
 
   (defruled path-to-author+round-of-self
     (implies (and (certificate-setp dag)
@@ -390,10 +380,7 @@
                 (set::subset certs dag))
       :fn certificate-set-causal-history)
     :hints
-    (("Goal" :in-theory (enable* set::expensive-rules
-                                 certificates-with-authors+round-subset))))
-  (in-theory (disable certificate-causal-history-subset
-                      certificate-set-causal-history-subset)))
+    (("Goal" :in-theory (enable* set::expensive-rules)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -442,7 +429,6 @@
        :hints (("Goal"
                 :induct t
                 :in-theory (enable* set::expensive-rules))))
-     (in-theory (disable successors-loop-subset))
 
      (defruled in-of-successors-loop
        (implies (certificate-setp certs)
@@ -473,7 +459,6 @@
        :induct t
        :enable (certificate-set->round-set
                 certificate-set->round-set-of-insert
-                emptyp-of-certificate-set->round-set
                 set::expensive-rules)
        :hints ('(:use (:instance set::emptyp-when-proper-subset-of-singleton
                                  (x (certificate-set->round-set (tail certs)))
@@ -490,23 +475,19 @@
 
   (defret successors-subset-of-next-round
     (set::subset certs
-                 (certificates-with-round (1+ (certificate->round cert)) dag))
-    :hints (("Goal" :in-theory (enable successors-loop-subset))))
-  (in-theory (disable successors-subset-of-next-round))
+                 (certificates-with-round (1+ (certificate->round cert)) dag)))
 
   (defret successors-subset-of-dag
     (set::subset certs dag)
     :hyp (certificate-setp dag)
     :hints (("Goal"
-             :in-theory (e/d (certificates-with-round-subset
-                              successors-subset-of-next-round)
+             :in-theory (e/d (successors-subset-of-next-round)
                              (successors))
              :use (:instance set::subset-transitive
                              (x (successors cert dag))
                              (y (certificates-with-round
                                  (1+ (certificate->round cert)) dag))
                              (z dag)))))
-  (in-theory (disable successors-subset-of-dag))
 
   (defruled successors-monotone
     (implies (and (certificate-setp dag1)
@@ -538,7 +519,8 @@
                     (1+ (certificate->round cert))))
     :enable (in-of-certificates-with-round
              set::expensive-rules)
-    :disable successors
+    :disable (successors
+              successors-subset-of-next-round)
     :use successors-subset-of-next-round))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -580,7 +562,6 @@
     :hyp (certificate-setp dag)
     :hints
     (("Goal" :in-theory (enable certificates-with-authors+round-subset))))
-  (in-theory (disable predecessors-subset-of-dag))
 
   (defret predecessors-subset-of-previous-round
     (set::subset certs
@@ -589,9 +570,7 @@
     :hints
     (("Goal"
       :in-theory (enable certificates-with-authors+round-to-round-of-authors
-                         certificates-with-round-monotone
-                         certificates-with-authors-subset))))
-  (in-theory (disable predecessors-subset-of-previous-round))
+                         certificates-with-round-monotone))))
 
   (defruled certificate-set->round-set-of-predecessors
     (implies (certificate-setp dag)
@@ -617,7 +596,8 @@
                       dag))
     :use predecessors-subset-of-dag
     :enable set::expensive-rules
-    :disable predecessors)
+    :disable (predecessors
+              predecessors-subset-of-dag))
 
   (defruled round-in-predecessors-is-one-less
     (implies (and (certificate-setp dag)
@@ -657,12 +637,13 @@
      we retrieve all the certificates from the DAG at the previous round,
      we obtain their set of authors,
      and we check that those are a superset of
-     the set of previous certificate authors in the certificate.")
+     the set of previous certificate authors referenced by the certificate.")
    (xdoc::p
     "For a given certificate,
      this predicate is preserved by extending the DAG,
      because extending the DAG cannot remove
-     any referenced predecessor certificates."))
+     any referenced predecessor certificates.
+     We prove this in @('certificate-previous-in-dag-p-when-subset')."))
   (b* (((certificate cert) cert))
     (or (= cert.round 1)
         (set::subset cert.previous
@@ -673,10 +654,10 @@
   ///
 
   (defruled certificate-previous-in-dag-p-when-subset
-    (implies (and (certificate-previous-in-dag-p cert dag)
+    (implies (and (certificate-setp dag)
+                  (certificate-setp dag1)
                   (set::subset dag dag1)
-                  (certificate-setp dag)
-                  (certificate-setp dag1))
+                  (certificate-previous-in-dag-p cert dag))
              (certificate-previous-in-dag-p cert dag1))
     :enable (certificates-with-round-monotone
              certificate-set->author-set-monotone
@@ -691,10 +672,12 @@
   (xdoc::topstring
    (xdoc::p
     "That is, check if the previous certificates of each certificate in the DAG
-     are all in the DAG.")
+     are all in the DAG.
+     This is an invariant of the DAGs of validators, as proved elsewhere.")
    (xdoc::p
     "Adding a certificate whose previous certificates are in the DAG
-     preserves the closure of the DAG.
+     preserves the closure of the DAG;
+     we prove this in @('dag-previous-in-dag-p-of-insert').
      It might be tempting to try and prove something like")
    (xdoc::codeblock
     "(equal (dag-closedp (set::insert cert dag))"
@@ -710,9 +693,8 @@
 
   ///
 
-  (defruled dag-closedp-when-emptyp
-    (implies (set::emptyp dag)
-             (dag-closedp dag)))
+  (defrule dag-closedp-of-nil
+    (dag-closedp nil))
 
   (defruled dag-closedp-of-insert
     (implies (and (certificatep cert)
@@ -726,9 +708,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define-sk dag-committees-p ((dag certificate-setp)
-                             (blocks block-listp)
-                             (all-vals address-setp))
+(define-sk dag-has-committees-p ((dag certificate-setp)
+                                 (blockchain block-listp))
   :returns (yes/no booleanp)
   :short "Check if the active committee
           at the round of every certificate in a DAG
@@ -736,133 +717,221 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The intent is that the DAG and blockchain are the ones of a validator,
-     and that @('all-vals') are all the validator addresses in the system.")
+    "The intent is that the DAG and blockchain are the ones of a validator.
+     This is an invariant of the DAGs of validators, as proved elsewhere.")
    (xdoc::p
-    "Besides the auto-generated @('dag-committee-p-necc'),
+    "Besides the auto-generated @('dag-has-committees-p-necc'),
      we also introduce a variant that helps bind the free variable @('dag')
      when there is a hypothesis saying that a certificate @('cert') is in it."))
   (forall (cert)
           (implies (set::in cert dag)
                    (active-committee-at-round (certificate->round cert)
-                                              blocks
-                                              all-vals)))
+                                              blockchain)))
 
   ///
 
-  (defruled dag-committees-p-necc-bind-dag
+  (defruled dag-has-committees-p-necc-bind-dag
     (implies (and (set::in cert dag)
-                  (dag-committees-p dag blocks all-vals))
+                  (dag-has-committees-p dag blockchain))
              (active-committee-at-round (certificate->round cert)
-                                        blocks
-                                        all-vals))
-    :enable dag-committees-p-necc
-    :disable dag-committees-p))
+                                        blockchain))
+    :enable dag-has-committees-p-necc
+    :disable dag-has-committees-p))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define-sk dag-in-committees-p ((dag certificate-setp)
+                                (blockchain block-listp))
+  :guard (dag-has-committees-p dag blockchain)
+  :returns (yes/no booleanp)
+  :short "Check if the author of every certificate in a DAG
+          is a member of the committee active at the round of the certificate."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The guard ensures that the committee can be in fact calculated.")
+   (xdoc::p
+    "This is an invariant of the DAGs of validators, as proved elsewhere.")
+   (xdoc::p
+    "We prove a theorem saying that, under this predicate,
+     if all the certificates in a set have a given round
+     then those certificates' authors are all
+     members of the active committee for that round.
+     We phrase the round hypothesis as subset instead of equality,
+     so that includes the case of the empty set,
+     in which case the round is irrelevant.
+     Showing that the committees is not @('nil') requires a few hints:
+     we need to exhibit a witness certificate
+     to use @('dag-in-committees-p-necc'):
+     the witness certificate is
+     the first one in @(tsee certificates-with-round).")
+   (xdoc::p
+    "We prove a theorem saying that, under this predicate,
+     the authors of all the certificates in any given round
+     are members of the committee at that round."))
+  (forall (cert)
+          (implies (set::in cert dag)
+                   (set::in (certificate->author cert)
+                            (committee-members
+                             (active-committee-at-round
+                              (certificate->round cert)
+                              blockchain)))))
+  :guard-hints (("Goal" :in-theory (enable dag-has-committees-p-necc)))
+
+  ///
+
+  (defruled authors-at-same-round-in-committee-when-dag-in-committees-p
+    (implies (and (dag-in-committees-p dag blockchain)
+                  (certificate-setp certs)
+                  (set::subset certs dag)
+                  (set::subset (certificate-set->round-set certs)
+                               (set::insert round nil)))
+             (set::subset (certificate-set->author-set certs)
+                          (committee-members
+                           (active-committee-at-round round blockchain))))
+    :enable set::expensive-rules
+    :disable dag-in-committees-p
+    :prep-lemmas
+    ((defrule lemma
+       (implies (and (dag-in-committees-p dag blockchain)
+                     (certificate-setp certs)
+                     (set::subset certs dag)
+                     (set::subset (certificate-set->round-set certs)
+                                  (set::insert round nil))
+                     (set::in author
+                              (certificate-set->author-set certs)))
+                (set::in author
+                         (committee-members
+                          (active-committee-at-round round blockchain))))
+       :use ((:instance dag-in-committees-p-necc
+                        (cert (set::head
+                               (certificates-with-author author certs))))
+             (:instance set::in-head
+                        (x (certificates-with-author author certs)))
+             (:instance certificate->round-in-certificate-set->round-set
+                        (cert (set::head
+                               (certificates-with-author author certs)))
+                        (certs certs))
+             (:instance set-lemma
+                        (x (certificate-set->round-set certs))
+                        (a round)
+                        (b (certificate->round
+                            (head (certificates-with-author author certs))))))
+       :enable (set::expensive-rules
+                emptyp-of-certificates-with-author-to-no-author
+                in-of-certificates-with-author)
+       :disable (dag-in-committees-p
+                 dag-in-committees-p-necc
+                 set::in-head)
+       :prep-lemmas
+       ((defrule set-lemma
+          (implies (and (set::subset x (set::insert a nil))
+                        (set::in b x))
+                   (equal b a))
+          :rule-classes nil
+          :enable set::expensive-rules)))))
+
+  (defruled round-in-committee-when-dag-in-committees-p
+    (implies (and (certificate-setp dag)
+                  (dag-in-committees-p dag blockchain)
+                  (posp round))
+             (set::subset (certificate-set->author-set
+                           (certificates-with-round round dag))
+                          (committee-members
+                           (active-committee-at-round round blockchain))))
+    :use (:instance authors-at-same-round-in-committee-when-dag-in-committees-p
+                    (certs (certificates-with-round round dag)))
+    :enable certificate-set->round-set-of-certificates-with-round
+    :disable (dag-in-committees-p
+              dag-in-committees-p-necc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define-sk dag-predecessor-cardinality-p ((dag certificate-setp)
-                                          (blocks block-listp)
-                                          (all-vals address-setp))
-  :guard (dag-committees-p dag blocks all-vals)
+(define-sk dag-no-prodecessors-round-1-p ((dag certificate-setp))
   :returns (yes/no booleanp)
-  :short "Check if the number of precedessor certificates
-          of each certificate in a DAG
-          is 0 if the certificate's round is 1
-          or the quorum of the active committee at the previous round
+  :short "Check if each certificate in round 1 of a DAG
+          has no predecessors."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is an invariant of the DAGs of validators, as proved elsewhere."))
+  (forall (cert)
+          (implies (and (set::in cert dag)
+                        (equal (certificate->round cert) 1))
+                   (set::emptyp (predecessors cert dag)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define-sk dag-predecessor-stake-p ((dag certificate-setp)
+                                    (blockchain block-listp))
+  :guard (and (dag-has-committees-p dag blockchain)
+              (dag-in-committees-p dag blockchain))
+  :returns (yes/no booleanp)
+  :short "Check if the total stake of the precedessor certificates
+          of each certificate in a DAG is:
+          0 if the certificate's round is 1;
+          or the quorum stake of the active committee at the previous round
           if the certificate's round is not 1."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The guard ensures that the active committee can be calculated
-     for every certificate in the DAG,
-     and therefore for the round of the predecessors.")
+    "The guard ensures that, for every certificate of the DAG,
+     the active committee for the round can be calculated
+     and the author is a member of that committee.
+     Thus, for every certificate,
+     all the authors of the predecessor certificates
+     are members of the active committee for the certificate's previous round.")
+   (xdoc::p
+    "This is an invariant of the DAGs of validators, as proved elsewhere.")
    (xdoc::p
     "Since committees are never empty by definition,
-     the quorum number is always positive,
-     as proved in the return theorem of @(tsee committee-quorum).
+     the quorum stake is always positive,
+     as proved in the return theorem of @(tsee committee-quorum-stake).
      Thus, this predicate guarantees that
      certificates in rounds above 1
      have at least one predecessor."))
   (forall (cert)
-          (implies (set::in cert dag)
-                   (equal (set::cardinality (predecessors cert dag))
-                          (if (equal (certificate->round cert) 1)
-                              0
-                            (b* ((commtt (active-committee-at-round
-                                          (1- (certificate->round cert))
-                                          blocks
-                                          all-vals)))
-                              (committee-quorum commtt))))))
+          (implies (and (set::in cert dag)
+                        (not (equal (certificate->round cert) 1)))
+                   (b* ((commtt (active-committee-at-round
+                                 (1- (certificate->round cert))
+                                 blockchain)))
+                     (equal (committee-members-stake
+                             (certificate-set->author-set
+                              (predecessors cert dag))
+                             commtt)
+                            (committee-quorum-stake commtt)))))
   :guard-hints
   (("Goal"
+    :use (:instance authors-at-same-round-in-committee-when-dag-in-committees-p
+                    (certs (predecessors (dag-predecessor-stake-p-witness
+                                          dag blockchain)
+                                         dag))
+                    (round (1- (certificate->round
+                                (dag-predecessor-stake-p-witness
+                                 dag blockchain)))))
     :in-theory (enable posp
                        pos-fix
-                       dag-committees-p-necc
-                       active-committee-at-previous-round-when-at-round)))
+                       dag-has-committees-p-necc
+                       active-committee-at-previous-round-when-at-round
+                       certificate-set->round-set-of-predecessors)))
 
   ///
 
   (defruled not-emptyp-predecessors-when-dag-predecessor-cardinality-p
-    (implies (and (dag-predecessor-cardinality-p dag blocks all-vals)
+    (implies (and (dag-predecessor-stake-p dag blockchain)
                   (set::in cert dag)
                   (not (equal (certificate->round cert) 1)))
              (not (set::emptyp (predecessors cert dag))))
-    :use (dag-predecessor-cardinality-p-necc)
-    :enable set::cardinality
-    :disable (dag-predecessor-cardinality-p
-              dag-predecessor-cardinality-p-necc)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define-sk dag-rounds-in-committees-p ((dag certificate-setp)
-                                       (blocks block-listp)
-                                       (all-vals address-setp))
-  :guard (dag-committees-p dag blocks all-vals)
-  :returns (yes/no booleanp)
-  :short "Check if the (one or more) authors of
-          the certificates in each round of a DAG
-          are members of the active committee at that round."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The guard guarantees that,
-     if there is at least one author in the set,
-     which means that there is at least one certificate at the round,
-     the active committee can be calculated.
-     Showing, as part of guard verification,
-     that the committees is not @('nil') requires a few hints:
-     we need to exhibit a witness certificate to use @('dag-committees-p-necc'):
-     the witness certificate is
-     the first one in @(tsee certificates-with-round);
-     that set is not empty because of the equivalent hypothesis that
-     the set of authors of those certificates is not empty."))
-  (forall (round)
-          (implies (posp round)
-                   (b* ((commtt (active-committee-at-round round
-                                                           blocks
-                                                           all-vals))
-                        (authors (certificate-set->author-set
-                                  (certificates-with-round round dag))))
-                     (implies (not (set::emptyp authors))
-                              (set::subset authors
-                                           (committee-members commtt))))))
-  :guard-hints
-  (("Goal"
-    :use ((:instance set::in-head
-                     (x (certificates-with-round
-                         (dag-rounds-in-committees-p-witness
-                          dag blocks all-vals)
-                         dag)))
-          (:instance dag-committees-p-necc
-                     (cert (set::head
-                            (certificates-with-round
-                             (dag-rounds-in-committees-p-witness
-                              dag blocks all-vals)
-                             dag)))))
-    :in-theory (e/d (emptyp-of-certificate-set->author-set
-                     in-of-certificates-with-round)
-                    (set::in-head)))))
+    :use (dag-predecessor-stake-p-necc
+          (:instance committee-members-stake-0-to-emptyp
+                     (members
+                      (certificate-set->author-set (predecessors cert dag)))
+                     (commtt
+                      (active-committee-at-round (+ -1 (certificate->round cert))
+                                                 blockchain))))
+    :disable (dag-predecessor-stake-p
+              dag-predecessor-stake-p-necc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -892,13 +961,7 @@
                 (path-to-author+round cert author round dag))
            (equal (path-to-author+round-set certs author round dag)
                   (path-to-author+round cert author round dag)))
-  :enable (set::expensive-rules
-           path-to-author+round-in-dag
-           path-to-author+round-set-in-dag
-           certificate->author-of-path-to-author+round
-           certificate->author-of-path-to-author+round-set
-           certificate->round-of-path-to-author+round
-           certificate->round-of-path-to-author+round-set)
+  :enable set::expensive-rules
   :use (path-to-author+round-set-when-path-to-author+round-of-element
         (:instance certificate-set-unequivocalp-necc
                    (cert1 (path-to-author+round-set certs author round dag))
@@ -914,7 +977,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This should be very intuitive,
+    "This should be intuitive,
      since paths arise precisely from the edges of the DAG.")
    (xdoc::p
     "Here @('cert1') is a generic certificate
@@ -951,7 +1014,6 @@
   :enable (path-to-author+round
            path-to-author+round-of-self
            nil-not-in-certificate-set
-           certificates-with-authors+round-subset
            in-of-certificates-with-authors+round
            posp))
 
@@ -964,7 +1026,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is intuitively obvious,
+    "This should be intuitive,
      since @(tsee successors) is based on the DAG edges,
      which define the paths.")
    (xdoc::p
@@ -997,7 +1059,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is also intuitively obvious,
+    "This should be intuitive,
      since @(tsee predecessors) is based on the DAG edges,
      which define the paths.")
    (xdoc::p
@@ -1093,7 +1155,6 @@
                      (1- (certificate->round cert))
                      dag0)))
     :enable (certificate-previous-in-dag-p
-             certificates-with-authors+round-when-emptyp
              posp)
     :use ((:instance dag-closedp-necc
                      (dag dag0))
@@ -1124,7 +1185,6 @@
                      (1- (certificate->round cert))
                      dag2)))
     :enable (certificate-previous-in-dag-p
-             certificates-with-authors+round-when-emptyp
              posp)
     :use ((:instance dag-closedp-necc
                      (dag dag1))
@@ -1216,7 +1276,6 @@
                 (enable* path-to-author+round
                          path-to-author+round-set
                          set::expensive-rules
-                         certificates-with-authors+round-subset
                          previous-certificates-of-unequivocal-superdag))))))
 
   (defruled path-to-author+round-of-unequivocal-dags
@@ -1300,9 +1359,6 @@
                 (path-to-author+round cert author round dag))
            (equal (path-to-author+round cert author round dag)
                   (certificate-with-author+round author round dag)))
-  :enable (certificate->author-of-path-to-author+round
-           certificate->round-of-path-to-author+round
-           path-to-author+round-in-dag)
   :use (:instance certificate-with-author+round-of-element-when-unequivocal
                   (certs dag)
                   (cert (path-to-author+round cert author round dag))))
@@ -1401,10 +1457,7 @@
         path-to-author+round-to-certificate-with-author+round
         certificate-with-author+round-of-element-when-unequivocal
         set::expensive-rules
-        nil-not-in-certificate-set
-        certificates-with-authors+round-subset
-        element-of-certificate-set-not-nil
-        round-leq-when-path-to-author+round))))))
+        element-of-certificate-set-not-nil))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1469,7 +1522,6 @@
                 (enable* certificate-causal-history
                          certificate-set-causal-history
                          set::expensive-rules
-                         certificates-with-authors+round-subset
                          previous-certificates-of-unequivocal-superdag))))))
 
   (defruled certificate-causal-history-of-unequivocal-dags
@@ -1633,10 +1685,7 @@
                              (path-to-author+round cert author round dag)
                              dag)))
               (set::in cert0 (certificate-causal-history cert dag)))
-     :enable (in-of-certificate-causal-history
-              certificate->author-of-path-to-author+round
-              certificate->round-of-path-to-author+round
-              path-to-author+round-in-dag)
+     :enable in-of-certificate-causal-history
      :use (:instance path-to-author+round-transitive
                      (cert cert)
                      (cert1 (path-to-author+round cert author round dag))

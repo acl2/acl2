@@ -271,7 +271,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule certificates-for-validator-of-timer-expires-next
+(defruled certificates-for-validator-of-timer-expires-next
   :short "A @('timer-expires') event
           does not change the certificates for validators."
   (implies (timer-expires-possiblep event-val systate)

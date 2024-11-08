@@ -720,9 +720,15 @@
              :in-theory (enable* set::subset
                                  set::expensive-rules))))
 
-  (defruled certificates-with-authors+round-of-nil
+  (defrule certificates-with-authors+round-of-nil-certs
     (equal (certificates-with-authors+round authors round nil)
            nil))
+
+  (defrule certificates-with-authors+round-when-emptyp-authors
+    (implies (set::emptyp authors)
+             (equal (certificates-with-authors+round authors round certs)
+                    nil))
+    :induct t)
 
   (defruled in-of-certificates-with-authors+round
     (implies (certificate-setp certs)

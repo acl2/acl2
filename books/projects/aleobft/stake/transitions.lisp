@@ -13,6 +13,7 @@
 
 (include-book "events")
 (include-book "elections")
+(include-book "dags")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -41,5 +42,6 @@
      because the definition of the labeled state transition system
      prioritizes clearity over efficiency."))
   :order-subtopics (elections
+                    dags
                     t)
   :default-parent t)

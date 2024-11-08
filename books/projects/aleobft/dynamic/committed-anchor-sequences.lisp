@@ -11,7 +11,7 @@
 
 (in-package "ALEOBFT-DYNAMIC")
 
-(include-book "omni-paths")
+(include-book "omni-paths-def-and-implied")
 (include-book "anchors-extension")
 
 (local (include-book "../library-extensions/arithmetic-theorems"))
