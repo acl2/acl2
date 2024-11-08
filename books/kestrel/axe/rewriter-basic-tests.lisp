@@ -30,57 +30,57 @@
 ;;; tests of simp-term-basic (which returns a term)
 ;;;
 
+(defmacro simp-term-basic-wrapper (term
+                                    &key
+                                    (assumptions 'nil)
+                                    (rule-alist 'nil)
+                                    (interpreted-function-alist 'nil)
+                                    (monitored-symbols 'nil)
+                                    (fns-to-elide 'nil)
+                                    (memoizep 't)
+                                    (count-hits 't)
+                                    (print 't)
+                                    (normalize-xors 'nil)
+                                    (known-booleans 'nil))
+  `(simp-term-basic ,term
+                    ,assumptions
+                    ,rule-alist
+                    ,interpreted-function-alist
+                    ,monitored-symbols
+                    ,fns-to-elide
+                    ,memoizep
+                    ;; todo: add context array and other args?
+                    ,count-hits
+                    ,print
+                    ,normalize-xors
+                    ,known-booleans))
+
 ;; A simple test that applies the rewrite rule CAR-CONS to simplify a term:
 (assert!
- (mv-let (erp term)
-   (simp-term-basic '(car (cons (foo x) (foo y)))
-                    nil     ; assumptions
-                    (make-rule-alist! '(car-cons) (w state))
-                    nil     ; interpreted-function-alist
-                    nil     ; monitored-symbols
-                    nil     ; fns-to-elide
-                    t       ; memoizep
-                    t       ; count-hits
-                    t       ; print
-                    nil     ; normalize-xors
-                    (known-booleans (w state)))
-   (and (not erp) ;no error
-        ;; resulting term is (FOO X):
-        (equal term '(foo x)))))
+  (mv-let (erp term)
+    (simp-term-basic-wrapper '(car (cons (foo x) (foo y)))
+                             :rule-alist (make-rule-alist! '(car-cons) (w state))
+                             :known-booleans (known-booleans (w state)))
+    (and (not erp) ;no error
+         ;; resulting term is (FOO X):
+         (equal term '(foo x)))))
 
 ;; A test that computes a ground term
 (assert!
- (mv-let (erp term)
-   (simp-term-basic '(binary-+ '3 '4)
-                    nil     ; assumptions
-                    nil     ; rule-alist
-                    nil     ; interpreted-function-alist
-                    nil     ; monitored-symbols
-                    nil     ; fns-to-elide
-                    t       ; memoizep
-                    t       ; count-hits
-                    t       ; print
-                    nil     ; normalize-xors
-                    (known-booleans (w state)))
-   (and (not erp)
-        (equal term ''7))))
+  (mv-let (erp term)
+    (simp-term-basic-wrapper '(binary-+ '3 '4)
+                             :known-booleans (known-booleans (w state)))
+    (and (not erp)
+         (equal term ''7))))
 
 ;; A test that uses an assumption
 (assert!
- (mv-let (erp term)
-   (simp-term-basic '(natp x)
-                    '((natp x))     ; assumptions
-                    nil     ; rule-alist
-                    nil     ; interpreted-function-alist
-                    nil     ; monitored-symbols
-                    nil     ; fns-to-elide
-                    t       ; memoizep
-                    t       ; count-hits
-                    t       ; print
-                    nil     ; normalize-xors
-                    (known-booleans (w state)))
-   (and (not erp)
-        (equal term ''t))))
+  (mv-let (erp term)
+    (simp-term-basic-wrapper '(natp x)
+                             :assumptions '((natp x))
+                             :known-booleans (known-booleans (w state)))
+    (and (not erp)
+         (equal term ''t))))
 
 ;; A test that returns a variable
 (assert!
