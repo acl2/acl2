@@ -245,7 +245,7 @@
                              nil ; count-hits
                              nil ; print
                              nil ; normalize-xors
-                             (w state)))
+                             (known-booleans (w state))))
        ((when erp)
         (cw "ERROR simplifying test.))~%")
         (mv erp nil state))
