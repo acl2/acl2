@@ -36,10 +36,11 @@
      the certificates at the immediately following odd round
      to carry out an election of that chosen leader:
      each certificate that references the leader certificate
-     counts as a `yes' vote,
+     adds its stake to the `yes' vote,
      while each certificate that references a different certificate
-     counts as a `no' vote.
-     If the validator has enough `yes' votes,
+     adds its stake to the `no' vote.
+     Thus these `yes' and `no' votes are amounts of stake.
+     If the validator has enough `yes' vote stake,
      which implies that it must have the leader certificate itself,
      which is called an `anchor',
      then the validator commits that anchor,
@@ -49,7 +50,7 @@
    (xdoc::p
     "Here we formalize the choice of the leader,
      via a constrained function on committees and round numbers.
-     We also formalize the counting of the `yes' and `no' votes."))
+     We also formalize the counting of the `yes' and `no' voting stake."))
   :order-subtopics t
   :default-parent t)
 
@@ -98,9 +99,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define tally-leader-votes ((leader addressp) (voters certificate-setp))
-  :returns (mv (yes-count natp) (no-count natp))
-  :short "Count the `yes' and `no' votes for a leader."
+(define tally-leader-stake-votes ((leader addressp)
+                                  (voters certificate-setp)
+                                  (commtt committeep))
+  :guard (set::subset (certificate-set->author-set voters)
+                      (committee-members commtt))
+  :returns (mv (yes-stake natp) (no-stake natp))
+  :short "Count the `yes' and `no' stake votes for a leader."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -112,7 +117,11 @@
      who are members of the committee active
      at the immediately following odd round:
      these are all the possible voters for the leader.
-     Note that the active committee may have changed
+     The @('commtt') input to this function
+     is the active committee at the odd round
+     just after the even round of the leader.")
+   (xdoc::p
+    "Note that the active committee may have changed
      between the even and odd round,
      if it changed between the two rounds
      exactly at the @(tsee lookback) distance.
@@ -122,16 +131,27 @@
    (xdoc::p
     "We go through the voters, and check whether the leader address
      is among the refernced previous certificates or not,
-     counting those as `yes' or `no' votes.
-     We return both counts."))
+     counting its stake as part of the `yes' or `no' vote stakes.
+     We return both voting stakes."))
   (b* (((when (or (not (mbt (certificate-setp voters)))
                   (set::emptyp voters)))
         (mv 0 0))
        (voter (set::head voters))
-       ((mv yes-count no-count)
-        (tally-leader-votes leader (set::tail voters))))
-    (if (set::in (address-fix leader) (certificate->previous voter))
-        (mv (1+ yes-count) no-count)
-      (mv yes-count (1+ no-count))))
+       (voter-stake (committee-member-stake (certificate->author voter) commtt))
+       ((mv yes-stake-rest no-stake-rest)
+        (tally-leader-stake-votes leader (set::tail voters) commtt)))
+    (if (set::in (address-fix leader)
+                 (certificate->previous voter))
+        (mv (+ voter-stake
+               yes-stake-rest)
+            no-stake-rest)
+      (mv yes-stake-rest
+          (+ voter-stake
+             no-stake-rest))))
   :verify-guards :after-returns
+  :guard-hints
+  (("Goal"
+    :in-theory (enable* certificate->author-in-certificate-set->author-set
+                        certificate-set->author-set-monotone
+                        set::expensive-rules)))
   :hooks (:fix))

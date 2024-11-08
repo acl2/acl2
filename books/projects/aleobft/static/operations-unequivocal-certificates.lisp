@@ -134,7 +134,7 @@
   ;; the number of certificates is the same as the number of their authors.
   ;; This is because two different certificates cannot have the same author.
 
-  (defrule cardinality-of-authors-when-same-round-and-unequiv
+  (defruled cardinality-of-authors-when-same-round-and-unequiv
     (implies (and (certificate-setp certs)
                   (certificate-set-unequivocalp certs)
                   (<= (set::cardinality (certificate-set->round-set certs)) 1))

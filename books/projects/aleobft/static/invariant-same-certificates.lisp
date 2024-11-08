@@ -247,6 +247,7 @@
                 (timer-expires-possiblep val systate))
            (same-certificates-p (timer-expires-next val systate)))
   :expand (same-certificates-p (timer-expires-next val systate))
+  :enable certificates-for-validator-of-timer-expires-next
   :use (:instance same-certificates-p-necc
                   (val1 (mv-nth
                          0

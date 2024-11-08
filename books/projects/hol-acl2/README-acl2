@@ -1,3 +1,10 @@
+This file describes the original of the present directory and how it
+was modified from the original in the HOL4 repository.  It also
+describes how to use the script tests/doit to run tests not currently
+included in regression testing.
+
+.....
+
 This directory contains replacements for portions of the
 examples/acl2/ directory in the Kananaskis release of HOL4 that has
 been obtained as follows.

@@ -39,10 +39,10 @@
 (include-book "dag-certificate-next")
 (include-book "last-anchor-next")
 (include-book "last-anchor-voters-def-and-init-and-next")
-(include-book "omni-paths")
+(include-book "omni-paths-def-and-implied")
 (include-book "anchors-extension")
 (include-book "committed-anchor-sequences")
-(include-book "nonforking-anchors")
+(include-book "nonforking-anchors-def-and-init-and-next")
 (include-book "committed-redundant")
 (include-book "blockchain-redundant")
 (include-book "nonforking-blockchains-next")
@@ -51,6 +51,8 @@
 (include-book "nonforking-blockchains")
 (include-book "same-committees")
 (include-book "last-anchor-voters")
+(include-book "omni-paths")
+(include-book "nonforking-anchors")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -91,10 +93,10 @@
                     dag-certificate-next
                     last-anchor-next
                     last-anchor-voters-def-and-init-and-next
-                    omni-paths
+                    omni-paths-def-and-implied
                     anchors-extension
                     committed-anchors-sequences
-                    nonforking-anchors
+                    nonforking-anchors-def-and-init-and-next
                     committed-redundant
                     blockchain-redundant
                     nonforking-blockchains-next
@@ -102,4 +104,6 @@
                     unequivocal-accepted-certificates
                     nonforking-blockchains
                     same-committees
-                    last-anchor-voters))
+                    last-anchor-voters
+                    omni-paths
+                    nonforking-anchors))

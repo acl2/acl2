@@ -820,11 +820,43 @@ solver submissions for the <a
 href="https://satcompetition.github.io/2020/downloads.html">2020 SAT
 competition</a>.  However, in most cases the build scripts for these libraries
 are configured to produce a static library, and we need a shared library in
-order to link it into a running Lisp session. We describe the steps below for
+order to link it into a running Lisp session.</p>
+
+<h3>Easy Steps for building Glucose on Mac OS/Linux</h3>
+<p><a href="https://github.com/liveontologies/ipasir">This git repository</a>
+contains wrappers for a few ipasir solvers and build scripts for creating
+dynamic libraries. The following sequence of commands has worked
+to build Glucose 4.1 on Linux and MacOS:</p>
+ @({
+ # Clone the repo into liveontologies-ipasir
+ git clone https://github.com/liveontologies/ipasir.git liveontologies-ipasir
+ cd liveontologies-ipasir
+
+ # Optional: check out a known-working commit
+ git checkout -b my-branch b183c8bf15f5c8f27246d630b2eb2c6df5ac453a
+
+ # make the glucose shared library
+ cd ipasir-glucose/src/main/native/
+ make library.version=4.1
+ })
+
+<p>This creates a shared library called libglucose-syrup.so on Linux or
+libglucose-syrup.dylib. To use it, set the IPASIR_SHARED_LIBRARY environment
+variable to that file's full path (optionally moving it to a convenient
+location first).</p>
+
+<p>Note, the makefile used above relies upon a tarball of the Glucose sources
+being available for download from a personal webpage of one of the authors. If
+this tarball disappears, another location of the Glucose sources is
+<a href="https://github.com/audemard/glucose">this git repository.</a></p>
+
+
+<h3>Obsolete instructions for 2017 SAT competition Glucose</h3>
+<p>We describe the steps below for
 patching the build scripts for the 2017 SAT competition version of
 Glucose. Unfortunately, the web pages for the 2017 and previous SAT
 competitions are offline. We preserve the instructions here in case they are
-applicable to other solvers in the distributions above.  For glucose, the
+applicable to other solvers.  For glucose, the
 binding and build files are available in the ACL2 distribution under
 books/centaur/ipasir/solver-glue/glucose4/.</p>
 
