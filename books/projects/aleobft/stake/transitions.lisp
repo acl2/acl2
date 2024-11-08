@@ -15,6 +15,7 @@
 (include-book "elections")
 (include-book "dags")
 (include-book "anchors")
+(include-book "blockchains")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -45,5 +46,6 @@
   :order-subtopics (elections
                     dags
                     anchors
+                    blockchains
                     t)
   :default-parent t)
