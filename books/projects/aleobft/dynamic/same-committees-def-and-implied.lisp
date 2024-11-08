@@ -579,10 +579,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled same-committees-p-implied
-  :short "Proof of the invariant from other invariants:
-          if blockchains do not fork,
-          and if blockchains have even ordered rounds,
-          validators always never calculate different active committees."
+  :short "Proof of the invariant from other invariants."
   :long
   (xdoc::topstring
    (xdoc::p

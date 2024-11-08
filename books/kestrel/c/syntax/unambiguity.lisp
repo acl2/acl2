@@ -1215,6 +1215,11 @@
            (dirabsdeclor-option-unambp decl?))
     :expand (absdeclor-unambp (absdeclor pointers decl?)))
 
+  (defrule not-dirabsdeclor-unambp-when-dummy-base
+    (implies (dirabsdeclor-case dirabsdeclor :dummy-base)
+             (not (dirabsdeclor-unambp dirabsdeclor)))
+    :expand (dirabsdeclor-unambp (dirabsdeclor-paren absdeclor)))
+
   (defrule dirabsdeclor-unambp-of-dirabsdeclor-paren
     (equal (dirabsdeclor-unambp (dirabsdeclor-paren absdeclor))
            (absdeclor-unambp absdeclor))

@@ -95,7 +95,7 @@
      which is ensured by @(tsee create-certificate-possiblep)
      and @(tsee store-certificate-possiblep).
      Then we prove the main theorems,
-     using rule @('dag-previous-in-dag-p-of-insert')
+     using rule @('dag-closedp-of-insert')
      to handle the addition of the certificate.")
    (xdoc::p
     "For the other four kinds of events,
@@ -133,7 +133,7 @@
        (backward-closed-p
         backward-closed-p-necc
         validator-state->dag-of-create-certificate-next
-        dag-previous-in-dag-p-of-insert
+        dag-closedp-of-insert
         certificate-previous-in-dag-p-when-create-certificate-possiblep))))
 
   ;; receive-certificate:
@@ -175,7 +175,7 @@
        :enable (backward-closed-p
                 backward-closed-p-necc
                 validator-state->dag-of-store-certificate-next
-                dag-previous-in-dag-p-of-insert
+                dag-closedp-of-insert
                 certificate-previous-in-dag-p-when-store-certificate-possiblep))))
 
   ;; advance-round:

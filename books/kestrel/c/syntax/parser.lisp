@@ -10693,9 +10693,13 @@
                    ((erp last-span parstate)
                     ;; struct/union ident { structdecls }
                     (read-punctuator "}" parstate)))
-                (retok (type-spec-struct
-                        (make-strunispec :name ident
-                                         :members structdecls))
+                (retok (if structp
+                           (type-spec-struct
+                             (make-strunispec :name ident
+                                              :members structdecls))
+                         (type-spec-union
+                             (make-strunispec :name ident
+                                              :members structdecls)))
                        (span-join struct/union-span last-span)
                        parstate))))
            ;; If token2 is not an open curly brace,
