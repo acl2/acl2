@@ -515,10 +515,10 @@
                             assumptions
                             rule-alist
                             interpreted-function-alist
+                            (known-booleans (w state))
                             nil ; limits
                             nil ; count-hits
                             print
-                            (known-booleans (w state))
                             monitor ; monitored-symbols
                             nil ; fns-to-elide
                             normalize-xors

@@ -220,6 +220,7 @@
                   :guard (natp old-rsp))) ;tighten?
   (< (rgfi *rsp* x86) old-rsp))
 
+;; why do we need this?  use eip for 32-bit mode, or do we always use rip?
 (defun get-pc (x86)
   (declare (xargs :stobjs x86))
   (rip x86))
@@ -376,10 +377,11 @@
                             *loop-lifter-state-component-extraction-rule-alist*
                             ;; (set-difference-eq (append '(x86isa::logext-64-does-nothing-when-canonical-address-p)
                             ;;                                   lifter-rules extra-rules) remove-rules)
-                            nil nil
+                            nil
+                            nil ; known-booleans
+                            nil
                             t ; count-hints
                             nil ;print
-                            nil ; known-booleans
                             nil
                             nil
                             nil
@@ -404,10 +406,11 @@
                             *loop-lifter-state-component-extraction-rule-alist*
                             ;; (set-difference-eq (append '(x86isa::logext-64-does-nothing-when-canonical-address-p)
                             ;;                                   lifter-rules extra-rules) remove-rules)
-                            nil nil
+                            nil
+                            nil ; known-booleans
+                            nil
                             t   ; count-hints
                             nil ;print
-                            nil ; known-booleans
                             nil
                             nil
                             nil
@@ -432,10 +435,11 @@
                             *loop-lifter-pc-extraction-rule-alist*
                             ;; :rules (set-difference-eq (append '(;xr-of-if
                             ;;                                     ) lifter-rules extra-rules) remove-rules) ; do we need x86isa::logext-64-does-nothing-when-canonical-address-p?
-                            nil nil
+                            nil
+                            nil ; known-booleans
+                            nil
                             nil ;count-hits
                             nil ;print
-                            nil ; known-booleans
                             '(x86isa::logext-48-does-nothing-when-canonical-address-p
                               ;;acl2::ifix-when-integerp
                               ;;acl2::integerp-of-+
@@ -534,8 +538,7 @@
             (acl2::simplify-dag-x86 dag-to-prove
                                     all-assumptions
                                     rule-alist
-                                    nil nil nil nil
-                                    known-booleans
+                                    nil known-booleans nil nil nil
                                     (append '( ;xr-wb-in-app-view
                                               )
                                             rules-to-monitor)
@@ -1727,9 +1730,8 @@
          (acl2::simplify-dag-x86 new-state-dag
                                  nil
                                  (acl2::make-rule-alist! (append (extra-loop-lifter-rules) lifter-rules) (w state))
-                                 nil nil nil nil
-                                 (acl2::known-booleans (w state))
-                         ;; todo: respect the monitor arg?
+                                 nil (acl2::known-booleans (w state)) nil nil nil
+                                 ;; todo: respect the monitor arg?
                                  '(;;x86isa::set-flag-set-flag-same
                                    ;;x86isa::x86p-set-flag
                                    ;;x86p-of-write
@@ -1952,8 +1954,7 @@
                                                                    extra-rules)
                                                            remove-rules)
                                                          (w state))
-                                 nil nil nil print
-                                 (acl2::known-booleans (w state))
+                                 nil (acl2::known-booleans (w state)) nil nil print
                                  (append '(;get-flag-of-set-flag
                                            x86-fetch-decode-execute-opener-safe-64
                                            )
@@ -2236,10 +2237,7 @@
                                                                   extra-rules)
                                                           remove-rules)
                                                         (w state))
-                                nil nil nil
-                                print (acl2::known-booleans (w state))
-                                rules-to-monitor
-                                nil nil nil))
+                                nil (acl2::known-booleans (w state)) nil nil print rules-to-monitor nil nil nil))
        ((when erp) (mv erp nil state))
        (output-term (dag-to-term output-dag))
        ;; TODO: Generalize:

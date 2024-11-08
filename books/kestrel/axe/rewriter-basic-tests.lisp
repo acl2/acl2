@@ -622,17 +622,7 @@
 
 (assert!
  (mv-let (erp res)
-   (simplify-dag-basic (make-term-into-dag-simple! '(cons a b))
-                       nil
-                       (empty-rule-alist)
-                       nil nil
-                       nil
-                       nil
-                       nil
-                       nil
-                       nil
-                       nil
-                       nil)
+   (simplify-dag-basic (make-term-into-dag-simple! '(cons a b)) nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil)
    (and (not erp)
         (equal res (make-term-into-dag-simple! '(cons a b))))))
 

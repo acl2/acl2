@@ -419,10 +419,10 @@
                                       assumptions
                                       rule-alist
                                       nil ; interpreted-function-alist
+                                      (acl2::known-booleans (w state))
                                       limits
                                       t ; count-hints ; todo: think about this
                                       print
-                                      (acl2::known-booleans (w state))
                                       rules-to-monitor
                                       '(program-at) ; fns-to-elide
                                       t             ; normalize-xors
@@ -509,10 +509,10 @@
                                             assumptions
                                             rule-alist
                                             nil ; interpreted-function-alist
+                                            (acl2::known-booleans (w state))
                                             limits
                                             t ; count-hints ; todo: think about this
                                             print
-                                            (acl2::known-booleans (w state))
                                             rules-to-monitor
                                             '(program-at code-segment-assumptions32-for-code) ; fns-to-elide
                                             t ; normalize-xors
