@@ -3757,10 +3757,8 @@
          ((declor declor) declor)
          (type (if (consp declor.pointers)
                    (type-pointer)
-                 type))
-         ((erp fundef-params-p type ident table)
-          (valid-dirdeclor declor.decl fundef-params-p type table ienv)))
-      (retok fundef-params-p type ident table))
+                 type)))
+      (valid-dirdeclor declor.decl fundef-params-p type table ienv))
     :measure (declor-count declor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3978,11 +3976,143 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  ;; TODO: valid-absdeclor
+  (define valid-absdeclor ((absdeclor absdeclorp)
+                           (type typep)
+                           (table valid-tablep)
+                           (ienv ienvp))
+    :guard (absdeclor-unambp absdeclor)
+    :returns (mv erp (new-type typep) (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate an abstract declarator."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is fairly similar to @(tsee valid-declor)
+       (see that function's documentation),
+       but since the declarator is abstract,
+       there is no identifier being declared to return.
+       Furthermore, there is no flag for function definitions,
+       since a function definition uses a declarator,
+       not an abstract declarator."))
+    (b* (((reterr) (irr-type) (irr-valid-table))
+         ((absdeclor absdeclor) absdeclor)
+         (type (if (consp absdeclor.pointers)
+                   (type-pointer)
+                 type)))
+      (valid-dirabsdeclor-option absdeclor.decl? type table ienv))
+    :measure (absdeclor-count absdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  ;; TODO: valid-dirabsdeclor
+  (define valid-dirabsdeclor ((dirabsdeclor dirabsdeclorp)
+                              (type typep)
+                              (table valid-tablep)
+                              (ienv ienvp))
+    :guard (dirabsdeclor-unambp dirabsdeclor)
+    :returns (mv erp (new-type typep) (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate a direct abstract declarator."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is fairly similar to @(tsee valid-dirdeclor)
+       (see that function's documentation),
+       but since the direct declarator is abstract,
+       there is no identifier being declared to return.
+       Furthermore, there is no flag for function definitions,
+       since a function definition uses a (direct) declarator,
+       not an (direct) abstract declarator."))
+    (b* (((reterr) (irr-type) (irr-valid-table)))
+      (dirabsdeclor-case
+       dirabsdeclor
+       :paren
+       (valid-absdeclor dirabsdeclor.unwrap type table ienv)
+       :array
+       (b* ((type (type-array))
+            ((erp type table)
+             (valid-dirabsdeclor-option dirabsdeclor.decl? type table ienv))
+            ((erp index-type? table)
+             (valid-expr-option dirabsdeclor.expr? table ienv))
+            ((when (and index-type?
+                        (not (type-integerp index-type?))))
+             (reterr (msg "The index expression ~
+                           of the direct abstract declarator ~x0 ~
+                           has type ~x1."
+                          (dirabsdeclor-fix dirabsdeclor)
+                          index-type?))))
+         (retok type table))
+       :array-static1
+       (b* ((type (type-array))
+            ((erp type table)
+             (valid-dirabsdeclor-option dirabsdeclor.decl? type table ienv))
+            ((erp index-type table)
+             (valid-expr dirabsdeclor.expr table ienv))
+            ((unless (type-integerp index-type))
+             (reterr (msg "The index expression ~
+                           of the direct abstract declarator ~x0 ~
+                           has type ~x1."
+                          (dirabsdeclor-fix dirabsdeclor)
+                          index-type))))
+         (retok type table))
+       :array-static2
+       (b* ((type (type-array))
+            ((erp type table)
+             (valid-dirabsdeclor-option dirabsdeclor.decl? type table ienv))
+            ((erp index-type table)
+             (valid-expr dirabsdeclor.expr table ienv))
+            ((unless (type-integerp index-type))
+             (reterr (msg "The index expression ~
+                           of the direct abstract declarator ~x0 ~
+                           has type ~x1."
+                          (dirabsdeclor-fix dirabsdeclor)
+                          index-type))))
+         (retok type table))
+       :array-star
+       (b* ((type (type-array))
+            ((erp type table)
+             (valid-dirabsdeclor-option dirabsdeclor.decl? type table ienv)))
+         (retok type table))
+       :function
+       (b* (((when (or (type-case type :function)
+                       (type-case type :array)))
+             (reterr (msg "The direct abstract declarator ~x0 ~
+                           has type ~x1."
+                          (dirabsdeclor-fix dirabsdeclor)
+                          (type-fix type))))
+            (type (type-function))
+            ((erp type table)
+             (valid-dirabsdeclor-option dirabsdeclor.decl? type table ienv))
+            (table (valid-push-scope table))
+            ;; TODO: validate parameters, passing fundef-params-p
+            (table (valid-pop-scope table)))
+         (retok type table))
+       :dummy-base
+       (prog2$ (impossible) (reterr t))))
+    :measure (dirabsdeclor-count dirabsdeclor))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define valid-dirabsdeclor-option ((dirabsdeclor? dirabsdeclor-optionp)
+                                     (type typep)
+                                     (table valid-tablep)
+                                     (ienv ienvp))
+    :guard (dirabsdeclor-option-unambp dirabsdeclor?)
+    :returns (mv erp (new-type typep) (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate an optional direct abstract declarator."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "If there is no direct abstract declarator,
+       we return the type and validation table unchanged.
+       Otherwise, we validate the direct abstract declarator,
+       using a separate validation function."))
+    (b* (((reterr) (irr-type) (irr-valid-table)))
+      (dirabsdeclor-option-case
+       dirabsdeclor?
+       :none (retok (type-fix type) (valid-table-fix table))
+       :some (valid-dirabsdeclor dirabsdeclor?.val type table ienv)))
+    :measure (dirabsdeclor-option-count dirabsdeclor?))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
