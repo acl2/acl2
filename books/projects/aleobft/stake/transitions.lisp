@@ -14,6 +14,7 @@
 (include-book "events")
 (include-book "elections")
 (include-book "dags")
+(include-book "anchors")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -43,5 +44,6 @@
      prioritizes clearity over efficiency."))
   :order-subtopics (elections
                     dags
+                    anchors
                     t)
   :default-parent t)
