@@ -226,7 +226,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule certificate-set-unequivocalp-of-union
+(defruled certificate-set-unequivocalp-of-union
   :short "If two sets of unequivocal certificates
           have equal certificates for the same author and round,
           their union is an unequivocal set."

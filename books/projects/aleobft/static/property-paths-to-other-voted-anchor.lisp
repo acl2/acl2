@@ -128,6 +128,7 @@
            certificate-set-unequivocalp-when-subset
            certificate-set->author-set-of-union
            certificate-set->author-set-monotone
+           certificate-set-unequivocalp-of-union
            set::expensive-rules)
   :disable (set::expand-cardinality-of-union
             certificate-set->round-set-of-union))
