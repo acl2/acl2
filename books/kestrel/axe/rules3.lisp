@@ -471,8 +471,7 @@
   (implies (integerp x)
            (equal (integerp (* 1/4 (bvchop 31 x)))
                   (integerp (* 1/4 x))))
-  :hints (("Goal" :in-theory (e/d (bvchop)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bvchop))))
 
 (defthm integerp-of-*-of-1/4-of-logext
   (implies (integerp x)
@@ -2681,20 +2680,17 @@
 (defthm bvlt-of-bvmult-hack2
   (implies (bvle 5 (bvchop 4 x) 3)
            (bvlt 5 (bvmult 4 4 x) 13))
-  :hints (("Goal" :in-theory (e/d (bvlt unsigned-byte-p bvmult)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bvlt unsigned-byte-p bvmult))))
 
 (defthm bvlt-of-bvmult-hack3
   (implies (bvle 5 (bvchop 4 x) 3)
            (bvlt 5 (bvmult 4 4 x) 15))
-  :hints (("Goal" :in-theory (e/d (bvlt unsigned-byte-p bvmult)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bvlt unsigned-byte-p bvmult))))
 
 (defthm bvlt-of-bvmult-hack4
   (implies (bvle 5 (bvchop 4 x) 3)
            (bvlt 5 (bvmult 4 4 x) 14))
-  :hints (("Goal" :in-theory (e/d (bvlt unsigned-byte-p bvmult)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bvlt unsigned-byte-p bvmult))))
 
 (defthm bvplus-of-bvuminus-hack10000b
   (implies (integerp k)
@@ -2731,7 +2727,7 @@
                 (posp xsize))
            (equal (bvlt size x y)
                   (bvlt size (trim size x) y)))
-  :hints (("Goal" :in-theory (e/d (bvlt trim) ()))))
+  :hints (("Goal" :in-theory (enable bvlt trim))))
 
 ;non-axe
 (defthm bvlt-trim-arg2
@@ -2741,7 +2737,7 @@
                 (posp xsize))
            (equal (bvlt size y x)
                   (bvlt size y (trim size x))))
-  :hints (("Goal" :in-theory (e/d (bvlt trim) ()))))
+  :hints (("Goal" :in-theory (enable bvlt trim))))
 
 (defthm bvlt-of-constant-tighten-when-usb-arg1
   (implies (and (syntaxp (and (quotep k)
@@ -3158,7 +3154,7 @@
 ;;                 (integerp y))
 ;;            (equal (sbvle n (+ x y) z)
 ;;                   (sbvle n (bvplus n x y) z)))
-;;   :hints (("Goal" :in-theory (e/d (sbvle) ()))))
+;;   :hints (("Goal" :in-theory (enable sbvle))))
 
 ;; ;drop?
 ;; (defthmd sbvle-of-+-arg2
@@ -3167,13 +3163,12 @@
 ;;                 (integerp y))
 ;;            (equal (sbvle n z (+ x y))
 ;;                   (sbvle n z (bvplus n x y))))
-;;   :hints (("Goal" :in-theory (e/d (sbvle) ()))))
+;;   :hints (("Goal" :in-theory (enable sbvle))))
 
 (defthm bvlt-of-bvcat-hack-99
   (equal (bvlt 4 (bvcat 2 x 2 0) 12)
          (bvlt 2 x 3))
-  :hints (("Goal" :in-theory (e/d (bvlt)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bvlt))))
 
 (defthm unsigned-byte-p-false-when-high-bit-1
   (implies (and (equal 1 (getbit free x))
@@ -3212,16 +3207,14 @@
   (implies (NOT (BVLT 6 16 GARG0))
            (equal (UNSIGNED-BYTE-P 6 GARG0)
                   (UNSIGNED-BYTE-P 5 GARG0)))
-  :hints (("Goal" :in-theory (e/d (bvlt unsigned-byte-p)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bvlt unsigned-byte-p))))
 
 (defthm bvlt-tighten-when-not-usb
   (implies (and (NOT (UNSIGNED-BYTE-P 3 GARG0))
                 (unsigned-byte-p 5 garg0))
            (equal (BVLT 5 3 GARG0)
                   (BVLT 5 7 GARG0)))
-  :hints (("Goal" :in-theory (e/d (bvlt unsigned-byte-p)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bvlt unsigned-byte-p))))
 
 (defthm bvplus-minus-4-tighten-29
   (implies (and (unsigned-byte-p 3 x) ;use bind-free
@@ -3232,9 +3225,8 @@
                 (bvle 3 4 x))
            (equal (bvplus size 536870908 x)
                   (bvplus 3 -4 x)))
-  :hints (("Goal" :in-theory (e/d (bvlt ;unsigned-byte-p
-                                   slice-of-bvplus-cases)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bvlt ;unsigned-byte-p
+                                     slice-of-bvplus-cases))))
 
 
 ;;old
@@ -3243,8 +3235,7 @@
 ;;                 (bvlt size k free))
 ;;            (equal (bvlt size k x)
 ;;                   t))
-;;   :hints (("Goal" :in-theory (e/d (bvlt unsigned-byte-p)
-;;                                   ()))))
+;;   :hints (("Goal" :in-theory (enable bvlt unsigned-byte-p))))
 
 (defthm unsigned-byte-p-when-not-bvlt-tighten
   (implies (and (not (bvlt size free x))
@@ -3273,9 +3264,8 @@
                 )
            (equal (BVLT size k x)
                   nil))
-  :hints (("Goal" :in-theory (e/d (bvlt ; unsigned-byte-p
-                                   UNSIGNED-BYTE-P-FORCED)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bvlt ; unsigned-byte-p
+                                     UNSIGNED-BYTE-P-FORCED))))
 
 ;; ;can we weaken other rules by using +1?
 ;; (defthm bvlt-when-bvlt-false
@@ -3287,10 +3277,7 @@
 ;;                   nil))
 ;;   :hints (("Goal"
 ;;            :cases ((integerp k))
-;;            :in-theory (e/d (bvlt
-;;                             bvchop-of-sum-cases
-;;                             )
-;;                           ()))))
+;;            :in-theory (enable bvlt bvchop-of-sum-cases))))
 
 ;gen
 ;the lemma is much nicer when we know the top slcie
@@ -3298,11 +3285,10 @@
   (implies (unsigned-byte-p 5 x) ;limit?
            (equal (BVLT 3 5 (SLICE 4 2 x))
                   (bvle 5 24 x)))
-  :hints (("Goal" :in-theory (e/d (bvlt
-                                   bvchop-of-sum-cases
-                                   bvplus
-                                   slice-bound-lemma-gen slice-bound-lemma-gen2)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bvlt
+                                     bvchop-of-sum-cases
+                                     bvplus
+                                     slice-bound-lemma-gen slice-bound-lemma-gen2))))
 
 
 ;gen the 31, 3, and bvplus
@@ -3326,9 +3312,8 @@
                 (bvle 3 4 x))
            (equal (bvplus 32 4294967292 x)
                   (bvplus 3 -4 x)))
-  :hints (("Goal" :in-theory (e/d (bvlt ;unsigned-byte-p
-                                   slice-of-bvplus-cases)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bvlt ;unsigned-byte-p
+                                     slice-of-bvplus-cases))))
 
 (defthm bvlt-of-slice-top-gen
   (implies (unsigned-byte-p 5 x) ;limit?
@@ -3336,21 +3321,19 @@
                   (if (equal 7 (bvchop 3 k))
                       nil
                     (bvle 5 (* 4 (+ 1 (bvchop 3 k))) x))))
-  :hints (("Goal" :in-theory (e/d (bvlt
-                                   bvchop-of-sum-cases
-                                   bvplus
-                                   slice-bound-lemma-gen
-                                   slice-bound-lemma-gen2)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bvlt
+                                     bvchop-of-sum-cases
+                                     bvplus
+                                     slice-bound-lemma-gen
+                                     slice-bound-lemma-gen2))))
 
 (defthm bvplus-minus-3-tighten-33
   (implies (and (unsigned-byte-p 3 x) ;use bind-free
                 (bvle 3 3 x))
            (equal (bvplus 33 8589934589 x)
                   (bvplus 3 -3 x)))
-  :hints (("Goal" :in-theory (e/d (bvlt ;unsigned-byte-p
-                                   slice-of-bvplus-cases)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bvlt ;unsigned-byte-p
+                                     slice-of-bvplus-cases))))
 
 
 (defthm bvplus-minus-13-tighten-32
@@ -3358,27 +3341,24 @@
                 (bvle 5 13 x))
            (equal (bvplus 32 4294967283 x)
                   (bvplus 5 -13 x)))
-  :hints (("Goal" :in-theory (e/d (bvlt ;unsigned-byte-p
-                                   slice-of-bvplus-cases)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bvlt ;unsigned-byte-p
+                                     slice-of-bvplus-cases))))
 
 (defthm bvplus-minus-11-tighten-32
   (implies (and (unsigned-byte-p 5 x) ;use bind-free
                 (bvle 5 11 x))
            (equal (bvplus 32 4294967285 x)
                   (bvplus 5 -11 x)))
-  :hints (("Goal" :in-theory (e/d (bvlt ;unsigned-byte-p
-                                   slice-of-bvplus-cases)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bvlt ;unsigned-byte-p
+                                     slice-of-bvplus-cases))))
 
 (defthm bvplus-minus-11-tighten-33
   (implies (and (unsigned-byte-p 5 x) ;use bind-free
                 (bvle 5 11 x))
            (equal (bvplus 33 8589934581 x)
                   (bvplus 5 -11 x)))
-  :hints (("Goal" :in-theory (e/d (bvlt ;unsigned-byte-p
-                                   slice-of-bvplus-cases)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bvlt ;unsigned-byte-p
+                                     slice-of-bvplus-cases))))
 
 ;gen the 4
 (defthm times-of-bvmult-4
@@ -3396,8 +3376,7 @@
                   (bvmult 5 4 (bvuminus 3 (slice 4 2 x)))))
   :hints (("Goal" :use ((:instance split-with-bvcat (x x) (hs 3) (ls 2)))
            :in-theory (e/d (bvmult bvuminus bvminus bvchop-of-minus bvplus bvcat logapp)
-                           (bvminus-becomes-bvplus-of-bvuminus
-                            )))))
+                           (bvminus-becomes-bvplus-of-bvuminus)))))
 
 (defthm bvplus-of-bvuminus-when-bvchop-gen-for-5
   (implies (and (equal (bvchop 2 x) 0) ;gen the 0 and the 2
@@ -3417,10 +3396,8 @@
   :hints (("Goal" :use ((:instance split-with-bvcat (x x) (hs 3) (ls 2)))
            :in-theory (e/d (bvlt ;unsigned-byte-p
                             )
-                           (BVCAT-EQUAL-REWRITE-ALT
-                            BVCAT-EQUAL-REWRITE
-
-                            )))))
+                           (bvcat-equal-rewrite-alt
+                            bvcat-equal-rewrite)))))
 
 ;this loops with BVMULT-OF-4-GEN ?
 (defthmd bvplus-of-bvcat-hack6-gen-low-open
@@ -3636,8 +3613,7 @@
   (implies (and (<= size size2)
                 (natp size)
                 (integerp size2)
-                (integerp x)
-                )
+                (integerp x))
            (equal (BVCHOP size (+ x (- (EXPT 2 SIZE2))))
                   (BVCHOP size x)))
   :hints (("Goal" :in-theory (enable bvchop-of-sum-cases))))
@@ -3647,8 +3623,7 @@
                 (natp size)
                 (integerp size2)
                 (integerp x)
-                (integerp y)
-                )
+                (integerp y))
            (equal (BVCHOP size (+ x y (- (EXPT 2 SIZE2))))
                   (BVCHOP size (+ x y))))
   :hints (("Goal" :in-theory (enable bvchop-of-sum-cases))))
@@ -3802,8 +3777,7 @@
 (defthm bvuminus-of-bvplus-32-20
   (implies (and (integerp x)
                 (integerp y)
-                (equal n 30)
-                )
+                (equal n 30))
            (equal (bvuminus 32 (bvplus n x y))
                   (if (equal 0 (bvplus n x y))
                       0
@@ -3858,11 +3832,8 @@
                             bvplus
                             getbit-of-+)
                            (getbit-when-bvlt-of-small-helper
-
                             equal-of-bvchop-extend
-                            bvcat-of-getbit-and-x-adjacent
-
-                            )))))
+                            bvcat-of-getbit-and-x-adjacent)))))
 
 (defthm equal-of-0-and-getbit-of-bvplus
   (implies (and (syntaxp (and (quotep k)
@@ -3887,7 +3858,7 @@
            (equal (getbit size k)
                   1))
   :hints (("Goal" :in-theory (e/d (unsigned-byte-p getbit slice logtail)
-                                  (anti-slice  )))))
+                                  (anti-slice)))))
 
 ;move
 (defthm <-of-plus-times-2-cancel
@@ -3922,11 +3893,8 @@
                             bvchop-1-becomes-getbit)
                            (<-of-bvchop-hack
                             plus-1-and-bvchop-becomes-bvplus
-
                             equal-of-bvchop-extend
-                            bvcat-of-getbit-and-x-adjacent
-
-                            )))))
+                            bvcat-of-getbit-and-x-adjacent)))))
 
 (defthm equal-of-0-and-getbit-of-bvplus-big-k
   (implies (and (syntaxp (and (quotep k)
@@ -9592,7 +9560,7 @@
 (defthm bv-array-read-trim-index
   (equal (BV-ARRAY-READ '32 '80 (BVPLUS '32 x y) lst)
          (BV-ARRAY-READ '32 '80 (BVPLUS '7 x y) lst))
-  :hints (("Goal" :in-theory (e/d (BV-ARRAY-READ) ()))))
+  :hints (("Goal" :in-theory (enable bv-array-read))))
 
 ;Mon Jul 19 21:06:14 2010
 ;; (defthm bv-array-write-with-index-and-len-same
@@ -11536,7 +11504,7 @@
                 (Natp n))
            (equal (equal (logtail n x) (floor x (expt 2 n)))
                   t))
-  :hints (("Goal" :in-theory (e/d (slice logtail) ()))))
+  :hints (("Goal" :in-theory (enable slice logtail))))
 
 ;constant version?
 (defthm equal-of-slice-and-floor-of-expt-same
@@ -11546,7 +11514,7 @@
                 (natp high))
            (equal (equal (slice high low y) (floor y (expt 2 low)))
                   (unsigned-byte-p (+ 1 high) y)))
-  :hints (("Goal" :in-theory (e/d (slice logtail) ()))))
+  :hints (("Goal" :in-theory (enable slice logtail))))
 
 ;constant version?
 (defthm equal-of-floor-of-expt-and-bv
@@ -13392,8 +13360,7 @@
          (if (power-of-2p len)
              (bv-array-read width len 0 data)
            0))
-  :hints (("Goal" :in-theory (e/d (bv-array-read ceiling-of-lg)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bv-array-read ceiling-of-lg))))
 
 (defthm unsigned-byte-p-of-minus
   (implies (and (integerp x)
@@ -13453,8 +13420,7 @@
                   (if (< index (nfix n))
                       (bv-array-read width len index x)
                     0)))
-  :hints (("Goal" :in-theory (e/d (bv-array-read-opener)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bv-array-read-opener))))
 
 (defthm bvlt-of-one-more-when-not-bvlt-helper
   (IMPLIES (AND (integerp z)
