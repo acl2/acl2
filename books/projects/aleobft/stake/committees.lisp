@@ -188,7 +188,15 @@
         (t (+ (committee-member-stake (set::head members) commtt)
               (committee-members-stake (set::tail members) commtt))))
   :guard-hints (("Goal" :in-theory (enable set::subset)))
-  :verify-guards :after-returns)
+  :verify-guards :after-returns
+
+  ///
+
+  (defruled committee-members-stake-0-to-emptyp
+    (equal (equal (committee-members-stake members commtt) 0)
+           (set::emptyp members))
+    :induct t
+    :enable fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
