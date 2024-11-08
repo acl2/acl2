@@ -212,7 +212,7 @@
                     (cert2 (mv-nth 1 (certificate-sets-unequivocalp-witness
                                       sub-certs1 sub-certs2)))))
 
-  (defrule certificate-set-unequivocalp-of-intersect
+  (defruled certificate-set-unequivocalp-of-intersect
     (implies (certificate-sets-unequivocalp certs1 certs2)
              (certificate-set-unequivocalp (set::intersect certs1 certs2)))
     :expand (certificate-set-unequivocalp (set::intersect certs1 certs2))
