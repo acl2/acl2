@@ -51,6 +51,7 @@
      prioritizes clearity over efficiency."))
   :order-subtopics (elections
                     dags
+                    anchors
                     blockchains
                     transitions-create-certificate
                     transitions-receive-certificate
