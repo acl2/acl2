@@ -16,7 +16,7 @@
 (include-book "last-anchor-voters-def-and-init-and-next")
 (include-book "omni-paths-def-and-implied")
 (include-book "nonforking-anchors-def-and-init-and-next")
-(include-book "committed-redundant")
+(include-book "committed-redundant-def-and-init-and-next")
 (include-book "blockchain-redundant")
 (include-book "nonforking-blockchains-next")
 

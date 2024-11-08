@@ -11,7 +11,7 @@
 
 (in-package "ALEOBFT-DYNAMIC")
 
-(include-book "committed-redundant")
+(include-book "committed-redundant-def-and-init-and-next")
 (include-book "committed-anchor-sequences")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
