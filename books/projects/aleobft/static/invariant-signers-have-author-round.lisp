@@ -389,7 +389,8 @@
              timer-expires-next
              timer-expires-next-val
              signer-has-author+round-p
-             get-validator-state-of-update-validator-state))
+             get-validator-state-of-update-validator-state
+             certificates-for-validator-of-timer-expires-next))
 
   (defrule system-signers-have-author+round-p-of-timer-expires-next
     (implies (and (system-signers-have-author+round-p systate)
@@ -398,7 +399,8 @@
               (timer-expires-next val systate)))
     :expand (system-signers-have-author+round-p
              (timer-expires-next val systate))
-    :enable system-signers-have-author+round-p-necc))
+    :enable (system-signers-have-author+round-p-necc
+             certificates-for-validator-of-timer-expires-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

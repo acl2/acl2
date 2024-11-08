@@ -250,7 +250,8 @@
             (timer-expires-next val systate)))
   :expand (system-signers-are-validators-p
            (timer-expires-next val systate))
-  :enable certificate-signers-are-validators-p
+  :enable (certificate-signers-are-validators-p
+           certificates-for-validator-of-timer-expires-next)
   :use (:instance system-signers-are-validators-p-necc
                   (val (mv-nth 0
                                (system-signers-are-validators-p-witness

@@ -47,7 +47,7 @@
     :enable (same-committees-p-implied
              unequivocal-accepted-certificates-p-when-init
              last-anchor-voters-p-when-init
-             omni-paths-p-invariant
+             omni-paths-p-implied
              nonforking-anchors-p-when-init
              committed-redundant-p-when-init
              blockchain-redundant-p-when-init

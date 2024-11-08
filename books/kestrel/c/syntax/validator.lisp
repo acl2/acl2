@@ -3698,12 +3698,16 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define valid-declor ((declor declorp)
+                        (fundef-params-p booleanp)
                         (type typep)
-                        (storspecs stor-spec-listp)
                         (table valid-tablep)
                         (ienv ienvp))
     :guard (declor-unambp declor)
-    :returns (mv erp (new-table valid-tablep))
+    :returns (mv erp
+                 (new-fundef-params-p booleanp)
+                 (new-type typep)
+                 (ident identp)
+                 (new-table valid-tablep))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate a declarator."
     :long
@@ -3711,44 +3715,62 @@
      (xdoc::p
       "This function is called after validating
        a list of declaration specifiers,
-       or a list of specifiers and qualifiers.
-       If the validation of those lists is successful,
+       or a list of specifiers and qualifiers:
+       if the validation of those lists is successful,
        they determine a type, which the declarator can further refine:
-       we pass that type as input to this validation function.")
+       we pass that type as input to this validation function,
+       which returns the possibly refined type,
+       along with the identifier being declared.
+       This function is also called recursively,
+       since declarators and direct declarators are mutually recursive.")
      (xdoc::p
-      "First we validate the direct declarator,
-       which returns the identifier being declared,
-       along with a possibly refined type.")
+      "The @('fundef-params-p') flag is @('t')
+       when this function is called
+       to validate the declarator of a function definition,
+       and only when the parameters of the function have not been validated yet.
+       Its new value @('fundef-params-p'), returned as result,
+       stays @('t') if the parameters of the function
+       have still not been validated yet,
+       because they are not found in this declarator;
+       otherwise, its new value is @('nil').
+       If the input @('fundef-params-p') is @('nil'),
+       then @('new-fundef-params-p') is @('nil') as well.
+       The exact handling of this flag,
+       and the exact treatment of the parameters of function declarations,
+       are explained in the code that actually makes use of the flag.")
      (xdoc::p
       "In our currently approximate type system,
        we do not validate type qualifiers, or attributes.
        So the only role of the @('pointers') component of @(tsee declor)
-       is to refine the type resulting from
-       the validation of the direct declarator
+       is to refine the type passed as input into the pointer type
        [C:6.7.6.1/1].
-       If the declarator has at least one pointer
-       (syntactically, i.e. @('*') possibly followed
-       by type qualifiers and attributes),
-       we further refine the type into the pointer type
-       (of which there is just one in our approximate type system)."))
-    (declare (ignore storspecs))
-    (b* (((reterr) (irr-valid-table))
+       This resulting type is then passed to
+       the function to validate the direct declarator that follows.")
+     (xdoc::p
+      "We also pass the @('fundef-params-p') flag to @(tsee valid-dirdeclor),
+       and relay the @('new-fundef-params-p') output.
+       The reason is that, after peeling off the pointers,
+       which refine the return result of the function,
+       the direct declarator is still expected to be for a function,
+       and we have not validated the parameters yet."))
+    (b* (((reterr) nil (irr-type) (irr-ident) (irr-valid-table))
          ((declor declor) declor)
-         ((erp type ident table) (valid-dirdeclor declor.decl type table ienv))
          (type (if (consp declor.pointers)
                    (type-pointer)
                  type)))
-      (reterr (list :todo type ident table)))
+      (valid-dirdeclor declor.decl fundef-params-p type table ienv))
     :measure (declor-count declor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define valid-dirdeclor ((dirdeclor dirdeclorp)
+                           (fundef-params-p booleanp)
                            (type typep)
                            (table valid-tablep)
                            (ienv ienvp))
     :guard (dirdeclor-unambp dirdeclor)
     :returns (mv erp
+                 (new-fundef-params-p booleanp)
                  (new-type typep)
                  (ident identp)
                  (new-table valid-tablep))
@@ -3759,36 +3781,338 @@
      (xdoc::p
       "The type passed as input is the one resulting from the validation of
        the list of declaration specifiers
-       or the list of specifiers and qualifiers.
+       or the list of specifiers and qualifiers
+       that precedes the declarator of which the direct declarator is part.
        This type is refined according to the direct declarator,
        and we return the refined type,
        along with the declared identifier.")
      (xdoc::p
+      "The meaning of the @('param-open') flag passed as input is
+       the same as in @(tsee valid-declor): see that function's documentation.")
+     (xdoc::p
       "If the direct declarator is just an identifier,
-       the type is not further refined by this direct declarator."))
-    (declare (ignore ienv))
-    (b* (((reterr) (irr-type) (irr-ident) (irr-valid-table)))
+       the type is not further refined by this direct declarator.")
+     (xdoc::p
+      "If the direct declarator is a parenthesized declarator,
+       we recursively validate the declarator.")
+     (xdoc::p
+      "If the direct declarator is one of the array kinds,
+       we refine the type to the array type [C:6.7.6.2/3]
+       (so in our currently approximate type system
+       the input type is effectively ignored),
+       and we recursively validate the enclosed direct declarator.
+       Then we validate the index expression (if present),
+       ensuring that it has integer type.
+       For now we do not check that, if these expressions are constant,
+       their values are greater than 0 [C:6.7.6.2/1].
+       Currently we do not need to do anything
+       with type qualifiers and attributes.
+       The @('fundef-params-p') flag is threaded through.")
+     (xdoc::p
+      "If the direct declarator is one of the function kinds,
+       we ensure that the input type, which is the function return type,
+       is not a function or array type [C:6.7.6.3/1].
+       We refine the input type to a function type
+       (which in our current type system means we override it),
+       and we validate the declarator.
+       Then things differ between the kinds of function declarators.")
+     (xdoc::p
+      "In a function declarator with a parameter type list,
+       we push a new scope for the parameters,
+       and we validate the parameters (which adds them to the new scope),
+       passing the @('fundef-params-p') resulting from
+       the recursive validation of the enclosed direct declarator.
+       This resulting flag is @('t') if
+       the parameters of the function being defined
+       have not been validated yet,
+       which means that the parameters of the current direct declarator
+       are in fact the ones of the function.
+       So we return @('nil') as the @('new-fundef-params-p') result,
+       so that any outer function declarator
+       is not treated as the one
+       whose parameters are for the function definition,
+       if we are validating one.
+       To make things clearer, consider a function definition")
+     (xdoc::codeblock
+      "void (*f(int x, int y))(int z) { ... }")
+     (xdoc::p
+      "which defines a function @('f') with parameters @('x') and @('y'),
+       which returns a pointer to a function
+       that has a parameter @('z') and returns @('void').
+       When we validate the full declarator of this function definition,
+       @('fundef-params-p') is @('t').
+       When we encounter the outer function declarator,
+       first we recursively process the inner function declarator,
+       whose input @('fundef-params-p') is still @('t'),
+       and whose output @('new-fundef-params-p') is @('nil').
+       That way, when we continue validating the outer function declarator,
+       we do not treat @('z') as a parameter of the function definition.
+       In any case, when the current function declarator
+       is the one whose parameters are for the function definition,
+       i.e. when @('fundef-params-p') is @('t'),
+       after validating the parameters, which pushes a new scope with them,
+       we return the validation table as such,
+       so that when we later validate the function body,
+       we already have the top-level scope for the body.
+       If instead @('fundef-params-p') is @('nil'),
+       the parameters form a function prototype scope [C:6.2.1/4],
+       which is therefore popped.")
+     (xdoc::p
+      "A function declarator with a non-empty name list can only occur
+       as the parameters of a function being defined [C:6.7.6.3/3]
+       Thus, unless the list is empty,
+       we raise an error unless @('fundef-params-p') is @('t'),
+       i.e. unless we are validating the parameters of a defined function.
+       Note that the value of @('fundef-params-p') is the one
+       after validating the inner direct declarator.
+       If we are not validating the declarator of a function definition
+       (i.e. if @('fundef-params-p') is @('nil')),
+       in which case as just mentioned the list must be empty,
+       there is nothing left to do, and we return;
+       note that there is no function prototype scope here.
+       Otherwise, we ensure that the names have no duplicates,
+       and we push a new scope for the parameters and the function body,
+       but we do not add the parameters to the new scope,
+       because their types are specified by the declarations
+       that must occur between the end of the whole function declarator
+       and the beginning of the defined function's body."))
+    (b* (((reterr) nil (irr-type) (irr-ident) (irr-valid-table)))
       (dirdeclor-case
        dirdeclor
-       :ident (retok (type-fix type)
-                     dirdeclor.unwrap
-                     (valid-table-fix table))
-       :paren (reterr :todo)
-       :array (reterr :todo)
-       :array-static1 (reterr :todo)
-       :array-static2 (reterr :todo)
-       :array-star (reterr :todo)
-       :function-params (reterr :todo)
-       :function-names (reterr :todo)))
+       :ident
+       (retok (bool-fix fundef-params-p)
+              (type-fix type)
+              dirdeclor.unwrap
+              (valid-table-fix table))
+       :paren
+       (valid-declor dirdeclor.unwrap fundef-params-p type table ienv)
+       :array
+       (b* ((type (type-array))
+            ((erp fundef-params-p type ident table)
+             (valid-dirdeclor dirdeclor.decl fundef-params-p type table ienv))
+            ((erp index-type? table)
+             (valid-expr-option dirdeclor.expr? table ienv))
+            ((when (and index-type?
+                        (not (type-integerp index-type?))))
+             (reterr (msg "The index expression ~
+                           of the direct declarator ~x0 ~
+                           has type ~x1."
+                          (dirdeclor-fix dirdeclor)
+                          index-type?))))
+         (retok fundef-params-p type ident table))
+       :array-static1
+       (b* ((type (type-array))
+            ((erp fundef-params-p type ident table)
+             (valid-dirdeclor dirdeclor.decl fundef-params-p type table ienv))
+            ((erp index-type table)
+             (valid-expr dirdeclor.expr table ienv))
+            ((unless (type-integerp index-type))
+             (reterr (msg "The index expression ~
+                           of the direct declarator ~x0 ~
+                           has type ~x1."
+                          (dirdeclor-fix dirdeclor)
+                          index-type))))
+         (retok fundef-params-p type ident table))
+       :array-static2
+       (b* ((type (type-array))
+            ((erp fundef-params-p type ident table)
+             (valid-dirdeclor dirdeclor.decl fundef-params-p type table ienv))
+            ((erp index-type table)
+             (valid-expr dirdeclor.expr table ienv))
+            ((unless (type-integerp index-type))
+             (reterr (msg "The index expression ~
+                           of the direct declarator ~x0 ~
+                           has type ~x1."
+                          (dirdeclor-fix dirdeclor)
+                          index-type))))
+         (retok fundef-params-p type ident table))
+       :array-star
+       (b* ((type (type-array))
+            ((erp fundef-params-p type ident table)
+             (valid-dirdeclor dirdeclor.decl fundef-params-p type table ienv)))
+         (retok fundef-params-p type ident table))
+       :function-params
+       (b* (((when (or (type-case type :function)
+                       (type-case type :array)))
+             (reterr (msg "The direct declarator ~x0 ~
+                           has type ~x1."
+                          (dirdeclor-fix dirdeclor)
+                          (type-fix type))))
+            (type (type-function))
+            ((erp fundef-params-p type ident table)
+             (valid-dirdeclor dirdeclor.decl fundef-params-p type table ienv))
+            (table (valid-push-scope table))
+            ;; TODO: validate parameters, passing fundef-params-p
+            (table (if fundef-params-p
+                       table
+                     (valid-pop-scope table))))
+         (retok nil type ident table))
+       :function-names
+       (b* (((when (or (type-case type :function)
+                       (type-case type :array)))
+             (reterr (msg "The direct declarator ~x0 ~
+                           has type ~x1."
+                          (dirdeclor-fix dirdeclor)
+                          (type-fix type))))
+            (type (type-function))
+            ((erp fundef-params-p type ident table)
+             (valid-dirdeclor dirdeclor.decl fundef-params-p type table ienv))
+            ((when (and (consp dirdeclor.names)
+                        (not fundef-params-p)))
+             (reterr (msg "A non-empty list of parameter names ~
+                           occurs in a function declarator ~x0 ~
+                           that is not part of a function definition."
+                          (dirdeclor-fix dirdeclor))))
+            ((when (not fundef-params-p))
+             (retok nil type ident table))
+            ((unless (no-duplicatesp-equal dirdeclor.names))
+             (reterr (msg "The list of parameter names ~
+                           in the function declarator ~x0 ~
+                           has duplicates."
+                          (dirdeclor-fix dirdeclor))))
+            (table (valid-push-scope table)))
+         (retok nil type ident table))))
     :measure (dirdeclor-count dirdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  ;; TODO: valid-absdeclor
+  (define valid-absdeclor ((absdeclor absdeclorp)
+                           (type typep)
+                           (table valid-tablep)
+                           (ienv ienvp))
+    :guard (absdeclor-unambp absdeclor)
+    :returns (mv erp (new-type typep) (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate an abstract declarator."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is fairly similar to @(tsee valid-declor)
+       (see that function's documentation),
+       but since the declarator is abstract,
+       there is no identifier being declared to return.
+       Furthermore, there is no flag for function definitions,
+       since a function definition uses a declarator,
+       not an abstract declarator."))
+    (b* (((reterr) (irr-type) (irr-valid-table))
+         ((absdeclor absdeclor) absdeclor)
+         (type (if (consp absdeclor.pointers)
+                   (type-pointer)
+                 type)))
+      (valid-dirabsdeclor-option absdeclor.decl? type table ienv))
+    :measure (absdeclor-count absdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  ;; TODO: valid-dirabsdeclor
+  (define valid-dirabsdeclor ((dirabsdeclor dirabsdeclorp)
+                              (type typep)
+                              (table valid-tablep)
+                              (ienv ienvp))
+    :guard (dirabsdeclor-unambp dirabsdeclor)
+    :returns (mv erp (new-type typep) (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate a direct abstract declarator."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is fairly similar to @(tsee valid-dirdeclor)
+       (see that function's documentation),
+       but since the direct declarator is abstract,
+       there is no identifier being declared to return.
+       Furthermore, there is no flag for function definitions,
+       since a function definition uses a (direct) declarator,
+       not an (direct) abstract declarator."))
+    (b* (((reterr) (irr-type) (irr-valid-table)))
+      (dirabsdeclor-case
+       dirabsdeclor
+       :paren
+       (valid-absdeclor dirabsdeclor.unwrap type table ienv)
+       :array
+       (b* ((type (type-array))
+            ((erp type table)
+             (valid-dirabsdeclor-option dirabsdeclor.decl? type table ienv))
+            ((erp index-type? table)
+             (valid-expr-option dirabsdeclor.expr? table ienv))
+            ((when (and index-type?
+                        (not (type-integerp index-type?))))
+             (reterr (msg "The index expression ~
+                           of the direct abstract declarator ~x0 ~
+                           has type ~x1."
+                          (dirabsdeclor-fix dirabsdeclor)
+                          index-type?))))
+         (retok type table))
+       :array-static1
+       (b* ((type (type-array))
+            ((erp type table)
+             (valid-dirabsdeclor-option dirabsdeclor.decl? type table ienv))
+            ((erp index-type table)
+             (valid-expr dirabsdeclor.expr table ienv))
+            ((unless (type-integerp index-type))
+             (reterr (msg "The index expression ~
+                           of the direct abstract declarator ~x0 ~
+                           has type ~x1."
+                          (dirabsdeclor-fix dirabsdeclor)
+                          index-type))))
+         (retok type table))
+       :array-static2
+       (b* ((type (type-array))
+            ((erp type table)
+             (valid-dirabsdeclor-option dirabsdeclor.decl? type table ienv))
+            ((erp index-type table)
+             (valid-expr dirabsdeclor.expr table ienv))
+            ((unless (type-integerp index-type))
+             (reterr (msg "The index expression ~
+                           of the direct abstract declarator ~x0 ~
+                           has type ~x1."
+                          (dirabsdeclor-fix dirabsdeclor)
+                          index-type))))
+         (retok type table))
+       :array-star
+       (b* ((type (type-array))
+            ((erp type table)
+             (valid-dirabsdeclor-option dirabsdeclor.decl? type table ienv)))
+         (retok type table))
+       :function
+       (b* (((when (or (type-case type :function)
+                       (type-case type :array)))
+             (reterr (msg "The direct abstract declarator ~x0 ~
+                           has type ~x1."
+                          (dirabsdeclor-fix dirabsdeclor)
+                          (type-fix type))))
+            (type (type-function))
+            ((erp type table)
+             (valid-dirabsdeclor-option dirabsdeclor.decl? type table ienv))
+            (table (valid-push-scope table))
+            ;; TODO: validate parameters, passing fundef-params-p
+            (table (valid-pop-scope table)))
+         (retok type table))
+       :dummy-base
+       (prog2$ (impossible) (reterr t))))
+    :measure (dirabsdeclor-count dirabsdeclor))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define valid-dirabsdeclor-option ((dirabsdeclor? dirabsdeclor-optionp)
+                                     (type typep)
+                                     (table valid-tablep)
+                                     (ienv ienvp))
+    :guard (dirabsdeclor-option-unambp dirabsdeclor?)
+    :returns (mv erp (new-type typep) (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate an optional direct abstract declarator."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "If there is no direct abstract declarator,
+       we return the type and validation table unchanged.
+       Otherwise, we validate the direct abstract declarator,
+       using a separate validation function."))
+    (b* (((reterr) (irr-type) (irr-valid-table)))
+      (dirabsdeclor-option-case
+       dirabsdeclor?
+       :none (retok (type-fix type) (valid-table-fix table))
+       :some (valid-dirabsdeclor dirabsdeclor?.val type table ienv)))
+    :measure (dirabsdeclor-option-count dirabsdeclor?))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
