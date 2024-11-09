@@ -12,7 +12,6 @@
 (in-package "ALEOBFT-STAKE")
 
 (include-book "system-states")
-(include-book "committees")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
