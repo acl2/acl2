@@ -1898,7 +1898,7 @@
     :short "Print a member designator."
     (member-designor-case
      memdes
-     :ident (print-ident memdes.unwrap pstate)
+     :ident (print-ident memdes.ident pstate)
      :dot (b* ((pstate (print-member-designor memdes.member pstate))
                (pstate (print-astring "." pstate))
                (pstate (print-ident memdes.name pstate)))

@@ -1710,7 +1710,7 @@
       "These are part of calls of @('__builtin_offsetof'),
        which is a GCC extension;
        see @(tsee expr)."))
-    (:ident ((unwrap ident)))
+    (:ident ((ident ident)))
     (:dot ((member member-designor)
            (name ident)))
     (:sub ((member member-designor)
