@@ -238,7 +238,8 @@
            certificate->round-of-certificate-with-author+round
            validator-state->dag-of-commit-anchors-next
            validator-state->last-of-commit-anchors-next
-           certificate->author-of-last-anchor)
+           certificate->author-of-last-anchor
+           certificate->round-of-last-anchor)
   :use (:instance collect-all-anchors-to-append-of-collect-anchors
                   (anchor (last-anchor (get-validator-state val systate)
                                        (all-addresses systate)))

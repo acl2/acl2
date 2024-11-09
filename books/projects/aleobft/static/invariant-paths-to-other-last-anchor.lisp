@@ -141,7 +141,8 @@
              anchorp
              system-previous-in-dag-p-necc
              system-last-is-even-p-necc
-             certificate->author-of-last-anchor)
+             certificate->author-of-last-anchor
+             certificate->round-of-last-anchor)
     :use
     ((:instance
       dag-all-path-to-p-other-holds
