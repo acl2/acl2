@@ -80,7 +80,7 @@
      the certificate in the @('create-certificate') event;
      see @(tsee event).
      The input @('vstate') is the state of
-     the validator whose address is an endorser of the certificate.
+     the validator whose address is a signer of the certificate.
      See the (indirect) callers of this function.")
    (xdoc::p
     "A certificate is signed by author and endorsers,
