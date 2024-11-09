@@ -16,6 +16,7 @@
 (include-book "dags")
 (include-book "anchors")
 (include-book "blockchains")
+(include-book "transitions-create")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -47,5 +48,6 @@
                     dags
                     anchors
                     blockchains
+                    transitions-create
                     t)
   :default-parent t)
