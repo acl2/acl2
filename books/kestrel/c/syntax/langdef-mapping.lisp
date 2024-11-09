@@ -297,7 +297,7 @@
            (type-spec-case (car tyspecs) :union))
       (b* ((tyspec (car tyspecs))
            (ident (check-strunispec-no-members
-                   (type-spec-union->unwrap tyspec)))
+                   (type-spec-union->spec tyspec)))
            ((when (not ident))
             (reterr (msg "Unsupported type specifier ~x0 that is ~
                           a union specifier with members."
@@ -876,7 +876,7 @@
              ((erp members1) (ldm-structdecl-list strunispec.members)))
           (retok (c::make-tag-declon-struct :tag name1 :members members1))))
        ((when (type-spec-case tyspec :union))
-        (b* (((strunispec strunispec) (type-spec-union->unwrap tyspec))
+        (b* (((strunispec strunispec) (type-spec-union->spec tyspec))
              ((unless strunispec.name)
               (reterr (msg "Unsupported union declaration without name.")))
              ((erp name1) (ldm-ident strunispec.name))

@@ -1941,7 +1941,7 @@
                   (pstate (print-strunispec tyspec.spec pstate)))
                pstate)
      :union (b* ((pstate (print-astring "union " pstate))
-                 (pstate (print-strunispec tyspec.unwrap pstate)))
+                 (pstate (print-strunispec tyspec.spec pstate)))
               pstate)
      :enum (b* ((pstate (print-astring "enum " pstate))
                 (pstate (print-enumspec tyspec.unwrap pstate)))

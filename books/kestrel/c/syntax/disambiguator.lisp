@@ -1251,7 +1251,7 @@
                  (retok (type-spec-struct new-strunispec)
                         table))
        :union (b* (((erp new-strunispec table)
-                    (dimb-strunispec tyspec.unwrap table)))
+                    (dimb-strunispec tyspec.spec table)))
                 (retok (type-spec-union new-strunispec)
                        table))
        :enum (b* (((erp new-enumspec table)

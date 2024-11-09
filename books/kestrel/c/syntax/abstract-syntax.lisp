@@ -1786,7 +1786,7 @@
     (:complex ())
     (:atomic ((type tyname)))
     (:struct ((spec strunispec)))
-    (:union ((unwrap strunispec)))
+    (:union ((spec strunispec)))
     (:enum ((unwrap enumspec)))
     (:typedef ((name ident)))
     ;; GCC extensions:
