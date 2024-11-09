@@ -156,7 +156,7 @@
      and therefore the validator must have those predecessors in the DAG.
      If the certificate's round is 1,
      there is no previous round, and thus no previous certificates,
-     and thus no requirements on they being in the DAG.")
+     and thus no requirements on them being in the DAG.")
    (xdoc::p
     "The referenced certificate in the previous round must form a quorum,
      unless the certificate's round is 1,
