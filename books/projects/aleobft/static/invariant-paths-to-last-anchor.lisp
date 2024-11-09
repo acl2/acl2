@@ -133,7 +133,8 @@
              dag-authors-are-validators-p
              anchorp
              system-previous-in-dag-p-necc
-             system-last-is-even-p-necc)
+             system-last-is-even-p-necc
+             certificate->author-of-last-anchor)
     :use ((:instance dag-all-path-to-p-holds
                      (dag (validator-state->dag
                            (get-validator-state
