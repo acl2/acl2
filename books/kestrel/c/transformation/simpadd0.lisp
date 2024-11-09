@@ -243,7 +243,7 @@
      :atomic (type-spec-atomic (simpadd0-tyname tyspec.type))
      :struct (type-spec-struct (simpadd0-strunispec tyspec.spec))
      :union (type-spec-union (simpadd0-strunispec tyspec.spec))
-     :enum (type-spec-enum (simpadd0-enumspec tyspec.unwrap))
+     :enum (type-spec-enum (simpadd0-enumspec tyspec.spec))
      :typedef (type-spec-fix tyspec)
      :int128 (type-spec-fix tyspec)
      :float128 (type-spec-fix tyspec)

@@ -1944,7 +1944,7 @@
                  (pstate (print-strunispec tyspec.spec pstate)))
               pstate)
      :enum (b* ((pstate (print-astring "enum " pstate))
-                (pstate (print-enumspec tyspec.unwrap pstate)))
+                (pstate (print-enumspec tyspec.spec pstate)))
              pstate)
      :typedef (print-ident tyspec.name pstate)
      :int128 (print-astring "__int128" pstate)

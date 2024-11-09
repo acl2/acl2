@@ -1787,7 +1787,7 @@
     (:atomic ((type tyname)))
     (:struct ((spec strunispec)))
     (:union ((spec strunispec)))
-    (:enum ((unwrap enumspec)))
+    (:enum ((spec enumspec)))
     (:typedef ((name ident)))
     ;; GCC extensions:
     (:int128 ())

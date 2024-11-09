@@ -1255,7 +1255,7 @@
                 (retok (type-spec-union new-strunispec)
                        table))
        :enum (b* (((erp new-enumspec table)
-                   (dimb-enumspec tyspec.unwrap table)))
+                   (dimb-enumspec tyspec.spec table)))
                (retok (type-spec-enum new-enumspec) table))
        :typedef (b* ((kind (dimb-lookup-ident tyspec.name table))
                      ((unless kind)
