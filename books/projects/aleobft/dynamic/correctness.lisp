@@ -44,7 +44,7 @@
 (include-book "committed-anchor-sequences")
 (include-book "nonforking-anchors-def-and-init-and-next")
 (include-book "committed-redundant-def-and-init-and-next")
-(include-book "blockchain-redundant")
+(include-book "blockchain-redundant-def-and-init-and-next")
 (include-book "nonforking-blockchains-next")
 (include-book "simultaneous-induction")
 (include-book "unequivocal-accepted-certificates")
@@ -54,6 +54,7 @@
 (include-book "omni-paths")
 (include-book "nonforking-anchors")
 (include-book "committed-redundant")
+(include-book "blockchain-redundant")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -99,7 +100,7 @@
                     committed-anchors-sequences
                     nonforking-anchors-def-and-init-and-next
                     committed-redundant-and-init-and-next
-                    blockchain-redundant
+                    blockchain-redundant-def-and-init-and-next
                     nonforking-blockchains-next
                     simultaneous-induction
                     unequivocal-accepted-certificates
@@ -108,4 +109,5 @@
                     last-anchor-voters
                     omni-paths
                     nonforking-anchors
-                    committed-redundant))
+                    committed-redundant
+                    blockchain-redundant))

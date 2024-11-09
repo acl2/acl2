@@ -17,7 +17,7 @@
 (include-book "omni-paths-def-and-implied")
 (include-book "nonforking-anchors-def-and-init-and-next")
 (include-book "committed-redundant-def-and-init-and-next")
-(include-book "blockchain-redundant")
+(include-book "blockchain-redundant-def-and-init-and-next")
 (include-book "nonforking-blockchains-next")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
