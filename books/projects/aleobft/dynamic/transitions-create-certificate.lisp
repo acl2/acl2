@@ -37,7 +37,7 @@
      which abstracts the aforementioned message exchange process.
      Our @('create-certificate') event ``instantly'' creates a certificates,
      and broadcasts it to the other validators.
-     This can be thought as modeling the final act of
+     This can be thought of as modeling the final act of
      the aforementioned message exchange,
      namely the creation and broadcasting of the certificates
      after proposals and signatures have been exchanged,
