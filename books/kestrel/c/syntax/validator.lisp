@@ -1043,7 +1043,7 @@
    (xdoc::p
     "The identifier is always added to
      the first (i.e. innermost, i.e. current) scope.
-     The guard requires the existence of at least one scope;
+     We check the existence of at least one scope;
      recall that there must be always a file scope.")
    (xdoc::p
     "If the identifier is already present in the current scope,
@@ -2878,6 +2878,28 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  (define valid-const-expr-option ((cexpr? const-expr-optionp)
+                                   (table valid-tablep)
+                                   (ienv ienvp))
+    :guard (const-expr-option-unambp cexpr?)
+    :returns (mv erp (type? type-optionp) (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate an optional constant expression."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "If there is no constant expression,
+       we return @('nil') as the optional type,
+       and the validation table unchanged."))
+    (b* (((reterr) nil (irr-valid-table)))
+      (const-expr-option-case
+       cexpr?
+       :some (valid-const-expr cexpr?.val table ienv)
+       :none (retok nil (valid-table-fix table))))
+    :measure (const-expr-option-count cexpr?))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define valid-genassoc ((genassoc genassocp)
                           (table valid-tablep)
                           (ienv ienvp))
@@ -3067,10 +3089,10 @@
                     ((erp type table) (valid-tyname tyspec.type table ienv)))
                  (retok type nil table))
        :struct (b* (((unless (endp tyspecs)) (reterr msg-bad-preceding))
-                    ((erp table) (mv :todo-strunispec same-table)))
+                    ((erp table) (valid-strunispec tyspec.unwrap table ienv)))
                  (retok (type-struct) nil table))
        :union (b* (((unless (endp tyspecs)) (reterr msg-bad-preceding))
-                   ((erp table) (mv :todo-strunispec same-table)))
+                   ((erp table) (valid-strunispec tyspec.unwrap table ienv)))
                 (retok (type-union) nil table))
        :enum (b* (((when (endp tyspecs)) (reterr msg-bad-preceding))
                   ((erp table) (mv :todo-enumspec same-table)))
@@ -3772,6 +3794,39 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  (define valid-declor-option ((declor? declor-optionp)
+                               (type typep)
+                               (table valid-tablep)
+                               (ienv ienvp))
+    :guard (declor-option-unambp declor?)
+    :returns (mv erp
+                 (new-type typep)
+                 (ident? ident-optionp)
+                 (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate an optional declarator."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "If there is no declarator,
+       we return the type and validation table unchanged,
+       and no identifer.
+       Otherwise, we validate the declarator,
+       using a separate validation function.")
+     (xdoc::p
+      "This function does not take a return a @('fundef-params-p') flag
+       because optional declarators are not used in function parameters."))
+    (b* (((reterr) (irr-type) nil (irr-valid-table)))
+      (declor-option-case
+       declor?
+       :none (retok (type-fix type) nil (valid-table-fix table))
+       :some (b* (((erp & type ident table)
+                   (valid-declor declor?.val nil type table ienv)))
+               (retok type ident table))))
+    :measure (declor-option-count declor?))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define valid-dirdeclor ((dirdeclor dirdeclorp)
                            (fundef-params-p booleanp)
                            (type typep)
@@ -4221,6 +4276,7 @@
           (retok table))
          (ord-info (make-valid-ord-info-objfun :type type
                                                :linkage (linkage-none)))
+         ;; TODO: ensure not already in same scope
          (table (valid-add-ord ident? ord-info table)))
       (reterr table))
     :measure (paramdecl-count paramdecl))
@@ -4323,39 +4379,288 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  ;; TODO: valid-strunispec
+  (define valid-strunispec ((strunispec strunispecp)
+                            (table valid-tablep)
+                            (ienv ienvp))
+    :guard (strunispec-unambp strunispec)
+    :returns (mv erp (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate a structure or union specifier."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We check that there is at least a name or a list of members
+       [C:6.7.2.1/2].")
+     (xdoc::p
+      "For now our validation tables include
+       no information about structure and union tags,
+       so we do not extend the validation table,
+       if the structure or union specifier has a name.
+       However, we validate the members, if present."))
+    (b* (((reterr) (irr-valid-table))
+         ((strunispec strunispec) strunispec)
+         ((when (and (not strunispec.name)
+                     (endp strunispec.members)))
+          (reterr (msg "The structure or union specifier ~x0 ~
+                        has no name and no members."
+                       (strunispec-fix strunispec)))))
+      (valid-structdecl-list strunispec.members nil table ienv))
+    :measure (strunispec-count strunispec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  ;; TODO: valid-structdecl
+  (define valid-structdecl ((structdecl structdeclp)
+                            (previous ident-listp)
+                            (table valid-tablep)
+                            (ienv ienvp))
+    :guard (structdecl-unambp structdecl)
+    :returns (mv erp
+                 (new-previous ident-listp)
+                 (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate a structure declaration."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The @('previous') input consists of
+       the names of the members that precede this structure declaration
+       in the structure or union specifier being validated.
+       The @('new-previous') output consists of
+       the extension of @('previous') with
+       the names of the members declared by this structure declaration.")
+     (xdoc::p
+      "If the structure declaration declares members,
+       first we validate the list of specifiers and qualifiers,
+       obtaining a type if the validation is successful.
+       Then we use a separate validation function for the structure declarators,
+       which also returns a possibly extended list of member names.")
+     (xdoc::p
+      "If the structure declaration consists of a static assertion declaration,
+       we validate it using a separate validation function.
+       The list of member names is unchanged.")
+     (xdoc::p
+      "If the structure declaration is empty (i.e. a semicolon),
+       which is a GCC extension,
+       the list of member names and the validation table are unchanged."))
+    (b* (((reterr) nil (irr-valid-table)))
+      (structdecl-case
+       structdecl
+       :member
+       (b* (((erp type table)
+             (valid-spec/qual-list structdecl.specqual nil nil table ienv)))
+         (valid-structdeclor-list structdecl.declor previous type table ienv))
+       :statassert
+       (b* (((erp table) (valid-statassert structdecl.unwrap table ienv)))
+         (retok (ident-list-fix previous) table))
+       :empty
+       (retok (ident-list-fix previous) (valid-table-fix table))))
+    :measure (structdecl-count structdecl))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  ;; TODO: valid-structdecl-list
+  (define valid-structdecl-list ((structdecls structdecl-listp)
+                                 (previous ident-listp)
+                                 (table valid-tablep)
+                                 (ienv ienvp))
+    :guard (structdecl-list-unambp structdecls)
+    :returns (mv erp (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate a list of structure declarators."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The @('previous') input consists of
+       the names of the members that precede these structure declarations
+       (which declare more members)
+       in the structure or union specifier being validated.
+       This list is used to ensure uniqueness of member names."))
+    (b* (((reterr) (irr-valid-table))
+         ((when (endp structdecls)) (retok (valid-table-fix table)))
+         ((erp previous table)
+          (valid-structdecl (car structdecls) previous table ienv)))
+      (valid-structdecl-list (cdr structdecls) previous table ienv))
+    :measure (structdecl-list-count structdecls))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  ;; TODO: valid-structdeclor
+  (define valid-structdeclor ((structdeclor structdeclorp)
+                              (previous ident-listp)
+                              (type typep)
+                              (table valid-tablep)
+                              (ienv ienvp))
+    :guard (structdeclor-unambp structdeclor)
+    :returns (mv erp
+                 (new-previous ident-listp)
+                 (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate a structure declarator."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The @('previous') input and @('new-previous') output
+       have the same meaning as in @(tsee valid-structdecl).")
+     (xdoc::p
+      "The @('type') input comes from the list of specifiers and qualifiers
+       that precedes the list of structure declarators
+       of which this structure declarator is an element.
+       We ensure that there is either a declarator or a constant expression
+       (this is actually a syntactic constraint,
+       but it is currently not captured in the abstract syntax,
+       so we check it here).
+       If there is a declarator, we validate it,
+       and we add the declared identifier to the list member names,
+       after ensuring that it is not already there.
+       If there is a constant expression, we validate it,
+       but for now we do not perform any checks related to its value
+       [C:6.7.2.1/4];
+       we also do not constrain the types of bit fields [C:6.7.2.1/5],
+       but we ensure that the constant expression, if present, is integer."))
+    (b* (((reterr) nil (irr-valid-table))
+         ((structdeclor structdeclor) structdeclor)
+         ((when (and (not structdeclor.declor?)
+                     (not structdeclor.expr?)))
+          (reterr (msg "The structure declarator ~x0 is empty."
+                       (structdeclor-fix structdeclor))))
+         ((erp & ident? table)
+          (valid-declor-option structdeclor.declor? type table ienv))
+         (previous (ident-list-fix previous))
+         ((when (and ident?
+                     (member-equal ident? previous)))
+          (reterr (msg "The structure declarator ~x0 ~
+                        duplicates the member name."
+                       (structdeclor-fix structdeclor))))
+         (previous (if ident?
+                       (rcons ident? previous)
+                     previous))
+         ((erp width-type? table)
+          (valid-const-expr-option structdeclor.expr? table ienv))
+         ((when (and width-type?
+                     (not (type-integerp width-type?))))
+          (reterr (msg "The structure declarator ~x0 ~
+                        has a width of type ~x1."
+                       (structdeclor-fix structdeclor)
+                       width-type?))))
+      (retok previous table))
+    :measure (structdeclor-count structdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  ;; TODO: valid-structdeclor-list
+  (define valid-structdeclor-list ((structdeclors structdeclor-listp)
+                                   (previous ident-listp)
+                                   (type typep)
+                                   (table valid-tablep)
+                                   (ienv ienvp))
+    :guard (structdeclor-list-unambp structdeclors)
+    :returns (mv erp
+                 (new-previous ident-listp)
+                 (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate a list structure declarators."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We validate each structure declarator in turn,
+       threading the data through.
+       Note that the same type
+       (coming from the list of specifiers and qualifiers)
+       is passed to the validation function for each structure declarator,
+       since that type applied to all them
+       (possibly refined, possibly differently, by the structure declarators."))
+    (b* (((reterr) nil (irr-valid-table))
+         ((when (endp structdeclors))
+          (retok (ident-list-fix previous) (valid-table-fix table)))
+         ((erp previous table)
+          (valid-structdeclor (car structdeclors) previous type table ienv)))
+      (valid-structdeclor-list (cdr structdeclors) previous type table ienv))
+    :measure (structdeclor-list-count structdeclors))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  ;; TODO: valid-enumspec
+  (define valid-enumspec ((enumspec enumspecp)
+                          (table valid-tablep)
+                          (ienv ienvp))
+    :guard (enumspec-unambp enumspec)
+    :returns (mv erp (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate an enumeration specifier."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We check that there is at least a name of a list of enumerators;
+       although this is a syntactic constraint,
+       it is currently not captured in our abstract syntax,
+       so we double-check it here.")
+     (xdoc::p
+      "For now our validation tabled include
+       no information about enumeration tags,
+       so we do not extend the validation table,
+       if the enumeration specifier has a name.
+       However, we validate the enumerators, if present."))
+    (b* (((reterr) (irr-valid-table))
+         ((enumspec enumspec) enumspec)
+         ((when (and (not enumspec.name)
+                     (endp enumspec.list)))
+          (reterr (msg "The enumeration specifier ~x0 ~
+                        has no name and no enumerators."
+                       (enumspec-fix enumspec)))))
+      (valid-enumer-list enumspec.list table ienv))
+    :measure (enumspec-count enumspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  ;; TODO: valid-enumer
+  (define valid-enumer ((enumer enumerp) (table valid-tablep) (ienv ienvp))
+    :guard (enumer-unambp enumer)
+    :returns (mv erp (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate an enumerator."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The enumeration constant is added to the validation table [C:6.2.1/7].
+       If there is a constant expression,
+       we validated it and check that it has integer type,
+       but for now we do not check that the value
+       is representable as @('int') [C:6.7.2.2/2]."))
+    (b* (((reterr) (irr-valid-table))
+         ((enumer enumer) enumer)
+         ;; TODO: ensure not already in same scope
+         (table (valid-add-ord enumer.name (valid-ord-info-enumconst) table))
+         ((erp type? table)
+          (valid-const-expr-option enumer.value table ienv))
+         ((when (and type?
+                     (not (type-integerp type?))))
+          (reterr (msg "The value of the numerator ~x0 has type ~x1."
+                       (enumer-fix enumer) type?))))
+      (retok table))
+    :measure (enumer-count enumer))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  ;; TODO: valid-enumer-list
+  (define valid-enumer-list ((enumers enumer-listp)
+                             (table valid-tablep)
+                             (ienv ienvp))
+    :guard (enumer-list-unambp enumers)
+    :returns (mv erp (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate a list of enumerators."
+    (declare (ignore enumers table ienv))
+    (b* (((reterr) (irr-valid-table)))
+      (reterr :todo))
+    :measure (enumer-list-count enumers))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  ;; TODO: valid-statassert
+  (define valid-statassert ((statassert statassertp)
+                            (table valid-tablep)
+                            (ienv ienvp))
+    :guard (statassert-unambp statassert)
+    :returns (mv erp (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate a static assertion declaration."
+    (declare (ignore statassert table ienv))
+    (b* (((reterr) (irr-valid-table)))
+      (reterr :todo))
+    :measure (statassert-count statassert))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
