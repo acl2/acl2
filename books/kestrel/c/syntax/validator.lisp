@@ -969,7 +969,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define valid-pop-scope ((table valid-tablep))
-  :guard (> (valid-table-num-scopes table) 0)
   :returns (new-table valid-tablep)
   :short "Pop a scope from the validation table."
   :long
@@ -978,7 +977,10 @@
     "The guard requires that there are is at least one scope.")
    (xdoc::p
     "The popped scope is discarded."))
-  (b* ((scopes (valid-table->scopes table))
+  (b* (((unless (> (valid-table-num-scopes table) 0))
+        (raise "Internal error: no scopes in validation table.")
+        (valid-table-fix table))
+       (scopes (valid-table->scopes table))
        (new-scopes (cdr scopes)))
     (change-valid-table table :scopes new-scopes))
   :hooks (:fix)
@@ -1032,7 +1034,6 @@
 (define valid-add-ord ((ident identp)
                        (info valid-ord-infop)
                        (table valid-tablep))
-  :guard (> (valid-table-num-scopes table) 0)
   :returns (new-table valid-tablep)
   :short "Add an ordinary identifier to the validation table."
   :long
@@ -1052,7 +1053,10 @@
      i.e. when it ``refines'' the validation information for the identifier.
      We could consider adding a guard to this function
      that characterizes the acceptable overwriting."))
-  (b* ((scopes (valid-table->scopes table))
+  (b* (((unless (> (valid-table-num-scopes table) 0))
+        (raise "Internal error: no scopes in validation table.")
+        (valid-table-fix table))
+       (scopes (valid-table->scopes table))
        (scope (car scopes))
        (ord-scope (valid-scope->ord scope))
        (new-ord-scope (acons (ident-fix ident)
@@ -3398,7 +3402,12 @@
          ((erp type? tyspecs storspecs table)
           (valid-declspec (car declspecs) type? tyspecs storspecs table ienv)))
       (valid-declspec-list (cdr declspecs) type? tyspecs storspecs table ienv))
-    :measure (declspec-list-count declspecs))
+    :measure (declspec-list-count declspecs)
+
+    ///
+
+    (more-returns
+     (all-storspecs true-listp :rule-classes :type-prescription)))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3858,6 +3867,10 @@
        the parameters form a function prototype scope [C:6.2.1/4],
        which is therefore popped.")
      (xdoc::p
+      "For the function declarator with a parameter type list,
+       we handle the special case of a single @('void') [C:6.7.6.3/10]
+       before calling a separate function to validate the parameters.")
+     (xdoc::p
       "A function declarator with a non-empty name list can only occur
        as the parameters of a function being defined [C:6.7.6.3/3]
        Thus, unless the list is empty,
@@ -3942,7 +3955,14 @@
             ((erp fundef-params-p type ident table)
              (valid-dirdeclor dirdeclor.decl fundef-params-p type table ienv))
             (table (valid-push-scope table))
-            ;; TODO: validate parameters, passing fundef-params-p
+            ((erp table)
+             (if (equal dirdeclor.params
+                        (list (make-paramdecl
+                               :spec (list (declspec-tyspec (type-spec-void)))
+                               :decl (paramdeclor-none))))
+                 (retok table)
+               (valid-paramdecl-list
+                dirdeclor.params fundef-params-p table ienv)))
             (table (if fundef-params-p
                        table
                      (valid-pop-scope table))))
@@ -4001,6 +4021,30 @@
                  type)))
       (valid-dirabsdeclor-option absdeclor.decl? type table ienv))
     :measure (absdeclor-count absdeclor))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define valid-absdeclor-option ((absdeclor? absdeclor-optionp)
+                                  (type typep)
+                                  (table valid-tablep)
+                                  (ienv ienvp))
+    :guard (absdeclor-option-unambp absdeclor?)
+    :returns (mv erp (new-type typep) (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate an optional abstract declarator."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "If there is no abstract declarator,
+       we return the type and validation table unchanged.
+       Otherwise, we validate the abstract declarator,
+       using a separate validation function."))
+    (b* (((reterr) (irr-type) (irr-valid-table)))
+      (absdeclor-option-case
+       absdeclor?
+       :none (retok (type-fix type) (valid-table-fix table))
+       :some (valid-absdeclor absdeclor?.val type table ienv)))
+    :measure (absdeclor-option-count absdeclor?))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4083,7 +4127,13 @@
             ((erp type table)
              (valid-dirabsdeclor-option dirabsdeclor.decl? type table ienv))
             (table (valid-push-scope table))
-            ;; TODO: validate parameters, passing fundef-params-p
+            ((erp table)
+             (if (equal dirabsdeclor.params
+                        (list (make-paramdecl
+                               :spec (list (declspec-tyspec (type-spec-void)))
+                               :decl (paramdeclor-none))))
+                 (retok table)
+               (valid-paramdecl-list dirabsdeclor.params nil table ienv)))
             (table (valid-pop-scope table)))
          (retok type table))
        :dummy-base
@@ -4116,15 +4166,133 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  ;; TODO: valid-paramdecl
+  (define valid-paramdecl ((paramdecl paramdeclp)
+                           (fundef-params-p booleanp)
+                           (table valid-tablep)
+                           (ienv ienvp))
+    :guard (paramdecl-unambp paramdecl)
+    :returns (mv erp (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate a parameter declaration."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The @('fundef-params-p') input is @('t') iff
+       we are validating the parameter of a function definition.")
+     (xdoc::p
+      "We validate the declaration specifiers,
+       which results in a type,
+       a list of storage class specifiers,
+       and a possibly updated table.
+       We ensure that the list of storage class specifiers
+       is either empty or the singleton @('register') [C:6.7.6.3/2].")
+     (xdoc::p
+      "We validate the parameter declarator,
+       ensuring that it has an identifier if @('fundef-params-p') is @('t')
+       [C:6.9.1/5].
+       We adjust the type if necessary [C:6.7.6.3/7] [C:6.7.6.3/8].
+       If the parameter declarator has an identifier,
+       we extend the validation table with it.
+       Parameters of function declarations have no linkage [C:6.2.2/6]."))
+    (b* (((reterr) (irr-valid-table))
+         ((paramdecl paramdecl) paramdecl)
+         ((erp type storspecs table)
+          (valid-declspec-list paramdecl.spec nil nil nil table ienv))
+         ((unless (or (endp storspecs)
+                      (stor-spec-list-register-p storspecs)))
+          (reterr (msg "The parameter declaration ~x0 ~
+                        has storage class specifiers ~x1."
+                       (paramdecl-fix paramdecl)
+                       (stor-spec-list-fix storspecs))))
+         ((erp type ident? table)
+          (valid-paramdeclor paramdecl.decl type table ienv))
+         ((when (and fundef-params-p
+                     (not ident?)))
+          (reterr (msg "The parameter declaration ~x0 ~
+                        is for a function definition but has no identifier."
+                       (paramdecl-fix paramdecl))))
+         (type (if (type-case type :array)
+                   (type-pointer)
+                 type))
+         (type (if (type-case type :function)
+                   (type-pointer)
+                 type))
+         ((when (not ident?))
+          (retok table))
+         (ord-info (make-valid-ord-info-objfun :type type
+                                               :linkage (linkage-none)))
+         (table (valid-add-ord ident? ord-info table)))
+      (reterr table))
+    :measure (paramdecl-count paramdecl))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  ;; TODO: valid-paramdecl-list
+  (define valid-paramdecl-list ((paramdecls paramdecl-listp)
+                                (fundef-params-p booleanp)
+                                (table valid-tablep)
+                                (ienv ienvp))
+    :guard (paramdecl-list-unambp paramdecls)
+    :returns (mv erp (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate a list of parameter declarations."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "IWe validate each parameter in turn,
+       threading the validation table through,
+       using a separate validation function."))
+    (b* (((reterr) (irr-valid-table))
+         ((when (endp paramdecls)) (retok (valid-table-fix table)))
+         ((erp table)
+          (valid-paramdecl (car paramdecls) fundef-params-p table ienv)))
+      (valid-paramdecl-list (cdr paramdecls) fundef-params-p table ienv))
+    :measure (paramdecl-list-count paramdecls))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  ;; TODO: valid-paramdeclor
+  (define valid-paramdeclor ((paramdeclor paramdeclorp)
+                             (type typep)
+                             (table valid-tablep)
+                             (ienv ienvp))
+    :guard (paramdeclor-unambp paramdeclor)
+    :returns (mv erp
+                 (new-type typep)
+                 (ident? ident-optionp)
+                 (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate a parameter declarator."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The input type is the one resulting from
+       the declaration specifiers of the parameter declaration
+       of which the parameter declarator is part of.
+       If validation is successful,
+       we return a possibly refined type,
+       and an optional identifier.")
+     (xdoc::p
+      "If the parameter declarator is a (non-abstract) declarator,
+       we return the possibly refined type and the identifier.
+       If the parameter declarator is an abstract declarator,
+       we return the possibly refined type but no identifier.
+       If the parameter declarator is absent,
+       we return the type unchanged and no identifer."))
+    (b* (((reterr) (irr-type) (irr-ident) (irr-valid-table)))
+      (paramdeclor-case
+       paramdeclor
+       :declor
+       (b* (((erp & type ident table)
+             (valid-declor paramdeclor.unwrap nil type table ienv)))
+         (retok type ident table))
+       :absdeclor
+       (b* (((erp type table)
+             (valid-absdeclor paramdeclor.unwrap type table ienv)))
+         (retok type nil table))
+       :none
+       (retok (type-fix type) nil (valid-table-fix table))
+       :ambig
+       (prog2$ (impossible) (reterr t))))
+    :measure (paramdeclor-count paramdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4137,10 +4305,20 @@
     (xdoc::topstring
      (xdoc::p
       "A valid type name denotes a type,
-       so we return a type if validation is successful."))
-    (declare (ignore tyname table ienv))
-    (b* (((reterr) (irr-type) (irr-valid-table)))
-      (reterr :todo))
+       so we return a type if validation is successful.")
+     (xdoc::p
+      "First we validate the list of specifiers and qualifiers,
+       which returns a type if successful.
+       Then we validate the optional abstract declarator,
+       which returns a possibly refined type.
+       We return the latter type."))
+    (b* (((reterr) (irr-type) (irr-valid-table))
+         ((tyname tyname) tyname)
+         ((erp type table)
+          (valid-spec/qual-list tyname.specqual nil nil table ienv))
+         ((erp type table)
+          (valid-absdeclor-option tyname.decl? type table ienv)))
+      (retok type table))
     :measure (tyname-count tyname))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
