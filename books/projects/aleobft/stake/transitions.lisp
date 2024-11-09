@@ -17,6 +17,7 @@
 (include-book "anchors")
 (include-book "blockchains")
 (include-book "transitions-create")
+(include-book "transitions-receive")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -49,5 +50,6 @@
                     anchors
                     blockchains
                     transitions-create
+                    transitions-receive
                     t)
   :default-parent t)
