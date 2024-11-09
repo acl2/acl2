@@ -851,11 +851,7 @@
      but faulty validators behave arbitrarily regardless of
      which messages they receive.
      Thus, in our model of AleoBFT, we ignore messages sent to faulty validators
-     by only adding to the network messages sent to correct validators.
-     We could easily change our model to add to the network
-     messages to all correct validators,
-     but since faulty validators have no internal state in our model,
-     messages to faulty validators would have no use and purpose.")
+     by only adding to the network messages sent to correct validators.")
    (xdoc::p
     "It may also seem strange that the messages are sent to
      all the validators in the system, and not just the ones in the committee.
