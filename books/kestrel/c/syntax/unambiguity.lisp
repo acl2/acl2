@@ -203,7 +203,7 @@
                     :bool t
                     :complex t
                     :atomic (tyname-unambp tyspec.type)
-                    :struct (strunispec-unambp tyspec.unwrap)
+                    :struct (strunispec-unambp tyspec.spec)
                     :union (strunispec-unambp tyspec.unwrap)
                     :enum (enumspec-unambp tyspec.unwrap)
                     :typedef t
@@ -1701,10 +1701,10 @@
              (tyname-unambp (type-spec-atomic->type tyspec)))
     :expand (type-spec-unambp tyspec))
 
-  (defrule strunispec-unambp-of-type-spec-struct->unwrap
+  (defrule strunispec-unambp-of-type-spec-struct->spec
     (implies (and (type-spec-unambp tyspec)
                   (type-spec-case tyspec :struct))
-             (strunispec-unambp (type-spec-struct->unwrap tyspec)))
+             (strunispec-unambp (type-spec-struct->spec tyspec)))
     :expand (type-spec-unambp tyspec))
 
   (defrule strunispec-unambp-of-type-spec-union->unwrap

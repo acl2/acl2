@@ -1938,7 +1938,7 @@
                   (pstate (print-astring ")" pstate)))
                pstate)
      :struct (b* ((pstate (print-astring "struct " pstate))
-                  (pstate (print-strunispec tyspec.unwrap pstate)))
+                  (pstate (print-strunispec tyspec.spec pstate)))
                pstate)
      :union (b* ((pstate (print-astring "union " pstate))
                  (pstate (print-strunispec tyspec.unwrap pstate)))

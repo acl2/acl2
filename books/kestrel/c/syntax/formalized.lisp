@@ -223,7 +223,7 @@
            (endp (cdr tyspecs))
            (type-spec-case (car tyspecs) :struct)
            (check-strunispec-no-members
-            (type-spec-struct->unwrap (car tyspecs)))
+            (type-spec-struct->spec (car tyspecs)))
            t))
   :hooks (:fix))
 
@@ -875,7 +875,7 @@
               (declspec-case (car decl.specs) :tyspec)
               (type-spec-case (declspec-tyspec->unwrap (car decl.specs))
                               :struct)
-              (strunispec-formalp (type-spec-struct->unwrap
+              (strunispec-formalp (type-spec-struct->spec
                                    (declspec-tyspec->unwrap (car decl.specs))))
               (endp decl.init))
    :statassert nil)

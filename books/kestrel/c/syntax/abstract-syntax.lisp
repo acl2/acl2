@@ -1785,7 +1785,7 @@
     (:bool ())
     (:complex ())
     (:atomic ((type tyname)))
-    (:struct ((unwrap strunispec)))
+    (:struct ((spec strunispec)))
     (:union ((unwrap strunispec)))
     (:enum ((unwrap enumspec)))
     (:typedef ((name ident)))

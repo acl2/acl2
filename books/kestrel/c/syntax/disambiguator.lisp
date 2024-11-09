@@ -1247,7 +1247,7 @@
        :atomic (b* (((erp new-type table) (dimb-tyname tyspec.type table)))
                  (retok (type-spec-atomic new-type) table))
        :struct (b* (((erp new-strunispec table)
-                     (dimb-strunispec tyspec.unwrap table)))
+                     (dimb-strunispec tyspec.spec table)))
                  (retok (type-spec-struct new-strunispec)
                         table))
        :union (b* (((erp new-strunispec table)

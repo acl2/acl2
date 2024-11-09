@@ -285,7 +285,7 @@
            (type-spec-case (car tyspecs) :struct))
       (b* ((tyspec (car tyspecs))
            (ident (check-strunispec-no-members
-                   (type-spec-struct->unwrap tyspec)))
+                   (type-spec-struct->spec tyspec)))
            ((when (not ident))
             (reterr (msg "Unsupported type specifier ~x0 that is ~
                           a structure specifier with members."
@@ -869,7 +869,7 @@
                      declspec)))
        (tyspec (declspec-tyspec->unwrap declspec))
        ((when (type-spec-case tyspec :struct))
-        (b* (((strunispec strunispec) (type-spec-struct->unwrap tyspec))
+        (b* (((strunispec strunispec) (type-spec-struct->spec tyspec))
              ((unless strunispec.name)
               (reterr (msg "Unsupported structure declaration without name.")))
              ((erp name1) (ldm-ident strunispec.name))

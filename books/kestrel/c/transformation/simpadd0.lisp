@@ -241,7 +241,7 @@
      :bool (type-spec-fix tyspec)
      :complex (type-spec-fix tyspec)
      :atomic (type-spec-atomic (simpadd0-tyname tyspec.type))
-     :struct (type-spec-struct (simpadd0-strunispec tyspec.unwrap))
+     :struct (type-spec-struct (simpadd0-strunispec tyspec.spec))
      :union (type-spec-union (simpadd0-strunispec tyspec.unwrap))
      :enum (type-spec-enum (simpadd0-enumspec tyspec.unwrap))
      :typedef (type-spec-fix tyspec)
