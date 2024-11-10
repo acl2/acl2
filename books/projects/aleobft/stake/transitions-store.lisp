@@ -235,10 +235,10 @@
             (mv (1- cert.round) (timer-running))
           (mv vstate.round vstate.timer)))
        (new-vstate (change-validator-state vstate
+                                           :round new-round
                                            :dag new-dag
                                            :buffer new-buffer
                                            :endorsed new-endorsed
-                                           :round new-round
                                            :timer new-timer))
        (systate (update-validator-state val new-vstate systate)))
     systate)
@@ -253,6 +253,21 @@
            (correct-addresses systate))
     :hyp (store-possiblep val cert systate)
     :hints (("Goal" :in-theory (enable store-possiblep))))
+
+  (defret validator-state->round-of-store-next
+    (equal (validator-state->round (get-validator-state val1 new-systate))
+           (if (and (equal (address-fix val1) (address-fix val))
+                    (> (certificate->round cert)
+                       (1+ (validator-state->round
+                            (get-validator-state val systate)))))
+               (1- (certificate->round cert))
+             (validator-state->round (get-validator-state val1 systate))))
+    :hyp (store-possiblep val cert systate)
+    :hints
+    (("Goal"
+      :in-theory (enable store-possiblep
+                         get-validator-state-of-update-validator-state
+                         posp))))
 
   (defret validator-state->dag-of-store-next
     (equal (validator-state->dag (get-validator-state val1 new-systate))
@@ -301,10 +316,9 @@
     :hyp (store-possiblep val cert systate)
     :hints
     (("Goal"
-      :in-theory
-      (enable store-possiblep
-              get-validator-state-of-update-validator-state
-              nfix))))
+      :in-theory (enable store-possiblep
+                         get-validator-state-of-update-validator-state
+                         nfix))))
 
   (defret validator-state->blockchain-of-store-next
     (equal (validator-state->blockchain (get-validator-state val1 new-systate))
@@ -312,9 +326,8 @@
     :hyp (store-possiblep val cert systate)
     :hints
     (("Goal"
-      :in-theory
-      (enable store-possiblep
-              get-validator-state-of-update-validator-state))))
+      :in-theory (enable store-possiblep
+                         get-validator-state-of-update-validator-state))))
 
   (defret validator-state->committed-of-store-next
     (equal (validator-state->committed (get-validator-state val1 new-systate))
@@ -322,9 +335,22 @@
     :hyp (store-possiblep val cert systate)
     :hints
     (("Goal"
-      :in-theory
-      (enable store-possiblep
-              get-validator-state-of-update-validator-state))))
+      :in-theory (enable store-possiblep
+                         get-validator-state-of-update-validator-state))))
+
+  (defret validator-state->timer-of-store-next
+    (equal (validator-state->timer (get-validator-state val1 new-systate))
+           (if (and (equal (address-fix val1) (address-fix val))
+                    (> (certificate->round cert)
+                       (1+ (validator-state->round
+                            (get-validator-state val systate)))))
+               (timer-running)
+             (validator-state->timer (get-validator-state val1 systate))))
+    :hyp (store-possiblep val cert systate)
+    :hints
+    (("Goal"
+      :in-theory (enable store-possiblep
+                         get-validator-state-of-update-validator-state))))
 
   (defret get-network-state-of-store-next
     (equal (get-network-state (store-next val cert systate))
