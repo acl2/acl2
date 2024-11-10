@@ -211,7 +211,7 @@
      for that round in our model (or a proposal in a more detailed model).
      This aspect of the protocol needs further study,
      along with the logic for
-     round advancement in @('advance-round') events.")
+     round advancement in @('advance') events.")
    (xdoc::p
     "If we advance the round, we also reset the timer,
      by setting it to `running'.
