@@ -681,7 +681,7 @@
                   (equal 0 (+ (fp-arith-triple->rational x)
                               (* (fp-arith-triple->rational y)
                                  (fp-arith-triple->rational z)))))))
-  
+
   ;; (defret <fn>-gte-exact
   ;;   (implies (and (integerp (* (expt 2 frac-size)
   ;;                              (rational-significand r)))
