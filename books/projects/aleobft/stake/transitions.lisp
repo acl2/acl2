@@ -20,6 +20,7 @@
 (include-book "transitions-receive")
 (include-book "transitions-store")
 (include-book "transitions-advance")
+(include-book "transitions-commit")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -55,5 +56,6 @@
                     transitions-receive
                     transitions-store
                     transitions-advance
+                    transitions-commit
                     t)
   :default-parent t)
