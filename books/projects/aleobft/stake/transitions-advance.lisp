@@ -222,9 +222,20 @@
     :hyp (advance-possiblep val systate)
     :hints (("Goal" :in-theory (enable advance-possiblep))))
 
+  (defret validator-state->round-of-advance-next
+    (equal (validator-state->round (get-validator-state val1 new-systate))
+           (if (equal (address-fix val1) (address-fix val))
+               (1+ (validator-state->round (get-validator-state val1 systate)))
+             (validator-state->round (get-validator-state val1 systate))))
+    :hyp (advance-possiblep val systate)
+    :hints
+    (("Goal"
+      :in-theory (enable advance-possiblep
+                         get-validator-state-of-update-validator-state))))
+
   (defret validator-state->dag-of-advance-next
-    (equal (validator-state->dag (get-validator-state val new-systate))
-           (validator-state->dag (get-validator-state val systate)))
+    (equal (validator-state->dag (get-validator-state val1 new-systate))
+           (validator-state->dag (get-validator-state val1 systate)))
     :hyp (advance-possiblep val systate)
     :hints
     (("Goal"
@@ -232,8 +243,8 @@
                          get-validator-state-of-update-validator-state))))
 
   (defret validator-state->buffer-of-advance-next
-    (equal (validator-state->buffer (get-validator-state val new-systate))
-           (validator-state->buffer (get-validator-state val systate)))
+    (equal (validator-state->buffer (get-validator-state val1 new-systate))
+           (validator-state->buffer (get-validator-state val1 systate)))
     :hyp (advance-possiblep val systate)
     :hints
     (("Goal"
@@ -241,8 +252,8 @@
                          get-validator-state-of-update-validator-state))))
 
   (defret validator-state->endorsed-of-advance-next
-    (equal (validator-state->endorsed (get-validator-state val new-systate))
-           (validator-state->endorsed (get-validator-state val systate)))
+    (equal (validator-state->endorsed (get-validator-state val1 new-systate))
+           (validator-state->endorsed (get-validator-state val1 systate)))
     :hyp (advance-possiblep val systate)
     :hints
     (("Goal"
@@ -272,6 +283,17 @@
   (defret validator-state->committed-of-advance-next
     (equal (validator-state->committed (get-validator-state val1 new-systate))
            (validator-state->committed (get-validator-state val1 systate)))
+    :hyp (advance-possiblep val systate)
+    :hints
+    (("Goal"
+      :in-theory (enable advance-possiblep
+                         get-validator-state-of-update-validator-state))))
+
+  (defret validator-state->timer-of-advance-next
+    (equal (validator-state->timer (get-validator-state val1 new-systate))
+           (if (equal (address-fix val1) (address-fix val))
+               (timer-running)
+             (validator-state->timer (get-validator-state val1 systate))))
     :hyp (advance-possiblep val systate)
     :hints
     (("Goal"
