@@ -18,6 +18,7 @@
 (include-book "blockchains")
 (include-book "transitions-create")
 (include-book "transitions-receive")
+(include-book "transitions-store")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -51,5 +52,6 @@
                     blockchains
                     transitions-create
                     transitions-receive
+                    transitions-store
                     t)
   :default-parent t)
