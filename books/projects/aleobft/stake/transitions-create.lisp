@@ -515,6 +515,10 @@
 
   ///
 
+  (defret validator-state->round-of-create-author-next
+    (equal (validator-state->round new-vstate)
+           (validator-state->round vstate)))
+
   (defret validator-state->dag-of-create-author-next
     (equal (validator-state->dag new-vstate)
            (set::insert (certificate-fix cert)
@@ -540,7 +544,11 @@
 
   (defret validator-state->committed-of-create-author-next
     (equal (validator-state->committed new-vstate)
-           (validator-state->committed vstate))))
+           (validator-state->committed vstate)))
+
+  (defret validator-state->timer-of-create-author-next
+    (equal (validator-state->timer new-vstate)
+           (validator-state->timer vstate))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -570,6 +578,10 @@
 
   ///
 
+  (defret validator-state->round-of-create-endorser-next
+    (equal (validator-state->round new-vstate)
+           (validator-state->round vstate)))
+
   (defret validator-state->dag-of-create-endorser-next
     (equal (validator-state->dag new-vstate)
            (validator-state->dag vstate)))
@@ -597,7 +609,11 @@
 
   (defret validator-state->committed-of-create-endorser-next
     (equal (validator-state->committed new-vstate)
-           (validator-state->committed vstate))))
+           (validator-state->committed vstate)))
+
+  (defret validator-state->timer-of-create-endorser-next
+    (equal (validator-state->timer new-vstate)
+           (validator-state->timer vstate))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -641,6 +657,14 @@
        (equal (correct-addresses new-systate)
               (correct-addresses systate))
        :hints (("Goal" :induct t)))
+
+     (defret validator-state->round-of-create-endorsers-next-loop
+       (equal (validator-state->round (get-validator-state val new-systate))
+              (validator-state->round (get-validator-state val systate)))
+       :hints
+       (("Goal"
+         :induct t
+         :in-theory (enable get-validator-state-of-update-validator-state))))
 
      (defret validator-state->dag-of-create-endorsers-next-loop
        (equal (validator-state->dag (get-validator-state val new-systate))
@@ -702,6 +726,14 @@
          :induct t
          :in-theory (enable get-validator-state-of-update-validator-state))))
 
+     (defret validator-state->timer-of-create-endorsers-next-loop
+       (equal (validator-state->timer (get-validator-state val new-systate))
+              (validator-state->timer (get-validator-state val systate)))
+       :hints
+       (("Goal"
+         :induct t
+         :in-theory (enable get-validator-state-of-update-validator-state))))
+
      (defret get-network-state-of-create-endorsers-next-loop
        (equal (get-network-state new-systate)
               (get-network-state systate))
@@ -712,6 +744,10 @@
   (defret correct-addresses-of-create-endorsers-next
     (equal (correct-addresses new-systate)
            (correct-addresses systate)))
+
+  (defret validator-state->round-of-create-endorsers-next
+    (equal (validator-state->round (get-validator-state val new-systate))
+           (validator-state->round (get-validator-state val systate))))
 
   (defret validator-state->dag-of-create-endorsers-next
     (equal (validator-state->dag (get-validator-state val new-systate))
@@ -749,6 +785,10 @@
   (defret validator-state->committed-of-create-endorsers-next
     (equal (validator-state->committed (get-validator-state val new-systate))
            (validator-state->committed (get-validator-state val systate))))
+
+  (defret validator-state->timer-of-create-endorsers-next
+    (equal (validator-state->timer (get-validator-state val new-systate))
+           (validator-state->timer (get-validator-state val systate))))
 
   (defret get-network-state-of-create-endorsers-next
     (equal (get-network-state new-systate)
@@ -867,6 +907,13 @@
     (equal (correct-addresses new-systate)
            (correct-addresses systate)))
 
+  (defret validator-state->round-of-create-next
+    (equal (validator-state->round (get-validator-state val new-systate))
+           (validator-state->round (get-validator-state val systate)))
+    :hints
+    (("Goal"
+      :in-theory (enable get-validator-state-of-update-validator-state))))
+
   (defret validator-state->dag-of-create-next
     (equal (validator-state->dag (get-validator-state val new-systate))
            (if (equal val (certificate->author cert))
@@ -920,6 +967,13 @@
   (defret validator-state->committed-of-create-next
     (equal (validator-state->committed (get-validator-state val new-systate))
            (validator-state->committed (get-validator-state val systate)))
+    :hints
+    (("Goal"
+      :in-theory (enable get-validator-state-of-update-validator-state))))
+
+  (defret validator-state->timer-of-create-next
+    (equal (validator-state->timer (get-validator-state val new-systate))
+           (validator-state->timer (get-validator-state val systate)))
     :hints
     (("Goal"
       :in-theory (enable get-validator-state-of-update-validator-state))))
