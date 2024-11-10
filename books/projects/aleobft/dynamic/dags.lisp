@@ -714,7 +714,7 @@
     (implies (set::emptyp dag)
              (dag-closedp dag)))
 
-  (defruled dag-previous-in-dag-p-of-insert
+  (defruled dag-closedp-of-insert
     (implies (and (certificatep cert)
                   (certificate-setp dag)
                   (dag-closedp dag)

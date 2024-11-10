@@ -14,7 +14,7 @@
 (include-book "last-anchor-present")
 (include-book "last-anchor-next")
 (include-book "backward-closure")
-(include-book "omni-paths")
+(include-book "omni-paths-def-and-implied")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))

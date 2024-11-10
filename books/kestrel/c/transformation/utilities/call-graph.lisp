@@ -120,7 +120,7 @@
     :returns (call-graph ident-ident-option-set-mapp)
     (expr-case
      expr
-     :paren (call-graph-expr expr.unwrap fn-name acc)
+     :paren (call-graph-expr expr.inner fn-name acc)
      ;; :gensel?
      :arrsub (call-graph-expr
                expr.arg2
@@ -132,7 +132,7 @@
      :funcall (call-graph-update fn-name
                                  (expr-case
                                    expr.fun
-                                   :ident expr.fun.unwrap
+                                   :ident expr.fun.ident
                                    :otherwise nil)
                                  acc)
      :member (call-graph-expr
@@ -247,7 +247,7 @@
    (acc ident-ident-option-set-mapp))
   :returns (call-graph ident-ident-option-set-mapp)
   (b* (((const-expr const-expr) const-expr))
-    (call-graph-expr const-expr.unwrap fn-name acc)))
+    (call-graph-expr const-expr.expr fn-name acc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

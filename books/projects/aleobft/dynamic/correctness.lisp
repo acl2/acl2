@@ -29,7 +29,7 @@
 (include-book "unequivocal-signed-certificates")
 (include-book "unequivocal-accepted-certificates-def-and-init")
 (include-book "nonforking-blockchains-def-and-init")
-(include-book "same-committees")
+(include-book "same-committees-def-and-implied")
 (include-book "unequivocal-accepted-certificates-next")
 (include-book "last-anchor-def-and-init")
 (include-book "last-anchor-present")
@@ -38,16 +38,21 @@
 (include-book "rounds-in-committees")
 (include-book "dag-certificate-next")
 (include-book "last-anchor-next")
-(include-book "last-anchor-voters")
-(include-book "omni-paths")
+(include-book "last-anchor-voters-def-and-init-and-next")
+(include-book "omni-paths-def-and-implied")
 (include-book "anchors-extension")
 (include-book "committed-anchor-sequences")
-(include-book "nonforking-anchors")
+(include-book "nonforking-anchors-def-and-init-and-next")
 (include-book "committed-redundant")
 (include-book "blockchain-redundant")
 (include-book "nonforking-blockchains-next")
 (include-book "simultaneous-induction")
+(include-book "unequivocal-accepted-certificates")
 (include-book "nonforking-blockchains")
+(include-book "same-committees")
+(include-book "last-anchor-voters")
+(include-book "omni-paths")
+(include-book "nonforking-anchors")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -57,11 +62,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We formulate and prove a number of properties of the protocol.
-     The main property that we are initially interested in
-     is the non-forking of blockchains,
-     which we have already proved for static committees;
-     here we are generalizing it for dynamic committees."))
+    "We formulate and prove a number of properties of the protocol,
+     culminating in the main property that we are interested in,
+     namely the non-forking of blockchains."))
   :order-subtopics (certificates-of-validators
                     same-owned-certificates
                     no-self-messages
@@ -80,7 +83,7 @@
                     unequivocal-signed-certificates
                     unequivocal-accepted-certificates-def-and-init
                     nonforking-blockchains-def-and-init
-                    same-committees
+                    same-committees-def-and-implied
                     unequivocal-accepted-certificates-next
                     last-anchor-def-and-init
                     last-anchor-present
@@ -89,15 +92,18 @@
                     rounds-in-committees
                     dag-certificate-next
                     last-anchor-next
-                    last-anchor-voters
-                    omni-paths
+                    last-anchor-voters-def-and-init-and-next
+                    omni-paths-def-and-implied
                     anchors-extension
                     committed-anchors-sequences
-                    nonforking-anchors
+                    nonforking-anchors-def-and-init-and-next
                     committed-redundant
                     blockchain-redundant
                     nonforking-blockchains-next
                     simultaneous-induction
-                    nonforking-blockchains))
-
-; TODO: continue
+                    unequivocal-accepted-certificates
+                    nonforking-blockchains
+                    same-committees
+                    last-anchor-voters
+                    omni-paths
+                    nonforking-anchors))

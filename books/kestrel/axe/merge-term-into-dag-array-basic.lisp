@@ -62,7 +62,9 @@
                         use-all-<-for-car
                         bounded-darg-listp-when-<-of-largest-non-quotep
                         ;;bounded-darg-listp-when-all-consp
-                        strip-cdrs))))
+                        strip-cdrs
+                        ;; for speed:
+                        pseudo-termp))))
 
 (defthmd true-listp-of-nth-1-of-nth-0-when-pseudo-termp
   (implies (and (pseudo-termp term)
@@ -774,7 +776,8 @@
     :flag merge-terms-into-dag-array-basic)
   :hints (("Goal" :in-theory (e/d (;merge-term-into-dag-array-basic
                                    merge-terms-into-dag-array-basic
-                                   consp-of-lookup-equal-when-all-myquotep-of-strip-cdrs)
+                                   consp-of-lookup-equal-when-all-myquotep-of-strip-cdrs
+                                   car-becomes-nth-of-0)
                                   (natp))
            :expand ((merge-term-into-dag-array-basic term var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist)
                     (merge-term-into-dag-array-basic term var-replacement-alist dag-array 0 dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist)))))

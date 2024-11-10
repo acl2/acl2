@@ -126,7 +126,7 @@
     :enable (no-self-buffer-p
              no-self-buffer-p-necc
              validator-state->buffer-of-receive-certificate-next
-             certificate-with-author-of-insert
+             certificates-with-author-of-insert
              receive-certificate-possiblep
              no-self-messages-p
              message-noselfp)
@@ -142,7 +142,7 @@
     :enable (no-self-buffer-p
              validator-state->buffer-of-store-certificate-next
              no-self-buffer-p-necc-fixing
-             certificate-with-author-of-delete))
+             certificates-with-author-of-delete))
 
   (defruled no-self-buffer-p-of-advance-round-next
     (implies (and (no-self-buffer-p systate)

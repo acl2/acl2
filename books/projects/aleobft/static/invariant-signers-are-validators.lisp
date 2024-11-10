@@ -91,7 +91,8 @@
            certificates-for-validator
            get-network-state
            validator-init-when-system-initp
-           validator-init))
+           validator-init
+           in-of-message-certificates-for-validator))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -114,7 +115,8 @@
            (create-certificate-next cert systate))
   :enable (certificate-signers-are-validators-p
            create-certificate-possiblep
-           certificate->signers)
+           certificate->signers
+           certificates-for-validator-of-create-certificate-next)
   :use (:instance system-signers-are-validators-p-necc
                   (val (mv-nth 0
                                (system-signers-are-validators-p-witness
@@ -140,7 +142,8 @@
             (receive-certificate-next msg systate)))
   :expand (system-signers-are-validators-p
            (receive-certificate-next msg systate))
-  :enable certificate-signers-are-validators-p
+  :enable (certificate-signers-are-validators-p
+           certificates-for-validator-of-receive-certificate-next)
   :use (:instance system-signers-are-validators-p-necc
                   (val (mv-nth 0
                                (system-signers-are-validators-p-witness
@@ -166,7 +169,8 @@
             (store-certificate-next cert val systate)))
   :expand (system-signers-are-validators-p
            (store-certificate-next cert val systate))
-  :enable certificate-signers-are-validators-p
+  :enable (certificate-signers-are-validators-p
+           certificates-for-validator-of-store-certificate-next)
   :use (:instance system-signers-are-validators-p-necc
                   (val (mv-nth 0
                                (system-signers-are-validators-p-witness
@@ -192,7 +196,8 @@
             (advance-round-next val systate)))
   :expand (system-signers-are-validators-p
            (advance-round-next val systate))
-  :enable certificate-signers-are-validators-p
+  :enable (certificate-signers-are-validators-p
+           certificates-for-validator-of-advance-round-next)
   :use (:instance system-signers-are-validators-p-necc
                   (val (mv-nth 0
                                (system-signers-are-validators-p-witness
@@ -218,7 +223,8 @@
             (commit-anchors-next val systate)))
   :expand (system-signers-are-validators-p
            (commit-anchors-next val systate))
-  :enable certificate-signers-are-validators-p
+  :enable (certificate-signers-are-validators-p
+           certificates-for-validator-of-commit-anchors-next)
   :use (:instance system-signers-are-validators-p-necc
                   (val (mv-nth 0
                                (system-signers-are-validators-p-witness
@@ -244,7 +250,8 @@
             (timer-expires-next val systate)))
   :expand (system-signers-are-validators-p
            (timer-expires-next val systate))
-  :enable certificate-signers-are-validators-p
+  :enable (certificate-signers-are-validators-p
+           certificates-for-validator-of-timer-expires-next)
   :use (:instance system-signers-are-validators-p-necc
                   (val (mv-nth 0
                                (system-signers-are-validators-p-witness

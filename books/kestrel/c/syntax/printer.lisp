@@ -1611,17 +1611,17 @@
          (pstate
           (expr-case
            expr
-           :ident (print-ident expr.unwrap pstate)
-           :const (print-const expr.unwrap pstate)
+           :ident (print-ident expr.ident pstate)
+           :const (print-const expr.const pstate)
            :string
-           (b* (((unless expr.literals)
+           (b* (((unless expr.strings)
                  (raise "Misusage error: ~
                          empty list of string literals.")
                  (pristate-fix pstate)))
-             (print-stringlit-list expr.literals pstate))
+             (print-stringlit-list expr.strings pstate))
            :paren
            (b* ((pstate (print-astring "(" pstate))
-                (pstate (print-expr expr.unwrap (expr-priority-expr) pstate))
+                (pstate (print-expr expr.inner (expr-priority-expr) pstate))
                 (pstate (print-astring ")" pstate)))
              pstate)
            :gensel
@@ -1845,7 +1845,7 @@
       "A constant expression is
        a synonym of a conditional expression in the grammar,
        so we use that as priority."))
-    (print-expr (const-expr->unwrap cexpr) (expr-priority-cond) pstate)
+    (print-expr (const-expr->expr cexpr) (expr-priority-cond) pstate)
     :measure (two-nats-measure (const-expr-count cexpr) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

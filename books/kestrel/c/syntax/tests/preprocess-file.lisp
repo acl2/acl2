@@ -14,7 +14,6 @@
 
 
 (include-book "std/testing/must-eval-to-t" :dir :system)
-(include-book "std/testing/must-fail" :dir :system)
 (include-book "std/testing/must-succeed" :dir :system)
 
 (include-book "../preprocess-file")
@@ -23,32 +22,46 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::must-succeed
-  (preprocess-file (filepath "stdbool.c")))
+  (b* (((mv erp - - state)
+        (preprocess-file (filepath "stdbool.c"))))
+    (value (not erp))))
 
 (acl2::must-succeed
   (acl2::must-eval-to-t
-    (b* (((er (cons out -))
+    (b* (((mv erp out - state)
           (preprocess-file (filepath "stdbool.c") :out "stdbool.i")))
-      (value (stringp out)))))
+      (value (and (not erp)
+                  (stringp out))))))
 
 (acl2::must-succeed
-  (preprocess-file (filepath "stdbool.i")))
+  (b* (((mv erp - - state)
+        (preprocess-file (filepath "stdbool.i"))))
+    (value (not erp))))
 
 (acl2::must-succeed
-  (preprocess-file (filepath "stdbool.c") :out "stdbool.i" :save nil))
-
-(acl2::must-fail
-  (preprocess-file (filepath "nonexistent-file.c")))
-
-(acl2::must-succeed
-  (preprocess-file (filepath "../tests/stdint.c")))
+  (b* (((mv erp - - state)
+        (preprocess-file (filepath "stdbool.c") :out "stdbool.i" :save nil)))
+    (value (not erp))))
 
 (acl2::must-succeed
-  (preprocess-files
-    (mergesort (list (filepath "stdbool.c")
-                     (filepath "stdint.c")))))
+  (b* (((mv erp - - state)
+        (preprocess-file (filepath "nonexistent-file.c"))))
+    (value (and erp t))))
 
 (acl2::must-succeed
-  (acl2::must-eval-to
-    (preprocess-files nil)
-    (fileset nil)))
+  (b* (((mv erp - - state)
+        (preprocess-file (filepath "../tests/stdint.c"))))
+    (value (not erp))))
+
+(acl2::must-succeed
+  (b* (((mv erp - state)
+        (preprocess-files
+          (mergesort (list (filepath "stdbool.c")
+                           (filepath "stdint.c"))))))
+    (value (not erp))))
+
+(acl2::must-succeed
+  (b* (((mv erp fileset state)
+        (preprocess-files nil)))
+    (value (and (not erp)
+                (equal fileset (fileset nil))))))

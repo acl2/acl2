@@ -1186,8 +1186,8 @@
                      (EXPT 2 SIZE))
                   t))
   :hints (("Goal" :in-theory (enable expt-of-+)
-           :use ((:instance SLICE-BOUND (high (+ -1 size)) (low 1) (k (EXPT 2 (+ size -1))))
-                 (:instance SLICE-BOUND (x y) (high (+ -1 size)) (low 1) (k (EXPT 2 (+ size -1))))))))
+           :use ((:instance slice-bound (high (+ -1 size)) (low 1) (k (expt 2 (+ size -1))))
+                 (:instance slice-bound (x y) (high (+ -1 size)) (low 1) (k (expt 2 (+ size -1))))))))
 
 (defthm bvplus-when-low-bits-are-zero
   (implies (and (equal 0 (getbit 0 x))
@@ -1442,8 +1442,8 @@
                 (<= 2 k)
                 (integerp k))
            (< (getbit n x) k))
-  :hints (("Goal" :use (:instance BOUND-WHEN-USB2 (n 1) (x (GETBIT N X)))
-           :in-theory (disable BOUND-WHEN-USB2))))
+  :hints (("Goal" :use (:instance bound-when-usb2 (n 1) (x (getbit n x)))
+           :in-theory (disable bound-when-usb2))))
 
 ;can use this to prove the mask thms?
 (defthmd logand-bvchop-when-usb
@@ -1455,9 +1455,9 @@
            (equal (logand x (bvchop xsize y))
                   (logand x y)))
   :hints (("Goal"
-           :use ((:instance BVCHOP-OF-LOGAND (size xsize) (i x) (j (bvchop xsize y)))
-                 (:instance BVCHOP-OF-LOGAND (size xsize) (i x) (j y)))
-           :in-theory (disable BVCHOP-OF-LOGAND))))
+           :use ((:instance bvchop-of-logand (size xsize) (i x) (j (bvchop xsize y)))
+                 (:instance bvchop-of-logand (size xsize) (i x) (j y)))
+           :in-theory (disable bvchop-of-logand))))
 
 ;move
 (defthmd bvmult-of-2-gen
@@ -2243,7 +2243,7 @@
                 (force (unsigned-byte-p-forced size x)))
            (equal (mod x y)
                   (bvmod size x y)))
-  :hints (("Goal" :use (:instance mod-becomes-bvmod-free-arg1)
+  :hints (("Goal" :use mod-becomes-bvmod-free-arg1
            :in-theory (enable unsigned-byte-p-forced))))
 
 (theory-invariant (incompatible (:definition bvmod) (:rewrite mod-becomes-bvmod-bind-free-arg1)))
@@ -2254,7 +2254,7 @@
                 (force (unsigned-byte-p-forced size y)))
            (equal (mod x y)
                   (bvmod size x y)))
-  :hints (("Goal" :use (:instance mod-becomes-bvmod-free-arg1)
+  :hints (("Goal" :use mod-becomes-bvmod-free-arg1
            :in-theory (enable unsigned-byte-p-forced))))
 
 (theory-invariant (incompatible (:definition bvmod) (:rewrite mod-becomes-bvmod-bind-free-arg2)))

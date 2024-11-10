@@ -57,7 +57,7 @@
     expr-case
     expr-ident
     expr-const
-    expr-const->unwrap
+    expr-const->const
     expr-paren
     make-expr-gensel
     make-expr-arrsub
@@ -90,7 +90,7 @@
     const-exprp
     const-expr-count
     const-expr
-    const-expr->unwrap
+    const-expr->expr
     irr-const-expr
 
     const-expr-optionp

@@ -289,7 +289,7 @@
                              t ; count-hits ; todo: pass in
                              print
                              normalize-xors
-                             (w state)))
+                             (known-booleans (w state))))
        ((when erp) (mv *error* nil state))
        ((when (quotep dag))
         ;; todo: factor out:

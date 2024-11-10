@@ -112,6 +112,7 @@
                 (certificatep cert))
            (same-certificates-p (create-certificate-next cert systate)))
   :expand (same-certificates-p (create-certificate-next cert systate))
+  :enable certificates-for-validator-of-create-certificate-next
   :use (:instance same-certificates-p-necc
                   (val1 (mv-nth
                          0
@@ -138,6 +139,7 @@
                 (receive-certificate-possiblep msg systate))
            (same-certificates-p (receive-certificate-next msg systate)))
   :expand (same-certificates-p (receive-certificate-next msg systate))
+  :enable certificates-for-validator-of-receive-certificate-next
   :use (:instance same-certificates-p-necc
                   (val1 (mv-nth
                          0
@@ -164,6 +166,7 @@
                 (store-certificate-possiblep cert val systate))
            (same-certificates-p (store-certificate-next cert val systate)))
   :expand (same-certificates-p (store-certificate-next cert val systate))
+  :enable certificates-for-validator-of-store-certificate-next
   :use (:instance same-certificates-p-necc
                   (val1 (mv-nth
                          0
@@ -190,6 +193,7 @@
                 (advance-round-possiblep val systate))
            (same-certificates-p (advance-round-next val systate)))
   :expand (same-certificates-p (advance-round-next val systate))
+  :enable certificates-for-validator-of-advance-round-next
   :use (:instance same-certificates-p-necc
                   (val1 (mv-nth
                          0
@@ -216,6 +220,7 @@
                 (commit-anchors-possiblep val systate))
            (same-certificates-p (commit-anchors-next val systate)))
   :expand (same-certificates-p (commit-anchors-next val systate))
+  :enable certificates-for-validator-of-commit-anchors-next
   :use (:instance same-certificates-p-necc
                   (val1 (mv-nth
                          0
@@ -242,6 +247,7 @@
                 (timer-expires-possiblep val systate))
            (same-certificates-p (timer-expires-next val systate)))
   :expand (same-certificates-p (timer-expires-next val systate))
+  :enable certificates-for-validator-of-timer-expires-next
   :use (:instance same-certificates-p-necc
                   (val1 (mv-nth
                          0

@@ -452,7 +452,7 @@
              (equal (certificates-with-author author certs)
                     nil)))
 
-  (defruled certificate-with-author-of-insert
+  (defruled certificates-with-author-of-insert
     (implies (and (certificatep cert)
                   (certificate-setp certs))
              (equal (certificates-with-author author
@@ -468,7 +468,7 @@
              set::pick-a-point-subset-strategy)
     :disable (certificates-with-author))
 
-  (defruled certificate-with-author-of-delete
+  (defruled certificates-with-author-of-delete
     (implies (certificate-setp certs)
              (equal (certificates-with-author author
                                               (set::delete cert certs))

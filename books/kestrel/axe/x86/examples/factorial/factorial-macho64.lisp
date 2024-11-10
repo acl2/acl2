@@ -18,7 +18,7 @@
 ;; STATUS: COMPLETE
 
 (include-book "kestrel/x86/parsers/parse-executable" :dir :system)
-(include-book "kestrel/axe/x86/lifter" :dir :system)
+(include-book "kestrel/axe/x86/loop-lifter" :dir :system)
 (include-book "kestrel/utilities/deftest" :dir :system)
 (include-book "kestrel/bv/rules3" :dir :system) ;for bvchop-of-+-becomes-bvplus
 (include-book "kestrel/apt/wrap-output" :dir :system)

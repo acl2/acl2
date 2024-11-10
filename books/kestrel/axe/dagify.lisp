@@ -1407,20 +1407,21 @@
 ;;(equal (compose-term-and-dag '(foo x) 'x (dagify-term '(bar (baz x)))) ((3 FOO 2) (2 BAR 1) (1 BAZ 0) (0 . X)))
 ;;(equal (compose-term-and-dag '(foo x) 'x ''2) ((0 FOO '2)))
 
-;fffixme use this more!
+;fffixme use this more!  actually, use wrap-term-around-dag-safe instead.
 ;; TODO: Consider returning the dag-array, etc. if we are just going to turn the result of this into an array anyway.
 ;; Returns (mv erp dag-or-quote).
 (defun compose-term-and-dag-safe-fn (term var-to-replace dag extra-vars)
   (declare (xargs :guard (and (pseudo-termp term)
                               (symbolp var-to-replace)
                               (or (myquotep dag)
-                                  (pseudo-dagp dag)))
+                                  (pseudo-dagp dag))
+                              (symbol-listp extra-vars))
                   :verify-guards nil))
   (let ((term-vars (all-vars term)))
     (if (not (member-eq var-to-replace term-vars))
         (prog2$ (er hard? 'compose-term-and-dag-safe "Var to be replaced, ~x0, is not among the vars in the term ~x1." var-to-replace term)
                 (mv (erp-t) nil))
-      (if (not (subsetp-eq term-vars (cons var-to-replace extra-vars))) ;todo: consider putting this check back, but we'll have to declare some extra vars
+      (if (not (subsetp-eq term-vars (cons var-to-replace extra-vars)))
           (prog2$ (er hard? 'compose-term-and-dag-safe "expected: ~x0. extra vars: ~x1. term: ~x2" var-to-replace (remove-eq var-to-replace term-vars) term)
                   (mv (erp-t) nil))
         (compose-term-and-dag term var-to-replace dag)))))

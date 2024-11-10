@@ -16,6 +16,7 @@
 
 (include-book "kestrel/event-macros/make-event-terse" :dir :system)
 (include-book "kestrel/fty/string-option" :dir :system)
+(include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "system/pseudo-event-form-listp" :dir :system)
 
 (local (include-book "std/system/partition-rest-and-keyword-args" :dir :system))
@@ -306,9 +307,9 @@
        ;; Preprocess if required;
        ;; either way, after this, FILES contains the files to process.
        ((erp files state) (if preprocessor
-                              (preprocess-files paths
-                                                :preprocessor preprocessor)
-                            (retok files state)))
+                                 (preprocess-files paths
+                                                   :preprocessor preprocessor)
+                               (retok files state)))
        ;; Generate :CONST-PREPROC if required.
        (events (if const-preproc
                    (cons `(defconst ,const-preproc ',files) events)

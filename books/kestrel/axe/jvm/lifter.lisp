@@ -496,6 +496,12 @@
 (defconst-computed-simple *state-component-extraction-axe-rule-alist*
   (make-rule-alist! (state-component-extraction-rules) (w state)))
 
+(defconst-computed-simple *extract-heap-dag-rule-alist*
+  (make-rule-alist! (append (get-local-rules)
+                            '(jvm::myif-of-set-field-1-strong
+                              jvm::myif-of-set-field-2-strong))
+                    (w state)))
+
 (defconst-computed-simple *stack-height-axe-rule-alist*
   (make-rule-alist!
    (append (jvm-simplification-rules)
@@ -2497,6 +2503,10 @@
                                 (get-addresses-from-dag (cdr dag)))))
         (get-addresses-from-dag (cdr dag))))))
 
+(defconst-computed-simple *rule-alist-1001*
+  (make-rule-alist! (rule-list-1001)
+                    (w state)))
+
 ;TODO: rename
 ;; Returns (mv erp result state).
 ;the exprs are over state-var (now previous-state-vars my occur too? what about input vars?)
@@ -2516,9 +2526,9 @@
                                                    acc extra-vars
                                                    state)
         (b* (((mv erp dag2)
-              (compose-term-and-dag-safe expr state-var initial-state-dag :extra-vars extra-vars))
+              (wrap-term-around-dag-safe expr state-var initial-state-dag extra-vars))
              ((when erp) (mv erp nil state))
-             ((mv erp result state) (quick-simp-dag dag2 :rules (rule-list-1001)))
+             ((mv erp result state) (quick-simp-dag dag2 :rule-alist *rule-alist-1001*))
              ((when erp) (mv erp nil state)))
           (make-unchangedness-invariants-for-exprs (rest exprs)
                                                    state-var initial-state-dag
@@ -2843,11 +2853,11 @@
 (defun stack-height-comparison (dag state-var state)
   (declare (xargs :mode :program :stobjs state))
   (b* (((mv erp dag2)
-        (compose-term-and-dag-safe `(comparison (jvm::call-stack-size (jvm::call-stack (th) replace-me))
+        (wrap-term-around-dag-safe `(comparison (jvm::call-stack-size (jvm::call-stack (th) replace-me))
                                                 (jvm::call-stack-size (jvm::call-stack (th) ,state-var)))
                                    'replace-me
                                    dag
-                                   :extra-vars (list state-var)))
+                                   (list state-var)))
        ((when erp) (mv erp nil state)))
     (quick-simp-dag
      dag2
@@ -3970,9 +3980,7 @@
   (declare (xargs :stobjs state
                   :mode :program))
   (quick-simp-composed-term-and-dag '(jvm::heap s) 's state-dag
-                                    :rules (append (get-local-rules)
-                                                   '(jvm::myif-of-set-field-1-strong
-                                                     jvm::myif-of-set-field-2-strong))))
+                                    :rule-alist *extract-heap-dag-rule-alist*))
 
 ;; Returns (mv erp invars state).
 (defun maybe-array-ref-invar-for-local (local-num state-var loop-top-state-dag hyps state)
@@ -4549,7 +4557,7 @@
        ((mv erp dag2) (wrap-term-around-dag term 'replace-me dag))
        ((when erp) (mv erp nil state)))
     (simp-dag dag2
-              :rules (state-component-extraction-rules)
+              :rule-alist *state-component-extraction-axe-rule-alist*
               ;; (append (amazing-rules-spec-and-dag)(map-rules)
               ;;         (map-rules) ;needed to push IFs, or we could open up JVM::thread-top-frame, JVM::CALL-STACK, etc.
               ;;         (jvm-semantics-rules)

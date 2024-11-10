@@ -87,6 +87,12 @@
                   (not (consp item)))))
 
 ;we use consp as the normal form
+(defthmd equal-of-quote-when-dargp
+  (implies (dargp darg)
+           (equal (equal (car darg) 'quote)
+                  (consp darg))))
+
+;we use consp as the normal form
 ;; can this loop?
 (defthmd natp-when-dargp
   (implies (dargp darg)

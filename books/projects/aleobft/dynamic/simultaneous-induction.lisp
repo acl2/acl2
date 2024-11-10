@@ -11,11 +11,11 @@
 
 (in-package "ALEOBFT-DYNAMIC")
 
-(include-book "same-committees")
+(include-book "same-committees-def-and-implied")
 (include-book "unequivocal-accepted-certificates-next")
-(include-book "last-anchor-voters")
-(include-book "omni-paths")
-(include-book "nonforking-anchors")
+(include-book "last-anchor-voters-def-and-init-and-next")
+(include-book "omni-paths-def-and-implied")
+(include-book "nonforking-anchors-def-and-init-and-next")
 (include-book "committed-redundant")
 (include-book "blockchain-redundant")
 (include-book "nonforking-blockchains-next")
@@ -121,10 +121,10 @@
            all-system-fault-tolerant-p
            committees-in-system-p-when-genesis
            rounds-in-committees-p-invariant
-           same-committees-p-invariant
+           same-committees-p-implied
            unequivocal-accepted-certificates-p-of-event-next
            last-anchor-voters-p-of-event-next
-           omni-paths-p-invariant
+           omni-paths-p-implied
            nonforking-anchors-p-of-event-next
            committed-redundant-p-of-event-next
            blockchain-redundant-p-of-event-next

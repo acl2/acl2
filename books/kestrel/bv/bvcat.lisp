@@ -98,8 +98,7 @@
                                    (size2 highsize)
                                    (x x))
                    :in-theory (e/d (bvcat slice equal-of-logtail-and-0)
-                                   (
-                                    <-of-logtail-arg1 LOGTAIL-LESSP
+                                   (<-of-logtail-arg1 LOGTAIL-LESSP
                                     unsigned-byte-p-of-+-when-<-of-logtail-and-expt))))))
 
  (local (defthm bvcat-equal-rewrite-bk
@@ -591,20 +590,17 @@
            (equal (bvcat highsize1 z lowsize1 (bvcat highsize2 y lowsize2 x))
                   (bvcat (+ highsize1 highsize2) (bvcat highsize1 z highsize2 y) lowsize2 x)))
   :hints (("Goal" :use ((:instance bvchop-of-logapp
-                                   (j y) (i (ifix x)) (size lowsize2) (size2  lowsize2)
-                                   )
+                                   (j y) (i (ifix x)) (size lowsize2) (size2 lowsize2))
                         (:instance bvchop-of-logapp-bigger
                                    (n (+ highsize2 lowsize2))
                                    (n2 lowsize2)
                                    (y (ifix x))
-                                   (x y)
-                                   ))
+                                   (x y)))
            :cases ((integerp x))
            :in-theory (e/d (bvcat slice logapp-0 ;bvchop-of-logtail
                                   )
-                           (                     ;associativity-of-logapp
+                           (;associativity-of-logapp
                             slice-becomes-bvchop ;bvchop-logapp
-
                             bvchop-of-logapp-bigger)))))
 
 (defthm bvcat-associative
@@ -921,8 +917,7 @@
                 (natp highsize))
            (not (< k (bvcat highsize highval lowsize lowval))))
   :hints (("Goal" :use (:instance unsigned-byte-p-of-bvcat
-                                  (n (+ lowsize highsize))
-                                  )
+                                  (n (+ lowsize highsize)))
            :in-theory (e/d (unsigned-byte-p) (unsigned-byte-p-of-bvcat-all-cases)))))
 
 ;; ;todo: gen the 1
@@ -1034,8 +1029,7 @@
   :hints (("Goal" :use (:instance logtail-logapp (i (ifix i)))
            :in-theory (e/d (slice bvchop-of-logtail ;enable this?
                                   )
-                           (logtail-logapp
-                            )))))
+                           (logtail-logapp)))))
 
 ;todo handle other cases
 (defthm logtail-of-bvcat-when-extends-into-upper
@@ -1374,8 +1368,8 @@
                 (posp size))
            (not (equal (bvchop size x) 0)))
   :rule-classes ((:rewrite :backchain-limit-lst (1 nil)))
-  :hints (("Goal" :use (:instance BVCAT-OF-GETBIT-AND-X-ADJACENT (n (+ -1 size)))
-           :in-theory (disable BVCAT-OF-GETBIT-AND-X-ADJACENT ; BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE
+  :hints (("Goal" :use (:instance bvcat-of-getbit-and-x-adjacent (n (+ -1 size)))
+           :in-theory (disable bvcat-of-getbit-and-x-adjacent ; bvcat-equal-rewrite-alt bvcat-equal-rewrite
                                ))))
 
 (defthm bvchop-not-0-when-low-bit-not-0
