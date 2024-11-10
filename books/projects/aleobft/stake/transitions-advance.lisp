@@ -124,7 +124,8 @@
      there are four possible conditions for advancing:
      (1) there is no leader certificate (i.e. anchor)
      at the even round that immediately precedes this odd round;
-     (2) there are more than @($f$) certificates at this odd round
+     (2) there is more than @($f$) stake
+     of the authors of the certificates at this odd round
      that vote for the leader certificate at the preceding even round;
      (3) there are at least @($n - f$) certificates at this odd round
      that do not vote for the leader certificate at the preceding even round;
@@ -142,7 +143,14 @@
      is an invariant, proved elsewhere;
      but that invariant is not available here,
      so we add an explicit check,
-     which turns out to be superfluous under that invariant."))
+     which turns out to be superfluous under that invariant.")
+   (xdoc::p
+    "Above we said `more than @($f$)',
+     which is equivalent to `at least @($f+1$).
+     The latter is more common when talking about numbers of validators,
+     because it often is exactly @($f+1$),
+     but with stake it seems cleaner to talk about @($f$),
+     since generally stake does not align exactly that way."))
   (b* (((unless (set::in (address-fix val) (correct-addresses systate)))
         nil)
        ((validator-state vstate) (get-validator-state val systate))
