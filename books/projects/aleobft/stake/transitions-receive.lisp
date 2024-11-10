@@ -134,6 +134,15 @@
     :hyp (receive-possiblep msg systate)
     :hints (("Goal" :in-theory (enable receive-possiblep))))
 
+  (defret validator-state->round-of-receive-next
+    (equal (validator-state->round (get-validator-state val new-systate))
+           (validator-state->round (get-validator-state val systate)))
+    :hyp (receive-possiblep msg systate)
+    :hints
+    (("Goal" :in-theory (enable
+                         receive-possiblep
+                         get-validator-state-of-update-validator-state))))
+
   (defret validator-state->dag-of-receive-next
     (equal (validator-state->dag (get-validator-state val new-systate))
            (validator-state->dag (get-validator-state val systate)))
@@ -186,6 +195,15 @@
   (defret validator-state->committed-of-receive-next
     (equal (validator-state->committed (get-validator-state val new-systate))
            (validator-state->committed (get-validator-state val systate)))
+    :hyp (receive-possiblep msg systate)
+    :hints
+    (("Goal" :in-theory (enable
+                         receive-possiblep
+                         get-validator-state-of-update-validator-state))))
+
+  (defret validator-state->timer-of-receive-next
+    (equal (validator-state->timer (get-validator-state val new-systate))
+           (validator-state->timer (get-validator-state val systate)))
     :hyp (receive-possiblep msg systate)
     :hints
     (("Goal" :in-theory (enable
