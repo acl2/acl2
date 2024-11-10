@@ -21,6 +21,7 @@
 (include-book "transitions-store")
 (include-book "transitions-advance")
 (include-book "transitions-commit")
+(include-book "transitions-timeout")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -57,5 +58,6 @@
                     transitions-store
                     transitions-advance
                     transitions-commit
+                    transitions-timeout
                     t)
   :default-parent t)
