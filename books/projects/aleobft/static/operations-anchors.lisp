@@ -111,7 +111,7 @@
   (defrule not-anchorp-of-nil
     (not (anchorp nil dag vals)))
 
-  (defrule anchorp-of-last-anchor
+  (defruled anchorp-of-last-anchor
     (implies (and (last-anchor vstate vals)
                   (evenp (validator-state->last vstate)))
              (anchorp (last-anchor vstate vals)

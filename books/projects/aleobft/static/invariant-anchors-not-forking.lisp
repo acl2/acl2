@@ -211,7 +211,8 @@
              system-last-anchor-present-p-necc
              system-paths-to-other-last-anchor-p-necc
              committed-anchors
-             certificate->round-of-last-anchor)
+             certificate->round-of-last-anchor
+             anchorp-of-last-anchor)
     :use ((:instance collect-all-anchors-to-append-of-collect-anchors-other
                      (dag1 (validator-state->dag
                             (get-validator-state val1 systate)))
