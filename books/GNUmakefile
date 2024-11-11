@@ -75,6 +75,11 @@
 #                 books+system manual in doc/manual/index.html.  Note:
 #                 this target requires USE_QUICKLISP=1.
 #
+#   clean_manual  Removes the ACL2 books+system manual and doc/top.cert,
+#                 and then builds the manual using the latest xdoc.
+#                 This can take less time than a full `make clean` followed
+#                 by `make manual`.  Note: this target requires USE_QUICKLISP=1.
+#
 #   special       Includes all the books, allowing arbitrary code before and
 #                 after an include-book, and writing the log for each book
 #                 <bk>.lisp to the file <bk>.special.out.
