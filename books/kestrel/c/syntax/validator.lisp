@@ -4677,9 +4677,21 @@
     :returns (mv erp (new-table valid-tablep))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate a static assertion declaration."
-    (declare (ignore statassert table ienv))
-    (b* (((reterr) (irr-valid-table)))
-      (reterr :todo))
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We validate the constant expression, which must be integer [C:6.7.10/3],
+       and we validate the string literal(s)."))
+    (b* (((reterr) (irr-valid-table))
+         ((statassert statassert) statassert)
+         ((erp type table) (valid-const-expr statassert.test table ienv))
+         ((unless (type-integerp type))
+          (reterr (msg "The expression in the static assertion declaration ~x0 ~
+                        has type ~x1."
+                       (statassert-fix statassert)
+                       type)))
+         ((erp &) (valid-stringlit-list statassert.message)))
+      (retok table))
     :measure (statassert-count statassert))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
