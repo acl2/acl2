@@ -240,6 +240,7 @@
     (("Goal"
       :in-theory (enable advance-possiblep
                          get-validator-state-of-update-validator-state))))
+  (in-theory (disable validator-state->round-of-advance-next))
 
   (defret validator-state->dag-of-advance-next
     (equal (validator-state->dag (get-validator-state val1 new-systate))
@@ -307,6 +308,7 @@
     (("Goal"
       :in-theory (enable advance-possiblep
                          get-validator-state-of-update-validator-state))))
+  (in-theory (disable validator-state->timer-of-advance-next))
 
   (defret get-network-state-of-advance-next
     (equal (get-network-state new-systate)

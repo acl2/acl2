@@ -949,6 +949,7 @@
       :in-theory (enable get-validator-state-of-update-validator-state
                          validator-state->endorsed-of-create-author-next
                          validator-state->endorsed-of-create-endorsers-next))))
+  (in-theory (disable validator-state->endorsed-of-create-next))
 
   (defret validator-state->last-of-create-next
     (equal (validator-state->last (get-validator-state val new-systate))

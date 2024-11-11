@@ -268,6 +268,7 @@
       :in-theory (enable store-possiblep
                          get-validator-state-of-update-validator-state
                          posp))))
+  (in-theory (disable validator-state->round-of-store-next))
 
   (defret validator-state->dag-of-store-next
     (equal (validator-state->dag (get-validator-state val1 new-systate))
@@ -351,6 +352,7 @@
     (("Goal"
       :in-theory (enable store-possiblep
                          get-validator-state-of-update-validator-state))))
+  (in-theory (disable validator-state->timer-of-store-next))
 
   (defret get-network-state-of-store-next
     (equal (get-network-state (store-next val cert systate))

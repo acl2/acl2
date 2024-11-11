@@ -263,6 +263,7 @@
       :in-theory (enable commit-possiblep
                          get-validator-state-of-update-validator-state
                          nfix))))
+  (in-theory (disable validator-state->last-of-commit-next))
 
   (defret validator-state->blockchain-of-commit-next
     (equal (validator-state->blockchain (get-validator-state val1 new-systate))
@@ -291,6 +292,7 @@
     (("Goal"
       :in-theory (enable commit-possiblep
                          get-validator-state-of-update-validator-state))))
+  (in-theory (disable validator-state->blockchain-of-commit-next))
 
   (defret validator-state->committed-of-commit-next
     (equal (validator-state->committed (get-validator-state val1 new-systate))
@@ -319,6 +321,7 @@
     (("Goal"
       :in-theory (enable commit-possiblep
                          get-validator-state-of-update-validator-state))))
+  (in-theory (disable validator-state->committed-of-commit-next))
 
   (defret validator-state->timer-of-commit-next
     (equal (validator-state->timer (get-validator-state val1 new-systate))
@@ -331,12 +334,4 @@
 
   (defret get-network-state-of-commit-next
     (equal (get-network-state new-systate)
-           (get-network-state systate)))
-
-  (in-theory (disable validator-state->dag-of-commit-next
-                      validator-state->buffer-of-commit-next
-                      validator-state->endorsed-of-commit-next
-                      validator-state->last-of-commit-next
-                      validator-state->blockchain-of-commit-next
-                      validator-state->committed-of-commit-next
-                      get-network-state-of-commit-next)))
+           (get-network-state systate))))
