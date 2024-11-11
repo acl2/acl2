@@ -140,9 +140,7 @@
   (defruled associated-certs-of-receive-next
     (implies (and (set::in val (correct-addresses systate))
                   (receive-possiblep msg systate))
-             (equal (associated-certs val
-                                      (receive-next msg
-                                                    systate))
+             (equal (associated-certs val (receive-next msg systate))
                     (associated-certs val systate)))
     :enable (associated-certs
              validator-state->buffer-of-receive-next
@@ -155,10 +153,7 @@
   (defruled associated-certs-of-store-next
     (implies (and (set::in val (correct-addresses systate))
                   (store-possiblep val1 cert systate))
-             (equal (associated-certs val
-                                      (store-next val1
-                                                  cert
-                                                  systate))
+             (equal (associated-certs val (store-next val1 cert systate))
                     (associated-certs val systate)))
     :enable (associated-certs
              validator-state->dag-of-store-next
@@ -169,26 +164,20 @@
   (defruled associated-certs-of-advance-next
     (implies (and (set::in val (correct-addresses systate))
                   (advance-possiblep val1 systate))
-             (equal (associated-certs val
-                                      (advance-next val1
-                                                    systate))
+             (equal (associated-certs val (advance-next val1 systate))
                     (associated-certs val systate)))
     :enable associated-certs)
 
   (defruled associated-certs-of-commit-next
     (implies (and (set::in val (correct-addresses systate))
                   (commit-possiblep val1 systate))
-             (equal (associated-certs val
-                                      (commit-next val1
-                                                   systate))
+             (equal (associated-certs val (commit-next val1 systate))
                     (associated-certs val systate)))
     :enable associated-certs)
 
   (defruled associated-certs-of-timeout-next
     (implies (and (set::in val (correct-addresses systate))
                   (timeout-possiblep val1 systate))
-             (equal (associated-certs val
-                                      (timeout-next val1
-                                                    systate))
+             (equal (associated-certs val (timeout-next val1 systate))
                     (associated-certs val systate)))
     :enable associated-certs))
