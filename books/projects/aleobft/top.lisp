@@ -52,7 +52,7 @@
      The subdirectory @('stake') contains a version for
      AleoBFT with dynamic committees and with stake,
      which mainly extends the previous one with stake.
-     We plan to add other subdirectories,
+     We plan to add other subdirectories
      for versions that cover additional aspects of AleoBFT,
      such as syncing.")
    (xdoc::p
@@ -60,7 +60,7 @@
      we formally specify AleoBFT as a labeled state transition system:
      we define the possible states of the system (of all validators),
      the possible events that can take place in the system,
-     and then we define, in essence, a ternary transition relation
+     and then we define, in essence, a ternary transition relation,
      each of whose triples relates an old state, an event, and a new state;
      the events are the labels in this labeled state transition system.
      In general, not every event may happen in every state,

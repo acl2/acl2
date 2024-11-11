@@ -868,10 +868,8 @@
               (dag-in-committees-p dag blockchain))
   :returns (yes/no booleanp)
   :short "Check if the total stake of the precedessor certificates
-          of each certificate in a DAG is:
-          0 if the certificate's round is 1;
-          or the quorum stake of the active committee at the previous round
-          if the certificate's round is not 1."
+          of each certificate in a DAG at a round later than 1 is at least
+          the quorum stake of the active committee at the previous round."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -896,11 +894,11 @@
                    (b* ((commtt (active-committee-at-round
                                  (1- (certificate->round cert))
                                  blockchain)))
-                     (equal (committee-members-stake
-                             (certificate-set->author-set
-                              (predecessors cert dag))
-                             commtt)
-                            (committee-quorum-stake commtt)))))
+                     (>= (committee-members-stake
+                          (certificate-set->author-set
+                           (predecessors cert dag))
+                          commtt)
+                         (committee-quorum-stake commtt)))))
   :guard-hints
   (("Goal"
     :use (:instance authors-at-same-round-in-committee-when-dag-in-committees-p
