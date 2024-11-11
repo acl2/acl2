@@ -3095,7 +3095,7 @@
                    ((erp table) (valid-strunispec tyspec.unwrap table ienv)))
                 (retok (type-union) nil table))
        :enum (b* (((when (endp tyspecs)) (reterr msg-bad-preceding))
-                  ((erp table) (mv :todo-enumspec same-table)))
+                  ((erp table) (valid-enumspec tyspec.unwrap table ienv)))
                (retok (type-enum) nil table))
        :typedef (if (endp tyspecs)
                     (retok (type-unknown) nil same-table)
@@ -4657,9 +4657,15 @@
     :returns (mv erp (new-table valid-tablep))
     :parents (validator valid-exprs/decls/stmts)
     :short "Validate a list of enumerators."
-    (declare (ignore enumers table ienv))
-    (b* (((reterr) (irr-valid-table)))
-      (reterr :todo))
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We go through each enumerator in order,
+       extending the validation table with each."))
+    (b* (((reterr) (irr-valid-table))
+         ((when (endp enumers)) (retok (valid-table-fix table)))
+         ((erp table) (valid-enumer (car enumers) table ienv)))
+      (valid-enumer-list (cdr enumers) table ienv))
     :measure (enumer-list-count enumers))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
