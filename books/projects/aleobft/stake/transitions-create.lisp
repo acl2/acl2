@@ -197,7 +197,7 @@
        ((unless (>= (committee-members-stake (certificate->signers cert) commtt)
                     (committee-quorum-stake commtt)))
         nil)
-       ((when (certificate-with-author+round cert.author cert.round vstate.dag))
+       ((when (cert-with-author+round cert.author cert.round vstate.dag))
         nil)
        ((when (= cert.round 1))
         (set::emptyp cert.previous))

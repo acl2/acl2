@@ -130,7 +130,7 @@
         nil)
        (prev-commtt (active-committee-at-round commit-round vstate.blockchain))
        (leader (leader-at-round commit-round prev-commtt))
-       (anchor? (certificate-with-author+round leader commit-round vstate.dag))
+       (anchor? (cert-with-author+round leader commit-round vstate.dag))
        ((unless anchor?)
         nil)
        (voters (certificates-with-round vstate.round vstate.dag))
@@ -177,7 +177,7 @@
        (commit-round (1- vstate.round))
        (commtt (active-committee-at-round commit-round vstate.blockchain))
        (leader (leader-at-round commit-round commtt))
-       (anchor (certificate-with-author+round leader commit-round vstate.dag))
+       (anchor (cert-with-author+round leader commit-round vstate.dag))
        (anchors (collect-anchors anchor
                                  (- commit-round 2)
                                  vstate.last
@@ -204,7 +204,7 @@
                        evenp
                        active-committee-at-previous-round-when-at-round
                        active-committee-at-previous3-round-when-at-round
-                       certificate->round-of-certificate-with-author+round)))
+                       certificate->round-of-cert-with-author+round)))
   :hooks (:fix)
 
   ///
@@ -274,7 +274,7 @@
                     (commtt (active-committee-at-round
                              commit-round vstate.blockchain))
                     (leader (leader-at-round commit-round commtt))
-                    (anchor (certificate-with-author+round
+                    (anchor (cert-with-author+round
                              leader commit-round vstate.dag))
                     (anchors (collect-anchors anchor
                                               (- commit-round 2)
@@ -303,7 +303,7 @@
                     (commtt (active-committee-at-round
                              commit-round vstate.blockchain))
                     (leader (leader-at-round commit-round commtt))
-                    (anchor (certificate-with-author+round
+                    (anchor (cert-with-author+round
                              leader commit-round vstate.dag))
                     (anchors (collect-anchors anchor
                                               (- commit-round 2)
