@@ -492,7 +492,7 @@ endif
 
 QUICKLISP_DIR := quicklisp
 
-.PHONY: quicklisp
+.PHONY: quicklisp manual
 
 ifeq ($(REALLY_USE_QUICKLISP), 0)
 
@@ -523,6 +523,21 @@ else
 quicklisp: $(QUICKLISP_DIR)/top.cert
 
 manual: doc/top.cert system/doc/acl2-manual.cert
+
+# Note, to force a new local manual to be generated,
+# do
+#   make clean_manual
+
+.PHONY: clean_manual
+
+# We force the rule order using double-colon syntax.
+
+clean_manual :: cleandocs
+	@echo clean_manual: Cleaned the docs.
+
+clean_manual :: manual
+	@echo clean_manual: Made the manual.
+	@echo You can aim your browser at 'file://'${PWD}'/doc/manual/index.html'
 
 endif # ifneq ($(filter-out CCL SBCL, $(ACL2_HOST_LISP)),)
 endif # REALLY_USE_QUICKLISP
@@ -679,7 +694,7 @@ MORECLEAN_FILES_EXPLICIT := \
    doc/xdoc.sao \
    kestrel/acl2data/gather/tests/runs
 
-.PHONY: clean_books clean
+.PHONY: clean_books clean moreclean cleandocs
 
 clean_books:
 	@echo "Using clean.pl to remove certificates, etc."
@@ -706,6 +721,17 @@ clean: clean_books
 moreclean: clean
 	@echo "Removing even more generated files (documentation, etc)."
 	rm -rf $(MORECLEAN_FILES_EXPLICIT)
+
+# Similar to 'moreclean' but doesn't have a prerequisite of the 'clean' rule,
+# so that we don't bother cleaning and rebuilding everything,
+# and also cleans the top doc files to trigger rebuilding the local manual.
+# Outputs a different message than 'moreclean' to make that clear.
+cleandocs:
+	@echo "Removing some files needed to rebuild the local manual."
+	rm -rf $(MORECLEAN_FILES_EXPLICIT)
+	rm -rf doc/top.{cert,cert.out,fasl,port}
+	rm -rf system/doc/acl2-manual.{cert,cert.out,fasl,port}
+
 
 ##############################
 ### Section: Miscellaneous custom support
