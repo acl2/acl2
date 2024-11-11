@@ -75,7 +75,7 @@
 #                 books+system manual in doc/manual/index.html.  Note:
 #                 this target requires USE_QUICKLISP=1.
 #
-#   clean_manual  Removes the ACL2 books+system manual and doc/top.cert,
+#   new_manual    Removes the ACL2 books+system manual and doc/top.cert,
 #                 and then builds the manual using the latest xdoc.
 #                 This can take less time than a full `make clean` followed
 #                 by `make manual`.  Note: this target requires USE_QUICKLISP=1.
@@ -531,17 +531,17 @@ manual: doc/top.cert system/doc/acl2-manual.cert
 
 # Note, to force a new local manual to be generated,
 # do
-#   make clean_manual
+#   make new_manual
 
-.PHONY: clean_manual
+.PHONY: new_manual
 
 # We force the rule order using double-colon syntax.
 
-clean_manual :: cleandocs
-	@echo clean_manual: Cleaned the docs.
+new_manual :: cleandocs
+	@echo new_manual: Cleaned the docs.
 
-clean_manual :: manual
-	@echo clean_manual: Made the manual.
+new_manual :: manual
+	@echo new_manual: Made the manual.
 	@echo You can aim your browser at 'file://'${PWD}'/doc/manual/index.html'
 
 endif # ifneq ($(filter-out CCL SBCL, $(ACL2_HOST_LISP)),)
