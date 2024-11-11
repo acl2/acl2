@@ -36,11 +36,11 @@
    (xdoc::p
     "Both the predicates and the functions are executable.
      This means that, given an initial state and a list of events,
-     it is possible to simulate the execution of the system in ACL2,
+     it is possible to simulate the execution of the system in ACL2
      by running each event in turn, starting with the initial state.
      The execution is not necessarily fast,
      because the definition of the labeled state transition system
-     prioritizes clearity over efficiency."))
+     prioritizes clarity over efficiency."))
   :order-subtopics (elections
                     dags
                     t)

@@ -25,7 +25,7 @@
     "We define a formal model of an abstraction of the AleoBFT protocol
      that mainly captures the Bullshark aspects of the protocol,
      but with dynamic committees and with stake,
-     which is a significant extension to Bullshark.
+     which are significant extensions to Bullshark.
      The Narwhal aspects of AleoBFT
      are modeled only at an abstract level,
      similarly to the way the Bullshark papers model

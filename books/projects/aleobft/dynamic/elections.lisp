@@ -30,8 +30,8 @@
     "Each even round has a deterministically chosen leader
      among the validators that form the active committee at that round.
      If all validators agree on the committee at that round,
-     which we prove in @(see same-committees),
-     then they choose the same leader.
+     which we prove they will do in @(see same-committees),
+     then they will choose the same leader.
      Given this common leader, each validator uses
      the certificates at the immediately following odd round
      to carry out an election of that chosen leader:
@@ -124,8 +124,8 @@
      as we ensure by way of formal proofs.")
    (xdoc::p
     "We go through the voters, and check whether the leader address
-     is among the refernced previous certificates or not,
-     counting those as `yes' or `no' votes.
+     is among the referenced previous certificates or not,
+     counting `yes' or `no' votes, respectively.
      We return both counts."))
   (b* (((when (set::emptyp voters)) (mv 0 0))
        (voter (set::head voters))
