@@ -160,8 +160,7 @@
         nil)
        ((unless (set::subset cert.previous
                              (certificate-set->author-set
-                              (certificates-with-round (1- cert.round)
-                                                       vstate.dag))))
+                              (certs-with-round (1- cert.round) vstate.dag))))
         nil))
     t)
   :guard-hints

@@ -133,7 +133,7 @@
        (anchor? (cert-with-author+round leader commit-round vstate.dag))
        ((unless anchor?)
         nil)
-       (voters (certificates-with-round vstate.round vstate.dag))
+       (voters (certs-with-round vstate.round vstate.dag))
        ((unless (set::subset (certificate-set->author-set voters)
                              (committee-members commtt)))
         nil)

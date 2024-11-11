@@ -53,7 +53,7 @@
      yields the empty set."))
   (forall (val)
           (implies (set::in val (correct-addresses systate))
-                   (equal (certificates-with-author
+                   (equal (certs-with-author
                            val
                            (validator-state->buffer
                             (get-validator-state val systate)))
@@ -64,7 +64,7 @@
   (defruled no-self-buffer-p-necc-fixing
     (implies (and (no-self-buffer-p systate)
                   (set::in (address-fix val) (correct-addresses systate)))
-             (equal (certificates-with-author
+             (equal (certs-with-author
                      val
                      (validator-state->buffer
                       (get-validator-state val systate)))
@@ -121,7 +121,7 @@
     :enable (no-self-buffer-p
              no-self-buffer-p-necc
              validator-state->buffer-of-receive-next
-             certificates-with-author-of-insert
+             certs-with-author-of-insert
              receive-possiblep
              no-self-messages-p
              message-noselfp)
@@ -136,7 +136,7 @@
     :enable (no-self-buffer-p
              validator-state->buffer-of-store-next
              no-self-buffer-p-necc-fixing
-             certificates-with-author-of-delete))
+             certs-with-author-of-delete))
 
   (defruled no-self-buffer-p-of-advance-next
     (implies (and (no-self-buffer-p systate)
