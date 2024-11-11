@@ -817,7 +817,7 @@
                                   (certificate->signers cert)))))
     :induct t)
 
-  (defruled certificates-with-signer-of-nil
+  (defrule certificates-with-signer-of-nil
     (equal (certificates-with-signer signer nil)
            nil))
 
