@@ -14,6 +14,7 @@
 (include-book "associated-certificates")
 (include-book "same-associated-certificates")
 (include-book "signed-certificates")
+(include-book "no-self-messages")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -28,4 +29,5 @@
      namely the non-forking of blockchains."))
   :order-subtopics (associated-certificates
                     same-associated-certificates
-                    signed-certificates))
+                    signed-certificates
+                    no-self-messages))
