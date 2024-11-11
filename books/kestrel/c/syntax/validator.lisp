@@ -4247,7 +4247,9 @@
        [C:6.9.1/5].
        We adjust the type if necessary [C:6.7.6.3/7] [C:6.7.6.3/8].
        If the parameter declarator has an identifier,
-       we extend the validation table with it.
+       we extend the validation table with it,
+       unless there is already an ordinary identifier
+       with the same name in the same (i.e. current) scope.
        Parameters of function declarations have no linkage [C:6.2.2/6]."))
     (b* (((reterr) (irr-valid-table))
          ((paramdecl paramdecl) paramdecl)
@@ -4276,7 +4278,12 @@
           (retok table))
          (ord-info (make-valid-ord-info-objfun :type type
                                                :linkage (linkage-none)))
-         ;; TODO: ensure not already in same scope
+         ((mv info? currentp) (valid-lookup-ord ident? table))
+         ((when (and info? currentp))
+          (reterr (msg "The parameter declared in ~x0 ~
+                        in already declared in the current scope ~
+                        with associated information ~x1."
+                       (paramdecl-fix paramdecl) info?)))
          (table (valid-add-ord ident? ord-info table)))
       (reterr table))
     :measure (paramdecl-count paramdecl))
@@ -4616,14 +4623,21 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "The enumeration constant is added to the validation table [C:6.2.1/7].
+      "The enumeration constant is added to the validation table [C:6.2.1/7],
+       unless there is already an ordinary identifier
+       with the same name and in the same (i.e. current) scope.
        If there is a constant expression,
        we validated it and check that it has integer type,
        but for now we do not check that the value
        is representable as @('int') [C:6.7.2.2/2]."))
     (b* (((reterr) (irr-valid-table))
          ((enumer enumer) enumer)
-         ;; TODO: ensure not already in same scope
+         ((mv info? currentp) (valid-lookup-ord enumer.name table))
+         ((when (and info? currentp))
+          (reterr (msg "The enumerator declared in ~x0 ~
+                        in already declared in the current scope ~
+                        with associated information ~x1."
+                       (enumer-fix enumer) info?)))
          (table (valid-add-ord enumer.name (valid-ord-info-enumconst) table))
          ((erp type? table)
           (valid-const-expr-option enumer.value table ienv))
