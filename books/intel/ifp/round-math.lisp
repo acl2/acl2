@@ -706,8 +706,9 @@
               (equal stickyp stickyp1))
              (equal new-x
                     (my-round-arith-triple x roundp stickyp rc)))
-    :hints (("Goal" :in-theory (enable round-arith-triple
-                                       my-round-arith-triple)
+    :hints (("Goal"
+             :in-theory (enable round-arith-triple
+                                my-round-arith-triple)
              :cases ((equal (fp-arith-triple->man in) 0)))
             (and stable-under-simplificationp
                  '(:expand ((:free (sign exp man verbosep)
@@ -1157,8 +1158,9 @@
   (local (defthmd integerp-of-loghead-divided
            (implies (not (equal (loghead n x) 0))
                     (not (integerp (* (expt 2 (- n)) (loghead n x)))))
-           :hints (("Goal" :use ((:instance acl2::loghead-upper-bound
-                                            (size n) (i x)))
+           :hints (("Goal"
+                    :use ((:instance acl2::loghead-upper-bound
+                                     (size n) (i x)))
                     :in-theory (disable acl2::loghead-upper-bound))
                    '(:cases ((and (< 0 (* (expt 2 (- n)) (loghead n x)))
                                   (< (* (expt 2 (- n)) (loghead n x)) 1)))))))
@@ -1239,8 +1241,7 @@
                                      logmask
                                      fp-arith-triple->rational-of-normalize-arith-triple-when-not-sticky)))
             (and stable-under-simplificationp
-                 '(
-                   :expand ((:free (sign exp man) (fp-arith-triple->rational (fp-arith-triple sign exp man)))
+                 '(:expand ((:free (sign exp man) (fp-arith-triple->rational (fp-arith-triple sign exp man)))
                             (fp-arith-triple->rational (mv-nth 0 (normalize-arith-triple x :verbosep nil)))))))
     :otf-flg t)
 
@@ -1477,62 +1478,102 @@
        (exp (rational-exponent x))
        (sign (if (< x 0) 1 0))
        (norm-exact (* signif (expt 2 frac-size)))
-       (norm (make-fp-arith-triple :sign sign :exp (- exp frac-size)
+       (norm (make-fp-arith-triple :sign sign
+                                   :exp (- exp frac-size)
                                    :man (floor norm-exact 1)))
        (round+sticky (* 2 (mod norm-exact 1)))
        (roundp (>= round+sticky 1))
-       (stickyp (or (and sticky-in t) (not (integerp round+sticky)))))
+       (stickyp (or (and sticky-in t)
+                    (not (integerp round+sticky)))))
     (mv norm roundp stickyp))
   ///
-  (local (defthm rational-exponent-of-times-power
-           (implies (and (rationalp x)
-                         (not (equal x 0)))
-                    (equal (rational-exponent (* x (expt 2 y)))
-                           (+ (ifix y) (rational-exponent x))))
-           :hints (("Goal" :in-theory (enable acl2::rational-exponent/significand-of-multiply)))))
+  (local
+   (defthm rational-exponent-of-times-power
+     (implies (and (rationalp x)
+                   (not (equal x 0)))
+              (equal (rational-exponent (* x (expt 2 y)))
+                     (+ (ifix y) (rational-exponent x))))
+     :hints (("Goal" :in-theory (enable acl2::rational-exponent/significand-of-multiply)))))
 
-  (local (defthm rational-significand-of-times-power
-           (implies (and (rationalp x)
-                         (not (equal x 0)))
-                    (equal (rational-significand (* x (expt 2 y)))
-                           (rational-significand x)))
-           :hints (("Goal" :in-theory (enable acl2::rational-exponent/significand-of-multiply)))))
+  (local
+   (defthm rational-significand-of-times-power
+     (implies (and (rationalp x)
+                   (not (equal x 0)))
+              (equal (rational-significand (* x (expt 2 y)))
+                     (rational-significand x)))
+     :hints (("Goal" :in-theory (enable acl2::rational-exponent/significand-of-multiply)))))
 
-  (local (defthm ash-1-integer-length-minus-1-lte-x
-           (implies (posp x)
-                    (<= (ash 1 (+ -1 (integer-length x))) x))
-           :hints (("Goal" :in-theory (enable* bitops::ihsext-inductions
-                                               bitops::ihsext-recursive-redefs)))))
+  (local
+   (defthm ash-1-integer-length-minus-1-lte-x
+     (implies (posp x)
+              (<= (ash 1 (+ -1 (integer-length x))) x))
+     :hints (("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                         bitops::ihsext-recursive-redefs)))))
 
-  (local (defthm rational-exponent-of-pos
-           (implies (posp x)
-                    (equal (rational-exponent x)
-                           (1- (integer-length x))))
-           :hints (("Goal" :in-theory (enable rational-exponent)
-                    :expand ((rational-exponent x))))))
+  (local
+   (defthm rational-exponent-of-pos
+     (implies (posp x)
+              (equal (rational-exponent x)
+                     (1- (integer-length x))))
+     :hints (("Goal"
+              :in-theory (enable rational-exponent)
+              :expand ((rational-exponent x))))))
 
-  (local (defthm floor-divide-out
-           (implies (and (not (equal (rfix y) 0))
-                         (syntaxp (not (equal y ''1)))
-                         (rationalp x))
-                    (equal (floor x y)
-                           (floor (/ x y) 1)))
-           :hints (("Goal" :in-theory (enable rfix)))))
+  (local
+   (defthm floor-divide-out
+     (implies (and (not (equal (rfix y) 0))
+                   (syntaxp (not (equal y ''1)))
+                   (rationalp x))
+              (equal (floor x y)
+                     (floor (/ x y) 1)))
+     :hints (("Goal" :in-theory (enable rfix)))))
 
-
-  (local (defthm mod-divide-out
-           (implies (and (not (equal (rfix y) 0))
-                         (syntaxp (not (equal y ''1)))
-                         (rationalp x))
-                    (equal (mod x y)
-                           (* y (mod (/ x y) 1))))
-           :hints (("Goal" :in-theory (enable mod rfix)))))
+  (local
+   (defthm mod-divide-out
+     (implies (and (not (equal (rfix y) 0))
+                   (syntaxp (not (equal y ''1)))
+                   (rationalp x))
+              (equal (mod x y)
+                     (* y (mod (/ x y) 1))))
+     :hints (("Goal" :in-theory (enable mod rfix)))))
 
   (local (in-theory (disable acl2::/r-when-abs-numerator=1
                              ;; acl2::floor-bounded-by-/
                              acl2::x*y>1-positive
                              acl2::0-<-*
                              acl2::floor-=-x/y)))
+
+  (defret <fn>.man-zero
+    (implies (equal (rfix x) 0)
+             (equal (fp-arith-triple->man norm) 0)))
+
+  (encapsulate
+    ()
+
+    (local (include-book "centaur/bitops/integer-length" :dir :system))
+
+    (local
+     (defthmd integer-length-of-normalized-man
+       (implies (and (integerp m)
+                     (natp f)
+                     (<= (expt 2 f) m)
+                     (< m (expt 2 (1+ f))))
+                (equal (integer-length m) (1+ f)))))
+
+    (local (include-book "arithmetic-3/top" :dir :system))
+
+    (defret integer-length-of-<fn>.man
+      (implies (not (equal (rfix x) 0))
+               (equal (integer-length (fp-arith-triple->man norm))
+                      (1+ (pos-fix frac-size))))
+      :hints (("Goal"
+               :nonlinearp t
+               :use ((:instance integer-length-of-normalized-man
+                                (m (floor (* (rational-significand x)
+                                             (expt 2 (pos-fix frac-size)))
+                                          1))
+                                (f (pos-fix frac-size))))
+               :in-theory (disable acl2::normalize-factors-gather-exponents)))))
 
   (defretd <fn>-correct-for-arith-triples
     :pre-bind ((x (fp-arith-triple->rational in))
@@ -1556,8 +1597,6 @@
                                       ash))))
     :otf-flg t))
 
-
-
 (define normalize-rational-to-arith-triple-round+sticky ((x rationalp)
                                                          (frac-size posp))
   :returns (round+sticky rationalp :rule-classes :type-prescription)
@@ -1567,66 +1606,71 @@
        (norm-exact (* signif (expt 2 frac-size))))
     (* 2 (mod norm-exact 1)))
   ///
-  (local (defthm rational-exponent-of-times-power
-           (implies (and (rationalp x)
-                         (not (equal x 0)))
-                    (equal (rational-exponent (* x (expt 2 y)))
-                           (+ (ifix y) (rational-exponent x))))
-           :hints (("Goal" :in-theory (enable acl2::rational-exponent/significand-of-multiply)))))
+  (local
+   (defthm rational-exponent-of-times-power
+     (implies (and (rationalp x)
+                   (not (equal x 0)))
+              (equal (rational-exponent (* x (expt 2 y)))
+                     (+ (ifix y) (rational-exponent x))))
+     :hints (("Goal" :in-theory (enable acl2::rational-exponent/significand-of-multiply)))))
 
-  (local (defthm rational-significand-of-times-power
-           (implies (and (rationalp x)
-                         (not (equal x 0)))
-                    (equal (rational-significand (* x (expt 2 y)))
-                           (rational-significand x)))
-           :hints (("Goal" :in-theory (enable acl2::rational-exponent/significand-of-multiply)))))
+  (local
+   (defthm rational-significand-of-times-power
+     (implies (and (rationalp x)
+                   (not (equal x 0)))
+              (equal (rational-significand (* x (expt 2 y)))
+                     (rational-significand x)))
+     :hints (("Goal" :in-theory (enable acl2::rational-exponent/significand-of-multiply)))))
 
-  (local (defthm ash-1-integer-length-minus-1-lte-x
-           (implies (posp x)
-                    (<= (ash 1 (+ -1 (integer-length x))) x))
-           :hints (("Goal" :in-theory (enable* bitops::ihsext-inductions
-                                               bitops::ihsext-recursive-redefs)))))
+  (local
+   (defthm ash-1-integer-length-minus-1-lte-x
+     (implies (posp x)
+              (<= (ash 1 (+ -1 (integer-length x))) x))
+     :hints (("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                         bitops::ihsext-recursive-redefs)))))
 
-  (local (defthm rational-exponent-of-pos
-           (implies (posp x)
-                    (equal (rational-exponent x)
-                           (1- (integer-length x))))
-           :hints (("Goal"
-                    :in-theory (enable rational-exponent)
-                    :expand ((rational-exponent x))))))
+  (local
+   (defthm rational-exponent-of-pos
+     (implies (posp x)
+              (equal (rational-exponent x)
+                     (1- (integer-length x))))
+     :hints (("Goal"
+              :in-theory (enable rational-exponent)
+              :expand ((rational-exponent x))))))
 
-  (local (defthm floor-divide-out
-           (implies (and (not (equal (rfix y) 0))
-                         (syntaxp (not (equal y ''1)))
-                         (rationalp x))
-                    (equal (floor x y)
-                           (floor (/ x y) 1)))
-           :hints (("Goal" :in-theory (enable rfix)))))
+  (local
+   (defthm floor-divide-out
+     (implies (and (not (equal (rfix y) 0))
+                   (syntaxp (not (equal y ''1)))
+                   (rationalp x))
+              (equal (floor x y)
+                     (floor (/ x y) 1)))
+     :hints (("Goal" :in-theory (enable rfix)))))
 
-
-  (local (defthm mod-divide-out
-           (implies (and (not (equal (rfix y) 0))
-                         (syntaxp (not (equal y ''1)))
-                         (rationalp x))
-                    (equal (mod x y)
-                           (* y (mod (/ x y) 1))))
-           :hints (("Goal" :in-theory (enable mod rfix)))))
+  (local
+   (defthm mod-divide-out
+     (implies (and (not (equal (rfix y) 0))
+                   (syntaxp (not (equal y ''1)))
+                   (rationalp x))
+              (equal (mod x y)
+                     (* y (mod (/ x y) 1))))
+     :hints (("Goal" :in-theory (enable mod rfix)))))
 
   (local (in-theory (disable acl2::/r-when-abs-numerator=1)))
 
-  (local (defthm integerp-of-divide-exponents
-           (implies (and (<= y (+ 1 x))
-                         (integerp y)
-                         (integerp x)
-                         (integerp z))
-                    (integerp (* 2 z (expt 2 x) (/ (expt 2 y)))))
-           :hints (("Goal"
-                    :use ((:instance (:theorem (implies (natp x) (integerp (expt 2 x))))
-                                     (x (+ 1 x (- y))))
-                          (:instance (:theorem (implies (and (integerp x) (integerp y)) (integerp (* x y))))
-                                     (x z) (y (* 2 (expt 2 x) (/ (expt 2 y))))))
-                    :in-theory (e/d (acl2::exponents-add-unrestricted))))))
-
+  (local
+   (defthm integerp-of-divide-exponents
+     (implies (and (<= y (+ 1 x))
+                   (integerp y)
+                   (integerp x)
+                   (integerp z))
+              (integerp (* 2 z (expt 2 x) (/ (expt 2 y)))))
+     :hints (("Goal"
+              :use ((:instance (:theorem (implies (natp x) (integerp (expt 2 x))))
+                               (x (+ 1 x (- y))))
+                    (:instance (:theorem (implies (and (integerp x) (integerp y)) (integerp (* x y))))
+                               (x z) (y (* 2 (expt 2 x) (/ (expt 2 y))))))
+              :in-theory (e/d (acl2::exponents-add-unrestricted))))))
 
   (defretd <fn>-correct-for-arith-triples
     :pre-bind ((x (fp-arith-triple->rational in)))
@@ -1682,10 +1726,47 @@
     :rule-classes nil)
 
   (defretd normalize-rational-in-terms-of-round+sticky
-    (b* (((mv & roundp stickyp) (normalize-rational-to-arith-triple x frac-size :sticky-in sticky-in)))
+    (b* (((mv & roundp stickyp)
+          (normalize-rational-to-arith-triple x frac-size :sticky-in sticky-in)))
       (and (equal roundp
                   (<= 1 round+sticky))
            (equal stickyp
                   (or (and sticky-in t)
                       (not (integerp round+sticky))))))
     :hints (("Goal" :in-theory (enable normalize-rational-to-arith-triple)))))
+
+(defthmd normalize-rational-to-arith-triple-correct-for-arith-triples-full
+  (b* ((x (fp-arith-triple->rational in))
+       (frac-size (fp-size->frac-size size))
+       ((mv norm roundp stickyp)
+        (normalize-rational-to-arith-triple x frac-size :sticky-in sticky-in))
+       ((mv norm-spec roundp-spec stickyp-spec)
+        (normalize-arith-triple in :sticky-in sticky-in)))
+    (implies (not (equal x 0))
+             (and (equal norm-spec norm)
+                  (equal roundp-spec roundp)
+                  (equal stickyp-spec stickyp))))
+  :hints (("Goal"
+           :in-theory (enable
+                       normalize-rational-to-arith-triple-correct-for-arith-triples
+                       normalize-rational-in-terms-of-round+sticky
+                       normalize-rational-to-arith-triple-round+sticky-correct-for-arith-triples
+                       normalize-in-terms-of-round+sticky))))
+
+(define normalize-rational+round-arith-triple ((x rationalp)
+                                               (rc fp-rc-p)
+                                               &key
+                                               ((size fp-size-p) 'size)
+                                               ((sticky-in booleanp) 'nil))
+  :returns (res fp-arith-triple-p) ;; normalized, rounded
+  :guard-hints (("Goal"
+                 :use ((:instance integer-length-of-normalize-rational-to-arith-triple.man
+                                  (frac-size (fp-size->frac-size size))))
+                 :in-theory (disable integer-length-of-normalize-rational-to-arith-triple.man)))
+  (b* (((mv norm roundp stickyp)
+        (normalize-rational-to-arith-triple x
+                                            (fp-size->frac-size size)
+                                            :sticky-in sticky-in))
+       ((mv round & &)
+        (round-arith-triple norm roundp stickyp rc :verbosep nil)))
+    round))
