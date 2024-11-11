@@ -985,5 +985,5 @@
                        (make-certificate-messages
                         cert (set::delete (certificate->author cert)
                                           (correct-addresses systate)))))
-    :hints
-    (("Goal" :in-theory (enable set::union-symmetric)))))
+    :hints (("Goal" :in-theory (enable set::union-symmetric))))
+  (in-theory (disable get-network-state-of-create-next)))
