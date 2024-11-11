@@ -15,6 +15,7 @@
 (include-book "same-associated-certificates")
 (include-book "signed-certificates")
 (include-book "no-self-messages")
+(include-book "no-self-buffer")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -30,4 +31,5 @@
   :order-subtopics (associated-certificates
                     same-associated-certificates
                     signed-certificates
-                    no-self-messages))
+                    no-self-messages
+                    no-self-buffer))
