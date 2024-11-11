@@ -71,7 +71,8 @@
            system-previous-in-dag-p-necc
            validator-state->dag-subset-create-certificate-next
            validator-state->dag-of-create-certificate-next-same
-           validator-state->last-of-create-certificate-next)
+           validator-state->last-of-create-certificate-next
+           last-anchor-in-dag)
   :cases ((equal val (certificate->author cert)))
   :use ((:instance collect-all-anchors-of-unequivocal-dag-superset
                    (vals (all-addresses systate))
@@ -146,7 +147,8 @@
            system-previous-in-dag-p-necc
            system-last-anchor-present-p-necc
            validator-state->dag-subset-store-certificate-next
-           validator-state->last-of-store-certificate-next)
+           validator-state->last-of-store-certificate-next
+           last-anchor-in-dag)
   :use (:instance collect-all-anchors-of-unequivocal-dag-superset
                   (vals (all-addresses systate))
                   (last-anchor
@@ -239,7 +241,8 @@
            validator-state->dag-of-commit-anchors-next
            validator-state->last-of-commit-anchors-next
            certificate->author-of-last-anchor
-           certificate->round-of-last-anchor)
+           certificate->round-of-last-anchor
+           last-anchor-in-dag)
   :use (:instance collect-all-anchors-to-append-of-collect-anchors
                   (anchor (last-anchor (get-validator-state val systate)
                                        (all-addresses systate)))

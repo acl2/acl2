@@ -72,7 +72,7 @@
                     (validator-state->last vstate)))
     :enable certificate->round-of-certificate-with-author+round)
 
-  (defrule last-anchor-in-dag
+  (defruled last-anchor-in-dag
     (implies (last-anchor vstate vals)
              (set::in (last-anchor vstate vals) (validator-state->dag vstate)))
     :enable certificate-with-author+round-element))
@@ -120,7 +120,8 @@
     :enable (anchorp
              certificate-with-author+round-element
              certificate->author-of-last-anchor
-             certificate->round-of-last-anchor)))
+             certificate->round-of-last-anchor
+             last-anchor-in-dag)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -177,7 +178,8 @@
        ((when (equal vstate.last 0)) nil)
        (last-anchor (last-anchor vstate vals)))
     (collect-all-anchors last-anchor vstate.dag vals))
-  :guard-hints (("Goal" :in-theory (enable certificate->round-of-last-anchor)))
+  :guard-hints (("Goal" :in-theory (enable certificate->round-of-last-anchor
+                                           last-anchor-in-dag)))
 
   ///
 

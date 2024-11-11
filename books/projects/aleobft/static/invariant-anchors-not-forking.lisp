@@ -160,7 +160,8 @@
              system-unequivocal-dag-p-necc
              system-unequivocal-dags-p-necc
              system-previous-in-dag-p-necc
-             system-last-anchor-present-p-necc)
+             system-last-anchor-present-p-necc
+             last-anchor-in-dag)
     :use ((:instance collect-all-anchors-of-unequivocal-dags
                      (dag1 (validator-state->dag
                             (get-validator-state val1 systate)))
