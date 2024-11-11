@@ -34,7 +34,7 @@
      (the events `label' the transitions between states).")
    (xdoc::p
     "The definition of our labeled state transition is executable,
-     in the sense explained in @(tsee transitions), useful as a simulator."))
+     in the sense explained in @(see transitions), useful as a simulator."))
   :order-subtopics (states
                     events
                     initialization
