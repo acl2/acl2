@@ -40,7 +40,7 @@
    (xdoc::p
     "We define this notion here,
      and we prove theorems about its initial value,
-     and about its value changes in response to events."))
+     and about how its value changes in response to events."))
   :order-subtopics t
   :default-parent t)
 
