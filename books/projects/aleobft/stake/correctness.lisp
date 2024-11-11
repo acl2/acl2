@@ -13,6 +13,7 @@
 
 (include-book "associated-certificates")
 (include-book "same-associated-certificates")
+(include-book "signed-certificates")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -26,4 +27,5 @@
      culminating in the main property that we are interested in,
      namely the non-forking of blockchains."))
   :order-subtopics (associated-certificates
-                    same-associated-certificates))
+                    same-associated-certificates
+                    signed-certificates))
