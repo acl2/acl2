@@ -16,6 +16,7 @@
 (include-book "signed-certificates")
 (include-book "no-self-messages")
 (include-book "no-self-buffer")
+(include-book "no-self-endorsed")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -32,4 +33,5 @@
                     same-associated-certificates
                     signed-certificates
                     no-self-messages
-                    no-self-buffer))
+                    no-self-buffer
+                    no-self-endorsed))
