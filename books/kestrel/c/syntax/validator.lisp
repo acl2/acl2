@@ -5106,21 +5106,76 @@
        contributes the type @('void') to the set.")
      (xdoc::p
       "The second piece of information is as follows.
-       If the statement is a compound one whose last block item
-       is an expression statement,
-       the second piece of information is the type of the expression.
-       If the statement is not a compound one,
-       or does not have an expression statement as the last block item
+       If the statement is either an expression statement,
+       or is a compound one whose last block item is an expression statement,
+       the second piece of information is the type of that expression.
+       If the statement is not an expression or compound,
+       or it is compound but does not end in an expression statement
        (including the case in which the compound statement has no block items),
        the second piece of information is @('nil').
        The reason for having this second piece of information
        is to support the validation of "
       (xdoc::ahref "GCC statement expressions"
                    "https://gcc.gnu.org/onlinedocs/gcc/Statement-Exprs.html")
-      "."))
-    (declare (ignore stmt table ienv))
+      ".")
+     (xdoc::p
+      "To validate a labeled statement,
+       we validate its label, and then the enclosed statement,
+       returning the same results.
+       For now we do not check the requirements in
+       [C:6.8.1/2] and [C:6.8.1/3].")
+     (xdoc::p
+      "To validate a compound statement,
+       we push a new scope for the block,
+       and we validate the list of block items.
+       We pop the scope and we return the same results
+       coming from the validation of the block items.")
+     (xdoc::p
+      "To validate an expression statement,
+       we validate the expression,
+       and return its type as the second result.
+       The first result is the same as the one obtained
+       from the expression."))
     (b* (((reterr) nil nil (irr-valid-table)))
-      (reterr :todo))
+      (stmt-case
+       stmt
+       :labeled
+       (b* (((erp table) (valid-label stmt.label table ienv)))
+         (valid-stmt stmt.stmt table ienv))
+       :compound
+       (b* ((table (valid-push-scope table))
+            ((erp types type? table)
+             (valid-block-item-list stmt.items table ienv))
+            (table (valid-pop-scope table)))
+         (retok types type? table))
+       :expr
+       (reterr :todo)
+       :if
+       (reterr :todo)
+       :ifelse
+       (reterr :todo)
+       :switch
+       (reterr :todo)
+       :while
+       (reterr :todo)
+       :dowhile
+       (reterr :todo)
+       :for-expr
+       (reterr :todo)
+       :for-decl
+       (reterr :todo)
+       :for-ambig
+       (prog2$ (impossible) (reterr t))
+       :goto
+       (reterr :todo)
+       :continue
+       (reterr :todo)
+       :break
+       (reterr :todo)
+       :return
+       (reterr :todo)
+       :asm
+       (reterr :todo)))
     :measure (stmt-count stmt))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5139,7 +5194,13 @@
     (xdoc::topstring
      (xdoc::p
       "If validation is successful, we return the same kind of type results
-       as @(tsee valid-stmt); see that function's documentation."))
+       as @(tsee valid-stmt) (see that function's documentation),
+       with the slight modification that
+       the @('last-expr-type?') result is a type exactly when
+       the block item is a compound statement
+       whose last block item is an expression statement,
+       in which case the @('last-expr-type?') result is
+       the type of that expression."))
     (declare (ignore item table ienv))
     (b* (((reterr) nil nil (irr-valid-table)))
       (reterr :todo))
@@ -5161,7 +5222,14 @@
     (xdoc::topstring
      (xdoc::p
       "If validation is successful, we return the same kind of type results
-       as @(tsee valid-stmt); see that function's documentation."))
+       as @(tsee valid-stmt) (see that function's documentation),
+       with the modification that
+       the @('last-expr-type?') result is a type exactly when
+       the list of block items is not empty
+       and the last block item is a compound statement
+       whose last block item is an expression statement
+       in which case the @('last-expr-type?') result is
+       the type of that expression."))
     (declare (ignore items table ienv))
     (b* (((reterr) nil nil (irr-valid-table)))
       (reterr :todo))
