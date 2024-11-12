@@ -217,6 +217,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defset type-set
+  :short "Fixtype of sets of types."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Types are defined in @(tsee type)."))
+  :elt-type type
+  :elementp-of-nil nil
+  :pred type-setp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defalist type-option-type-alist
   :short "Fixtype of alists from optional types to types."
   :long
@@ -5065,15 +5077,95 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  ;; TODO: valid-stmt
+  (define valid-stmt ((stmt stmtp) (table valid-tablep) (ienv ienvp))
+    :guard (stmt-unambp stmt)
+    :returns (mv erp
+                 (return-types type-setp)
+                 (last-expr-type? type-optionp)
+                 (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate a statement."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "If validation is successful, we return,
+       besides an updated validation table,
+       also two pieces of type information.")
+     (xdoc::p
+      "The first piece is the set of types returned by the statement,
+       either via @('return') statements, with or without expression,
+       or by ending execution.
+       This is a set because a statement may contain
+       multiple @('return') sub-statements,
+       and may also end its execution without a @('return').
+       A @('return') statement with an expression
+       contributes the type of the expression to the set;
+       a @('return') statement without an expression
+       contributes the type @('void') to the set;
+       the ending of the statement's execution without a @('return')
+       contributes the type @('void') to the set.")
+     (xdoc::p
+      "The second piece of information is as follows.
+       If the statement is a compound one whose last block item
+       is an expression statement,
+       the second piece of information is the type of the expression.
+       If the statement is not a compound one,
+       or does not have an expression statement as the last block item
+       (including the case in which the compound statement has no block items),
+       the second piece of information is @('nil').
+       The reason for having this second piece of information
+       is to support the validation of "
+      (xdoc::ahref "GCC statement expressions"
+                   "https://gcc.gnu.org/onlinedocs/gcc/Statement-Exprs.html")
+      "."))
+    (declare (ignore stmt table ienv))
+    (b* (((reterr) nil nil (irr-valid-table)))
+      (reterr :todo))
+    :measure (stmt-count stmt))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  ;; TODO: valid-block-item
+  (define valid-block-item ((item block-itemp)
+                            (table valid-tablep)
+                            (ienv ienvp))
+    :guard (block-item-unambp item)
+    :returns (mv erp
+                 (return-types type-setp)
+                 (last-expr-type? type-optionp)
+                 (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate a block item."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "If validation is successful, we return the same kind of type results
+       as @(tsee valid-stmt); see that function's documentation."))
+    (declare (ignore item table ienv))
+    (b* (((reterr) nil nil (irr-valid-table)))
+      (reterr :todo))
+    :measure (block-item-count item))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  ;; TODO: valid-block-item-list
+  (define valid-block-item-list ((items block-item-listp)
+                                 (table valid-tablep)
+                                 (ienv ienvp))
+    :guard (block-item-list-unambp items)
+    :returns (mv erp
+                 (return-types type-setp)
+                 (last-expr-type? type-optionp)
+                 (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate a list of block items."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "If validation is successful, we return the same kind of type results
+       as @(tsee valid-stmt); see that function's documentation."))
+    (declare (ignore items table ienv))
+    (b* (((reterr) nil nil (irr-valid-table)))
+      (reterr :todo))
+    :measure (block-item-list-count items))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
