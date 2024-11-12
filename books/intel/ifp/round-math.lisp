@@ -1769,4 +1769,152 @@
                                             :sticky-in sticky-in))
        ((mv round & &)
         (round-arith-triple norm roundp stickyp rc :verbosep nil)))
-    round))
+    round)
+  ///
+  (local (include-book "centaur/bitops/integer-length" :dir :system))
+  (local (include-book "centaur/misc/multiply-out" :dir :system))
+
+  (local
+   (defthmd expt-2-of-minus-one
+     (implies (integerp x)
+              (equal (expt 2 (1- x))
+                     (* 1/2 (expt 2 x))))))
+
+  (local
+   (defthmd expt-2-of-plus-one
+     (implies (integerp x)
+              (equal (expt 2 (1+ x))
+                     (* 2 (expt 2 x))))
+     :hints (("Goal" :in-theory (enable expt)))))
+
+  (local
+   (encapsulate
+     ()
+
+     (local (include-book "arithmetic-3/top" :dir :system))
+
+     (local (in-theory (disable acl2::normalize-factors-gather-exponents)))
+
+     (defthm integerp-rewrite-mod-1
+       (implies (and (rationalp x)
+                     (not (equal (mod (* x (expt 2 f))
+                                      1)
+                                 0)))
+                (equal (integerp (* 2 (mod (* x (expt 2 f))
+                                           1)))
+                       (equal (mod (* x (expt 2 f))
+                                   1)
+                              1/2))))
+
+     (defthm integer-length-of-floor-1
+       (implies (and (rationalp x)
+                     (natp f)
+                     (<= 1 x)
+                     (< x 2))
+                (equal (integer-length (floor (* x (expt 2 f))
+                                              1))
+                       (1+ f)))
+       :hints (("Goal"
+                :nonlinearp t
+                :use ((:instance bitops::integer-length-unique
+                                 (x (floor (* x (expt 2 f))
+                                           1))
+                                 (y (1+ f)))))))))
+
+  (local
+   (defthmd integer-length-plus-one-unchanged
+     (implies (and (natp x)
+                   (equal (integer-length x) n)
+                   (<= (integer-length (1+ x)) n))
+              (equal (integer-length (1+ x)) n))
+     :hints (("Goal"
+              :use ((:instance bitops::integer-length-monotonic
+                               (i x)
+                               (j (1+ x))))
+              :in-theory (disable bitops::integer-length-monotonic)))))
+
+  (local
+   (defthm integer-length-plus-one-ovf
+     (implies (and (natp x)
+                   (equal (integer-length x) n)
+                   (< n (integer-length (1+ x))))
+              (and (equal (integer-length (1+ x))
+                          (1+ n))
+                   (equal x (1- (expt 2 n)))))
+     :hints (("Goal"
+              :use ((:instance bitops::integer-length-when-less-than-exp
+                               (x (1+ x))
+                               (y n))
+                    (:instance bitops::integer-length-when-greater-than-exp
+                               (y n)))
+              :in-theory (disable bitops::integer-length-when-less-than-exp
+                                  bitops::integer-length-when-greater-than-exp)))
+     :rule-classes nil))
+
+  (local
+   (defthm floor-mod-rel-1
+     (implies (<= 1/2 (mod x 1))
+              (<= (floor x 1) (- x 1/2)))
+     :hints (("Goal" :in-theory (enable mod)))
+     :rule-classes :linear))
+
+  (local
+   (defthm floor-mod-rel-2
+     (implies (<= (mod x 1) 1/2)
+              (<= (- x 1/2) (floor x 1)))
+     :rule-classes :linear))
+
+  (local
+   (defthm logtail1-2*2^f
+     (implies (integerp n)
+              (equal (logtail 1 (* 2 n))
+                     n))
+     :hints (("Goal" :in-theory (enable logtail)))))
+
+  (defret <fn>-bounds-when-rne
+    (b* ((frac-size (fp-size->frac-size size))
+         ((fp-arith-triple res))
+         (val (fp-arith-triple->rational res))
+         (exp (- (rational-exponent x)
+                 (+ 1 frac-size))))
+      (implies (and (rationalp x)
+                    (equal (rc->rounding-mode rc) :rne))
+               (and (<= (+ (- (expt 2 exp))
+                           x)
+                        val)
+                    (<= val
+                        (+ (expt 2 exp)
+                           x)))))
+    :hints (("Goal"
+             :use ((:instance integer-length-plus-one-unchanged
+                              (x (floor (* (rational-significand x)
+                                           (expt 2 (fp-size->frac-size size)))
+                                        1))
+                              (n (1+ (fp-size->frac-size size))))
+                   (:instance integer-length-plus-one-ovf
+                              (x (floor (* (rational-significand x)
+                                           (expt 2 (fp-size->frac-size size)))
+                                        1))
+                              (n (1+ (fp-size->frac-size size)))))
+             :in-theory (e/d (fp-arith-triple->rational
+                              normalize-rational-to-arith-triple
+                              round-arith-triple
+                              round-up
+                              normalize-arith-triple
+                              fp-arith-rightshift
+                              acl2::rational-exponent-in-terms-of-rational-significand
+                              acl2::divide-out-common-factors-<
+                              expt-2-of-minus-one
+                              expt-2-of-plus-one
+                              rational-sign)
+                             (acl2::rational-significand-base-case
+                              (:linear acl2::x*y>1-positive)
+                              acl2::x*y>1-positive
+                              acl2::mod-x-y-=-x+y-for-rationals
+                              acl2::mod-x-y-=-x+y-for-rationals
+                              acl2::mod-x-y-=-x-for-rationals
+                              abs
+                              acl2::/r-when-abs-numerator=1
+                              bitops::|(* 1/2 (expt 2 n))|))))
+    :rule-classes :linear)
+  )
