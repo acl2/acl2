@@ -2449,12 +2449,16 @@
      If nothing is found, then the linkage is external.
      If an object or function is found with external or internal linkage,
      then the linkage of the new declaration
-     is the one of that object or function.
+     is the one of that object or function;
+     the two declarations must refer to the same object or function,
+     but we check elsewhere that the two declarations
+     are consistent with each other.
      If an object or function is found with no linkage,
-     or if an enumeration constant or a @('typedef') are found,
-     both of which have no linkage [C:6.2.2/6],
-     then the linkage of the new declaration is external.
-     Thus, the linkage is always either internal or external.
+     or a @('typedef') is found (which has no linkage [C:6.2.2/6]),
+     or an enumeration constant is found (which has no linkage [C:6.2.2/6]),
+     then the linkage of the new declaration is external;
+     the two declarations must refer to different entities.
+     In any case, the linkage is always either internal or external.
      If the type is that of a function,
      there is no lifetime, which only applies to objects [C:6.2.4/1].
      If the type is that of an object,
@@ -2490,7 +2494,7 @@
      the type must not be one of a function [C:6.7.1/4].
      Since we must have an object, the lifetime is thread.
      If we are in a block scope, it is an error,
-     because in that case there must also be @('extern') or @('storage')
+     because in that case there must also be @('extern') or @('static')
      [C:6.7.1/3].
      Since we cannot be in a block scope, we must be in the file scope.
      [C:6.2.2] does not seem to specify the linkage for this case,
@@ -2506,6 +2510,7 @@
     "If the storage class specifier sequence is @('auto') or @('register'),
      we must not be in a file scope [C:6.9/2];
      so we must be in a block scope.
+     The type must not be one of a function.
      Thus, it has no linkage [C:6.2.2/6].
      The lifetime is automatic [C:6.2.4/5].")
    (xdoc::p
@@ -2522,9 +2527,12 @@
      For an object block scope, there is no linkage [C:6.2.2/6],
      and the lifetime is automatic [C:6.2.4/5].")
    (xdoc::p
-    "We prove that if @('typedefp') is @('t') then @('lifetime?') is @('nil'),
-     and that if @('typedefp') is @('nil') then @('lifetime?') is not @('nil').
-     That is, the two are mutually exclusive."))
+    "We prove that if @('typedefp') is @('t')
+     then @('lifetime?') is @('nil') and there is no linkage.
+     We prove that if a function is being declared,
+     then the linkage is always external or internal,
+     and that the only possible sequences of storage class specifiers
+     are @('extern'), @('static'), and nothing."))
   (b* (((reterr) nil (irr-linkage) nil))
     (cond
      ((stor-spec-list-typedef-p storspecs)
@@ -2602,7 +2610,15 @@
         (retok nil (linkage-external) (lifetime-thread))))
      ((or (stor-spec-list-auto-p storspecs)
           (stor-spec-list-register-p storspecs))
-      (b* (((unless (> (valid-table-num-scopes table) 1))
+      (b* (((when (type-case type :function))
+            (reterr (msg "The storage class specifier '~s0' ~
+                          cannot be used in the declaration of
+                          the function ~x1."
+                         (if (stor-spec-list-auto-p storspecs)
+                             "auto"
+                           "register")
+                         (ident-fix ident))))
+           ((unless (> (valid-table-num-scopes table) 1))
             (reterr (msg "The storage class specifier '~s0' ~
                           cannot be used in the file scope, ~
                           for identifier ~x1."
@@ -2631,13 +2647,34 @@
 
   ///
 
-  (defret no-lifetime-if-typedef-of-valid-stor-spec-list
+  (defret no-lifetime-of-valid-stor-spec-list-when-typedef
     (implies typedefp
              (not lifetime?)))
 
-  (defret no-linkage-if-typedef-of-valid-stor-spec-list
+  (defret no-linkage-of-valid-stor-spec-list-when-typedef
     (implies typedefp
-             (equal (linkage-kind linkage) :none))))
+             (equal (linkage-kind linkage) :none)))
+
+  (defret ext/int-linkage-of-valid-stor-spec-when-function
+    (implies (and (not erp)
+                  (not typedefp)
+                  (type-case type :function))
+             (not (equal (linkage-kind linkage)
+                         :none))))
+
+  (defret lifetime-of-valid-stor-spec-when-object
+    (implies (and (not erp)
+                  (not typedefp)
+                  (not (type-case type :function)))
+             lifetime?))
+
+  (defret extern/static/none-when-valid-stor-spec-list-function
+    (implies (and (not erp)
+                  (not typedefp)
+                  (type-case type :function))
+             (or (stor-spec-list-extern-p storspecs)
+                 (stor-spec-list-static-p storspecs)
+                 (endp storspecs)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3577,6 +3614,38 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  (define valid-initer-option ((initer? initer-optionp)
+                               (target-type typep)
+                               (lifetime lifetimep)
+                               (table valid-tablep)
+                               (ienv ienvp))
+    :guard (and (initer-option-unambp initer?)
+                (or (not initer?)
+                    (not (type-case target-type :function)))
+                (or (not initer?)
+                    (not (type-case target-type :void))))
+    :returns (mv erp (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate an optional initializer."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "If there is no initializer, validation succeeds.
+       Otherwise, we validate the initializer.")
+     (xdoc::p
+      "The guard on the target type is weakened,
+       compared to @(tsee valid-initer):
+       if there is no initializer, the type can be anything,
+       because the restriction applies only to initializers [C:6.7.9/3]."))
+    (b* (((reterr) (irr-valid-table)))
+      (initer-option-case
+       initer?
+       :some (valid-initer initer?.val target-type lifetime table ienv)
+       :none (retok (valid-table-fix table))))
+    :measure (initer-option-count initer?))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define valid-desiniter ((desiniter desiniterp)
                            (target-type typep)
                            (lifetime lifetimep)
@@ -4249,7 +4318,9 @@
        If the parameter declarator has an identifier,
        we extend the validation table with it,
        unless there is already an ordinary identifier
-       with the same name in the same (i.e. current) scope.
+       with the same name in the same (i.e. current) scope;
+       since parameters have no linkage [C:6.2.2/6],
+       they can be only declared once in the same scope [C:6.7/3].
        Parameters of function declarations have no linkage [C:6.2.2/6]."))
     (b* (((reterr) (irr-valid-table))
          ((paramdecl paramdecl) paramdecl)
@@ -4625,9 +4696,11 @@
      (xdoc::p
       "The enumeration constant is added to the validation table [C:6.2.1/7],
        unless there is already an ordinary identifier
-       with the same name and in the same (i.e. current) scope.
+       with the same name and in the same (i.e. current) scope;
+       since enumeration constants have no linkage [C:6.2.2/6],
+       they can be only declared once in the same scope [C:6.7/3].
        If there is a constant expression,
-       we validated it and check that it has integer type,
+       we validate it and check that it has integer type,
        but for now we do not check that the value
        is representable as @('int') [C:6.7.2.2/2]."))
     (b* (((reterr) (irr-valid-table))
@@ -4696,7 +4769,242 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  ;; TODO: valid-initdeclor
+  (define valid-initdeclor ((initdeclor initdeclorp)
+                            (type typep)
+                            (storspecs stor-spec-listp)
+                            (table valid-tablep)
+                            (ienv ienvp))
+    :guard (initdeclor-unambp initdeclor)
+    :returns (mv erp (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate an initializer declarator."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "Initializer declarators [C:6.7/1]
+       appear in declarations, after declaration specifiers.
+       The latter determine a type, passed as input,
+       which an initializer declarator may refine.
+       We also pass as input the storage class specifiers
+       extracted from the declaration specifiers.")
+     (xdoc::p
+      "We validate the declarator,
+       which returns the identifier and the possibly refined type.
+       Here the @('fundef-params-p') flag is always @('nil'),
+       because we are not in a function definition.")
+     (xdoc::p
+      "Then we validate the storage class specifiers,
+       which together with the identifier and final type
+       determine whether we are declaring a @('typedef'),
+       and what the linkage and lifetime are.")
+     (xdoc::p
+      "If the @('typedef') flag is @('t'),
+       there must be no initializer,
+       because we are not declaring an object.
+       In this case, we add the @('typedef') to the validation table.
+       The same @('typedef') is allowed in the same scope [C:6.7/3],
+       under certain conditions that are inexpressible
+       in our current approximate type system,
+       but since our validation tables currently carry limited information
+       about @('typedef') names (i.e. just that they are @('typedef')s),
+       we allow the identifier to be present, as a @('typedef'),
+       in the same (i.e. current) scope,
+       to avoid rejecting valid code.")
+     (xdoc::p
+      "If the @('typedef') flag is @('nil'),
+       the identifier may denote a function or an object.")
+     (xdoc::p
+      "If the type resulting from the declarator is the function type,
+       the identifier denotes a function,
+       and there must be no initializer.
+       We look up the identifier in the validation table.
+       If it is not found, we extend the validation table with the function.
+       If it is found, there are a few cases to consider.
+       If it has no linkage in the table, the two must be different entities:
+       thus, it is an error if the identifier is found
+       in the same (i.e. current) scope [C:6.2.1/4] [C:6.7/3];
+       but if it is in a different scope, we add the new one to the table.
+       If instead the identifier has internal or external linkage in the table,
+       there are other cases to consider.
+       The current declaration is for a function,
+       and thus it always has internal or external linkage,
+       as proved in @(tsee valid-stor-spec-list).
+       The current declaration must therefore refer
+       to the same entity as the information found in the table;
+       and so we need to ensure that the types are the same,
+       i.e. that the type in the table is the function type.
+       The two linkages must be the same too:
+       it is an error if the current one is internal
+       while the one in the table is external
+       (it means that there is an @('extern') or unqualified one
+       followed by a @('static') one, both in the file scope);
+       the situation where the current one is external
+       while the one in the table is internal cannot happen,
+       because as defined in @(tsee valid-stor-spec-list),
+       the current one would be @('extern') or unqualified,
+       and so it would have the same linkage as the previous one.
+       We also need to add the identifier to the table:
+       even though it has the same information as the one already found,
+       that one may be in an outer scope,
+       but we need to record that there is one in the current scope too.")
+     (xdoc::p
+      "If the type is an object type,
+       we validate the initializer if present;
+       we pass the type of the identifier,
+       so the initializer is checked against that.
+       If there is an initializer, the type must not be void [C:6.7.9/3].
+       Then we look it up in the validation table.
+       If no information is found in the validation table,
+       we add the identifier to the table.
+       If the current declaration has no linkage,
+       or if the information in the table has no linkage,
+       the two must denote different entities,
+       and thus we ensure that the one in the table
+       is not in the same (i.e. current) scope [C:6.2.1/4] [C:6.7/3];
+       if the checks pass, we add the identifier to the table.
+       If instead both have internal or external linkage,
+       we need to check that the linkages are the same,
+       in which case we still add the identifier to the table,
+       to record that it is also declared in the current scope.
+       Similarly to the case for functions discussed above,
+       it is an error if the current declaration has internal linkage
+       while the one in the table has external linkage,
+       and the opposite situation cannot happen.")
+     (xdoc::p
+      "For now we ignore the optional assembler name specifier,
+       as well as any attribute specifiers."))
+    (b* (((reterr) (irr-valid-table))
+         ((initdeclor initdeclor) initdeclor)
+         ((erp & type ident table)
+          (valid-declor initdeclor.declor nil type table ienv))
+         ((erp typedefp linkage lifetime?)
+          (valid-stor-spec-list storspecs ident type table))
+         ((when typedefp)
+          (b* (((when initdeclor.init?)
+                (reterr (msg "The typedef name ~x0 ~
+                              has an initializer ~x1."
+                             ident initdeclor.init?)))
+               ((mv info? currentp) (valid-lookup-ord ident table))
+               ((when (and info?
+                           currentp
+                           (not (valid-ord-info-case info? :typedef))))
+                (reterr (msg "The typedef name ~x0 ~
+                              is already declared in the current scope ~
+                              with associated information ~x1."
+                             ident info?)))
+               (table (valid-add-ord ident (valid-ord-info-typedef) table)))
+            (retok table)))
+         ((when (type-case type :function))
+          (b* (((when initdeclor.init?)
+                (reterr (msg "The function ~x0 has an initializer ~x1."
+                             ident initdeclor.init?)))
+               ((mv info? currentp) (valid-lookup-ord ident table))
+               ((when (not info?))
+                (b* ((new-info (make-valid-ord-info-objfun
+                                :type type
+                                :linkage linkage))
+                     (table (valid-add-ord ident new-info table)))
+                  (retok table)))
+               ((when (or (valid-ord-info-case info? :typedef)
+                          (valid-ord-info-case info? :enumconst)))
+                (if currentp
+                    (reterr (msg "The object ~x0 ~
+                                  is already declared in the current scope ~
+                                  with associated information ~x1."
+                                 ident info?))
+                  (b* ((new-info (make-valid-ord-info-objfun
+                                  :type type
+                                  :linkage linkage))
+                       (table (valid-add-ord ident new-info table)))
+                    (retok table))))
+               ((valid-ord-info-objfun info) info?)
+               ((when (linkage-case info.linkage :none))
+                (if currentp
+                    (reterr (msg "The function ~x0 ~
+                                  is already declared in the current scope ~
+                                  with associated information ~x1."
+                                 ident info?))
+                  (b* ((new-info (make-valid-ord-info-objfun
+                                  :type type
+                                  :linkage linkage))
+                       (table (valid-add-ord ident new-info table)))
+                    (retok table))))
+               ((unless (type-case info.type :function))
+                (reterr (msg "The function ~x0 ~
+                              is already declared with a diffent type ~x1."
+                             ident info.type)))
+               ((when (and (linkage-case linkage :internal)
+                           (linkage-case info.linkage :external)))
+                (reterr (msg "The function ~x0 ~
+                              is declared with internal linkage ~
+                              after being declared with external linkage."
+                             ident)))
+               ((when (and (linkage-case linkage :external)
+                           (linkage-case info.linkage :internal)))
+                (raise "Internal error: function ~x0 declared ~
+                        first with internal linkage then with external linkage."
+                       ident)
+                (reterr t))
+               (new-info (make-valid-ord-info-objfun
+                          :type type
+                          :linkage linkage))
+               (table (valid-add-ord ident new-info table)))
+            (retok table)))
+         ((when (and initdeclor.init?
+                     (type-case type :void)))
+          (reterr (msg "The incomplete type void cannot have an initializer.")))
+         ((erp table)
+          (valid-initer-option initdeclor.init? type lifetime? table ienv))
+         ((mv info? currentp) (valid-lookup-ord ident table))
+         ((when (not info?))
+          (b* ((new-info (make-valid-ord-info-objfun
+                          :type type
+                          :linkage linkage))
+               (table (valid-add-ord ident new-info table)))
+            (retok table)))
+         ((when (or (valid-ord-info-case info? :typedef)
+                    (valid-ord-info-case info? :enumconst)))
+          (if currentp
+              (reterr (msg "The object ~x0 ~
+                            is already declared in the current scope ~
+                            with associated information ~x1."
+                           ident info?))
+            (b* ((new-info (make-valid-ord-info-objfun
+                            :type type
+                            :linkage linkage))
+                 (table (valid-add-ord ident new-info table)))
+              (retok table))))
+         ((valid-ord-info-objfun info) info?)
+         ((when (or (linkage-case linkage :none)
+                    (linkage-case info.linkage :none)))
+          (if currentp
+              (reterr (msg "The object ~x0 ~
+                            is already declared in the current scope ~
+                            with associated information ~x1."
+                           ident info?))
+            (b* ((new-info (make-valid-ord-info-objfun
+                            :type type
+                            :linkage linkage))
+                 (table (valid-add-ord ident new-info table)))
+              (retok table))))
+         ((when (and (linkage-case linkage :internal)
+                     (linkage-case info.linkage :external)))
+          (reterr (msg "The function ~x0 ~
+                        is declared with internal linkage ~
+                        after being declared with external linkage."
+                       ident)))
+         ((when (and (linkage-case linkage :external)
+                     (linkage-case info.linkage :internal)))
+          (raise "Internal error: function ~x0 declared ~
+                  first with internal linkage then with external linkage."
+                 ident)
+          (reterr t))
+         (new-info (make-valid-ord-info-objfun
+                    :type type
+                    :linkage linkage))
+         (table (valid-add-ord ident new-info table)))
+      (retok table))
+    :measure (initdeclor-count initdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
