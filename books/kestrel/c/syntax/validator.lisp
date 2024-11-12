@@ -4967,7 +4967,43 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  ;; TODO: valid-decl
+  (define valid-decl ((decl declp) (table valid-tablep) (ienv ienvp))
+    :guard (decl-unambp decl)
+    :returns (mv erp (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate a declaration."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "If it is a static assertion declaration,
+       we validate it using a separate validation function.
+       Otherwise, we first validate the declaration specifiers
+       and then the list of initializer declarators,
+       passing information from the former to the latter.
+       We ensure that the list of initializer declarators is not empty
+       (i.e. there is at least a declarator),
+       or the declaration specifiers declare a tag,
+       as required in [C:6.7/2].
+       We ignore the GCC extension for now."))
+    (b* (((reterr) (irr-valid-table)))
+      (decl-case
+       decl
+       :decl
+       (b* (((erp type storspecs table)
+             (valid-declspec-list decl.specs nil nil nil table ienv))
+            ((when (and (endp decl.init)
+                        (not (type-case type :struct))
+                        (not (type-case type :union))
+                        (not (type-case type :enum))))
+             (reterr (msg "The declaration ~x0 declares ~
+                           neither a declarator nor a tag."
+                          (decl-fix decl))))
+            ((erp table)
+             (valid-initdeclor-list decl.init type storspecs table ienv)))
+         (retok table))
+       :statassert
+       (valid-statassert decl.unwrap table ienv)))
+    :measure (decl-count decl))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
