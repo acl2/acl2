@@ -969,7 +969,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define valid-pop-scope ((table valid-tablep))
-  :guard (> (valid-table-num-scopes table) 0)
   :returns (new-table valid-tablep)
   :short "Pop a scope from the validation table."
   :long
@@ -978,7 +977,10 @@
     "The guard requires that there are is at least one scope.")
    (xdoc::p
     "The popped scope is discarded."))
-  (b* ((scopes (valid-table->scopes table))
+  (b* (((unless (> (valid-table-num-scopes table) 0))
+        (raise "Internal error: no scopes in validation table.")
+        (valid-table-fix table))
+       (scopes (valid-table->scopes table))
        (new-scopes (cdr scopes)))
     (change-valid-table table :scopes new-scopes))
   :hooks (:fix)
@@ -1032,7 +1034,6 @@
 (define valid-add-ord ((ident identp)
                        (info valid-ord-infop)
                        (table valid-tablep))
-  :guard (> (valid-table-num-scopes table) 0)
   :returns (new-table valid-tablep)
   :short "Add an ordinary identifier to the validation table."
   :long
@@ -1042,7 +1043,7 @@
    (xdoc::p
     "The identifier is always added to
      the first (i.e. innermost, i.e. current) scope.
-     The guard requires the existence of at least one scope;
+     We check the existence of at least one scope;
      recall that there must be always a file scope.")
    (xdoc::p
     "If the identifier is already present in the current scope,
@@ -1052,7 +1053,10 @@
      i.e. when it ``refines'' the validation information for the identifier.
      We could consider adding a guard to this function
      that characterizes the acceptable overwriting."))
-  (b* ((scopes (valid-table->scopes table))
+  (b* (((unless (> (valid-table-num-scopes table) 0))
+        (raise "Internal error: no scopes in validation table.")
+        (valid-table-fix table))
+       (scopes (valid-table->scopes table))
        (scope (car scopes))
        (ord-scope (valid-scope->ord scope))
        (new-ord-scope (acons (ident-fix ident)
@@ -2445,12 +2449,16 @@
      If nothing is found, then the linkage is external.
      If an object or function is found with external or internal linkage,
      then the linkage of the new declaration
-     is the one of that object or function.
+     is the one of that object or function;
+     the two declarations must refer to the same object or function,
+     but we check elsewhere that the two declarations
+     are consistent with each other.
      If an object or function is found with no linkage,
-     or if an enumeration constant or a @('typedef') are found,
-     both of which have no linkage [C:6.2.2/6],
-     then the linkage of the new declaration is external.
-     Thus, the linkage is always either internal or external.
+     or a @('typedef') is found (which has no linkage [C:6.2.2/6]),
+     or an enumeration constant is found (which has no linkage [C:6.2.2/6]),
+     then the linkage of the new declaration is external;
+     the two declarations must refer to different entities.
+     In any case, the linkage is always either internal or external.
      If the type is that of a function,
      there is no lifetime, which only applies to objects [C:6.2.4/1].
      If the type is that of an object,
@@ -2486,7 +2494,7 @@
      the type must not be one of a function [C:6.7.1/4].
      Since we must have an object, the lifetime is thread.
      If we are in a block scope, it is an error,
-     because in that case there must also be @('extern') or @('storage')
+     because in that case there must also be @('extern') or @('static')
      [C:6.7.1/3].
      Since we cannot be in a block scope, we must be in the file scope.
      [C:6.2.2] does not seem to specify the linkage for this case,
@@ -2502,6 +2510,7 @@
     "If the storage class specifier sequence is @('auto') or @('register'),
      we must not be in a file scope [C:6.9/2];
      so we must be in a block scope.
+     The type must not be one of a function.
      Thus, it has no linkage [C:6.2.2/6].
      The lifetime is automatic [C:6.2.4/5].")
    (xdoc::p
@@ -2518,9 +2527,12 @@
      For an object block scope, there is no linkage [C:6.2.2/6],
      and the lifetime is automatic [C:6.2.4/5].")
    (xdoc::p
-    "We prove that if @('typedefp') is @('t') then @('lifetime?') is @('nil'),
-     and that if @('typedefp') is @('nil') then @('lifetime?') is not @('nil').
-     That is, the two are mutually exclusive."))
+    "We prove that if @('typedefp') is @('t')
+     then @('lifetime?') is @('nil') and there is no linkage.
+     We prove that if a function is being declared,
+     then the linkage is always external or internal,
+     and that the only possible sequences of storage class specifiers
+     are @('extern'), @('static'), and nothing."))
   (b* (((reterr) nil (irr-linkage) nil))
     (cond
      ((stor-spec-list-typedef-p storspecs)
@@ -2598,7 +2610,15 @@
         (retok nil (linkage-external) (lifetime-thread))))
      ((or (stor-spec-list-auto-p storspecs)
           (stor-spec-list-register-p storspecs))
-      (b* (((unless (> (valid-table-num-scopes table) 1))
+      (b* (((when (type-case type :function))
+            (reterr (msg "The storage class specifier '~s0' ~
+                          cannot be used in the declaration of
+                          the function ~x1."
+                         (if (stor-spec-list-auto-p storspecs)
+                             "auto"
+                           "register")
+                         (ident-fix ident))))
+           ((unless (> (valid-table-num-scopes table) 1))
             (reterr (msg "The storage class specifier '~s0' ~
                           cannot be used in the file scope, ~
                           for identifier ~x1."
@@ -2627,13 +2647,34 @@
 
   ///
 
-  (defret no-lifetime-if-typedef-of-valid-stor-spec-list
+  (defret no-lifetime-of-valid-stor-spec-list-when-typedef
     (implies typedefp
              (not lifetime?)))
 
-  (defret no-linkage-if-typedef-of-valid-stor-spec-list
+  (defret no-linkage-of-valid-stor-spec-list-when-typedef
     (implies typedefp
-             (equal (linkage-kind linkage) :none))))
+             (equal (linkage-kind linkage) :none)))
+
+  (defret ext/int-linkage-of-valid-stor-spec-when-function
+    (implies (and (not erp)
+                  (not typedefp)
+                  (type-case type :function))
+             (not (equal (linkage-kind linkage)
+                         :none))))
+
+  (defret lifetime-of-valid-stor-spec-when-object
+    (implies (and (not erp)
+                  (not typedefp)
+                  (not (type-case type :function)))
+             lifetime?))
+
+  (defret extern/static/none-when-valid-stor-spec-list-function
+    (implies (and (not erp)
+                  (not typedefp)
+                  (type-case type :function))
+             (or (stor-spec-list-extern-p storspecs)
+                 (stor-spec-list-static-p storspecs)
+                 (endp storspecs)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2874,6 +2915,28 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  (define valid-const-expr-option ((cexpr? const-expr-optionp)
+                                   (table valid-tablep)
+                                   (ienv ienvp))
+    :guard (const-expr-option-unambp cexpr?)
+    :returns (mv erp (type? type-optionp) (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate an optional constant expression."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "If there is no constant expression,
+       we return @('nil') as the optional type,
+       and the validation table unchanged."))
+    (b* (((reterr) nil (irr-valid-table)))
+      (const-expr-option-case
+       cexpr?
+       :some (valid-const-expr cexpr?.val table ienv)
+       :none (retok nil (valid-table-fix table))))
+    :measure (const-expr-option-count cexpr?))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define valid-genassoc ((genassoc genassocp)
                           (table valid-tablep)
                           (ienv ienvp))
@@ -3063,13 +3126,13 @@
                     ((erp type table) (valid-tyname tyspec.type table ienv)))
                  (retok type nil table))
        :struct (b* (((unless (endp tyspecs)) (reterr msg-bad-preceding))
-                    ((erp table) (mv :todo-strunispec same-table)))
+                    ((erp table) (valid-strunispec tyspec.unwrap table ienv)))
                  (retok (type-struct) nil table))
        :union (b* (((unless (endp tyspecs)) (reterr msg-bad-preceding))
-                   ((erp table) (mv :todo-strunispec same-table)))
+                   ((erp table) (valid-strunispec tyspec.unwrap table ienv)))
                 (retok (type-union) nil table))
        :enum (b* (((when (endp tyspecs)) (reterr msg-bad-preceding))
-                  ((erp table) (mv :todo-enumspec same-table)))
+                  ((erp table) (valid-enumspec tyspec.unwrap table ienv)))
                (retok (type-enum) nil table))
        :typedef (if (endp tyspecs)
                     (retok (type-unknown) nil same-table)
@@ -3398,7 +3461,12 @@
          ((erp type? tyspecs storspecs table)
           (valid-declspec (car declspecs) type? tyspecs storspecs table ienv)))
       (valid-declspec-list (cdr declspecs) type? tyspecs storspecs table ienv))
-    :measure (declspec-list-count declspecs))
+    :measure (declspec-list-count declspecs)
+
+    ///
+
+    (more-returns
+     (all-storspecs true-listp :rule-classes :type-prescription)))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3543,6 +3611,44 @@
                         is disallowed."
                        (initer-fix initer) (type-fix target-type))))))
     :measure (initer-count initer))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define valid-initer-option ((initer? initer-optionp)
+                               (target-type typep)
+                               (lifetime? lifetime-optionp)
+                               (table valid-tablep)
+                               (ienv ienvp))
+    :guard (and (initer-option-unambp initer?)
+                (or (not initer?)
+                    lifetime?)
+                (or (not initer?)
+                    (not (type-case target-type :function)))
+                (or (not initer?)
+                    (not (type-case target-type :void))))
+    :returns (mv erp (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate an optional initializer."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "If there is no initializer, validation succeeds.
+       Otherwise, we validate the initializer.")
+     (xdoc::p
+      "The guard on the target type is weakened,
+       compared to @(tsee valid-initer):
+       if there is no initializer, the type can be anything,
+       because the restriction applies only to initializers [C:6.7.9/3]."))
+    (b* (((reterr) (irr-valid-table)))
+      (initer-option-case
+       initer?
+       :some (valid-initer initer?.val
+                           target-type
+                           (lifetime-option-fix lifetime?)
+                           table
+                           ienv)
+       :none (retok (valid-table-fix table))))
+    :measure (initer-option-count initer?))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3763,6 +3869,39 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  (define valid-declor-option ((declor? declor-optionp)
+                               (type typep)
+                               (table valid-tablep)
+                               (ienv ienvp))
+    :guard (declor-option-unambp declor?)
+    :returns (mv erp
+                 (new-type typep)
+                 (ident? ident-optionp)
+                 (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate an optional declarator."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "If there is no declarator,
+       we return the type and validation table unchanged,
+       and no identifer.
+       Otherwise, we validate the declarator,
+       using a separate validation function.")
+     (xdoc::p
+      "This function does not take a return a @('fundef-params-p') flag
+       because optional declarators are not used in function parameters."))
+    (b* (((reterr) (irr-type) nil (irr-valid-table)))
+      (declor-option-case
+       declor?
+       :none (retok (type-fix type) nil (valid-table-fix table))
+       :some (b* (((erp & type ident table)
+                   (valid-declor declor?.val nil type table ienv)))
+               (retok type ident table))))
+    :measure (declor-option-count declor?))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
   (define valid-dirdeclor ((dirdeclor dirdeclorp)
                            (fundef-params-p booleanp)
                            (type typep)
@@ -3858,6 +3997,10 @@
        the parameters form a function prototype scope [C:6.2.1/4],
        which is therefore popped.")
      (xdoc::p
+      "For the function declarator with a parameter type list,
+       we handle the special case of a single @('void') [C:6.7.6.3/10]
+       before calling a separate function to validate the parameters.")
+     (xdoc::p
       "A function declarator with a non-empty name list can only occur
        as the parameters of a function being defined [C:6.7.6.3/3]
        Thus, unless the list is empty,
@@ -3942,7 +4085,14 @@
             ((erp fundef-params-p type ident table)
              (valid-dirdeclor dirdeclor.decl fundef-params-p type table ienv))
             (table (valid-push-scope table))
-            ;; TODO: validate parameters, passing fundef-params-p
+            ((erp table)
+             (if (equal dirdeclor.params
+                        (list (make-paramdecl
+                               :spec (list (declspec-tyspec (type-spec-void)))
+                               :decl (paramdeclor-none))))
+                 (retok table)
+               (valid-paramdecl-list
+                dirdeclor.params fundef-params-p table ienv)))
             (table (if fundef-params-p
                        table
                      (valid-pop-scope table))))
@@ -4001,6 +4151,30 @@
                  type)))
       (valid-dirabsdeclor-option absdeclor.decl? type table ienv))
     :measure (absdeclor-count absdeclor))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (define valid-absdeclor-option ((absdeclor? absdeclor-optionp)
+                                  (type typep)
+                                  (table valid-tablep)
+                                  (ienv ienvp))
+    :guard (absdeclor-option-unambp absdeclor?)
+    :returns (mv erp (new-type typep) (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate an optional abstract declarator."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "If there is no abstract declarator,
+       we return the type and validation table unchanged.
+       Otherwise, we validate the abstract declarator,
+       using a separate validation function."))
+    (b* (((reterr) (irr-type) (irr-valid-table)))
+      (absdeclor-option-case
+       absdeclor?
+       :none (retok (type-fix type) (valid-table-fix table))
+       :some (valid-absdeclor absdeclor?.val type table ienv)))
+    :measure (absdeclor-option-count absdeclor?))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4083,7 +4257,13 @@
             ((erp type table)
              (valid-dirabsdeclor-option dirabsdeclor.decl? type table ienv))
             (table (valid-push-scope table))
-            ;; TODO: validate parameters, passing fundef-params-p
+            ((erp table)
+             (if (equal dirabsdeclor.params
+                        (list (make-paramdecl
+                               :spec (list (declspec-tyspec (type-spec-void)))
+                               :decl (paramdeclor-none))))
+                 (retok table)
+               (valid-paramdecl-list dirabsdeclor.params nil table ienv)))
             (table (valid-pop-scope table)))
          (retok type table))
        :dummy-base
@@ -4116,15 +4296,143 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  ;; TODO: valid-paramdecl
+  (define valid-paramdecl ((paramdecl paramdeclp)
+                           (fundef-params-p booleanp)
+                           (table valid-tablep)
+                           (ienv ienvp))
+    :guard (paramdecl-unambp paramdecl)
+    :returns (mv erp (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate a parameter declaration."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The @('fundef-params-p') input is @('t') iff
+       we are validating the parameter of a function definition.")
+     (xdoc::p
+      "We validate the declaration specifiers,
+       which results in a type,
+       a list of storage class specifiers,
+       and a possibly updated table.
+       We ensure that the list of storage class specifiers
+       is either empty or the singleton @('register') [C:6.7.6.3/2].")
+     (xdoc::p
+      "We validate the parameter declarator,
+       ensuring that it has an identifier if @('fundef-params-p') is @('t')
+       [C:6.9.1/5].
+       We adjust the type if necessary [C:6.7.6.3/7] [C:6.7.6.3/8].
+       If the parameter declarator has an identifier,
+       we extend the validation table with it,
+       unless there is already an ordinary identifier
+       with the same name in the same (i.e. current) scope;
+       since parameters have no linkage [C:6.2.2/6],
+       they can be only declared once in the same scope [C:6.7/3].
+       Parameters of function declarations have no linkage [C:6.2.2/6]."))
+    (b* (((reterr) (irr-valid-table))
+         ((paramdecl paramdecl) paramdecl)
+         ((erp type storspecs table)
+          (valid-declspec-list paramdecl.spec nil nil nil table ienv))
+         ((unless (or (endp storspecs)
+                      (stor-spec-list-register-p storspecs)))
+          (reterr (msg "The parameter declaration ~x0 ~
+                        has storage class specifiers ~x1."
+                       (paramdecl-fix paramdecl)
+                       (stor-spec-list-fix storspecs))))
+         ((erp type ident? table)
+          (valid-paramdeclor paramdecl.decl type table ienv))
+         ((when (and fundef-params-p
+                     (not ident?)))
+          (reterr (msg "The parameter declaration ~x0 ~
+                        is for a function definition but has no identifier."
+                       (paramdecl-fix paramdecl))))
+         (type (if (type-case type :array)
+                   (type-pointer)
+                 type))
+         (type (if (type-case type :function)
+                   (type-pointer)
+                 type))
+         ((when (not ident?))
+          (retok table))
+         (ord-info (make-valid-ord-info-objfun :type type
+                                               :linkage (linkage-none)))
+         ((mv info? currentp) (valid-lookup-ord ident? table))
+         ((when (and info? currentp))
+          (reterr (msg "The parameter declared in ~x0 ~
+                        in already declared in the current scope ~
+                        with associated information ~x1."
+                       (paramdecl-fix paramdecl) info?)))
+         (table (valid-add-ord ident? ord-info table)))
+      (reterr table))
+    :measure (paramdecl-count paramdecl))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  ;; TODO: valid-paramdecl-list
+  (define valid-paramdecl-list ((paramdecls paramdecl-listp)
+                                (fundef-params-p booleanp)
+                                (table valid-tablep)
+                                (ienv ienvp))
+    :guard (paramdecl-list-unambp paramdecls)
+    :returns (mv erp (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate a list of parameter declarations."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "IWe validate each parameter in turn,
+       threading the validation table through,
+       using a separate validation function."))
+    (b* (((reterr) (irr-valid-table))
+         ((when (endp paramdecls)) (retok (valid-table-fix table)))
+         ((erp table)
+          (valid-paramdecl (car paramdecls) fundef-params-p table ienv)))
+      (valid-paramdecl-list (cdr paramdecls) fundef-params-p table ienv))
+    :measure (paramdecl-list-count paramdecls))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  ;; TODO: valid-paramdeclor
+  (define valid-paramdeclor ((paramdeclor paramdeclorp)
+                             (type typep)
+                             (table valid-tablep)
+                             (ienv ienvp))
+    :guard (paramdeclor-unambp paramdeclor)
+    :returns (mv erp
+                 (new-type typep)
+                 (ident? ident-optionp)
+                 (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate a parameter declarator."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The input type is the one resulting from
+       the declaration specifiers of the parameter declaration
+       of which the parameter declarator is part of.
+       If validation is successful,
+       we return a possibly refined type,
+       and an optional identifier.")
+     (xdoc::p
+      "If the parameter declarator is a (non-abstract) declarator,
+       we return the possibly refined type and the identifier.
+       If the parameter declarator is an abstract declarator,
+       we return the possibly refined type but no identifier.
+       If the parameter declarator is absent,
+       we return the type unchanged and no identifer."))
+    (b* (((reterr) (irr-type) (irr-ident) (irr-valid-table)))
+      (paramdeclor-case
+       paramdeclor
+       :declor
+       (b* (((erp & type ident table)
+             (valid-declor paramdeclor.unwrap nil type table ienv)))
+         (retok type ident table))
+       :absdeclor
+       (b* (((erp type table)
+             (valid-absdeclor paramdeclor.unwrap type table ienv)))
+         (retok type nil table))
+       :none
+       (retok (type-fix type) nil (valid-table-fix table))
+       :ambig
+       (prog2$ (impossible) (reterr t))))
+    :measure (paramdeclor-count paramdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4137,55 +4445,525 @@
     (xdoc::topstring
      (xdoc::p
       "A valid type name denotes a type,
-       so we return a type if validation is successful."))
-    (declare (ignore tyname table ienv))
-    (b* (((reterr) (irr-type) (irr-valid-table)))
-      (reterr :todo))
+       so we return a type if validation is successful.")
+     (xdoc::p
+      "First we validate the list of specifiers and qualifiers,
+       which returns a type if successful.
+       Then we validate the optional abstract declarator,
+       which returns a possibly refined type.
+       We return the latter type."))
+    (b* (((reterr) (irr-type) (irr-valid-table))
+         ((tyname tyname) tyname)
+         ((erp type table)
+          (valid-spec/qual-list tyname.specqual nil nil table ienv))
+         ((erp type table)
+          (valid-absdeclor-option tyname.decl? type table ienv)))
+      (retok type table))
     :measure (tyname-count tyname))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  ;; TODO: valid-strunispec
+  (define valid-strunispec ((strunispec strunispecp)
+                            (table valid-tablep)
+                            (ienv ienvp))
+    :guard (strunispec-unambp strunispec)
+    :returns (mv erp (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate a structure or union specifier."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We check that there is at least a name or a list of members
+       [C:6.7.2.1/2].")
+     (xdoc::p
+      "For now our validation tables include
+       no information about structure and union tags,
+       so we do not extend the validation table,
+       if the structure or union specifier has a name.
+       However, we validate the members, if present."))
+    (b* (((reterr) (irr-valid-table))
+         ((strunispec strunispec) strunispec)
+         ((when (and (not strunispec.name)
+                     (endp strunispec.members)))
+          (reterr (msg "The structure or union specifier ~x0 ~
+                        has no name and no members."
+                       (strunispec-fix strunispec)))))
+      (valid-structdecl-list strunispec.members nil table ienv))
+    :measure (strunispec-count strunispec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  ;; TODO: valid-structdecl
+  (define valid-structdecl ((structdecl structdeclp)
+                            (previous ident-listp)
+                            (table valid-tablep)
+                            (ienv ienvp))
+    :guard (structdecl-unambp structdecl)
+    :returns (mv erp
+                 (new-previous ident-listp)
+                 (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate a structure declaration."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The @('previous') input consists of
+       the names of the members that precede this structure declaration
+       in the structure or union specifier being validated.
+       The @('new-previous') output consists of
+       the extension of @('previous') with
+       the names of the members declared by this structure declaration.")
+     (xdoc::p
+      "If the structure declaration declares members,
+       first we validate the list of specifiers and qualifiers,
+       obtaining a type if the validation is successful.
+       Then we use a separate validation function for the structure declarators,
+       which also returns a possibly extended list of member names.")
+     (xdoc::p
+      "If the structure declaration consists of a static assertion declaration,
+       we validate it using a separate validation function.
+       The list of member names is unchanged.")
+     (xdoc::p
+      "If the structure declaration is empty (i.e. a semicolon),
+       which is a GCC extension,
+       the list of member names and the validation table are unchanged."))
+    (b* (((reterr) nil (irr-valid-table)))
+      (structdecl-case
+       structdecl
+       :member
+       (b* (((erp type table)
+             (valid-spec/qual-list structdecl.specqual nil nil table ienv)))
+         (valid-structdeclor-list structdecl.declor previous type table ienv))
+       :statassert
+       (b* (((erp table) (valid-statassert structdecl.unwrap table ienv)))
+         (retok (ident-list-fix previous) table))
+       :empty
+       (retok (ident-list-fix previous) (valid-table-fix table))))
+    :measure (structdecl-count structdecl))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  ;; TODO: valid-structdecl-list
+  (define valid-structdecl-list ((structdecls structdecl-listp)
+                                 (previous ident-listp)
+                                 (table valid-tablep)
+                                 (ienv ienvp))
+    :guard (structdecl-list-unambp structdecls)
+    :returns (mv erp (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate a list of structure declarators."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The @('previous') input consists of
+       the names of the members that precede these structure declarations
+       (which declare more members)
+       in the structure or union specifier being validated.
+       This list is used to ensure uniqueness of member names."))
+    (b* (((reterr) (irr-valid-table))
+         ((when (endp structdecls)) (retok (valid-table-fix table)))
+         ((erp previous table)
+          (valid-structdecl (car structdecls) previous table ienv)))
+      (valid-structdecl-list (cdr structdecls) previous table ienv))
+    :measure (structdecl-list-count structdecls))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  ;; TODO: valid-structdeclor
+  (define valid-structdeclor ((structdeclor structdeclorp)
+                              (previous ident-listp)
+                              (type typep)
+                              (table valid-tablep)
+                              (ienv ienvp))
+    :guard (structdeclor-unambp structdeclor)
+    :returns (mv erp
+                 (new-previous ident-listp)
+                 (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate a structure declarator."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The @('previous') input and @('new-previous') output
+       have the same meaning as in @(tsee valid-structdecl).")
+     (xdoc::p
+      "The @('type') input comes from the list of specifiers and qualifiers
+       that precedes the list of structure declarators
+       of which this structure declarator is an element.
+       We ensure that there is either a declarator or a constant expression
+       (this is actually a syntactic constraint,
+       but it is currently not captured in the abstract syntax,
+       so we check it here).
+       If there is a declarator, we validate it,
+       and we add the declared identifier to the list member names,
+       after ensuring that it is not already there.
+       If there is a constant expression, we validate it,
+       but for now we do not perform any checks related to its value
+       [C:6.7.2.1/4];
+       we also do not constrain the types of bit fields [C:6.7.2.1/5],
+       but we ensure that the constant expression, if present, is integer."))
+    (b* (((reterr) nil (irr-valid-table))
+         ((structdeclor structdeclor) structdeclor)
+         ((when (and (not structdeclor.declor?)
+                     (not structdeclor.expr?)))
+          (reterr (msg "The structure declarator ~x0 is empty."
+                       (structdeclor-fix structdeclor))))
+         ((erp & ident? table)
+          (valid-declor-option structdeclor.declor? type table ienv))
+         (previous (ident-list-fix previous))
+         ((when (and ident?
+                     (member-equal ident? previous)))
+          (reterr (msg "The structure declarator ~x0 ~
+                        duplicates the member name."
+                       (structdeclor-fix structdeclor))))
+         (previous (if ident?
+                       (rcons ident? previous)
+                     previous))
+         ((erp width-type? table)
+          (valid-const-expr-option structdeclor.expr? table ienv))
+         ((when (and width-type?
+                     (not (type-integerp width-type?))))
+          (reterr (msg "The structure declarator ~x0 ~
+                        has a width of type ~x1."
+                       (structdeclor-fix structdeclor)
+                       width-type?))))
+      (retok previous table))
+    :measure (structdeclor-count structdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  ;; TODO: valid-structdeclor-list
+  (define valid-structdeclor-list ((structdeclors structdeclor-listp)
+                                   (previous ident-listp)
+                                   (type typep)
+                                   (table valid-tablep)
+                                   (ienv ienvp))
+    :guard (structdeclor-list-unambp structdeclors)
+    :returns (mv erp
+                 (new-previous ident-listp)
+                 (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate a list structure declarators."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We validate each structure declarator in turn,
+       threading the data through.
+       Note that the same type
+       (coming from the list of specifiers and qualifiers)
+       is passed to the validation function for each structure declarator,
+       since that type applied to all them
+       (possibly refined, possibly differently, by the structure declarators."))
+    (b* (((reterr) nil (irr-valid-table))
+         ((when (endp structdeclors))
+          (retok (ident-list-fix previous) (valid-table-fix table)))
+         ((erp previous table)
+          (valid-structdeclor (car structdeclors) previous type table ienv)))
+      (valid-structdeclor-list (cdr structdeclors) previous type table ienv))
+    :measure (structdeclor-list-count structdeclors))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  ;; TODO: valid-enumspec
+  (define valid-enumspec ((enumspec enumspecp)
+                          (table valid-tablep)
+                          (ienv ienvp))
+    :guard (enumspec-unambp enumspec)
+    :returns (mv erp (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate an enumeration specifier."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We check that there is at least a name of a list of enumerators;
+       although this is a syntactic constraint,
+       it is currently not captured in our abstract syntax,
+       so we double-check it here.")
+     (xdoc::p
+      "For now our validation tabled include
+       no information about enumeration tags,
+       so we do not extend the validation table,
+       if the enumeration specifier has a name.
+       However, we validate the enumerators, if present."))
+    (b* (((reterr) (irr-valid-table))
+         ((enumspec enumspec) enumspec)
+         ((when (and (not enumspec.name)
+                     (endp enumspec.list)))
+          (reterr (msg "The enumeration specifier ~x0 ~
+                        has no name and no enumerators."
+                       (enumspec-fix enumspec)))))
+      (valid-enumer-list enumspec.list table ienv))
+    :measure (enumspec-count enumspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  ;; TODO: valid-enumer
+  (define valid-enumer ((enumer enumerp) (table valid-tablep) (ienv ienvp))
+    :guard (enumer-unambp enumer)
+    :returns (mv erp (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate an enumerator."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The enumeration constant is added to the validation table [C:6.2.1/7],
+       unless there is already an ordinary identifier
+       with the same name and in the same (i.e. current) scope;
+       since enumeration constants have no linkage [C:6.2.2/6],
+       they can be only declared once in the same scope [C:6.7/3].
+       If there is a constant expression,
+       we validate it and check that it has integer type,
+       but for now we do not check that the value
+       is representable as @('int') [C:6.7.2.2/2]."))
+    (b* (((reterr) (irr-valid-table))
+         ((enumer enumer) enumer)
+         ((mv info? currentp) (valid-lookup-ord enumer.name table))
+         ((when (and info? currentp))
+          (reterr (msg "The enumerator declared in ~x0 ~
+                        in already declared in the current scope ~
+                        with associated information ~x1."
+                       (enumer-fix enumer) info?)))
+         (table (valid-add-ord enumer.name (valid-ord-info-enumconst) table))
+         ((erp type? table)
+          (valid-const-expr-option enumer.value table ienv))
+         ((when (and type?
+                     (not (type-integerp type?))))
+          (reterr (msg "The value of the numerator ~x0 has type ~x1."
+                       (enumer-fix enumer) type?))))
+      (retok table))
+    :measure (enumer-count enumer))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  ;; TODO: valid-enumer-list
+  (define valid-enumer-list ((enumers enumer-listp)
+                             (table valid-tablep)
+                             (ienv ienvp))
+    :guard (enumer-list-unambp enumers)
+    :returns (mv erp (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate a list of enumerators."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We go through each enumerator in order,
+       extending the validation table with each."))
+    (b* (((reterr) (irr-valid-table))
+         ((when (endp enumers)) (retok (valid-table-fix table)))
+         ((erp table) (valid-enumer (car enumers) table ienv)))
+      (valid-enumer-list (cdr enumers) table ienv))
+    :measure (enumer-list-count enumers))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  ;; TODO: valid-statassert
+  (define valid-statassert ((statassert statassertp)
+                            (table valid-tablep)
+                            (ienv ienvp))
+    :guard (statassert-unambp statassert)
+    :returns (mv erp (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate a static assertion declaration."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We validate the constant expression, which must be integer [C:6.7.10/3],
+       and we validate the string literal(s)."))
+    (b* (((reterr) (irr-valid-table))
+         ((statassert statassert) statassert)
+         ((erp type table) (valid-const-expr statassert.test table ienv))
+         ((unless (type-integerp type))
+          (reterr (msg "The expression in the static assertion declaration ~x0 ~
+                        has type ~x1."
+                       (statassert-fix statassert)
+                       type)))
+         ((erp &) (valid-stringlit-list statassert.message)))
+      (retok table))
+    :measure (statassert-count statassert))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  ;; TODO: valid-initdeclor
+  (define valid-initdeclor ((initdeclor initdeclorp)
+                            (type typep)
+                            (storspecs stor-spec-listp)
+                            (table valid-tablep)
+                            (ienv ienvp))
+    :guard (initdeclor-unambp initdeclor)
+    :returns (mv erp (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate an initializer declarator."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "Initializer declarators [C:6.7/1]
+       appear in declarations, after declaration specifiers.
+       The latter determine a type, passed as input,
+       which an initializer declarator may refine.
+       We also pass as input the storage class specifiers
+       extracted from the declaration specifiers.")
+     (xdoc::p
+      "We validate the declarator,
+       which returns the identifier and the possibly refined type.
+       Here the @('fundef-params-p') flag is always @('nil'),
+       because we are not in a function definition.")
+     (xdoc::p
+      "Then we validate the storage class specifiers,
+       which together with the identifier and final type
+       determine whether we are declaring a @('typedef'),
+       and what the linkage and lifetime are.")
+     (xdoc::p
+      "If the @('typedef') flag is @('t'),
+       there must be no initializer,
+       because we are not declaring an object.
+       In this case, we add the @('typedef') to the validation table.
+       The same @('typedef') is allowed in the same scope [C:6.7/3],
+       under certain conditions that are inexpressible
+       in our current approximate type system,
+       but since our validation tables currently carry limited information
+       about @('typedef') names (i.e. just that they are @('typedef')s),
+       we allow the identifier to be present, as a @('typedef'),
+       in the same (i.e. current) scope,
+       to avoid rejecting valid code.")
+     (xdoc::p
+      "If the @('typedef') flag is @('nil'),
+       the identifier may denote a function or an object.
+       The initializer may be present only if
+       the type is not that of a function,
+       because initializers only apply to objects,
+       and the type is not void,
+       because the type must be complete [C:6.7.9/3].
+       We validate the initializer if present;
+       we pass the type of the identifier,
+       so the initializer is checked against that.
+       Then we look it up in the validation table.
+       If no information is found in the validation table,
+       we add the identifier to the table.
+       If the current declaration has no linkage,
+       or if the information in the table has no linkage
+       (which includes the case of the information in the table
+       being for a @('typedef') or an enumeration constant),
+       the two must denote different entities,
+       and thus we ensure that the one in the table
+       is not in the same (i.e. current) scope [C:6.2.1/4] [C:6.7/3];
+       if the checks pass, we add the identifier to the table.
+       If instead both have internal or external linkage,
+       they must refer to the same entity,
+       and so we ensure that the types are the same.
+       We also need to check that the linkages are the same,
+       in which case we still add the identifier to the table,
+       to record that it is also declared in the current scope.
+       It is an error if the current linkage is internal
+       while the one in the table is external.
+       The situation where the current one is external
+       while the one in the table is internal cannot happen,
+       because as defined in @(tsee valid-stor-spec-list),
+       the current one would ``inherit''
+       the internal linkage from the previous one.")
+     (xdoc::p
+      "For now we ignore the optional assembler name specifier,
+       as well as any attribute specifiers."))
+    (b* (((reterr) (irr-valid-table))
+         ((initdeclor initdeclor) initdeclor)
+         ((erp & type ident table)
+          (valid-declor initdeclor.declor nil type table ienv))
+         ((erp typedefp linkage lifetime?)
+          (valid-stor-spec-list storspecs ident type table))
+         ((when typedefp)
+          (b* (((when initdeclor.init?)
+                (reterr (msg "The typedef name ~x0 ~
+                              has an initializer ~x1."
+                             ident initdeclor.init?)))
+               ((mv info? currentp) (valid-lookup-ord ident table))
+               ((when (and info?
+                           currentp
+                           (not (valid-ord-info-case info? :typedef))))
+                (reterr (msg "The typedef name ~x0 ~
+                              is already declared in the current scope ~
+                              with associated information ~x1."
+                             ident info?)))
+               (table (valid-add-ord ident (valid-ord-info-typedef) table)))
+            (retok table)))
+         ((when (and initdeclor.init?
+                     (or (type-case type :function)
+                         (type-case type :void))))
+          (reterr (msg "The identifier ~x0 has type ~x1, ~
+                        which disallows the initializer, ~
+                        but the initializer ~x2 is present."
+                       ident type initdeclor.init?)))
+         ((erp table)
+          (valid-initer-option initdeclor.init? type lifetime? table ienv))
+         ((mv info? currentp) (valid-lookup-ord ident table))
+         ((when (not info?))
+          (b* ((new-info (make-valid-ord-info-objfun
+                          :type type
+                          :linkage linkage))
+               (table (valid-add-ord ident new-info table)))
+            (retok table)))
+         ((when (or (valid-ord-info-case info? :typedef)
+                    (valid-ord-info-case info? :enumconst)))
+          (if currentp
+              (reterr (msg "The identifier ~x0 ~
+                            is already declared in the current scope ~
+                            with associated information ~x1."
+                           ident info?))
+            (b* ((new-info (make-valid-ord-info-objfun
+                            :type type
+                            :linkage linkage))
+                 (table (valid-add-ord ident new-info table)))
+              (retok table))))
+         ((valid-ord-info-objfun info) info?)
+         ((when (or (linkage-case linkage :none)
+                    (linkage-case info.linkage :none)))
+          (if currentp
+              (reterr (msg "The identifier ~x0 ~
+                            is already declared in the current scope ~
+                            with associated information ~x1."
+                           ident info?))
+            (b* ((new-info (make-valid-ord-info-objfun
+                            :type type
+                            :linkage linkage))
+                 (table (valid-add-ord ident new-info table)))
+              (retok table))))
+         ((unless (equal type info.type))
+          (reterr (msg "The identifier ~x0 ~
+                        is declared with type ~x1 ~
+                        after being declared with type ~x2."
+                       ident type info.type)))
+         ((when (and (linkage-case linkage :internal)
+                     (linkage-case info.linkage :external)))
+          (reterr (msg "The identifier ~x0 ~
+                        is declared with internal linkage ~
+                        after being declared with external linkage."
+                       ident)))
+         ((when (and (linkage-case linkage :external)
+                     (linkage-case info.linkage :internal)))
+          (raise "Internal error: ~ the identifier ~x0 ~
+                  is declared with external linkage ~
+                  after being declared with internal linkage."
+                 ident)
+          (reterr t))
+         (new-info (make-valid-ord-info-objfun
+                    :type type
+                    :linkage linkage))
+         (table (valid-add-ord ident new-info table)))
+      (retok table))
+    :measure (initdeclor-count initdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  ;; TODO: valid-initdeclor-list
+  (define valid-initdeclor-list ((initdeclors initdeclor-listp)
+                                 (type typep)
+                                 (storspecs stor-spec-listp)
+                                 (table valid-tablep)
+                                 (ienv ienvp))
+    :guard (initdeclor-list-unambp initdeclors)
+    :returns (mv erp (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate a list of initializer declarators."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The type and storage class specifiers come from
+       the declaration specifiers that precede the initializer declarators.
+       We validate each in turn."))
+    (b* (((reterr) (irr-valid-table))
+         ((when (endp initdeclors)) (retok (valid-table-fix table)))
+         ((erp table)
+          (valid-initdeclor (car initdeclors) type storspecs table ienv)))
+      (valid-initdeclor-list (cdr initdeclors) type storspecs table ienv))
+    :measure (initdeclor-list-count initdeclors))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
