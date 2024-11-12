@@ -944,7 +944,7 @@
          (retok (expr-sizeof new-tyname) table))
        :sizeof-ambig
        (b* (((erp expr-or-tyname table)
-             (dimb-amb-expr/tyname expr.expr/tyname table)))
+             (dimb-amb-expr/tyname expr.expr/tyname t table)))
          (expr/tyname-case
           expr-or-tyname
           :expr (retok (make-expr-unary
@@ -986,7 +986,7 @@
                 table))
        :cast/call-ambig
        (b* (((erp expr/tyname table)
-             (dimb-amb-expr/tyname expr.type/fun table))
+             (dimb-amb-expr/tyname expr.type/fun t table))
             ((erp new-arg/rest table) (dimb-expr expr.arg/rest table)))
          (expr/tyname-case
           expr/tyname
@@ -1004,7 +1004,7 @@
            table)))
        :cast/mul-ambig
        (b* (((erp expr/tyname table)
-             (dimb-amb-expr/tyname expr.type/arg1 table))
+             (dimb-amb-expr/tyname expr.type/arg1 t table))
             ((erp new-arg/arg2 table) (dimb-expr expr.arg/arg2 table)))
          (expr/tyname-case
           expr/tyname
@@ -1022,7 +1022,7 @@
            table)))
        :cast/add-ambig
        (b* (((erp expr/tyname table)
-             (dimb-amb-expr/tyname expr.type/arg1 table))
+             (dimb-amb-expr/tyname expr.type/arg1 t table))
             ((erp new-arg/arg2 table) (dimb-expr expr.arg/arg2 table)))
          (expr/tyname-case
           expr/tyname
@@ -1042,7 +1042,7 @@
            table)))
        :cast/sub-ambig
        (b* (((erp expr/tyname table)
-             (dimb-amb-expr/tyname expr.type/arg1 table))
+             (dimb-amb-expr/tyname expr.type/arg1 t table))
             ((erp new-arg/arg2 table) (dimb-expr expr.arg/arg2 table)))
          (expr/tyname-case
           expr/tyname
@@ -1062,7 +1062,7 @@
            table)))
        :cast/and-ambig
        (b* (((erp expr/tyname table)
-             (dimb-amb-expr/tyname expr.type/arg1 table))
+             (dimb-amb-expr/tyname expr.type/arg1 t table))
             ((erp new-arg/arg2 table) (dimb-expr expr.arg/arg2 table)))
          (expr/tyname-case
           expr/tyname
@@ -1297,7 +1297,7 @@
                 table))
        :typeof-ambig
        (b* (((erp expr/tyname table)
-             (dimb-amb-expr/tyname tyspec.expr/type table)))
+             (dimb-amb-expr/tyname tyspec.expr/type nil table)))
          (expr/tyname-case
           expr/tyname
           :expr (retok (make-type-spec-typeof-expr :expr expr/tyname.unwrap
@@ -1379,7 +1379,7 @@
          (retok (align-spec-alignas-expr new-arg) table))
        :alignas-ambig
        (b* (((erp expr/tyname table)
-             (dimb-amb-expr/tyname alignspec.type/arg table)))
+             (dimb-amb-expr/tyname alignspec.type/arg nil table)))
          (expr/tyname-case
           expr/tyname
           :expr (retok (align-spec-alignas-expr (const-expr expr/tyname.unwrap))
@@ -2498,6 +2498,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-amb-expr/tyname ((expr/tyname amb-expr/tyname-p)
+                                (add-parens-p booleanp)
                                 (table dimb-tablep))
     :returns (mv erp (expr-or-tyname expr/tyname-p) (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
@@ -2512,7 +2513,29 @@
        independently from each other.
        In valid code, one of them must succeed and the other one must fail:
        then we disambiguate in favor of the one that succeeded.
-       If none or both succeed, the code must be invalid."))
+       If none or both succeed, the code must be invalid.")
+     (xdoc::p
+      "If the ambiguous expression or type name
+       is disambiguated to an expression,
+       if the @('add-parens-p') flag is @('t')
+       we parenthesize the expression.
+       This is needed because, for instance,
+       in a @('sizeof(A)') expression where A is
+       a possibly ambiguous expression or type name,
+       the actual expression would be @('(A)'), not just @('A'),
+       because @('sizeof') can be applied to
+       an unparenthesized unary expression (e.g. @('sizeof x')).
+       In this case, the @('add-parens-p') is set to @('t')
+       by the caller of this disambiguation function.
+       On the other hand, in a construct like @('_Alignas(A)'),
+       where @('A') is a possibly ambiguous expression or type name,
+       the expression is just @('A'),
+       because the parentheses are always required:
+       they are part of the syntax of @('_Alignas'),
+       not part of the expression as in the case of
+       @('sizeof') applied to an expression.
+       In this case, the @('add-parens-p') flag is set to @('nil')
+       by the caller of this disambiguation function."))
     (b* (((reterr) (irr-expr/tyname) (irr-dimb-table))
          ((amb-expr/tyname expr/tyname) expr/tyname)
          ((mv erp-expr new-expr table-expr)
@@ -2540,7 +2563,10 @@
         ;; expr succeeds:
         (if erp-tyname
             ;; tyname fails:
-            (retok (expr/tyname-expr new-expr) table-expr)
+            (b* ((new-expr (if add-parens-p
+                               (expr-paren new-expr)
+                             new-expr)))
+              (retok (expr/tyname-expr new-expr) table-expr))
           ;; tyname succeeds:
           (reterr (msg "In the ambiguous expression or type name ~x0, ~
                         both the expression and the type name ~
