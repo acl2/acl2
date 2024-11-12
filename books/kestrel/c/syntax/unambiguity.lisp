@@ -224,7 +224,7 @@
     :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if a specifier or qualifier is unambiguous."
     (spec/qual-case specqual
-                    :tyspec (type-spec-unambp specqual.unwrap)
+                    :tyspec (type-spec-unambp specqual.spec)
                     :tyqual t
                     :align (align-spec-unambp specqual.unwrap)
                     :attrib t)
@@ -1739,7 +1739,7 @@
   (defrule type-spec-unambp-of-spec/qual-tyspec->unwrap
     (implies (and (spec/qual-unambp specqual)
                   (spec/qual-case specqual :tyspec))
-             (type-spec-unambp (spec/qual-tyspec->unwrap specqual)))
+             (type-spec-unambp (spec/qual-tyspec->spec specqual)))
     :expand (spec/qual-unambp specqual))
 
   (defrule align-spec-unambp-of-spec/qual-align->unwrap

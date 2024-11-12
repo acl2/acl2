@@ -3143,7 +3143,7 @@
     (b* (((reterr) nil nil (irr-valid-table)))
       (spec/qual-case
        specqual
-       :tyspec (valid-type-spec specqual.unwrap type? tyspecs table ienv)
+       :tyspec (valid-type-spec specqual.spec type? tyspecs table ienv)
        :tyqual (retok (type-option-fix type?)
                       (type-spec-list-fix tyspecs)
                       (valid-table-fix table))

@@ -1322,7 +1322,7 @@
       (spec/qual-case
        specqual
        :tyspec (b* (((erp new-tyspec table)
-                     (dimb-type-spec specqual.unwrap table)))
+                     (dimb-type-spec specqual.spec table)))
                  (retok (spec/qual-tyspec new-tyspec)
                         table))
        :tyqual (retok (spec/qual-tyqual specqual.unwrap)

@@ -268,7 +268,7 @@
     :short "Transform a type specifier or qualifier."
     (spec/qual-case
      specqual
-     :tyspec (spec/qual-tyspec (simpadd0-type-spec specqual.unwrap))
+     :tyspec (spec/qual-tyspec (simpadd0-type-spec specqual.spec))
      :tyqual (spec/qual-fix specqual)
      :align (spec/qual-align (simpadd0-align-spec specqual.unwrap))
      :attrib (spec/qual-fix specqual))

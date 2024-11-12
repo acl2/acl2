@@ -1820,7 +1820,7 @@
      (xdoc::p
       "As a GCC extension, we include attribute specifiers.
        See our ABNF grammar."))
-    (:tyspec ((unwrap type-spec)))
+    (:tyspec ((spec type-spec)))
     (:tyqual ((unwrap type-qual)))
     (:align ((unwrap align-spec)))
     (:attrib ((unwrap attrib-spec))) ; GCC extension
