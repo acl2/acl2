@@ -5007,7 +5007,20 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  ;; TODO: valid-decl-list
+  (define valid-decl-list ((decls decl-listp) (table valid-tablep) (ienv ienvp))
+    :guard (decl-list-unambp decls)
+    :returns (mv erp (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate a list of declarations."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "We validate each one in turn."))
+    (b* (((reterr) (irr-valid-table))
+         ((when (endp decls)) (retok (valid-table-fix table)))
+         ((erp table) (valid-decl (car decls) table ienv)))
+      (valid-decl-list (cdr decls) table ienv))
+    :measure (decl-list-count decls))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
