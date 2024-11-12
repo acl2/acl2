@@ -85,7 +85,7 @@
                            NORMALIZE-ARITH-TRIPLE-EXACT-IN-TERMS-OF-RATIONAL)))
 
 
-(local (defthm less-than-0-of-fp-arith-triple->Rational
+(local (defthm less-than-0-of-fp-arith-triple->rational
          (equal (< (fp-arith-triple->rational x) 0)
                 (and (not (equal 0 (fp-arith-triple->man x)))
                      (equal (fp-arith-triple->sign x) 1)))
@@ -134,7 +134,7 @@
                   (> (+ (* xrs exp)
                         (* 2 x exp))
                      (+ yrs (* 2 y))))
-         :hints (("goal" :nonlinearp t))))
+         :hints (("Goal" :nonlinearp t))))
 
 (local (defthm crock5
          (implies (and (bind-free '((e2f . (expt '2 (fp-size->frac-size$inline size))))
@@ -157,7 +157,7 @@
                   (> (+ (- (* xrs exp))
                         (- (* 2 x exp)))
                      (+ (- yrs) (- (* 2 y)))))
-         :hints (("goal" :nonlinearp t))))
+         :hints (("Goal" :nonlinearp t))))
 
 
 (defthm round-arith-triple-of-normalize-monotonic
@@ -171,8 +171,9 @@
        (yroundval (fp-arith-triple->rational yround)))
     (implies (<= xval yval)
              (<= xroundval yroundval)))
-  :hints (("goal" :in-theory (enable fp-sign-value-redef
-                                     normalize-arith-triple-round+sticky-when-0)
+  :hints (("Goal"
+           :in-theory (enable fp-sign-value-redef
+                              normalize-arith-triple-round+sticky-when-0)
            :cases ((equal (fp-arith-triple->man x) 0)))
           '(:cases ((equal (fp-arith-triple->man y) 0)))
           (and stable-under-simplificationp
@@ -193,8 +194,7 @@
                                        fp-sign-value-redef
                                        normalize-arith-triple-round+sticky-when-0
                                        normalize-integer-length-x/y)
-                    :expand ((:Free (sign exp man) (fp-arith-triple->rational
+                    :expand ((:free (sign exp man) (fp-arith-triple->rational
                                                     (fp-arith-triple sign exp man)))
-                             (:Free (x) (fp-arith-triple->rational
+                             (:free (x) (fp-arith-triple->rational
                                          (mv-nth 0 (normalize-arith-triple x :verbosep nil)))))))))))
-

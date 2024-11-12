@@ -34,7 +34,7 @@
      The level of abstraction of this model
      is about the same as the Bullshark papers.
      This model does not capture garbage collection or syncing.
-     It also does not capture stake, but only numbers of validators
-     (i.e. every validator has the same stake)."))
+     It also does not capture stake, but does model an arbitrary number
+     of validators where every validator has the same stake."))
   :order-subtopics (definition
                     correctness))

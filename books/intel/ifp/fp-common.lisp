@@ -1206,7 +1206,13 @@ for details.</p>
     ///
     (defretd <fn>-equal-0
       (iff (equal 0 val)
-           (equal (fp-arith-triple->man x) 0))))
+           (equal (fp-arith-triple->man x) 0)))
+
+    (defretd abs-of-<fn>
+      (b* (((fp-arith-triple x)))
+        (equal (abs val)
+               (* (expt 2 x.exp) x.man)))
+      :hints (("Goal" :cases ((equal (fp-arith-triple->sign x) 0))))))
 
   (define fp-value-to-arith-triple ((x fp-value-p)
                                     &key ((size fp-size-p) 'size))
@@ -2612,4 +2618,11 @@ upper bits that may otherwise be always zero without being syntactically zero."
                (unsigned-byte-p size new-x.man)))
     :hints (("Goal" :use ((:instance unsigned-byte-p-of-integer-length
                                      (x (fp-arith-triple->man new-x))))))
-    :hints-sub-returnnames t))
+    :hints-sub-returnnames t)
+
+  (defret negate-of-left-normalize
+    (equal (fp-arith-triple-negate new-x)
+           (<fn> (fp-arith-triple-negate x) frac-size))
+    :hints (("Goal" :in-theory (enable fp-arith-triple-negate
+                                       fp-arith-leftshift))))
+  )

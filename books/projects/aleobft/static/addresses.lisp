@@ -49,7 +49,6 @@
      In other words, we can use any ACL2 value as an address,
      e.g. to construct examples and simulations."))
   ((unwrap any))
-  :tag :address
   :pred addressp
   :prepwork ((local (in-theory (enable identity)))))
 
