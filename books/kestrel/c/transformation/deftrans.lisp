@@ -884,6 +884,7 @@
       :enum (type-spec-enum (,(cdr (assoc-eq 'enumspec names)) tyspec.spec ,@extra-args-names))
       :typedef (type-spec-fix tyspec)
       :int128 (type-spec-fix tyspec)
+      :float32 (type-spec-fix tyspec)
       :float128 (type-spec-fix tyspec)
       :builtin-va-list (type-spec-fix tyspec)
       :struct-empty (type-spec-fix tyspec)

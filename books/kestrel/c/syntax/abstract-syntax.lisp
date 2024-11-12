@@ -1749,8 +1749,8 @@
        "@('https://gcc.gnu.org/onlinedocs/gcc/_005f_005fint128.html')")
       ".")
      (xdoc::p
-      "We also include the GCC extension @('_Float128'),
-       which is a floating type: see "
+      "We also include the GCC extension @('_Float32') and @('_Float128'),
+       which are floating types: see "
       (xdoc::ahref
        "https://gcc.gnu.org/onlinedocs/gcc/Floating-Types.html"
        "@('https://gcc.gnu.org/onlinedocs/gcc/Floating-Types.html')")
@@ -1791,6 +1791,7 @@
     (:typedef ((name ident)))
     ;; GCC extensions:
     (:int128 ())
+    (:float32 ())
     (:float128 ())
     (:builtin-va-list ())
     (:struct-empty ((name? ident-option)))

@@ -208,6 +208,7 @@
                     :enum (enumspec-unambp tyspec.spec)
                     :typedef t
                     :int128 t
+                    :float32 t
                     :float128 t
                     :builtin-va-list t
                     :struct-empty t
