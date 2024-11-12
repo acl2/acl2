@@ -1792,6 +1792,7 @@
     ;; GCC extensions:
     (:int128 ())
     (:float32 ())
+    (:float64 ())
     (:float128 ())
     (:builtin-va-list ())
     (:struct-empty ((name? ident-option)))

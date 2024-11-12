@@ -2202,6 +2202,7 @@
                                         "__builtin_va_list"
                                         "__extension__"
                                         "_Float32"
+                                        "_Float64"
                                         "_Float128"
                                         "__inline"
                                         "__inline__"
@@ -6092,6 +6093,7 @@
     "We similarly include the GCC extension types
      @('__int128'),
      @('_Float32'),
+     @('_Float64'),
      @('_Float128'),
      @('__builtin_va_list'), and
      @('__auto_type')."))
@@ -6110,6 +6112,7 @@
       (token-keywordp token? "_Complex")
       (token-keywordp token? "__int128")
       (token-keywordp token? "_Float32")
+      (token-keywordp token? "_Float64")
       (token-keywordp token? "_Float128")
       (token-keywordp token? "__builtin_va_list")
       (token-keywordp token? "__auto_type"))
@@ -6145,6 +6148,7 @@
         ((token-keywordp token "_Complex") (type-spec-complex))
         ((token-keywordp token "__int128") (type-spec-int128))
         ((token-keywordp token "_Float32") (type-spec-float32))
+        ((token-keywordp token "_Float64") (type-spec-float32))
         ((token-keywordp token "_Float128") (type-spec-float128))
         ((token-keywordp token "__builtin_va_list") (type-spec-builtin-va-list))
         ((token-keywordp token "__auto_type") (type-spec-auto-type))

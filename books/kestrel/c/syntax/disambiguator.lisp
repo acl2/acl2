@@ -1279,6 +1279,7 @@
                                     (ident->unwrap tyspec.name)))))
        :int128 (retok (type-spec-int128) (dimb-table-fix table))
        :float32 (retok (type-spec-float32) (dimb-table-fix table))
+       :float64 (retok (type-spec-float64) (dimb-table-fix table))
        :float128 (retok (type-spec-float128) (dimb-table-fix table))
        :builtin-va-list (retok (type-spec-builtin-va-list)
                                (dimb-table-fix table))

@@ -453,6 +453,7 @@ gcc-keyword = %s"__alignof"
             / %s"__builtin_va_list"
             / %s"__extension__"
             / %s"_Float32"
+            / %s"_Float64"
             / %s"_Float128"
             / %s"__inline"
             / %s"__inline__"
@@ -1081,7 +1082,7 @@ asm-goto-labels = [ identifier *( "," identifier ) ]
 ; the '__signed' and '__signed__' variants of 'signed' as type specifiers.
 
 ; As GCC extensions, we include the type specifiers
-; '__int128', '_Float32', '_Float128', and '__builtin_va_list'.
+; '__int128', '_Float32', '_Float64', '_Float128', and '__builtin_va_list'.
 
 ; We include the GCC extension for the 'typeof' operator,
 ; along with its '__typeof' and '__typeof__' variants.
@@ -1157,6 +1158,7 @@ type-specifier = %s"void"
                ; GCC extensions:
                / %s"__int128"
                / %s"_Float32"
+               / %s"_Float64"
                / %s"_Float128"
                / %s"__builtin_va_list"
                / typeof-keyword "(" expression ")"
