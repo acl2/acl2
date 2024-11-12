@@ -262,7 +262,7 @@
     (:linear c$::enumer-count-of-car)
     (:linear c$::enumer-list-count-of-cdr)
     (:linear c$::enumer-list-count-of-enumspec->list)
-    (:linear c$::enumspec-count-of-type-spec-enum->unwrap)
+    (:linear c$::enumspec-count-of-type-spec-enum->spec)
     (:linear c$::expr-count-of-car)
     (:linear c$::expr-count-of-const-expr->expr)
     (:linear c$::expr-count-of-dirabsdeclor-array-static1->expr)
@@ -347,8 +347,8 @@
     (:linear c$::structdeclor-count-of-car)
     (:linear c$::structdeclor-list-count-of-cdr)
     (:linear c$::structdeclor-list-count-of-structdecl-member->declor)
-    (:linear c$::strunispec-count-of-type-spec-struct->unwrap)
-    (:linear c$::strunispec-count-of-type-spec-union->unwrap)
+    (:linear c$::strunispec-count-of-type-spec-struct->spec)
+    (:linear c$::strunispec-count-of-type-spec-union->spec)
     (:linear c$::tyname-count-of-align-spec-alignas-type->type)
     (:linear c$::tyname-count-of-expr-alignof->type)
     (:linear c$::tyname-count-of-expr-cast->type)
@@ -361,7 +361,7 @@
     (:linear c$::tyname-count-of-type-spec-atomic->type)
     (:linear c$::tyname-count-of-type-spec-typeof-type->type)
     (:linear c$::type-spec-count-of-declspec-tyspec->unwrap)
-    (:linear c$::type-spec-count-of-spec/qual-tyspec->unwrap)))
+    (:linear c$::type-spec-count-of-spec/qual-tyspec->spec)))
 
 (defthy deftrans-theory-type-prescription
   '((:type-prescription absdeclor)
@@ -879,9 +879,9 @@
       :bool (type-spec-fix tyspec)
       :complex (type-spec-fix tyspec)
       :atomic (type-spec-atomic (,(cdr (assoc-eq 'tyname names)) tyspec.type ,@extra-args-names))
-      :struct (type-spec-struct (,(cdr (assoc-eq 'strunispec names)) tyspec.unwrap ,@extra-args-names))
-      :union (type-spec-union (,(cdr (assoc-eq 'strunispec names)) tyspec.unwrap ,@extra-args-names))
-      :enum (type-spec-enum (,(cdr (assoc-eq 'enumspec names)) tyspec.unwrap ,@extra-args-names))
+      :struct (type-spec-struct (,(cdr (assoc-eq 'strunispec names)) tyspec.spec ,@extra-args-names))
+      :union (type-spec-union (,(cdr (assoc-eq 'strunispec names)) tyspec.spec ,@extra-args-names))
+      :enum (type-spec-enum (,(cdr (assoc-eq 'enumspec names)) tyspec.spec ,@extra-args-names))
       :typedef (type-spec-fix tyspec)
       :int128 (type-spec-fix tyspec)
       :float128 (type-spec-fix tyspec)
@@ -913,7 +913,7 @@
    extra-args
    `(spec/qual-case
       specqual
-      :tyspec (spec/qual-tyspec (,(cdr (assoc-eq 'type-spec names)) specqual.unwrap ,@extra-args-names))
+      :tyspec (spec/qual-tyspec (,(cdr (assoc-eq 'type-spec names)) specqual.spec ,@extra-args-names))
       :tyqual (spec/qual-fix specqual)
       :align (spec/qual-align (,(cdr (assoc-eq 'align-spec names)) specqual.unwrap ,@extra-args-names))
       :attrib (spec/qual-fix specqual))

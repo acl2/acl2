@@ -1095,7 +1095,7 @@
        ((unless (spec/qual-case specqual :tyspec)) (mv nil nil))
        ((mv yes/no tyspecs) (check-spec/qual-list-all-tyspec (cdr specquals))))
     (if yes/no
-        (mv t (cons (spec/qual-tyspec->unwrap specqual) tyspecs))
+        (mv t (cons (spec/qual-tyspec->spec specqual) tyspecs))
       (mv nil nil)))
   :hooks (:fix))
 
@@ -1139,7 +1139,7 @@
   (b* (((when (endp specquals)) nil)
        (specqual (car specquals)))
     (if (spec/qual-case specqual :tyspec)
-        (cons (spec/qual-tyspec->unwrap specqual)
+        (cons (spec/qual-tyspec->spec specqual)
               (spec/qual-list-to-type-spec-list (cdr specquals)))
       (spec/qual-list-to-type-spec-list (cdr specquals))))
   :hooks (:fix))

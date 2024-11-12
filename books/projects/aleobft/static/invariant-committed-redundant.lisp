@@ -153,7 +153,8 @@
     :enable (validator-committed-redundantp
              system-last-anchor-present-p-necc
              validator-state->last-of-create-certificate-next
-             validator-state->committed-of-create-certificate-next))
+             validator-state->committed-of-create-certificate-next
+             last-anchor-in-dag))
 
   (defrule system-committed-redundantp-of-create-certificate-next
     (implies (and (system-committed-redundantp systate)
@@ -235,7 +236,8 @@
     :enable (validator-committed-redundantp
              system-last-anchor-present-p-necc
              validator-state->last-of-store-certificate-next
-             validator-state->committed-of-store-certificate-next))
+             validator-state->committed-of-store-certificate-next
+             last-anchor-in-dag))
 
   (defrule system-committed-redundantp-of-store-certificate-next
     (implies (and (system-committed-redundantp systate)
