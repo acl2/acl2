@@ -4943,7 +4943,27 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  ;; TODO: valid-initdeclor-list
+  (define valid-initdeclor-list ((initdeclors initdeclor-listp)
+                                 (type typep)
+                                 (storspecs stor-spec-listp)
+                                 (table valid-tablep)
+                                 (ienv ienvp))
+    :guard (initdeclor-list-unambp initdeclors)
+    :returns (mv erp (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate a list of initializer declarators."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "The type and storage class specifiers come from
+       the declaration specifiers that precede the initializer declarators.
+       We validate each in turn."))
+    (b* (((reterr) (irr-valid-table))
+         ((when (endp initdeclors)) (retok (valid-table-fix table)))
+         ((erp table)
+          (valid-initdeclor (car initdeclors) type storspecs table ienv)))
+      (valid-initdeclor-list (cdr initdeclors) type storspecs table ienv))
+    :measure (initdeclor-list-count initdeclors))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
