@@ -60,19 +60,19 @@
 
   ///
 
-  (defrule certificate->author-of-last-anchor
+  (defruled certificate->author-of-last-anchor
     (implies (last-anchor vstate vals)
              (equal (certificate->author (last-anchor vstate vals))
                     (leader-at-round (validator-state->last vstate) vals)))
     :enable certificate->author-of-certificate-with-author+round)
 
-  (defrule certificate->round-of-last-anchor
+  (defruled certificate->round-of-last-anchor
     (implies (last-anchor vstate vals)
              (equal (certificate->round (last-anchor vstate vals))
                     (validator-state->last vstate)))
     :enable certificate->round-of-certificate-with-author+round)
 
-  (defrule last-anchor-in-dag
+  (defruled last-anchor-in-dag
     (implies (last-anchor vstate vals)
              (set::in (last-anchor vstate vals) (validator-state->dag vstate)))
     :enable certificate-with-author+round-element))
@@ -111,14 +111,17 @@
   (defrule not-anchorp-of-nil
     (not (anchorp nil dag vals)))
 
-  (defrule anchorp-of-last-anchor
+  (defruled anchorp-of-last-anchor
     (implies (and (last-anchor vstate vals)
                   (evenp (validator-state->last vstate)))
              (anchorp (last-anchor vstate vals)
                       (validator-state->dag vstate)
                       vals))
     :enable (anchorp
-             certificate-with-author+round-element)))
+             certificate-with-author+round-element
+             certificate->author-of-last-anchor
+             certificate->round-of-last-anchor
+             last-anchor-in-dag)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -175,6 +178,8 @@
        ((when (equal vstate.last 0)) nil)
        (last-anchor (last-anchor vstate vals)))
     (collect-all-anchors last-anchor vstate.dag vals))
+  :guard-hints (("Goal" :in-theory (enable certificate->round-of-last-anchor
+                                           last-anchor-in-dag)))
 
   ///
 
