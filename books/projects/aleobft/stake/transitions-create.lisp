@@ -9,7 +9,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ALEOBFT-DYNAMIC")
+(in-package "ALEOBFT-STAKE")
 
 (include-book "system-states")
 (include-book "committees")
@@ -21,21 +21,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ transitions-create-certificate
+(defxdoc+ transitions-create
   :parents (transitions)
   :short "Transitions for certificate creation."
   :long
   (xdoc::topstring
    (xdoc::p
     "Here we define the system state transitions
-     caused by @('create-certificate') events.")
+     caused by @('create') events.")
    (xdoc::p
     "In AleoBFT, certificates are created through an exchange of messages
      involving proposals, signatures, and certificates,
      following the Narwhal protocol, which AleoBFT is based on.
      Currently we model certificate creation as one atomic event,
      which abstracts the aforementioned message exchange process.
-     Our @('create-certificate') event ``instantly'' creates a certificates,
+     Our @('create') event ``instantly'' creates a certificates,
      and broadcasts it to the other validators.
      This can be thought of as modeling the final act of
      the aforementioned message exchange,
@@ -67,9 +67,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define create-certificate-signer-possiblep ((cert certificatep)
-                                             (vstate validator-statep)
-                                             (all-vals address-setp))
+(define create-signer-possiblep ((cert certificatep) (vstate validator-statep))
   :returns (yes/no booleanp)
   :short "Check if a certificate creation event is possible,
           from the point of view of a correct signer."
@@ -77,7 +75,7 @@
   (xdoc::topstring
    (xdoc::p
     "The input @('cert') of this function is
-     the certificate in the @('create-certificate') event;
+     the certificate in the @('create') event;
      see @(tsee event).
      The input @('vstate') is the state of
      the validator whose address is a signer of the certificate.
@@ -92,13 +90,13 @@
      This ACL2 function formalizes the conditions
      that are common to author and endorsers, i.e. signers in general.
      Further conditions for the author are
-     formalized in @(tsee create-certificate-author-possiblep);
+     formalized in @(tsee create-author-possiblep);
      further conditions for the endorsers are
-     formalized in @(tsee create-certificate-endorser-possiblep).")
+     formalized in @(tsee create-endorser-possiblep).")
    (xdoc::p
     "First, the signer must be able to calculate
      the active committee at the certificate's round.
-     That is, its local blockchain is sufficiently far along.
+     That is, its local blockchain must be sufficiently far along.
      If the validator cannot calculate the active committee,
      it is unable to author or endorse a certificate for that round,
      so this event cannot happen from the point of view of the validator.")
@@ -116,7 +114,7 @@
      validators also check certificates as they realize
      the reliable broadcast mechanism that our model assumes.
      Thus a bad certificate would not correspond to
-     a @('create-certificate') event in our model,
+     a @('create') event in our model,
      which involves reliable broadcast.
      This is a somewhat complex and perhaps not fully persuasive aspect
      of our current formalization of atomic certificate creation,
@@ -124,11 +122,17 @@
      with explcit proposals, signatures, and checks on certificates,
      which should clarify this aspect of AleoBFT.")
    (xdoc::p
-    "The number of endorsers must be one less than the quorum,
-     so that, with the author, there is a quorum of signatures.
-     The aforementioned distinctness of the author from the endorsers
-     ensures that they indeed form a quorum,
-     i.e. that the author adds one to the quorum minus one.")
+    "The total stake of the signers must be
+     at least the quorum stake of the committee.
+     This is the proper generalization to stake
+     of the analogous condition on number of validators.
+     For the latter, the condition is
+     equality between the number of signers and the quorum number.
+     With stake, the granularity is a whole validator (it either signs or not),
+     and the total stake may not be exactly equal to the quorum stake,
+     because the signers may have arbitrary amounts of stake.
+     So the proper condition with stake is that
+     the quorum stake is an (inclusive) lower bound.")
    (xdoc::p
     "The DAG of the signer must not already have
      a certificate with the given author and round.
@@ -136,6 +140,12 @@
      two different certificates with the same author and round.
      Further conditions about this apply to endorsers,
      but here we are defining conditions common to author and endorsers.")
+   (xdoc::p
+    "If the round of the certificate is 1,
+     it must have no references to previous certificates,
+     because there is no round 0.
+     If the round of the certificate is not 1,
+     the following two additional requirements apply.")
    (xdoc::p
     "The signer's DAG must include
      all the previous certificates referenced by the certificate.
@@ -145,81 +155,83 @@
      the authors of all the certificates at the round before the certificate
      are a superset of the authors in the @('previous') component.
      When the signer is the author,
-     this condition serves to ensure the backward closure of the DAG,
-     i.e. that if the DAG includes a certificate,
-     it also includes all its predecessors.
+     this condition corresponds to the fact that,
+     before authoring a certificate,
+     the validator must have enough predecessors,
+     which the new certificate references.
      When the signer is an endorser,
      this condition corresponds to the fact that,
      before endorsing a certificate from another validator,
      a validator checks it against the predecessors
-     (something not explicit in our model),
-     and therefore the validator must have those predecessors in the DAG.
-     If the certificate's round is 1,
-     there is no previous round, and thus no previous certificates,
-     and thus no requirements on them being in the DAG.")
+     (something not explicit in our current model),
+     and therefore the validator must have those predecessors in the DAG.")
    (xdoc::p
-    "The referenced certificate in the previous round must form a quorum,
-     unless the certificate's round is 1,
-     in which case there must be no references to previous certificates.
-     However, note that the active committee of the previous round
+    "The total stake of the certificate referenced in the previous round
+     must be at least the committee quorum stake.
+     Similarly to the condition on the stake of the signers,
+     this is the proper generalization from numbers of validators to stake.
+     Note that the active committee of the previous round
      may differ from the one of the certificate's round.
      Since we already checked that the active committee of the certificate round
      is known to the signer whose conditions we are checking,
      it follows that the active committee at the previous round is also known,
-     as proved in @(tsee active-committee-at-round).")
-   (xdoc::p
-    "The role of the @('all-vals') input is
-     explained in @(tsee update-committee-with-transaction)."))
+     as proved in @(tsee active-committee-at-round).
+     It is an invariant, proved elsewhere,
+     that the authors of the certificates in the previous round
+     that are referenced in the @('previous') component of @('cert')
+     are members of the active committee at that previous round;
+     however, this invariant is not available in this definiion here,
+     and so we add that as an additional check,
+     which is in fact superfluous assuming that invariant."))
   (b* (((certificate cert) cert)
        ((validator-state vstate) vstate)
-       (commtt
-        (active-committee-at-round cert.round vstate.blockchain all-vals))
-       ((unless commtt) nil)
+       (commtt (active-committee-at-round cert.round vstate.blockchain))
+       ((unless commtt)
+        nil)
        ((when (set::in cert.author cert.endorsers)) nil)
-       ((unless (set::in cert.author (committee-members commtt))) nil)
-       ((unless (set::subset cert.endorsers (committee-members commtt))) nil)
-       ((unless (= (set::cardinality cert.endorsers)
-                   (1- (committee-quorum commtt))))
+       ((unless (set::in cert.author (committee-members commtt)))
         nil)
-       ((when (certificate-with-author+round
-               cert.author cert.round vstate.dag))
+       ((unless (set::subset cert.endorsers (committee-members commtt)))
         nil)
-       ((unless (or (= cert.round 1)
-                    (set::subset cert.previous
-                                 (certificate-set->author-set
-                                  (certificates-with-round (1- cert.round)
-                                                           vstate.dag)))))
+       ((unless (>= (committee-members-stake (certificate->signers cert) commtt)
+                    (committee-quorum-stake commtt)))
         nil)
-       ((unless (= (set::cardinality cert.previous)
-                   (if (= cert.round 1)
-                       0
-                     (b* ((prev-commtt
-                           (active-committee-at-round (1- cert.round)
-                                                      vstate.blockchain
-                                                      all-vals)))
-                       (committee-quorum prev-commtt)))))
+       ((when (certificate-with-author+round cert.author cert.round vstate.dag))
+        nil)
+       ((when (= cert.round 1))
+        (set::emptyp cert.previous))
+       ((unless (set::subset cert.previous
+                             (certificate-set->author-set
+                              (certificates-with-round (1- cert.round)
+                                                       vstate.dag))))
+        nil)
+       (prev-commtt
+        (active-committee-at-round (1- cert.round) vstate.blockchain))
+       ((unless (set::subset cert.previous
+                             (committee-members prev-commtt)))
+        nil)
+       ((unless (>= (committee-members-stake cert.previous prev-commtt)
+                    (committee-quorum-stake prev-commtt)))
         nil))
     t)
   :guard-hints
   (("Goal"
     :in-theory (enable posp
+                       certificate->signers
                        active-committee-at-previous-round-when-at-round)))
   :hooks (:fix)
 
   ///
 
-  (defrule active-committee-at-round-when-create-certificate-signer-possiblep
-    (implies (create-certificate-signer-possiblep cert vstate all-vals)
+  (defruled active-committee-at-round-when-create-signer-possiblep
+    (implies (create-signer-possiblep cert vstate)
              (active-committee-at-round (certificate->round cert)
-                                        (validator-state->blockchain vstate)
-                                        all-vals))
+                                        (validator-state->blockchain vstate)))
     :rule-classes :forward-chaining))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define create-certificate-author-possiblep ((cert certificatep)
-                                             (vstate validator-statep)
-                                             (all-vals address-setp))
+(define create-author-possiblep ((cert certificatep) (vstate validator-statep))
   :returns (yes/no booleanp)
   :short "Check if a certificate creation event is possible,
           from the point of view of a correct author."
@@ -227,14 +239,14 @@
   (xdoc::topstring
    (xdoc::p
     "The input @('cert') of this function is
-     the certificate in the @('create-certificate') event;
+     the certificate in the @('create') event;
      see @(tsee event).
      The input @('vstate') is the state of
      the validator whose address is the certificate's author.
      See the (indirect) callers of this function.")
    (xdoc::p
     "In addition to the conditions
-     formalized in @(tsee create-certificate-signer-possiblep),
+     formalized in @(tsee create-signer-possiblep),
      a correct validator authors a certificate
      if additional conditions are satisfied.
      This function puts these additional conditions
@@ -247,27 +259,24 @@
     "That is the only additional condition.
      A correct validator only authors a certificate
      if the validator is in the active committee for that round,
-     but @(tsee create-certificate-signer-possiblep)
+     but @(tsee create-signer-possiblep)
      already checks that the certificate author is in the committee.
-     The other conditions in @(tsee create-certificate-signer-possiblep)
+     The other conditions in @(tsee create-signer-possiblep)
      are naturally checked by the certificate's author,
-     who is in charge of creating the certificate.")
-   (xdoc::p
-    "The role of the @('all-vals') input is
-     explained in @(tsee update-committee-with-transaction)."))
+     who is in charge of creating the certificate."))
   (b* (((certificate cert) cert)
        ((validator-state vstate) vstate)
-       ((unless (create-certificate-signer-possiblep cert vstate all-vals))
+       ((unless (create-signer-possiblep cert vstate))
         nil)
-       ((unless (= cert.round vstate.round)) nil))
+       ((unless (= cert.round vstate.round))
+        nil))
     t)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define create-certificate-endorser-possiblep ((cert certificatep)
-                                               (vstate validator-statep)
-                                               (all-vals address-setp))
+(define create-endorser-possiblep ((cert certificatep)
+                                   (vstate validator-statep))
   :returns (yes/no booleanp)
   :short "Check if a certificate creation event is possible,
           from the point of view of a correct endorser."
@@ -275,52 +284,66 @@
   (xdoc::topstring
    (xdoc::p
     "The input @('cert') of this function is
-     the certificate in the @('create-certificate') event;
+     the certificate in the @('create') event;
      see @(tsee event).
      The input @('vstate') is the state of
      the validator whose address is an endorser of the certificate.
      See the (indirect) callers of this function.")
    (xdoc::p
     "In addition to the conditions
-     formalized in @(tsee create-certificate-signer-possiblep),
+     formalized in @(tsee create-signer-possiblep),
      a correct validator endorses a certificate
      if additional conditions are satisfied.
      This function puts these additional conditions
      together with the conditions of that function.")
    (xdoc::p
-    "While @(tsee create-certificate-signer-possiblep) checks that
+    "While @(tsee create-signer-possiblep) checks that
      the DAG has no certificate already with the same author and round,
      which is sufficient for the author to check,
-     an endorser must check more than that:
-     the buffer of the endorser
-     must not contain a certificate with the same author and round;
-     and the set of endorsed author-round pairs
+     an endorser must also check that
+     the set of endorsed author-round pairs
      does not already contain the author-round pair of the certificate.
-     The presence of a pair in this set indicates that the validators
+     The presence of a pair in this set indicates that the validator
      has already endorsed a certificate with that author and round,
-     but has not yet received the actual certificate from the network.")
+     but has not yet received the actual certificate from the network,
+     and incorporated it into its own DAG.
+     This check is not needed for the signer,
+     because it is an invariant, proved elsewhere,
+     that the set of endorsed author-round pairs
+     does not contain any pair with the validator as author.")
    (xdoc::p
-    "Together with the check that the DAG does not have a certificate
-     with the same author and round as this new certificate,
-     we are checking that the endorser has not any trace, anywhere,
-     of the author-round pair of the new certificate.
-     This serves to ensure the non-equivocation of certificates.")
-   (xdoc::p
-    "For the certificate author, in @(tsee create-certificate-author-possiblep),
-     it is not necessary to check the buffer and author-round pairs:
-     as proved in @(see no-self-buffer),
-     a validator never has a certificate authored by itself in the buffer,
-     or an author-round pair whose author component is the validator's address.
-     So it suffices to check the DAG for the author.")
-   (xdoc::p
-    "The role of the @('all-vals') input is
-     explained in @(tsee update-committee-with-transaction)."))
+    "Note that, unlike in our previous model
+     with dynamic committees but without stake,
+     here we are not checking that
+     the buffer does not contain a certificate
+     with the same author and round as @('cert').
+     This difference has nothing to do with stake:
+     we are simply experimenting with a slightly different modeling approach,
+     in which we let the buffer accept any certificate from the network,
+     but we make certain additional checks before storing it into the DAG;
+     those additional checks,
+     in the model with dynamic committees without stake,
+     are performed as part of the event
+     to receive a certificate from the network.
+     Both in that and in this model of AleoBFT,
+     nothing prevents the creation and broadcast of a certificate
+     that is signed by only faulty validators
+     and that has the same author and round of
+     some existing certificate in the DAGs of correct validators.
+     In the model without stake,
+     that certificate will stay forever in the network,
+     never moved to any correct validator's buffer,
+     because the event to receive the certificate
+     can only happen (because we model it that way)
+     if the signers are in the appropriate committee,
+     which must be fault-tolerant by assumption.
+     But in this model with stake,
+     we let any certificate to be received,
+     and instead move that committee check
+     to the event that moves the certificate from the buffer to the DAG."))
   (b* (((certificate cert) cert)
        ((validator-state vstate) vstate)
-       ((unless (create-certificate-signer-possiblep cert vstate all-vals))
-        nil)
-       ((when (certificate-with-author+round
-               cert.author cert.round vstate.buffer))
+       ((unless (create-signer-possiblep cert vstate))
         nil)
        ((when (set::in (make-address+pos :address cert.author :pos cert.round)
                        vstate.endorsed))
@@ -330,8 +353,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define create-certificate-endorsers-possiblep ((cert certificatep)
-                                                (systate system-statep))
+(define create-endorsers-possiblep ((cert certificatep)
+                                    (systate system-statep))
   :returns (yes/no booleanp)
   :short "Check if a certificate creation event is possible,
           from the point of view of all the certificate's endorsers."
@@ -339,163 +362,146 @@
   (xdoc::topstring
    (xdoc::p
     "The input @('cert') of this function is
-     the certificate in the @('create-certificate') event;
+     the certificate in the @('create') event;
      see @(tsee event).")
    (xdoc::p
     "An endorser may be correct or faulty.
      If it is correct, it must satisfy the conditions
-     formalized in @(tsee create-certificate-endorser-possiblep).
+     formalized in @(tsee create-endorser-possiblep).
      If it is faulty, it is not bound by any condition.")
    (xdoc::p
     "Note that, if there are (as normal) multiple correct endorsers,
-     the conditions involving committees as viewed by the endorsers
+     the conditions involving committees as viewed by the endorsers,
+     and checked by this predicate,
      imply at least some agreement among the blockchains of the validators,
      enough to make consistent checks involving the committee.
-     As proved in @(see same-committees),
+     As proved elsewhere,
      it is a system invariant that
      different validators agree on the committees they can both calculate,
      because of the invariant that blockchains never fork.
      Thus, in each state, which satisfies the invariant,
      starting with an initial state,
-     the conditions on the possibility of a @('create-certificate') event
+     the conditions on the possibility of a @('create') event
      do not impose any more agreement requirements
      than already implied by the invariants.
-     As already observed in @(tsee create-certificate-signer-possiblep),
+     As already observed in @(tsee create-signer-possiblep),
      all of this can be made even more clear and persuasive
      in a planned more detailed model of AleoBFT
-     that includes explicit proposal and signature exchanges.")
-   (xdoc::p
-    "Note that we instantiate the @('all-vals') parameter
-     of @(tsee create-certificate-endorser-possiblep)
-     with the set of all the addresses of all validators in the system;
-     that is indeed the rols of @('all-vals'),
-     as explained in @(tsee update-committee-with-transaction)."))
-  (create-certificate-endorsers-possiblep-loop cert
-                                               (certificate->endorsers cert)
-                                               systate)
+     that includes explicit proposal and signature exchanges."))
+  (create-endorsers-possiblep-loop cert
+                                   (certificate->endorsers cert)
+                                   systate)
   :hooks (:fix)
 
   :prepwork
-  ((define create-certificate-endorsers-possiblep-loop ((cert certificatep)
-                                                        (endorsers address-setp)
-                                                        (systate system-statep))
+  ((define create-endorsers-possiblep-loop ((cert certificatep)
+                                            (endorsers address-setp)
+                                            (systate system-statep))
      :returns (yes/no booleanp)
      :parents nil
      (b* (((when (set::emptyp endorsers)) t)
           (endorser (set::head endorsers))
           ((unless (set::in endorser (correct-addresses systate)))
-           (create-certificate-endorsers-possiblep-loop cert
-                                                        (set::tail endorsers)
-                                                        systate))
-          ((unless (create-certificate-endorser-possiblep
+           (create-endorsers-possiblep-loop cert
+                                            (set::tail endorsers)
+                                            systate))
+          ((unless (create-endorser-possiblep
                     cert
-                    (get-validator-state endorser systate)
-                    (all-addresses systate)))
+                    (get-validator-state endorser systate)))
            nil))
-       (create-certificate-endorsers-possiblep-loop cert
-                                                    (set::tail endorsers)
-                                                    systate))
+       (create-endorsers-possiblep-loop cert
+                                        (set::tail endorsers)
+                                        systate))
      ///
-     (fty::deffixequiv create-certificate-endorsers-possiblep-loop
+     (fty::deffixequiv create-endorsers-possiblep-loop
        :args ((cert certificatep) (systate system-statep))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define create-certificate-possiblep ((cert certificatep)
-                                      (systate system-statep))
+(define create-possiblep ((cert certificatep) (systate system-statep))
   :returns (yes/no booleanp)
   :short "Check if a certificate creation event is possible."
   :long
   (xdoc::topstring
    (xdoc::p
     "The input @('cert') of this function is
-     the certificate in the @('create-certificate') event;
+     the certificate in the @('create') event;
      see @(tsee event).")
    (xdoc::p
-    "Author and endorsers must be in the system.
-     Recall that the system includes all possible validators
-     in all possible committees.
-     More specific checks about author and endorsers being in the committee
-     are formalized in @(tsee create-certificate-signer-possiblep).")
-   (xdoc::p
     "If the author is correct,
-     the conditions in @(tsee create-certificate-author-possiblep)
+     the conditions in @(tsee create-author-possiblep)
      must be satisfied.
      If the author is faulty, there are no requirements
      from the author's point of view.")
    (xdoc::p
-    "The conditions in @(tsee create-certificate-endorsers-possiblep)
-     must also hold, which may concern correct and faulty endorsers.")
+    "The conditions in @(tsee create-endorsers-possiblep) must also hold,
+     which only actually constrain correct endorsers.")
    (xdoc::p
     "Although the author and some endorsers may be faulty,
      under suitable fault tolerance conditions,
      there are enough signers to guarantee that
      the new certificate does not cause equivocation,
      i.e. does not have the same author and round as an existing certificate.
-     This is proved as the non-equivocation of certificates.
-     Here the fault tolerance conditions has to be stated for each committee.")
+     This is proved as the non-equivocation of certificates.")
    (xdoc::p
-    "Note that we instantiate the @('all-vals') parameter
-     of @(tsee create-certificate-author-possiblep)
-     with the set of all the addresses of all validators in the system;
-     that is indeed the rols of @('all-vals'),
-     as explained in @(tsee update-committee-with-transaction).")
+    "Note that there are no constraints on the addresses of
+     faulty signers (author or endorsers).
+     Recall that our model of system states
+     only explicitly includes correct validators,
+     whose addresses are the ones in @(tsee correct-addresses).")
    (xdoc::p
     "If the author of the certificate is correct,
-     then it can calculate the active committees at the certificate's round,
-     and the certificate's signers form a quorum in that committee.
+     then it can calculate the active committee at the certificate's round,
+     and the certificate's signers' total stake
+     is at least the quorum stake of the committee.
      This derives from the definition,
      but provides a way to obtain this fact in proofs
-     without having to open @('create-certificate-possiblep')
+     without having to open @('create-possiblep')
      and some of the functions it calls."))
   (b* (((certificate cert) cert)
-       ((unless (set::in cert.author (all-addresses systate))) nil)
-       ((unless (set::subset cert.endorsers (all-addresses systate))) nil)
        ((unless (or (not (set::in cert.author (correct-addresses systate)))
-                    (create-certificate-author-possiblep
+                    (create-author-possiblep
                      cert
-                     (get-validator-state cert.author systate)
-                     (all-addresses systate))))
+                     (get-validator-state cert.author systate))))
         nil)
-       ((unless (create-certificate-endorsers-possiblep cert systate))
+       ((unless (create-endorsers-possiblep cert systate))
         nil))
     t)
   :hooks (:fix)
 
   ///
 
-  (defruled author-quorum-when-create-certificate-possiblep
+  (defruled author-quorum-when-create-possiblep
     (implies (and (set::in (certificate->author cert)
                            (correct-addresses systate))
-                  (create-certificate-possiblep cert systate))
+                  (create-possiblep cert systate))
              (b* ((commtt (active-committee-at-round
                            (certificate->round cert)
                            (validator-state->blockchain
                             (get-validator-state (certificate->author cert)
-                                                 systate))
-                           (all-addresses systate))))
+                                                 systate)))))
                (and commtt
                     (set::subset (certificate->signers cert)
                                  (committee-members commtt))
-                    (equal (set::cardinality (certificate->signers cert))
-                           (committee-quorum commtt)))))
-    :enable (create-certificate-author-possiblep
-             create-certificate-signer-possiblep
+                    (>= (committee-members-stake (certificate->signers cert)
+                                                 commtt)
+                        (committee-quorum-stake commtt)))))
+    :enable (create-author-possiblep
+             create-signer-possiblep
              certificate->signers
              set::expensive-rules)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define create-certificate-author-next ((cert certificatep)
-                                        (vstate validator-statep))
+(define create-author-next ((cert certificatep) (vstate validator-statep))
   :returns (new-vstate validator-statep)
   :short "New correct author state
-          resulting from a @('create-certificate') event."
+          resulting from a @('create') event."
   :long
   (xdoc::topstring
    (xdoc::p
     "The input @('cert') of this function is
-     the certificate in the @('create-certificate') event;
+     the certificate in the @('create') event;
      see @(tsee event).
      The input @('vstate') is the state of
      the validator whose address is the certificate's author.
@@ -509,53 +515,52 @@
 
   ///
 
-  (defret validator-state->dag-of-create-certificate-author-next
+  (defret validator-state->round-of-create-author-next
+    (equal (validator-state->round new-vstate)
+           (validator-state->round vstate)))
+
+  (defret validator-state->dag-of-create-author-next
     (equal (validator-state->dag new-vstate)
            (set::insert (certificate-fix cert)
                         (validator-state->dag vstate))))
+  (in-theory (disable validator-state->dag-of-create-author-next))
 
-  (defret validator-state->buffer-of-create-certificate-author-next
+  (defret validator-state->buffer-of-create-author-next
     (equal (validator-state->buffer new-vstate)
            (validator-state->buffer vstate)))
 
-  (defret validator-state->endorsed-of-create-certificate-author-next
+  (defret validator-state->endorsed-of-create-author-next
     (equal (validator-state->endorsed new-vstate)
            (validator-state->endorsed vstate)))
 
-  (defret validator-state->last-of-create-certificate-author-next
+  (defret validator-state->last-of-create-author-next
     (equal (validator-state->last new-vstate)
            (validator-state->last vstate))
     :hints (("Goal" :in-theory (enable nfix))))
 
-  (defret validator-state->blockchain-of-create-certificate-author-next
+  (defret validator-state->blockchain-of-create-author-next
     (equal (validator-state->blockchain new-vstate)
            (validator-state->blockchain vstate)))
 
-  (defret validator-state->committed-of-create-certificate-author-next
+  (defret validator-state->committed-of-create-author-next
     (equal (validator-state->committed new-vstate)
            (validator-state->committed vstate)))
 
-  (in-theory
-   (disable
-    validator-state->dag-of-create-certificate-author-next
-    validator-state->buffer-of-create-certificate-author-next
-    validator-state->endorsed-of-create-certificate-author-next
-    validator-state->last-of-create-certificate-author-next
-    validator-state->blockchain-of-create-certificate-author-next
-    validator-state->committed-of-create-certificate-author-next)))
+  (defret validator-state->timer-of-create-author-next
+    (equal (validator-state->timer new-vstate)
+           (validator-state->timer vstate))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define create-certificate-endorser-next ((cert certificatep)
-                                          (vstate validator-statep))
+(define create-endorser-next ((cert certificatep) (vstate validator-statep))
   :returns (new-vstate validator-statep)
   :short "New correct endorser state
-          resulting from a @('create-certificate') event."
+          resulting from a @('create') event."
   :long
   (xdoc::topstring
    (xdoc::p
     "The input @('cert') of this function is
-     the certificate in the @('create-certificate') event;
+     the certificate in the @('create') event;
      see @(tsee event).
      The input @('vstate') is the state of
      the validator whose address is @('endorser').
@@ -573,126 +578,111 @@
 
   ///
 
-  (defret validator-state->dag-of-create-certificate-endorser-next
+  (defret validator-state->round-of-create-endorser-next
+    (equal (validator-state->round new-vstate)
+           (validator-state->round vstate)))
+
+  (defret validator-state->dag-of-create-endorser-next
     (equal (validator-state->dag new-vstate)
            (validator-state->dag vstate)))
 
-  (defret validator-state->buffer-of-create-certificate-endorser-next
+  (defret validator-state->buffer-of-create-endorser-next
     (equal (validator-state->buffer new-vstate)
            (validator-state->buffer vstate)))
 
-  (defret validator-state->endorsed-of-create-certificate-endorser-next
+  (defret validator-state->endorsed-of-create-endorser-next
     (equal (validator-state->endorsed new-vstate)
            (set::insert (make-address+pos
                          :address (certificate->author cert)
                          :pos (certificate->round cert))
                         (validator-state->endorsed vstate))))
+  (in-theory (disable validator-state->endorsed-of-create-endorser-next))
 
-  (defret validator-state->last-of-create-certificate-endorser-next
+  (defret validator-state->last-of-create-endorser-next
     (equal (validator-state->last new-vstate)
            (validator-state->last vstate))
     :hints (("Goal" :in-theory (enable nfix))))
 
-  (defret validator-state->blockchain-of-create-certificate-endorser-next
+  (defret validator-state->blockchain-of-create-endorser-next
     (equal (validator-state->blockchain new-vstate)
            (validator-state->blockchain vstate)))
 
-  (defret validator-state->committed-of-create-certificate-endorser-next
+  (defret validator-state->committed-of-create-endorser-next
     (equal (validator-state->committed new-vstate)
            (validator-state->committed vstate)))
 
-  (in-theory
-   (disable
-    validator-state->dag-of-create-certificate-endorser-next
-    validator-state->buffer-of-create-certificate-endorser-next
-    validator-state->endorsed-of-create-certificate-endorser-next
-    validator-state->last-of-create-certificate-endorser-next
-    validator-state->blockchain-of-create-certificate-endorser-next
-    validator-state->committed-of-create-certificate-endorser-next)))
+  (defret validator-state->timer-of-create-endorser-next
+    (equal (validator-state->timer new-vstate)
+           (validator-state->timer vstate))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define create-certificate-endorsers-next ((cert certificatep)
-                                           (systate system-statep))
+(define create-endorsers-next ((cert certificatep) (systate system-statep))
   :returns (new-systate system-statep)
   :short "Update, in a system state, to a certificate's endorsers' states
-          resulting from a @('create-certificate') event."
+          resulting from a @('create') event."
   :long
   (xdoc::topstring
    (xdoc::p
     "The input @('cert') of this function is
-     the certificate in the @('create-certificate') event;
+     the certificate in the @('create') event;
      see @(tsee event).")
    (xdoc::p
     "We update the states of the correct endorsers.
      The faulty endorsers have no internal state."))
-  (create-certificate-endorsers-next-loop cert
-                                          (certificate->endorsers cert)
-                                          systate)
+  (create-endorsers-next-loop cert (certificate->endorsers cert) systate)
   :hooks (:fix)
 
   :prepwork
-  ((define create-certificate-endorsers-next-loop ((cert certificatep)
-                                                   (endorsers address-setp)
-                                                   (systate system-statep))
+  ((define create-endorsers-next-loop ((cert certificatep)
+                                       (endorsers address-setp)
+                                       (systate system-statep))
      :returns (new-systate system-statep)
      :parents nil
      (b* (((when (set::emptyp endorsers)) (system-state-fix systate))
           (endorser (set::head endorsers))
           ((unless (set::in endorser (correct-addresses systate)))
-           (create-certificate-endorsers-next-loop cert
-                                                   (set::tail endorsers)
-                                                   systate))
+           (create-endorsers-next-loop cert (set::tail endorsers) systate))
           (vstate (get-validator-state endorser systate))
-          (new-vstate (create-certificate-endorser-next cert vstate))
+          (new-vstate (create-endorser-next cert vstate))
           (new-systate (update-validator-state endorser new-vstate systate)))
-       (create-certificate-endorsers-next-loop cert
-                                               (set::tail endorsers)
-                                               new-systate))
+       (create-endorsers-next-loop cert (set::tail endorsers) new-systate))
 
      ///
 
-     (fty::deffixequiv create-certificate-endorsers-next-loop
+     (fty::deffixequiv create-endorsers-next-loop
        :args ((systate system-statep) (cert certificatep)))
 
-     (defret all-addresses-of-create-certificate-endorsers-next-loop
-       (equal (all-addresses new-systate)
-              (all-addresses systate))
-       :hints (("Goal" :induct t)))
-
-     (defret correct-addresses-of-create-certificate-endorsers-next-loop
+     (defret correct-addresses-of-create-endorsers-next-loop
        (equal (correct-addresses new-systate)
               (correct-addresses systate))
        :hints (("Goal" :induct t)))
 
-     (defret faulty-addresses-of-create-certificate-endorsers-next-loop
-       (equal (faulty-addresses new-systate)
-              (faulty-addresses systate))
-       :hints (("Goal" :induct t)))
+     (defret validator-state->round-of-create-endorsers-next-loop
+       (equal (validator-state->round (get-validator-state val new-systate))
+              (validator-state->round (get-validator-state val systate)))
+       :hints
+       (("Goal"
+         :induct t
+         :in-theory (enable get-validator-state-of-update-validator-state))))
 
-     (defret validator-state->dag-of-create-certificate-endorsers-next-loop
+     (defret validator-state->dag-of-create-endorsers-next-loop
        (equal (validator-state->dag (get-validator-state val new-systate))
               (validator-state->dag (get-validator-state val systate)))
        :hints
        (("Goal"
          :induct t
-         :in-theory
-         (enable
-          validator-state->dag-of-create-certificate-endorser-next
-          get-validator-state-of-update-validator-state))))
+         :in-theory (enable get-validator-state-of-update-validator-state))))
 
-     (defret validator-state->buffer-of-create-certificate-endorsers-next-loop
+     (defret validator-state->buffer-of-create-endorsers-next-loop
        (equal (validator-state->buffer (get-validator-state val new-systate))
               (validator-state->buffer (get-validator-state val systate)))
        :hints
        (("Goal"
          :induct t
-         :in-theory
-         (enable
-          validator-state->buffer-of-create-certificate-endorser-next
-          get-validator-state-of-update-validator-state))))
+         :in-theory (enable get-validator-state-of-update-validator-state))))
 
-     (defret validator-state->endorsed-of-create-certificate-endorsers-next-loop
+     (defret validator-state->endorsed-of-create-endorsers-next-loop
        (equal (validator-state->endorsed (get-validator-state val new-systate))
               (if (set::in val endorsers)
                   (set::insert (make-address+pos
@@ -706,71 +696,68 @@
        :hints
        (("Goal"
          :induct t
-         :in-theory
-         (enable validator-state->endorsed-of-create-certificate-endorser-next
-                 get-validator-state-of-update-validator-state))))
+         :in-theory (enable validator-state->endorsed-of-create-endorser-next
+                            get-validator-state-of-update-validator-state))))
+     (in-theory
+      (disable validator-state->endorsed-of-create-endorsers-next-loop))
 
-     (defret validator-state->last-of-create-certificate-endorsers-next-loop
+     (defret validator-state->last-of-create-endorsers-next-loop
        (equal (validator-state->last (get-validator-state val new-systate))
               (validator-state->last (get-validator-state val systate)))
        :hints
        (("Goal"
          :induct t
-         :in-theory
-         (enable
-          validator-state->last-of-create-certificate-endorser-next
-          get-validator-state-of-update-validator-state))))
+         :in-theory (enable get-validator-state-of-update-validator-state))))
 
-     (defret validator-state->blockchain-of-create-certificate-endorsers-next-loop
-       (equal (validator-state->blockchain (get-validator-state val new-systate))
-              (validator-state->blockchain (get-validator-state val systate)))
+     (defret validator-state->blockchain-of-create-endorsers-next-loop
+       (equal
+        (validator-state->blockchain (get-validator-state val new-systate))
+        (validator-state->blockchain (get-validator-state val systate)))
        :hints
        (("Goal"
          :induct t
-         :in-theory
-         (enable
-          validator-state->blockchain-of-create-certificate-endorser-next
-          get-validator-state-of-update-validator-state))))
+         :in-theory (enable get-validator-state-of-update-validator-state))))
 
-     (defret validator-state->committed-of-create-certificate-endorsers-next-loop
+     (defret validator-state->committed-of-create-endorsers-next-loop
        (equal (validator-state->committed (get-validator-state val new-systate))
               (validator-state->committed (get-validator-state val systate)))
        :hints
        (("Goal"
          :induct t
-         :in-theory
-         (enable
-          validator-state->committed-of-create-certificate-endorser-next
-          get-validator-state-of-update-validator-state))))
+         :in-theory (enable get-validator-state-of-update-validator-state))))
 
-     (defret get-network-state-of-create-certificate-endorsers-next-loop
+     (defret validator-state->timer-of-create-endorsers-next-loop
+       (equal (validator-state->timer (get-validator-state val new-systate))
+              (validator-state->timer (get-validator-state val systate)))
+       :hints
+       (("Goal"
+         :induct t
+         :in-theory (enable get-validator-state-of-update-validator-state))))
+
+     (defret get-network-state-of-create-endorsers-next-loop
        (equal (get-network-state new-systate)
               (get-network-state systate))
        :hints (("Goal" :induct t)))))
 
   ///
 
-  (defret all-addresses-of-create-certificate-endorsers-next
-    (equal (all-addresses new-systate)
-           (all-addresses systate)))
-
-  (defret correct-addresses-of-create-certificate-endorsers-next
+  (defret correct-addresses-of-create-endorsers-next
     (equal (correct-addresses new-systate)
            (correct-addresses systate)))
 
-  (defret faulty-addresses-of-create-certificate-endorsers-next
-    (equal (faulty-addresses new-systate)
-           (faulty-addresses systate)))
+  (defret validator-state->round-of-create-endorsers-next
+    (equal (validator-state->round (get-validator-state val new-systate))
+           (validator-state->round (get-validator-state val systate))))
 
-  (defret validator-state->dag-of-create-certificate-endorsers-next
+  (defret validator-state->dag-of-create-endorsers-next
     (equal (validator-state->dag (get-validator-state val new-systate))
            (validator-state->dag (get-validator-state val systate))))
 
-  (defret validator-state->buffer-of-create-certificate-endorsers-next
+  (defret validator-state->buffer-of-create-endorsers-next
     (equal (validator-state->buffer (get-validator-state val new-systate))
            (validator-state->buffer (get-validator-state val systate))))
 
-  (defret validator-state->endorsed-of-create-certificate-endorsers-next
+  (defret validator-state->endorsed-of-create-endorsers-next
     (equal (validator-state->endorsed (get-validator-state val new-systate))
            (if (set::in val (certificate->endorsers cert))
                (set::insert (make-address+pos
@@ -780,60 +767,53 @@
                              (get-validator-state val systate)))
              (validator-state->endorsed
               (get-validator-state val systate))))
-    :hyp (set::in val (correct-addresses systate)))
+    :hyp (set::in val (correct-addresses systate))
+    :hints
+    (("Goal"
+      :in-theory
+      (enable validator-state->endorsed-of-create-endorsers-next-loop))))
+  (in-theory (disable validator-state->endorsed-of-create-endorsers-next))
 
-  (defret validator-state->last-of-create-certificate-endorsers-next
+  (defret validator-state->last-of-create-endorsers-next
     (equal (validator-state->last (get-validator-state val new-systate))
            (validator-state->last (get-validator-state val systate))))
 
-  (defret validator-state->blockchain-of-create-certificate-endorsers-next
+  (defret validator-state->blockchain-of-create-endorsers-next
     (equal (validator-state->blockchain (get-validator-state val new-systate))
            (validator-state->blockchain (get-validator-state val systate))))
 
-  (defret validator-state->committed-of-create-certificate-endorsers-next
+  (defret validator-state->committed-of-create-endorsers-next
     (equal (validator-state->committed (get-validator-state val new-systate))
            (validator-state->committed (get-validator-state val systate))))
 
-  (defret get-network-state-of-create-certificate-endorsers-next
-    (equal (get-network-state new-systate)
-           (get-network-state systate)))
+  (defret validator-state->timer-of-create-endorsers-next
+    (equal (validator-state->timer (get-validator-state val new-systate))
+           (validator-state->timer (get-validator-state val systate))))
 
-  (in-theory
-   (disable
-    validator-state->dag-of-create-certificate-endorsers-next-loop
-    validator-state->buffer-of-create-certificate-endorsers-next-loop
-    validator-state->endorsed-of-create-certificate-endorsers-next-loop
-    validator-state->last-of-create-certificate-endorsers-next-loop
-    validator-state->blockchain-of-create-certificate-endorsers-next-loop
-    validator-state->committed-of-create-certificate-endorsers-next-loop
-    get-network-state-of-create-certificate-endorsers-next-loop
-    validator-state->dag-of-create-certificate-endorsers-next
-    validator-state->buffer-of-create-certificate-endorsers-next
-    validator-state->endorsed-of-create-certificate-endorsers-next
-    validator-state->last-of-create-certificate-endorsers-next
-    validator-state->blockchain-of-create-certificate-endorsers-next
-    validator-state->committed-of-create-certificate-endorsers-next
-    get-network-state-of-create-certificate-endorsers-next)))
+  (defret get-network-state-of-create-endorsers-next
+    (equal (get-network-state new-systate)
+           (get-network-state systate))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define create-certificate-next ((cert certificatep)
-                                 (systate system-statep))
-  :guard (create-certificate-possiblep cert systate)
+(define create-next ((cert certificatep) (systate system-statep))
+  :guard (create-possiblep cert systate)
   :returns (new-systate system-statep)
-  :short "New system state resulting from a @('create-certificate') event."
+  :short "New system state resulting from a @('create') event."
   :long
   (xdoc::topstring
    (xdoc::p
     "The input @('cert') of this function is
-     the certificate in the @('create-certificate') event;
+     the certificate in the @('create') event;
      see @(tsee event).")
    (xdoc::p
     "If the author is correct, its state is updated
-     using @(tsee create-certificate-author-next).")
+     using @(tsee create-author-next).")
    (xdoc::p
     "The states of the correct endorsers are updated
-     using @(tsee create-certificate-endorsers-next).")
+     using @(tsee create-endorsers-next);
+     this only affects correct endorsers,
+     since we only explicitly model the state of correct validators.")
    (xdoc::p
     "The certificate is broadcast to all the correct validators,
      except for the author if correct.
@@ -851,17 +831,23 @@
      but faulty validators behave arbitrarily regardless of
      which messages they receive.
      Thus, in our model of AleoBFT, we ignore messages sent to faulty validators
-     by only adding to the network messages sent to correct validators.")
+     by only adding to the network messages sent to correct validators.
+     After all, recall again that our system model
+     only explicitly includes correct, not faulty, validators.")
    (xdoc::p
     "It may also seem strange that the messages are sent to
-     all the validators in the system, and not just the ones in the committee.
+     all the (correct) validators in the system,
+     and not just the ones in the committee.
      An AleoBFT implementation would only send them to the committee.
      However, as explained in @(tsee system-states),
      our model of AleoBFT implicitly models syncing
      by including all possible validators in the system,
      and by having all of them update their internal states
      based on certificates generated by the active committee.
-     This is way our model adds to the network messages to all validators.")
+     This is way our model adds to the network messages to all validators:
+     in this modeling approach, it is in fact critical that
+     the certificate is broadcast not just to the committees,
+     but to all the validators.")
    (xdoc::p
     "In our model, adding a message to the network implies that
      the message can always be eventually delivered,
@@ -872,7 +858,7 @@
      the certificate in the message includes the author,
      which is also the sender.
      There is no event, in our model, to drop or modify messages in the network.
-     They can only be added, and removed when delivered.
+     They can only be added, and removed when delivered to validators.
      In an implementation, this kind of network behavior can be realized
      via encryption and re-transmissions on top of TCP/IP;
      the extent to which this actually realizes the network assumptions
@@ -901,10 +887,10 @@
        (systate
         (if (set::in cert.author (correct-addresses systate))
             (b* ((vstate (get-validator-state cert.author systate))
-                 (new-vstate (create-certificate-author-next cert vstate)))
+                 (new-vstate (create-author-next cert vstate)))
               (update-validator-state cert.author new-vstate systate))
           systate))
-       (systate (create-certificate-endorsers-next cert systate))
+       (systate (create-endorsers-next cert systate))
        (network (get-network-state systate))
        (msgs (make-certificate-messages cert
                                         (set::delete
@@ -917,19 +903,18 @@
 
   ///
 
-  (defret all-addresses-of-create-certificate-next
-    (equal (all-addresses new-systate)
-           (all-addresses systate)))
-
-  (defret correct-addresses-of-create-certificate-next
+  (defret correct-addresses-of-create-next
     (equal (correct-addresses new-systate)
            (correct-addresses systate)))
 
-  (defret faulty-addresses-of-create-certificate-next
-    (equal (faulty-addresses new-systate)
-           (faulty-addresses systate)))
+  (defret validator-state->round-of-create-next
+    (equal (validator-state->round (get-validator-state val new-systate))
+           (validator-state->round (get-validator-state val systate)))
+    :hints
+    (("Goal"
+      :in-theory (enable get-validator-state-of-update-validator-state))))
 
-  (defret validator-state->dag-of-create-certificate-next
+  (defret validator-state->dag-of-create-next
     (equal (validator-state->dag (get-validator-state val new-systate))
            (if (equal val (certificate->author cert))
                (set::insert (certificate-fix cert)
@@ -938,24 +923,17 @@
              (validator-state->dag (get-validator-state val systate))))
     :hyp (set::in val (correct-addresses systate))
     :hints
-    (("Goal"
-      :in-theory
-      (enable
-       validator-state->dag-of-create-certificate-author-next
-       validator-state->dag-of-create-certificate-endorsers-next))))
+    (("Goal" :in-theory (enable validator-state->dag-of-create-author-next))))
+  (in-theory (disable validator-state->dag-of-create-next))
 
-  (defret validator-state->buffer-of-create-certificate-next
+  (defret validator-state->buffer-of-create-next
     (equal (validator-state->buffer (get-validator-state val new-systate))
            (validator-state->buffer (get-validator-state val systate)))
     :hints
     (("Goal"
-      :in-theory
-      (enable
-       validator-state->buffer-of-create-certificate-author-next
-       validator-state->buffer-of-create-certificate-endorsers-next
-       get-validator-state-of-update-validator-state))))
+      :in-theory (enable get-validator-state-of-update-validator-state))))
 
-  (defret validator-state->endorsed-of-create-certificate-next
+  (defret validator-state->endorsed-of-create-next
     (equal (validator-state->endorsed (get-validator-state val new-systate))
            (if (set::in val (certificate->endorsers cert))
                (set::insert (make-address+pos
@@ -968,60 +946,44 @@
     :hyp (set::in val (correct-addresses systate))
     :hints
     (("Goal"
-      :in-theory
-      (enable
-       get-validator-state-of-update-validator-state
-       validator-state->endorsed-of-create-certificate-author-next
-       validator-state->endorsed-of-create-certificate-endorsers-next))))
+      :in-theory (enable get-validator-state-of-update-validator-state
+                         validator-state->endorsed-of-create-author-next
+                         validator-state->endorsed-of-create-endorsers-next))))
+  (in-theory (disable validator-state->endorsed-of-create-next))
 
-  (defret validator-state->last-of-create-certificate-next
+  (defret validator-state->last-of-create-next
     (equal (validator-state->last (get-validator-state val new-systate))
            (validator-state->last (get-validator-state val systate)))
     :hints
     (("Goal"
-      :in-theory
-      (enable
-       validator-state->last-of-create-certificate-author-next
-       validator-state->last-of-create-certificate-endorsers-next
-       get-validator-state-of-update-validator-state))))
+      :in-theory (enable get-validator-state-of-update-validator-state))))
 
-  (defret validator-state->blockchain-of-create-certificate-next
+  (defret validator-state->blockchain-of-create-next
     (equal (validator-state->blockchain (get-validator-state val new-systate))
            (validator-state->blockchain (get-validator-state val systate)))
     :hints
     (("Goal"
-      :in-theory
-      (enable
-       validator-state->blockchain-of-create-certificate-author-next
-       validator-state->blockchain-of-create-certificate-endorsers-next
-       get-validator-state-of-update-validator-state))))
+      :in-theory (enable get-validator-state-of-update-validator-state))))
 
-  (defret validator-state->committed-of-create-certificate-next
+  (defret validator-state->committed-of-create-next
     (equal (validator-state->committed (get-validator-state val new-systate))
            (validator-state->committed (get-validator-state val systate)))
     :hints
     (("Goal"
-      :in-theory
-      (enable
-       validator-state->committed-of-create-certificate-author-next
-       validator-state->committed-of-create-certificate-endorsers-next
-       get-validator-state-of-update-validator-state))))
+      :in-theory (enable get-validator-state-of-update-validator-state))))
 
-  (defret get-network-state-of-create-certificate-next
+  (defret validator-state->timer-of-create-next
+    (equal (validator-state->timer (get-validator-state val new-systate))
+           (validator-state->timer (get-validator-state val systate)))
+    :hints
+    (("Goal"
+      :in-theory (enable get-validator-state-of-update-validator-state))))
+
+  (defret get-network-state-of-create-next
     (equal (get-network-state new-systate)
            (set::union (get-network-state systate)
                        (make-certificate-messages
                         cert (set::delete (certificate->author cert)
                                           (correct-addresses systate)))))
     :hints
-    (("Goal"
-      :in-theory (enable get-network-state-of-create-certificate-endorsers-next
-                         set::union-symmetric))))
-
-  (in-theory (disable validator-state->dag-of-create-certificate-next
-                      validator-state->buffer-of-create-certificate-next
-                      validator-state->endorsed-of-create-certificate-next
-                      validator-state->last-of-create-certificate-next
-                      validator-state->blockchain-of-create-certificate-next
-                      validator-state->committed-of-create-certificate-next
-                      get-network-state-of-create-certificate-next)))
+    (("Goal" :in-theory (enable set::union-symmetric)))))

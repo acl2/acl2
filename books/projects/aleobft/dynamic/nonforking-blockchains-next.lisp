@@ -12,7 +12,7 @@
 (in-package "ALEOBFT-DYNAMIC")
 
 (include-book "nonforking-anchors-def-and-init-and-next")
-(include-book "blockchain-redundant")
+(include-book "blockchain-redundant-def-and-init-and-next")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))

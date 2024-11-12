@@ -33,15 +33,15 @@
      The level of abstraction of this model
      is about the same as the Bullshark papers.
      This model does not capture garbage collection or syncing.
-     It also does not capture stake, but only numbers of validators
-     (i.e. every validator has the same stake).")
+     It also does not capture stake, but does model an arbitrary number
+     of validators where every validator has the same stake.")
    (xdoc::p
     "Although this is more of a model of Bullshark than AleoBFT,
      due to the lack of dynamic committees,
      this model is useful as a baseline,
      because a fixed committee is a special case of dynamic committees
      (a flaw with fixed committees
-     would be also a flaw with dynamic committees).
+     would also be a flaw with dynamic committees).
      Furthermore, this model is useful as a starting point
      for developing the more complex model with dynamic committees.
      Note also that, although the substance of AleoBFT is similar to Bullshark,
