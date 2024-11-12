@@ -1749,7 +1749,13 @@
        "@('https://gcc.gnu.org/onlinedocs/gcc/_005f_005fint128.html')")
       ".")
      (xdoc::p
-      "We also include the GCC extension @('_Float32') and @('_Float128'),
+      "We also include the GCC extensions
+       @('_Float32'),
+       @('_Float32x'),
+       @('_Float64'),
+       @('_Float64x'),
+       @('_Float128'), and
+       @('_Float128x'),
        which are floating types: see "
       (xdoc::ahref
        "https://gcc.gnu.org/onlinedocs/gcc/Floating-Types.html"
@@ -1792,8 +1798,11 @@
     ;; GCC extensions:
     (:int128 ())
     (:float32 ())
+    (:float32x ())
     (:float64 ())
+    (:float64x ())
     (:float128 ())
+    (:float128x ())
     (:builtin-va-list ())
     (:struct-empty ((name? ident-option)))
     (:typeof-expr ((expr expr)
