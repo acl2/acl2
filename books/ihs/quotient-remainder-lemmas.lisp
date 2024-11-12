@@ -1633,10 +1633,12 @@ property of @('(/ x y)').</p>"
 
 #+non-standard-analysis
 (defrule realp-mod
-  (implies (real/rationalp x)
-	   (real/rationalp (mod x y)))
+; Matt K. trivial mod for consistency with
+; books/arithmetic-3/floor-mod/floor-mod.lisp
+  (implies (realp x)
+	   (realp (mod x y)))
   :cases ((not (acl2-numberp y))
-          (real/rationalp y))
+          (realp y))
   :enable (mod floor realp-+)
   :rule-classes (:rewrite :type-prescription))
 
