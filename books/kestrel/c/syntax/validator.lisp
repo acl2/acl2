@@ -5024,7 +5024,44 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  ;; TODO: valid-label
+  (define valid-label ((label labelp) (table valid-tablep) (ienv ienvp))
+    :guard (label-unambp label)
+    :returns (mv erp (new-table valid-tablep))
+    :parents (validator valid-exprs/decls/stmts)
+    :short "Validate a label."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "For now this just amounts to validating the constant expression(s),
+       for the case of a @('case') label,
+       and ensuring it/they has/have integer type [C:6.8.4.2/3];
+       in the future, we should collect labels in the validation table
+       so that we can check that referenced labels are in scope.
+       Also, for now we do not check that @('case') and @('default') labels
+       only appear in @('switch') statements [C:6.8.1/2]."))
+    (b* (((reterr) (irr-valid-table)))
+      (label-case
+       label
+       :name
+       (retok (valid-table-fix table))
+       :casexpr
+       (b* (((erp type table)
+             (valid-const-expr label.expr table ienv))
+            ((unless (type-integerp type))
+             (reterr (msg "The first or only 'case' expression ~
+                           in the label ~x0 has type ~x1."
+                          (label-fix label) type)))
+            ((erp type? table)
+             (valid-const-expr-option label.range? table ienv))
+            ((when (and type?
+                        (not (type-integerp type?))))
+             (reterr (msg "The second 'case' expression~
+                           in the label ~x0 has type ~x1."
+                          (label-fix label) type?))))
+         (retok table))
+       :default
+       (retok (valid-table-fix table))))
+    :measure (label-count label))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
