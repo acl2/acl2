@@ -402,7 +402,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection collect-all-anchors-in-equivocal-closed-dags
+(defsection collect-all-anchors-in-unequivocal-closed-dags
   :short "Some theorems about @(tsee collect-all-anchors)
           applied on unequivocal, backward-closed DAGs."
   :long
