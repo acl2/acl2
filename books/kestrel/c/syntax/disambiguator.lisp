@@ -3108,12 +3108,12 @@
      We should revisit this, adding all the GCC built-ins,
      with clear and accurate references.")
    (xdoc::p
-    "We also add entries for certina built-in variables
+    "We also add entries for certain built-in variables
      corresponding to the x86 registers, i.e. @('__eax') etc.
      We could not find those documented in the GCC manual,
      but we found them in practical code.
      Experiments suggest that these variables are somewhat restricted in usage.
-     The normal patten seems to be something like")
+     The normal pattern seems to be something like")
    (xdoc::codeblock
     "unsigned long __eax = __eax;")
    (xdoc::p
