@@ -1661,7 +1661,7 @@
      whose element is in the DAG;
      no paths are required in this case.
      If there are two or more certificates in the list,
-     then there must be paths between each contiguous elements."))
+     then there must be a path between each contiguous pair of elements."))
   (b* (((when (endp certs)) t)
        (cert (car certs))
        ((unless (set::in cert dag)) nil)
