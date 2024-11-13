@@ -40,9 +40,9 @@
      Here we introduce operations on DAGs (as certificate sets)
      that are more DAG-specific than the operations on certificate sets
      defined in @(see certificates).
-     By `DAG-specific' we mean that take into account the edges of the DAG,
-     as opposed to treating the DAG as just a set of vertices
-     as the operations in @(see certificates).
+     By `DAG-specific' we mean those operations that take into account the edges
+     of the DAG, as opposed to treating the DAG as just a set of vertices
+     as the operations in @(see certificates) do.
      The edges are represented as the @('previous') component of certificates,
      so they are part of the vertices, in terms of data structures."))
   :order-subtopics t
