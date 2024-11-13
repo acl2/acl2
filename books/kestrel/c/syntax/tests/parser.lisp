@@ -1235,6 +1235,18 @@
  "__builtin_offsetof(struct pt_regs, ss)"
  :gcc t)
 
+(test-parse
+ parse-expression
+ "({x = 0;})(x)"
+ :cond (expr-case ast :funcall)
+ :gcc t)
+
+(test-parse
+ parse-expression
+ "sizeof(*ctx)"
+ :cond (and (expr-case ast :unary)
+            (expr-case (expr-unary->arg ast) :paren)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; parse-struct-or-union-specifier
@@ -1533,31 +1545,37 @@
 (test-parse
  parse-expression-or-type-name
  "abc)"
+ :more-inputs (t)
  :cond (amb?-expr/tyname-case ast :ambig))
 
 (test-parse
  parse-expression-or-type-name
  "id(id))"
+ :more-inputs (nil)
  :cond (amb?-expr/tyname-case ast :ambig))
 
 (test-parse
  parse-expression-or-type-name
  "+x)"
+ :more-inputs (t)
  :cond (amb?-expr/tyname-case ast :expr))
 
 (test-parse
  parse-expression-or-type-name
  "int *)"
+ :more-inputs (nil)
  :cond (amb?-expr/tyname-case ast :tyname))
 
 (test-parse
  parse-expression-or-type-name
  "a + b)"
+ :more-inputs (t)
  :cond (amb?-expr/tyname-case ast :expr))
 
 (test-parse
  parse-expression-or-type-name
  "a _Atomic)"
+ :more-inputs (nil)
  :cond (amb?-expr/tyname-case ast :tyname))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1836,10 +1854,4 @@ error (int __status, int __errnum, const char *__format, ...)
 (test-parse
  parse-external-declaration-list
  "extern struct static_call_key __SCK__might_resched; extern typeof(__cond_resched) __SCT__might_resched;;"
- :gcc t)
-
-(test-parse
- parse-expression
- "({x = 0;})(x)"
- :cond (expr-case ast :funcall)
  :gcc t)
