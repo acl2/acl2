@@ -29,8 +29,8 @@
    (xdoc::p
     "An anchor is a leader certificate that is committed to the blockchain,
      either directly, by receiving enough votes (see @(see elections)),
-     or because it is on the path from one receiving enough votes to
-     a previously committed anchor.
+     or because it is reachable via a path from one receiving enough votes to
+     a previously committed anchor or to round 0.
      A leader certificate is a certificate in a DAG
      that is authored by the leader of the certificate's round.")
    (xdoc::p
