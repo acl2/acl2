@@ -1833,7 +1833,7 @@
        See our ABNF grammar."))
     (:tyspec ((spec type-spec)))
     (:tyqual ((qual type-qual)))
-    (:align ((unwrap align-spec)))
+    (:align ((spec align-spec)))
     (:attrib ((unwrap attrib-spec))) ; GCC extension
     :pred spec/qual-p
     :measure (two-nats-measure (acl2-count x) 0))

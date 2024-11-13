@@ -231,7 +231,7 @@
     (spec/qual-case specqual
                     :tyspec (type-spec-unambp specqual.spec)
                     :tyqual t
-                    :align (align-spec-unambp specqual.unwrap)
+                    :align (align-spec-unambp specqual.spec)
                     :attrib t)
     :measure (spec/qual-count specqual))
 
@@ -1747,10 +1747,10 @@
              (type-spec-unambp (spec/qual-tyspec->spec specqual)))
     :expand (spec/qual-unambp specqual))
 
-  (defrule align-spec-unambp-of-spec/qual-align->unwrap
+  (defrule align-spec-unambp-of-spec/qual-align->spec
     (implies (and (spec/qual-unambp specqual)
                   (spec/qual-case specqual :align))
-             (align-spec-unambp (spec/qual-align->unwrap specqual)))
+             (align-spec-unambp (spec/qual-align->spec specqual)))
     :expand (spec/qual-unambp specqual))
 
   (defrule tyname-unambp-of-align-spec-alignas-type->type
