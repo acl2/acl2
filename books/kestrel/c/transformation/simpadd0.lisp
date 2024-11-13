@@ -241,9 +241,9 @@
      :bool (type-spec-fix tyspec)
      :complex (type-spec-fix tyspec)
      :atomic (type-spec-atomic (simpadd0-tyname tyspec.type))
-     :struct (type-spec-struct (simpadd0-strunispec tyspec.unwrap))
-     :union (type-spec-union (simpadd0-strunispec tyspec.unwrap))
-     :enum (type-spec-enum (simpadd0-enumspec tyspec.unwrap))
+     :struct (type-spec-struct (simpadd0-strunispec tyspec.spec))
+     :union (type-spec-union (simpadd0-strunispec tyspec.spec))
+     :enum (type-spec-enum (simpadd0-enumspec tyspec.spec))
      :typedef (type-spec-fix tyspec)
      :int128 (type-spec-fix tyspec)
      :float128 (type-spec-fix tyspec)
@@ -268,7 +268,7 @@
     :short "Transform a type specifier or qualifier."
     (spec/qual-case
      specqual
-     :tyspec (spec/qual-tyspec (simpadd0-type-spec specqual.unwrap))
+     :tyspec (spec/qual-tyspec (simpadd0-type-spec specqual.spec))
      :tyqual (spec/qual-fix specqual)
      :align (spec/qual-align (simpadd0-align-spec specqual.unwrap))
      :attrib (spec/qual-fix specqual))

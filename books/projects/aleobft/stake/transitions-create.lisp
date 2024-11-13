@@ -188,7 +188,8 @@
        (commtt (active-committee-at-round cert.round vstate.blockchain))
        ((unless commtt)
         nil)
-       ((when (set::in cert.author cert.endorsers)) nil)
+       ((when (set::in cert.author cert.endorsers))
+        nil)
        ((unless (set::in cert.author (committee-members commtt)))
         nil)
        ((unless (set::subset cert.endorsers (committee-members commtt)))
@@ -196,14 +197,13 @@
        ((unless (>= (committee-members-stake (certificate->signers cert) commtt)
                     (committee-quorum-stake commtt)))
         nil)
-       ((when (certificate-with-author+round cert.author cert.round vstate.dag))
+       ((when (cert-with-author+round cert.author cert.round vstate.dag))
         nil)
        ((when (= cert.round 1))
         (set::emptyp cert.previous))
        ((unless (set::subset cert.previous
                              (certificate-set->author-set
-                              (certificates-with-round (1- cert.round)
-                                                       vstate.dag))))
+                              (certs-with-round (1- cert.round) vstate.dag))))
         nil)
        (prev-commtt
         (active-committee-at-round (1- cert.round) vstate.blockchain))
@@ -985,5 +985,5 @@
                        (make-certificate-messages
                         cert (set::delete (certificate->author cert)
                                           (correct-addresses systate)))))
-    :hints
-    (("Goal" :in-theory (enable set::union-symmetric)))))
+    :hints (("Goal" :in-theory (enable set::union-symmetric))))
+  (in-theory (disable get-network-state-of-create-next)))

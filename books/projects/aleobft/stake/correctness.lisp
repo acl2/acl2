@@ -11,7 +11,12 @@
 
 (in-package "ALEOBFT-STAKE")
 
-(include-book "xdoc/defxdoc-plus" :dir :system)
+(include-book "associated-certificates")
+(include-book "same-associated-certificates")
+(include-book "signed-certificates")
+(include-book "no-self-messages")
+(include-book "no-self-buffer")
+(include-book "no-self-endorsed")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -24,4 +29,9 @@
     "We formulate and prove a number of properties of the protocol,
      culminating in the main property that we are interested in,
      namely the non-forking of blockchains."))
-  :order-subtopics ())
+  :order-subtopics (associated-certificates
+                    same-associated-certificates
+                    signed-certificates
+                    no-self-messages
+                    no-self-buffer
+                    no-self-endorsed))

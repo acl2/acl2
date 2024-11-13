@@ -161,11 +161,11 @@
         t))
     (if (evenp vstate.round)
         (b* ((leader (leader-at-round vstate.round commtt))
-             (anchor? (certificate-with-author+round leader
-                                                     vstate.round
-                                                     vstate.dag))
+             (anchor? (cert-with-author+round leader
+                                              vstate.round
+                                              vstate.dag))
              (authors (certificate-set->author-set
-                       (certificates-with-round vstate.round vstate.dag))))
+                       (certs-with-round vstate.round vstate.dag))))
           (or (and anchor? t)
               (and (timer-case vstate.timer :expired)
                    (set::subset authors (committee-members commtt))
@@ -174,10 +174,10 @@
       (b* ((prev-commtt
             (active-committee-at-round (1- vstate.round) vstate.blockchain))
            (leader (leader-at-round (1- vstate.round) prev-commtt))
-           (anchor? (certificate-with-author+round leader
-                                                   (1- vstate.round)
-                                                   vstate.dag))
-           (voters (certificates-with-round vstate.round vstate.dag))
+           (anchor? (cert-with-author+round leader
+                                            (1- vstate.round)
+                                            vstate.dag))
+           (voters (certs-with-round vstate.round vstate.dag))
            ((unless (set::subset (certificate-set->author-set voters)
                                  (committee-members commtt)))
             nil)

@@ -213,4 +213,5 @@
   (defret get-network-state-of-receive-next
     (equal (get-network-state new-systate)
            (set::delete (message-fix msg)
-                        (get-network-state systate)))))
+                        (get-network-state systate))))
+  (in-theory (disable get-network-state-of-receive-next)))
