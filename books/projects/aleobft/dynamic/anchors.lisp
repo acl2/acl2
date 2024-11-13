@@ -27,10 +27,12 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "An anchor is a leader certificate that has
-     received enough votes (see @(see elections)) to be committed.
+    "An anchor is a leader certificate that is committed to the blockchain,
+     either directly, by receiving enough votes (see @(see elections)),
+     or because it is on the path from one receiving enough votes to
+     a previously committed anchor.
      A leader certificate is a certificate in a DAG
-     that is authored by the leader for the round of the certificate.")
+     that is authored by the leader of the certificate's round.")
    (xdoc::p
     "Here we define operations related to anchors."))
   :order-subtopics t
@@ -79,7 +81,7 @@
      in the recursion DAG paths will be from the new @('current-anchor').
      The recursive call will return a list of anchors
      that includes the anchor passed as first argument.
-     thus, when that anchor changes (i.e. when the previous anchor is found),
+     Thus, when that anchor changes (i.e. when the previous anchor is found),
      we add the old @('current-anchor') to the list.
      The resulting list of anchors is in inverse chronological order:
      the leftmost anchor is the newest one (i.e. greatest round number);
@@ -431,7 +433,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection collect-all-anchors-in-equivocal-closed-dags
+(defsection collect-all-anchors-in-unequivocal-closed-dags
   :short "Some theorems about @(tsee collect-all-anchors)
           applied on unequivocal, backward-closed DAGs."
   :long
@@ -439,7 +441,7 @@
    (xdoc::p
     "The first theorem says that
      all the anchors collected, starting from an anchor,
-     from a backward-closed subset of an unequivocal DAG
+     from a backward-closed subset of an unequivocal DAG,
      are the same in the superset.
      This is a simple consequence of the analogous theorem
      about @(tsee collect-anchors).")
