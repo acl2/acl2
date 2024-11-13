@@ -208,7 +208,12 @@
                     :enum (enumspec-unambp tyspec.spec)
                     :typedef t
                     :int128 t
+                    :float32 t
+                    :float32x t
+                    :float64 t
+                    :float64x t
                     :float128 t
+                    :float128x t
                     :builtin-va-list t
                     :struct-empty t
                     :typeof-expr (expr-unambp tyspec.expr)

@@ -2201,7 +2201,12 @@
                                         "__builtin_types_compatible_p"
                                         "__builtin_va_list"
                                         "__extension__"
+                                        "_Float32"
+                                        "_Float32x"
+                                        "_Float64"
+                                        "_Float64x"
                                         "_Float128"
+                                        "_Float128x"
                                         "__inline"
                                         "__inline__"
                                         "__int128"
@@ -6090,7 +6095,12 @@
    (xdoc::p
     "We similarly include the GCC extension types
      @('__int128'),
+     @('_Float32'),
+     @('_Float32x'),
+     @('_Float64'),
+     @('_Float64x'),
      @('_Float128'),
+     @('_Float128x'),
      @('__builtin_va_list'), and
      @('__auto_type')."))
   (or (token-keywordp token? "void")
@@ -6107,7 +6117,12 @@
       (token-keywordp token? "_Bool")
       (token-keywordp token? "_Complex")
       (token-keywordp token? "__int128")
+      (token-keywordp token? "_Float32")
+      (token-keywordp token? "_Float32x")
+      (token-keywordp token? "_Float64")
+      (token-keywordp token? "_Float64x")
       (token-keywordp token? "_Float128")
+      (token-keywordp token? "_Float128x")
       (token-keywordp token? "__builtin_va_list")
       (token-keywordp token? "__auto_type"))
   ///
@@ -6141,7 +6156,12 @@
         ((token-keywordp token "_Bool") (type-spec-bool))
         ((token-keywordp token "_Complex") (type-spec-complex))
         ((token-keywordp token "__int128") (type-spec-int128))
+        ((token-keywordp token "_Float32") (type-spec-float32))
+        ((token-keywordp token "_Float32x") (type-spec-float32x))
+        ((token-keywordp token "_Float64") (type-spec-float64))
+        ((token-keywordp token "_Float64x") (type-spec-float64x))
         ((token-keywordp token "_Float128") (type-spec-float128))
+        ((token-keywordp token "_Float128x") (type-spec-float128x))
         ((token-keywordp token "__builtin_va_list") (type-spec-builtin-va-list))
         ((token-keywordp token "__auto_type") (type-spec-auto-type))
         (t (prog2$ (impossible) (irr-type-spec))))
