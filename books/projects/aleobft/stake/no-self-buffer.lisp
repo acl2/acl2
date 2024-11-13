@@ -9,7 +9,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ALEOBFT-DYNAMIC")
+(in-package "ALEOBFT-STAKE")
 
 (include-book "no-self-messages")
 
@@ -33,7 +33,7 @@
      which are never self-addresses as proved in that invariant.
      Thus, any message in the buffer or a validator
      is not self-authored, i.e. it is authored by another validator.
-     Initially all buffers are empty, so this invariant holds."))
+     Initially all buffers are empty, so this invariant holds initially."))
   :order-subtopics t
   :default-parent t)
 
@@ -53,7 +53,7 @@
      yields the empty set."))
   (forall (val)
           (implies (set::in val (correct-addresses systate))
-                   (equal (certificates-with-author
+                   (equal (certs-with-author
                            val
                            (validator-state->buffer
                             (get-validator-state val systate)))
@@ -64,7 +64,7 @@
   (defruled no-self-buffer-p-necc-fixing
     (implies (and (no-self-buffer-p systate)
                   (set::in (address-fix val) (correct-addresses systate)))
-             (equal (certificates-with-author
+             (equal (certs-with-author
                      val
                      (validator-state->buffer
                       (get-validator-state val systate)))
@@ -85,8 +85,7 @@
   :enable (no-self-buffer-p
            system-initp
            system-validators-initp-necc
-           validator-init
-           certificates-with-author-when-emptyp))
+           validator-init))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -97,78 +96,67 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The only kind of event that adds a certificate to a buffer
-     is @('receive-certificate').
+    "The only kind of event that adds a certificate to a buffer is @('receive').
      But if we assume the already proved invariant
      that messages are not self-addressed,
      then we know that the newly added certificate
      is not signed by the validator by which it is received.")
    (xdoc::p
-    "A @('store-certificate') event removes a certificate from a buffer,
+    "A @('store') event removes a certificate from a buffer,
      which thus preserves the invariant (on the remaining certificates).")
    (xdoc::p
     "The other kinds of events to do change any buffers."))
 
-  (defruled no-self-buffer-p-of-create-certificate-next
+  (defruled no-self-buffer-p-of-create-next
     (implies (no-self-buffer-p systate)
-             (no-self-buffer-p
-              (create-certificate-next cert systate)))
+             (no-self-buffer-p (create-next cert systate)))
     :enable (no-self-buffer-p
-             no-self-buffer-p-necc
-             validator-state->buffer-of-create-certificate-next))
+             no-self-buffer-p-necc))
 
   (defruled no-self-buffer-p-of-receive-certiicate-next
     (implies (and (no-self-buffer-p systate)
                   (no-self-messages-p systate)
-                  (receive-certificate-possiblep msg systate))
-             (no-self-buffer-p
-              (receive-certificate-next msg systate)))
+                  (receive-possiblep msg systate))
+             (no-self-buffer-p (receive-next msg systate)))
     :enable (no-self-buffer-p
              no-self-buffer-p-necc
-             validator-state->buffer-of-receive-certificate-next
-             certificates-with-author-of-insert
-             receive-certificate-possiblep
+             validator-state->buffer-of-receive-next
+             certs-with-author-of-insert
+             receive-possiblep
              no-self-messages-p
              message-noselfp)
     :use (:instance message-set-noselfp-element
                     (msgs (get-network-state systate))
                     (msg (message-fix msg))))
 
-  (defruled no-self-buffer-p-of-store-certificate-next
+  (defruled no-self-buffer-p-of-store-next
     (implies (and (no-self-buffer-p systate)
-                  (store-certificate-possiblep val cert systate))
-             (no-self-buffer-p
-              (store-certificate-next val cert systate)))
+                  (store-possiblep val cert systate))
+             (no-self-buffer-p (store-next val cert systate)))
     :enable (no-self-buffer-p
-             validator-state->buffer-of-store-certificate-next
+             validator-state->buffer-of-store-next
              no-self-buffer-p-necc-fixing
-             certificates-with-author-of-delete))
+             certs-with-author-of-delete))
 
-  (defruled no-self-buffer-p-of-advance-round-next
+  (defruled no-self-buffer-p-of-advance-next
     (implies (and (no-self-buffer-p systate)
-                  (advance-round-possiblep val systate))
-             (no-self-buffer-p
-              (advance-round-next val systate)))
-    :enable (validator-state->buffer-of-advance-round-next
-             no-self-buffer-p
+                  (advance-possiblep val systate))
+             (no-self-buffer-p (advance-next val systate)))
+    :enable (no-self-buffer-p
              no-self-buffer-p-necc))
 
-  (defruled no-self-buffer-p-of-commit-anchors-next
+  (defruled no-self-buffer-p-of-commit-next
     (implies (and (no-self-buffer-p systate)
-                  (commit-anchors-possiblep val systate))
-             (no-self-buffer-p
-              (commit-anchors-next val systate)))
-    :enable (validator-state->buffer-of-commit-anchors-next
-             no-self-buffer-p
+                  (commit-possiblep val systate))
+             (no-self-buffer-p (commit-next val systate)))
+    :enable (no-self-buffer-p
              no-self-buffer-p-necc))
 
-  (defruled no-self-buffer-p-of-timer-expires-next
+  (defruled no-self-buffer-p-of-timeout-next
     (implies (and (no-self-buffer-p systate)
-                  (timer-expires-possiblep val systate))
-             (no-self-buffer-p
-              (timer-expires-next val systate)))
-    :enable (validator-state->buffer-of-timer-expires-next
-             no-self-buffer-p
+                  (timeout-possiblep val systate))
+             (no-self-buffer-p (timeout-next val systate)))
+    :enable (no-self-buffer-p
              no-self-buffer-p-necc))
 
   (defruled no-self-buffer-p-of-event-next
@@ -193,18 +181,11 @@
              (and (no-self-buffer-p (events-next events systate))
                   (no-self-messages-p (events-next events systate))))
     :induct t
-    :disable ((:e tau-system))
     :enable (events-possiblep
-             events-next
-             no-self-buffer-p-of-event-next
-             no-self-messages-p-of-event-next))
+             events-next))
 
   (defruled no-self-buffer-p-when-reachable
     (implies (and (system-statep systate)
                   (system-initp systate)
                   (events-possiblep events systate))
-             (no-self-buffer-p (events-next events systate)))
-    :disable ((:e tau-system))
-    :enable (no-self-buffer-p-when-init
-             no-self-messages-p-when-init
-             no-self-buffer-p-of-events-next)))
+             (no-self-buffer-p (events-next events systate)))))

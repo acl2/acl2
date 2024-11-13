@@ -1710,7 +1710,7 @@
       "These are part of calls of @('__builtin_offsetof'),
        which is a GCC extension;
        see @(tsee expr)."))
-    (:ident ((unwrap ident)))
+    (:ident ((ident ident)))
     (:dot ((member member-designor)
            (name ident)))
     (:sub ((member member-designor)
@@ -1785,9 +1785,9 @@
     (:bool ())
     (:complex ())
     (:atomic ((type tyname)))
-    (:struct ((unwrap strunispec)))
-    (:union ((unwrap strunispec)))
-    (:enum ((unwrap enumspec)))
+    (:struct ((spec strunispec)))
+    (:union ((spec strunispec)))
+    (:enum ((spec enumspec)))
     (:typedef ((name ident)))
     ;; GCC extensions:
     (:int128 ())
@@ -1820,7 +1820,7 @@
      (xdoc::p
       "As a GCC extension, we include attribute specifiers.
        See our ABNF grammar."))
-    (:tyspec ((unwrap type-spec)))
+    (:tyspec ((spec type-spec)))
     (:tyqual ((unwrap type-qual)))
     (:align ((unwrap align-spec)))
     (:attrib ((unwrap attrib-spec))) ; GCC extension
