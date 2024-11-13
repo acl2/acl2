@@ -213,13 +213,13 @@
     :use ((:instance lstate-match-renamevarp-rewrite
            (old old-lstate)
            (new new-lstate))
-          (:instance valuep-of-cdr-of-in-lstatep
+          (:instance valuep-of-cdr-of-assoc-lstatep
            (x old-lstate)
            (k old-var))
-          (:instance valuep-of-cdr-of-in-lstatep
+          (:instance valuep-of-cdr-of-assoc-lstatep
            (x new-lstate)
            (k new-var)))
-    :disable valuep-of-cdr-of-in-lstatep)
+    :disable valuep-of-cdr-of-assoc-lstatep)
 
   (defruled lstate-renamevarp-of-nil
     (lstate-renamevarp nil nil (renaming nil))
