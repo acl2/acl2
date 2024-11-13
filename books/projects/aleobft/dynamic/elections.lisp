@@ -39,13 +39,12 @@
      counts as a `yes' vote,
      while each following odd-round certificate 
      that does not reference the leader certificate counts as a `no' vote.
-     If the validator has enough `yes' votes,
-     which implies that it must have the leader certificate itself,
-     which is called an `anchor', the validator commits that anchor,
-     and potentially other precededing anchors,
+     If a validator has the leader certificate and has enough `yes' votes,
+     that certificate becomes an anchor (see @(see anchors)).
+     The validator commits that anchor,
+     and potentially other preceding anchors,
      by generating blocks from them;
      but this is formalized elsewhere.")
-
    (xdoc::p
     "Here we formalize the choice of the leader,
      via a constrained function on committees and round numbers.
