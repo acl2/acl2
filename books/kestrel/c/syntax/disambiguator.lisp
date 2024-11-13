@@ -1330,7 +1330,7 @@
                      (dimb-type-spec specqual.spec table)))
                  (retok (spec/qual-tyspec new-tyspec)
                         table))
-       :tyqual (retok (spec/qual-tyqual specqual.unwrap)
+       :tyqual (retok (spec/qual-tyqual specqual.qual)
                       (dimb-table-fix table))
        :align (b* (((erp new-alignspec table)
                     (dimb-align-spec specqual.unwrap table)))
