@@ -1948,7 +1948,12 @@
              pstate)
      :typedef (print-ident tyspec.name pstate)
      :int128 (print-astring "__int128" pstate)
+     :float32 (print-astring "_Float32" pstate)
+     :float32x (print-astring "_Float32x" pstate)
+     :float64 (print-astring "_Float64" pstate)
+     :float64x (print-astring "_Float64x" pstate)
      :float128 (print-astring "_Float128" pstate)
+     :float128x (print-astring "_Float128x" pstate)
      :builtin-va-list (print-astring "__builtin_va_list" pstate)
      :struct-empty (b* ((pstate (print-astring "struct" pstate))
                         (pstate (if tyspec.name?

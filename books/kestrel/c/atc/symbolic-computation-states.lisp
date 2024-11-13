@@ -306,8 +306,8 @@
        (implies (and (scopep x)
                      (consp (omap::assoc k x)))
                 (cdr (omap::assoc k x)))
-       :use valuep-of-cdr-of-in-scopep
-       :disable valuep-of-cdr-of-in-scopep))))
+       :use valuep-of-cdr-of-assoc-scopep
+       :disable valuep-of-cdr-of-assoc-scopep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

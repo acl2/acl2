@@ -314,13 +314,13 @@
        (pred-of-update* (acl2::packn-pos (list omap.pred '-of-update*) pkg-witness))
        (pred-of-delete (acl2::packn-pos (list omap.pred '-of-delete) pkg-witness))
        (pred-of-delete* (acl2::packn-pos (list omap.pred '-of-delete*) pkg-witness))
-       (key-pred-when-in-pred
-        (acl2::packn-pos (list omap.key-type '-when-in- omap.pred '-binds-free- omap.xvar)
+       (key-pred-when-assoc-pred
+        (acl2::packn-pos (list omap.key-type '-when-assoc- omap.pred '-binds-free- omap.xvar)
                          pkg-witness))
-       (key-pred-of-car-of-in-pred
-        (acl2::packn-pos (list omap.key-type '-of-car-of-in- omap.pred) pkg-witness))
-       (val-pred-of-cdr-of-in-pred
-        (acl2::packn-pos (list omap.val-type '-of-cdr-of-in- omap.pred) pkg-witness))
+       (key-pred-of-car-of-assoc-pred
+        (acl2::packn-pos (list omap.key-type '-of-car-of-assoc- omap.pred) pkg-witness))
+       (val-pred-of-cdr-of-assoc-pred
+        (acl2::packn-pos (list omap.val-type '-of-cdr-of-assoc- omap.pred) pkg-witness))
        (val-pred-of-lookup-when-pred
         (acl2::packn-pos (list omap.val-type '-of-lookup-when- omap.pred) pkg-witness))
        ;; reference to the fixtype for the generated XDOC documentation:
@@ -395,17 +395,17 @@
              (implies (,omap.pred ,omap.xvar)
                       (,omap.pred (omap::delete* ,k ,omap.xvar)))
              :enable omap::delete*)
-           (defrule ,key-pred-when-in-pred
+           (defrule ,key-pred-when-assoc-pred
              (implies (and (omap::assoc ,k ,omap.xvar) ; binds free X
                            (,omap.pred ,omap.xvar))
                       (,omap.key-type ,k))
              :enable omap::assoc)
-           (defrule ,key-pred-of-car-of-in-pred
+           (defrule ,key-pred-of-car-of-assoc-pred
              (implies (and (,omap.pred ,omap.xvar)
                            (omap::assoc ,k ,omap.xvar))
                       (,omap.key-type (car (omap::assoc ,k ,omap.xvar))))
              :enable omap::assoc)
-           (defrule ,val-pred-of-cdr-of-in-pred
+           (defrule ,val-pred-of-cdr-of-assoc-pred
              (implies (and (,omap.pred ,omap.xvar)
                            (omap::assoc ,k ,omap.xvar))
                       (,omap.val-type (cdr (omap::assoc ,k ,omap.xvar))))
