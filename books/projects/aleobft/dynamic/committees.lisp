@@ -575,10 +575,11 @@
     "Since @('B') is fixed and globally known,
      we introduce a constrained nullary function that returns it.
      There is no need to pick a specific value in this model;
-     this way, the model is more general.
+     this way the model is more general.
      Should the need arise to prove properties that depend on
-     specific values of @('B'), or more generally on @('B') be in certain range,
-     those can be made into hypotheses of such theorems."))
+     specific values of @('B'), 
+     or more generally, on whether @('B') is in a certain range,
+     those constraints can be hypotheses of such theorems."))
 
   (encapsulate
     (((lookback) => *))

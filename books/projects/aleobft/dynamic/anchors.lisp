@@ -27,7 +27,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "An anchor is a certificate in a DAG
+    "We define `anchor' to be a leader certificate that has
+     received enough votes (see @(see elections)) to be committed.
+     A `leader certificate' is a certificate in a DAG
      that is authored by the leader for the round of the certificate.")
    (xdoc::p
     "Here we define operations related to anchors."))
