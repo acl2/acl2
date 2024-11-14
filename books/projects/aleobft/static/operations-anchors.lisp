@@ -183,7 +183,7 @@
 
   ///
 
-  (defrule committed-anchors-when-last-is-0
+  (defruled committed-anchors-when-last-is-0
     (implies (equal (validator-state->last vstate) 0)
              (equal (committed-anchors vstate vals)
                     nil)))
