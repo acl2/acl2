@@ -179,7 +179,7 @@
     "A @('create-certificate') event adds a new certificate
      to the set of certificates signed by each signer of the certificate.
      We prove a theorem saying that
-     the author and round of the  new certificate satisfy the invariant,
+     the author and round of the new certificate satisfy the invariant,
      which follows from the definition of the creation of the certificate,
      which adds the certificate to the author's DAG
      and the author-round pair to the endorsers' endorser sets.
