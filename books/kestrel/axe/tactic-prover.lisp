@@ -283,13 +283,13 @@
                              assumptions
                              rule-alist
                              interpreted-function-alist
+                             (known-booleans (w state))
                              monitor
                              nil ; fns-to-elide
                              nil ; memoizep
                              t ; count-hits ; todo: pass in
                              print
-                             normalize-xors
-                             (known-booleans (w state))))
+                             normalize-xors))
        ((when erp) (mv *error* nil state))
        ((when (quotep dag))
         ;; todo: factor out:
