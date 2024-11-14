@@ -95,6 +95,7 @@
        :hints (("Goal"
                 :induct t
                 :in-theory (enable* set::expensive-rules))))
+     (in-theory (disable incoming-loop-subset))
 
      (defruled incoming-loop-previous-and-member
        (implies (and (certificate-setp certs)
@@ -140,7 +141,8 @@
     (set::subset certs
                  (certificates-with-round
                   (1+ (certificate->round cert))
-                  dag)))
+                  dag))
+    :hints (("Goal" :in-theory (enable incoming-loop-subset))))
 
   (defret incoming-same-round
     (<= (set::cardinality (certificate-set->round-set certs))
