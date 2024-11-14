@@ -13,6 +13,7 @@
 
 (include-book "blocks")
 
+(include-book "kestrel/fty/deffixequiv-sk" :dir :system)
 (include-book "std/util/define-sk" :dir :system)
 
 (local (include-book "../library-extensions/omap-theorems"))
@@ -953,7 +954,10 @@
                         (commtt2 (bonded-committee-at-round round blocks2)))
                      (implies (and commtt1
                                    commtt2)
-                              (equal commtt1 commtt2))))))
+                              (equal commtt1 commtt2)))))
+  ///
+  (fty::deffixequiv-sk same-bonded-committees-p
+    :args ((blocks1 block-listp) (blocks2 block-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -977,4 +981,7 @@
                         (commtt2 (active-committee-at-round round blocks2)))
                      (implies (and commtt1
                                    commtt2)
-                              (equal commtt1 commtt2))))))
+                              (equal commtt1 commtt2)))))
+  ///
+  (fty::deffixequiv-sk same-active-committees-p
+    :args ((blocks1 block-listp) (blocks2 block-listp))))
