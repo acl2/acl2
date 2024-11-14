@@ -144,17 +144,7 @@
   (xdoc::topstring
    (xdoc::p
     "We express this on the set of signed certificates
-     defined by @(tsee signed-certificates).
-     The invariant holds on all the certificates in the system,
-     as returned by @(tsee owned-certificates) on any correct validator
-     (where the exact validator is irrelevant
-     because of @(see same-owned-certificates)),
-     which in general are a superset,
-     because there may be a certificate whose signers are all faulty
-     (a @('create-certificate') event does not prevent that).
-     However, we only need this invariant for
-     the certificates in @(tsee signed-certificates),
-     which is slightly simpler to formulate."))
+     defined by @(tsee signed-certificates)."))
   (forall (signer cert)
           (implies (and (set::in signer (correct-addresses systate))
                         (set::in cert (signed-certificates signer systate)))
