@@ -73,10 +73,10 @@
      (ii) the certificate is in the buffer of the signer, and
      (iii) the author and round of the certificate form a pair
      in the set of endorsed pairs of the signer.
-     However, this would be not quite preserved
+     However, this would not be quite preserved
      by @('receive-certificate') events.
      The validator receiving a certificate @('C')
-     could already have a recordo of a certificate @('C0'),
+     could already have a record of a certificate @('C0'),
      different from @('C') but with the same author and round,
      i.e. @('C.author = C0.author') and @('C.round = C0.round').
      This cannot happen because of non-equivocation,
