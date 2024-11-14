@@ -242,13 +242,13 @@
                              assumptions
                              rule-alist
                              interpreted-function-alist
+                             (known-booleans (w state))
                              monitor
                              nil ; fns-to-elide
                              memoizep
                              count-hits
                              print
-                             normalize-xors
-                             (known-booleans (w state))))
+                             normalize-xors))
        ((when erp) (mv erp nil state))
        ((when (quotep dag)) ;; TODO: Should we allow this?
         (er hard? 'unroll-spec-basic-fn "Spec unexpectedly rewrote to the constant ~x0." dag)
