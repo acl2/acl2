@@ -193,7 +193,7 @@
              (consp (committed-anchors vstate vals)))
     :rule-classes :type-prescription)
 
-  (defrule car-of-committed-anchors
+  (defruled car-of-committed-anchors
     (implies (and (not (equal (validator-state->last vstate) 0))
                   (last-anchor vstate vals))
              (equal (car (committed-anchors vstate vals))
