@@ -1,7 +1,7 @@
 ; Lists of DAG function args ("dargs") whose nodenum elemements are bounded
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -12,9 +12,10 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/lists-light/reverse-list" :dir :system)
+(include-book "kestrel/lists-light/reverse-list-def" :dir :system)
 (include-book "dargp-less-than")
 (include-book "darg-listp")
+(local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 
 (defund bounded-darg-listp (dargs bound)
   (declare (xargs :guard (natp bound)
