@@ -104,7 +104,14 @@
                      ;;:check-expansion t
                ))
 
-;; We can add built-in ACL2 functions freely to this list:
+;; The empty list of known-booleans:
+(defmacro no-known-booleans () nil)
+
+(thm
+  (symbol-listp (no-known-booleans)))
+
+;; We can add built-in ACL2 functions freely to this list as long as they
+;; provably always return booleans:
 
 (add-known-boolean not)
 (add-known-boolean equal)

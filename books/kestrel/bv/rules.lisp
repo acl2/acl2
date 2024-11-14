@@ -195,8 +195,6 @@
 ;;   (equal (zbp (* 2 x))
 ;;          (not (equal x 1/2))))
 
-;(in-theory (disable binary-logand binary-logxor))
-
 ;(local (in-theory (disable MOD-X-Y-=-X)))
 
 (defthm logxor-of-logapp
@@ -291,9 +289,9 @@
 
 ;restrict to only certain applications of logand?
 (defthmd logand-of-myif-arg2
-  (equal (binary-logand k (myif test a b))
-         (myif test (binary-logand k a)
-               (binary-logand k b)))
+  (equal (logand k (myif test a b))
+         (myif test (logand k a)
+               (logand k b)))
   :hints (("Goal" :in-theory (enable myif))))
 
 ;rewrite
@@ -1235,9 +1233,9 @@
   (implies (and ;(evenp k) ;drop somehow?
                 (natp x)
                 (natp k))
-            (equal (binary-logand k (logapp 1 0 x))
+            (equal (logand k (logapp 1 0 x))
                    ;had / instead of floor below:
-                   (logapp 1 0 (binary-logand (floor k 2) x))))
+                   (logapp 1 0 (logand (floor k 2) x))))
    :hints (("Goal" :do-not '(generalize eliminate-destructors)
             :expand ((LOGTAIL 1 K))
             :in-theory (enable LOGCDR LOGAND))))
