@@ -73,6 +73,11 @@
 
   ///
 
+  (defruled emptyp-of-address-set-fix
+    (equal (set::emptyp (address-set-fix set))
+           (or (not (address-setp set))
+               (set::emptyp set))))
+
   (defruled not-in-address-set-when-not-address
     (implies (and (address-setp set)
                   (not (addressp elem)))
