@@ -184,17 +184,20 @@
   (xdoc::topstring
    (xdoc::p
     "We add up all the stakes of the members."))
-  (cond ((set::emptyp members) 0)
-        (t (+ (committee-member-stake (set::head members) commtt)
+  (cond ((or (not (mbt (address-setp members)))
+             (set::emptyp members))
+         0)
+        (t (+ (committee-member-stake (address-fix (set::head members)) commtt)
               (committee-members-stake (set::tail members) commtt))))
   :guard-hints (("Goal" :in-theory (enable set::subset)))
   :verify-guards :after-returns
+  :hooks (:fix)
 
   ///
 
   (defruled committee-members-stake-0-to-emptyp
     (equal (equal (committee-members-stake members commtt) 0)
-           (set::emptyp members))
+           (set::emptyp (address-set-fix members)))
     :induct t
     :enable fix))
 
