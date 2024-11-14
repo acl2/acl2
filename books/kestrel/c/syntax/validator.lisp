@@ -3315,7 +3315,7 @@
                       nil
                       (valid-table-fix table))
        :align (b* (((erp types table)
-                    (valid-align-spec specqual.unwrap table ienv)))
+                    (valid-align-spec specqual.spec table ienv)))
                 (retok (type-option-fix type?)
                        (type-spec-list-fix tyspecs)
                        types
