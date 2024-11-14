@@ -124,7 +124,8 @@
                 :type2 (simpadd0-tyname expr.type2))
      :offsetof (make-expr-offsetof
                 :type (simpadd0-tyname expr.type)
-                :member (simpadd0-member-designor expr.member)))
+                :member (simpadd0-member-designor expr.member))
+     :extension (expr-extension (simpadd0-expr expr.expr)))
     :measure (expr-count expr))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -275,7 +276,7 @@
      specqual
      :tyspec (spec/qual-tyspec (simpadd0-type-spec specqual.spec))
      :tyqual (spec/qual-fix specqual)
-     :align (spec/qual-align (simpadd0-align-spec specqual.unwrap))
+     :align (spec/qual-align (simpadd0-align-spec specqual.spec))
      :attrib (spec/qual-fix specqual))
     :measure (spec/qual-count specqual))
 
@@ -319,7 +320,8 @@
      :tyqual (declspec-fix declspec)
      :funspec (declspec-fix declspec)
      :align (declspec-align (simpadd0-align-spec declspec.unwrap))
-     :attrib (declspec-fix declspec))
+     :attrib (declspec-fix declspec)
+     :stdcall (declspec-fix declspec))
     :measure (declspec-count declspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
