@@ -344,14 +344,13 @@
           reachable from an initial state via a sequence of events."
 
   (defruled unequivocal-signed-certs-p-of-events-next
-    (implies
-     (and (unequivocal-signed-certs-p systate)
-          (signer-records-p systate)
-          (no-self-endorsed-p systate)
-          (events-possiblep events systate))
-     (and (unequivocal-signed-certs-p (events-next events systate))
-          (signer-records-p (events-next events systate))
-          (no-self-endorsed-p (events-next events systate))))
+    (implies (and (unequivocal-signed-certs-p systate)
+                  (signer-records-p systate)
+                  (no-self-endorsed-p systate)
+                  (events-possiblep events systate))
+             (and (unequivocal-signed-certs-p (events-next events systate))
+                  (signer-records-p (events-next events systate))
+                  (no-self-endorsed-p (events-next events systate))))
     :induct t
     :enable (events-possiblep
              events-next))
