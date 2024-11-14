@@ -465,6 +465,7 @@ gcc-keyword = %s"__alignof"
             / %s"__restrict__"
             / %s"__signed"
             / %s"__signed__"
+            / %s"__stdcall"
             / %s"typeof"
             / %s"__typeof"
             / %s"__typeof__"
@@ -1061,9 +1062,14 @@ asm-goto-labels = [ identifier *( "," identifier ) ]
 
 ; As a GCC extension,
 ; we allow declaration specifiers, as well as specifier and qualifier lists,
-; to include attribute specifiers;
+; to include attribute specifiers, as well as the keyword '__stdcall';
 ; these can be easily distinguished from other declaration specifiers
-; by the starting '__attribute__' or '__attribute' GCC keyword.
+; by the starting '__attribute__' or '__attribute' GCC keyword,
+; or by the '__stdcall' GCC keyword.
+; The latter is documented as an attribute 'stdcall' in the GCC manual,
+; which should therefore have the syntax '__attribute__((stdcall))',
+; but apparently it is also accepted by itself, with two underscores in front,
+; but only in certain places (not everywhere normal attributes are allowed).
 
 ; As a GCC extension, allow a list of type qualifiers
 ; to also contains attribute specifiers.
@@ -1135,6 +1141,7 @@ declaration-specifiers = storage-class-specifier [ declaration-specifiers ]
                        / alignment-specifier [ declaration-specifiers ]
                        ; GCC extension:
                        / attribute-specifier [ declaration-specifiers ]
+                       / %s"__stdcall" [ declaration-specifiers ]
 
 init-declarator-list = init-declarator
                      / init-declarator-list "," init-declarator

@@ -2214,6 +2214,7 @@
                                         "__restrict__"
                                         "__signed"
                                         "__signed__"
+                                        "__stdcall"
                                         "typeof"
                                         "__typeof"
                                         "__typeof__"
@@ -6383,16 +6384,15 @@
   (xdoc::topstring
    (xdoc::p
     "We put together the five cases that define declaration specifiers,
-     plus a sixth case for GCC attribute specifiers.
-     Recall that @('__attribute__') can be a keyword
-     only if GCC extensions are supported."))
+     plus more cases for GCC attribute specifiers."))
   (or (token-storage-class-specifier-p token?)
       (token-type-specifier-start-p token?)
       (token-type-qualifier-p token?)
       (token-function-specifier-p token?)
       (token-keywordp token? "_Alignas")
       (token-keywordp token? "__attribute")
-      (token-keywordp token? "__attribute__"))
+      (token-keywordp token? "__attribute__")
+      (token-keywordp token? "__stdcall"))
   ///
 
   (defrule non-nil-when-token-declaration-specifier-start-p
@@ -10181,7 +10181,9 @@
        a type qualifier,
        a function specifier,
        an alignment specifier,
-       or an attribute specifier (the last one is a GCC extension).")
+       an attribute specifier,
+       or the @('__stdcall') keyword
+       (the last two are GCC extensions).")
      (xdoc::p
       "A declaration specifier (list) may always be followed by a declarator.
        It may also be followed by an abstract declarator
@@ -10351,6 +10353,11 @@
           (retok (declspec-attrib attrspec)
                  (span-join span last-span)
                  parstate)))
+       ;; If token is the keyword '__stdcall',
+       ;; which can only happen if GCC extensions are enabled,
+       ;; we must have that special GCC construct.
+       ((token-keywordp token "__stdcall")
+        (retok (declspec-stdcall) span parstate))
        ;; If token is anything else, it is an error.
        ;; The above cases are all the allowed possibilities for token.
        (t ; other

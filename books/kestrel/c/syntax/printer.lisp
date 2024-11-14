@@ -2049,7 +2049,8 @@
      :tyqual (print-type-qual declspec.unwrap pstate)
      :funspec (print-fun-spec declspec.unwrap pstate)
      :align (print-align-spec declspec.unwrap pstate)
-     :attrib (print-attrib-spec declspec.unwrap pstate))
+     :attrib (print-attrib-spec declspec.unwrap pstate)
+     :stdcall (print-astring "__stdcall" pstate))
     :measure (two-nats-measure (declspec-count declspec) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

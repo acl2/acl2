@@ -3510,7 +3510,12 @@
                       (type-spec-list-fix tyspecs)
                       (stor-spec-list-fix storspecs)
                       nil
-                      (valid-table-fix table))))
+                      (valid-table-fix table))
+       :stdcall (retok (type-option-fix type?)
+                       (type-spec-list-fix tyspecs)
+                       (stor-spec-list-fix storspecs)
+                       nil
+                       (valid-table-fix table))))
     :measure (declspec-count declspec)
 
     ///

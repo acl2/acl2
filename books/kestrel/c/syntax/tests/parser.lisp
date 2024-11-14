@@ -1855,3 +1855,8 @@ error (int __status, int __errnum, const char *__format, ...)
  parse-external-declaration-list
  "extern struct static_call_key __SCK__might_resched; extern typeof(__cond_resched) __SCT__might_resched;;"
  :gcc t)
+
+(test-parse
+ parse-external-declaration-list
+ "static ngx_thread_value_t __stdcall ngx_iocp_timer(void *data);"
+ :gcc t)

@@ -1447,7 +1447,10 @@
                        table))
        :attrib (retok (declspec-fix declspec)
                       (dimb-kind-fix kind)
-                      (dimb-table-fix table))))
+                      (dimb-table-fix table))
+       :stdcall (retok (declspec-fix declspec)
+                       (dimb-kind-fix kind)
+                       (dimb-table-fix table))))
     :measure (declspec-count declspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
