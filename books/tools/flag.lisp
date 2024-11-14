@@ -877,7 +877,9 @@ one such form may affect what you might think of as the proof of another.</p>
                ;; :doc ,doc ; Removed by Matt K.; see comment above
                :hints(("Goal"
                        :in-theory (theory 'minimal-theory)
-                       :use ((:instance ,lemma-name (,flag-var ',flag)))))))
+                       :use ((:instance ,lemma-name
+                                        :extra-bindings-ok
+                                        (,flag-var ',flag)))))))
           (flag-defthm-corollaries lemma-name explicit-name flag-var (cdr thmparts)))))
 
 (defun find-first-thm-name (thmparts)
