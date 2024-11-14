@@ -18,7 +18,7 @@
 (include-book "kestrel/utilities/forms" :dir :system)
 (include-book "kestrel/terms-light/lambda-free-termp" :dir :system)
 (include-book "kestrel/terms-light/free-vars-in-term" :dir :system)
-(include-book "kestrel/lists-light/reverse-list" :dir :system)
+(include-book "kestrel/lists-light/reverse-list-def" :dir :system)
 (include-book "kestrel/lists-light/perm-def" :dir :system)
 (include-book "kestrel/lists-light/perm" :dir :system) ;for the fact that perm is an equiv
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))

@@ -1,7 +1,7 @@
 ; A function to remove duplicates from a sorted list
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -12,7 +12,7 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/lists-light/reverse-list" :dir :system)
+(include-book "kestrel/lists-light/reverse-list-def" :dir :system)
 (include-book "kestrel/typed-lists-light/all-natp" :dir :system)
 (include-book "kestrel/typed-lists-light/all-less" :dir :system)
 (include-book "kestrel/typed-lists-light/all-less-than-or-equal-all" :dir :system)
@@ -20,6 +20,7 @@
 (local (include-book "kestrel/lists-light/append" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
+(local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
 (defthm all-<=-of-car-when-all-<=-of-all

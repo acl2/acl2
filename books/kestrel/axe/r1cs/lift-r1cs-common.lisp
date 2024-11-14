@@ -2,7 +2,7 @@
 
 ;; utilities for doing proofs about R1CSes
 
-(include-book "kestrel/lists-light/reverse-list" :dir :system)
+(include-book "kestrel/lists-light/reverse-list-def" :dir :system)
 (include-book "kestrel/utilities/merge-sort-symbol-less-than" :dir :system)
 (include-book "kestrel/utilities/defmergesort" :dir :system)
 (include-book "kestrel/crypto/r1cs/tools/filter-and-combine-symbol-alists" :dir :system)

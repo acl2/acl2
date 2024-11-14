@@ -13,6 +13,7 @@
 (in-package "ACL2")
 
 (include-book "axe-rules")
+(local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 
 ;; Recognizes a true-list of axe-rules.
 (defund axe-rule-listp (rules)

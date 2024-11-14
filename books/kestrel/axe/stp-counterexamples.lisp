@@ -17,7 +17,7 @@
 (include-book "kestrel/utilities/erp" :dir :system)
 (include-book "kestrel/alists-light/lookup-equal" :dir :system)
 (include-book "kestrel/alists-light/lookup-safe" :dir :system)
-(include-book "kestrel/lists-light/reverse-list" :dir :system)
+(include-book "kestrel/lists-light/reverse-list-def" :dir :system)
 (include-book "kestrel/strings-light/parse-binary-digits" :dir :system)
 (include-book "kestrel/strings-light/parse-decimal-digits" :dir :system)
 (include-book "kestrel/typed-lists-light/maxelem" :dir :system)
@@ -32,6 +32,7 @@
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
+(local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 
 (defthm all-integerp-of-strip-cars-when-nodenum-type-alistp
   (implies (nodenum-type-alistp alist)
