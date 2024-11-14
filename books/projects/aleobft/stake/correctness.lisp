@@ -19,6 +19,7 @@
 (include-book "no-self-buffer")
 (include-book "no-self-endorsed")
 (include-book "signer-records")
+(include-book "unequivocal-signed-certificates")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -38,4 +39,5 @@
                     no-self-messages
                     no-self-buffer
                     no-self-endorsed
-                    signer-records))
+                    signer-records
+                    unequivocal-signed-certificates))
