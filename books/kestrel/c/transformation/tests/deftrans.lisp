@@ -98,7 +98,8 @@
                         :type2 (my-simpadd0-tyname expr.type2))
             :offsetof (make-expr-offsetof
                         :type (my-simpadd0-tyname expr.type)
-                        :member (my-simpadd0-member-designor expr.member)))))
+                        :member (my-simpadd0-member-designor expr.member))
+            :extension (expr-extension (my-simpadd0-expr expr.expr)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

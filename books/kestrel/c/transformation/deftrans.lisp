@@ -170,7 +170,8 @@
        "                        :type2 (my-simpadd0-tyname expr.type2))"
        "            :offsetof (make-expr-offsetof"
        "                        :type (my-simpadd0-tyname expr.type)"
-       "                        :member (my-simpadd0-member-designor expr.member)))))"
+       "                        :member (my-simpadd0-member-designor expr.member))"
+       "            :extension (expr-extension (my-simpadd0-tyname expr.expr)))))"
        )))
   :order-subtopics t
   :default-parent t)
@@ -212,7 +213,7 @@
     (:linear c$::absdeclor-count-of-paramdeclor-absdeclor->unwrap)
     (:linear c$::absdeclor-option-count-of-tyname->decl?)
     (:linear c$::align-spec-count-of-declspec-align->unwrap)
-    (:linear c$::align-spec-count-of-spec/qual-align->unwrap)
+    (:linear c$::align-spec-count-of-spec/qual-align->spec)
     (:linear c$::block-item-count-of-car)
     (:linear c$::block-item-list-count-of-cdr)
     (:linear c$::block-item-list-count-of-expr-stmt->items)
@@ -278,6 +279,7 @@
     (:linear c$::expr-count-of-expr-comma->next)
     (:linear c$::expr-count-of-expr-cond->else)
     (:linear c$::expr-count-of-expr-cond->test)
+    (:linear c$::expr-count-of-expr-extension->expr)
     (:linear c$::expr-count-of-expr-funcall->fun)
     (:linear c$::expr-count-of-expr-gensel->control)
     (:linear c$::expr-count-of-expr-member->arg)
@@ -720,7 +722,7 @@
       :offsetof (make-expr-offsetof
                   :type (,(cdr (assoc-eq 'tyname names)) expr.type ,@extra-args-names)
                   :member (,(cdr (assoc-eq 'member-designor names)) expr.member ,@extra-args-names))
-      )
+      :extension (expr-extension (,(cdr (assoc-eq 'expr names)) expr.expr ,@extra-args-names)))
    '(:returns (new-expr exprp)
      :measure (expr-count expr))))
 
@@ -920,7 +922,7 @@
       specqual
       :tyspec (spec/qual-tyspec (,(cdr (assoc-eq 'type-spec names)) specqual.spec ,@extra-args-names))
       :tyqual (spec/qual-fix specqual)
-      :align (spec/qual-align (,(cdr (assoc-eq 'align-spec names)) specqual.unwrap ,@extra-args-names))
+      :align (spec/qual-align (,(cdr (assoc-eq 'align-spec names)) specqual.spec ,@extra-args-names))
       :attrib (spec/qual-fix specqual))
    '(:returns (new-specqual spec/qual-p)
      :measure (spec/qual-count specqual))))
@@ -982,7 +984,8 @@
       :tyqual (declspec-fix declspec)
       :funspec (declspec-fix declspec)
       :align (declspec-align (,(cdr (assoc-eq 'align-spec names)) declspec.unwrap ,@extra-args-names))
-      :attrib (declspec-fix declspec))
+      :attrib (declspec-fix declspec)
+      :stdcall (declspec-fix declspec))
    '(:returns (new-declspec declspecp)
      :measure (declspec-count declspec))))
 

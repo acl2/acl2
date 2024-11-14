@@ -2214,6 +2214,7 @@
                                         "__restrict__"
                                         "__signed"
                                         "__signed__"
+                                        "__stdcall"
                                         "typeof"
                                         "__typeof"
                                         "__typeof__"
@@ -5904,7 +5905,8 @@
      or a parenthesizes expression (which starts with a certain punctuator),
      or a generic selection (which starts a certain keyword),
      or a call of the GCC built-in function @('__builtin_types_compatible_p')
-     (which is a keyword only if GCC extensions are supported)."))
+     (which is a keyword only if GCC extensions are supported),
+     or another primary expression preceded by @('__extension__')."))
   (and token?
        (or (token-case token? :ident)
            (token-case token? :const)
@@ -5912,7 +5914,8 @@
            (token-punctuatorp token? "(")
            (token-keywordp token? "_Generic")
            (token-keywordp token? "__builtin_offsetof")
-           (token-keywordp token? "__builtin_types_compatible_p")))
+           (token-keywordp token? "__builtin_types_compatible_p")
+           (token-keywordp token? "__extension__")))
   ///
 
   (defrule non-nil-when-token-primary-expression-start-p
@@ -6383,16 +6386,15 @@
   (xdoc::topstring
    (xdoc::p
     "We put together the five cases that define declaration specifiers,
-     plus a sixth case for GCC attribute specifiers.
-     Recall that @('__attribute__') can be a keyword
-     only if GCC extensions are supported."))
+     plus more cases for GCC attribute specifiers."))
   (or (token-storage-class-specifier-p token?)
       (token-type-specifier-start-p token?)
       (token-type-qualifier-p token?)
       (token-function-specifier-p token?)
       (token-keywordp token? "_Alignas")
       (token-keywordp token? "__attribute")
-      (token-keywordp token? "__attribute__"))
+      (token-keywordp token? "__attribute__")
+      (token-keywordp token? "__stdcall"))
   ///
 
   (defrule non-nil-when-token-declaration-specifier-start-p
@@ -8120,7 +8122,7 @@
              (checkpoint (parstate->tokens-read parstate))
              (psize (parsize parstate))
              ((erp expr/tyname & parstate) ; ( expr/tyname
-              (parse-expression-or-type-name parstate))
+              (parse-expression-or-type-name t parstate))
              ((unless (mbt (<= (parsize parstate) (1- psize))))
               (reterr :impossible)))
           (amb?-expr/tyname-case
@@ -8478,7 +8480,7 @@
                  ;; We first need to puth back token2, if not NIL.
                  (parstate (if token2 (unread-token parstate) parstate)) ; (
                  ((erp expr/tyname & parstate) ; sizeof ( exprtyname
-                  (parse-expression-or-type-name parstate))
+                  (parse-expression-or-type-name t parstate))
                  ((erp last-span parstate) ; sizeof ( exprtyname )
                   (read-punctuator ")" parstate))
                  (expr
@@ -8704,7 +8706,7 @@
             (b* ((parstate (if token2 (unread-token parstate) parstate)) ; (
                  (psize (parsize parstate))
                  ((erp expr/tyname & parstate) ; ( expr/tyname
-                  (parse-expression-or-type-name parstate))
+                  (parse-expression-or-type-name t parstate))
                  ((unless (mbt (<= (parsize parstate) (1- psize))))
                   (reterr :impossible))
                  ((erp close-paren-span parstate) ; ( expr/tyname )
@@ -8721,9 +8723,13 @@
                ;; we cannot have a compound literal,
                ;; and instead we have just parsed the primary expression
                ;; that always starts a non-compound-literal postfix expression.
-               ;; So we proceed to parse the rest of the postfix expression
+               ;; So we proceed to parse the rest of the postfix expression.
+               ;; Note that, since we have obtained an unambiguous expression,
+               ;; it has been already parenthesized,
+               ;; because the ADD-PARENS-P flag is T
+               ;; in the call above to PARSE-EXPRESSION-OR-TYPE-NAME.
                :expr
-               (b* ((prev-expr (expr-paren expr/tyname.unwrap))
+               (b* ((prev-expr expr/tyname.unwrap)
                     (prev-span (span-join span close-paren-span)))
                  (parse-postfix-expression-rest prev-expr prev-span parstate))
                ;; If we just parsed an ambiguous type name or expression,
@@ -9001,6 +9007,9 @@
        we parse a call of this built-in function,
        which has a type name and a member designator as arguments.")
      (xdoc::p
+      "If the token is the GCC keyword @('__extension__'),
+       we parse the primary expression after it, recursively.")
+     (xdoc::p
       "If the token is none of the above,
        including the token being absent,
        it is an error."))
@@ -9124,6 +9133,12 @@
               ;; __builtin_offset ( type , memdes )
               (read-punctuator ")" parstate)))
           (retok (make-expr-offsetof :type tyname :member memdes)
+                 (span-join span last-span)
+                 parstate)))
+       ((token-keywordp token "__extension__") ; __extension__
+        (b* (((erp expr last-span parstate) ; __extension__ expr
+              (parse-primary-expression parstate)))
+          (retok (expr-extension expr)
                  (span-join span last-span)
                  parstate)))
        (t ; other
@@ -10009,7 +10024,7 @@
              ((erp & parstate) ; typeof (
               (read-punctuator "(" parstate))
              ((erp expr/tyname & parstate) ; typeof ( expr/tyname
-              (parse-expression-or-type-name parstate))
+              (parse-expression-or-type-name nil parstate))
              ((erp last-span parstate) ; typeof ( expr/tyname )
               (read-punctuator ")" parstate))
              (tyspec
@@ -10177,7 +10192,9 @@
        a type qualifier,
        a function specifier,
        an alignment specifier,
-       or an attribute specifier (the last one is a GCC extension).")
+       an attribute specifier,
+       or the @('__stdcall') keyword
+       (the last two are GCC extensions).")
      (xdoc::p
       "A declaration specifier (list) may always be followed by a declarator.
        It may also be followed by an abstract declarator
@@ -10301,7 +10318,7 @@
              ((erp & parstate) ; typeof (
               (read-punctuator "(" parstate))
              ((erp expr/tyname & parstate) ; typeof ( expr/tyname
-              (parse-expression-or-type-name parstate))
+              (parse-expression-or-type-name nil parstate))
              ((erp last-span parstate) ; typeof ( expr/tyname )
               (read-punctuator ")" parstate))
              (tyspec
@@ -10347,6 +10364,11 @@
           (retok (declspec-attrib attrspec)
                  (span-join span last-span)
                  parstate)))
+       ;; If token is the keyword '__stdcall',
+       ;; which can only happen if GCC extensions are enabled,
+       ;; we must have that special GCC construct.
+       ((token-keywordp token "__stdcall")
+        (retok (declspec-stdcall) span parstate))
        ;; If token is anything else, it is an error.
        ;; The above cases are all the allowed possibilities for token.
        (t ; other
@@ -10892,7 +10914,7 @@
          ((erp & parstate) (read-punctuator "(" parstate)) ; (
          ;; Next comes a possibly ambiguous expression or type name.
          ((erp expr/tyname & parstate) ; ( expr/tyname
-          (parse-expression-or-type-name parstate))
+          (parse-expression-or-type-name nil parstate))
          ;; There must be a closed parenthesis.
          ((erp last-span parstate) ; ( expr/tyname )
           (read-punctuator ")" parstate)))
@@ -12219,7 +12241,8 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define parse-expression-or-type-name ((parstate parstatep))
+  (define parse-expression-or-type-name ((add-parens-p booleanp)
+                                         (parstate parstatep))
     :returns (mv erp
                  (expr/tyname amb?-expr/tyname-p)
                  (span spanp)
@@ -12235,6 +12258,33 @@
        which cannot be disambiguated purely syntactically.
        Thus, this parsing function returns
        a possibly ambiguous expression or type name.")
+     (xdoc::p
+      "The @('add-parens-p') flag indicates whether,
+       if the expression or type name turns out to be an expression,
+       such expression should be parenthesized.
+       This is needed because, for instance,
+       in a @('sizeof(A)') expression where A is
+       a possibly ambiguous expression or type name,
+       the actual expression would be @('(A)'), not just @('A'),
+       because @('sizeof') can be applied to
+       an unparenthesized unary expression (e.g. @('sizeof x')).
+       In this case, the @('add-parens-p') is set to @('t')
+       by the caller of this parsing function.
+       On the other hand, in a construct like @('_Alignas(A)'),
+       where @('A') is a possibly ambiguous expression or type name,
+       the expression is just @('A'),
+       because the parentheses are always required:
+       they are part of the syntax of @('_Alignas'),
+       not part of the expression as in the case of
+       @('sizeof') applied to an expression.
+       In this case, the @('add-parens-p') flag is set to @('nil')
+       by the caller of this parsing function.
+       This flag is ignored if the expression or type name
+       turns out to be ambiguous at parsing time:
+       the disambiguation function @(tsee dimb-amb-expr/tyname)
+       has an analogous @('add-parens-p') boolean flag
+       to add parentheses to expressions, if needed,
+       at disambiguation time.")
      (xdoc::p
       "We try to parse both an expression and a type name,
        using the checkpointing and backtracking feature.
@@ -12337,6 +12387,9 @@
                     (if erp
                         ;; If the parsing of a type name fails,
                         ;; we have an unambiguous expression, already parsed.
+                        ;; If the ADD-PARENS-P flag is T,
+                        ;; we parenthesize the expression
+                        ;; (see the documentation of this function).
                         ;; So we re-read the already parsed tokens to get to
                         ;; just past the closing parenthesis after the expression,
                         ;; and we return the expression;
@@ -12372,8 +12425,13 @@
                                 (reterr t)))
                              ;; Put back the closing parenthesis,
                              ;; which is not part of the expression.
-                             (parstate (unread-token parstate)))
-                          (retok (amb?-expr/tyname-expr expr) span-expr parstate))
+                             (parstate (unread-token parstate))
+                             (expr (if add-parens-p
+                                       (expr-paren expr)
+                                     expr)))
+                          (retok (amb?-expr/tyname-expr expr)
+                                 span-expr
+                                 parstate))
                       ;; If the parsing of a type name succeeds,
                       ;; we read a token to see whether
                       ;; a closed parenthesis follows.
@@ -12381,7 +12439,8 @@
                         (if (token-punctuatorp token ")")
                             ;; If a closed parenthesis follows,
                             ;; we have an ambiguous expression or type name.
-                            ;; We double-check that the expression and the type name
+                            ;; We double-check that
+                            ;; the expression and the type name
                             ;; have the same spans;
                             ;; this is always expected to succeed,
                             ;; because we have checked that in both cases
@@ -12390,8 +12449,9 @@
                             ;; We put back the closed parenthesis.
                             (b* (((unless (equal span-expr span-tyname))
                                   (raise "Internal error:
-                                      span ~x0 of expression ~x1 differs from ~
-                                      span ~x2 of type name ~x3."
+                                          span ~x0 of expression ~x1 ~
+                                          differs from ~
+                                          span ~x2 of type name ~x3."
                                          span-expr expr span-tyname tyname)
                                   (reterr t))
                                  ;; Put back the closing parenthesis,
@@ -12410,6 +12470,8 @@
                           ;; So we must have an expression instead,
                           ;; which we have already parsed,
                           ;; so we backtrack from the backtracking as before.
+                          ;; We parenthesize the expression
+                          ;; the ADD-PARENS-P flag is T.
                           (b* ((parstate ; backtrack
                                 (unread-to-token checkpoint parstate))
                                (parstate ; backtrack from backtracking
@@ -12432,7 +12494,10 @@
                                   (reterr t)))
                                ;; Put back the closing parenthesis,
                                ;; which is not part of the expression.
-                               (parstate (unread-token parstate)))
+                               (parstate (unread-token parstate))
+                               (expr (if add-parens-p
+                                         (expr-paren expr)
+                                       expr)))
                             (retok (amb?-expr/tyname-expr expr)
                                    span-expr
                                    parstate))))))
@@ -12463,9 +12528,13 @@
                   (retok (amb?-expr/tyname-tyname tyname) span parstate)))))))
        ;; If token may start an expression, we must have an expression,
        ;; because we have already handled the case of an identifier above.
+       ;; We parenthesize the expression if ADD-PARENS-P is T.
        ((token-expression-start-p token) ; expr...
         (b* ((parstate (unread-token parstate)) ;
-             ((erp expr span parstate) (parse-expression parstate))) ; expr
+             ((erp expr span parstate) (parse-expression parstate)) ; expr
+             (expr (if add-parens-p
+                       (expr-paren expr)
+                     expr)))
           (retok (amb?-expr/tyname-expr expr) span parstate)))
        ;; If token may start a type name, we must have a type name,
        ;; because we have already handled the case of an identifier above.
@@ -15262,7 +15331,7 @@
        '(:expand (parse-type-name parstate)))
       ((acl2::occur-lst '(acl2::flag-is 'parse-expression-or-type-name)
                         clause)
-       '(:expand (parse-expression-or-type-name parstate)))
+       '(:expand (parse-expression-or-type-name add-parens-p parstate)))
       ((acl2::occur-lst '(acl2::flag-is 'parse-declarator-or-abstract-declarator)
                         clause)
        '(:expand (parse-declarator-or-abstract-declarator parstate)))
@@ -16003,7 +16072,7 @@
        '(:expand (parse-type-name parstate)))
       ((acl2::occur-lst '(acl2::flag-is 'parse-expression-or-type-name)
                         clause)
-       '(:expand (parse-expression-or-type-name parstate)))
+       '(:expand (parse-expression-or-type-name add-parens-p parstate)))
       ((acl2::occur-lst '(acl2::flag-is 'parse-declarator-or-abstract-declarator)
                         clause)
        '(:expand (parse-declarator-or-abstract-declarator parstate)))

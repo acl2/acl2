@@ -1088,7 +1088,10 @@
        :offsetof
        (b* (((erp type table) (dimb-tyname expr.type table))
             ((erp memdes table) (dimb-member-designor expr.member table)))
-         (retok (make-expr-offsetof :type type :member memdes) table))))
+         (retok (make-expr-offsetof :type type :member memdes) table))
+       :extension
+       (b* (((erp expr table) (dimb-expr expr.expr table)))
+         (retok (expr-extension expr) table))))
     :measure (expr-count expr))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1330,10 +1333,10 @@
                      (dimb-type-spec specqual.spec table)))
                  (retok (spec/qual-tyspec new-tyspec)
                         table))
-       :tyqual (retok (spec/qual-tyqual specqual.unwrap)
+       :tyqual (retok (spec/qual-tyqual specqual.qual)
                       (dimb-table-fix table))
        :align (b* (((erp new-alignspec table)
-                    (dimb-align-spec specqual.unwrap table)))
+                    (dimb-align-spec specqual.spec table)))
                 (retok (spec/qual-align new-alignspec)
                        table))
        :attrib (retok (spec/qual-attrib specqual.unwrap)
@@ -1447,7 +1450,10 @@
                        table))
        :attrib (retok (declspec-fix declspec)
                       (dimb-kind-fix kind)
-                      (dimb-table-fix table))))
+                      (dimb-table-fix table))
+       :stdcall (retok (declspec-fix declspec)
+                       (dimb-kind-fix kind)
+                       (dimb-table-fix table))))
     :measure (declspec-count declspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3108,12 +3114,12 @@
      We should revisit this, adding all the GCC built-ins,
      with clear and accurate references.")
    (xdoc::p
-    "We also add entries for certina built-in variables
+    "We also add entries for certain built-in variables
      corresponding to the x86 registers, i.e. @('__eax') etc.
      We could not find those documented in the GCC manual,
      but we found them in practical code.
      Experiments suggest that these variables are somewhat restricted in usage.
-     The normal patten seems to be something like")
+     The normal pattern seems to be something like")
    (xdoc::codeblock
     "unsigned long __eax = __eax;")
    (xdoc::p
@@ -3177,6 +3183,7 @@
                     (ident "__builtin_strncpy")
                     (ident "__builtin_sub_overflow")
                     (ident "__builtin_unreachable")
+                    (ident "__builtin_va_start")
                     (ident "__eax")
                     (ident "__ebx")
                     (ident "__ecx")
@@ -3184,7 +3191,24 @@
                     (ident "__esi")
                     (ident "__edi")
                     (ident "__ebp")
-                    (ident "__esp"))
+                    (ident "__esp")
+                    (ident "__sync_add_and_fetch")
+                    (ident "__sync_and_and_fetch")
+                    (ident "__sync_bool_compare_and_swap")
+                    (ident "__sync_fetch_and_add")
+                    (ident "__sync_fetch_and_and")
+                    (ident "__sync_fetch_and_nand")
+                    (ident "__sync_fetch_and_or")
+                    (ident "__sync_fetch_and_sub")
+                    (ident "__sync_fetch_and_xor")
+                    (ident "__sync_lock_release")
+                    (ident "__sync_lock_test_and_set")
+                    (ident "__sync_nand_and_fetch")
+                    (ident "__sync_or_and_fetch")
+                    (ident "__sync_sub_and_fetch")
+                    (ident "__sync_synchronize")
+                    (ident "__sync_val_compare_and_swap")
+                    (ident "__sync_xor_and_fetch"))
               table)
            table))
        ((erp new-edecls &) (dimb-extdecl-list edecls table)))

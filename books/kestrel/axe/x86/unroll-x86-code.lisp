@@ -46,7 +46,8 @@
 (include-book "../rules-in-rule-lists")
 ;(include-book "../rules2") ;for BACKCHAIN-SIGNED-BYTE-P-TO-UNSIGNED-BYTE-P-NON-CONST
 ;(include-book "../rules1") ;for ACL2::FORCE-OF-NON-NIL, etc.
-(include-book "../rewriter") ; for the simplify-terms-repeatedly ; todo: brings in skip-proofs, TODO: Consider using rewriter-basic (but it needs simplify-terms-repeatedly)
+(include-book "../equivalent-dags")
+(include-book "../make-term-into-dag-basic")
 ;(include-book "../basic-rules")
 (include-book "../step-increments")
 (include-book "../dag-size")
@@ -54,6 +55,8 @@
 (include-book "../prune-dag-precisely")
 (include-book "../prune-dag-approximately")
 (include-book "../arithmetic-rules-axe")
+(include-book "../make-evaluator") ; for make-acons-nest ; todo: split out
+(include-book "../evaluator") ; for get-non-built-in-supporting-fns-list, todo: split out! ; this book has skip-proofs
 (include-book "rewriter-x86")
 (include-book "kestrel/utilities/print-levels" :dir :system)
 (include-book "kestrel/utilities/widen-margins" :dir :system)
@@ -419,10 +422,10 @@
                                       assumptions
                                       rule-alist
                                       nil ; interpreted-function-alist
+                                      (acl2::known-booleans (w state))
                                       limits
                                       t ; count-hints ; todo: think about this
                                       print
-                                      (acl2::known-booleans (w state))
                                       rules-to-monitor
                                       '(program-at) ; fns-to-elide
                                       t             ; normalize-xors
@@ -509,10 +512,10 @@
                                             assumptions
                                             rule-alist
                                             nil ; interpreted-function-alist
+                                            (acl2::known-booleans (w state))
                                             limits
                                             t ; count-hints ; todo: think about this
                                             print
-                                            (acl2::known-booleans (w state))
                                             rules-to-monitor
                                             '(program-at code-segment-assumptions32-for-code) ; fns-to-elide
                                             t ; normalize-xors
@@ -603,7 +606,8 @@
                               (member print-base '(10 16))
                               (booleanp untranslatep))
                   :stobjs state
-                  :mode :program))
+                  :mode :program ; todo
+                  ))
   (b* ((- (cw "(Lifting ~s0.~%" target)) ;todo: print the executable name
        ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
        (state (acl2::widen-margins state))
@@ -727,16 +731,15 @@
         (acl2::make-rule-alist assumption-rules (w state)))
        ((when erp) (mv erp nil nil nil nil state))
        ;; TODO: Option to turn this off, or to do just one pass:
-       ((mv erp
-            assumptions
-            state)
-        (acl2::simplify-terms-repeatedly
+       ((mv erp assumptions)
+        (acl2::simplify-conjunction-basic ;simplify-terms-repeatedly
          assumptions
          assumption-rule-alist
+         (acl2::known-booleans (w state))
          rules-to-monitor ; do we want to monitor here?  What if some rules are not incldued?
          nil ; don't memoize (avoids time spent making empty-memoizations)
          t ; todo: warn just once
-         state))
+         ))
        ((when erp) (mv erp nil nil nil nil state))
        (assumptions (acl2::get-conjuncts-of-terms2 assumptions))
        ((mv assumption-simp-elapsed state) (acl2::real-time-since assumption-simp-start-real-time state))
@@ -756,8 +759,11 @@
        (- (cw "(Limiting the unrolling to ~x0 steps.)~%" step-limit))
        ;; Convert the term into a dag for passing to repeatedly-run:
        ;; TODO: Just call simplify-term here?
-       ((mv erp dag-to-simulate) (dagify-term term-to-simulate))
+       ((mv erp dag-to-simulate) (acl2::make-term-into-dag-basic term-to-simulate nil))
        ((when erp) (mv erp nil nil nil nil state))
+       ((when (quotep dag-to-simulate))
+        (er hard? 'unroll-x86-code-core "Unexpected quotep: ~x0." dag-to-simulate)
+        (mv :unexpected-quotep nil nil nil nil state))
        ;; Choose the lifter rules to use:
        (lifter-rules (if 32-bitp (lifter-rules32-all) (lifter-rules64-all)))
        ;; Add any extra-rules:

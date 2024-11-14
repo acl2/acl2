@@ -1795,6 +1795,10 @@
                 (pstate (print-astring ", " pstate))
                 (pstate (print-member-designor expr.member pstate))
                 (pstate (print-astring ")" pstate)))
+             pstate)
+           :extension
+           (b* ((pstate (print-astring "__extension__ " pstate))
+                (pstate (print-expr expr.expr (expr-priority-primary) pstate)))
              pstate)))
          (pstate (if parenp
                      (print-astring ")" pstate)
@@ -1996,8 +2000,8 @@
     (spec/qual-case
      specqual
      :tyspec (print-type-spec specqual.spec pstate)
-     :tyqual (print-type-qual specqual.unwrap pstate)
-     :align (print-align-spec specqual.unwrap pstate)
+     :tyqual (print-type-qual specqual.qual pstate)
+     :align (print-align-spec specqual.spec pstate)
      :attrib (print-attrib-spec specqual.unwrap pstate))
     :measure (two-nats-measure (spec/qual-count specqual) 0))
 
@@ -2049,7 +2053,8 @@
      :tyqual (print-type-qual declspec.unwrap pstate)
      :funspec (print-fun-spec declspec.unwrap pstate)
      :align (print-align-spec declspec.unwrap pstate)
-     :attrib (print-attrib-spec declspec.unwrap pstate))
+     :attrib (print-attrib-spec declspec.unwrap pstate)
+     :stdcall (print-astring "__stdcall" pstate))
     :measure (two-nats-measure (declspec-count declspec) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

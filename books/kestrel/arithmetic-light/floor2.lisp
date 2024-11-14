@@ -89,7 +89,7 @@
 (defthm multiple-idioms-for-multiple-4
   (implies (and (equal 0 (mod i 4))
                 (rationalp i))
-           (integerp (binary-* '1/4 i))))
+           (integerp (* 1/4 i))))
 
 (defthm mod-less-than-1
   (implies (and (integerp i)
