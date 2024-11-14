@@ -47,7 +47,7 @@
 ;(include-book "../rules2") ;for BACKCHAIN-SIGNED-BYTE-P-TO-UNSIGNED-BYTE-P-NON-CONST
 ;(include-book "../rules1") ;for ACL2::FORCE-OF-NON-NIL, etc.
 (include-book "../equivalent-dags")
-(include-book "../dagify") ; for dagify-term ; reduce? has skip-proofs!
+(include-book "../make-term-into-dag-basic")
 ;(include-book "../basic-rules")
 (include-book "../step-increments")
 (include-book "../dag-size")
@@ -55,6 +55,8 @@
 (include-book "../prune-dag-precisely")
 (include-book "../prune-dag-approximately")
 (include-book "../arithmetic-rules-axe")
+(include-book "../make-evaluator") ; for make-acons-nest ; todo: split out
+(include-book "../evaluator") ; for get-non-built-in-supporting-fns-list, todo: split out! ; this book has skip-proofs
 (include-book "rewriter-x86")
 (include-book "kestrel/utilities/print-levels" :dir :system)
 (include-book "kestrel/utilities/widen-margins" :dir :system)
@@ -757,8 +759,11 @@
        (- (cw "(Limiting the unrolling to ~x0 steps.)~%" step-limit))
        ;; Convert the term into a dag for passing to repeatedly-run:
        ;; TODO: Just call simplify-term here?
-       ((mv erp dag-to-simulate) (dagify-term term-to-simulate))
+       ((mv erp dag-to-simulate) (acl2::make-term-into-dag-basic term-to-simulate nil))
        ((when erp) (mv erp nil nil nil nil state))
+       ((when (quotep dag-to-simulate))
+        (er hard? 'unroll-x86-code-core "Unexpected quotep: ~x0." dag-to-simulate)
+        (mv :unexpected-quotep nil nil nil nil state))
        ;; Choose the lifter rules to use:
        (lifter-rules (if 32-bitp (lifter-rules32-all) (lifter-rules64-all)))
        ;; Add any extra-rules:
