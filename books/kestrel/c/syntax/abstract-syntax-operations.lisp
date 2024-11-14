@@ -675,7 +675,8 @@
    :cast/and-ambig (expr-priority-and)
    :stmt (expr-priority-primary)
    :tycompat (expr-priority-primary)
-   :offsetof (expr-priority-primary))
+   :offsetof (expr-priority-primary)
+   :extension (expr-priority-primary))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

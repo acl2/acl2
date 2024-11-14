@@ -465,6 +465,7 @@ gcc-keyword = %s"__alignof"
             / %s"__restrict__"
             / %s"__signed"
             / %s"__signed__"
+            / %s"__stdcall"
             / %s"typeof"
             / %s"__typeof"
             / %s"__typeof__"
@@ -810,6 +811,19 @@ lexeme = token
 ; As a GCC extensions, we allow conditional with omitted operands,
 ; documented at https://gcc.gnu.org/onlinedocs/gcc/Conditionals.html.
 
+; As a GCC extension, we allow a primary expression
+; to be preceded by '__extension__'.
+; This is briefly mentioned in the GCC manual
+; (https://gcc.gnu.org/onlinedocs/gcc/Alternate-Keywords.html);
+; experiments suggest that this keyword only applies to
+; the subsequent primary expression,
+; and not to a larger expression,
+; which makes syntactic sense.
+; The keyword and the expression are juxtaposed,
+; without required parentheses;
+; if there are parentheses, they below to the expression,
+; which is therefore a parenthesized expression.
+
 primary-expression = identifier
                    / constant
                    / 1*string-literal
@@ -818,6 +832,7 @@ primary-expression = identifier
                    / "(" compound-statement ")" ; GCC extension
                    / types-compatible-call ; GCC extension
                    / offsetof-call ; GCC extension
+                   / %s"__extension__" primary-expression ; GCC extension
 
 types-compatible-call =
     %s"__builtin_types_compatible_p" "(" type-name "," type-name ")"
@@ -1061,9 +1076,14 @@ asm-goto-labels = [ identifier *( "," identifier ) ]
 
 ; As a GCC extension,
 ; we allow declaration specifiers, as well as specifier and qualifier lists,
-; to include attribute specifiers;
+; to include attribute specifiers, as well as the keyword '__stdcall';
 ; these can be easily distinguished from other declaration specifiers
-; by the starting '__attribute__' or '__attribute' GCC keyword.
+; by the starting '__attribute__' or '__attribute' GCC keyword,
+; or by the '__stdcall' GCC keyword.
+; The latter is documented as an attribute 'stdcall' in the GCC manual,
+; which should therefore have the syntax '__attribute__((stdcall))',
+; but apparently it is also accepted by itself, with two underscores in front,
+; but only in certain places (not everywhere normal attributes are allowed).
 
 ; As a GCC extension, allow a list of type qualifiers
 ; to also contains attribute specifiers.
@@ -1135,6 +1155,7 @@ declaration-specifiers = storage-class-specifier [ declaration-specifiers ]
                        / alignment-specifier [ declaration-specifiers ]
                        ; GCC extension:
                        / attribute-specifier [ declaration-specifiers ]
+                       / %s"__stdcall" [ declaration-specifiers ]
 
 init-declarator-list = init-declarator
                      / init-declarator-list "," init-declarator

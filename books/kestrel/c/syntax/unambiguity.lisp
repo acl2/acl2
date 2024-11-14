@@ -102,7 +102,8 @@
                :tycompat (and (tyname-unambp expr.type1)
                               (tyname-unambp expr.type2))
                :offsetof (and (tyname-unambp expr.type)
-                              (member-designor-unambp expr.member)))
+                              (member-designor-unambp expr.member))
+               :extension (expr-unambp expr.expr))
     :measure (expr-count expr))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -231,7 +232,7 @@
     (spec/qual-case specqual
                     :tyspec (type-spec-unambp specqual.spec)
                     :tyqual t
-                    :align (align-spec-unambp specqual.unwrap)
+                    :align (align-spec-unambp specqual.spec)
                     :attrib t)
     :measure (spec/qual-count specqual))
 
@@ -270,7 +271,8 @@
                    :tyqual t
                    :funspec t
                    :align (align-spec-unambp declspec.unwrap)
-                   :attrib t)
+                   :attrib t
+                   :stdcall t)
     :measure (declspec-count declspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1005,6 +1007,11 @@
                 (member-designor-unambp memdes)))
     :expand (expr-unambp (expr-offsetof type memdes)))
 
+  (defrule expr-unambp-of-expr-extension
+    (equal (expr-unambp (expr-extension expr))
+           (expr-unambp expr))
+    :expand (expr-unambp (expr-extension expr)))
+
   (defrule const-expr-unambp-of-const-expr
     (equal (const-expr-unambp (const-expr expr))
            (expr-unambp expr))
@@ -1122,15 +1129,24 @@
            (align-spec-unambp alignspec))
     :expand (declspec-unambp (declspec-align alignspec)))
 
-  (defrule declspec-unambp-when-stocla/tyqual/funspec/attrib
+  (defrule declspec-unambp-when-stocla/tyqual/funspec/attrib/stdcall
     ;; The formulation (declspec-unambp (declspec-... ...))
     ;; does not work for the return theorems in the disambiguator.
     ;; We get a subgoal of a form that is instead handled by
     ;; the formulation we give here,
     ;; which is not ideal because the conclusion is quite generic.
     (implies (member-eq (declspec-kind declspec)
-                        '(:stocla :tyqual :funspec :attrib))
+                        '(:stocla :tyqual :funspec :attrib :stdcall))
              (declspec-unambp declspec)))
+
+  (defrule declspec-unambp-when-not-stocla/tyspec/tyqual/funspec/align
+    (implies (and (not (declspec-case declspec :stocla))
+                  (not (declspec-case declspec :tyspec))
+                  (not (declspec-case declspec :tyqual))
+                  (not (declspec-case declspec :funspec))
+                  (not (declspec-case declspec :align)))
+             (declspec-unambp declspec))
+    :expand (declspec-unambp declspec))
 
   (defrule initer-unambp-of-initer-single
     (equal (initer-unambp (initer-single expr))
@@ -1662,6 +1678,12 @@
                   (expr-case expr :offsetof))
              (member-designor-unambp (expr-offsetof->member expr))))
 
+  (defrule expr-unambp-of-expr-extension->expr
+    (implies (and (expr-unambp expr)
+                  (expr-case expr :extension))
+             (expr-unambp (expr-extension->expr expr)))
+    :expand (expr-unambp expr))
+
   (defrule expr-unambp-of-expr-const-expr->expr
     (implies (const-expr-unambp cexpr)
              (expr-unambp (const-expr->expr cexpr)))
@@ -1747,10 +1769,10 @@
              (type-spec-unambp (spec/qual-tyspec->spec specqual)))
     :expand (spec/qual-unambp specqual))
 
-  (defrule align-spec-unambp-of-spec/qual-align->unwrap
+  (defrule align-spec-unambp-of-spec/qual-align->spec
     (implies (and (spec/qual-unambp specqual)
                   (spec/qual-case specqual :align))
-             (align-spec-unambp (spec/qual-align->unwrap specqual)))
+             (align-spec-unambp (spec/qual-align->spec specqual)))
     :expand (spec/qual-unambp specqual))
 
   (defrule tyname-unambp-of-align-spec-alignas-type->type

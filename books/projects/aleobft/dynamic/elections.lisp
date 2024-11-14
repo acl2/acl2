@@ -33,16 +33,16 @@
      which we prove they will do in @(see same-committees),
      then they will choose the same leader.
      Given this common leader, each validator uses
-     the certificates at the immediately following odd round
+     the certificates they receive in the immediately following odd round
      to carry out an election of that chosen leader:
-     each certificate that references the leader certificate
+     each following odd-round certificate that references the leader certificate
      counts as a `yes' vote,
-     while each certificate that references a different certificate
-     counts as a `no' vote.
-     If the validator has enough `yes' votes,
-     which implies that it must have the leader certificate itself,
-     which is called an `anchor', the validator commits that anchor,
-     and potentially other precededing anchors,
+     while each following odd-round certificate 
+     that does not reference the leader certificate counts as a `no' vote.
+     If a validator has the leader certificate and has enough `yes' votes,
+     that certificate becomes an anchor (see @(see anchors)).
+     The validator commits that anchor,
+     and potentially other preceding anchors,
      by generating blocks from them;
      but this is formalized elsewhere.")
    (xdoc::p
@@ -123,8 +123,8 @@
      for the purpose of the correctness of the protocol,
      as we ensure by way of formal proofs.")
    (xdoc::p
-    "We go through the voters, and check whether the leader address
-     is among the referenced previous certificates or not,
+    "We go through the voters, and for each voter check whether the given leader
+     authored one of the certificates referenced in the voter certificate,
      counting `yes' or `no' votes, respectively.
      We return both counts."))
   (b* (((when (set::emptyp voters)) (mv 0 0))
