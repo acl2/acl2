@@ -358,7 +358,8 @@
    :cast/and-ambig (impossible)
    :stmt nil
    :tycompat nil
-   :offsetof nil)
+   :offsetof nil
+   :extension nil)
   :measure (expr-count expr)
   :hints (("Goal" :in-theory (enable o< o-finp)))
   :hooks (:fix))

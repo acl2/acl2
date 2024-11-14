@@ -1235,6 +1235,33 @@
  "__builtin_offsetof(struct pt_regs, ss)"
  :gcc t)
 
+(test-parse
+ parse-expression
+ "({x = 0;})(x)"
+ :cond (expr-case ast :funcall)
+ :gcc t)
+
+(test-parse
+ parse-expression
+ "sizeof(*ctx)"
+ :cond (and (expr-case ast :unary)
+            (expr-case (expr-unary->arg ast) :paren)))
+
+(test-parse
+ parse-expression
+ "__extension__ x"
+ :gcc t)
+
+(test-parse
+ parse-expression
+ "__extension__ x + y"
+ :gcc t)
+
+(test-parse
+ parse-expression
+ "__extension__ (x + y)"
+ :gcc t)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; parse-struct-or-union-specifier
@@ -1533,31 +1560,37 @@
 (test-parse
  parse-expression-or-type-name
  "abc)"
+ :more-inputs (t)
  :cond (amb?-expr/tyname-case ast :ambig))
 
 (test-parse
  parse-expression-or-type-name
  "id(id))"
+ :more-inputs (nil)
  :cond (amb?-expr/tyname-case ast :ambig))
 
 (test-parse
  parse-expression-or-type-name
  "+x)"
+ :more-inputs (t)
  :cond (amb?-expr/tyname-case ast :expr))
 
 (test-parse
  parse-expression-or-type-name
  "int *)"
+ :more-inputs (nil)
  :cond (amb?-expr/tyname-case ast :tyname))
 
 (test-parse
  parse-expression-or-type-name
  "a + b)"
+ :more-inputs (t)
  :cond (amb?-expr/tyname-case ast :expr))
 
 (test-parse
  parse-expression-or-type-name
  "a _Atomic)"
+ :more-inputs (nil)
  :cond (amb?-expr/tyname-case ast :tyname))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1839,7 +1872,6 @@ error (int __status, int __errnum, const char *__format, ...)
  :gcc t)
 
 (test-parse
- parse-expression
- "({x = 0;})(x)"
- :cond (expr-case ast :funcall)
+ parse-external-declaration-list
+ "static ngx_thread_value_t __stdcall ngx_iocp_timer(void *data);"
  :gcc t)

@@ -1550,7 +1550,11 @@
        This is not a regular function,
        because its first argument is a type name, not an expression.
        The second argument is a member designator,
-       which is a restricted form of expression."))
+       which is a restricted form of expression.")
+     (xdoc::p
+      "As a GCC extesntion, we include
+       expressions preceded by @('__extension__').
+       See our ABNF grammar."))
     (:ident ((ident ident)))
     (:const ((const const)))
     (:string ((strings stringlit-list)))
@@ -1604,6 +1608,7 @@
                 (type2 tyname)))
     (:offsetof ((type tyname)
                 (member member-designor)))
+    (:extension ((expr expr)))
     :pred exprp
     :measure (two-nats-measure (acl2-count x) 0))
 
@@ -1832,8 +1837,8 @@
       "As a GCC extension, we include attribute specifiers.
        See our ABNF grammar."))
     (:tyspec ((spec type-spec)))
-    (:tyqual ((unwrap type-qual)))
-    (:align ((unwrap align-spec)))
+    (:tyqual ((qual type-qual)))
+    (:align ((spec align-spec)))
     (:attrib ((unwrap attrib-spec))) ; GCC extension
     :pred spec/qual-p
     :measure (two-nats-measure (acl2-count x) 0))
@@ -1895,14 +1900,16 @@
        but it is useful to define <i>declaration-specifiers</i>
        (see @(tsee declspec-list)).")
      (xdoc::p
-      "As a GCC extension, we include attribute specifiers.
-       See our ABNF grammar."))
+      "As a GCC extension, we include attribute specifiers,
+       as well as the special keyword @('__stdcall').
+       See our ABNF grammar for details."))
     (:stocla ((unwrap stor-spec)))
     (:tyspec ((unwrap type-spec)))
     (:tyqual ((unwrap type-qual)))
     (:funspec ((unwrap fun-spec)))
     (:align ((unwrap align-spec)))
     (:attrib ((unwrap attrib-spec))) ; GCC extension
+    (:stdcall ()) ; GCC extension
     :pred declspecp
     :measure (two-nats-measure (acl2-count x) 0))
 

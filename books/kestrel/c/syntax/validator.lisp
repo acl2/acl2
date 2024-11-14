@@ -2899,6 +2899,7 @@
                       ((erp more-types table)
                        (valid-member-designor expr.member table ienv)))
                    (retok (type-unknown) (set::union types more-types) table))
+       :extension (valid-expr expr.expr table ienv)
        :otherwise (prog2$ (impossible) (reterr t))))
     :measure (expr-count expr))
 
@@ -3315,7 +3316,7 @@
                       nil
                       (valid-table-fix table))
        :align (b* (((erp types table)
-                    (valid-align-spec specqual.unwrap table ienv)))
+                    (valid-align-spec specqual.spec table ienv)))
                 (retok (type-option-fix type?)
                        (type-spec-list-fix tyspecs)
                        types
@@ -3510,7 +3511,12 @@
                       (type-spec-list-fix tyspecs)
                       (stor-spec-list-fix storspecs)
                       nil
-                      (valid-table-fix table))))
+                      (valid-table-fix table))
+       :stdcall (retok (type-option-fix type?)
+                       (type-spec-list-fix tyspecs)
+                       (stor-spec-list-fix storspecs)
+                       nil
+                       (valid-table-fix table))))
     :measure (declspec-count declspec)
 
     ///
