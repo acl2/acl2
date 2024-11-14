@@ -13,6 +13,7 @@
 
 (include-book "fault-tolerance")
 (include-book "last-blockchain-round")
+(include-book "ordered-even-blocks")
 (include-book "associated-certificates")
 (include-book "same-associated-certificates")
 (include-book "signed-certificates")
@@ -35,6 +36,7 @@
      namely the non-forking of blockchains."))
   :order-subtopics (fault-tolerance
                     last-blockchain-round
+                    ordered-even-blocks
                     associated-certificates
                     same-associated-certificates
                     signed-certificates
