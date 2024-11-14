@@ -1898,7 +1898,7 @@
     :short "Print a member designator."
     (member-designor-case
      memdes
-     :ident (print-ident memdes.unwrap pstate)
+     :ident (print-ident memdes.ident pstate)
      :dot (b* ((pstate (print-member-designor memdes.member pstate))
                (pstate (print-astring "." pstate))
                (pstate (print-ident memdes.name pstate)))
@@ -1938,17 +1938,22 @@
                   (pstate (print-astring ")" pstate)))
                pstate)
      :struct (b* ((pstate (print-astring "struct " pstate))
-                  (pstate (print-strunispec tyspec.unwrap pstate)))
+                  (pstate (print-strunispec tyspec.spec pstate)))
                pstate)
      :union (b* ((pstate (print-astring "union " pstate))
-                 (pstate (print-strunispec tyspec.unwrap pstate)))
+                 (pstate (print-strunispec tyspec.spec pstate)))
               pstate)
      :enum (b* ((pstate (print-astring "enum " pstate))
-                (pstate (print-enumspec tyspec.unwrap pstate)))
+                (pstate (print-enumspec tyspec.spec pstate)))
              pstate)
      :typedef (print-ident tyspec.name pstate)
      :int128 (print-astring "__int128" pstate)
+     :float32 (print-astring "_Float32" pstate)
+     :float32x (print-astring "_Float32x" pstate)
+     :float64 (print-astring "_Float64" pstate)
+     :float64x (print-astring "_Float64x" pstate)
      :float128 (print-astring "_Float128" pstate)
+     :float128x (print-astring "_Float128x" pstate)
      :builtin-va-list (print-astring "__builtin_va_list" pstate)
      :struct-empty (b* ((pstate (print-astring "struct" pstate))
                         (pstate (if tyspec.name?
@@ -1990,7 +1995,7 @@
     :short "Print a specifier or qualifier."
     (spec/qual-case
      specqual
-     :tyspec (print-type-spec specqual.unwrap pstate)
+     :tyspec (print-type-spec specqual.spec pstate)
      :tyqual (print-type-qual specqual.unwrap pstate)
      :align (print-align-spec specqual.unwrap pstate)
      :attrib (print-attrib-spec specqual.unwrap pstate))

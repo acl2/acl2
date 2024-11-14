@@ -203,12 +203,17 @@
                     :bool t
                     :complex t
                     :atomic (tyname-unambp tyspec.type)
-                    :struct (strunispec-unambp tyspec.unwrap)
-                    :union (strunispec-unambp tyspec.unwrap)
-                    :enum (enumspec-unambp tyspec.unwrap)
+                    :struct (strunispec-unambp tyspec.spec)
+                    :union (strunispec-unambp tyspec.spec)
+                    :enum (enumspec-unambp tyspec.spec)
                     :typedef t
                     :int128 t
+                    :float32 t
+                    :float32x t
+                    :float64 t
+                    :float64x t
                     :float128 t
+                    :float128x t
                     :builtin-va-list t
                     :struct-empty t
                     :typeof-expr (expr-unambp tyspec.expr)
@@ -224,7 +229,7 @@
     :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if a specifier or qualifier is unambiguous."
     (spec/qual-case specqual
-                    :tyspec (type-spec-unambp specqual.unwrap)
+                    :tyspec (type-spec-unambp specqual.spec)
                     :tyqual t
                     :align (align-spec-unambp specqual.unwrap)
                     :attrib t)
@@ -1701,22 +1706,22 @@
              (tyname-unambp (type-spec-atomic->type tyspec)))
     :expand (type-spec-unambp tyspec))
 
-  (defrule strunispec-unambp-of-type-spec-struct->unwrap
+  (defrule strunispec-unambp-of-type-spec-struct->spec
     (implies (and (type-spec-unambp tyspec)
                   (type-spec-case tyspec :struct))
-             (strunispec-unambp (type-spec-struct->unwrap tyspec)))
+             (strunispec-unambp (type-spec-struct->spec tyspec)))
     :expand (type-spec-unambp tyspec))
 
-  (defrule strunispec-unambp-of-type-spec-union->unwrap
+  (defrule strunispec-unambp-of-type-spec-union->spec
     (implies (and (type-spec-unambp tyspec)
                   (type-spec-case tyspec :union))
-             (strunispec-unambp (type-spec-union->unwrap tyspec)))
+             (strunispec-unambp (type-spec-union->spec tyspec)))
     :expand (type-spec-unambp tyspec))
 
-  (defrule enumspec-unambp-of-type-spec-enum->unwrap
+  (defrule enumspec-unambp-of-type-spec-enum->spec
     (implies (and (type-spec-unambp tyspec)
                   (type-spec-case tyspec :enum))
-             (enumspec-unambp (type-spec-enum->unwrap tyspec)))
+             (enumspec-unambp (type-spec-enum->spec tyspec)))
     :expand (type-spec-unambp tyspec))
 
   (defrule expr-unambp-of-type-spec-typeof-expr->expr
@@ -1739,7 +1744,7 @@
   (defrule type-spec-unambp-of-spec/qual-tyspec->unwrap
     (implies (and (spec/qual-unambp specqual)
                   (spec/qual-case specqual :tyspec))
-             (type-spec-unambp (spec/qual-tyspec->unwrap specqual)))
+             (type-spec-unambp (spec/qual-tyspec->spec specqual)))
     :expand (spec/qual-unambp specqual))
 
   (defrule align-spec-unambp-of-spec/qual-align->unwrap

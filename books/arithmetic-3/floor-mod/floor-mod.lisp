@@ -201,7 +201,11 @@
   :rule-classes (:rewrite :type-prescription))
 
 #+:non-standard-analysis
-(defthm realp-mod
+(defthm realp-mod-weak
+; Matt K. has renamed this lemma by adding "-weak" because a similar lemma,
+; named realp-mod, is in books/ihs/quotient-remainder-lemmas.lisp but without
+; the second hypothesis below.  (That hypothesis is needed here as things
+; stand at the time of this name change.)
   (implies (and (realp x)
 		(realp y))
 	   (realp (mod x y)))
