@@ -200,8 +200,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define-sk validator-fault-tolerant-p ((vstate validator-statep)
-                                       (systate system-statep))
+(define-sk validator-committees-fault-tolerant-p ((vstate validator-statep)
+                                                  (systate system-statep))
   :returns (yes/no booleanp)
   :short "Check if the active committees calculated by a validator
           are all fault-tolerant."
@@ -222,12 +222,12 @@
                      (implies commtt
                               (committee-fault-tolerant-p commtt systate)))))
   ///
-  (fty::deffixequiv-sk validator-fault-tolerant-p
+  (fty::deffixequiv-sk validator-committees-fault-tolerant-p
     :args ((vstate validator-statep) (systate system-statep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define-sk system-fault-tolerant-p ((systate system-statep))
+(define-sk system-committees-fault-tolerant-p ((systate system-statep))
   :returns (yes/no booleanp)
   :short "Check if a system state is fault-tolerant."
   :long
@@ -244,17 +244,17 @@
      in AleoBFT and other systems."))
   (forall (val)
           (implies (set::in val (correct-addresses systate))
-                   (validator-fault-tolerant-p
+                   (validator-committees-fault-tolerant-p
                     (get-validator-state val systate)
                     systate)))
   ///
-  (fty::deffixequiv-sk system-fault-tolerant-p
+  (fty::deffixequiv-sk system-committees-fault-tolerant-p
     :args ((systate system-statep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define all-system-fault-tolerant-p ((events event-listp)
-                                     (systate system-statep))
+(define all-system-committees-fault-tolerant-p ((events event-listp)
+                                                (systate system-statep))
   :guard (events-possiblep events systate)
   :returns (yes/no booleanp)
   :short "Check if all the system states
@@ -276,9 +276,9 @@
      Otherwise, we execute the event
      and we recursively call this predicate with the resulting state:
      this covers all the states in the execution."))
-  (b* (((unless (system-fault-tolerant-p systate)) nil)
+  (b* (((unless (system-committees-fault-tolerant-p systate)) nil)
        ((when (endp events)) t))
-    (all-system-fault-tolerant-p (cdr events)
-                                 (event-next (car events) systate)))
+    (all-system-committees-fault-tolerant-p (cdr events)
+                                            (event-next (car events) systate)))
   :guard-hints (("Goal" :in-theory (enable events-possiblep)))
   :hooks (:fix))
