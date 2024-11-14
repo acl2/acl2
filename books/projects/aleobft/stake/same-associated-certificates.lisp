@@ -203,8 +203,7 @@
           reachable from an initial state via a sequence of events."
 
   (defruled same-associated-certs-p-of-events-next
-    (implies (and (system-statep systate)
-                  (same-associated-certs-p systate)
+    (implies (and (same-associated-certs-p systate)
                   (events-possiblep events systate))
              (same-associated-certs-p (events-next events systate)))
     :induct t
@@ -212,7 +211,6 @@
              events-next))
 
   (defruled same-associated-certs-p-when-reachable
-    (implies (and (system-statep systate)
-                  (system-initp systate)
+    (implies (and (system-initp systate)
                   (events-possiblep events systate))
              (same-associated-certs-p (events-next events systate)))))

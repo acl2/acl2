@@ -211,8 +211,7 @@
           reachable from an initial state via a sequence of events."
 
   (defruled no-self-messages-p-of-events-next
-    (implies (and (system-statep systate)
-                  (no-self-messages-p systate)
+    (implies (and (no-self-messages-p systate)
                   (events-possiblep events systate))
              (no-self-messages-p (events-next events systate)))
     :induct t
@@ -220,7 +219,6 @@
              events-next))
 
   (defruled no-self-messages-p-when-reachable
-    (implies (and (system-statep systate)
-                  (system-initp systate)
+    (implies (and (system-initp systate)
                   (events-possiblep events systate))
              (no-self-messages-p (events-next events systate)))))

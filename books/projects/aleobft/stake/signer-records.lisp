@@ -374,8 +374,7 @@
           reachable from an initial state via a sequence of events."
 
   (defruled signer-records-p-of-events-next
-    (implies (and (system-statep systate)
-                  (signer-records-p systate)
+    (implies (and (signer-records-p systate)
                   (events-possiblep events systate))
              (signer-records-p (events-next events systate)))
     :induct t
@@ -383,7 +382,6 @@
              events-next))
 
   (defruled signer-records-p-when-reachable
-    (implies (and (system-statep systate)
-                  (system-initp systate)
+    (implies (and (system-initp systate)
                   (events-possiblep events systate))
              (signer-records-p (events-next events systate)))))
