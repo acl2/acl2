@@ -46,7 +46,8 @@
 (include-book "../rules-in-rule-lists")
 ;(include-book "../rules2") ;for BACKCHAIN-SIGNED-BYTE-P-TO-UNSIGNED-BYTE-P-NON-CONST
 ;(include-book "../rules1") ;for ACL2::FORCE-OF-NON-NIL, etc.
-(include-book "../rewriter") ; for the simplify-terms-repeatedly ; todo: brings in skip-proofs, TODO: Consider using rewriter-basic (but it needs simplify-terms-repeatedly)
+(include-book "../equivalent-dags")
+(include-book "../dagify") ; for dagify-term ; reduce? has skip-proofs!
 ;(include-book "../basic-rules")
 (include-book "../step-increments")
 (include-book "../dag-size")
@@ -603,7 +604,8 @@
                               (member print-base '(10 16))
                               (booleanp untranslatep))
                   :stobjs state
-                  :mode :program))
+                  :mode :program ; todo
+                  ))
   (b* ((- (cw "(Lifting ~s0.~%" target)) ;todo: print the executable name
        ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
        (state (acl2::widen-margins state))
@@ -727,16 +729,15 @@
         (acl2::make-rule-alist assumption-rules (w state)))
        ((when erp) (mv erp nil nil nil nil state))
        ;; TODO: Option to turn this off, or to do just one pass:
-       ((mv erp
-            assumptions
-            state)
-        (acl2::simplify-terms-repeatedly
+       ((mv erp assumptions)
+        (acl2::simplify-conjunction-basic ;simplify-terms-repeatedly
          assumptions
          assumption-rule-alist
+         (acl2::known-booleans (w state))
          rules-to-monitor ; do we want to monitor here?  What if some rules are not incldued?
          nil ; don't memoize (avoids time spent making empty-memoizations)
          t ; todo: warn just once
-         state))
+         ))
        ((when erp) (mv erp nil nil nil nil state))
        (assumptions (acl2::get-conjuncts-of-terms2 assumptions))
        ((mv assumption-simp-elapsed state) (acl2::real-time-since assumption-simp-start-real-time state))
