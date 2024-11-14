@@ -878,6 +878,9 @@ one such form may affect what you might think of as the proof of another.</p>
                :hints(("Goal"
                        :in-theory (theory 'minimal-theory)
                        :use ((:instance ,lemma-name
+                                        ;; This avoids errors for the case
+                                        ;; where the mutually recursive clique
+                                        ;; consists of a single function.
                                         :extra-bindings-ok
                                         (,flag-var ',flag)))))))
           (flag-defthm-corollaries lemma-name explicit-name flag-var (cdr thmparts)))))
