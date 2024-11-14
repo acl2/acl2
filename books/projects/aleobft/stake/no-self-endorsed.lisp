@@ -66,6 +66,9 @@
 
   ///
 
+  (fty::deffixequiv-sk no-self-endorsed-p
+    :args ((systate system-statep)))
+
   (defruled no-self-endorsed-p-necc-fixing
     (implies (and (no-self-endorsed-p systate)
                   (set::in (address-fix val) (correct-addresses systate)))

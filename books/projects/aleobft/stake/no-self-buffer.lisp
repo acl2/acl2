@@ -61,6 +61,9 @@
 
   ///
 
+  (fty::deffixequiv-sk no-self-buffer-p
+    :args ((systate system-statep)))
+
   (defruled no-self-buffer-p-necc-fixing
     (implies (and (no-self-buffer-p systate)
                   (set::in (address-fix val) (correct-addresses systate)))

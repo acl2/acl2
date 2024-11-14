@@ -116,7 +116,8 @@
   :returns (yes/no booleanp)
   :short "Definition of the invariant:
           none of the messages in the network is self-addressed."
-  (message-set-noselfp (get-network-state systate)))
+  (message-set-noselfp (get-network-state systate))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
