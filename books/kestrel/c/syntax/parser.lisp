@@ -5905,7 +5905,8 @@
      or a parenthesizes expression (which starts with a certain punctuator),
      or a generic selection (which starts a certain keyword),
      or a call of the GCC built-in function @('__builtin_types_compatible_p')
-     (which is a keyword only if GCC extensions are supported)."))
+     (which is a keyword only if GCC extensions are supported),
+     or another primary expression preceded by @('__extension__')."))
   (and token?
        (or (token-case token? :ident)
            (token-case token? :const)
@@ -5913,7 +5914,8 @@
            (token-punctuatorp token? "(")
            (token-keywordp token? "_Generic")
            (token-keywordp token? "__builtin_offsetof")
-           (token-keywordp token? "__builtin_types_compatible_p")))
+           (token-keywordp token? "__builtin_types_compatible_p")
+           (token-keywordp token? "__extension__")))
   ///
 
   (defrule non-nil-when-token-primary-expression-start-p
@@ -9005,6 +9007,9 @@
        we parse a call of this built-in function,
        which has a type name and a member designator as arguments.")
      (xdoc::p
+      "If the token is the GCC keyword @('__extension__'),
+       we parse the primary expression after it, recursively.")
+     (xdoc::p
       "If the token is none of the above,
        including the token being absent,
        it is an error."))
@@ -9128,6 +9133,12 @@
               ;; __builtin_offset ( type , memdes )
               (read-punctuator ")" parstate)))
           (retok (make-expr-offsetof :type tyname :member memdes)
+                 (span-join span last-span)
+                 parstate)))
+       ((token-keywordp token "__extension__") ; __extension__
+        (b* (((erp expr last-span parstate) ; __extension__ expr
+              (parse-primary-expression parstate)))
+          (retok (expr-extension expr)
                  (span-join span last-span)
                  parstate)))
        (t ; other

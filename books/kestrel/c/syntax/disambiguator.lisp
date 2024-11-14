@@ -1088,7 +1088,10 @@
        :offsetof
        (b* (((erp type table) (dimb-tyname expr.type table))
             ((erp memdes table) (dimb-member-designor expr.member table)))
-         (retok (make-expr-offsetof :type type :member memdes) table))))
+         (retok (make-expr-offsetof :type type :member memdes) table))
+       :extension
+       (b* (((erp expr table) (dimb-expr expr.expr table)))
+         (retok (expr-extension expr) table))))
     :measure (expr-count expr))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

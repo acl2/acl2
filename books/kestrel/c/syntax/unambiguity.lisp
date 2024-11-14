@@ -102,7 +102,8 @@
                :tycompat (and (tyname-unambp expr.type1)
                               (tyname-unambp expr.type2))
                :offsetof (and (tyname-unambp expr.type)
-                              (member-designor-unambp expr.member)))
+                              (member-designor-unambp expr.member))
+               :extension (expr-unambp expr.expr))
     :measure (expr-count expr))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1006,6 +1007,11 @@
                 (member-designor-unambp memdes)))
     :expand (expr-unambp (expr-offsetof type memdes)))
 
+  (defrule expr-unambp-of-expr-extension
+    (equal (expr-unambp (expr-extension expr))
+           (expr-unambp expr))
+    :expand (expr-unambp (expr-extension expr)))
+
   (defrule const-expr-unambp-of-const-expr
     (equal (const-expr-unambp (const-expr expr))
            (expr-unambp expr))
@@ -1671,6 +1677,12 @@
     (implies (and (expr-unambp expr)
                   (expr-case expr :offsetof))
              (member-designor-unambp (expr-offsetof->member expr))))
+
+  (defrule expr-unambp-of-expr-extension->expr
+    (implies (and (expr-unambp expr)
+                  (expr-case expr :extension))
+             (expr-unambp (expr-extension->expr expr)))
+    :expand (expr-unambp expr))
 
   (defrule expr-unambp-of-expr-const-expr->expr
     (implies (const-expr-unambp cexpr)

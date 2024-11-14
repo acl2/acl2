@@ -170,7 +170,8 @@
        "                        :type2 (my-simpadd0-tyname expr.type2))"
        "            :offsetof (make-expr-offsetof"
        "                        :type (my-simpadd0-tyname expr.type)"
-       "                        :member (my-simpadd0-member-designor expr.member)))))"
+       "                        :member (my-simpadd0-member-designor expr.member))"
+       "            :extension (expr-extension (my-simpadd0-tyname expr.expr)))))"
        )))
   :order-subtopics t
   :default-parent t)
@@ -278,6 +279,7 @@
     (:linear c$::expr-count-of-expr-comma->next)
     (:linear c$::expr-count-of-expr-cond->else)
     (:linear c$::expr-count-of-expr-cond->test)
+    (:linear c$::expr-count-of-expr-extension->expr)
     (:linear c$::expr-count-of-expr-funcall->fun)
     (:linear c$::expr-count-of-expr-gensel->control)
     (:linear c$::expr-count-of-expr-member->arg)
@@ -720,7 +722,7 @@
       :offsetof (make-expr-offsetof
                   :type (,(cdr (assoc-eq 'tyname names)) expr.type ,@extra-args-names)
                   :member (,(cdr (assoc-eq 'member-designor names)) expr.member ,@extra-args-names))
-      )
+      :extension (expr-extension (,(cdr (assoc-eq 'expr names)) expr.expr ,@extra-args-names)))
    '(:returns (new-expr exprp)
      :measure (expr-count expr))))
 

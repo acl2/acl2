@@ -2899,6 +2899,7 @@
                       ((erp more-types table)
                        (valid-member-designor expr.member table ienv)))
                    (retok (type-unknown) (set::union types more-types) table))
+       :extension (valid-expr expr.expr table ienv)
        :otherwise (prog2$ (impossible) (reterr t))))
     :measure (expr-count expr))
 

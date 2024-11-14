@@ -811,6 +811,19 @@ lexeme = token
 ; As a GCC extensions, we allow conditional with omitted operands,
 ; documented at https://gcc.gnu.org/onlinedocs/gcc/Conditionals.html.
 
+; As a GCC extension, we allow a primary expression
+; to be preceded by '__extension__'.
+; This is briefly mentioned in the GCC manual
+; (https://gcc.gnu.org/onlinedocs/gcc/Alternate-Keywords.html);
+; experiments suggest that this keyword only applies to
+; the subsequent primary expression,
+; and not to a larger expression,
+; which makes syntactic sense.
+; The keyword and the expression are juxtaposed,
+; without required parentheses;
+; if there are parentheses, they below to the expression,
+; which is therefore a parenthesized expression.
+
 primary-expression = identifier
                    / constant
                    / 1*string-literal
@@ -819,6 +832,7 @@ primary-expression = identifier
                    / "(" compound-statement ")" ; GCC extension
                    / types-compatible-call ; GCC extension
                    / offsetof-call ; GCC extension
+                   / %s"__extension__" primary-expression ; GCC extension
 
 types-compatible-call =
     %s"__builtin_types_compatible_p" "(" type-name "," type-name ")"

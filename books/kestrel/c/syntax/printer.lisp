@@ -1795,6 +1795,10 @@
                 (pstate (print-astring ", " pstate))
                 (pstate (print-member-designor expr.member pstate))
                 (pstate (print-astring ")" pstate)))
+             pstate)
+           :extension
+           (b* ((pstate (print-astring "__extension__ " pstate))
+                (pstate (print-expr expr.expr (expr-priority-primary) pstate)))
              pstate)))
          (pstate (if parenp
                      (print-astring ")" pstate)

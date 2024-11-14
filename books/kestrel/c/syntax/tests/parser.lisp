@@ -1247,6 +1247,21 @@
  :cond (and (expr-case ast :unary)
             (expr-case (expr-unary->arg ast) :paren)))
 
+(test-parse
+ parse-expression
+ "__extension__ x"
+ :gcc t)
+
+(test-parse
+ parse-expression
+ "__extension__ x + y"
+ :gcc t)
+
+(test-parse
+ parse-expression
+ "__extension__ (x + y)"
+ :gcc t)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; parse-struct-or-union-specifier

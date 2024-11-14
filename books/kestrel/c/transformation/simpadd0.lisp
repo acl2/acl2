@@ -124,7 +124,8 @@
                 :type2 (simpadd0-tyname expr.type2))
      :offsetof (make-expr-offsetof
                 :type (simpadd0-tyname expr.type)
-                :member (simpadd0-member-designor expr.member)))
+                :member (simpadd0-member-designor expr.member))
+     :extension (expr-extension (simpadd0-expr expr.expr)))
     :measure (expr-count expr))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

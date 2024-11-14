@@ -1550,7 +1550,11 @@
        This is not a regular function,
        because its first argument is a type name, not an expression.
        The second argument is a member designator,
-       which is a restricted form of expression."))
+       which is a restricted form of expression.")
+     (xdoc::p
+      "As a GCC extesntion, we include
+       expressions preceded by @('__extension__').
+       See our ABNF grammar."))
     (:ident ((ident ident)))
     (:const ((const const)))
     (:string ((strings stringlit-list)))
@@ -1604,6 +1608,7 @@
                 (type2 tyname)))
     (:offsetof ((type tyname)
                 (member member-designor)))
+    (:extension ((expr expr)))
     :pred exprp
     :measure (two-nats-measure (acl2-count x) 0))
 
