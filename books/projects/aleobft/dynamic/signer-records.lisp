@@ -80,7 +80,8 @@
      different from @('C') but with the same author and round,
      i.e. @('C.author = C0.author') and @('C.round = C0.round').
      This cannot happen because of non-equivocation,
-     but we have not proved that yet,
+     but this property is not yet available
+     at this point of this formal development,
      and in fact we need to use the notion of signer records
      to prove non-equivocation, so we cannot assume it here.
      The problem is that, upon receiving @('C'),
