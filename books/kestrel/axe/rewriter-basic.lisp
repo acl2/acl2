@@ -96,7 +96,7 @@
                                                                          memoizep
                                                                          warn-missingp
                                                                          againp))))
-    :hints (("Goal" :in-theory (e/d (simplify-conjuncts-once-basic) (reverse-becomes-reverse-list-gen reverse-becomes-reverse-list))))))
+    :hints (("Goal" :in-theory (enable simplify-conjuncts-once-basic)))))
 
 ;; Returns (mv erp new-conjuncts) where NEW-CONJUNCTS is a set of conjuncts
 ;; whose conjunction is equal to the conjunction of the CONJUNCTS.
