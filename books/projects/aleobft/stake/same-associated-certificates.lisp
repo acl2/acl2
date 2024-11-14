@@ -69,7 +69,12 @@
           (implies (and (set::in val1 (correct-addresses systate))
                         (set::in val2 (correct-addresses systate)))
                    (equal (associated-certs val1 systate)
-                          (associated-certs val2 systate)))))
+                          (associated-certs val2 systate))))
+
+  ///
+
+  (fty::deffixequiv-sk same-associated-certs-p
+    :args ((systate system-statep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
