@@ -730,6 +730,14 @@
 
   ///
 
+  (defruled dag-has-committees-p-necc-bind-dag
+    (implies (and (set::in cert dag)
+                  (dag-has-committees-p dag blockchain))
+             (active-committee-at-round (certificate->round cert)
+                                        blockchain))
+    :enable dag-has-committees-p-necc
+    :disable dag-has-committees-p)
+
   (defrule dag-has-committees-p-of-empty-dag
     (dag-has-committees-p nil blockchain)
     :enable dag-has-committees-p)
@@ -756,15 +764,7 @@
                       (certificate->round cert) blockchain)))
        :expand (dag-has-committees-p dag blockchain)
        :enable dag-has-committees-p-necc
-       :disable dag-has-committees-p)))
-
-  (defruled dag-has-committees-p-necc-bind-dag
-    (implies (and (set::in cert dag)
-                  (dag-has-committees-p dag blockchain))
-             (active-committee-at-round (certificate->round cert)
-                                        blockchain))
-    :enable dag-has-committees-p-necc
-    :disable dag-has-committees-p))
+       :disable dag-has-committees-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
