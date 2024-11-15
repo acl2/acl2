@@ -285,7 +285,7 @@
            (type-spec-case (car tyspecs) :struct))
       (b* ((tyspec (car tyspecs))
            (ident (check-strunispec-no-members
-                   (type-spec-struct->unwrap tyspec)))
+                   (type-spec-struct->spec tyspec)))
            ((when (not ident))
             (reterr (msg "Unsupported type specifier ~x0 that is ~
                           a structure specifier with members."
@@ -297,7 +297,7 @@
            (type-spec-case (car tyspecs) :union))
       (b* ((tyspec (car tyspecs))
            (ident (check-strunispec-no-members
-                   (type-spec-union->unwrap tyspec)))
+                   (type-spec-union->spec tyspec)))
            ((when (not ident))
             (reterr (msg "Unsupported type specifier ~x0 that is ~
                           a union specifier with members."
@@ -309,7 +309,7 @@
            (type-spec-case (car tyspecs) :enum))
       (b* ((tyspec (car tyspecs))
            (ident (check-enumspec-no-list
-                   (type-spec-enum->unwrap tyspec)))
+                   (type-spec-enum->spec tyspec)))
            ((when (not ident))
             (reterr (msg "Unsupported type specifier ~x0 that is ~
                           an enumeration specifier with enumerators."
@@ -686,7 +686,8 @@
        :cast/and-ambig (prog2$ (impossible) (reterr t))
        :stmt (reterr (msg "Unsupported expression ~x0." (expr-fix expr)))
        :tycompat (reterr (msg "Unsupported expression ~x0." (expr-fix expr)))
-       :offsetof (reterr (msg "Unsupported expression ~x0." (expr-fix expr)))))
+       :offsetof (reterr (msg "Unsupported expression ~x0." (expr-fix expr)))
+       :extension (reterr (msg "Unsupported expression ~x0." (expr-fix expr)))))
     :measure (expr-count expr))
 
   (define ldm-expr-list ((exprs expr-listp))
@@ -869,21 +870,21 @@
                      declspec)))
        (tyspec (declspec-tyspec->unwrap declspec))
        ((when (type-spec-case tyspec :struct))
-        (b* (((strunispec strunispec) (type-spec-struct->unwrap tyspec))
+        (b* (((strunispec strunispec) (type-spec-struct->spec tyspec))
              ((unless strunispec.name)
               (reterr (msg "Unsupported structure declaration without name.")))
              ((erp name1) (ldm-ident strunispec.name))
              ((erp members1) (ldm-structdecl-list strunispec.members)))
           (retok (c::make-tag-declon-struct :tag name1 :members members1))))
        ((when (type-spec-case tyspec :union))
-        (b* (((strunispec strunispec) (type-spec-union->unwrap tyspec))
+        (b* (((strunispec strunispec) (type-spec-union->spec tyspec))
              ((unless strunispec.name)
               (reterr (msg "Unsupported union declaration without name.")))
              ((erp name1) (ldm-ident strunispec.name))
              ((erp members1) (ldm-structdecl-list strunispec.members)))
           (retok (c::make-tag-declon-union :tag name1 :members members1))))
        ((when (type-spec-case tyspec :enum))
-        (b* (((enumspec enumspec) (type-spec-enum->unwrap tyspec))
+        (b* (((enumspec enumspec) (type-spec-enum->spec tyspec))
              ((unless enumspec.name)
               (reterr
                (msg "Unsupported enumeration declaration without name.")))

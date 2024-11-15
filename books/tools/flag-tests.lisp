@@ -450,3 +450,26 @@
                           (IF (ATOM X)
                               'NIL
                               (FLAG4-EVENLP 'EVENLP (CDR X)))))))
+
+;;;;;;;;;;
+;;; Test of application to a single-function mutual-recursion
+;;; (by Grant Jurgensen).
+;;;;;;;;;;
+
+(mutual-recursion
+ (defun my-nat-listp (x)
+   (if (consp x)
+       (and (natp (car x))
+            (my-nat-listp (cdr x)))
+     (eq x nil))))
+
+(flag::make-flag flag-my-nat-listp
+                 my-nat-listp)
+
+(defthm-flag-my-nat-listp
+  (defthm type-of-my-nat-listp
+    (booleanp (my-nat-listp x))
+    :flag my-nat-listp
+    :hints ('(:in-theory '(booleanp)
+              :expand ((my-nat-listp x)))))
+  :hints (("Goal" :in-theory '((:i flag-my-nat-listp)))))

@@ -39,10 +39,10 @@
      we model a DAG as a set of certificates.
      Here we introduce operations on DAGs (as certificate sets)
      that are more DAG-specific than the operations on certificate sets
-     defined in @(see certificates).
-     By `DAG-specific' we mean that take into account the edges of the DAG,
-     as opposed to treating the DAG as just a set of vertices
-     as the operations in @(see certificates).
+     defined in the @(see certificates) book.
+     By `DAG-specific' we mean those operations that take into account the edges
+     of the DAG, as opposed to treating the DAG as just a set of vertices
+     as the operations in the @(see certificates) book do.
      The edges are represented as the @('previous') component of certificates,
      so they are part of the vertices, in terms of data structures."))
   :order-subtopics t
@@ -1661,7 +1661,7 @@
      whose element is in the DAG;
      no paths are required in this case.
      If there are two or more certificates in the list,
-     then there must be paths between each contiguous elements."))
+     then there must be a path between each contiguous pair of elements."))
   (b* (((when (endp certs)) t)
        (cert (car certs))
        ((unless (set::in cert dag)) nil)

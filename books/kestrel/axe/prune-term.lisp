@@ -239,13 +239,14 @@
                              assumptions ;no equality assumptions here to prevent loops (todo: think about this)
                              rule-alist
                              interpreted-function-alist
+                             (known-booleans (w state))
                              monitored-rules
                              nil ; fns-to-elide
                              nil ; memoizep
                              nil ; count-hits
                              nil ; print
                              nil ; normalize-xors
-                             (known-booleans (w state))))
+                             ))
        ((when erp)
         (cw "ERROR simplifying test.))~%")
         (mv erp nil state))

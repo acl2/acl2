@@ -451,8 +451,14 @@ gcc-keyword = %s"__alignof"
             / %s"__builtin_offsetof"
             / %s"__builtin_types_compatible_p"
             / %s"__builtin_va_list"
+            / %s"__declspec"
             / %s"__extension__"
+            / %s"_Float32"
+            / %s"_Float32x"
+            / %s"_Float64"
+            / %s"_Float64x"
             / %s"_Float128"
+            / %s"_Float128x"
             / %s"__inline"
             / %s"__inline__"
             / %s"__int128"
@@ -460,6 +466,7 @@ gcc-keyword = %s"__alignof"
             / %s"__restrict__"
             / %s"__signed"
             / %s"__signed__"
+            / %s"__stdcall"
             / %s"typeof"
             / %s"__typeof"
             / %s"__typeof__"
@@ -535,6 +542,11 @@ hex-quad =
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Constants [C:A.1.5] [C:6.4.4]
+
+; As a GCC extension, we allow the '\%' escape.
+; Although we did not find it documented in the GCC manual,
+; we encountered it in practical code, and we found this web page:
+; https://stackoverflow.com/questions/34142682/what-is-the-backslash-percent-escape-in-c.
 
 constant = integer-constant
          / floating-constant
@@ -637,6 +649,7 @@ simple-escape-sequence = "\'"
                        / %s"\r"
                        / %s"\t"
                        / %s"\v"
+                       / "\%" ; GCC extension
 
 octal-escape-sequence = "\" octal-digit
                       / "\" octal-digit octal-digit
@@ -805,14 +818,29 @@ lexeme = token
 ; As a GCC extensions, we allow conditional with omitted operands,
 ; documented at https://gcc.gnu.org/onlinedocs/gcc/Conditionals.html.
 
+; As a GCC extension, we allow a primary expression
+; to be preceded by '__extension__'.
+; This is briefly mentioned in the GCC manual
+; (https://gcc.gnu.org/onlinedocs/gcc/Alternate-Keywords.html);
+; experiments suggest that this keyword only applies to
+; the subsequent primary expression,
+; and not to a larger expression,
+; which makes syntactic sense.
+; The keyword and the expression are juxtaposed,
+; without required parentheses;
+; if there are parentheses, they below to the expression,
+; which is therefore a parenthesized expression.
+
 primary-expression = identifier
                    / constant
                    / 1*string-literal
                    / "(" expression ")"
                    / generic-selection
-                   / "(" compound-statement ")" ; GCC extension
-                   / types-compatible-call ; GCC extension
-                   / offsetof-call ; GCC extension
+                   ; GCC extensions:
+                   / "(" compound-statement ")"
+                   / types-compatible-call
+                   / offsetof-call
+                   / %s"__extension__" primary-expression
 
 types-compatible-call =
     %s"__builtin_types_compatible_p" "(" type-name "," type-name ")"
@@ -1060,6 +1088,16 @@ asm-goto-labels = [ identifier *( "," identifier ) ]
 ; these can be easily distinguished from other declaration specifiers
 ; by the starting '__attribute__' or '__attribute' GCC keyword.
 
+; As a GCC extension,
+; we allow the '__stdcall' keyword as a declaration specifier.
+; The latter is documented as an attribute 'stdcall' in the GCC manual,
+; which should therefore have the syntax '__attribute__((stdcall))',
+; but apparently it is also accepted by itself, with two underscores in front,
+; but only in certain places (not everywhere normal attributes are allowed).
+
+; As a GCC extension,
+; we allow the '__declspec' attribute syntax as a declaration specifier.
+
 ; As a GCC extension, allow a list of type qualifiers
 ; to also contains attribute specifiers.
 ; Thus we use type-qualifier-and-attribute-specifier-list
@@ -1080,7 +1118,14 @@ asm-goto-labels = [ identifier *( "," identifier ) ]
 ; the '__signed' and '__signed__' variants of 'signed' as type specifiers.
 
 ; As GCC extensions, we include the type specifiers
-; '__int128', '_Float128', and '__builtin_va_list'.
+; '__int128',
+; '_Float32',
+; '_Float32x',
+; '_Float64',
+; '_Float64x',
+; '_Float128',
+; '_Float128x',
+; and '__builtin_va_list'.
 
 ; We include the GCC extension for the 'typeof' operator,
 ; along with its '__typeof' and '__typeof__' variants.
@@ -1116,13 +1161,16 @@ declaration = [ %s"__extension__" ] ; GCC extension
               ";"
             / static-assert-declaration
 
-declaration-specifiers = storage-class-specifier [ declaration-specifiers ]
-                       / type-specifier [ declaration-specifiers ]
-                       / type-qualifier [ declaration-specifiers ]
-                       / function-specifier [ declaration-specifiers ]
-                       / alignment-specifier [ declaration-specifiers ]
-                       ; GCC extension:
-                       / attribute-specifier [ declaration-specifiers ]
+declaration-specifiers =
+      storage-class-specifier [ declaration-specifiers ]
+    / type-specifier [ declaration-specifiers ]
+    / type-qualifier [ declaration-specifiers ]
+    / function-specifier [ declaration-specifiers ]
+    / alignment-specifier [ declaration-specifiers ]
+    ; GCC extensions:
+    / attribute-specifier [ declaration-specifiers ]
+    / %s"__stdcall" [ declaration-specifiers ]
+    / %s"__declspec" "(" identifier ")" [ declaration-specifiers ]
 
 init-declarator-list = init-declarator
                      / init-declarator-list "," init-declarator
@@ -1155,7 +1203,12 @@ type-specifier = %s"void"
                / typedef-name
                ; GCC extensions:
                / %s"__int128"
+               / %s"_Float32"
+               / %s"_Float32x"
+               / %s"_Float64"
+               / %s"_Float64x"
                / %s"_Float128"
+               / %s"_Float128x"
                / %s"__builtin_va_list"
                / typeof-keyword "(" expression ")"
                / typeof-keyword "(" type-name ")"
@@ -1377,8 +1430,9 @@ translation-unit = external-declaration
 
 external-declaration = function-definition
                      / declaration
-                     / ";" ; GCC extension
-                     / asm-statement ; GCC extension
+                     ; GCC extensions:
+                     / ";"
+                     / asm-statement
 
 function-definition = [ %s"__extension__" ] ; GCC extension
                       declaration-specifiers

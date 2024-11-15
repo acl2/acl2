@@ -944,7 +944,7 @@
          (retok (expr-sizeof new-tyname) table))
        :sizeof-ambig
        (b* (((erp expr-or-tyname table)
-             (dimb-amb-expr/tyname expr.expr/tyname table)))
+             (dimb-amb-expr/tyname expr.expr/tyname t table)))
          (expr/tyname-case
           expr-or-tyname
           :expr (retok (make-expr-unary
@@ -986,7 +986,7 @@
                 table))
        :cast/call-ambig
        (b* (((erp expr/tyname table)
-             (dimb-amb-expr/tyname expr.type/fun table))
+             (dimb-amb-expr/tyname expr.type/fun t table))
             ((erp new-arg/rest table) (dimb-expr expr.arg/rest table)))
          (expr/tyname-case
           expr/tyname
@@ -1004,7 +1004,7 @@
            table)))
        :cast/mul-ambig
        (b* (((erp expr/tyname table)
-             (dimb-amb-expr/tyname expr.type/arg1 table))
+             (dimb-amb-expr/tyname expr.type/arg1 t table))
             ((erp new-arg/arg2 table) (dimb-expr expr.arg/arg2 table)))
          (expr/tyname-case
           expr/tyname
@@ -1022,7 +1022,7 @@
            table)))
        :cast/add-ambig
        (b* (((erp expr/tyname table)
-             (dimb-amb-expr/tyname expr.type/arg1 table))
+             (dimb-amb-expr/tyname expr.type/arg1 t table))
             ((erp new-arg/arg2 table) (dimb-expr expr.arg/arg2 table)))
          (expr/tyname-case
           expr/tyname
@@ -1042,7 +1042,7 @@
            table)))
        :cast/sub-ambig
        (b* (((erp expr/tyname table)
-             (dimb-amb-expr/tyname expr.type/arg1 table))
+             (dimb-amb-expr/tyname expr.type/arg1 t table))
             ((erp new-arg/arg2 table) (dimb-expr expr.arg/arg2 table)))
          (expr/tyname-case
           expr/tyname
@@ -1062,7 +1062,7 @@
            table)))
        :cast/and-ambig
        (b* (((erp expr/tyname table)
-             (dimb-amb-expr/tyname expr.type/arg1 table))
+             (dimb-amb-expr/tyname expr.type/arg1 t table))
             ((erp new-arg/arg2 table) (dimb-expr expr.arg/arg2 table)))
          (expr/tyname-case
           expr/tyname
@@ -1088,7 +1088,10 @@
        :offsetof
        (b* (((erp type table) (dimb-tyname expr.type table))
             ((erp memdes table) (dimb-member-designor expr.member table)))
-         (retok (make-expr-offsetof :type type :member memdes) table))))
+         (retok (make-expr-offsetof :type type :member memdes) table))
+       :extension
+       (b* (((erp expr table) (dimb-expr expr.expr table)))
+         (retok (expr-extension expr) table))))
     :measure (expr-count expr))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1247,15 +1250,15 @@
        :atomic (b* (((erp new-type table) (dimb-tyname tyspec.type table)))
                  (retok (type-spec-atomic new-type) table))
        :struct (b* (((erp new-strunispec table)
-                     (dimb-strunispec tyspec.unwrap table)))
+                     (dimb-strunispec tyspec.spec table)))
                  (retok (type-spec-struct new-strunispec)
                         table))
        :union (b* (((erp new-strunispec table)
-                    (dimb-strunispec tyspec.unwrap table)))
+                    (dimb-strunispec tyspec.spec table)))
                 (retok (type-spec-union new-strunispec)
                        table))
        :enum (b* (((erp new-enumspec table)
-                   (dimb-enumspec tyspec.unwrap table)))
+                   (dimb-enumspec tyspec.spec table)))
                (retok (type-spec-enum new-enumspec) table))
        :typedef (b* ((kind (dimb-lookup-ident tyspec.name table))
                      ((unless kind)
@@ -1278,7 +1281,12 @@
                                      but it is used as a typedef name."
                                     (ident->unwrap tyspec.name)))))
        :int128 (retok (type-spec-int128) (dimb-table-fix table))
+       :float32 (retok (type-spec-float32) (dimb-table-fix table))
+       :float32x (retok (type-spec-float32x) (dimb-table-fix table))
+       :float64 (retok (type-spec-float64) (dimb-table-fix table))
+       :float64x (retok (type-spec-float64x) (dimb-table-fix table))
        :float128 (retok (type-spec-float128) (dimb-table-fix table))
+       :float128x (retok (type-spec-float128x) (dimb-table-fix table))
        :builtin-va-list (retok (type-spec-builtin-va-list)
                                (dimb-table-fix table))
        :struct-empty (retok (type-spec-fix tyspec)
@@ -1295,7 +1303,7 @@
                 table))
        :typeof-ambig
        (b* (((erp expr/tyname table)
-             (dimb-amb-expr/tyname tyspec.expr/type table)))
+             (dimb-amb-expr/tyname tyspec.expr/type nil table)))
          (expr/tyname-case
           expr/tyname
           :expr (retok (make-type-spec-typeof-expr :expr expr/tyname.unwrap
@@ -1322,13 +1330,13 @@
       (spec/qual-case
        specqual
        :tyspec (b* (((erp new-tyspec table)
-                     (dimb-type-spec specqual.unwrap table)))
+                     (dimb-type-spec specqual.spec table)))
                  (retok (spec/qual-tyspec new-tyspec)
                         table))
-       :tyqual (retok (spec/qual-tyqual specqual.unwrap)
+       :tyqual (retok (spec/qual-tyqual specqual.qual)
                       (dimb-table-fix table))
        :align (b* (((erp new-alignspec table)
-                    (dimb-align-spec specqual.unwrap table)))
+                    (dimb-align-spec specqual.spec table)))
                 (retok (spec/qual-align new-alignspec)
                        table))
        :attrib (retok (spec/qual-attrib specqual.unwrap)
@@ -1377,7 +1385,7 @@
          (retok (align-spec-alignas-expr new-arg) table))
        :alignas-ambig
        (b* (((erp expr/tyname table)
-             (dimb-amb-expr/tyname alignspec.type/arg table)))
+             (dimb-amb-expr/tyname alignspec.type/arg nil table)))
          (expr/tyname-case
           expr/tyname
           :expr (retok (align-spec-alignas-expr (const-expr expr/tyname.unwrap))
@@ -1442,7 +1450,13 @@
                        table))
        :attrib (retok (declspec-fix declspec)
                       (dimb-kind-fix kind)
-                      (dimb-table-fix table))))
+                      (dimb-table-fix table))
+       :stdcall (retok (declspec-fix declspec)
+                       (dimb-kind-fix kind)
+                       (dimb-table-fix table))
+       :declspec-attrib (retok (declspec-fix declspec)
+                               (dimb-kind-fix kind)
+                               (dimb-table-fix table))))
     :measure (declspec-count declspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2496,6 +2510,7 @@
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (define dimb-amb-expr/tyname ((expr/tyname amb-expr/tyname-p)
+                                (add-parens-p booleanp)
                                 (table dimb-tablep))
     :returns (mv erp (expr-or-tyname expr/tyname-p) (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
@@ -2510,7 +2525,29 @@
        independently from each other.
        In valid code, one of them must succeed and the other one must fail:
        then we disambiguate in favor of the one that succeeded.
-       If none or both succeed, the code must be invalid."))
+       If none or both succeed, the code must be invalid.")
+     (xdoc::p
+      "If the ambiguous expression or type name
+       is disambiguated to an expression,
+       if the @('add-parens-p') flag is @('t')
+       we parenthesize the expression.
+       This is needed because, for instance,
+       in a @('sizeof(A)') expression where A is
+       a possibly ambiguous expression or type name,
+       the actual expression would be @('(A)'), not just @('A'),
+       because @('sizeof') can be applied to
+       an unparenthesized unary expression (e.g. @('sizeof x')).
+       In this case, the @('add-parens-p') is set to @('t')
+       by the caller of this disambiguation function.
+       On the other hand, in a construct like @('_Alignas(A)'),
+       where @('A') is a possibly ambiguous expression or type name,
+       the expression is just @('A'),
+       because the parentheses are always required:
+       they are part of the syntax of @('_Alignas'),
+       not part of the expression as in the case of
+       @('sizeof') applied to an expression.
+       In this case, the @('add-parens-p') flag is set to @('nil')
+       by the caller of this disambiguation function."))
     (b* (((reterr) (irr-expr/tyname) (irr-dimb-table))
          ((amb-expr/tyname expr/tyname) expr/tyname)
          ((mv erp-expr new-expr table-expr)
@@ -2538,7 +2575,10 @@
         ;; expr succeeds:
         (if erp-tyname
             ;; tyname fails:
-            (retok (expr/tyname-expr new-expr) table-expr)
+            (b* ((new-expr (if add-parens-p
+                               (expr-paren new-expr)
+                             new-expr)))
+              (retok (expr/tyname-expr new-expr) table-expr))
           ;; tyname succeeds:
           (reterr (msg "In the ambiguous expression or type name ~x0, ~
                         both the expression and the type name ~
@@ -3077,12 +3117,12 @@
      We should revisit this, adding all the GCC built-ins,
      with clear and accurate references.")
    (xdoc::p
-    "We also add entries for certina built-in variables
+    "We also add entries for certain built-in variables
      corresponding to the x86 registers, i.e. @('__eax') etc.
      We could not find those documented in the GCC manual,
      but we found them in practical code.
      Experiments suggest that these variables are somewhat restricted in usage.
-     The normal patten seems to be something like")
+     The normal pattern seems to be something like")
    (xdoc::codeblock
     "unsigned long __eax = __eax;")
    (xdoc::p
@@ -3146,6 +3186,7 @@
                     (ident "__builtin_strncpy")
                     (ident "__builtin_sub_overflow")
                     (ident "__builtin_unreachable")
+                    (ident "__builtin_va_start")
                     (ident "__eax")
                     (ident "__ebx")
                     (ident "__ecx")
@@ -3153,7 +3194,24 @@
                     (ident "__esi")
                     (ident "__edi")
                     (ident "__ebp")
-                    (ident "__esp"))
+                    (ident "__esp")
+                    (ident "__sync_add_and_fetch")
+                    (ident "__sync_and_and_fetch")
+                    (ident "__sync_bool_compare_and_swap")
+                    (ident "__sync_fetch_and_add")
+                    (ident "__sync_fetch_and_and")
+                    (ident "__sync_fetch_and_nand")
+                    (ident "__sync_fetch_and_or")
+                    (ident "__sync_fetch_and_sub")
+                    (ident "__sync_fetch_and_xor")
+                    (ident "__sync_lock_release")
+                    (ident "__sync_lock_test_and_set")
+                    (ident "__sync_nand_and_fetch")
+                    (ident "__sync_or_and_fetch")
+                    (ident "__sync_sub_and_fetch")
+                    (ident "__sync_synchronize")
+                    (ident "__sync_val_compare_and_swap")
+                    (ident "__sync_xor_and_fetch"))
               table)
            table))
        ((erp new-edecls &) (dimb-extdecl-list edecls table)))

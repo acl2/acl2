@@ -141,9 +141,10 @@
   (fty::deffixequiv message-certificates-with-destination
     :args ((dest addressp)))
 
-  (defrule message-certificates-with-destination-of-nil
-    (equal (message-certificates-with-destination dest nil)
-           nil))
+  (defrule message-certificates-with-destination-of-empty-msgs
+    (implies (set::emptyp msgs)
+             (equal (message-certificates-with-destination dest msgs)
+                    nil)))
 
   (defruled in-of-message-certificates-with-destination
     (implies (message-setp msgs)

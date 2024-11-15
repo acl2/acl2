@@ -124,7 +124,8 @@
                 :type2 (simpadd0-tyname expr.type2))
      :offsetof (make-expr-offsetof
                 :type (simpadd0-tyname expr.type)
-                :member (simpadd0-member-designor expr.member)))
+                :member (simpadd0-member-designor expr.member))
+     :extension (expr-extension (simpadd0-expr expr.expr)))
     :measure (expr-count expr))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -241,12 +242,17 @@
      :bool (type-spec-fix tyspec)
      :complex (type-spec-fix tyspec)
      :atomic (type-spec-atomic (simpadd0-tyname tyspec.type))
-     :struct (type-spec-struct (simpadd0-strunispec tyspec.unwrap))
-     :union (type-spec-union (simpadd0-strunispec tyspec.unwrap))
-     :enum (type-spec-enum (simpadd0-enumspec tyspec.unwrap))
+     :struct (type-spec-struct (simpadd0-strunispec tyspec.spec))
+     :union (type-spec-union (simpadd0-strunispec tyspec.spec))
+     :enum (type-spec-enum (simpadd0-enumspec tyspec.spec))
      :typedef (type-spec-fix tyspec)
      :int128 (type-spec-fix tyspec)
+     :float32 (type-spec-fix tyspec)
+     :float32x (type-spec-fix tyspec)
+     :float64 (type-spec-fix tyspec)
+     :float64x (type-spec-fix tyspec)
      :float128 (type-spec-fix tyspec)
+     :float128x (type-spec-fix tyspec)
      :builtin-va-list (type-spec-fix tyspec)
      :struct-empty (type-spec-fix tyspec)
      :typeof-expr (make-type-spec-typeof-expr
@@ -268,9 +274,9 @@
     :short "Transform a type specifier or qualifier."
     (spec/qual-case
      specqual
-     :tyspec (spec/qual-tyspec (simpadd0-type-spec specqual.unwrap))
+     :tyspec (spec/qual-tyspec (simpadd0-type-spec specqual.spec))
      :tyqual (spec/qual-fix specqual)
-     :align (spec/qual-align (simpadd0-align-spec specqual.unwrap))
+     :align (spec/qual-align (simpadd0-align-spec specqual.spec))
      :attrib (spec/qual-fix specqual))
     :measure (spec/qual-count specqual))
 
@@ -314,7 +320,9 @@
      :tyqual (declspec-fix declspec)
      :funspec (declspec-fix declspec)
      :align (declspec-align (simpadd0-align-spec declspec.unwrap))
-     :attrib (declspec-fix declspec))
+     :attrib (declspec-fix declspec)
+     :stdcall (declspec-fix declspec)
+     :declspec-attrib (declspec-fix declspec))
     :measure (declspec-count declspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

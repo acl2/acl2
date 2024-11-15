@@ -241,3 +241,10 @@
   for (size_t; ; ) {}
   }
 ")
+
+(test-dimb
+ "int myarray[];
+  int foo () {
+  int x = sizeof(myarray);
+  }
+")

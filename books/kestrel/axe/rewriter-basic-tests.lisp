@@ -30,57 +30,58 @@
 ;;; tests of simp-term-basic (which returns a term)
 ;;;
 
+(defmacro simp-term-basic-wrapper (term
+                                    &key
+                                    (assumptions 'nil)
+                                    (rule-alist 'nil)
+                                    (interpreted-function-alist 'nil)
+                                    (known-booleans 'nil)
+                                    (monitored-symbols 'nil)
+                                    (fns-to-elide 'nil)
+                                    (memoizep 't)
+                                    (count-hits 't)
+                                    (print 't)
+                                    (normalize-xors 'nil)
+                                    )
+  `(simp-term-basic ,term
+                    ,assumptions
+                    ,rule-alist
+                    ,interpreted-function-alist
+                    ,monitored-symbols
+                    ,fns-to-elide
+                    ,memoizep
+                    ;; todo: add context array and other args?
+                    ,count-hits
+                    ,print
+                    ,normalize-xors
+                    ,known-booleans))
+
 ;; A simple test that applies the rewrite rule CAR-CONS to simplify a term:
 (assert!
- (mv-let (erp term)
-   (simp-term-basic '(car (cons (foo x) (foo y)))
-                    nil     ; assumptions
-                    (make-rule-alist! '(car-cons) (w state))
-                    nil     ; interpreted-function-alist
-                    nil     ; monitored-symbols
-                    nil     ; fns-to-elide
-                    t       ; memoizep
-                    t       ; count-hits
-                    t       ; print
-                    nil     ; normalize-xors
-                    (known-booleans (w state)))
-   (and (not erp) ;no error
-        ;; resulting term is (FOO X):
-        (equal term '(foo x)))))
+  (mv-let (erp term)
+    (simp-term-basic-wrapper '(car (cons (foo x) (foo y)))
+                             :rule-alist (make-rule-alist! '(car-cons) (w state))
+                             :known-booleans (known-booleans (w state)))
+    (and (not erp) ;no error
+         ;; resulting term is (FOO X):
+         (equal term '(foo x)))))
 
 ;; A test that computes a ground term
 (assert!
- (mv-let (erp term)
-   (simp-term-basic '(binary-+ '3 '4)
-                    nil     ; assumptions
-                    nil     ; rule-alist
-                    nil     ; interpreted-function-alist
-                    nil     ; monitored-symbols
-                    nil     ; fns-to-elide
-                    t       ; memoizep
-                    t       ; count-hits
-                    t       ; print
-                    nil     ; normalize-xors
-                    (known-booleans (w state)))
-   (and (not erp)
-        (equal term ''7))))
+  (mv-let (erp term)
+    (simp-term-basic-wrapper '(binary-+ '3 '4)
+                             :known-booleans (known-booleans (w state)))
+    (and (not erp)
+         (equal term ''7))))
 
 ;; A test that uses an assumption
 (assert!
- (mv-let (erp term)
-   (simp-term-basic '(natp x)
-                    '((natp x))     ; assumptions
-                    nil     ; rule-alist
-                    nil     ; interpreted-function-alist
-                    nil     ; monitored-symbols
-                    nil     ; fns-to-elide
-                    t       ; memoizep
-                    t       ; count-hits
-                    t       ; print
-                    nil     ; normalize-xors
-                    (known-booleans (w state)))
-   (and (not erp)
-        (equal term ''t))))
+  (mv-let (erp term)
+    (simp-term-basic-wrapper '(natp x)
+                             :assumptions '((natp x))
+                             :known-booleans (known-booleans (w state)))
+    (and (not erp)
+         (equal term ''t))))
 
 ;; A test that returns a variable
 (assert!
@@ -210,13 +211,14 @@
                         nil ; assumptions
                         nil ; rule-alist
                         nil ; interpreted-function-alist
+                        (known-booleans (w state))
                         nil ; monitored-symbols
                         nil ; fns-to-elide
                         t   ; memoizep
                         t   ; count-hits
                         t       ; print
                         nil     ; normalize-xors
-                        (known-booleans (w state)))
+                        )
    (and (not erp)
         (equal result ''0))))
 
@@ -240,7 +242,7 @@
                           nil
                           (make-rule-alist! '(if-same-branches)
                                            (w state))
-                          nil nil nil nil nil t nil (known-booleans (w state)))
+                          nil (known-booleans (w state)) nil nil nil nil t nil)
      (and (not erp)
           (equal res *t*)))))
 
@@ -253,9 +255,8 @@
  (mv-let (erp res)
    (simplify-term-basic '(if (natp x) (natp x) y)
                         nil
-                        (make-rule-alist! nil
-                                         (w state))
-                        nil nil nil nil nil t nil (known-booleans (w state)))
+                        (make-rule-alist! nil (w state))
+                        nil (known-booleans (w state)) nil nil nil nil t nil)
    (and (not erp)
         (equal (dag-to-term res) '(if (natp x) 't y)))))
 
@@ -264,9 +265,8 @@
  (mv-let (erp res)
    (simplify-term-basic '(if (foo x) (foo x) y)
                         nil
-                        (make-rule-alist! nil
-                                         (w state))
-                        nil nil nil nil nil t nil (known-booleans (w state)))
+                        (make-rule-alist! nil (w state))
+                        nil (known-booleans (w state)) nil nil nil nil t nil)
    (and (not erp)
         (equal (dag-to-term res) '(if (foo x) (foo x) y)))))
 
@@ -276,7 +276,7 @@
    (simplify-term-basic '(if x y x)
                         nil
                         nil
-                        nil nil nil nil nil t nil (known-booleans (w state)))
+                        nil (known-booleans (w state)) nil nil nil nil t nil)
    (and (not erp)
         (equal (dag-to-term res) '(if x y 'nil)))))
 
@@ -286,7 +286,7 @@
    (simplify-term-basic '(if (not (natp x)) (natp x) y)
                         nil
                         nil
-                        nil nil nil nil nil t nil (known-booleans (w state)))
+                        nil (known-booleans (w state)) nil nil nil nil t nil)
    (and (not erp)
         (equal (dag-to-term res) '(if (not (natp x)) 'nil y)))))
 
@@ -296,7 +296,7 @@
    (simplify-term-basic '(if (not (natp x)) (not (natp x)) y)
                         nil
                         nil
-                        nil nil nil nil nil t nil (known-booleans (w state)))
+                        nil (known-booleans (w state)) nil nil nil nil t nil)
    (and (not erp)
         (equal (dag-to-term res) '(if (not (natp x)) 't y)))))
 
@@ -306,7 +306,7 @@
    (simplify-term-basic '(if (not (natp x)) y (natp x))
                         nil
                         nil
-                        nil nil nil nil nil t nil (known-booleans (w state)))
+                        nil (known-booleans (w state)) nil nil nil nil t nil)
    (and (not erp)
         (equal (dag-to-term res) '(if (not (natp x)) y 't)))))
 
@@ -316,7 +316,7 @@
    (simplify-term-basic '(if (not (natp x)) y (not (natp x)))
                         nil
                         nil
-                        nil nil nil nil nil t nil (known-booleans (w state)))
+                        nil (known-booleans (w state)) nil nil nil nil t nil)
    (and (not erp)
         (equal (dag-to-term res) '(if (not (natp x)) y 'nil)))))
 
@@ -326,7 +326,7 @@
    (simplify-term-basic '(if (not (foo x)) y (foo x))
                         nil
                         nil
-                        nil nil nil nil nil t nil (known-booleans (w state)))
+                        nil (known-booleans (w state)) nil nil nil nil t nil)
    (and (not erp)
         (equal (dag-to-term res) '(if (not (foo x)) y (foo x))))))
 
@@ -336,7 +336,7 @@
    (simplify-term-basic '(if (not (foo x)) y (not (foo x)))
                         nil
                         nil
-                        nil nil nil nil nil t nil (known-booleans (w state)))
+                        nil (known-booleans (w state)) nil nil nil nil t nil)
    (and (not erp)
         (equal (dag-to-term res) '(if (not (foo x)) y 'nil)))))
 
@@ -351,7 +351,7 @@
                         nil
                         (make-rule-alist! nil
                                          (w state))
-                        nil nil nil t nil t nil (known-booleans (w state)))
+                        nil (known-booleans (w state)) nil nil t nil t nil)
    (and (not erp)
         (equal (dag-to-term res) '(if (natp x) (natp x) y)))))
 
@@ -362,7 +362,7 @@
                         nil
                         (make-rule-alist! nil
                                          (w state))
-                        nil nil nil t nil t nil (known-booleans (w state)))
+                        nil (known-booleans (w state)) nil nil t nil t nil)
    (and (not erp)
         (equal (dag-to-term res) '(if (natp x) y (natp x))))))
 
@@ -373,7 +373,7 @@
                         nil
                         (make-rule-alist! nil
                                          (w state))
-                        nil nil nil t nil t nil (known-booleans (w state)))
+                        nil (known-booleans (w state)) nil nil t nil t nil)
    (and (not erp)
         (equal (dag-to-term res) '(if (foo x) (foo x) y)))))
 
@@ -384,7 +384,7 @@
                         nil
                         (make-rule-alist! nil
                                          (w state))
-                        nil nil nil t nil t nil (known-booleans (w state)))
+                        nil (known-booleans (w state)) nil nil t nil t nil)
    (and (not erp)
         (equal (dag-to-term res) '(if (foo x) y (foo x))))))
 
@@ -395,7 +395,7 @@
                         nil
                         (make-rule-alist! nil
                                          (w state))
-                        nil nil nil t nil t nil (known-booleans (w state)))
+                        nil (known-booleans (w state)) nil nil t nil t nil)
    (and (not erp)
         (equal (dag-to-term res) '(if (not (natp x)) (not (natp x)) y)))))
 
@@ -406,7 +406,7 @@
                         nil
                         (make-rule-alist! nil
                                          (w state))
-                        nil nil nil t nil t nil (known-booleans (w state)))
+                        nil (known-booleans (w state)) nil nil t nil t nil)
    (and (not erp)
         (equal (dag-to-term res) '(if (not (natp x)) (natp x) y)))))
 
@@ -417,7 +417,7 @@
                         nil
                         (make-rule-alist! nil
                                          (w state))
-                        nil nil nil t nil t nil (known-booleans (w state)))
+                        nil (known-booleans (w state)) nil nil t nil t nil)
    (and (not erp)
         (equal (dag-to-term res) '(if (not (natp x)) y (not (natp x)))))))
 
@@ -428,7 +428,7 @@
                         nil
                         (make-rule-alist! nil
                                          (w state))
-                        nil nil nil t nil t nil (known-booleans (w state)))
+                        nil (known-booleans (w state)) nil nil t nil t nil)
    (and (not erp)
         (equal (dag-to-term res) '(if (not (natp x)) y (natp x))))))
 
@@ -439,7 +439,7 @@
                         nil
                         (make-rule-alist! nil
                                          (w state))
-                        nil nil nil t nil t nil (known-booleans (w state)))
+                        nil (known-booleans (w state)) nil nil t nil t nil)
    (and (not erp)
         (equal (dag-to-term res) '(if (not (foo x)) (not (foo x)) y)))))
 
@@ -450,7 +450,7 @@
                         nil
                         (make-rule-alist! nil
                                          (w state))
-                        nil nil nil t nil t nil (known-booleans (w state)))
+                        nil (known-booleans (w state)) nil nil t nil t nil)
    (and (not erp)
         (equal (dag-to-term res) '(if (not (foo x)) (foo x) y)))))
 
@@ -461,7 +461,7 @@
                         nil
                         (make-rule-alist! nil
                                          (w state))
-                        nil nil nil t nil t nil (known-booleans (w state)))
+                        nil (known-booleans (w state)) nil nil t nil t nil)
    (and (not erp)
         (equal (dag-to-term res) '(if (not (foo x)) y (not (foo x)))))))
 
@@ -472,7 +472,7 @@
                         nil
                         (make-rule-alist! nil
                                          (w state))
-                        nil nil nil t nil t nil (known-booleans (w state)))
+                        nil (known-booleans (w state)) nil nil t nil t nil)
    (and (not erp)
         (equal (dag-to-term res) '(if (not (foo x)) y (foo x))))))
 
@@ -484,7 +484,7 @@
                         '((member-equal x y))
                         (make-rule-alist! nil
                                          (w state))
-                        nil nil nil t nil t nil (known-booleans (w state)))
+                        nil (known-booleans (w state)) nil nil t nil t nil)
    (and (not erp)
         (equal (dag-to-term res) 'w))))
 
@@ -495,7 +495,7 @@
                         '((member-equal x y))
                         (make-rule-alist! nil
                                          (w state))
-                        nil nil nil t nil t nil (known-booleans (w state)))
+                        nil (known-booleans (w state)) nil nil t nil t nil)
    (and (not erp)
         (equal (dag-to-term res) 'z))))
 
@@ -507,7 +507,7 @@
                         '((not (member-equal x y)))
                         (make-rule-alist! nil
                                          (w state))
-                        nil nil nil t nil t nil (known-booleans (w state)))
+                        nil (known-booleans (w state)) nil nil t nil t nil)
    (and (not erp)
         (equal (dag-to-term res) 'z))))
 
@@ -518,7 +518,7 @@
                         '((not (member-equal x y)))
                         (make-rule-alist! nil
                                          (w state))
-                        nil nil nil t nil t nil (known-booleans (w state)))
+                        nil (known-booleans (w state)) nil nil t nil t nil)
    (and (not erp)
         (equal (dag-to-term res) 'w))))
 
@@ -533,9 +533,9 @@
                           '()
                           (make-rule-alist! '(if-same)
                                             (w state))
-                          nil nil nil
+                          nil (known-booleans (w state)) nil nil
                           nil ; can't be memoizing if we want to use contexts
-                          nil t nil (known-booleans (w state)))
+                          nil t nil)
      (and (not erp)
           (equal (dag-to-term res) ''t)))))
 
@@ -551,8 +551,9 @@
                           (make-rule-alist! '(<-TRANS-simple)
                                             (w state))
                           nil
+                           (known-booleans (w state))
                           '(<-trans-simple) nil
-                          nil nil t nil (known-booleans (w state)))
+                          nil nil t nil)
      (and (not erp)
           (equal (dag-to-term res) '(if (< x y) (if (< y z) 't blah) blah2))))))
 
@@ -566,7 +567,7 @@
                         nil
                         (make-rule-alist! nil
                                          (w state))
-                        nil nil nil t nil t t (known-booleans (w state)))
+                        nil (known-booleans (w state)) nil nil t nil t t)
    (and (not erp)
         (equal (dag-to-term res) '(bvxor '32 x y)))))
 
@@ -576,7 +577,7 @@
                         nil
                         (make-rule-alist! nil
                                          (w state))
-                        nil nil nil t nil t t (known-booleans (w state)))
+                        nil (known-booleans (w state)) nil nil t nil t t)
    (and (not erp)
         (equal (dag-to-term res) '(bvchop '32 y)))))
 
@@ -586,7 +587,7 @@
                         nil
                         (make-rule-alist! nil
                                          (w state))
-                        nil nil nil t nil t t (known-booleans (w state)))
+                        nil (known-booleans (w state)) nil nil t nil t t)
    (and (not erp)
         (equal (dag-to-term res) '(bvxor '32 '17 x)))))
 
@@ -599,9 +600,9 @@
    (simplify-term-basic '(if (not (consp x)) (equal '3 (car x)) (equal '4 (car x)))
                         nil
                         (make-rule-alist! '(default-car) (w state))
-                        nil nil nil
+                        nil (known-booleans (w state)) nil nil
                         t ;memoize=t
-                        nil t t (known-booleans (w state)))
+                        nil t t)
    (and (not erp)
         (equal (dag-to-term res) '(if (not (consp x)) (equal '3 (car x)) (equal '4 (car x)))))))
 
@@ -612,9 +613,9 @@
    (simplify-term-basic '(bvif '32 't '1 x)
                         nil
                         nil ;(make-rule-alist! '(default-car) (w state))
-                        nil nil nil
+                        nil (known-booleans (w state)) nil nil
                         t ;memoize=t
-                        nil t t (known-booleans (w state)))
+                        nil t t)
    (and (not erp)
         (equal (dag-to-term res) ''1))))
 
@@ -622,17 +623,7 @@
 
 (assert!
  (mv-let (erp res)
-   (simplify-dag-basic (make-term-into-dag-simple! '(cons a b))
-                       nil
-                       (empty-rule-alist)
-                       nil nil
-                       nil
-                       nil
-                       nil
-                       nil
-                       nil
-                       nil
-                       nil)
+   (simplify-dag-basic (make-term-into-dag-simple! '(cons a b)) nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil)
    (and (not erp)
         (equal res (make-term-into-dag-simple! '(cons a b))))))
 

@@ -605,7 +605,8 @@
      @('\\n'),
      @('\\r'),
      @('\\t'), and
-     @('\\v')."))
+     @('\\v').
+     We also include the @('\\%') GCC extension (see our ABNF grammar)."))
   (:squote ())
   (:dquote ())
   (:qmark ())
@@ -617,6 +618,7 @@
   (:r ())
   (:t ())
   (:v ())
+  (:percent ())
   :pred simple-escapep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1550,7 +1552,11 @@
        This is not a regular function,
        because its first argument is a type name, not an expression.
        The second argument is a member designator,
-       which is a restricted form of expression."))
+       which is a restricted form of expression.")
+     (xdoc::p
+      "As a GCC extesntion, we include
+       expressions preceded by @('__extension__').
+       See our ABNF grammar."))
     (:ident ((ident ident)))
     (:const ((const const)))
     (:string ((strings stringlit-list)))
@@ -1604,6 +1610,7 @@
                 (type2 tyname)))
     (:offsetof ((type tyname)
                 (member member-designor)))
+    (:extension ((expr expr)))
     :pred exprp
     :measure (two-nats-measure (acl2-count x) 0))
 
@@ -1710,7 +1717,7 @@
       "These are part of calls of @('__builtin_offsetof'),
        which is a GCC extension;
        see @(tsee expr)."))
-    (:ident ((unwrap ident)))
+    (:ident ((ident ident)))
     (:dot ((member member-designor)
            (name ident)))
     (:sub ((member member-designor)
@@ -1749,8 +1756,14 @@
        "@('https://gcc.gnu.org/onlinedocs/gcc/_005f_005fint128.html')")
       ".")
      (xdoc::p
-      "We also include the GCC extension @('_Float128'),
-       which is a floating type: see "
+      "We also include the GCC extensions
+       @('_Float32'),
+       @('_Float32x'),
+       @('_Float64'),
+       @('_Float64x'),
+       @('_Float128'), and
+       @('_Float128x'),
+       which are floating types: see "
       (xdoc::ahref
        "https://gcc.gnu.org/onlinedocs/gcc/Floating-Types.html"
        "@('https://gcc.gnu.org/onlinedocs/gcc/Floating-Types.html')")
@@ -1785,13 +1798,18 @@
     (:bool ())
     (:complex ())
     (:atomic ((type tyname)))
-    (:struct ((unwrap strunispec)))
-    (:union ((unwrap strunispec)))
-    (:enum ((unwrap enumspec)))
+    (:struct ((spec strunispec)))
+    (:union ((spec strunispec)))
+    (:enum ((spec enumspec)))
     (:typedef ((name ident)))
     ;; GCC extensions:
     (:int128 ())
+    (:float32 ())
+    (:float32x ())
+    (:float64 ())
+    (:float64x ())
     (:float128 ())
+    (:float128x ())
     (:builtin-va-list ())
     (:struct-empty ((name? ident-option)))
     (:typeof-expr ((expr expr)
@@ -1820,9 +1838,9 @@
      (xdoc::p
       "As a GCC extension, we include attribute specifiers.
        See our ABNF grammar."))
-    (:tyspec ((unwrap type-spec)))
-    (:tyqual ((unwrap type-qual)))
-    (:align ((unwrap align-spec)))
+    (:tyspec ((spec type-spec)))
+    (:tyqual ((qual type-qual)))
+    (:align ((spec align-spec)))
     (:attrib ((unwrap attrib-spec))) ; GCC extension
     :pred spec/qual-p
     :measure (two-nats-measure (acl2-count x) 0))
@@ -1884,14 +1902,19 @@
        but it is useful to define <i>declaration-specifiers</i>
        (see @(tsee declspec-list)).")
      (xdoc::p
-      "As a GCC extension, we include attribute specifiers.
-       See our ABNF grammar."))
+      "As GCC extensions, we include
+       attribute specifiers,
+       the keyword @('__stdcall'),
+       and the @('__declspec') attribute syntax.
+       See our ABNF grammar for details."))
     (:stocla ((unwrap stor-spec)))
     (:tyspec ((unwrap type-spec)))
     (:tyqual ((unwrap type-qual)))
     (:funspec ((unwrap fun-spec)))
     (:align ((unwrap align-spec)))
     (:attrib ((unwrap attrib-spec))) ; GCC extension
+    (:stdcall ()) ; GCC extension
+    (:declspec-attrib ((arg identp))) ; GCC extension
     :pred declspecp
     :measure (two-nats-measure (acl2-count x) 0))
 

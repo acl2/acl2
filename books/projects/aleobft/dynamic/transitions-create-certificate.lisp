@@ -37,7 +37,7 @@
      which abstracts the aforementioned message exchange process.
      Our @('create-certificate') event ``instantly'' creates a certificates,
      and broadcasts it to the other validators.
-     This can be thought as modeling the final act of
+     This can be thought of as modeling the final act of
      the aforementioned message exchange,
      namely the creation and broadcasting of the certificates
      after proposals and signatures have been exchanged,
@@ -80,7 +80,7 @@
      the certificate in the @('create-certificate') event;
      see @(tsee event).
      The input @('vstate') is the state of
-     the validator whose address is an endorser of the certificate.
+     the validator whose address is a signer of the certificate.
      See the (indirect) callers of this function.")
    (xdoc::p
     "A certificate is signed by author and endorsers,
@@ -156,7 +156,7 @@
      and therefore the validator must have those predecessors in the DAG.
      If the certificate's round is 1,
      there is no previous round, and thus no previous certificates,
-     and thus no requirements on they being in the DAG.")
+     and thus no requirements on them being in the DAG.")
    (xdoc::p
     "The referenced certificate in the previous round must form a quorum,
      unless the certificate's round is 1,
@@ -851,11 +851,7 @@
      but faulty validators behave arbitrarily regardless of
      which messages they receive.
      Thus, in our model of AleoBFT, we ignore messages sent to faulty validators
-     by only adding to the network messages sent to correct validators.
-     We could easily change our model to add to the network
-     messages to all correct validators,
-     but since faulty validators have no internal state in our model,
-     messages to faulty validators would have no use and purpose.")
+     by only adding to the network messages sent to correct validators.")
    (xdoc::p
     "It may also seem strange that the messages are sent to
      all the validators in the system, and not just the ones in the committee.

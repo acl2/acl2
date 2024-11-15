@@ -875,17 +875,18 @@
   :short "Print a simple escape."
   (simple-escape-case
    esc
-   :squote (print-astring "\\'" pstate)  ; \'
-   :dquote (print-astring "\\\"" pstate) ; \"
-   :qmark (print-astring "\\?" pstate)   ; \?
-   :bslash (print-astring "\\\\" pstate) ; \\
-   :a (print-astring "\\a" pstate)       ; \a
-   :b (print-astring "\\b" pstate)       ; \b
-   :f (print-astring "\\f" pstate)       ; \f
-   :n (print-astring "\\n" pstate)       ; \n
-   :r (print-astring "\\r" pstate)       ; \r
-   :t (print-astring "\\t" pstate)       ; \t
-   :v (print-astring "\\v" pstate))      ; \v
+   :squote (print-astring "\\'" pstate)   ; \'
+   :dquote (print-astring "\\\"" pstate)  ; \"
+   :qmark (print-astring "\\?" pstate)    ; \?
+   :bslash (print-astring "\\\\" pstate)  ; \\
+   :a (print-astring "\\a" pstate)        ; \a
+   :b (print-astring "\\b" pstate)        ; \b
+   :f (print-astring "\\f" pstate)        ; \f
+   :n (print-astring "\\n" pstate)        ; \n
+   :r (print-astring "\\r" pstate)        ; \r
+   :t (print-astring "\\t" pstate)        ; \t
+   :v (print-astring "\\v" pstate)        ; \v
+   :percent (print-astring "\\%" pstate)) ; \%
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1795,6 +1796,10 @@
                 (pstate (print-astring ", " pstate))
                 (pstate (print-member-designor expr.member pstate))
                 (pstate (print-astring ")" pstate)))
+             pstate)
+           :extension
+           (b* ((pstate (print-astring "__extension__ " pstate))
+                (pstate (print-expr expr.expr (expr-priority-primary) pstate)))
              pstate)))
          (pstate (if parenp
                      (print-astring ")" pstate)
@@ -1898,7 +1903,7 @@
     :short "Print a member designator."
     (member-designor-case
      memdes
-     :ident (print-ident memdes.unwrap pstate)
+     :ident (print-ident memdes.ident pstate)
      :dot (b* ((pstate (print-member-designor memdes.member pstate))
                (pstate (print-astring "." pstate))
                (pstate (print-ident memdes.name pstate)))
@@ -1938,17 +1943,22 @@
                   (pstate (print-astring ")" pstate)))
                pstate)
      :struct (b* ((pstate (print-astring "struct " pstate))
-                  (pstate (print-strunispec tyspec.unwrap pstate)))
+                  (pstate (print-strunispec tyspec.spec pstate)))
                pstate)
      :union (b* ((pstate (print-astring "union " pstate))
-                 (pstate (print-strunispec tyspec.unwrap pstate)))
+                 (pstate (print-strunispec tyspec.spec pstate)))
               pstate)
      :enum (b* ((pstate (print-astring "enum " pstate))
-                (pstate (print-enumspec tyspec.unwrap pstate)))
+                (pstate (print-enumspec tyspec.spec pstate)))
              pstate)
      :typedef (print-ident tyspec.name pstate)
      :int128 (print-astring "__int128" pstate)
+     :float32 (print-astring "_Float32" pstate)
+     :float32x (print-astring "_Float32x" pstate)
+     :float64 (print-astring "_Float64" pstate)
+     :float64x (print-astring "_Float64x" pstate)
      :float128 (print-astring "_Float128" pstate)
+     :float128x (print-astring "_Float128x" pstate)
      :builtin-va-list (print-astring "__builtin_va_list" pstate)
      :struct-empty (b* ((pstate (print-astring "struct" pstate))
                         (pstate (if tyspec.name?
@@ -1990,9 +2000,9 @@
     :short "Print a specifier or qualifier."
     (spec/qual-case
      specqual
-     :tyspec (print-type-spec specqual.unwrap pstate)
-     :tyqual (print-type-qual specqual.unwrap pstate)
-     :align (print-align-spec specqual.unwrap pstate)
+     :tyspec (print-type-spec specqual.spec pstate)
+     :tyqual (print-type-qual specqual.qual pstate)
+     :align (print-align-spec specqual.spec pstate)
      :attrib (print-attrib-spec specqual.unwrap pstate))
     :measure (two-nats-measure (spec/qual-count specqual) 0))
 
@@ -2044,7 +2054,12 @@
      :tyqual (print-type-qual declspec.unwrap pstate)
      :funspec (print-fun-spec declspec.unwrap pstate)
      :align (print-align-spec declspec.unwrap pstate)
-     :attrib (print-attrib-spec declspec.unwrap pstate))
+     :attrib (print-attrib-spec declspec.unwrap pstate)
+     :stdcall (print-astring "__stdcall" pstate)
+     :declspec-attrib (b* ((pstate (print-astring "__declspec(" pstate))
+                           (pstate (print-ident declspec.arg pstate))
+                           (pstate (print-astring ")" pstate)))
+                        pstate))
     :measure (two-nats-measure (declspec-count declspec) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

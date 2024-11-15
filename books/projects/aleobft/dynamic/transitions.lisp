@@ -42,15 +42,21 @@
      In other words, we define the transitions of
      the state transition system that models AleoBFT.")
    (xdoc::p
-    "Both the predicates and the functions are executable.
-     This means that, given an initial state and a list of events,
-     it is possible to simulate the execution of the system in ACL2
+    "Both the predicates and the functions are ``nearly'' executable.
+     There are three constrained functions whose details are not needed
+     for the proofs: @(tsee genesis-committee), @(tsee leader-at-round), and
+     @(tsee lookback).  These functions would need to have executable
+     attachments for the transition predicates and functions to be executable
+     in the theorem prover.
+     Once this is done, given an initial state and a list of events,
+     it will be possible to simulate the execution of the system in ACL2
      by running each event in turn, starting with the initial state.
-     The execution is not necessarily fast,
+     The execution will not necessarily be fast,
      because the definition of the labeled state transition system
      prioritizes clarity over efficiency."))
   :order-subtopics (elections
                     dags
+                    anchors
                     blockchains
                     transitions-create-certificate
                     transitions-receive-certificate

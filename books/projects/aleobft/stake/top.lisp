@@ -12,6 +12,7 @@
 (in-package "ALEOBFT-STAKE")
 
 (include-book "definition")
+(include-book "correctness")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -35,4 +36,5 @@
      This model does not capture garbage collection or syncing.")
    (xdoc::p
     "This is work in progress."))
-  :order-subtopics (definition))
+  :order-subtopics (definition
+                    correctness))

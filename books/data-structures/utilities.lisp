@@ -285,7 +285,7 @@ soon as any of the lists are ATOMic, e.g.,</p>
 (program)
 
 (defmacro bomb (ctx str &rest args)
-  `(ACl2::ER ACL2::HARD ,ctx ,str ,@args))
+  `(ACL2::ER ACL2::HARD ,ctx ,str ,@args))
 
 (defconst *defloop-accumulators* '("COLLECT" "APPEND"))
 (defconst *defloop-conditionals* '("IF" "WHEN" "UNLESS"))

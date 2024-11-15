@@ -571,18 +571,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro test-lex (fn input &key pos more-inputs cond)
+(defmacro test-lex (fn input &key pos more-inputs gcc cond)
   ;; INPUT is an ACL2 term with the text to lex,
   ;; where the term evaluates to a string or a list of bytes.
   ;; Optional POS is the initial position for the parser state.
   ;; Optional MORE-INPUTS go just before parser state input.
+  ;; GCC flag says whether GCC extensions are enabled.
   ;; Optional COND may be over variables AST, POS/SPAN, PARSTATE,
   ;; and also POS/SPAN2 for LEX-*-DIGIT and LEX-*-HEXADECIMAL-DIGIT.
   `(assert!-stobj
     (b* ((parstate (init-parstate (if (stringp ,input)
                                       (acl2::string=>nats ,input)
                                     ,input)
-                                  nil
+                                  ,gcc
                                   parstate))
          ,@(and pos
                 `((parstate (update-parstate->position ,pos parstate))))
@@ -598,16 +599,17 @@
        parstate))
     parstate))
 
-(defmacro test-lex-fail (fn input &key pos more-inputs)
+(defmacro test-lex-fail (fn input &key pos more-inputs gcc)
   ;; INPUT is an ACL2 term with the text to lex,
   ;; where the term evaluates to a string or a list of bytes.
   ;; Optional POS is the initial position for the parser state.
   ;; Optional MORE-INPUTS go just before parser state input.
+  ;; GCC flag says whether GCC extensions are enabled.
   `(assert!-stobj
     (b* ((parstate (init-parstate (if (stringp ,input)
                                       (acl2::string=>nats ,input)
                                     ,input)
-                                  nil
+                                  ,gcc
                                   parstate))
          ,@(and pos
                 `((parstate (update-parstate->position ,pos parstate))))
@@ -929,6 +931,16 @@
  lex-escape-sequence
  "U0000123")
 
+(test-lex-fail
+ lex-escape-sequence
+ "%")
+
+(test-lex
+ lex-escape-sequence
+ "%"
+ :gcc t
+ :cond (equal ast (escape-simple (simple-escape-percent))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; lex-*-c-char
@@ -1235,6 +1247,33 @@
  "__builtin_offsetof(struct pt_regs, ss)"
  :gcc t)
 
+(test-parse
+ parse-expression
+ "({x = 0;})(x)"
+ :cond (expr-case ast :funcall)
+ :gcc t)
+
+(test-parse
+ parse-expression
+ "sizeof(*ctx)"
+ :cond (and (expr-case ast :unary)
+            (expr-case (expr-unary->arg ast) :paren)))
+
+(test-parse
+ parse-expression
+ "__extension__ x"
+ :gcc t)
+
+(test-parse
+ parse-expression
+ "__extension__ x + y"
+ :gcc t)
+
+(test-parse
+ parse-expression
+ "__extension__ (x + y)"
+ :gcc t)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; parse-struct-or-union-specifier
@@ -1533,31 +1572,37 @@
 (test-parse
  parse-expression-or-type-name
  "abc)"
+ :more-inputs (t)
  :cond (amb?-expr/tyname-case ast :ambig))
 
 (test-parse
  parse-expression-or-type-name
  "id(id))"
+ :more-inputs (nil)
  :cond (amb?-expr/tyname-case ast :ambig))
 
 (test-parse
  parse-expression-or-type-name
  "+x)"
+ :more-inputs (t)
  :cond (amb?-expr/tyname-case ast :expr))
 
 (test-parse
  parse-expression-or-type-name
  "int *)"
+ :more-inputs (nil)
  :cond (amb?-expr/tyname-case ast :tyname))
 
 (test-parse
  parse-expression-or-type-name
  "a + b)"
+ :more-inputs (t)
  :cond (amb?-expr/tyname-case ast :expr))
 
 (test-parse
  parse-expression-or-type-name
  "a _Atomic)"
+ :more-inputs (nil)
  :cond (amb?-expr/tyname-case ast :tyname))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1839,7 +1884,21 @@ error (int __status, int __errnum, const char *__format, ...)
  :gcc t)
 
 (test-parse
- parse-expression
- "({x = 0;})(x)"
- :cond (expr-case ast :funcall)
+ parse-external-declaration-list
+ "static ngx_thread_value_t __stdcall ngx_iocp_timer(void *data);"
+ :gcc t)
+
+(test-parse
+ parse-external-declaration-list
+ "__declspec(thread) int nevents = 0;"
+ :gcc t)
+
+(test-parse
+ parse-external-declaration-list
+ "__declspec(thread) WSAEVENT events[WSA_MAXIMUM_WAIT_EVENTS + 1];"
+ :gcc t)
+
+(test-parse
+ parse-external-declaration-list
+ "__declspec(thread) ngx_connection_t *conn[WSA_MAXIMUM_WAIT_EVENTS + 1];"
  :gcc t)

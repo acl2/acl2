@@ -98,7 +98,7 @@
   (xdoc::topstring
    (xdoc::p
     "The only kind of event that adds a certificate to a buffer
-     is @('receive-certificate-next').
+     is @('receive-certificate').
      But if we assume the already proved invariant
      that messages are not self-addressed,
      then we know that the newly added certificate
