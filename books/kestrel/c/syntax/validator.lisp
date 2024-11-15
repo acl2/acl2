@@ -5531,10 +5531,19 @@
        the block item is a compound statement
        whose last block item is an expression statement,
        in which case the @('last-expr-type?') result is
-       the type of that expression."))
-    (declare (ignore item table ienv))
+       the type of that expression.")
+     (xdoc::p
+      "If the block item is a declaration,
+       the @('last-expr-type?') result is @('nil'),
+       because the block item is not a statement of the kind
+       described in @(tsee valid-stmt)."))
     (b* (((reterr) nil nil (irr-valid-table)))
-      (reterr :todo))
+      (block-item-case
+       item
+       :decl (b* (((erp types table) (valid-decl item.unwrap table ienv)))
+               (retok types nil table))
+       :stmt (valid-stmt item.unwrap table ienv)
+       :ambig (prog2$ (impossible) (reterr t))))
     :measure (block-item-count item))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
