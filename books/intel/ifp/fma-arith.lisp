@@ -610,8 +610,9 @@
                     (<= val
                         (+ (expt 2 exp)
                            exact)))))
-    :hints (("Goal" :in-theory (e/d (fp-muladd-arith-in-terms-of-add-naive)
-                                    (FP-ARITH-TRIPLE->RATIONAL-OF-NORMALIZE-ARITH-TRIPLE-WHEN-NOT-STICKY)))))
+    :hints (("Goal"
+             :in-theory (e/d (fp-muladd-arith-in-terms-of-add-naive)
+                             (fp-arith-triple->rational-of-normalize-arith-triple-when-not-sticky)))))
 
   (defret <fn>-when-exact
     (implies (and (integerp (* (expt 2 frac-size)
@@ -882,7 +883,8 @@
                   (posp frac-size))
              (and (<= -1/2 error)
                   (<= error 1/2)))
-    :hints (("Goal" :use fp-muladd-arith-round-bounds-when-rne
+    :hints (("Goal"
+             :use fp-muladd-arith-round-bounds-when-rne
              :in-theory (e/d (acl2::exponents-add-unrestricted)
                              (fp-muladd-arith-round-bounds-when-rne))))
     :rule-classes :linear)
