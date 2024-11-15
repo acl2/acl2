@@ -122,8 +122,7 @@
     (implies (and (backward-closed-p systate)
                   (create-possiblep cert systate)
                   (certificatep cert))
-             (backward-closed-p
-              (create-next cert systate)))
+             (backward-closed-p (create-next cert systate)))
     :enable (backward-closed-p
              backward-closed-p-necc
              validator-state->dag-of-create-next
@@ -135,8 +134,7 @@
   (defruled backward-closed-p-of-receive-next
     (implies (and (backward-closed-p systate)
                   (receive-possiblep msg systate))
-             (backward-closed-p
-              (receive-next msg systate)))
+             (backward-closed-p (receive-next msg systate)))
     :enable (backward-closed-p
              backward-closed-p-necc))
 
@@ -156,8 +154,7 @@
     (implies (and (backward-closed-p systate)
                   (store-possiblep val cert systate)
                   (addressp val))
-             (backward-closed-p
-              (store-next val cert systate)))
+             (backward-closed-p (store-next val cert systate)))
     :enable (backward-closed-p
              backward-closed-p-necc
              validator-state->dag-of-store-next
@@ -169,8 +166,7 @@
   (defruled backward-closed-p-of-advance-next
     (implies (and (backward-closed-p systate)
                   (advance-possiblep val systate))
-             (backward-closed-p
-              (advance-next val systate)))
+             (backward-closed-p (advance-next val systate)))
     :enable (backward-closed-p
              backward-closed-p-necc))
 
@@ -179,8 +175,7 @@
   (defruled backward-closed-p-of-commit-next
     (implies (and (backward-closed-p systate)
                   (commit-possiblep val systate))
-             (backward-closed-p
-              (commit-next val systate)))
+             (backward-closed-p (commit-next val systate)))
     :enable (backward-closed-p
              backward-closed-p-necc))
 
@@ -189,8 +184,7 @@
   (defruled backward-closed-p-of-timeout-next
     (implies (and (backward-closed-p systate)
                   (timeout-possiblep val systate))
-             (backward-closed-p
-              (timeout-next val systate)))
+             (backward-closed-p (timeout-next val systate)))
     :enable (backward-closed-p
              backward-closed-p-necc))
 
