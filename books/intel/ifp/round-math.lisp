@@ -1956,24 +1956,25 @@
   (define within-1/2*ulp ((x rationalp)
                           (y1 rationalp)
                           (y2 rationalp)
-                          (ulp rationalp))
+                          (frac-size posp))
     :returns (res booleanp :rule-classes :type-prescription)
-    (or (and (< (- x ulp) y1)
-             (< y1 (- x (* 1/2 ulp)))
-             (< (- x ulp) y2)
-             (< y2 (- x (* 1/2 ulp))))
-        (and (< (- x (* 1/2 ulp)) y1)
-             (< y1 x)
-             (< (- x (* 1/2 ulp)) y2)
-             (< y2 x))
-        (and (< x y1)
-             (< y1 (+ x (* 1/2 ulp)))
-             (< x y2)
-             (< y2 (+ x (* 1/2 ulp))))
-        (and (< (+ x (* 1/2 ulp)) y1)
-             (< y1 (+ x ulp))
-             (< (+ x (* 1/2 ulp)) y2)
-             (< y2 (+ x ulp)))))
+    (b* ((ulp (ulp y2 frac-size)))
+      (or (and (< (- x ulp) y1)
+               (< y1 (- x (* 1/2 ulp)))
+               (< (- x ulp) y2)
+               (< y2 (- x (* 1/2 ulp))))
+          (and (< (- x (* 1/2 ulp)) y1)
+               (< y1 x)
+               (< (- x (* 1/2 ulp)) y2)
+               (< y2 x))
+          (and (< x y1)
+               (< y1 (+ x (* 1/2 ulp)))
+               (< x y2)
+               (< y2 (+ x (* 1/2 ulp))))
+          (and (< (+ x (* 1/2 ulp)) y1)
+               (< y1 (+ x ulp))
+               (< (+ x (* 1/2 ulp)) y2)
+               (< y2 (+ x ulp))))))
 
   (local
    (defthm integer-length-of-normalized-man
@@ -2564,7 +2565,6 @@
    (defthmd normalize-rational-within-1/2*ulp
      (b* (((fp-arith-triple x))
           (xval (fp-arith-triple->rational x))
-          (ulp-x (ulp xval frac-size))
           ((mv norm1 roundp1 stickyp1)
            (normalize-rational-to-arith-triple yval1
                                                frac-size
@@ -2589,13 +2589,14 @@
                             (<= 0 xval))
                      (equal (<= 0 yval2)
                             (<= 0 xval))
-                     (within-1/2*ulp xval yval1 yval2 ulp-x))
+                     (within-1/2*ulp xval yval1 yval2 frac-size))
                 (and (equal norm1 norm2)
                      (equal roundp1 roundp2)
                      (equal stickyp1 stickyp2))))
      :hints (("Goal"
               :cases ((<= 0 (fp-arith-triple->rational x)))
               :in-theory (enable within-1/2*ulp
+                                 ulp
                                  normalize-rational-within-1/2*ulp-1a
                                  normalize-rational-within-1/2*ulp-1b
                                  normalize-rational-within-1/2*ulp-2a
@@ -2609,8 +2610,7 @@
    (defthmd normalize-rational+round-arith-triple-within-1/2*ulp-normalized
      (b* (((fp-arith-triple x))
           (frac-size (fp-size->frac-size size))
-          (xval (fp-arith-triple->rational x))
-          (ulp-y2 (ulp yval2 frac-size)))
+          (xval (fp-arith-triple->rational x)))
        (implies (and (fp-arith-triple-p x)
                      (unsigned-byte-p (1+ frac-size) x.man)
                      (<= (expt 2 frac-size) x.man)
@@ -2626,21 +2626,19 @@
                             (<= 0 xval))
                      (equal (<= 0 yval2)
                             (<= 0 xval))
-                     (within-1/2*ulp xval yval1 yval2 ulp-y2))
+                     (within-1/2*ulp xval yval1 yval2 frac-size))
                 (equal (normalize-rational+round-arith-triple
                         yval1 rc :sticky-in sticky-in1)
                        (normalize-rational+round-arith-triple
                         yval2 rc :sticky-in sticky-in2))))
      :hints (("Goal"
-              :in-theory (enable ulp
-                                 normalize-rational+round-arith-triple
+              :in-theory (enable normalize-rational+round-arith-triple
                                  normalize-rational-within-1/2*ulp)))))
 
   (defthmd normalize-rational+round-arith-triple-within-1/2*ulp
     (b* (((fp-arith-triple x))
          (frac-size (fp-size->frac-size size))
-         (xval (fp-arith-triple->rational x))
-         (ulp-y2 (ulp yval2 frac-size)))
+         (xval (fp-arith-triple->rational x)))
       (implies (and (fp-arith-triple-p x)
                     (unsigned-byte-p (1+ frac-size) x.man)
                     (not (equal x.man 0))
@@ -2656,7 +2654,7 @@
                            (<= 0 xval))
                     (equal (<= 0 yval2)
                            (<= 0 xval))
-                    (within-1/2*ulp xval yval1 yval2 ulp-y2))
+                    (within-1/2*ulp xval yval1 yval2 frac-size))
                (equal (normalize-rational+round-arith-triple
                        yval1 rc :sticky-in sticky-in1)
                       (normalize-rational+round-arith-triple
