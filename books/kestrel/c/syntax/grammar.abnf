@@ -829,10 +829,11 @@ primary-expression = identifier
                    / 1*string-literal
                    / "(" expression ")"
                    / generic-selection
-                   / "(" compound-statement ")" ; GCC extension
-                   / types-compatible-call ; GCC extension
-                   / offsetof-call ; GCC extension
-                   / %s"__extension__" primary-expression ; GCC extension
+                   ; GCC extensions:
+                   / "(" compound-statement ")"
+                   / types-compatible-call
+                   / offsetof-call
+                   / %s"__extension__" primary-expression
 
 types-compatible-call =
     %s"__builtin_types_compatible_p" "(" type-name "," type-name ")"
@@ -1153,7 +1154,7 @@ declaration-specifiers = storage-class-specifier [ declaration-specifiers ]
                        / type-qualifier [ declaration-specifiers ]
                        / function-specifier [ declaration-specifiers ]
                        / alignment-specifier [ declaration-specifiers ]
-                       ; GCC extension:
+                       ; GCC extensions:
                        / attribute-specifier [ declaration-specifiers ]
                        / %s"__stdcall" [ declaration-specifiers ]
 
@@ -1415,8 +1416,9 @@ translation-unit = external-declaration
 
 external-declaration = function-definition
                      / declaration
-                     / ";" ; GCC extension
-                     / asm-statement ; GCC extension
+                     ; GCC extensions:
+                     / ";"
+                     / asm-statement
 
 function-definition = [ %s"__extension__" ] ; GCC extension
                       declaration-specifiers
