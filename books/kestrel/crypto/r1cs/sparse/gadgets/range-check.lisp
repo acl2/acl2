@@ -830,10 +830,8 @@
            (subsetp-equal (strip-cdrs (mv-nth 1 (make-range-check-pi-constraints-aux i tvar avars pivars c constraints-acc pivar-renaming)))
                           (cons (nth (+ -1 n) avars)
                                 (pivars-for-1s pivars (+ -2 n) tvar c))))
-  :hints (
-          ("Goal" :do-not '(generalize eliminate-destructors)
-           :induct (MAKE-RANGE-CHECK-PI-CONSTRAINTS-AUX I TVAR AVARS PIVARS C CONSTRAINTS-ACC PIVAR-RENAMING)
-
+  :hints (("Goal" :do-not '(generalize eliminate-destructors)
+           :induct (make-range-check-pi-constraints-aux i tvar avars pivars c constraints-acc pivar-renaming)
            :in-theory (e/d (make-range-check-pi-constraints-aux
                             bitp-of-mul-forced)
                            (bitp)))))
@@ -885,8 +883,8 @@
                           (= (INDEX-OF-LOWEST-0 C) (+ -1 n)))
            :expand ((INDICES-FOR-0S (+ -2 (LEN AVARS))
                                    (INDEX-OF-LOWEST-0 C) C)
-                    (INDICES-FOR-0S (BINARY-+ '-2 (LEN AVARS))
-                                   (BINARY-+ '-1 (LEN AVARS))
+                    (INDICES-FOR-0S (+ -2 (LEN AVARS))
+                                    (+ -1 (LEN AVARS))
                                    C))
            :in-theory (enable make-range-check-pi-constraints))))
 
@@ -1167,8 +1165,8 @@
   :hints (("subgoal *1/2" :cases (;(< i (INDEX-OF-LOWEST-0 C))
                                   (equal i (+ -1 n))
                                   ;; (and (>= i (INDEX-OF-LOWEST-0-AUX 0 C))
-                                  ;;      (EQUAL (NTH (BINARY-+ '-1 (LEN AVARS)) AVARS)
-                                  ;;                (CDR (ASSOC-EQUAL (NTH (BINARY-+ '1 I) PIVARS)
+                                  ;;      (EQUAL (NTH (+ -1 (LEN AVARS)) AVARS)
+                                  ;;                (CDR (ASSOC-EQUAL (NTH (+ 1 I) PIVARS)
                                   ;;                                  PIVAR-RENAMING))))
                                   )
            :in-theory (e/d (make-range-check-a-constraints
@@ -1362,7 +1360,6 @@
            (equal (lookup-equal (nth i pivars) valuation)
                   (pi i c n avars valuation prime)))
   :hints (("Goal" :in-theory (enable pivars-correctp))))
-
 
 (defthm pivars-correctp-of-append
   (equal (pivars-correctp (append indices1 indices2) valuation avars pivars c n p)
@@ -1710,9 +1707,7 @@
                     (indices-for-1s i tvar c)
                     (indices-for-1s i (index-of-lowest-0 c) c)
                     (pi i c (len avars) avars valuation p)
-                    (INDICES-FOR-1S (+ -2 (INDEX-OF-LOWEST-0 C))
-                                        (+ 1 I)
-                                        C))
+                    (indices-for-1s (+ -2 (index-of-lowest-0 c)) (+ 1 i) c))
            :in-theory (e/d ((:i make-range-check-pi-constraints-aux)
                             bitp-of-mul-forced
                             <=-of-0-and-lookup-equal
@@ -2015,14 +2010,10 @@
                     (PI (LEN AVARS) C (LEN AVARS) AVARS VALUATION P)
                     (PI (+ -1 (LEN AVARS)) C (LEN AVARS) AVARS VALUATION P))
            :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (make-range-check-a-constraints
-                            ACL2::PACKBV-OPENER
-                            zip
-                            )
-                           (index-of-lowest-0
-                            ALISTP)))))
+           :in-theory (e/d (make-range-check-a-constraints acl2::packbv-opener zip)
+                           (index-of-lowest-0 alistp)))))
 
-(local (in-theory (disable ACL2::BITP-BECOMES-UNSIGNED-BYTE-P alistp)))
+(local (in-theory (disable acl2::bitp-becomes-unsigned-byte-p alistp)))
 
 ;todo: use polarities
 (defthm equal-of-1-when-bitp-weaken
@@ -2224,8 +2215,7 @@
                                      (INDEX-OF-LOWEST-0 C)
                                      C))
                             (n (len avars))
-                            (prime p)
-                            )))
+                            (prime p))))
           ("Goal" :induct (make-range-check-a-constraints i avars pivars c pivar-renaming)
            :expand ((AVARS-FOR-1S AVARS I C)
                     (PI I C (LEN AVARS) AVARS VALUATION P)
@@ -2233,18 +2223,14 @@
                     (PI (+ -1 (LEN AVARS)) C (LEN AVARS) AVARS VALUATION P)
                     (PI (+ 1 I) C (LEN AVARS) AVARS VALUATION P))
            :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (make-range-check-a-constraints
-                            ACL2::PACKBV-OPENER
-                            zip acl2::bvchop-1-becomes-getbit)
-                           (index-of-lowest-0
-                            ALISTP)))))
+           :in-theory (e/d (make-range-check-a-constraints acl2::packbv-opener zip acl2::bvchop-1-becomes-getbit)
+                           (index-of-lowest-0 alistp)))))
 
 ;; If A<=C, then the constraints hold
 (defthm make-range-check-constraints-correct-backward
   (implies (and (<= (acl2::packbv n 1 (acl2::lookup-eq-lst (acl2::reverse-list avars) valuation)) c) ;chops the avars, but we assume the avars are bits
                 ;; All of the pivars are correct:
                 (pivars-correctp (indices-for-1s (+ -2 n) (index-of-lowest-0 c) c) valuation avars pivars c n p)
-
                 (r1cs-valuationp valuation p)
                 (primep p)
                 (equal n (len avars))
