@@ -10,7 +10,9 @@
 
 (in-package "ACL2")
 
-(include-book "build/ifdef" :dir :system)
+;; We don't actually need to include the tests together here, so we put the
+;; includes in a comment, but the dependency scanner should still find them:
+#|
 (include-book "dag-tests")
 (include-book "dag-size-sparse-tests")
 (include-book "known-booleans-tests")
@@ -38,6 +40,11 @@
 (include-book "unroll-spec-tests")
 
 (include-book "query-tests")
+|#
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(include-book "build/ifdef" :dir :system)
 
 (ifdef "OS_HAS_STP"
        (include-book "stp-clause-processor-tests")
