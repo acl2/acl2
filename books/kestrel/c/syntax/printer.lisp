@@ -2002,7 +2002,7 @@
      :tyspec (print-type-spec specqual.spec pstate)
      :tyqual (print-type-qual specqual.qual pstate)
      :align (print-align-spec specqual.spec pstate)
-     :attrib (print-attrib-spec specqual.unwrap pstate))
+     :attrib (print-attrib-spec specqual.spec pstate))
     :measure (two-nats-measure (spec/qual-count specqual) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

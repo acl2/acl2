@@ -1339,7 +1339,7 @@
                     (dimb-align-spec specqual.spec table)))
                 (retok (spec/qual-align new-alignspec)
                        table))
-       :attrib (retok (spec/qual-attrib specqual.unwrap)
+       :attrib (retok (spec/qual-attrib specqual.spec)
                       (dimb-table-fix table))))
     :measure (spec/qual-count specqual))
 
