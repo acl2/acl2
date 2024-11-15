@@ -2033,7 +2033,7 @@
           (align-spec-case
            alignspec
            :alignas-type (print-tyname alignspec.type pstate)
-           :alignas-expr (print-const-expr alignspec.arg pstate)
+           :alignas-expr (print-const-expr alignspec.expr pstate)
            :alignas-ambig (prog2$ (impossible) (pristate-fix pstate))))
          (pstate (print-astring ")" pstate)))
       pstate)

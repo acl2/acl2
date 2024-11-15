@@ -302,7 +302,7 @@
     (align-spec-case
      alignspec
      :alignas-type (align-spec-alignas-type (simpadd0-tyname alignspec.type))
-     :alignas-expr (align-spec-alignas-expr (simpadd0-const-expr alignspec.arg))
+     :alignas-expr (align-spec-alignas-expr (simpadd0-const-expr alignspec.expr))
      :alignas-ambig (prog2$ (impossible) (irr-align-spec)))
     :measure (align-spec-count alignspec))
 

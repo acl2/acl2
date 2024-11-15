@@ -1381,8 +1381,8 @@
        (b* (((erp new-type table) (dimb-tyname alignspec.type table)))
          (retok (align-spec-alignas-type new-type) table))
        :alignas-expr
-       (b* (((erp new-arg table) (dimb-const-expr alignspec.arg table)))
-         (retok (align-spec-alignas-expr new-arg) table))
+       (b* (((erp new-expr table) (dimb-const-expr alignspec.expr table)))
+         (retok (align-spec-alignas-expr new-expr) table))
        :alignas-ambig
        (b* (((erp expr/tyname table)
              (dimb-amb-expr/tyname alignspec.type/arg nil table)))

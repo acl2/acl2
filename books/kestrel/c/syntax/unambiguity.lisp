@@ -255,7 +255,7 @@
     :short "Check if an alignment specifier is unambiguous."
     (align-spec-case alignspec
                      :alignas-type (tyname-unambp alignspec.type)
-                     :alignas-expr (const-expr-unambp alignspec.arg)
+                     :alignas-expr (const-expr-unambp alignspec.expr)
                      :alignas-ambig nil)
     :measure (align-spec-count alignspec))
 
@@ -1781,10 +1781,10 @@
              (tyname-unambp (align-spec-alignas-type->type alignspec)))
     :expand (align-spec-unambp alignspec))
 
-  (defrule const-expr-unambp-of-align-spec-alignas-expr->arg
+  (defrule const-expr-unambp-of-align-spec-alignas-expr->expr
     (implies (and (align-spec-unambp alignspec)
                   (align-spec-case alignspec :alignas-expr))
-             (const-expr-unambp (align-spec-alignas-expr->arg alignspec)))
+             (const-expr-unambp (align-spec-alignas-expr->expr alignspec)))
     :expand (align-spec-unambp alignspec))
 
   (defrule not-alignas-ambig-when-align-spec-unambp
