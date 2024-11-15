@@ -3435,7 +3435,7 @@
                           (align-spec-fix align) type))))
          (retok types table))
        :alignas-expr
-       (b* (((erp type types table) (valid-const-expr align.arg table ienv))
+       (b* (((erp type types table) (valid-const-expr align.expr table ienv))
             ((unless (or (type-integerp type)
                          (type-case type :unknown)))
              (reterr (msg "In the alignment specifier ~x0, ~

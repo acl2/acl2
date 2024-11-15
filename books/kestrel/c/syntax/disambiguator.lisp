@@ -1339,7 +1339,7 @@
                     (dimb-align-spec specqual.spec table)))
                 (retok (spec/qual-align new-alignspec)
                        table))
-       :attrib (retok (spec/qual-attrib specqual.unwrap)
+       :attrib (retok (spec/qual-attrib specqual.spec)
                       (dimb-table-fix table))))
     :measure (spec/qual-count specqual))
 
@@ -1381,8 +1381,8 @@
        (b* (((erp new-type table) (dimb-tyname alignspec.type table)))
          (retok (align-spec-alignas-type new-type) table))
        :alignas-expr
-       (b* (((erp new-arg table) (dimb-const-expr alignspec.arg table)))
-         (retok (align-spec-alignas-expr new-arg) table))
+       (b* (((erp new-expr table) (dimb-const-expr alignspec.expr table)))
+         (retok (align-spec-alignas-expr new-expr) table))
        :alignas-ambig
        (b* (((erp expr/tyname table)
              (dimb-amb-expr/tyname alignspec.type/arg nil table)))

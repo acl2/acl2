@@ -21,7 +21,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ correctness
-  :parents (aleobft-dynamic)
+  :parents (aleobft-stake)
   :short "Correctness proofs of the AleoBFT labeled state transition system."
   :long
   (xdoc::topstring
