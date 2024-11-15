@@ -2200,6 +2200,7 @@
                                         "__builtin_offsetof"
                                         "__builtin_types_compatible_p"
                                         "__builtin_va_list"
+                                        "__declspec"
                                         "__extension__"
                                         "_Float32"
                                         "_Float32x"
@@ -2581,6 +2582,9 @@
       (retok (escape-simple (simple-escape-t)) pos parstate))
      ((= char (char-code #\v)) ; \ v
       (retok (escape-simple (simple-escape-v)) pos parstate))
+     ((and (= char (char-code #\%)) ; \ %
+           (parstate->gcc parstate))
+      (retok (escape-simple (simple-escape-percent)) pos parstate))
      ((and (<= (char-code #\0) char)
            (<= char (char-code #\7))) ; \ octdig
       (b* (((erp char2 pos2 parstate) (read-char parstate)))
@@ -6394,7 +6398,8 @@
       (token-keywordp token? "_Alignas")
       (token-keywordp token? "__attribute")
       (token-keywordp token? "__attribute__")
-      (token-keywordp token? "__stdcall"))
+      (token-keywordp token? "__stdcall")
+      (token-keywordp token? "__declspec"))
   ///
 
   (defrule non-nil-when-token-declaration-specifier-start-p
@@ -10193,8 +10198,9 @@
        a function specifier,
        an alignment specifier,
        an attribute specifier,
-       or the @('__stdcall') keyword
-       (the last two are GCC extensions).")
+       the @('__stdcall') keyword,
+       or the @('__declspec') keyword
+       (the last three are GCC extensions).")
      (xdoc::p
       "A declaration specifier (list) may always be followed by a declarator.
        It may also be followed by an abstract declarator
@@ -10369,6 +10375,16 @@
        ;; we must have that special GCC construct.
        ((token-keywordp token "__stdcall")
         (retok (declspec-stdcall) span parstate))
+       ;; If token is the keyword '__declspec',
+       ;; which can only happen if GCC extensions are enabled,
+       ;; we must have an attribute with that syntax.
+       ((token-keywordp token "__declspec")
+        (b* (((erp & parstate) (read-punctuator "(" parstate))
+             ((erp ident & parstate) (read-identifier parstate))
+             ((erp last-span parstate) (read-punctuator ")" parstate)))
+          (retok (declspec-declspec-attrib ident)
+                 (span-join span last-span)
+                 parstate)))
        ;; If token is anything else, it is an error.
        ;; The above cases are all the allowed possibilities for token.
        (t ; other

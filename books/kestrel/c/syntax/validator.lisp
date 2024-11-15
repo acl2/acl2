@@ -1293,7 +1293,8 @@
     "Simple escapes are always valid.
      This function returns their ASCII codes.
      Note that these always fit in any of the types
-     mentioned in [C:6.4.4.4/4]."))
+     mentioned in [C:6.4.4.4/4].
+     The GCC escape @('\\%') is like the character @('%')."))
   (simple-escape-case
    esc
    :squote (char-code #\')
@@ -1306,7 +1307,8 @@
    :n 10
    :r 13
    :t 9
-   :v 11)
+   :v 11
+   :percent (char-code #\%))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3516,7 +3518,12 @@
                        (type-spec-list-fix tyspecs)
                        (stor-spec-list-fix storspecs)
                        nil
-                       (valid-table-fix table))))
+                       (valid-table-fix table))
+       :declspec-attrib (retok (type-option-fix type?)
+                               (type-spec-list-fix tyspecs)
+                               (stor-spec-list-fix storspecs)
+                               nil
+                               (valid-table-fix table))))
     :measure (declspec-count declspec)
 
     ///

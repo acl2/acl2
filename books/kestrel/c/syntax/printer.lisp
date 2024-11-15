@@ -875,17 +875,18 @@
   :short "Print a simple escape."
   (simple-escape-case
    esc
-   :squote (print-astring "\\'" pstate)  ; \'
-   :dquote (print-astring "\\\"" pstate) ; \"
-   :qmark (print-astring "\\?" pstate)   ; \?
-   :bslash (print-astring "\\\\" pstate) ; \\
-   :a (print-astring "\\a" pstate)       ; \a
-   :b (print-astring "\\b" pstate)       ; \b
-   :f (print-astring "\\f" pstate)       ; \f
-   :n (print-astring "\\n" pstate)       ; \n
-   :r (print-astring "\\r" pstate)       ; \r
-   :t (print-astring "\\t" pstate)       ; \t
-   :v (print-astring "\\v" pstate))      ; \v
+   :squote (print-astring "\\'" pstate)   ; \'
+   :dquote (print-astring "\\\"" pstate)  ; \"
+   :qmark (print-astring "\\?" pstate)    ; \?
+   :bslash (print-astring "\\\\" pstate)  ; \\
+   :a (print-astring "\\a" pstate)        ; \a
+   :b (print-astring "\\b" pstate)        ; \b
+   :f (print-astring "\\f" pstate)        ; \f
+   :n (print-astring "\\n" pstate)        ; \n
+   :r (print-astring "\\r" pstate)        ; \r
+   :t (print-astring "\\t" pstate)        ; \t
+   :v (print-astring "\\v" pstate)        ; \v
+   :percent (print-astring "\\%" pstate)) ; \%
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2054,7 +2055,11 @@
      :funspec (print-fun-spec declspec.unwrap pstate)
      :align (print-align-spec declspec.unwrap pstate)
      :attrib (print-attrib-spec declspec.unwrap pstate)
-     :stdcall (print-astring "__stdcall" pstate))
+     :stdcall (print-astring "__stdcall" pstate)
+     :declspec-attrib (b* ((pstate (print-astring "__declspec(" pstate))
+                           (pstate (print-ident declspec.arg pstate))
+                           (pstate (print-astring ")" pstate)))
+                        pstate))
     :measure (two-nats-measure (declspec-count declspec) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

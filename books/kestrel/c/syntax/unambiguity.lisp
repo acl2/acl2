@@ -272,7 +272,8 @@
                    :funspec t
                    :align (align-spec-unambp declspec.unwrap)
                    :attrib t
-                   :stdcall t)
+                   :stdcall t
+                   :declspec-attrib t)
     :measure (declspec-count declspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1129,14 +1130,15 @@
            (align-spec-unambp alignspec))
     :expand (declspec-unambp (declspec-align alignspec)))
 
-  (defrule declspec-unambp-when-stocla/tyqual/funspec/attrib/stdcall
+  (defrule declspec-unambp-when-stocla/tyqual/funspec/attrib/stdcall/declspec
     ;; The formulation (declspec-unambp (declspec-... ...))
     ;; does not work for the return theorems in the disambiguator.
     ;; We get a subgoal of a form that is instead handled by
     ;; the formulation we give here,
     ;; which is not ideal because the conclusion is quite generic.
-    (implies (member-eq (declspec-kind declspec)
-                        '(:stocla :tyqual :funspec :attrib :stdcall))
+    (implies (member-eq
+              (declspec-kind declspec)
+              '(:stocla :tyqual :funspec :attrib :stdcall :declspec-attrib))
              (declspec-unambp declspec)))
 
   (defrule declspec-unambp-when-not-stocla/tyspec/tyqual/funspec/align
