@@ -730,6 +730,10 @@
 
   ///
 
+  (defrule dag-has-committees-p-of-empty-dag
+    (dag-has-committees-p nil blockchain)
+    :enable dag-has-committees-p)
+
   (defruled dag-has-committees-p-necc-bind-dag
     (implies (and (set::in cert dag)
                   (dag-has-committees-p dag blockchain))
@@ -779,6 +783,10 @@
   :guard-hints (("Goal" :in-theory (enable dag-has-committees-p-necc)))
 
   ///
+
+  (defrule dag-in-committees-p-of-empty-dag
+    (dag-in-committees-p nil blockchain)
+    :enable dag-in-committees-p)
 
   (defruled authors-at-same-round-in-committee-when-dag-in-committees-p
     (implies (and (dag-in-committees-p dag blockchain)
