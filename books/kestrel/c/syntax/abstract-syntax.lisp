@@ -1554,6 +1554,12 @@
        The second argument is a member designator,
        which is a restricted form of expression.")
      (xdoc::p
+      "As a GCC extension, we include calls of
+       the built-in function @('__builtin_va_arg').
+       This is not a regular function,
+       because its second argument is a type name, not an expression.
+       The first argument is an expression.")
+     (xdoc::p
       "As a GCC extesntion, we include
        expressions preceded by @('__extension__').
        See our ABNF grammar."))
@@ -1610,6 +1616,8 @@
                 (type2 tyname)))
     (:offsetof ((type tyname)
                 (member member-designor)))
+    (:va-arg ((list expr)
+              (type tyname)))
     (:extension ((expr expr)))
     :pred exprp
     :measure (two-nats-measure (acl2-count x) 0))

@@ -1089,6 +1089,10 @@
        (b* (((erp type table) (dimb-tyname expr.type table))
             ((erp memdes table) (dimb-member-designor expr.member table)))
          (retok (make-expr-offsetof :type type :member memdes) table))
+       :va-arg
+       (b* (((erp list table) (dimb-expr expr.list table))
+            ((erp type table) (dimb-tyname expr.type table)))
+         (retok (make-expr-va-arg :list list :type type) table))
        :extension
        (b* (((erp expr table) (dimb-expr expr.expr table)))
          (retok (expr-extension expr) table))))

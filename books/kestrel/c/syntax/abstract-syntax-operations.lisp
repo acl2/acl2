@@ -676,6 +676,7 @@
    :stmt (expr-priority-primary)
    :tycompat (expr-priority-primary)
    :offsetof (expr-priority-primary)
+   :va-arg (expr-priority-primary)
    :extension (expr-priority-primary))
   :hooks (:fix))
 

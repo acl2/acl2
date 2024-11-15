@@ -809,13 +809,22 @@ lexeme = token
 ; We render that as an extension of our ABNF grammar;
 ; note that the second argument is a restricted form of expressions.
 
+; As a GCC extension, we include calls of '__builtin_va_arg',
+; which are not normal function calls,
+; because the second argument is a type name.
+; We did not find this documented in the GCC manual,
+; presumably because it is an internal function,
+; used to implement the user-visible 'va_arg' macro,
+; although we did not find the latter in the GCC manual either,
+; but some web searches support the view explained just above.
+
 ; As a GCC extension, we allow empty compound literals.
 ; GCC extensions for compound literals are described in
 ; https://gcc.gnu.org/onlinedocs/gcc/Compound-Literals.html,
 ; which does not actually mention empty compound literals,
 ; but we have encountered them in practical code.
 
-; As a GCC extensions, we allow conditional with omitted operands,
+; As a GCC extensions, we allow conditionals with omitted operands,
 ; documented at https://gcc.gnu.org/onlinedocs/gcc/Conditionals.html.
 
 ; As a GCC extension, we allow a primary expression
@@ -840,6 +849,7 @@ primary-expression = identifier
                    / "(" compound-statement ")"
                    / types-compatible-call
                    / offsetof-call
+                   / va-arg-call
                    / %s"__extension__" primary-expression
 
 types-compatible-call =
@@ -851,6 +861,9 @@ offsetof-call =
 offsetof-member-designator = identifier
                            / offsetof-member-designator "." identifier
                            / offsetof-member-designator "[" expression "]"
+
+va-arg-call =
+    %s"__builtin_va_arg" "(" assignment-expression "," type-name ")"
 
 generic-selection =
     %s"_Generic" "(" assignment-expression "," generic-assoc-list ")"
