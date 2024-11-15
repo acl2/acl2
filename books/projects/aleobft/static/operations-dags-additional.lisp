@@ -136,6 +136,7 @@
                                      (+ 1 (certificate->round cert))
                                      dag))
                              (prev (certificate->author cert))))))
+  (in-theory (disable incoming-subset))
 
   (defret incoming-subset-of-next-round
     (set::subset certs
