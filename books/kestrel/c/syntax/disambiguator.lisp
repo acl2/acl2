@@ -2560,14 +2560,12 @@
               ;; tyname fails:
               (reterr (msg "In the ambiguous expression or type name ~x0, ~
                             neither the expression nor the type name ~
-                            can be successfully disambiguated ~
-                            given the current table ~x1. ~
+                            can be successfully disambiguated. ~
                             The code must be invalid, ~
                             because at least one must succeed.~%~%~
                             These are the failures for each:~%~%~
-                            ~@2~%~%~@3"
+                            ~@1~%~%~@2"
                            (amb-expr/tyname-fix expr/tyname)
-                           (dimb-table-fix table)
                            erp-expr
                            erp-tyname))
             ;; tyname succeeds:
@@ -2582,12 +2580,10 @@
           ;; tyname succeeds:
           (reterr (msg "In the ambiguous expression or type name ~x0, ~
                         both the expression and the type name ~
-                        are successfully disambiguated ~
-                        given the current table ~x1. ~
+                        are successfully disambiguated. ~
                         The code must be invalid, ~
                         because at most one must succeed."
-                       (amb-expr/tyname-fix expr/tyname)
-                       (dimb-table-fix table))))))
+                       (amb-expr/tyname-fix expr/tyname))))))
     :measure (amb-expr/tyname-count expr/tyname))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2659,14 +2655,12 @@
               (reterr (msg "In the ambiguous ~
                             declarator or abstract declarator ~x0, ~
                             neither the declarator nor the abstract declarator ~
-                            can be successfully disambiguated ~
-                            given the current table ~x1. ~
+                            can be successfully disambiguated ~. ~
                             The code must be invalid, ~
                             because at least one must succeed.~%~%~
                             These are the failures for each:~%~%~
-                            ~@2~%~%~@3"
+                            ~@1~%~%~@2"
                            (amb-declor/absdeclor-fix declor/absdeclor)
-                           (dimb-table-fix table)
                            erp-declor
                            erp-absdeclor))
             ;; absdeclor succeeds:
@@ -2688,14 +2682,12 @@
               (reterr (msg "In the ambiguous ~
                             declarator or abstract declarator ~x0, ~
                             both the declarator and the abstract declarator ~
-                            are successfully disambiguated ~
-                            given the current table ~x1, ~
-                            and the identifier ~x2 in the declarator ~
+                            are successfully disambiguated, ~
+                            and the identifier ~x1 in the declarator ~
                             is not a typedef name. ~
                             The code must be invalid, ~
                             because at most one must succeed."
                            (amb-declor/absdeclor-fix declor/absdeclor)
-                           (dimb-table-fix table)
                            ident)))))))
     :measure (amb-declor/absdeclor-count declor/absdeclor))
 
@@ -2728,15 +2720,13 @@
           (if erp-expr
               ;; stmt fails:
               (reterr (msg "In the ambiguous declaration or statement ~x0, ~
-                          neither the declaration nor the expression ~
-                          can be successfully disambiguated ~
-                          given the current table ~x1. ~
-                          The code must be invalid, ~
-                          because at least one must succeed.~%~%~
-                          These are the failures for each:~%~%~
-                          ~@2~%~%~@3"
+                            neither the declaration nor the expression ~
+                            can be successfully disambiguated ~. ~
+                            The code must be invalid, ~
+                            because at least one must succeed.~%~%~
+                            These are the failures for each:~%~%~
+                            ~@1~%~%~@2"
                            (amb-decl/stmt-fix decl/stmt)
-                           (dimb-table-fix table)
                            erp-decl
                            erp-expr))
             ;; stmt succeeds:
@@ -2747,13 +2737,11 @@
             (retok (decl/stmt-decl new-decl) table-decl)
           ;; stmt succeeds:
           (reterr (msg "In the ambiguous declaration or statement ~x0, ~
-                      both the declaration and the statement ~
-                      are successfully disambiguated ~
-                      given the current table ~x1. ~
-                      The code must be invalid, ~
-                      because at most one must succeed."
-                       (amb-decl/stmt-fix decl/stmt)
-                       (dimb-table-fix table))))))
+                        both the declaration and the statement ~
+                        are successfully disambiguated. ~
+                        The code must be invalid, ~
+                        because at most one must succeed."
+                       (amb-decl/stmt-fix decl/stmt))))))
     :measure (amb-decl/stmt-count decl/stmt))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
