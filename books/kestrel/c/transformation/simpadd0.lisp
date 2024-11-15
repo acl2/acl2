@@ -321,7 +321,8 @@
      :funspec (declspec-fix declspec)
      :align (declspec-align (simpadd0-align-spec declspec.unwrap))
      :attrib (declspec-fix declspec)
-     :stdcall (declspec-fix declspec))
+     :stdcall (declspec-fix declspec)
+     :declspec-attrib (declspec-fix declspec))
     :measure (declspec-count declspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

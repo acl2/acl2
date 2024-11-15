@@ -1875,3 +1875,18 @@ error (int __status, int __errnum, const char *__format, ...)
  parse-external-declaration-list
  "static ngx_thread_value_t __stdcall ngx_iocp_timer(void *data);"
  :gcc t)
+
+(test-parse
+ parse-external-declaration-list
+ "__declspec(thread) int nevents = 0;"
+ :gcc t)
+
+(test-parse
+ parse-external-declaration-list
+ "__declspec(thread) WSAEVENT events[WSA_MAXIMUM_WAIT_EVENTS + 1];"
+ :gcc t)
+
+(test-parse
+ parse-external-declaration-list
+ "__declspec(thread) ngx_connection_t *conn[WSA_MAXIMUM_WAIT_EVENTS + 1];"
+ :gcc t)

@@ -1900,8 +1900,10 @@
        but it is useful to define <i>declaration-specifiers</i>
        (see @(tsee declspec-list)).")
      (xdoc::p
-      "As a GCC extension, we include attribute specifiers,
-       as well as the special keyword @('__stdcall').
+      "As GCC extensions, we include
+       attribute specifiers,
+       the keyword @('__stdcall'),
+       and the @('__declspec') attribute syntax.
        See our ABNF grammar for details."))
     (:stocla ((unwrap stor-spec)))
     (:tyspec ((unwrap type-spec)))
@@ -1910,6 +1912,7 @@
     (:align ((unwrap align-spec)))
     (:attrib ((unwrap attrib-spec))) ; GCC extension
     (:stdcall ()) ; GCC extension
+    (:declspec-attrib ((arg identp))) ; GCC extension
     :pred declspecp
     :measure (two-nats-measure (acl2-count x) 0))
 
