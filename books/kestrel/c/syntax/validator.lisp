@@ -5506,7 +5506,7 @@
             (return-type (or type? (type-void))))
          (retok (set::insert return-type types) nil table))
        :asm
-       (retok (set::insert (type-void) nil) nil (valid-table-fix table))))
+       (retok nil nil (valid-table-fix table))))
     :measure (stmt-count stmt))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5566,13 +5566,15 @@
        with the modification that
        the @('last-expr-type?') result is a type exactly when
        the list of block items is not empty
-       and the last block item is a compound statement
-       whose last block item is an expression statement
-       in which case the @('last-expr-type?') result is
-       the type of that expression."))
-    (declare (ignore items table ienv))
-    (b* (((reterr) nil nil (irr-valid-table)))
-      (reterr :todo))
+       and the validation of the last block item
+       returns a type as that result."))
+    (b* (((reterr) nil nil (irr-valid-table))
+         ((when (endp items)) (retok nil nil (valid-table-fix table)))
+         ((erp types last-expr-type? table)
+          (valid-block-item (car items) table ienv))
+         ((when (endp (cdr items)))
+          (retok types last-expr-type? table)))
+      (valid-block-item-list (cdr items) table ienv))
     :measure (block-item-list-count items))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5581,8 +5583,7 @@
 
   :verify-guards nil ; done below
 
-  :prepwork ((set-bogus-mutual-recursion-ok t) ; TODO: remove eventually
-             (local (in-theory (enable acons))))
+  :prepwork ((local (in-theory (enable acons))))
 
   ///
 
