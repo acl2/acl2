@@ -2582,6 +2582,9 @@
       (retok (escape-simple (simple-escape-t)) pos parstate))
      ((= char (char-code #\v)) ; \ v
       (retok (escape-simple (simple-escape-v)) pos parstate))
+     ((and (= char (char-code #\%)) ; \ %
+           (parstate->gcc parstate))
+      (retok (escape-simple (simple-escape-percent)) pos parstate))
      ((and (<= (char-code #\0) char)
            (<= char (char-code #\7))) ; \ octdig
       (b* (((erp char2 pos2 parstate) (read-char parstate)))

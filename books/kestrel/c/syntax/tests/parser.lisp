@@ -571,18 +571,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro test-lex (fn input &key pos more-inputs cond)
+(defmacro test-lex (fn input &key pos more-inputs gcc cond)
   ;; INPUT is an ACL2 term with the text to lex,
   ;; where the term evaluates to a string or a list of bytes.
   ;; Optional POS is the initial position for the parser state.
   ;; Optional MORE-INPUTS go just before parser state input.
+  ;; GCC flag says whether GCC extensions are enabled.
   ;; Optional COND may be over variables AST, POS/SPAN, PARSTATE,
   ;; and also POS/SPAN2 for LEX-*-DIGIT and LEX-*-HEXADECIMAL-DIGIT.
   `(assert!-stobj
     (b* ((parstate (init-parstate (if (stringp ,input)
                                       (acl2::string=>nats ,input)
                                     ,input)
-                                  nil
+                                  ,gcc
                                   parstate))
          ,@(and pos
                 `((parstate (update-parstate->position ,pos parstate))))
@@ -598,16 +599,17 @@
        parstate))
     parstate))
 
-(defmacro test-lex-fail (fn input &key pos more-inputs)
+(defmacro test-lex-fail (fn input &key pos more-inputs gcc)
   ;; INPUT is an ACL2 term with the text to lex,
   ;; where the term evaluates to a string or a list of bytes.
   ;; Optional POS is the initial position for the parser state.
   ;; Optional MORE-INPUTS go just before parser state input.
+  ;; GCC flag says whether GCC extensions are enabled.
   `(assert!-stobj
     (b* ((parstate (init-parstate (if (stringp ,input)
                                       (acl2::string=>nats ,input)
                                     ,input)
-                                  nil
+                                  ,gcc
                                   parstate))
          ,@(and pos
                 `((parstate (update-parstate->position ,pos parstate))))
@@ -928,6 +930,16 @@
 (test-lex-fail
  lex-escape-sequence
  "U0000123")
+
+(test-lex-fail
+ lex-escape-sequence
+ "%")
+
+(test-lex
+ lex-escape-sequence
+ "%"
+ :gcc t
+ :cond (equal ast (escape-simple (simple-escape-percent))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

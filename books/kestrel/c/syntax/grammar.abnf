@@ -543,6 +543,11 @@ hex-quad =
 
 ; Constants [C:A.1.5] [C:6.4.4]
 
+; As a GCC extension, we allow the '\%' escape.
+; Although we did not find it documented in the GCC manual,
+; we encountered it in practical code, and we found this web page:
+; https://stackoverflow.com/questions/34142682/what-is-the-backslash-percent-escape-in-c.
+
 constant = integer-constant
          / floating-constant
          / enumeration-constant
@@ -644,6 +649,7 @@ simple-escape-sequence = "\'"
                        / %s"\r"
                        / %s"\t"
                        / %s"\v"
+                       / "\%" ; GCC extension
 
 octal-escape-sequence = "\" octal-digit
                       / "\" octal-digit octal-digit

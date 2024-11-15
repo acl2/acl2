@@ -1293,7 +1293,8 @@
     "Simple escapes are always valid.
      This function returns their ASCII codes.
      Note that these always fit in any of the types
-     mentioned in [C:6.4.4.4/4]."))
+     mentioned in [C:6.4.4.4/4].
+     The GCC escape @('\\%') is like the character @('%')."))
   (simple-escape-case
    esc
    :squote (char-code #\')
@@ -1306,7 +1307,8 @@
    :n 10
    :r 13
    :t 9
-   :v 11)
+   :v 11
+   :percent (char-code #\%))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

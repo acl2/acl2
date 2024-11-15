@@ -605,7 +605,8 @@
      @('\\n'),
      @('\\r'),
      @('\\t'), and
-     @('\\v')."))
+     @('\\v').
+     We also include the @('\\%') GCC extension (see our ABNF grammar)."))
   (:squote ())
   (:dquote ())
   (:qmark ())
@@ -617,6 +618,7 @@
   (:r ())
   (:t ())
   (:v ())
+  (:percent ())
   :pred simple-escapep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
