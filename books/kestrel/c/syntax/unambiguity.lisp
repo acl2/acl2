@@ -255,7 +255,7 @@
     :short "Check if an alignment specifier is unambiguous."
     (align-spec-case alignspec
                      :alignas-type (tyname-unambp alignspec.type)
-                     :alignas-expr (const-expr-unambp alignspec.arg)
+                     :alignas-expr (const-expr-unambp alignspec.expr)
                      :alignas-ambig nil)
     :measure (align-spec-count alignspec))
 
@@ -272,7 +272,8 @@
                    :funspec t
                    :align (align-spec-unambp declspec.unwrap)
                    :attrib t
-                   :stdcall t)
+                   :stdcall t
+                   :declspec-attrib t)
     :measure (declspec-count declspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -902,12 +903,20 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  ;; The formulation of rules for
+  ;; constructors that are always unambiguous,
+  ;; e.g. the rule for constructor EXPR-IDENT,
+  ;; are formulated differently from other rules.
+  ;; For uniformity with other rules, they should have
+  ;; a conclusion like (EXPR-UNAMBP (EXPR-IDENT IDENT)).
+  ;; But that fails to apply in proofs,
+  ;; such as the ones for the disambiguator.
+  ;; Thus, we formulate those rules with conclusion (EXPR-UNAMBP EXPR)
+  ;; and hypothesis like (EXPR-CASE EXPR :IDENT),
+  ;; which is not ideal because the conclusion is very generic.
+  ;; Perhaps there are better ways to do this.
+
   (defrule expr-unambp-when-ident/const/string
-    ;; The formulation (expr-unambp (expr-... ...))
-    ;; does not work for the return theorems in the disambiguator.
-    ;; We get a subgoal of a form that is instead handled by
-    ;; the formulation we give here,
-    ;; which is not ideal because the conclusion is quite generic.
     (implies (member-eq (expr-kind expr) '(:ident :const :string))
              (expr-unambp expr)))
 
@@ -1029,11 +1038,6 @@
     :expand (genassoc-unambp (genassoc-default expr)))
 
   (defrule member-designor-unambp-when-ident
-    ;; The formulation (member-designor-unambp (member-designor-ident ...))
-    ;; does not work for the return theorems in the disambiguator.
-    ;; We get a subgoal of a form that is instead handled by
-    ;; the formulation we give here,
-    ;; which is not ideal because the conclusion is quite generic.
     (implies (member-designor-case memdes :ident)
              (member-designor-unambp memdes)))
 
@@ -1049,11 +1053,6 @@
     :expand (member-designor-unambp (member-designor-sub member index)))
 
   (defrule type-spec-unambp-when-not-atomic/struct/union/enum/typeof
-    ;; The formulation (type-spec-unambp (type-spec-... ...))
-    ;; does not work for the return theorems in the disambiguator.
-    ;; We get a subgoal of a form that is instead handled by
-    ;; the formulation we give here,
-    ;; which is not ideal because the conclusion is quite generic.
     (implies (not (member-eq (type-spec-kind tyspec)
                              '(:atomic :struct :union :enum
                                :typeof-expr :typeof-type :typeof-ambig)))
@@ -1095,11 +1094,6 @@
     :expand (spec/qual-unambp (spec/qual-tyspec tyspec)))
 
   (defrule spec/qual-unambp-when-tyqual/attrib
-    ;; The formulation (spec/qual-unambp (spec/qual-... ...))
-    ;; does not work for the return theorems in the disambiguator.
-    ;; We get a subgoal of a form that is instead handled by
-    ;; the formulation we give here,
-    ;; which is not ideal because the conclusion is quite generic.
     (implies (member-eq (spec/qual-kind spec/qual)
                         '(:tyqual :attrib))
              (spec/qual-unambp spec/qual)))
@@ -1129,14 +1123,10 @@
            (align-spec-unambp alignspec))
     :expand (declspec-unambp (declspec-align alignspec)))
 
-  (defrule declspec-unambp-when-stocla/tyqual/funspec/attrib/stdcall
-    ;; The formulation (declspec-unambp (declspec-... ...))
-    ;; does not work for the return theorems in the disambiguator.
-    ;; We get a subgoal of a form that is instead handled by
-    ;; the formulation we give here,
-    ;; which is not ideal because the conclusion is quite generic.
-    (implies (member-eq (declspec-kind declspec)
-                        '(:stocla :tyqual :funspec :attrib :stdcall))
+  (defrule declspec-unambp-when-stocla/tyqual/funspec/attrib/stdcall/declspec
+    (implies (member-eq
+              (declspec-kind declspec)
+              '(:stocla :tyqual :funspec :attrib :stdcall :declspec-attrib))
              (declspec-unambp declspec)))
 
   (defrule declspec-unambp-when-not-stocla/tyspec/tyqual/funspec/align
@@ -1170,11 +1160,6 @@
     :expand (designor-unambp (designor-sub index)))
 
   (defrule designor-unambp-of-designor-dot
-    ;; The formulation (designor-unambp (designor-dot ident))
-    ;; does not work for the return theorems in the disambiguator.
-    ;; We get a subgoal of a form that is instead handled by
-    ;; the formulation we give here,
-    ;; which is not ideal because the conclusion is quite generic.
     (implies (designor-case designor :dot)
              (designor-unambp designor)))
 
@@ -1184,11 +1169,6 @@
     :expand (declor-unambp (declor pointers decl)))
 
   (defrule dirdeclor-unambp-when-ident
-    ;; The formulation (dirdeclor-unambp (dirdeclor-ident ident))
-    ;; does not work for the return theorems in the disambiguator.
-    ;; We get a subgoal of a form that is instead handled by
-    ;; the formulation we give here,
-    ;; which is not ideal because the conclusion is quite generic.
     (implies (dirdeclor-case dirdeclor :ident)
              (dirdeclor-unambp dirdeclor)))
 
@@ -1320,11 +1300,6 @@
     :expand (structdecl-unambp (structdecl-statassert statassert)))
 
   (defrule structdecl-unambp-when-empty
-    ;; The formulation (structdecl-unambp (structdecl-empty))
-    ;; does not work for the return theorems in the disambiguator.
-    ;; We get a subgoal of a form that is instead handled by
-    ;; the formulation we give here,
-    ;; which is not ideal because the conclusion is quite generic.
     (implies (structdecl-case sdecl :empty)
              (structdecl-unambp sdecl)))
 
@@ -1368,11 +1343,6 @@
     :expand (label-unambp (label-casexpr expr range?)))
 
   (defrule label-unambp-when-not-casexpr
-    ;; The formulations (label-unambp (label-... ...))
-    ;; do not work for the return theorems in the disambiguator.
-    ;; We get a subgoal of a form that is instead handled by
-    ;; the formulation we give here,
-    ;; which is not ideal because the conclusion is quite generic.
     (implies (not (label-case label :casexpr))
              (label-unambp label)))
 
@@ -1443,11 +1413,6 @@
     :expand (stmt-unambp (stmt-for-decl init test next body)))
 
   (defrule stmt-unambp-when-goto
-    ;; The formulation (stmt-unambp (stmt-goto label))
-    ;; does not work for the return theorems in the disambiguator.
-    ;; We get a subgoal of a form that is instead handled by
-    ;; the formulation we give here,
-    ;; which is not ideal because the conclusion is quite generic.
     (implies (stmt-case stmt :goto)
              (stmt-unambp stmt)))
 
@@ -1465,11 +1430,6 @@
     :expand (stmt-unambp (stmt-return expr?)))
 
   (defrule stmt-unambp-of-when-asm
-    ;; The formulation (stmt-unambp (stmt-asm ...))
-    ;; does not work for the return theorems in the disambiguator.
-    ;; We get a subgoal of a form that is instead handled by
-    ;; the formulation we give here,
-    ;; which is not ideal because the conclusion is quite generic.
     (implies (stmt-case stmt :asm)
              (stmt-unambp stmt)))
 
@@ -1781,10 +1741,10 @@
              (tyname-unambp (align-spec-alignas-type->type alignspec)))
     :expand (align-spec-unambp alignspec))
 
-  (defrule const-expr-unambp-of-align-spec-alignas-expr->arg
+  (defrule const-expr-unambp-of-align-spec-alignas-expr->expr
     (implies (and (align-spec-unambp alignspec)
                   (align-spec-case alignspec :alignas-expr))
-             (const-expr-unambp (align-spec-alignas-expr->arg alignspec)))
+             (const-expr-unambp (align-spec-alignas-expr->expr alignspec)))
     :expand (align-spec-unambp alignspec))
 
   (defrule not-alignas-ambig-when-align-spec-unambp
@@ -2438,11 +2398,6 @@
            (decl-unambp decl)))
 
   (defrule extdecl-unambp-when-not-fundef/decl
-    ;; The formulation (extdecl-unambp (extdecl-empty))
-    ;; does not work for the return theorems in the disambiguator.
-    ;; We get a subgoal of a form that is instead handled by
-    ;; the formulation we give here,
-    ;; which is not ideal because the conclusion is quite generic.
     (implies (not (member-eq (extdecl-kind edecl) '(:fundef :decl)))
              (extdecl-unambp edecl)))
 

@@ -218,7 +218,7 @@
     (:linear c$::block-item-list-count-of-cdr)
     (:linear c$::block-item-list-count-of-expr-stmt->items)
     (:linear c$::block-item-list-count-of-stmt-compound->items)
-    (:linear c$::const-expr-count-of-align-spec-alignas-expr->arg)
+    (:linear c$::const-expr-count-of-align-spec-alignas-expr->expr)
     (:linear c$::const-expr-count-of-const-expr-option-some->val)
     (:linear c$::const-expr-count-of-designor-sub->index)
     (:linear c$::const-expr-count-of-label-casexpr->expr)
@@ -959,7 +959,7 @@
    `(align-spec-case
       alignspec
       :alignas-type (align-spec-alignas-type (,(cdr (assoc-eq 'tyname names)) alignspec.type ,@extra-args-names))
-      :alignas-expr (align-spec-alignas-expr (,(cdr (assoc-eq 'const-expr names)) alignspec.arg ,@extra-args-names))
+      :alignas-expr (align-spec-alignas-expr (,(cdr (assoc-eq 'const-expr names)) alignspec.expr ,@extra-args-names))
       :alignas-ambig (prog2$
                        (raise "Misusage error: ~x0." (align-spec-fix alignspec))
                        (align-spec-fix alignspec)))
@@ -985,7 +985,8 @@
       :funspec (declspec-fix declspec)
       :align (declspec-align (,(cdr (assoc-eq 'align-spec names)) declspec.unwrap ,@extra-args-names))
       :attrib (declspec-fix declspec)
-      :stdcall (declspec-fix declspec))
+      :stdcall (declspec-fix declspec)
+      :declspec-attrib (declspec-fix declspec))
    '(:returns (new-declspec declspecp)
      :measure (declspec-count declspec))))
 

@@ -8,7 +8,7 @@
 Note from Sandip:  The original version of this fairness book was developed by
 Rob Sumners.  This version makes several changes, in particular the use of
 btm-measure and top-measure.  A cleaner collection of fairness books were later
-derived by Rob and submitted to the ACl2 2003 workshop.
+derived by Rob and submitted to the ACL2 2003 workshop.
 
 Fair environment assumptions for the bakery algorithm
 

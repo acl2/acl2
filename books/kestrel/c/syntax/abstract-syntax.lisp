@@ -605,7 +605,8 @@
      @('\\n'),
      @('\\r'),
      @('\\t'), and
-     @('\\v')."))
+     @('\\v').
+     We also include the @('\\%') GCC extension (see our ABNF grammar)."))
   (:squote ())
   (:dquote ())
   (:qmark ())
@@ -617,6 +618,7 @@
   (:r ())
   (:t ())
   (:v ())
+  (:percent ())
   :pred simple-escapep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1839,7 +1841,7 @@
     (:tyspec ((spec type-spec)))
     (:tyqual ((qual type-qual)))
     (:align ((spec align-spec)))
-    (:attrib ((unwrap attrib-spec))) ; GCC extension
+    (:attrib ((spec attrib-spec))) ; GCC extension
     :pred spec/qual-p
     :measure (two-nats-measure (acl2-count x) 0))
 
@@ -1881,7 +1883,7 @@
        As discussed in @(tsee amb-expr/tyname),
        there is a non-trivial overlap between expressions and type names."))
     (:alignas-type ((type tyname)))
-    (:alignas-expr ((arg const-expr)))
+    (:alignas-expr ((expr const-expr)))
     (:alignas-ambig ((type/arg amb-expr/tyname)))
     :pred align-specp
     :base-case-override :alignas-expr
@@ -1900,8 +1902,10 @@
        but it is useful to define <i>declaration-specifiers</i>
        (see @(tsee declspec-list)).")
      (xdoc::p
-      "As a GCC extension, we include attribute specifiers,
-       as well as the special keyword @('__stdcall').
+      "As GCC extensions, we include
+       attribute specifiers,
+       the keyword @('__stdcall'),
+       and the @('__declspec') attribute syntax.
        See our ABNF grammar for details."))
     (:stocla ((unwrap stor-spec)))
     (:tyspec ((unwrap type-spec)))
@@ -1910,6 +1914,7 @@
     (:align ((unwrap align-spec)))
     (:attrib ((unwrap attrib-spec))) ; GCC extension
     (:stdcall ()) ; GCC extension
+    (:declspec-attrib ((arg identp))) ; GCC extension
     :pred declspecp
     :measure (two-nats-measure (acl2-count x) 0))
 
