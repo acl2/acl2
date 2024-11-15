@@ -20,16 +20,17 @@
 ;   FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 ;   DEALINGS IN THE SOFTWARE.
 
+;; ======================================================================
 
 (in-package "IFP")
 
 (include-book "fp-common")
 (include-book "centaur/bitops/rational-exponent" :dir :system)
+
 (local (include-book "arithmetic/top" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 
 (local (in-theory (disable unsigned-byte-p)))
-
 
 (defthmd fp-sign-value-redef
   (equal (fp-sign-value x)
@@ -920,8 +921,7 @@
     :hints (("Goal"
              :use ((:instance round-arith-triple-bounds-in-terms-of-input-rational-exponent-when-rne
                               (verbosep nil)))
-             :in-theory (e/d (acl2::exponents-add-unrestricted
-                              acl2::multiply-out-<)
+             :in-theory (e/d (acl2::exponents-add-unrestricted)
                              (round-arith-triple-bounds-in-terms-of-input-rational-exponent-when-rne)))
             (and stable-under-simplificationp
                  '(:nonlinearp t)))
@@ -1553,7 +1553,7 @@
     (local (include-book "centaur/bitops/integer-length" :dir :system))
 
     (local
-     (defthmd integer-length-of-normalized-man
+     (defthmd integer-length-of-normalized-nat
        (implies (and (integerp m)
                      (natp f)
                      (<= (expt 2 f) m)
@@ -1568,7 +1568,7 @@
                       (1+ (pos-fix frac-size))))
       :hints (("Goal"
                :nonlinearp t
-               :use ((:instance integer-length-of-normalized-man
+               :use ((:instance integer-length-of-normalized-nat
                                 (m (floor (* (rational-significand x)
                                              (expt 2 (pos-fix frac-size)))
                                           1))
@@ -1769,4 +1769,900 @@
                                             :sticky-in sticky-in))
        ((mv round & &)
         (round-arith-triple norm roundp stickyp rc :verbosep nil)))
-    round))
+    round)
+  ///
+  (local (include-book "centaur/bitops/integer-length" :dir :system))
+  (local (include-book "centaur/misc/multiply-out" :dir :system))
+
+  (local
+   (defthmd expt-2-of-minus-one
+     (implies (integerp x)
+              (equal (expt 2 (1- x))
+                     (* 1/2 (expt 2 x))))))
+
+  (local
+   (defthmd expt-2-of-plus-one
+     (implies (integerp x)
+              (equal (expt 2 (1+ x))
+                     (* 2 (expt 2 x))))
+     :hints (("Goal" :in-theory (enable expt)))))
+
+  (local
+   (encapsulate
+     ()
+
+     (local (include-book "arithmetic-3/top" :dir :system))
+
+     (local (in-theory (disable acl2::normalize-factors-gather-exponents)))
+
+     (defthm integerp-rewrite-mod-1
+       (implies (and (rationalp x)
+                     (not (equal (mod (* x (expt 2 f))
+                                      1)
+                                 0)))
+                (equal (integerp (* 2 (mod (* x (expt 2 f))
+                                           1)))
+                       (equal (mod (* x (expt 2 f))
+                                   1)
+                              1/2))))
+
+     (defthm integer-length-of-floor-1
+       (implies (and (rationalp x)
+                     (natp f)
+                     (<= 1 x)
+                     (< x 2))
+                (equal (integer-length (floor (* x (expt 2 f))
+                                              1))
+                       (1+ f)))
+       :hints (("Goal"
+                :nonlinearp t
+                :use ((:instance bitops::integer-length-unique
+                                 (x (floor (* x (expt 2 f))
+                                           1))
+                                 (y (1+ f)))))))))
+
+  (local
+   (defthmd integer-length-plus-one-unchanged
+     (implies (and (natp x)
+                   (equal (integer-length x) n)
+                   (<= (integer-length (1+ x)) n))
+              (equal (integer-length (1+ x)) n))
+     :hints (("Goal"
+              :use ((:instance bitops::integer-length-monotonic
+                               (i x)
+                               (j (1+ x))))
+              :in-theory (disable bitops::integer-length-monotonic)))))
+
+  (local
+   (defthm integer-length-plus-one-ovf
+     (implies (and (natp x)
+                   (equal (integer-length x) n)
+                   (< n (integer-length (1+ x))))
+              (and (equal (integer-length (1+ x))
+                          (1+ n))
+                   (equal x (1- (expt 2 n)))))
+     :hints (("Goal"
+              :use ((:instance bitops::integer-length-when-less-than-exp
+                               (x (1+ x))
+                               (y n))
+                    (:instance bitops::integer-length-when-greater-than-exp
+                               (y n)))
+              :in-theory (disable bitops::integer-length-when-less-than-exp
+                                  bitops::integer-length-when-greater-than-exp)))
+     :rule-classes nil))
+
+  (local
+   (defthm floor-mod-rel-1
+     (implies (<= 1/2 (mod x 1))
+              (<= (floor x 1) (- x 1/2)))
+     :hints (("Goal" :in-theory (enable mod)))
+     :rule-classes :linear))
+
+  (local
+   (defthm floor-mod-rel-2
+     (implies (<= (mod x 1) 1/2)
+              (<= (- x 1/2) (floor x 1)))
+     :rule-classes :linear))
+
+  (local
+   (defthm logtail1-2*2^f
+     (implies (integerp n)
+              (equal (logtail 1 (* 2 n))
+                     n))
+     :hints (("Goal" :in-theory (enable logtail)))))
+
+  (defret <fn>-bounds-when-rne
+    (b* ((frac-size (fp-size->frac-size size))
+         ((fp-arith-triple res))
+         (val (fp-arith-triple->rational res))
+         (exp (- (rational-exponent x)
+                 (+ 1 frac-size))))
+      (implies (and (rationalp x)
+                    (equal (rc->rounding-mode rc) :rne))
+               (and (<= (+ (- (expt 2 exp))
+                           x)
+                        val)
+                    (<= val
+                        (+ (expt 2 exp)
+                           x)))))
+    :hints (("Goal"
+             :use ((:instance integer-length-plus-one-unchanged
+                              (x (floor (* (rational-significand x)
+                                           (expt 2 (fp-size->frac-size size)))
+                                        1))
+                              (n (1+ (fp-size->frac-size size))))
+                   (:instance integer-length-plus-one-ovf
+                              (x (floor (* (rational-significand x)
+                                           (expt 2 (fp-size->frac-size size)))
+                                        1))
+                              (n (1+ (fp-size->frac-size size)))))
+             :in-theory (e/d (fp-arith-triple->rational
+                              normalize-rational-to-arith-triple
+                              round-arith-triple
+                              round-up
+                              normalize-arith-triple
+                              fp-arith-rightshift
+                              acl2::rational-exponent-in-terms-of-rational-significand
+                              acl2::divide-out-common-factors-<
+                              expt-2-of-minus-one
+                              expt-2-of-plus-one
+                              rational-sign)
+                             (acl2::rational-significand-base-case
+                              (:linear acl2::x*y>1-positive)
+                              acl2::x*y>1-positive
+                              acl2::mod-x-y-=-x+y-for-rationals
+                              acl2::mod-x-y-=-x+y-for-rationals
+                              acl2::mod-x-y-=-x-for-rationals
+                              abs
+                              acl2::/r-when-abs-numerator=1
+                              bitops::|(* 1/2 (expt 2 n))|))))
+    :rule-classes :linear)
+  )
+
+;; Rounding of two rational numbers within a 1/2 ulp interval would return the
+;; same value.
+
+(defsection normalize-rational+round-arith-triple-within-1/2*ulp
+  (local (include-book "centaur/bitops/integer-length" :dir :system))
+  (local (include-book "centaur/misc/multiply-out" :dir :system))
+
+  (define ulp ((x rationalp)
+               (frac-size posp))
+    :returns (res rationalp :rule-classes :type-prescription)
+    (expt 2 (- (rational-exponent x) frac-size))
+    ///
+    (defret <fn>-is-positive
+      (< 0 res)
+      :rule-classes :linear)
+
+    (defret <fn>-of-abs-canceled
+      (equal (ulp (abs x) frac-size)
+             res))
+
+    (defretd <fn>-is-smaller
+      (implies (and (rationalp x)
+                    (not (equal x 0))
+                    (posp frac-size))
+               (< res (abs x)))
+      :hints (("Goal"
+               :use ((:instance acl2::rational-exponent-correct-positive
+                                (x (abs x))))
+               :in-theory (e/d ()
+                               (acl2::rational-exponent-correct-positive)))
+              (and stable-under-simplificationp
+                   '(:nonlinearp t)))
+      :rule-classes :linear))
+
+  (define within-1/2*ulp ((x rationalp)
+                          (y1 rationalp)
+                          (y2 rationalp)
+                          (frac-size posp))
+    :returns (res booleanp :rule-classes :type-prescription)
+    (b* ((ulp (ulp y2 frac-size)))
+      (or (and (< (- x ulp) y1)
+               (< y1 (- x (* 1/2 ulp)))
+               (< (- x ulp) y2)
+               (< y2 (- x (* 1/2 ulp))))
+          (and (< (- x (* 1/2 ulp)) y1)
+               (< y1 x)
+               (< (- x (* 1/2 ulp)) y2)
+               (< y2 x))
+          (and (< x y1)
+               (< y1 (+ x (* 1/2 ulp)))
+               (< x y2)
+               (< y2 (+ x (* 1/2 ulp))))
+          (and (< (+ x (* 1/2 ulp)) y1)
+               (< y1 (+ x ulp))
+               (< (+ x (* 1/2 ulp)) y2)
+               (< y2 (+ x ulp))))))
+
+  (local
+   (defthm integer-length-of-normalized-man
+     (implies (and (unsigned-byte-p (1+ f) m)
+                   (<= (expt 2 f) m))
+              (equal (integer-length m) (1+ f)))
+     :hints (("Goal" :in-theory (enable unsigned-byte-p)))))
+
+  (local
+   (defthmd rational-significand-bounds-within-1/2*ulp-1a
+     (b* (((fp-arith-triple x))
+          (xval (fp-arith-triple->rational x))
+          (ulp-x (ulp xval frac-size)))
+       (implies (and (integerp frac-size)
+                     (unsigned-byte-p (1+ frac-size) x.man)
+                     (<= (expt 2 frac-size) x.man)
+                     (rationalp yval)
+                     (equal (rational-exponent yval)
+                            (rational-exponent xval))
+                     (< xval 0)
+                     (< (- xval ulp-x) yval)
+                     (< yval (- xval (* 1/2 ulp-x))))
+                (and (< (+ x.man 1/2)
+                        (* (rational-significand yval)
+                           (expt 2 frac-size)))
+                     (< (* (rational-significand yval)
+                           (expt 2 frac-size))
+                        (+ x.man 1)))))
+     :hints (("Goal"
+              :use ((:instance fp-arith-triple->rational (x x)))
+              :in-theory (e/d (ulp
+                               acl2::rational-significand-in-terms-of-rational-exponent-abs
+                               rational-sign-significand-exponent-of-fp-arith-triple->rational
+                               fp-sign-value-redef
+                               acl2::divide-out-common-factors-<)
+                              (bitops::|(* 1/2 (expt 2 n))|))))
+     :rule-classes :linear))
+
+  (local
+   (defthmd rational-significand-bounds-within-1/2*ulp-1b
+     (b* (((fp-arith-triple x))
+          (xval (fp-arith-triple->rational x))
+          (ulp-x (ulp xval frac-size)))
+       (implies (and (integerp frac-size)
+                     (unsigned-byte-p (1+ frac-size) x.man)
+                     (<= (expt 2 frac-size) x.man)
+                     (rationalp yval)
+                     (equal (rational-exponent yval)
+                            (rational-exponent xval))
+                     (< 0 yval)
+                     (< (- xval ulp-x) yval)
+                     (< yval (- xval (* 1/2 ulp-x))))
+                (and (< (- x.man 1)
+                        (* (rational-significand yval)
+                           (expt 2 frac-size)))
+                     (< (* (rational-significand yval)
+                           (expt 2 frac-size))
+                        (- x.man 1/2)))))
+     :hints (("Goal"
+              :use ((:instance fp-arith-triple->rational (x x)))
+              :in-theory (e/d (ulp
+                               acl2::rational-significand-in-terms-of-rational-exponent-abs
+                               rational-sign-significand-exponent-of-fp-arith-triple->rational
+                               fp-sign-value-redef
+                               acl2::divide-out-common-factors-<)
+                              (bitops::|(* 1/2 (expt 2 n))|))))
+     :rule-classes :linear))
+
+  (local
+   (defthmd rational-significand-bounds-within-1/2*ulp-2a
+     (b* (((fp-arith-triple x))
+          (xval (fp-arith-triple->rational x))
+          (ulp-x (ulp xval frac-size)))
+       (implies (and (integerp frac-size)
+                     (unsigned-byte-p (1+ frac-size) x.man)
+                     (<= (expt 2 frac-size) x.man)
+                     (rationalp yval)
+                     (equal (rational-exponent yval)
+                            (rational-exponent xval))
+                     (< xval 0)
+                     (< (- xval (* 1/2 ulp-x)) yval)
+                     (< yval xval))
+                (and (< x.man
+                        (* (rational-significand yval)
+                           (expt 2 frac-size)))
+                     (< (* (rational-significand yval)
+                           (expt 2 frac-size))
+                        (+ x.man 1/2)))))
+     :hints (("Goal"
+              :use ((:instance fp-arith-triple->rational (x x)))
+              :in-theory (e/d (ulp
+                               acl2::rational-significand-in-terms-of-rational-exponent-abs
+                               rational-sign-significand-exponent-of-fp-arith-triple->rational
+                               fp-sign-value-redef
+                               acl2::divide-out-common-factors-<)
+                              (bitops::|(* 1/2 (expt 2 n))|))))
+     :rule-classes :linear))
+
+  (local
+   (defthmd rational-significand-bounds-within-1/2*ulp-2b
+     (b* (((fp-arith-triple x))
+          (xval (fp-arith-triple->rational x))
+          (ulp-x (ulp xval frac-size)))
+       (implies (and (integerp frac-size)
+                     (unsigned-byte-p (1+ frac-size) x.man)
+                     (<= (expt 2 frac-size) x.man)
+                     (rationalp yval)
+                     (equal (rational-exponent yval)
+                            (rational-exponent xval))
+                     (< 0 yval)
+                     (< (- xval (* 1/2 ulp-x)) yval)
+                     (< yval xval))
+                (and (< (- x.man 1/2)
+                        (* (rational-significand yval)
+                           (expt 2 frac-size)))
+                     (< (* (rational-significand yval)
+                           (expt 2 frac-size))
+                        x.man))))
+     :hints (("Goal"
+              :use ((:instance fp-arith-triple->rational (x x)))
+              :in-theory (e/d (ulp
+                               acl2::rational-significand-in-terms-of-rational-exponent-abs
+                               rational-sign-significand-exponent-of-fp-arith-triple->rational
+                               fp-sign-value-redef
+                               acl2::divide-out-common-factors-<)
+                              (bitops::|(* 1/2 (expt 2 n))|))))
+     :rule-classes :linear))
+
+  (local
+   (defthmd rational-significand-bounds-within-1/2*ulp-3a
+     (b* (((fp-arith-triple x))
+          (xval (fp-arith-triple->rational x))
+          (ulp-x (ulp xval frac-size)))
+       (implies (and (integerp frac-size)
+                     (unsigned-byte-p (1+ frac-size) x.man)
+                     (<= (expt 2 frac-size) x.man)
+                     (rationalp yval)
+                     (equal (rational-exponent yval)
+                            (rational-exponent xval))
+                     (< yval 0)
+                     (< xval yval)
+                     (< yval (+ xval (* 1/2 ulp-x))))
+                (and (< (- x.man 1/2)
+                        (* (rational-significand yval)
+                           (expt 2 frac-size)))
+                     (< (* (rational-significand yval)
+                           (expt 2 frac-size))
+                        x.man))))
+     :hints (("Goal"
+              :use ((:instance fp-arith-triple->rational (x x)))
+              :in-theory (e/d (ulp
+                               acl2::rational-significand-in-terms-of-rational-exponent-abs
+                               rational-sign-significand-exponent-of-fp-arith-triple->rational
+                               fp-sign-value-redef
+                               acl2::divide-out-common-factors-<)
+                              (bitops::|(* 1/2 (expt 2 n))|))))
+     :rule-classes :linear))
+
+  (local
+   (defthmd rational-significand-bounds-within-1/2*ulp-3b
+     (b* (((fp-arith-triple x))
+          (xval (fp-arith-triple->rational x))
+          (ulp-x (ulp xval frac-size)))
+       (implies (and (integerp frac-size)
+                     (unsigned-byte-p (1+ frac-size) x.man)
+                     (<= (expt 2 frac-size) x.man)
+                     (rationalp yval)
+                     (equal (rational-exponent yval)
+                            (rational-exponent xval))
+                     (<= 0 xval)
+                     (< xval yval)
+                     (< yval (+ xval (* 1/2 ulp-x))))
+                (and (< x.man
+                        (* (rational-significand yval)
+                           (expt 2 frac-size)))
+                     (< (* (rational-significand yval)
+                           (expt 2 frac-size))
+                        (+ x.man 1/2)))))
+     :hints (("Goal"
+              :use ((:instance fp-arith-triple->rational (x x)))
+              :in-theory (e/d (ulp
+                               acl2::rational-significand-in-terms-of-rational-exponent-abs
+                               rational-sign-significand-exponent-of-fp-arith-triple->rational
+                               fp-sign-value-redef
+                               acl2::divide-out-common-factors-<)
+                              (bitops::|(* 1/2 (expt 2 n))|))))
+     :rule-classes :linear))
+
+  (local
+   (defthmd rational-significand-bounds-within-1/2*ulp-4a
+     (b* (((fp-arith-triple x))
+          (xval (fp-arith-triple->rational x))
+          (ulp-x (ulp xval frac-size)))
+       (implies (and (integerp frac-size)
+                     (unsigned-byte-p (1+ frac-size) x.man)
+                     (<= (expt 2 frac-size) x.man)
+                     (rationalp yval)
+                     (equal (rational-exponent yval)
+                            (rational-exponent xval))
+                     (< yval 0)
+                     (< (+ xval (* 1/2 ulp-x)) yval)
+                     (< yval (+ xval ulp-x)))
+                (and (< (- x.man 1)
+                        (* (rational-significand yval)
+                           (expt 2 frac-size)))
+                     (< (* (rational-significand yval)
+                           (expt 2 frac-size))
+                        (- x.man 1/2)))))
+     :hints (("Goal"
+              :use ((:instance fp-arith-triple->rational (x x)))
+              :in-theory (e/d (ulp
+                               acl2::rational-significand-in-terms-of-rational-exponent-abs
+                               rational-sign-significand-exponent-of-fp-arith-triple->rational
+                               fp-sign-value-redef
+                               acl2::divide-out-common-factors-<)
+                              (bitops::|(* 1/2 (expt 2 n))|))))
+     :rule-classes :linear))
+
+  (local
+   (defthmd rational-significand-bounds-within-1/2*ulp-4b
+     (b* (((fp-arith-triple x))
+          (xval (fp-arith-triple->rational x))
+          (ulp-x (ulp xval frac-size)))
+       (implies (and (integerp frac-size)
+                     (unsigned-byte-p (1+ frac-size) x.man)
+                     (<= (expt 2 frac-size) x.man)
+                     (rationalp yval)
+                     (equal (rational-exponent yval)
+                            (rational-exponent xval))
+                     (<= 0 xval)
+                     (< (+ xval (* 1/2 ulp-x)) yval)
+                     (< yval (+ xval ulp-x)))
+                (and (< (+ x.man 1/2)
+                        (* (rational-significand yval)
+                           (expt 2 frac-size)))
+                     (< (* (rational-significand yval)
+                           (expt 2 frac-size))
+                        (+ x.man 1)))))
+     :hints (("Goal"
+              :use ((:instance fp-arith-triple->rational (x x)))
+              :in-theory (e/d (ulp
+                               acl2::rational-significand-in-terms-of-rational-exponent-abs
+                               rational-sign-significand-exponent-of-fp-arith-triple->rational
+                               fp-sign-value-redef
+                               acl2::divide-out-common-factors-<)
+                              (bitops::|(* 1/2 (expt 2 n))|))))
+     :rule-classes :linear))
+
+  (local
+   (encapsulate
+     ()
+
+     (local (include-book "arithmetic-3/top" :dir :system))
+
+     (defthmd floor-1-unique-lemma-1
+       (implies (and (rationalp x)
+                     (integerp n)
+                     (<= (- n 1) x)
+                     (<= x (- n 1/2)))
+                (equal (floor x 1) (1- n))))
+
+     (defthmd floor-1-unique-lemma-2
+       (implies (and (rationalp x)
+                     (integerp n)
+                     (<= (- n 1/2) x)
+                     (< x n))
+                (equal (floor x 1) (1- n))))
+
+     (defthmd floor-1-unique-lemma-3
+       (implies (and (rationalp x)
+                     (integerp n)
+                     (<= n x)
+                     (< x (+ n 1/2)))
+                (equal (floor x 1) n)))
+
+     (defthmd floor-1-unique-lemma-4
+       (implies (and (rationalp x)
+                     (integerp n)
+                     (<= (+ n 1/2) x)
+                     (< x (+ n 1)))
+                (equal (floor x 1) n)))
+
+     (defthmd mod-1-bounds-lemma-1
+       (implies (and (rationalp x)
+                     (integerp n)
+                     (< (- n 1) x)
+                     (< x (- n 1/2)))
+                (and (< 0 (mod x 1))
+                     (< (mod x 1) 1/2)))
+       :hints (("Goal" :in-theory (enable mod floor-1-unique-lemma-1)))
+       :rule-classes :linear)
+
+     (defthmd mod-1-bounds-lemma-2
+       (implies (and (rationalp x)
+                     (integerp n)
+                     (< (- n 1/2) x)
+                     (< x n))
+                (and (< 1/2 (mod x 1))
+                     (< (mod x 1) 1)))
+       :hints (("Goal" :in-theory (enable mod floor-1-unique-lemma-2)))
+       :rule-classes :linear)
+
+     (defthmd mod-1-bounds-lemma-3
+       (implies (and (rationalp x)
+                     (integerp n)
+                     (< n x)
+                     (< x (+ n 1/2)))
+                (and (< 0 (mod x 1))
+                     (< (mod x 1) 1/2)))
+       :hints (("Goal" :in-theory (enable mod floor-1-unique-lemma-3)))
+       :rule-classes :linear)
+
+     (defthmd mod-1-bounds-lemma-4
+       (implies (and (rationalp x)
+                     (integerp n)
+                     (< (+ n 1/2) x)
+                     (< x (+ n 1)))
+                (and (< 1/2 (mod x 1))
+                     (< (mod x 1) 1)))
+       :hints (("Goal" :in-theory (enable mod floor-1-unique-lemma-4)))
+       :rule-classes :linear)
+     ))
+
+  (local
+   (defthmd not-integerp-lemma
+     (implies (and (rationalp x)
+                   (< 1/2 x)
+                   (< x 1))
+              (not (integerp (* 2 x))))))
+
+  (local
+   (defthmd normalize-rational-within-1/2*ulp-1a
+     (b* (((fp-arith-triple x))
+          (xval (fp-arith-triple->rational x))
+          (ulp-x (ulp xval frac-size))
+          ((mv norm roundp stickyp)
+           (normalize-rational-to-arith-triple yval
+                                               frac-size
+                                               :sticky-in sticky-in)))
+       (implies (and (fp-arith-triple-p x)
+                     (posp frac-size)
+                     (unsigned-byte-p (1+ frac-size) x.man)
+                     (<= (expt 2 frac-size) x.man)
+                     (rationalp yval)
+                     (equal (rational-exponent yval)
+                            (rational-exponent xval))
+                     (< xval 0)
+                     (< (- xval ulp-x) yval)
+                     (< yval (- xval (* 1/2 ulp-x))))
+                (and (equal norm x)
+                     roundp
+                     stickyp)))
+     :hints (("Goal"
+              :use ((:instance fp-arith-triple->rational (x x))
+                    (:instance not-integerp-lemma
+                               (x (mod (* (rational-significand yval)
+                                          (expt 2 frac-size))
+                                       1))))
+              :in-theory (enable normalize-rational-to-arith-triple
+                                 rational-sign-significand-exponent-of-fp-arith-triple->rational
+                                 rational-significand-bounds-within-1/2*ulp-1a
+                                 floor-1-unique-lemma-4
+                                 mod-1-bounds-lemma-4)))))
+
+  (local
+   (defthmd normalize-rational-within-1/2*ulp-1b
+     (b* (((fp-arith-triple x))
+          (xval (fp-arith-triple->rational x))
+          (ulp-x (ulp xval frac-size))
+          ((mv norm roundp stickyp)
+           (normalize-rational-to-arith-triple yval
+                                               frac-size
+                                               :sticky-in sticky-in)))
+       (implies (and (posp frac-size)
+                     (unsigned-byte-p (1+ frac-size) x.man)
+                     (<= (expt 2 frac-size) x.man)
+                     (rationalp yval)
+                     (equal (rational-exponent yval)
+                            (rational-exponent xval))
+                     (< 0 yval)
+                     (< (- xval ulp-x) yval)
+                     (< yval (- xval (* 1/2 ulp-x))))
+                (and (equal norm
+                            (change-fp-arith-triple x :man (1- x.man)))
+                     (not roundp)
+                     stickyp)))
+     :hints (("Goal"
+              :use ((:instance fp-arith-triple->rational (x x)))
+              :in-theory (enable normalize-rational-to-arith-triple
+                                 rational-sign-significand-exponent-of-fp-arith-triple->rational
+                                 rational-significand-bounds-within-1/2*ulp-1b
+                                 floor-1-unique-lemma-1
+                                 mod-1-bounds-lemma-1)))))
+
+  (local
+   (defthmd normalize-rational-within-1/2*ulp-2a
+     (b* (((fp-arith-triple x))
+          (xval (fp-arith-triple->rational x))
+          (ulp-x (ulp xval frac-size))
+          ((mv norm roundp stickyp)
+           (normalize-rational-to-arith-triple yval
+                                               frac-size
+                                               :sticky-in sticky-in)))
+       (implies (and (fp-arith-triple-p x)
+                     (posp frac-size)
+                     (unsigned-byte-p (1+ frac-size) x.man)
+                     (<= (expt 2 frac-size) x.man)
+                     (rationalp yval)
+                     (equal (rational-exponent yval)
+                            (rational-exponent xval))
+                     (< xval 0)
+                     (< (- xval (* 1/2 ulp-x)) yval)
+                     (< yval xval))
+                (and (equal norm x)
+                     (not roundp)
+                     stickyp)))
+     :hints (("Goal"
+              :use ((:instance fp-arith-triple->rational (x x)))
+              :in-theory (enable normalize-rational-to-arith-triple
+                                 rational-sign-significand-exponent-of-fp-arith-triple->rational
+                                 rational-significand-bounds-within-1/2*ulp-2a
+                                 floor-1-unique-lemma-3
+                                 mod-1-bounds-lemma-3)))))
+
+  (local
+   (defthmd normalize-rational-within-1/2*ulp-2b
+     (b* (((fp-arith-triple x))
+          (xval (fp-arith-triple->rational x))
+          (ulp-x (ulp xval frac-size))
+          ((mv norm roundp stickyp)
+           (normalize-rational-to-arith-triple yval
+                                               frac-size
+                                               :sticky-in sticky-in)))
+       (implies (and (posp frac-size)
+                     (unsigned-byte-p (1+ frac-size) x.man)
+                     (<= (expt 2 frac-size) x.man)
+                     (rationalp yval)
+                     (equal (rational-exponent yval)
+                            (rational-exponent xval))
+                     (< 0 yval)
+                     (< (- xval (* 1/2 ulp-x)) yval)
+                     (< yval xval))
+                (and (equal norm
+                            (change-fp-arith-triple x :man (1- x.man)))
+                     roundp
+                     stickyp)))
+     :hints (("Goal"
+              :use ((:instance fp-arith-triple->rational (x x))
+                    (:instance not-integerp-lemma
+                               (x (mod (* (rational-significand yval)
+                                          (expt 2 frac-size))
+                                       1))))
+              :in-theory (enable normalize-rational-to-arith-triple
+                                 rational-sign-significand-exponent-of-fp-arith-triple->rational
+                                 rational-significand-bounds-within-1/2*ulp-2b
+                                 floor-1-unique-lemma-2
+                                 mod-1-bounds-lemma-2)))))
+
+  (local
+   (defthmd normalize-rational-within-1/2*ulp-3a
+     (b* (((fp-arith-triple x))
+          (xval (fp-arith-triple->rational x))
+          (ulp-x (ulp xval frac-size))
+          ((mv norm roundp stickyp)
+           (normalize-rational-to-arith-triple yval
+                                               frac-size
+                                               :sticky-in sticky-in)))
+       (implies (and (posp frac-size)
+                     (unsigned-byte-p (1+ frac-size) x.man)
+                     (<= (expt 2 frac-size) x.man)
+                     (rationalp yval)
+                     (equal (rational-exponent yval)
+                            (rational-exponent xval))
+                     (< yval 0)
+                     (< xval yval)
+                     (< yval (+ xval (* 1/2 ulp-x))))
+                (and (equal norm
+                            (change-fp-arith-triple x :man (1- x.man)))
+                     roundp
+                     stickyp)))
+     :hints (("Goal"
+              :use ((:instance fp-arith-triple->rational (x x))
+                    (:instance not-integerp-lemma
+                               (x (mod (* (rational-significand yval)
+                                          (expt 2 frac-size))
+                                       1))))
+              :in-theory (enable normalize-rational-to-arith-triple
+                                 rational-sign-significand-exponent-of-fp-arith-triple->rational
+                                 rational-significand-bounds-within-1/2*ulp-3a
+                                 floor-1-unique-lemma-2
+                                 mod-1-bounds-lemma-2)))))
+
+  (local
+   (defthmd normalize-rational-within-1/2*ulp-3b
+     (b* (((fp-arith-triple x))
+          (xval (fp-arith-triple->rational x))
+          (ulp-x (ulp xval frac-size))
+          ((mv norm roundp stickyp)
+           (normalize-rational-to-arith-triple yval
+                                               frac-size
+                                               :sticky-in sticky-in)))
+       (implies (and (fp-arith-triple-p x)
+                     (posp frac-size)
+                     (unsigned-byte-p (1+ frac-size) x.man)
+                     (<= (expt 2 frac-size) x.man)
+                     (rationalp yval)
+                     (equal (rational-exponent yval)
+                            (rational-exponent xval))
+                     (<= 0 xval)
+                     (< xval yval)
+                     (< yval (+ xval (* 1/2 ulp-x))))
+                (and (equal norm x)
+                     (not roundp)
+                     stickyp)))
+     :hints (("Goal"
+              :use ((:instance fp-arith-triple->rational (x x)))
+              :in-theory (enable normalize-rational-to-arith-triple
+                                 rational-sign-significand-exponent-of-fp-arith-triple->rational
+                                 rational-significand-bounds-within-1/2*ulp-3b
+                                 floor-1-unique-lemma-3
+                                 mod-1-bounds-lemma-3)))))
+
+  (local
+   (defthmd normalize-rational-within-1/2*ulp-4a
+     (b* (((fp-arith-triple x))
+          (xval (fp-arith-triple->rational x))
+          (ulp-x (ulp xval frac-size))
+          ((mv norm roundp stickyp)
+           (normalize-rational-to-arith-triple yval
+                                               frac-size
+                                               :sticky-in sticky-in)))
+       (implies (and (posp frac-size)
+                     (unsigned-byte-p (1+ frac-size) x.man)
+                     (<= (expt 2 frac-size) x.man)
+                     (rationalp yval)
+                     (equal (rational-exponent yval)
+                            (rational-exponent xval))
+                     (< yval 0)
+                     (< (+ xval (* 1/2 ulp-x)) yval)
+                     (< yval (+ xval ulp-x)))
+                (and (equal norm
+                            (change-fp-arith-triple x :man (1- x.man)))
+                     (not roundp)
+                     stickyp)))
+     :hints (("Goal"
+              :use ((:instance fp-arith-triple->rational (x x)))
+              :in-theory (enable normalize-rational-to-arith-triple
+                                 rational-sign-significand-exponent-of-fp-arith-triple->rational
+                                 rational-significand-bounds-within-1/2*ulp-4a
+                                 floor-1-unique-lemma-1
+                                 mod-1-bounds-lemma-1)))))
+
+  (local
+   (defthmd normalize-rational-within-1/2*ulp-4b
+     (b* (((fp-arith-triple x))
+          (xval (fp-arith-triple->rational x))
+          (ulp-x (ulp xval frac-size))
+          ((mv norm roundp stickyp)
+           (normalize-rational-to-arith-triple yval
+                                               frac-size
+                                               :sticky-in sticky-in)))
+       (implies (and (fp-arith-triple-p x)
+                     (posp frac-size)
+                     (unsigned-byte-p (1+ frac-size) x.man)
+                     (<= (expt 2 frac-size) x.man)
+                     (rationalp yval)
+                     (equal (rational-exponent yval)
+                            (rational-exponent xval))
+                     (<= 0 xval)
+                     (< (+ xval (* 1/2 ulp-x)) yval)
+                     (< yval (+ xval ulp-x)))
+                (and (equal norm x)
+                     roundp
+                     stickyp)))
+     :hints (("Goal"
+              :use ((:instance fp-arith-triple->rational (x x))
+                    (:instance not-integerp-lemma
+                               (x (mod (* (rational-significand yval)
+                                          (expt 2 frac-size))
+                                       1))))
+              :in-theory (enable normalize-rational-to-arith-triple
+                                 rational-sign-significand-exponent-of-fp-arith-triple->rational
+                                 rational-significand-bounds-within-1/2*ulp-4b
+                                 floor-1-unique-lemma-4
+                                 mod-1-bounds-lemma-4)))))
+
+  (local
+   (defthmd normalize-rational-within-1/2*ulp
+     (b* (((fp-arith-triple x))
+          (xval (fp-arith-triple->rational x))
+          ((mv norm1 roundp1 stickyp1)
+           (normalize-rational-to-arith-triple yval1
+                                               frac-size
+                                               :sticky-in sticky-in1))
+          ((mv norm2 roundp2 stickyp2)
+           (normalize-rational-to-arith-triple yval2
+                                               frac-size
+                                               :sticky-in sticky-in2)))
+       (implies (and (fp-arith-triple-p x)
+                     (posp frac-size)
+                     (unsigned-byte-p (1+ frac-size) x.man)
+                     (<= (expt 2 frac-size) x.man)
+                     (rationalp yval1)
+                     (rationalp yval2)
+                     (not (equal yval1 0))
+                     (not (equal yval2 0))
+                     (equal (rational-exponent yval1)
+                            (rational-exponent xval))
+                     (equal (rational-exponent yval2)
+                            (rational-exponent xval))
+                     (equal (<= 0 yval1)
+                            (<= 0 xval))
+                     (equal (<= 0 yval2)
+                            (<= 0 xval))
+                     (within-1/2*ulp xval yval1 yval2 frac-size))
+                (and (equal norm1 norm2)
+                     (equal roundp1 roundp2)
+                     (equal stickyp1 stickyp2))))
+     :hints (("Goal"
+              :cases ((<= 0 (fp-arith-triple->rational x)))
+              :in-theory (enable within-1/2*ulp
+                                 ulp
+                                 normalize-rational-within-1/2*ulp-1a
+                                 normalize-rational-within-1/2*ulp-1b
+                                 normalize-rational-within-1/2*ulp-2a
+                                 normalize-rational-within-1/2*ulp-2b
+                                 normalize-rational-within-1/2*ulp-3a
+                                 normalize-rational-within-1/2*ulp-3b
+                                 normalize-rational-within-1/2*ulp-4a
+                                 normalize-rational-within-1/2*ulp-4b)))))
+
+  (local
+   (defthmd normalize-rational+round-arith-triple-within-1/2*ulp-normalized
+     (b* (((fp-arith-triple x))
+          (frac-size (fp-size->frac-size size))
+          (xval (fp-arith-triple->rational x)))
+       (implies (and (fp-arith-triple-p x)
+                     (unsigned-byte-p (1+ frac-size) x.man)
+                     (<= (expt 2 frac-size) x.man)
+                     (rationalp yval1)
+                     (rationalp yval2)
+                     (not (equal yval1 0))
+                     (not (equal yval2 0))
+                     (equal (rational-exponent yval1)
+                            (rational-exponent xval))
+                     (equal (rational-exponent yval2)
+                            (rational-exponent xval))
+                     (equal (<= 0 yval1)
+                            (<= 0 xval))
+                     (equal (<= 0 yval2)
+                            (<= 0 xval))
+                     (within-1/2*ulp xval yval1 yval2 frac-size))
+                (equal (normalize-rational+round-arith-triple
+                        yval1 rc :sticky-in sticky-in1)
+                       (normalize-rational+round-arith-triple
+                        yval2 rc :sticky-in sticky-in2))))
+     :hints (("Goal"
+              :in-theory (enable normalize-rational+round-arith-triple
+                                 normalize-rational-within-1/2*ulp)))))
+
+  (defthmd normalize-rational+round-arith-triple-within-1/2*ulp
+    (b* (((fp-arith-triple x))
+         (frac-size (fp-size->frac-size size))
+         (xval (fp-arith-triple->rational x)))
+      (implies (and (fp-arith-triple-p x)
+                    (unsigned-byte-p (1+ frac-size) x.man)
+                    (not (equal x.man 0))
+                    (rationalp yval1)
+                    (rationalp yval2)
+                    (not (equal yval1 0))
+                    (not (equal yval2 0))
+                    (equal (rational-exponent yval1)
+                           (rational-exponent xval))
+                    (equal (rational-exponent yval2)
+                           (rational-exponent xval))
+                    (equal (<= 0 yval1)
+                           (<= 0 xval))
+                    (equal (<= 0 yval2)
+                           (<= 0 xval))
+                    (within-1/2*ulp xval yval1 yval2 frac-size))
+               (equal (normalize-rational+round-arith-triple
+                       yval1 rc :sticky-in sticky-in1)
+                      (normalize-rational+round-arith-triple
+                       yval2 rc :sticky-in sticky-in2))))
+    :hints (("Goal"
+             :use ((:instance
+                    normalize-rational+round-arith-triple-within-1/2*ulp-normalized
+                    (x (left-normalize-arith-triple
+                        x
+                        (fp-size->frac-size size))))))))
+  )

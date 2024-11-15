@@ -23,7 +23,7 @@
 ;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original authors: Jared Davis <jared@centtech.com>
-;                   Sol Swords <sol.swords@intel.com
+;                   Sol Swords <sol.swords@intel.com>
 
 
 ; boothpipe.lisp
