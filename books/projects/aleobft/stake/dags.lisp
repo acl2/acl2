@@ -808,6 +808,17 @@
 
   ///
 
+  (defruled dag-in-committees-p-necc-bind-dag
+    (implies (and (set::in cert dag)
+                  (dag-in-committees-p dag blockchain))
+             (set::in (certificate->author cert)
+                      (committee-members
+                       (active-committee-at-round
+                        (certificate->round cert)
+                        blockchain))))
+    :enable dag-in-committees-p-necc
+    :disable dag-in-committees-p)
+
   (defrule dag-in-committees-p-of-empty-dag
     (dag-in-committees-p nil blockchain)
     :enable dag-in-committees-p)
