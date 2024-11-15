@@ -1123,17 +1123,8 @@
            (align-spec-unambp alignspec))
     :expand (declspec-unambp (declspec-align alignspec)))
 
-  (defrule declspec-unambp-when-stocla/tyqual/funspec/attrib/stdcall/declspec
-    (implies (member-eq
-              (declspec-kind declspec)
-              '(:stocla :tyqual :funspec :attrib :stdcall :declspec-attrib))
-             (declspec-unambp declspec)))
-
-  (defrule declspec-unambp-when-not-stocla/tyspec/tyqual/funspec/align
-    (implies (and (not (declspec-case declspec :stocla))
-                  (not (declspec-case declspec :tyspec))
-                  (not (declspec-case declspec :tyqual))
-                  (not (declspec-case declspec :funspec))
+  (defrule declspec-unambp-when-not-tyspec/align
+    (implies (and (not (declspec-case declspec :tyspec))
                   (not (declspec-case declspec :align)))
              (declspec-unambp declspec))
     :expand (declspec-unambp declspec))
