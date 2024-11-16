@@ -183,7 +183,7 @@
 
   ;; create-certificate:
 
-  (defruled validator-certificates-quorum-p-of-create-certificate-next-old
+  (defruled validator-signer-quorum-p-of-create-certificate-next-old
     (implies (and (accepted-certificate-committee-p systate)
                   (set::in val (correct-addresses systate))
                   (validator-signer-quorum-p
@@ -199,7 +199,7 @@
              validator-state->blockchain-of-create-certificate-next
              accepted-certificate-committee-p-necc))
 
-  (defruled validator-certificates-quorum-p-of-create-certificate-next-new
+  (defruled validator-signer-quorum-p-of-create-certificate-next-new
     (implies (and (create-certificate-possiblep cert systate)
                   (set::in (certificate->author cert)
                            (correct-addresses systate)))
@@ -235,12 +235,12 @@
        (signer-quorum-p
         signer-quorum-p-necc
         accepted-certificates-of-create-certificate-next
-        validator-certificates-quorum-p-of-create-certificate-next-old
-        validator-certificates-quorum-p-of-create-certificate-next-new))))
+        validator-signer-quorum-p-of-create-certificate-next-old
+        validator-signer-quorum-p-of-create-certificate-next-new))))
 
   ;; receive-certificate:
 
-  (defruled validator-certificates-quorum-p-of-receive-certificate-next-old
+  (defruled validator-signer-quorum-p-of-receive-certificate-next-old
     (implies (and (set::in val (correct-addresses systate))
                   (validator-signer-quorum-p
                    cert
@@ -255,7 +255,7 @@
     :enable (validator-signer-quorum-p
              validator-state->blockchain-of-receive-certificate-next))
 
-  (defruled validator-certificates-quorum-p-of-receive-certificate-next-new
+  (defruled validator-signer-quorum-p-of-receive-certificate-next-new
     (implies (receive-certificate-possiblep msg systate)
              (validator-signer-quorum-p
               (message->certificate msg)
@@ -274,8 +274,8 @@
     :enable (signer-quorum-p
              signer-quorum-p-necc
              accepted-certificates-of-receive-certificate-next
-             validator-certificates-quorum-p-of-receive-certificate-next-old
-             validator-certificates-quorum-p-of-receive-certificate-next-new))
+             validator-signer-quorum-p-of-receive-certificate-next-old
+             validator-signer-quorum-p-of-receive-certificate-next-new))
 
   ;; store-certificate:
 
