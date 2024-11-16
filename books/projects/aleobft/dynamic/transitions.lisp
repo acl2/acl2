@@ -153,7 +153,8 @@
      since no events can always happen, so to speak."))
   (b* (((when (endp events)) t)
        ((unless (event-possiblep (car events) systate)) nil))
-    (events-possiblep (cdr events) (event-next (car events) systate))))
+    (events-possiblep (cdr events) (event-next (car events) systate)))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -172,6 +173,7 @@
        (systate (event-next (car events) systate)))
     (events-next (cdr events) systate))
   :guard-hints (("Goal" :in-theory (enable events-possiblep)))
+  :hooks (:fix)
 
   ///
 

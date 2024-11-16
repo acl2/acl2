@@ -359,6 +359,7 @@
    :stmt nil
    :tycompat nil
    :offsetof nil
+   :va-arg nil
    :extension nil)
   :measure (expr-count expr)
   :hints (("Goal" :in-theory (enable o< o-finp)))

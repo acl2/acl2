@@ -2199,7 +2199,9 @@
                                         "__auto_type"
                                         "__builtin_offsetof"
                                         "__builtin_types_compatible_p"
+                                        "__builtin_va_arg"
                                         "__builtin_va_list"
+                                        "__declspec"
                                         "__extension__"
                                         "_Float32"
                                         "_Float32x"
@@ -2581,6 +2583,9 @@
       (retok (escape-simple (simple-escape-t)) pos parstate))
      ((= char (char-code #\v)) ; \ v
       (retok (escape-simple (simple-escape-v)) pos parstate))
+     ((and (= char (char-code #\%)) ; \ %
+           (parstate->gcc parstate))
+      (retok (escape-simple (simple-escape-percent)) pos parstate))
      ((and (<= (char-code #\0) char)
            (<= char (char-code #\7))) ; \ octdig
       (b* (((erp char2 pos2 parstate) (read-char parstate)))
@@ -5904,8 +5909,7 @@
      or a string literal (which is a token),
      or a parenthesizes expression (which starts with a certain punctuator),
      or a generic selection (which starts a certain keyword),
-     or a call of the GCC built-in function @('__builtin_types_compatible_p')
-     (which is a keyword only if GCC extensions are supported),
+     or a call of a GCC built-in special function,
      or another primary expression preceded by @('__extension__')."))
   (and token?
        (or (token-case token? :ident)
@@ -5915,6 +5919,7 @@
            (token-keywordp token? "_Generic")
            (token-keywordp token? "__builtin_offsetof")
            (token-keywordp token? "__builtin_types_compatible_p")
+           (token-keywordp token? "__builtin_va_arg")
            (token-keywordp token? "__extension__")))
   ///
 
@@ -6394,7 +6399,8 @@
       (token-keywordp token? "_Alignas")
       (token-keywordp token? "__attribute")
       (token-keywordp token? "__attribute__")
-      (token-keywordp token? "__stdcall"))
+      (token-keywordp token? "__stdcall")
+      (token-keywordp token? "__declspec"))
   ///
 
   (defrule non-nil-when-token-declaration-specifier-start-p
@@ -9007,6 +9013,10 @@
        we parse a call of this built-in function,
        which has a type name and a member designator as arguments.")
      (xdoc::p
+      "If the token is the GCC keyword @('__builtin_va_arg'),
+       we parse a call of this built-in function,
+       which has an expression and a type name as arguments.")
+     (xdoc::p
       "If the token is the GCC keyword @('__extension__'),
        we parse the primary expression after it, recursively.")
      (xdoc::p
@@ -9133,6 +9143,31 @@
               ;; __builtin_offset ( type , memdes )
               (read-punctuator ")" parstate)))
           (retok (make-expr-offsetof :type tyname :member memdes)
+                 (span-join span last-span)
+                 parstate)))
+       ((token-keywordp token "__builtin_va_arg") ; __builtin_va_arg
+        (b* (((erp & parstate)
+              ;; __builtin_va_arg (
+              (read-punctuator "(" parstate))
+             (psize (parsize parstate))
+             ((erp list & parstate)
+              ;; __builtin_va_arg ( list
+              (parse-assignment-expression parstate))
+             ((unless (mbt (<= (parsize parstate) (1- psize))))
+              (reterr :impossible))
+             ((erp & parstate)
+              ;; __builtin_va_arg ( list ,
+              (read-punctuator "," parstate))
+             (psize (parsize parstate))
+             ((erp type & parstate)
+              ;; __builtin_va_arg ( list , type
+              (parse-type-name parstate))
+             ((unless (mbt (<= (parsize parstate) (1- psize))))
+              (reterr :impossible))
+             ((erp last-span parstate)
+              ;; __builtin_va_arg ( list , type )
+              (read-punctuator ")" parstate)))
+          (retok (make-expr-va-arg :list list :type type)
                  (span-join span last-span)
                  parstate)))
        ((token-keywordp token "__extension__") ; __extension__
@@ -10193,8 +10228,9 @@
        a function specifier,
        an alignment specifier,
        an attribute specifier,
-       or the @('__stdcall') keyword
-       (the last two are GCC extensions).")
+       the @('__stdcall') keyword,
+       or the @('__declspec') keyword
+       (the last three are GCC extensions).")
      (xdoc::p
       "A declaration specifier (list) may always be followed by a declarator.
        It may also be followed by an abstract declarator
@@ -10369,6 +10405,16 @@
        ;; we must have that special GCC construct.
        ((token-keywordp token "__stdcall")
         (retok (declspec-stdcall) span parstate))
+       ;; If token is the keyword '__declspec',
+       ;; which can only happen if GCC extensions are enabled,
+       ;; we must have an attribute with that syntax.
+       ((token-keywordp token "__declspec")
+        (b* (((erp & parstate) (read-punctuator "(" parstate))
+             ((erp ident & parstate) (read-identifier parstate))
+             ((erp last-span parstate) (read-punctuator ")" parstate)))
+          (retok (declspec-declspec-attrib ident)
+                 (span-join span last-span)
+                 parstate)))
        ;; If token is anything else, it is an error.
        ;; The above cases are all the allowed possibilities for token.
        (t ; other

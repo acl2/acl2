@@ -116,7 +116,8 @@
   :returns (yes/no booleanp)
   :short "Definition of the invariant:
           none of the messages in the network is self-addressed."
-  (message-set-noselfp (get-network-state systate)))
+  (message-set-noselfp (get-network-state systate))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -210,8 +211,7 @@
           reachable from an initial state via a sequence of events."
 
   (defruled no-self-messages-p-of-events-next
-    (implies (and (system-statep systate)
-                  (no-self-messages-p systate)
+    (implies (and (no-self-messages-p systate)
                   (events-possiblep events systate))
              (no-self-messages-p (events-next events systate)))
     :induct t
@@ -219,7 +219,6 @@
              events-next))
 
   (defruled no-self-messages-p-when-reachable
-    (implies (and (system-statep systate)
-                  (system-initp systate)
+    (implies (and (system-initp systate)
                   (events-possiblep events systate))
              (no-self-messages-p (events-next events systate)))))

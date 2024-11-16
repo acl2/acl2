@@ -1293,7 +1293,8 @@
     "Simple escapes are always valid.
      This function returns their ASCII codes.
      Note that these always fit in any of the types
-     mentioned in [C:6.4.4.4/4]."))
+     mentioned in [C:6.4.4.4/4].
+     The GCC escape @('\\%') is like the character @('%')."))
   (simple-escape-case
    esc
    :squote (char-code #\')
@@ -1306,7 +1307,8 @@
    :n 10
    :r 13
    :t 9
-   :v 11)
+   :v 11
+   :percent (char-code #\%))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2899,6 +2901,13 @@
                       ((erp more-types table)
                        (valid-member-designor expr.member table ienv)))
                    (retok (type-unknown) (set::union types more-types) table))
+       :va-arg (b* (((erp & list-types table)
+                     (valid-expr expr.list table ienv))
+                    ((erp & type-types table)
+                     (valid-tyname expr.type table ienv)))
+                 (retok (type-unknown)
+                        (set::union list-types type-types)
+                        table))
        :extension (valid-expr expr.expr table ienv)
        :otherwise (prog2$ (impossible) (reterr t))))
     :measure (expr-count expr))
@@ -3433,7 +3442,7 @@
                           (align-spec-fix align) type))))
          (retok types table))
        :alignas-expr
-       (b* (((erp type types table) (valid-const-expr align.arg table ienv))
+       (b* (((erp type types table) (valid-const-expr align.expr table ienv))
             ((unless (or (type-integerp type)
                          (type-case type :unknown)))
              (reterr (msg "In the alignment specifier ~x0, ~
@@ -3516,7 +3525,12 @@
                        (type-spec-list-fix tyspecs)
                        (stor-spec-list-fix storspecs)
                        nil
-                       (valid-table-fix table))))
+                       (valid-table-fix table))
+       :declspec-attrib (retok (type-option-fix type?)
+                               (type-spec-list-fix tyspecs)
+                               (stor-spec-list-fix storspecs)
+                               nil
+                               (valid-table-fix table))))
     :measure (declspec-count declspec)
 
     ///
@@ -5298,21 +5312,18 @@
        also two pieces of type information.")
      (xdoc::p
       "The first piece is the set of types returned by the statement,
-       either via @('return') statements, with or without expression,
-       or by ending execution.
+       via @('return') statements, with or without expressions.
        This is a set because a statement may contain
-       multiple @('return') sub-statements,
-       and may also end its execution without a @('return').
+       multiple @('return') sub-statements.
        A @('return') statement with an expression
        contributes the type of the expression to the set;
        a @('return') statement without an expression
-       contributes the type @('void') to the set;
-       the ending of the statement's execution without a @('return')
        contributes the type @('void') to the set.")
      (xdoc::p
       "The second piece of information is as follows.
-       If the statement is either an expression statement,
-       or is a compound one whose last block item is an expression statement,
+       If the statement is either a (possibly labeled) expression statement,
+       or is a (possibly labeled) compound one
+       whose last block item is an expression statement,
        the second piece of information is the type of that expression.
        If the statement is not an expression or compound,
        or it is compound but does not end in an expression statement
@@ -5325,8 +5336,9 @@
       ".")
      (xdoc::p
       "To validate a labeled statement,
-       we validate its label, and then the enclosed statement,
-       returning the same results.
+       we validate its label, and then the enclosed statement.
+       We return the union of the return types,
+       and the optional type from the statement.
        For now we do not check the requirements in
        [C:6.8.1/2] and [C:6.8.1/3].")
      (xdoc::p
@@ -5337,10 +5349,40 @@
        coming from the validation of the block items.")
      (xdoc::p
       "To validate an expression statement,
-       we validate the expression,
-       and return its type as the second result.
-       The first result is the same as the one obtained
-       from the expression."))
+       we validate the expression if present,
+       and return its type as the second result;
+       this is @('nil') if there is no expression.
+       The return types are the same as the ones of the expression.")
+     (xdoc::p
+      "A selection statement and its sub-statements are blocks [C:6.8.4/3],
+       so we push and pop scopes accordingly.
+       We check that the test of @('if') has scalar type [C:6.8.4.1/1]
+       and that the target of @('switch') has integer type [C:6.8.4.2/1].
+       No type is returned as the @('last-expr-type?') result,
+       because a selection statement is not an expression statement
+       (see criterion above for that result of this validation function).")
+     (xdoc::p
+      "An iteration statement and its sub-statements are blocks [C:6.8.5/5],
+       so we push and pop scopes accordingly.
+       We check that the test expression has scalar type.
+       No type is returned as the @('last-expr-type?') result,
+       because an iteraion statement is not an expression statement
+       (see criterion above for that result of this validation function).
+       For now we do not enforce that the declaration in a @('for')
+       only uses the storage class specifiers @('auto') and @('register').")
+     (xdoc::p
+      "For now we do not check constraints on
+       the label of a @('goto') [C:6.8.6.1/1],
+       the occurrence of @('continue') [C:6.8.6.2/2],
+       and the occurrence of @('break') [C:6.8.6.3/1].")
+     (xdoc::p
+      "A @('return') statement explicitly adds a type to the return types,
+       either the type of the expression,
+       or @('void') is there is no expression.
+       We check the constraints on occurrences [C:6.8.6.4/1]
+       in the validation function for function definitions.")
+     (xdoc::p
+      "For now we do not check any constraints on assembler statements."))
     (b* (((reterr) nil nil (irr-valid-table)))
       (stmt-case
        stmt
@@ -5355,33 +5397,123 @@
             (table (valid-pop-scope table)))
          (retok types type? table))
        :expr
-       (reterr :todo)
+       (b* (((erp type? types table) (valid-expr-option stmt.expr? table ienv)))
+         (retok types type? table))
        :if
-       (reterr :todo)
+       (b* ((table (valid-push-scope table))
+            ((erp test-type test-types table) (valid-expr stmt.test table ienv))
+            ((unless (type-scalarp test-type))
+             (reterr (msg "The test of the statement ~x0 has type ~x1."
+                          (stmt-fix stmt) test-type)))
+            (table (valid-push-scope table))
+            ((erp then-types & table) (valid-stmt stmt.then table ienv))
+            (table (valid-pop-scope table))
+            (table (valid-pop-scope table)))
+         (retok (set::union test-types then-types) nil table))
        :ifelse
-       (reterr :todo)
+       (b* ((table (valid-push-scope table))
+            ((erp test-type test-types table) (valid-expr stmt.test table ienv))
+            ((unless (type-scalarp test-type))
+             (reterr (msg "The test of the statement ~x0 has type ~x1."
+                          (stmt-fix stmt) test-type)))
+            (table (valid-push-scope table))
+            ((erp then-types & table) (valid-stmt stmt.then table ienv))
+            (table (valid-pop-scope table))
+            (table (valid-push-scope table))
+            ((erp else-types & table) (valid-stmt stmt.else table ienv))
+            (table (valid-pop-scope table))
+            (table (valid-pop-scope table)))
+         (retok (set::union test-types (set::union then-types else-types))
+                nil
+                table))
        :switch
-       (reterr :todo)
+       (b* ((table (valid-push-scope table))
+            ((erp target-type target-types table)
+             (valid-expr stmt.target table ienv))
+            ((unless (type-integerp target-type))
+             (reterr (msg "The target of the statement ~x0 has type ~x1."
+                          (stmt-fix stmt) target-type)))
+            (table (valid-push-scope table))
+            ((erp body-types & table) (valid-stmt stmt.body table ienv))
+            (table (valid-pop-scope table))
+            (table (valid-pop-scope table)))
+         (retok (set::union target-types body-types) nil table))
        :while
-       (reterr :todo)
+       (b* ((table (valid-push-scope table))
+            ((erp test-type test-types table) (valid-expr stmt.test table ienv))
+            ((unless (type-scalarp test-type))
+             (reterr (msg "The test of the statement ~x0 has type ~x1."
+                          (stmt-fix stmt) test-type)))
+            (table (valid-push-scope table))
+            ((erp body-types & table) (valid-stmt stmt.body table ienv))
+            (table (valid-pop-scope table))
+            (table (valid-pop-scope table))
+            (types (set::union test-types body-types)))
+         (retok types nil table))
        :dowhile
-       (reterr :todo)
+       (b* ((table (valid-push-scope table))
+            (table (valid-push-scope table))
+            ((erp body-types & table) (valid-stmt stmt.body table ienv))
+            (table (valid-pop-scope table))
+            ((erp test-type test-types table) (valid-expr stmt.test table ienv))
+            ((unless (type-scalarp test-type))
+             (reterr (msg "The test of the statement ~x0 has type ~x1."
+                          (stmt-fix stmt) test-type)))
+            (table (valid-pop-scope table)))
+         (retok (set::union test-types body-types) nil table))
        :for-expr
-       (reterr :todo)
+       (b* ((table (valid-push-scope table))
+            ((erp & init-types table)
+             (valid-expr-option stmt.init table ienv))
+            ((erp test-type? test-types table)
+             (valid-expr-option stmt.test table ienv))
+            ((when (and test-type?
+                        (not (type-scalarp test-type?))))
+             (reterr (msg "The test of the statement ~x0 has type ~x1."
+                          (stmt-fix stmt) test-type?)))
+            ((erp & next-types table)
+             (valid-expr-option stmt.next table ienv))
+            (table (valid-push-scope table))
+            ((erp body-types & table) (valid-stmt stmt.body table ienv)))
+         (retok (set::union init-types
+                            (set::union test-types
+                                        (set::union next-types
+                                                    body-types)))
+                nil
+                table))
        :for-decl
-       (reterr :todo)
+       (b* ((table (valid-push-scope table))
+            ((erp init-types table) (valid-decl stmt.init table ienv))
+            ((erp test-type? test-types table)
+             (valid-expr-option stmt.test table ienv))
+            ((when (and test-type?
+                        (not (type-scalarp test-type?))))
+             (reterr (msg "The test of the statement ~x0 has type ~x1."
+                          (stmt-fix stmt) test-type?)))
+            ((erp & next-types table)
+             (valid-expr-option stmt.next table ienv))
+            (table (valid-push-scope table))
+            ((erp body-types & table) (valid-stmt stmt.body table ienv)))
+         (retok (set::union init-types
+                            (set::union test-types
+                                        (set::union next-types
+                                                    body-types)))
+                nil
+                table))
        :for-ambig
        (prog2$ (impossible) (reterr t))
        :goto
-       (reterr :todo)
+       (retok nil nil (valid-table-fix table))
        :continue
-       (reterr :todo)
+       (retok nil nil (valid-table-fix table))
        :break
-       (reterr :todo)
+       (retok nil nil (valid-table-fix table))
        :return
-       (reterr :todo)
+       (b* (((erp type? types table) (valid-expr-option stmt.expr? table ienv))
+            (return-type (or type? (type-void))))
+         (retok (set::insert return-type types) nil table))
        :asm
-       (reterr :todo)))
+       (retok nil nil (valid-table-fix table))))
     :measure (stmt-count stmt))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5406,10 +5538,19 @@
        the block item is a compound statement
        whose last block item is an expression statement,
        in which case the @('last-expr-type?') result is
-       the type of that expression."))
-    (declare (ignore item table ienv))
+       the type of that expression.")
+     (xdoc::p
+      "If the block item is a declaration,
+       the @('last-expr-type?') result is @('nil'),
+       because the block item is not a statement of the kind
+       described in @(tsee valid-stmt)."))
     (b* (((reterr) nil nil (irr-valid-table)))
-      (reterr :todo))
+      (block-item-case
+       item
+       :decl (b* (((erp types table) (valid-decl item.unwrap table ienv)))
+               (retok types nil table))
+       :stmt (valid-stmt item.unwrap table ienv)
+       :ambig (prog2$ (impossible) (reterr t))))
     :measure (block-item-count item))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5432,13 +5573,15 @@
        with the modification that
        the @('last-expr-type?') result is a type exactly when
        the list of block items is not empty
-       and the last block item is a compound statement
-       whose last block item is an expression statement
-       in which case the @('last-expr-type?') result is
-       the type of that expression."))
-    (declare (ignore items table ienv))
-    (b* (((reterr) nil nil (irr-valid-table)))
-      (reterr :todo))
+       and the validation of the last block item
+       returns a type as that result."))
+    (b* (((reterr) nil nil (irr-valid-table))
+         ((when (endp items)) (retok nil nil (valid-table-fix table)))
+         ((erp types last-expr-type? table)
+          (valid-block-item (car items) table ienv))
+         ((when (endp (cdr items)))
+          (retok types last-expr-type? table)))
+      (valid-block-item-list (cdr items) table ienv))
     :measure (block-item-list-count items))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5447,8 +5590,7 @@
 
   :verify-guards nil ; done below
 
-  :prepwork ((set-bogus-mutual-recursion-ok t) ; TODO: remove eventually
-             (local (in-theory (enable acons))))
+  :prepwork ((local (in-theory (enable acons))))
 
   ///
 

@@ -347,7 +347,8 @@
              extend-blockchain-of-append
              validator-state->dag-of-commit-anchors-next
              validator-state->blockchain-of-commit-anchors-next
-             last-anchor-in-dag)
+             last-anchor-in-dag
+             car-of-committed-anchors)
     :use system-committed-redundantp-necc)
 
   (defrule system-blockchain-redundantp-of-commit-anchors-next

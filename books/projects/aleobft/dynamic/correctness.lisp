@@ -99,7 +99,7 @@
                     anchors-extension
                     committed-anchors-sequences
                     nonforking-anchors-def-and-init-and-next
-                    committed-redundant-and-init-and-next
+                    committed-redundant-def-and-init-and-next
                     blockchain-redundant-def-and-init-and-next
                     nonforking-blockchains-next
                     simultaneous-induction

@@ -736,7 +736,35 @@
              (active-committee-at-round (certificate->round cert)
                                         blockchain))
     :enable dag-has-committees-p-necc
-    :disable dag-has-committees-p))
+    :disable dag-has-committees-p)
+
+  (defrule dag-has-committees-p-of-empty-dag
+    (dag-has-committees-p nil blockchain)
+    :enable dag-has-committees-p)
+
+  (defruled dag-has-committees-p-of-insert
+    (iff (dag-has-committees-p (set::insert cert dag) blockchain)
+         (and (dag-has-committees-p dag blockchain)
+              (active-committee-at-round
+               (certificate->round cert) blockchain)))
+    :use (if-part only-if-part)
+    :prep-lemmas
+    ((defruled if-part
+       (implies (and (dag-has-committees-p dag blockchain)
+                     (active-committee-at-round
+                      (certificate->round cert) blockchain))
+                (dag-has-committees-p (set::insert cert dag) blockchain))
+       :expand (dag-has-committees-p (set::insert cert dag) blockchain)
+       :enable dag-has-committees-p-necc
+       :disable dag-has-committees-p)
+     (defruled only-if-part
+       (implies (dag-has-committees-p (set::insert cert dag) blockchain)
+                (and (dag-has-committees-p dag blockchain)
+                     (active-committee-at-round
+                      (certificate->round cert) blockchain)))
+       :expand (dag-has-committees-p dag blockchain)
+       :enable dag-has-committees-p-necc
+       :disable dag-has-committees-p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -779,6 +807,51 @@
   :guard-hints (("Goal" :in-theory (enable dag-has-committees-p-necc)))
 
   ///
+
+  (defruled dag-in-committees-p-necc-bind-dag
+    (implies (and (set::in cert dag)
+                  (dag-in-committees-p dag blockchain))
+             (set::in (certificate->author cert)
+                      (committee-members
+                       (active-committee-at-round
+                        (certificate->round cert)
+                        blockchain))))
+    :enable dag-in-committees-p-necc
+    :disable dag-in-committees-p)
+
+  (defrule dag-in-committees-p-of-empty-dag
+    (dag-in-committees-p nil blockchain)
+    :enable dag-in-committees-p)
+
+  (defruled dag-in-committees-p-of-insert
+    (equal (dag-in-committees-p (set::insert cert dag) blockchain)
+           (and (dag-in-committees-p dag blockchain)
+                (set::in (certificate->author cert)
+                         (committee-members
+                          (active-committee-at-round
+                           (certificate->round cert) blockchain)))))
+    :use (if-part only-if-part)
+    :prep-lemmas
+    ((defruled if-part
+       (implies (and (dag-in-committees-p dag blockchain)
+                     (set::in (certificate->author cert)
+                              (committee-members
+                               (active-committee-at-round
+                                (certificate->round cert) blockchain))))
+                (dag-in-committees-p (set::insert cert dag) blockchain))
+       :expand (dag-in-committees-p (set::insert cert dag) blockchain)
+       :enable dag-in-committees-p-necc
+       :disable dag-in-committees-p)
+     (defruled only-if-part
+       (implies (dag-in-committees-p (set::insert cert dag) blockchain)
+                (and (dag-in-committees-p dag blockchain)
+                     (set::in (certificate->author cert)
+                              (committee-members
+                               (active-committee-at-round
+                                (certificate->round cert) blockchain)))))
+       :expand (dag-in-committees-p dag blockchain)
+       :enable dag-in-committees-p-necc
+       :disable dag-in-committees-p)))
 
   (defruled authors-at-same-round-in-committee-when-dag-in-committees-p
     (implies (and (dag-in-committees-p dag blockchain)

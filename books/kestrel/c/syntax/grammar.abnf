@@ -451,6 +451,7 @@ gcc-keyword = %s"__alignof"
             / %s"__builtin_offsetof"
             / %s"__builtin_types_compatible_p"
             / %s"__builtin_va_list"
+            / %s"__declspec"
             / %s"__extension__"
             / %s"_Float32"
             / %s"_Float32x"
@@ -541,6 +542,11 @@ hex-quad =
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Constants [C:A.1.5] [C:6.4.4]
+
+; As a GCC extension, we allow the '\%' escape.
+; Although we did not find it documented in the GCC manual,
+; we encountered it in practical code, and we found this web page:
+; https://stackoverflow.com/questions/34142682/what-is-the-backslash-percent-escape-in-c.
 
 constant = integer-constant
          / floating-constant
@@ -643,6 +649,7 @@ simple-escape-sequence = "\'"
                        / %s"\r"
                        / %s"\t"
                        / %s"\v"
+                       / "\%" ; GCC extension
 
 octal-escape-sequence = "\" octal-digit
                       / "\" octal-digit octal-digit
@@ -802,13 +809,22 @@ lexeme = token
 ; We render that as an extension of our ABNF grammar;
 ; note that the second argument is a restricted form of expressions.
 
+; As a GCC extension, we include calls of '__builtin_va_arg',
+; which are not normal function calls,
+; because the second argument is a type name.
+; We did not find this documented in the GCC manual,
+; presumably because it is an internal function,
+; used to implement the user-visible 'va_arg' macro,
+; although we did not find the latter in the GCC manual either,
+; but some web searches support the view explained just above.
+
 ; As a GCC extension, we allow empty compound literals.
 ; GCC extensions for compound literals are described in
 ; https://gcc.gnu.org/onlinedocs/gcc/Compound-Literals.html,
 ; which does not actually mention empty compound literals,
 ; but we have encountered them in practical code.
 
-; As a GCC extensions, we allow conditional with omitted operands,
+; As a GCC extensions, we allow conditionals with omitted operands,
 ; documented at https://gcc.gnu.org/onlinedocs/gcc/Conditionals.html.
 
 ; As a GCC extension, we allow a primary expression
@@ -829,10 +845,12 @@ primary-expression = identifier
                    / 1*string-literal
                    / "(" expression ")"
                    / generic-selection
-                   / "(" compound-statement ")" ; GCC extension
-                   / types-compatible-call ; GCC extension
-                   / offsetof-call ; GCC extension
-                   / %s"__extension__" primary-expression ; GCC extension
+                   ; GCC extensions:
+                   / "(" compound-statement ")"
+                   / types-compatible-call
+                   / offsetof-call
+                   / va-arg-call
+                   / %s"__extension__" primary-expression
 
 types-compatible-call =
     %s"__builtin_types_compatible_p" "(" type-name "," type-name ")"
@@ -843,6 +861,9 @@ offsetof-call =
 offsetof-member-designator = identifier
                            / offsetof-member-designator "." identifier
                            / offsetof-member-designator "[" expression "]"
+
+va-arg-call =
+    %s"__builtin_va_arg" "(" assignment-expression "," type-name ")"
 
 generic-selection =
     %s"_Generic" "(" assignment-expression "," generic-assoc-list ")"
@@ -1076,14 +1097,19 @@ asm-goto-labels = [ identifier *( "," identifier ) ]
 
 ; As a GCC extension,
 ; we allow declaration specifiers, as well as specifier and qualifier lists,
-; to include attribute specifiers, as well as the keyword '__stdcall';
+; to include attribute specifiers;
 ; these can be easily distinguished from other declaration specifiers
-; by the starting '__attribute__' or '__attribute' GCC keyword,
-; or by the '__stdcall' GCC keyword.
+; by the starting '__attribute__' or '__attribute' GCC keyword.
+
+; As a GCC extension,
+; we allow the '__stdcall' keyword as a declaration specifier.
 ; The latter is documented as an attribute 'stdcall' in the GCC manual,
 ; which should therefore have the syntax '__attribute__((stdcall))',
 ; but apparently it is also accepted by itself, with two underscores in front,
 ; but only in certain places (not everywhere normal attributes are allowed).
+
+; As a GCC extension,
+; we allow the '__declspec' attribute syntax as a declaration specifier.
 
 ; As a GCC extension, allow a list of type qualifiers
 ; to also contains attribute specifiers.
@@ -1148,14 +1174,16 @@ declaration = [ %s"__extension__" ] ; GCC extension
               ";"
             / static-assert-declaration
 
-declaration-specifiers = storage-class-specifier [ declaration-specifiers ]
-                       / type-specifier [ declaration-specifiers ]
-                       / type-qualifier [ declaration-specifiers ]
-                       / function-specifier [ declaration-specifiers ]
-                       / alignment-specifier [ declaration-specifiers ]
-                       ; GCC extension:
-                       / attribute-specifier [ declaration-specifiers ]
-                       / %s"__stdcall" [ declaration-specifiers ]
+declaration-specifiers =
+      storage-class-specifier [ declaration-specifiers ]
+    / type-specifier [ declaration-specifiers ]
+    / type-qualifier [ declaration-specifiers ]
+    / function-specifier [ declaration-specifiers ]
+    / alignment-specifier [ declaration-specifiers ]
+    ; GCC extensions:
+    / attribute-specifier [ declaration-specifiers ]
+    / %s"__stdcall" [ declaration-specifiers ]
+    / %s"__declspec" "(" identifier ")" [ declaration-specifiers ]
 
 init-declarator-list = init-declarator
                      / init-declarator-list "," init-declarator
@@ -1415,8 +1443,9 @@ translation-unit = external-declaration
 
 external-declaration = function-definition
                      / declaration
-                     / ";" ; GCC extension
-                     / asm-statement ; GCC extension
+                     ; GCC extensions:
+                     / ";"
+                     / asm-statement
 
 function-definition = [ %s"__extension__" ] ; GCC extension
                       declaration-specifiers
