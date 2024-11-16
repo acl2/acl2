@@ -222,7 +222,7 @@
 
 ;; (var-intro-assumptions-for-array-input '0 '6 '4 'foo-ptr 'foo)
 
-;;Rreturns a parsed-type or :error.
+;; Returns a parsed-type or :error.
 ;; Types are parsed right-to-left, with the rightmost thing being the top construct.
 (defund parse-type-string (type-str)
   (declare (xargs :guard (stringp type-str)
@@ -242,10 +242,28 @@
           type-str
         :error))))
 
+;; Returns a parsed-type or :error.
+;; Types are parsed right-to-left, with the rightmost thing being the top construct.
 (defund parse-type (sym)
   (declare (xargs :guard (symbolp sym)))
   (parse-type-string (symbol-name sym)))
 
+;; Make assertions that the region at ADDRESS with length LEN is separate from all the
+;; regions represented by ADDRESSES-AND-LENS.
+;; Not sure what order is better for the args of SEPARATE.
+(defund make-separate-claims (address len addresses-and-lens)
+  (declare (xargs :guard (alistp addresses-and-lens)
+                  :guard-hints (("Goal" :in-theory (enable alistp)))))
+  (if (endp addresses-and-lens)
+      nil
+    (let* ((pair (first addresses-and-lens))
+           (this-address (car pair))
+           (this-len (cdr pair)))
+      (cons `(separate :r ,len ,address
+                       :r ,this-len ,this-address)
+            (make-separate-claims address len (rest addresses-and-lens))))))
+
+;; Returns a list of assumptions.
 (defund assumptions-for-input (var-name
                                type ;; examples: :u32 or :u32* or :u32[4]
                                state-component
@@ -283,8 +301,7 @@
                             :r ,stack-byte-count
                             (+ ,(- stack-byte-count) (rsp x86)))
                   ;; The input is disjoint from the code:
-                  (separate :r ,numbytes ,pointer-name
-                            :r ,code-length ,text-offset)
+                  ,@(make-separate-claims pointer-name numbytes (acons text-offset code-length nil))
                   ;; The input is disjoint from the saved return address:
                   ;; todo: reorder args?
                   (separate :r 8 (rsp x86)
@@ -309,8 +326,7 @@
                                       :r ,stack-byte-count
                                       (+ ,(- stack-byte-count) (rsp x86)))
                             ;; The input is disjoint from the code:
-                            (separate :r ,numbytes ,pointer-name
-                                      :r ,code-length ,text-offset)
+                            ,@(make-separate-claims pointer-name numbytes (acons text-offset code-length nil))
                             ;; The input is disjoint from the saved return address:
                             ;; todo: reorder args?
                             (separate :r 8 (rsp x86)
