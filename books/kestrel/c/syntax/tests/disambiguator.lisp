@@ -248,3 +248,15 @@
   int x = sizeof(myarray);
   }
 ")
+
+(test-dimb
+ "int foo (int *a, int *b) {
+ return (char *) (a) - b;
+}
+")
+
+(test-dimb
+ "int foo (int a, int b, int c) {
+ return a + (b) + c;
+}
+")
