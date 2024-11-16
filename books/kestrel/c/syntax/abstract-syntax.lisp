@@ -1884,7 +1884,7 @@
        there is a non-trivial overlap between expressions and type names."))
     (:alignas-type ((type tyname)))
     (:alignas-expr ((expr const-expr)))
-    (:alignas-ambig ((type/arg amb-expr/tyname)))
+    (:alignas-ambig ((expr/type amb-expr/tyname)))
     :pred align-specp
     :base-case-override :alignas-expr
     :measure (two-nats-measure (acl2-count x) 2))

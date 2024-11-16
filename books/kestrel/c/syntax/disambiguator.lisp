@@ -1385,7 +1385,7 @@
          (retok (align-spec-alignas-expr new-expr) table))
        :alignas-ambig
        (b* (((erp expr/tyname table)
-             (dimb-amb-expr/tyname alignspec.type/arg nil table)))
+             (dimb-amb-expr/tyname alignspec.expr/type nil table)))
          (expr/tyname-case
           expr/tyname
           :expr (retok (align-spec-alignas-expr (const-expr expr/tyname.unwrap))
