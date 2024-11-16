@@ -50,7 +50,7 @@
      at least one correct validator in the intersection of the quora.")
    (xdoc::p
     "Here we introduce a function that picks a correct validator (if any)
-     from the intersection of two set of (addresses of) validators
+     from the intersection of two sets of (addresses of) validators
      from a common committee.
      We prove that, if the committee is fault-tolerant,
      the function indeed picks a correct validator.
