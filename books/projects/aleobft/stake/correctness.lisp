@@ -24,6 +24,7 @@
 (include-book "signer-records")
 (include-book "unequivocal-signed-certificates")
 (include-book "dag-committees")
+(include-book "signer-quorum")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -48,4 +49,5 @@
                     no-self-endorsed
                     signer-records
                     unequivocal-signed-certificates
-                    dag-committees))
+                    dag-committees
+                    signer-quorum))
