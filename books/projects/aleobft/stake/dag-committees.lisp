@@ -208,14 +208,13 @@
           reachable from an initial state via a sequence of events."
 
   (defruled dag-committees-p-of-events-next
-    (implies
-     (and (dag-committees-p systate)
-          (ordered-even-p systate)
-          (last-blockchain-round-p systate)
-          (events-possiblep events systate))
-     (and (dag-committees-p (events-next events systate))
-          (ordered-even-p (events-next events systate))
-          (last-blockchain-round-p (events-next events systate))))
+    (implies (and (dag-committees-p systate)
+                  (ordered-even-p systate)
+                  (last-blockchain-round-p systate)
+                  (events-possiblep events systate))
+             (and (dag-committees-p (events-next events systate))
+                  (ordered-even-p (events-next events systate))
+                  (last-blockchain-round-p (events-next events systate))))
     :induct t
     :enable (events-possiblep
              events-next))
