@@ -528,7 +528,9 @@
                     :complit
                     :stmt
                     :tycompat
-                    :offsetof))
+                    :offsetof
+                    :va-arg
+                    :extension))
        t)
   :hooks (:fix))
 
@@ -563,7 +565,9 @@
                     :alignof
                     :stmt
                     :tycompat
-                    :offsetof))
+                    :offsetof
+                    :va-arg
+                    :extension))
        t)
   :hooks (:fix))
 
