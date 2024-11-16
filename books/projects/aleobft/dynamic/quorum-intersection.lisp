@@ -92,7 +92,7 @@
      (see @(tsee max-faulty-for-total)).
      The reason is that if @('pick-correct-validator') returned @('nil'),
      as proved then all the validators in @('vals') are faulty.
-     But since we hypothesize that there are more then @($f$),
+     But since we hypothesize that there are more than @($f$),
      and since the fault tolerance hypothesis means that
      there are no more than @($f$) faulty validators,
      we have an impossibility.
