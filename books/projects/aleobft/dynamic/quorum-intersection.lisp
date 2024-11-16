@@ -85,7 +85,7 @@
     "From the latter fact,
      we prove that this function will return an address
      if the following conditions are satisfied:
-     the input set is a subset of a fault tolerant committee,
+     the input set is a subset of a fault-tolerant committee,
      the committee consists of validators in the system,
      and the number of validators is more than @($f$),
      i.e. the maximum tolerated number of faulty validators
