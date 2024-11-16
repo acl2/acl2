@@ -144,6 +144,7 @@
                   (1+ (certificate->round cert))
                   dag))
     :hints (("Goal" :in-theory (enable incoming-loop-subset))))
+  (in-theory (disable incoming-subset-of-next-round))
 
   (defret incoming-same-round
     (<= (set::cardinality (certificate-set->round-set certs))
