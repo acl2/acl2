@@ -167,9 +167,11 @@
      does not affect the committees calculated prior to the extension.
      This property depends on the previously proved invariants
      that blockchain rounds are even and ordered,
-     and that the last committed round in the validator state
+     that the last committed round in the validator state
      matches the latest block's round
-     (or they are both 0 if there are no blocks);
+     (or they are both 0 if there are no blocks),
+     and that a validator can calculate the active committees
+     at all the rounds in which it has certificates;
      so we need to add these invariants as hypothesis,
      which therefore propagate to the theorem about @(tsee event-next)."))
 
