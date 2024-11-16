@@ -53,6 +53,7 @@
      from the intersection of two sets of (addresses of) validators
      from a common committee.
      We prove that, if the committee is fault-tolerant,
+     and each set of addresses forms a quorum,
      the function indeed picks a correct validator.
      This is then used (elsewhere) to prove certificate non-equivocation."))
   :order-subtopics t
