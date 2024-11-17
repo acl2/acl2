@@ -21,7 +21,7 @@
 ;; Returns (mv erp contents) where contents in an alist representing
 ;; the contents of the executable (exact format depends on the type of
 ;; the executable).  TODO: Pass back errors?
-(defun parse-executable-bytes (bytes
+(defund parse-executable-bytes (bytes
                                filename ; only used in error messages
                                )
   (declare (xargs :guard (and (byte-listp bytes)
@@ -52,10 +52,9 @@
 ;; the contents of the executable (exact format depends on the type of
 ;; the executable).
 (defun parse-executable (filename state)
-  (declare (xargs :stobjs state
-                  ;:mode :program
-                  :verify-guards nil
-                  :guard (stringp filename)))
+  (declare (xargs :guard (stringp filename)
+                  :stobjs state
+                  :verify-guards nil))
   (b* (((mv existsp state) (file-existsp filename state))
        ((when (not existsp))
         (progn$ (er hard? 'parse-executable "File does not exist: ~x0." filename)

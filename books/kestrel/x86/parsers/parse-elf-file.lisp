@@ -447,7 +447,8 @@
                                  bytes))))
 
 ;; TODO: Some of this parsing need not be done for all callers (e.g., when loading an image)
-(defun parse-elf-file-bytes (bytes)
+;; TODO: Allow returning an error.
+(defund parse-elf-file-bytes (bytes)
   (b* ((all-bytes bytes) ;capture for later looking up things at given offsets
        ((mv e_ident bytes) (parse-n-bytes 16 bytes))
        (ei_mag0 (nth 0 e_ident))
