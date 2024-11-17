@@ -278,7 +278,25 @@
     :enable (committee-members-stake-of-insert
              set::union
              set::intersect
-             fix)))
+             fix))
+
+  (defruled committee-members-stake-of-intersection-expand
+    (implies (and (address-setp members1)
+                  (address-setp members2))
+             (equal (committee-members-stake (set::intersect members1
+                                                             members2)
+                                             commtt)
+                    (- (+ (committee-members-stake members1 commtt)
+                          (committee-members-stake members2 commtt))
+                       (committee-members-stake (set::union members1
+                                                            members2)
+                                                commtt))))
+    :enable committee-members-stake-of-union-expand
+    :disable committee-members-stake)
+
+  (theory-invariant
+   (incompatible (:rewrite committee-members-stake-of-union-expand)
+                 (:rewrite committee-members-stake-of-intersection-expand))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
