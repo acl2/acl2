@@ -44,7 +44,7 @@
      both @($n$) and @($f$) measure numbers of validators.
      In AleoBFT, stake is used instead of numbers of validators:
      both @($n$) and @($f$) measure stake;
-     see @(see fault-tolerant), as well as the functions
+     see @(see fault-tolerance), as well as the functions
      @(tsee committee-max-faulty-stake) and @(tsee committee-quorum-stake).
      The quorum argument works not only for numbers of validators,
      but also for stake of validators,
