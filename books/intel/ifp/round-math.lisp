@@ -1959,7 +1959,8 @@
                           (frac-size posp))
     :returns (res booleanp :rule-classes :type-prescription)
     (b* ((ulp (ulp y2 frac-size)))
-      (or (and (< (- x ulp) y1)
+      (or (equal y1 y2)
+          (and (< (- x ulp) y1)
                (< y1 (- x (* 1/2 ulp)))
                (< (- x ulp) y2)
                (< y2 (- x (* 1/2 ulp))))
@@ -2568,11 +2569,11 @@
           ((mv norm1 roundp1 stickyp1)
            (normalize-rational-to-arith-triple yval1
                                                frac-size
-                                               :sticky-in sticky-in1))
+                                               :sticky-in sticky-in))
           ((mv norm2 roundp2 stickyp2)
            (normalize-rational-to-arith-triple yval2
                                                frac-size
-                                               :sticky-in sticky-in2)))
+                                               :sticky-in sticky-in)))
        (implies (and (fp-arith-triple-p x)
                      (posp frac-size)
                      (unsigned-byte-p (1+ frac-size) x.man)
@@ -2628,9 +2629,9 @@
                             (<= 0 xval))
                      (within-1/2*ulp xval yval1 yval2 frac-size))
                 (equal (normalize-rational+round-arith-triple
-                        yval1 rc :sticky-in sticky-in1)
+                        yval1 rc :sticky-in sticky-in)
                        (normalize-rational+round-arith-triple
-                        yval2 rc :sticky-in sticky-in2))))
+                        yval2 rc :sticky-in sticky-in))))
      :hints (("Goal"
               :in-theory (enable normalize-rational+round-arith-triple
                                  normalize-rational-within-1/2*ulp)))))
@@ -2656,9 +2657,9 @@
                            (<= 0 xval))
                     (within-1/2*ulp xval yval1 yval2 frac-size))
                (equal (normalize-rational+round-arith-triple
-                       yval1 rc :sticky-in sticky-in1)
+                       yval1 rc :sticky-in sticky-in)
                       (normalize-rational+round-arith-triple
-                       yval2 rc :sticky-in sticky-in2))))
+                       yval2 rc :sticky-in sticky-in))))
     :hints (("Goal"
              :use ((:instance
                     normalize-rational+round-arith-triple-within-1/2*ulp-normalized
