@@ -774,7 +774,6 @@
        (term-to-simulate (wrap-in-output-extractor output term-to-simulate)) ;TODO: delay this if lifting a loop?
        (- (cw "(Limiting the unrolling to ~x0 steps.)~%" step-limit))
        ;; Convert the term into a dag for passing to repeatedly-run:
-       ;; TODO: Just call simplify-term here?
        ((mv erp dag-to-simulate) (acl2::make-term-into-dag-basic term-to-simulate nil))
        ((when erp) (mv erp nil nil nil nil state))
        ((when (quotep dag-to-simulate))
@@ -801,6 +800,7 @@
        (- (cw " (Lifting took ")
           (acl2::print-to-hundredths elapsed) ; todo: could have real-time-since detect negative time
           (cw "s.)~%"))
+       ;; Print the result (todo: allow suppressing this):
        (- (if (quotep result-dag-or-quotep)
               (cw " Lifting produced the constant ~x0.)~%" result-dag-or-quotep) ; matches (Lifting...
             (progn$ (cw " Lifting produced a dag:~%")

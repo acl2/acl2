@@ -298,7 +298,6 @@
        ;; Translate the assumptions supplied by the user:
        (user-assumptions (translate-terms assumptions 'test-function-core (w state)))
 
-
        ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
        (- (cw "(Testing ~x0.~%" function-name-string))
        ;; Check the param names, if any:
@@ -558,7 +557,7 @@
 
 ;; Test a single function:
 (defmacro test-function (function-name-string
-                         executable ; a parsed-executable or a string (meaning read from that file)
+                         executable ; a parsed-executable or a string (meaning read from that file) ; TODO: Disallow a parsed-executable here?
                          &key
                          (param-names ':none)
                          (assumptions 'nil)
@@ -786,7 +785,7 @@
           state))))
 
 ;; Test a list of functions:
-;; deprecate this?
+;; TODO: deprecate this?
 (defmacro test-functions (function-name-strings ; or can be :all
                           executable ; a string
                           &key
