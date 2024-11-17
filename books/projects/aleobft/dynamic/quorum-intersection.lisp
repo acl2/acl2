@@ -222,12 +222,12 @@
    (xdoc::p
     "and if we use that in the equation above we get")
    (xdoc::@[]
-    "|A \\cap B| \\geq 2n - 2f - n = n - 2f")
+    "|A \\cap B| \\geq 2n - 2f - n")
    (xdoc::p
     "Since @($f < n/3$), we have @($n > 3f$),
      which we substitute above obtaining")
    (xdoc::@[]
-    "|A \\cap B| \\geq 2n - 2f - n = n - 2f > 3f - f = f")
+    "|A \\cap B| \\geq 2n - 2f - n = n - 2f > 3f - 2f = f")
    (xdoc::p
     "So we get")
    (xdoc::@[]
