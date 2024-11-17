@@ -76,6 +76,7 @@
     expr-stmt
     make-expr-tycompat
     make-expr-offsetof
+    make-expr-va-arg
     expr-extension
     irr-expr
 

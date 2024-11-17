@@ -1554,6 +1554,12 @@
        The second argument is a member designator,
        which is a restricted form of expression.")
      (xdoc::p
+      "As a GCC extension, we include calls of
+       the built-in function @('__builtin_va_arg').
+       This is not a regular function,
+       because its second argument is a type name, not an expression.
+       The first argument is an expression.")
+     (xdoc::p
       "As a GCC extesntion, we include
        expressions preceded by @('__extension__').
        See our ABNF grammar."))
@@ -1610,6 +1616,8 @@
                 (type2 tyname)))
     (:offsetof ((type tyname)
                 (member member-designor)))
+    (:va-arg ((list expr)
+              (type tyname)))
     (:extension ((expr expr)))
     :pred exprp
     :measure (two-nats-measure (acl2-count x) 0))
@@ -1841,7 +1849,7 @@
     (:tyspec ((spec type-spec)))
     (:tyqual ((qual type-qual)))
     (:align ((spec align-spec)))
-    (:attrib ((unwrap attrib-spec))) ; GCC extension
+    (:attrib ((spec attrib-spec))) ; GCC extension
     :pred spec/qual-p
     :measure (two-nats-measure (acl2-count x) 0))
 
@@ -1883,7 +1891,7 @@
        As discussed in @(tsee amb-expr/tyname),
        there is a non-trivial overlap between expressions and type names."))
     (:alignas-type ((type tyname)))
-    (:alignas-expr ((arg const-expr)))
+    (:alignas-expr ((expr const-expr)))
     (:alignas-ambig ((type/arg amb-expr/tyname)))
     :pred align-specp
     :base-case-override :alignas-expr

@@ -61,6 +61,9 @@
 
   ///
 
+  (fty::deffixequiv-sk no-self-buffer-p
+    :args ((systate system-statep)))
+
   (defruled no-self-buffer-p-necc-fixing
     (implies (and (no-self-buffer-p systate)
                   (set::in (address-fix val) (correct-addresses systate)))
@@ -174,8 +177,7 @@
           reachable from an initial state via a sequence of events."
 
   (defruled no-self-buffer-p-of-events-next
-    (implies (and (system-statep systate)
-                  (no-self-buffer-p systate)
+    (implies (and (no-self-buffer-p systate)
                   (no-self-messages-p systate)
                   (events-possiblep events systate))
              (and (no-self-buffer-p (events-next events systate))
@@ -185,7 +187,6 @@
              events-next))
 
   (defruled no-self-buffer-p-when-reachable
-    (implies (and (system-statep systate)
-                  (system-initp systate)
+    (implies (and (system-initp systate)
                   (events-possiblep events systate))
              (no-self-buffer-p (events-next events systate)))))

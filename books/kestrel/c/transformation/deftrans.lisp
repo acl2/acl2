@@ -171,6 +171,9 @@
        "            :offsetof (make-expr-offsetof"
        "                        :type (my-simpadd0-tyname expr.type)"
        "                        :member (my-simpadd0-member-designor expr.member))"
+       "            :va-arg (make-expr-va-arg"
+       "                      :list (my-simpadd0-expr expr.list)"
+       "                      :type (my-simpadd0-tyname expr.type))"
        "            :extension (expr-extension (my-simpadd0-tyname expr.expr)))))"
        )))
   :order-subtopics t
@@ -218,7 +221,7 @@
     (:linear c$::block-item-list-count-of-cdr)
     (:linear c$::block-item-list-count-of-expr-stmt->items)
     (:linear c$::block-item-list-count-of-stmt-compound->items)
-    (:linear c$::const-expr-count-of-align-spec-alignas-expr->arg)
+    (:linear c$::const-expr-count-of-align-spec-alignas-expr->expr)
     (:linear c$::const-expr-count-of-const-expr-option-some->val)
     (:linear c$::const-expr-count-of-designor-sub->index)
     (:linear c$::const-expr-count-of-label-casexpr->expr)
@@ -286,6 +289,7 @@
     (:linear c$::expr-count-of-expr-memberp->arg)
     (:linear c$::expr-count-of-expr-option-some->val)
     (:linear c$::expr-count-of-expr-paren->inner)
+    (:linear c$::expr-count-of-expr-va-arg->list)
     (:linear c$::expr-count-of-expr-unary->arg)
     (:linear c$::expr-count-of-genassoc-default->expr)
     (:linear c$::expr-count-of-genassoc-type->expr)
@@ -360,6 +364,7 @@
     (:linear c$::tyname-count-of-expr-tycompat->type2)
     (:linear c$::tyname-count-of-genassoc-type->type)
     (:linear c$::tyname-count-of-expr-offsetof->type)
+    (:linear c$::tyname-count-of-expr-va-arg->type)
     (:linear c$::tyname-count-of-type-spec-atomic->type)
     (:linear c$::tyname-count-of-type-spec-typeof-type->type)
     (:linear c$::type-spec-count-of-declspec-tyspec->unwrap)
@@ -722,6 +727,9 @@
       :offsetof (make-expr-offsetof
                   :type (,(cdr (assoc-eq 'tyname names)) expr.type ,@extra-args-names)
                   :member (,(cdr (assoc-eq 'member-designor names)) expr.member ,@extra-args-names))
+      :va-arg (make-expr-va-arg
+                :list (,(cdr (assoc-eq 'expr names)) expr.list ,@extra-args-names)
+                :type (,(cdr (assoc-eq 'tyname names)) expr.type ,@extra-args-names))
       :extension (expr-extension (,(cdr (assoc-eq 'expr names)) expr.expr ,@extra-args-names)))
    '(:returns (new-expr exprp)
      :measure (expr-count expr))))
@@ -959,7 +967,7 @@
    `(align-spec-case
       alignspec
       :alignas-type (align-spec-alignas-type (,(cdr (assoc-eq 'tyname names)) alignspec.type ,@extra-args-names))
-      :alignas-expr (align-spec-alignas-expr (,(cdr (assoc-eq 'const-expr names)) alignspec.arg ,@extra-args-names))
+      :alignas-expr (align-spec-alignas-expr (,(cdr (assoc-eq 'const-expr names)) alignspec.expr ,@extra-args-names))
       :alignas-ambig (prog2$
                        (raise "Misusage error: ~x0." (align-spec-fix alignspec))
                        (align-spec-fix alignspec)))

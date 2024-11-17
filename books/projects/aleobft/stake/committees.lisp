@@ -13,6 +13,7 @@
 
 (include-book "blocks")
 
+(include-book "kestrel/fty/deffixequiv-sk" :dir :system)
 (include-book "std/util/define-sk" :dir :system)
 
 (local (include-book "../library-extensions/omap-theorems"))
@@ -184,17 +185,19 @@
   (xdoc::topstring
    (xdoc::p
     "We add up all the stakes of the members."))
-  (cond ((set::emptyp members) 0)
-        (t (+ (committee-member-stake (set::head members) commtt)
+  (cond ((set::emptyp (address-set-fix members)) 0)
+        (t (+ (committee-member-stake (address-fix (set::head members)) commtt)
               (committee-members-stake (set::tail members) commtt))))
+  :prepwork ((local (in-theory (enable emptyp-of-address-set-fix))))
   :guard-hints (("Goal" :in-theory (enable set::subset)))
   :verify-guards :after-returns
+  :hooks (:fix)
 
   ///
 
   (defruled committee-members-stake-0-to-emptyp
     (equal (equal (committee-members-stake members commtt) 0)
-           (set::emptyp members))
+           (set::emptyp (address-set-fix members)))
     :induct t
     :enable fix))
 
@@ -951,7 +954,10 @@
                         (commtt2 (bonded-committee-at-round round blocks2)))
                      (implies (and commtt1
                                    commtt2)
-                              (equal commtt1 commtt2))))))
+                              (equal commtt1 commtt2)))))
+  ///
+  (fty::deffixequiv-sk same-bonded-committees-p
+    :args ((blocks1 block-listp) (blocks2 block-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -975,4 +981,7 @@
                         (commtt2 (active-committee-at-round round blocks2)))
                      (implies (and commtt1
                                    commtt2)
-                              (equal commtt1 commtt2))))))
+                              (equal commtt1 commtt2)))))
+  ///
+  (fty::deffixequiv-sk same-active-committees-p
+    :args ((blocks1 block-listp) (blocks2 block-listp))))

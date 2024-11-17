@@ -125,6 +125,9 @@
      :offsetof (make-expr-offsetof
                 :type (simpadd0-tyname expr.type)
                 :member (simpadd0-member-designor expr.member))
+     :va-arg (make-expr-va-arg
+              :list (simpadd0-expr expr.list)
+              :type (simpadd0-tyname expr.type))
      :extension (expr-extension (simpadd0-expr expr.expr)))
     :measure (expr-count expr))
 
@@ -302,7 +305,7 @@
     (align-spec-case
      alignspec
      :alignas-type (align-spec-alignas-type (simpadd0-tyname alignspec.type))
-     :alignas-expr (align-spec-alignas-expr (simpadd0-const-expr alignspec.arg))
+     :alignas-expr (align-spec-alignas-expr (simpadd0-const-expr alignspec.expr))
      :alignas-ambig (prog2$ (impossible) (irr-align-spec)))
     :measure (align-spec-count alignspec))
 

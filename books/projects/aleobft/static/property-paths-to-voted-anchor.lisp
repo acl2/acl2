@@ -280,6 +280,7 @@
            cardinality-bound-when-same-round-and-unequiv
            certificate-set-unequivocalp-when-subset
            certificate-set->author-set-monotone
+           incoming-subset
            set::expensive-rules)
   :disable (set::expand-cardinality-of-union
             certificate-set->round-set-of-union))
@@ -554,7 +555,8 @@
            (> (set::cardinality vals) f))
   :rule-classes :linear
   :enable (set::expensive-rules
-           certificate-set-unequivocalp-when-subset)
+           certificate-set-unequivocalp-when-subset
+           incoming-subset)
   :use ((:instance cardinality-of-authors-when-same-round-and-unequiv
                    (certs (incoming anchor dag)))
         (:instance certificate-set->author-set-monotone

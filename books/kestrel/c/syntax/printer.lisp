@@ -1797,6 +1797,13 @@
                 (pstate (print-member-designor expr.member pstate))
                 (pstate (print-astring ")" pstate)))
              pstate)
+           :va-arg
+           (b* ((pstate (print-astring "__builtin_va_arg(" pstate))
+                (pstate (print-expr expr.list (expr-priority-asg) pstate))
+                (pstate (print-astring ", " pstate))
+                (pstate (print-tyname expr.type pstate))
+                (pstate (print-astring ")" pstate)))
+             pstate)
            :extension
            (b* ((pstate (print-astring "__extension__ " pstate))
                 (pstate (print-expr expr.expr (expr-priority-primary) pstate)))
@@ -2003,7 +2010,7 @@
      :tyspec (print-type-spec specqual.spec pstate)
      :tyqual (print-type-qual specqual.qual pstate)
      :align (print-align-spec specqual.spec pstate)
-     :attrib (print-attrib-spec specqual.unwrap pstate))
+     :attrib (print-attrib-spec specqual.spec pstate))
     :measure (two-nats-measure (spec/qual-count specqual) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2034,7 +2041,7 @@
           (align-spec-case
            alignspec
            :alignas-type (print-tyname alignspec.type pstate)
-           :alignas-expr (print-const-expr alignspec.arg pstate)
+           :alignas-expr (print-const-expr alignspec.expr pstate)
            :alignas-ambig (prog2$ (impossible) (pristate-fix pstate))))
          (pstate (print-astring ")" pstate)))
       pstate)

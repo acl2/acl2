@@ -39,7 +39,7 @@
      which it uses to check quorum conditions.")
    (xdoc::p
     "The above events are the only ones that extend
-     the set of certificates accepted by a validator,
+     the set of certificates accepted by a validator.
      Thus, it is the case that the active committee
      at the round of each certificate accepted by a validator
      is known to (i.e. calculable by) the validator."))
