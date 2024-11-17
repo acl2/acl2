@@ -9,7 +9,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ALEOBFT-DYNAMIC")
+(in-package "ALEOBFT-STAKE")
 
 (include-book "fault-tolerance")
 
@@ -33,27 +33,40 @@
      certain decisions are made (by correct validators)
      only if they are supported by a quorum of validators;
      contradictory decisions cannot be made because,
-     because each would be supported by a quorum,
+     because each decision would be supported by a quorum,
      but the intersection of the two quora would contain enough validators
      that there is at least a correct one in the intersection,
      which would not have supported both decisions.
      This is the case if the system is fault-tolerant,
      i.e. @($f < n/3$) (see @(tsee max-faulty-for-total)).")
    (xdoc::p
-    "In AleoBFT this concept applies to certificate non-equivocation.
+    "The quorum intersection argument is normally based on number of validators:
+     both @($n$) and @($f$) measure numbers of validators.
+     In AleoBFT, stake is used instead of numbers of validators:
+     both @($n$) and @($f$) measure stake;
+     see @(see fault-tolerance), as well as the functions
+     @(tsee committee-max-faulty-stake) and @(tsee committee-quorum-stake).
+     The quorum argument works not only for numbers of validators,
+     but also for stake of validators,
+     as we prove here.")
+   (xdoc::p
+    "In AleoBFT quorum intersection applies to certificate non-equivocation.
      By requiring a quorum of signatures,
      where each signature supports the certificate
      (in the sense of `supporting' mentioned above),
      we ensure that two incompatible certificates,
      i.e. two different certificates with the same author and round,
      cannot exist because they would have to be both signed by
-     at least one correct validator in the intersection of the quora.")
+     at least one correct validator in the intersection of the quora;
+     the intersection consists of stake (not numbers of validators),
+     but it still implies the existence of
+     at least one correct validator in both quora.")
    (xdoc::p
     "Here we introduce a function that picks a correct validator (if any)
      from the intersection of two sets of (addresses of) validators
      from a common committee.
      We prove that, if the committee is fault-tolerant,
-     and each set of addresses forms a quorum,
+     and each set of addresses has at least the quorum stake,
      the function indeed picks a correct validator.
      This is then used (elsewhere) to prove certificate non-equivocation."))
   :order-subtopics t
@@ -68,7 +81,10 @@
   (xdoc::topstring
    (xdoc::p
     "Correct validators are identified via a system state,
-     so we pass a system state to this function.")
+     so we pass a system state to this function.
+     The correct validators are the keys of
+     the map from addresses to validator states,
+     in the system state.")
    (xdoc::p
     "We go through all the addresses in the set,
      returning the first one we find that is of a correct validator.
@@ -77,27 +93,38 @@
     "We show that if this function returns an address,
      the address is in the input set,
      and it is the address of a correct validator.
-     We show that if this function returns @('nil')
-     and if all the addresses are in the system,
-     then all the addresses are of faulty validators,
+     We show that if this function returns @('nil'),
+     then all the addresses are of faulty validators
+     (expressed by saying that they have an empty intersection
+     with the set of correct validators),
      because otherwise we would have found a correct one.")
    (xdoc::p
     "From the latter fact,
      we prove that this function will return an address
      if the following conditions are satisfied:
      the input set is a subset of a fault-tolerant committee,
-     the committee consists of validators in the system,
-     and the number of validators is more than @($f$),
-     i.e. the maximum tolerated number of faulty validators
+     and the total stake of validators is more than @($f$),
+     i.e. the maximum tolerated stake of faulty validators
      (see @(tsee max-faulty-for-total)).
      The reason is that if @('pick-correct-validator') returned @('nil'),
-     as proved then all the validators in @('vals') are faulty.
-     But since we hypothesize that there are more than @($f$),
+     then, as proved in @('all-faulty-when-not-pick-correct-validator'),
+     all the validators in @('vals') are faulty.
+     But since we hypothesize that their stake is more than @($f$),
      and since the fault tolerance hypothesis means that
-     there are no more than @($f$) faulty validators,
+     the total stake of faulty validators is no more than @($f$),
      we have an impossibility.
      Thus @('pick-correct-validator') must return an address,
-     which as previously proved is in @('vals') and is a correct validator."))
+     which as previously proved is in @('vals') and is a correct validator.
+     We use the @('committee-members-stake-monotone')
+     to inject the appropriate facts into the proof.
+     Given that @('vals') is a subset of the committee members,
+     but that @('vals') is disjoint from correct addresses
+     (by @('all-faulty-when-not-pick-correct-validator'),
+     we have that @('vals') is in fact a subset of
+     the committee's faulty members,
+     whose total stake does not exceed @($f$) by fault tolerance,
+     and thus the total stake of @('vals') does not exceed @($f$) either,
+     which contradicts the hypothesis that it does."))
   (b* (((when (set::emptyp vals)) nil)
        (val (set::head vals))
        ((when (set::in val (correct-addresses systate))) (address-fix val)))
@@ -121,32 +148,27 @@
     :induct t)
 
   (defruled all-faulty-when-not-pick-correct-validator
-    (implies (and (set::subset vals (all-addresses systate))
-                  (not (pick-correct-validator vals systate)))
-             (set::subset vals (faulty-addresses systate)))
+    (implies (not (pick-correct-validator vals systate))
+             (set::emptyp (set::intersect vals (correct-addresses systate))))
     :induct t
-    :enable (faulty-addresses
-             set::expensive-rules
+    :enable (set::intersect
              not-in-address-set-when-not-address))
 
   (defruled pick-correct-validator-when-fault-tolerant-p
-    (implies (and (set::subset vals
-                               (committee-members commtt))
-                  (set::subset (committee-members commtt)
-                               (all-addresses systate))
+    (implies (and (address-setp vals)
+                  (set::subset vals (committee-members commtt))
                   (committee-fault-tolerant-p commtt systate)
-                  (> (set::cardinality vals)
-                     (committee-max-faulty commtt)))
+                  (> (committee-members-stake vals commtt)
+                     (committee-max-faulty-stake commtt)))
              (pick-correct-validator vals systate))
     :enable (committee-fault-tolerant-p
              committee-faulty-members
-             set::expensive-rules)
+             set::subset-of-difference-when-disjoint)
     :disable pick-correct-validator
     :use (all-faulty-when-not-pick-correct-validator
-          (:instance set::subset-of-intersect-if-subset-of-both
-                     (a vals)
-                     (b (faulty-addresses systate))
-                     (c (committee-members commtt))))))
+          (:instance committee-members-stake-monotone
+                     (members1 vals)
+                     (members2 (committee-faulty-members commtt systate))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -172,66 +194,70 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled cardinality-of-quorum-intersection
-  :short "Cardinality of a quorum intersection."
+(defruled stake-of-quorum-intersection
+  :short "Stake of a quorum intersection."
   :long
   (xdoc::topstring
    (xdoc::p
     "We show that the intersection of two quora
-     that are both subsets of a committee of size @($n$)
-     contains more than @($f$) elements.
+     that are both subsets of a committee of total stake @($n$)
+     have more than @($f$) stake.
      Refer to @(tsee max-faulty-for-total) for
      a description of @($f$) and @($n$).")
    (xdoc::p
-    "Let @($A$) and @($B$) be the two sets of (addresses of) validators.
-     Since they each form a quorum,
-     their cardinality is")
+    "Let @($A$) and @($B$) be the two sets of (addresses of) validators
+     whose total stakes are @($S(A)$) and @($S(B)$).
+     Since they each form a quorum, their stakes are at least @($n - f$):")
    (xdoc::@[]
-    "|A| = |B| = n - f")
+    "S(A) \\geq n - f")
+   (xdoc::@[]
+    "S(B) \\geq n - f")
    (xdoc::p
-    "Furthermore, since both @($A$) and @($B$) are subsets of the committee,
+    "Furthermore, since both @($a$) and @($b$) are subsets of the committee,
      their union is also a subset of the committe,
-     and thus the cardinality of the union is bounded by the committee size,
+     and thus the stake of the union is bounded by
+     the committee's total stake,
      i.e.")
    (xdoc::@[]
-    "|A \\cup B| \\leq n")
+    "S(A \\cup B) \\leq n")
    (xdoc::p
     "This fact is proved as a local lemma,
      which fires as a rewrite rule in the proof of the main theorem.")
    (xdoc::p
-    "We start from the known fact that")
+    "We start from the previously proved (in @(tsee committee-member-stake))
+     fact that")
    (xdoc::@[]
-    "|A \\cup B| = |A| + |B| - |A \\cap B|")
+    "S(A \\cup B) = S(A) + S(B) - S(A \\cap B)")
    (xdoc::p
     "from which we get")
    (xdoc::@[]
-    "|A \\cap B| = |A| + |B| - |A \\cup B|")
+    "S(A \\cap B) = S(A) + S(B) - S(A \\cup B)")
    (xdoc::p
-    "If we substitute the quorum cardinality of @($A$ and @($B$) (see above),
+    "If we use the quorum inequalities of @($A$ and @($B$) (see above),
      we obtain")
    (xdoc::@[]
-    "|A \\cap B| = 2n - 2f - |A \\cup B|")
+    "S(A \\cap B) \\geq 2n - 2f - S(A \\cup B)")
    (xdoc::p
     "But as mentioned earlier we have")
    (xdoc::@[]
-    "|A \\cup B| \\leq n")
+    "S(A \\cup B) \\leq n")
    (xdoc::p
     "that is")
    (xdoc::@[]
-    "- |A \\cup B| \\geq -n")
+    "- S(A \\cup B) \\geq -n")
    (xdoc::p
-    "and if we use that in the equation above we get")
+    "and if we use that in the inequality above we get")
    (xdoc::@[]
-    "|A \\cap B| \\geq 2n - 2f - n")
+    "S(A \\cap B) \\geq 2n - 2f - n")
    (xdoc::p
     "Since @($f < n/3$), we have @($n > 3f$),
      which we substitute above obtaining")
    (xdoc::@[]
-    "|A \\cap B| \\geq 2n - 2f - n = n - 2f > 3f - 2f = f")
+    "S(A \\cap B) \\geq 2n - 2f - n = n - 2f > 3f - 2f = f")
    (xdoc::p
     "So we get")
    (xdoc::@[]
-    "|A \\cap B| > f")
+    "S(A \\cap B) > f")
    (xdoc::p
     "Note that committees are defined to be non-empty,
      so we have @($n > 0$), which is necessary here,
@@ -248,29 +274,32 @@
      We also need to expand the cardinality of the intersection,
      and disable the rule that expands the cardinality of the union.
      We also need a lemma, as mentioned earlier."))
-  (implies (and (set::subset vals1 (committee-members commtt))
+  (implies (and (address-setp vals1)
+                (address-setp vals2)
+                (set::subset vals1 (committee-members commtt))
                 (set::subset vals2 (committee-members commtt))
-                (equal (set::cardinality vals1)
-                       (committee-quorum commtt))
-                (equal (set::cardinality vals2)
-                       (committee-quorum commtt)))
-           (> (set::cardinality (set::intersect vals1 vals2))
-              (committee-max-faulty commtt)))
+                (>= (committee-members-stake vals1 commtt)
+                    (committee-quorum-stake commtt))
+                (>= (committee-members-stake vals2 commtt)
+                    (committee-quorum-stake commtt)))
+           (> (committee-members-stake (set::intersect vals1 vals2) commtt)
+              (committee-max-faulty-stake commtt)))
   :rule-classes :linear
-  :enable (set::expand-cardinality-of-intersect
-           committee-quorum
-           committee-max-faulty
+  :enable (committee-members-stake-of-intersection-expand
+           committee-quorum-stake
+           committee-max-faulty-stake
            total-lower-bound-wrt-max-faulty)
-  :disable set::expand-cardinality-of-union
   :prep-lemmas
   ((defrule lemma
-     (implies (and (set::subset vals1 (committee-members commtt))
+     (implies (and (address-setp vals1)
+                   (address-setp vals2)
+                   (set::subset vals1 (committee-members commtt))
                    (set::subset vals2 (committee-members commtt)))
-              (<= (set::cardinality (set::union vals1 vals2))
-                  (committee-total commtt)))
+              (<= (committee-members-stake (set::union vals1 vals2) commtt)
+                  (committee-total-stake commtt)))
      :rule-classes :linear
-     :enable committee-total
-     :disable set::expand-cardinality-of-union)))
+     :enable (committee-total-stake
+              committee-members-stake-monotone))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -281,7 +310,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is the main property of quorum intersection.
-     Given a fault-tolerant committee whose members are in the system,
+     Given a fault-tolerant committee,
      and two quora of validators in the committee,
      the function @(tsee pick-common-correct-validator)
      returns a validator that is in both quora and is correct.")
@@ -289,18 +318,16 @@
     "First we prove that the function returns
      a correct validator in the intersection,
      from which it easily follows that it returns
-     a correct validator in both quora.
-     Some attempts to prove this in one shot failed,
-     but perhaps there is a way to avoid the intermediate local lemma."))
-  (implies (and (set::subset (committee-members commtt)
-                             (all-addresses systate))
+     a correct validator in both quora."))
+  (implies (and (address-setp vals1)
+                (address-setp vals2)
                 (committee-fault-tolerant-p commtt systate)
                 (set::subset vals1 (committee-members commtt))
                 (set::subset vals2 (committee-members commtt))
-                (equal (set::cardinality vals1)
-                       (committee-quorum commtt))
-                (equal (set::cardinality vals2)
-                       (committee-quorum commtt)))
+                (>= (committee-members-stake vals1 commtt)
+                    (committee-quorum-stake commtt))
+                (>= (committee-members-stake vals2 commtt)
+                    (committee-quorum-stake commtt)))
            (b* ((val (pick-common-correct-validator vals1 vals2 systate)))
              (and (set::in val vals1)
                   (set::in val vals2)
@@ -308,20 +335,20 @@
   :use lemma
   :prep-lemmas
   ((defruled lemma
-     (implies (and (set::subset (committee-members commtt)
-                                (all-addresses systate))
+     (implies (and (address-setp vals1)
+                   (address-setp vals2)
                    (committee-fault-tolerant-p commtt systate)
                    (set::subset vals1 (committee-members commtt))
                    (set::subset vals2 (committee-members commtt))
-                   (equal (set::cardinality vals1)
-                          (committee-quorum commtt))
-                   (equal (set::cardinality vals2)
-                          (committee-quorum commtt)))
+                   (>= (committee-members-stake vals1 commtt)
+                       (committee-quorum-stake commtt))
+                   (>= (committee-members-stake vals2 commtt)
+                       (committee-quorum-stake commtt)))
               (b* ((val (pick-common-correct-validator vals1 vals2 systate)))
                 (and (set::in val (set::intersect vals1 vals2))
                      (set::in val (correct-addresses systate)))))
      :enable (pick-common-correct-validator
-              cardinality-of-quorum-intersection
+              stake-of-quorum-intersection
               pick-correct-validator-in-set
               pick-correct-validator-is-correct
               set::expensive-rules)

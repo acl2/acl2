@@ -16,6 +16,7 @@
 (include-book "kestrel/fty/deffixequiv-sk" :dir :system)
 (include-book "std/util/define-sk" :dir :system)
 
+(local (include-book "../library-extensions/oset-theorems"))
 (local (include-book "../library-extensions/omap-theorems"))
 
 (local (include-book "arithmetic-3/top" :dir :system))
@@ -184,7 +185,23 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We add up all the stakes of the members."))
+    "We add up all the stakes of the members.")
+   (xdoc::p
+    "We prove various properties that relate this function to set operations.")
+   (xdoc::p
+    "The monotonicity property uses a (locally defined) custom induction,
+     which removes from the second set the head of the first set
+     in the recursive call, when the first set is not empty;
+     this is needed to exclude the stake of that committee member
+     (if present in the second set of committee members)
+     in the induction hypothesis.")
+   (xdoc::p
+    "The union expansion properties is analogous to
+     the property of cardinalities of sets,
+     but with stake in this case.
+     The total stake of the union of two sets is their sum,
+     minus the stake of the intersection (if any),
+     which the sum union counts twice."))
   (cond ((set::emptyp (address-set-fix members)) 0)
         (t (+ (committee-member-stake (address-fix (set::head members)) commtt)
               (committee-members-stake (set::tail members) commtt))))
@@ -199,7 +216,87 @@
     (equal (equal (committee-members-stake members commtt) 0)
            (set::emptyp (address-set-fix members)))
     :induct t
-    :enable fix))
+    :enable fix)
+
+  (defrule committee-members-stake-when-emptyp
+    (implies (set::emptyp members)
+             (equal (committee-members-stake members commtt)
+                    0)))
+
+  (defruled committee-members-stake-of-insert
+    (implies (and (addressp member)
+                  (address-setp members))
+             (equal (committee-members-stake (set::insert member members)
+                                             commtt)
+                    (if (set::in member members)
+                        (committee-members-stake members commtt)
+                      (+ (committee-member-stake member commtt)
+                         (committee-members-stake members commtt)))))
+    :induct (set::weak-insert-induction member members)
+    :enable set::expensive-rules)
+
+  (defruled committee-members-stake-of-delete
+    (implies (address-setp members)
+             (equal (committee-members-stake (set::delete member members)
+                                             commtt)
+                    (if (set::in member members)
+                        (- (committee-members-stake members commtt)
+                           (committee-member-stake member commtt))
+                      (committee-members-stake members commtt))))
+    :induct t
+    :enable (set::delete
+             committee-members-stake-of-insert))
+
+  (defruled committee-members-stake-monotone
+    (implies (and (address-setp members1)
+                  (address-setp members2)
+                  (set::subset members1 members2))
+             (<= (committee-members-stake members1 commtt)
+                 (committee-members-stake members2 commtt)))
+    :induct (ind members1 members2)
+    :enable (set::subset-of-tail-and-delete-when-subset
+             committee-members-stake-of-delete
+             set::expensive-rules)
+    :prep-lemmas
+    ((defun ind (x y)
+       (declare (irrelevant y))
+       (cond ((set::emptyp x) nil)
+             (t (ind (set::tail x) (set::delete (set::head x) y)))))))
+
+  (defruled committee-members-stake-of-union-expand
+    (implies (and (address-setp members1)
+                  (address-setp members2))
+             (equal (committee-members-stake (set::union members1
+                                                         members2)
+                                             commtt)
+                    (- (+ (committee-members-stake members1 commtt)
+                          (committee-members-stake members2 commtt))
+                       (committee-members-stake (set::intersect members1
+                                                                members2)
+                                                commtt))))
+    :induct t
+    :enable (committee-members-stake-of-insert
+             set::union
+             set::intersect
+             fix))
+
+  (defruled committee-members-stake-of-intersection-expand
+    (implies (and (address-setp members1)
+                  (address-setp members2))
+             (equal (committee-members-stake (set::intersect members1
+                                                             members2)
+                                             commtt)
+                    (- (+ (committee-members-stake members1 commtt)
+                          (committee-members-stake members2 commtt))
+                       (committee-members-stake (set::union members1
+                                                            members2)
+                                                commtt))))
+    :enable committee-members-stake-of-union-expand
+    :disable committee-members-stake)
+
+  (theory-invariant
+   (incompatible (:rewrite committee-members-stake-of-union-expand)
+                 (:rewrite committee-members-stake-of-intersection-expand))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -853,7 +950,11 @@
 (define committee-total-stake ((commtt committeep))
   :returns (total posp
                   :rule-classes (:rewrite :type-prescription)
-                  :hints (("Goal" :in-theory (enable posp))))
+                  :hints
+                  (("Goal"
+                    :in-theory
+                    (enable posp
+                            committee-members-stake-0-to-emptyp))))
   :short "Total stake of validators in a committee."
   :long
   (xdoc::topstring
@@ -861,25 +962,8 @@
     "This is @($n$), using the notation in @(tsee max-faulty-for-total).
      It is the sum of all the units of stake
      associated to members of the committee."))
-  (committee-total-stake-loop (committee->members-with-stake commtt))
-  :hooks (:fix)
-
-  :prepwork
-  ((define committee-total-stake-loop ((members address-pos-mapp))
-     :returns (total natp :rule-classes (:rewrite :type-prescription))
-     :parents nil
-     (b* (((when (omap::emptyp members)) 0)
-          ((mv & stake) (omap::head members)))
-       (+ (lnfix stake)
-          (committee-total-stake-loop (omap::tail members))))
-
-     ///
-
-     (more-returns
-      (total posp
-             :hyp (and (address-pos-mapp members)
-                       (not (omap::emptyp members)))
-             :hints (("Goal" :induct t :in-theory (enable nfix))))))))
+  (committee-members-stake (committee-members commtt) commtt)
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -143,4 +143,19 @@
     (implies (and (set::subset a b)
                   (set::subset a c))
              (set::subset a (set::intersect b c)))
-    :enable set::expensive-rules))
+    :enable set::expensive-rules)
+
+  (defruled set::subset-of-tail-and-delete-when-subset
+    (implies (and (not (set::emptyp x))
+                  (set::subset x y))
+             (set::subset (set::tail x)
+                          (set::delete (set::head x) y)))
+    :enable set::expensive-rules)
+
+  (defruled set::subset-of-difference-when-disjoint
+    (implies (and (set::subset x y)
+                  (set::emptyp (set::intersect x z)))
+             (set::subset x (set::difference y z)))
+    :enable (set::expensive-rules
+             set::not-member-when-member-of-disjoint
+             set::emptyp)))
