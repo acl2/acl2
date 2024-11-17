@@ -950,7 +950,11 @@
 (define committee-total-stake ((commtt committeep))
   :returns (total posp
                   :rule-classes (:rewrite :type-prescription)
-                  :hints (("Goal" :in-theory (enable posp))))
+                  :hints
+                  (("Goal"
+                    :in-theory
+                    (enable posp
+                            committee-members-stake-0-to-emptyp))))
   :short "Total stake of validators in a committee."
   :long
   (xdoc::topstring
@@ -958,25 +962,8 @@
     "This is @($n$), using the notation in @(tsee max-faulty-for-total).
      It is the sum of all the units of stake
      associated to members of the committee."))
-  (committee-total-stake-loop (committee->members-with-stake commtt))
-  :hooks (:fix)
-
-  :prepwork
-  ((define committee-total-stake-loop ((members address-pos-mapp))
-     :returns (total natp :rule-classes (:rewrite :type-prescription))
-     :parents nil
-     (b* (((when (omap::emptyp members)) 0)
-          ((mv & stake) (omap::head members)))
-       (+ (lnfix stake)
-          (committee-total-stake-loop (omap::tail members))))
-
-     ///
-
-     (more-returns
-      (total posp
-             :hyp (and (address-pos-mapp members)
-                       (not (omap::emptyp members)))
-             :hints (("Goal" :induct t :in-theory (enable nfix))))))))
+  (committee-members-stake (committee-members commtt) commtt)
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
