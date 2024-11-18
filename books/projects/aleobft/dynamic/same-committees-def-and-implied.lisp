@@ -435,7 +435,7 @@
      but one is longer and the other is shorter.
      We express this relation using @(tsee nthcdr) here,
      as in @(tsee lists-noforkp).
-     We make use of (two instance of)
+     We make use of (two instances of)
      the theorem to expand the committee calculation
      to include a call of @(tsee trim-blocks-for-round),
      and the two theorems that simplify them
