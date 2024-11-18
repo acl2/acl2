@@ -150,17 +150,17 @@
     align-spec-alignas-expr
     irr-align-spec
 
-    declspecp
-    declspec-fix
-    declspec-count
-    declspec-case
-    declspec-tyspec
-    declspec-align
-    declspec-attrib
+    decl-specp
+    decl-spec-fix
+    decl-spec-count
+    decl-spec-case
+    decl-spec-tyspec
+    decl-spec-align
+    decl-spec-attrib
 
-    declspec-listp
-    declspec-list-fix
-    declspec-list-count
+    decl-spec-listp
+    decl-spec-list-fix
+    decl-spec-list-count
 
     initerp
     initer-fix
@@ -441,8 +441,8 @@
     spec/qual-unambp
     spec/qual-list-unambp
     align-spec-unambp
-    declspec-unambp
-    declspec-list-unambp
+    decl-spec-unambp
+    decl-spec-list-unambp
     initer-unambp
     initer-option-unambp
     desiniter-unambp

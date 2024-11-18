@@ -1892,14 +1892,14 @@
        there is a non-trivial overlap between expressions and type names."))
     (:alignas-type ((type tyname)))
     (:alignas-expr ((expr const-expr)))
-    (:alignas-ambig ((type/arg amb-expr/tyname)))
+    (:alignas-ambig ((expr/type amb-expr/tyname)))
     :pred align-specp
     :base-case-override :alignas-expr
     :measure (two-nats-measure (acl2-count x) 2))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (fty::deftagsum declspec
+  (fty::deftagsum decl-spec
     :parents (abstract-syntax exprs/decls/stmts)
     :short "Fixtype of declaration specifiers [C:6.7] [C:A.2.2]."
     :long
@@ -1908,7 +1908,7 @@
       "This does not directly correspond to
        any nonterminal in the grammar in [C],
        but it is useful to define <i>declaration-specifiers</i>
-       (see @(tsee declspec-list)).")
+       (see @(tsee decl-spec-list)).")
      (xdoc::p
       "As GCC extensions, we include
        attribute specifiers,
@@ -1923,25 +1923,25 @@
     (:attrib ((unwrap attrib-spec))) ; GCC extension
     (:stdcall ()) ; GCC extension
     (:declspec-attrib ((arg identp))) ; GCC extension
-    :pred declspecp
+    :pred decl-specp
     :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;
 
-  (fty::deflist declspec-list
+  (fty::deflist decl-spec-list
     :parents (abstract-syntax exprs/decls/stmts)
     :short "Fixtype of lists of declaration specifiers."
     :long
     (xdoc::topstring
      (xdoc::p
-      "The fixtype of declaration specifiers is defined in @(tsee declspec).")
+      "The fixtype of declaration specifiers is defined in @(tsee decl-spec).")
      (xdoc::p
       "This fixtype corresponds to <i>declaration-specifiers</i>
        in the grammar in [C]."))
-    :elt-type declspec
+    :elt-type decl-spec
     :true-listp t
     :elementp-of-nil nil
-    :pred declspec-listp
+    :pred decl-spec-listp
     :measure (two-nats-measure (acl2-count x) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2279,7 +2279,7 @@
        declaration specifiers followed by a parameter declarator;
        see @(tsee paramdeclor) for a description and motivation
        for this notion of parameter declarator."))
-    ((spec declspec-list)
+    ((spec decl-spec-list)
      (decl paramdeclor))
     :pred paramdeclp
     :measure (two-nats-measure (acl2-count x) 1))
@@ -2682,7 +2682,7 @@
        We model this as a boolean saying whether
        the keyword is present or absent."))
     (:decl ((extension bool)
-            (specs declspec-list)
+            (specs decl-spec-list)
             (init initdeclor-list)))
     (:statassert ((unwrap statassert)))
     :pred declp
@@ -3187,7 +3187,7 @@
      as GCC extensions;
      see the ABNF grammar."))
   ((extension bool) ; GCC extension
-   (spec declspec-list)
+   (spec decl-spec-list)
    (declor declor)
    (asm? asm-name-spec-option) ; GCC extension
    (attribs attrib-spec-list) ; GCC extension

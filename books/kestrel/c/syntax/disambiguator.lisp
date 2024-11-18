@@ -989,8 +989,8 @@
           ((unless (and (consp declspecs) (endp (cdr declspecs))))
            (mv nil nil))
           (declspec (car declspecs))
-          ((unless (declspec-case declspec :tyspec)) (mv nil nil))
-          (tyspec (declspec-tyspec->unwrap declspec))
+          ((unless (decl-spec-case declspec :tyspec)) (mv nil nil))
+          (tyspec (decl-spec-tyspec->unwrap declspec))
           ((unless (type-spec-case tyspec :typedef)) (mv nil nil))
           (ident (type-spec-typedef->name tyspec))
           (kind? (dimb-lookup-ident ident table))
@@ -1585,7 +1585,7 @@
          (retok (align-spec-alignas-expr new-expr) table))
        :alignas-ambig
        (b* (((erp expr/tyname table)
-             (dimb-amb-expr/tyname alignspec.type/arg nil table)))
+             (dimb-amb-expr/tyname alignspec.expr/type nil table)))
          (expr/tyname-case
           expr/tyname
           :expr (retok (align-spec-alignas-expr (const-expr expr/tyname.unwrap))
@@ -1596,11 +1596,11 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-declspec ((declspec declspecp)
-                         (kind dimb-kindp)
-                         (table dimb-tablep))
+  (define dimb-decl-spec ((declspec decl-specp)
+                          (kind dimb-kindp)
+                          (table dimb-tablep))
     :returns (mv erp
-                 (new-declspec declspecp)
+                 (new-declspec decl-specp)
                  (new-kind dimb-kindp)
                  (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
@@ -1622,50 +1622,50 @@
        and change it to @(':typedef') if we encounter a @('typedef').
        This is why this ACL2 function takes and returns
        a disambiguation kind, i.e. a value of type @(tsee dimb-kind)."))
-    (b* (((reterr) (irr-declspec) (irr-dimb-kind) (irr-dimb-table)))
-      (declspec-case
+    (b* (((reterr) (irr-decl-spec) (irr-dimb-kind) (irr-dimb-table)))
+      (decl-spec-case
        declspec
        :stocla (if (stor-spec-case declspec.unwrap :typedef)
-                   (retok (declspec-fix declspec)
+                   (retok (decl-spec-fix declspec)
                           (dimb-kind-typedef)
                           (dimb-table-fix table))
-                 (retok (declspec-fix declspec)
+                 (retok (decl-spec-fix declspec)
                         (dimb-kind-fix kind)
                         (dimb-table-fix table)))
        :tyspec (b* (((erp new-tyspec table)
                      (dimb-type-spec declspec.unwrap table)))
-                 (retok (declspec-tyspec new-tyspec)
+                 (retok (decl-spec-tyspec new-tyspec)
                         (dimb-kind-fix kind)
                         (dimb-table-fix table)))
-       :tyqual (retok (declspec-fix declspec)
+       :tyqual (retok (decl-spec-fix declspec)
                       (dimb-kind-fix kind)
                       (dimb-table-fix table))
-       :funspec (retok (declspec-fix declspec)
+       :funspec (retok (decl-spec-fix declspec)
                        (dimb-kind-fix kind)
                        (dimb-table-fix table))
        :align (b* (((erp new-alignspec table)
                     (dimb-align-spec declspec.unwrap table)))
-                (retok (declspec-align new-alignspec)
+                (retok (decl-spec-align new-alignspec)
                        (dimb-kind-fix kind)
                        table))
-       :attrib (retok (declspec-fix declspec)
+       :attrib (retok (decl-spec-fix declspec)
                       (dimb-kind-fix kind)
                       (dimb-table-fix table))
-       :stdcall (retok (declspec-fix declspec)
+       :stdcall (retok (decl-spec-fix declspec)
                        (dimb-kind-fix kind)
                        (dimb-table-fix table))
-       :declspec-attrib (retok (declspec-fix declspec)
+       :declspec-attrib (retok (decl-spec-fix declspec)
                                (dimb-kind-fix kind)
                                (dimb-table-fix table))))
-    :measure (declspec-count declspec))
+    :measure (decl-spec-count declspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define dimb-declspec-list ((declspecs declspec-listp)
-                              (kind dimb-kindp)
-                              (table dimb-tablep))
+  (define dimb-decl-spec-list ((declspecs decl-spec-listp)
+                               (kind dimb-kindp)
+                               (table dimb-tablep))
     :returns (mv erp
-                 (new-declspecs declspec-listp)
+                 (new-declspecs decl-spec-listp)
                  (new-kind dimb-kindp)
                  (new-table dimb-tablep))
     :parents (disambiguator dimb-exprs/decls/stmts)
@@ -1673,18 +1673,18 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "See @(tsee dimb-declspec) for an explanation of
+      "See @(tsee dimb-decl-spec) for an explanation of
        the disambiguation kind passed as input and returned as output."))
     (b* (((reterr) nil (irr-dimb-kind) (irr-dimb-table))
          ((when (endp declspecs)) (retok nil
                                          (dimb-kind-fix kind)
                                          (dimb-table-fix table)))
          ((erp new-declspec kind table)
-          (dimb-declspec (car declspecs) kind table))
+          (dimb-decl-spec (car declspecs) kind table))
          ((erp new-declspecs kind table)
-          (dimb-declspec-list (cdr declspecs) kind table)))
+          (dimb-decl-spec-list (cdr declspecs) kind table)))
       (retok (cons new-declspec new-declspecs) kind table))
-    :measure (declspec-list-count declspecs))
+    :measure (decl-spec-list-count declspecs))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2124,7 +2124,7 @@
     (b* (((reterr) (irr-paramdecl) (irr-dimb-table))
          ((paramdecl paramdecl) paramdecl)
          ((erp new-spec & table)
-          (dimb-declspec-list paramdecl.spec (dimb-kind-objfun) table))
+          (dimb-decl-spec-list paramdecl.spec (dimb-kind-objfun) table))
          ((erp new-decl table)
           (dimb-paramdeclor paramdecl.decl table)))
       (retok (make-paramdecl :spec new-spec :decl new-decl) table))
@@ -2464,7 +2464,7 @@
     (xdoc::topstring
      (xdoc::p
       "First we process the declaration specifiers,
-       which, as explained in @(tsee dimb-declspec),
+       which, as explained in @(tsee dimb-decl-spec),
        determine whether the (one or more) identifiers
        introduced by the declarators
        denote @('typedef') names or objects/functions.
@@ -2475,7 +2475,7 @@
        decl
        :decl
        (b* (((erp new-specs kind table)
-             (dimb-declspec-list decl.specs (dimb-kind-objfun) table))
+             (dimb-decl-spec-list decl.specs (dimb-kind-objfun) table))
             ((erp new-init table)
              (dimb-initdeclor-list decl.init kind table)))
          (retok (make-decl-decl :extension decl.extension
@@ -3005,14 +3005,14 @@
       (implies (not erp)
                (align-spec-unambp new-alignspec))
       :fn dimb-align-spec)
-    (defret declspec-unambp-of-dimb-declspec
+    (defret decl-spec-unambp-of-dimb-decl-spec
       (implies (not erp)
-               (declspec-unambp new-declspec))
-      :fn dimb-declspec)
-    (defret declspec-list-unambp-of-dimb-declspec-list
+               (decl-spec-unambp new-declspec))
+      :fn dimb-decl-spec)
+    (defret decl-spec-list-unambp-of-dimb-decl-spec-list
       (implies (not erp)
-               (declspec-list-unambp new-declspecs))
-      :fn dimb-declspec-list)
+               (decl-spec-list-unambp new-declspecs))
+      :fn dimb-decl-spec-list)
     (defret initer-unambp-of-dimb-initer
       (implies (not erp)
                (initer-unambp new-initer))
@@ -3215,7 +3215,7 @@
   (b* (((reterr) (irr-fundef) (irr-dimb-table))
        ((fundef fundef) fundef)
        ((erp new-spec & table)
-        (dimb-declspec-list fundef.spec (dimb-kind-objfun) table))
+        (dimb-decl-spec-list fundef.spec (dimb-kind-objfun) table))
        ((erp new-declor ident table) (dimb-declor fundef.declor t table))
        ((erp new-decls table) (dimb-decl-list fundef.decls table))
        (table (dimb-add-ident-objfun ident table))

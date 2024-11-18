@@ -3454,13 +3454,13 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define valid-declspec ((declspec declspecp)
-                          (type? type-optionp)
-                          (tyspecs type-spec-listp)
-                          (storspecs stor-spec-listp)
-                          (table valid-tablep)
-                          (ienv ienvp))
-    :guard (and (declspec-unambp declspec)
+  (define valid-decl-spec ((declspec decl-specp)
+                           (type? type-optionp)
+                           (tyspecs type-spec-listp)
+                           (storspecs stor-spec-listp)
+                           (table valid-tablep)
+                           (ienv ienvp))
+    :guard (and (decl-spec-unambp declspec)
                 (type-spec-list-unambp tyspecs)
                 (not (and type? tyspecs)))
     :returns (mv erp
@@ -3484,7 +3484,7 @@
        In addition, we collect all the storage class specifiers
        encountered as we go through the declaration specifiers."))
     (b* (((reterr) nil nil nil nil (irr-valid-table)))
-      (declspec-case
+      (decl-spec-case
        declspec
        :stocla (retok (type-option-fix type?)
                       (type-spec-list-fix tyspecs)
@@ -3531,40 +3531,40 @@
                                (stor-spec-list-fix storspecs)
                                nil
                                (valid-table-fix table))))
-    :measure (declspec-count declspec)
+    :measure (decl-spec-count declspec)
 
     ///
 
-    (defret type-spec-list-unambp-of-valid-declspec
+    (defret type-spec-list-unambp-of-valid-decl-spec
       (type-spec-list-unambp new-tyspecs)
       :hyp (type-spec-list-unambp tyspecs)
       :hints
       (("Goal"
-        :expand (valid-declspec declspec type? tyspecs storspecs table ienv))))
+        :expand (valid-decl-spec declspec type? tyspecs storspecs table ienv))))
 
-    (defret not-type-and-type-specs-of-valid-declspec
+    (defret not-type-and-type-specs-of-valid-decl-spec
       (not (and new-type? new-tyspecs))
       :hyp (not (and type? tyspecs))
       :hints
       (("Goal"
-        :expand ((valid-declspec declspec nil tyspecs storspecs table ienv)
-                 (valid-declspec declspec type? nil storspecs table ienv)))))
+        :expand ((valid-decl-spec declspec nil tyspecs storspecs table ienv)
+                 (valid-decl-spec declspec type? nil storspecs table ienv)))))
 
-    (defret not-type-specs-of-valid-declspec-when-type
+    (defret not-type-specs-of-valid-decl-spec-when-type
       (implies new-type?
                (not new-tyspecs))
       :hyp (not (and type? tyspecs))
-      :hints (("Goal" :use not-type-and-type-specs-of-valid-declspec))))
+      :hints (("Goal" :use not-type-and-type-specs-of-valid-decl-spec))))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define valid-declspec-list ((declspecs declspec-listp)
-                               (type? type-optionp)
-                               (tyspecs type-spec-listp)
-                               (storspecs stor-spec-listp)
-                               (table valid-tablep)
-                               (ienv ienvp))
-    :guard (and (declspec-list-unambp declspecs)
+  (define valid-decl-spec-list ((declspecs decl-spec-listp)
+                                (type? type-optionp)
+                                (tyspecs type-spec-listp)
+                                (storspecs stor-spec-listp)
+                                (table valid-tablep)
+                                (ienv ienvp))
+    :guard (and (decl-spec-list-unambp declspecs)
                 (type-spec-list-unambp tyspecs)
                 (not (and type? tyspecs)))
     :returns (mv erp
@@ -3603,14 +3603,14 @@
                      (valid-table-fix table))))
            (t (reterr (msg "The declaration specifiers ~x0 ~
                             contain no type specifiers."
-                           (declspec-list-fix declspecs))))))
+                           (decl-spec-list-fix declspecs))))))
          ((erp type? tyspecs storspecs types table)
-          (valid-declspec (car declspecs) type? tyspecs storspecs table ienv))
+          (valid-decl-spec (car declspecs) type? tyspecs storspecs table ienv))
          ((erp type storspecs more-types table)
-          (valid-declspec-list
+          (valid-decl-spec-list
            (cdr declspecs) type? tyspecs storspecs table ienv)))
       (retok type storspecs (set::union types more-types) table))
-    :measure (declspec-list-count declspecs)
+    :measure (decl-spec-list-count declspecs)
 
     ///
 
@@ -4258,7 +4258,7 @@
             ((erp more-types table)
              (if (equal dirdeclor.params
                         (list (make-paramdecl
-                               :spec (list (declspec-tyspec (type-spec-void)))
+                               :spec (list (decl-spec-tyspec (type-spec-void)))
                                :decl (paramdeclor-none))))
                  (retok nil table)
                (valid-paramdecl-list
@@ -4439,7 +4439,7 @@
             ((erp more-types table)
              (if (equal dirabsdeclor.params
                         (list (make-paramdecl
-                               :spec (list (declspec-tyspec (type-spec-void)))
+                               :spec (list (decl-spec-tyspec (type-spec-void)))
                                :decl (paramdeclor-none))))
                  (retok nil table)
                (valid-paramdecl-list dirabsdeclor.params nil table ienv)))
@@ -4515,7 +4515,7 @@
     (b* (((reterr) nil (irr-valid-table))
          ((paramdecl paramdecl) paramdecl)
          ((erp type storspecs types table)
-          (valid-declspec-list paramdecl.spec nil nil nil table ienv))
+          (valid-decl-spec-list paramdecl.spec nil nil nil table ienv))
          ((unless (or (endp storspecs)
                       (stor-spec-list-register-p storspecs)))
           (reterr (msg "The parameter declaration ~x0 ~
@@ -5216,7 +5216,7 @@
        decl
        :decl
        (b* (((erp type storspecs types table)
-             (valid-declspec-list decl.specs nil nil nil table ienv))
+             (valid-decl-spec-list decl.specs nil nil nil table ienv))
             ((when (and (endp decl.init)
                         (not (type-case type :struct))
                         (not (type-case type :union))

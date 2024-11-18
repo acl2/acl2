@@ -10207,7 +10207,7 @@
   (define parse-declaration-specifier ((tyspec-seenp booleanp)
                                        (parstate parstatep))
     :returns (mv erp
-                 (declspec declspecp)
+                 (declspec decl-specp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls/stmts)
@@ -10252,20 +10252,20 @@
        is resolved in the same way as in @(tsee parse-specifier/qualifier),
        which motivates the @('tyspec-seenp') flag passed to this function;
        see that function's documentation."))
-    (b* (((reterr) (irr-declspec) (irr-span) parstate)
+    (b* (((reterr) (irr-decl-spec) (irr-span) parstate)
          ((erp token span parstate) (read-token parstate)))
       (cond
        ;; If token is a storage class specifier,
        ;; which always consists of a single keyword,
        ;; return that storage class specifier.
        ((token-storage-class-specifier-p token) ; typedef/.../register
-        (retok (declspec-stocla (token-to-storage-class-specifier token))
+        (retok (decl-spec-stocla (token-to-storage-class-specifier token))
                span
                parstate))
        ;; If token is a type specifier consisting of a single keyword,
        ;; return that type specifier.
        ((token-type-specifier-keyword-p token) ; void/.../_Complex
-        (retok (declspec-tyspec (token-to-type-specifier-keyword token))
+        (retok (decl-spec-tyspec (token-to-type-specifier-keyword token))
                span
                parstate))
        ;; If token is the keyword _Atomic,
@@ -10282,7 +10282,7 @@
                 ;; If we have already seen a type specifier,
                 ;; this must be a type qualifier.
                 (b* ((parstate (unread-token parstate))) ; _Atomic
-                  (retok (declspec-tyqual (type-qual-atomic))
+                  (retok (decl-spec-tyqual (type-qual-atomic))
                          span
                          parstate))
               ;; If we have not already seen a type specifier,
@@ -10293,7 +10293,7 @@
                     (parse-type-name parstate))
                    ((erp last-span parstate) ; _Atomic ( typename )
                     (read-punctuator ")" parstate)))
-                (retok (declspec-tyspec (type-spec-atomic tyname))
+                (retok (decl-spec-tyspec (type-spec-atomic tyname))
                        (span-join span last-span)
                        parstate))))
            ;; If token2 is not an open parenthesis,
@@ -10301,7 +10301,7 @@
            (t ; _Atomic other
             (b* ((parstate ; _Atomic
                   (if token2 (unread-token parstate) parstate)))
-              (retok (declspec-tyqual (type-qual-atomic))
+              (retok (decl-spec-tyqual (type-qual-atomic))
                      span
                      parstate))))))
        ;; If token is the keyword struct,
@@ -10309,7 +10309,7 @@
        ((token-keywordp token "struct") ; struct
         (b* (((erp tyspec last-span parstate) ; struct strunispec
               (parse-struct-or-union-specifier t span parstate)))
-          (retok (declspec-tyspec tyspec)
+          (retok (decl-spec-tyspec tyspec)
                  (span-join span last-span)
                  parstate)))
        ;; If token is the keyword union
@@ -10317,7 +10317,7 @@
        ((token-keywordp token "union") ; union
         (b* (((erp tyspec last-span parstate) ; union strunispec
               (parse-struct-or-union-specifier nil span parstate)))
-          (retok (declspec-tyspec tyspec)
+          (retok (decl-spec-tyspec tyspec)
                  (span-join span last-span)
                  parstate)))
        ;; If token is the keyword enum,
@@ -10325,7 +10325,7 @@
        ((token-keywordp token "enum") ; enum
         (b* (((erp enumspec last-span parstate) ; enum enumspec
               (parse-enum-specifier span parstate)))
-          (retok (declspec-tyspec (type-spec-enum enumspec))
+          (retok (decl-spec-tyspec (type-spec-enum enumspec))
                  (span-join span last-span)
                  parstate)))
        ;; If token is an identifier,
@@ -10335,7 +10335,7 @@
        ;; when this function is called, it must be the case that
        ;; a specifier or qualifier is expected.
        ((and token (token-case token :ident)) ; ident
-        (retok (declspec-tyspec (type-spec-typedef (token-ident->unwrap token)))
+        (retok (decl-spec-tyspec (type-spec-typedef (token-ident->unwrap token)))
                span
                parstate))
        ;; If token is 'typeof' or '__typeof' or '__typeof__',
@@ -10366,19 +10366,19 @@
                                                    :uscores uscores)
                :ambig (make-type-spec-typeof-ambig :expr/type expr/tyname.unwrap
                                                    :uscores uscores))))
-          (retok (declspec-tyspec tyspec)
+          (retok (decl-spec-tyspec tyspec)
                  (span-join span last-span)
                  parstate)))
        ;; If token is a type qualifier, which is always a single keyword,
        ;; we have that type qualifier.
        ((token-type-qualifier-p token) ; tyqual
-        (retok (declspec-tyqual (token-to-type-qualifier token))
+        (retok (decl-spec-tyqual (token-to-type-qualifier token))
                span
                parstate))
        ;; If token is a function specifier, which is always a single keyword,
        ;; we have that function specifier.
        ((token-function-specifier-p token) ; inline/_Noreturn
-        (retok (declspec-funspec (token-to-function-specifier token))
+        (retok (decl-spec-funspec (token-to-function-specifier token))
                span
                parstate))
        ;; If token is the keyword _Alignas,
@@ -10386,7 +10386,7 @@
        ((token-keywordp token "_Alignas") ; _Alignas
         (b* (((erp alignspec last-span parstate) ; _Alignas ( ... )
               (parse-alignment-specifier span parstate)))
-          (retok (declspec-align alignspec)
+          (retok (decl-spec-align alignspec)
                  (span-join span last-span)
                  parstate)))
        ;; If token is the keyword '__attribute' or '__attribute__',
@@ -10397,14 +10397,14 @@
         (b* ((uscores (token-keywordp token "__attribute__"))
              ((erp attrspec last-span parstate) ; attrspec
               (parse-attribute-specifier uscores span parstate)))
-          (retok (declspec-attrib attrspec)
+          (retok (decl-spec-attrib attrspec)
                  (span-join span last-span)
                  parstate)))
        ;; If token is the keyword '__stdcall',
        ;; which can only happen if GCC extensions are enabled,
        ;; we must have that special GCC construct.
        ((token-keywordp token "__stdcall")
-        (retok (declspec-stdcall) span parstate))
+        (retok (decl-spec-stdcall) span parstate))
        ;; If token is the keyword '__declspec',
        ;; which can only happen if GCC extensions are enabled,
        ;; we must have an attribute with that syntax.
@@ -10412,7 +10412,7 @@
         (b* (((erp & parstate) (read-punctuator "(" parstate))
              ((erp ident & parstate) (read-identifier parstate))
              ((erp last-span parstate) (read-punctuator ")" parstate)))
-          (retok (declspec-declspec-attrib ident)
+          (retok (decl-spec-declspec-attrib ident)
                  (span-join span last-span)
                  parstate)))
        ;; If token is anything else, it is an error.
@@ -10457,7 +10457,7 @@
   (define parse-declaration-specifiers ((tyspec-seenp booleanp)
                                         (parstate parstatep))
     :returns (mv erp
-                 (declspecs declspec-listp)
+                 (declspecs decl-spec-listp)
                  (span spanp)
                  (new-parstate parstatep :hyp (parstatep parstate)))
     :parents (parser parse-exprs/decls/stmts)
@@ -10502,7 +10502,7 @@
          ((unless (mbt (<= (parsize parstate) (1- psize))))
           (reterr :impossible))
          (tyspec-seenp (or tyspec-seenp
-                           (declspec-case declspec :tyspec)))
+                           (decl-spec-case declspec :tyspec)))
          ((erp token & parstate) (read-token parstate)))
       (cond
        ;; If token is an identifier,

@@ -2049,12 +2049,12 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define print-declspec ((declspec declspecp) (pstate pristatep))
-    :guard (declspec-unambp declspec)
+  (define print-decl-spec ((declspec decl-specp) (pstate pristatep))
+    :guard (decl-spec-unambp declspec)
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a declaration specifier."
-    (declspec-case
+    (decl-spec-case
      declspec
      :stocla (print-stor-spec declspec.unwrap pstate)
      :tyspec (print-type-spec declspec.unwrap pstate)
@@ -2067,23 +2067,23 @@
                            (pstate (print-ident declspec.arg pstate))
                            (pstate (print-astring ")" pstate)))
                         pstate))
-    :measure (two-nats-measure (declspec-count declspec) 0))
+    :measure (two-nats-measure (decl-spec-count declspec) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define print-declspec-list ((declspecs declspec-listp) (pstate pristatep))
+  (define print-decl-spec-list ((declspecs decl-spec-listp) (pstate pristatep))
     :guard (and (consp declspecs)
-                (declspec-list-unambp declspecs))
+                (decl-spec-list-unambp declspecs))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more declaration specifiers,
             separated by spaces."
     (b* (((unless (mbt (consp declspecs))) (pristate-fix pstate))
-         (pstate (print-declspec (car declspecs) pstate))
+         (pstate (print-decl-spec (car declspecs) pstate))
          ((when (endp (cdr declspecs))) pstate)
          (pstate (print-astring " " pstate)))
-      (print-declspec-list (cdr declspecs) pstate))
-    :measure (two-nats-measure (declspec-list-count declspecs) 0))
+      (print-decl-spec-list (cdr declspecs) pstate))
+    :measure (two-nats-measure (decl-spec-list-count declspecs) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2536,7 +2536,7 @@
          ((unless paramdecl.spec)
           (raise "Misusage error: no declaration specifiers.")
           (pristate-fix pstate))
-         (pstate (print-declspec-list paramdecl.spec pstate))
+         (pstate (print-decl-spec-list paramdecl.spec pstate))
          (pstate (print-paramdeclor paramdecl.decl pstate)))
       pstate)
     :measure (two-nats-measure (paramdecl-count paramdecl) 0))
@@ -3006,7 +3006,7 @@
                  no declaration specifiers in declaration ~x0."
                   decl)
            pstate)
-          (pstate (print-declspec-list decl.specs pstate))
+          (pstate (print-decl-spec-list decl.specs pstate))
           (pstate
            (if decl.init
                (b* ((pstate (print-astring " " pstate))
@@ -3596,7 +3596,7 @@
        ((unless fundef.spec)
         (raise "Misusage error: no declaration specifiers.")
         pstate)
-       (pstate (print-declspec-list fundef.spec pstate))
+       (pstate (print-decl-spec-list fundef.spec pstate))
        (pstate (print-astring " " pstate))
        (pstate (print-declor fundef.declor pstate))
        (pstate (if fundef.asm?

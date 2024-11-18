@@ -201,10 +201,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-declspec
+(defirrelevant irr-decl-spec
   :short "An irrelevant declaration specifier."
-  :type declspecp
-  :body (declspec-tyspec (irr-type-spec)))
+  :type decl-specp
+  :body (decl-spec-tyspec (irr-type-spec)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1032,7 +1032,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-declspec-list-all-tyspec ((declspecs declspec-listp))
+(define check-decl-spec-list-all-tyspec ((declspecs decl-spec-listp))
   :returns (mv (yes/no booleanp) (tyspecs type-spec-listp))
   :short "Check if all the declaration specifiers in a list
           are type specifiers."
@@ -1043,16 +1043,16 @@
      also return the list of type specifiers, in the same order."))
   (b* (((when (endp declspecs)) (mv t nil))
        (declspec (car declspecs))
-       ((unless (declspec-case declspec :tyspec)) (mv nil nil))
-       ((mv yes/no tyspecs) (check-declspec-list-all-tyspec (cdr declspecs))))
+       ((unless (decl-spec-case declspec :tyspec)) (mv nil nil))
+       ((mv yes/no tyspecs) (check-decl-spec-list-all-tyspec (cdr declspecs))))
     (if yes/no
-        (mv t (cons (declspec-tyspec->unwrap declspec) tyspecs))
+        (mv t (cons (decl-spec-tyspec->unwrap declspec) tyspecs))
       (mv nil nil)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-declspec-list-all-tyspec/storspec ((declspecs declspec-listp))
+(define check-decl-spec-list-all-tyspec/storspec ((declspecs decl-spec-listp))
   :returns (mv (yes/no booleanp)
                (tyspecs type-spec-listp)
                (stor-specs stor-spec-listp))
@@ -1066,21 +1066,21 @@
      in the same order."))
   (b* (((when (endp declspecs)) (mv t nil nil))
        (declspec (car declspecs))
-       ((when (declspec-case declspec :tyspec))
+       ((when (decl-spec-case declspec :tyspec))
         (b* (((mv yes/no tyspecs stor-specs)
-              (check-declspec-list-all-tyspec/storspec (cdr declspecs))))
+              (check-decl-spec-list-all-tyspec/storspec (cdr declspecs))))
           (if yes/no
               (mv t
-                  (cons (declspec-tyspec->unwrap declspec) tyspecs)
+                  (cons (decl-spec-tyspec->unwrap declspec) tyspecs)
                   stor-specs)
             (mv nil nil nil))))
-       ((when (declspec-case declspec :stocla))
+       ((when (decl-spec-case declspec :stocla))
         (b* (((mv yes/no tyspecs stor-specs)
-              (check-declspec-list-all-tyspec/storspec (cdr declspecs))))
+              (check-decl-spec-list-all-tyspec/storspec (cdr declspecs))))
           (if yes/no
               (mv t
                   tyspecs
-                  (cons (declspec-stocla->unwrap declspec) stor-specs))
+                  (cons (decl-spec-stocla->unwrap declspec) stor-specs))
             (mv nil nil nil)))))
     (mv nil nil nil))
   :hooks (:fix))
@@ -1107,32 +1107,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define declspec-list-to-type-spec-list ((declspecs declspec-listp))
+(define decl-spec-list-to-type-spec-list ((declspecs decl-spec-listp))
   :returns (tyspecs type-spec-listp)
   :short "Extract the list of type specifiers
           from a list of declaration specifiers,
           preserving the order."
   (b* (((when (endp declspecs)) nil)
        (declspec (car declspecs)))
-    (if (declspec-case declspec :tyspec)
-        (cons (declspec-tyspec->unwrap declspec)
-              (declspec-list-to-type-spec-list (cdr declspecs)))
-      (declspec-list-to-type-spec-list (cdr declspecs))))
+    (if (decl-spec-case declspec :tyspec)
+        (cons (decl-spec-tyspec->unwrap declspec)
+              (decl-spec-list-to-type-spec-list (cdr declspecs)))
+      (decl-spec-list-to-type-spec-list (cdr declspecs))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define declspec-list-to-stor-spec-list ((declspecs declspec-listp))
+(define decl-spec-list-to-stor-spec-list ((declspecs decl-spec-listp))
   :returns (stor-specs stor-spec-listp)
   :short "Extract the list of storage class specifiers
           from a list of declaration specifiers,
           preserving the order."
   (b* (((when (endp declspecs)) nil)
        (declspec (car declspecs)))
-    (if (declspec-case declspec :stocla)
-        (cons (declspec-stocla->unwrap declspec)
-              (declspec-list-to-stor-spec-list (cdr declspecs)))
-      (declspec-list-to-stor-spec-list (cdr declspecs))))
+    (if (decl-spec-case declspec :stocla)
+        (cons (decl-spec-stocla->unwrap declspec)
+              (decl-spec-list-to-stor-spec-list (cdr declspecs)))
+      (decl-spec-list-to-stor-spec-list (cdr declspecs))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
