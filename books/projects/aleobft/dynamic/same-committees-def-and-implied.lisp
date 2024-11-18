@@ -585,7 +585,7 @@
     "This is the proof of our invariant,
      from the other two invariants.
      The rewrite rules enabled in the hints take care of everything;
-     also see the observarion in @(tsee same-active-committees-when-nofork)
+     also see the observation in @(tsee same-active-committees-when-nofork)
      about the particular form of that rewrite rule."))
   (implies (and (nonforking-blockchains-p systate)
                 (ordered-even-p systate))
