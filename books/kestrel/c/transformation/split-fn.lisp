@@ -153,7 +153,7 @@
    :statassert nil)
   :prepwork
   ((define decl-to-ident-paramdecl-map0
-     ((declspecs declspec-listp)
+     ((declspecs decl-spec-listp)
       (initdeclors initdeclor-listp))
      :returns
      (map ident-paramdecl-mapp)
@@ -185,7 +185,7 @@
 
 (define abstract-fn
   ((new-fn-name identp)
-   (spec declspec-listp)
+   (spec decl-spec-listp)
    (pointers typequal/attribspec-list-listp)
    (items block-item-listp)
    (decls ident-paramdecl-mapp))
@@ -253,7 +253,7 @@
 (define split-fn-block-item-list
   ((new-fn-name identp)
    (items block-item-listp)
-   (spec declspec-listp)
+   (spec decl-spec-listp)
    (pointers typequal/attribspec-list-listp)
    (decls ident-paramdecl-mapp)
    (split-point natp))

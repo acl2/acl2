@@ -579,7 +579,7 @@
    decl
    :decl (and (not decl.extension)
               (b* (((mv okp tyspecs)
-                    (check-declspec-list-all-tyspec decl.specs)))
+                    (check-decl-spec-list-all-tyspec decl.specs)))
                 (and okp
                      (type-spec-list-formalp tyspecs)))
               (consp decl.init)
@@ -768,7 +768,7 @@
    decl
    :decl (and (not decl.extension)
               (b* (((mv okp tyspecs storspecs)
-                    (check-declspec-list-all-tyspec/storspec decl.specs)))
+                    (check-decl-spec-list-all-tyspec/storspec decl.specs)))
                 (and okp
                      (type-spec-list-formalp tyspecs)
                      (stor-spec-list-formalp storspecs)))
@@ -873,11 +873,11 @@
    :decl (and (not decl.extension)
               (consp decl.specs)
               (endp (cdr decl.specs))
-              (declspec-case (car decl.specs) :tyspec)
-              (type-spec-case (declspec-tyspec->unwrap (car decl.specs))
+              (decl-spec-case (car decl.specs) :tyspec)
+              (type-spec-case (decl-spec-tyspec->unwrap (car decl.specs))
                               :struct)
               (strunispec-formalp (type-spec-struct->spec
-                                   (declspec-tyspec->unwrap (car decl.specs))))
+                                   (decl-spec-tyspec->unwrap (car decl.specs))))
               (endp decl.init))
    :statassert nil)
   :hooks (:fix))
@@ -915,7 +915,7 @@
      and must form a supported type.
      The parameter declarator must be a supported one."))
   (b* (((paramdecl paramdecl) paramdecl)
-       ((mv okp tyspecs) (check-declspec-list-all-tyspec paramdecl.spec)))
+       ((mv okp tyspecs) (check-decl-spec-list-all-tyspec paramdecl.spec)))
     (and okp
          (type-spec-list-formalp tyspecs)
          (paramdeclor-formalp paramdecl.decl)))
@@ -1009,7 +1009,7 @@
    decl
    :decl (and (not decl.extension)
               (b* (((mv okp tyspecs)
-                    (check-declspec-list-all-tyspec decl.specs)))
+                    (check-decl-spec-list-all-tyspec decl.specs)))
                 (and okp
                      (type-spec-list-formalp tyspecs)))
               (consp decl.init)
@@ -1037,7 +1037,7 @@
      whose block items are all supported."))
   (b* (((fundef fundef) fundef))
     (and (not fundef.extension)
-         (b* (((mv okp tyspecs) (check-declspec-list-all-tyspec fundef.spec)))
+         (b* (((mv okp tyspecs) (check-decl-spec-list-all-tyspec fundef.spec)))
            (and okp
                 (type-spec-list-formalp tyspecs)))
          (declor-fun-formalp fundef.declor)

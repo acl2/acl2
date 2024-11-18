@@ -308,34 +308,34 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-declspec ((declspec declspecp))
-    :guard (declspec-unambp declspec)
-    :returns (new-declspec declspecp)
+  (define simpadd0-decl-spec ((declspec decl-specp))
+    :guard (decl-spec-unambp declspec)
+    :returns (new-declspec decl-specp)
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
     :short "Transform a declaration specifier."
-    (declspec-case
+    (decl-spec-case
      declspec
-     :stocla (declspec-fix declspec)
-     :tyspec (declspec-tyspec (simpadd0-type-spec declspec.unwrap))
-     :tyqual (declspec-fix declspec)
-     :funspec (declspec-fix declspec)
-     :align (declspec-align (simpadd0-align-spec declspec.unwrap))
-     :attrib (declspec-fix declspec)
-     :stdcall (declspec-fix declspec)
-     :declspec-attrib (declspec-fix declspec))
-    :measure (declspec-count declspec))
+     :stocla (decl-spec-fix declspec)
+     :tyspec (decl-spec-tyspec (simpadd0-type-spec declspec.unwrap))
+     :tyqual (decl-spec-fix declspec)
+     :funspec (decl-spec-fix declspec)
+     :align (decl-spec-align (simpadd0-align-spec declspec.unwrap))
+     :attrib (decl-spec-fix declspec)
+     :stdcall (decl-spec-fix declspec)
+     :declspec-attrib (decl-spec-fix declspec))
+    :measure (decl-spec-count declspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define simpadd0-declspec-list ((declspecs declspec-listp))
-    :guard (declspec-list-unambp declspecs)
-    :returns (new-declspecs declspec-listp)
+  (define simpadd0-decl-spec-list ((declspecs decl-spec-listp))
+    :guard (decl-spec-list-unambp declspecs)
+    :returns (new-declspecs decl-spec-listp)
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
     :short "Transform a list of declaration specifiers."
     (cond ((endp declspecs) nil)
-          (t (cons (simpadd0-declspec (car declspecs))
-                   (simpadd0-declspec-list (cdr declspecs)))))
-    :measure (declspec-list-count declspecs))
+          (t (cons (simpadd0-decl-spec (car declspecs))
+                   (simpadd0-decl-spec-list (cdr declspecs)))))
+    :measure (decl-spec-list-count declspecs))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -556,7 +556,7 @@
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
     :short "Transform a parameter declaration."
     (b* (((paramdecl paramdecl) paramdecl))
-      (make-paramdecl :spec (simpadd0-declspec-list paramdecl.spec)
+      (make-paramdecl :spec (simpadd0-decl-spec-list paramdecl.spec)
                       :decl (simpadd0-paramdeclor paramdecl.decl)))
     :measure (paramdecl-count paramdecl))
 
@@ -759,7 +759,7 @@
      decl
      :decl (make-decl-decl
             :extension decl.extension
-            :specs (simpadd0-declspec-list decl.specs)
+            :specs (simpadd0-decl-spec-list decl.specs)
             :init (simpadd0-initdeclor-list decl.init))
      :statassert (decl-statassert
                   (simpadd0-statassert decl.unwrap)))
@@ -919,12 +919,12 @@
     (defret align-spec-unambp-of-simpadd0-align-spec
       (align-spec-unambp new-alignspec)
       :fn simpadd0-align-spec)
-    (defret declspec-unambp-of-simpadd0-declspec
-      (declspec-unambp new-declspec)
-      :fn simpadd0-declspec)
-    (defret declspec-list-unambp-of-simpadd0-declspec-list
-      (declspec-list-unambp new-declspecs)
-      :fn simpadd0-declspec-list)
+    (defret decl-spec-unambp-of-simpadd0-decl-spec
+      (decl-spec-unambp new-declspec)
+      :fn simpadd0-decl-spec)
+    (defret decl-spec-list-unambp-of-simpadd0-decl-spec-list
+      (decl-spec-list-unambp new-declspecs)
+      :fn simpadd0-decl-spec-list)
     (defret initer-unambp-of-simpadd0-initer
       (initer-unambp new-initer)
       :fn simpadd0-initer)
@@ -1038,8 +1038,8 @@
                                        simpadd0-spec/qual
                                        simpadd0-spec/qual-list
                                        simpadd0-align-spec
-                                       simpadd0-declspec
-                                       simpadd0-declspec-list
+                                       simpadd0-decl-spec
+                                       simpadd0-decl-spec-list
                                        simpadd0-initer
                                        simpadd0-initer-option
                                        simpadd0-desiniter
@@ -1092,7 +1092,7 @@
   (b* (((fundef fundef) fundef))
     (make-fundef
      :extension fundef.extension
-     :spec (simpadd0-declspec-list fundef.spec)
+     :spec (simpadd0-decl-spec-list fundef.spec)
      :declor (simpadd0-declor fundef.declor)
      :asm? fundef.asm?
      :attribs fundef.attribs

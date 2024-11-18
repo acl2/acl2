@@ -198,7 +198,7 @@
 (defthy deftrans-theory-forward-chaining
   '((:forward-chaining c$::expr-kind-possibilities)
     (:forward-chaining c$::decl-kind-possibilities)
-    (:forward-chaining c$::declspec-kind-possibilities)
+    (:forward-chaining c$::decl-spec-kind-possibilities)
     (:forward-chaining c$::dirabsdeclor-kind-possibilities)
     (:forward-chaining c$::dirdeclor-kind-possibilities)
     (:forward-chaining c$::genassoc-kind-possibilities)
@@ -212,7 +212,7 @@
     (:linear c$::absdeclor-count-of-dirabsdeclor-paren->unwrap)
     (:linear c$::absdeclor-count-of-paramdeclor-absdeclor->unwrap)
     (:linear c$::absdeclor-option-count-of-tyname->decl?)
-    (:linear c$::align-spec-count-of-declspec-align->unwrap)
+    (:linear c$::align-spec-count-of-decl-spec-align->unwrap)
     (:linear c$::align-spec-count-of-spec/qual-align->spec)
     (:linear c$::block-item-count-of-car)
     (:linear c$::block-item-list-count-of-cdr)
@@ -235,10 +235,10 @@
     (:linear c$::declor-count-of-initdeclor->declor)
     (:linear c$::declor-count-of-paramdeclor-declor->unwrap)
     (:linear c$::declor-option-count-of-structdeclor->declor?)
-    (:linear c$::declspec-count-of-car)
-    (:linear c$::declspec-list-count-of-cdr)
-    (:linear c$::declspec-list-count-of-decl-decl->specs)
-    (:linear c$::declspec-list-count-of-paramdecl->spec)
+    (:linear c$::decl-spec-count-of-car)
+    (:linear c$::decl-spec-list-count-of-cdr)
+    (:linear c$::decl-spec-list-count-of-decl-decl->specs)
+    (:linear c$::decl-spec-list-count-of-paramdecl->spec)
     (:linear c$::designor-count-of-car)
     (:linear c$::designor-list-count-of-cdr)
     (:linear c$::designor-list-count-of-desiniter->design)
@@ -362,7 +362,7 @@
     (:linear c$::tyname-count-of-expr-offsetof->type)
     (:linear c$::tyname-count-of-type-spec-atomic->type)
     (:linear c$::tyname-count-of-type-spec-typeof-type->type)
-    (:linear c$::type-spec-count-of-declspec-tyspec->unwrap)
+    (:linear c$::type-spec-count-of-decl-spec-tyspec->unwrap)
     (:linear c$::type-spec-count-of-spec/qual-tyspec->spec)))
 
 (defthy deftrans-theory-type-prescription
@@ -380,7 +380,7 @@
     (:type-prescription c$::block-item-fix$inline)
     (:type-prescription c$::consp-of-align-spec-fix)
     (:type-prescription c$::consp-of-block-item-fix)
-    (:type-prescription c$::consp-of-declspec-fix)
+    (:type-prescription c$::consp-of-decl-spec-fix)
     (:type-prescription c$::consp-of-designor-fix)
     (:type-prescription c$::consp-of-dirabsdeclor-fix)
     (:type-prescription c$::consp-of-dirdeclor-fix)
@@ -389,7 +389,7 @@
     (:type-prescription c$::consp-of-spec/qual-fix)
     (:type-prescription c$::consp-of-stmt-fix)
     (:type-prescription c$::consp-of-type-spec-fix)
-    (:type-prescription c$::declspec-fix$inline)
+    (:type-prescription c$::decl-spec-fix$inline)
     (:type-prescription c$::designor-fix$inline)
     (:type-prescription c$::dirabsdeclor-array)
     (:type-prescription c$::dirabsdeclor-array-static1)
@@ -429,8 +429,8 @@
     (:type-prescription c$::return-type-of-decl-list-count.count)
     (:type-prescription c$::return-type-of-declor-count.count)
     (:type-prescription c$::return-type-of-declor-option-count.count)
-    (:type-prescription c$::return-type-of-declspec-count.count)
-    (:type-prescription c$::return-type-of-declspec-list-count.count)
+    (:type-prescription c$::return-type-of-decl-spec-count.count)
+    (:type-prescription c$::return-type-of-decl-spec-list-count.count)
     (:type-prescription c$::return-type-of-designor-count.count)
     (:type-prescription c$::return-type-of-designor-list-count.count)
     (:type-prescription c$::return-type-of-desiniter-count.count)
@@ -484,10 +484,10 @@
     (:type-prescription declor)
     (:type-prescription declor-count)
     (:type-prescription declor-option-count)
-    (:type-prescription declspec-align)
-    (:type-prescription declspec-count)
-    (:type-prescription declspec-list-count)
-    (:type-prescription declspec-tyspec)
+    (:type-prescription decl-spec-align)
+    (:type-prescription decl-spec-count)
+    (:type-prescription decl-spec-list-count)
+    (:type-prescription decl-spec-tyspec)
     (:type-prescription designor-count)
     (:type-prescription designor-list-count)
     (:type-prescription designor-sub)
@@ -966,47 +966,47 @@
    '(:returns (new-alignspec align-specp)
      :measure (align-spec-count alignspec))))
 
-(define deftrans-defn-declspec
+(define deftrans-defn-decl-spec
   ((names alistp)
    (bodies alistp)
    (extra-args true-listp)
    (extra-args-names true-listp))
   (deftrans-defn
-   'declspec
+   'decl-spec
    names
    bodies
-   '((declspec declspecp))
+   '((declspec decl-specp))
    extra-args
-   `(declspec-case
+   `(decl-spec-case
       declspec
-      :stocla (declspec-fix declspec)
-      :tyspec (declspec-tyspec (,(cdr (assoc-eq 'type-spec names)) declspec.unwrap ,@extra-args-names))
-      :tyqual (declspec-fix declspec)
-      :funspec (declspec-fix declspec)
-      :align (declspec-align (,(cdr (assoc-eq 'align-spec names)) declspec.unwrap ,@extra-args-names))
-      :attrib (declspec-fix declspec)
-      :stdcall (declspec-fix declspec)
-      :declspec-attrib (declspec-fix declspec))
-   '(:returns (new-declspec declspecp)
-     :measure (declspec-count declspec))))
+      :stocla (decl-spec-fix declspec)
+      :tyspec (decl-spec-tyspec (,(cdr (assoc-eq 'type-spec names)) declspec.unwrap ,@extra-args-names))
+      :tyqual (decl-spec-fix declspec)
+      :funspec (decl-spec-fix declspec)
+      :align (decl-spec-align (,(cdr (assoc-eq 'align-spec names)) declspec.unwrap ,@extra-args-names))
+      :attrib (decl-spec-fix declspec)
+      :stdcall (decl-spec-fix declspec)
+      :declspec-attrib (decl-spec-fix declspec))
+   '(:returns (new-declspec decl-specp)
+     :measure (decl-spec-count declspec))))
 
-(define deftrans-defn-declspec-list
+(define deftrans-defn-decl-spec-list
   ((names alistp)
    (bodies alistp)
    (extra-args true-listp)
    (extra-args-names true-listp))
   (deftrans-defn
-   'declspec-list
+   'decl-spec-list
    names
    bodies
-   '((declspecs declspec-listp))
+   '((declspecs decl-spec-listp))
    extra-args
    `(if (endp declspecs)
         nil
-      (cons (,(cdr (assoc-eq 'declspec names)) (car declspecs) ,@extra-args-names)
-            (,(cdr (assoc-eq 'declspec-list names)) (cdr declspecs) ,@extra-args-names)))
-   '(:returns (new-declspecs declspec-listp)
-     :measure (declspec-list-count declspecs))))
+      (cons (,(cdr (assoc-eq 'decl-spec names)) (car declspecs) ,@extra-args-names)
+            (,(cdr (assoc-eq 'decl-spec-list names)) (cdr declspecs) ,@extra-args-names)))
+   '(:returns (new-declspecs decl-spec-listp)
+     :measure (decl-spec-list-count declspecs))))
 
 (define deftrans-defn-initer
   ((names alistp)
@@ -1298,7 +1298,7 @@
    '((paramdecl paramdeclp))
    extra-args
    `(b* (((paramdecl paramdecl) paramdecl))
-      (make-paramdecl :spec (,(cdr (assoc-eq 'declspec-list names)) paramdecl.spec ,@extra-args-names)
+      (make-paramdecl :spec (,(cdr (assoc-eq 'decl-spec-list names)) paramdecl.spec ,@extra-args-names)
                       :decl (,(cdr (assoc-eq 'paramdeclor names)) paramdecl.decl ,@extra-args-names)))
    '(:returns (new-paramdecl paramdeclp)
      :measure (paramdecl-count paramdecl))))
@@ -1583,7 +1583,7 @@
       decl
       :decl (make-decl-decl
               :extension decl.extension
-              :specs (,(cdr (assoc-eq 'declspec-list names)) decl.specs ,@extra-args-names)
+              :specs (,(cdr (assoc-eq 'decl-spec-list names)) decl.specs ,@extra-args-names)
               :init (,(cdr (assoc-eq 'initdeclor-list names)) decl.init ,@extra-args-names))
       :statassert (decl-statassert
                     (,(cdr (assoc-eq 'statassert names)) decl.unwrap ,@extra-args-names)))
@@ -1737,7 +1737,7 @@
    `(b* (((fundef fundef) fundef))
       (make-fundef
         :extension fundef.extension
-        :spec (,(cdr (assoc-eq 'declspec-list names)) fundef.spec ,@extra-args-names)
+        :spec (,(cdr (assoc-eq 'decl-spec-list names)) fundef.spec ,@extra-args-names)
         :declor (,(cdr (assoc-eq 'declor names)) fundef.declor ,@extra-args-names)
         :asm? fundef.asm?
         :attribs fundef.attribs
@@ -1818,8 +1818,8 @@
     spec/qual
     spec/qual-list
     align-spec
-    declspec
-    declspec-list
+    decl-spec
+    decl-spec-list
     initer
     initer-option
     desiniter
@@ -1952,8 +1952,8 @@
          ,(deftrans-defn-spec/qual           names bodies extra-args extra-args-names)
          ,(deftrans-defn-spec/qual-list      names bodies extra-args extra-args-names)
          ,(deftrans-defn-align-spec          names bodies extra-args extra-args-names)
-         ,(deftrans-defn-declspec            names bodies extra-args extra-args-names)
-         ,(deftrans-defn-declspec-list       names bodies extra-args extra-args-names)
+         ,(deftrans-defn-decl-spec            names bodies extra-args extra-args-names)
+         ,(deftrans-defn-decl-spec-list       names bodies extra-args extra-args-names)
          ,(deftrans-defn-initer              names bodies extra-args extra-args-names)
          ,(deftrans-defn-initer-option       names bodies extra-args extra-args-names)
          ,(deftrans-defn-desiniter           names bodies extra-args extra-args-names)
