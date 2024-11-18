@@ -26,6 +26,7 @@
 (include-book "dag-committees")
 (include-book "signer-quorum")
 (include-book "quorum-intersection")
+(include-book "unequivocal-dags-def-and-init")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -52,4 +53,5 @@
                     unequivocal-signed-certificates
                     dag-committees
                     signer-quorum
-                    quorum-intersection))
+                    quorum-intersection
+                    unequivocal-dags-def-and-init))
