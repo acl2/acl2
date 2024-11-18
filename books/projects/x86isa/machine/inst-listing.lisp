@@ -7056,21 +7056,21 @@
           (ARG :OP1 '(V X)
                :OP2 '(W X)
                :OP3 '(I B))
-          'NIL
+          '(X86-PSHUFD)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "PSHUFHW"
           (OP :OP #xF70 :PFX :F3 :FEAT '(:SSE2))
           (ARG :OP1 '(V X)
                :OP2 '(W X)
                :OP3 '(I B))
-          'NIL
+          '(X86-PSHUFHW)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "PSHUFLW"
           (OP :OP #xF70 :PFX :F2 :FEAT '(:SSE2))
           (ARG :OP1 '(V X)
                :OP2 '(W X)
                :OP3 '(I B))
-          'NIL
+          '(X86-PSHUFHW)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "VPSHUFD"
           (OP :OP #xF70
