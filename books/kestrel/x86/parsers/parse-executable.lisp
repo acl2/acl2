@@ -20,7 +20,7 @@
 
 ;; Returns (mv erp contents) where contents in an alist representing
 ;; the contents of the executable (exact format depends on the type of
-;; the executable).  TODO: Pass back errors?
+;; the executable).  TODO: Pass back errors from mach-o and pe parsing.
 (defund parse-executable-bytes (bytes
                                filename ; only used in error messages
                                )
@@ -33,8 +33,7 @@
        ((when erp) (mv erp nil)))
     (if (= magic-number *elf-magic-number*)
         (prog2$ (cw "ELF file detected.~%")
-                (mv nil ;no error
-                    (parse-elf-file-bytes bytes)))
+                (parse-elf-file-bytes bytes))
       (if (member magic-number (strip-cars *mach-o-magic-numbers*))
           (prog2$ (cw "Mach-O file detected.~%")
                   (mv nil ;no error

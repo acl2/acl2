@@ -24,6 +24,7 @@
 (include-book "kestrel/bv-lists/byte-listp" :dir :system)
 (include-book "kestrel/utilities/defopeners" :dir :system)
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
+(local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "kestrel/bv/bvcat" :dir :system))
 
 (defconst *elf-magic-number* #x464C457F) ; 7F"ELF" (but note the byte order)
@@ -100,7 +101,7 @@
     (#x3 . :dyn)
     (#x4 . :core)))
 
-(defun decode-file-type (e_type)
+(defund decode-file-type (e_type)
   (declare (xargs :guard (unsigned-byte-p 16 e_type)))
   (let ((res (lookup e_type *elf-file-types*)))
     (if res
@@ -289,7 +290,7 @@
     (mv (reverse result) bytes)))
 
 ;; Returns the section headers
-(defun parse-elf-section-headers (index count 64-bitp acc bytes)
+(defund parse-elf-section-headers (index count 64-bitp acc bytes)
   (declare (xargs :measure (nfix (- count index))))
   (if (or (<= count index)
           (not (natp index))
@@ -342,7 +343,7 @@
 
 (defopeners get-elf-section-header) ; move?
 
-(defun strtab-offset (section-header-table)
+(defund strtab-offset (section-header-table)
   (lookup-eq-safe :offset (get-elf-section-header ".strtab" section-header-table)))
 
 (defun parse-elf-symbol-table-entry (64-bitp string-table-bytes-etc bytes)
@@ -365,7 +366,7 @@
        (result (acons :size st_size result)))
     (mv (reverse result) bytes)))
 
-(defun parse-elf-symbol-table (symbol-table-size 64-bitp string-table-bytes-etc acc bytes)
+(defund parse-elf-symbol-table (symbol-table-size 64-bitp string-table-bytes-etc acc bytes)
   (declare (xargs :measure (len bytes)))
   (if (zp symbol-table-size)
       (reverse acc)
@@ -380,7 +381,7 @@
                                 bytes)))))
 
 ;; Returns an alist mapping section names to lists of bytes.
-(defun extract-elf-sections (section-header-table all-bytes acc)
+(defund extract-elf-sections (section-header-table all-bytes acc)
   (if (endp section-header-table)
       (reverse acc)
     (let* ((entry (first section-header-table))
@@ -392,6 +393,11 @@
            (bytes (take-safe size (nthcdr offset all-bytes))))
       (extract-elf-sections (rest section-header-table) all-bytes
                             (acons name bytes acc)))))
+
+(defthm alistp-of-extract-elf-sections
+  (implies (alistp acc)
+           (alistp (extract-elf-sections section-header-table all-bytes acc)))
+  :hints (("Goal" :in-theory (enable extract-elf-sections))))
 
 ;move up
 ;; Returns (mv program-header bytes).
@@ -432,7 +438,7 @@
 ;move up
 ; todo: guard
 ;; Returns the program headers
-(defun parse-elf-program-headers (index count 64-bitp acc bytes)
+(defund parse-elf-program-headers (index count 64-bitp acc bytes)
   (declare (xargs :measure (nfix (- count index))))
   (if (or (<= count index)
           (not (natp index))
@@ -446,6 +452,7 @@
                                  (acons index program-header acc)
                                  bytes))))
 
+;; Returns (mv erp parsed-elf) where PARSED-ELF is meaningless if ERP in non-nil.
 ;; TODO: Some of this parsing need not be done for all callers (e.g., when loading an image)
 ;; TODO: Allow returning an error.
 (defund parse-elf-file-bytes (bytes)
@@ -467,7 +474,8 @@
                         (= (char-code #\E) ei_mag1)
                         (= (char-code #\L) ei_mag2)
                         (= (char-code #\F) ei_mag3))))
-        (er hard? 'parse-elf-file-bytes "Bad magic number: ~x0." (take 4 e_ident)))
+        (er hard? 'parse-elf-file-bytes "Bad magic number: ~x0." (take 4 e_ident))
+        (mv t nil))
 
        (class (lookup-safe ei_class *classes*))
        (64-bitp (eq :elfclass64 class))
@@ -532,10 +540,16 @@
        (sections (extract-elf-sections section-header-table all-bytes nil))
        (result (acons :sections sections result))
        )
-    (reverse result)))
+    (mv nil (reverse result))))
 
 ;; TODO: Add more to this
 (defund parsed-elfp (parsed-elf)
   (declare (xargs :guard t))
   (and (symbol-alistp parsed-elf)
        (alistp (lookup-eq-safe :sections parsed-elf))))
+
+;todo: slow!
+(defthm parsed-elfp-of-mv-nth-1-of-parse-elf-file-bytes
+  (implies (not (mv-nth 0 (parse-elf-file-bytes bytes)))
+           (parsed-elfp (mv-nth 1 (parse-elf-file-bytes bytes))))
+  :hints (("Goal" :in-theory (enable parse-elf-file-bytes parsed-elfp))))
