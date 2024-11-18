@@ -1032,6 +1032,131 @@
 ;; INSTRUCTION: MOVD/MOVQ to/from XMM Registers
 ;; ======================================================================
 
+(def-inst x86-movq-to-xmm/mem
+
+  ;; 66       0F D6 /r: MOVQ xmm2/m64, xmm1
+
+  :parents (two-byte-opcodes)
+
+  :returns (x86 x86p :hyp (x86p x86))
+
+  :modr/m t
+
+  :body
+
+  (b* (((the (unsigned-byte 4) xmm-index)
+        (reg-index reg rex-byte #.*r*))
+       ((the (unsigned-byte 64) xmm)
+        (xmmi-size 8 xmm-index x86))
+
+       (p2 (prefixes->seg prefixes))
+       (p4? (eql #.*addr-size-override*
+                 (prefixes->adr prefixes)))
+
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+
+       ((mv flg0
+            (the (signed-byte 64) addr)
+            (the (unsigned-byte 3) increment-RIP-by)
+            x86)
+        (if (int= mod #b11)
+            (mv nil 0 0 x86)
+          (x86-effective-addr proc-mode p4? temp-rip rex-byte r/m mod sib
+                              0 ;; No immediate operand
+                              x86)))
+       ((when flg0)
+        (!!ms-fresh :x86-effective-addr-error flg0))
+
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error flg))
+
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+       ;; Update the x86 state:
+       (inst-ac? t)
+       ((mv flg1 x86)
+        (x86-operand-to-xmm/mem proc-mode
+                                ;; If writing to xmm register, use size 16 to
+                                ;; clear upper bits
+                                ;; If writing to memory, use size 8
+                                (if (int= mod #b11)
+                                  16 8)
+                                inst-ac?
+                                xmm
+                                seg-reg
+                                addr
+                                rex-byte
+                                r/m
+                                mod
+                                x86))
+       ;; Note: If flg1 is non-nil, we bail out without changing the x86 state.
+       ((when flg1)
+        (!!ms-fresh :x86-operand-to-xmm/mem flg1))
+
+       (x86 (write-*ip proc-mode temp-rip x86)))
+    x86))
+
+(def-inst x86-movq-from-xmm/mem
+
+  ;; F3       0F 7E /r: MOVQ xmm1, xmm2/m64
+
+  :parents (two-byte-opcodes)
+
+  :returns (x86 x86p :hyp (x86p x86))
+
+  :modr/m t
+
+  :body
+
+  (b* (((the (unsigned-byte 4) xmm-index)
+        (reg-index reg rex-byte #.*r*))
+
+       (p2 (prefixes->seg prefixes))
+       (p4? (eql #.*addr-size-override*
+                 (prefixes->adr prefixes)))
+
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+
+       (inst-ac? t)
+       ((mv flg0
+            xmm/mem
+            (the (integer 0 4) increment-RIP-by)
+            (the (signed-byte 64) ?addr)
+            x86)
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
+                                               #.*xmm-access*
+                                               8
+                                               inst-ac?
+                                               nil ;; Not a memory pointer operand
+                                               seg-reg
+                                               p4?
+                                               temp-rip
+                                               rex-byte
+                                               r/m
+                                               mod
+                                               sib
+                                               0 ;; No immediate operand
+                                               x86))
+       ((when flg0)
+        (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
+
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error flg))
+
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+       ;; Update the x86 state:
+       (x86 (!xmmi-size 16 xmm-index xmm/mem x86))
+
+       (x86 (write-*ip proc-mode temp-rip x86)))
+    x86))
+
 (def-inst x86-movd/movq-to-xmm
 
   ;; 66       0F 6E /r: MOVD xmm, r/m32

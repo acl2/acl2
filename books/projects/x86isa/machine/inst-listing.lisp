@@ -8504,7 +8504,7 @@
     (INST "MOVQ"
           (OP :OP #xF7E :PFX :F3 :FEAT '(:SSE2))
           (ARG :OP1 '(V Q) :OP2 '(W Q))
-          'NIL
+          '(X86-MOVQ-FROM-XMM/MEM)
           '((:EX (CHK-EXC :TYPE-5 (:SSE2)))))
     (INST "VMOVD"
           (OP :OP #xF7E
@@ -10165,7 +10165,7 @@
     (INST "MOVQ"
           (OP :OP #xFD6 :PFX :66 :FEAT '(:SSE2))
           (ARG :OP1 '(W Q) :OP2 '(V Q))
-          'NIL
+          '(X86-MOVQ-TO-XMM/MEM)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "MOVQ2DQ"
           (OP :OP #xFD6 :PFX :F3 :FEAT '(:SSE2))
