@@ -1797,6 +1797,13 @@
                 (pstate (print-member-designor expr.member pstate))
                 (pstate (print-astring ")" pstate)))
              pstate)
+           :va-arg
+           (b* ((pstate (print-astring "__builtin_va_arg(" pstate))
+                (pstate (print-expr expr.list (expr-priority-asg) pstate))
+                (pstate (print-astring ", " pstate))
+                (pstate (print-tyname expr.type pstate))
+                (pstate (print-astring ")" pstate)))
+             pstate)
            :extension
            (b* ((pstate (print-astring "__extension__ " pstate))
                 (pstate (print-expr expr.expr (expr-priority-primary) pstate)))

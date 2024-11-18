@@ -103,6 +103,8 @@
                               (tyname-unambp expr.type2))
                :offsetof (and (tyname-unambp expr.type)
                               (member-designor-unambp expr.member))
+               :va-arg (and (expr-unambp expr.list)
+                            (tyname-unambp expr.type))
                :extension (expr-unambp expr.expr))
     :measure (expr-count expr))
 
@@ -1016,6 +1018,12 @@
                 (member-designor-unambp memdes)))
     :expand (expr-unambp (expr-offsetof type memdes)))
 
+  (defrule expr-unambp-of-expr-va-arg
+    (equal (expr-unambp (expr-va-arg list type))
+           (and (expr-unambp list)
+                (tyname-unambp type)))
+    :expand (expr-unambp (expr-va-arg list type)))
+
   (defrule expr-unambp-of-expr-extension
     (equal (expr-unambp (expr-extension expr))
            (expr-unambp expr))
@@ -1628,6 +1636,16 @@
     (implies (and (expr-unambp expr)
                   (expr-case expr :offsetof))
              (member-designor-unambp (expr-offsetof->member expr))))
+
+  (defrule expr-unambp-of-expr-va-arg->list
+    (implies (and (expr-unambp expr)
+                  (expr-case expr :va-arg))
+             (expr-unambp (expr-va-arg->list expr))))
+
+  (defrule tyname-unambp-of-expr-va-arg->type
+    (implies (and (expr-unambp expr)
+                  (expr-case expr :va-arg))
+             (tyname-unambp (expr-va-arg->type expr))))
 
   (defrule expr-unambp-of-expr-extension->expr
     (implies (and (expr-unambp expr)

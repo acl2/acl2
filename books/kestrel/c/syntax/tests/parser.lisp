@@ -1249,6 +1249,11 @@
 
 (test-parse
  parse-expression
+ "__builtin_va_arg(args, ngx_str_t *)"
+ :gcc t)
+
+(test-parse
+ parse-expression
  "({x = 0;})(x)"
  :cond (expr-case ast :funcall)
  :gcc t)

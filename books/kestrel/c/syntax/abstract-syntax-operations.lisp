@@ -528,7 +528,9 @@
                     :complit
                     :stmt
                     :tycompat
-                    :offsetof))
+                    :offsetof
+                    :va-arg
+                    :extension))
        t)
   :hooks (:fix))
 
@@ -563,7 +565,9 @@
                     :alignof
                     :stmt
                     :tycompat
-                    :offsetof))
+                    :offsetof
+                    :va-arg
+                    :extension))
        t)
   :hooks (:fix))
 
@@ -676,6 +680,7 @@
    :stmt (expr-priority-primary)
    :tycompat (expr-priority-primary)
    :offsetof (expr-priority-primary)
+   :va-arg (expr-priority-primary)
    :extension (expr-priority-primary))
   :hooks (:fix))
 
