@@ -335,8 +335,8 @@
 
 ;; might have extra, unneeded items in state-components
 (defun assumptions-for-inputs (names-and-types state-components stack-slots text-offset code-length)
-  (declare (xargs :mode :program ; todo
-                  :guard (and (names-and-typesp names-and-types)
+  (declare (xargs :guard (and (names-and-typesp names-and-types)
+                              (true-listp state-components)
                               (natp stack-slots)
                               ;; text-offset is a term
                               (natp code-length))))
@@ -404,7 +404,7 @@
                               (booleanp untranslatep)
                               (booleanp memoizep)
                               (natp total-steps))
-                  :mode :program
+                  :mode :program ; because of untranslate ; todo: use a safe version, or ec-call?
                   :stobjs state))
   (if (zp steps-left)
       (mv (erp-nil) dag state)
@@ -881,7 +881,7 @@
           ;; it's already a parsed-executable:
           (mv nil executable state)))
        ((when erp)
-        (er hard? 'def-unrolled-fn "Error parsing executable: ~s0." executable)
+        (er hard? 'def-unrolled-fn "Error (~x0) parsing executable: ~s1." erp executable)
         (mv t nil state))
        (executable-type (acl2::parsed-executable-type parsed-executable))
        ;; Handle a :position-independent of :auto:
