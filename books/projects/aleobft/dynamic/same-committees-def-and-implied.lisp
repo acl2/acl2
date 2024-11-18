@@ -231,7 +231,7 @@
      The cutoff round is the smallest one of the extension.
      Here we need to assume that block rounds are ordered
      (in the longer blockchain, which implies that
-     they are also ordered in the extension and in the smaller blockchain."))
+     they are also ordered in the extension and in the smaller blockchain)."))
   (implies (and (blocks-ordered-even-p (append blocks1 blocks2))
                 (consp blocks1))
            (equal (trim-blocks-for-round (block->round (car (last blocks1)))
