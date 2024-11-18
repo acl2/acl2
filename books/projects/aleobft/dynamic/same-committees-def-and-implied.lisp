@@ -441,8 +441,8 @@
      and the two theorems that simplify them
      (for longer and shorter blockchain).
      We also need, as a local lemma,
-     the fact that oldest block of the extension
-     is greater than the newest block of the shorter blockchain,
+     the fact that the round of the oldest block of the extension
+     is greater than the round of the newest block of the shorter blockchain,
      but expressed in terms of @(tsee nth) of the longer blockchain.
      We also need the fact that the rounds are not only ordered, but even:
      this ensures that there is a gap of at least 2
