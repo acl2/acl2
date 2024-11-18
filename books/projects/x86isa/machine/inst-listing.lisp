@@ -2750,7 +2750,7 @@
           (ARG :OP1 '(V Q)
                :OP2 '(H Q)
                :OP3 '(U Q))
-          'NIL
+          '(X86-MOVHLPS-SSE)
           '((:EX (CHK-EXC :TYPE-7 (:SSE)))))
     (INST "MOVLPD"
           (OP :OP #xF12 :PFX :66 :FEAT '(:SSE2))
