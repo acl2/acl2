@@ -721,6 +721,195 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define dimb-make/adjust-expr-cast ((type tynamep) (arg exprp))
+  :guard (and (tyname-unambp type)
+              (expr-unambp arg))
+  :returns (expr exprp)
+  :short "Build, and adjust if needed, a cast expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used in @(tsee dimb-expr), when dealing with a cast expression.
+     When @(tsee dimb-expr) encounters a cast expression,
+     it recursively disambiguates
+     the type name @('T0') and the argument expression @('E0'),
+     obtaining a type name @('T') and an argument expression @('E').
+     Then it should generally return the cast expression @('(T) E'),
+     but there are cases in which an adjustment is needed.
+     Suppose that @('E0') was an ambiguous cast/binary expression,
+     which gets disambiguated to a binary expression @('A op B').
+     Then it means that the original code was @('(T0) A op B'),
+     which is a binary expression
+     whose first operand is the cast expression @('(T0) A')
+     and whose second operand is the expression @('B').
+     Thus, it would be incorrect for @(tsee dimb-expr)
+     to return a cast expression, which would be @('(T) (A op B)').
+     Therefore, @(tsee dimb-expr) uses this function defined here
+     to combine @('T') and @('E') properly, and return the result.")
+   (xdoc::p
+    "This function takes @('T') and @('E') as inputs.
+     If @('E') is a binary expression, let that be @('A op B'),
+     then we return @('[ (T) A ] op B'),
+     where the square brackets show how things are grouped.
+     If @('E') is not a binary expression,
+     then we return the cast expression @('(T) E')."))
+  (if (expr-case arg :binary)
+      (make-expr-binary :op (expr-binary->op arg)
+                        :arg1 (make-expr-cast :type type
+                                              :arg (expr-binary->arg1 arg))
+                        :arg2 (expr-binary->arg2 arg))
+    (make-expr-cast :type type :arg arg))
+  :hooks (:fix)
+
+  ///
+
+  (defret expr-unambp-of-dimb-make/adjust-expr-cast
+    (expr-unambp expr)
+    :hyp (and (tyname-unambp type)
+              (expr-unambp arg))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define dimb-make/adjust-expr-binary ((op binopp) (left exprp) (right exprp))
+  :returns (expr exprp)
+  :short "Build, and adjust if needed, a binary expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This has a similar purpose to @(tsee dimb-make/adjust-expr-cast):
+     see that function's documentation first.
+     The same kind of incorrect grouping
+     (prevented by the use of @(tsee dimb-make/adjust-expr-cast))
+     may arise with a binary expression @('A0 op B0').
+     When encountering such a binary expression,
+     @(tsee dimb-expr) first disambiguates
+     @('A0') to @('A') and @('B0') to @('B').
+     But if @('A0') and/or @('B0') were ambiguous cast/binary expressions,
+     and one or both get disambiguated to binary expressions,
+     returning the expression @('A op B') could be incorrect.
+     There are four cases to consider (described in the paragraphs below),
+     based on whether the priority of @('A') is greater than or equal to
+     the expected priority of the left operand of @('op'),
+     and/or whether the priority of @('B') is greater than or equal to
+     the expected priority of the right operand of @('op').
+     If the priority of @('A')/@('B') is greater than or equal to
+     the exptected priority of the left-right operand of @('op'),
+     then that expression can be safely left as is;
+     otherwise, it needs to be broken up and re-grouped with the rest.
+     Recall that, in @('A0 op B0'),
+     both @('A0') and @('B0') have the priority of cast expressions,
+     which is greater than or equal to
+     the expected priorities of all the binary operators.
+     If @('A') and/or @('B') is a cast expression,
+     or a kind of expression with higher priority,
+     no re-grouping is necessary.
+     The only situation in which re-grouping is necessary is when
+     @('A') and/or @('B') is a binary expression,
+     and has priority less than the one expected as operand of @('op').
+     There is no need to consider any other other kinds of expressions,
+     because both @('A') and @('B') can never have
+     a priority lower than binary expressions.
+     In the code, @('left-okp') and @('right-okp') indicate whether
+     @('A') (left) and @('B') (right) can be used as operands of @('op'),
+     or instead they need to be broken up and re-grouped.
+     The following are the four cases.")
+   (xdoc::p
+    "If both @('A') and @('B') are cast expressions,
+     or binary expressions with priority greater than or equal to
+     the one expected by @('op') for its operands,
+     it is correct to return @('A op B') without adjustment.")
+   (xdoc::p
+    "If @('A') is a cast expression
+     or a binary expression with priority greater than or equal to
+     the priority expected by @('op') for the left operand,
+     while @('B') is a binary expression @('B1 Bop B2')
+     with priority less than
+     the priority expected by @('op') for the right operand,
+     we re-group and return @('[ A op B1 ] Bop B2').
+     An example is @('A * (x) + y')
+     (i.e. @('B1') is @('(x)') and @('B2') is @('y')),
+     with @('(x) + y') initially ambiguous,
+     initially grouped as @('A * [ (x) + y ]').")
+   (xdoc::p
+    "If @('B') is a cast expression
+     or a binary expression with priority greater than or equal to
+     the priority expected by @('op') for the right operand,
+     while @('A') is a binary expression @('A1 Aop A2')
+     with priority less than
+     the priority expected by @('op') for the left operand,
+     we re-group and return @('A1 Aop [ A2 op B ]').
+     An example is @('(x) + y * B'
+     (i.e. @('A1') is @('(x)') and @('A2') is @('y')),
+     with @('(x) + y') initially ambiguous,
+     initially grouped as @('[ (x) + y ] * B').")
+   (xdoc::p
+    "The most complicated case is when
+     both @('A') and @('B') are binary expressions
+     @('A1 Aop A2') and @('B1 Bop B2'),
+     both with priorities less than
+     the expected left and right priorities of @('op').
+     There are two sub-cases to consider,
+     based on the relative priorities of @('A') and @('B').
+     If @('A') has priority greater than or equal to @('B'),
+     we return @('[ A1 Aop [ A2 op B1 ] ] Bop B2'),
+     otherwise @('A1 Aop [ [ A2 op B1 ] Bop B2 ]').
+     This critically depends on the fact that
+     the binary operators that may be involved are all left-associative.
+     For example, an initial @('[ (x) & y ] * [ (z) + w ]')
+     results in @('(x) & [ [ y * (z) ] + w ]'),
+     while an initial @('[ (x) + y ] * [ (z) & w ]')
+     results in @('[ (x) + [ y * (z) ] ] & w]')."))
+  (b* (((mv left-prio right-prio) (binop-expected-priorities op))
+       (left-okp (or (not (expr-case left :binary))
+                     (expr-priority-<= left-prio (expr->priority left))))
+       (right-okp (or (not (expr-case right :binary))
+                      (expr-priority-<= right-prio (expr->priority right)))))
+    (cond
+     ((and left-okp right-okp)
+      (make-expr-binary :op op :arg1 left :arg2 right))
+     (left-okp
+      (make-expr-binary :op (expr-binary->op right)
+                        :arg1 (make-expr-binary :op op
+                                                :arg1 left
+                                                :arg2 (expr-binary->arg1 right))
+                        :arg2 (expr-binary->arg2 right)))
+     (right-okp
+      (make-expr-binary :op (expr-binary->op left)
+                        :arg1 (expr-binary->arg1 left)
+                        :arg2 (make-expr-binary :op op
+                                                :arg1 (expr-binary->arg2 left)
+                                                :arg2 right)))
+     (t (b* ((left-op (expr-binary->op left))
+             (right-op (expr-binary->op right))
+             (left-left (expr-binary->arg1 left))
+             (left-right (expr-binary->arg2 left))
+             (right-left (expr-binary->arg1 right))
+             (right-right (expr-binary->arg2 right))
+             (middle (make-expr-binary :op op
+                                       :arg1 left-right
+                                       :arg2 right-left)))
+          (if (expr-priority-<= (expr->priority right) (expr->priority left))
+              (make-expr-binary :op right-op
+                                :arg1 (make-expr-binary :op left-op
+                                                        :arg1 left-left
+                                                        :arg2 middle)
+                                :arg2 right-right)
+            (make-expr-binary :op left-op
+                              :arg1 left-left
+                              :arg2 (make-expr-binary :op right-op
+                                                      :arg1 middle
+                                                      :arg2 right-right)))))))
+  :hooks (:fix)
+
+  ///
+
+  (defret expr-unambp-dimb-make/adjust-expr-binary
+    (expr-unambp expr)
+    :hyp (and (expr-unambp left)
+              (expr-unambp right))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define dimb-params-to-names ((params paramdecl-listp)
                               (fundefp booleanp)
                               (table dimb-tablep))
@@ -876,7 +1065,17 @@
        the initial expression or type name, @('X').
        Based on the result,
        we re-classify the expression as a cast or a binary one,
-       using separate ACL2 functions."))
+       using separate ACL2 functions.")
+     (xdoc::p
+      "For cast and binary expressions,
+       after disambiguating their sub-constructs,
+       we use @(tsee dimb-make/adjust-expr-cast)
+       and @(tsee dimb-make/adjust-expr-binary)
+       for the reasons explained in the documentation of those functions.
+       These two kinds of expressions are the only ones needing this treatment,
+       because the only change in priorities
+       that may be caused by disambiguation
+       is for cast and binary expressions."))
     (b* (((reterr) (irr-expr) (irr-dimb-table)))
       (expr-case
        expr
@@ -960,15 +1159,12 @@
        :cast
        (b* (((erp new-type table) (dimb-tyname expr.type table))
             ((erp new-arg table) (dimb-expr expr.arg table)))
-         (retok (make-expr-cast :type new-type
-                                :arg new-arg)
+         (retok (dimb-make/adjust-expr-cast new-type new-arg)
                 table))
        :binary
        (b* (((erp new-arg1 table) (dimb-expr expr.arg1 table))
             ((erp new-arg2 table) (dimb-expr expr.arg2 table)))
-         (retok (make-expr-binary :op expr.op
-                                  :arg1 new-arg1
-                                  :arg2 new-arg2)
+         (retok (dimb-make/adjust-expr-binary expr.op new-arg1 new-arg2)
                 table))
        :cond
        (b* (((erp new-test table) (dimb-expr expr.test table))
@@ -1089,6 +1285,10 @@
        (b* (((erp type table) (dimb-tyname expr.type table))
             ((erp memdes table) (dimb-member-designor expr.member table)))
          (retok (make-expr-offsetof :type type :member memdes) table))
+       :va-arg
+       (b* (((erp list table) (dimb-expr expr.list table))
+            ((erp type table) (dimb-tyname expr.type table)))
+         (retok (make-expr-va-arg :list list :type type) table))
        :extension
        (b* (((erp expr table) (dimb-expr expr.expr table)))
          (retok (expr-extension expr) table))))
@@ -1339,7 +1539,7 @@
                     (dimb-align-spec specqual.spec table)))
                 (retok (spec/qual-align new-alignspec)
                        table))
-       :attrib (retok (spec/qual-attrib specqual.unwrap)
+       :attrib (retok (spec/qual-attrib specqual.spec)
                       (dimb-table-fix table))))
     :measure (spec/qual-count specqual))
 
@@ -1381,8 +1581,8 @@
        (b* (((erp new-type table) (dimb-tyname alignspec.type table)))
          (retok (align-spec-alignas-type new-type) table))
        :alignas-expr
-       (b* (((erp new-arg table) (dimb-const-expr alignspec.arg table)))
-         (retok (align-spec-alignas-expr new-arg) table))
+       (b* (((erp new-expr table) (dimb-const-expr alignspec.expr table)))
+         (retok (align-spec-alignas-expr new-expr) table))
        :alignas-ambig
        (b* (((erp expr/tyname table)
              (dimb-amb-expr/tyname alignspec.type/arg nil table)))
@@ -1453,7 +1653,10 @@
                       (dimb-table-fix table))
        :stdcall (retok (declspec-fix declspec)
                        (dimb-kind-fix kind)
-                       (dimb-table-fix table))))
+                       (dimb-table-fix table))
+       :declspec-attrib (retok (declspec-fix declspec)
+                               (dimb-kind-fix kind)
+                               (dimb-table-fix table))))
     :measure (declspec-count declspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2557,14 +2760,12 @@
               ;; tyname fails:
               (reterr (msg "In the ambiguous expression or type name ~x0, ~
                             neither the expression nor the type name ~
-                            can be successfully disambiguated ~
-                            given the current table ~x1. ~
+                            can be successfully disambiguated. ~
                             The code must be invalid, ~
                             because at least one must succeed.~%~%~
                             These are the failures for each:~%~%~
-                            ~@2~%~%~@3"
+                            ~@1~%~%~@2"
                            (amb-expr/tyname-fix expr/tyname)
-                           (dimb-table-fix table)
                            erp-expr
                            erp-tyname))
             ;; tyname succeeds:
@@ -2579,12 +2780,10 @@
           ;; tyname succeeds:
           (reterr (msg "In the ambiguous expression or type name ~x0, ~
                         both the expression and the type name ~
-                        are successfully disambiguated ~
-                        given the current table ~x1. ~
+                        are successfully disambiguated. ~
                         The code must be invalid, ~
                         because at most one must succeed."
-                       (amb-expr/tyname-fix expr/tyname)
-                       (dimb-table-fix table))))))
+                       (amb-expr/tyname-fix expr/tyname))))))
     :measure (amb-expr/tyname-count expr/tyname))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2656,14 +2855,12 @@
               (reterr (msg "In the ambiguous ~
                             declarator or abstract declarator ~x0, ~
                             neither the declarator nor the abstract declarator ~
-                            can be successfully disambiguated ~
-                            given the current table ~x1. ~
+                            can be successfully disambiguated. ~
                             The code must be invalid, ~
                             because at least one must succeed.~%~%~
                             These are the failures for each:~%~%~
-                            ~@2~%~%~@3"
+                            ~@1~%~%~@2"
                            (amb-declor/absdeclor-fix declor/absdeclor)
-                           (dimb-table-fix table)
                            erp-declor
                            erp-absdeclor))
             ;; absdeclor succeeds:
@@ -2685,14 +2882,12 @@
               (reterr (msg "In the ambiguous ~
                             declarator or abstract declarator ~x0, ~
                             both the declarator and the abstract declarator ~
-                            are successfully disambiguated ~
-                            given the current table ~x1, ~
-                            and the identifier ~x2 in the declarator ~
+                            are successfully disambiguated, ~
+                            and the identifier ~x1 in the declarator ~
                             is not a typedef name. ~
                             The code must be invalid, ~
                             because at most one must succeed."
                            (amb-declor/absdeclor-fix declor/absdeclor)
-                           (dimb-table-fix table)
                            ident)))))))
     :measure (amb-declor/absdeclor-count declor/absdeclor))
 
@@ -2725,15 +2920,13 @@
           (if erp-expr
               ;; stmt fails:
               (reterr (msg "In the ambiguous declaration or statement ~x0, ~
-                          neither the declaration nor the expression ~
-                          can be successfully disambiguated ~
-                          given the current table ~x1. ~
-                          The code must be invalid, ~
-                          because at least one must succeed.~%~%~
-                          These are the failures for each:~%~%~
-                          ~@2~%~%~@3"
+                            neither the declaration nor the expression ~
+                            can be successfully disambiguated. ~
+                            The code must be invalid, ~
+                            because at least one must succeed.~%~%~
+                            These are the failures for each:~%~%~
+                            ~@1~%~%~@2"
                            (amb-decl/stmt-fix decl/stmt)
-                           (dimb-table-fix table)
                            erp-decl
                            erp-expr))
             ;; stmt succeeds:
@@ -2744,20 +2937,18 @@
             (retok (decl/stmt-decl new-decl) table-decl)
           ;; stmt succeeds:
           (reterr (msg "In the ambiguous declaration or statement ~x0, ~
-                      both the declaration and the statement ~
-                      are successfully disambiguated ~
-                      given the current table ~x1. ~
-                      The code must be invalid, ~
-                      because at most one must succeed."
-                       (amb-decl/stmt-fix decl/stmt)
-                       (dimb-table-fix table))))))
+                        both the declaration and the statement ~
+                        are successfully disambiguated. ~
+                        The code must be invalid, ~
+                        because at most one must succeed."
+                       (amb-decl/stmt-fix decl/stmt))))))
     :measure (amb-decl/stmt-count decl/stmt))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   :hints (("Goal" :in-theory (enable o< o-finp)))
 
-  :verify-guards :after-returns
+  :verify-guards nil ; done below
 
   ///
 
@@ -2969,7 +3160,11 @@
     (defret decl/stmt-unambp-of-dimb-amb-decl/stmt
       (implies (not erp)
                (decl/stmt-unambp decl-or-stmt))
-      :fn dimb-amb-decl/stmt)))
+      :fn dimb-amb-decl/stmt))
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (verify-guards dimb-expr))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

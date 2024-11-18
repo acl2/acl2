@@ -74,6 +74,9 @@
 
   ///
 
+  (fty::deffixequiv-sk same-owned-certificates-p
+    :args ((systate system-statep)))
+
   (defruled in-signed-certificates-when-in-owned-and-signer
     (implies (and (same-owned-certificates-p systate)
                   (set::in val (correct-addresses systate))
@@ -246,8 +249,7 @@
           reachable from an initial state via a sequence of events."
 
   (defruled same-owned-certificates-p-of-events-next
-    (implies (and (system-statep systate)
-                  (same-owned-certificates-p systate)
+    (implies (and (same-owned-certificates-p systate)
                   (events-possiblep events systate))
              (same-owned-certificates-p (events-next events systate)))
     :induct t
@@ -257,8 +259,7 @@
              same-owned-certificates-p-of-event-next))
 
   (defruled same-owned-certificates-p-when-reachable
-    (implies (and (system-statep systate)
-                  (system-initp systate)
+    (implies (and (system-initp systate)
                   (events-possiblep events systate))
              (same-owned-certificates-p (events-next events systate)))
     :disable ((:e tau-system))

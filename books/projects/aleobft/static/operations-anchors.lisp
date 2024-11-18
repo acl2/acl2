@@ -183,17 +183,17 @@
 
   ///
 
-  (defrule committed-anchors-when-last-is-0
+  (defruled committed-anchors-when-last-is-0
     (implies (equal (validator-state->last vstate) 0)
              (equal (committed-anchors vstate vals)
                     nil)))
 
-  (defrule consp-of-committed-anchors-when-last-not-0
+  (defruled consp-of-committed-anchors-when-last-not-0
     (implies (not (equal (validator-state->last vstate) 0))
              (consp (committed-anchors vstate vals)))
     :rule-classes :type-prescription)
 
-  (defrule car-of-committed-anchors
+  (defruled car-of-committed-anchors
     (implies (and (not (equal (validator-state->last vstate) 0))
                   (last-anchor vstate vals))
              (equal (car (committed-anchors vstate vals))

@@ -14,7 +14,6 @@
 (include-book "system-states")
 (include-book "committees")
 
-(include-book "kestrel/fty/deffixequiv-sk" :dir :system)
 (include-book "std/util/define-sk" :dir :system)
 
 (local (include-book "../library-extensions/oset-theorems"))

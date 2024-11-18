@@ -66,6 +66,9 @@
 
   ///
 
+  (fty::deffixequiv-sk no-self-endorsed-p
+    :args ((systate system-statep)))
+
   (defruled no-self-endorsed-p-necc-fixing
     (implies (and (no-self-endorsed-p systate)
                   (set::in (address-fix val) (correct-addresses systate)))
@@ -191,8 +194,7 @@
           reachable from an initial state via a sequence of events."
 
   (defruled no-self-endorsed-p-of-events-next
-    (implies (and (system-statep systate)
-                  (no-self-endorsed-p systate)
+    (implies (and (no-self-endorsed-p systate)
                   (events-possiblep events systate))
              (no-self-endorsed-p (events-next events systate)))
     :induct t
@@ -200,7 +202,6 @@
              events-next))
 
   (defruled no-self-endorsed-p-when-reachable
-    (implies (and (system-statep systate)
-                  (system-initp systate)
+    (implies (and (system-initp systate)
                   (events-possiblep events systate))
              (no-self-endorsed-p (events-next events systate)))))

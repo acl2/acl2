@@ -99,7 +99,7 @@
      It says that, in order for a new certificate to be created,
      its correct signers must have no records of its author and round.
      This is then used to show that equivocation is not possible
-     for the set of certificates signed by a certificate.")
+     for the set of certificates signed by a validator.")
    (xdoc::p
     "This fact follows from
      the definition of @(tsee create-certificate-possiblep),

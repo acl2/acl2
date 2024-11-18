@@ -50,9 +50,10 @@
      at least one correct validator in the intersection of the quora.")
    (xdoc::p
     "Here we introduce a function that picks a correct validator (if any)
-     from the intersection of two set of (addresses of) validators
+     from the intersection of two sets of (addresses of) validators
      from a common committee.
      We prove that, if the committee is fault-tolerant,
+     and each set of addresses forms a quorum,
      the function indeed picks a correct validator.
      This is then used (elsewhere) to prove certificate non-equivocation."))
   :order-subtopics t
@@ -84,14 +85,14 @@
     "From the latter fact,
      we prove that this function will return an address
      if the following conditions are satisfied:
-     the input set is a subset of a fault tolerant committee,
+     the input set is a subset of a fault-tolerant committee,
      the committee consists of validators in the system,
      and the number of validators is more than @($f$),
      i.e. the maximum tolerated number of faulty validators
      (see @(tsee max-faulty-for-total)).
      The reason is that if @('pick-correct-validator') returned @('nil'),
      as proved then all the validators in @('vals') are faulty.
-     But since we hypothesize that there are more then @($f$),
+     But since we hypothesize that there are more than @($f$),
      and since the fault tolerance hypothesis means that
      there are no more than @($f$) faulty validators,
      we have an impossibility.
@@ -221,12 +222,12 @@
    (xdoc::p
     "and if we use that in the equation above we get")
    (xdoc::@[]
-    "|A \\cap B| \\geq 2n - 2f - n = n - 2f")
+    "|A \\cap B| \\geq 2n - 2f - n")
    (xdoc::p
     "Since @($f < n/3$), we have @($n > 3f$),
      which we substitute above obtaining")
    (xdoc::@[]
-    "|A \\cap B| \\geq 2n - 2f - n = n - 2f > 3f - f = f")
+    "|A \\cap B| \\geq 2n - 2f - n = n - 2f > 3f - 2f = f")
    (xdoc::p
     "So we get")
    (xdoc::@[]

@@ -73,14 +73,15 @@
      (ii) the certificate is in the buffer of the signer, and
      (iii) the author and round of the certificate form a pair
      in the set of endorsed pairs of the signer.
-     However, this would be not quite preserved
+     However, this would not be quite preserved
      by @('receive-certificate') events.
      The validator receiving a certificate @('C')
-     could already have a recordo of a certificate @('C0'),
+     could already have a record of a certificate @('C0'),
      different from @('C') but with the same author and round,
      i.e. @('C.author = C0.author') and @('C.round = C0.round').
      This cannot happen because of non-equivocation,
-     but we have not proved that yet,
+     but this property is not yet available
+     at this point of this formal development,
      and in fact we need to use the notion of signer records
      to prove non-equivocation, so we cannot assume it here.
      The problem is that, upon receiving @('C'),
@@ -143,17 +144,7 @@
   (xdoc::topstring
    (xdoc::p
     "We express this on the set of signed certificates
-     defined by @(tsee signed-certificates).
-     The invariant holds on all the certificates in the system,
-     as returned by @(tsee owned-certificates) on any correct validator
-     (where the exact validator is irrelevant
-     because of @(see same-owned-certificates)),
-     which in general are a superset,
-     because there may be a certificate whose signers are all faulty
-     (a @('create-certificate') event does not prevent that).
-     However, we only need this invariant for
-     the certificates in @(tsee signed-certificates),
-     which is slightly simpler to formulate."))
+     defined by @(tsee signed-certificates)."))
   (forall (signer cert)
           (implies (and (set::in signer (correct-addresses systate))
                         (set::in cert (signed-certificates signer systate)))
@@ -188,7 +179,7 @@
     "A @('create-certificate') event adds a new certificate
      to the set of certificates signed by each signer of the certificate.
      We prove a theorem saying that
-     the author and round of the  new certificate satisfy the invariant,
+     the author and round of the new certificate satisfy the invariant,
      which follows from the definition of the creation of the certificate,
      which adds the certificate to the author's DAG
      and the author-round pair to the endorsers' endorser sets.

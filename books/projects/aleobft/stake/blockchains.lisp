@@ -125,7 +125,10 @@
      if that committee can be calculated in the original blockchain.
      As a consequence, collecting anchors is not affected
      by the extension of the blockchain,
-     as proved for @(tsee collect-anchors) and @(tsee collect-all-anchors).")
+     as proved for @(tsee collect-anchors) and @(tsee collect-all-anchors).
+     Furthermore, if the predicates
+     @(tsee dag-has-committees-p) and @(tsee dag-in-committees-p) hold,
+     they continue holding if the blockchain is extended.")
    (xdoc::p
     "We show that if a blockchain is extended using anchors
      that are all in the DAG and connected by paths
@@ -304,6 +307,30 @@
     :enable (collect-all-anchors
              collect-anchors-of-extend-blockchain-no-change
              active-committee-at-previous2-round-when-at-round))
+
+  (defruled dag-has-committees-p-of-extend-blockchain
+    (b* (((mv new-blockchain &)
+          (extend-blockchain anchors dag blockchain committed-certs)))
+      (implies (and (block-listp blockchain)
+                    (blocks-ordered-even-p new-blockchain))
+               (implies (dag-has-committees-p dag blockchain)
+                        (dag-has-committees-p dag new-blockchain))))
+    :enable (dag-has-committees-p
+             dag-has-committees-p-necc-bind-dag
+             active-committee-at-round-of-extend-blockchain-no-change))
+
+  (defruled dag-in-committees-p-of-extend-blockchain
+    (b* (((mv new-blockchain &)
+          (extend-blockchain anchors dag blockchain committed-certs)))
+      (implies (and (block-listp blockchain)
+                    (blocks-ordered-even-p new-blockchain))
+               (implies (and (dag-in-committees-p dag blockchain)
+                             (dag-has-committees-p dag blockchain))
+                        (dag-in-committees-p dag new-blockchain))))
+    :enable (dag-in-committees-p
+             dag-has-committees-p-necc-bind-dag
+             dag-in-committees-p-necc-bind-dag
+             active-committee-at-round-of-extend-blockchain-no-change))
 
   (defruled new-committed-certs-of-extend-blockchain
     (implies (and (certificate-setp dag)

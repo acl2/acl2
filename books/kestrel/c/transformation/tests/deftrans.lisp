@@ -99,6 +99,9 @@
             :offsetof (make-expr-offsetof
                         :type (my-simpadd0-tyname expr.type)
                         :member (my-simpadd0-member-designor expr.member))
+            :va-arg (make-expr-va-arg
+                      :list (my-simpadd0-expr expr.list)
+                      :type (my-simpadd0-tyname expr.type))
             :extension (expr-extension (my-simpadd0-expr expr.expr)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
