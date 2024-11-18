@@ -469,6 +469,7 @@
           ;; 0F BA/4: BT r/m16/32/64, imm8
           ;; 0F BA/5: BTS r/m16/32/64, imm8
           ;; 0F BA/6: BTR r/m16/32/64, imm8
+          ;; 0F BA/7: BTC r/m16/32/64, imm8
 
           ;; If the bitBase is a register, the BitOffset can be in the range 0
           ;; to [15, 31, 63] depending on the mode and register size.  If the
@@ -553,20 +554,19 @@
                         (x86 (!flgi-undefined :sf x86))
                         (x86 (!flgi-undefined :of x86)))
                    x86))
-               ((mv flg x86) (if (member reg '(5 6))  ;; If BTR/BTS, we need to clear/set the tested bit
-                               (x86-operand-to-reg/mem
-                                 proc-mode
-                                 operand-size
-                                 inst-ac?
-                                 nil
-                                 (install-bit bitOffset (if (equal reg 5) 1 0) bitBase)
-                                 seg-reg
-                                 addr
-                                 rex-byte
-                                 r/m
-                                 mod
-                                 x86)
-                               (mv nil x86)))
+               ((mv flg x86)
+                (if (member reg '(5 6 7))
+                  ;; If BTR/BTS/BTC, we need to clear/set/complement the tested bit
+                  (x86-operand-to-reg/mem
+                    proc-mode operand-size inst-ac? nil
+                    (install-bit bitOffset 
+                                 (case reg
+                                   (5 1)
+                                   (6 0)
+                                   (7 (b-not (logbit bitOffset bitBase))))
+                                 bitBase)
+                    seg-reg addr rex-byte r/m mod x86)
+                  (mv nil x86)))
                ((when flg) (!!ms-fresh :x86-operand-to-reg/mem flg))
                (x86 (write-*ip proc-mode temp-rip x86)))
               x86))

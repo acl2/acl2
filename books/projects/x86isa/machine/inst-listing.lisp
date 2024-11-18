@@ -9366,7 +9366,7 @@
               :SUPERSCRIPTS '(:1A)
               :GROUP '(:GROUP-8))
           (ARG :OP1 '(E B) :OP2 '(I B))
-          'NIL
+          '(X86-BT-0F-BA)
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
     (INST "BTC" (OP :OP #xFBB)
           (ARG :OP1 '(E V) :OP2 '(G V))
