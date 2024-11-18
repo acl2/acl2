@@ -82,7 +82,7 @@
    (xdoc::p
     "Here we define the invariant,
      and we prove that is is implied by other invariants.
-     In @(see same-committees) we prove that
+     Elsewhere we prove that
      this invariant holds in every reachable state."))
   :order-subtopics t
   :default-parent t)
@@ -120,7 +120,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "As explained in @(see same-committees),
+    "As explained in @(see same-committees-def-and-implied),
      the interesting case of the proof is that of
      a longer blockchain extending a shorter blockchain.
      In @(tsee lists-noforkp),
@@ -205,7 +205,8 @@
      if the round is after the last one,
      no block is removed.")
    (xdoc::p
-    "With reference to the explanation in @(see same-committees),
+    "With reference to the explanation in
+     @(see same-committees-def-and-implied),
      this theorem will be used to show that
      trimming the shorter blockchain does not change it."))
   (implies (> (pos-fix round)
