@@ -9844,35 +9844,35 @@
           '((:UD (UD-LOCK-USED))))
     (INST "BSWAP" (OP :OP #xFC8)
           (ARG :OP1 '(:RAX/EAX/R8/R8D))
-          'NIL
+          '(X86-BSWAP)
           '((:UD (UD-LOCK-USED))))
     (INST "BSWAP" (OP :OP #xFC9)
           (ARG :OP1 '(:RCX/ECX/R9/R9D))
-          'NIL
+          '(X86-BSWAP)
           '((:UD (UD-LOCK-USED))))
     (INST "BSWAP" (OP :OP #xFCA)
           (ARG :OP1 '(:RDX/EDX/R10/R10D))
-          'NIL
+          '(X86-BSWAP)
           '((:UD (UD-LOCK-USED))))
     (INST "BSWAP" (OP :OP #xFCB)
           (ARG :OP1 '(:RBX/EBX/R11/R11D))
-          'NIL
+          '(X86-BSWAP)
           '((:UD (UD-LOCK-USED))))
     (INST "BSWAP" (OP :OP #xFCC)
           (ARG :OP1 '(:RSP/ESP/R12/R12D))
-          'NIL
+          '(X86-BSWAP)
           '((:UD (UD-LOCK-USED))))
     (INST "BSWAP" (OP :OP #xFCD)
           (ARG :OP1 '(:RBP/EBP/R13/R13D))
-          'NIL
+          '(X86-BSWAP)
           '((:UD (UD-LOCK-USED))))
     (INST "BSWAP" (OP :OP #xFCE)
           (ARG :OP1 '(:RSI/ESI/R14/R14D))
-          'NIL
+          '(X86-BSWAP)
           '((:UD (UD-LOCK-USED))))
     (INST "BSWAP" (OP :OP #xFCF)
           (ARG :OP1 '(:RDI/EDI/R15/R15D))
-          'NIL
+          '(X86-BSWAP)
           '((:UD (UD-LOCK-USED))))
     (INST "ADDSUBPD"
           (OP :OP #xFD0 :PFX :66 :FEAT '(:SSE3))
