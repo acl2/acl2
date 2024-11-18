@@ -281,6 +281,7 @@
            certificate-set-unequivocalp-when-subset
            certificate-set->author-set-monotone
            incoming-subset
+           outgoing-subset
            set::expensive-rules)
   :disable (set::expand-cardinality-of-union
             certificate-set->round-set-of-union))
@@ -537,7 +538,8 @@
         (:instance round-of-predecessor
                    (cert (dag-round-all-path-to-p-witness
                           (+ 1 round) cert dag))))
-  :enable (set::expensive-rules))
+  :enable (outgoing-subset
+           set::expensive-rules))
 
 ; To prove the actual induction step below,
 ; we need the fact that n-f > 0, i.e. f < n.

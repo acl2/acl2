@@ -219,6 +219,7 @@
     :hyp (certificate-setp dag)
     :hints
     (("Goal" :in-theory (enable certificates-with-authors+round-subset))))
+  (in-theory (disable outgoing-subset))
 
   (defret outgoing-subset-of-previous-round
     (set::subset certs

@@ -130,6 +130,7 @@
            certificate-set->author-set-monotone
            certificate-set-unequivocalp-of-union
            incoming-subset
+           outgoing-subset
            set::expensive-rules)
   :disable (set::expand-cardinality-of-union
             certificate-set->round-set-of-union))
@@ -474,7 +475,8 @@
                    (author (certificate->author cert))
                    (round (certificate->round cert))))
   :disable path-to-author+round-in-dag
-  :enable (set::expensive-rules))
+  :enable (outgoing-subset
+           set::expensive-rules))
 
 ; This is the same as the homonymous theorem in the single-DAG proof.
 
