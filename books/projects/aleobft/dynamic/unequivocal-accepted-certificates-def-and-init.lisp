@@ -63,7 +63,7 @@
      the set of certificates accepted by a single validator,
      as expressed by @(tsee certificate-set-unequivocalp)
      applied to @(tsee accepted-certificates)
-     applied to the validator.
+     applied to the validator,
      can be proved from some already proved invariants.
      However, to prove further correctness properties of the protocol,
      we need the more general non-equivocation of
