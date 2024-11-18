@@ -6547,7 +6547,7 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          'NIL
+          '(X86-PACKUSWB-SSE)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "VPACKUSWB"
           (OP :OP #xF67
