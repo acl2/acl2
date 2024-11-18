@@ -78,7 +78,7 @@
      So there is no point in proving non-equivocation for a single validator,
      which involves some work,
      and instead we prove non-equivocation for multiple validators,
-     which involves just a little more work,
+     which we need anyhow,
      and then we obtain non-equivocation for single validator
      as a very simple consequence.")
    (xdoc::p
