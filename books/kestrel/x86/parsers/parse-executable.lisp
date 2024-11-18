@@ -20,7 +20,7 @@
 
 ;; Returns (mv erp contents) where contents in an alist representing
 ;; the contents of the executable (exact format depends on the type of
-;; the executable).  TODO: Pass back errors from mach-o and pe parsing.
+;; the executable).
 (defund parse-executable-bytes (bytes
                                filename ; only used in error messages
                                )
@@ -36,13 +36,11 @@
                 (parse-elf-file-bytes bytes))
       (if (member magic-number (strip-cars *mach-o-magic-numbers*))
           (prog2$ (cw "Mach-O file detected.~%")
-                  (mv nil ;no error
-                      (parse-mach-o-file-bytes bytes)))
+                  (parse-mach-o-file-bytes bytes))
         (let ((sig (pe-file-signature bytes)))
           (if (eql sig *pe-signature*)
               (prog2$ (cw "PE file detected.~%")
-                      (mv nil ;no error
-                          (parse-pe-file-bytes bytes)))
+                      (parse-pe-file-bytes bytes))
             (mv t
                 (er hard? 'parse-executable-bytes "Unexpected kind of file (not PE, ELF, or Mach-O).  Magic number is ~x0. PE file signature is ~x1" magic-number sig))))))))
 
