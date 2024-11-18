@@ -130,7 +130,7 @@
     "We also prove an equivalence (really, an implication) between
      two ways to address the rightmost element of the extension.
      The extension is the @('(take ...)') term in the formula,
-     and the two way of addressing the rightmost element are
+     and the two ways of addressing the rightmost element are
      as the last one of the extension and
      as the @(tsee nth) of the longer list.")
    (xdoc::p
