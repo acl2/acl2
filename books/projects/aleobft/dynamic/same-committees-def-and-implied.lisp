@@ -265,9 +265,8 @@
      Recall that blocks should be thought of having increasing rounds,
      even though that hypothesis is not necessary to prove this theorem.")
    (xdoc::p
-    "This theorem is not a rewrite rule (it cannot be).
-     We could make it a rewrite rule
-     by swapping the left and right sides of the equality,
+    "This theorem does not have the form of a good a rewrite rule.
+     We could swap the left and right sides of the equality,
      but the current form is more in line with the intuition behind the proof.
      The intuition is that, in order to prove our main claim,
      we expand the left side of this equality to its right side,
@@ -337,7 +336,7 @@
      The relation between longer and shorter blockchains
      is expressed in terms of @(tsee nthcdr),
      but the core theorem @(tsee trim-blocks-for-round-of-append-yields-first)
-     used the @(tsee append) formulation,
+     uses the @(tsee append) formulation,
      so we use the theorem about list equivalences.")
    (xdoc::p
     "The theorem says that the trimming of the longer blockchain
