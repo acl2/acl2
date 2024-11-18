@@ -6211,7 +6211,7 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          'NIL
+          '(X86-PUNPCKL-SSE)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "VPUNPCKLBW"
           (OP :OP #xF60
@@ -6259,7 +6259,7 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          'NIL
+          '(X86-PUNPCKL-SSE)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "VPUNPCKLWD"
           (OP :OP #xF61
@@ -6307,7 +6307,7 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          'NIL
+          '(X86-PUNPCKL-SSE)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "VPUNPCKLDQ"
           (OP :OP #xF62
@@ -6595,7 +6595,7 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          'NIL
+          '(X86-PUNPCKH-SSE)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "VPUNPCKHBW"
           (OP :OP #xF68
@@ -6643,7 +6643,7 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          'NIL
+          '(X86-PUNPCKH-SSE)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "VPUNPCKHWD"
           (OP :OP #xF69
@@ -6691,7 +6691,7 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          'NIL
+          '(X86-PUNPCKH-SSE)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "VPUNPCKHDQ"
           (OP :OP #xF6A
@@ -6780,7 +6780,7 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          'NIL
+          '(X86-PUNPCKL-SSE)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "VPUNPCKLQDQ"
           (OP :OP #xF6C
@@ -6821,7 +6821,7 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          'NIL
+          '(X86-PUNPCKH-SSE)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "VPUNPCKHQDQ"
           (OP :OP #xF6D
