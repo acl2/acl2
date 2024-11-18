@@ -27,6 +27,7 @@
 (include-book "signer-quorum")
 (include-book "quorum-intersection")
 (include-book "unequivocal-dags-def-and-init")
+(include-book "nonforking-blockchains-def-and-init")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -54,4 +55,5 @@
                     dag-committees
                     signer-quorum
                     quorum-intersection
-                    unequivocal-dags-def-and-init))
+                    unequivocal-dags-def-and-init
+                    nonforking-blockchains-def-and-init))
