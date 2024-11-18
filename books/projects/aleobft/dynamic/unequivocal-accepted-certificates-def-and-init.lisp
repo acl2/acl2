@@ -73,7 +73,7 @@
      The latter property is expressed by @(tsee certificate-sets-unequivocalp)
      applied to @(tsee accepted-certificates)
      applied to the two validators.
-     The property for two validator subsumed the property for one validator,
+     The property for two validator subsumes the property for one validator,
      by choosing the two validators to be equal.
      So there is no point in proving non-equivocation for a single validator,
      which involves some work,
