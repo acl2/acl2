@@ -95,6 +95,8 @@
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
 (include-book "punpck"
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+(include-book "pcmp"
+              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 

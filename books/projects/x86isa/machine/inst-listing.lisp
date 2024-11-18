@@ -7881,7 +7881,7 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          '(X86-PCMPEQB-OP/EN-RM)
+          '(X86-PCMPEQ-SSE)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "VPCMPEQB"
           (OP :OP #xF74
@@ -7929,7 +7929,7 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          'NIL
+          '(X86-PCMPEQ-SSE)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "VPCMPEQW"
           (OP :OP #xF75
@@ -7977,7 +7977,7 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          'NIL
+          '(X86-PCMPEQ-SSE)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "VPCMPEQD"
           (OP :OP #xF76
