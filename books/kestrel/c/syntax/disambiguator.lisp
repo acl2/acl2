@@ -2855,7 +2855,7 @@
               (reterr (msg "In the ambiguous ~
                             declarator or abstract declarator ~x0, ~
                             neither the declarator nor the abstract declarator ~
-                            can be successfully disambiguated ~. ~
+                            can be successfully disambiguated. ~
                             The code must be invalid, ~
                             because at least one must succeed.~%~%~
                             These are the failures for each:~%~%~
@@ -2921,7 +2921,7 @@
               ;; stmt fails:
               (reterr (msg "In the ambiguous declaration or statement ~x0, ~
                             neither the declaration nor the expression ~
-                            can be successfully disambiguated ~. ~
+                            can be successfully disambiguated. ~
                             The code must be invalid, ~
                             because at least one must succeed.~%~%~
                             These are the failures for each:~%~%~
