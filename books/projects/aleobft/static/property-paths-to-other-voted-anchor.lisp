@@ -488,7 +488,8 @@
   :rule-classes :linear
   :enable (set::expensive-rules
            certificate-set-unequivocalp-when-subset
-           incoming-subset)
+           incoming-subset
+           incoming-same-round)
   :use ((:instance cardinality-of-authors-when-same-round-and-unequiv
                    (certs (incoming anchor dag)))
         (:instance certificate-set->author-set-monotone

@@ -156,6 +156,7 @@
              :in-theory (e/d (cardinality-of-subset-of-round-set-of-round)
                              (incoming-subset-of-next-round
                               incoming)))))
+  (in-theory (disable incoming-same-round))
 
   (defruled incoming-in-dag
     (implies (and (certificate-setp dag)
