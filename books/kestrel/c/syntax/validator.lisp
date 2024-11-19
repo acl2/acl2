@@ -1058,6 +1058,27 @@
        (valid-lookup-ord-loop ident (cdr scopes) nil))
      :hooks (:fix))))
 
+;;;;;;;;;;;;;;;;;;;;
+
+(define valid-lookup-ord-file-scope ((ident identp) (table valid-tablep))
+  :returns (info? valid-ord-info-optionp)
+  :short "Look up an ordinary identifier
+          in the file scope of a validation table."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Unlike @(tsee valid-lookup-ord), this skips any block scopes,
+     and directly looks up the identifier in the file scope.
+     It is used in some situations."))
+  (b* ((scopes (valid-table->scopes table))
+       ((when (endp scopes)) (raise "Internal error: no scopes."))
+       (scope (car (last scopes)))
+       (ident+info (assoc-equal (ident-fix ident)
+                                (valid-scope->ord scope)))
+       ((when ident+info) (cdr ident+info)))
+    nil)
+  :hooks (:fix))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define valid-add-ord ((ident identp)
@@ -1095,6 +1116,35 @@
        (new-scopes (cons new-scope (cdr scopes))))
     (change-valid-table table :scopes new-scopes))
   :guard-hints (("Goal" :in-theory (enable valid-table-num-scopes acons)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define valid-add-ord-file-scope ((ident identp)
+                                  (info valid-ord-infop)
+                                  (table valid-tablep))
+  :returns (new-table valid-tablep)
+  :short "Add an ordinary identifier
+          to the file scope of a validation table."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Unlike @(tsee valid-add-ord), this skips any block scopes,
+     and directly updates the file scope at the bottom of the stack.
+     It is used in some situations."))
+  (b* ((scopes (valid-table->scopes table))
+       ((when (endp scopes))
+        (raise "Internal error: no scopes.")
+        (irr-valid-table))
+       (scope (car (last scopes)))
+       (ord-scope (valid-scope->ord scope))
+       (new-ord-scope (acons (ident-fix ident)
+                             (valid-ord-info-fix info)
+                             ord-scope))
+       (new-scope (change-valid-scope scope :ord new-ord-scope))
+       (new-scopes (append (butlast scopes 1) (list new-scope))))
+    (change-valid-table table :scopes new-scopes))
+  :guard-hints (("Goal" :in-theory (enable acons)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5657,6 +5707,160 @@
   (verify-guards valid-expr)
 
   (fty::deffixequiv-mutual valid-exprs/decls/stmts))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define valid-fundef ((fundef fundefp) (table valid-tablep) (ienv ienvp))
+  :guard (fundef-unambp fundef)
+  :returns (mv erp (new-table valid-tablep))
+  :short "Validate a function definition."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we ignore all the GCC extensions.
+     We validate the declaration specifiers, then the declarator.
+     It is an error if the validation of the declarator
+     returns a non-empty set of types,
+     because it means that there are statement expressions
+     with return statements in them,
+     which can only happen inside a function's body.
+     We validate the storage class specifiers.
+     It is an error if the declaration is for a @('typedef').
+     We also ensure that the type is the function type [C:6.9.1/2].")
+   (xdoc::p
+    "As with declarations, the scope of the function name
+     starts just after its declarator;
+     it must be added to the file scope of the validation table.
+     However, recall that the validation of the declarator
+     pushes a new scope for the outermost block of the function definition.
+     Thus, instead of using @(tsee valid-add-ord) to add the function,
+     we use @(tsee valid-add-ord-file-scope).
+     But before adding it, we need to look it up,
+     and again in the file scope, not the block scope
+     (it is in fact legal for a function parameter
+     to have the same name as the function:
+     its scope is the block, and it hides the function name there);
+     so we use @(tsee valid-lookup-ord-file-scope)
+     instead of the usual @(tsee valid-lookup-ord).")
+   (xdoc::p
+    "If the name of the function is not found in the file scope,
+     we add it to the file scope, with the appropriate information.
+     Note that the definition status is defined,
+     since we are validating a function definition.
+     If the name is found already, and does not denote a function,
+     it is an error;
+     it is also an error if the linkages do not match.
+     And it is an error if the function is alread defined.
+     If all the checks pass, we add the function to the table,
+     which overwrites the previous entry,
+     but the only information actually overwritten
+     is the definition status, from undefined to defiend,
+     which is appropriate.")
+   (xdoc::p
+    "The declarations between declarator and body should be present
+     if and only if the function declarator has a list of identifiers,
+     and there should be exactly one declaration per identifier
+     [C:6.9.1/5] [C:6.9.1/6].
+     For now we do not check those constraints,
+     but we validate any declarations
+     (ensuring they return no types),
+     which will add entries to the block scope in the validation table.")
+   (xdoc::p
+    "We ensure that the body is a compound statement,
+     and we validate directly the block items;
+     this way, we do not push an extra scope,
+     because the outer scope must include the parameters.
+     In our approximate type system,
+     the function type alone does not give us enough information
+     to check the types returned by the body
+     against the return type of the function,
+     to enforce the constraints in [C:6.8.6.4/1];
+     so for now we discard the set of return types
+     obtained by validating the body.")
+   (xdoc::p
+    "Finally we pop the scope of the function body.
+     Recall that the function itself stays in the validation table,
+     because we have added it to the file scope."))
+  (b* (((reterr) (irr-valid-table))
+       ((fundef fundef) fundef)
+       ((erp type storspecs types table)
+        (valid-decl-spec-list fundef.spec nil nil nil table ienv))
+       ((erp & type ident more-types table)
+        (valid-declor fundef.declor t type table ienv))
+       ((unless (and (set::emptyp types)
+                     (set::emptyp more-types)))
+        (reterr (msg "The declarator of the function definition ~x0 ~
+                      contains return statements."
+                     (fundef-fix fundef))))
+       ((erp typedefp linkage &)
+        (valid-stor-spec-list storspecs ident type table))
+       ((when typedefp)
+        (reterr (msg "The function definition ~x0 ~
+                      declares a 'typedef' name instead of a function."
+                     (fundef-fix fundef))))
+       ((unless (type-case type :function))
+        (reterr (msg "The function definition ~x0 has type ~x1."
+                     (fundef-fix fundef) type)))
+       (info? (valid-lookup-ord-file-scope ident table))
+       ((erp table)
+        (b* (((when (not info?))
+              (retok
+               (valid-add-ord-file-scope ident
+                                         (make-valid-ord-info-objfun
+                                          :type (type-function)
+                                          :linkage linkage
+                                          :defstatus (valid-defstatus-defined))
+                                         table)))
+             (info info?)
+             ((unless (valid-ord-info-case info :objfun))
+              (reterr (msg "The name of the function definition ~x0 ~
+                            is already in the file scope, ~
+                            but is not a function; ~
+                            its associated information is ~x1."
+                           (fundef-fix fundef) info)))
+             ((valid-ord-info-objfun info) info)
+             ((unless (type-case info.type :function))
+              (reterr (msg "The name of the function definition ~x0 ~
+                            is already in the file scope, ~
+                            but it has type ~x1."
+                           (fundef-fix fundef) info.type)))
+             ((unless (equal linkage info.linkage))
+              (reterr (msg "The function definition ~x0 has linkage ~s1, ~
+                            which is inconsistent with the linkage ~s2 ~
+                            already present in the validation table."
+                           (fundef-fix fundef)
+                           (if (linkage-case linkage :external)
+                               "external"
+                             "internal")
+                           (if (linkage-case info.linkage :external)
+                               "external"
+                             "internal"))))
+             ((when (valid-defstatus-case info.defstatus :defined))
+              (reterr (msg "The function definition ~x0 ~
+                            is a redefinition of the function."
+                           (fundef-fix fundef)))))
+          (retok
+           (valid-add-ord-file-scope ident
+                                     (make-valid-ord-info-objfun
+                                      :type (type-function)
+                                      :linkage linkage
+                                      :defstatus (valid-defstatus-defined))
+                                     table))))
+       ((erp types table) (valid-decl-list fundef.decls table ienv))
+       ((unless (set::emptyp types))
+        (reterr (msg "The declarations of the function definition ~x0 ~
+                      contain return statements."
+                     (fundef-fix fundef))))
+       ((unless (stmt-case fundef.body :compound))
+        (reterr (msg "The function definition ~x0 ~
+                      does not have a compound statement as body."
+                     (fundef-fix fundef))))
+       (items (stmt-compound->items fundef.body))
+       ((erp & & table) (valid-block-item-list items table ienv))
+       (table (valid-pop-scope table)))
+    (retok table))
+  :guard-hints (("Goal" :in-theory (disable (:e tau-system)))) ; for speed
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
