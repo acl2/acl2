@@ -19,7 +19,8 @@
 (include-book "parser-utils")
 (include-book "kestrel/alists-light/lookup-equal-safe" :dir :system)
 (include-book "kestrel/alists-light/lookup" :dir :system)
-(include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
+(include-book "kestrel/alists-light/lookup-eq-safe" :dir :system) ; reduce?
+(include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/alists-light/lookup-safe" :dir :system)
 (include-book "kestrel/typed-lists-light/alist-listp" :dir :system)
 (include-book "kestrel/bv-lists/byte-listp" :dir :system)
@@ -450,6 +451,12 @@
           section-header
         (get-elf-section-header name (rest section-header-table))))))
 
+(defthm alistp-of-get-elf-section-header
+  (implies (and (alistp section-header-table)
+                (alist-listp (strip-cdrs section-header-table)))
+           (alistp (get-elf-section-header name section-header-table)))
+  :hints (("Goal" :in-theory (enable get-elf-section-header))))
+
 (defopeners get-elf-section-header) ; move?
 
 (defund strtab-offset (section-header-table)
@@ -743,13 +750,28 @@
        )
     (mv nil (reverse result))))
 
+;; TODO: Maybe move parse-elf here and rename it parse-elf-file.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; TODO: Add more to this
 (defund parsed-elfp (parsed-elf)
   (declare (xargs :guard t))
   (and (symbol-alistp parsed-elf)
-       (alistp (lookup-eq-safe :sections parsed-elf))))
+       (assoc-eq :section-header-table parsed-elf)
+       (let ((section-header-table (lookup-eq :section-header-table parsed-elf)))
+         (and (alistp section-header-table)
+              (alist-listp (strip-cdrs section-header-table))))
+       (assoc-eq :sections parsed-elf)
+       (alistp (lookup-eq :sections parsed-elf))))
 
-;todo: slow!
+(defthmd alistp-when-parsed-elfp
+  (implies (parsed-elfp parsed-elf)
+           (alistp parsed-elf))
+  :hints (("Goal" :in-theory (enable parsed-elfp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defthm parsed-elfp-of-mv-nth-1-of-parse-elf-file-bytes
   (implies (not (mv-nth 0 (parse-elf-file-bytes bytes)))
            (parsed-elfp (mv-nth 1 (parse-elf-file-bytes bytes))))
