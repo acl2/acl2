@@ -3353,6 +3353,7 @@
                     (ident "__builtin_strncpy")
                     (ident "__builtin_sub_overflow")
                     (ident "__builtin_unreachable")
+                    (ident "__builtin_va_end")
                     (ident "__builtin_va_start")
                     (ident "__eax")
                     (ident "__ebx")
