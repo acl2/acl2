@@ -1,7 +1,7 @@
 ; Tools for processing parsed executables
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2023 Kestrel Institute
+; Copyright (C) 2020-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,14 +15,16 @@
 (include-book "mach-o-tools")
 (include-book "pe-tools")
 
+;; Returns one of :elf-32, :elf-64, :mach-o-32, :mach-o-64, :pe-32, or :pe-64
+;; (or throws an error).
 (defund parsed-executable-type (parsed-executable)
   (let ((magic (lookup-eq :magic parsed-executable)))
-    (if (equal :MH_MAGIC_64 magic)
-        :mach-o-64
+    (if (member-eq magic '(:elf-32 :elf-64))
+        magic
       (if (equal :MH_MAGIC magic)
           :mach-o-32
-        (if (member-eq magic '(:elf-32 :elf-64))
-            magic
+        (if (equal :MH_MAGIC_64 magic)
+            :mach-o-64
           (if (assoc-eq :MS-DOS-STUB parsed-executable)
               (let* ((coff-file-header (lookup-eq-safe :COFF-FILE-HEADER parsed-executable))
                      (machine-type (lookup-eq-safe :machine coff-file-header)))
@@ -35,7 +37,6 @@
             (er hard? 'parsed-executable-type "Unknown executable type.  Magic is: ~x0" magic)))))))
 
 ;; Throws an error if SUBROUTINE-NAME is not found in PARSED-EXECUTABLE
-;; todo: move out of this file since not just for 64-bit?
 (defund ensure-target-exists-in-executable (subroutine-name
                                             parsed-executable)
   (let ((executable-type (parsed-executable-type parsed-executable)))
@@ -47,7 +48,8 @@
               )
       (t (er hard? 'ensure-target-exists-in-executable "Unknown executable type: ~x0." executable-type)))))
 
-(defun ensure-x86 (parsed-executable)
+; Throws an error if the executable is not an x86 executable.
+(defund ensure-x86 (parsed-executable)
   (let ((executable-type (parsed-executable-type parsed-executable)))
     (if (member-eq executable-type '(:mach-o-32 :mach-o-64))
         (let ((cpu-type (mach-o-cpu-type parsed-executable)))

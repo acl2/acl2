@@ -25,7 +25,7 @@
     (x86p ,state-var)
 
     ;; The model is operating in the application view (ignore paging):
-    (equal (app-view ,state-var) t) ;todo: get rid of the (equal ... t) wrapper (may need to improve the rewriter)
+    (app-view ,state-var)
 
     ;; The initial state is error-free:
     (equal (ms ,state-var) nil)

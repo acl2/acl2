@@ -65,3 +65,18 @@
            (equal (byte-listp (take n x))
                   (<= (nfix n) (len x))))
   :hints (("Goal" :in-theory (enable take byte-listp))))
+
+;; Avoids name clash with weaker rule in FTY
+(defthm bytep-of-nth-when-byte-listp-2
+  (implies (byte-listp bytes)
+           (equal (bytep (nth n bytes))
+                  (< (nfix n) (len bytes))))
+  :hints (("Goal" :in-theory (enable byte-listp))
+          ("subgoal *1/1" :cases ((< n (+ 1 (len (cdr bytes))))))))
+
+;; Avoids name clash with weaker rule in FTY
+(defthm bytep-of-car-when-byte-listp-2
+  (implies (byte-listp bytes)
+           (equal (bytep (car bytes))
+                  (consp bytes)))
+  :hints (("Goal" :in-theory (enable byte-listp))))
