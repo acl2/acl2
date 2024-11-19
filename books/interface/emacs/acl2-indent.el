@@ -160,7 +160,7 @@
     (if (looking-at "\\s<")
         normal-indent
       (if (and (elt state 2)
-               (not (or (looking-at "\\sw\\|\\s_")
+               (not (or (looking-at "\\sw\\|\\s_\\||")
                         (and indent-string-headed-list
                              (looking-at "\"")))))
           ;; car of form doesn't seem to be a symbol or string
@@ -213,14 +213,27 @@
                                           (looking-at "'("))       ; List of items
                           ))
                  (save-excursion (goto-char (1+ (elt state 1))) (current-column)))
-                ((and (> (save-excursion (forward-line 1) (point))
-                         (elt state 2))
-                      (= (+ 1 (elt state 1)) (elt state 2)))
-                 (if (or (= indent-first-function-arg 0) ; 
-                         (list-not-a-functionp state))
-                     car-indent
-                   ;; First argument of ordinary function on a new line
-                   (+ car-indent indent-first-function-arg)))))))))
+                ((> (save-excursion (forward-line 1) (point))
+                    (elt state 2))      ; The line after (elt state 2)
+                 (cond ((or (= (+ 1 (elt state 1)) (elt state 2))
+                            ;; Special case where item is something like foo::|fie|
+                            (save-excursion (goto-char (elt state 1))
+                                            (forward-char 1)
+                                            (forward-sexp 1)
+                                            (and (eq (char-after) ?\|)
+                                                 (= (point) (elt state 2)))))
+                        (if (list-not-a-functionp state)
+                            car-indent
+                          ;; First argument of ordinary function on a new line
+                          (+ car-indent indent-first-function-arg)))
+                       ((save-excursion (goto-char (elt state 1))
+                                        (forward-char 1)
+                                        (forward-sexp 1)
+                                        (eq (char-after) ?\|))
+                        ;;  Special case where (elt state 1) is something like (foo::|fie| x
+                        (forward-sexp 1)
+                        (skip-chars-forward " \t")
+                        (current-column))))))))))
 
 (defun preceding-double-quote-column (pos)
   (save-excursion
@@ -398,6 +411,12 @@ by more than one line to cross a string literal."
   (interactive)
   (indent-region-line-by-line (region-beginning) (region-end)))
 
+;; Simpler than version from lisp-mode.el and more consistent with TAB
+(defun indent-sexp (arg)
+  (interactive "P")
+  (mark-sexp arg)
+  (indent-region (point) (mark)))
+
 (if (boundp 'acl2-mode-map) 
     (define-key acl2-mode-map [C-tab] 'indent-region-including-strings)
   (if (boundp 'lisp-mode-map)
@@ -416,7 +435,7 @@ by more than one line to cross a string literal."
   (if (looking-at " ")
       (forward-char 1)
     (goto-char (+ 1 indent-first-function-arg (elt state 1)))
-  (current-column)))
+    (current-column)))
 
 ;; Common lisp
 (put 'defun 'acl2-indent-hook 'defun)
