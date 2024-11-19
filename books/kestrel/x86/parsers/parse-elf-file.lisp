@@ -32,6 +32,7 @@
 (local (include-book "kestrel/bv/bvcat" :dir :system))
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
+(local (include-book "kestrel/typed-lists-light/true-list-listp" :dir :system))
 
 (local (defthm integerp-when-unsigned-byte-p-32
          (implies (unsigned-byte-p 32 x)
@@ -116,18 +117,19 @@
     (#x6474e553 . :PT_GNU_PROPERTY)
     ))
 
+;; Returns (mv erp p_type).
 (defun decode-program-header-type (p_type)
   (declare (xargs :guard (unsigned-byte-p 32 p_type)))
   (let ((res (lookup p_type *program-header-types*)))
     (if res
-        res
+        (mv nil res)
       (if (and (<= #x60000000 p_type)
                (<= p_type #x6FFFFFFF))
-          :operating-system-specific
+          (mv nil :operating-system-specific)
         (if (and (<= #x70000000 p_type)
                  (<= p_type #x7FFFFFFF))
-            :processor-specific
-          (er hard? 'decode-program-header-type "Bad program header type: ~x0." p_type))))))
+            (mv nil :processor-specific)
+          (mv (cons :bad-program-header-type p_type) nil))))))
 
 (defconst *elf-file-types* ; acl2::*file-types* is already defined
   `((#x0 . :none)
@@ -553,7 +555,10 @@
                               )))
   (b* (((mv erp p_type bytes) (parse-word bytes))
        ((when erp) (mv erp nil bytes))
-       (p_type (decode-program-header-type p_type))
+       ((mv erp p_type) (decode-program-header-type p_type))
+       ((when erp) (mv erp nil bytes))
+       ;; We wait to assemble the result, due to differences in where the flags
+       ;; appear in 32-bit vs 64-bit headers.
        ((mv erp p_flags bytes)                    ; flags are read later if 32-bit
         (if 64-bitp
             (parse-word bytes)
@@ -584,11 +589,15 @@
        (result (acons :flags (decode-val-with-mask-flag-alist p_flags *segment-mask-flag-alist*) result))
        (result (acons :offset p_offset result))
        (result (acons :vaddr p_vaddr result))
-       (result (acons :paddr p_paddr result))
+       (result (acons :paddr p_paddr result)) ;; reserved for systems with physical addressing
        (result (acons :filesz p_filesz result))
        (result (acons :memsz p_memsz result))
        (result (acons :align p_align result)))
     (mv nil (reverse result) bytes)))
+
+(defthm alistp-of-mv-nth-1-of-parse-elf-program-header
+  (alistp (mv-nth 1 (parse-elf-program-header 64-bitp bytes)))
+  :hints (("Goal" :in-theory (enable parse-elf-program-header))))
 
 (defthm byte-listp-of-mv-nth-2-of-parse-elf-program-header
   (implies (byte-listp bytes)
@@ -596,27 +605,34 @@
   :hints (("Goal" :in-theory (enable parse-elf-program-header))))
 
 ;move up
-;; Returns (mv erp program-headers).
-(defund parse-elf-program-headers (index count 64-bitp acc bytes)
+;; Returns (mv erp program-headers) where PROGRAM-HEADERS is a list of alists
+;; (header entries).
+(defund parse-elf-program-headers (index num-entries 64-bitp acc bytes)
   (declare (xargs :guard (and (natp index)
-                              (natp count)
+                              (natp num-entries)
                               (booleanp 64-bitp)
-                              (alistp acc)
+                              (true-list-listp acc)
                               (byte-listp bytes))
-                  :measure (nfix (- count index))))
-  (if (or (<= count index)
+                  :measure (nfix (- num-entries index))
+                  :hints (("Goal" :in-theory (enable natp)))))
+  (if (or (<= num-entries index)
           (not (natp index))
-          (not (natp count)))
+          (not (natp num-entries)))
       (mv nil (reverse acc))
     (mv-let (erp program-header bytes)
       (parse-elf-program-header 64-bitp bytes)
       (if erp
           (mv erp nil)
         (parse-elf-program-headers (+ 1 index)
-                                   count
+                                   num-entries
                                    64-bitp
-                                   (acons index program-header acc)
+                                   (cons program-header acc)
                                    bytes)))))
+
+(defthm alist-listp-of-mv-nth-1-of-parse-elf-program-headers
+  (implies (alist-listp acc)
+           (alist-listp (mv-nth 1 (parse-elf-program-headers index num-entries 64-bitp acc bytes))))
+  :hints (("Goal" :in-theory (enable parse-elf-program-headers))))
 
 ;; Returns (mv erp parsed-elf) where PARSED-ELF is meaningless if ERP in non-nil.
 ;; TODO: Some of this parsing need not be done for all callers (e.g., when loading an image)
@@ -624,7 +640,9 @@
 (defund parse-elf-file-bytes (bytes)
   (declare (xargs :guard (byte-listp bytes)
                   :guard-hints (("Goal" :in-theory (e/d (byte-listp-of-mv-nth-1-of-parse-n-bytes) (bytep))))))
-  (b* ((all-bytes bytes) ;capture for later looking up things at given offsets
+  (b* ((all-bytes bytes) ; original bytes, for later looking up things at given offsets
+       (result nil) ; empty alist, to be extended
+       ;; Parse the file header:
        ((mv erp e_ident bytes) (parse-n-bytes 16 bytes))
        ((when erp) (mv erp nil))
        (ei_mag0 (nth 0 e_ident))
@@ -648,9 +666,7 @@
 
        (class (lookup-safe ei_class *classes*))
        (64-bitp (eq :elfclass64 class))
-
-       (result nil) ; empty alist, to be extended
-       ;; Now we can set the magic number:
+       ;; Now we can set the magic number (todo: call this :executable-type?):
        (result (acons :magic (if 64-bitp :elf-64 :elf-32) result)) ; for use by parsed-executable-type
        (result (acons :class class result))
        (data (lookup-safe ei_data *data-encodings*))
@@ -659,7 +675,7 @@
        (osabi (lookup-safe ei_osabi *osabis*))
        (result (acons :osabi osabi result))
        (result (acons :abiversion ei_abiversion result))
-       ;; Done with e_ident.
+       ;; Done with e_ident.  Now parse the rest of the header:
        ((mv erp e_type bytes) (parse-half bytes)) ; todo: consider endianness for these values
        ((when erp) (mv erp nil))
        (result (acons :type (decode-file-type e_type) result))
@@ -708,8 +724,7 @@
        ((when erp) (mv erp nil))
        (result (acons :shnum e_shnum result))
 
-       ((mv erp e_shstrndx & ;bytes
-            ) (parse-half bytes))
+       ((mv erp e_shstrndx &) (parse-half bytes)) ; ignore the remaining bytes, as below we jump ahead
        ((when erp) (mv erp nil))
        (result (acons :shstrndx e_shstrndx result))
 
@@ -718,9 +733,11 @@
         (parse-elf-program-headers 0 e_phnum 64-bitp nil (nthcdr e_phoff all-bytes)))
        ((when erp) (mv erp nil))
        (result (acons :program-header-table program-header-table result))
+
        ;; Parse the section header table:
        ((mv erp section-header-table-without-names) (parse-elf-section-headers 0 e_shnum 64-bitp nil (nthcdr e_shoff all-bytes)))
        ((when erp) (mv erp nil))
+
        ;; Add the names to the section headers:
        (section-name-string-table-header (lookup-safe e_shstrndx section-header-table-without-names))
        (section-name-string-table-header-offset (lookup-eq-safe :offset section-name-string-table-header))
@@ -763,7 +780,9 @@
          (and (alistp section-header-table)
               (alist-listp (strip-cdrs section-header-table))))
        (assoc-eq :sections parsed-elf)
-       (alistp (lookup-eq :sections parsed-elf))))
+       (alistp (lookup-eq :sections parsed-elf))
+       (assoc-eq :program-header-table parsed-elf)
+       (alist-listp (lookup-eq :program-header-table parsed-elf))))
 
 (defthmd alistp-when-parsed-elfp
   (implies (parsed-elfp parsed-elf)
