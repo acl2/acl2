@@ -1917,7 +1917,7 @@
        See our ABNF grammar for details."))
     (:stocla ((spec stor-spec)))
     (:tyspec ((spec type-spec)))
-    (:tyqual ((unwrap type-qual)))
+    (:tyqual ((qual type-qual)))
     (:funspec ((unwrap fun-spec)))
     (:align ((unwrap align-spec)))
     (:attrib ((unwrap attrib-spec))) ; GCC extension
