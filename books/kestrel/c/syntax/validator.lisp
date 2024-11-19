@@ -5864,4 +5864,107 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; TODO: continue
+(define valid-extdecl ((edecl extdeclp) (table valid-tablep) (ienv ienvp))
+  :guard (extdecl-unambp edecl)
+  :returns (mv erp (new-table valid-tablep))
+  :short "Validate an external declaration."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For now we do not do anything with assembler statements.
+     The empty external declaration is always valid.
+     We check that declarations contain no return statements."))
+  (b* (((reterr) (irr-valid-table)))
+    (extdecl-case
+     edecl
+     :fundef (valid-fundef edecl.unwrap table ienv)
+     :decl (b* (((erp types table)
+                 (valid-decl edecl.unwrap table ienv))
+                ((unless (set::emptyp types))
+                 (reterr (msg "The top-level declaration ~x0 ~
+                               contains return statements."
+                              edecl.unwrap))))
+             (retok table))
+     :empty (retok (valid-table-fix table))
+     :asm (retok (valid-table-fix table))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define valid-extdecl-list ((edecls extdecl-listp)
+                            (table valid-tablep)
+                            (ienv ienvp))
+  :guard (extdecl-list-unambp edecls)
+  :returns (mv erp (new-table valid-tablep))
+  :short "Validate a list of external declarations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We validate them in order, threading the validation table through."))
+  (b* (((reterr) (irr-valid-table))
+       ((when (endp edecls)) (retok (valid-table-fix table)))
+       ((erp table) (valid-extdecl (car edecls) table ienv)))
+    (valid-extdecl-list (cdr edecls) table ienv))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define valid-transunit ((tunit transunitp) (ienv ienvp))
+  :guard (transunit-unambp tunit)
+  :returns (mv erp (table valid-tablep))
+  :short "Validate a translation unit."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Starting with the initial validation table,
+     we validate all the external declarations in the translation unit.
+     Since these are translation units after preprocesing,
+     all the referenced names must be declared in the translation unit,
+     so it is appropriate to start with the initial validation table.")
+   (xdoc::p
+    "If validation is successful, we return the final validation table.
+     For now we do no make any use of the returned table,
+     but in the future we should use it to validate
+     the externally linked identifiers across
+     different translation units of a translation unit ensemble.
+     In fact, we should probably extend this validation function
+     to trim the returned validation table
+     so it only has entries for identifiers with external linkage."))
+  (b* (((reterr) (irr-valid-table))
+       (table (valid-init-table)))
+    (valid-extdecl-list (transunit->decls tunit) table ienv))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define valid-transunit-ensemble ((tunits transunit-ensemblep) (ienv ienvp))
+  :guard (transunit-ensemble-unambp tunits)
+  :returns erp
+  :short "Validate a translation unit ensemble."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We validate each translation unit.
+     As mentioned in @(tsee valid-transunit),
+     for now we discard the result validation tables,
+     but in the future we should cross-check them.")
+   (xdoc::p
+    "If validation is successful, we return no information (@('nil')).
+     Otherwise, we return an error message,
+     which a caller can show to the user in an event macro."))
+  (valid-transunit-ensemble-loop (transunit-ensemble->unwrap tunits) ienv)
+  :prepwork
+  ((define valid-transunit-ensemble-loop ((map filepath-transunit-mapp)
+                                          (ienv ienvp))
+     :guard (transunit-ensemble-unambp-loop map)
+     :returns erp
+     :parents nil
+     (b* (((reterr))
+          ((when (omap::emptyp map)) (retok))
+          ((erp &) (valid-transunit (omap::head-val map) ienv))
+          ((erp) (valid-transunit-ensemble-loop (omap::tail map) ienv)))
+       (retok))
+     ///
+     (fty::deffixequiv valid-transunit-ensemble-loop
+       :args ((ienv ienvp)))))
+  :hooks (:fix))
