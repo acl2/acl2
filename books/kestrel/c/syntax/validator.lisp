@@ -809,6 +809,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum valid-defstatus
+  :short "Fixtype of definition statuses for validation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This applies to objects and functions, which may be
+     undefined, defined, or tentatively defined [C:6.7/5] [C:6.9.2],
+     with the latter actually only applying to objects, not functions."))
+  (:undefined ())
+  (:tentative ())
+  (:defined ())
+  :pred valid-defstatusp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftagsum valid-ord-info
   :short "Fixtype of validation information about ordinary identifiers."
   :long
@@ -824,14 +839,16 @@
      tracked by our current validator.
      Since our model of types includes both object and function types,
      the information for both objects and functions includes (different) types;
-     that information also includes the linkage [C:6.2.2].
+     that information also includes the linkage [C:6.2.2],
+     as well as definition status (see @(tsee valid-defstatus)).
      For enumeration constants and for @('typedef') names,
      for now we only track that they are
      enumeration constants and @('typedef') names.")
    (xdoc::p
     "We will refine this fixtype as we refine our validator."))
   (:objfun ((type type)
-            (linkage linkage)))
+            (linkage linkage)
+            (defstatus valid-defstatus)))
   (:enumconst ())
   (:typedef ())
   :pred valid-ord-infop)
@@ -2574,7 +2591,8 @@
                          (ident-fix ident))))
            (linkage
             (b* (((mv info? &) (valid-lookup-ord ident table))
-                 ((unless info?) (linkage-external))
+                 ((unless info?)
+                  (linkage-external))
                  ((unless (valid-ord-info-case info? :objfun))
                   (linkage-external))
                  (previous-linkage (valid-ord-info-objfun->linkage info?)))
@@ -4511,7 +4529,9 @@
        with the same name in the same (i.e. current) scope;
        since parameters have no linkage [C:6.2.2/6],
        they can be only declared once in the same scope [C:6.7/3].
-       Parameters of function declarations have no linkage [C:6.2.2/6]."))
+       Parameters of function declarations have no linkage [C:6.2.2/6].
+       Since storage is allocated for them when the function is called,
+       they are considered defined [C:6.7/5]."))
     (b* (((reterr) nil (irr-valid-table))
          ((paramdecl paramdecl) paramdecl)
          ((erp type storspecs types table)
@@ -4537,8 +4557,10 @@
                  type))
          ((when (not ident?))
           (retok (set::union types more-types) table))
-         (ord-info (make-valid-ord-info-objfun :type type
-                                               :linkage (linkage-none)))
+         (ord-info (make-valid-ord-info-objfun
+                    :type type
+                    :linkage (linkage-none)
+                    :defstatus (valid-defstatus-defined)))
          ((mv info? currentp) (valid-lookup-ord ident? table))
          ((when (and info? currentp))
           (reterr (msg "The parameter declared in ~x0 ~
@@ -5046,8 +5068,27 @@
        because the type must be complete [C:6.7.9/3].
        We validate the initializer if present;
        we pass the type of the identifier,
-       so the initializer is checked against that.
-       Then we look it up in the validation table.
+       so the initializer is checked against that.")
+     (xdoc::p
+      "We calculate the definition status for the declaration.
+       If we are declaring a function, the status is undefined,
+       because we do not have a function body here.
+       Otherwise, we are declaring an object.
+       If we are in a block scope,
+       the status is undefined if the object has external linkage
+       (because it refers to some external entity from the block),
+       while it is defined otherwise
+       (because the declaration allocates storage for the object).
+       If we are in a file scope, we follow [C:6.9.2/1] and [C:6.9.2/2]:
+       an initializer makes the status defined;
+       otherwise, the presence of @('extern') makes the status undefined
+       and its absence makes the status defined.
+       This is slightly different from what [C:6.9.2/2] says,
+       which mentions no storage class specifier or @('static'),
+       but it seems clear that this neglects to consider @('_Thread_local');
+       in fact, the wording in the newly released C23 standard is clearer.")
+     (xdoc::p
+      "We look up the identifier in the validation table.
        If no information is found in the validation table,
        we add the identifier to the table.
        If the current declaration has no linkage,
@@ -5063,7 +5104,10 @@
        and so we ensure that the types are the same.
        We also need to check that the linkages are the same,
        in which case we still add the identifier to the table,
-       to record that it is also declared in the current scope.
+       to record that it is also declared in the current scope;
+       in this case, it is not clear whether we should suitable combine
+       the old and new definition statuses,
+       but for now we just use the newest.
        It is an error if the current linkage is internal
        while the one in the table is external.
        The situation where the current one is external
@@ -5104,11 +5148,24 @@
                        ident type initdeclor.init?)))
          ((erp more-types table)
           (valid-initer-option initdeclor.init? type lifetime? table ienv))
+         (defstatus (if (type-case type :function)
+                        (valid-defstatus-undefined)
+                      (if (> (valid-table-num-scopes table) 1)
+                          (if (linkage-case linkage :external)
+                              (valid-defstatus-undefined)
+                            (valid-defstatus-defined))
+                        (if initdeclor.init?
+                            (valid-defstatus-defined)
+                          (if (member-equal (stor-spec-extern)
+                                            (stor-spec-list-fix storspecs))
+                              (valid-defstatus-undefined)
+                            (valid-defstatus-tentative))))))
          ((mv info? currentp) (valid-lookup-ord ident table))
          ((when (not info?))
           (b* ((new-info (make-valid-ord-info-objfun
                           :type type
-                          :linkage linkage))
+                          :linkage linkage
+                          :defstatus defstatus))
                (table (valid-add-ord ident new-info table)))
             (retok (set::union types more-types) table)))
          ((when (or (valid-ord-info-case info? :typedef)
@@ -5120,7 +5177,8 @@
                            ident info?))
             (b* ((new-info (make-valid-ord-info-objfun
                             :type type
-                            :linkage linkage))
+                            :linkage linkage
+                            :defstatus defstatus))
                  (table (valid-add-ord ident new-info table)))
               (retok (set::union types more-types) table))))
          ((valid-ord-info-objfun info) info?)
@@ -5133,7 +5191,8 @@
                            ident info?))
             (b* ((new-info (make-valid-ord-info-objfun
                             :type type
-                            :linkage linkage))
+                            :linkage linkage
+                            :defstatus defstatus))
                  (table (valid-add-ord ident new-info table)))
               (retok (set::union types more-types) table))))
          ((unless (equal type info.type))
@@ -5156,7 +5215,8 @@
           (reterr t))
          (new-info (make-valid-ord-info-objfun
                     :type type
-                    :linkage linkage))
+                    :linkage linkage
+                    :defstatus defstatus))
          (table (valid-add-ord ident new-info table)))
       (retok (set::union types more-types) table))
     :measure (initdeclor-count initdeclor))
