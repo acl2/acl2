@@ -994,7 +994,7 @@
       :align (decl-spec-align (,(cdr (assoc-eq 'align-spec names)) declspec.spec ,@extra-args-names))
       :attrib (decl-spec-fix declspec)
       :stdcall (decl-spec-fix declspec)
-      :declspec-attrib (decl-spec-fix declspec))
+      :declspec (decl-spec-fix declspec))
    '(:returns (new-declspec decl-specp)
      :measure (decl-spec-count declspec))))
 

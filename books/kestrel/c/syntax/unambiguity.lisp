@@ -275,7 +275,7 @@
                     :align (align-spec-unambp declspec.spec)
                     :attrib t
                     :stdcall t
-                    :declspec-attrib t)
+                    :declspec t)
     :measure (decl-spec-count declspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

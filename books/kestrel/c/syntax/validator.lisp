@@ -3594,11 +3594,11 @@
                        (stor-spec-list-fix storspecs)
                        nil
                        (valid-table-fix table))
-       :declspec-attrib (retok (type-option-fix type?)
-                               (type-spec-list-fix tyspecs)
-                               (stor-spec-list-fix storspecs)
-                               nil
-                               (valid-table-fix table))))
+       :declspec (retok (type-option-fix type?)
+                        (type-spec-list-fix tyspecs)
+                        (stor-spec-list-fix storspecs)
+                        nil
+                        (valid-table-fix table))))
     :measure (decl-spec-count declspec)
 
     ///

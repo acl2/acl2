@@ -1922,7 +1922,7 @@
     (:align ((spec align-spec)))
     (:attrib ((spec attrib-spec))) ; GCC extension
     (:stdcall ()) ; GCC extension
-    (:declspec-attrib ((arg identp))) ; GCC extension
+    (:declspec ((arg identp))) ; GCC extension
     :pred decl-specp
     :measure (two-nats-measure (acl2-count x) 0))
 

@@ -325,7 +325,7 @@
      :align (decl-spec-align (simpadd0-align-spec declspec.spec))
      :attrib (decl-spec-fix declspec)
      :stdcall (decl-spec-fix declspec)
-     :declspec-attrib (decl-spec-fix declspec))
+     :declspec (decl-spec-fix declspec))
     :measure (decl-spec-count declspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
