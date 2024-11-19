@@ -1619,7 +1619,7 @@
                        (dimb-kind-fix kind)
                        (dimb-table-fix table))
        :align (b* (((erp new-alignspec table)
-                    (dimb-align-spec declspec.unwrap table)))
+                    (dimb-align-spec declspec.spec table)))
                 (retok (decl-spec-align new-alignspec)
                        (dimb-kind-fix kind)
                        table))

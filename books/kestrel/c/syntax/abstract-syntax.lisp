@@ -1919,7 +1919,7 @@
     (:tyspec ((spec type-spec)))
     (:tyqual ((qual type-qual)))
     (:funspec ((spec fun-spec)))
-    (:align ((unwrap align-spec)))
+    (:align ((spec align-spec)))
     (:attrib ((unwrap attrib-spec))) ; GCC extension
     (:stdcall ()) ; GCC extension
     (:declspec-attrib ((arg identp))) ; GCC extension

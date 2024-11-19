@@ -272,7 +272,7 @@
                     :tyspec (type-spec-unambp declspec.spec)
                     :tyqual t
                     :funspec t
-                    :align (align-spec-unambp declspec.unwrap)
+                    :align (align-spec-unambp declspec.spec)
                     :attrib t
                     :stdcall t
                     :declspec-attrib t)
@@ -1767,10 +1767,10 @@
              (type-spec-unambp (decl-spec-tyspec->spec declspec)))
     :expand (decl-spec-unambp declspec))
 
-  (defrule align-spec-unambp-of-decl-spec-align->unwrap
+  (defrule align-spec-unambp-of-decl-spec-align->spec
     (implies (and (decl-spec-unambp declspec)
                   (decl-spec-case declspec :align))
-             (align-spec-unambp (decl-spec-align->unwrap declspec)))
+             (align-spec-unambp (decl-spec-align->spec declspec)))
     :expand (decl-spec-unambp declspec))
 
   (defrule expr-unambp-of-initer-single->expr
