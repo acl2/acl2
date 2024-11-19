@@ -36,8 +36,7 @@
 
 (defun get-elf-section-address (section-name parsed-elf)
   (declare (xargs :guard (parsed-elfp parsed-elf)
-                  :verify-guards nil ; todo
-                  ))
+                  :guard-hints (("Goal" :in-theory (enable parsed-elfp)))))
   (lookup-eq-safe :addr (get-elf-section-header section-name (lookup-eq-safe :section-header-table parsed-elf))))
 
 (defun get-elf-code-address (parsed-elf)
@@ -84,10 +83,7 @@
 ;; the contents of the executable.
 (defun parse-elf (filename state)
   (declare (xargs :guard (stringp filename)
-                  :stobjs state
-                  :verify-guards nil
-                  ;:mode :program
-                  ))
+                  :stobjs state))
   (b* (((mv existsp state) (file-existsp filename state))
        ((when (not existsp))
         (progn$ (er hard? 'parse-elf "File ~x0 does not exist." filename)
@@ -107,9 +103,7 @@
 (defun elf-info-fn (filename state)
   (declare (xargs :guard (stringp filename)
                   :stobjs state
-                  :verify-guards nil
-                  ;:mode :program
-                  ))
+                  :guard-hints (("Goal" :in-theory (enable alistp-when-parsed-elfp)))))
   (b* (((mv erp parsed-elf state) (parse-elf filename state))
        ((when erp) (mv erp nil state))
        ;; (sections (lookup-eq-safe :sections parsed-elf))
