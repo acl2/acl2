@@ -13656,7 +13656,7 @@
                  parstate)))
        ;; If token2 is not a closed parenthesis,
        ;; it must be a colon, and we continue parsing.
-       (t ; asm [asmquals] ( template ) other
+       (t ; asm [asmquals] ( template other
         (b* (((unless (token-punctuatorp token2 ":"))
               (reterr-msg :where (position-to-msg (span->start span2))
                           :expected "a colon or a closed parenthesis"
@@ -13674,16 +13674,19 @@
            ;; we have reached the end of the assembler statement.
            ((token-punctuatorp token3 ")")
             ;; asm [asmquals] ( template : [outputs] )
-            (retok (make-asm-stmt :uscores uscores
-                                  :quals quals
-                                  :template template
-                                  :num-colons 1
-                                  :outputs outputs
-                                  :inputs nil
-                                  :clobbers nil
-                                  :labels nil)
-                   (span-join first-span span3)
-                   parstate))
+            (b* (((erp last-span parstate)
+                  ;; asm [asmquals] ( template : [outputs] ) ;
+                  (read-punctuator ";" parstate)))
+              (retok (make-asm-stmt :uscores uscores
+                                    :quals quals
+                                    :template template
+                                    :num-colons 1
+                                    :outputs outputs
+                                    :inputs nil
+                                    :clobbers nil
+                                    :labels nil)
+                     (span-join first-span last-span)
+                     parstate)))
            ;; If token3 is not a closed parenthesis,
            ;; it must be a colon, and we continue parsing.
            (t ; asm [asmquals] ( template : [outputs] other
@@ -13701,16 +13704,19 @@
                ;; we have reached the end of the assembler statement.
                ((token-punctuatorp token4 ")")
                 ;; asm [asmquals] ( template : [outputs] : [inputs] )
-                (retok (make-asm-stmt :uscores uscores
-                                      :quals quals
-                                      :template template
-                                      :num-colons 2
-                                      :outputs outputs
-                                      :inputs inputs
-                                      :clobbers nil
-                                      :labels nil)
-                       (span-join first-span span4)
-                       parstate))
+                (b* (((erp last-span parstate)
+                      ;; asm [asmquals] ( template : [outputs] : [inputs] ) ;
+                      (read-punctuator ";" parstate)))
+                  (retok (make-asm-stmt :uscores uscores
+                                        :quals quals
+                                        :template template
+                                        :num-colons 2
+                                        :outputs outputs
+                                        :inputs inputs
+                                        :clobbers nil
+                                        :labels nil)
+                         (span-join first-span last-span)
+                         parstate)))
                ;; If token4 is not a closed parenthesis,
                ;; it must be a colon, and we continue parsing.
                (t ; asm [asmquals] ( template : [outputs] : [inputs] other
@@ -13731,16 +13737,20 @@
                    ((token-punctuatorp token5 ")")
                     ;; asm [asmquals] ( template
                     ;; : [outputs] : [inputs] : [clobbers] )
-                    (retok (make-asm-stmt :uscores uscores
-                                          :quals quals
-                                          :template template
-                                          :num-colons 3
-                                          :outputs outputs
-                                          :inputs inputs
-                                          :clobbers clobbers
-                                          :labels nil)
-                           (span-join first-span span5)
-                           parstate))
+                    (b* (((erp last-span parstate)
+                          ;; asm [asmquals] ( template
+                          ;; : [outputs] : [inputs] : [clobbers] ) ;
+                          (read-punctuator ";" parstate)))
+                      (retok (make-asm-stmt :uscores uscores
+                                            :quals quals
+                                            :template template
+                                            :num-colons 3
+                                            :outputs outputs
+                                            :inputs inputs
+                                            :clobbers clobbers
+                                            :labels nil)
+                             (span-join first-span last-span)
+                             parstate)))
                    ;; If token5 is not a closed parenthesis,
                    ;; it must be a colon, and we continue parsing.
                    (t
@@ -13757,13 +13767,20 @@
                           ;; asm [asmquals] ( template
                           ;; : [outputs] : [inputs] : [clobbers] : [labels]
                           (parse-asm-goto-labels parstate))
-                         ((erp last-span parstate)
+                         ((erp & parstate)
                           ;; asm [asmquals] ( template
                           ;; : [outputs]
                           ;; : [inputs]
                           ;; : [clobbers]
                           ;; : [labels] )
-                          (read-punctuator ")" parstate)))
+                          (read-punctuator ")" parstate))
+                         ((erp last-span parstate)
+                          ;; asm [asmquals] ( template
+                          ;; : [outputs]
+                          ;; : [inputs]
+                          ;; : [clobbers]
+                          ;; : [labels] ) ;
+                          (read-punctuator ";" parstate)))
                       (retok (make-asm-stmt :uscores uscores
                                             :quals quals
                                             :template template

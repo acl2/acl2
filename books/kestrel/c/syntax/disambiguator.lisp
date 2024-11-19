@@ -360,367 +360,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dimb-cast/call-to-cast ((tyname tynamep)
-                                (inc/dec inc/dec-op-listp)
-                                (arg exprp))
-  :returns (cast-expr exprp)
-  :short "Disambiguate an ambiguous cast or call expression
-          to be a cast expression."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The form @('(X) IncDec (E)Pr') of an ambiguous call or cast expression
-     is described in detail in @(tsee expr): refer to that description.
-     This ambiguous expression is disambiguated in @(tsee dimb-expr),
-     by first disambiguating whether @('X') is a type name or an expression.
-     Based on that, the constituents of that ambiguous expression
-     must be re-arranged into an unambiguous expression:
-     this is done by this function,
-     for the case in which @('X') is a type name.
-     The case in which @('X') is an expression
-     is handled in @(tsee dimb-cast/call-to-call).")
-   (xdoc::p
-    "In this function,
-     @('tyname') is @('X'),
-     @('inc/dec') is @('IncDec'), and
-     @('arg') is @('(E)Pr').
-     If @('X') is a type name,
-     the increment and decrement operators, if any,
-     are pre-increment and pre-decrement operators
-     applied to the expression @('(E)Pr').
-     We apply them and we form a cast expression."))
-  (make-expr-cast :type tyname
-                  :arg (apply-pre-inc/dec-ops inc/dec arg))
-  :hooks (:fix)
-
-  ///
-
-  (defret expr-unambp-of-dimb-cast/call-to-cast
-    (expr-unambp cast-expr)
-    :hyp (and (tyname-unambp tyname)
-              (expr-unambp arg))))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define dimb-cast/call-to-call ((fun exprp)
-                                (inc/dec inc/dec-op-listp)
-                                (rest exprp))
-  :returns (call-expr exprp)
-  :short "Disambiguate an ambiguous cast or call expression
-          to be a call expression."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The form @('(X) IncDec (E)Pr') of an ambiguous call or cast expression
-     is described in detail in @(tsee expr): refer to that description.
-     This ambiguous expression is disambiguated in @(tsee dimb-expr),
-     by first disambiguating whether @('X') is a type name or an expression.
-     Based on that, the constituents of that ambiguous expression
-     must be re-arranged into an unambiguous expression:
-     this is done by this function,
-     for the case in which @('X') is an expression.
-     The case in which @('X') is a type name
-     is handled in @(tsee dimb-cast/call-to-call).")
-   (xdoc::p
-    "In this function,
-     @('fun') is @('X'),
-     @('inc/dec') is @('IncDec'), and
-     @('rest') is @('(E)Pr').
-     If @('X') is an expression,
-     the increment and decrement operators, if any,
-     are post-increment and post-decrement operators
-     applied to the expression @('X').
-     We apply them and we form a call expression.
-     To do so, we need to separate @('(E)') and @('Pr'),
-     turn @('(E)') into @('(E1,...,En)') according to the comma operators,
-     and then apply the @('Pr') to the call @('(X)(E1,...,En)').")
-   (xdoc::p
-    "We perform the latter transformation via a recursion,
-     because we need to go through the individual postfix constructs of @('Pr'),
-     till we reach @('(E)'),
-     and then we re-apply the postfix constructs of @('Pr')."))
-  (b* ((fun (expr-paren fun))
-       (fun (apply-post-inc/dec-ops fun inc/dec)))
-    (dimb-cast/call-to-call-loop fun rest))
-  :hooks (:fix)
-
-  :prepwork
-
-  ((define dimb-cast/call-to-call-loop ((fun exprp) (rest exprp))
-     :returns (new-expr exprp)
-     :parents nil
-     (b* (((when (expr-case rest :paren))
-           (b* ((args (expr-to-asg-expr-list (expr-paren->inner rest))))
-             (make-expr-funcall :fun fun :args args)))
-          ((when (expr-case rest :arrsub))
-           (b* ((expr
-                 (dimb-cast/call-to-call-loop fun (expr-arrsub->arg1 rest))))
-             (make-expr-arrsub :arg1 expr :arg2 (expr-arrsub->arg2 rest))))
-          ((when (expr-case rest :funcall))
-           (b* ((expr
-                 (dimb-cast/call-to-call-loop fun (expr-funcall->fun rest))))
-             (make-expr-funcall :fun expr :args (expr-funcall->args rest))))
-          ((when (expr-case rest :member))
-           (b* ((expr
-                 (dimb-cast/call-to-call-loop fun (expr-member->arg rest))))
-             (make-expr-member :arg expr :name (expr-member->name rest))))
-          ((when (expr-case rest :memberp))
-           (b* ((expr
-                 (dimb-cast/call-to-call-loop fun (expr-memberp->arg rest))))
-             (make-expr-memberp :arg expr :name (expr-memberp->name rest)))))
-       (prog2$
-        (raise "Internal error: unexpected expression ~x0." (expr-fix fun))
-        (irr-expr)))
-     :measure (expr-count rest)
-     :hints (("Goal" :in-theory (enable o< o-finp)))
-     :verify-guards :after-returns
-     :hooks (:fix)
-
-     ///
-
-     (defret expr-unambp-of-dimb-cast/call-to-call-loop
-       (expr-unambp new-expr)
-       :hyp (and (expr-unambp fun)
-                 (expr-unambp rest))
-       :hints (("Goal" :induct t :in-theory (enable irr-expr))))))
-
-  ///
-
-  (defret expr-unambp-of-dimb-cast/call-to-call
-    (expr-unambp call-expr)
-    :hyp (and (expr-unambp fun)
-              (expr-unambp rest))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define dimb-cast/mul-to-cast ((tyname tynamep)
-                               (inc/dec inc/dec-op-listp)
-                               (arg exprp))
-  :returns (cast-expr exprp)
-  :short "Disambiguate an ambiguous cast or multiplication expression
-          to be a cast expression."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is analogous in purpose to @(tsee dimb-cast/call-to-cast),
-     but for a different kind of ambiguous expression.
-     Note that the @('*'), which is unary in this disambiguation,
-     is implicit in the abstract syntax of the ambiguous expression."))
-  (make-expr-cast :type tyname
-                  :arg (make-expr-unary
-                        :op (unop-indir)
-                        :arg (apply-pre-inc/dec-ops inc/dec arg)))
-  :hooks (:fix)
-
-  ///
-
-  (defret expr-unambp-of-dimb-cast/mul-to-cast
-    (expr-unambp cast-expr)
-    :hyp (and (tyname-unambp tyname)
-              (expr-unambp arg))))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define dimb-cast/mul-to-mul ((arg1 exprp)
-                              (inc/dec inc/dec-op-listp)
-                              (arg2 exprp))
-  :returns (mul-expr exprp)
-  :short "Disambiguate an ambiguous cast or multiplication expression
-          to be a multiplication expression."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is analogous in purpose to @(tsee dimb-cast/call-to-call),
-     but for a different kind of ambiguous expression.
-     Note that the @('*'), which is binary in this disambiguation,
-     is implicit in the abstract syntax of the ambiguous expression."))
-  (make-expr-binary :op (binop-mul)
-                    :arg1 (apply-post-inc/dec-ops arg1 inc/dec)
-                    :arg2 arg2)
-  :hooks (:fix)
-
-  ///
-
-  (defret expr-unambp-of-dimb-cast/mul-to-mul
-    (expr-unambp mul-expr)
-    :hyp (and (expr-unambp arg1)
-              (expr-unambp arg2))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define dimb-cast/addsub-to-cast ((tyname tynamep)
-                                  (inc/dec inc/dec-op-listp)
-                                  (arg exprp)
-                                  (plus/minus unopp))
-  :guard (or (unop-case plus/minus :plus)
-             (unop-case plus/minus :minus))
-  :returns (expr exprp)
-  :short "Disambiguate an ambiguous cast or addition/subtraction expression
-          to be a cast expression."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is analogous in purpose to @(tsee dimb-cast/call-to-cast),
-     but for a different kind of ambiguous expression,
-     actually two kinds, which are very similar and thus handled together;
-     the two kinds are selected by the unary operator passed as input.
-     Note that the @('+') or @('-'), which is unary in this disambiguation,
-     is implicit in the abstract syntax of the ambiguous expression.")
-   (xdoc::p
-    "There is also an extra complexity here.
-     In the @(':cast/add-ambig') and @(':cast/sub-ambig') cases of @(tsee expr),
-     the @('arg/arg2') component is parsed as a multiplicative expression
-     (see the @(see parser)),
-     because that is what is required
-     if the ambiguous cast or addition/subtraction
-     turns out to be an addition or subtraction.
-     But if it turns out to be a cast, we may need to re-organize things.
-     For instance, consider the ambiguous expression")
-   (xdoc::codeblock
-    "(X) + Y * Z")
-   (xdoc::p
-    "which first the pattern @('(X) IncDec + E') in @(tsee expr),
-     with empty @('IncDec') in this case.
-     If @('X') is a type name,
-     then the cast expression is only @('(X) +Y'), without the @('* Z') part,
-     which instead forms an outer multiplication expression.
-     In other words, if @('E') has the form @('E1 * E2'),
-     we need to return the expression @('[(X) +E1] * E2'),
-     where the square brackets convey the grouping.
-     Note that @('E1') could be also a multiplication @('E11 * E12'),
-     and in that case we must return @('[[(X) +E11] * E12] * E2').
-     So in general we need a recursion to find
-     the leftmost sub-expression of @('E') that is not a multiplication,
-     form the cast with it, and then re-apply the nest of multiplications.
-     By construction of the parser, @('E') will not include operations
-     with lower priority than multiplication."))
-  (b* (((mv mul? arg1 arg2) (check-expr-mul arg))
-       ((when (not mul?))
-        (make-expr-cast
-         :type tyname
-         :arg (make-expr-unary :op plus/minus
-                               :arg (apply-pre-inc/dec-ops inc/dec arg))))
-       (expr (dimb-cast/addsub-to-cast tyname inc/dec arg1 plus/minus)))
-    (make-expr-binary :op (binop-mul) :arg1 expr :arg2 arg2))
-  :measure (expr-count arg)
-  :hints (("Goal" :in-theory (enable o< o-finp)))
-  :verify-guards :after-returns
-  :hooks (:fix)
-
-  ///
-
-  (defret expr-unambp-of-dimb-cast/addsub-to-cast
-    (expr-unambp expr)
-    :hyp (and (tyname-unambp tyname)
-              (expr-unambp arg))
-    :hints (("Goal" :induct t))))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define dimb-cast/addsub-to-addsub ((arg1 exprp)
-                                    (inc/dec inc/dec-op-listp)
-                                    (arg2 exprp)
-                                    (add/sub binopp))
-  :guard (or (binop-case add/sub :add)
-             (binop-case add/sub :sub))
-  :returns (expr exprp)
-  :short "Disambiguate an ambiguous cast or addition/subtraction expression
-          to be an addition or subtraction expression."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is analogous in purpose to @(tsee dimb-cast/call-to-call),
-     but for a different kind of ambiguous expression,
-     actually two kinds, which are very similar and thus handled together;
-     the two kinds are selected by the binary operator passed as input.
-     Note that the @('+') or @('-'), which is binary in this disambiguation,
-     is implicit in the abstract syntax of the ambiguous expression."))
-  (make-expr-binary :op add/sub
-                    :arg1 (apply-post-inc/dec-ops arg1 inc/dec)
-                    :arg2 arg2)
-  :hooks (:fix)
-
-  ///
-
-  (defret expr-unambp-of-dimb-cast/addsub-to-addsub
-    (expr-unambp expr)
-    :hyp (and (expr-unambp arg1)
-              (expr-unambp arg2))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define dimb-cast/and-to-cast ((tyname tynamep)
-                               (inc/dec inc/dec-op-listp)
-                               (arg exprp))
-  :returns (expr exprp)
-  :short "Disambiguate an ambiguous cast or conjunction expression
-          to be a cast expression."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is analogous in purpose to @(tsee dimb-cast/call-to-cast),
-     but for a different kind of ambiguous expression.
-     Note that the @('&'), which is unary in this disambiguation,
-     is implicit in the abstract syntax of the ambiguous expression.
-     There is also a complication similar to @(tsee dimb-cast/addsub-to-cast),
-     but here we need to handle not just multiplications,
-     but all the binary expressions of priority higher than binary @('&')."))
-  (b* (((mv bin? op arg1 arg2) (check-expr-binary arg))
-       ((unless (and bin?
-                     (member-eq (binop-kind op)
-                                '(:mul :div :rem
-                                  :add :sub
-                                  :shl :shr
-                                  :lt :gt :le :ge
-                                  :eq :ne))))
-        (make-expr-cast
-         :type tyname
-         :arg (make-expr-unary :op (unop-address)
-                               :arg (apply-pre-inc/dec-ops inc/dec arg))))
-       (expr (dimb-cast/and-to-cast tyname inc/dec arg1)))
-    (make-expr-binary :op op :arg1 expr :arg2 arg2))
-  :measure (expr-count arg)
-  :hints (("Goal" :in-theory (enable o< o-finp)))
-  :verify-guards :after-returns
-  :hooks (:fix)
-
-  ///
-
-  (defret expr-unambp-of-dimb-cast/and-to-cast
-    (expr-unambp expr)
-    :hyp (and (tyname-unambp tyname)
-              (expr-unambp arg))
-    :hints (("Goal" :induct t))))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define dimb-cast/and-to-and ((arg1 exprp)
-                              (inc/dec inc/dec-op-listp)
-                              (arg2 exprp))
-  :returns (expr exprp)
-  :short "Disambiguate an ambiguous cast or conjunction expression
-          to be a conjunction expression."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is analogous in purpose to @(tsee dimb-cast/call-to-call),
-     but for a different kind of ambiguous expression.
-     Note that the @('&'), which is binary in this disambiguation,
-     is implicit in the abstract syntax of the ambiguous expression."))
-  (make-expr-binary :op (binop-bitand)
-                    :arg1 (apply-post-inc/dec-ops arg1 inc/dec)
-                    :arg2 arg2)
-  :hooks (:fix)
-
-  ///
-
-  (defret expr-unambp-of-dimb-cast/and-to-and
-    (expr-unambp expr)
-    :hyp (and (expr-unambp arg1)
-              (expr-unambp arg2))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define dimb-make/adjust-expr-cast ((type tynamep) (arg exprp))
   :guard (and (tyname-unambp type)
               (expr-unambp arg))
@@ -729,7 +368,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is used in @(tsee dimb-expr), when dealing with a cast expression.
+    "This is used to build or adjust cast expression,
+     in @(tsee dimb-expr) and other functions.
      When @(tsee dimb-expr) encounters a cast expression,
      it recursively disambiguates
      the type name @('T0') and the argument expression @('E0'),
@@ -746,6 +386,10 @@
      to return a cast expression, which would be @('(T) (A op B)').
      Therefore, @(tsee dimb-expr) uses this function defined here
      to combine @('T') and @('E') properly, and return the result.")
+   (xdoc::p
+    "The same kind of adjustment may be needed
+     in functions like @(tsee dimb-cast/call-to-cast),
+     which also normally build cast expressions.")
    (xdoc::p
     "This function takes @('T') and @('E') as inputs.
      If @('E') is a binary expression, let that be @('A op B'),
@@ -858,7 +502,12 @@
      For example, an initial @('[ (x) & y ] * [ (z) + w ]')
      results in @('(x) & [ [ y * (z) ] + w ]'),
      while an initial @('[ (x) + y ] * [ (z) & w ]')
-     results in @('[ (x) + [ y * (z) ] ] & w]')."))
+     results in @('[ (x) + [ y * (z) ] ] & w]').")
+   (xdoc::p
+    "Besides @(tsee dimb-expr),
+     the same kind of adjustment may be needed
+     in functions like @(tsee dimb-cast/mul-to-mul),
+     which also build binary expressions that may need re-grouping."))
   (b* (((mv left-prio right-prio) (binop-expected-priorities op))
        (left-okp (or (not (expr-case left :binary))
                      (expr-priority-<= left-prio (expr->priority left))))
@@ -907,6 +556,332 @@
     (expr-unambp expr)
     :hyp (and (expr-unambp left)
               (expr-unambp right))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define dimb-cast/call-to-cast ((tyname tynamep)
+                                (inc/dec inc/dec-op-listp)
+                                (arg exprp))
+  :guard (and (tyname-unambp tyname)
+              (expr-unambp arg))
+  :returns (cast-expr exprp)
+  :short "Disambiguate an ambiguous cast or call expression
+          to be a cast expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The form @('(X) IncDec (E)Pr') of an ambiguous call or cast expression
+     is described in detail in @(tsee expr): refer to that description.
+     This ambiguous expression is disambiguated in @(tsee dimb-expr),
+     by first disambiguating whether @('X') is a type name or an expression.
+     Based on that, the constituents of that ambiguous expression
+     must be re-arranged into an unambiguous expression:
+     this is done by this function,
+     for the case in which @('X') is a type name.
+     The case in which @('X') is an expression
+     is handled in @(tsee dimb-cast/call-to-call).")
+   (xdoc::p
+    "In this function,
+     @('tyname') is @('X'),
+     @('inc/dec') is @('IncDec'), and
+     @('arg') is @('(E)Pr').
+     If @('X') is a type name,
+     the increment and decrement operators, if any,
+     are pre-increment and pre-decrement operators
+     applied to the expression @('(E)Pr').
+     We apply them and we form a cast expression."))
+  (dimb-make/adjust-expr-cast tyname
+                              (apply-pre-inc/dec-ops inc/dec arg))
+  :hooks (:fix)
+
+  ///
+
+  (defret expr-unambp-of-dimb-cast/call-to-cast
+    (expr-unambp cast-expr)
+    :hyp (and (tyname-unambp tyname)
+              (expr-unambp arg))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define dimb-cast/call-to-call ((fun exprp)
+                                (inc/dec inc/dec-op-listp)
+                                (rest exprp))
+  :guard (and (expr-unambp fun)
+              (expr-unambp rest))
+  :returns (call-expr exprp)
+  :short "Disambiguate an ambiguous cast or call expression
+          to be a call expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The form @('(X) IncDec (E)Pr') of an ambiguous call or cast expression
+     is described in detail in @(tsee expr): refer to that description.
+     This ambiguous expression is disambiguated in @(tsee dimb-expr),
+     by first disambiguating whether @('X') is a type name or an expression.
+     Based on that, the constituents of that ambiguous expression
+     must be re-arranged into an unambiguous expression:
+     this is done by this function,
+     for the case in which @('X') is an expression.
+     The case in which @('X') is a type name
+     is handled in @(tsee dimb-cast/call-to-call).")
+   (xdoc::p
+    "In this function,
+     @('fun') is @('X'),
+     @('inc/dec') is @('IncDec'), and
+     @('rest') is @('(E)Pr').
+     If @('X') is an expression,
+     the increment and decrement operators, if any,
+     are post-increment and post-decrement operators
+     applied to the expression @('X').
+     We apply them and we form a call expression.
+     To do so, we need to separate @('(E)') and @('Pr'),
+     turn @('(E)') into @('(E1,...,En)') according to the comma operators,
+     and then apply the @('Pr') to the call @('(X)(E1,...,En)').")
+   (xdoc::p
+    "We perform the latter transformation via a recursion,
+     because we need to go through the individual postfix constructs of @('Pr'),
+     till we reach @('(E)'),
+     and then we re-apply the postfix constructs of @('Pr')."))
+  (b* ((fun (expr-paren fun))
+       (fun (apply-post-inc/dec-ops fun inc/dec)))
+    (dimb-cast/call-to-call-loop fun rest))
+  :hooks (:fix)
+
+  :prepwork
+
+  ((define dimb-cast/call-to-call-loop ((fun exprp) (rest exprp))
+     :guard (and (expr-unambp fun)
+                 (expr-unambp rest))
+     :returns (new-expr exprp)
+     :parents nil
+     (b* (((when (expr-case rest :paren))
+           (b* ((args (expr-to-asg-expr-list (expr-paren->inner rest))))
+             (make-expr-funcall :fun fun :args args)))
+          ((when (expr-case rest :arrsub))
+           (b* ((expr
+                 (dimb-cast/call-to-call-loop fun (expr-arrsub->arg1 rest))))
+             (make-expr-arrsub :arg1 expr :arg2 (expr-arrsub->arg2 rest))))
+          ((when (expr-case rest :funcall))
+           (b* ((expr
+                 (dimb-cast/call-to-call-loop fun (expr-funcall->fun rest))))
+             (make-expr-funcall :fun expr :args (expr-funcall->args rest))))
+          ((when (expr-case rest :member))
+           (b* ((expr
+                 (dimb-cast/call-to-call-loop fun (expr-member->arg rest))))
+             (make-expr-member :arg expr :name (expr-member->name rest))))
+          ((when (expr-case rest :memberp))
+           (b* ((expr
+                 (dimb-cast/call-to-call-loop fun (expr-memberp->arg rest))))
+             (make-expr-memberp :arg expr :name (expr-memberp->name rest)))))
+       (prog2$
+        (raise "Internal error: unexpected expression ~x0." (expr-fix fun))
+        (irr-expr)))
+     :measure (expr-count rest)
+     :hints (("Goal" :in-theory (enable o< o-finp)))
+     :verify-guards :after-returns
+     :hooks (:fix)
+
+     ///
+
+     (defret expr-unambp-of-dimb-cast/call-to-call-loop
+       (expr-unambp new-expr)
+       :hyp (and (expr-unambp fun)
+                 (expr-unambp rest))
+       :hints (("Goal" :induct t :in-theory (enable irr-expr))))))
+
+  ///
+
+  (defret expr-unambp-of-dimb-cast/call-to-call
+    (expr-unambp call-expr)
+    :hyp (and (expr-unambp fun)
+              (expr-unambp rest))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define dimb-cast/mul-to-cast ((tyname tynamep)
+                               (inc/dec inc/dec-op-listp)
+                               (arg exprp))
+  :guard (and (tyname-unambp tyname)
+              (expr-unambp arg))
+  :returns (cast-expr exprp)
+  :short "Disambiguate an ambiguous cast or multiplication expression
+          to be a cast expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is analogous in purpose to @(tsee dimb-cast/call-to-cast),
+     but for a different kind of ambiguous expression.
+     Note that the @('*'), which is unary in this disambiguation,
+     is implicit in the abstract syntax of the ambiguous expression."))
+  (dimb-make/adjust-expr-cast tyname
+                              (make-expr-unary
+                               :op (unop-indir)
+                               :arg (apply-pre-inc/dec-ops inc/dec arg)))
+  :hooks (:fix)
+
+  ///
+
+  (defret expr-unambp-of-dimb-cast/mul-to-cast
+    (expr-unambp cast-expr)
+    :hyp (and (tyname-unambp tyname)
+              (expr-unambp arg))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define dimb-cast/mul-to-mul ((arg1 exprp)
+                              (inc/dec inc/dec-op-listp)
+                              (arg2 exprp))
+  :guard (and (expr-unambp arg1)
+              (expr-unambp arg2))
+  :returns (mul-expr exprp)
+  :short "Disambiguate an ambiguous cast or multiplication expression
+          to be a multiplication expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is analogous in purpose to @(tsee dimb-cast/call-to-call),
+     but for a different kind of ambiguous expression.
+     Note that the @('*'), which is binary in this disambiguation,
+     is implicit in the abstract syntax of the ambiguous expression."))
+  (dimb-make/adjust-expr-binary (binop-mul)
+                                (apply-post-inc/dec-ops arg1 inc/dec)
+                                arg2)
+  :hooks (:fix)
+
+  ///
+
+  (defret expr-unambp-of-dimb-cast/mul-to-mul
+    (expr-unambp mul-expr)
+    :hyp (and (expr-unambp arg1)
+              (expr-unambp arg2))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define dimb-cast/addsub-to-cast ((tyname tynamep)
+                                  (inc/dec inc/dec-op-listp)
+                                  (arg exprp)
+                                  (plus/minus unopp))
+  :guard (and (tyname-unambp tyname)
+              (expr-unambp arg)
+              (or (unop-case plus/minus :plus)
+                  (unop-case plus/minus :minus)))
+  :returns (expr exprp)
+  :short "Disambiguate an ambiguous cast or addition/subtraction expression
+          to be a cast expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is analogous in purpose to @(tsee dimb-cast/call-to-cast),
+     but for a different kind of ambiguous expression,
+     actually two kinds, which are very similar and thus handled together;
+     the two kinds are selected by the unary operator passed as input.
+     Note that the @('+') or @('-'), which is unary in this disambiguation,
+     is implicit in the abstract syntax of the ambiguous expression."))
+  (dimb-make/adjust-expr-cast tyname
+                              (make-expr-unary
+                               :op plus/minus
+                               :arg (apply-pre-inc/dec-ops inc/dec arg)))
+  :hooks (:fix)
+
+  ///
+
+  (defret expr-unambp-of-dimb-cast/addsub-to-cast
+    (expr-unambp expr)
+    :hyp (and (tyname-unambp tyname)
+              (expr-unambp arg))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define dimb-cast/addsub-to-addsub ((arg1 exprp)
+                                    (inc/dec inc/dec-op-listp)
+                                    (arg2 exprp)
+                                    (add/sub binopp))
+  :guard (and (expr-unambp arg1)
+              (expr-unambp arg2)
+              (or (binop-case add/sub :add)
+                  (binop-case add/sub :sub)))
+  :returns (expr exprp)
+  :short "Disambiguate an ambiguous cast or addition/subtraction expression
+          to be an addition or subtraction expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is analogous in purpose to @(tsee dimb-cast/call-to-call),
+     but for a different kind of ambiguous expression,
+     actually two kinds, which are very similar and thus handled together;
+     the two kinds are selected by the binary operator passed as input.
+     Note that the @('+') or @('-'), which is binary in this disambiguation,
+     is implicit in the abstract syntax of the ambiguous expression."))
+  (dimb-make/adjust-expr-binary add/sub
+                                (apply-post-inc/dec-ops arg1 inc/dec)
+                                arg2)
+  :hooks (:fix)
+
+  ///
+
+  (defret expr-unambp-of-dimb-cast/addsub-to-addsub
+    (expr-unambp expr)
+    :hyp (and (expr-unambp arg1)
+              (expr-unambp arg2))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define dimb-cast/and-to-cast ((tyname tynamep)
+                               (inc/dec inc/dec-op-listp)
+                               (arg exprp))
+  :guard (and (tyname-unambp tyname)
+              (expr-unambp arg))
+  :returns (expr exprp)
+  :short "Disambiguate an ambiguous cast or conjunction expression
+          to be a cast expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is analogous in purpose to @(tsee dimb-cast/call-to-cast),
+     but for a different kind of ambiguous expression.
+     Note that the @('&'), which is unary in this disambiguation,
+     is implicit in the abstract syntax of the ambiguous expression."))
+  (dimb-make/adjust-expr-cast tyname
+                              (make-expr-unary
+                               :op (unop-address)
+                               :arg (apply-pre-inc/dec-ops inc/dec arg)))
+  :hooks (:fix)
+
+  ///
+
+  (defret expr-unambp-of-dimb-cast/and-to-cast
+    (expr-unambp expr)
+    :hyp (and (tyname-unambp tyname)
+              (expr-unambp arg))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define dimb-cast/and-to-and ((arg1 exprp)
+                              (inc/dec inc/dec-op-listp)
+                              (arg2 exprp))
+  :guard (and (expr-unambp arg1)
+              (expr-unambp arg2))
+  :returns (expr exprp)
+  :short "Disambiguate an ambiguous cast or conjunction expression
+          to be a conjunction expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is analogous in purpose to @(tsee dimb-cast/call-to-call),
+     but for a different kind of ambiguous expression.
+     Note that the @('&'), which is binary in this disambiguation,
+     is implicit in the abstract syntax of the ambiguous expression."))
+  (dimb-make/adjust-expr-binary (binop-bitand)
+                                (apply-post-inc/dec-ops arg1 inc/dec)
+                                arg2)
+  :hooks (:fix)
+
+  ///
+
+  (defret expr-unambp-of-dimb-cast/and-to-and
+    (expr-unambp expr)
+    :hyp (and (expr-unambp arg1)
+              (expr-unambp arg2))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3378,6 +3353,7 @@
                     (ident "__builtin_strncpy")
                     (ident "__builtin_sub_overflow")
                     (ident "__builtin_unreachable")
+                    (ident "__builtin_va_end")
                     (ident "__builtin_va_start")
                     (ident "__eax")
                     (ident "__ebx")
