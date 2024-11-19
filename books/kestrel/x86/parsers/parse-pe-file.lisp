@@ -13,6 +13,7 @@
 
 ;; See also build-book-for-pe-file.lisp.
 
+;; TDOO: Avoid throwing hard errors, now that this can return erps.
 ;; TODO: Collect any warnings / errors and include them in the parsed output somehow?
 
 (include-book "parser-utils")
@@ -29,12 +30,49 @@
 (local (include-book "kestrel/bv/bvcat" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
-;todo: use len-at-least
-(defun at-least-n-bytes-left (n bytes)
-  (declare (xargs :guard (and (posp n)
-                              (true-listp bytes))))
-  (consp (nthcdr (- n 1) bytes))) ;we take all but the last and assert there is at least one more
+(local (defthm integerp-when-unsigned-byte-p-32
+         (implies (unsigned-byte-p 32 x)
+                  (integerp x))))
+
+(local (defthm integerp-when-unsigned-byte-p-16
+         (implies (unsigned-byte-p 16 x)
+                  (integerp x))))
+
+(local (defthm acl2-numberp-when-unsigned-byte-p-32
+         (implies (unsigned-byte-p 32 x)
+                  (acl2-numberp x))))
+
+(local (defthm natp-when-unsigned-byte-p-32
+         (implies (unsigned-byte-p 32 x)
+                  (natp x))))
+
+(local (defthm <=-of-0-when-unsigned-byte-p-32
+         (implies (unsigned-byte-p 32 x)
+                  (<= 0 x))))
+
+(local (in-theory (disable natp)))
+
+(local (in-theory (enable unsigned-byte-p-of-mv-nth-1-of-parse-u8
+                          unsigned-byte-p-of-mv-nth-1-of-parse-u16
+                          unsigned-byte-p-of-mv-nth-1-of-parse-u32
+                          unsigned-byte-p-of-mv-nth-1-of-parse-u64
+                          byte-listp-of-mv-nth-2-of-parse-u8
+                          byte-listp-of-mv-nth-2-of-parse-u16
+                          byte-listp-of-mv-nth-2-of-parse-u32
+                          byte-listp-of-mv-nth-2-of-parse-u64)))
+
+;; ;; deprecate?
+;; ;; A version of TAKE that throws an error if there are not at least N
+;; ;; elements in the list.
+;; (defun take-safe-ctx (n l ctx)
+;;   (declare (xargs :guard (and (natp n)
+;;                               (true-listp l))))
+;;   (if (> n (len l))
+;;       (er hard? ctx "Not enough bytes to take ~x0 of them." n)
+;;     (take n l)))
+
 
 (defconst *expected-sig*
   (list (char-code #\P)
@@ -48,40 +86,44 @@
 ;; Returns the PE signature offset, or nil if there are not enough bytes.  The
 ;; offset to the PE signature is a u32 at location #x3c.
 (defun pe-sig-offset (all-bytes)
-  (declare (xargs :guard (integer-listp all-bytes)))
-  (b* (((when (not (at-least-n-bytes-left (+ 4 #x3c) all-bytes)))
+  (declare (xargs :guard (byte-listp all-bytes)))
+  (b* (((when (not (len-at-least (+ 4 #x3c) all-bytes)))
         (prog2$ (cw "NOTE: Not enough bytes to get the PE signature offset.~%")
                 nil))
        (bytes (nthcdr #x3c all-bytes))
-       ((mv pe-sig-offset &)
+       ((mv & pe-sig-offset &)
         (parse-u32 bytes)))
     pe-sig-offset))
 
 ;; Skips ahead to the PE signature (so this skips over any extra stuff between the true MS-DOS stub and the PE signature)
 (defun parse-ms-dos-stub (bytes)
-  (declare (xargs :guard (integer-listp bytes)))
+  (declare (xargs :guard (byte-listp bytes)))
   (b* ((pe-sig-offset (pe-sig-offset bytes))
        ((when (not pe-sig-offset))
-        (mv (er hard? 'parse-ms-dos-stub "Failed to get the offset to the PE signature.")
+        (mv :not-enough-bytes
+            (er hard? 'parse-ms-dos-stub "Failed to get the offset to the PE signature.")
             nil))
        ;; consume all bytes up to the given offset (there may be extra stuff after the MS-DOS stub)
-       (ms-dos-stub (take-safe-ctx pe-sig-offset bytes 'parse-ms-dos-stub))
-       (bytes (nthcdr pe-sig-offset bytes)))
-    (mv ms-dos-stub bytes)))
+       ((when (not (len-at-least pe-sig-offset bytes)))
+        (mv :not-enough-bytes-for-ms-dos-stub nil bytes))
+       (ms-dos-stub (take pe-sig-offset bytes))
+       (bytes (nthcdr pe-sig-offset bytes))
+       )
+    (mv nil ms-dos-stub bytes)))
 
 ;; Returns the PE signature, or NIL if there are not enough bytes in the file.
 ;; This may often be called on a non-PE file, so it needs to be safe.
 (defun pe-file-signature (bytes)
-  (declare (xargs :guard (integer-listp bytes)))
+  (declare (xargs :guard (byte-listp bytes)))
   (b* ((pe-sig-offset (pe-sig-offset bytes))
        ((when (not pe-sig-offset))
         nil) ;maybe this is not even a PE file.
        ;; (- (cw "NOTE: Offset to pe-sig would be ~x0.~%" pe-sig-offset))
-       ((when (not (at-least-n-bytes-left (+ 4 pe-sig-offset) bytes)))
+       ((when (not (len-at-least (+ 4 pe-sig-offset) bytes)))
         (prog2$ (cw "NOTE: Not enough bytes to read a PE signature at offset ~x0.~%" pe-sig-offset)
                 nil))
        (bytes (nthcdr pe-sig-offset bytes))
-       ((mv sig &) (parse-u32 bytes)))
+       ((mv & sig &) (parse-u32 bytes)))
     sig))
 
 (defconst *machine-types*
@@ -132,69 +174,89 @@
     (#x4000 . :IMAGE_FILE_UP_SYSTEM_ONLY)
     (#x8000 . :IMAGE_FILE_BYTES_REVERSED_HI)))
 
+;; Returns (mv erp header bytes).
 (defun parse-coff-file-header (bytes)
-;  (declare (xargs :guard (integer-listp bytes)))   ;todo: check for not enough bytes (using len-at-least)
+  (declare (xargs :guard (byte-listp bytes)))
   (b* ((header nil)
        ;; machine:
-       ((mv machine bytes) (parse-u16 bytes))
+       ((mv erp machine bytes) (parse-u16 bytes))
+       ((when erp) (mv erp nil bytes))
        (header (acons :machine (lookup-safe machine *machine-types*) header))
        ;; number-of-sections:
-       ((mv number-of-sections bytes) (parse-u16 bytes))
+       ((mv erp number-of-sections bytes) (parse-u16 bytes))
+       ((when erp) (mv erp nil bytes))
        (header (acons :number-of-sections number-of-sections header))
        ;; time-date-stamp:
-       ((mv time-date-stamp bytes) (parse-u32 bytes))
+       ((mv erp time-date-stamp bytes) (parse-u32 bytes))
+       ((when erp) (mv erp nil bytes))
        (header (acons :time-date-stamp time-date-stamp header))
        ;; pointer-to-symbol-table:
-       ((mv pointer-to-symbol-table bytes) (parse-u32 bytes))
+       ((mv erp pointer-to-symbol-table bytes) (parse-u32 bytes))
+       ((when erp) (mv erp nil bytes))
        ;; pecoff.pdf says: "This value should be zero for an image because COFF debugging information is deprecated."
        ;; However, non-zero values seem to happen a lot.
        (- (and (not (eql 0 pointer-to-symbol-table))
                (cw "NOTE: Non-zero pointer to symbol table (deprecated): ~x0.~%" pointer-to-symbol-table)))
        (header (acons :pointer-to-symbol-table pointer-to-symbol-table header))
        ;; number-of-symbols:
-       ((mv number-of-symbols bytes) (parse-u32 bytes))
+       ((mv erp number-of-symbols bytes) (parse-u32 bytes))
+       ((when erp) (mv erp nil bytes))
        ;; pecoff.pdf says: This value should be zero for an image because COFF debugging information is deprecated.
        ;; However, non-zero values seem to happen a lot.
        (- (and (not (eql 0 number-of-symbols))
                (cw "NOTE: Non-zero number of symbols (deprecated): ~x0.~%" number-of-symbols)))
        (header (acons :number-of-symbols number-of-symbols header))
        ;; size-of-optional-header:
-       ((mv size-of-optional-header bytes) (parse-u16 bytes))
+       ((mv erp size-of-optional-header bytes) (parse-u16 bytes))
+       ((when erp) (mv erp nil bytes))
        (header (acons :size-of-optional-header size-of-optional-header header)) ;TODO: Use this to decide whether to parse an optional-header
        ;; characteristics:
-       ((mv characteristics bytes) (parse-u16 bytes))
+       ((mv erp characteristics bytes) (parse-u16 bytes))
+       ((when erp) (mv erp nil bytes))
        (header (acons :characteristics (decode-flags characteristics
                                                      *pe-characteristic-flags-alist*)
                       header)))
-      (mv (reverse header) bytes)))
+      (mv nil (reverse header) bytes)))
 
+;; Returns (mv erp header bytes).
 (defun parse-optional-header-standard-fields (bytes)
+  (declare (xargs :guard (byte-listp bytes)))
   (b* ((header nil)
-       ((mv magic-number bytes) (parse-u16 bytes))
+       ((mv erp magic-number bytes) (parse-u16 bytes))
+       ((when erp) (mv erp nil bytes))
        (magic (lookup-safe magic-number *magic-numbers*))
        (header (acons :magic magic header))
-       ((mv major-linker-version bytes) (parse-u8 bytes))
+       ((mv erp major-linker-version bytes) (parse-u8 bytes))
+       ((when erp) (mv erp nil bytes))
        (header (acons :major-linker-version major-linker-version header))
-       ((mv minor-linker-version bytes) (parse-u8 bytes))
+       ((mv erp minor-linker-version bytes) (parse-u8 bytes))
+       ((when erp) (mv erp nil bytes))
        (header (acons :minor-linker-version minor-linker-version header))
-       ((mv size-of-code bytes) (parse-u32 bytes))
+       ((mv erp size-of-code bytes) (parse-u32 bytes))
+       ((when erp) (mv erp nil bytes))
        (header (acons :size-of-code size-of-code header))
-       ((mv size-of-initialized-data bytes) (parse-u32 bytes))
+       ((mv erp size-of-initialized-data bytes) (parse-u32 bytes))
+       ((when erp) (mv erp nil bytes))
        (header (acons :size-of-initialized-data size-of-initialized-data header))
-       ((mv size-of-uninitialized-data bytes) (parse-u32 bytes))
+       ((mv erp size-of-uninitialized-data bytes) (parse-u32 bytes))
+       ((when erp) (mv erp nil bytes))
        (header (acons :size-of-uninitialized-data size-of-uninitialized-data header))
-       ((mv address-of-entry-point bytes) (parse-u32 bytes))
+       ((mv erp address-of-entry-point bytes) (parse-u32 bytes))
+       ((when erp) (mv erp nil bytes))
        (header (acons :address-of-entry-point address-of-entry-point header))
-       ((mv base-of-code bytes) (parse-u32 bytes))
+       ((mv erp base-of-code bytes) (parse-u32 bytes))
+       ((when erp) (mv erp nil bytes))
        (header (acons :base-of-code base-of-code header))
-       ((mv header bytes)
+       ((mv erp header bytes)
         (if (eq magic :pe32)
             ;; this field is only for PE32:
-            (b* (((mv base-of-data bytes) (parse-u32 bytes))
+            (b* (((mv erp base-of-data bytes) (parse-u32 bytes))
+                 ((when erp) (mv erp nil bytes))
                  (header (acons :base-of-data base-of-data header)))
-                (mv header bytes))
-          (mv header bytes))))
-    (mv (reverse header) bytes)))
+              (mv nil header bytes))
+          (mv nil header bytes)))
+       ((when erp) (mv erp nil bytes)))
+    (mv nil (reverse header) bytes)))
 
 (defconst *windows-subsystems*
   '((0 . :IMAGE_SUBSYSTEM_UNKNOWN)
@@ -226,61 +288,88 @@
     (#x4000 . :IMAGE_DLLCHARACTERISTICS_GUARD_CF)
     (#x8000 . :IMAGE_DLLCHARACTERISTICS_TERMINAL_SERVER_AWARE)))
 
+;; Returns (mv erp result bytes)
 (defun parse-optional-header-windows-specific-fields (magic bytes)
+  (declare (xargs :guard (and (symbolp magic)
+                              (byte-listp bytes))))
   (b* ((header nil)
-       ((mv image-base bytes) (if (eq :pe32 magic) (parse-u32 bytes) (parse-u64 bytes)))
+       ((mv erp image-base bytes) (if (eq :pe32 magic) (parse-u32 bytes) (parse-u64 bytes)))
+       ((when erp) (mv erp nil bytes))
        (header (acons :image-base image-base header))
-       ((mv section-alignment bytes) (parse-u32 bytes))
+       ((mv erp section-alignment bytes) (parse-u32 bytes))
+       ((when erp) (mv erp nil bytes))
        (header (acons :section-alignment section-alignment header))
-       ((mv file-alignment bytes) (parse-u32 bytes))
+       ((mv erp file-alignment bytes) (parse-u32 bytes))
+       ((when erp) (mv erp nil bytes))
        (header (acons :file-alignment file-alignment header))
-       ((mv major-operating-system-version bytes) (parse-u16 bytes))
+       ((mv erp major-operating-system-version bytes) (parse-u16 bytes))
+       ((when erp) (mv erp nil bytes))
        (header (acons :major-operating-system-version major-operating-system-version header))
-       ((mv minor-operating-system-version bytes) (parse-u16 bytes))
+       ((mv erp minor-operating-system-version bytes) (parse-u16 bytes))
+       ((when erp) (mv erp nil bytes))
        (header (acons :minor-operating-system-version minor-operating-system-version header))
-       ((mv major-image-version bytes) (parse-u16 bytes))
+       ((mv erp major-image-version bytes) (parse-u16 bytes))
+       ((when erp) (mv erp nil bytes))
        (header (acons :major-image-version major-image-version header))
-       ((mv minor-image-version bytes) (parse-u16 bytes))
+       ((mv erp minor-image-version bytes) (parse-u16 bytes))
+       ((when erp) (mv erp nil bytes))
        (header (acons :minor-image-version minor-image-version header))
-       ((mv major-subsystem-version bytes) (parse-u16 bytes))
+       ((mv erp major-subsystem-version bytes) (parse-u16 bytes))
+       ((when erp) (mv erp nil bytes))
        (header (acons :major-subsystem-version major-subsystem-version header))
-       ((mv minor-subsystem-version bytes) (parse-u16 bytes))
+       ((mv erp minor-subsystem-version bytes) (parse-u16 bytes))
+       ((when erp) (mv erp nil bytes))
        (header (acons :minor-subsystem-version minor-subsystem-version header))
-       ((mv win-32-version-value bytes) (parse-u32 bytes))
+       ((mv erp win-32-version-value bytes) (parse-u32 bytes))
+       ((when erp) (mv erp nil bytes))
        ((when (not (eql 0 win-32-version-value)))
-        (mv (er hard 'parse-optional-header-windows-specific-fields "Win32VersionValue should be 0.")
-              bytes))
-       ((mv size-of-image bytes) (parse-u32 bytes))
+        (mv :bad-win32versionvalue
+            (er hard? 'parse-optional-header-windows-specific-fields "Win32VersionValue should be 0.")
+            bytes))
+       ((mv erp size-of-image bytes) (parse-u32 bytes))
+       ((when erp) (mv erp nil bytes))
        (header (acons :size-of-image size-of-image header))
-       ((mv size-of-headers bytes) (parse-u32 bytes))
+       ((mv erp size-of-headers bytes) (parse-u32 bytes))
+       ((when erp) (mv erp nil bytes))
        (header (acons :size-of-headers size-of-headers header))
-       ((mv check-sum bytes) (parse-u32 bytes))
+       ((mv erp check-sum bytes) (parse-u32 bytes))
+       ((when erp) (mv erp nil bytes))
        (header (acons :check-sum check-sum header))
-       ((mv subsystem bytes) (parse-u16 bytes))
+       ((mv erp subsystem bytes) (parse-u16 bytes))
+       ((when erp) (mv erp nil bytes))
        (header (acons :subsystem (lookup-safe subsystem *windows-subsystems*) header)) ;todo: better error message if no match
-       ((mv dll-characteristics bytes) (parse-u16 bytes))
+       ((mv erp dll-characteristics bytes) (parse-u16 bytes))
+       ((when erp) (mv erp nil bytes))
        (header (acons :dll-characteristics (decode-flags dll-characteristics *dll-characteristics-flags-alist*) header))
-       ((mv size-of-stack-reserve bytes) (if (eq :pe32 magic) (parse-u32 bytes) (parse-u64 bytes)))
+       ((mv erp size-of-stack-reserve bytes) (if (eq :pe32 magic) (parse-u32 bytes) (parse-u64 bytes)))
+       ((when erp) (mv erp nil bytes))
        (header (acons :size-of-stack-reserve size-of-stack-reserve header))
-       ((mv size-of-stack-commit bytes) (if (eq :pe32 magic) (parse-u32 bytes) (parse-u64 bytes)))
+       ((mv erp size-of-stack-commit bytes) (if (eq :pe32 magic) (parse-u32 bytes) (parse-u64 bytes)))
+       ((when erp) (mv erp nil bytes))
        (header (acons :size-of-stack-commit size-of-stack-commit header))
-       ((mv size-of-heap-reserve bytes) (if (eq :pe32 magic) (parse-u32 bytes) (parse-u64 bytes)))
+       ((mv erp size-of-heap-reserve bytes) (if (eq :pe32 magic) (parse-u32 bytes) (parse-u64 bytes)))
+       ((when erp) (mv erp nil bytes))
        (header (acons :size-of-heap-reserve size-of-heap-reserve header))
-       ((mv size-of-heap-commit bytes) (if (eq :pe32 magic) (parse-u32 bytes) (parse-u64 bytes)))
+       ((mv erp size-of-heap-commit bytes) (if (eq :pe32 magic) (parse-u32 bytes) (parse-u64 bytes)))
+       ((when erp) (mv erp nil bytes))
        (header (acons :size-of-heap-commit size-of-heap-commit header))
-       ((mv loader-flags bytes) (parse-u32 bytes))
+       ((mv erp loader-flags bytes) (parse-u32 bytes))
+       ((when erp) (mv erp nil bytes))
        (- (if (not (eql 0 loader-flags))
               (cw "ERROR: LoaderFlags should be 0, but they are ~x0." loader-flags) ;todo: store them?
             nil))
-       ((mv number-of-rva-and-sizes bytes) (parse-u32 bytes))
+       ((mv erp number-of-rva-and-sizes bytes) (parse-u32 bytes))
+       ((when erp) (mv erp nil bytes))
        (header (acons :number-of-rva-and-sizes number-of-rva-and-sizes header)))
-      (mv (reverse header) bytes)))
+      (mv nil (reverse header) bytes)))
 
 (defun parse-optional-data-directories-aux (num bytes acc)
   (if (zp num)
-      (mv (reverse acc) bytes)
-    (b* (((mv rva bytes) (parse-u32 bytes))
-         ((mv size bytes) (parse-u32 bytes))
+      (mv nil (reverse acc) bytes)
+    (b* (((mv erp rva bytes) (parse-u32 bytes))
+         ((when erp) (mv erp nil bytes))
+         ((mv erp size bytes) (parse-u32 bytes))
+         ((when erp) (mv erp nil bytes))
          (data-directory (acons :rva rva (acons :size size nil))))
         (parse-optional-data-directories-aux (+ -1 num) bytes (cons data-directory acc)))))
 
@@ -312,10 +401,12 @@
 
 ;TODO: check that we don't run out of names before we run out of directories
 (defun parse-optional-data-directories (number-of-rva-and-sizes bytes)
-  (b* (((mv data-directories bytes)
-        (parse-optional-data-directories-aux number-of-rva-and-sizes bytes nil)))
-      (mv (pair-data-directories-with-names data-directories *data-directory-names*)
-          bytes)))
+  (b* (((mv erp data-directories bytes)
+        (parse-optional-data-directories-aux number-of-rva-and-sizes bytes nil))
+       ((when erp) (mv erp nil bytes)))
+    (mv nil
+        (pair-data-directories-with-names data-directories *data-directory-names*)
+        bytes)))
 
 (defun keep-bytes-until-0 (bytes)
   (if (endp bytes)
@@ -430,31 +521,42 @@
           (name-to-string (nthcdr string-table-offset string-table-bytes))))
     (name-to-string name-bytes)))
 
+;; Returns (mv erp header bytes).
 ;; TODO: Add the special handling for $ in section names in object files.
 (defun parse-pe-section-header (file-type bytes string-table-bytes)
   ;;(declare (xargs :guard (member-eq file-type '(:image :object))))
   (b* ((header nil) ;to accumulate results
-       ((mv name-bytes bytes) (parse-n-bytes 8 bytes))
+       ((mv erp name-bytes bytes) (parse-n-bytes 8 bytes))
+       ((when erp) (mv erp nil bytes))
        ;; (- (cw "section name-bytes: ~x0~%" name-bytes))
        (name (decode-section-name name-bytes string-table-bytes))
        (header (acons :name name header))
-       ((mv virtual-size bytes) (parse-u32 bytes))
+       ((mv erp virtual-size bytes) (parse-u32 bytes))
+       ((when erp) (mv erp nil bytes))
        (header (acons :virtual-size virtual-size header))
-       ((mv virtual-address bytes) (parse-u32 bytes))
+       ((mv erp virtual-address bytes) (parse-u32 bytes))
+       ((when erp) (mv erp nil bytes))
        (header (acons :virtual-address virtual-address header))
-       ((mv size-of-raw-data bytes) (parse-u32 bytes))
+       ((mv erp size-of-raw-data bytes) (parse-u32 bytes))
+       ((when erp) (mv erp nil bytes))
        (header (acons :size-of-raw-data size-of-raw-data header))
-       ((mv pointer-to-raw-data bytes) (parse-u32 bytes))
+       ((mv erp pointer-to-raw-data bytes) (parse-u32 bytes))
+       ((when erp) (mv erp nil bytes))
        (header (acons :pointer-to-raw-data pointer-to-raw-data header))
-       ((mv pointer-to-relocations bytes) (parse-u32 bytes))
+       ((mv erp pointer-to-relocations bytes) (parse-u32 bytes))
+       ((when erp) (mv erp nil bytes))
        (header (acons :pointer-to-relocations pointer-to-relocations header))
-       ((mv pointer-to-line-numbers bytes) (parse-u32 bytes))
+       ((mv erp pointer-to-line-numbers bytes) (parse-u32 bytes))
+       ((when erp) (mv erp nil bytes))
        (header (acons :pointer-to-line-numbers pointer-to-line-numbers header))
-       ((mv number-of-relocations bytes) (parse-u16 bytes))
+       ((mv erp number-of-relocations bytes) (parse-u16 bytes))
+       ((when erp) (mv erp nil bytes))
        (header (acons :number-of-relocations number-of-relocations header))
-       ((mv number-of-line-numbers bytes) (parse-u16 bytes))
+       ((mv erp number-of-line-numbers bytes) (parse-u16 bytes))
+       ((when erp) (mv erp nil bytes))
        (header (acons :number-of-line-numbers number-of-line-numbers header))
-       ((mv characteristics-val bytes) (parse-u32 bytes))
+       ((mv erp characteristics-val bytes) (parse-u32 bytes))
+       ((when erp) (mv erp nil bytes))
        ;;(characteristics (bvxor 32 #xFF0FFFFF characteristics-val)) not really needed
        (characteristics (decode-flags characteristics-val *pe-section-characteristic-flags-alist*))
        (characteristics (if (eq file-type :object) ;the alignment stuff is only valid for object files
@@ -464,13 +566,14 @@
                               (cons alignment characteristics))
                           characteristics))
        (header (acons :characteristics characteristics header)))
-      (mv (reverse header) bytes)))
+      (mv nil (reverse header) bytes)))
 
 (defun parse-pe-section-headers (number-of-sections file-type acc bytes string-table-bytes)
   ;(declare (xargs :guard (member-eq file-type '(:image :object))))
   (if (zp number-of-sections)
-      (mv (reverse acc) bytes)
-    (b* (((mv section-header bytes) (parse-pe-section-header file-type bytes string-table-bytes)))
+      (mv nil (reverse acc) bytes)
+    (b* (((mv erp section-header bytes) (parse-pe-section-header file-type bytes string-table-bytes))
+         ((when erp) (mv erp nil bytes)))
         (parse-pe-section-headers (+ -1 number-of-sections) file-type (cons section-header acc) bytes string-table-bytes))))
 
 (defun parse-section (section-header all-bytes len-all-bytes acc)
@@ -495,12 +598,14 @@
     (let ((acc (parse-section (first section-headers) all-bytes len-all-bytes acc)))
       (parse-sections (rest section-headers) acc all-bytes len-all-bytes))))
 
+;; Returns (mv erp string)
 ;bytes has length 8
 (defun interpret-symbol-name (bytes string-table-bytes)
   (if (equal '(0 0 0 0) (take 4 bytes))
-      (b* (((mv offset &) (parse-u32 (nthcdr 4 bytes))))
-        (name-to-string (nthcdr offset string-table-bytes))) ;todo: slow?  use an array?)
-    (name-to-string bytes)))
+      (b* (((mv erp offset &) (parse-u32 (nthcdr 4 bytes)))
+           ((when erp) (mv erp "")))
+        (mv nil (name-to-string (nthcdr offset string-table-bytes)))) ;todo: slow?  use an array?)
+    (mv nil (name-to-string bytes))))
 
 (defconst *section-number-values-alist*
   '((0 . :IMAGE_SYM_UNDEFINED)
@@ -512,23 +617,30 @@
       (lookup val *section-number-values-alist*)
     val))
 
-;; Returns (mv entry bytes)
+;; Returns (mv erp entry bytes)
 (defund parse-pe-symbol-table-entry (bytes string-table-bytes)
   (b* ((entry nil) ;empty alist
-       ((mv name-bytes bytes) (parse-n-bytes 8 bytes))
-       (name (interpret-symbol-name name-bytes string-table-bytes))
+       ((mv erp name-bytes bytes) (parse-n-bytes 8 bytes))
+       ((when erp) (mv erp nil bytes))
+       ((mv erp name) (interpret-symbol-name name-bytes string-table-bytes))
+       ((when erp) (mv erp nil bytes))
        (entry (acons :name name entry))
-       ((mv value bytes) (parse-u32 bytes))
+       ((mv erp value bytes) (parse-u32 bytes))
+       ((when erp) (mv erp nil bytes))
        (entry (acons :value value entry))  ;todo parse value better?
-       ((mv section-number bytes) (parse-u16 bytes)) ;todo parse better!
+       ((mv erp section-number bytes) (parse-u16 bytes)) ;todo parse better!
+       ((when erp) (mv erp nil bytes))
        (section-number (logext 16 section-number)) ;it's a signed integer, 1-based
        (section-number (interpret-section-number section-number))
        (entry (acons :section-number section-number entry))
-       ((mv type bytes) (parse-u16 bytes)) ;todo parse better!
+       ((mv erp type bytes) (parse-u16 bytes)) ;todo parse better!
+       ((when erp) (mv erp nil bytes))
        (entry (acons :type type entry))
-       ((mv storage-class bytes) (parse-u8 bytes)) ;todo parse better!
+       ((mv erp storage-class bytes) (parse-u8 bytes)) ;todo parse better!
+       ((when erp) (mv erp nil bytes))
        (entry (acons :storage-class storage-class entry))
-       ((mv number-of-aux-symbols bytes) (parse-u8 bytes)) ;todo parse better!
+       ((mv erp number-of-aux-symbols bytes) (parse-u8 bytes)) ;todo parse better!
+       ((when erp) (mv erp nil bytes))
        (entry (acons :number-of-aux-symbols number-of-aux-symbols entry))
        ;; todo: call something like "parse n bytes" here:
        (aux-symbol-data (take (* 18 number-of-aux-symbols) bytes))
@@ -536,24 +648,30 @@
        (entry (acons :aux-symbol-data aux-symbol-data entry))
        (entry (reverse entry))
        )
-    (mv entry bytes)))
+    (mv nil entry bytes)))
 
-(defthm len-of-mv-nth-1-of-parse-pe-symbol-table-entry
-  (implies (consp bytes)
-           (< (len (mv-nth 1 (parse-pe-symbol-table-entry bytes string-table-bytes)))
+(defthm len-of-mv-nth-2-of-parse-pe-symbol-table-entry
+  (implies (and (not (mv-nth 0 (parse-pe-symbol-table-entry bytes string-table-bytes)))
+                (consp bytes))
+           (< (len (mv-nth 2 (parse-pe-symbol-table-entry bytes string-table-bytes)))
               (len bytes)))
   :hints (("Goal" :in-theory (e/d (parse-pe-symbol-table-entry) (len)))))
 
 ;the len of bytes should be a multiple of 18
-;; Returns the list of entries
+;; Returns (mv erp result) where RESULT is the list of entries.
 (defun parse-pe-symbol-table (bytes string-table-bytes)
   (declare (xargs :measure (len bytes)))
   (if (endp bytes)
-      nil
-    (mv-let (entry bytes)
+      (mv nil nil)
+    (mv-let (erp entry bytes)
       (parse-pe-symbol-table-entry bytes string-table-bytes) ;consumes 1 or more symbols
-      (cons entry
-            (parse-pe-symbol-table bytes string-table-bytes)))))
+      (if erp
+          (mv erp nil)
+        (mv-let (erp rest-result)
+          (parse-pe-symbol-table bytes string-table-bytes)
+          (if erp
+              (mv erp nil)
+            (mv nil (cons entry rest-result))))))))
 
 (defun map-code-char-tail (bytes acc)
   (if (endp bytes)
@@ -562,42 +680,50 @@
                         (cons (code-char (first bytes))
                               acc))))
 
-;; Returns the string table as a list of bytes
+;; Returns (mv erp string-table) where STRING-TABLE is a list of bytes.
 (defun parse-string-table (bytes)
-  (b* (((when (not (at-least-n-bytes-left 4 bytes)))
-        (er hard 'parse-string-table "Can't read string table size."))
-       ((mv size bytes) (parse-u32 bytes)) ;the size includes these 4 bytes
+  (b* (((when (not (len-at-least 4 bytes)))
+        (er hard 'parse-string-table "Can't read string table size.")
+        (mv :cant-read-string-table-size nil))
+       ((mv erp size bytes) (parse-u32 bytes)) ;the size includes these 4 bytes
+       ((when erp) (mv erp nil))
        (size-of-string-part (- size 4))
        ((when (< size-of-string-part 0))
-        (er hard 'parse-string-table "Negative size for string data in string table."))
-       ((when (not (at-least-n-bytes-left size-of-string-part bytes)))
-        (er hard 'parse-string-table "Can't read string table (not enough data)."))
+        (er hard 'parse-string-table "Negative size for string data in string table.")
+        (mv :negative-size nil))
+       ((when (not (len-at-least size-of-string-part bytes)))
+        (er hard 'parse-string-table "Can't read string table (not enough data).")
+        (mv :not-enough-data-for-string-table nil))
        (bytes (take size-of-string-part bytes)) ;; these bytes include a bunch of null-terminated strings
        )
-    bytes))
+    (mv nil bytes)))
 
 (defun bytes-to-string (bytes)
   (let* ((chars (map-code-char-tail bytes nil)) ;TODO; Handle UTF-8 ??
          (string (coerce chars 'string)))
     string))
 
-;; Returns an alist representing the contents of the PE file
+;; Returns (mv erp parsed-pe) where PARSED-PE is an alist representing the contents of the PE file.
 (defun parse-pe-file-bytes (bytes)
   (b* ((all-bytes bytes)
        (pe nil) ;initially empty alist to accumulate results
        ;; Parse the ms-dos-stub:
-       ((mv ms-dos-stub bytes)
+       ((mv erp ms-dos-stub bytes)
         (parse-ms-dos-stub bytes))
+       ((when erp) (mv erp nil))
        (pe (acons :ms-dos-stub ms-dos-stub pe)) ;checked by PARSED-EXECUTABLE-TYPE
        (pe (acons :ms-dos-stub-as-string (bytes-to-printable-string ms-dos-stub) pe))
        ;; Parse the PE signature
-       ((mv sig bytes) (parse-n-bytes 4 bytes))
+       ((mv erp sig bytes) (parse-n-bytes 4 bytes))
+       ((when erp) (mv erp nil))
        ((when (not (equal sig *expected-sig*)))
-        (er hard 'parse-pe "Bad signature (~x0)" sig))
+        (er hard 'parse-pe "Bad signature (~x0)" sig)
+        (mv :bad-signature nil))
        ;;(pe (acons :sig sig pe))
        (pe (acons :sig-as-string (bytes-to-printable-string sig) pe))
        ;; Parse the coff-file-header:
-       ((mv coff-file-header bytes) (parse-coff-file-header bytes))
+       ((mv erp coff-file-header bytes) (parse-coff-file-header bytes))
+       ((when erp) (mv erp nil))
        (pe (acons :coff-file-header coff-file-header pe))
        ;; Parse the symbol table:
        (pointer-to-symbol-table (lookup-eq-safe :pointer-to-symbol-table coff-file-header))
@@ -608,30 +734,36 @@
        (string-table-start (+ pointer-to-symbol-table symbol-table-size))
        (symbol-table-existsp (not (eql 0 pointer-to-symbol-table))) ;assuming 0 means there is no string table either
        (string-table-existsp symbol-table-existsp)
-       (string-table-bytes (if string-table-existsp
-                               (parse-string-table (nthcdr string-table-start all-bytes))
-                             nil))
+       ((mv erp string-table-bytes) (if string-table-existsp
+                                        (parse-string-table (nthcdr string-table-start all-bytes))
+                                      (mv nil nil)))
+       ((when erp) (mv erp nil))
        (string-table (if string-table-existsp
                          (bytes-to-string string-table-bytes)
                        :none))
        (pe (acons :string-table string-table pe))
        (symbol-table-bytes (take symbol-table-size (nthcdr pointer-to-symbol-table all-bytes)))
-       (symbol-table (if symbol-table-existsp (parse-pe-symbol-table symbol-table-bytes string-table-bytes) :none))
+       ((mv erp symbol-table) (if symbol-table-existsp (parse-pe-symbol-table symbol-table-bytes string-table-bytes) (mv nil :none)))
+       ((when erp) (mv erp nil))
        (pe (acons :symbol-table symbol-table pe))
        ;; Parse the optional-header:
-       ((mv optional-header-standard-fields bytes) (parse-optional-header-standard-fields bytes))
+       ((mv erp optional-header-standard-fields bytes) (parse-optional-header-standard-fields bytes))
+       ((when erp) (mv erp nil))
        (pe (acons :optional-header-standard-fields optional-header-standard-fields pe))
        (magic (lookup-eq-safe :magic optional-header-standard-fields))
-       ((mv optional-header-windows-specific-fields bytes) (parse-optional-header-windows-specific-fields magic bytes))
+       ((mv erp optional-header-windows-specific-fields bytes) (parse-optional-header-windows-specific-fields magic bytes))
+       ((when erp) (mv erp nil))
        (pe (acons :optional-header-windows-specific-fields optional-header-windows-specific-fields pe))
        (number-of-rva-and-sizes (lookup-eq-safe :number-of-rva-and-sizes optional-header-windows-specific-fields))
-       ((mv optional-data-directories bytes) (parse-optional-data-directories number-of-rva-and-sizes bytes))
+       ((mv erp optional-data-directories bytes) (parse-optional-data-directories number-of-rva-and-sizes bytes))
+       ((when erp) (mv erp nil))
        (pe (acons :optional-data-directories optional-data-directories pe))
        ;; TODO: Cross-check with the size of the optional-header (stored in the file header)
        (number-of-sections (lookup-eq-safe :number-of-sections coff-file-header))
        (- (cw "~x0 section(s).~%" number-of-sections))
        ;; The final bytes are essentially ignored here:
-       ((mv section-headers bytes) (parse-pe-section-headers number-of-sections :image nil bytes string-table-bytes))
+       ((mv erp section-headers bytes) (parse-pe-section-headers number-of-sections :image nil bytes string-table-bytes))
+       ((when erp) (mv erp nil))
        (- (cw "~x0 bytes after section headers.~%" (len bytes)))
        ;; (pe (acons :section-headers section-headers pe)) ;; the header is now included in the parsed data for its section
        ;; Here we stop processing the bytes in order, instead looking up each section's start in all-bytes:
@@ -639,7 +771,7 @@
        (pe (acons :sections sections pe))
        ;;TODO: What other data do we need to parse?
        ) ;todo: Can we somehow check that all bytes are used?
-    (reverse pe)))
+    (mv nil (reverse pe))))
 
 ;; ;; Parse a file that is known to be a PE executable.  Returns (mv
 ;; ;; erp contents state) where contents is an alist representing the
@@ -669,27 +801,37 @@
                 (my-all-equal x (cdr lst))))))
 
 ;move?
-;; Returns a list of entries.
+;; Returns (mv erp entries).
 (defun parse-import-directory-table (bytes)
   (declare (xargs ;; :guard (and (acl2::all-unsigned-byte-p 8 bytes)
-            ;;              (true-listp bytes))
-            :measure (len bytes)
-                  ))
+             ;;              (true-listp bytes))
+             :measure (len bytes)
+             ))
   (if (< (len bytes) 20)
-      (er hard? 'parse-import-directory-table "Not enough bytes.")
+      (mv :not-enough-bytes
+          (er hard? 'parse-import-directory-table "Not enough bytes."))
     (if (my-all-equal 0 (take 20 bytes))
-        nil ;null entry means end of table
-      (b* (((mv import-lookup-table-rva bytes) (parse-u32 bytes))
-           ((mv time/date-stamp bytes) (parse-u32 bytes))
-           ((mv forwarder-chain bytes) (parse-u32 bytes))
-           ((mv name-rva bytes) (parse-u32 bytes))
-           ((mv import-address-table-rva bytes) (parse-u32 bytes)))
-        (cons (acons :import-lookup-table-rva import-lookup-table-rva
-                     (acons :time/date-stamp time/date-stamp
-                            (acons :forwarder-chain forwarder-chain
-                                   (acons :name-rva name-rva
-                                          (acons :import-address-table-rva import-address-table-rva nil)))))
-              (parse-import-directory-table bytes))))))
+        (mv nil nil) ;null entry means end of table
+      (b* (((mv erp import-lookup-table-rva bytes) (parse-u32 bytes))
+           ((when erp) (mv erp nil))
+           ((mv erp time/date-stamp bytes) (parse-u32 bytes))
+           ((when erp) (mv erp nil))
+           ((mv erp forwarder-chain bytes) (parse-u32 bytes))
+           ((when erp) (mv erp nil))
+           ((mv erp name-rva bytes) (parse-u32 bytes))
+           ((when erp) (mv erp nil))
+           ((mv erp import-address-table-rva bytes) (parse-u32 bytes))
+           ((when erp) (mv erp nil))
+           ((mv erp rest-result) (parse-import-directory-table bytes))
+           ((when erp) (mv erp nil))
+           )
+        (mv nil
+            (cons (acons :import-lookup-table-rva import-lookup-table-rva
+                         (acons :time/date-stamp time/date-stamp
+                                (acons :forwarder-chain forwarder-chain
+                                       (acons :name-rva name-rva
+                                              (acons :import-address-table-rva import-address-table-rva nil)))))
+                  rest-result))))))
 
 ;; Get data at the given RVA from the sections, chopping it down to size bytes
 ;; (and checking that there are that many) if size is not :unknown.
@@ -753,55 +895,68 @@
         ;; RVA is not in this section, so keep looking
         (get-string-from-sections (rest sections) rva)))))
 
+;; Returns (mv erp result).
 (defun parse-hint/name-table-entry-bytes (bytes)
-  (b* (((mv hint bytes) (parse-u16 bytes))
+  (b* (((mv erp hint bytes) (parse-u16 bytes))
+       ((when erp) (mv erp nil))
        (string-bytes (read-bytes-of-null-terminated-string bytes))
        (string (coerce (map-code-char string-bytes) 'string)))
-    (acons :hint hint
-           (acons :name string
-                  nil))))
+    (mv nil
+        (acons :hint hint
+               (acons :name string
+                      nil)))))
 
+;; Returns (mv erp result).
 (defun parse-import-lookup-table-bytes (bytes magic sections)
 ;  (declare (xargs :guard (member-eq magic '(strip-cdrs *magic-numbers*))))
   (declare (xargs :measure (len bytes)))
   (if (< (len bytes) (if (eq magic :pe32) 4 8))
-      (er hard? 'parse-import-lookup-table-bytes "Not enough bytes")
-    (b* (((mv item bytes) (if (eq magic :pe32)
-                              (parse-u32 bytes)
-                            (parse-u64 bytes))))
+      (mv :not-enough-bytes
+          (er hard? 'parse-import-lookup-table-bytes "Not enough bytes"))
+    (b* (((mv erp item bytes) (if (eq magic :pe32)
+                                  (parse-u32 bytes)
+                                (parse-u64 bytes)))
+         ((when erp) (mv erp nil)))
       (if (= 0 item)
           ;; no more items
-          nil
-        (let* ((most-significant-bit (if (eq magic :pe32)
-                                         (getbit 31 item)
-                                       (getbit 63 item)))
-               (import-info
-                (if (= 1 most-significant-bit)
-                    ;; import by ordinal:
-                    (acons :ordinal-number (bvchop 16 item)
-                           nil)
-                  ;;import by name:
-                  (let* ((hint/name-table-rva (bvchop 31 item))
-                         (hint/name-table-entry-bytes (get-data-from-sections sections hint/name-table-rva :unknown))
-                         (hint/name-info (parse-hint/name-table-entry-bytes hint/name-table-entry-bytes))
-                         )
-                    hint/name-info))))
-          (cons import-info
-                (parse-import-lookup-table-bytes bytes magic sections)))))))
+          (mv nil nil)
+        (b* ((most-significant-bit (if (eq magic :pe32)
+                                       (getbit 31 item)
+                                     (getbit 63 item)))
+             ((mv erp import-info)
+              (if (= 1 most-significant-bit)
+                  ;; import by ordinal:
+                  (mv nil
+                      (acons :ordinal-number (bvchop 16 item)
+                             nil))
+                ;;import by name:
+                (b* ((hint/name-table-rva (bvchop 31 item))
+                     (hint/name-table-entry-bytes (get-data-from-sections sections hint/name-table-rva :unknown))
+                     ((mv erp hint/name-info) (parse-hint/name-table-entry-bytes hint/name-table-entry-bytes))
+                     ((when erp) (mv erp nil))
+                     )
+                  (mv nil hint/name-info))))
+             ((when erp) (mv erp nil))
+             ((mv erp rest-result) (parse-import-lookup-table-bytes bytes magic sections))
+             ((when erp) (mv erp nil)))
+          (mv nil (cons import-info rest-result)))))))
 
+;; Returns (mv erp result).
 (defun lookup-import-directory-table-entries (import-directory-table sections magic)
   (if (endp import-directory-table)
-      nil
-    (let* ((entry (first import-directory-table))
-           (name-rva (lookup-eq-safe :name-rva entry))
-           (dll-name (get-string-from-sections sections name-rva))
-           (import-address-table-rva (lookup-eq-safe :import-address-table-rva entry))
-           (import-address-table-bytes (get-data-from-sections sections import-address-table-rva :unknown))
-           )
-      (cons (cons dll-name
-                  (parse-import-lookup-table-bytes import-address-table-bytes magic sections))
-            (lookup-import-directory-table-entries (rest import-directory-table) sections magic)))))
+      (mv nil nil)
+    (b* ((entry (first import-directory-table))
+         (name-rva (lookup-eq-safe :name-rva entry))
+         (dll-name (get-string-from-sections sections name-rva))
+         (import-address-table-rva (lookup-eq-safe :import-address-table-rva entry))
+         (import-address-table-bytes (get-data-from-sections sections import-address-table-rva :unknown))
+         ((mv erp result) (parse-import-lookup-table-bytes import-address-table-bytes magic sections))
+         ((when erp) (mv erp nil))
+         ((mv erp rest-result) (lookup-import-directory-table-entries (rest import-directory-table) sections magic))
+         ((when erp) (mv erp nil)))
+      (mv nil (cons (cons dll-name result) rest-result)))))
 
+;; Returns (mv erp info).
 ;; TODO: Make the result of this more compact
 ;; TODO: Can this get overwritten in memory at runtime?
 (defun get-import-info (parsed-pe-file)
@@ -809,14 +964,17 @@
        (magic (lookup-eq-safe :magic optional-header-standard-fields))
        (sections (lookup-eq-safe :sections parsed-pe-file))
        (import-table-info
-        (lookup-eq-safe :import-table
-                        (lookup-eq-safe :optional-data-directories
-                                        parsed-pe-file)))
+         (lookup-eq-safe :import-table
+                         (lookup-eq-safe :optional-data-directories
+                                         parsed-pe-file)))
        (import-table-rva (lookup-eq-safe :rva import-table-info))
        (import-table-size (lookup-eq-safe :size import-table-info))
 
        (import-table-bytes (get-data-from-sections sections import-table-rva import-table-size))
-       (import-directory-table (parse-import-directory-table import-table-bytes))
-       (import-dll-info (lookup-import-directory-table-entries import-directory-table sections magic)))
-    (list import-directory-table
-          import-dll-info)))
+       ((mv erp import-directory-table) (parse-import-directory-table import-table-bytes))
+       ((when erp) (mv erp nil))
+       ((mv erp import-dll-info) (lookup-import-directory-table-entries import-directory-table sections magic))
+       ((when erp) (mv erp nil)))
+    (mv nil
+        (list import-directory-table
+              import-dll-info))))

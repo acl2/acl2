@@ -164,11 +164,13 @@
           nil
         (cons byte (keep-non-zeros (rest bytes)))))))
 
+;; Return (mv erp string bytes)
 (defun parse-n-bytes-into-string (n bytes)
-  (b* (((mv string-bytes bytes) (parse-n-bytes n bytes))
+  (b* (((mv erp string-bytes bytes) (parse-n-bytes n bytes))
+       ((when erp) (mv erp "" bytes))
        (string (coerce (map-code-char (keep-non-zeros string-bytes)) 'string)) ;TODO: strip trailing 0 bytes
        )
-      (mv string bytes)))
+      (mv nil string bytes)))
 
 (defconst *mach-o-header-flags-alist*
   '((#x1 . :MH_NOUNDEFS)
@@ -199,20 +201,29 @@
     (#x2000000 . :MH_APP_EXTENSION_SAFE)))
 
 ;; The magic number is already parsed
+;; Returns (mv erp header bytes).
 (defun parse-mach-o-header-32 (bytes)
-  (b* (((mv cputype bytes) (parse-u32 bytes))
+  (b* (((mv erp cputype bytes) (parse-u32 bytes))
+       ((when erp) (mv erp nil bytes))
        (cputype (lookup-safe cputype *mach-o-CPU-types*))
-       ((mv cpusubtype bytes) (parse-u32 bytes)) ; TODO: decode
-       ((mv filetype bytes) (parse-u32 bytes))
+       ((mv erp cpusubtype bytes) (parse-u32 bytes)) ; TODO: decode
+       ((when erp) (mv erp nil bytes))
+       ((mv erp filetype bytes) (parse-u32 bytes))
+       ((when erp) (mv erp nil bytes))
        (filetype (lookup-safe filetype *mach-o-filetypes*))
        ((when (not (eq :MH_EXECUTE filetype)))
-        (mv (er hard 'parse-mach-o-header-32 "Unsupported filetype: ~x0." filetype)
+        (mv :unsupported-filetype
+            (er hard 'parse-mach-o-header-32 "Unsupported filetype: ~x0." filetype)
             bytes))
-       ((mv ncmds bytes) (parse-u32 bytes))
-       ((mv sizeofcmds bytes) (parse-u32 bytes))
-       ((mv flags bytes) (parse-u32 bytes)) ;TODO: decode
+       ((mv erp ncmds bytes) (parse-u32 bytes))
+       ((when erp) (mv erp nil bytes))
+       ((mv erp sizeofcmds bytes) (parse-u32 bytes))
+       ((when erp) (mv erp nil bytes))
+       ((mv erp flags bytes) (parse-u32 bytes)) ;TODO: decode
+       ((when erp) (mv erp nil bytes))
        )
-      (mv (list (cons :cputype cputype)
+    (mv nil
+        (list (cons :cputype cputype)
                 (cons :cpusubtype cpusubtype)
                 (cons :filetype filetype)
                 (cons :ncmds ncmds)
@@ -221,21 +232,31 @@
           bytes)))
 
 ;; The magic number is already parsed
+;; Returns (mv erp header bytes).
 (defun parse-mach-o-header-64 (bytes)
-  (b* (((mv cputype bytes) (parse-u32 bytes))
+  (b* (((mv erp cputype bytes) (parse-u32 bytes))
+       ((when erp) (mv erp nil bytes))
        (cputype (lookup-safe cputype *mach-o-CPU-types*))
-       ((mv cpusubtype bytes) (parse-u32 bytes)) ; TODO: decode
-       ((mv filetype bytes) (parse-u32 bytes))
+       ((mv erp cpusubtype bytes) (parse-u32 bytes)) ; TODO: decode
+       ((when erp) (mv erp nil bytes))
+       ((mv erp filetype bytes) (parse-u32 bytes))
+       ((when erp) (mv erp nil bytes))
        (filetype (lookup-safe filetype *mach-o-filetypes*))
        ((when (not (eq :MH_EXECUTE filetype)))
-        (mv (er hard 'parse-mach-o-header-64 "Unsupported filetype: ~x0." filetype)
+        (mv :unsupported-filetype
+            (er hard 'parse-mach-o-header-64 "Unsupported filetype: ~x0." filetype)
             bytes))
-       ((mv ncmds bytes) (parse-u32 bytes))
-       ((mv sizeofcmds bytes) (parse-u32 bytes))
-       ((mv flags bytes) (parse-u32 bytes))    ;TODO: decode
-       ((mv reserved bytes) (parse-u32 bytes)) ;drop from the result?
+       ((mv erp ncmds bytes) (parse-u32 bytes))
+       ((when erp) (mv erp nil bytes))
+       ((mv erp sizeofcmds bytes) (parse-u32 bytes))
+       ((when erp) (mv erp nil bytes))
+       ((mv erp flags bytes) (parse-u32 bytes))    ;TODO: decode
+       ((when erp) (mv erp nil bytes))
+       ((mv erp reserved bytes) (parse-u32 bytes)) ;drop from the result?
+       ((when erp) (mv erp nil bytes))
        )
-      (mv (list (cons :cputype cputype)
+      (mv nil
+          (list (cons :cputype cputype)
                 (cons :cpusubtype cpusubtype)
                 (cons :filetype filetype)
                 (cons :ncmds ncmds)
@@ -280,31 +301,46 @@
     (#x00000200 . :S_ATTR_EXT_RELOC)
     (#x00000100 . :S_ATTR_LOC_RELOC)))
 
+;; Returns (mv erp section bytes).
 (defun parse-mach-o-section (expected-segname all-bytes bytes)
-  (b* (((mv sectname bytes) (parse-n-bytes-into-string 16 bytes))
-       ((mv segname bytes) (parse-n-bytes-into-string 16 bytes))
+  (b* (((mv erp sectname bytes) (parse-n-bytes-into-string 16 bytes))
+       ((when erp) (mv erp nil bytes))
+       ((mv erp segname bytes) (parse-n-bytes-into-string 16 bytes))
+       ((when erp) (mv erp nil bytes))
        ;;it's not clear why the segment name is stored here as well as
        ;;in the overarching load command for the segment
        ((when (not (equal segname expected-segname)))
-        (mv (er hard 'parse-mach-o-section "Segname mismatch (expected ~x0, got ~x1)." expected-segname segname)
+        (mv :segname-mismatch
+            (er hard 'parse-mach-o-section "Segname mismatch (expected ~x0, got ~x1)." expected-segname segname)
             bytes))
-       ((mv addr bytes) (parse-u32 bytes))
-       ((mv size bytes) (parse-u32 bytes))
-       ((mv offset bytes) (parse-u32 bytes))
-       ((mv align bytes) (parse-u32 bytes))
-       ((mv reloff bytes) (parse-u32 bytes))
-       ((mv nreloc bytes) (parse-u32 bytes))
-       ((mv flags bytes) (parse-u32 bytes))
+       ((mv erp addr bytes) (parse-u32 bytes))
+       ((when erp) (mv erp nil bytes))
+       ((mv erp size bytes) (parse-u32 bytes))
+       ((when erp) (mv erp nil bytes))
+       ((mv erp offset bytes) (parse-u32 bytes))
+       ((when erp) (mv erp nil bytes))
+       ((mv erp align bytes) (parse-u32 bytes))
+       ((when erp) (mv erp nil bytes))
+       ((mv erp reloff bytes) (parse-u32 bytes))
+       ((when erp) (mv erp nil bytes))
+       ((mv erp nreloc bytes) (parse-u32 bytes))
+       ((when erp) (mv erp nil bytes))
+       ((mv erp flags bytes) (parse-u32 bytes))
+       ((when erp) (mv erp nil bytes))
        (section-type (logand #xff flags))
        (section-type (lookup-safe section-type *mach-o-section-types*))
        (section-attributes (decode-flags flags *mach-o-section-attributes*))
-       ((mv reserved1 bytes) (parse-u32 bytes))
-       ((mv reserved2 bytes) (parse-u32 bytes))
+       ((mv erp reserved1 bytes) (parse-u32 bytes))
+       ((when erp) (mv erp nil bytes))
+       ((mv erp reserved2 bytes) (parse-u32 bytes))
+       ((when erp) (mv erp nil bytes))
        ;; look up the contents of the section:
-       (contents (if (member-eq section-type '(:S_ZEROFILL :S_GB_ZEROFILL :S_THREAD_LOCAL_ZEROFILL))
-                     `(:zero-fill ,size) ;special handling for zerofill sections (don't try to read data from a meaningless offset)
-                   (take-safe size (nthcdr offset all-bytes)))))
-      (mv (list (cons :sectname sectname)
+       ((mv erp contents &) (if (member-eq section-type '(:S_ZEROFILL :S_GB_ZEROFILL :S_THREAD_LOCAL_ZEROFILL))
+                                (mv nil `(:zero-fill ,size) nil) ;special handling for zerofill sections (don't try to read data from a meaningless offset)
+                              (parse-n-bytes size (nthcdr offset all-bytes))))
+       ((when erp) (mv erp nil bytes)))
+      (mv nil
+          (list (cons :sectname sectname)
                 (cons :type section-type)
                 (cons :segname segname)
                 (cons :addr addr)
@@ -320,32 +356,48 @@
                 )
           bytes)))
 
+;; Returns (mv erp section bytes).
 (defun parse-mach-o-section-64 (expected-segname all-bytes bytes)
-  (b* (((mv sectname bytes) (parse-n-bytes-into-string 16 bytes))
-       ((mv segname bytes) (parse-n-bytes-into-string 16 bytes))
+  (b* (((mv erp sectname bytes) (parse-n-bytes-into-string 16 bytes))
+       ((when erp) (mv erp nil bytes))
+       ((mv erp segname bytes) (parse-n-bytes-into-string 16 bytes))
+       ((when erp) (mv erp nil bytes))
        ;;it's not clear why the segment name is stored here as well as
        ;;in the overarching load command for the segment
        ((when (not (equal segname expected-segname)))
-        (mv (er hard 'parse-mach-o-section-64 "Segname mismatch (expected ~x0, got ~x1)." expected-segname segname)
+        (mv :segname-mismatch
+            (er hard 'parse-mach-o-section-64 "Segname mismatch (expected ~x0, got ~x1)." expected-segname segname)
             bytes))
-       ((mv addr bytes) (parse-u64 bytes))
-       ((mv size bytes) (parse-u64 bytes))
-       ((mv offset bytes) (parse-u32 bytes))
-       ((mv align bytes) (parse-u32 bytes))
-       ((mv reloff bytes) (parse-u32 bytes))
-       ((mv nreloc bytes) (parse-u32 bytes))
-       ((mv flags bytes) (parse-u32 bytes)) ;TODO: decode the section attributes
+       ((mv erp addr bytes) (parse-u64 bytes))
+       ((when erp) (mv erp nil bytes))
+       ((mv erp size bytes) (parse-u64 bytes))
+       ((when erp) (mv erp nil bytes))
+       ((mv erp offset bytes) (parse-u32 bytes))
+       ((when erp) (mv erp nil bytes))
+       ((mv erp align bytes) (parse-u32 bytes))
+       ((when erp) (mv erp nil bytes))
+       ((mv erp reloff bytes) (parse-u32 bytes))
+       ((when erp) (mv erp nil bytes))
+       ((mv erp nreloc bytes) (parse-u32 bytes))
+       ((when erp) (mv erp nil bytes))
+       ((mv erp flags bytes) (parse-u32 bytes)) ;TODO: decode the section attributes
+       ((when erp) (mv erp nil bytes))
        (section-type (logand #xff flags))
        (section-type (lookup-safe section-type *mach-o-section-types*))
        (section-attributes (decode-flags flags *mach-o-section-attributes*))
-       ((mv reserved1 bytes) (parse-u32 bytes))
-       ((mv reserved2 bytes) (parse-u32 bytes))
-       ((mv reserved3 bytes) (parse-u32 bytes))  ;NOTE: This field is not in Mach-O_File_Format.pdf, but it is in loader.h
+       ((mv erp reserved1 bytes) (parse-u32 bytes))
+       ((when erp) (mv erp nil bytes))
+       ((mv erp reserved2 bytes) (parse-u32 bytes))
+       ((when erp) (mv erp nil bytes))
+       ((mv erp reserved3 bytes) (parse-u32 bytes))  ;NOTE: This field is not in Mach-O_File_Format.pdf, but it is in loader.h
+       ((when erp) (mv erp nil bytes))
        ;; look up the contents of the section:
-       (contents (if (member-eq section-type '(:S_ZEROFILL :S_GB_ZEROFILL :S_THREAD_LOCAL_ZEROFILL))
-                     `(:zero-fill ,size) ;special handling for zerofill sections (don't try to read data from a meaningless offset)
-                   (take-safe size (nthcdr offset all-bytes)))))
-      (mv (list (cons :sectname sectname)
+       ((mv erp contents &) (if (member-eq section-type '(:S_ZEROFILL :S_GB_ZEROFILL :S_THREAD_LOCAL_ZEROFILL))
+                                (mv nil `(:zero-fill ,size) nil) ;special handling for zerofill sections (don't try to read data from a meaningless offset)
+                              (parse-n-bytes size (nthcdr offset all-bytes))))
+       ((when erp) (mv erp nil bytes)))
+      (mv nil
+          (list (cons :sectname sectname)
                 (cons :type section-type)
                 (cons :segname segname)
                 (cons :addr addr)
@@ -361,16 +413,20 @@
                 (cons :contents contents))
           bytes)))
 
+;; Returns (mv erp sections bytes).
 (defun parse-mach-o-sections (nsects expected-segname acc all-bytes bytes)
   (if (zp nsects)
-      (mv (reverse acc) bytes)
-    (b* (((mv section bytes) (parse-mach-o-section expected-segname all-bytes bytes)))
+      (mv nil (reverse acc) bytes)
+    (b* (((mv erp section bytes) (parse-mach-o-section expected-segname all-bytes bytes))
+         ((when erp) (mv erp nil bytes)))
         (parse-mach-o-sections (+ -1 nsects) expected-segname (cons section acc) all-bytes bytes))))
 
+;; Returns (mv erp sections bytes).
 (defun parse-mach-o-sections-64 (nsects expected-segname acc all-bytes bytes)
   (if (zp nsects)
-      (mv (reverse acc) bytes)
-    (b* (((mv section bytes) (parse-mach-o-section-64 expected-segname all-bytes bytes)))
+      (mv nil (reverse acc) bytes)
+    (b* (((mv erp section bytes) (parse-mach-o-section-64 expected-segname all-bytes bytes))
+         ((when erp) (mv erp nil bytes)))
         (parse-mach-o-sections-64 (+ -1 nsects) expected-segname (cons section acc) all-bytes bytes))))
 
 (defconst *mach-o-stab-symbol-types*
@@ -419,12 +475,18 @@
     (#x0c . :N_PBUD)
     (#x0a . :N_INDR)))
 
+;; Returns (mv erp result bytes).
 (defun parse-mach-o-nlist (string-table bytes)
-  (b* (((mv n-strx bytes) (parse-u32 bytes))
-       ((mv n-type bytes) (parse-u8 bytes))
-       ((mv n-sect bytes) (parse-u8 bytes))
-       ((mv n-desc bytes) (parse-u16 bytes))
-       ((mv n-value bytes) (parse-u32 bytes))
+  (b* (((mv erp n-strx bytes) (parse-u32 bytes))
+       ((when erp) (mv erp nil bytes))
+       ((mv erp n-type bytes) (parse-u8 bytes))
+       ((when erp) (mv erp nil bytes))
+       ((mv erp n-sect bytes) (parse-u8 bytes))
+       ((when erp) (mv erp nil bytes))
+       ((mv erp n-desc bytes) (parse-u16 bytes))
+       ((when erp) (mv erp nil bytes))
+       ((mv erp n-value bytes) (parse-u32 bytes))
+       ((when erp) (mv erp nil bytes))
        (stabp (not (eql 0 (logand #xe0 n-type))))
        (n-type (if stabp
                    (lookup-safe n-type *mach-o-stab-symbol-types*)
@@ -437,7 +499,8 @@
        (string (if (eql 0 n-strx) ;todo: check that this special case is appropriate (it's suggested by the PDF)
                    ""
                  (coerce (map-code-char (keep-non-zeros (nthcdr n-strx string-table))) 'string))))
-      (mv (list (cons :string string)
+      (mv nil
+          (list (cons :string string)
                 ;;(cons :n-strx n-strx)
                 (cons :n-type n-type)
                 (cons :n-sect n-sect)
@@ -445,18 +508,26 @@
                 (cons :n-value n-value))
           bytes)))
 
+;; Returns (mv erp result).
 (defun parse-mach-o-nlists (nsyms acc string-table bytes)
   (if (zp nsyms)
-      (reverse acc)
-    (b* (((mv sym bytes) (parse-mach-o-nlist string-table bytes)))
+      (mv nil (reverse acc))
+    (b* (((mv erp sym bytes) (parse-mach-o-nlist string-table bytes))
+         ((when erp) (mv erp nil)))
         (parse-mach-o-nlists (+ -1 nsyms) (cons sym acc) string-table bytes))))
 
+;; Returns (mv erp result bytes).
 (defun parse-mach-o-nlist-64 (string-table bytes)
-  (b* (((mv n-strx bytes) (parse-u32 bytes))
-       ((mv n-type bytes) (parse-u8 bytes))
-       ((mv n-sect bytes) (parse-u8 bytes))
-       ((mv n-desc bytes) (parse-u16 bytes))
-       ((mv n-value bytes) (parse-u64 bytes))
+  (b* (((mv erp n-strx bytes) (parse-u32 bytes))
+       ((when erp) (mv erp nil bytes))
+       ((mv erp n-type bytes) (parse-u8 bytes))
+       ((when erp) (mv erp nil bytes))
+       ((mv erp n-sect bytes) (parse-u8 bytes))
+       ((when erp) (mv erp nil bytes))
+       ((mv erp n-desc bytes) (parse-u16 bytes))
+       ((when erp) (mv erp nil bytes))
+       ((mv erp n-value bytes) (parse-u64 bytes))
+       ((when erp) (mv erp nil bytes))
        (string (if (eql 0 n-strx) ;todo: check that this special case is appropriate (it's suggested by the PDF)
                    ""
                  (coerce (map-code-char (keep-non-zeros (nthcdr n-strx string-table))) 'string)))
@@ -469,7 +540,8 @@
                      (list (cons :n-pext n-pext)
                            (cons :n-type (lookup-safe n-type *mach-o-symbol-n-types*))
                            (cons :n-ext n-ext))))))
-      (mv (list (cons :string string)
+      (mv nil
+          (list (cons :string string)
                 ;; (cons :n-strx n-strx)
                 (cons :n-type n-type)
                 (cons :n-sect n-sect)
@@ -477,10 +549,12 @@
                 (cons :n-value n-value))
           bytes)))
 
+;; Returns (mv erp result).
 (defun parse-mach-o-nlist-64s (nsyms acc string-table bytes)
   (if (zp nsyms)
-      (reverse acc)
-    (b* (((mv sym bytes) (parse-mach-o-nlist-64 string-table bytes)))
+      (mv nil (reverse acc))
+    (b* (((mv erp sym bytes) (parse-mach-o-nlist-64 string-table bytes))
+         ((when erp) (mv erp nil)))
         (parse-mach-o-nlist-64s (+ -1 nsyms) (cons sym acc) string-table bytes))))
 
 (defconst *mach-o-segment-flags*
@@ -489,31 +563,43 @@
     (#x4 . :SG_NORELOC)
     (#x8 . :SG_PROTECTED_VERSION_1)))
 
-;returns (mv cmd-data bytes)
+; Returns (mv erp cmd-data bytes).
 (defun parse-mach-o-load-command (cmd ; the type of the command
                                   architecture
                                   all-bytes
                                   bytes)
   (let ((cmd-data nil)) ;empty accumulator (TODO: remove)
     (cond ((eq cmd :LC_UUID)
-           (b* (((mv uuid bytes) (parse-n-bytes 16 bytes)) ;todo: assemble the value
+           (b* (((mv erp uuid bytes) (parse-n-bytes 16 bytes)) ;todo: assemble the value
+                ((when erp) (mv erp nil bytes))
                 (cmd-data (acons :uuid uuid cmd-data)))
-               (mv cmd-data bytes)))
+               (mv nil cmd-data bytes)))
           ((eq cmd :LC_SEGMENT)
-           (b* (((mv segname bytes) (parse-n-bytes-into-string 16 bytes))
-                ((mv vmaddr bytes) (parse-u32 bytes))
-                ((mv vmsize bytes) (parse-u32 bytes))
-                ((mv & ;fileoff
+           (b* (((mv erp segname bytes) (parse-n-bytes-into-string 16 bytes))
+                ((when erp) (mv erp nil bytes))
+                ((mv erp vmaddr bytes) (parse-u32 bytes))
+                ((when erp) (mv erp nil bytes))
+                ((mv erp vmsize bytes) (parse-u32 bytes))
+                ((when erp) (mv erp nil bytes))
+                ((mv erp & ;fileoff
                      bytes) (parse-u32 bytes))
-                ((mv & ;filesize
+                ((when erp) (mv erp nil bytes))
+                ((mv erp & ;filesize
                      bytes) (parse-u32 bytes))
-                ((mv maxprot bytes) (parse-u32 bytes))
-                ((mv initprot bytes) (parse-u32 bytes))
-                ((mv nsects bytes) (parse-u32 bytes))
-                ((mv flags bytes) (parse-u32 bytes))
+                ((when erp) (mv erp nil bytes))
+                ((mv erp maxprot bytes) (parse-u32 bytes))
+                ((when erp) (mv erp nil bytes))
+                ((mv erp initprot bytes) (parse-u32 bytes))
+                ((when erp) (mv erp nil bytes))
+                ((mv erp nsects bytes) (parse-u32 bytes))
+                ((when erp) (mv erp nil bytes))
+                ((mv erp flags bytes) (parse-u32 bytes))
+                ((when erp) (mv erp nil bytes))
                 ;; now come the sections commands:
-                ((mv sections bytes) (parse-mach-o-sections nsects segname nil all-bytes bytes)))
-               (mv (list (cons :segname segname)
+                ((mv erp sections bytes) (parse-mach-o-sections nsects segname nil all-bytes bytes))
+                ((when erp) (mv erp nil bytes)))
+               (mv nil
+                   (list (cons :segname segname)
                          (cons :vmaddr vmaddr)
                          (cons :vmsize vmsize)
                          ;;(cons :fileoff fileoff)
@@ -525,20 +611,31 @@
                          (cons :sections sections))
                    bytes)))
           ((eq cmd :LC_SEGMENT_64)
-           (b* (((mv segname bytes) (parse-n-bytes-into-string 16 bytes))
-                ((mv vmaddr bytes) (parse-u64 bytes))
-                ((mv vmsize bytes) (parse-u64 bytes))
-                ((mv & ;fileoff
+           (b* (((mv erp segname bytes) (parse-n-bytes-into-string 16 bytes))
+                ((when erp) (mv erp nil bytes))
+                ((mv erp vmaddr bytes) (parse-u64 bytes))
+                ((when erp) (mv erp nil bytes))
+                ((mv erp vmsize bytes) (parse-u64 bytes))
+                ((when erp) (mv erp nil bytes))
+                ((mv erp & ;fileoff
                      bytes) (parse-u64 bytes))
-                ((mv & ;filesize
+                ((when erp) (mv erp nil bytes))
+                ((mv erp & ;filesize
                      bytes) (parse-u64 bytes))
-                ((mv maxprot bytes) (parse-u32 bytes))
-                ((mv initprot bytes) (parse-u32 bytes))
-                ((mv nsects bytes) (parse-u32 bytes))
-                ((mv flags bytes) (parse-u32 bytes))
+                ((when erp) (mv erp nil bytes))
+                ((mv erp maxprot bytes) (parse-u32 bytes))
+                ((when erp) (mv erp nil bytes))
+                ((mv erp initprot bytes) (parse-u32 bytes))
+                ((when erp) (mv erp nil bytes))
+                ((mv erp nsects bytes) (parse-u32 bytes))
+                ((when erp) (mv erp nil bytes))
+                ((mv erp flags bytes) (parse-u32 bytes))
+                ((when erp) (mv erp nil bytes))
                 ;; now come the sections commands:
-                ((mv sections bytes) (parse-mach-o-sections-64 nsects segname nil all-bytes bytes)))
-               (mv (list (cons :segname segname)
+                ((mv erp sections bytes) (parse-mach-o-sections-64 nsects segname nil all-bytes bytes))
+                ((when erp) (mv erp nil bytes)))
+               (mv nil
+                   (list (cons :segname segname)
                           (cons :vmaddr vmaddr)
                           (cons :vmsize vmsize)
                           ;;(cons :fileoff fileoff)
@@ -550,25 +647,33 @@
                           (cons :sections sections))
                    bytes)))
           ((eq cmd :LC_TWOLEVEL_HINTS)
-           (b* (((mv offset bytes) (parse-u32 bytes)) ;todo: dereference
+           (b* (((mv erp offset bytes) (parse-u32 bytes)) ;todo: dereference
+                ((when erp) (mv erp nil bytes))
                 (cmd-data (acons :offset offset cmd-data))
-                ((mv nhints bytes) (parse-u32 bytes))
+                ((mv erp nhints bytes) (parse-u32 bytes))
+                ((when erp) (mv erp nil bytes))
                 (cmd-data (acons :nhints nhints cmd-data)))
-               (mv cmd-data bytes)))
+               (mv nil cmd-data bytes)))
           ((eq cmd :LC_DYLD_INFO_ONLY)
            (prog2$ (cw "NOTE: Ignoring unsupported command type: ~x0.~%" cmd)
-                   (mv (acons :unsupported t nil) bytes)))
+                   (mv nil (acons :unsupported t nil) bytes)))
           ((eq cmd :LC_SYMTAB) ;TODO: look this up?
-             (b* (((mv symoff bytes) (parse-u32 bytes))
-                  ((mv nsyms bytes) (parse-u32 bytes))
-                  ((mv stroff bytes) (parse-u32 bytes))
-                  ((mv strsize bytes) (parse-u32 bytes))
-                  (string-table (take-safe strsize (nthcdr stroff all-bytes)))  ;todo: make an nthcdr-safe and use it here
-                  (syms (if (eql architecture 32)
-                            (parse-mach-o-nlists nsyms nil string-table (nthcdr symoff all-bytes))
-                          (parse-mach-o-nlist-64s nsyms nil string-table (nthcdr symoff all-bytes))))
-                  )
-                 (mv (list ;(cons :symoff symoff)
+             (b* (((mv erp symoff bytes) (parse-u32 bytes))
+                  ((when erp) (mv erp nil bytes))
+                  ((mv erp nsyms bytes) (parse-u32 bytes))
+                  ((when erp) (mv erp nil bytes))
+                  ((mv erp stroff bytes) (parse-u32 bytes))
+                  ((when erp) (mv erp nil bytes))
+                  ((mv erp strsize bytes) (parse-u32 bytes))
+                  ((when erp) (mv erp nil bytes))
+                  ((mv erp string-table &) (parse-n-bytes strsize (nthcdr stroff all-bytes)))  ;todo: make an nthcdr-safe and use it here
+                  ((when erp) (mv erp nil bytes))
+                  ((mv erp syms) (if (eql architecture 32)
+                                     (parse-mach-o-nlists nsyms nil string-table (nthcdr symoff all-bytes))
+                                   (parse-mach-o-nlist-64s nsyms nil string-table (nthcdr symoff all-bytes))))
+                  ((when erp) (mv erp nil bytes)))
+                 (mv nil
+                     (list ;(cons :symoff symoff)
                            ;(cons :nsyms nsyms)
                            ;(cons :stroff stroff)
                            ;(cons :strsize strsize)
@@ -578,26 +683,32 @@
                      bytes)))
           ;;TODO: Add more!
           (t (prog2$ (cw "NOTE: Ignoring unsupported command type: ~x0.~%" cmd)
-                     (mv (acons :unsupported t nil) bytes))
+                     (mv nil ; :unsupported-comment-type
+                         (acons :unsupported t nil)
+                         bytes))
              ;; (mv (er hard 'parse-mach-o-load-command "Unsupported command type: ~x0." cmd)
              ;;     bytes)
              ))))
 
+; Returns (mv erp cmd-data-list bytes).
 (defun parse-mach-o-load-commands (ncmds acc architecture all-bytes bytes)
   (if (zp ncmds)
-      (mv (reverse acc) bytes)
+      (mv nil (reverse acc) bytes)
     (b* ((orig-bytes bytes)
-         ((mv cmd-u32 bytes) (parse-u32 bytes))
-         ((mv cmdsize bytes) (parse-u32 bytes))
+         ((mv erp cmd-u32 bytes) (parse-u32 bytes))
+         ((when erp) (mv erp nil bytes))
+         ((mv erp cmdsize bytes) (parse-u32 bytes))
+         ((when erp) (mv erp nil bytes))
          (cmd (lookup cmd-u32 *mach-o-load-commands*)))
       (if (not cmd)
           (b* ((- (cw "NOTE: Ignoring unsupported load command: ~x0.~%" cmd-u32))
                (bytes (nthcdr cmdsize orig-bytes)))
             (parse-mach-o-load-commands (+ -1 ncmds) acc architecture all-bytes bytes))
         (b* (;; for all of the options below, the cmd and cmdsize are already parsed:
-             ((mv cmd-data & ;bytes
+             ((mv erp cmd-data & ;bytes
                   )
               (parse-mach-o-load-command cmd architecture all-bytes bytes))
+             ((when erp) (mv erp nil bytes))
              (acc (cons (acons :cmd cmd ; (acons :cmdsize cmdsize
                                cmd-data ;)
                                ) acc))
@@ -605,26 +716,31 @@
              (bytes (nthcdr cmdsize orig-bytes)))
           (parse-mach-o-load-commands (+ -1 ncmds) acc architecture all-bytes bytes))))))
 
+;; Returns (mv erp result).
 (defun parse-mach-o-file-bytes (bytes)
   (b* ((all-bytes bytes) ;capture for later looking up things at given offsets
        ;; Parse the magic number:
-       ((mv magic bytes) (parse-u32 bytes))
+       ((mv erp magic bytes) (parse-u32 bytes))
+       ((when erp) (mv erp nil))
        (magic (lookup-safe magic *mach-o-magic-numbers*))
        (architecture (if (member-eq magic *32-bit-magic-numbers*)
                          32
                        (if (member-eq magic *64-bit-magic-numbers*)
                            64
                          (er hard 'parse-mach-o-file-bytes "Bad magic number."))))
-       ((mv header bytes)
+       ((mv erp header bytes)
         (if (eql architecture 32)
             (parse-mach-o-header-32 bytes)
           (parse-mach-o-header-64 bytes)))
+       ((when erp) (mv erp nil))
        (ncmds (lookup-eq-safe :ncmds header))
-       ((mv cmds & ;bytes
-            ) (parse-mach-o-load-commands ncmds nil architecture all-bytes bytes)))
-      (list (cons :magic magic)
-            (cons :header header)
-            (cons :cmds cmds))))
+       ((mv erp cmds & ;bytes
+            ) (parse-mach-o-load-commands ncmds nil architecture all-bytes bytes))
+       ((when erp) (mv erp nil)))
+    (mv nil
+        (list (cons :magic magic)
+              (cons :header header)
+              (cons :cmds cmds)))))
 
 ;; ;; Parse a file that is known to be a Mach-O executable.  Returns (mv
 ;; ;; erp contents state) where contents in an alist representing the

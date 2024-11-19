@@ -871,6 +871,7 @@
     ;; x86 stuff (move to x package?):
     elf-info
     parse-elf-file-bytes ; helpful for tracing
+    parsed-elfp
 
     ;; Testing utilities:
     assert-equal
