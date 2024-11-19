@@ -21,3 +21,8 @@
 (defthm string-listp-of-map-symbol-name
   (string-listp (map-symbol-name syms))
   :hints (("Goal" :in-theory (enable map-symbol-name))))
+
+(defthm map-symbol-name-of-cons
+  (equal (map-symbol-name (cons sym syms))
+         (cons (symbol-name sym) (map-symbol-name syms)))
+  :hints (("Goal" :in-theory (enable map-symbol-name))))

@@ -2957,6 +2957,9 @@
 
 ; Event-data has event-type defthm, defun, verify-guards, or thm.
 
+; If no reasonable name can be returned, then :no-event-data-name is returned.
+; The caller should be able to handle that case.
+
   (let ((event (and (not (eq event-type 'thm))
                     (get-event-data-1 'event event-data))))
     (cond
@@ -2971,9 +2974,10 @@
                (if (eq (car event) 'mutual-recursion)
                    (cdr (cadr event))
                  (cadr event))))
-          (assert$ (and (consp def)
-                        (symbolp (car def)))
-                   (car def))))
+          (if (and (consp def)
+                   (symbolp (car def)))
+              (car def)
+            :no-event-data-name)))
        ((or (eq (car event) 'defun)
             #+:non-standard-analysis
             (eq (car event) 'defun-std))
@@ -3218,24 +3222,27 @@
                                   (access certify-book-info info
                                           :event-data-channel)))
                     (event-data (f-get-global 'last-event-data state))
-                    (edf (f-get-global 'event-data-fal state)))
-               (cond ((or channel edf)
-                      (let ((name (event-data-name event-data event-type)))
-                        (pprogn
-                         (if channel
-                             (print-event-data name event-data channel ctx
-                                               state)
-                           state)
-                         (if edf
-                             (f-put-global
-                              'event-data-fal
-                              (hons-acons name
-                                          (cons event-data
-                                                (cdr (hons-get name edf)))
-                                          edf)
-                              state)
-                           state))))
-                     (t state)))
+                    (edf (f-get-global 'event-data-fal state))
+                    (name (if (or channel edf)
+                              (event-data-name event-data event-type)
+                            :no-event-data-name)))
+               (cond ((eq name :no-event-data-name)
+                      state)
+                     (t
+                      (pprogn
+                       (if channel
+                           (print-event-data name event-data channel ctx
+                                             state)
+                         state)
+                       (if edf
+                           (f-put-global
+                            'event-data-fal
+                            (hons-acons name
+                                        (cons event-data
+                                              (cdr (hons-get name edf)))
+                                        edf)
+                            state)
+                         state)))))
            state)))))))
 
 (defun with-prover-step-limit-fn (limit form no-change-flg)

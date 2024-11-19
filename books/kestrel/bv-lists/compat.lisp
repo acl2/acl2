@@ -12,5 +12,5 @@
 
 ;; Make sure we can include all of these libraries without errors:
 (include-book "std/typed-lists/top" :dir :system)
-(include-book "top")
 (include-book "kestrel/fty/top" :dir :system)
+(include-book "top")

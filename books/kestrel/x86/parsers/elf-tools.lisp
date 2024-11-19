@@ -98,10 +98,10 @@
        ((when erp) (mv erp nil state))
        ((when (not (= magic-number *elf-magic-number*)))
         (er hard? 'parse-elf "File ~x0 does not appear to be an ELF file." filename)
-        (mv t nil state)))
-    (mv nil ;no error
-        (parse-elf-file-bytes bytes)
-        state)))
+        (mv t nil state))
+       ((mv erp parsed-elf)
+        (parse-elf-file-bytes bytes)))
+    (mv erp parsed-elf state)))
 
 ;; Returns an error triple (mv erp res state) where res contains information about the given ELF file.
 (defun elf-info-fn (filename state)
