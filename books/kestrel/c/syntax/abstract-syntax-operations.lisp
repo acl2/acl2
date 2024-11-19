@@ -1080,7 +1080,7 @@
           (if yes/no
               (mv t
                   tyspecs
-                  (cons (decl-spec-stocla->unwrap declspec) stor-specs))
+                  (cons (decl-spec-stocla->spec declspec) stor-specs))
             (mv nil nil nil)))))
     (mv nil nil nil))
   :hooks (:fix))
@@ -1130,7 +1130,7 @@
   (b* (((when (endp declspecs)) nil)
        (declspec (car declspecs)))
     (if (decl-spec-case declspec :stocla)
-        (cons (decl-spec-stocla->unwrap declspec)
+        (cons (decl-spec-stocla->spec declspec)
               (decl-spec-list-to-stor-spec-list (cdr declspecs)))
       (decl-spec-list-to-stor-spec-list (cdr declspecs))))
   :hooks (:fix))

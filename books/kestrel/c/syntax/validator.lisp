@@ -3556,7 +3556,7 @@
        declspec
        :stocla (retok (type-option-fix type?)
                       (type-spec-list-fix tyspecs)
-                      (rcons declspec.unwrap (stor-spec-list-fix storspecs))
+                      (rcons declspec.spec (stor-spec-list-fix storspecs))
                       nil
                       (valid-table-fix table))
        :tyspec (b* (((erp type? tyspecs types table)

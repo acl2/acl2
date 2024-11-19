@@ -1600,7 +1600,7 @@
     (b* (((reterr) (irr-decl-spec) (irr-dimb-kind) (irr-dimb-table)))
       (decl-spec-case
        declspec
-       :stocla (if (stor-spec-case declspec.unwrap :typedef)
+       :stocla (if (stor-spec-case declspec.spec :typedef)
                    (retok (decl-spec-fix declspec)
                           (dimb-kind-typedef)
                           (dimb-table-fix table))
