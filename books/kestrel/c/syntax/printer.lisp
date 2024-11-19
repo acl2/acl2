@@ -2061,7 +2061,7 @@
      :tyqual (print-type-qual declspec.qual pstate)
      :funspec (print-fun-spec declspec.spec pstate)
      :align (print-align-spec declspec.spec pstate)
-     :attrib (print-attrib-spec declspec.unwrap pstate)
+     :attrib (print-attrib-spec declspec.spec pstate)
      :stdcall (print-astring "__stdcall" pstate)
      :declspec-attrib (b* ((pstate (print-astring "__declspec(" pstate))
                            (pstate (print-ident declspec.arg pstate))
