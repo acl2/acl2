@@ -869,7 +869,7 @@
         (reterr (msg "Unsupported declaration specifier ~x0 ~
                       for tag (i.e. structure/union/enumeration) declaration."
                      declspec)))
-       (tyspec (decl-spec-tyspec->unwrap declspec))
+       (tyspec (decl-spec-tyspec->spec declspec))
        ((when (type-spec-case tyspec :struct))
         (b* (((strunispec strunispec) (type-spec-struct->spec tyspec))
              ((unless strunispec.name)

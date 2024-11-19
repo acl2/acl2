@@ -3561,7 +3561,7 @@
                       (valid-table-fix table))
        :tyspec (b* (((erp type? tyspecs types table)
                      (valid-type-spec
-                      declspec.unwrap type? tyspecs table ienv)))
+                      declspec.spec type? tyspecs table ienv)))
                  (retok type?
                         tyspecs
                         (stor-spec-list-fix storspecs)

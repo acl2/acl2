@@ -367,7 +367,7 @@
     (:linear c$::tyname-count-of-expr-va-arg->type)
     (:linear c$::tyname-count-of-type-spec-atomic->type)
     (:linear c$::tyname-count-of-type-spec-typeof-type->type)
-    (:linear c$::type-spec-count-of-decl-spec-tyspec->unwrap)
+    (:linear c$::type-spec-count-of-decl-spec-tyspec->spec)
     (:linear c$::type-spec-count-of-spec/qual-tyspec->spec)))
 
 (defthy deftrans-theory-type-prescription
@@ -988,7 +988,7 @@
    `(decl-spec-case
       declspec
       :stocla (decl-spec-fix declspec)
-      :tyspec (decl-spec-tyspec (,(cdr (assoc-eq 'type-spec names)) declspec.unwrap ,@extra-args-names))
+      :tyspec (decl-spec-tyspec (,(cdr (assoc-eq 'type-spec names)) declspec.spec ,@extra-args-names))
       :tyqual (decl-spec-fix declspec)
       :funspec (decl-spec-fix declspec)
       :align (decl-spec-align (,(cdr (assoc-eq 'align-spec names)) declspec.unwrap ,@extra-args-names))
