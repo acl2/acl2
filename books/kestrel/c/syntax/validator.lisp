@@ -3556,12 +3556,12 @@
        declspec
        :stocla (retok (type-option-fix type?)
                       (type-spec-list-fix tyspecs)
-                      (rcons declspec.unwrap (stor-spec-list-fix storspecs))
+                      (rcons declspec.spec (stor-spec-list-fix storspecs))
                       nil
                       (valid-table-fix table))
        :tyspec (b* (((erp type? tyspecs types table)
                      (valid-type-spec
-                      declspec.unwrap type? tyspecs table ienv)))
+                      declspec.spec type? tyspecs table ienv)))
                  (retok type?
                         tyspecs
                         (stor-spec-list-fix storspecs)
@@ -3578,7 +3578,7 @@
                        nil
                        (valid-table-fix table))
        :align (b* (((erp types table)
-                    (valid-align-spec declspec.unwrap table ienv)))
+                    (valid-align-spec declspec.spec table ienv)))
                 (retok (type-option-fix type?)
                        (type-spec-list-fix tyspecs)
                        (stor-spec-list-fix storspecs)
@@ -3594,11 +3594,11 @@
                        (stor-spec-list-fix storspecs)
                        nil
                        (valid-table-fix table))
-       :declspec-attrib (retok (type-option-fix type?)
-                               (type-spec-list-fix tyspecs)
-                               (stor-spec-list-fix storspecs)
-                               nil
-                               (valid-table-fix table))))
+       :declspec (retok (type-option-fix type?)
+                        (type-spec-list-fix tyspecs)
+                        (stor-spec-list-fix storspecs)
+                        nil
+                        (valid-table-fix table))))
     :measure (decl-spec-count declspec)
 
     ///

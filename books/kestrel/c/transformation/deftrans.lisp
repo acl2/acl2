@@ -215,7 +215,7 @@
     (:linear c$::absdeclor-count-of-dirabsdeclor-paren->unwrap)
     (:linear c$::absdeclor-count-of-paramdeclor-absdeclor->unwrap)
     (:linear c$::absdeclor-option-count-of-tyname->decl?)
-    (:linear c$::align-spec-count-of-decl-spec-align->unwrap)
+    (:linear c$::align-spec-count-of-decl-spec-align->spec)
     (:linear c$::align-spec-count-of-spec/qual-align->spec)
     (:linear c$::block-item-count-of-car)
     (:linear c$::block-item-list-count-of-cdr)
@@ -367,7 +367,7 @@
     (:linear c$::tyname-count-of-expr-va-arg->type)
     (:linear c$::tyname-count-of-type-spec-atomic->type)
     (:linear c$::tyname-count-of-type-spec-typeof-type->type)
-    (:linear c$::type-spec-count-of-decl-spec-tyspec->unwrap)
+    (:linear c$::type-spec-count-of-decl-spec-tyspec->spec)
     (:linear c$::type-spec-count-of-spec/qual-tyspec->spec)))
 
 (defthy deftrans-theory-type-prescription
@@ -988,13 +988,13 @@
    `(decl-spec-case
       declspec
       :stocla (decl-spec-fix declspec)
-      :tyspec (decl-spec-tyspec (,(cdr (assoc-eq 'type-spec names)) declspec.unwrap ,@extra-args-names))
+      :tyspec (decl-spec-tyspec (,(cdr (assoc-eq 'type-spec names)) declspec.spec ,@extra-args-names))
       :tyqual (decl-spec-fix declspec)
       :funspec (decl-spec-fix declspec)
-      :align (decl-spec-align (,(cdr (assoc-eq 'align-spec names)) declspec.unwrap ,@extra-args-names))
+      :align (decl-spec-align (,(cdr (assoc-eq 'align-spec names)) declspec.spec ,@extra-args-names))
       :attrib (decl-spec-fix declspec)
       :stdcall (decl-spec-fix declspec)
-      :declspec-attrib (decl-spec-fix declspec))
+      :declspec (decl-spec-fix declspec))
    '(:returns (new-declspec decl-specp)
      :measure (decl-spec-count declspec))))
 

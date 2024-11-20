@@ -269,13 +269,13 @@
     :short "Check if a declaration specifier is unambiguous."
     (decl-spec-case declspec
                     :stocla t
-                    :tyspec (type-spec-unambp declspec.unwrap)
+                    :tyspec (type-spec-unambp declspec.spec)
                     :tyqual t
                     :funspec t
-                    :align (align-spec-unambp declspec.unwrap)
+                    :align (align-spec-unambp declspec.spec)
                     :attrib t
                     :stdcall t
-                    :declspec-attrib t)
+                    :declspec t)
     :measure (decl-spec-count declspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1761,16 +1761,16 @@
              (not (equal (align-spec-kind alignspec) :alignas-ambig)))
     :rule-classes :forward-chaining)
 
-  (defrule type-spec-unambp-of-decl-spec-tyspec->unwrap
+  (defrule type-spec-unambp-of-decl-spec-tyspec->spec
     (implies (and (decl-spec-unambp declspec)
                   (decl-spec-case declspec :tyspec))
-             (type-spec-unambp (decl-spec-tyspec->unwrap declspec)))
+             (type-spec-unambp (decl-spec-tyspec->spec declspec)))
     :expand (decl-spec-unambp declspec))
 
-  (defrule align-spec-unambp-of-decl-spec-align->unwrap
+  (defrule align-spec-unambp-of-decl-spec-align->spec
     (implies (and (decl-spec-unambp declspec)
                   (decl-spec-case declspec :align))
-             (align-spec-unambp (decl-spec-align->unwrap declspec)))
+             (align-spec-unambp (decl-spec-align->spec declspec)))
     :expand (decl-spec-unambp declspec))
 
   (defrule expr-unambp-of-initer-single->expr

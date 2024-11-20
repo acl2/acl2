@@ -965,7 +965,7 @@
            (mv nil nil))
           (declspec (car declspecs))
           ((unless (decl-spec-case declspec :tyspec)) (mv nil nil))
-          (tyspec (decl-spec-tyspec->unwrap declspec))
+          (tyspec (decl-spec-tyspec->spec declspec))
           ((unless (type-spec-case tyspec :typedef)) (mv nil nil))
           (ident (type-spec-typedef->name tyspec))
           (kind? (dimb-lookup-ident ident table))
@@ -1600,7 +1600,7 @@
     (b* (((reterr) (irr-decl-spec) (irr-dimb-kind) (irr-dimb-table)))
       (decl-spec-case
        declspec
-       :stocla (if (stor-spec-case declspec.unwrap :typedef)
+       :stocla (if (stor-spec-case declspec.spec :typedef)
                    (retok (decl-spec-fix declspec)
                           (dimb-kind-typedef)
                           (dimb-table-fix table))
@@ -1608,7 +1608,7 @@
                         (dimb-kind-fix kind)
                         (dimb-table-fix table)))
        :tyspec (b* (((erp new-tyspec table)
-                     (dimb-type-spec declspec.unwrap table)))
+                     (dimb-type-spec declspec.spec table)))
                  (retok (decl-spec-tyspec new-tyspec)
                         (dimb-kind-fix kind)
                         (dimb-table-fix table)))
@@ -1619,7 +1619,7 @@
                        (dimb-kind-fix kind)
                        (dimb-table-fix table))
        :align (b* (((erp new-alignspec table)
-                    (dimb-align-spec declspec.unwrap table)))
+                    (dimb-align-spec declspec.spec table)))
                 (retok (decl-spec-align new-alignspec)
                        (dimb-kind-fix kind)
                        table))
@@ -1629,9 +1629,9 @@
        :stdcall (retok (decl-spec-fix declspec)
                        (dimb-kind-fix kind)
                        (dimb-table-fix table))
-       :declspec-attrib (retok (decl-spec-fix declspec)
-                               (dimb-kind-fix kind)
-                               (dimb-table-fix table))))
+       :declspec (retok (decl-spec-fix declspec)
+                        (dimb-kind-fix kind)
+                        (dimb-table-fix table))))
     :measure (decl-spec-count declspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

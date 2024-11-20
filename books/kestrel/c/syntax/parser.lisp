@@ -10412,7 +10412,7 @@
         (b* (((erp & parstate) (read-punctuator "(" parstate))
              ((erp ident & parstate) (read-identifier parstate))
              ((erp last-span parstate) (read-punctuator ")" parstate)))
-          (retok (decl-spec-declspec-attrib ident)
+          (retok (decl-spec-declspec ident)
                  (span-join span last-span)
                  parstate)))
        ;; If token is anything else, it is an error.

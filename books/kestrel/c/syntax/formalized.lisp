@@ -875,10 +875,10 @@
               (consp decl.specs)
               (endp (cdr decl.specs))
               (decl-spec-case (car decl.specs) :tyspec)
-              (type-spec-case (decl-spec-tyspec->unwrap (car decl.specs))
+              (type-spec-case (decl-spec-tyspec->spec (car decl.specs))
                               :struct)
               (strunispec-formalp (type-spec-struct->spec
-                                   (decl-spec-tyspec->unwrap (car decl.specs))))
+                                   (decl-spec-tyspec->spec (car decl.specs))))
               (endp decl.init))
    :statassert nil)
   :hooks (:fix))
