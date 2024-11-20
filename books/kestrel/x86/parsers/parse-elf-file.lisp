@@ -310,6 +310,8 @@
     ;; todo: handle the ranges
     ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns (mv erp section-header bytes).
 (defund parse-elf-section-header (64-bitp bytes)
   (declare (xargs :guard (and (booleanp 64-bitp)
@@ -349,14 +351,16 @@
        (result (acons :entsize sh_entsize result)))
     (mv nil (reverse result) bytes)))
 
-(defthm alist-of-mv-nth-1-of-parse-elf-section-header
-  (alistp (mv-nth 1 (parse-elf-section-header 64-bitp bytes)))
-  :hints (("Goal" :in-theory (enable parse-elf-section-header))))
+(local
+  (defthm alist-of-mv-nth-1-of-parse-elf-section-header
+    (alistp (mv-nth 1 (parse-elf-section-header 64-bitp bytes)))
+    :hints (("Goal" :in-theory (enable parse-elf-section-header)))))
 
-(defthm byte-listp-of-mv-nth-2-of-parse-elf-section-header
-  (implies (byte-listp bytes)
-           (byte-listp (mv-nth 2 (parse-elf-section-header 64-bitp bytes))))
-  :hints (("Goal" :in-theory (enable parse-elf-section-header))))
+(local
+  (defthm byte-listp-of-mv-nth-2-of-parse-elf-section-header
+    (implies (byte-listp bytes)
+             (byte-listp (mv-nth 2 (parse-elf-section-header 64-bitp bytes))))
+    :hints (("Goal" :in-theory (enable parse-elf-section-header)))))
 
 ;; Returns (mv erp section-header-table-without-names).
 (defund parse-elf-section-headers (index count 64-bitp acc bytes)
@@ -380,20 +384,23 @@
                                    (acons index section-header acc)
                                    bytes)))))
 
-(defthm alist-listp-of-mv-nth-1-of-parse-elf-section-headers
-  (implies (alistp acc)
-           (alistp (mv-nth 1 (parse-elf-section-headers index count 64-bitp acc bytes))))
-  :hints (("Goal" :in-theory (enable parse-elf-section-headers))))
+(local
+  (defthm alist-listp-of-mv-nth-1-of-parse-elf-section-headers
+    (implies (alistp acc)
+             (alistp (mv-nth 1 (parse-elf-section-headers index count 64-bitp acc bytes))))
+    :hints (("Goal" :in-theory (enable parse-elf-section-headers)))))
 
-(defthm alist-listp-of-strip-cdrs-of-mv-nth-1-of-parse-elf-section-headers
-  (implies (and (alist-listp (strip-cdrs acc))
-                (alistp acc))
-           (alist-listp (strip-cdrs (mv-nth 1 (parse-elf-section-headers index count 64-bitp acc bytes)))))
-  :hints (("Goal" :in-theory (enable parse-elf-section-headers))))
+(local
+  (defthm alist-listp-of-strip-cdrs-of-mv-nth-1-of-parse-elf-section-headers
+    (implies (and (alist-listp (strip-cdrs acc))
+                  (alistp acc))
+             (alist-listp (strip-cdrs (mv-nth 1 (parse-elf-section-headers index count 64-bitp acc bytes)))))
+    :hints (("Goal" :in-theory (enable parse-elf-section-headers)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Returns (mv erp result)
-(defun assign-section-header-names (section-header-table string-table-bytes acc)
+;; Returns (mv erp result).
+(defund assign-section-header-names (section-header-table string-table-bytes acc)
   (declare (xargs :guard (and (alistp section-header-table)
                               (alist-listp (strip-cdrs section-header-table))
                               (byte-listp string-table-bytes)
@@ -414,17 +421,23 @@
                                        string-table-bytes
                                        (acons index (acons :name name section-header) acc)))))))
 
-(defthm alistp-of-mv-nth-1-of-assign-section-header-names
-  (implies (and ;(alist-listp (strip-cdrs section-header-table))
-                ;(alist-listp (strip-cdrs acc))
-                (alistp acc))
-           (alistp (mv-nth 1 (assign-section-header-names section-header-table string-table-bytes acc)))))
+(local
+  (defthm alistp-of-mv-nth-1-of-assign-section-header-names
+    (implies (and ;(alist-listp (strip-cdrs section-header-table))
+               ;;(alist-listp (strip-cdrs acc))
+               (alistp acc))
+             (alistp (mv-nth 1 (assign-section-header-names section-header-table string-table-bytes acc))))
+    :hints (("Goal" :in-theory (enable assign-section-header-names)))))
 
-(defthm alist-listp-of-strip-cdrs-of-mv-nth-1-of-assign-section-header-names
-  (implies (and (alist-listp (strip-cdrs section-header-table))
-                (alist-listp (strip-cdrs acc))
-                (alistp acc))
-           (alist-listp (strip-cdrs (mv-nth 1 (assign-section-header-names section-header-table string-table-bytes acc))))))
+(local
+  (defthm alist-listp-of-strip-cdrs-of-mv-nth-1-of-assign-section-header-names
+    (implies (and (alist-listp (strip-cdrs section-header-table))
+                  (alist-listp (strip-cdrs acc))
+                  (alistp acc))
+             (alist-listp (strip-cdrs (mv-nth 1 (assign-section-header-names section-header-table string-table-bytes acc)))))
+    :hints (("Goal" :in-theory (enable assign-section-header-names)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund symtab-offset-and-size (section-header-table)
   (declare (xargs :guard (and (alistp section-header-table)
