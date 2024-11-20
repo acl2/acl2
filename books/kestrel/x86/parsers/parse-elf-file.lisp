@@ -157,9 +157,10 @@
             :processor-specific
           (er hard? 'decode-file-type "Unknown file type: ~x0." e_type))))))
 
-(defthm symbolp-of-decode-file-type
-  (symbolp (decode-file-type e_type))
-  :hints (("Goal" :in-theory (enable decode-file-type))))
+(local
+  (defthm symbolp-of-decode-file-type
+    (symbolp (decode-file-type e_type))
+    :hints (("Goal" :in-theory (enable decode-file-type)))))
 
 (defconst *elf-machine-types*
   '((0 . :EM_NONE)
@@ -290,10 +291,11 @@
           (mv nil (reverse acc))
         (parse-string-chars (rest bytes) (cons (code-char byte) acc))))))
 
-(defthm character-listp-of-mv-nth-1-of-parse-string-chars
-  (implies (character-listp acc)
-           (character-listp (mv-nth 1 (parse-string-chars bytes acc))))
-  :hints (("Goal" :in-theory (enable parse-string-chars))))
+(local
+  (defthm character-listp-of-mv-nth-1-of-parse-string-chars
+    (implies (character-listp acc)
+             (character-listp (mv-nth 1 (parse-string-chars bytes acc))))
+    :hints (("Goal" :in-theory (enable parse-string-chars)))))
 
 ;; Returns (mv erp string)
 (defun parse-string (bytes)
@@ -537,10 +539,11 @@
   (declare (xargs :guard t ))
   (alist-listp st))
 
-(defthm elf-symbol-tablep-of-mv-nth-1-of-parse-elf-symbol-table
-  (implies (elf-symbol-tablep acc)
-           (elf-symbol-tablep (mv-nth 1 (parse-elf-symbol-table symbol-table-size 64-bitp string-table-bytes-etc acc bytes))))
-  :hints (("Goal" :in-theory (enable parse-elf-symbol-table elf-symbol-tablep))))
+(local
+  (defthm elf-symbol-tablep-of-mv-nth-1-of-parse-elf-symbol-table
+    (implies (elf-symbol-tablep acc)
+             (elf-symbol-tablep (mv-nth 1 (parse-elf-symbol-table symbol-table-size 64-bitp string-table-bytes-etc acc bytes))))
+    :hints (("Goal" :in-theory (enable parse-elf-symbol-table elf-symbol-tablep)))))
 
 ;; Returns (mv erp result) where RESULT is an alist mapping section names to lists of bytes.
 (defund extract-elf-sections (section-header-table all-bytes acc)
@@ -562,10 +565,11 @@
       (extract-elf-sections (rest section-header-table) all-bytes
                             (acons name bytes acc)))))
 
-(defthm alistp-of-mv-nth-1-of-extract-elf-sections
-  (implies (alistp acc)
-           (alistp (mv-nth 1 (extract-elf-sections section-header-table all-bytes acc))))
-  :hints (("Goal" :in-theory (enable extract-elf-sections))))
+(local
+  (defthm alistp-of-mv-nth-1-of-extract-elf-sections
+    (implies (alistp acc)
+             (alistp (mv-nth 1 (extract-elf-sections section-header-table all-bytes acc))))
+    :hints (("Goal" :in-theory (enable extract-elf-sections)))))
 
 ;move up
 ;; Returns (mv erp program-header bytes).
@@ -616,14 +620,16 @@
        (result (acons :align p_align result)))
     (mv nil (reverse result) bytes)))
 
-(defthm alistp-of-mv-nth-1-of-parse-elf-program-header
-  (alistp (mv-nth 1 (parse-elf-program-header 64-bitp bytes)))
-  :hints (("Goal" :in-theory (enable parse-elf-program-header))))
+(local
+  (defthm alistp-of-mv-nth-1-of-parse-elf-program-header
+    (alistp (mv-nth 1 (parse-elf-program-header 64-bitp bytes)))
+    :hints (("Goal" :in-theory (enable parse-elf-program-header)))))
 
-(defthm byte-listp-of-mv-nth-2-of-parse-elf-program-header
-  (implies (byte-listp bytes)
-           (byte-listp (mv-nth 2 (parse-elf-program-header 64-bitp bytes))))
-  :hints (("Goal" :in-theory (enable parse-elf-program-header))))
+(local
+  (defthm byte-listp-of-mv-nth-2-of-parse-elf-program-header
+    (implies (byte-listp bytes)
+             (byte-listp (mv-nth 2 (parse-elf-program-header 64-bitp bytes))))
+    :hints (("Goal" :in-theory (enable parse-elf-program-header)))))
 
 ;move up
 ;; Returns (mv erp program-headers) where PROGRAM-HEADERS is a list of alists
@@ -650,10 +656,11 @@
                                    (cons program-header acc)
                                    bytes)))))
 
-(defthm alist-listp-of-mv-nth-1-of-parse-elf-program-headers
-  (implies (alist-listp acc)
-           (alist-listp (mv-nth 1 (parse-elf-program-headers index num-entries 64-bitp acc bytes))))
-  :hints (("Goal" :in-theory (enable parse-elf-program-headers))))
+(local
+  (defthm alist-listp-of-mv-nth-1-of-parse-elf-program-headers
+    (implies (alist-listp acc)
+             (alist-listp (mv-nth 1 (parse-elf-program-headers index num-entries 64-bitp acc bytes))))
+    :hints (("Goal" :in-theory (enable parse-elf-program-headers)))))
 
 ;; Returns (mv erp parsed-elf) where PARSED-ELF is meaningless if ERP in non-nil.
 ;; TODO: Some of this parsing need not be done for all callers (e.g., when loading an image)
@@ -802,17 +809,26 @@
 (defund parsed-elfp (parsed-elf)
   (declare (xargs :guard t))
   (and (symbol-alistp parsed-elf)
+       ;; Check the type (:rel, :dyn, etc):
        (assoc-eq :type parsed-elf)
        (symbolp (lookup-eq :type parsed-elf))
+       ;; Check the CPU type:
        (assoc-eq :machine parsed-elf)
        (symbolp (lookup-eq :machine parsed-elf))
+       ;; Check the entry point:
+       (assoc-eq :entry parsed-elf)
+       (natp (lookup-eq :entry parsed-elf))
+       ;; Check the section header table:
        (assoc-eq :section-header-table parsed-elf)
        (let ((section-header-table (lookup-eq :section-header-table parsed-elf)))
          (section-header-tablep section-header-table))
+       ;; Check the sections (todo: drop this?):
        (assoc-eq :sections parsed-elf)
        (alistp (lookup-eq :sections parsed-elf))
+       ;; Check the program header table (segments):
        (assoc-eq :program-header-table parsed-elf)
        (alist-listp (lookup-eq :program-header-table parsed-elf))
+       ;; Check the symbol-table:
        (assoc-eq :symbol-table parsed-elf)
        (elf-symbol-tablep (lookup-eq :symbol-table parsed-elf))))
 
