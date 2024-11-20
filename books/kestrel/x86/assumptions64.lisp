@@ -189,6 +189,8 @@
                                 stack-slots-needed
                                 x86))
 
+;; TODO: What should this go if the parsed-elf is bad (e.g., doesn't have a
+;; text section)?  Transition to just generating a list of terms?
 (defun standard-assumptions-elf-64 (subroutine-name
                                     parsed-elf
                                     stack-slots-needed

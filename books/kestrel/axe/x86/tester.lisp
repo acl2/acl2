@@ -718,9 +718,9 @@
        ;; We will test all functions whose names begin with test_ or fail_test_
        (function-name-strings (if (eq :all include-fns)
                                   (if (eq :elf-64 executable-type)
-                                      (let ((all-functions (acl2::get-all-elf-symbols parsed-executable)))
+                                      (let ((all-functions (acl2::parsed-elf-symbols parsed-executable)))
                                         (append (acl2::strings-starting-with "test_" all-functions)
-                                                (acl2::strings-starting-with "fail_test_" (acl2::get-all-elf-symbols parsed-executable))))
+                                                (acl2::strings-starting-with "fail_test_" all-functions)))
                                     (if (eq :mach-o-64 executable-type)
                                         (let ((all-functions (acl2::get-all-mach-o-symbols parsed-executable)))
                                           (append (acl2::strings-starting-with "_test_" all-functions)

@@ -11,18 +11,21 @@
 
 (in-package "X")
 
-;; ;; todo: generalize
+(include-book "assumptions") ; todo: for lifter-targetp
+(include-book "parsers/elf-tools")
+
+;; ;; Generate all the assumptions for an ELF64 file, whether relative or
+;; ;; absolute.  Returns a list of terms.
 ;; (defun assumption-elf64-new (target
 ;;                              parsed-elf
 ;;                              stack-slots-needed
 ;;                              ;text-offset
-;;                              x86)
+;;                              state-term)
 ;;   (declare (xargs :guard (and (lifter-targetp target)
 ;;                               (acl2::parsed-elfp parsed-elf)
-;;                               (natp stack-slots-needed))
-;;                   :stobjs x86
-;;                   :verify-guards nil ;todo
-;;                   ))
+;;                               (natp stack-slots-needed)
+;;                               ;; state-term may be untranslated?
+;;                               )))
 ;;   (let (
 
 

@@ -47,12 +47,17 @@
 
 ;; Returns the :addr field of the ".text" section, or :none.
 (defun get-elf-code-address (parsed-elf)
+  (declare (xargs :guard (parsed-elfp parsed-elf)
+                  :guard-hints (("Goal" :in-theory (enable parsed-elfp)))))
   (let ((addr (get-elf-section-address ".text" parsed-elf)))
     (if (eq :none addr)
-        (er hard? 'get-elf-code-address "No .text section.")
+        (er hard? 'get-elf-code-address "No .text section.") ;; todo: instead, return :none
       addr)))
 
 (defun get-elf-symbol-address (name symbol-table)
+  (declare (xargs :guard (and (stringp name)
+                              (elf-symbol-tablep symbol-table))
+                  :guard-hints (("Goal" :in-theory (enable elf-symbol-tablep)))))
   (if (endp symbol-table)
       (er hard? 'get-elf-symbol-address "Can't find ~s0 in symbol table." name)
     (let* ((entry (first symbol-table))
@@ -62,6 +67,9 @@
         (get-elf-symbol-address name (rest symbol-table))))))
 
 (defun get-names-from-elf-symbol-table (symbol-table acc)
+  (declare (xargs :guard (and (elf-symbol-tablep symbol-table)
+                              (true-listp acc))
+                  :guard-hints (("Goal" :in-theory (enable elf-symbol-tablep)))))
   (if (endp symbol-table)
       (reverse acc)
     (let* ((entry (first symbol-table))
@@ -73,18 +81,20 @@
 
 (defopeners get-elf-symbol-address)
 
-(defun get-elf-symbol-table (parsed-elf)
+(defund parsed-elf-symbol-table (parsed-elf)
+  (declare (xargs :guard (parsed-elfp parsed-elf)))
   (lookup-eq-safe :symbol-table parsed-elf))
 
 ;; Throws an error if not found
 (defun subroutine-address-elf (name parsed-elf)
-  (get-elf-symbol-address name (get-elf-symbol-table parsed-elf)))
+  (get-elf-symbol-address name (parsed-elf-symbol-table parsed-elf)))
 
-(defun get-all-elf-symbols (parsed-elf)
-  (get-names-from-elf-symbol-table (get-elf-symbol-table parsed-elf) nil))
+(defun parsed-elf-symbols (parsed-elf)
+  (get-names-from-elf-symbol-table (parsed-elf-symbol-table parsed-elf) nil))
 
-(defun elf-cpu-type (parsed-elf)
-  (lookup-eq-safe :machine parsed-elf))
+(defun parsed-elf-cpu-type (parsed-elf)
+  (declare (xargs :guard (parsed-elfp parsed-elf)))
+  (lookup-eq :machine parsed-elf))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

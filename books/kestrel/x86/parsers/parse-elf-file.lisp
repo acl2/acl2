@@ -63,6 +63,12 @@
              (alistp (lookup-equal key x)))
     :hints (("Goal" :in-theory (enable lookup-equal)))))
 
+(local
+  (defthm symbolp-of-lookup-equal
+    (implies (symbol-listp (strip-cdrs alist))
+             (symbolp (lookup-equal key alist)))
+  :hints (("Goal" :in-theory (enable lookup-equal)))))
+
 (defconst *elf-magic-number* #x464C457F) ; 7F"ELF" (but note the byte order)
 
 (defconst *classes*
@@ -150,6 +156,10 @@
                  (<= e_type #xffff))
             :processor-specific
           (er hard? 'decode-file-type "Unknown file type: ~x0." e_type))))))
+
+(defthm symbolp-of-decode-file-type
+  (symbolp (decode-file-type e_type))
+  :hints (("Goal" :in-theory (enable decode-file-type))))
 
 (defconst *elf-machine-types*
   '((0 . :EM_NONE)
@@ -523,6 +533,15 @@
                                 (cons symbol-table-entry acc)
                                 bytes)))))
 
+(defund elf-symbol-tablep (st)
+  (declare (xargs :guard t ))
+  (alist-listp st))
+
+(defthm elf-symbol-tablep-of-mv-nth-1-of-parse-elf-symbol-table
+  (implies (elf-symbol-tablep acc)
+           (elf-symbol-tablep (mv-nth 1 (parse-elf-symbol-table symbol-table-size 64-bitp string-table-bytes-etc acc bytes))))
+  :hints (("Goal" :in-theory (enable parse-elf-symbol-table elf-symbol-tablep))))
+
 ;; Returns (mv erp result) where RESULT is an alist mapping section names to lists of bytes.
 (defund extract-elf-sections (section-header-table all-bytes acc)
   (declare (xargs :guard (and (section-header-tablep section-header-table)
@@ -783,13 +802,19 @@
 (defund parsed-elfp (parsed-elf)
   (declare (xargs :guard t))
   (and (symbol-alistp parsed-elf)
+       (assoc-eq :type parsed-elf)
+       (symbolp (lookup-eq :type parsed-elf))
+       (assoc-eq :machine parsed-elf)
+       (symbolp (lookup-eq :machine parsed-elf))
        (assoc-eq :section-header-table parsed-elf)
        (let ((section-header-table (lookup-eq :section-header-table parsed-elf)))
          (section-header-tablep section-header-table))
        (assoc-eq :sections parsed-elf)
        (alistp (lookup-eq :sections parsed-elf))
        (assoc-eq :program-header-table parsed-elf)
-       (alist-listp (lookup-eq :program-header-table parsed-elf))))
+       (alist-listp (lookup-eq :program-header-table parsed-elf))
+       (assoc-eq :symbol-table parsed-elf)
+       (elf-symbol-tablep (lookup-eq :symbol-table parsed-elf))))
 
 (defthmd alistp-when-parsed-elfp
   (implies (parsed-elfp parsed-elf)
