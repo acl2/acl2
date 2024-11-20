@@ -10,7 +10,6 @@
 
 (in-package "C$")
 
-(include-book "abstract-syntax-operations")
 (include-book "unambiguity")
 
 (include-book "std/util/error-value-tuples" :dir :system)
