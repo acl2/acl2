@@ -310,6 +310,8 @@
     ;; todo: handle the ranges
     ))
 
+(defconst *shn_undef* 0)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp section-header bytes).
@@ -398,6 +400,26 @@
   (declare (xargs :guard t))
   (alist-listp section-header-table))
 
+;; Looks up a section header by name.  Returns the header, or :none.
+(defund get-elf-section-header (name section-header-table)
+  (declare (xargs :guard (and (stringp name)
+                              (section-header-tablep section-header-table))))
+  (if (endp section-header-table)
+      :none
+    (let* ((section-header (first section-header-table))
+           (this-name (lookup-eq-safe :name section-header)))
+      (if (equal this-name name)
+          section-header
+        (get-elf-section-header name (rest section-header-table))))))
+
+(defthm alistp-of-get-elf-section-header
+  (implies (and (not (equal :none (get-elf-section-header name section-header-table)))
+                (section-header-tablep section-header-table))
+           (alistp (get-elf-section-header name section-header-table)))
+  :hints (("Goal" :in-theory (enable get-elf-section-header))))
+
+(defopeners get-elf-section-header) ; move?
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp result).
@@ -442,26 +464,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun get-elf-section-header (name section-header-table)
-  (declare (xargs :guard (section-header-tablep section-header-table)))
-  (if (endp section-header-table)
-      (er hard? 'get-elf-section-header "No section header found for ~x0." name)
-    (let* ((section-header (first section-header-table))
-           (this-name (lookup-eq-safe :name section-header)))
-      (if (equal this-name name)
-          section-header
-        (get-elf-section-header name (rest section-header-table))))))
-
-(defthm alistp-of-get-elf-section-header
-  (implies (section-header-tablep section-header-table)
-           (alistp (get-elf-section-header name section-header-table)))
-  :hints (("Goal" :in-theory (enable get-elf-section-header))))
-
-(defopeners get-elf-section-header) ; move?
-
 (defund strtab-offset (section-header-table)
   (declare (xargs :guard (section-header-tablep section-header-table)))
-  (lookup-eq-safe :offset (get-elf-section-header ".strtab" section-header-table)))
+  (let ((header (get-elf-section-header ".strtab" section-header-table)))
+    (if (eq :none header)
+        :none
+      (lookup-eq-safe :offset header))))
 
 ;; Returns (mv erp result bytes).
 (defun parse-elf-symbol-table-entry (64-bitp string-table-bytes-etc bytes)
@@ -732,23 +740,26 @@
        ((mv erp section-header-table-without-names) (parse-elf-section-headers 0 e_shnum 64-bitp nil (nthcdr e_shoff all-bytes)))
        ((when erp) (mv erp nil))
 
-       ;; Add the names to the section headers:
+       ;; Rewsolve the names of the section headers:
+       ((when (= e_shstrndx *shn_undef*))
+        (mv :no-section-contains-a-section-name-string-table nil))
        (section-name-string-table-header (nth e_shstrndx section-header-table-without-names))
-       (section-name-string-table-header-offset (lookup-eq-safe :offset section-name-string-table-header))
-       ((when (not (natp section-name-string-table-header-offset))) ; impossible?
-        (mv :bad-section-name-string-table-header-offset nil))
+       (section-name-string-table-offset (lookup-eq-safe :offset section-name-string-table-header))
+       ((when (not (natp section-name-string-table-offset))) ; impossible?
+        (mv :bad-section-name-string-table-offset nil))
        ((mv erp section-header-table) (assign-section-header-names section-header-table-without-names
-                                                                   (nthcdr section-name-string-table-header-offset all-bytes)
+                                                                   (nthcdr section-name-string-table-offset all-bytes)
                                                                    nil))
        ((when erp) (mv erp nil))
        (result (acons :section-header-table section-header-table result))
+
        ((mv symbol-table-offset symbol-table-size) (symtab-offset-and-size section-header-table))
        ((when (not (natp symbol-table-offset))) ; impossible?
         (mv :bad-symbol-table-offset nil))
        ((when (not (natp symbol-table-size))) ; impossible?
         (mv :bad-symbol-table-size nil))
        (string-table-offset (strtab-offset section-header-table))
-       ((when (not (natp string-table-offset))) ; impossible?
+       ((when (not (natp string-table-offset))) ; impossible? but it may be :none
         (mv :bad-string-table-offset nil))
        ((mv erp symbol-table) (parse-elf-symbol-table symbol-table-size
                                                       64-bitp

@@ -17,6 +17,7 @@
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 ;(include-book "kestrel/alists-light/lookup-equal-safe" :dir :system)
 
+;; todo: use the section-header-table?
 (defund elf-section-presentp (section-name parsed-elf)
   (declare (xargs :guard (and (stringp section-name)
                               (parsed-elfp parsed-elf))
@@ -34,13 +35,22 @@
   (declare (xargs :guard (parsed-elfp parsed-elf)))
   (get-elf-section-bytes ".text" parsed-elf))
 
+;; Returns the :addr field of the header with the give SECTION-NAME, or :none
 (defun get-elf-section-address (section-name parsed-elf)
-  (declare (xargs :guard (parsed-elfp parsed-elf)
+  (declare (xargs :guard (and (stringp section-name)
+                              (parsed-elfp parsed-elf))
                   :guard-hints (("Goal" :in-theory (enable parsed-elfp)))))
-  (lookup-eq-safe :addr (get-elf-section-header section-name (lookup-eq-safe :section-header-table parsed-elf))))
+  (let ((header (get-elf-section-header section-name (lookup-eq-safe :section-header-table parsed-elf))))
+    (if (eq :none header)
+        :none
+      (lookup-eq-safe :addr header))))
 
+;; Returns the :addr field of the ".text" section, or :none.
 (defun get-elf-code-address (parsed-elf)
-  (get-elf-section-address ".text" parsed-elf))
+  (let ((addr (get-elf-section-address ".text" parsed-elf)))
+    (if (eq :none addr)
+        (er hard? 'get-elf-code-address "No .text section.")
+      addr)))
 
 (defun get-elf-symbol-address (name symbol-table)
   (if (endp symbol-table)
