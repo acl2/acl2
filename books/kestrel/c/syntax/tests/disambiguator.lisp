@@ -260,3 +260,9 @@
  return a + (b) + c;
 }
 ")
+
+(test-dimb
+ "int foo (int a, int b, int c) {
+  return (a) + (b) + c;
+}
+")

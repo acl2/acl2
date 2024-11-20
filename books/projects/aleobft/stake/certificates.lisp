@@ -1134,7 +1134,7 @@
            (mv-nth 1 (certificate-sets-unequivocalp-witness certs01 certs02))))
     :enable set::expensive-rules)
 
-  (defruled certificate-sets-unequivocalp-when-emptyp
+  (defrule certificate-sets-unequivocalp-when-emptyp
     (implies (or (set::emptyp certs1)
                  (set::emptyp certs2))
              (certificate-sets-unequivocalp certs1 certs2)))

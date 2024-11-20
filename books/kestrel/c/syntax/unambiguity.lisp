@@ -263,31 +263,31 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define declspec-unambp ((declspec declspecp))
+  (define decl-spec-unambp ((declspec decl-specp))
     :returns (yes/no booleanp)
     :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if a declaration specifier is unambiguous."
-    (declspec-case declspec
-                   :stocla t
-                   :tyspec (type-spec-unambp declspec.unwrap)
-                   :tyqual t
-                   :funspec t
-                   :align (align-spec-unambp declspec.unwrap)
-                   :attrib t
-                   :stdcall t
-                   :declspec-attrib t)
-    :measure (declspec-count declspec))
+    (decl-spec-case declspec
+                    :stocla t
+                    :tyspec (type-spec-unambp declspec.spec)
+                    :tyqual t
+                    :funspec t
+                    :align (align-spec-unambp declspec.spec)
+                    :attrib t
+                    :stdcall t
+                    :declspec t)
+    :measure (decl-spec-count declspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define declspec-list-unambp ((declspecs declspec-listp))
+  (define decl-spec-list-unambp ((declspecs decl-spec-listp))
     :returns (yes/no booleanp)
     :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if a list of declaration specifiers is unambiguous."
     (or (endp declspecs)
-        (and (declspec-unambp (car declspecs))
-             (declspec-list-unambp (cdr declspecs))))
-    :measure (declspec-list-count declspecs))
+        (and (decl-spec-unambp (car declspecs))
+             (decl-spec-list-unambp (cdr declspecs))))
+    :measure (decl-spec-list-count declspecs))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -460,7 +460,7 @@
     :returns (yes/no booleanp)
     :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if a parameter declaration is unambiguous."
-    (and (declspec-list-unambp (paramdecl->spec paramdecl))
+    (and (decl-spec-list-unambp (paramdecl->spec paramdecl))
          (paramdeclor-unambp (paramdecl->decl paramdecl)))
     :measure (paramdecl-count paramdecl))
 
@@ -618,7 +618,7 @@
     :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if a declaration is unambiguous."
     (decl-case decl
-               :decl (and (declspec-list-unambp decl.specs)
+               :decl (and (decl-spec-list-unambp decl.specs)
                           (initdeclor-list-unambp decl.init))
                :statassert (statassert-unambp decl.unwrap))
     :measure (decl-count decl))
@@ -733,10 +733,10 @@
     :parents nil
     (spec/qual-unambp x))
 
-  (std::deflist declspec-list-unambp (x)
-    :guard (declspec-listp x)
+  (std::deflist decl-spec-list-unambp (x)
+    :guard (decl-spec-listp x)
     :parents nil
-    (declspec-unambp x))
+    (decl-spec-unambp x))
 
   (std::deflist desiniter-list-unambp (x)
     :guard (desiniter-listp x)
@@ -1121,30 +1121,21 @@
            (const-expr-unambp cexpr))
     :expand (align-spec-unambp (align-spec-alignas-expr cexpr)))
 
-  (defrule declspec-unambp-of-declspec-tyspec
-    (equal (declspec-unambp (declspec-tyspec tyspec))
+  (defrule decl-spec-unambp-of-decl-spec-tyspec
+    (equal (decl-spec-unambp (decl-spec-tyspec tyspec))
            (type-spec-unambp tyspec))
-    :expand (declspec-unambp (declspec-tyspec tyspec)))
+    :expand (decl-spec-unambp (decl-spec-tyspec tyspec)))
 
-  (defrule declspec-unambp-of-declspec-align
-    (equal (declspec-unambp (declspec-align alignspec))
+  (defrule decl-spec-unambp-of-decl-spec-align
+    (equal (decl-spec-unambp (decl-spec-align alignspec))
            (align-spec-unambp alignspec))
-    :expand (declspec-unambp (declspec-align alignspec)))
+    :expand (decl-spec-unambp (decl-spec-align alignspec)))
 
-  (defrule declspec-unambp-when-stocla/tyqual/funspec/attrib/stdcall/declspec
-    (implies (member-eq
-              (declspec-kind declspec)
-              '(:stocla :tyqual :funspec :attrib :stdcall :declspec-attrib))
-             (declspec-unambp declspec)))
-
-  (defrule declspec-unambp-when-not-stocla/tyspec/tyqual/funspec/align
-    (implies (and (not (declspec-case declspec :stocla))
-                  (not (declspec-case declspec :tyspec))
-                  (not (declspec-case declspec :tyqual))
-                  (not (declspec-case declspec :funspec))
-                  (not (declspec-case declspec :align)))
-             (declspec-unambp declspec))
-    :expand (declspec-unambp declspec))
+  (defrule decl-spec-unambp-when-not-tyspec/align
+    (implies (and (not (decl-spec-case declspec :tyspec))
+                  (not (decl-spec-case declspec :align)))
+             (decl-spec-unambp declspec))
+    :expand (decl-spec-unambp declspec))
 
   (defrule initer-unambp-of-initer-single
     (equal (initer-unambp (initer-single expr))
@@ -1270,7 +1261,7 @@
 
   (defrule paramdecl-unambp-of-paramdecl
     (equal (paramdecl-unambp (paramdecl spec decl))
-           (and (declspec-list-unambp spec)
+           (and (decl-spec-list-unambp spec)
                 (paramdeclor-unambp decl)))
     :expand (paramdecl-unambp (paramdecl spec decl)))
 
@@ -1335,7 +1326,7 @@
 
   (defrule decl-unambp-of-decl-decl
     (equal (decl-unambp (decl-decl extension specs init))
-           (and (declspec-list-unambp specs)
+           (and (decl-spec-list-unambp specs)
                 (initdeclor-list-unambp init)))
     :expand (decl-unambp (decl-decl extension specs init)))
 
@@ -1770,17 +1761,17 @@
              (not (equal (align-spec-kind alignspec) :alignas-ambig)))
     :rule-classes :forward-chaining)
 
-  (defrule type-spec-unambp-of-declspec-tyspec->unwrap
-    (implies (and (declspec-unambp declspec)
-                  (declspec-case declspec :tyspec))
-             (type-spec-unambp (declspec-tyspec->unwrap declspec)))
-    :expand (declspec-unambp declspec))
+  (defrule type-spec-unambp-of-decl-spec-tyspec->spec
+    (implies (and (decl-spec-unambp declspec)
+                  (decl-spec-case declspec :tyspec))
+             (type-spec-unambp (decl-spec-tyspec->spec declspec)))
+    :expand (decl-spec-unambp declspec))
 
-  (defrule align-spec-unambp-of-declspec-align->unwrap
-    (implies (and (declspec-unambp declspec)
-                  (declspec-case declspec :align))
-             (align-spec-unambp (declspec-align->unwrap declspec)))
-    :expand (declspec-unambp declspec))
+  (defrule align-spec-unambp-of-decl-spec-align->spec
+    (implies (and (decl-spec-unambp declspec)
+                  (decl-spec-case declspec :align))
+             (align-spec-unambp (decl-spec-align->spec declspec)))
+    :expand (decl-spec-unambp declspec))
 
   (defrule expr-unambp-of-initer-single->expr
     (implies (and (initer-unambp initer)
@@ -1953,9 +1944,9 @@
               (dirabsdeclor-function->params dirabsdeclor)))
     :expand (dirabsdeclor-unambp dirabsdeclor))
 
-  (defrule declspec-list-unambp-of-paramdecl->spec
+  (defrule decl-spec-list-unambp-of-paramdecl->spec
     (implies (paramdecl-unambp paramdecl)
-             (declspec-list-unambp (paramdecl->spec paramdecl)))
+             (decl-spec-list-unambp (paramdecl->spec paramdecl)))
     :expand (paramdecl-unambp paramdecl))
 
   (defrule paramdeclor-unambp-of-paramdecl->decl
@@ -2046,10 +2037,10 @@
     (implies (initdeclor-unambp initdeclor)
              (initer-option-unambp (initdeclor->init? initdeclor))))
 
-  (defrule declspec-list-unambp-of-decl-decl->specs
+  (defrule decl-spec-list-unambp-of-decl-decl->specs
     (implies (and (decl-unambp decl)
                   (decl-case decl :decl))
-             (declspec-list-unambp (decl-decl->specs decl))))
+             (decl-spec-list-unambp (decl-decl->specs decl))))
 
   (defrule initdeclor-list-unambp-of-decl-decl->init
     (implies (and (decl-unambp decl)
@@ -2361,7 +2352,7 @@
 (define fundef-unambp ((fundef fundefp))
   :returns (yes/no booleanp)
   :short "Check if a function definition is unambiguous."
-  (and (declspec-list-unambp (fundef->spec fundef))
+  (and (decl-spec-list-unambp (fundef->spec fundef))
        (declor-unambp (fundef->declor fundef))
        (decl-list-unambp (fundef->decls fundef))
        (stmt-unambp (fundef->body fundef)))
@@ -2372,14 +2363,14 @@
   (defrule fundef-unambp-of-fundef
     (equal (fundef-unambp
             (fundef extension spec declor asm? attribs decls body))
-           (and (declspec-list-unambp spec)
+           (and (decl-spec-list-unambp spec)
                 (declor-unambp declor)
                 (decl-list-unambp decls)
                 (stmt-unambp body))))
 
-  (defrule declspec-list-unambp-of-fundef->spec
+  (defrule decl-spec-list-unambp-of-fundef->spec
     (implies (fundef-unambp fundef)
-             (declspec-list-unambp (fundef->spec fundef))))
+             (decl-spec-list-unambp (fundef->spec fundef))))
 
   (defrule declor-unambp-of-fundef->declor
     (implies (fundef-unambp fundef)
@@ -2529,22 +2520,22 @@
     :induct t
     :enable check-spec/qual-list-all-tyspec)
 
-  (defrule type-spec-list-unambp-of-check-declspec-list-all-tyspec
-    (b* (((mv okp tyspecs) (check-declspec-list-all-tyspec specquals)))
-      (implies (and (declspec-list-unambp specquals)
+  (defrule type-spec-list-unambp-of-check-decl-spec-list-all-tyspec
+    (b* (((mv okp tyspecs) (check-decl-spec-list-all-tyspec specquals)))
+      (implies (and (decl-spec-list-unambp specquals)
                     okp)
                (type-spec-list-unambp tyspecs)))
     :induct t
-    :enable check-declspec-list-all-tyspec)
+    :enable check-decl-spec-list-all-tyspec)
 
-  (defrule type-spec-list-unambp-of-check-declspec-list-all-tyspec/storspec
+  (defrule type-spec-list-unambp-of-check-decl-spec-list-all-tyspec/storspec
     (b* (((mv okp tyspecs &)
-          (check-declspec-list-all-tyspec/storspec declspecs)))
-      (implies (and (declspec-list-unambp declspecs)
+          (check-decl-spec-list-all-tyspec/storspec declspecs)))
+      (implies (and (decl-spec-list-unambp declspecs)
                     okp)
                (type-spec-list-unambp tyspecs)))
     :induct t
-    :enable check-declspec-list-all-tyspec/storspec))
+    :enable check-decl-spec-list-all-tyspec/storspec))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -156,6 +156,7 @@
              :in-theory (e/d (cardinality-of-subset-of-round-set-of-round)
                              (incoming-subset-of-next-round
                               incoming)))))
+  (in-theory (disable incoming-same-round))
 
   (defruled incoming-in-dag
     (implies (and (certificate-setp dag)
@@ -218,6 +219,7 @@
     :hyp (certificate-setp dag)
     :hints
     (("Goal" :in-theory (enable certificates-with-authors+round-subset))))
+  (in-theory (disable outgoing-subset))
 
   (defret outgoing-subset-of-previous-round
     (set::subset certs
@@ -228,6 +230,7 @@
     :hints
     (("Goal"
       :in-theory (enable certificates-with-authors+round-subset-with-round))))
+  (in-theory (disable outgoing-subset-of-previous-round))
 
   (defruled outgoing-in-dag
     (implies (and (certificate-setp dag)
