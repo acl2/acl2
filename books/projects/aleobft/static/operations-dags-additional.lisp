@@ -230,6 +230,7 @@
     :hints
     (("Goal"
       :in-theory (enable certificates-with-authors+round-subset-with-round))))
+  (in-theory (disable outgoing-subset-of-previous-round))
 
   (defruled outgoing-in-dag
     (implies (and (certificate-setp dag)
