@@ -617,11 +617,11 @@
    (xdoc::p
     "An ambiguous @('sizeof') has the same priority as an unambiguous one.
      An ambiguous cast/call expression is given
-     the lower priority of the two possibilities,
-     i.e. the priority of a cast expression.
+     the higher priority of the two possibilities,
+     i.e. the priority of a postfix expression.
      Ambiguous cast/binary expressions are given
-     the lower priority of the two possibilities,
-     i.e. the priority of the corresponding binary expression."))
+     the higher priority of the two possibilities,
+     i.e. the priority of a cast expression."))
   (expr-case
    expr
    :ident (expr-priority-primary)
@@ -672,11 +672,11 @@
             :asg-ior (expr-priority-asg))
    :cond (expr-priority-cond)
    :comma (expr-priority-expr)
-   :cast/call-ambig (expr-priority-cast)
-   :cast/mul-ambig (expr-priority-mul)
-   :cast/add-ambig (expr-priority-add)
-   :cast/sub-ambig (expr-priority-add)
-   :cast/and-ambig (expr-priority-and)
+   :cast/call-ambig (expr-priority-postfix)
+   :cast/mul-ambig (expr-priority-cast)
+   :cast/add-ambig (expr-priority-cast)
+   :cast/sub-ambig (expr-priority-cast)
+   :cast/and-ambig (expr-priority-cast)
    :stmt (expr-priority-primary)
    :tycompat (expr-priority-primary)
    :offsetof (expr-priority-primary)
