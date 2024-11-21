@@ -12,7 +12,6 @@
 (in-package "ALEOBFT-STAKE")
 
 (include-book "backward-closure")
-(include-book "ordered-even-blocks")
 (include-book "dag-committees")
 
 (local (include-book "arithmetic-3/top" :dir :system))
