@@ -31,6 +31,7 @@
 (include-book "same-committees-def-and-implied")
 (include-book "unequivocal-dags-next")
 (include-book "previous-quorum")
+(include-book "dag-certificate-next")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -62,4 +63,5 @@
                     nonforking-blockchains-def-and-init
                     same-committees-def-and-implied
                     unequivocal-dags-next
-                    previous-quorum))
+                    previous-quorum
+                    dag-certificate-next))
