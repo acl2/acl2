@@ -312,7 +312,7 @@
                    (certificate-previous-in-dag-p cert dag)))
   ///
 
-  (defrule dag-previous-in-dag-p-of-insert
+  (defruled dag-previous-in-dag-p-of-insert
     (implies (and (certificatep cert)
                   (certificate-setp dag)
                   (dag-previous-in-dag-p dag)

@@ -109,7 +109,8 @@
               cert
               (validator-state->dag (get-validator-state signer systate))))
     :enable (signer-has-previous-certificates-p
-             certificate-previous-in-dag-p))
+             certificate-previous-in-dag-p
+             dag-previous-in-dag-p-of-insert))
 
   (defruled certificate-previous-in-dag-p-when-signers-have-previous
     (implies (and (signers-have-previous-certificates-p
@@ -148,7 +149,8 @@
     :expand (system-previous-in-dag-p
              (create-certificate-next cert systate))
     :enable (system-previous-in-dag-p-necc
-             validator-state->dag-of-create-certificate-next)))
+             validator-state->dag-of-create-certificate-next
+             dag-previous-in-dag-p-of-insert)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -190,7 +192,8 @@
               (validator-state->dag
                (get-validator-state val systate))))
     :enable (store-certificate-possiblep
-             certificate-previous-in-dag-p))
+             certificate-previous-in-dag-p
+             dag-previous-in-dag-p-of-insert))
 
   (defrule system-previous-in-dag-p-of-store-certificate-next
     (implies (and (system-previous-in-dag-p systate)
@@ -201,7 +204,8 @@
     :expand (system-previous-in-dag-p
              (store-certificate-next cert val systate))
     :enable (system-previous-in-dag-p-necc
-             validator-state->dag-of-store-certificate-next)))
+             validator-state->dag-of-store-certificate-next
+             dag-previous-in-dag-p-of-insert)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
