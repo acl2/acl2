@@ -13,6 +13,8 @@
 
 (include-book "transitions")
 
+(include-book "kestrel/fty/deffixequiv-sk" :dir :system)
+
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
@@ -216,7 +218,10 @@
                                  (validator-state->blockchain vstate)
                                  (all-addresses systate))))
                      (implies commtt
-                              (committee-fault-tolerant-p commtt systate))))))
+                              (committee-fault-tolerant-p commtt systate)))))
+  ///
+  (fty::deffixequiv-sk validator-fault-tolerant-p
+    :args ((vstate validator-statep) (systate system-statep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -238,7 +243,10 @@
           (implies (set::in val (correct-addresses systate))
                    (validator-fault-tolerant-p
                     (get-validator-state val systate)
-                    systate))))
+                    systate)))
+  ///
+  (fty::deffixequiv-sk system-fault-tolerant-p
+    :args ((systate system-statep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -268,4 +276,5 @@
        ((when (endp events)) t))
     (all-system-fault-tolerant-p (cdr events)
                                  (event-next (car events) systate)))
-  :guard-hints (("Goal" :in-theory (enable events-possiblep))))
+  :guard-hints (("Goal" :in-theory (enable events-possiblep)))
+  :hooks (:fix))
