@@ -71,7 +71,27 @@
                                                            all-vals)))
                      (implies commtt
                               (set::subset (committee-members commtt)
-                                           all-vals))))))
+                                           (address-set-fix all-vals))))))
+
+  ///
+
+  (fty::deffixequiv-sk validator-committees-in-system-p
+    :args ((vstate validator-statep) (all-vals address-setp)))
+
+  (defruled validator-committees-in-system-p-necc-when-address-setp
+    (implies (and (validator-committees-in-system-p vstate all-vals)
+                  (address-setp all-vals)
+                  (posp round))
+             (b* ((commtt (active-committee-at-round
+                           round
+                           (validator-state->blockchain vstate)
+                           all-vals)))
+               (implies commtt
+                        (set::subset (committee-members commtt)
+                                     all-vals))))
+    :use validator-committees-in-system-p-necc
+    :disable (validator-committees-in-system-p
+              validator-committees-in-system-p-necc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -90,7 +110,10 @@
           (implies (set::in val (correct-addresses systate))
                    (validator-committees-in-system-p
                     (get-validator-state val systate)
-                    (all-addresses systate)))))
+                    (all-addresses systate))))
+  ///
+  (fty::deffixequiv-sk committees-in-system-p
+    :args ((systate system-statep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -120,8 +143,7 @@
           reachable from an initial state via a sequence of events."
 
   (defruled committees-in-system-p-when-reachable
-    (implies (and (system-statep systate)
-                  (system-initp systate)
+    (implies (and (system-initp systate)
                   (events-possiblep events systate))
              (committees-in-system-p (events-next events systate)))
     :enable (committees-in-system-p-when-genesis
