@@ -50,7 +50,7 @@
                 (integerp n)
                 (natp num))
            (unsigned-byte-p n (packbv-little num size items)))
-  :hints (("Goal" :use (:instance unsigned-byte-p-of-packbv-little)
+  :hints (("Goal" :use unsigned-byte-p-of-packbv-little
            :in-theory (disable unsigned-byte-p-of-packbv-little))))
 
 ;; Since it's little-endian, getting the lowest bits gives the first item.

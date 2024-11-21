@@ -254,7 +254,7 @@
            (equal (equal (bvchop 8 (nth n data))
                          (bv-array-read 8 16 m data))
                   t))
-  :hints (("Goal" :use (:instance equal-of-bvchop-and-bv-array-read))))
+  :hints (("Goal" :use equal-of-bvchop-and-bv-array-read)))
 
 (defthm bv-array-read-of-+-of-expt-of-ceiling-of-lg
   (implies (and (natp len)
@@ -279,5 +279,5 @@
                 (< n len))
            (equal (equal (bv-array-read size len n x) (nth n x))
                   t))
-  :hints (("Goal" :use (:instance equal-of-nth-and-bv-array-read-better)
+  :hints (("Goal" :use equal-of-nth-and-bv-array-read-better
            :in-theory (disable equal-of-nth-and-bv-array-read-better))))

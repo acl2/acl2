@@ -196,7 +196,7 @@
 (defthm subsetp-equal-of-all-vars-and-free-vars-in-term
   (subsetp-equal (all-vars term)
                  (free-vars-in-term term))
-  :hints (("Goal" :use (:instance all-vars))))
+  :hints (("Goal" :use all-vars)))
 
 (local
  ;rename these!
@@ -222,7 +222,7 @@
 (defthm subsetp-equal-of-free-vars-in-term-and-all-vars
   (subsetp-equal (free-vars-in-term term)
                  (all-vars term))
-  :hints (("Goal" :use (:instance all-vars))))
+  :hints (("Goal" :use all-vars)))
 
 (defthm subsetp-equal-of-free-vars-in-term-and-free-vars-in-terms-when-member-equal
   (implies (member-equal term terms)
