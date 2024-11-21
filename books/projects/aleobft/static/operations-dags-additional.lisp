@@ -377,7 +377,7 @@
 
   ///
 
-  (defrule certificate-list-pathp-of-nil
+  (defruled certificate-list-pathp-of-nil
     (certificate-list-pathp nil dag))
 
   (defruled certificate-list-pathp-member-in-dag
