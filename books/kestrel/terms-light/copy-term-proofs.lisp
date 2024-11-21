@@ -41,11 +41,10 @@
              (no-nils-in-termsp (copy-terms terms)))
     :flag copy-terms)
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (copy-term
-                            copy-terms
-                            ;; lambdas-closed-in-termp
-                            )
-                           ()))))
+           :in-theory (enable copy-term
+                              copy-terms
+                              ;; lambdas-closed-in-termp
+                              ))))
 
 (defthm-flag-copy-term
   (defthm subsetp-equal-of-free-vars-in-term-of-copy-term
@@ -70,11 +69,10 @@
            :expand ((free-vars-in-term term)
                     ;; (no-duplicate-lambda-formals-in-termp term)
                     )
-           :in-theory (e/d (copy-term
-                            copy-terms
-                            ;; lambdas-closed-in-termp
-                            free-vars-in-terms-when-symbol-listp)
-                           ()))))
+           :in-theory (enable copy-term
+                              copy-terms
+                              ;; lambdas-closed-in-termp
+                              free-vars-in-terms-when-symbol-listp))))
 
 (defthm-flag-copy-term
   (defthm termp-of-copy-term
@@ -96,13 +94,12 @@
              (term-listp (copy-terms terms) w))
     :flag copy-terms)
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (termp-becomes-termp-simple
-                            term-listp-becomes-term-listp-simple
-                            copy-term
-                            copy-terms
-                            ;; lambdas-closed-in-termp
-                            )
-                           ()))))
+           :in-theory (enable termp-becomes-termp-simple
+                              term-listp-becomes-term-listp-simple
+                              copy-term
+                              copy-terms
+                              ;; lambdas-closed-in-termp
+                              ))))
 
 (defthm-flag-copy-term
   (defthm logic-fnsp-of-copy-term
@@ -122,13 +119,12 @@
              (logic-fns-listp (copy-terms terms) w))
     :flag copy-terms)
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (termp-becomes-termp-simple
-                            term-listp-becomes-term-listp-simple
-                            copy-term
-                            copy-terms
-                            ;; lambdas-closed-in-termp
-                            )
-                           ()))))
+           :in-theory (enable termp-becomes-termp-simple
+                              term-listp-becomes-term-listp-simple
+                              copy-term
+                              copy-terms
+                              ;; lambdas-closed-in-termp
+                              ))))
 
 ;; Follows easily from termp and logic-fnsp proofs.
 ;; In general, an arities-okp hyp may be needed.

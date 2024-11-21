@@ -1,6 +1,6 @@
 ; A variant of write-objects-to-file for use during make-event, etc.
 ;
-; Copyright (C) 2017-2023 Kestrel Institute
+; Copyright (C) 2017-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,7 +12,6 @@
 
 (include-book "write-objects-to-channel")
 (local (include-book "kestrel/utilities/state" :dir :system))
-(local (include-book "kestrel/utilities/get-serialize-character-ttag" :dir :system))
 (local (include-book "open-output-channel-bang"))
 
 (defttag file-io!)
@@ -26,10 +25,7 @@
 (defund write-objects-to-file! (objects filename ctx state)
   (declare (xargs :stobjs state
                   :guard (and (true-listp objects)
-                              (stringp filename)
-                              ;; required by print-object$ (why?):
-                              (member (get-serialize-character state)
-                                      '(nil #\Y #\Z)))))
+                              (stringp filename))))
   (mv-let (channel state)
     (open-output-channel! filename :object state)
     (if (not channel)

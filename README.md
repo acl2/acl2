@@ -1,11 +1,6 @@
 ACL2 System and Community Books
 ===============================
 
-**WARNING**: On rare occasions development versions of ACL2 may be
-incomplete, fragile, or unable to pass the usual regression tests.  You
-may choose to download an official ACL2 release as described on the
-[ACL2 Home Page][ACL2] or below in this README.
-
 The ACL2 theorem proving environment consists of two parts: The ACL2
 System and The ACL2 Books.  This repository contains both.
 
@@ -16,6 +11,11 @@ version of the [ACL2 Theorem Prover][ACL2].  It is updated only by the
 ACL2 authors, Matt Kaufmann and J Moore.
 
 [ACL2]: http://www.cs.utexas.edu/users/moore/acl2 "ACL2 Home Page"
+
+**WARNING**: On rare occasions development versions of ACL2 may be
+incomplete, fragile, or unable to pass the usual regression tests.  You
+may choose to download an official ACL2 release as described on the
+[ACL2 Home Page][ACL2] or below in this README.
 
 ### ACL2 Books
 
@@ -107,7 +107,7 @@ discussion related to ACL2 system- and book-related development.
 
 [acl2-books]: http://groups.google.com/group/acl2-books
 
-### Contributors wanted!
+### Contributors Wanted!
 
 Everyone can contribute documentation and advice to our [wiki] and
 discuss [problems and feature requests][bugtracker].
