@@ -108,7 +108,7 @@
 
   ///
 
-  (defrule not-anchorp-of-nil
+  (defruled not-anchorp-of-nil
     (not (anchorp nil dag vals)))
 
   (defruled anchorp-of-last-anchor
