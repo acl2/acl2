@@ -989,7 +989,7 @@
 
   ///
 
-  (defruled not-emptyp-predecessors-when-dag-predecessor-cardinality-p
+  (defruled not-emptyp-predecessors-when-dag-predecessor-stake-p
     (implies (and (dag-predecessor-stake-p dag blockchain)
                   (set::in cert dag)
                   (not (equal (certificate->round cert) 1)))
@@ -999,8 +999,9 @@
                      (members
                       (certificate-set->author-set (predecessors cert dag)))
                      (commtt
-                      (active-committee-at-round (+ -1 (certificate->round cert))
-                                                 blockchain))))
+                      (active-committee-at-round
+                       (+ -1 (certificate->round cert))
+                       blockchain))))
     :disable (dag-predecessor-stake-p
               dag-predecessor-stake-p-necc)))
 
