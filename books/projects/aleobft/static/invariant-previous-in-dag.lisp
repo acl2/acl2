@@ -136,7 +136,8 @@
                (get-validator-state (certificate->author cert) systate))))
     :enable (create-certificate-possiblep
              certificate-previous-in-dag-p-when-signers-have-previous
-             certificate->signers))
+             certificate->signers
+             certificate-previous-in-dag-p-when-round-1))
 
   (defrule system-previous-in-dag-p-of-create-certificate-next
     (implies (and (system-previous-in-dag-p systate)

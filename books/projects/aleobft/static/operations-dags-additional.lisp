@@ -281,7 +281,7 @@
   :guard-hints (("Goal" :in-theory (enable posp)))
   ///
 
-  (defrule certificate-previous-in-dag-p-when-round-1
+  (defruled certificate-previous-in-dag-p-when-round-1
     (implies (equal (certificate->round cert) 1)
              (certificate-previous-in-dag-p cert dag)))
 
