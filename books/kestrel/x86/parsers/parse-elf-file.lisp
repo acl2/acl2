@@ -631,10 +631,15 @@
              (byte-listp (mv-nth 2 (parse-elf-program-header 64-bitp bytes))))
     :hints (("Goal" :in-theory (enable parse-elf-program-header)))))
 
+
+(defund elf-program-header-tablep (program-header-table)
+  (declare (xargs :guard t))
+  (alist-listp program-header-table))
+
 ;move up
 ;; Returns (mv erp program-headers) where PROGRAM-HEADERS is a list of alists
 ;; (header entries).
-(defund parse-elf-program-headers (index num-entries 64-bitp acc bytes)
+(defund parse-elf-program-header-table (index num-entries 64-bitp acc bytes)
   (declare (xargs :guard (and (natp index)
                               (natp num-entries)
                               (booleanp 64-bitp)
@@ -650,17 +655,17 @@
       (parse-elf-program-header 64-bitp bytes)
       (if erp
           (mv erp nil)
-        (parse-elf-program-headers (+ 1 index)
+        (parse-elf-program-header-table (+ 1 index)
                                    num-entries
                                    64-bitp
                                    (cons program-header acc)
                                    bytes)))))
 
 (local
-  (defthm alist-listp-of-mv-nth-1-of-parse-elf-program-headers
-    (implies (alist-listp acc)
-             (alist-listp (mv-nth 1 (parse-elf-program-headers index num-entries 64-bitp acc bytes))))
-    :hints (("Goal" :in-theory (enable parse-elf-program-headers)))))
+  (defthm elf-program-header-tablep-of-mv-nth-1-of-parse-elf-program-header-table
+    (implies (elf-program-header-tablep acc)
+             (elf-program-header-tablep (mv-nth 1 (parse-elf-program-header-table index num-entries 64-bitp acc bytes))))
+    :hints (("Goal" :in-theory (enable parse-elf-program-header-table elf-program-header-tablep)))))
 
 ;; Returns (mv erp parsed-elf) where PARSED-ELF is meaningless if ERP in non-nil.
 ;; TODO: Some of this parsing need not be done for all callers (e.g., when loading an image)
@@ -670,6 +675,7 @@
                   :guard-hints (("Goal" :in-theory (e/d (byte-listp-of-mv-nth-1-of-parse-n-bytes) (bytep))))))
   (b* ((all-bytes bytes) ; original bytes, for later looking up things at given offsets
        (result nil) ; empty alist, to be extended
+       (result (acons :bytes all-bytes result))
        ;; Parse the file header:
        ((mv erp e_ident bytes) (parse-n-bytes 16 bytes))
        ((when erp) (mv erp nil))
@@ -758,7 +764,7 @@
 
        ;; Parse the program header table:
        ((mv erp program-header-table)
-        (parse-elf-program-headers 0 e_phnum 64-bitp nil (nthcdr e_phoff all-bytes)))
+        (parse-elf-program-header-table 0 e_phnum 64-bitp nil (nthcdr e_phoff all-bytes)))
        ((when erp) (mv erp nil))
        (result (acons :program-header-table program-header-table result))
 
@@ -809,6 +815,9 @@
 (defund parsed-elfp (parsed-elf)
   (declare (xargs :guard t))
   (and (symbol-alistp parsed-elf)
+       ;; Check the bytes:
+       (assoc-eq :bytes parsed-elf)
+       (byte-listp (lookup-eq :bytes parsed-elf))
        ;; Check the type (:rel, :dyn, etc):
        (assoc-eq :type parsed-elf)
        (symbolp (lookup-eq :type parsed-elf))
@@ -827,7 +836,7 @@
        (alistp (lookup-eq :sections parsed-elf))
        ;; Check the program header table (segments):
        (assoc-eq :program-header-table parsed-elf)
-       (alist-listp (lookup-eq :program-header-table parsed-elf))
+       (elf-program-header-tablep (lookup-eq :program-header-table parsed-elf))
        ;; Check the symbol-table:
        (assoc-eq :symbol-table parsed-elf)
        (elf-symbol-tablep (lookup-eq :symbol-table parsed-elf))))
@@ -840,6 +849,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm parsed-elfp-of-mv-nth-1-of-parse-elf-file-bytes
-  (implies (not (mv-nth 0 (parse-elf-file-bytes bytes)))
+  (implies (and (not (mv-nth 0 (parse-elf-file-bytes bytes)))
+                (byte-listp bytes))
            (parsed-elfp (mv-nth 1 (parse-elf-file-bytes bytes))))
   :hints (("Goal" :in-theory (enable parse-elf-file-bytes parsed-elfp))))

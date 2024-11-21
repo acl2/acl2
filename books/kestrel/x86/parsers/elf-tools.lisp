@@ -86,15 +86,49 @@
   (lookup-eq-safe :symbol-table parsed-elf))
 
 ;; Throws an error if not found
-(defun subroutine-address-elf (name parsed-elf)
+(defund subroutine-address-elf (name parsed-elf)
+  (declare (xargs :guard (and (stringp name)
+                              (parsed-elfp parsed-elf))
+                  :guard-hints (("Goal" :in-theory (enable parsed-elf-symbol-table
+                                                           parsed-elfp)))))
   (get-elf-symbol-address name (parsed-elf-symbol-table parsed-elf)))
 
 (defun parsed-elf-symbols (parsed-elf)
+  (declare (xargs :guard (parsed-elfp parsed-elf)
+                  :guard-hints (("Goal" :in-theory (enable parsed-elfp parsed-elf-symbol-table)))))
   (get-names-from-elf-symbol-table (parsed-elf-symbol-table parsed-elf) nil))
+
+;; :rel or :exec or :dyn, etc.
+(defun parsed-elf-type (parsed-elf)
+  (declare (xargs :guard (parsed-elfp parsed-elf)))
+  (lookup-eq :type parsed-elf))
 
 (defun parsed-elf-cpu-type (parsed-elf)
   (declare (xargs :guard (parsed-elfp parsed-elf)))
   (lookup-eq :machine parsed-elf))
+
+(defun parsed-elf-entry-point (parsed-elf)
+  (declare (xargs :guard (parsed-elfp parsed-elf)))
+  (lookup-eq :entry parsed-elf))
+
+;; all the bytes in the file, for looking up the bytes of the segments
+(defund parsed-elf-bytes (parsed-elf)
+  (declare (xargs :guard (parsed-elfp parsed-elf)))
+  (lookup-eq :bytes parsed-elf))
+
+(defthm byte-listp-of-parsed-elf-bytes
+  (implies (parsed-elfp parsed-elf)
+           (byte-listp (parsed-elf-bytes parsed-elf)))
+  :hints (("Goal" :in-theory (enable parsed-elf-bytes parsed-elfp))))
+
+(defund parsed-elf-program-header-table (parsed-elf)
+  (declare (xargs :guard (parsed-elfp parsed-elf)))
+  (lookup-eq :program-header-table parsed-elf))
+
+(defthm program-header-tablep-of-parsed-elf-program-header-table
+  (implies (parsed-elfp parsed-elf)
+           (elf-program-header-tablep (parsed-elf-program-header-table parsed-elf)))
+  :hints (("Goal" :in-theory (enable parsed-elf-program-header-table parsed-elfp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
