@@ -605,6 +605,44 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define binop->priority ((op binopp))
+  :returns (priority expr-priorityp)
+  :short "Priority of (binary expressions with) operators."
+  (binop-case
+   op
+   :mul (expr-priority-mul)
+   :div (expr-priority-mul)
+   :rem (expr-priority-mul)
+   :add (expr-priority-add)
+   :sub (expr-priority-add)
+   :shl (expr-priority-sh)
+   :shr (expr-priority-sh)
+   :lt (expr-priority-rel)
+   :gt (expr-priority-rel)
+   :le (expr-priority-rel)
+   :ge (expr-priority-rel)
+   :eq (expr-priority-eq)
+   :ne (expr-priority-eq)
+   :bitand (expr-priority-and)
+   :bitxor (expr-priority-xor)
+   :bitior (expr-priority-ior)
+   :logand (expr-priority-logand)
+   :logor (expr-priority-logor)
+   :asg (expr-priority-asg)
+   :asg-mul (expr-priority-asg)
+   :asg-div (expr-priority-asg)
+   :asg-rem (expr-priority-asg)
+   :asg-add (expr-priority-asg)
+   :asg-sub (expr-priority-asg)
+   :asg-shl (expr-priority-asg)
+   :asg-shr (expr-priority-asg)
+   :asg-and (expr-priority-asg)
+   :asg-xor (expr-priority-asg)
+   :asg-ior (expr-priority-asg))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define expr->priority ((expr exprp))
   :returns (priority expr-priorityp)
   :short "Priorities of expressions."
@@ -639,37 +677,7 @@
    :sizeof-ambig (expr-priority-unary)
    :alignof (expr-priority-unary)
    :cast (expr-priority-cast)
-   :binary (binop-case
-            expr.op
-            :mul (expr-priority-mul)
-            :div (expr-priority-mul)
-            :rem (expr-priority-mul)
-            :add (expr-priority-add)
-            :sub (expr-priority-add)
-            :shl (expr-priority-sh)
-            :shr (expr-priority-sh)
-            :lt (expr-priority-rel)
-            :gt (expr-priority-rel)
-            :le (expr-priority-rel)
-            :ge (expr-priority-rel)
-            :eq (expr-priority-eq)
-            :ne (expr-priority-eq)
-            :bitand (expr-priority-and)
-            :bitxor (expr-priority-xor)
-            :bitior (expr-priority-ior)
-            :logand (expr-priority-logand)
-            :logor (expr-priority-logor)
-            :asg (expr-priority-asg)
-            :asg-mul (expr-priority-asg)
-            :asg-div (expr-priority-asg)
-            :asg-rem (expr-priority-asg)
-            :asg-add (expr-priority-asg)
-            :asg-sub (expr-priority-asg)
-            :asg-shl (expr-priority-asg)
-            :asg-shr (expr-priority-asg)
-            :asg-and (expr-priority-asg)
-            :asg-xor (expr-priority-asg)
-            :asg-ior (expr-priority-asg))
+   :binary (binop->priority expr.op)
    :cond (expr-priority-cond)
    :comma (expr-priority-expr)
    :cast/call-ambig (expr-priority-postfix)
@@ -688,7 +696,7 @@
 
 (define expr-priority-<= ((prio1 expr-priorityp) (prio2 expr-priorityp))
   :returns (yes/no booleanp)
-  :short "Total order on expression priorities."
+  :short "Total order on expression priorities: less than or equal to."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -744,6 +752,30 @@
       :asg 1
       :expr 0)
      :hooks (:fix))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define expr-priority->= ((prio1 expr-priorityp) (prio2 expr-priorityp))
+  :returns (yes/no booleanp)
+  :short "Total order on expression priorities: greater than or equal to."
+  (expr-priority-<= prio2 prio1)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define expr-priority-< ((prio1 expr-priorityp) (prio2 expr-priorityp))
+  :returns (yes/no booleanp)
+  :short "Total order on expression priorities: less than."
+  (not (expr-priority-<= prio2 prio1))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define expr-priority-> ((prio1 expr-priorityp) (prio2 expr-priorityp))
+  :returns (yes/no booleanp)
+  :short "Total order on expression priorities: greater than."
+  (not (expr-priority-<= prio1 prio2))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
