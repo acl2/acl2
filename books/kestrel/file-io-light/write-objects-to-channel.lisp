@@ -1,6 +1,6 @@
 ; A function to write a sequence of objects to a channel
 ;
-; Copyright (C) 2017-2023 Kestrel Institute
+; Copyright (C) 2017-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -25,10 +25,7 @@
   (declare (xargs :stobjs state
                   :guard (and (true-listp objects)
                               (symbolp channel)
-                              (open-output-channel-p channel :object state)
-                              ;; required by print-object$ (why?):
-                              (member (get-serialize-character state)
-                                      '(nil #\Y #\Z)))
+                              (open-output-channel-p channel :object state))
                   :guard-hints (("Goal" :in-theory (enable open-output-channel-p)))))
   (if (atom objects)
       state
@@ -58,10 +55,7 @@
 (defund write-objects-to-channel (objects channel state)
   (declare (xargs :guard (and (true-listp objects)
                               (symbolp channel)
-                              (open-output-channel-p channel :object state)
-                              ;; required by print-object$ (why?):
-                              (member (get-serialize-character state)
-                                      '(nil #\Y #\Z)))
+                              (open-output-channel-p channel :object state))
                   :guard-hints (("Goal" :in-theory (enable open-output-channel-p)))
                   :stobjs state))
   (if (endp objects)

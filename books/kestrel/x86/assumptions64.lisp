@@ -194,8 +194,13 @@
                                     stack-slots-needed
                                     text-offset
                                     x86)
-  (declare (xargs :stobjs x86
-                  :verify-guards nil ;todo
+  (declare (xargs :guard (and (stringp subroutine-name)
+                              (acl2::parsed-elfp parsed-elf) ; todo: import
+                              (natp stack-slots-needed)
+                              ;; text-offset is a term?
+                              )
+                  :stobjs x86
+                  :verify-guards nil ;todo, first do acl2::get-elf-code-address and acl2::subroutine-address-elf
                   ))
   (let ((text-section-bytes (acl2::get-elf-code parsed-elf)) ;all the code, not just the given subroutine
         (text-section-address (acl2::get-elf-code-address parsed-elf))

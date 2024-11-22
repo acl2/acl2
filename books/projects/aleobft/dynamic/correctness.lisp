@@ -24,13 +24,13 @@
 (include-book "ordered-even-blocks")
 (include-book "accepted-certificate-committee")
 (include-book "signer-quorum")
-(include-book "previous-quorum")
 (include-book "backward-closure")
 (include-book "unequivocal-signed-certificates")
 (include-book "unequivocal-accepted-certificates-def-and-init")
 (include-book "nonforking-blockchains-def-and-init")
 (include-book "same-committees-def-and-implied")
 (include-book "unequivocal-accepted-certificates-next")
+(include-book "previous-quorum")
 (include-book "last-anchor-def-and-init")
 (include-book "last-anchor-present")
 (include-book "successor-predecessor-intersection")
@@ -80,13 +80,13 @@
                     ordered-even-blocks
                     accepted-certificate-committee
                     signer-quorum
-                    previous-quorum
                     backward-closure
                     unequivocal-signed-certificates
                     unequivocal-accepted-certificates-def-and-init
                     nonforking-blockchains-def-and-init
                     same-committees-def-and-implied
                     unequivocal-accepted-certificates-next
+                    previous-quorum
                     last-anchor-def-and-init
                     last-anchor-present
                     successor-predecessor-intersection

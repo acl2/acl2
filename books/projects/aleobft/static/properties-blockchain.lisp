@@ -90,7 +90,8 @@
                         (validator-state->dag vstate)))
            (certificate-list-pathp (committed-anchors vstate vals)
                                    (validator-state->dag vstate)))
-  :enable committed-anchors)
+  :enable (committed-anchors
+           certificate-list-pathp-of-nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

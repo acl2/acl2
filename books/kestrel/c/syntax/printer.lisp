@@ -1605,7 +1605,7 @@
        This means that if the `then' and/or `else' is a conditional expression,
        it is parenthesized, in order to raise its priority."))
     (b* ((actual-prio (expr->priority expr))
-         (parenp (not (expr-priority-<= expected-prio actual-prio)))
+         (parenp (expr-priority-< actual-prio expected-prio))
          (pstate (if parenp
                      (print-astring "(" pstate)
                    pstate))
@@ -2049,41 +2049,41 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define print-declspec ((declspec declspecp) (pstate pristatep))
-    :guard (declspec-unambp declspec)
+  (define print-decl-spec ((declspec decl-specp) (pstate pristatep))
+    :guard (decl-spec-unambp declspec)
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a declaration specifier."
-    (declspec-case
+    (decl-spec-case
      declspec
-     :stocla (print-stor-spec declspec.unwrap pstate)
-     :tyspec (print-type-spec declspec.unwrap pstate)
-     :tyqual (print-type-qual declspec.unwrap pstate)
-     :funspec (print-fun-spec declspec.unwrap pstate)
-     :align (print-align-spec declspec.unwrap pstate)
-     :attrib (print-attrib-spec declspec.unwrap pstate)
+     :stocla (print-stor-spec declspec.spec pstate)
+     :tyspec (print-type-spec declspec.spec pstate)
+     :tyqual (print-type-qual declspec.qual pstate)
+     :function (print-fun-spec declspec.spec pstate)
+     :align (print-align-spec declspec.spec pstate)
+     :attrib (print-attrib-spec declspec.spec pstate)
      :stdcall (print-astring "__stdcall" pstate)
-     :declspec-attrib (b* ((pstate (print-astring "__declspec(" pstate))
-                           (pstate (print-ident declspec.arg pstate))
-                           (pstate (print-astring ")" pstate)))
-                        pstate))
-    :measure (two-nats-measure (declspec-count declspec) 0))
+     :declspec (b* ((pstate (print-astring "__declspec(" pstate))
+                    (pstate (print-ident declspec.arg pstate))
+                    (pstate (print-astring ")" pstate)))
+                 pstate))
+    :measure (two-nats-measure (decl-spec-count declspec) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (define print-declspec-list ((declspecs declspec-listp) (pstate pristatep))
+  (define print-decl-spec-list ((declspecs decl-spec-listp) (pstate pristatep))
     :guard (and (consp declspecs)
-                (declspec-list-unambp declspecs))
+                (decl-spec-list-unambp declspecs))
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print a list of one or more declaration specifiers,
             separated by spaces."
     (b* (((unless (mbt (consp declspecs))) (pristate-fix pstate))
-         (pstate (print-declspec (car declspecs) pstate))
+         (pstate (print-decl-spec (car declspecs) pstate))
          ((when (endp (cdr declspecs))) pstate)
          (pstate (print-astring " " pstate)))
-      (print-declspec-list (cdr declspecs) pstate))
-    :measure (two-nats-measure (declspec-list-count declspecs) 0))
+      (print-decl-spec-list (cdr declspecs) pstate))
+    :measure (two-nats-measure (decl-spec-list-count declspecs) 0))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2536,7 +2536,7 @@
          ((unless paramdecl.spec)
           (raise "Misusage error: no declaration specifiers.")
           (pristate-fix pstate))
-         (pstate (print-declspec-list paramdecl.spec pstate))
+         (pstate (print-decl-spec-list paramdecl.spec pstate))
          (pstate (print-paramdeclor paramdecl.decl pstate)))
       pstate)
     :measure (two-nats-measure (paramdecl-count paramdecl) 0))
@@ -3006,7 +3006,7 @@
                  no declaration specifiers in declaration ~x0."
                   decl)
            pstate)
-          (pstate (print-declspec-list decl.specs pstate))
+          (pstate (print-decl-spec-list decl.specs pstate))
           (pstate
            (if decl.init
                (b* ((pstate (print-astring " " pstate))
@@ -3596,7 +3596,7 @@
        ((unless fundef.spec)
         (raise "Misusage error: no declaration specifiers.")
         pstate)
-       (pstate (print-declspec-list fundef.spec pstate))
+       (pstate (print-decl-spec-list fundef.spec pstate))
        (pstate (print-astring " " pstate))
        (pstate (print-declor fundef.declor pstate))
        (pstate (if fundef.asm?

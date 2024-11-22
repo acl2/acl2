@@ -11,7 +11,7 @@
 
 (in-package "X")
 
-;; This book contains supproting material that is Axe-specific (e.g., rules
+;; This book contains supporting material that is Axe-specific (e.g., rules
 ;; that use axe-syntaxp or axe-bind-free).
 
 ;; TODO: Factor out any non-Axe-specific stuff
@@ -39,6 +39,7 @@
 (add-known-boolean program-at)
 (add-known-boolean x86p)
 (add-known-boolean 64-bit-modep)
+(add-known-boolean app-view)
 ;(add-known-boolean addr-byte-alistp)
 (add-known-boolean subset-p)
 (add-known-boolean no-duplicates-p)

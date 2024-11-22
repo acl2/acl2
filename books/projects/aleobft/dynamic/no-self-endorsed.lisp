@@ -62,7 +62,10 @@
                            val
                            (validator-state->endorsed
                             (get-validator-state val systate)))
-                          nil))))
+                          nil)))
+  ///
+  (fty::deffixequiv-sk no-self-endorsed-p
+    :args ((systate system-statep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -190,8 +193,7 @@
           reachable from an initial state via a sequence of events."
 
   (defruled no-self-endorsed-p-of-events-next
-    (implies (and (system-statep systate)
-                  (no-self-endorsed-p systate)
+    (implies (and (no-self-endorsed-p systate)
                   (events-possiblep events systate))
              (no-self-endorsed-p (events-next events systate)))
     :induct t
@@ -201,8 +203,7 @@
              no-self-endorsed-p-of-event-next))
 
   (defruled no-self-endorsed-p-when-reachable
-    (implies (and (system-statep systate)
-                  (system-initp systate)
+    (implies (and (system-initp systate)
                   (events-possiblep events systate))
              (no-self-endorsed-p (events-next events systate)))
     :disable ((:e tau-system))

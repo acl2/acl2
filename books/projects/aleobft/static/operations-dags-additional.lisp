@@ -144,6 +144,7 @@
                   (1+ (certificate->round cert))
                   dag))
     :hints (("Goal" :in-theory (enable incoming-loop-subset))))
+  (in-theory (disable incoming-subset-of-next-round))
 
   (defret incoming-same-round
     (<= (set::cardinality (certificate-set->round-set certs))
@@ -155,6 +156,7 @@
              :in-theory (e/d (cardinality-of-subset-of-round-set-of-round)
                              (incoming-subset-of-next-round
                               incoming)))))
+  (in-theory (disable incoming-same-round))
 
   (defruled incoming-in-dag
     (implies (and (certificate-setp dag)
@@ -217,6 +219,7 @@
     :hyp (certificate-setp dag)
     :hints
     (("Goal" :in-theory (enable certificates-with-authors+round-subset))))
+  (in-theory (disable outgoing-subset))
 
   (defret outgoing-subset-of-previous-round
     (set::subset certs
@@ -227,6 +230,7 @@
     :hints
     (("Goal"
       :in-theory (enable certificates-with-authors+round-subset-with-round))))
+  (in-theory (disable outgoing-subset-of-previous-round))
 
   (defruled outgoing-in-dag
     (implies (and (certificate-setp dag)
@@ -277,7 +281,7 @@
   :guard-hints (("Goal" :in-theory (enable posp)))
   ///
 
-  (defrule certificate-previous-in-dag-p-when-round-1
+  (defruled certificate-previous-in-dag-p-when-round-1
     (implies (equal (certificate->round cert) 1)
              (certificate-previous-in-dag-p cert dag)))
 
@@ -308,7 +312,7 @@
                    (certificate-previous-in-dag-p cert dag)))
   ///
 
-  (defrule dag-previous-in-dag-p-of-insert
+  (defruled dag-previous-in-dag-p-of-insert
     (implies (and (certificatep cert)
                   (certificate-setp dag)
                   (dag-previous-in-dag-p dag)
@@ -373,7 +377,7 @@
 
   ///
 
-  (defrule certificate-list-pathp-of-nil
+  (defruled certificate-list-pathp-of-nil
     (certificate-list-pathp nil dag))
 
   (defruled certificate-list-pathp-member-in-dag

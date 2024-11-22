@@ -203,7 +203,7 @@
                   (packbv (+ 1 (- high low)) size (subrange (+ -1 (- high) (len bvs))
                                                             (+ -1 (- low) (len bvs))
                                                             bvs))))
-  :hints (("Goal" :use (:instance slice-of-packbv)
+  :hints (("Goal" :use slice-of-packbv
            :in-theory (disable slice-of-packbv))))
 
 ;special case of low=1

@@ -1,7 +1,7 @@
 ; A tool to make an evaluator for a set of functions.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -246,6 +246,8 @@
   (declare (xargs :guard (and (symbolp suffix)
                               (fns-and-aliasesp fns-and-aliases)
                               (consp fns-and-aliases)
+                              ;; the extra-guards-XXX are translated terms
+                              (booleanp verify-guards)
                               (plist-worldp wrld))
                   :guard-hints (("Goal" :in-theory (enable rational-listp-when-nat-listp)))))
   (let* ((base-name (pack$ 'axe-evaluator- suffix))
@@ -268,20 +270,20 @@
 
        (mutual-recursion
 
-        ;; Returns (mv erp result).
+        ;; Returns (mv erp result) where RESULT is the unquoted value.
         ;; The ARGS passed in to this version are not expected to be quoted (unless they happen to be, by chance).
         ;; fn must be either built-in or passed in via interpreted-function-alist - otherwise, the return value is meaningless and an error is thrown
-        ;; returns the (unquoted) value
         (defund ,apply-function-name (fn args interpreted-function-alist count)
           (declare (type (unsigned-byte 60) count)
-                   (xargs :measure (make-ord 2 (+ 1 (nfix count)) (make-ord 1 2 0))
-                          :verify-guards nil ; maybe done below
-                          :guard (and (or (symbolp fn)
+                   (xargs :guard (and (or (symbolp fn)
                                           (pseudo-lambdap fn))
                                       (true-listp args)
                                       (interpreted-function-alistp interpreted-function-alist)
                                       (natp count)
-                                      ,@extra-guards-apply)))
+                                      ,@extra-guards-apply)
+                          :measure (make-ord 2 (+ 1 (nfix count)) (make-ord 1 2 0))
+                          :verify-guards nil ; optionally done below
+                          ))
           (if (consp fn) ;test for lambda
               (let* ((formals (second fn))
                      (body (third fn))
@@ -293,13 +295,13 @@
             (let ((args-to-walk-down args)) ;why??
               (mv-let (hit val)
                 ,(make-apply-cases-for-arities-simple max-arity
-                                               arity-fn-call-alist-alist
-                                               nil      ;quoted-argsp
-                                               t        ;innermost-callp
-                                               nil      ;not tracing
-                                               ;;acc:
-                                               '(mv nil ;no hit
-                                                    nil))
+                                                      arity-fn-call-alist-alist
+                                                      nil ;quoted-argsp
+                                                      t   ;innermost-callp
+                                                      nil ;not tracing
+                                                      ;;acc:
+                                                      '(mv nil ;no hit
+                                                        nil))
                 (if hit
                     (mv (erp-nil) val)
                   ;;fn isn't one of the built-in functions, so try to interpret it
@@ -310,8 +312,9 @@
                       (let* ((fn-info (cdr match))
                              (formals (first fn-info))
                              (body (second fn-info))
-                             (alist (pairlis$-fast formals args)) ;could pass two lists to walk down in parallel?
+                             (alist (pairlis$-fast formals args)) ;todo: optimize by passing two lists to walk down in parallel
                              )
+                        ;; Evaluate the function's body with its formals bound to the actuals:
                         (,eval-function-name alist body interpreted-function-alist count)))))))))
 
         ;; Returns (mv erp result).
@@ -321,12 +324,12 @@
         ;; returns the (unquoted) value
         (defund ,eval-function-name (alist form interpreted-function-alist count)
           (declare (type (unsigned-byte 60) count)
-                   (xargs :measure (make-ord 2 (+ 1 (nfix count)) (make-ord 1 1 (acl2-count form)))
-                          :guard (and (symbol-alistp alist) ;todo: must bind all free vars in form?
+                   (xargs :guard (and (symbol-alistp alist) ;todo: must bind all free vars in form?
                                       (pseudo-termp form)
                                       (interpreted-function-alistp interpreted-function-alist)
                                       (natp count)
-                                      ,@extra-guards-eval)))
+                                      ,@extra-guards-eval)
+                          :measure (make-ord 2 (+ 1 (nfix count)) (make-ord 1 1 (acl2-count form)))))
           (if (or (not (mbt (natp count)))
                   (= 0 count))
               (mv :count-exceeded nil)
@@ -337,7 +340,7 @@
                        (if (and (or (eq fn 'if)
                                     (eq fn 'myif))
                                 (consp (cdr (cdr (fargs form)))))
-                           ;; Evaluate the test and the either the then-branch or the else-branch, according to the test:
+                           ;; Evaluate the test and then either the then-branch or the else-branch, according to the test:
                            (b* ((test-form (second form))
                                 ((mv erp test-result)
                                  (,eval-function-name alist test-form interpreted-function-alist count))
@@ -349,14 +352,11 @@
                                                     )
                                                   interpreted-function-alist
                                                   count))
-                         ;;not an if, so evalate all arguments:
+                         ;; not an if, so evalate all arguments and then apply the function (which may be a lambda):
                          (b* (((mv erp args)
                                (,eval-list-function-name alist (fargs form) interpreted-function-alist count))
                               ((when erp) (mv erp nil)))
-                           ;;regular function call:
-                           (,apply-function-name fn
-                                                 args
-                                                 interpreted-function-alist (+ -1 count)))))))))
+                           (,apply-function-name fn args interpreted-function-alist (+ -1 count)))))))))
 
         ;; Returns (mv erp result).
         ;; all functions to evaluate must be either built-in or passed in in interpreted-function-alist - otherwise, the return value is meaningless and an error is thrown
@@ -365,13 +365,13 @@
         ;; returns the (unquoted) list of values
         (defund ,eval-list-function-name (alist form-lst interpreted-function-alist count)
           (declare (type (unsigned-byte 60) count)
-                   (xargs :measure (make-ord 2 (+ 1 (nfix count)) (make-ord 1 1 (acl2-count form-lst)))
-                          :guard (and (symbol-alistp alist)
+                   (xargs :guard (and (symbol-alistp alist)
                                       (pseudo-term-listp form-lst)
                                       (interpreted-function-alistp interpreted-function-alist)
                                       (natp count)
-                                      ,@extra-guards-eval-list)))
-          (if (endp form-lst) ;fixme could use null but would complicate rules?
+                                      ,@extra-guards-eval-list)
+                          :measure (make-ord 2 (+ 1 (nfix count)) (make-ord 1 1 (acl2-count form-lst)))))
+          (if (endp form-lst) ; todo: could use null but would complicate rules?
               (mv (erp-nil) nil)
             (b* (((mv erp car-res)
                   (,eval-function-name alist (car form-lst) interpreted-function-alist count))
@@ -395,10 +395,7 @@
                                                      cddr-of-assoc-equal-when-interpreted-function-alistp
                                                      true-listp-of-cadr-of-assoc-equal-when-interpreted-function-alistp
                                                      consp-of-cdr-of-assoc-equal-when-interpreted-function-alistp
-                                                     consp-of-cddr-of-assoc-equal-when-interpreted-function-alistp
-                                                     unsigned-byte-p ;todo
-                                                     ))))))
-
+                                                     consp-of-cddr-of-assoc-equal-when-interpreted-function-alistp))))))
 
        ;; Returns (mv erp result).
        ;; The ARGS passed in to this version must all be quoted.
@@ -460,15 +457,15 @@
                  ',(get-fns-from-fns-and-aliases fns-and-aliases))))))
 
 (defmacro make-evaluator-simple (suffix ;a symbol
-                                 arity-fn-call-alist-alist
+                                 fns-and-aliases
                                  &key
-                                 (verify-guards 't)
                                  (extra-guards-apply 'nil)
                                  (extra-guards-eval 'nil)
-                                 (extra-guards-eval-list 'nil))
+                                 (extra-guards-eval-list 'nil)
+                                 (verify-guards 't))
   `(make-event
     (make-evaluator-simple-fn ',suffix
-                              ,arity-fn-call-alist-alist
+                              ,fns-and-aliases
                               ',extra-guards-apply
                               ',extra-guards-eval
                               ',extra-guards-eval-list

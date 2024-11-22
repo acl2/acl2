@@ -216,7 +216,7 @@
                    (certificate->round cert)
                    (accepted-certificates val systate))))
     :enable (committees-in-system-p-necc
-             validator-committees-in-system-p-necc
+             validator-committees-in-system-p-necc-when-address-setp
              validator-signer-quorum-p
              certificate-with-author+round-element
              author-quorum-when-create-certificate-possiblep
@@ -331,7 +331,7 @@
                    (certificate->round (message->certificate msg))
                    (accepted-certificates val systate))))
     :enable (committees-in-system-p-necc
-             validator-committees-in-system-p-necc
+             validator-committees-in-system-p-necc-when-address-setp
              validator-signer-quorum-p
              receive-certificate-possiblep
              system-fault-tolerant-p-necc

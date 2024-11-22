@@ -484,7 +484,7 @@
                 (integerp n)
                 )
            (unsigned-byte-p n (stack-top stack)))
-  :hints (("Goal" :use (:instance n256p-of-stack-top-when-stackp)
+  :hints (("Goal" :use n256p-of-stack-top-when-stackp
            :in-theory (e/d (n256p) ( n256p-of-stack-top-when-stackp)))))
 
 (defthm acl2-numberp-of-stack-top-when-stackp
@@ -498,7 +498,7 @@
   (implies (and (stackp stack)
                 (< 0 (stack-size stack)))
            (not (< (stack-top stack) 0)))
-  :hints (("Goal" :use (:instance n256p-of-stack-top-when-stackp)
+  :hints (("Goal" :use n256p-of-stack-top-when-stackp
            :in-theory (disable n256p-of-stack-top-when-stackp))))
 
 (defthm stack-size-bound-linear
@@ -578,7 +578,7 @@
                 (< n (stack-size (machine-state->stack mu))) ;move to rhs?
                 (natp n))
            (unsigned-byte-p 256 (stack-item n mu)))
-  :hints (("Goal" :use (:instance n256p-of-stack-item)
+  :hints (("Goal" :use n256p-of-stack-item
            :in-theory (disable n256p-of-stack-item))))
   ;; :hints (("Goal" :in-theory (enable stack-size stack-item machine-statep machine-state->stack ;POPN stack-top ACL2::NTH-WHEN-<=-LEN
   ;;                                    ))))
@@ -589,7 +589,7 @@
                 (natp n))
            (natp (stack-item n mu)))
   :rule-classes (:type-prescription :rewrite)
-  :hints (("Goal" :use (:instance n256p-of-stack-item)
+  :hints (("Goal" :use n256p-of-stack-item
            :in-theory (e/d (n256p) (n256p-of-stack-item
                                     UNSIGNED-BYTE-P-OF-STACK-ITEM)))))
 

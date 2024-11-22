@@ -20,8 +20,8 @@
 
 ;; Returns (mv erp contents) where contents in an alist representing
 ;; the contents of the executable (exact format depends on the type of
-;; the executable).  TODO: Pass back errors?
-(defun parse-executable-bytes (bytes
+;; the executable).
+(defund parse-executable-bytes (bytes
                                filename ; only used in error messages
                                )
   (declare (xargs :guard (and (byte-listp bytes)
@@ -33,17 +33,14 @@
        ((when erp) (mv erp nil)))
     (if (= magic-number *elf-magic-number*)
         (prog2$ (cw "ELF file detected.~%")
-                (mv nil ;no error
-                    (parse-elf-file-bytes bytes)))
+                (parse-elf-file-bytes bytes))
       (if (member magic-number (strip-cars *mach-o-magic-numbers*))
           (prog2$ (cw "Mach-O file detected.~%")
-                  (mv nil ;no error
-                      (parse-mach-o-file-bytes bytes)))
+                  (parse-mach-o-file-bytes bytes))
         (let ((sig (pe-file-signature bytes)))
           (if (eql sig *pe-signature*)
               (prog2$ (cw "PE file detected.~%")
-                      (mv nil ;no error
-                          (parse-pe-file-bytes bytes)))
+                      (parse-pe-file-bytes bytes))
             (mv t
                 (er hard? 'parse-executable-bytes "Unexpected kind of file (not PE, ELF, or Mach-O).  Magic number is ~x0. PE file signature is ~x1" magic-number sig))))))))
 
@@ -52,10 +49,9 @@
 ;; the contents of the executable (exact format depends on the type of
 ;; the executable).
 (defun parse-executable (filename state)
-  (declare (xargs :stobjs state
-                  ;:mode :program
-                  :verify-guards nil
-                  :guard (stringp filename)))
+  (declare (xargs :guard (stringp filename)
+                  :stobjs state
+                  :verify-guards nil))
   (b* (((mv existsp state) (file-existsp filename state))
        ((when (not existsp))
         (progn$ (er hard? 'parse-executable "File does not exist: ~x0." filename)

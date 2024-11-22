@@ -222,7 +222,7 @@
 
 ;; (var-intro-assumptions-for-array-input '0 '6 '4 'foo-ptr 'foo)
 
-;;Rreturns a parsed-type or :error.
+;; Returns a parsed-type or :error.
 ;; Types are parsed right-to-left, with the rightmost thing being the top construct.
 (defund parse-type-string (type-str)
   (declare (xargs :guard (stringp type-str)
@@ -242,10 +242,28 @@
           type-str
         :error))))
 
+;; Returns a parsed-type or :error.
+;; Types are parsed right-to-left, with the rightmost thing being the top construct.
 (defund parse-type (sym)
   (declare (xargs :guard (symbolp sym)))
   (parse-type-string (symbol-name sym)))
 
+;; Make assertions that the region at ADDRESS with length LEN is separate from all the
+;; regions represented by ADDRESSES-AND-LENS.
+;; Not sure what order is better for the args of SEPARATE.
+(defund make-separate-claims (address len addresses-and-lens)
+  (declare (xargs :guard (alistp addresses-and-lens)
+                  :guard-hints (("Goal" :in-theory (enable alistp)))))
+  (if (endp addresses-and-lens)
+      nil
+    (let* ((pair (first addresses-and-lens))
+           (this-address (car pair))
+           (this-len (cdr pair)))
+      (cons `(separate :r ,len ,address
+                       :r ,this-len ,this-address)
+            (make-separate-claims address len (rest addresses-and-lens))))))
+
+;; Returns a list of assumptions.
 (defund assumptions-for-input (var-name
                                type ;; examples: :u32 or :u32* or :u32[4]
                                state-component
@@ -283,8 +301,7 @@
                             :r ,stack-byte-count
                             (+ ,(- stack-byte-count) (rsp x86)))
                   ;; The input is disjoint from the code:
-                  (separate :r ,numbytes ,pointer-name
-                            :r ,code-length ,text-offset)
+                  ,@(make-separate-claims pointer-name numbytes (acons text-offset code-length nil))
                   ;; The input is disjoint from the saved return address:
                   ;; todo: reorder args?
                   (separate :r 8 (rsp x86)
@@ -309,8 +326,7 @@
                                       :r ,stack-byte-count
                                       (+ ,(- stack-byte-count) (rsp x86)))
                             ;; The input is disjoint from the code:
-                            (separate :r ,numbytes ,pointer-name
-                                      :r ,code-length ,text-offset)
+                            ,@(make-separate-claims pointer-name numbytes (acons text-offset code-length nil))
                             ;; The input is disjoint from the saved return address:
                             ;; todo: reorder args?
                             (separate :r 8 (rsp x86)
@@ -319,8 +335,8 @@
 
 ;; might have extra, unneeded items in state-components
 (defun assumptions-for-inputs (names-and-types state-components stack-slots text-offset code-length)
-  (declare (xargs :mode :program ; todo
-                  :guard (and (names-and-typesp names-and-types)
+  (declare (xargs :guard (and (names-and-typesp names-and-types)
+                              (true-listp state-components)
                               (natp stack-slots)
                               ;; text-offset is a term
                               (natp code-length))))
@@ -388,7 +404,7 @@
                               (booleanp untranslatep)
                               (booleanp memoizep)
                               (natp total-steps))
-                  :mode :program
+                  :mode :program ; because of untranslate ; todo: use a safe version, or ec-call?
                   :stobjs state))
   (if (zp steps-left)
       (mv (erp-nil) dag state)
@@ -758,7 +774,6 @@
        (term-to-simulate (wrap-in-output-extractor output term-to-simulate)) ;TODO: delay this if lifting a loop?
        (- (cw "(Limiting the unrolling to ~x0 steps.)~%" step-limit))
        ;; Convert the term into a dag for passing to repeatedly-run:
-       ;; TODO: Just call simplify-term here?
        ((mv erp dag-to-simulate) (acl2::make-term-into-dag-basic term-to-simulate nil))
        ((when erp) (mv erp nil nil nil nil state))
        ((when (quotep dag-to-simulate))
@@ -785,6 +800,7 @@
        (- (cw " (Lifting took ")
           (acl2::print-to-hundredths elapsed) ; todo: could have real-time-since detect negative time
           (cw "s.)~%"))
+       ;; Print the result (todo: allow suppressing this):
        (- (if (quotep result-dag-or-quotep)
               (cw " Lifting produced the constant ~x0.)~%" result-dag-or-quotep) ; matches (Lifting...
             (progn$ (cw " Lifting produced a dag:~%")
@@ -865,7 +881,7 @@
           ;; it's already a parsed-executable:
           (mv nil executable state)))
        ((when erp)
-        (er hard? 'def-unrolled-fn "Error parsing executable: ~s0." executable)
+        (er hard? 'def-unrolled-fn "Error (~x0) parsing executable: ~s1." erp executable)
         (mv t nil state))
        (executable-type (acl2::parsed-executable-type parsed-executable))
        ;; Handle a :position-independent of :auto:

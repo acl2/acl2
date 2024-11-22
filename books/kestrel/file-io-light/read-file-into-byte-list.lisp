@@ -1,6 +1,6 @@
 ; A lightweight function to read a file's contents into a list of bytes
 ;
-; Copyright (C) 2021-2023 Kestrel Institute
+; Copyright (C) 2021-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,6 +13,7 @@
 ;; See also std/io/read-file-bytes.lisp.
 
 (include-book "read-bytes-from-channel")
+(include-book "kestrel/bv-lists/byte-listp-def" :dir :system)
 (local (include-book "kestrel/bv-lists/unsigned-byte-listp" :dir :system))
 (local (include-book "open-input-channel"))
 (local (include-book "close-input-channel"))
@@ -38,6 +39,10 @@
 
 (defthm unsigned-byte-listp-of-mv-nth-1-of-read-file-into-byte-list
   (unsigned-byte-listp 8 (mv-nth 1 (read-file-into-byte-list path-to-file state)))
+  :hints (("Goal" :in-theory (enable read-file-into-byte-list))))
+
+(defthm byte-listp-of-mv-nth-1-of-read-file-into-byte-list
+  (byte-listp (mv-nth 1 (read-file-into-byte-list path-to-file state)))
   :hints (("Goal" :in-theory (enable read-file-into-byte-list))))
 
 (defthm true-listp-of-mv-nth-1-of-read-file-into-byte-list-type

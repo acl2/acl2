@@ -11,13 +11,6 @@
 
 (in-package "ALEOBFT-DYNAMIC")
 
-(include-book "same-committees-def-and-implied")
-(include-book "unequivocal-accepted-certificates-next")
-(include-book "last-anchor-voters-def-and-init-and-next")
-(include-book "omni-paths-def-and-implied")
-(include-book "nonforking-anchors-def-and-init-and-next")
-(include-book "committed-redundant-def-and-init-and-next")
-(include-book "blockchain-redundant-def-and-init-and-next")
 (include-book "nonforking-blockchains-next")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))

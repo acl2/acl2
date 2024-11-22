@@ -865,11 +865,11 @@
                       for tag (i.e. structure/union/enumeration) declaration."
                      declspecs)))
        (declspec (car declspecs))
-       ((unless (declspec-case declspec :tyspec))
+       ((unless (decl-spec-case declspec :tyspec))
         (reterr (msg "Unsupported declaration specifier ~x0 ~
                       for tag (i.e. structure/union/enumeration) declaration."
                      declspec)))
-       (tyspec (declspec-tyspec->unwrap declspec))
+       (tyspec (decl-spec-tyspec->spec declspec))
        ((when (type-spec-case tyspec :struct))
         (b* (((strunispec strunispec) (type-spec-struct->spec tyspec))
              ((unless strunispec.name)
@@ -942,7 +942,7 @@
                                    (c::ident "irrelevant"))))
        (declspecs (paramdecl->spec paramdecl))
        (declor (paramdecl->decl paramdecl))
-       ((mv okp tyspecs) (check-declspec-list-all-tyspec declspecs))
+       ((mv okp tyspecs) (check-decl-spec-list-all-tyspec declspecs))
        ((unless okp)
         (reterr (msg "Unsupported declaration specifier list ~
                       in parameter declaration ~x0."
@@ -1071,7 +1071,7 @@
         (reterr (msg "Unsupported GCC extension keyword ~
                       for tag (i.e. structure/union/enumeration) ~
                       declaration.")))
-       ((mv okp tyspecs) (check-declspec-list-all-tyspec declspecs))
+       ((mv okp tyspecs) (check-decl-spec-list-all-tyspec declspecs))
        ((when (not okp))
         (reterr (msg "Unsupported declaration specifier list ~
                       in declaration ~x0 for function."
@@ -1182,7 +1182,7 @@
                       for tag (i.e. structure/union/enumeration) ~
                       declaration.")))
        ((mv okp tyspecs stor-specs)
-        (check-declspec-list-all-tyspec/storspec declspecs))
+        (check-decl-spec-list-all-tyspec/storspec declspecs))
        ((unless okp)
         (reterr (msg "Unsupported declaration specifiers ~x0 ~
                       for object declaration."
@@ -1352,7 +1352,7 @@
                             (c::fun-declor-base (c::ident "irrelevant") nil)
                             nil))
        ((fundef fundef) fundef)
-       ((mv okp tyspecs) (check-declspec-list-all-tyspec fundef.spec))
+       ((mv okp tyspecs) (check-decl-spec-list-all-tyspec fundef.spec))
        ((when (not okp))
         (reterr (msg "Unsupported declaration specifiers ~
                       in function definition ~x0."
