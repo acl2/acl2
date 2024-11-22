@@ -388,7 +388,7 @@
                              extra-assumptions ; todo: can these introduce vars for state components?  support that more directly?  could also replace register expressions with register names (vars)
                              suppress-assumptions
                              stack-slots
-                             position-independentp
+                             position-independent
                              inputs
                              output
                              use-internal-contextsp
@@ -409,7 +409,7 @@
                               (true-listp extra-assumptions) ; untranslated terms
                               (booleanp suppress-assumptions)
                               (natp stack-slots)
-                              (booleanp position-independentp)
+                              (member-eq position-independent '(t nil :auto))
                               (or (eq :skip inputs) (names-and-typesp inputs))
                               (output-indicatorp output)
                               (booleanp use-internal-contextsp)
@@ -433,9 +433,27 @@
   (b* ((- (cw "(Lifting ~s0.~%" target)) ;todo: print the executable name
        ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
        (state (acl2::widen-margins state))
+       ;; Get and check the executable-type:
        (executable-type (acl2::parsed-executable-type parsed-executable))
        (- (acl2::ensure-x86 parsed-executable))
        (- (and (acl2::print-level-at-least-tp print) (cw "(Executable type: ~x0.)~%" executable-type)))
+       ;; Handle a :position-independent of :auto:
+       (position-independentp (if (eq :auto position-independent)
+                                  (if (eq executable-type :mach-o-64)
+                                      t ; since clang seems to produce position-independent code by default ; todo: think about this
+                                    (if (eq executable-type :elf-64)
+                                        ;; TODO: Put this back
+                                        ;; For ELF64, we treat :dyn and :rel as position-independent (addresses relative to the var base-address) and :exec as absolute:
+                                        ;; (member-eq (acl2::parsed-elf-type parsed-executable) '(:rel :dyn))
+                                        nil
+                                      ;; TODO: Think about the other cases:
+                                      t))
+                                position-independent))
+       ((when (and (not position-independentp) ; todo: think about this:
+                   (not (member-eq executable-type '(:mach-o-64 :elf-64)))))
+        (er hard? 'unroll-x86-code-core "Non-position-independent lifting is currently only supported for ELF64 and MACHO64 files.")
+        (mv :bad-options nil nil nil nil state))
+
        ;;todo: finish adding support for :entry-point!
        ((when (and (eq :entry-point target)
                    (not (eq :pe-32 executable-type))))
@@ -448,10 +466,8 @@
        (- (and (stringp target)
                ;; Throws an error if the target doesn't exist:
                (acl2::ensure-target-exists-in-executable target parsed-executable)))
-       ((when (and (not position-independentp)
-                   (not (member-eq executable-type '(:mach-o-64 :elf-64)))))
-        (er hard? 'unroll-x86-code-core "Non-position-independent lifting is currently only supported for ELF64 and MACHO64 files.")
-        (mv :bad-options nil nil nil nil state))
+
+       ;; todo: avoid all of this if we will use the override below:
        ;; Generate assumptions (these get simplified below to put them into normal form):
        (64-bitp (member-equal executable-type '(:mach-o-64 :pe-64 :elf-64)))
        (text-offset
@@ -707,19 +723,10 @@
         (er hard? 'def-unrolled-fn "Error (~x0) parsing executable: ~s1." erp executable)
         (mv t nil state))
        (executable-type (acl2::parsed-executable-type parsed-executable))
-       ;; Handle a :position-independent of :auto:
-       (position-independentp (if (eq :auto position-independent)
-                                  (if (eq executable-type :mach-o-64)
-                                      t ; since clang seems to produce position-independent code by default
-                                    (if (eq executable-type :elf-64)
-                                        nil ; since gcc seems to not produce position-independent code by default
-                                      ;; TODO: Think about this case:
-                                      t))
-                                position-independent))
        ;; Lift the function to obtain the DAG:
        ((mv erp result-dag assumptions lifter-rules-used assumption-rules-used state)
         (unroll-x86-code-core target parsed-executable
-          extra-assumptions suppress-assumptions stack-slots position-independentp
+          extra-assumptions suppress-assumptions stack-slots position-independent
           inputs output use-internal-contextsp prune extra-rules remove-rules extra-assumption-rules
           step-limit step-increment memoizep monitor print print-base untranslatep state))
        ((when erp) (mv erp nil state))

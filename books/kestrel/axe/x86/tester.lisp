@@ -521,7 +521,7 @@
           (mv nil executable state)))
        ((when erp) (mv erp nil state))
        (executable-type (acl2::parsed-executable-type parsed-executable))
-       ;; Handle a :position-independent of :auto:
+       ;; Handle a :position-independent of :auto: ; todo: eventually drop this
        (position-independentp (if (eq :auto position-independent)
                                   (if (eq executable-type :mach-o-64)
                                       t ; since clang seems to produce position-independent code by default
