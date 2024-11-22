@@ -85,7 +85,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule certificate-set-unequivocalp-of-certificates-with-authors
+(defruled certificate-set-unequivocalp-of-certificates-with-authors
   :short "The certificates with given authors of an unequivocal DAG
           is also an unequivocal set of certificates."
   :long
