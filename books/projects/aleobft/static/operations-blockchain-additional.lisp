@@ -49,7 +49,7 @@
 
   ///
 
-  (defrule calculate-blockchain-of-nil
+  (defruled calculate-blockchain-of-nil
     (equal (calculate-blockchain nil dag)
            nil)
     :enable extend-blockchain-of-nil)

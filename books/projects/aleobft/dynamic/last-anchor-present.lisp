@@ -108,7 +108,7 @@
      For validators different from the author,
      there is no change to the DAG or last committed round.")
    (xdoc::p
-    "A @('store-certificate') event modifies the DAG of the recipient
+    "A @('store-certificate') event modifies the DAG of the target validator
      but not its blockchain or last committed round.
      However, similarly to the @('create-certificate') case,
      the extension of the DAG preserves the fact that

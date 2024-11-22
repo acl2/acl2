@@ -315,10 +315,10 @@
              evenp))
 
   (defruled signer-quorum-p-of-commit-next
-    (implies (and (last-blockchain-round-p systate)
+    (implies (and (signer-quorum-p systate)
+                  (last-blockchain-round-p systate)
                   (ordered-even-p systate)
                   (dag-committees-p systate)
-                  (signer-quorum-p systate)
                   (commit-possiblep val systate)
                   (addressp val))
              (signer-quorum-p (commit-next val systate)))
@@ -329,8 +329,7 @@
   ;; timeout:
 
   (defruled validator-signer-quorum-p-of-timeout-next
-    (implies (and ;(set::in val1 (correct-addresses systate))
-                  (validator-signer-quorum-p
+    (implies (and (validator-signer-quorum-p
                    cert
                    (get-validator-state val1 systate))
                   (timeout-possiblep val systate))
@@ -350,10 +349,10 @@
   ;; all events:
 
   (defruled signer-quorum-p-of-event-next
-    (implies (and (last-blockchain-round-p systate)
+    (implies (and (signer-quorum-p systate)
+                  (last-blockchain-round-p systate)
                   (ordered-even-p systate)
                   (dag-committees-p systate)
-                  (signer-quorum-p systate)
                   (event-possiblep event systate))
              (signer-quorum-p (event-next event systate)))
     :enable (event-possiblep
@@ -367,14 +366,14 @@
 
   (defruled signer-quorum-p-of-events-next
     (implies (and (signer-quorum-p systate)
-                  (dag-committees-p systate)
-                  (ordered-even-p systate)
                   (last-blockchain-round-p systate)
+                  (ordered-even-p systate)
+                  (dag-committees-p systate)
                   (events-possiblep events systate))
              (and (signer-quorum-p (events-next events systate))
-                  (dag-committees-p (events-next events systate))
+                  (last-blockchain-round-p (events-next events systate))
                   (ordered-even-p (events-next events systate))
-                  (last-blockchain-round-p (events-next events systate))))
+                  (dag-committees-p (events-next events systate))))
     :induct t
     :enable (events-possiblep
              events-next))

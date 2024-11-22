@@ -1605,7 +1605,7 @@
        This means that if the `then' and/or `else' is a conditional expression,
        it is parenthesized, in order to raise its priority."))
     (b* ((actual-prio (expr->priority expr))
-         (parenp (not (expr-priority-<= expected-prio actual-prio)))
+         (parenp (expr-priority-< actual-prio expected-prio))
          (pstate (if parenp
                      (print-astring "(" pstate)
                    pstate))
@@ -2059,7 +2059,7 @@
      :stocla (print-stor-spec declspec.spec pstate)
      :tyspec (print-type-spec declspec.spec pstate)
      :tyqual (print-type-qual declspec.qual pstate)
-     :funspec (print-fun-spec declspec.spec pstate)
+     :function (print-fun-spec declspec.spec pstate)
      :align (print-align-spec declspec.spec pstate)
      :attrib (print-attrib-spec declspec.spec pstate)
      :stdcall (print-astring "__stdcall" pstate)

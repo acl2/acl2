@@ -1,6 +1,6 @@
 ; A function to write a sequence of objects to a file
 ;
-; Copyright (C) 2017-2023 Kestrel Institute
+; Copyright (C) 2017-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,7 +12,6 @@
 
 (include-book "write-objects-to-channel")
 (local (include-book "kestrel/utilities/state" :dir :system))
-(local (include-book "kestrel/utilities/get-serialize-character" :dir :system))
 (local (include-book "open-output-channel"))
 
 (local (in-theory (disable put-global
@@ -23,10 +22,7 @@
 ;; previous contents of FILENAME.  Returns (mv erp state).
 (defund write-objects-to-file (objects filename ctx state)
   (declare (xargs :guard (and (true-listp objects)
-                              (stringp filename)
-                              ;; required by print-object$ (why?):
-                              (member (get-serialize-character state)
-                                      '(nil #\Y #\Z)))
+                              (stringp filename))
                   :stobjs state))
   (mv-let (channel state)
     (open-output-channel filename :object state)

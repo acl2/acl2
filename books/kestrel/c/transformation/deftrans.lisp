@@ -990,7 +990,7 @@
       :stocla (decl-spec-fix declspec)
       :tyspec (decl-spec-tyspec (,(cdr (assoc-eq 'type-spec names)) declspec.spec ,@extra-args-names))
       :tyqual (decl-spec-fix declspec)
-      :funspec (decl-spec-fix declspec)
+      :function (decl-spec-fix declspec)
       :align (decl-spec-align (,(cdr (assoc-eq 'align-spec names)) declspec.spec ,@extra-args-names))
       :attrib (decl-spec-fix declspec)
       :stdcall (decl-spec-fix declspec)
