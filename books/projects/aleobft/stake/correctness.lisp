@@ -34,6 +34,7 @@
 (include-book "dag-certificate-next")
 (include-book "last-anchor-def-and-init")
 (include-book "last-anchor-present")
+(include-book "last-anchor-next")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -68,4 +69,5 @@
                     previous-quorum
                     dag-certificate-next
                     last-anchor-def-and-init
-                    last-anchor-present))
+                    last-anchor-present
+                    last-anchor-next))
