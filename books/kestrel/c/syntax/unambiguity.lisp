@@ -271,7 +271,7 @@
                     :stocla t
                     :tyspec (type-spec-unambp declspec.spec)
                     :tyqual t
-                    :funspec t
+                    :function t
                     :align (align-spec-unambp declspec.spec)
                     :attrib t
                     :stdcall t

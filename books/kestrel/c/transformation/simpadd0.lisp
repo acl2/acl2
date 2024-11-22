@@ -321,7 +321,7 @@
      :stocla (decl-spec-fix declspec)
      :tyspec (decl-spec-tyspec (simpadd0-type-spec declspec.spec))
      :tyqual (decl-spec-fix declspec)
-     :funspec (decl-spec-fix declspec)
+     :function (decl-spec-fix declspec)
      :align (decl-spec-align (simpadd0-align-spec declspec.spec))
      :attrib (decl-spec-fix declspec)
      :stdcall (decl-spec-fix declspec)

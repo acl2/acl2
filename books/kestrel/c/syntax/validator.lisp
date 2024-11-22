@@ -3572,11 +3572,11 @@
                       (stor-spec-list-fix storspecs)
                       nil
                       (valid-table-fix table))
-       :funspec (retok (type-option-fix type?)
-                       (type-spec-list-fix tyspecs)
-                       (stor-spec-list-fix storspecs)
-                       nil
-                       (valid-table-fix table))
+       :function (retok (type-option-fix type?)
+                        (type-spec-list-fix tyspecs)
+                        (stor-spec-list-fix storspecs)
+                        nil
+                        (valid-table-fix table))
        :align (b* (((erp types table)
                     (valid-align-spec declspec.spec table ienv)))
                 (retok (type-option-fix type?)
