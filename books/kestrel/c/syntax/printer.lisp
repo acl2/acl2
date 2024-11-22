@@ -1605,7 +1605,7 @@
        This means that if the `then' and/or `else' is a conditional expression,
        it is parenthesized, in order to raise its priority."))
     (b* ((actual-prio (expr->priority expr))
-         (parenp (not (expr-priority-<= expected-prio actual-prio)))
+         (parenp (expr-priority-< actual-prio expected-prio))
          (pstate (if parenp
                      (print-astring "(" pstate)
                    pstate))
