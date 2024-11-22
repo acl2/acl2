@@ -198,7 +198,7 @@
   :returns (x86 x86p :hyp (x86p x86))
 
   :guard-hints (("Goal" :in-theory (e/d (segment-base-and-bounds)
-                                        ())))
+                                        (bitops::part-install-width-low))))
 
   :modr/m t
 
@@ -314,7 +314,7 @@
             ;; bitBase is a register operand
             (let ((x86 (!rgfi-size operand-size
                                    (reg-index r/m rex-byte #.*b*)
-                                   (loghead operand-size val)
+                                   val
                                    rex-byte
                                    x86)))
               (mv nil x86))
@@ -453,7 +453,7 @@
                   ;; bitBase is a register operand
                   (let ((x86 (!rgfi-size operand-size
                                          (reg-index r/m rex-byte #.*b*)
-                                         (loghead operand-size val)
+                                         val
                                          rex-byte
                                          x86)))
                     (mv nil x86))
