@@ -75,7 +75,8 @@
           (if relp
               ;; Relative addresses make everything relative to the base-var:
               (let* ((segment-first-addr-term (symbolic-add-constant vaddr base-var)) ; todo: use bvplus?
-                     (segment-last-addr-term (symbolic-add-constant (+ -1 vaddr numbytes) base-var)) ; todo: use bvplus
+                     (segment-last-addr-term (symbolic-add-constant (+ 1 ; todo: why is this needed?  I have code that ends in RET and checks whether the address after the RET is canonical.  however, making this change elsewhere broke other proofs.
+                                                                       (+ -1 vaddr numbytes)) base-var)) ; todo: use bvplus
                      )
                 (mv nil
                     `((canonical-address-p ,segment-first-addr-term) ; first address of segment

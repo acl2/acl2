@@ -31,7 +31,9 @@
    ;; todo: factor out these checks:
    (canonical-address-p addr)
    (canonical-address-p (+ addr
-                           (- (len bytes) 1)))
+                           ;; (len bytes) ; todo: I've seen a program that ends in RET cause the model to check whether the next address is canonical.  However, changing this broke some proofs.
+                           (- (len bytes) 1)
+                           ))
    ;; We assume the program (and eventually all data from the
    ;; executable) is loaded into memory.
    ;; (TODO: What about more than 1 section?):
