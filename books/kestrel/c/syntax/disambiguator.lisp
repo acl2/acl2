@@ -10,7 +10,6 @@
 
 (in-package "C$")
 
-(include-book "abstract-syntax-operations")
 (include-book "unambiguity")
 
 (include-book "std/util/error-value-tuples" :dir :system)
@@ -1615,9 +1614,9 @@
        :tyqual (retok (decl-spec-fix declspec)
                       (dimb-kind-fix kind)
                       (dimb-table-fix table))
-       :funspec (retok (decl-spec-fix declspec)
-                       (dimb-kind-fix kind)
-                       (dimb-table-fix table))
+       :function (retok (decl-spec-fix declspec)
+                        (dimb-kind-fix kind)
+                        (dimb-table-fix table))
        :align (b* (((erp new-alignspec table)
                     (dimb-align-spec declspec.spec table)))
                 (retok (decl-spec-align new-alignspec)
