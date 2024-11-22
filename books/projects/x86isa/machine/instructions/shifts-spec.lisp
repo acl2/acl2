@@ -1025,10 +1025,13 @@ most-significant bit of the original operand.</p>"
             ;; we shift the juxtaposed dst and src to the left by cnt bits,
             ;; so that the high bits of src go into the low bits of dst:
             (output-dst (the (unsigned-byte ,size)
-                             (n-size ,size (ash (the (unsigned-byte ,size*2)
-                                                     dst-src)
-                                                (the (unsigned-byte ,size)
-                                                     cnt)))))
+                             ;; Our result is in the 2*size-1:size bits
+                             (n-size ,size
+                                     (logtail ,size
+                                              (ash (the (unsigned-byte ,size*2)
+                                                        dst-src)
+                                                   (the (unsigned-byte ,size)
+                                                        cnt))))))
 
             ((mv (the (unsigned-byte 32) output-rflags)
                  (the (unsigned-byte 32) undefined-flags))
