@@ -187,7 +187,7 @@
     :enable validator-state->dag-of-store-certificate-next
     :disable store-certificate-next)
 
-  (defrule validator-state->dag-of-store-certificate-next-same
+  (defruled validator-state->dag-of-store-certificate-next-same
     (implies (and (set::in val (correct-addresses systate))
                   (store-certificate-possiblep cert val1 systate)
                   (not (equal val val1)))

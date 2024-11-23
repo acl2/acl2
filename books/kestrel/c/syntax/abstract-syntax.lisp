@@ -1918,7 +1918,7 @@
     (:stocla ((spec stor-spec)))
     (:tyspec ((spec type-spec)))
     (:tyqual ((qual type-qual)))
-    (:funspec ((spec fun-spec)))
+    (:function ((spec fun-spec)))
     (:align ((spec align-spec)))
     (:attrib ((spec attrib-spec))) ; GCC extension
     (:stdcall ()) ; GCC extension

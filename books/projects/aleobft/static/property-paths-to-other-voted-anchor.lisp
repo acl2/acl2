@@ -292,6 +292,7 @@
                    (author (certificate->author anchor))
                    (round (certificate->round anchor))
                    (cert (common anchor witness dag1 dag2))))
+  :enable not-anchorp-of-nil
   :disable path-to-author+round-in-dag)
 
 ; This is similar to the homonymous theorem in the single-DAG proof,
@@ -559,7 +560,8 @@
                                     anchor
                                     dag2))
   :induct (acl2::dec-induct round-delta)
-  :enable f-below-cardinality-of-vals
+  :enable (f-below-cardinality-of-vals
+           not-anchorp-of-nil)
   :hints ('(:use (dag-round-all-path-to-p-base-case
                   (:instance dag-round-all-path-to-p-step-case
                              (round-delta (1- round-delta))

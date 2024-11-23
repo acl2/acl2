@@ -10378,7 +10378,7 @@
        ;; If token is a function specifier, which is always a single keyword,
        ;; we have that function specifier.
        ((token-function-specifier-p token) ; inline/_Noreturn
-        (retok (decl-spec-funspec (token-to-function-specifier token))
+        (retok (decl-spec-function (token-to-function-specifier token))
                span
                parstate))
        ;; If token is the keyword _Alignas,

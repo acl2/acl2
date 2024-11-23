@@ -11,7 +11,6 @@
 
 (in-package "ALEOBFT-DYNAMIC")
 
-(include-book "last-anchor-present")
 (include-book "last-anchor-next")
 (include-book "backward-closure")
 (include-book "omni-paths-def-and-implied")

@@ -2059,7 +2059,7 @@
      :stocla (print-stor-spec declspec.spec pstate)
      :tyspec (print-type-spec declspec.spec pstate)
      :tyqual (print-type-qual declspec.qual pstate)
-     :funspec (print-fun-spec declspec.spec pstate)
+     :function (print-fun-spec declspec.spec pstate)
      :align (print-align-spec declspec.spec pstate)
      :attrib (print-attrib-spec declspec.spec pstate)
      :stdcall (print-astring "__stdcall" pstate)

@@ -104,7 +104,7 @@
          (implies (and (< exp -1)
                        (integerp exp))
                   (<= (expt 2 exp) 1/4))
-         :hints (("goal" :use ((:instance ACL2::EXPT-IS-weakly-INCREASING-FOR-BASE>1
+         :hints (("Goal" :use ((:instance ACL2::EXPT-IS-weakly-INCREASING-FOR-BASE>1
                                 (r 2) (i exp) (j -2)))
                   :in-theory (disable acl2::expt-is-weakly-increasing-for-base>1)))
          :rule-classes :linear))
@@ -126,7 +126,7 @@
                   (or (equal exp-diff -1)
                       (equal exp-diff 0)
                       (equal exp-diff 1)))
-         :hints (("goal" :in-theory (enable acl2::multiply-out-<))
+         :hints (("Goal" :in-theory (enable acl2::multiply-out-<))
                  '(:cases ((< exp-diff -1)
                            (> exp-diff 1)))
                  (and stable-under-simplificationp
@@ -181,7 +181,7 @@
                          (fp-arith-triple->sign spec))
                   (not (equal 0 (fp-arith-triple->man in)))
                   (not (equal 0 (fp-arith-triple->man spec))))))
-  :hints (("goal" :use ((:instance sign-possibities-within-half-ulp-rel
+  :hints (("Goal" :use ((:instance sign-possibities-within-half-ulp-rel
                          (in-val (fp-arith-triple->rational in))
                          (spec-val (fp-arith-triple->rational spec))))
            :in-theory (enable fp-arith-triple->rational
@@ -204,7 +204,7 @@
 ;;                     (or (equal (norm-exp in size) spec.exp)
 ;;                         (equal (norm-exp in size) (+ -1 spec.exp))
 ;;                         (equal (norm-exp in size) (+ 1 spec.exp)))))
-;;          :hints (("goal" :use ((:instance ACL2::EXPT-IS-INCREASING-FOR-BASE>1
+;;          :hints (("Goal" :use ((:instance ACL2::EXPT-IS-INCREASING-FOR-BASE>1
 ;;                                 (r 2)
 ;;                                 (i (norm-exp in size)) (j (+ -1 (fp-arith-triple->exp spec))))
 ;;                                (:instance ACL2::EXPT-IS-INCREASING-FOR-BASE>1
@@ -239,7 +239,7 @@
                          (- (* 2 e2f r+s))
                          (- (* 4 e2f norm)))
                       vman))
-         :hints (("goal" :nonlinearp t))))
+         :hints (("Goal" :nonlinearp t))))
 
 ;; (local (defthm crock11
 ;;          (implies (and (<= 0 r+s)
@@ -253,7 +253,7 @@
 ;;                          (* 2 e2f r+s)
 ;;                          (* 4 e2f norm))
 ;;                       vman))
-;;          :hints (("goal" :nonlinearp t))))
+;;          :hints (("Goal" :nonlinearp t))))
 
 (local (defthm crock2
          (implies (and (<= norm (+ -1 (* 2 vman)))
@@ -267,7 +267,7 @@
                               (- (* e2f r+s))
                               (- (* 2 e2f norm)))
                            vman)))
-         :hints (("goal" :nonlinearp t))))
+         :hints (("Goal" :nonlinearp t))))
 
 ;; (local (defthm crock21
 ;;          (implies (and (<= 0 r+s)
@@ -281,7 +281,7 @@
 ;;                          (* e2f r+s)
 ;;                          (* 2 e2f norm))
 ;;                       vman))
-;;          :hints (("goal" :nonlinearp t))))
+;;          :hints (("Goal" :nonlinearp t))))
 
 
 ;; (local (defthm crock-man-zero
@@ -305,7 +305,7 @@
                    (< (abs (- (/ in-val spec-val) 1))
                       (expt 2 (+ (- (fp-size->frac-size size)) -2))))
               (< 1 (normalize-arith-triple-round+sticky in (fp-size->frac-size size)))))
-   :hints (("goal" :in-theory (enable normalize-in-terms-of-round+sticky
+   :hints (("Goal" :in-theory (enable normalize-in-terms-of-round+sticky
                                       fp-sign-value-redef
                                       acl2::multiply-out-<
                                       equal-integer-length-of-positive)
@@ -356,7 +356,7 @@
                              (- (* 2 e2f r+s))
                              (- (* 4 e2f norm)))
                           vman)))
-         :hints (("goal" :nonlinearp t))))
+         :hints (("Goal" :nonlinearp t))))
 
 (local (defthm crock4
          (implies (and (<= norm (+ -2 (* 2 vman)))
@@ -375,7 +375,7 @@
                              (- (* e2f r+s))
                              (- (* 2 e2f norm)))
                           vman)))
-         :hints (("goal" :nonlinearp t))))
+         :hints (("Goal" :nonlinearp t))))
 
 (local
  (defret round-arith-triple-of-normalize-exact-when-exact-triple-exists-lesser-implies-round-is-exact
@@ -392,9 +392,9 @@
                  ;; relative error is < 2^(-f-2)
                  (< (abs (- (/ in-val spec-val) 1))
                     (expt 2 (+ (- (fp-size->frac-size size)) -2)))
-                 (Eq (rc->rounding-mode rc) :rne))
+                 (eq (rc->rounding-mode rc) :rne))
             (equal round-val spec-val))
-   :hints (("goal" :in-theory (enable fp-sign-value-redef
+   :hints (("Goal" :in-theory (enable fp-sign-value-redef
                                       acl2::multiply-out-<
                                       equal-integer-length-of-positive
                                       normalize-integer-length-in
@@ -444,7 +444,7 @@
                          (* 2 e2f r+s)
                          (* 4 e2f norm))
                       vman))
-         :hints (("goal" :nonlinearp t))))
+         :hints (("Goal" :nonlinearp t))))
 
 ;; (local (defthm crock51
 ;;          (implies (and (not (< r+s 1))
@@ -458,7 +458,7 @@
 ;;                          (* 2 e2f r+s)
 ;;                          (* 4 e2f norm))
 ;;                       vman))
-;;          :hints (("goal" :nonlinearp t))))
+;;          :hints (("Goal" :nonlinearp t))))
 
 (local (defthm crock6
          (implies (and (not (< r+s 1))
@@ -472,7 +472,7 @@
                          (* 4 e2f r+s)
                          (* 8 e2f norm))
                       vman))
-         :hints (("goal" :nonlinearp t))))
+         :hints (("Goal" :nonlinearp t))))
 
 ;; (local (defthm crock61
 ;;         (implies (and (< vman (+ r+s (* 2 norm)))
@@ -487,7 +487,7 @@
 ;;                          (* 4 e2f r+s)
 ;;                          (* 8 e2f norm))
 ;;                       vman))
-;;          :hints (("goal" :nonlinearp t))))
+;;          :hints (("Goal" :nonlinearp t))))
 
 (local
  (defthm round-arith-triple-of-normalize-exact-when-exact-triple-exists-greater-implies-round-sticky
@@ -502,12 +502,13 @@
                    (< (abs (- (/ in-val spec-val) 1))
                       (expt 2 (+ (- (fp-size->frac-size size)) -2))))
               (> 1 (normalize-arith-triple-round+sticky in (fp-size->frac-size size)))))
-   :hints (("goal" :in-theory (enable normalize-in-terms-of-round+sticky
-                                      fp-sign-value-redef
-                                      acl2::multiply-out-<
-                                      equal-integer-length-of-positive)
+   :hints (("Goal"
+            :in-theory (enable normalize-in-terms-of-round+sticky
+                               fp-sign-value-redef
+                               acl2::multiply-out-<
+                               equal-integer-length-of-positive)
             :use ((:instance fp-arith-triple-sign-bit-possibilities-within-half-ulp-rel
-                   (frac-size (fp-size->frac-size size))))
+                             (frac-size (fp-size->frac-size size))))
             :expand ((fp-arith-triple->rational spec)))
            ;; (acl2::use-termhint
            ;;  (if (equal (fp-arith-triple->man in) 0)
@@ -516,20 +517,20 @@
            ;;                           acl2::divide-out-common-factors-<))
            (and stable-under-simplificationp
                 '(:use ((:instance exponent-possibilities-within-half-ulp-rel
-                         (spec.man (fp-arith-triple->man spec))
-                         (spec.exp (fp-arith-triple->exp spec))
-                         (approx.man (b* (((mv norm & &)
-                                           (normalize-arith-triple in))
-                                          (round+sticky (normalize-arith-triple-round+sticky
-                                                         in (fp-size->frac-size size))))
+                                   (spec.man (fp-arith-triple->man spec))
+                                   (spec.exp (fp-arith-triple->exp spec))
+                                   (approx.man (b* (((mv norm & &)
+                                                     (normalize-arith-triple in))
+                                                    (round+sticky (normalize-arith-triple-round+sticky
+                                                                   in (fp-size->frac-size size))))
 
-                                       (+ (fp-arith-triple->man norm)
-                                          (* 1/2 round+sticky))))
-                         (approx.exp (+ 1 (norm-exp in size)))
-                         (frac-size (fp-size->frac-size size))))
-                  :in-theory (enable acl2::exponents-add-unrestricted
-                                     acl2::multiply-out-<
-                                     acl2::divide-out-common-factors-<)))
+                                                 (+ (fp-arith-triple->man norm)
+                                                    (* 1/2 round+sticky))))
+                                   (approx.exp (+ 1 (norm-exp in size)))
+                                   (frac-size (fp-size->frac-size size))))
+                       :in-theory (enable acl2::exponents-add-unrestricted
+                                          acl2::multiply-out-<
+                                          acl2::divide-out-common-factors-<)))
            ;; (and stable-under-simplificationp
            ;;      '(:nonlinearp t))
            )
@@ -552,11 +553,12 @@
 ;;                           (* 4 e2f r+s)
 ;;                           (* 8 e2f norm))
 ;;                        vman))
-;;           :hints (("goal" ;; :in-theory (disable ACL2::|x < y  =>  0 < -x+y|
+;;           :hints (("Goal" ;; :in-theory (disable ACL2::|x < y  =>  0 < -x+y|
 ;;                           ;;                     acl2::posp-redefinition)
 ;;                    :nonlinearp t))))
 
 ; (local (in-theory (disable (tau-system))))
+
 (local (defthm crock7
          (implies (and ; (< r+s 1)
                    (<= 0 r+s)
@@ -575,7 +577,7 @@
                          (* 4 e2f r+s)
                          (* 8 e2f norm))
                       vman))
-         :hints (("goal" :nonlinearp t))))
+         :hints (("Goal" :nonlinearp t))))
 
 (local (defthm crock8
          (implies (and ; (< r+s 1)
@@ -596,11 +598,9 @@
                          (* 2 e2f r+s)
                          (* 4 e2f norm))
                       vman))
-         :hints (("goal" :nonlinearp t))))
+         :hints (("Goal" :nonlinearp t))))
 
-
-
-(local (in-theory (disable FP-ARITH-TRIPLE->RATIONAL-OF-NORMALIZE-ARITH-TRIPLE-WHEN-NOT-STICKY)))
+(local (in-theory (disable fp-arith-triple->rational-of-normalize-arith-triple-when-not-sticky)))
 
 (local
  (defret round-arith-triple-of-normalize-exact-when-exact-triple-exists-greater-implies-round-is-exact
@@ -617,16 +617,17 @@
                  ;; relative error is < 2^(-f-2)
                  (< (abs (- (/ in-val spec-val) 1))
                     (expt 2 (+ (- (fp-size->frac-size size)) -2)))
-                 (Eq (rc->rounding-mode rc) :rne))
+                 (eq (rc->rounding-mode rc) :rne))
             (equal round-val spec-val))
-   :hints (("goal" :in-theory (enable fp-sign-value-redef
-                                      acl2::multiply-out-<
-                                      equal-integer-length-of-positive
-                                      normalize-integer-length-in
-                                      round-nearest-in-terms-of-round+sticky)
+   :hints (("Goal"
+            :in-theory (enable fp-sign-value-redef
+                               acl2::multiply-out-<
+                               equal-integer-length-of-positive
+                               normalize-integer-length-in
+                               round-nearest-in-terms-of-round+sticky)
             :use (round-arith-triple-of-normalize-exact-when-exact-triple-exists-greater-implies-round-sticky
                   (:instance fp-arith-triple-sign-bit-possibilities-within-half-ulp-rel
-                   (frac-size (fp-size->frac-size size))))
+                             (frac-size (fp-size->frac-size size))))
             :expand ((fp-arith-triple->rational spec)))
            ;; (acl2::use-termhint
            ;;  (if (equal (fp-arith-triple->man in) 0)
@@ -635,28 +636,27 @@
            ;;                           acl2::divide-out-common-factors-<))
            (and stable-under-simplificationp
                 '(:use ((:instance exponent-possibilities-within-half-ulp-rel
-                         (spec.man (fp-arith-triple->man spec))
-                         (spec.exp (fp-arith-triple->exp spec))
-                         (approx.man (b* (((mv norm & &)
-                                           (normalize-arith-triple in))
-                                          (round+sticky (normalize-arith-triple-round+sticky
-                                                         in (fp-size->frac-size size))))
+                                   (spec.man (fp-arith-triple->man spec))
+                                   (spec.exp (fp-arith-triple->exp spec))
+                                   (approx.man (b* (((mv norm & &)
+                                                     (normalize-arith-triple in))
+                                                    (round+sticky (normalize-arith-triple-round+sticky
+                                                                   in (fp-size->frac-size size))))
 
-                                       (+ (fp-arith-triple->man norm)
-                                          (* 1/2 round+sticky))))
-                         (approx.exp (+ 1 (norm-exp in size)))
-                         (frac-size (fp-size->frac-size size))))
-                  :expand ((:free (sign exp man) (FP-ARITH-TRIPLE->RATIONAL
-                                                  (mv-nth 0 (normalize-arith-triple in :verbosep nil)))))
-                  :in-theory (enable acl2::exponents-add-unrestricted
-                                     acl2::multiply-out-<
-                                     normalize-integer-length-in
-                                     ;; normalize-in-terms-of-round+sticky
-                                     acl2::divide-out-common-factors-equal
-                                     acl2::divide-out-common-factors-<))))
+                                                 (+ (fp-arith-triple->man norm)
+                                                    (* 1/2 round+sticky))))
+                                   (approx.exp (+ 1 (norm-exp in size)))
+                                   (frac-size (fp-size->frac-size size))))
+                       :expand ((:free (sign exp man) (FP-ARITH-TRIPLE->RATIONAL
+                                                       (mv-nth 0 (normalize-arith-triple in :verbosep nil)))))
+                       :in-theory (enable acl2::exponents-add-unrestricted
+                                          acl2::multiply-out-<
+                                          normalize-integer-length-in
+                                          ;; normalize-in-terms-of-round+sticky
+                                          acl2::divide-out-common-factors-equal
+                                          acl2::divide-out-common-factors-<))))
 ; :otf-flg t
    :fn round-arith-triple))
-
 
 (defret round-arith-triple-of-normalize-exact-when-exact-triple-exists-implies-round-is-exact
   :pre-bind (((mv x roundp stickyp) (normalize-arith-triple in))
@@ -670,11 +670,10 @@
                 ;; relative error is < 2^(-f-2)
                 (< (abs (- (/ in-val spec-val) 1))
                    (expt 2 (+ (- (fp-size->frac-size size)) -2)))
-                (Eq (rc->rounding-mode rc) :rne))
+                (eq (rc->rounding-mode rc) :rne))
            (equal round-val spec-val))
-  :hints (("goal" :use (round-arith-triple-of-normalize-exact-when-exact-triple-exists-greater-implies-round-is-exact
-                        round-arith-triple-of-normalize-exact-when-exact-triple-exists-lesser-implies-round-is-exact)))
+  :hints (("Goal"
+           :use (round-arith-triple-of-normalize-exact-when-exact-triple-exists-greater-implies-round-is-exact
+                 round-arith-triple-of-normalize-exact-when-exact-triple-exists-lesser-implies-round-is-exact)))
 ; :otf-flg t
   :fn round-arith-triple)
-
-
