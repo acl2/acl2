@@ -35,6 +35,7 @@
 (include-book "last-anchor-def-and-init")
 (include-book "last-anchor-present")
 (include-book "last-anchor-next")
+(include-book "last-anchor-voters-def-and-init-and-next")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -70,4 +71,5 @@
                     dag-certificate-next
                     last-anchor-def-and-init
                     last-anchor-present
-                    last-anchor-next))
+                    last-anchor-next
+                    last-anchor-voters-def-and-init-and-next))
