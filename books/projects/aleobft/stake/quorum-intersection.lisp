@@ -285,7 +285,7 @@
            (> (committee-members-stake (set::intersect vals1 vals2) commtt)
               (committee-max-faulty-stake commtt)))
   :rule-classes :linear
-  :enable (committee-members-stake-of-intersection-expand
+  :enable (committee-members-stake-of-intersect-expand
            committee-quorum-stake
            committee-max-faulty-stake
            total-lower-bound-wrt-max-faulty)
