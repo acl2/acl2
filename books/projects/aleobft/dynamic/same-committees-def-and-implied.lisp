@@ -130,7 +130,7 @@
     "We also prove an equivalence (really, an implication) between
      two ways to address the rightmost element of the extension.
      The extension is the @('(take ...)') term in the formula,
-     and the two way of addressing the rightmost element are
+     and the two ways of addressing the rightmost element are
      as the last one of the extension and
      as the @(tsee nth) of the longer list.")
    (xdoc::p
@@ -231,7 +231,7 @@
      The cutoff round is the smallest one of the extension.
      Here we need to assume that block rounds are ordered
      (in the longer blockchain, which implies that
-     they are also ordered in the extension and in the smaller blockchain."))
+     they are also ordered in the extension and in the smaller blockchain)."))
   (implies (and (blocks-ordered-even-p (append blocks1 blocks2))
                 (consp blocks1))
            (equal (trim-blocks-for-round (block->round (car (last blocks1)))
@@ -265,9 +265,8 @@
      Recall that blocks should be thought of having increasing rounds,
      even though that hypothesis is not necessary to prove this theorem.")
    (xdoc::p
-    "This theorem is not a rewrite rule (it cannot be).
-     We could make it a rewrite rule
-     by swapping the left and right sides of the equality,
+    "This theorem does not have the form of a good a rewrite rule.
+     We could swap the left and right sides of the equality,
      but the current form is more in line with the intuition behind the proof.
      The intuition is that, in order to prove our main claim,
      we expand the left side of this equality to its right side,
@@ -337,7 +336,7 @@
      The relation between longer and shorter blockchains
      is expressed in terms of @(tsee nthcdr),
      but the core theorem @(tsee trim-blocks-for-round-of-append-yields-first)
-     used the @(tsee append) formulation,
+     uses the @(tsee append) formulation,
      so we use the theorem about list equivalences.")
    (xdoc::p
     "The theorem says that the trimming of the longer blockchain
@@ -436,14 +435,14 @@
      but one is longer and the other is shorter.
      We express this relation using @(tsee nthcdr) here,
      as in @(tsee lists-noforkp).
-     We make use of (two instance of)
+     We make use of (two instances of)
      the theorem to expand the committee calculation
      to include a call of @(tsee trim-blocks-for-round),
      and the two theorems that simplify them
      (for longer and shorter blockchain).
      We also need, as a local lemma,
-     the fact that oldest block of the extension
-     is greater than the newest block of the shorter blockchain,
+     the fact that the round of the oldest block of the extension
+     is greater than the round of the newest block of the shorter blockchain,
      but expressed in terms of @(tsee nth) of the longer blockchain.
      We also need the fact that the rounds are not only ordered, but even:
      this ensures that there is a gap of at least 2
@@ -586,7 +585,7 @@
     "This is the proof of our invariant,
      from the other two invariants.
      The rewrite rules enabled in the hints take care of everything;
-     also see the observarion in @(tsee same-active-committees-when-nofork)
+     also see the observation in @(tsee same-active-committees-when-nofork)
      about the particular form of that rewrite rule."))
   (implies (and (nonforking-blockchains-p systate)
                 (ordered-even-p systate))

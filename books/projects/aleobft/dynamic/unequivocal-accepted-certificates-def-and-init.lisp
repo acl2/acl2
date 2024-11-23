@@ -63,7 +63,7 @@
      the set of certificates accepted by a single validator,
      as expressed by @(tsee certificate-set-unequivocalp)
      applied to @(tsee accepted-certificates)
-     applied to the validator.
+     applied to the validator,
      can be proved from some already proved invariants.
      However, to prove further correctness properties of the protocol,
      we need the more general non-equivocation of
@@ -73,12 +73,12 @@
      The latter property is expressed by @(tsee certificate-sets-unequivocalp)
      applied to @(tsee accepted-certificates)
      applied to the two validators.
-     The property for two validator subsumed the property for one validator,
+     The property for two validator subsumes the property for one validator,
      by choosing the two validators to be equal.
      So there is no point in proving non-equivocation for a single validator,
      which involves some work,
      and instead we prove non-equivocation for multiple validators,
-     which involves just a little more work,
+     which we need anyhow,
      and then we obtain non-equivocation for single validator
      as a very simple consequence.")
    (xdoc::p

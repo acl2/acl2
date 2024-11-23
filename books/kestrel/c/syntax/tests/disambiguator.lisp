@@ -15,7 +15,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro test-dimb (input &key gcc)
+(defmacro test-dimb (input &key gcc cond)
+  ;; INPUT is an ACL2 string with the text to parse.
+  ;; GCC flag says whether GCC extensions are enabled.
+  ;; Optional COND may be over variable AST.
   `(assert-event
     (b* (((mv erp1 ast) (parse-file (filepath "test")
                                     (acl2::string=>nats ,input)
@@ -25,7 +28,8 @@
          (- ))
       (cond (erp1 (cw "~%PARSER ERROR: ~@0" erp1))
             (erp2 (cw "~%DISAMBIGUATOR ERROR: ~@0" erp2))
-            (t (prog2$ (cw "~%Output:~%~x0~|" ast) t))))))
+            (t (and ,(or cond t)
+                    (prog2$ (cw "~%Output:~%~x0~|" ast) t)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -253,10 +257,102 @@
  "int foo (int *a, int *b) {
  return (char *) (a) - b;
 }
-")
+"
+ :cond (b* ((edecls (transunit->decls ast))
+            (edecl (car edecls))
+            (fundef (extdecl-fundef->unwrap edecl))
+            (stmt (fundef->body fundef))
+            (items (stmt-compound->items stmt))
+            (item (car items))
+            (stmt (block-item-stmt->unwrap item))
+            (expr (stmt-return->expr? stmt)))
+         (and (expr-case expr :binary)
+              (binop-case (expr-binary->op expr) :sub))))
 
 (test-dimb
  "int foo (int a, int b, int c) {
  return a + (b) + c;
 }
-")
+"
+ :cond (b* ((edecls (transunit->decls ast))
+            (edecl (car edecls))
+            (fundef (extdecl-fundef->unwrap edecl))
+            (stmt (fundef->body fundef))
+            (items (stmt-compound->items stmt))
+            (item (car items))
+            (stmt (block-item-stmt->unwrap item))
+            (expr-abc (stmt-return->expr? stmt))
+            (expr-ab (expr-binary->arg1 expr-abc)))
+         (and (expr-case expr-abc :binary)
+              (expr-case expr-ab :binary)
+              (equal (expr-binary->arg2 expr-abc)
+                     (expr-ident (ident "c")))
+              (equal (expr-binary->arg2 expr-ab)
+                     (expr-paren (expr-ident (ident "b"))))
+              (equal (expr-binary->arg1 expr-ab)
+                     (expr-ident (ident "a"))))))
+
+(test-dimb
+ "int foo (int a, int b, int c) {
+  return (a) + (b) + c;
+}
+"
+ :cond (b* ((edecls (transunit->decls ast))
+            (edecl (car edecls))
+            (fundef (extdecl-fundef->unwrap edecl))
+            (stmt (fundef->body fundef))
+            (items (stmt-compound->items stmt))
+            (item (car items))
+            (stmt (block-item-stmt->unwrap item))
+            (expr-abc (stmt-return->expr? stmt))
+            (expr-ab (expr-binary->arg1 expr-abc)))
+         (and (expr-case expr-abc :binary)
+              (expr-case expr-ab :binary)
+              (equal (expr-binary->arg2 expr-abc)
+                     (expr-ident (ident "c")))
+              (equal (expr-binary->arg2 expr-ab)
+                     (expr-paren (expr-ident (ident "b"))))
+              (equal (expr-binary->arg1 expr-ab)
+                     (expr-paren (expr-ident (ident "a")))))))
+
+(test-dimb
+ "int foo (int a, int b, int c, int d) {
+  return a + (b) + (c) + d;
+}
+"
+ :cond (b* ((edecls (transunit->decls ast))
+            (edecl (car edecls))
+            (fundef (extdecl-fundef->unwrap edecl))
+            (stmt (fundef->body fundef))
+            (items (stmt-compound->items stmt))
+            (item (car items))
+            (stmt (block-item-stmt->unwrap item))
+            (expr-abcd (stmt-return->expr? stmt))
+            (expr-abc (expr-binary->arg1 expr-abcd))
+            (expr-ab (expr-binary->arg1 expr-abc)))
+         (and (expr-case expr-abcd :binary)
+              (expr-case expr-abc :binary)
+              (expr-case expr-ab :binary)
+              (equal (expr-binary->arg2 expr-abcd)
+                     (expr-ident (ident "d")))
+              (equal (expr-binary->arg2 expr-abc)
+                     (expr-paren (expr-ident (ident "c"))))
+              (equal (expr-binary->arg2 expr-ab)
+                     (expr-paren (expr-ident (ident "b"))))
+              (equal (expr-binary->arg1 expr-ab)
+                     (expr-ident (ident "a"))))))
+
+(test-dimb
+ "int foo (int a, int b) {
+  return ~ (a) + b;
+}
+"
+ :cond (b* ((edecls (transunit->decls ast))
+            (edecl (car edecls))
+            (fundef (extdecl-fundef->unwrap edecl))
+            (stmt (fundef->body fundef))
+            (items (stmt-compound->items stmt))
+            (item (car items))
+            (stmt (block-item-stmt->unwrap item))
+            (expr (stmt-return->expr? stmt)))
+         (expr-case expr :binary)))

@@ -1907,3 +1907,13 @@ error (int __status, int __errnum, const char *__format, ...)
  parse-external-declaration-list
  "__declspec(thread) ngx_connection_t *conn[WSA_MAXIMUM_WAIT_EVENTS + 1];"
  :gcc t)
+
+(test-parse
+ parse-block-item-list
+ "__asm__ (
+        \"cpuid\"
+    : \"=a\" (eax), \"=b\" (ebx), \"=c\" (ecx), \"=d\" (edx) : \"a\" (i) );
+  buf[0] = eax;
+  }"
+ :gcc t
+ :cond (equal (len ast) 2))

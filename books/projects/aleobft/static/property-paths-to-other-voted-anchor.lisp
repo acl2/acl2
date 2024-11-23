@@ -130,6 +130,7 @@
            certificate-set->author-set-monotone
            certificate-set-unequivocalp-of-union
            incoming-subset
+           outgoing-subset
            set::expensive-rules)
   :disable (set::expand-cardinality-of-union
             certificate-set->round-set-of-union))
@@ -291,6 +292,7 @@
                    (author (certificate->author anchor))
                    (round (certificate->round anchor))
                    (cert (common anchor witness dag1 dag2))))
+  :enable not-anchorp-of-nil
   :disable path-to-author+round-in-dag)
 
 ; This is similar to the homonymous theorem in the single-DAG proof,
@@ -474,7 +476,8 @@
                    (author (certificate->author cert))
                    (round (certificate->round cert))))
   :disable path-to-author+round-in-dag
-  :enable (set::expensive-rules))
+  :enable (outgoing-subset
+           set::expensive-rules))
 
 ; This is the same as the homonymous theorem in the single-DAG proof.
 
@@ -488,7 +491,8 @@
   :rule-classes :linear
   :enable (set::expensive-rules
            certificate-set-unequivocalp-when-subset
-           incoming-subset)
+           incoming-subset
+           incoming-same-round)
   :use ((:instance cardinality-of-authors-when-same-round-and-unequiv
                    (certs (incoming anchor dag)))
         (:instance certificate-set->author-set-monotone
@@ -556,7 +560,8 @@
                                     anchor
                                     dag2))
   :induct (acl2::dec-induct round-delta)
-  :enable f-below-cardinality-of-vals
+  :enable (f-below-cardinality-of-vals
+           not-anchorp-of-nil)
   :hints ('(:use (dag-round-all-path-to-p-base-case
                   (:instance dag-round-all-path-to-p-step-case
                              (round-delta (1- round-delta))

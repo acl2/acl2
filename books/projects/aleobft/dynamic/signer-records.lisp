@@ -150,7 +150,10 @@
                         (set::in cert (signed-certificates signer systate)))
                    (signer-record-p (certificate->author cert)
                                     (certificate->round cert)
-                                    (get-validator-state signer systate)))))
+                                    (get-validator-state signer systate))))
+  ///
+  (fty::deffixequiv-sk signer-records-p
+    :args ((systate system-statep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -400,8 +403,7 @@
           reachable from an initial state via a sequence of events."
 
   (defruled signer-records-p-of-events-next
-    (implies (and (system-statep systate)
-                  (signer-records-p systate)
+    (implies (and (signer-records-p systate)
                   (events-possiblep events systate))
              (signer-records-p (events-next events systate)))
     :induct t
@@ -411,8 +413,7 @@
              signer-records-p-of-event-next))
 
   (defruled signer-records-p-when-reachable
-    (implies (and (system-statep systate)
-                  (system-initp systate)
+    (implies (and (system-initp systate)
                   (events-possiblep events systate))
              (signer-records-p (events-next events systate)))
     :disable ((:e tau-system))

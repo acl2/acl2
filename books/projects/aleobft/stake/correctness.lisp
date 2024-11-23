@@ -26,6 +26,15 @@
 (include-book "dag-committees")
 (include-book "signer-quorum")
 (include-book "quorum-intersection")
+(include-book "unequivocal-dags-def-and-init")
+(include-book "nonforking-blockchains-def-and-init")
+(include-book "same-committees-def-and-implied")
+(include-book "unequivocal-dags-next")
+(include-book "previous-quorum")
+(include-book "dag-certificate-next")
+(include-book "last-anchor-def-and-init")
+(include-book "last-anchor-present")
+(include-book "last-anchor-next")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -52,4 +61,13 @@
                     unequivocal-signed-certificates
                     dag-committees
                     signer-quorum
-                    quorum-intersection))
+                    quorum-intersection
+                    unequivocal-dags-def-and-init
+                    nonforking-blockchains-def-and-init
+                    same-committees-def-and-implied
+                    unequivocal-dags-next
+                    previous-quorum
+                    dag-certificate-next
+                    last-anchor-def-and-init
+                    last-anchor-present
+                    last-anchor-next))

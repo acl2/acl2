@@ -10302,7 +10302,7 @@
       (when (and controlp
                  (not (print-control-p control)))
 ; See comment about this check in the :guard above.
-        (er hard 'print-object$-fn
+        (er hard? 'print-object$-fn
             "Illegal print-control record, ~x0"
             control))
 
@@ -10343,9 +10343,13 @@
 
 (defun print-object$ (x channel state)
 
-; WARNING: Be sure to use with-output-object-channel-sharing rather than
-; calling open-output-channel directly, so that *print-circle-stream* is
-; initialized.
+; WARNING: The "Remark on print-circle-files" in :DOC print-control mentions
+; that ACL2 binds state global variable print-circle to t before writing
+; certificate files and some other files.  In order for that binding to cause
+; structure sharing, ACL2 implementors should be sure to use
+; with-output-object-channel-sharing rather than calling open-output-channel
+; directly, so that Lisp global *print-circle-stream* is initialized, which is
+; necessary for binding *print-circle* to t in print-object$-fn.
 
 ; We believe that if in a single Common Lisp session, one prints an object and
 ; then reads it back in with print-object$ and read-object, one will get back

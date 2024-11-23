@@ -201,10 +201,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defirrelevant irr-declspec
+(defirrelevant irr-decl-spec
   :short "An irrelevant declaration specifier."
-  :type declspecp
-  :body (declspec-tyspec (irr-type-spec)))
+  :type decl-specp
+  :body (decl-spec-tyspec (irr-type-spec)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -605,6 +605,44 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define binop->priority ((op binopp))
+  :returns (priority expr-priorityp)
+  :short "Priority of (binary expressions with) operators."
+  (binop-case
+   op
+   :mul (expr-priority-mul)
+   :div (expr-priority-mul)
+   :rem (expr-priority-mul)
+   :add (expr-priority-add)
+   :sub (expr-priority-add)
+   :shl (expr-priority-sh)
+   :shr (expr-priority-sh)
+   :lt (expr-priority-rel)
+   :gt (expr-priority-rel)
+   :le (expr-priority-rel)
+   :ge (expr-priority-rel)
+   :eq (expr-priority-eq)
+   :ne (expr-priority-eq)
+   :bitand (expr-priority-and)
+   :bitxor (expr-priority-xor)
+   :bitior (expr-priority-ior)
+   :logand (expr-priority-logand)
+   :logor (expr-priority-logor)
+   :asg (expr-priority-asg)
+   :asg-mul (expr-priority-asg)
+   :asg-div (expr-priority-asg)
+   :asg-rem (expr-priority-asg)
+   :asg-add (expr-priority-asg)
+   :asg-sub (expr-priority-asg)
+   :asg-shl (expr-priority-asg)
+   :asg-shr (expr-priority-asg)
+   :asg-and (expr-priority-asg)
+   :asg-xor (expr-priority-asg)
+   :asg-ior (expr-priority-asg))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define expr->priority ((expr exprp))
   :returns (priority expr-priorityp)
   :short "Priorities of expressions."
@@ -617,11 +655,11 @@
    (xdoc::p
     "An ambiguous @('sizeof') has the same priority as an unambiguous one.
      An ambiguous cast/call expression is given
-     the lower priority of the two possibilities,
-     i.e. the priority of a cast expression.
+     the higher priority of the two possibilities,
+     i.e. the priority of a postfix expression.
      Ambiguous cast/binary expressions are given
-     the lower priority of the two possibilities,
-     i.e. the priority of the corresponding binary expression."))
+     the higher priority of the two possibilities,
+     i.e. the priority of a cast expression."))
   (expr-case
    expr
    :ident (expr-priority-primary)
@@ -639,44 +677,14 @@
    :sizeof-ambig (expr-priority-unary)
    :alignof (expr-priority-unary)
    :cast (expr-priority-cast)
-   :binary (binop-case
-            expr.op
-            :mul (expr-priority-mul)
-            :div (expr-priority-mul)
-            :rem (expr-priority-mul)
-            :add (expr-priority-add)
-            :sub (expr-priority-add)
-            :shl (expr-priority-sh)
-            :shr (expr-priority-sh)
-            :lt (expr-priority-rel)
-            :gt (expr-priority-rel)
-            :le (expr-priority-rel)
-            :ge (expr-priority-rel)
-            :eq (expr-priority-eq)
-            :ne (expr-priority-eq)
-            :bitand (expr-priority-and)
-            :bitxor (expr-priority-xor)
-            :bitior (expr-priority-ior)
-            :logand (expr-priority-logand)
-            :logor (expr-priority-logor)
-            :asg (expr-priority-asg)
-            :asg-mul (expr-priority-asg)
-            :asg-div (expr-priority-asg)
-            :asg-rem (expr-priority-asg)
-            :asg-add (expr-priority-asg)
-            :asg-sub (expr-priority-asg)
-            :asg-shl (expr-priority-asg)
-            :asg-shr (expr-priority-asg)
-            :asg-and (expr-priority-asg)
-            :asg-xor (expr-priority-asg)
-            :asg-ior (expr-priority-asg))
+   :binary (binop->priority expr.op)
    :cond (expr-priority-cond)
    :comma (expr-priority-expr)
-   :cast/call-ambig (expr-priority-cast)
-   :cast/mul-ambig (expr-priority-mul)
-   :cast/add-ambig (expr-priority-add)
-   :cast/sub-ambig (expr-priority-add)
-   :cast/and-ambig (expr-priority-and)
+   :cast/call-ambig (expr-priority-postfix)
+   :cast/mul-ambig (expr-priority-cast)
+   :cast/add-ambig (expr-priority-cast)
+   :cast/sub-ambig (expr-priority-cast)
+   :cast/and-ambig (expr-priority-cast)
    :stmt (expr-priority-primary)
    :tycompat (expr-priority-primary)
    :offsetof (expr-priority-primary)
@@ -688,7 +696,7 @@
 
 (define expr-priority-<= ((prio1 expr-priorityp) (prio2 expr-priorityp))
   :returns (yes/no booleanp)
-  :short "Total order on expression priorities."
+  :short "Total order on expression priorities: less than or equal to."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -744,6 +752,30 @@
       :asg 1
       :expr 0)
      :hooks (:fix))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define expr-priority->= ((prio1 expr-priorityp) (prio2 expr-priorityp))
+  :returns (yes/no booleanp)
+  :short "Total order on expression priorities: greater than or equal to."
+  (expr-priority-<= prio2 prio1)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define expr-priority-< ((prio1 expr-priorityp) (prio2 expr-priorityp))
+  :returns (yes/no booleanp)
+  :short "Total order on expression priorities: less than."
+  (not (expr-priority-<= prio2 prio1))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(define expr-priority-> ((prio1 expr-priorityp) (prio2 expr-priorityp))
+  :returns (yes/no booleanp)
+  :short "Total order on expression priorities: greater than."
+  (not (expr-priority-<= prio1 prio2))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1032,7 +1064,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-declspec-list-all-tyspec ((declspecs declspec-listp))
+(define check-decl-spec-list-all-tyspec ((declspecs decl-spec-listp))
   :returns (mv (yes/no booleanp) (tyspecs type-spec-listp))
   :short "Check if all the declaration specifiers in a list
           are type specifiers."
@@ -1043,16 +1075,16 @@
      also return the list of type specifiers, in the same order."))
   (b* (((when (endp declspecs)) (mv t nil))
        (declspec (car declspecs))
-       ((unless (declspec-case declspec :tyspec)) (mv nil nil))
-       ((mv yes/no tyspecs) (check-declspec-list-all-tyspec (cdr declspecs))))
+       ((unless (decl-spec-case declspec :tyspec)) (mv nil nil))
+       ((mv yes/no tyspecs) (check-decl-spec-list-all-tyspec (cdr declspecs))))
     (if yes/no
-        (mv t (cons (declspec-tyspec->unwrap declspec) tyspecs))
+        (mv t (cons (decl-spec-tyspec->spec declspec) tyspecs))
       (mv nil nil)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-declspec-list-all-tyspec/storspec ((declspecs declspec-listp))
+(define check-decl-spec-list-all-tyspec/storspec ((declspecs decl-spec-listp))
   :returns (mv (yes/no booleanp)
                (tyspecs type-spec-listp)
                (stor-specs stor-spec-listp))
@@ -1066,21 +1098,21 @@
      in the same order."))
   (b* (((when (endp declspecs)) (mv t nil nil))
        (declspec (car declspecs))
-       ((when (declspec-case declspec :tyspec))
+       ((when (decl-spec-case declspec :tyspec))
         (b* (((mv yes/no tyspecs stor-specs)
-              (check-declspec-list-all-tyspec/storspec (cdr declspecs))))
+              (check-decl-spec-list-all-tyspec/storspec (cdr declspecs))))
           (if yes/no
               (mv t
-                  (cons (declspec-tyspec->unwrap declspec) tyspecs)
+                  (cons (decl-spec-tyspec->spec declspec) tyspecs)
                   stor-specs)
             (mv nil nil nil))))
-       ((when (declspec-case declspec :stocla))
+       ((when (decl-spec-case declspec :stocla))
         (b* (((mv yes/no tyspecs stor-specs)
-              (check-declspec-list-all-tyspec/storspec (cdr declspecs))))
+              (check-decl-spec-list-all-tyspec/storspec (cdr declspecs))))
           (if yes/no
               (mv t
                   tyspecs
-                  (cons (declspec-stocla->unwrap declspec) stor-specs))
+                  (cons (decl-spec-stocla->spec declspec) stor-specs))
             (mv nil nil nil)))))
     (mv nil nil nil))
   :hooks (:fix))
@@ -1107,32 +1139,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define declspec-list-to-type-spec-list ((declspecs declspec-listp))
+(define decl-spec-list-to-type-spec-list ((declspecs decl-spec-listp))
   :returns (tyspecs type-spec-listp)
   :short "Extract the list of type specifiers
           from a list of declaration specifiers,
           preserving the order."
   (b* (((when (endp declspecs)) nil)
        (declspec (car declspecs)))
-    (if (declspec-case declspec :tyspec)
-        (cons (declspec-tyspec->unwrap declspec)
-              (declspec-list-to-type-spec-list (cdr declspecs)))
-      (declspec-list-to-type-spec-list (cdr declspecs))))
+    (if (decl-spec-case declspec :tyspec)
+        (cons (decl-spec-tyspec->spec declspec)
+              (decl-spec-list-to-type-spec-list (cdr declspecs)))
+      (decl-spec-list-to-type-spec-list (cdr declspecs))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define declspec-list-to-stor-spec-list ((declspecs declspec-listp))
+(define decl-spec-list-to-stor-spec-list ((declspecs decl-spec-listp))
   :returns (stor-specs stor-spec-listp)
   :short "Extract the list of storage class specifiers
           from a list of declaration specifiers,
           preserving the order."
   (b* (((when (endp declspecs)) nil)
        (declspec (car declspecs)))
-    (if (declspec-case declspec :stocla)
-        (cons (declspec-stocla->unwrap declspec)
-              (declspec-list-to-stor-spec-list (cdr declspecs)))
-      (declspec-list-to-stor-spec-list (cdr declspecs))))
+    (if (decl-spec-case declspec :stocla)
+        (cons (decl-spec-stocla->spec declspec)
+              (decl-spec-list-to-stor-spec-list (cdr declspecs)))
+      (decl-spec-list-to-stor-spec-list (cdr declspecs))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

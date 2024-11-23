@@ -1008,8 +1008,7 @@ recursion introduced with @('defines') is assumed to be the subject.</p>
 <p>The individual @('defret') forms inside the mutual recursion support all the
 options supported by @(see defret), plus the @(':skip') option from the flag
 defthm macro, which if set to nonnil uses the theorem only as an inductive
-lemma for the overall mutually recursive proof, and doesn't export it.</p>
- })")
+lemma for the overall mutually recursive proof, and doesn't export it.</p>")
 
 (defun pass-kwd-args (names kwd-alist)
   (if (atom names)

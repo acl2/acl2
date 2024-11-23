@@ -935,8 +935,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define-sk dag-predecessor-stake-p ((dag certificate-setp)
-                                    (blockchain block-listp))
+(define-sk dag-predecessor-quorum-p ((dag certificate-setp)
+                                     (blockchain block-listp))
   :guard (and (dag-has-committees-p dag blockchain)
               (dag-in-committees-p dag blockchain))
   :returns (yes/no booleanp)
@@ -975,11 +975,11 @@
   :guard-hints
   (("Goal"
     :use (:instance authors-at-same-round-in-committee-when-dag-in-committees-p
-                    (certs (predecessors (dag-predecessor-stake-p-witness
+                    (certs (predecessors (dag-predecessor-quorum-p-witness
                                           dag blockchain)
                                          dag))
                     (round (1- (certificate->round
-                                (dag-predecessor-stake-p-witness
+                                (dag-predecessor-quorum-p-witness
                                  dag blockchain)))))
     :in-theory (enable posp
                        pos-fix
@@ -989,20 +989,21 @@
 
   ///
 
-  (defruled not-emptyp-predecessors-when-dag-predecessor-cardinality-p
-    (implies (and (dag-predecessor-stake-p dag blockchain)
+  (defruled not-emptyp-predecessors-when-dag-predecessor-quorum-p
+    (implies (and (dag-predecessor-quorum-p dag blockchain)
                   (set::in cert dag)
                   (not (equal (certificate->round cert) 1)))
              (not (set::emptyp (predecessors cert dag))))
-    :use (dag-predecessor-stake-p-necc
+    :use (dag-predecessor-quorum-p-necc
           (:instance committee-members-stake-0-to-emptyp
                      (members
                       (certificate-set->author-set (predecessors cert dag)))
                      (commtt
-                      (active-committee-at-round (+ -1 (certificate->round cert))
-                                                 blockchain))))
-    :disable (dag-predecessor-stake-p
-              dag-predecessor-stake-p-necc)))
+                      (active-committee-at-round
+                       (+ -1 (certificate->round cert))
+                       blockchain))))
+    :disable (dag-predecessor-quorum-p
+              dag-predecessor-quorum-p-necc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
