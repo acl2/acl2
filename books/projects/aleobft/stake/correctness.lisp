@@ -40,6 +40,7 @@
 (include-book "dag-omni-paths")
 (include-book "omni-paths-def-and-implied")
 (include-book "anchors-extension")
+(include-book "committed-anchor-sequences")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -80,4 +81,5 @@
                     successor-predecessor-intersection
                     dag-omni-paths
                     omni-paths-def-and-implied
-                    anchors-extension))
+                    anchors-extension
+                    committed-anchor-sequences))
