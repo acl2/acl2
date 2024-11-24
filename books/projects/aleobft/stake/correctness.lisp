@@ -39,6 +39,7 @@
 (include-book "successor-predecessor-intersection")
 (include-book "dag-omni-paths")
 (include-book "omni-paths-def-and-implied")
+(include-book "anchors-extension")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -78,4 +79,5 @@
                     last-anchor-voters-def-and-init-and-next
                     successor-predecessor-intersection
                     dag-omni-paths
-                    omni-paths-def-and-implied))
+                    omni-paths-def-and-implied
+                    anchors-extension))
