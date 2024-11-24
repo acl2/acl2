@@ -99,7 +99,7 @@
     :use (:instance set::subset-cardinality (x (set::tail set)) (y set))
     :disable set::subset-cardinality)
 
-  (defruled set::head-of-intersection-member-when-not-emptyp
+  (defruled set::head-of-intersect-member-when-not-emptyp
     (implies (not (set::emptyp (set::intersect x y)))
              (and (set::in (set::head (set::intersect x y)) x)
                   (set::in (set::head (set::intersect x y)) y)))
