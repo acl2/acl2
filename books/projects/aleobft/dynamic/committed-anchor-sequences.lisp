@@ -340,7 +340,6 @@
   (defruled committed-anchors-of-commit-anchors-next-last-not-0
     (implies (and (ordered-even-p systate)
                   (last-blockchain-round-p systate)
-                  (accepted-certificate-committee-p systate)
                   (unequivocal-accepted-certificates-p systate)
                   (omni-paths-p systate)
                   (last-anchor-present-p systate)
@@ -427,7 +426,6 @@
   (defruled committed-anchors-of-commit-anchors-next-last-0
     (implies (and (ordered-even-p systate)
                   (last-blockchain-round-p systate)
-                  (accepted-certificate-committee-p systate)
                   (unequivocal-accepted-certificates-p systate)
                   (omni-paths-p systate)
                   (last-anchor-present-p systate)
@@ -484,7 +482,6 @@
   (defruled committed-anchors-of-commit-anchors-next-other-val
     (implies (and (ordered-even-p systate)
                   (last-blockchain-round-p systate)
-                  (accepted-certificate-committee-p systate)
                   (unequivocal-accepted-certificates-p systate)
                   (omni-paths-p systate)
                   (last-anchor-present-p systate)
@@ -509,7 +506,6 @@
   (defruled committed-anchors-of-commit-anchors-next
     (implies (and (ordered-even-p systate)
                   (last-blockchain-round-p systate)
-                  (accepted-certificate-committee-p systate)
                   (unequivocal-accepted-certificates-p systate)
                   (omni-paths-p systate)
                   (last-anchor-present-p systate)
@@ -552,7 +548,6 @@
     ((defruled lemma
        (implies (and (ordered-even-p systate)
                      (last-blockchain-round-p systate)
-                     (accepted-certificate-committee-p systate)
                      (unequivocal-accepted-certificates-p systate)
                      (omni-paths-p systate)
                      (last-anchor-present-p systate)
@@ -641,7 +636,6 @@
      and thus of the anchor sequence."))
   (implies (and (ordered-even-p systate)
                 (last-blockchain-round-p systate)
-                (accepted-certificate-committee-p systate)
                 (unequivocal-accepted-certificates-p systate)
                 (omni-paths-p systate)
                 (last-anchor-present-p systate)
@@ -670,7 +664,6 @@
   ((defruled lemma
      (implies (and (ordered-even-p systate)
                    (last-blockchain-round-p systate)
-                   (accepted-certificate-committee-p systate)
                    (unequivocal-accepted-certificates-p systate)
                    (omni-paths-p systate)
                    (last-anchor-present-p systate)
