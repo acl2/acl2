@@ -381,6 +381,56 @@
                           total-steps
                           state))))))
 
+(local (in-theory (disable ;; reader-and-writer-intro-rules
+                           ;; (:e reader-and-writer-intro-rules)
+                           ;; assumption-simplification-rules
+                           ;; (:e assumption-simplification-rules)
+                           ;; lifter-rules64-new
+                           ;; (:e lifter-rules64-new)
+                           acl2::ilks-plist-worldp
+                           w)))
+
+;; Returns (mv erp assumptions assumption-rules state)
+(defund simplify-assumptions (assumptions extra-assumption-rules 64-bitp state)
+  (declare (xargs :guard (and (pseudo-term-listp assumptions)
+                              (symbol-listp extra-assumption-rules)
+                              (booleanp 64-bitp)
+                              (acl2::ilks-plist-worldp (w state)))
+                  :stobjs state))
+  (b* ((- (cw "(Simplifying assumptions...~%"))
+       ((mv assumption-simp-start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
+       ;; todo: optimize):
+       (assumption-rules (append extra-assumption-rules
+                                 (reader-and-writer-intro-rules)
+                                 (assumption-simplification-rules)
+                                 (if 64-bitp
+                                     ;; needed to match the normal forms used during lifting:
+                                     (lifter-rules64-new)
+                                   nil ; todo: why not use (lifter-rules32-new)?
+                                   )))
+       ((mv erp assumption-rule-alist)
+        (acl2::make-rule-alist assumption-rules (w state)))
+       ((when erp) (mv erp nil nil state))
+       ;; TODO: Option to turn this off, or to do just one pass:
+       ((mv erp assumptions)
+        (acl2::simplify-conjunction-basic ;simplify-terms-repeatedly
+          assumptions
+          assumption-rule-alist
+          (acl2::known-booleans (w state))
+          nil ;; rules-to-monitor ; do we want to monitor here?  What if some rules are not included?
+          nil ; don't memoize (avoids time spent making empty-memoizations)
+          t   ; todo: warn just once
+          ))
+       ((when erp) (mv erp nil nil state))
+       (assumptions (acl2::get-conjuncts-of-terms2 assumptions)) ; should already be done above, when repeatedly simplifying?
+       ((mv assumption-simp-elapsed state) (acl2::real-time-since assumption-simp-start-real-time state))
+       (- (cw " (Simplifying assumptions took ") ; usually <= .01 seconds
+          (acl2::print-to-hundredths assumption-simp-elapsed)
+          (cw "s.)~%"))
+       (- (cw " Done simplifying assumptions)~%")))
+    (mv nil assumptions assumption-rules state)))
+
+
 ;; Returns (mv erp result-dag-or-quotep assumptions lifter-rules-used assumption-rules-used state).
 ;; This is also called by the formal unit tester.
 (defun unroll-x86-code-core (target
@@ -466,147 +516,139 @@
        (- (and (stringp target)
                ;; Throws an error if the target doesn't exist:
                (acl2::ensure-target-exists-in-executable target parsed-executable)))
-
-       ;; todo: avoid all of this if we will use the override below:
-       ;; Generate assumptions (these get simplified below to put them into normal form):
        (64-bitp (member-equal executable-type '(:mach-o-64 :pe-64 :elf-64)))
-       (text-offset
-         (and 64-bitp ; todo
-              (if (eq :mach-o-64 executable-type)
-                  (if position-independentp 'text-offset `,(acl2::get-mach-o-code-address parsed-executable))
-                (if (eq :pe-64 executable-type)
-                    'text-offset ; todo: match what we do for other executable types
-                  (if (eq :elf-64 executable-type)
-                      (if position-independentp 'text-offset `,(acl2::get-elf-code-address parsed-executable))
-                    (if (eq :mach-o-32 executable-type)
-                        nil ; todo
-                      (if (eq :pe-32 executable-type)
-                          nil ; todo
-                        ;; todo: add support for :elf-32
-                        (er hard? 'unroll-x86-code-core "Unsupported executable type: ~x0.~%" executable-type))))))))
-       (code-length
-         (and 64-bitp ; todo
-              (if (eq :mach-o-64 executable-type)
-                  (len (acl2::get-mach-o-code parsed-executable))
-                (if (eq :pe-64 executable-type)
-                    10000 ; fixme
-                  (if (eq :elf-64 executable-type)
-                      (len (acl2::get-elf-code parsed-executable))
-                    (if (eq :mach-o-32 executable-type)
-                        nil ; todo
-                      (if (eq :pe-32 executable-type)
-                          nil ; todo
-                        ;;todo: add support for :elf-32
-                        (er hard? 'unroll-x86-code-core "Unsupported executable type: ~x0.~%" executable-type))))))))
-       (standard-assumptions
-        (if suppress-assumptions
-            ;; Suppress tool-generated assumptions; use only the explicitly provided ones:
-            nil
-          (if (eq :mach-o-64 executable-type)
-              `((standard-assumptions-mach-o-64 ',target
-                                                ',parsed-executable
-                                                ',stack-slots
-                                                ,text-offset
-                                                x86))
-            (if (eq :pe-64 executable-type)
-                `((standard-assumptions-pe-64 ',target
-                                              ',parsed-executable
-                                              ',stack-slots
-                                              text-offset
-                                              x86))
-              (if (eq :elf-64 executable-type)
-                  `((standard-assumptions-elf-64 ',target
-                                                 ',parsed-executable
-                                                 ',stack-slots
-                                                 ,text-offset
-                                                 x86))
-                (if (eq :mach-o-32 executable-type)
-                    (gen-standard-assumptions-mach-o-32 target parsed-executable stack-slots)
-                  (if (eq :pe-32 executable-type)
-                      ;; todo: try without expanding this:
-                      (gen-standard-assumptions-pe-32 target parsed-executable stack-slots)
-                    ;;todo: add support for :elf-32
-                    (er hard? 'unroll-x86-code-core "Unsupported executable type: ~x0.~%" executable-type))))))))
-       ;; maybe we should check suppress-assumptions here, but if they gave an :inputs, they must want the assumptions:
-       (input-assumptions (if (and 64-bitp ; todo
-                                   (not (equal inputs :skip)) ; really means generate no assumptions
-                                   )
-                              (assumptions-for-inputs inputs
-                                                      ;; todo: handle zmm regs and values passed on the stack?!:
-                                                      ;; handle structs that fit in 2 registers?
-                                                      ;; See the System V AMD64 ABI
-                                                      '((rdi x86) (rsi x86) (rdx x86) (rcx x86) (r8 x86) (r9 x86))
-                                                      stack-slots
-                                                      text-offset
-                                                      code-length)
-                            nil))
-       (assumptions (append standard-assumptions input-assumptions)) ; call these automatic-assumptions?
-       ;; overrride!:
-       ((mv erp assumptions)
-        (if (and (eq :elf-64 executable-type) ; todo: clean up this override
-                 (acl2::parsed-elf-program-header-table parsed-executable))
-            (assumptions-elf64-new target
-                                   :auto ; todo: pass in relp
-                                   stack-slots
-                                   'x86
-                                   inputs
-                                   parsed-executable)
-          (mv nil assumptions)))
+       (debug-rules (if 64-bitp (debug-rules64) (debug-rules32)))
+       (rules-to-monitor (maybe-add-debug-rules debug-rules monitor))
+
+       ;; Generate assumptions:
+       ((mv erp assumptions untranslated-assumptions
+            assumption-rules ; drop? todo: includes rules that were not used, but we return these as an RV named assumption-rules-used
+            state)
+        (if (and (eq :elf-64 executable-type)
+                 (acl2::parsed-elf-program-header-table parsed-executable) ; there are segments present (todo: improve the "new" behavior to use sections when there are no segments)
+                 )
+            ;; New assumption generation behavior, only for ELF64 (for now):
+            (b* (((mv erp automatic-assumptions)
+                  (if suppress-assumptions
+                      (mv nil nil) ; todo: this also suppresses input assumptions - should it?  the user can just not give inputs..
+                    (assumptions-elf64-new target
+                                           :auto ; todo: pass in relp
+                                           stack-slots
+                                           'x86
+                                           inputs
+                                           parsed-executable)))
+                 ((when erp) (mv erp nil nil nil state))
+                 (untranslated-assumptions (append automatic-assumptions extra-assumptions)) ; includes any user assumptions
+                 ;; Translate all the assumptions:
+                 (assumptions (acl2::translate-terms untranslated-assumptions 'unroll-x86-code-core (w state)))
+                 ((mv erp assumptions assumption-rules state)
+                  (if extra-assumptions
+                      ;; If there are extra-assumptions, we need to simplify (e.g., an extra assumption could replace RSP with 10000, and then all assumptions about RSP need to mention 10000 instead):
+                      (simplify-assumptions assumptions extra-assumption-rules 64-bitp state)
+                    (mv nil assumptions nil state)))
+                 ((when erp) (mv erp nil nil nil state)))
+              (mv nil assumptions
+                  untranslated-assumptions ; seems ok to use the original, unrewritten assumptions here
+                  assumption-rules state))
+          ;; legacy case (generate some assumptions and then simplify them):
+          (b* ((text-offset
+                 (and 64-bitp ; todo
+                      (if (eq :mach-o-64 executable-type)
+                          (if position-independentp 'text-offset `,(acl2::get-mach-o-code-address parsed-executable))
+                        (if (eq :pe-64 executable-type)
+                            'text-offset ; todo: match what we do for other executable types
+                          (if (eq :elf-64 executable-type)
+                              (if position-independentp 'text-offset `,(acl2::get-elf-code-address parsed-executable))
+                            (if (eq :mach-o-32 executable-type)
+                                nil ; todo
+                              (if (eq :pe-32 executable-type)
+                                  nil ; todo
+                                ;; todo: add support for :elf-32
+                                (er hard? 'unroll-x86-code-core "Unsupported executable type: ~x0.~%" executable-type))))))))
+               (code-length
+                 (and 64-bitp ; todo
+                      (if (eq :mach-o-64 executable-type)
+                          (len (acl2::get-mach-o-code parsed-executable))
+                        (if (eq :pe-64 executable-type)
+                            10000 ; fixme
+                          (if (eq :elf-64 executable-type)
+                              (len (acl2::get-elf-code parsed-executable))
+                            (if (eq :mach-o-32 executable-type)
+                                nil ; todo
+                              (if (eq :pe-32 executable-type)
+                                  nil ; todo
+                                ;;todo: add support for :elf-32
+                                (er hard? 'unroll-x86-code-core "Unsupported executable type: ~x0.~%" executable-type))))))))
+               (standard-assumptions
+                 (if suppress-assumptions
+                     ;; Suppress tool-generated assumptions; use only the explicitly provided ones:
+                     nil
+                   (if (eq :mach-o-64 executable-type)
+                       `((standard-assumptions-mach-o-64 ',target
+                                                         ',parsed-executable
+                                                         ',stack-slots
+                                                         ,text-offset
+                                                         x86))
+                     (if (eq :pe-64 executable-type)
+                         `((standard-assumptions-pe-64 ',target
+                                                       ',parsed-executable
+                                                       ',stack-slots
+                                                       text-offset
+                                                       x86))
+                       (if (eq :elf-64 executable-type)
+                           `((standard-assumptions-elf-64 ',target
+                                                          ',parsed-executable
+                                                          ',stack-slots
+                                                          ,text-offset
+                                                          x86))
+                         (if (eq :mach-o-32 executable-type)
+                             (gen-standard-assumptions-mach-o-32 target parsed-executable stack-slots)
+                           (if (eq :pe-32 executable-type)
+                               ;; todo: try without expanding this:
+                               (gen-standard-assumptions-pe-32 target parsed-executable stack-slots)
+                             ;;todo: add support for :elf-32
+                             (er hard? 'unroll-x86-code-core "Unsupported executable type: ~x0.~%" executable-type))))))))
+               ;; maybe we should check suppress-assumptions here, but if they gave an :inputs, they must want the assumptions:
+               (input-assumptions (if (and 64-bitp ; todo
+                                           (not (equal inputs :skip)) ; really means generate no assumptions
+                                           )
+                                      (assumptions-for-inputs inputs
+                                                              ;; todo: handle zmm regs and values passed on the stack?!:
+                                                              ;; handle structs that fit in 2 registers?
+                                                              ;; See the System V AMD64 ABI
+                                                              '((rdi x86) (rsi x86) (rdx x86) (rcx x86) (r8 x86) (r9 x86))
+                                                              stack-slots
+                                                              text-offset
+                                                              code-length)
+                                    nil))
+               (assumptions (append standard-assumptions input-assumptions)) ; call these automatic-assumptions?
+               (assumptions (append assumptions extra-assumptions))
+               (assumptions-to-return assumptions) ; untranslated?
+               (assumptions (acl2::translate-terms assumptions 'unroll-x86-code-core (w state))) ; perhaps don't translate the automatic-assumptions?
+               (- (and (acl2::print-level-at-least-tp print) (progn$ (cw "(Unsimplified assumptions:~%")
+                                                                     (print-terms-elided assumptions
+                                                                                         '(standard-assumptions-elf-64
+                                                                                           standard-assumptions-mach-o-64
+                                                                                           standard-assumptions-pe-64)) ; todo: more?
+                                                                     (cw ")~%"))))
+               ;; Next, we simplify the assumptions.  This allows us to state the
+               ;; theorem about a lifted routine concisely, using an assumption
+               ;; function that opens to a large conjunction before lifting is
+               ;; attempted.  We need to assume some assumptions when simplifying the
+               ;; others, because opening things like read64 involves testing
+               ;; canonical-addressp (which we know from other assumptions is true):
+               ((mv erp assumptions assumption-rules state)
+                (simplify-assumptions assumptions extra-assumption-rules 64-bitp state))
+               ((when erp) (mv erp nil nil nil state)))
+            (mv nil assumptions assumptions-to-return assumption-rules state))))
        ((when erp)
         (er hard? 'unroll-x86-code-core "Error generating assumptions: ~x0." erp)
         (mv erp nil nil nil nil state))
-       (assumptions (append assumptions extra-assumptions))
-       (assumptions-to-return assumptions)
-       (assumptions (acl2::translate-terms assumptions 'unroll-x86-code-core (w state))) ; perhaps don't translate the automatic-assumptions?
-       (- (and (acl2::print-level-at-least-tp print) (progn$ (cw "(Unsimplified assumptions:~%")
-                                                             (print-terms-elided assumptions
-                                                                                 '(standard-assumptions-elf-64
-                                                                                   standard-assumptions-mach-o-64
-                                                                                   standard-assumptions-pe-64)) ; todo: more?
-                                                             (cw ")~%"))))
-       (- (cw "(Simplifying assumptions...~%"))
-       ((mv assumption-simp-start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
-       (32-bitp (member-eq executable-type *executable-types32*))
-       (debug-rules (if 32-bitp (debug-rules32) (debug-rules64)))
-       (rules-to-monitor (maybe-add-debug-rules debug-rules monitor))
-       ;; Next, we simplify the assumptions.  This allows us to state the
-       ;; theorem about a lifted routine concisely, using an assumption
-       ;; function that opens to a large conjunction before lifting is
-       ;; attempted.  We need to assume some assumptions when simplifying the
-       ;; others, because opening things like read64 involves testing
-       ;; canonical-addressp (which we know from other assumptions is true):
-       (assumption-rules (append extra-assumption-rules
-                                 (reader-and-writer-intro-rules)
-                                 (assumption-simplification-rules)
-                                 (if 32-bitp
-                                     nil ; todo: why not use (lifter-rules32-new)?
-                                   ;; needed to match the normal forms used during lifting:
-                                   (lifter-rules64-new))))
-       ((mv erp assumption-rule-alist)
-        (acl2::make-rule-alist assumption-rules (w state)))
-       ((when erp) (mv erp nil nil nil nil state))
-       ;; TODO: Option to turn this off, or to do just one pass:
-       ((mv erp assumptions)
-        (acl2::simplify-conjunction-basic ;simplify-terms-repeatedly
-         assumptions
-         assumption-rule-alist
-         (acl2::known-booleans (w state))
-         rules-to-monitor ; do we want to monitor here?  What if some rules are not incldued?
-         nil ; don't memoize (avoids time spent making empty-memoizations)
-         t ; todo: warn just once
-         ))
-       ((when erp) (mv erp nil nil nil nil state))
-       (assumptions (acl2::get-conjuncts-of-terms2 assumptions))
-       ((mv assumption-simp-elapsed state) (acl2::real-time-since assumption-simp-start-real-time state))
-       (- (cw " (Simplifying assumptions took ") ; usually <= .01 seconds
-          (acl2::print-to-hundredths assumption-simp-elapsed)
-          (cw "s.)~%"))
-       (- (cw " Done simplifying assumptions)~%"))
-       (- (and print (progn$ (cw "(Simplified assumptions:~%")
+       (- (and print (progn$ (cw "(Assumptions for lifting:~%") ; should we untranslate these?
                              (if (acl2::print-level-at-least-tp print)
                                  (acl2::print-list assumptions)
                                (print-terms-elided assumptions '(program-at ; the program can be huge
-                                                                )))
+                                                                 )))
                              (cw ")~%"))))
        ;; Prepare for symbolic execution:
        (term-to-simulate '(run-until-return x86))
@@ -619,7 +661,7 @@
         (er hard? 'unroll-x86-code-core "Unexpected quotep: ~x0." dag-to-simulate)
         (mv :unexpected-quotep nil nil nil nil state))
        ;; Choose the lifter rules to use:
-       (lifter-rules (if 32-bitp (lifter-rules32-all) (lifter-rules64-all)))
+       (lifter-rules (if 64-bitp (lifter-rules64-all) (lifter-rules32-all)))
        ;; Add any extra-rules:
        (lifter-rules (append extra-rules lifter-rules)) ; todo: use union?
        ;; Remove any remove-rules:
@@ -646,7 +688,7 @@
                     (acl2::print-dag-info result-dag-or-quotep 'result t)
                     (cw ")~%") ; matches (Lifting...
                     ))))
-    (mv (erp-nil) result-dag-or-quotep assumptions-to-return lifter-rules assumption-rules state)))
+    (mv (erp-nil) result-dag-or-quotep untranslated-assumptions lifter-rules assumption-rules state)))
 
 ;; Returns (mv erp event state)
 (defun def-unrolled-fn (lifted-name
