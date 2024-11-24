@@ -37,6 +37,7 @@
 (include-book "last-anchor-next")
 (include-book "last-anchor-voters-def-and-init-and-next")
 (include-book "successor-predecessor-intersection")
+(include-book "dag-omni-paths")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -74,4 +75,5 @@
                     last-anchor-present
                     last-anchor-next
                     last-anchor-voters-def-and-init-and-next
-                    successor-predecessor-intersection))
+                    successor-predecessor-intersection
+                    dag-omni-paths))
