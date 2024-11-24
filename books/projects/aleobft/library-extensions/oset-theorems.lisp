@@ -158,4 +158,11 @@
              (set::subset x (set::difference y z)))
     :enable (set::expensive-rules
              set::not-member-when-member-of-disjoint
-             set::emptyp)))
+             set::emptyp))
+
+  (defruled set::not-emptyp-of-intersect-when-in-both
+    (implies (and (set::in a x)
+                  (set::in a y))
+             (not (set::emptyp (set::intersect x y))))
+    :use (:instance set::never-in-empty (a a) (x (set::intersect x y)))
+    :disable set::never-in-empty))
