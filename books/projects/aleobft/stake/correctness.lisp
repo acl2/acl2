@@ -36,6 +36,7 @@
 (include-book "last-anchor-present")
 (include-book "last-anchor-next")
 (include-book "last-anchor-voters-def-and-init-and-next")
+(include-book "successor-predecessor-intersection")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -72,4 +73,5 @@
                     last-anchor-def-and-init
                     last-anchor-present
                     last-anchor-next
-                    last-anchor-voters-def-and-init-and-next))
+                    last-anchor-voters-def-and-init-and-next
+                    successor-predecessor-intersection))
