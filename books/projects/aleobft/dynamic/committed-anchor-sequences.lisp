@@ -68,19 +68,19 @@
 
   (defruled committed-anchors-when-last-is-0
     (implies (equal (validator-state->last vstate) 0)
-             (equal (committed-anchors vstate vals)
+             (equal (committed-anchors vstate all-vals)
                     nil)))
 
   (defrule consp-of-committed-anchors-when-last-not-0
     (implies (not (equal (validator-state->last vstate) 0))
-             (consp (committed-anchors vstate vals)))
+             (consp (committed-anchors vstate all-vals)))
     :rule-classes :type-prescription)
 
   (defruled car-of-committed-anchors
     (implies (and (not (equal (validator-state->last vstate) 0))
-                  (last-anchor vstate vals))
-             (equal (car (committed-anchors vstate vals))
-                    (last-anchor vstate vals)))
+                  (last-anchor vstate all-vals))
+             (equal (car (committed-anchors vstate all-vals))
+                    (last-anchor vstate all-vals)))
     :enable car-of-collect-all-anchors)
 
   (defret certificates-dag-paths-p-of-committed-anchors
