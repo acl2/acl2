@@ -51,6 +51,9 @@
 
   ///
 
+  (fty::deffixequiv-sk ordered-even-p
+    :args ((systate system-statep)))
+
   (defruled ordered-even-p-necc-fixing
     (implies (and (ordered-even-p systate)
                   (set::in (address-fix val) (correct-addresses systate)))
@@ -182,8 +185,7 @@
           reachable from an initial state via a sequence of events."
 
   (defruled ordered-even-p-of-events-next
-    (implies (and (system-statep systate)
-                  (ordered-even-p systate)
+    (implies (and (ordered-even-p systate)
                   (last-blockchain-round-p systate)
                   (events-possiblep events systate))
              (and (ordered-even-p (events-next events systate))
@@ -196,8 +198,7 @@
              last-blockchain-round-p-of-event-next))
 
   (defruled ordered-even-p-when-reachable
-    (implies (and (system-statep systate)
-                  (system-initp systate)
+    (implies (and (system-initp systate)
                   (events-possiblep events systate))
              (ordered-even-p (events-next events systate)))
     :disable ((:e tau-system))
