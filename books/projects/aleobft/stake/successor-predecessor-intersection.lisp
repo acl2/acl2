@@ -109,7 +109,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is used to establish
-     a hypothesis of @(tsee not-emptyp-successor-predecessor-intersection).
+     a hypothesis of @(tsee not-empty-successor-predecessor-intersection).
      If (again with reference to @(see successor-predecessor-intersection))
      @($A$) and @($C$) are two rounds apart,
      then the successors of @($A$) and the predecessors of @($C$)

@@ -186,8 +186,7 @@
      to the voting stake returned by @(tsee tally-leader-stake-votes);
      this needs non-equivocation because @(tsee tally-leader-stake-votes)
      would count the stake of equivocal certificates multiple times,
-     while @(tsee certificate-set->author-set)
-     applied to @(tsee successors-loop)
+     while @(tsee certificate-set->author-set) applied to @('successors-loop')
      counts the stake of each author only once.
      Since the event also extends the blockchain,
      as in other proofs we need to show that the extension of the blockchain
