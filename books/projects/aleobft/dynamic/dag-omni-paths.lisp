@@ -61,7 +61,7 @@
      every certificate @($C$) in DAG 2 at round @($r+2$) or later
      has a path to @($A$), which must be also in DAG 2.
      The reason is that there must be a certificate @($B$)
-     that is both in the @($d+1$) or more voters in DAG 1
+     that is both in the @($f+1$) or more voters in DAG 1
      and in the @($n-f$) certificates in DAG 2.
      In DAG 1, it has an edge to @($A$).
      Because of the backward closure of DAG 2,
