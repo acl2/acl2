@@ -139,7 +139,7 @@
      (for the target validator),
      by extending them with a suitable call of @(tsee collect-anchors).
      The proof takes a little work.
-     We consider the case of the target validator
+     We distinguish the case of the target validator
      from the case of another validator (which is easy),
      and within the first case we consider two sub-cases
      based on whether the last committed round was 0 or not.
