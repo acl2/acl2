@@ -16,6 +16,8 @@
 (include-book "assumptions64")  ; reduce?
 (include-book "parsers/elf-tools")
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
+(local (include-book "kestrel/bv-lists/all-unsigned-byte-p2" :dir :system))
+(local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 
 (local (in-theory (disable acl2::reverse-becomes-reverse-list-gen acl2::reverse-becomes-reverse-list acl2::reverse-removal acl2::revappend-removal))) ; todo
 
@@ -36,6 +38,66 @@
   (if (= 0 constant)
       term
     `(+ ',constant ,term)))
+
+;; Returns (mv erp assumptions).
+(defund assumptions-for-memory-chunk (addr bytes relp state-var base-var stack-slots-needed)
+  (declare (xargs :guard (and (natp addr)
+                              (byte-listp bytes)
+                              (booleanp relp)
+                              (symbolp state-var)
+                              (symbolp base-var)
+                              (natp stack-slots-needed))))
+  (let ((numbytes (len bytes)))
+    (if relp
+        ;; Relative addresses make everything relative to the base-var:
+        (let* ((first-addr-term (symbolic-add-constant addr base-var)) ; todo: use bvplus?
+               (last-addr-term (symbolic-add-constant (+ 1 ; todo: why is this needed?  I have code that ends in RET and checks whether the address after the RET is canonical.  however, making this change elsewhere broke other proofs.
+                                                                 (+ -1 addr numbytes)) base-var)) ; todo: use bvplus?
+               )
+          (mv nil
+              `((canonical-address-p ,first-addr-term)
+                (canonical-address-p ,last-addr-term)
+                ;; Assert that the chunk is loaded into memory:
+                ;; TODO: "program-at" is not a great name since the bytes may not represent a program:
+                (program-at ,first-addr-term ; todo: use something better that includes the length, for speed
+                            ',bytes
+                            ,state-var)
+                ;; Assert that the chunk is disjoint the part of the stack that will be written:
+                ,@(if (posp stack-slots-needed)
+                      ;; todo: make a better version of separate that doesn't require the Ns to be positive (and that doesn't have the useless rwx params):
+                      `((separate ':r ',(len bytes) ,first-addr-term
+                                  ':r ',(* 8 stack-slots-needed) (binary-+ ',(* '-8 stack-slots-needed) (rsp ,state-var))))
+                    ;; Can't call separate here because (* 8 stack-slots-needed) = 0:
+                    nil))))
+      ;; Absolute addresses are just numbers:
+      (let ((first-addr addr)
+            (last-addr (+ -1 addr numbytes)) ; todo: use bvplus? ; don't need to add 1 here for that RET issue, because the number should be clearly canonical
+            )
+        (if (not (and (canonical-address-p first-addr)
+                      (canonical-address-p last-addr)))
+            (mv :bad-address nil)
+          (mv nil
+              `(;; In the absolute case, the start and end addresses are just numbers, so we don't need canonical claims for them:
+                ;; Assert that the chunk is loaded into memory:
+                (program-at ',first-addr ; todo: use something better that includes the length, for speed
+                            ',bytes
+                            ,state-var)
+                ;; Assert that the chunk is disjoint from the part of the stack that will be written:
+                ,@(if (posp stack-slots-needed)
+                      ;; todo: make a better version of separate that doesn't require the Ns to be positive (and that doesn't have the useless rwx params):
+                      `((separate ':r ',(len bytes) ',first-addr
+                                  ':r ',(* 8 stack-slots-needed) (binary-+ ',(* '-8 stack-slots-needed) (rsp ,state-var))))
+                    ;; Can't call separate here because (* 8 stack-slots-needed) = 0:
+                    nil))))))))
+
+;;might relax this
+(defthm pseudo-term-listp-of-mv-nth-1-of-assumptions-for-memory-chunk
+  (implies (and (pseudo-termp state-var)
+                (pseudo-termp base-var))
+           (pseudo-term-listp (mv-nth 1 (assumptions-for-memory-chunk addr bytes relp state-var base-var stack-slots-needed))))
+  :hints (("Goal" :in-theory (enable assumptions-for-memory-chunk))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp assumptions)
 (defund assumptions-for-elf64-segment (program-header-table-entry relp state-var base-var stack-slots-needed bytes bytes-len)
@@ -70,49 +132,8 @@
              ;; Zero bytes at the end of the segment may not be stored in the file:
              (bytes (if (posp numzeros)
                         (append bytes (acl2::repeat numzeros 0)) ; optimize?
-                      bytes))
-             (numbytes (len bytes)))
-          (if relp
-              ;; Relative addresses make everything relative to the base-var:
-              (let* ((segment-first-addr-term (symbolic-add-constant vaddr base-var)) ; todo: use bvplus?
-                     (segment-last-addr-term (symbolic-add-constant (+ 1 ; todo: why is this needed?  I have code that ends in RET and checks whether the address after the RET is canonical.  however, making this change elsewhere broke other proofs.
-                                                                       (+ -1 vaddr numbytes)) base-var)) ; todo: use bvplus
-                     )
-                (mv nil
-                    `((canonical-address-p ,segment-first-addr-term) ; first address of segment
-                      (canonical-address-p ,segment-last-addr-term) ; last address of segment (todo: check for too large segment here, which might make this a contradiction)
-                      ;; We assume the segment data is loaded into memory:
-                      ;; TODO: "program-at" is not a great name since the bytes may not represent a program:
-                      (program-at ,segment-first-addr-term ; todo: use something better that includes the length, for speed
-                                  ',bytes
-                                  ,state-var)
-                      ;; The program is disjoint from the part of the stack that is written:
-                      ,@(if (posp stack-slots-needed)
-                            ;; todo: make a better version of separate that doesn't require the Ns to be positive (and that doesn't have the useless rwx params):
-                            `((separate ':r ',(len bytes) ,segment-first-addr-term
-                                        ':r ',(* 8 stack-slots-needed) (binary-+ ',(* '-8 stack-slots-needed) (rsp ,state-var))))
-                          ;; Can't call separate here because (* 8 stack-slots-needed) = 0:
-                          nil))))
-            ;; Absolute addresses are just numbers:
-            (let ((segment-first-addr vaddr)
-                  (segment-last-addr (+ -1 vaddr numbytes)) ; todo: use bvplus?
-                  )
-              (if (not (and (canonical-address-p segment-first-addr)
-                            (canonical-address-p segment-last-addr)))
-                  (mv :bad-address nil)
-                (mv nil
-                    `(;; In the absolute case, the start and end addresses are just numbers, so we don't need canonical claims for them:
-                      ;; We assume the segment data is loaded into memory:
-                      (program-at ',segment-first-addr ; todo: use something better that includes the length, for speed
-                                  ',bytes
-                                  ,state-var)
-                      ;; The program is disjoint from the part of the stack that is written:
-                      ,@(if (posp stack-slots-needed)
-                            ;; todo: make a better version of separate that doesn't require the Ns to be positive (and that doesn't have the useless rwx params):
-                            `((separate ':r ',(len bytes) ',segment-first-addr
-                                        ':r ',(* 8 stack-slots-needed) (binary-+ ',(* '-8 stack-slots-needed) (rsp ,state-var))))
-                          ;; Can't call separate here because (* 8 stack-slots-needed) = 0:
-                          nil)))))))))))
+                      bytes)))
+          (assumptions-for-memory-chunk vaddr bytes relp state-var base-var stack-slots-needed))))))
 
 (defthm pseudo-term-listp-of-mv-nth-1-of-assumptions-for-elf64-segment
   (implies (and (symbolp state-var)
@@ -121,6 +142,7 @@
   :hints (("Goal" :in-theory (enable assumptions-for-elf64-segment))))
 
 ;; Returns (mv erp assumptions).
+;; TODO: Check for contradiction due to overlap of segments (after perhaps adding zeros at the end)
 (defund assumptions-for-elf64-segments (program-header-table relp state-var base-var stack-slots-needed bytes bytes-len acc)
   (declare (xargs :guard (and (acl2::elf-program-header-tablep program-header-table)
                               (booleanp relp)
@@ -162,7 +184,7 @@
 ;; absolute.  Returns (mv erp assumptions) where assumptions is a list of terms.
 ;; Do not inclue assumptions about the inputs.  TODO: Should it?
 (defun assumptions-elf64-new (target
-                              relp
+                              relp ; rename position-independentp?
                               stack-slots-needed
                               state-var
                               inputs
@@ -184,6 +206,7 @@
                  (if (member-eq file-type '(:rel :dyn)) t nil) ; :exec means absolute
                ;; use the explicitly given relp:
                relp))
+       ;; Decide where to start lifting:
        (target-address (if (eq :entry-point target)
                            (acl2::parsed-elf-entry-point parsed-elf)
                          (if (natp target)
@@ -215,7 +238,7 @@
               `(;(integerp ,base-var)
                 (canonical-address-p$inline ,base-var))
             nil)
-          `((equal (64-bit-modep ,state-var) t)
+          `((equal (64-bit-modep ,state-var) t) ; can we call make-standard-state-assumptions-64-fn?
             ;; Alignment checking is turned off:
             (not (alignment-checking-enabled-p ,state-var))
 
