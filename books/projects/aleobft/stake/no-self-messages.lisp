@@ -38,7 +38,10 @@
      thus in particular the validator does not send the message to itself.
      Either way, messages are never self-addressed:
      the destination always differ from the sender,
-     i.e. the certificate's author."))
+     i.e. the certificate's author.")
+   (xdoc::p
+    "This invariant is not needed to prove non-forking of blockchains.
+     But it is useful as a validation of the model."))
   :order-subtopics t
   :default-parent t)
 
