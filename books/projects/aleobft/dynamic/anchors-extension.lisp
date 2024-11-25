@@ -35,7 +35,7 @@
      that if an anchor has at least @($f+1$) successors,
      there are paths to it from all the certificates
      at least two rounds ahead in the same or different DAG.
-     Under this condition, which is expressed by @(tsee dag-closedp),
+     Under this condition, which is expressed by @(tsee dag-omni-paths-p),
      given two anchors @('anchor') and @('anchor1'),
      the latter at a later round than the former,
      all the anchors collected starting from @('anchor1')

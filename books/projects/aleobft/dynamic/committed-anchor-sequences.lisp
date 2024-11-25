@@ -68,19 +68,19 @@
 
   (defruled committed-anchors-when-last-is-0
     (implies (equal (validator-state->last vstate) 0)
-             (equal (committed-anchors vstate vals)
+             (equal (committed-anchors vstate all-vals)
                     nil)))
 
   (defrule consp-of-committed-anchors-when-last-not-0
     (implies (not (equal (validator-state->last vstate) 0))
-             (consp (committed-anchors vstate vals)))
+             (consp (committed-anchors vstate all-vals)))
     :rule-classes :type-prescription)
 
   (defruled car-of-committed-anchors
     (implies (and (not (equal (validator-state->last vstate) 0))
-                  (last-anchor vstate vals))
-             (equal (car (committed-anchors vstate vals))
-                    (last-anchor vstate vals)))
+                  (last-anchor vstate all-vals))
+             (equal (car (committed-anchors vstate all-vals))
+                    (last-anchor vstate all-vals)))
     :enable car-of-collect-all-anchors)
 
   (defret certificates-dag-paths-p-of-committed-anchors
@@ -139,7 +139,7 @@
      (for the target validator),
      by extending them with a suitable call of @(tsee collect-anchors).
      The proof takes a little work.
-     We consider the case of the target validator
+     We distinguish the case of the target validator
      from the case of another validator (which is easy),
      and within the first case we consider two sub-cases
      based on whether the last committed round was 0 or not.
@@ -340,7 +340,6 @@
   (defruled committed-anchors-of-commit-anchors-next-last-not-0
     (implies (and (ordered-even-p systate)
                   (last-blockchain-round-p systate)
-                  (accepted-certificate-committee-p systate)
                   (unequivocal-accepted-certificates-p systate)
                   (omni-paths-p systate)
                   (last-anchor-present-p systate)
@@ -427,7 +426,6 @@
   (defruled committed-anchors-of-commit-anchors-next-last-0
     (implies (and (ordered-even-p systate)
                   (last-blockchain-round-p systate)
-                  (accepted-certificate-committee-p systate)
                   (unequivocal-accepted-certificates-p systate)
                   (omni-paths-p systate)
                   (last-anchor-present-p systate)
@@ -484,7 +482,6 @@
   (defruled committed-anchors-of-commit-anchors-next-other-val
     (implies (and (ordered-even-p systate)
                   (last-blockchain-round-p systate)
-                  (accepted-certificate-committee-p systate)
                   (unequivocal-accepted-certificates-p systate)
                   (omni-paths-p systate)
                   (last-anchor-present-p systate)
@@ -509,7 +506,6 @@
   (defruled committed-anchors-of-commit-anchors-next
     (implies (and (ordered-even-p systate)
                   (last-blockchain-round-p systate)
-                  (accepted-certificate-committee-p systate)
                   (unequivocal-accepted-certificates-p systate)
                   (omni-paths-p systate)
                   (last-anchor-present-p systate)
@@ -552,7 +548,6 @@
     ((defruled lemma
        (implies (and (ordered-even-p systate)
                      (last-blockchain-round-p systate)
-                     (accepted-certificate-committee-p systate)
                      (unequivocal-accepted-certificates-p systate)
                      (omni-paths-p systate)
                      (last-anchor-present-p systate)
@@ -641,7 +636,6 @@
      and thus of the anchor sequence."))
   (implies (and (ordered-even-p systate)
                 (last-blockchain-round-p systate)
-                (accepted-certificate-committee-p systate)
                 (unequivocal-accepted-certificates-p systate)
                 (omni-paths-p systate)
                 (last-anchor-present-p systate)
@@ -670,7 +664,6 @@
   ((defruled lemma
      (implies (and (ordered-even-p systate)
                    (last-blockchain-round-p systate)
-                   (accepted-certificate-committee-p systate)
                    (unequivocal-accepted-certificates-p systate)
                    (omni-paths-p systate)
                    (last-anchor-present-p systate)
