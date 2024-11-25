@@ -122,7 +122,7 @@
              nonforking-blockchains-p-necc
              validator-state->blockchain-of-store-certificate-next))
 
-  ;; advance-certificate
+  ;; advance-round:
 
   (defruled nonforking-blockchains-p-of-advance-round-next
     (implies (and (nonforking-blockchains-p systate)
@@ -199,14 +199,14 @@
                      (val val2)
                      (systate (commit-anchors-next val systate)))
           (:instance lists-noforkp-of-calculate-blockchain-when-anchors
-                     (anchors1 (COMMITTED-ANCHORS
-                                (GET-VALIDATOR-STATE
-                                 VAL1 (COMMIT-ANCHORS-NEXT VAL SYSTATE))
-                                (ALL-ADDRESSES SYSTATE)))
-                     (anchors2 (COMMITTED-ANCHORS
-                                (GET-VALIDATOR-STATE
-                                 VAL2 (COMMIT-ANCHORS-NEXT VAL SYSTATE))
-                                (ALL-ADDRESSES SYSTATE)))
+                     (anchors1 (committed-anchors
+                                (get-validator-state
+                                 val1 (commit-anchors-next val systate))
+                                (all-addresses systate)))
+                     (anchors2 (committed-anchors
+                                (get-validator-state
+                                 val2 (commit-anchors-next val systate))
+                                (all-addresses systate)))
                      (dag1 (validator-state->dag
                             (get-validator-state val1 systate)))
                      (dag2 (validator-state->dag
