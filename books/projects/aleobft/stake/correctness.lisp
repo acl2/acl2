@@ -50,6 +50,7 @@
 (include-book "nonforking-blockchains")
 (include-book "same-committees")
 (include-book "last-anchor-voters")
+(include-book "omni-paths")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -100,4 +101,5 @@
                     unequivocal-dags
                     nonforking-blockchains
                     same-committees
-                    last-anchor-voters))
+                    last-anchor-voters
+                    omni-paths))
