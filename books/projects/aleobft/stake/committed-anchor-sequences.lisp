@@ -63,6 +63,7 @@
   (("Goal" :in-theory (enable last-anchor-in-dag
                               active-committee-at-round-when-last-anchor
                               certificate->round-of-last-anchor)))
+  :hooks (:fix)
 
   ///
 
