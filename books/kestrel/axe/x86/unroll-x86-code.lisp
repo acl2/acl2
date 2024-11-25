@@ -525,6 +525,7 @@
             assumption-rules ; drop? todo: includes rules that were not used, but we return these as an RV named assumption-rules-used
             state)
         (if (and (eq :elf-64 executable-type)
+                 ;; todo: remove this, but we have odd, unlinked ELFs that put both the text and data segments at address 0 !
                  (acl2::parsed-elf-program-header-table parsed-executable) ; there are segments present (todo: improve the "new" behavior to use sections when there are no segments)
                  )
             ;; New assumption generation behavior, only for ELF64 (for now):

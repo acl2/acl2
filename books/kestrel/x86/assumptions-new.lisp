@@ -32,6 +32,14 @@
              (acl2::all-unsigned-byte-p 8 x))
     :hints (("Goal" :in-theory (enable acl2::byte-listp acl2::all-unsigned-byte-p)))))
 
+(local
+  (defthm byte-listp-of-repeat ;move
+    (equal (acl2::byte-listp (acl2::repeat n x))
+           (if (posp n)
+               (acl2::bytep x)
+             t))
+    :hints (("Goal" :in-theory (enable acl2::byte-listp acl2::repeat)))))
+
 ;; Result is untranslated
 (defun symbolic-add-constant (constant term)
   (declare (xargs :guard (integerp constant)))
@@ -42,7 +50,7 @@
 ;; Returns (mv erp assumptions).
 (defund assumptions-for-memory-chunk (addr bytes relp state-var base-var stack-slots-needed)
   (declare (xargs :guard (and (natp addr)
-                              (byte-listp bytes)
+                              (acl2::byte-listp bytes)
                               (booleanp relp)
                               (symbolp state-var)
                               (symbolp base-var)
@@ -97,6 +105,11 @@
            (pseudo-term-listp (mv-nth 1 (assumptions-for-memory-chunk addr bytes relp state-var base-var stack-slots-needed))))
   :hints (("Goal" :in-theory (enable assumptions-for-memory-chunk))))
 
+(defthm true-listp-of-mv-nth-1-of-assumptions-for-memory-chunk
+  (true-listp (mv-nth 1 (assumptions-for-memory-chunk addr bytes relp state-var base-var stack-slots-needed)))
+  :rule-classes :type-prescription
+  :hints (("Goal" :in-theory (enable assumptions-for-memory-chunk))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp assumptions)
@@ -106,7 +119,7 @@
                               (symbolp state-var)
                               (symbolp base-var)
                               (natp stack-slots-needed)
-                              (byte-listp bytes)
+                              (acl2::byte-listp bytes)
                               (equal bytes-len (len bytes)))
                   :guard-hints (("Goal" :in-theory (enable acl2::elf-program-header-tablep)))))
   (b* ((type (lookup-eq :type program-header-table-entry))
@@ -149,7 +162,7 @@
                               (symbolp state-var)
                               (symbolp base-var)
                               (natp stack-slots-needed)
-                              (byte-listp bytes)
+                              (acl2::byte-listp bytes)
                               (equal bytes-len (len bytes))
                               (pseudo-term-listp acc))
                   :guard-hints (("Goal" :in-theory (enable acl2::elf-program-header-tablep
@@ -170,11 +183,56 @@
                 (symbolp state-var)
                 (symbolp base-var)
                 (natp stack-slots-needed)
-                (byte-listp bytes)
+                (acl2::byte-listp bytes)
                 (equal bytes-len (len bytes))
                 (pseudo-term-listp acc))
            (pseudo-term-listp (mv-nth 1 (assumptions-for-elf64-segments program-header-table relp state-var base-var stack-slots-needed bytes bytes-len acc))))
   :hints (("Goal" :in-theory (enable assumptions-for-elf64-segments))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(local (include-book "kestrel/lists-light/reverse" :dir :system))
+
+(local (in-theory (disable x86isa::byte-listp-becomes-all-unsigned-byte-p ; todo
+                           acl2::get-elf-section-address ; todo
+                           )))
+
+;; Returns (mv erp ASSUMPTIONS), where ASSUMPTIONS is a list of terms over the variables STATE-VAR and (perhaps BASE-VAR).
+(defund assumptions-for-elf64-sections-new (section-names position-independentp stack-slots-needed state-var base-var parsed-elf acc)
+  (declare (xargs :guard (and (string-listp section-names)
+                              (booleanp position-independentp)
+                              (natp stack-slots-needed)
+                              (symbolp state-var)
+                              (symbolp base-var)
+                              (parsed-elfp parsed-elf)
+                              (true-listp acc))))
+  (if (endp section-names)
+      (mv nil (reverse acc))
+    (let* ((section-name (first section-names)))
+      (if (acl2::elf-section-presentp section-name parsed-elf)
+          (b* ((- (cw "(~s0 section detected.)~%" section-name))
+               (addr (acl2::get-elf-section-address section-name parsed-elf))
+               ((when (not (natp addr)))
+                (mv (cons :bad-addr addr) nil))
+               (bytes (acl2::get-elf-section-bytes section-name parsed-elf))
+               ((when (not bytes)) ; the call to separate would be ill-guarded if there are no bytes?
+                (cw "(NOTE: section ~s0 is empty.)~%" section-name)
+                (assumptions-for-elf64-sections-new (rest section-names) position-independentp stack-slots-needed state-var base-var parsed-elf acc))
+               ((mv erp assumptions)
+                (assumptions-for-memory-chunk addr
+                                              bytes
+                                              position-independentp
+                                              state-var base-var stack-slots-needed))
+               ((when erp) (mv erp nil)))
+            (assumptions-for-elf64-sections-new (rest section-names) position-independentp stack-slots-needed state-var base-var parsed-elf
+                                                ;; will be reversed again, as part of the ACC, when this function finishes:
+                                                (append (reverse assumptions) acc)))
+        (assumptions-for-elf64-sections-new (rest section-names) position-independentp stack-slots-needed state-var base-var parsed-elf acc)))))
+
+(defthm true-listp-of-mv-nth-1-of-assumptions-for-elf64-sections-new
+  (implies (true-listp acc)
+           (true-listp (mv-nth 1 (assumptions-for-elf64-sections-new section-names position-independentp stack-slots-needed state-var base-var parsed-elf acc))))
+  :hints (("Goal" :in-theory (enable assumptions-for-elf64-sections-new))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -219,13 +277,17 @@
                               (acl2::enquote target-address)))
        (bytes (acl2::parsed-elf-bytes parsed-elf))
        (program-header-table (acl2::parsed-elf-program-header-table parsed-elf))
-       ((when (null program-header-table)) ; todo: check that there is at least one LOAD section
-        (mv :empty-program-header-table nil))
-       ((mv erp segment-assumptions)
-        (assumptions-for-elf64-segments program-header-table relp state-var base-var stack-slots-needed bytes (len bytes) nil))
+       ;; Generate assumptions for the segments/sections:
+       ((mv erp segment-or-section-assumptions)
+        (if (null program-header-table)
+            ;; There are no segments, so we have to use the sections (TODO: WHICH ONES?):
+            (assumptions-for-elf64-sections-new '(".text" ".data" ".rodata") ; todo: .bss, etc
+                                                relp stack-slots-needed state-var base-var parsed-elf nil)
+          ;;todo: check that there is at least one LOAD section:
+          (assumptions-for-elf64-segments program-header-table relp state-var base-var stack-slots-needed bytes (len bytes) nil)))
        ((when erp) (mv erp nil))
        ;; currently, we only assume the inputs are disjoint from the text section (an input might very well be in a data section!):
-       (code-address (acl2::get-elf-code-address parsed-elf))
+       (code-address (acl2::get-elf-code-address parsed-elf)) ; todo: what if there are segments but no sections?!
        ((when (not (natp code-address))) ; impossible
         (mv :bad-code-addres nil))
        (text-offset (if relp
@@ -268,7 +330,7 @@
                 (x86isa::canonical-address-p (binary-+ ',(* -8 stack-slots-needed) (rsp ,state-var))) ; todo: drop if same as above
                 )
             nil)
-          segment-assumptions
+          segment-or-section-assumptions
           (if (equal inputs :skip)
               nil
             (assumptions-for-inputs inputs
