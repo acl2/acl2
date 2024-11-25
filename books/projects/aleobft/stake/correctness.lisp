@@ -53,6 +53,7 @@
 (include-book "omni-paths")
 (include-book "nonforking-anchors")
 (include-book "committed-redundant")
+(include-book "blockchain-redundant")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -106,4 +107,5 @@
                     last-anchor-voters
                     omni-paths
                     nonforking-anchors
-                    committed-redundant))
+                    committed-redundant
+                    blockchain-redundant))
