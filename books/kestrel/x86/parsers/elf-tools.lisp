@@ -24,11 +24,22 @@
                   :guard-hints (("Goal" :in-theory (enable parsed-elfp)))))
   (if (assoc-equal section-name (lookup-eq :sections parsed-elf)) t nil))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defund get-elf-section-bytes (section-name parsed-elf)
   (declare (xargs :guard (and (stringp section-name)
                               (parsed-elfp parsed-elf))
                   :guard-hints (("Goal" :in-theory (enable parsed-elfp)))))
-  (lookup-equal-safe section-name (lookup-eq-safe :sections parsed-elf)))
+  (let ((res (lookup-equal-safe section-name (lookup-eq-safe :sections parsed-elf))))
+    (if (not (byte-listp res))
+        (er hard? 'get-elf-section-bytes "Non-bytes found.") ; todo: prove that this doesn't happen.  maybe redo the sections to not have their bytes stored?
+      res)))
+
+(defthm byte-listp-of-get-elf-section-bytes
+  (implies (parsed-elfp parsed-elf)
+           (byte-listp (get-elf-section-bytes section-name parsed-elf)))
+  :hints (("Goal" :in-theory (enable get-elf-section-bytes parsed-elfp))))
+
 
 ;; Get the code from the .text section:
 (defun get-elf-code (parsed-elf)
