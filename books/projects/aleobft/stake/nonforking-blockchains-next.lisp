@@ -32,8 +32,8 @@
      the preservation of blockchain non-forking is proved
      separately from its definition and establishment proof,
      as done for certificate non-equivocation
-     (see @(see unequivocal-accepted-certificates-def-and-init)
-     and @(see unequivocal-accepted-certificates-next)),
+     (see @(see unequivocal-dags-def-and-init)
+     and @(see unequivocal-dags-next)),
      due to the need for simultaneous induction.
      Although it would be possible to prove the non-forking of blockchains
      from other invariants, particularly the non-forking of anchors,

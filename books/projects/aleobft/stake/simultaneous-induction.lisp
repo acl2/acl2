@@ -26,7 +26,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "As discussed in @(see unequivocal-accepted-certificates-def-and-init)
+    "As discussed in @(see unequivocal-dags-def-and-init)
      and in @(see nonforking-blockchains-def-and-init),
      these key invariants are proved by simultaneous induction.
      There are many other invariants involved,
