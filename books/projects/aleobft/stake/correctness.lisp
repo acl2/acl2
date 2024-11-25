@@ -46,6 +46,7 @@
 (include-book "blockchain-redundant-def-and-init-and-next")
 (include-book "nonforking-blockchains-next")
 (include-book "simultaneous-induction")
+(include-book "unequivocal-dags")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -92,4 +93,5 @@
                     committed-redundant-def-and-init-and-next
                     blockchain-redundant-def-and-init-and-next
                     nonforking-blockchains-next
-                    simultaneous-induction))
+                    simultaneous-induction
+                    unequivocal-dags))
