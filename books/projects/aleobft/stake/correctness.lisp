@@ -51,6 +51,7 @@
 (include-book "same-committees")
 (include-book "last-anchor-voters")
 (include-book "omni-paths")
+(include-book "nonforking-anchors")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -102,4 +103,5 @@
                     nonforking-blockchains
                     same-committees
                     last-anchor-voters
-                    omni-paths))
+                    omni-paths
+                    nonforking-anchors))
