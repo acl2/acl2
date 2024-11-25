@@ -533,7 +533,7 @@
                   (if suppress-assumptions
                       (mv nil nil) ; todo: this also suppresses input assumptions - should it?  the user can just not give inputs..
                     (assumptions-elf64-new target
-                                           :auto ; todo: pass in relp
+                                           (if (eq :auto position-independent) :auto position-independent) ; todo: clean up the handling of this
                                            stack-slots
                                            'x86
                                            inputs
@@ -800,6 +800,9 @@
        ;; ((when (not (subsetp-eq result-vars '(x86 text-offset))))
        ;;  (mv t (er hard 'lifter "Unexpected vars, ~x0, in result DAG!" (set-difference-eq result-vars '(x86 text-offset))) state))
        ;; TODO: Maybe move some of this to the -core function:
+       ;; (state (if (not (eql 10 print-base)) ; make-event always sets the print-base to 10
+       ;;            (set-print-base-radix print-base state)
+       ;;          state)) ; todo: do this better
        ((when (intersection-eq result-dag-fns '(run-until-stack-shorter-than run-until-return)))
         (if (< result-dag-size 100000) ; todo: make customizable
             (progn$ (cw "(Term:~%")
