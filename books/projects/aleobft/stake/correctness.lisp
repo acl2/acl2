@@ -48,6 +48,8 @@
 (include-book "simultaneous-induction")
 (include-book "unequivocal-dags")
 (include-book "nonforking-blockchains")
+(include-book "same-committees")
+(include-book "last-anchor-voters")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -96,4 +98,6 @@
                     nonforking-blockchains-next
                     simultaneous-induction
                     unequivocal-dags
-                    nonforking-blockchains))
+                    nonforking-blockchains
+                    same-committees
+                    last-anchor-voters))
