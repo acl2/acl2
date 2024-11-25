@@ -280,7 +280,7 @@
              set::intersect
              fix))
 
-  (defruled committee-members-stake-of-intersection-expand
+  (defruled committee-members-stake-of-intersect-expand
     (implies (and (address-setp members1)
                   (address-setp members2))
              (equal (committee-members-stake (set::intersect members1
@@ -296,7 +296,7 @@
 
   (theory-invariant
    (incompatible (:rewrite committee-members-stake-of-union-expand)
-                 (:rewrite committee-members-stake-of-intersection-expand))))
+                 (:rewrite committee-members-stake-of-intersect-expand))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

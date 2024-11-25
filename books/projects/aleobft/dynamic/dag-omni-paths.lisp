@@ -61,7 +61,7 @@
      every certificate @($C$) in DAG 2 at round @($r+2$) or later
      has a path to @($A$), which must be also in DAG 2.
      The reason is that there must be a certificate @($B$)
-     that is both in the @($d+1$) or more voters in DAG 1
+     that is both in the @($f+1$) or more voters in DAG 1
      and in the @($n-f$) certificates in DAG 2.
      In DAG 1, it has an edge to @($A$).
      Because of the backward closure of DAG 2,
@@ -102,7 +102,7 @@
      yields exactly @('cert').")
    (xdoc::p
     "The certificate @('cert') passed as input
-     is the certificate @($A$) in the discussion in @(see omni-paths).")
+     is the certificate @($A$) in the discussion in @(see dag-omni-paths).")
    (xdoc::p
     "We prove that if the DAG has
      at least one certificate at least two rounds after the given one,
@@ -156,7 +156,7 @@
     "The reason why we define this predicate is that
      we will prove @(tsee dag-omni-paths-p) by induction on rounds,
      starting from two rounds just after the certificate.
-     With reference to the discussion in @(see omni-paths),
+     With reference to the discussion in @(see dag-omni-paths),
      @('cert') is @($A$),
      and the base case of the induction is for
      the generic certificate @($C$) two rounds after @($A$),

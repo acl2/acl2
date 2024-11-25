@@ -35,6 +35,25 @@
 (include-book "last-anchor-def-and-init")
 (include-book "last-anchor-present")
 (include-book "last-anchor-next")
+(include-book "last-anchor-voters-def-and-init-and-next")
+(include-book "successor-predecessor-intersection")
+(include-book "dag-omni-paths")
+(include-book "omni-paths-def-and-implied")
+(include-book "anchors-extension")
+(include-book "committed-anchor-sequences")
+(include-book "nonforking-anchors-def-and-init-and-next")
+(include-book "committed-redundant-def-and-init-and-next")
+(include-book "blockchain-redundant-def-and-init-and-next")
+(include-book "nonforking-blockchains-next")
+(include-book "simultaneous-induction")
+(include-book "unequivocal-dags")
+(include-book "nonforking-blockchains")
+(include-book "same-committees")
+(include-book "last-anchor-voters")
+(include-book "omni-paths")
+(include-book "nonforking-anchors")
+(include-book "committed-redundant")
+(include-book "blockchain-redundant")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -70,4 +89,23 @@
                     dag-certificate-next
                     last-anchor-def-and-init
                     last-anchor-present
-                    last-anchor-next))
+                    last-anchor-next
+                    last-anchor-voters-def-and-init-and-next
+                    successor-predecessor-intersection
+                    dag-omni-paths
+                    omni-paths-def-and-implied
+                    anchors-extension
+                    committed-anchor-sequences
+                    nonforking-anchors-def-and-init-and-next
+                    committed-redundant-def-and-init-and-next
+                    blockchain-redundant-def-and-init-and-next
+                    nonforking-blockchains-next
+                    simultaneous-induction
+                    unequivocal-dags
+                    nonforking-blockchains
+                    same-committees
+                    last-anchor-voters
+                    omni-paths
+                    nonforking-anchors
+                    committed-redundant
+                    blockchain-redundant))

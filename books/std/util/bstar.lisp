@@ -28,6 +28,7 @@
 ;
 ; Original author: Sol Swords <sswords@centtech.com>
 ; Contributing author: Alessandro Coglio <coglio@kestrel.edu>
+; Contributing author: Grant Jurgensen <grant@kestrel.edu>
 
 (in-package "ACL2")
 (include-book "xdoc/base" :dir :system)
@@ -1654,6 +1655,59 @@ see @(see flet) for more discussion.</p>"
            (er hard? 'b* "Invalid formals for b* FUN binder of ~x0: ~x1~%" fn args))
           (t
            `(flet ((,fn ,args (progn$ . ,forms)))
+              ,@decls
+              ,rest-expr)))))
+
+(def-b*-binder macro
+  :short "@(see b*) binder to produce @(see macrolet) forms."
+  :long "<p>Example:</p>
+
+@({
+    (b* (((macro (add a b)) `(+ ,a ,b)))
+      (add x y))
+})
+
+<p>More generally,</p>
+
+@({
+    (b* (((macro (name arg1 ... argn)) body-form))
+      result-form)
+})
+
+<p>expands to</p>
+
+@({
+    (macrolet ((name (arg1 ... argn) body-form))
+      result-form)
+})
+
+<p>You can also provide an @('inline') or @('notinline') suggestion, e.g.,:</p>
+
+@({
+    (b* (((macro inline (add a b)) `(+ ,a ,b)))
+      (add 3 4))
+
+    (b* (((macro notinline (add a b)) `(+ ,a ,b)))
+      (add 3 4))
+})
+
+<p>Either of these results in a suitable @(see declare) form for the macro,
+although these are unlikely to have any effect (see @(see macrolet)).</p>"
+  :body
+  (mv-let (okp fn args decls)
+    ;; Arguments have the same form as in patbind-fun
+    (match-b*-fun-args args)
+    (cond ((not okp)
+           (er hard? 'b* "Invalid b* binder MACRO binder (see :doc patbind-macro): ~x0~%" args))
+          ((or (not (symbolp fn))
+               (keywordp fn)
+               (eq fn t)
+               (eq fn nil))
+           (er hard? 'b* "Invalid macro name ~x0 in b* MACRO binder: ~x1~%" fn args))
+          ((not (symbol-listp args))
+           (er hard? 'b* "Invalid formals for b* MACRO binder of ~x0: ~x1~%" fn args))
+          (t
+           `(macrolet ((,fn ,args (progn$ . ,forms)))
               ,@decls
               ,rest-expr)))))
 

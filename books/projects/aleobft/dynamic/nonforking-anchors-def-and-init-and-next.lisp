@@ -459,7 +459,6 @@
                   (last-anchor-present-p systate)
                   (backward-closed-p systate)
                   (same-committees-p systate)
-                  (omni-paths-p systate)
                   (commit-anchors-possiblep val systate)
                   (set::in val0 (correct-addresses systate))
                   (not (equal val0 val))

@@ -33,7 +33,10 @@
      which are never self-addresses as proved in that invariant.
      Thus, any message in the buffer or a validator
      is not self-authored, i.e. it is authored by another validator.
-     Initially all buffers are empty, so this invariant holds initially."))
+     Initially all buffers are empty, so this invariant holds initially.")
+   (xdoc::p
+    "This invariant is not needed to prove non-forking of blockchains.
+     But it is useful as a validation of the model."))
   :order-subtopics t
   :default-parent t)
 

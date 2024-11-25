@@ -456,6 +456,16 @@
     :enable (certificate-set->author-set
              certificate-set->author-set-of-insert))
 
+  (defruled certificate->author-of-head-of-certs-with-author
+    (implies (and (certificate-setp certs)
+                  (not (set::emptyp (certs-with-author author certs))))
+             (equal (certificate->author
+                     (set::head (certs-with-author author certs)))
+                    (address-fix author)))
+    :disable certs-with-author
+    :use (:instance in-of-certs-with-author
+                    (cert (set::head (certs-with-author author certs)))))
+
   (defruled in-certificate-set->author-set-to-nonempty-certs-with-author
     (implies (certificate-setp certs)
              (equal (set::in author (certificate-set->author-set certs))
@@ -507,7 +517,18 @@
                          nil))
              (not (cert-with-author+round author round certs)))
     :use cert-with-author+round-in-certs-with-author
-    :disable certs-with-author))
+    :disable certs-with-author)
+
+  (defruled head-of-certs-with-author-in-certs-when-author-in-authors
+    (implies (certificate-setp certs)
+             (implies (set::in author (certificate-set->author-set certs))
+                      (set::in (set::head (certs-with-author author certs))
+                               certs)))
+    :enable (emptyp-of-certs-with-author-to-no-author
+             set::expensive-rules)
+    :use (:instance set::in-head (x (certs-with-author author certs)))
+    :disable (set::in-head
+              certs-with-author)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -887,7 +908,26 @@
      the certificates returned by @(tsee certs-with-authors+round).
      Note that this returns certificates all in the same round,
      so they are in bijection with their authors,
-     given that the certificates are unequivocal."))
+     given that the certificates are unequivocal.")
+   (xdoc::p
+    "The theorem
+     @('certs-same-round-unequiv-intersect-when-authors-intersect')
+     says that if two sets of unequivocal certificates with the same round
+     have at least one common author,
+     then there is at least one common certificate to the two sets.
+     This is because, as proved in
+     @('equal-certificate-authors-when-unequiv-and-same-round'),
+     there is a bijection between unequivocal certificates with the same round
+     and their authors.
+     The theorem @('certs-same-round-unequiv-intersect-when-authors-intersect')
+     is proved as follows:
+     take an author in the intersection of authors (the head);
+     use @('head-of-certs-with-author-in-certs-when-author-in-authors')
+     twice to show that there is a certificate in both sets with that author;
+     use @('equal-certificate-authors-when-unequiv-and-same-round')
+     to show that they are the same certificate;
+     thus that same certificate is in both sets of certificates,
+     which therefore have a non-empty intersection."))
   (forall (cert1 cert2)
           (implies (and (set::in cert1 certs)
                         (set::in cert2 certs)
@@ -1040,7 +1080,48 @@
              certificate-set-unequivocalp-when-subset)
     :disable (set::subset-transitive
               certificate-set-unequivocalp
-              certificate-set-unequivocalp-necc)))
+              certificate-set-unequivocalp-necc))
+
+  (defruled certs-same-round-unequiv-intersect-when-authors-intersect
+    (implies (and (certificate-setp certs1)
+                  (certificate-setp certs2)
+                  (certificate-set-unequivocalp (set::union certs1 certs2))
+                  (<= (set::cardinality
+                       (certificate-set->round-set
+                        (set::union certs1 certs2)))
+                      1)
+                  (not (set::emptyp (set::intersect
+                                     (certificate-set->author-set certs1)
+                                     (certificate-set->author-set certs2)))))
+             (not (set::emptyp (set::intersect certs1 certs2))))
+    :enable (certificate->author-of-head-of-certs-with-author
+             emptyp-of-certs-with-author-to-no-author
+             set::not-emptyp-of-intersect-when-in-both
+             set::head-of-intersect-member-when-not-emptyp)
+    :use ((:instance head-of-certs-with-author-in-certs-when-author-in-authors
+                     (author (set::head (set::intersect
+                                         (certificate-set->author-set certs1)
+                                         (certificate-set->author-set certs2))))
+                     (certs certs1))
+          (:instance head-of-certs-with-author-in-certs-when-author-in-authors
+                     (author (set::head (set::intersect
+                                         (certificate-set->author-set certs1)
+                                         (certificate-set->author-set certs2))))
+                     (certs certs2))
+          (:instance equal-certificate-authors-when-unequiv-and-same-round
+                     (certs (set::union certs1 certs2))
+                     (cert1 (set::head
+                             (certs-with-author
+                              (set::head (set::intersect
+                                          (certificate-set->author-set certs1)
+                                          (certificate-set->author-set certs2)))
+                              certs1)))
+                     (cert2 (set::head
+                             (certs-with-author
+                              (set::head (set::intersect
+                                          (certificate-set->author-set certs1)
+                                          (certificate-set->author-set certs2)))
+                              certs2)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
