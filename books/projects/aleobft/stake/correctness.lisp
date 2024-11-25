@@ -41,6 +41,7 @@
 (include-book "omni-paths-def-and-implied")
 (include-book "anchors-extension")
 (include-book "committed-anchor-sequences")
+(include-book "nonforking-anchors-def-and-init-and-next")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -82,4 +83,5 @@
                     dag-omni-paths
                     omni-paths-def-and-implied
                     anchors-extension
-                    committed-anchor-sequences))
+                    committed-anchor-sequences
+                    nonforking-anchors-def-and-init-and-next))
