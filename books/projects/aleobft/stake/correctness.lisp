@@ -44,6 +44,7 @@
 (include-book "nonforking-anchors-def-and-init-and-next")
 (include-book "committed-redundant-def-and-init-and-next")
 (include-book "blockchain-redundant-def-and-init-and-next")
+(include-book "nonforking-blockchains-next")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -88,4 +89,5 @@
                     committed-anchor-sequences
                     nonforking-anchors-def-and-init-and-next
                     committed-redundant-def-and-init-and-next
-                    blockchain-redundant-def-and-init-and-next))
+                    blockchain-redundant-def-and-init-and-next
+                    nonforking-blockchains-next))
