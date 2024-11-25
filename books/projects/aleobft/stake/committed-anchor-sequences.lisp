@@ -158,7 +158,7 @@
 
   ;; create:
 
-  (defruled committed-anchors-of-create-next
+  (defrule committed-anchors-of-create-next
     (implies (and (system-committees-fault-tolerant-p systate)
                   (backward-closed-p systate)
                   (same-associated-certs-p systate)
@@ -201,7 +201,7 @@
 
   ;; receive certificate:
 
-  (defruled committed-anchors-of-receive-next
+  (defrule committed-anchors-of-receive-next
     (implies (and (set::in val (correct-addresses systate))
                   (receive-possiblep msg systate))
              (equal (committed-anchors
@@ -212,7 +212,7 @@
 
   ;; store:
 
-  (defruled committed-anchors-of-store-next
+  (defrule committed-anchors-of-store-next
     (implies (and (system-committees-fault-tolerant-p systate)
                   (backward-closed-p systate)
                   (same-associated-certs-p systate)
@@ -254,7 +254,7 @@
 
   ;; advance:
 
-  (defruled committed-anchors-of-advance-next
+  (defrule committed-anchors-of-advance-next
     (implies (and (set::in val (correct-addresses systate))
                   (advance-possiblep val1 systate))
              (equal (committed-anchors
@@ -446,7 +446,7 @@
 
   ;; timeout:
 
-  (defruled committed-anchors-of-timeout-next
+  (defrule committed-anchors-of-timeout-next
     (implies (and (set::in val (correct-addresses systate))
                   (timeout-possiblep val1 systate))
              (equal (committed-anchors
