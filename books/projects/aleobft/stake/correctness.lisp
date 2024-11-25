@@ -52,6 +52,7 @@
 (include-book "last-anchor-voters")
 (include-book "omni-paths")
 (include-book "nonforking-anchors")
+(include-book "committed-redundant")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -104,4 +105,5 @@
                     same-committees
                     last-anchor-voters
                     omni-paths
-                    nonforking-anchors))
+                    nonforking-anchors
+                    committed-redundant))
