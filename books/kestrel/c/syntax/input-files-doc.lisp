@@ -102,7 +102,7 @@
         which must be in the current path.")
       (xdoc::li
        "@(':auto'),
-        which implicitly names the preprocessed @('\"cpp\"')
+        which implicitly names the preprocessor @('\"cpp\"')
         (a common default),
         which must be in the current path."))
      (xdoc::p
