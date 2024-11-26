@@ -78,11 +78,10 @@
     ;; no assumptions if section not present:
     t))
 
-;; TODO: Can ELF sections be relocated?
 (defun elf64-section-loadedp (section-bytes
                               section-address
                               text-offset
-                              position-independentp ; whether to assume position independence, todo: is this ever true?
+                              position-independentp ; whether to assume position independence
                               stack-slots-needed
                               text-section-address
                               x86)
@@ -173,6 +172,7 @@
 ;; We make the register variables be usb64s, and we assert that the registers
 ;; contain their signed forms.  (Note that the registers are signed; see rule X86ISA::I64P-XR-RGF.)
 ;; Returns (mv replacement-assumptions type-assumptions).
+;; TODO: How do these interact with the input-assumptions?
 (defund make-register-replacement-assumptions64 (register-functions vars replacement-assumptions-acc type-assumptions-acc)
   (declare (xargs :guard (and (symbol-listp vars)
                               (symbol-listp register-functions))))
@@ -521,7 +521,7 @@
           (mv nil executable state)))
        ((when erp) (mv erp nil state))
        (executable-type (acl2::parsed-executable-type parsed-executable))
-       ;; Handle a :position-independent of :auto:
+       ;; Handle a :position-independent of :auto: ; todo: eventually drop this
        (position-independentp (if (eq :auto position-independent)
                                   (if (eq executable-type :mach-o-64)
                                       t ; since clang seems to produce position-independent code by default
@@ -718,9 +718,9 @@
        ;; We will test all functions whose names begin with test_ or fail_test_
        (function-name-strings (if (eq :all include-fns)
                                   (if (eq :elf-64 executable-type)
-                                      (let ((all-functions (acl2::get-all-elf-symbols parsed-executable)))
+                                      (let ((all-functions (acl2::parsed-elf-symbols parsed-executable)))
                                         (append (acl2::strings-starting-with "test_" all-functions)
-                                                (acl2::strings-starting-with "fail_test_" (acl2::get-all-elf-symbols parsed-executable))))
+                                                (acl2::strings-starting-with "fail_test_" all-functions)))
                                     (if (eq :mach-o-64 executable-type)
                                         (let ((all-functions (acl2::get-all-mach-o-symbols parsed-executable)))
                                           (append (acl2::strings-starting-with "_test_" all-functions)
