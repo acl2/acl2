@@ -16,7 +16,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro test-dimb (input &key gcc cond)
-  ;; INPUT is an ACL2 string with the text to parse.
+  ;; INPUT is an ACL2 string with the text to parse and disambiguate.
   ;; GCC flag says whether GCC extensions are enabled.
   ;; Optional COND may be over variable AST.
   `(assert-event

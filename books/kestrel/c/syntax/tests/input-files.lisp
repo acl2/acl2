@@ -216,7 +216,7 @@ int main(void) {
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (input-files :files ("simple.c")
-             :process :disamb
+             :process :disambiguate
              :const *disamb-simple*)
 
 (acl2::assert! (transunit-ensemblep *disamb-simple*))
@@ -224,7 +224,7 @@ int main(void) {
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (input-files :files ("simple.c")
-             :process :disamb
+             :process :disambiguate
              :const *disamb-simple-2*
              :const-files *files-simple-3*
              :const-parsed *parsed-simple-3*)
@@ -248,7 +248,7 @@ int main(void) {
              ;; We exclude stdint.c because it has occurrences of #define
              ;; (not at the left margin) even after preprocessing.
              :preprocess :auto
-             :process :disamb
+             :process :disambiguate
              :const *disamb-simple/stdbool*)
 
 (acl2::assert! (transunit-ensemblep *disamb-simple/stdbool*))
@@ -259,7 +259,7 @@ int main(void) {
              ;; We exclude stdint.c because it has occurrences of #define
              ;; (not at the left margin) even after preprocessing.
              :preprocess :auto
-             :process :disamb
+             :process :disambiguate
              :const *disamb-simple/stdbool-2*
              :const-files *files-simple/stdbool-3*
              :const-preproc *preproc-simple/stdbool-3*
