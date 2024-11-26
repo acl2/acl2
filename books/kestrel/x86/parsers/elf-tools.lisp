@@ -17,32 +17,58 @@
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 ;(include-book "kestrel/alists-light/lookup-equal-safe" :dir :system)
 
+;; todo: use the section-header-table?
 (defund elf-section-presentp (section-name parsed-elf)
   (declare (xargs :guard (and (stringp section-name)
                               (parsed-elfp parsed-elf))
                   :guard-hints (("Goal" :in-theory (enable parsed-elfp)))))
   (if (assoc-equal section-name (lookup-eq :sections parsed-elf)) t nil))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defund get-elf-section-bytes (section-name parsed-elf)
   (declare (xargs :guard (and (stringp section-name)
                               (parsed-elfp parsed-elf))
                   :guard-hints (("Goal" :in-theory (enable parsed-elfp)))))
-  (lookup-equal-safe section-name (lookup-eq-safe :sections parsed-elf)))
+  (let ((res (lookup-equal-safe section-name (lookup-eq-safe :sections parsed-elf))))
+    (if (not (byte-listp res))
+        (er hard? 'get-elf-section-bytes "Non-bytes found.") ; todo: prove that this doesn't happen.  maybe redo the sections to not have their bytes stored?
+      res)))
+
+(defthm byte-listp-of-get-elf-section-bytes
+  (implies (parsed-elfp parsed-elf)
+           (byte-listp (get-elf-section-bytes section-name parsed-elf)))
+  :hints (("Goal" :in-theory (enable get-elf-section-bytes parsed-elfp))))
+
 
 ;; Get the code from the .text section:
 (defun get-elf-code (parsed-elf)
   (declare (xargs :guard (parsed-elfp parsed-elf)))
   (get-elf-section-bytes ".text" parsed-elf))
 
+;; Returns the :addr field of the header with the give SECTION-NAME, or :none
 (defun get-elf-section-address (section-name parsed-elf)
+  (declare (xargs :guard (and (stringp section-name)
+                              (parsed-elfp parsed-elf))
+                  :guard-hints (("Goal" :in-theory (enable parsed-elfp)))))
+  (let ((header (get-elf-section-header section-name (lookup-eq-safe :section-header-table parsed-elf))))
+    (if (eq :none header)
+        :none
+      (lookup-eq-safe :addr header))))
+
+;; Returns the :addr field of the ".text" section, or :none.
+(defun get-elf-code-address (parsed-elf)
   (declare (xargs :guard (parsed-elfp parsed-elf)
                   :guard-hints (("Goal" :in-theory (enable parsed-elfp)))))
-  (lookup-eq-safe :addr (get-elf-section-header section-name (lookup-eq-safe :section-header-table parsed-elf))))
-
-(defun get-elf-code-address (parsed-elf)
-  (get-elf-section-address ".text" parsed-elf))
+  (let ((addr (get-elf-section-address ".text" parsed-elf)))
+    (if (eq :none addr)
+        (er hard? 'get-elf-code-address "No .text section.") ;; todo: instead, return :none
+      addr)))
 
 (defun get-elf-symbol-address (name symbol-table)
+  (declare (xargs :guard (and (stringp name)
+                              (elf-symbol-tablep symbol-table))
+                  :guard-hints (("Goal" :in-theory (enable elf-symbol-tablep)))))
   (if (endp symbol-table)
       (er hard? 'get-elf-symbol-address "Can't find ~s0 in symbol table." name)
     (let* ((entry (first symbol-table))
@@ -52,6 +78,9 @@
         (get-elf-symbol-address name (rest symbol-table))))))
 
 (defun get-names-from-elf-symbol-table (symbol-table acc)
+  (declare (xargs :guard (and (elf-symbol-tablep symbol-table)
+                              (true-listp acc))
+                  :guard-hints (("Goal" :in-theory (enable elf-symbol-tablep)))))
   (if (endp symbol-table)
       (reverse acc)
     (let* ((entry (first symbol-table))
@@ -63,18 +92,54 @@
 
 (defopeners get-elf-symbol-address)
 
-(defun get-elf-symbol-table (parsed-elf)
+(defund parsed-elf-symbol-table (parsed-elf)
+  (declare (xargs :guard (parsed-elfp parsed-elf)))
   (lookup-eq-safe :symbol-table parsed-elf))
 
 ;; Throws an error if not found
-(defun subroutine-address-elf (name parsed-elf)
-  (get-elf-symbol-address name (get-elf-symbol-table parsed-elf)))
+(defund subroutine-address-elf (name parsed-elf)
+  (declare (xargs :guard (and (stringp name)
+                              (parsed-elfp parsed-elf))
+                  :guard-hints (("Goal" :in-theory (enable parsed-elf-symbol-table
+                                                           parsed-elfp)))))
+  (get-elf-symbol-address name (parsed-elf-symbol-table parsed-elf)))
 
-(defun get-all-elf-symbols (parsed-elf)
-  (get-names-from-elf-symbol-table (get-elf-symbol-table parsed-elf) nil))
+(defun parsed-elf-symbols (parsed-elf)
+  (declare (xargs :guard (parsed-elfp parsed-elf)
+                  :guard-hints (("Goal" :in-theory (enable parsed-elfp parsed-elf-symbol-table)))))
+  (get-names-from-elf-symbol-table (parsed-elf-symbol-table parsed-elf) nil))
 
-(defun elf-cpu-type (parsed-elf)
-  (lookup-eq-safe :machine parsed-elf))
+;; :rel or :exec or :dyn, etc.
+(defun parsed-elf-type (parsed-elf)
+  (declare (xargs :guard (parsed-elfp parsed-elf)))
+  (lookup-eq :type parsed-elf))
+
+(defun parsed-elf-cpu-type (parsed-elf)
+  (declare (xargs :guard (parsed-elfp parsed-elf)))
+  (lookup-eq :machine parsed-elf))
+
+(defun parsed-elf-entry-point (parsed-elf)
+  (declare (xargs :guard (parsed-elfp parsed-elf)))
+  (lookup-eq :entry parsed-elf))
+
+;; all the bytes in the file, for looking up the bytes of the segments
+(defund parsed-elf-bytes (parsed-elf)
+  (declare (xargs :guard (parsed-elfp parsed-elf)))
+  (lookup-eq :bytes parsed-elf))
+
+(defthm byte-listp-of-parsed-elf-bytes
+  (implies (parsed-elfp parsed-elf)
+           (byte-listp (parsed-elf-bytes parsed-elf)))
+  :hints (("Goal" :in-theory (enable parsed-elf-bytes parsed-elfp))))
+
+(defund parsed-elf-program-header-table (parsed-elf)
+  (declare (xargs :guard (parsed-elfp parsed-elf)))
+  (lookup-eq :program-header-table parsed-elf))
+
+(defthm program-header-tablep-of-parsed-elf-program-header-table
+  (implies (parsed-elfp parsed-elf)
+           (elf-program-header-tablep (parsed-elf-program-header-table parsed-elf)))
+  :hints (("Goal" :in-theory (enable parsed-elf-program-header-table parsed-elfp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -25,6 +25,7 @@
 (include-book "kestrel/bv/unsigned-byte-p-forced" :dir :system)
 (include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system)
 (include-book "kestrel/typed-lists-light/all-natp" :dir :system)
+(include-book "kestrel/bv-lists/byte-listp-def" :dir :system)
 
 ;; TODO: Add more functions!  Add more bv functions.
 (defconst *axe-evaluator-basic-fns-and-aliases*
@@ -57,6 +58,7 @@
     bool-fix$inline
     true-listp ; unguarded
     true-list-listp
+    byte-listp ; unguarded
     (denominator denominator-unguarded) ; primitive
     (numerator numerator-unguarded) ; primitive
     (coerce coerce-unguarded) ; primitive
