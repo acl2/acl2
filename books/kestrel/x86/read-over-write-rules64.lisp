@@ -1054,6 +1054,16 @@
          (segment-base-and-bounds proc-mode seg-reg x86))
   :hints (("Goal" :in-theory (enable set-rax))))
 
+(defthm segment-base-and-bounds-of-set-rbx
+  (equal (segment-base-and-bounds proc-mode seg-reg (set-rbx rbx x86))
+         (segment-base-and-bounds proc-mode seg-reg x86))
+  :hints (("Goal" :in-theory (enable set-rbx))))
+
+(defthm segment-base-and-bounds-of-set-rcx
+  (equal (segment-base-and-bounds proc-mode seg-reg (set-rcx rcx x86))
+         (segment-base-and-bounds proc-mode seg-reg x86))
+  :hints (("Goal" :in-theory (enable set-rcx))))
+
 (defthm segment-base-and-bounds-of-set-rdx
   (equal (segment-base-and-bounds proc-mode seg-reg (set-rdx rdx x86))
          (segment-base-and-bounds proc-mode seg-reg x86))
