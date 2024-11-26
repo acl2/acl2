@@ -1915,7 +1915,7 @@
        the keyword @('__stdcall'),
        and the @('__declspec') attribute syntax.
        See our ABNF grammar for details."))
-    (:stocla ((spec stor-spec)))
+    (:stoclass ((spec stor-spec)))
     (:tyspec ((spec type-spec)))
     (:tyqual ((qual type-qual)))
     (:function ((spec fun-spec)))
