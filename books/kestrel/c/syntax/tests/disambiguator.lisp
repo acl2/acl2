@@ -16,7 +16,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmacro test-dimb (input &key gcc cond)
-  ;; INPUT is an ACL2 string with the text to parse.
+  ;; INPUT is an ACL2 string with the text to parse and disambiguate.
   ;; GCC flag says whether GCC extensions are enabled.
   ;; Optional COND may be over variable AST.
   `(assert-event
@@ -24,8 +24,7 @@
                                     (acl2::string=>nats ,input)
                                     ,gcc))
          (- (cw "~%Input:~%~x0~|" ast))
-         ((mv erp2 ast) (dimb-transunit ast ,gcc))
-         (- ))
+         ((mv erp2 ast) (dimb-transunit ast ,gcc)))
       (cond (erp1 (cw "~%PARSER ERROR: ~@0" erp1))
             (erp2 (cw "~%DISAMBIGUATOR ERROR: ~@0" erp2))
             (t (and ,(or cond t)

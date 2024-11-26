@@ -60,7 +60,7 @@
     (xdoc::codeblock
      "(input-files :files         ...  ; no default"
      "             :preprocess    ...  ; default nil"
-     "             :process       ...  ; default :disamb"
+     "             :process       ...  ; default :disambiguate"
      "             :const         ...  ; no default"
      "             :const-files   ...  ; default nil"
      "             :const-preproc ...  ; default nil"
@@ -102,7 +102,7 @@
         which must be in the current path.")
       (xdoc::li
        "@(':auto'),
-        which implicitly names the preprocessed @('\"cpp\"')
+        which implicitly names the preprocessor @('\"cpp\"')
         (a common default),
         which must be in the current path."))
      (xdoc::p
@@ -110,7 +110,7 @@
        is performed via the @(tsee preprocess-file) tool."))
 
     (xdoc::desc
-     "@(':process') &mdash; default @(':disamb')"
+     "@(':process') &mdash; default @(':disambiguate')"
      (xdoc::p
       "Specifies the processing to perform
        on the files specified by the @(':files') input
@@ -132,7 +132,7 @@
        (xdoc::seetopic "abstract-syntax" "abstract syntax")
        " representation, which may contain ambiguous constructs.")
       (xdoc::li
-       "@(':disamb') (the default),
+       "@(':disambiguate') (the default),
         to parse the files as with @(':parse'),
         and then to "
        (xdoc::seetopic "disambiguator" "disambiguate")
@@ -142,7 +142,7 @@
      (xdoc::p
       "These levels of processing are ordered as")
      (xdoc::codeblock
-      ":read < :parse < :disamb")
+      ":read < :parse < :disambiguate")
      (xdoc::p
       "where a larger level includes and extends
        the processing of smaller levels.
@@ -178,7 +178,7 @@
        Since the parser captures ambiguous constructs without resolving them,
        this representation may include ambiguous constructs.")
      (xdoc::p
-      "If @(':process') is @(':disamb'),
+      "If @(':process') is @(':disambiguate'),
        the value of the constant named by @(':const') is
        a translation unit ensemble
        (i.e. a value of type @(tsee transunit-ensemble)),

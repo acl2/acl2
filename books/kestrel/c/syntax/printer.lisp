@@ -2056,7 +2056,7 @@
     :short "Print a declaration specifier."
     (decl-spec-case
      declspec
-     :stocla (print-stor-spec declspec.spec pstate)
+     :stoclass (print-stor-spec declspec.spec pstate)
      :tyspec (print-type-spec declspec.spec pstate)
      :tyqual (print-type-qual declspec.qual pstate)
      :function (print-fun-spec declspec.spec pstate)
