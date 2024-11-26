@@ -2251,7 +2251,7 @@
      ;; ELF stuff:
      acl2::lookup-equal-safe
      acl2::subroutine-address-elf
-     acl2::get-elf-symbol-table
+     acl2::parsed-elf-symbol-table
      acl2::get-elf-section-address
      acl2::get-elf-section-bytes
      acl2::get-elf-code

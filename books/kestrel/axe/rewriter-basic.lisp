@@ -118,6 +118,17 @@
           (simplify-conjunction-basic-aux (+ -1 passes-left) new-conjuncts rule-alist known-booleans monitored-symbols memoizep warn-missingp)
         (mv (erp-nil) new-conjuncts)))))
 
+(local
+  (defthm pseudo-term-listp-of-mv-nth-1-of-simplify-conjunction-basic-aux
+    (implies (and (natp passes-left)
+                  (pseudo-term-listp conjuncts)
+                  (rule-alistp rule-alist)
+                  (symbol-listp monitored-symbols)
+                  (booleanp memoizep)
+                  (booleanp warn-missingp)
+                  (symbol-listp known-booleans))
+             (pseudo-term-listp (mv-nth 1 (simplify-conjunction-basic-aux passes-left conjuncts rule-alist known-booleans monitored-symbols memoizep warn-missingp))))))
+
 ;; Returns (mv erp new-conjuncts) where NEW-CONJUNCTS is a set of conjuncts
 ;; whose conjunction is equal to the conjunction of the CONJUNCTS.
 (defund simplify-conjunction-basic (conjuncts rule-alist known-booleans monitored-symbols memoizep warn-missingp)
@@ -135,3 +146,13 @@
                                             monitored-symbols memoizep
                                             nil ; don't warn again about missing monitored rules
                                             ))))
+
+(defthm pseudo-term-listp-of-mv-nth-1-of-simplify-conjunction-basic
+  (implies (and (pseudo-term-listp conjuncts)
+                (rule-alistp rule-alist)
+                (symbol-listp monitored-symbols)
+                (booleanp memoizep)
+                (booleanp warn-missingp)
+                (symbol-listp known-booleans))
+           (pseudo-term-listp (mv-nth 1 (simplify-conjunction-basic conjuncts rule-alist known-booleans monitored-symbols memoizep warn-missingp))))
+  :hints (("Goal" :in-theory (enable simplify-conjunction-basic))))
