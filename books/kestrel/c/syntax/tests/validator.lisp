@@ -157,3 +157,180 @@
   a * b;
   }
 ")
+
+(test-valid
+ "typedef _Bool a;
+  void f() {
+  int b;
+  a * c;
+  }
+")
+
+(test-valid
+ "void f() {
+  int a(int);
+  int b;
+  int amb = (a)(b);
+  }
+")
+
+(test-valid
+ "void f() {
+  typedef int a;
+  int b;
+  int amb = (a)(b);
+  }
+")
+
+(test-valid
+ "void f() {
+  int a(int);
+  int b;
+  int amb = (a)(b);
+  }
+")
+
+(test-valid
+ "void f() {
+  typedef int a;
+  int b;
+  int amb = (a)--++--++(b);
+  }
+")
+
+(test-valid
+ "void f() {
+  int a;
+  int b;
+  int amb = (a)*b;
+  }
+")
+
+(test-valid
+ "void f() {
+  typedef int a;
+  int *b;
+  int amb = (a)*b;
+  }
+")
+
+(test-valid
+ "void f() {
+  int a;
+  int b;
+  int amb = (a)+b;
+  }
+")
+
+(test-valid
+ "void f() {
+  typedef int a;
+  int b;
+  int amb = (a)+b;
+  }
+")
+
+(test-valid
+ "void f() {
+  int a;
+  int b;
+  int c;
+  int amb = (a)+b*c;
+  }
+")
+
+(test-valid
+ "void f() {
+  typedef int a;
+  int b;
+  int c;
+  int amb = (a)+b*c;
+  }
+")
+
+(test-valid
+ "void f() {
+  int a;
+  int b;
+  int c;
+  int amb = (a)&b;
+  }
+")
+
+(test-valid
+ "void f() {
+  typedef int a;
+  int b;
+  int c;
+  int amb = (a)&b;
+  }
+")
+
+(test-valid
+ "void f() {
+  int a;
+  int b;
+  int c;
+  int amb = (a)&b+c;
+  }
+")
+
+(test-valid
+ "void f() {
+  typedef int a;
+  int b;
+  int c;
+  int amb = (a)&b+c;
+  }
+")
+
+(test-valid
+ "unsigned int size_t;
+  void foo() {
+  for (size_t; ; ) {}
+  }
+")
+
+(test-valid
+ "typedef unsigned int size_t;
+  void foo() {
+  for (size_t i; ; ) {}
+  }
+")
+
+(test-valid
+ "int myarray[];
+  int foo () {
+  int x = sizeof(myarray);
+  }
+")
+
+(test-valid
+ "int foo (int *a, int *b) {
+ return (char *) (a) - b;
+}
+")
+
+(test-valid
+ "int foo (int a, int b, int c) {
+ return a + (b) + c;
+}
+")
+
+(test-valid
+ "int foo (int a, int b, int c) {
+  return (a) + (b) + c;
+}
+")
+
+(test-valid
+ "int foo (int a, int b, int c, int d) {
+  return a + (b) + (c) + d;
+}
+")
+
+(test-valid
+ "int foo (int a, int b) {
+  return ~ (a) + b;
+}
+")
