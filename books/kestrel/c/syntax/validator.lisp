@@ -3554,11 +3554,11 @@
     (b* (((reterr) nil nil nil nil (irr-valid-table)))
       (decl-spec-case
        declspec
-       :stocla (retok (type-option-fix type?)
-                      (type-spec-list-fix tyspecs)
-                      (rcons declspec.spec (stor-spec-list-fix storspecs))
-                      nil
-                      (valid-table-fix table))
+       :stoclass (retok (type-option-fix type?)
+                        (type-spec-list-fix tyspecs)
+                        (rcons declspec.spec (stor-spec-list-fix storspecs))
+                        nil
+                        (valid-table-fix table))
        :tyspec (b* (((erp type? tyspecs types table)
                      (valid-type-spec
                       declspec.spec type? tyspecs table ienv)))

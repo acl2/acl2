@@ -10259,7 +10259,7 @@
        ;; which always consists of a single keyword,
        ;; return that storage class specifier.
        ((token-storage-class-specifier-p token) ; typedef/.../register
-        (retok (decl-spec-stocla (token-to-storage-class-specifier token))
+        (retok (decl-spec-stoclass (token-to-storage-class-specifier token))
                span
                parstate))
        ;; If token is a type specifier consisting of a single keyword,

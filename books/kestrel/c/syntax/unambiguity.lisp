@@ -268,7 +268,7 @@
     :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if a declaration specifier is unambiguous."
     (decl-spec-case declspec
-                    :stocla t
+                    :stoclass t
                     :tyspec (type-spec-unambp declspec.spec)
                     :tyqual t
                     :function t
