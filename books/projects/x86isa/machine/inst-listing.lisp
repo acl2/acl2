@@ -2750,7 +2750,7 @@
           (ARG :OP1 '(V Q)
                :OP2 '(H Q)
                :OP3 '(U Q))
-          'NIL
+          '(X86-MOVHLPS-SSE)
           '((:EX (CHK-EXC :TYPE-7 (:SSE)))))
     (INST "MOVLPD"
           (OP :OP #xF12 :PFX :66 :FEAT '(:SSE2))
@@ -6211,7 +6211,7 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          'NIL
+          '(X86-PUNPCKL-SSE)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "VPUNPCKLBW"
           (OP :OP #xF60
@@ -6259,7 +6259,7 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          'NIL
+          '(X86-PUNPCKL-SSE)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "VPUNPCKLWD"
           (OP :OP #xF61
@@ -6307,7 +6307,7 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          'NIL
+          '(X86-PUNPCKL-SSE)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "VPUNPCKLDQ"
           (OP :OP #xF62
@@ -6547,7 +6547,7 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          'NIL
+          '(X86-PACKUSWB-SSE)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "VPACKUSWB"
           (OP :OP #xF67
@@ -6595,7 +6595,7 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          'NIL
+          '(X86-PUNPCKH-SSE)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "VPUNPCKHBW"
           (OP :OP #xF68
@@ -6643,7 +6643,7 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          'NIL
+          '(X86-PUNPCKH-SSE)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "VPUNPCKHWD"
           (OP :OP #xF69
@@ -6691,7 +6691,7 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          'NIL
+          '(X86-PUNPCKH-SSE)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "VPUNPCKHDQ"
           (OP :OP #xF6A
@@ -6780,7 +6780,7 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          'NIL
+          '(X86-PUNPCKL-SSE)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "VPUNPCKLQDQ"
           (OP :OP #xF6C
@@ -6821,7 +6821,7 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          'NIL
+          '(X86-PUNPCKH-SSE)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "VPUNPCKHQDQ"
           (OP :OP #xF6D
@@ -7056,21 +7056,21 @@
           (ARG :OP1 '(V X)
                :OP2 '(W X)
                :OP3 '(I B))
-          'NIL
+          '(X86-PSHUFD)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "PSHUFHW"
           (OP :OP #xF70 :PFX :F3 :FEAT '(:SSE2))
           (ARG :OP1 '(V X)
                :OP2 '(W X)
                :OP3 '(I B))
-          'NIL
+          '(X86-PSHUFHW)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "PSHUFLW"
           (OP :OP #xF70 :PFX :F2 :FEAT '(:SSE2))
           (ARG :OP1 '(V X)
                :OP2 '(W X)
                :OP3 '(I B))
-          'NIL
+          '(X86-PSHUFHW)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "VPSHUFD"
           (OP :OP #xF70
@@ -7194,7 +7194,7 @@
           (ARG :OP1 '(H X)
                :OP2 '(U X)
                :OP3 '(I B))
-          'NIL
+          '(X86-PSRL-IMM-SSE)
           '((:EX (CHK-EXC :TYPE-7 (:SSE2)))))
     (INST "PSRAW"
           (OP :OP #xF71
@@ -7216,7 +7216,7 @@
           (ARG :OP1 '(H X)
                :OP2 '(U X)
                :OP3 '(I B))
-          'NIL
+          '(X86-PSRA-IMM-SSE)
           '((:EX (CHK-EXC :TYPE-7 (:SSE2)))))
     (INST "PSLLW"
           (OP :OP #xF71
@@ -7238,7 +7238,7 @@
           (ARG :OP1 '(H X)
                :OP2 '(U X)
                :OP3 '(I B))
-          'NIL
+          '(X86-PSLL-IMM-SSE)
           '((:EX (CHK-EXC :TYPE-7 (:SSE2)))))
     (INST "VPSRLVW"
           (OP :OP #xF71
@@ -7377,7 +7377,7 @@
           (ARG :OP1 '(H X)
                :OP2 '(U X)
                :OP3 '(I B))
-          'NIL
+          '(X86-PSRL-IMM-SSE)
           '((:EX (CHK-EXC :TYPE-7 (:SSE2)))))
     (INST "PSRAD"
           (OP :OP #xF72
@@ -7399,7 +7399,7 @@
           (ARG :OP1 '(H X)
                :OP2 '(U X)
                :OP3 '(I B))
-          'NIL
+          '(X86-PSRA-IMM-SSE)
           '((:EX (CHK-EXC :TYPE-7 (:SSE2)))))
     (INST "PSLLD"
           (OP :OP #xF72
@@ -7421,7 +7421,7 @@
           (ARG :OP1 '(H X)
                :OP2 '(U X)
                :OP3 '(I B))
-          'NIL
+          '(X86-PSLL-IMM-SSE)
           '((:EX (CHK-EXC :TYPE-7 (:SSE2)))))
     (INST "VPSLLVD"
           (OP :OP #xF72
@@ -7665,7 +7665,7 @@
           (ARG :OP1 '(H X)
                :OP2 '(U X)
                :OP3 '(I B))
-          'NIL
+          '(X86-PSRL-IMM-SSE)
           '((:EX (CHK-EXC :TYPE-7 (:SSE2)))))
     (INST "PSRLDQ"
           (OP :OP #xF73
@@ -7699,7 +7699,7 @@
           (ARG :OP1 '(H X)
                :OP2 '(U X)
                :OP3 '(I B))
-          'NIL
+          '(X86-PSLL-IMM-SSE)
           '((:EX (CHK-EXC :TYPE-7 (:SSE2)))))
     (INST "PSLLDQ"
           (OP :OP #xF73
@@ -7881,7 +7881,7 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          '(X86-PCMPEQB-OP/EN-RM)
+          '(X86-PCMPEQ-SSE)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "VPCMPEQB"
           (OP :OP #xF74
@@ -7929,7 +7929,7 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          'NIL
+          '(X86-PCMPEQ-SSE)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "VPCMPEQW"
           (OP :OP #xF75
@@ -7977,7 +7977,7 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          'NIL
+          '(X86-PCMPEQ-SSE)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "VPCMPEQD"
           (OP :OP #xF76
@@ -8504,7 +8504,7 @@
     (INST "MOVQ"
           (OP :OP #xF7E :PFX :F3 :FEAT '(:SSE2))
           (ARG :OP1 '(V Q) :OP2 '(W Q))
-          'NIL
+          '(X86-MOVQ-FROM-XMM/MEM)
           '((:EX (CHK-EXC :TYPE-5 (:SSE2)))))
     (INST "VMOVD"
           (OP :OP #xF7E
@@ -9366,7 +9366,7 @@
               :SUPERSCRIPTS '(:1A)
               :GROUP '(:GROUP-8))
           (ARG :OP1 '(E B) :OP2 '(I B))
-          'NIL
+          '(X86-BT-0F-BA)
           '((:UD (UD-LOCK-USED-DEST-NOT-MEMORY-OP))))
     (INST "BTC" (OP :OP #xFBB)
           (ARG :OP1 '(E V) :OP2 '(G V))
@@ -9844,35 +9844,35 @@
           '((:UD (UD-LOCK-USED))))
     (INST "BSWAP" (OP :OP #xFC8)
           (ARG :OP1 '(:RAX/EAX/R8/R8D))
-          'NIL
+          '(X86-BSWAP)
           '((:UD (UD-LOCK-USED))))
     (INST "BSWAP" (OP :OP #xFC9)
           (ARG :OP1 '(:RCX/ECX/R9/R9D))
-          'NIL
+          '(X86-BSWAP)
           '((:UD (UD-LOCK-USED))))
     (INST "BSWAP" (OP :OP #xFCA)
           (ARG :OP1 '(:RDX/EDX/R10/R10D))
-          'NIL
+          '(X86-BSWAP)
           '((:UD (UD-LOCK-USED))))
     (INST "BSWAP" (OP :OP #xFCB)
           (ARG :OP1 '(:RBX/EBX/R11/R11D))
-          'NIL
+          '(X86-BSWAP)
           '((:UD (UD-LOCK-USED))))
     (INST "BSWAP" (OP :OP #xFCC)
           (ARG :OP1 '(:RSP/ESP/R12/R12D))
-          'NIL
+          '(X86-BSWAP)
           '((:UD (UD-LOCK-USED))))
     (INST "BSWAP" (OP :OP #xFCD)
           (ARG :OP1 '(:RBP/EBP/R13/R13D))
-          'NIL
+          '(X86-BSWAP)
           '((:UD (UD-LOCK-USED))))
     (INST "BSWAP" (OP :OP #xFCE)
           (ARG :OP1 '(:RSI/ESI/R14/R14D))
-          'NIL
+          '(X86-BSWAP)
           '((:UD (UD-LOCK-USED))))
     (INST "BSWAP" (OP :OP #xFCF)
           (ARG :OP1 '(:RDI/EDI/R15/R15D))
-          'NIL
+          '(X86-BSWAP)
           '((:UD (UD-LOCK-USED))))
     (INST "ADDSUBPD"
           (OP :OP #xFD0 :PFX :66 :FEAT '(:SSE3))
@@ -9932,7 +9932,7 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          'NIL
+          '(X86-PSRL-XMM-SSE)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "VPSRLW"
           (OP :OP #xFD1
@@ -9980,7 +9980,7 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          'NIL
+          '(X86-PSRL-XMM-SSE)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "VPSRLD"
           (OP :OP #xFD2
@@ -10028,7 +10028,7 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          'NIL
+          '(X86-PSRL-XMM-SSE)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "VPSRLQ"
           (OP :OP #xFD3
@@ -10165,7 +10165,7 @@
     (INST "MOVQ"
           (OP :OP #xFD6 :PFX :66 :FEAT '(:SSE2))
           (ARG :OP1 '(W Q) :OP2 '(V Q))
-          'NIL
+          '(X86-MOVQ-TO-XMM/MEM)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "MOVQ2DQ"
           (OP :OP #xFD6 :PFX :F3 :FEAT '(:SSE2))
@@ -10709,7 +10709,7 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          'NIL
+          '(X86-PSRA-XMM-SSE)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "VPSRAW"
           (OP :OP #xFE1
@@ -10757,7 +10757,7 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          'NIL
+          '(X86-PSRA-XMM-SSE)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "VPSRAD"
           (OP :OP #xFE2
@@ -11589,7 +11589,7 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          'NIL
+          '(X86-PSLL-XMM-SSE)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "VPSLLW"
           (OP :OP #xFF1
@@ -11637,7 +11637,7 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          'NIL
+          '(X86-PSLL-XMM-SSE)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "VPSLLD"
           (OP :OP #xFF2
@@ -11685,7 +11685,7 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          'NIL
+          '(X86-PSLL-XMM-SSE)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "VPSLLQ"
           (OP :OP #xFF3
