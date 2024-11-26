@@ -888,6 +888,15 @@
   :hints (("Goal" :in-theory (enable drop-non-supporters
                                      len-when-pseudo-dagp))))
 
+(defthm <=-of-len-of-drop-non-supporters-2-linear
+  (implies (and (pseudo-dagp dag-or-quotep)
+                (<= (top-nodenum-of-dag dag-or-quotep) *max-1d-array-index*))
+           (<= (len (drop-non-supporters dag-or-quotep))
+               (+ 1 *max-1d-array-index*)))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable drop-non-supporters
+                                     len-when-pseudo-dagp))))
+
 (defthm consp-of-drop-non-supporters
   (implies (and (pseudo-dagp dag-or-quotep)
                 (<= (car (car dag-or-quotep)) *max-1d-array-index*))
