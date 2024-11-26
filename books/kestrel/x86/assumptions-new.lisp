@@ -339,8 +339,7 @@
                                     ;; See the System V AMD64 ABI
                                     '((rdi x86) (rsi x86) (rdx x86) (rcx x86) (r8 x86) (r9 x86))
                                     stack-slots-needed
-                                    text-offset
-                                    (len (acl2::get-elf-code parsed-elf)) ; todo: could there be extra zeros?
+                                    (acons text-offset (len (acl2::get-elf-code parsed-elf)) nil) ; todo: could there be extra zeros?
                                     ))))))
 
 ;; not true due to make-standard-state-assumptions-64-fn

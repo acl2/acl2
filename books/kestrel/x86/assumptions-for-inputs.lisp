@@ -128,14 +128,13 @@
                                input-type ;; examples: :u32 or :u32* or :u32[4]
                                state-component
                                stack-slots
-                               text-offset
-                               code-length)
+                               disjoint-chunk-addresses-and-lens)
   (declare (xargs :guard (and (symbolp input-name)
                               (symbolp input-type)
                               ;;state-component might be rdi or (rdi x86)
                               (natp stack-slots)
-                              ;; text-offset is a term
-                              (natp code-length))))
+                              (alistp disjoint-chunk-addresses-and-lens) ; cars are terms
+                              (nat-listp (strip-cdrs disjoint-chunk-addresses-and-lens)))))
   (let ((type (parse-type input-type)))
     (if (eq :error type)
         (er hard? 'assumptions-for-input "Bad type: ~x0." type)
@@ -161,7 +160,7 @@
                             :r ,stack-byte-count
                             (+ ,(- stack-byte-count) (rsp x86)))
                   ;; The input is disjoint from the code:
-                  ,@(make-separate-claims pointer-name numbytes (acons text-offset code-length nil))
+                  ,@(make-separate-claims pointer-name numbytes disjoint-chunk-addresses-and-lens)
                   ;; The input is disjoint from the saved return address:
                   ;; todo: reorder args?
                   (separate :r 8 (rsp x86)
@@ -186,7 +185,7 @@
                                       :r ,stack-byte-count
                                       (+ ,(- stack-byte-count) (rsp x86)))
                             ;; The input is disjoint from the code:
-                            ,@(make-separate-claims pointer-name numbytes (acons text-offset code-length nil))
+                            ,@(make-separate-claims pointer-name numbytes disjoint-chunk-addresses-and-lens)
                             ;; The input is disjoint from the saved return address:
                             ;; todo: reorder args?
                             (separate :r 8 (rsp x86)
@@ -194,12 +193,12 @@
               (er hard? 'assumptions-for-input "Bad type: ~x0." type))))))))
 
 ;; might have extra, unneeded items in state-components
-(defun assumptions-for-inputs (input-names-and-types state-components stack-slots text-offset code-length)
+(defun assumptions-for-inputs (input-names-and-types state-components stack-slots disjoint-chunk-addresses-and-lens)
   (declare (xargs :guard (and (names-and-typesp input-names-and-types)
                               (true-listp state-components)
                               (natp stack-slots)
-                              ;; text-offset is a term
-                              (natp code-length))))
+                              (alistp disjoint-chunk-addresses-and-lens) ; cars are terms
+                              (nat-listp (strip-cdrs disjoint-chunk-addresses-and-lens)))))
   (if (endp input-names-and-types)
       nil
     (let* ((name-and-type (first input-names-and-types))
@@ -207,7 +206,7 @@
            (input-type (second name-and-type))
            (state-component (first state-components))
            )
-      (append (assumptions-for-input input-name input-type state-component stack-slots text-offset code-length)
-              (assumptions-for-inputs (rest input-names-and-types) (rest state-components) stack-slots text-offset code-length)))))
+      (append (assumptions-for-input input-name input-type state-component stack-slots disjoint-chunk-addresses-and-lens)
+              (assumptions-for-inputs (rest input-names-and-types) (rest state-components) stack-slots disjoint-chunk-addresses-and-lens)))))
 
 ;; Example: (assumptions-for-inputs '((v1 :u32*) (v2 :u32*)) '((rdi x86) (rsi x86)))
