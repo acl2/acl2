@@ -128,35 +128,67 @@
 
 ;move this util
 
-(defun print-term-elided (item firstp fns-to-elide)
-  (declare (xargs :guard (symbol-listp fns-to-elide)))
-  (if (and (consp item)
-           (member-eq (ffn-symb item) fns-to-elide))
-      ;; eliding:
-      ;; todo: allow eliding some args but not others?
-      (if firstp ; leading paren but not leading space
-          (cw "((~x0 ...)~%" (ffn-symb item))
-        (cw " (~x0 ...)~%" (ffn-symb item)))
-    ;; not eliding:
-    (if firstp ; no leading space
-        (cw "(~y0" item)
-      (cw " ~y0" item))))
+;; Recognizes an alist from functions to boolean-lists representing which arguments to print.
+(defun elision-spec-alistp (alist)
+  (declare (xargs :guard t))
+  (if (atom alist)
+      (null alist)
+      (let ((entry (first alist)))
+        (and (consp entry)
+             (symbolp (car entry))
+             (boolean-listp (cdr entry))
+             (elision-spec-alistp (rest alist))))))
 
-;doesn't stack overflow when printing a large list
-(defun print-terms-elided-aux (lst fns-to-elide)
-  (declare (xargs :guard (and (true-listp lst)
-                              (symbol-listp fns-to-elide))))
-  (if (atom lst)
+(defthm elision-spec-alistp-forward-to-alistp
+    (implies (elision-spec-alistp alist)
+             (alistp alist))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable elision-spec-alistp alistp))))
+
+;; Replace with :elided any arg that corresponds with nil in the bools
+(defun apply-elision-spec (args bools)
+  (declare (xargs :guard (and (true-listp args)
+                              (boolean-listp bools))))
+  (if (endp args)
       nil
-    (prog2$ (print-term-elided (first lst) nil fns-to-elide)
-            (print-terms-elided-aux (rest lst) fns-to-elide))))
+      (cons (if (first bools) (first args) :elided)
+            (apply-elision-spec (rest args) (rest bools)))))
 
-(defun print-terms-elided (lst fns-to-elide)
-  (declare (xargs :guard (and (true-listp lst)
-                              (symbol-listp fns-to-elide))))
-  (if (consp lst)
-      (prog2$ (print-term-elided (first lst) t fns-to-elide) ;print the first element separately to put in an open paren
-              (prog2$ (print-terms-elided-aux (rest lst) fns-to-elide)
+(defund print-term-elided (term firstp elision-specs)
+  (declare (xargs :guard (elision-spec-alistp elision-specs)))
+  (let ((elision-spec (and (consp term)
+                           (acl2::lookup-eq (car term) elision-specs))))
+    (if elision-spec
+        ;; eliding:
+        (if (not (true-listp term))
+            (er hard? 'print-term-elided "Bad term.")
+            (if (not (= (len (rest term)) (len elision-spec))) ; todo: optimize via same-lengthp
+                (er hard? 'print-term-elided "Length mismatch in elision spec, ~x0, for ~x1." elision-spec (car term))
+                (let ((elided-term (cons (car term) (apply-elision-spec (rest term) elision-spec))))
+                  (if firstp
+                      (cw "(~y0" elided-term)
+                      (cw " ~y0" elided-term)))))
+        ;; not eliding (todo: share code with the above):
+        (if firstp
+            (cw "(~y0" term)
+            (cw " ~y0" term)))))
+
+;; Prints each of the TERMS, each starting with a space and ending with a newline.
+;tail recursive, to support printing a large list
+(defund print-terms-elided-aux (terms elision-specs)
+  (declare (xargs :guard (and (true-listp terms)
+                              (elision-spec-alistp elision-specs))))
+  (if (atom terms)
+      nil
+    (prog2$ (print-term-elided (first terms) nil elision-specs)
+            (print-terms-elided-aux (rest terms) elision-specs))))
+
+(defund print-terms-elided (terms elision-specs)
+  (declare (xargs :guard (and (true-listp terms)
+                              (elision-spec-alistp elision-specs))))
+  (if (consp terms)
+      (prog2$ (print-term-elided (first terms) t elision-specs) ;print the first element separately to put in an open paren
+              (prog2$ (print-terms-elided-aux (rest terms) elision-specs)
                       (cw ")")))
     (cw "nil") ; or could do ()
     ))
@@ -721,9 +753,9 @@
        (assumptions-to-return assumptions)
        (assumptions (acl2::translate-terms assumptions 'unroll-x86-code-core (w state))) ; perhaps don't translate the automatic-assumptions?
        (- (and (acl2::print-level-at-least-tp print) (progn$ (cw "(Unsimplified assumptions:~%")
-                                                             (print-terms-elided assumptions '(standard-assumptions-elf-64
-                                                                                              standard-assumptions-mach-o-64
-                                                                                              standard-assumptions-pe-64)) ; todo: more?
+                                                             (print-terms-elided assumptions '((standard-assumptions-elf-64 t nil t t t)
+                                                                                               (standard-assumptions-mach-o-64 t nil t t t)
+                                                                                               (standard-assumptions-pe-64 t nil t t t))) ; todo: more?
                                                              (cw ")~%"))))
        (- (cw "(Simplifying assumptions...~%"))
        ((mv assumption-simp-start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
@@ -766,7 +798,7 @@
        (- (and print (progn$ (cw "(Simplified assumptions:~%")
                              (if (acl2::print-level-at-least-tp print)
                                  (acl2::print-list assumptions)
-                               (print-terms-elided assumptions '(program-at ; the program can be huge
+                               (print-terms-elided assumptions '((program-at t nil t) ; the program can be huge
                                                                 )))
                              (cw ")~%"))))
        ;; Prepare for symbolic execution:
