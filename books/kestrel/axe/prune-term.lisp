@@ -319,6 +319,11 @@
                  (cw "STP did not resolve the test.))~%"))
             (mv nil :unknown state))))
 
+(defthm w-of-mv-nth-2-of-try-to-resolve-test
+  (equal (w (mv-nth 2 (try-to-resolve-test test assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp print state)))
+         (w state))
+  :hints (("Goal" :in-theory (enable try-to-resolve-test))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (mutual-recursion
@@ -612,6 +617,17 @@
 
 (verify-guards prune-term-aux :hints (("Goal" :in-theory (enable true-listp-when-pseudo-term-listp-2))))
 
+(defthm-flag-prune-term-aux
+  (defthm w-of-mv-nth-2-of-prune-term-aux
+    (equal (w (mv-nth 2 (prune-term-aux term assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp print state)))
+           (w state))
+    :flag prune-term-aux)
+  (defthm w-of-mv-nth-2-of-prune-terms-aux
+    (equal (w (mv-nth 2 (prune-terms-aux terms assumptions equality-assumptions rule-alist interpreted-function-alist monitored-rules call-stp print state)))
+           (w state))
+    :flag prune-terms-aux)
+  :hints (("Goal" :in-theory (enable prune-term-aux prune-terms-aux symbolp-when-member-equal-and-symbol-listp))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp changep result-term state).
@@ -658,4 +674,9 @@
                 (or (booleanp call-stp)
                     (natp call-stp)))
            (pseudo-termp (mv-nth 2 (prune-term term assumptions rule-alist interpreted-function-alist monitored-rules call-stp print state))))
+  :hints (("Goal" :in-theory (enable prune-term))))
+
+(defthm w-of-mv-nth-3-of-prune-term
+  (equal (w (mv-nth 3 (prune-term term assumptions rule-alist interpreted-function-alist monitored-rules call-stp print state)))
+         (w state))
   :hints (("Goal" :in-theory (enable prune-term))))

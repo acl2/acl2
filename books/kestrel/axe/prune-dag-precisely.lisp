@@ -1,7 +1,7 @@
 ; Pruning irrelevant IF-branches
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -69,6 +69,11 @@
            (pseudo-dagp (mv-nth 1 (prune-dag-precisely-with-rule-alist dag assumptions rule-alist interpreted-function-alist monitored-rules call-stp check-fnsp print state))))
   :hints (("Goal" :in-theory (enable prune-dag-precisely-with-rule-alist))))
 
+(defthm w-of-mv-nth-2-of-prune-dag-precisely-with-rule-alist
+  (equal (w (mv-nth 2 (prune-dag-precisely-with-rule-alist dag assumptions rule-alist interpreted-function-alist monitored-rules call-stp check-fnsp print state)))
+         (w state))
+  :hints (("Goal" :in-theory (enable prune-dag-precisely-with-rule-alist))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Prune unreachable branches using full contexts.  Warning: can explode the
@@ -93,7 +98,6 @@
                               (booleanp check-fnsp)
                               (print-levelp print)
                               (ilks-plist-worldp (w state)))
-                  :guard-debug t
                   :stobjs state))
   (b* (((mv erp rule-alist)
         (if (not (eq :none rule-alist))
@@ -123,6 +127,11 @@
            (pseudo-dagp (mv-nth 1 (prune-dag-precisely dag assumptions rules rule-alist interpreted-fns monitored-rules call-stp check-fnsp print state))))
   :hints (("Goal" :in-theory (enable prune-dag-precisely))))
 
+(defthm w-of-mv-nth-2-of-prune-dag-precisely
+  (equal (w (mv-nth 2 (prune-dag-precisely dag assumptions rules rule-alist interpreted-fns monitored-rules call-stp check-fnsp print state)))
+         (w state))
+  :hints (("Goal" :in-theory (enable prune-dag-precisely))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;Returns (mv erp result-dag-or-quotep state).  Pruning turns the DAG into a term and
@@ -135,7 +144,6 @@
   (declare (xargs :guard (and (or (booleanp prune-branches)
                                   (natp prune-branches))
                               (pseudo-dagp dag)
-                              (<= (len dag) *max-1d-array-length*) ;todo?
                               (pseudo-term-listp assumptions)
                               (or (symbol-listp rules)
                                   (eq :none rules))
@@ -155,6 +163,8 @@
   (b* (((when (not prune-branches))
         ;; don't even print anything in this case, as we've been told not to prune
         (mv nil dag state))
+       ((when (not (<= (len dag) *max-1d-array-length*)))
+        (mv :dag-too-big nil state))
        ((when (not (dag-fns-include-any dag '(if myif boolif bvif))))
         (cw "(Note: No pruning to do.)~%")
         (mv nil dag state))
@@ -213,4 +223,9 @@
                     (natp call-stp))
                 (ilks-plist-worldp (w state)))
            (pseudo-dagp (mv-nth 1 (maybe-prune-dag-precisely prune-branches dag assumptions rules rule-alist interpreted-fns monitored-rules call-stp print state))))
+  :hints (("Goal" :in-theory (enable maybe-prune-dag-precisely))))
+
+(defthm w-of-mv-nth-2-of-maybe-prune-dag-precisely
+  (equal (w (mv-nth 2 (maybe-prune-dag-precisely prune-branches dag assumptions rules rule-alist interpreted-fns monitored-rules call-stp print state)))
+         (w state))
   :hints (("Goal" :in-theory (enable maybe-prune-dag-precisely))))

@@ -124,36 +124,35 @@
             (make-separate-claims address len (rest addresses-and-lens))))))
 
 ;; Returns a list of assumptions.
-(defund assumptions-for-input (var-name
-                               type ;; examples: :u32 or :u32* or :u32[4]
+(defund assumptions-for-input (input-name
+                               input-type ;; examples: :u32 or :u32* or :u32[4]
                                state-component
                                stack-slots
-                               text-offset
-                               code-length)
-  (declare (xargs :guard (and (symbolp var-name)
-                              (symbolp type)
+                               disjoint-chunk-addresses-and-lens)
+  (declare (xargs :guard (and (symbolp input-name)
+                              (symbolp input-type)
                               ;;state-component might be rdi or (rdi x86)
                               (natp stack-slots)
-                              ;; text-offset is a term
-                              (natp code-length))))
-  (let ((type (parse-type type)))
+                              (alistp disjoint-chunk-addresses-and-lens) ; cars are terms
+                              (nat-listp (strip-cdrs disjoint-chunk-addresses-and-lens)))))
+  (let ((type (parse-type input-type)))
     (if (eq :error type)
         (er hard? 'assumptions-for-input "Bad type: ~x0." type)
       (if (atom type) ; scalar
           ;; just put in the var name for the state component:
           ;; todo: what about signed/unsigned?
-          `((equal ,state-component ,var-name))
+          `((equal ,state-component ,input-name))
         (let ((stack-byte-count (* 8 stack-slots))) ; each stack element is 64-bits
           (if (and (call-of :pointer type)
                    (stringp (farg1 type)) ; for guards
                    )
               (let* ((base-type (farg1 type))
                      (numbytes (bytes-in-scalar-type base-type))
-                     (pointer-name (acl2::pack-in-package "X" var-name '_ptr)) ;todo: watch for clashes; todo: should this be the main name and the other the "contents"?
+                     (pointer-name (acl2::pack-in-package "X" input-name '_ptr)) ;todo: watch for clashes; todo: should this be the main name and the other the "contents"?
                      )
                 `((equal ,state-component ,pointer-name)
                   ;; todo: what about reading individual bytes?:  don't trim down reads?
-                  (equal (read ,numbytes ,pointer-name x86) ,var-name)
+                  (equal (read ,numbytes ,pointer-name x86) ,input-name)
                   (canonical-address-p$inline ,pointer-name) ; first address
                   (canonical-address-p (+ ,(- numbytes 1) ,pointer-name)) ; last address
                   ;; The input is disjount from the space into which the stack will grow:
@@ -161,7 +160,7 @@
                             :r ,stack-byte-count
                             (+ ,(- stack-byte-count) (rsp x86)))
                   ;; The input is disjoint from the code:
-                  ,@(make-separate-claims pointer-name numbytes (acons text-offset code-length nil))
+                  ,@(make-separate-claims pointer-name numbytes disjoint-chunk-addresses-and-lens)
                   ;; The input is disjoint from the saved return address:
                   ;; todo: reorder args?
                   (separate :r 8 (rsp x86)
@@ -175,9 +174,9 @@
                      (element-count (farg2 type))
                      (element-size (bytes-in-scalar-type base-type))
                      (numbytes (* element-count element-size))
-                     (pointer-name (acl2::pack-in-package "X" var-name '_ptr)) ;todo: watch for clashes; todo: should this be the main name and the other the "contents"?
+                     (pointer-name (acl2::pack-in-package "X" input-name '_ptr)) ;todo: watch for clashes; todo: should this be the main name and the other the "contents"?
                      )
-                  (append (var-intro-assumptions-for-array-input 0 element-count element-size pointer-name var-name)
+                  (append (var-intro-assumptions-for-array-input 0 element-count element-size pointer-name input-name)
                           `((equal ,state-component ,pointer-name)
                             (canonical-address-p$inline ,pointer-name) ; first address
                             (canonical-address-p (+ ,(- numbytes 1) ,pointer-name)) ; last address
@@ -186,7 +185,7 @@
                                       :r ,stack-byte-count
                                       (+ ,(- stack-byte-count) (rsp x86)))
                             ;; The input is disjoint from the code:
-                            ,@(make-separate-claims pointer-name numbytes (acons text-offset code-length nil))
+                            ,@(make-separate-claims pointer-name numbytes disjoint-chunk-addresses-and-lens)
                             ;; The input is disjoint from the saved return address:
                             ;; todo: reorder args?
                             (separate :r 8 (rsp x86)
@@ -194,20 +193,20 @@
               (er hard? 'assumptions-for-input "Bad type: ~x0." type))))))))
 
 ;; might have extra, unneeded items in state-components
-(defun assumptions-for-inputs (names-and-types state-components stack-slots text-offset code-length)
-  (declare (xargs :guard (and (names-and-typesp names-and-types)
+(defun assumptions-for-inputs (input-names-and-types state-components stack-slots disjoint-chunk-addresses-and-lens)
+  (declare (xargs :guard (and (names-and-typesp input-names-and-types)
                               (true-listp state-components)
                               (natp stack-slots)
-                              ;; text-offset is a term
-                              (natp code-length))))
-  (if (endp names-and-types)
+                              (alistp disjoint-chunk-addresses-and-lens) ; cars are terms
+                              (nat-listp (strip-cdrs disjoint-chunk-addresses-and-lens)))))
+  (if (endp input-names-and-types)
       nil
-    (let* ((name-and-type (first names-and-types))
-           (name (first name-and-type))
-           (type (second name-and-type))
+    (let* ((name-and-type (first input-names-and-types))
+           (input-name (first name-and-type))
+           (input-type (second name-and-type))
            (state-component (first state-components))
            )
-      (append (assumptions-for-input name type state-component stack-slots text-offset code-length)
-              (assumptions-for-inputs (rest names-and-types) (rest state-components) stack-slots text-offset code-length)))))
+      (append (assumptions-for-input input-name input-type state-component stack-slots disjoint-chunk-addresses-and-lens)
+              (assumptions-for-inputs (rest input-names-and-types) (rest state-components) stack-slots disjoint-chunk-addresses-and-lens)))))
 
 ;; Example: (assumptions-for-inputs '((v1 :u32*) (v2 :u32*)) '((rdi x86) (rsi x86)))

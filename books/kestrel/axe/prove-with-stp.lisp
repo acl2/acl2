@@ -2213,6 +2213,11 @@
        (clause (cons conc negated-hyps)))
     (prove-clause-with-stp clause counterexamplep print-cex-as-signedp max-conflicts print base-filename state)))
 
+(defthm w-of-mv-nth-1-of-prove-implication-with-stp
+  (equal (w (mv-nth 1 (prove-implication-with-stp conc hyps counterexamplep print-cex-as-signedp max-conflicts print base-filename state)))
+         (w state))
+  :hints (("Goal" :in-theory (enable prove-implication-with-stp))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Splits TERM into hyps and a conclusion when possible.
