@@ -57,7 +57,7 @@
               (er hard? 'ensure-x86 "Non-x86 executable detected.  CPU type is ~x0" cpu-type)
             nil))
       (if (member-eq executable-type '(:elf-32 :elf-64))
-          (let ((cpu-type (elf-cpu-type parsed-executable)))
+          (let ((cpu-type (parsed-elf-cpu-type parsed-executable)))
             (if (not (member-eq cpu-type '(:EM_386 :EM_X86_64)))
                 (er hard? 'ensure-x86 "Non-x86 executable detected.  CPU type is ~x0" cpu-type)
               nil))
