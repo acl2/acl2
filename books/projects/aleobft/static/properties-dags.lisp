@@ -55,7 +55,7 @@
      its precedecessors are also in both DAGs,
      and therefore in the intersection."))
 
-  (defrule certificate-previous-in-dag-p-of-intersect
+  (defruled certificate-previous-in-dag-p-of-intersect
     (implies (and (certificate-setp dag1)
                   (certificate-setp dag2)
                   (certificate-sets-unequivocalp dag1 dag2)
@@ -111,7 +111,8 @@
                   (dag-previous-in-dag-p dag2))
              (dag-previous-in-dag-p (set::intersect dag1 dag2)))
     :expand (dag-previous-in-dag-p (set::intersect dag1 dag2))
-    :enable dag-previous-in-dag-p-necc))
+    :enable (dag-previous-in-dag-p-necc
+             certificate-previous-in-dag-p-of-intersect)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
