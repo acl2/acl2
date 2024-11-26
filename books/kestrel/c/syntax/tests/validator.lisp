@@ -88,3 +88,72 @@
  "int x;
   float x;
 ")
+
+(test-valid
+ "enum {a, b, c};
+  int x = b;
+")
+
+(test-valid
+ "int main(void) {
+    return 0;
+  }
+")
+
+(test-valid
+ "void f();
+")
+
+(test-valid
+ "void f() {}
+")
+
+(test-valid
+ "int x;
+  void f() {
+  int y = sizeof(x);
+  }
+")
+
+(test-valid
+ "typedef char x;
+  void f() {
+  int y = sizeof(x);
+  }
+")
+
+(test-valid
+ "int x;
+  void f(x) {}
+")
+
+(test-valid
+ "typedef char x;
+  void f(x);
+")
+
+(test-valid
+ "void f(int(x));
+")
+
+(test-valid
+ "typedef char x;
+  void f(int(x));
+")
+
+(test-valid
+ "void f(int *(x));
+")
+
+(test-valid
+ "typedef char x;
+  void f(int *(x));
+")
+
+(test-valid
+ "int a;
+  void f() {
+  int b;
+  a * b;
+  }
+")
