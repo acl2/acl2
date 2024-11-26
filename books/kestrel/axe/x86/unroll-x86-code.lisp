@@ -160,7 +160,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun remove-assumptions-about (fns-to-remove terms)
+(defund remove-assumptions-about (fns-to-remove terms)
   (declare (xargs :guard (and (symbol-listp fns-to-remove)
                               (pseudo-term-listp terms))))
   (if (endp terms)
@@ -177,6 +177,12 @@
           (remove-assumptions-about fns-to-remove (rest terms))
         (cons term (remove-assumptions-about fns-to-remove (rest terms)))))))
 
+(local
+  (defthm pseudo-term-listp-of-remove-assumptions-about
+    (implies (pseudo-term-listp terms)
+             (pseudo-term-listp (remove-assumptions-about fns-to-remove terms)))
+    :hints (("Goal" :in-theory (enable remove-assumptions-about)))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; todo: more?
@@ -189,6 +195,37 @@
     cr4bits-p$inline
     alignment-checking-enabled-p
     ))
+
+;move
+(defund untranslate-logic (term wrld state)
+  (declare (xargs :guard (plist-worldp wrld)
+                  :stobjs state))
+  (magic-ev-fncall 'untranslate (list term nil wrld) state nil nil))
+
+(local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
+
+(local (in-theory (disable set-print-base-radix
+                           w
+                           acl2::ilks-plist-worldp
+                           acl2::myquotep
+                           quotep
+                           mv-nth)))
+
+(local (in-theory (enable acl2::weak-dagp-when-pseudo-dagp
+                          acl2::true-listp-when-symbol-listp-rewrite-unlimited)))
+
+;move
+(defthm w-of-set-print-base-radix
+  (equal (w (set-print-base-radix base state))
+         (w state))
+  :hints (("Goal" :in-theory (enable set-print-base-radix w))))
+
+(local
+  (defthm not-quote-forward-to-not-myquotep
+    (implies (not (quotep x))
+             (not (myquotep x)))
+    :rule-classes :forward-chaining
+    :hints (("Goal" :in-theory (enable myquotep)))))
 
 ;; Repeatedly rewrite DAG to perform symbolic execution.  Perform
 ;; STEP-INCREMENT steps at a time, until the run finishes, STEPS-LEFT is
@@ -209,13 +246,18 @@
                               (member print-base '(10 16))
                               (booleanp untranslatep)
                               (booleanp memoizep)
-                              (natp total-steps))
-                  :mode :program ; because of untranslate ; todo: use a safe version, or ec-call?
+                              (natp total-steps)
+                              (acl2::ilks-plist-worldp (w state)) ; why?
+                              )
+                  :measure (nfix steps-left)
                   :stobjs state))
   (if (zp steps-left)
       (mv (erp-nil) dag state)
     (b* ((this-step-increment (acl2::this-step-increment step-increment total-steps))
          (steps-for-this-iteration (min steps-left this-step-increment))
+         ((when (not (posp steps-for-this-iteration))) ; use mbt?
+          (er hard? 'repeatedly-run "Temination problem.")
+          (mv :termination-problem nil state))
          (- (cw "(Running (up to ~x0 steps):~%" steps-for-this-iteration))
          ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
          (old-dag dag)
@@ -296,6 +338,7 @@
          ((when erp) (mv erp nil state))
          ((when (quotep dag-or-quotep)) (mv (erp-nil) dag-or-quotep state))
          (dag dag-or-quotep) ; it wasn't a quotep
+         ;; TODO: Error if dag too big (must be able to add it to old dag, or make a version of equivalent-dagsp that signals an error):
          ;; (- (and print (progn$ (cw "(DAG after second pruning:~%")
          ;;                       (cw "~X01" dag nil)
          ;;                       (cw ")~%"))))
@@ -305,7 +348,8 @@
          ((when (member-eq 'x86isa::x86-step-unimplemented dag-fns))
           (prog2$ (cw "WARNING: UNIMPLEMENTED INSTRUCTION.~%")
                   (mv (erp-nil) dag state))) ; todo: return an error?
-         (nothing-changedp (acl2::equivalent-dagsp dag old-dag)) ; todo: can we test equivalence up to xor nest normalization?
+         ((mv erp nothing-changedp) (acl2::equivalent-dagsp2 dag old-dag)) ; todo: can we test equivalence up to xor nest normalization?
+         ((when erp) (mv erp nil state))
          ((when nothing-changedp)
           (cw "Note: Stopping the run because nothing changed.~%")
           (mv (erp-nil) dag state)) ; todo: return an error?
@@ -352,16 +396,20 @@
         (let* ((total-steps (+ steps-for-this-iteration total-steps))
                (state ;; Print as a term unless it would be huge:
                  (if (acl2::print-level-at-least-tp print)
-                     (if (< (acl2::dag-or-quotep-size dag) 1000)
+                     (if (acl2::dag-or-quotep-size-less-than dag 1000)
                          (b* ((- (cw "(Term after ~x0 steps:~%" total-steps))
                               (state (if (not (eql 10 print-base)) ; make-event always sets the print-base to 10
                                          (set-print-base-radix print-base state)
                                        state))
-                              (- (cw "~X01" (let ((term (dag-to-term dag)))
-                                              (if untranslatep
-                                                  (untranslate term nil (w state))
-                                                term))
-                                     nil))
+                              ((mv erp term)
+                               (let ((term (dag-to-term dag)))
+                                 (if untranslatep
+                                     (untranslate-logic term (w state) state)
+                                   (mv nil term))))
+                              ((when erp)
+                               (er hard? 'repeatedly-run "Error untranslating.")
+                               state)
+                              (- (cw "~X01" term nil))
                               (state (set-print-base-radix 10 state)) ;make event sets it to 10
                               (- (cw ")~%")))
                            state)
@@ -387,8 +435,7 @@
                            ;; (:e assumption-simplification-rules)
                            ;; lifter-rules64-new
                            ;; (:e lifter-rules64-new)
-                           acl2::ilks-plist-worldp
-                           w)))
+                    )))
 
 ;; Returns (mv erp assumptions assumption-rules state)
 (defund simplify-assumptions (assumptions extra-assumption-rules 64-bitp state)
@@ -478,7 +525,7 @@
                               (member print-base '(10 16))
                               (booleanp untranslatep))
                   :stobjs state
-                  :mode :program ; todo
+                  :mode :program ; todo: need a magic wrapper for translate-terms
                   ))
   (b* ((- (cw "(Lifting ~s0.~%" target)) ;todo: print the executable name
        ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
@@ -619,8 +666,7 @@
                                                               ;; See the System V AMD64 ABI
                                                               '((rdi x86) (rsi x86) (rdx x86) (rcx x86) (r8 x86) (r9 x86))
                                                               stack-slots
-                                                              text-offset
-                                                              code-length)
+                                                              (acons text-offset code-length nil))
                                     nil))
                (assumptions (append standard-assumptions input-assumptions)) ; call these automatic-assumptions?
                (assumptions (append assumptions extra-assumptions))
@@ -750,7 +796,8 @@
                               (booleanp prove-theorem)
                               (booleanp restrict-theory))
                   :stobjs state
-                  :mode :program))
+                  :mode :program ; todo
+                  ))
   (b* (;; Check whether this call to the lifter has already been made:
        (previous-result (previous-lifter-result whole-form state))
        ((when previous-result)
