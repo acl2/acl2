@@ -103,7 +103,7 @@
                                 (certificates-with-round round dag1)
                                 (certificates-with-round round dag2))))))))
 
-  (defrule dag-previous-in-dag-p-of-intersect
+  (defruled dag-previous-in-dag-p-of-intersect
     (implies (and (certificate-setp dag1)
                   (certificate-setp dag2)
                   (certificate-sets-unequivocalp dag1 dag2)
