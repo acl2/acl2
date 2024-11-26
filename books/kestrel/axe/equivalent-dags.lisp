@@ -45,14 +45,24 @@
                    (farg2 equality-expr))))))))
 
 ;fixme what if one is a constant and the other is a dag with one node that is that constant?
-(defun equivalent-dags-or-quoteps (dag1 dag2)
+(defund equivalent-dags-or-quoteps (dag1 dag2)
   (declare (xargs :guard (and (or (myquotep dag1)
                                   (pseudo-dagp dag1))
                               (or (myquotep dag2)
                                   (pseudo-dagp dag2))
-                              (<= (+ (LEN DAG1) (LEN DAG2))
+                              (<= (+ (len dag1) (len dag2))
                                   *max-1d-array-length*))))
   (if (or (quotep dag1)
           (quotep dag2))
       (equal dag1 dag2)
     (equivalent-dagsp dag1 dag2)))
+
+;; This one can return an error if the dags are too big.
+;; Returns (mv erp equivalentp).
+(defund equivalent-dagsp2 (dag1 dag2)
+  (declare (xargs :guard (and (pseudo-dagp dag1)
+                              (pseudo-dagp dag2))))
+  (if (<= (+ (len dag1) (len dag2))
+          *max-1d-array-length*)
+      (mv nil (equivalent-dagsp dag1 dag2))
+    (mv :dags-too-big nil)))
