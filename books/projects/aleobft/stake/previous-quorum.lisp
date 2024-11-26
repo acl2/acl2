@@ -39,7 +39,7 @@
      unless the certificate round is 1,
      in which case there must be no references.")
    (xdoc::p
-    "When a certificate is stored into the DAG via a @('receive') event,
+    "When a certificate is stored into the DAG via a @('store') event,
      that event's preconditions impose a similar requirements.")
    (xdoc::p
     "Thus, all the certificates in a validator's DAG satisfy that requirement.
