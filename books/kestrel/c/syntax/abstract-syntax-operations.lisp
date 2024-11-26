@@ -1106,13 +1106,13 @@
                   (cons (decl-spec-tyspec->spec declspec) tyspecs)
                   stor-specs)
             (mv nil nil nil))))
-       ((when (decl-spec-case declspec :stocla))
+       ((when (decl-spec-case declspec :stoclass))
         (b* (((mv yes/no tyspecs stor-specs)
               (check-decl-spec-list-all-tyspec/storspec (cdr declspecs))))
           (if yes/no
               (mv t
                   tyspecs
-                  (cons (decl-spec-stocla->spec declspec) stor-specs))
+                  (cons (decl-spec-stoclass->spec declspec) stor-specs))
             (mv nil nil nil)))))
     (mv nil nil nil))
   :hooks (:fix))
@@ -1161,8 +1161,8 @@
           preserving the order."
   (b* (((when (endp declspecs)) nil)
        (declspec (car declspecs)))
-    (if (decl-spec-case declspec :stocla)
-        (cons (decl-spec-stocla->spec declspec)
+    (if (decl-spec-case declspec :stoclass)
+        (cons (decl-spec-stoclass->spec declspec)
               (decl-spec-list-to-stor-spec-list (cdr declspecs)))
       (decl-spec-list-to-stor-spec-list (cdr declspecs))))
   :hooks (:fix))

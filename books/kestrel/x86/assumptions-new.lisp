@@ -253,9 +253,7 @@
                               (symbolp state-var) ; todo: too strict?
                               (names-and-typesp inputs)
                               (acl2::parsed-elfp parsed-elf))
-                  :guard-hints (("Goal" :in-theory (enable acl2::parsed-elfp acl2::true-listp-when-pseudo-term-listp-2)))
-                  :guard-debug t
-                  ))
+                  :guard-hints (("Goal" :in-theory (enable acl2::parsed-elfp acl2::true-listp-when-pseudo-term-listp-2)))))
   (b* ((file-type (acl2::parsed-elf-type parsed-elf))
        ((when (not (member-eq file-type '(:rel :dyn :exec))))
         (mv (cons :unknown-file-type file-type) nil))
@@ -339,8 +337,7 @@
                                     ;; See the System V AMD64 ABI
                                     '((rdi x86) (rsi x86) (rdx x86) (rcx x86) (r8 x86) (r9 x86))
                                     stack-slots-needed
-                                    text-offset
-                                    (len (acl2::get-elf-code parsed-elf)) ; todo: could there be extra zeros?
+                                    (acons text-offset (len (acl2::get-elf-code parsed-elf)) nil) ; todo: could there be extra zeros?
                                     ))))))
 
 ;; not true due to make-standard-state-assumptions-64-fn

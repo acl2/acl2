@@ -318,7 +318,7 @@
     :short "Transform a declaration specifier."
     (decl-spec-case
      declspec
-     :stocla (decl-spec-fix declspec)
+     :stoclass (decl-spec-fix declspec)
      :tyspec (decl-spec-tyspec (simpadd0-type-spec declspec.spec))
      :tyqual (decl-spec-fix declspec)
      :function (decl-spec-fix declspec)

@@ -3295,7 +3295,7 @@
                    ((erp types table)
                     (valid-strunispec tyspec.spec table ienv)))
                 (retok (type-union) nil types table))
-       :enum (b* (((when (endp tyspecs)) (reterr msg-bad-preceding))
+       :enum (b* (((unless (endp tyspecs)) (reterr msg-bad-preceding))
                   ((erp types table)
                    (valid-enumspec tyspec.spec table ienv)))
                (retok (type-enum) nil types table))
@@ -3554,11 +3554,11 @@
     (b* (((reterr) nil nil nil nil (irr-valid-table)))
       (decl-spec-case
        declspec
-       :stocla (retok (type-option-fix type?)
-                      (type-spec-list-fix tyspecs)
-                      (rcons declspec.spec (stor-spec-list-fix storspecs))
-                      nil
-                      (valid-table-fix table))
+       :stoclass (retok (type-option-fix type?)
+                        (type-spec-list-fix tyspecs)
+                        (rcons declspec.spec (stor-spec-list-fix storspecs))
+                        nil
+                        (valid-table-fix table))
        :tyspec (b* (((erp type? tyspecs types table)
                      (valid-type-spec
                       declspec.spec type? tyspecs table ienv)))

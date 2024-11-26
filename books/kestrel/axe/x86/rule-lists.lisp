@@ -1347,6 +1347,8 @@
     segment-base-and-bounds-of-set-rsp
     segment-base-and-bounds-of-set-rbp
     segment-base-and-bounds-of-set-rax
+    segment-base-and-bounds-of-set-rbx
+    segment-base-and-bounds-of-set-rcx
     segment-base-and-bounds-of-set-rdx
     segment-base-and-bounds-of-set-rsi
     segment-base-and-bounds-of-set-rdi

@@ -236,6 +236,7 @@
 ;; TODO: Add a function to eval a dag.  See evaluate-test-case-aux.
 ;; TODO: Strengthen guards to require the interpreted-function-alist to always be complete wrt the built-in functions of the evaluator.
 ;; perhaps always include all the primitives - since we can't interpret them!
+;; TODO: Disallow duplicates among the fns-and-aliases (ignoring any unguarded aliases).
 (defun make-evaluator-simple-fn (suffix
                                  fns-and-aliases
                                  extra-guards-apply

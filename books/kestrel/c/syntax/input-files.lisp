@@ -94,7 +94,7 @@
 (define input-files-process-inputp (x)
   :returns (yes/no booleanp)
   :short "Recognize valid values of the @(':process') input."
-  (and (member-eq x '(:read :parse :disamb)) t))
+  (and (member-eq x '(:read :parse :disambiguate)) t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -170,9 +170,10 @@
        (process-option (assoc-eq :process options))
        (process (if process-option
                     (cdr process-option)
-                  :disamb))
+                  :disambiguate))
        ((unless (input-files-process-inputp process))
-        (reterr (msg "The :PROCESS input must be :READ, :PARSE, or :DISAMB, ~
+        (reterr (msg "The :PROCESS input must be ~
+                      :READ, :PARSE, or :DISAMBIGUATE, ~
                       but it is ~x0 instead."
                      process)))
        ;; Process :CONST input.
