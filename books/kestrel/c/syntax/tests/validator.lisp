@@ -334,3 +334,18 @@
   return ~ (a) + b;
 }
 ")
+
+(test-valid
+ "static int f();
+  extern int f();
+")
+
+(test-valid-fail
+ "extern int f();
+  static int f();
+")
+
+(test-valid-fail
+ "int f();
+  static int f();
+")
