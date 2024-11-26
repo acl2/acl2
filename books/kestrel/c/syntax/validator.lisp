@@ -3295,7 +3295,7 @@
                    ((erp types table)
                     (valid-strunispec tyspec.spec table ienv)))
                 (retok (type-union) nil types table))
-       :enum (b* (((when (endp tyspecs)) (reterr msg-bad-preceding))
+       :enum (b* (((unless (endp tyspecs)) (reterr msg-bad-preceding))
                   ((erp types table)
                    (valid-enumspec tyspec.spec table ienv)))
                (retok (type-enum) nil types table))
