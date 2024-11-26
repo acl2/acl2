@@ -215,3 +215,18 @@
                (myquotep x))
            (natp (dag-or-quotep-size x)))
   :hints (("Goal" :in-theory (enable dag-or-quotep-size))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; This one consider huge dags to not have size < n, without even looking at n!
+;; This one does not require the DAG to be not too large.
+(defund dag-or-quotep-size-less-than (d n)
+  (declare (xargs :guard (and (or (pseudo-dagp d)
+                                  (myquotep d))
+                              (natp n))
+                  :guard-hints (("Goal" :in-theory (enable rationalp-when-natp)))))
+  (if (or (myquotep d)
+          (<= (len d) *max-1d-array-length*))
+      (< (dag-or-quotep-size d) n)
+    nil ; the dag is huge
+    ))
