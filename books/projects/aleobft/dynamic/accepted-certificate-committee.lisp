@@ -75,6 +75,9 @@
 
   ///
 
+  (fty::deffixequiv-sk accepted-certificate-committee-p
+    :args ((systate system-statep)))
+
   (defruled accepted-certificate-committee-p-necc-fixing-binding
     (implies (and (accepted-certificate-committee-p systate)
                   (set::in (address-fix val) (correct-addresses systate))
@@ -242,15 +245,13 @@
           reachable from an initial state via a sequence of events."
 
   (defruled accepted-certificate-committee-p-of-events-next
-    (implies
-     (and (system-statep systate)
-          (accepted-certificate-committee-p systate)
-          (ordered-even-p systate)
-          (last-blockchain-round-p systate)
-          (events-possiblep events systate))
-     (and (accepted-certificate-committee-p (events-next events systate))
-          (ordered-even-p (events-next events systate))
-          (last-blockchain-round-p (events-next events systate))))
+    (implies (and (accepted-certificate-committee-p systate)
+                  (ordered-even-p systate)
+                  (last-blockchain-round-p systate)
+                  (events-possiblep events systate))
+             (and (accepted-certificate-committee-p (events-next events systate))
+                  (ordered-even-p (events-next events systate))
+                  (last-blockchain-round-p (events-next events systate))))
     :induct t
     :disable ((:e tau-system))
     :enable (events-possiblep
@@ -260,8 +261,7 @@
              last-blockchain-round-p-of-event-next))
 
   (defruled accepted-certificate-committee-p-when-reachable
-    (implies (and (system-statep systate)
-                  (system-initp systate)
+    (implies (and (system-initp systate)
                   (events-possiblep events systate))
              (accepted-certificate-committee-p (events-next events systate)))
     :disable ((:e tau-system))
