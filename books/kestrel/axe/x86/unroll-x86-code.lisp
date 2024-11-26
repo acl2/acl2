@@ -706,9 +706,10 @@
                (assumptions (acl2::translate-terms assumptions 'unroll-x86-code-core (w state))) ; perhaps don't translate the automatic-assumptions?
                (- (and (acl2::print-level-at-least-tp print) (progn$ (cw "(Unsimplified assumptions:~%")
                                                                      (print-terms-elided assumptions
-                                                                                         '(standard-assumptions-elf-64
-                                                                                           standard-assumptions-mach-o-64
-                                                                                           standard-assumptions-pe-64)) ; todo: more?
+                                                                                         '((standard-assumptions-elf-64 t nil t t t)
+                                                                                           (standard-assumptions-mach-o-64 t nil t t t)
+                                                                                           (standard-assumptions-pe-64 t nil t t t)
+                                                                                           )) ; todo: more?
                                                                      (cw ")~%"))))
                ;; Next, we simplify the assumptions.  This allows us to state the
                ;; theorem about a lifted routine concisely, using an assumption
