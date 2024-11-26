@@ -591,6 +591,29 @@
           (cw ")~%")))
     (mv (erp-nil) result-dag-or-quotep state)))
 
+(defthm w-of-mv-nth-2-of-prune-dag-approximately
+  (equal (w (mv-nth 2 (prune-dag-approximately dag assumptions check-fnsp print state)))
+         (w state))
+  :hints (("Goal" :in-theory (enable prune-dag-approximately))))
+
+(local (in-theory (disable ilks-plist-worldp)))
+
+(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+
+(defthm pseudo-dagp-of-mv-nth-1-of-prune-dag-approximately
+  (implies (and (not (mv-nth 0 (prune-dag-approximately dag assumptions check-fnsp print state))) ; no error
+                (pseudo-dagp dag)
+                (<= (len dag) *max-1d-array-length*)
+                (pseudo-term-listp assumptions)
+                (booleanp check-fnsp)
+                (print-levelp print)
+                (ilks-plist-worldp (w state))
+                (not (quotep (mv-nth 1 (prune-dag-approximately dag assumptions check-fnsp print state)))))
+           (pseudo-dagp (mv-nth 1 (prune-dag-approximately dag assumptions check-fnsp print state))))
+  :hints (("Goal" :in-theory (e/d (prune-dag-approximately car-of-car-when-pseudo-dagp)
+                                  (myquotep ; loop on simplify-dag-basic-return-type-corollary-2 without this
+                                   )))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv erp dag-or-quotep state).
@@ -621,3 +644,8 @@
                              nil ; we already know there are prunable ops
                              print
                              state)))
+
+(defthm w-of-mv-nth-2-of-maybe-prune-dag-approximately
+  (equal (w (mv-nth 2 (maybe-prune-dag-approximately prune-branches dag assumptions print state)))
+         (w state))
+  :hints (("Goal" :in-theory (enable maybe-prune-dag-approximately))))
