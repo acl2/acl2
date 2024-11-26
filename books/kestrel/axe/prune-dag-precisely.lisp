@@ -98,7 +98,6 @@
                               (booleanp check-fnsp)
                               (print-levelp print)
                               (ilks-plist-worldp (w state)))
-                  :guard-debug t
                   :stobjs state))
   (b* (((mv erp rule-alist)
         (if (not (eq :none rule-alist))

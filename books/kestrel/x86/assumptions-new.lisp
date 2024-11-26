@@ -253,9 +253,7 @@
                               (symbolp state-var) ; todo: too strict?
                               (names-and-typesp inputs)
                               (acl2::parsed-elfp parsed-elf))
-                  :guard-hints (("Goal" :in-theory (enable acl2::parsed-elfp acl2::true-listp-when-pseudo-term-listp-2)))
-                  :guard-debug t
-                  ))
+                  :guard-hints (("Goal" :in-theory (enable acl2::parsed-elfp acl2::true-listp-when-pseudo-term-listp-2)))))
   (b* ((file-type (acl2::parsed-elf-type parsed-elf))
        ((when (not (member-eq file-type '(:rel :dyn :exec))))
         (mv (cons :unknown-file-type file-type) nil))

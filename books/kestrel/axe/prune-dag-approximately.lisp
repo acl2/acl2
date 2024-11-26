@@ -507,7 +507,6 @@
                               (booleanp check-fnsp)
                               (print-levelp print)
                               (ilks-plist-worldp (w state)))
-                  :guard-debug t
                   :guard-hints (("Goal" :in-theory (enable car-of-car-when-pseudo-dagp)))
                   :stobjs state))
   (b* ((prunep (if check-fnsp (dag-fns-include-any dag '(if myif boolif bvif)) t))
