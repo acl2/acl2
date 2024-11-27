@@ -1,7 +1,7 @@
 ; BV Lists library: bits-to-bytes-little
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -16,6 +16,8 @@
 
 (include-book "bits-to-byte-little")
 (include-book "len-mult-of-8p")
+(include-book "byte-listp-def")
+(local (include-book "byte-listp"))
 (local (include-book "../lists-light/len"))
 (local (include-book "../lists-light/nthcdr"))
 (local (include-book "../lists-light/take"))
@@ -48,6 +50,10 @@
 
 (defthm all-unsigned-byte-p-8-of-bits-to-bytes-little
   (all-unsigned-byte-p 8 (bits-to-bytes-little bits))
+  :hints (("Goal" :in-theory (enable bits-to-bytes-little))))
+
+(defthm byte-listp-of-bits-to-bytes-little
+  (byte-listp (bits-to-bytes-little bits))
   :hints (("Goal" :in-theory (enable bits-to-bytes-little))))
 
 (defthm bits-to-bytes-little-iff

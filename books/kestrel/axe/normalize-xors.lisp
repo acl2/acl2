@@ -259,42 +259,48 @@
           (cons first-item (insert-into-sorted-list-and-remove-dups item (cdr list))))))))
 
 ;drop?
-(defthmd all-integerp-of-insert-into-sorted-list-and-remove-dups
-  (implies (integerp item)
-           (equal (all-integerp (insert-into-sorted-list-and-remove-dups item list))
-                  (all-integerp list)))
-  :hints (("Goal" :in-theory (enable insert-into-sorted-list-and-remove-dups))))
+;; (defthmd all-integerp-of-insert-into-sorted-list-and-remove-dups
+;;   (implies (integerp item)
+;;            (equal (all-integerp (insert-into-sorted-list-and-remove-dups item list))
+;;                   (all-integerp list)))
+;;   :hints (("Goal" :in-theory (enable insert-into-sorted-list-and-remove-dups))))
 
-(defthm nat-listp-of-insert-into-sorted-list-and-remove-dups
-  (implies (and (natp item)
-                (true-listp list))
-           (equal (nat-listp (insert-into-sorted-list-and-remove-dups item list))
-                  (nat-listp list)))
-  :hints (("Goal" :in-theory (enable nat-listp insert-into-sorted-list-and-remove-dups))))
+(local
+ (defthm nat-listp-of-insert-into-sorted-list-and-remove-dups
+   (implies (and (natp item)
+                 (true-listp list))
+            (equal (nat-listp (insert-into-sorted-list-and-remove-dups item list))
+                   (nat-listp list)))
+   :hints (("Goal" :in-theory (enable nat-listp insert-into-sorted-list-and-remove-dups)))))
 
-(defthm all-natp-of-insert-into-sorted-list-and-remove-dups
-  (implies (natp item)
-           (equal (all-natp (insert-into-sorted-list-and-remove-dups item list))
-                  (all-natp list)))
-  :hints (("Goal" :in-theory (enable insert-into-sorted-list-and-remove-dups))))
+;; todo: go to just using nat-listp?
+(local
+ (defthm all-natp-of-insert-into-sorted-list-and-remove-dups
+   (implies (natp item)
+            (equal (all-natp (insert-into-sorted-list-and-remove-dups item list))
+                   (all-natp list)))
+   :hints (("Goal" :in-theory (enable insert-into-sorted-list-and-remove-dups)))))
 
-(defthm true-listp-of-insert-into-sorted-list-and-remove-dups
-  (implies (true-listp list)
-           (true-listp (insert-into-sorted-list-and-remove-dups item list)))
-  :hints (("Goal" :in-theory (enable insert-into-sorted-list-and-remove-dups))))
+(local
+ (defthm true-listp-of-insert-into-sorted-list-and-remove-dups
+   (implies (true-listp list)
+            (true-listp (insert-into-sorted-list-and-remove-dups item list)))
+   :hints (("Goal" :in-theory (enable insert-into-sorted-list-and-remove-dups)))))
 
-(defthm all-<-of-insert-into-sorted-list-and-remove-dups
-  (implies (and (< item bound)
-                (all-< list bound))
-           (all-< (insert-into-sorted-list-and-remove-dups item list) bound))
-  :hints (("Goal" :in-theory (enable insert-into-sorted-list-and-remove-dups))))
+(local
+ (defthm all-<-of-insert-into-sorted-list-and-remove-dups
+   (implies (and (< item bound)
+                 (all-< list bound))
+            (all-< (insert-into-sorted-list-and-remove-dups item list) bound))
+   :hints (("Goal" :in-theory (enable insert-into-sorted-list-and-remove-dups)))))
 
-(defthm all-<=-of-insert-into-sorted-list-and-remove-dups
-  (implies (and (<= val2 val)
-                (all-<= lst val))
-           (all-<= (insert-into-sorted-list-and-remove-dups val2 lst)
-                   val))
-  :hints (("Goal" :in-theory (enable insert-into-sorted-list-and-remove-dups))))
+(local
+ (defthm all-<=-of-insert-into-sorted-list-and-remove-dups
+   (implies (and (<= val2 val)
+                 (all-<= lst val))
+            (all-<= (insert-into-sorted-list-and-remove-dups val2 lst)
+                    val))
+   :hints (("Goal" :in-theory (enable insert-into-sorted-list-and-remove-dups)))))
 
 ;; ;not quite right because of dups
 ;; (defthm maxelem-of-insert-into-sorted-list-and-remove-dups
@@ -304,12 +310,13 @@
 ;;            (max item (maxelem list))))
 ;;   :hints (("Goal" :in-theory (enable MAXELEM))))
 
-(defthm decreasingp-of-insert-into-sorted-list-and-remove-dups
-  (implies (and (decreasingp list)
-                (integerp item)
-                (integer-listp list))
-           (decreasingp (insert-into-sorted-list-and-remove-dups item list)))
-  :hints (("Goal" :in-theory (enable decreasingp insert-into-sorted-list-and-remove-dups))))
+(local
+ (defthm decreasingp-of-insert-into-sorted-list-and-remove-dups
+   (implies (and (decreasingp list)
+                 (integerp item)
+                 (integer-listp list))
+            (decreasingp (insert-into-sorted-list-and-remove-dups item list)))
+   :hints (("Goal" :in-theory (enable decreasingp insert-into-sorted-list-and-remove-dups)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -355,21 +362,23 @@
                                   (cons renamed-nodenum nodenum-acc)
                                   combined-constant))))))
 
-(defthm true-listp-of-mv-nth-0-of-translate-nodenums-for-xor-rev
-  (implies (true-listp nodenum-acc)
-           (true-listp (mv-nth 0 (translate-nodenums-for-xor-rev nodenums translation-array dag-len xor-size nodenum-acc combined-constant))))
-  :hints (("Goal" :in-theory (enable translate-nodenums-for-xor-rev))))
+(local
+ (defthm true-listp-of-mv-nth-0-of-translate-nodenums-for-xor-rev
+   (implies (true-listp nodenum-acc)
+            (true-listp (mv-nth 0 (translate-nodenums-for-xor-rev nodenums translation-array dag-len xor-size nodenum-acc combined-constant))))
+   :hints (("Goal" :in-theory (enable translate-nodenums-for-xor-rev)))))
 
 ;; need to know that the translation array is bounded - use def-typed-acl2-array?
-(defthm all-natp-of-mv-nth-0-of-translate-nodenums-for-xor-rev
-  (implies (and (all-natp nodenum-acc)
-                (all-natp nodenums)
-                (all-< nodenums dag-len)
-                (array1p 'translation-array translation-array)
-                (equal dag-len (alen1 'translation-array translation-array))
-                (translation-arrayp-aux (+ -1 dag-len) translation-array))
-           (all-natp (mv-nth 0 (translate-nodenums-for-xor-rev nodenums translation-array dag-len xor-size nodenum-acc combined-constant))))
-  :hints (("Goal" :in-theory (enable translate-nodenums-for-xor-rev))))
+(local
+ (defthm all-natp-of-mv-nth-0-of-translate-nodenums-for-xor-rev
+   (implies (and (all-natp nodenum-acc)
+                 (all-natp nodenums)
+                 (all-< nodenums dag-len)
+                 (array1p 'translation-array translation-array)
+                 (equal dag-len (alen1 'translation-array translation-array))
+                 (translation-arrayp-aux (+ -1 dag-len) translation-array))
+            (all-natp (mv-nth 0 (translate-nodenums-for-xor-rev nodenums translation-array dag-len xor-size nodenum-acc combined-constant))))
+   :hints (("Goal" :in-theory (enable translate-nodenums-for-xor-rev)))))
 
 ;; (defthm all-integerp-of-mv-nth-0-of-translate-nodenums-for-xor-rev
 ;;   (implies (and (all-natp nodenum-acc)
@@ -384,16 +393,17 @@
 ;;   :hints (("Goal" :in-theory (enable translate-nodenums-for-xor-rev))))
 
 ;; they actually can't be quoteps?
-(defthm bounded-darg-listp-of-mv-nth-0-of-translate-nodenums-for-xor-rev
-  (implies (and (all-natp nodenums)
-                (all-< nodenums dag-len)
-                (bounded-darg-listp nodenum-acc bound)
-                (array1p 'translation-array translation-array)
-                (equal dag-len (alen1 'translation-array translation-array))
-                (bounded-translation-arrayp-aux (+ -1 dag-len) translation-array bound))
-           (bounded-darg-listp (mv-nth 0 (translate-nodenums-for-xor-rev nodenums translation-array dag-len xor-size nodenum-acc combined-constant))
-                                           bound))
-  :hints (("Goal" :in-theory (enable translate-nodenums-for-xor-rev))))
+(local
+ (defthm bounded-darg-listp-of-mv-nth-0-of-translate-nodenums-for-xor-rev
+   (implies (and (all-natp nodenums)
+                 (all-< nodenums dag-len)
+                 (bounded-darg-listp nodenum-acc bound)
+                 (array1p 'translation-array translation-array)
+                 (equal dag-len (alen1 'translation-array translation-array))
+                 (bounded-translation-arrayp-aux (+ -1 dag-len) translation-array bound))
+            (bounded-darg-listp (mv-nth 0 (translate-nodenums-for-xor-rev nodenums translation-array dag-len xor-size nodenum-acc combined-constant))
+                                bound))
+   :hints (("Goal" :in-theory (enable translate-nodenums-for-xor-rev)))))
 
 
 ;items are sorted, so any duplicates must be adjacent
@@ -415,16 +425,18 @@
           (remove-duplicate-pairs-and-reverse (cddr items) acc)
         (remove-duplicate-pairs-and-reverse (cdr items) (cons (first items) acc))))))
 
-(defthm true-listp-of-remove-duplicate-pairs-and-reverse
-  (implies (true-listp acc)
-           (true-listp (remove-duplicate-pairs-and-reverse items acc)))
-  :hints (("Goal" :in-theory (enable remove-duplicate-pairs-and-reverse))))
+(local
+ (defthm true-listp-of-remove-duplicate-pairs-and-reverse
+   (implies (true-listp acc)
+            (true-listp (remove-duplicate-pairs-and-reverse items acc)))
+   :hints (("Goal" :in-theory (enable remove-duplicate-pairs-and-reverse)))))
 
-(defthm bounded-darg-listp-of-remove-duplicate-pairs-and-reverse
-  (implies (and (bounded-darg-listp items lim)
-                (bounded-darg-listp acc lim))
-           (bounded-darg-listp (remove-duplicate-pairs-and-reverse items acc) lim))
-  :hints (("Goal" :in-theory (enable remove-duplicate-pairs-and-reverse))))
+(local
+ (defthm bounded-darg-listp-of-remove-duplicate-pairs-and-reverse
+   (implies (and (bounded-darg-listp items lim)
+                 (bounded-darg-listp acc lim))
+            (bounded-darg-listp (remove-duplicate-pairs-and-reverse items acc) lim))
+   :hints (("Goal" :in-theory (enable remove-duplicate-pairs-and-reverse)))))
 
 ;;
 ;; bitxor:
@@ -452,6 +464,7 @@
 ;; at any point, the original nest equals the xor of the output so far (accumulated-constant and acc) with the xor of everything in the pending-list
 
 
+;; todo: localize:
 
 ;slow?
 (defthm <-of-0-when-<-free
@@ -566,29 +579,33 @@
               ;;add the node to the result, since it's not a bitxor:
               (bitxor-nest-leaves-aux (rest pending-list) dag-array dag-len (cons highest-node acc) accumulated-constant))))))))
 
-(defthm all-natp-of-mv-nth-0-of-bitxor-nest-leaves-aux
-  (implies (all-natp acc)
-           (all-natp (mv-nth 0 (bitxor-nest-leaves-aux pending-list dag-array dag-len acc accumulated-constant))))
-  :hints (("Goal" :in-theory (e/d (bitxor-nest-leaves-aux) (pseudo-dag-arrayp)))))
+(local
+ (defthm all-natp-of-mv-nth-0-of-bitxor-nest-leaves-aux
+   (implies (all-natp acc)
+            (all-natp (mv-nth 0 (bitxor-nest-leaves-aux pending-list dag-array dag-len acc accumulated-constant))))
+   :hints (("Goal" :in-theory (e/d (bitxor-nest-leaves-aux) (pseudo-dag-arrayp))))))
 
-(defthm true-listp-of-mv-nth-0-of-bitxor-nest-leaves-aux
-  (implies (true-listp acc)
-           (true-listp (mv-nth 0 (bitxor-nest-leaves-aux pending-list dag-array dag-len acc accumulated-constant))))
-  :hints (("Goal" :in-theory (e/d (bitxor-nest-leaves-aux) (pseudo-dag-arrayp)))))
+(local
+ (defthm true-listp-of-mv-nth-0-of-bitxor-nest-leaves-aux
+   (implies (true-listp acc)
+            (true-listp (mv-nth 0 (bitxor-nest-leaves-aux pending-list dag-array dag-len acc accumulated-constant))))
+   :hints (("Goal" :in-theory (e/d (bitxor-nest-leaves-aux) (pseudo-dag-arrayp))))))
 
-(defthm all-<-of-mv-nth-0-of-bitxor-nest-leaves-aux
-  (implies (all-< acc dag-len)
-           (all-< (mv-nth 0 (bitxor-nest-leaves-aux pending-list dag-array dag-len acc accumulated-constant))
-                  dag-len))
-  :hints (("Goal" :in-theory (e/d (bitxor-nest-leaves-aux) (pseudo-dag-arrayp)))))
+(local
+ (defthm all-<-of-mv-nth-0-of-bitxor-nest-leaves-aux
+   (implies (all-< acc dag-len)
+            (all-< (mv-nth 0 (bitxor-nest-leaves-aux pending-list dag-array dag-len acc accumulated-constant))
+                   dag-len))
+   :hints (("Goal" :in-theory (e/d (bitxor-nest-leaves-aux) (pseudo-dag-arrayp))))))
 
-(defthm all-<-of-mv-nth-0-of-bitxor-nest-leaves-aux-gen
-  (implies (and (all-< acc bound)
-                (<= dag-len bound))
-           (all-< (mv-nth 0 (bitxor-nest-leaves-aux pending-list dag-array dag-len acc accumulated-constant))
-                  bound))
-  :hints (("Goal" :in-theory (e/d (bitxor-nest-leaves-aux)
-                                  (pseudo-dag-arrayp)))))
+(local
+ (defthm all-<-of-mv-nth-0-of-bitxor-nest-leaves-aux-gen
+   (implies (and (all-< acc bound)
+                 (<= dag-len bound))
+            (all-< (mv-nth 0 (bitxor-nest-leaves-aux pending-list dag-array dag-len acc accumulated-constant))
+                   bound))
+   :hints (("Goal" :in-theory (e/d (bitxor-nest-leaves-aux)
+                                   (pseudo-dag-arrayp))))))
 
 (defthmd not-<-of-nth-0-and-nth-1-when-decreasingp
   (implies (and (decreasingp pending-list)
@@ -613,21 +630,22 @@
            (all-<= x bound))
   :hints (("Goal" :in-theory (enable all-<= decreasingp))))
 
-(defthm all-<=-of-mv-nth-0-of-bitxor-nest-leaves-aux-new
-  (implies (and (all-natp pending-list)
-                (decreasingp pending-list)
-                (all-< pending-list dag-len)
-                (pseudo-dag-arrayp 'normalize-xors-old-array dag-array dag-len)
+(local
+ (defthm all-<=-of-mv-nth-0-of-bitxor-nest-leaves-aux-new
+   (implies (and (all-natp pending-list)
+                 (decreasingp pending-list)
+                 (all-< pending-list dag-len)
+                 (pseudo-dag-arrayp 'normalize-xors-old-array dag-array dag-len)
 ;                (integerp accumulated-constant)
-                (all-<= acc bound)
-                (natp bound)
-                (if (consp pending-list)
-                    (<= (car pending-list) bound)
-                  t))
-           (all-<= (mv-nth 0 (bitxor-nest-leaves-aux pending-list dag-array dag-len acc accumulated-constant))
-                   bound))
-  :hints (("Goal" :in-theory (e/d (bitxor-nest-leaves-aux all-myquotep)
-                                  (pseudo-dag-arrayp quotep)))))
+                 (all-<= acc bound)
+                 (natp bound)
+                 (if (consp pending-list)
+                     (<= (car pending-list) bound)
+                   t))
+            (all-<= (mv-nth 0 (bitxor-nest-leaves-aux pending-list dag-array dag-len acc accumulated-constant))
+                    bound))
+   :hints (("Goal" :in-theory (e/d (bitxor-nest-leaves-aux all-myquotep)
+                                   (pseudo-dag-arrayp quotep))))))
 
 (defthm all-<=-of-+-of--1
   (implies (and (all-integerp acc)
@@ -645,33 +663,36 @@
 
 (local (in-theory (enable all-integerp-when-all-natp)))
 
-(defthm all-<-of-mv-nth-0-of-bitxor-nest-leaves-aux-new
-  (implies (and (all-natp pending-list)
-                (all-natp acc)
-                (decreasingp pending-list)
-                (all-< pending-list dag-len)
-                (pseudo-dag-arrayp 'normalize-xors-old-array dag-array dag-len)
+(local
+ (defthm all-<-of-mv-nth-0-of-bitxor-nest-leaves-aux-new
+   (implies (and (all-natp pending-list)
+                 (all-natp acc)
+                 (decreasingp pending-list)
+                 (all-< pending-list dag-len)
+                 (pseudo-dag-arrayp 'normalize-xors-old-array dag-array dag-len)
 ;                (integerp accumulated-constant)
-                (all-< acc bound)
-                (natp bound)
-                (if (consp pending-list)
-                    (< (car pending-list) bound)
-                  t))
-           (all-< (mv-nth 0 (bitxor-nest-leaves-aux pending-list dag-array dag-len acc accumulated-constant))
-                  bound))
-  :hints (("Goal" :use (:instance all-<=-of-mv-nth-0-of-bitxor-nest-leaves-aux-new (bound (+ -1 bound)))
-           :in-theory (e/d (BITXOR-NEST-LEAVES-AUX ALL-INTEGERP-WHEN-ALL-NATP)
-                           (all-<=-of-mv-nth-0-of-bitxor-nest-leaves-aux-new)))))
+                 (all-< acc bound)
+                 (natp bound)
+                 (if (consp pending-list)
+                     (< (car pending-list) bound)
+                   t))
+            (all-< (mv-nth 0 (bitxor-nest-leaves-aux pending-list dag-array dag-len acc accumulated-constant))
+                   bound))
+   :hints (("Goal" :use (:instance all-<=-of-mv-nth-0-of-bitxor-nest-leaves-aux-new (bound (+ -1 bound)))
+            :in-theory (e/d (BITXOR-NEST-LEAVES-AUX ALL-INTEGERP-WHEN-ALL-NATP)
+                            (all-<=-of-mv-nth-0-of-bitxor-nest-leaves-aux-new))))))
 
-(defthm integerp-of-mv-nth-1-of-bitxor-nest-leaves-aux
-  (implies (integerp accumulated-constant)
-           (integerp (mv-nth 1 (bitxor-nest-leaves-aux pending-list dag-array dag-len acc accumulated-constant))))
-  :hints (("Goal" :in-theory (e/d (bitxor-nest-leaves-aux) (quotep pseudo-dag-arrayp)))))
+(local
+ (defthm integerp-of-mv-nth-1-of-bitxor-nest-leaves-aux
+   (implies (integerp accumulated-constant)
+            (integerp (mv-nth 1 (bitxor-nest-leaves-aux pending-list dag-array dag-len acc accumulated-constant))))
+   :hints (("Goal" :in-theory (e/d (bitxor-nest-leaves-aux) (quotep pseudo-dag-arrayp))))))
 
-(defthm bitp-of-mv-nth-1-of-bitxor-nest-leaves-aux
-  (implies (bitp accumulated-constant)
-           (bitp (mv-nth 1 (bitxor-nest-leaves-aux pending-list dag-array dag-len acc accumulated-constant))))
-  :hints (("Goal" :in-theory (e/d (bitxor-nest-leaves-aux) (quotep pseudo-dag-arrayp)))))
+(local
+ (defthm bitp-of-mv-nth-1-of-bitxor-nest-leaves-aux
+   (implies (bitp accumulated-constant)
+            (bitp (mv-nth 1 (bitxor-nest-leaves-aux pending-list dag-array dag-len acc accumulated-constant))))
+   :hints (("Goal" :in-theory (e/d (bitxor-nest-leaves-aux) (quotep pseudo-dag-arrayp))))))
 
 
 ;; KEEP IN SYNC WITH BVXOR-NEST-LEAVES
@@ -711,19 +732,21 @@
 ;;                     (append rev-sorted-nodenum-leaves (list (enquote combined-constant))))))
 ;;             (make-reversed-bitxor-nest rev-sorted-nodenum-leaves-with-constant))))
 
-(defthm true-listp-of-bitxor-nest-leaves
-  (true-listp (bitxor-nest-leaves nodenum dag-array dag-len translation-array))
-  :hints (("Goal" :in-theory (enable bitxor-nest-leaves))))
+(local
+ (defthm true-listp-of-bitxor-nest-leaves
+   (true-listp (bitxor-nest-leaves nodenum dag-array dag-len translation-array))
+   :hints (("Goal" :in-theory (enable bitxor-nest-leaves)))))
 
-(defthm bounded-darg-listp-of-bitxor-nest-leaves
-  (implies (and (natp nodenum)
-                (pseudo-dag-arrayp 'normalize-xors-old-array dag-array dag-len)
-                (< nodenum dag-len)
-                (array1p 'translation-array translation-array)
-                (equal dag-len (alen1 'translation-array translation-array))
-                (bounded-translation-arrayp-aux (+ -1 dag-len) translation-array bound))
-           (bounded-darg-listp (bitxor-nest-leaves nodenum dag-array dag-len translation-array) bound))
-  :hints (("Goal" :in-theory (enable bitxor-nest-leaves))))
+(local
+ (defthm bounded-darg-listp-of-bitxor-nest-leaves
+   (implies (and (natp nodenum)
+                 (pseudo-dag-arrayp 'normalize-xors-old-array dag-array dag-len)
+                 (< nodenum dag-len)
+                 (array1p 'translation-array translation-array)
+                 (equal dag-len (alen1 'translation-array translation-array))
+                 (bounded-translation-arrayp-aux (+ -1 dag-len) translation-array bound))
+            (bounded-darg-listp (bitxor-nest-leaves nodenum dag-array dag-len translation-array) bound))
+   :hints (("Goal" :in-theory (enable bitxor-nest-leaves)))))
 
 ;; POSSIBLE BETTER ALGORITHM (linear in the size of the DAG but might perform worse for small nests):
 
@@ -1001,71 +1024,79 @@
                    (accumulated-constant (if (consp right-child) (bvxor size (ifix (unquote right-child)) accumulated-constant) accumulated-constant)))
               (bvxor-nest-leaves-aux pending-list size dag-array dag-len acc accumulated-constant))))))))
 
-(defthm all-natp-of-mv-nth-0-of-bvxor-nest-leaves-aux
-  (implies (all-natp acc)
-           (all-natp (mv-nth 0 (bvxor-nest-leaves-aux pending-list size dag-array dag-len acc accumulated-constant))))
-  :hints (("Goal" :in-theory (e/d (bvxor-nest-leaves-aux) (pseudo-dag-arrayp)))))
+(local
+ (defthm all-natp-of-mv-nth-0-of-bvxor-nest-leaves-aux
+   (implies (all-natp acc)
+            (all-natp (mv-nth 0 (bvxor-nest-leaves-aux pending-list size dag-array dag-len acc accumulated-constant))))
+   :hints (("Goal" :in-theory (e/d (bvxor-nest-leaves-aux) (pseudo-dag-arrayp))))))
 
-(defthm true-listp-of-mv-nth-0-of-bvxor-nest-leaves-aux
-  (implies (true-listp acc)
-           (true-listp (mv-nth 0 (bvxor-nest-leaves-aux pending-list size dag-array dag-len acc accumulated-constant))))
-  :hints (("Goal" :in-theory (e/d (bvxor-nest-leaves-aux) (pseudo-dag-arrayp)))))
+(local
+ (defthm true-listp-of-mv-nth-0-of-bvxor-nest-leaves-aux
+   (implies (true-listp acc)
+            (true-listp (mv-nth 0 (bvxor-nest-leaves-aux pending-list size dag-array dag-len acc accumulated-constant))))
+   :hints (("Goal" :in-theory (e/d (bvxor-nest-leaves-aux) (pseudo-dag-arrayp))))))
 
-(defthm all-<-of-mv-nth-0-of-bvxor-nest-leaves-aux
-  (implies (all-< acc dag-len)
-           (all-< (mv-nth 0 (bvxor-nest-leaves-aux pending-list size dag-array dag-len acc accumulated-constant)) dag-len))
-  :hints (("Goal" :in-theory (e/d (bvxor-nest-leaves-aux) (pseudo-dag-arrayp)))))
+(local
+ (defthm all-<-of-mv-nth-0-of-bvxor-nest-leaves-aux
+   (implies (all-< acc dag-len)
+            (all-< (mv-nth 0 (bvxor-nest-leaves-aux pending-list size dag-array dag-len acc accumulated-constant)) dag-len))
+   :hints (("Goal" :in-theory (e/d (bvxor-nest-leaves-aux) (pseudo-dag-arrayp))))))
 
-(defthm all-<-of-mv-nth-0-of-bvxor-nest-leaves-aux-gen
-  (implies (and (all-< acc bound)
-                (<= dag-len bound))
-           (all-< (mv-nth 0 (bvxor-nest-leaves-aux pending-list size dag-array dag-len acc accumulated-constant)) bound))
-  :hints (("Goal" :in-theory (e/d (bvxor-nest-leaves-aux)
-                                  (pseudo-dag-arrayp)))))
+(local
+ (defthm all-<-of-mv-nth-0-of-bvxor-nest-leaves-aux-gen
+   (implies (and (all-< acc bound)
+                 (<= dag-len bound))
+            (all-< (mv-nth 0 (bvxor-nest-leaves-aux pending-list size dag-array dag-len acc accumulated-constant)) bound))
+   :hints (("Goal" :in-theory (e/d (bvxor-nest-leaves-aux)
+                                   (pseudo-dag-arrayp))))))
 
-(defthm integer-of-mv-nth-1-of-bvxor-nest-leaves-aux
-  (implies (integerp accumulated-constant)
-           (integerp (mv-nth 1 (bvxor-nest-leaves-aux pending-list size dag-array dag-len acc accumulated-constant))))
-  :hints (("Goal" :in-theory (e/d (bvxor-nest-leaves-aux) (dag-exprp)))))
+(local
+ (defthm integer-of-mv-nth-1-of-bvxor-nest-leaves-aux
+   (implies (integerp accumulated-constant)
+            (integerp (mv-nth 1 (bvxor-nest-leaves-aux pending-list size dag-array dag-len acc accumulated-constant))))
+   :hints (("Goal" :in-theory (e/d (bvxor-nest-leaves-aux) (dag-exprp))))))
 
-(defthm unsigned-byte-p-of-mv-nth-1-of-bvxor-nest-leaves-aux
-  (implies (unsigned-byte-p size accumulated-constant)
-           (unsigned-byte-p size (mv-nth 1 (bvxor-nest-leaves-aux pending-list size dag-array dag-len acc accumulated-constant))))
-  :hints (("Goal" :in-theory (e/d (bvxor-nest-leaves-aux) (dag-exprp)))))
+(local
+ (defthm unsigned-byte-p-of-mv-nth-1-of-bvxor-nest-leaves-aux
+   (implies (unsigned-byte-p size accumulated-constant)
+            (unsigned-byte-p size (mv-nth 1 (bvxor-nest-leaves-aux pending-list size dag-array dag-len acc accumulated-constant))))
+   :hints (("Goal" :in-theory (e/d (bvxor-nest-leaves-aux) (dag-exprp))))))
 
-(defthm all-<=-of-mv-nth-0-of-bvxor-nest-leaves-aux-new
-  (implies (and (all-natp pending-list)
-                (decreasingp pending-list)
-                (all-< pending-list dag-len)
-                (pseudo-dag-arrayp 'normalize-xors-old-array dag-array dag-len)
+(local
+ (defthm all-<=-of-mv-nth-0-of-bvxor-nest-leaves-aux-new
+   (implies (and (all-natp pending-list)
+                 (decreasingp pending-list)
+                 (all-< pending-list dag-len)
+                 (pseudo-dag-arrayp 'normalize-xors-old-array dag-array dag-len)
 ;                (integerp accumulated-constant)
-                (all-<= acc bound)
-                (natp bound)
-                (if (consp pending-list)
-                    (<= (car pending-list) bound)
-                  t))
-           (all-<= (mv-nth 0 (bvxor-nest-leaves-aux pending-list size dag-array dag-len acc accumulated-constant))
+                 (all-<= acc bound)
+                 (natp bound)
+                 (if (consp pending-list)
+                     (<= (car pending-list) bound)
+                   t))
+            (all-<= (mv-nth 0 (bvxor-nest-leaves-aux pending-list size dag-array dag-len acc accumulated-constant))
+                    bound))
+   :hints (("Goal" :in-theory (e/d (bvxor-nest-leaves-aux)
+                                   (pseudo-dag-arrayp quotep))))))
+
+(local
+ (defthm all-<-of-mv-nth-0-of-bvxor-nest-leaves-aux-new
+   (implies (and (all-natp pending-list)
+                 (all-natp acc)
+                 (decreasingp pending-list)
+                 (all-< pending-list dag-len)
+                 (pseudo-dag-arrayp 'normalize-xors-old-array dag-array dag-len)
+;                (integerp accumulated-constant)
+                 (all-< acc bound)
+                 (natp bound)
+                 (if (consp pending-list)
+                     (< (car pending-list) bound)
+                   t))
+            (all-< (mv-nth 0 (bvxor-nest-leaves-aux pending-list size dag-array dag-len acc accumulated-constant))
                    bound))
-  :hints (("Goal" :in-theory (e/d (bvxor-nest-leaves-aux)
-                                  (pseudo-dag-arrayp quotep)))))
-
-(defthm all-<-of-mv-nth-0-of-bvxor-nest-leaves-aux-new
-  (implies (and (all-natp pending-list)
-                (all-natp acc)
-                (decreasingp pending-list)
-                (all-< pending-list dag-len)
-                (pseudo-dag-arrayp 'normalize-xors-old-array dag-array dag-len)
-;                (integerp accumulated-constant)
-                (all-< acc bound)
-                (natp bound)
-                (if (consp pending-list)
-                    (< (car pending-list) bound)
-                  t))
-           (all-< (mv-nth 0 (bvxor-nest-leaves-aux pending-list size dag-array dag-len acc accumulated-constant))
-                  bound))
-  :hints (("Goal" :use (:instance all-<=-of-mv-nth-0-of-bvxor-nest-leaves-aux-new (bound (+ -1 bound)))
-           :in-theory (e/d (BvXOR-NEST-LEAVES-AUX ALL-INTEGERP-WHEN-ALL-NATP)
-                           (all-<=-of-mv-nth-0-of-bvxor-nest-leaves-aux-new)))))
+   :hints (("Goal" :use (:instance all-<=-of-mv-nth-0-of-bvxor-nest-leaves-aux-new (bound (+ -1 bound)))
+            :in-theory (e/d (BvXOR-NEST-LEAVES-AUX ALL-INTEGERP-WHEN-ALL-NATP)
+                            (all-<=-of-mv-nth-0-of-bvxor-nest-leaves-aux-new))))))
 
 ;; KEEP IN SYNC WITH BITXOR-NEST-LEAVES
 ;; NODENUM is the root of a bvxor nest whose size parameter is SIZE.
@@ -1098,19 +1129,21 @@
        )
     all-leaves))
 
-(defthm true-listp-of-bvxor-nest-leaves
-  (true-listp (bvxor-nest-leaves nodenum size dag-array dag-len translation-array))
-  :hints (("Goal" :in-theory (enable bvxor-nest-leaves))))
+(local
+ (defthm true-listp-of-bvxor-nest-leaves
+   (true-listp (bvxor-nest-leaves nodenum size dag-array dag-len translation-array))
+   :hints (("Goal" :in-theory (enable bvxor-nest-leaves)))))
 
-(defthm bounded-darg-listp-of-bvxor-nest-leaves
-  (implies (and (natp nodenum)
-                (pseudo-dag-arrayp 'normalize-xors-old-array dag-array dag-len)
-                (< nodenum dag-len)
-                (array1p 'translation-array translation-array)
-                (equal (alen1 'translation-array translation-array) dag-len)
-                (bounded-translation-arrayp-aux (+ -1 dag-len) translation-array bound))
-           (bounded-darg-listp (bvxor-nest-leaves nodenum size dag-array dag-len translation-array) bound))
-  :hints (("Goal" :in-theory (enable bvxor-nest-leaves))))
+(local
+ (defthm bounded-darg-listp-of-bvxor-nest-leaves
+   (implies (and (natp nodenum)
+                 (pseudo-dag-arrayp 'normalize-xors-old-array dag-array dag-len)
+                 (< nodenum dag-len)
+                 (array1p 'translation-array translation-array)
+                 (equal (alen1 'translation-array translation-array) dag-len)
+                 (bounded-translation-arrayp-aux (+ -1 dag-len) translation-array bound))
+            (bounded-darg-listp (bvxor-nest-leaves nodenum size dag-array dag-len translation-array) bound))
+   :hints (("Goal" :in-theory (enable bvxor-nest-leaves)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1253,15 +1286,16 @@
                                             (aset1 'translation-array translation-array n nodenum-or-quotep)
                                             print)))))))))))))
 
-(def-dag-builder-theorems
-  (normalize-xors-aux n old-dag-array old-dag-len old-dag-parent-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist translation-array print)
-  (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist translation-array)
-  :dag-array-name 'normalize-xors-new-array
-  :dag-parent-array-name 'normalize-xors-new-parent-array
-  :expand (:free (old-dag-array old-dag-len old-dag-parent-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist translation-array print) ;;everything but n
-                 (normalize-xors-aux n old-dag-array old-dag-len old-dag-parent-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist translation-array print))
-  :dont-enable t ;led to loops?
-  :hyps ((natp n)
+(local
+ (def-dag-builder-theorems
+   (normalize-xors-aux n old-dag-array old-dag-len old-dag-parent-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist translation-array print)
+   (mv erp dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist translation-array)
+   :dag-array-name 'normalize-xors-new-array
+   :dag-parent-array-name 'normalize-xors-new-parent-array
+   :expand (:free (old-dag-array old-dag-len old-dag-parent-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist translation-array print) ;;everything but n
+                  (normalize-xors-aux n old-dag-array old-dag-len old-dag-parent-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist translation-array print))
+   :dont-enable t ;led to loops?
+   :hyps ((natp n)
           (natp old-dag-len)
           (<= n old-dag-len)
           ;;stuff about the old dag:
@@ -1273,101 +1307,104 @@
           (array1p 'translation-array translation-array)
           (equal old-dag-len (alen1 'translation-array translation-array))
           (bounded-translation-arrayp-aux (+ -1 old-dag-len) translation-array dag-len)
-          ))
+          )))
 
-(defthm type-of-normalize-xors-aux-other-params
-  (implies (and (natp n)
-                (natp old-dag-len)
-                (<= n old-dag-len)
+(local
+ (defthm type-of-normalize-xors-aux-other-params
+   (implies (and (natp n)
+                 (natp old-dag-len)
+                 (<= n old-dag-len)
                 ;;stuff about the old dag:
-                (pseudo-dag-arrayp 'normalize-xors-old-array old-dag-array old-dag-len)
-                (bounded-dag-parent-arrayp 'normalize-xors-old-parent-array old-dag-parent-array old-dag-len)
-                (equal (alen1 'normalize-xors-old-array old-dag-array)
-                       (alen1 'normalize-xors-old-parent-array old-dag-parent-array))
+                 (pseudo-dag-arrayp 'normalize-xors-old-array old-dag-array old-dag-len)
+                 (bounded-dag-parent-arrayp 'normalize-xors-old-parent-array old-dag-parent-array old-dag-len)
+                 (equal (alen1 'normalize-xors-old-array old-dag-array)
+                        (alen1 'normalize-xors-old-parent-array old-dag-parent-array))
                 ;; stuff about the new dag:
-                (wf-dagp 'normalize-xors-new-array dag-array dag-len 'normalize-xors-new-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                 (wf-dagp 'normalize-xors-new-array dag-array dag-len 'normalize-xors-new-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                 ;; stuff about the renaming array:
-                (array1p 'translation-array translation-array)
-                (equal old-dag-len (alen1 'translation-array translation-array))
-                (bounded-translation-arrayp-aux (+ -1 old-dag-len) translation-array dag-len)
-                )
-           (and (equal (alen1 'translation-array
-                              (mv-nth 6 (normalize-xors-aux n old-dag-array old-dag-len old-dag-parent-array
-                                                           dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist translation-array print)))
-                       old-dag-len)
-                (array1p 'translation-array
-                         (mv-nth 6 (normalize-xors-aux n old-dag-array old-dag-len old-dag-parent-array
-                                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist translation-array print)))
-                (bounded-translation-arrayp-aux (+ -1 old-dag-len)
-                                                (mv-nth 6 (normalize-xors-aux n old-dag-array old-dag-len old-dag-parent-array
-                                                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                                             translation-array print))
-                                                (mv-nth 2 (normalize-xors-aux n old-dag-array old-dag-len old-dag-parent-array
-                                                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                                             translation-array print)))
-                (translation-arrayp-aux (+ -1 old-dag-len)
-                                        (mv-nth 6 (normalize-xors-aux n old-dag-array old-dag-len old-dag-parent-array
-                                                                     dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                                     translation-array print)))))
-  :hints (("Goal" :induct (normalize-xors-aux n old-dag-array old-dag-len old-dag-parent-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist translation-array print)
-           :expand (normalize-xors-aux n old-dag-array
-                                      (alen1 'translation-array
-                                             translation-array)
-                                      old-dag-parent-array
-                                      dag-array dag-len dag-parent-array
-                                      dag-constant-alist dag-variable-alist
-                                      translation-array print)
-           :in-theory (enable normalize-xors-aux))))
+                 (array1p 'translation-array translation-array)
+                 (equal old-dag-len (alen1 'translation-array translation-array))
+                 (bounded-translation-arrayp-aux (+ -1 old-dag-len) translation-array dag-len)
+                 )
+            (and (equal (alen1 'translation-array
+                               (mv-nth 6 (normalize-xors-aux n old-dag-array old-dag-len old-dag-parent-array
+                                                             dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist translation-array print)))
+                        old-dag-len)
+                 (array1p 'translation-array
+                          (mv-nth 6 (normalize-xors-aux n old-dag-array old-dag-len old-dag-parent-array
+                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist translation-array print)))
+                 (bounded-translation-arrayp-aux (+ -1 old-dag-len)
+                                                 (mv-nth 6 (normalize-xors-aux n old-dag-array old-dag-len old-dag-parent-array
+                                                                               dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                                               translation-array print))
+                                                 (mv-nth 2 (normalize-xors-aux n old-dag-array old-dag-len old-dag-parent-array
+                                                                               dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                                               translation-array print)))
+                 (translation-arrayp-aux (+ -1 old-dag-len)
+                                         (mv-nth 6 (normalize-xors-aux n old-dag-array old-dag-len old-dag-parent-array
+                                                                       dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                                       translation-array print)))))
+   :hints (("Goal" :induct (normalize-xors-aux n old-dag-array old-dag-len old-dag-parent-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist translation-array print)
+            :expand (normalize-xors-aux n old-dag-array
+                                        (alen1 'translation-array
+                                               translation-array)
+                                        old-dag-parent-array
+                                        dag-array dag-len dag-parent-array
+                                        dag-constant-alist dag-variable-alist
+                                        translation-array print)
+            :in-theory (enable normalize-xors-aux)))))
 
-(defthm type-of-normalize-xors-aux-other-params-gen-1
-  (implies (and (natp n)
-                (natp old-dag-len)
-                (<= n old-dag-len)
+(local
+ (defthm type-of-normalize-xors-aux-other-params-gen-1
+   (implies (and (natp n)
+                 (natp old-dag-len)
+                 (<= n old-dag-len)
                 ;;stuff about the old dag:
-                (pseudo-dag-arrayp 'normalize-xors-old-array old-dag-array old-dag-len)
-                (bounded-dag-parent-arrayp 'normalize-xors-old-parent-array old-dag-parent-array old-dag-len)
-                (equal (alen1 'normalize-xors-old-array old-dag-array)
-                       (alen1 'normalize-xors-old-parent-array old-dag-parent-array))
+                 (pseudo-dag-arrayp 'normalize-xors-old-array old-dag-array old-dag-len)
+                 (bounded-dag-parent-arrayp 'normalize-xors-old-parent-array old-dag-parent-array old-dag-len)
+                 (equal (alen1 'normalize-xors-old-array old-dag-array)
+                        (alen1 'normalize-xors-old-parent-array old-dag-parent-array))
                 ;; stuff about the new dag:
-                (wf-dagp 'normalize-xors-new-array dag-array dag-len 'normalize-xors-new-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                 (wf-dagp 'normalize-xors-new-array dag-array dag-len 'normalize-xors-new-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                 ;; stuff about the renaming array:
-                (array1p 'translation-array translation-array)
-                (equal old-dag-len (alen1 'translation-array translation-array))
-                (bounded-translation-arrayp-aux (+ -1 old-dag-len) translation-array dag-len)
-                (<= (mv-nth 2 (normalize-xors-aux n old-dag-array old-dag-len old-dag-parent-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist translation-array print))
-                    bound)
-                (natp bound)
-                )
-           (bounded-translation-arrayp-aux (+ -1 old-dag-len)
-                                           (mv-nth 6 (normalize-xors-aux n old-dag-array old-dag-len old-dag-parent-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist translation-array print))
-                                           bound))
-  :hints (("Goal" :use (:instance type-of-normalize-xors-aux-other-params)
-           :in-theory (disable type-of-normalize-xors-aux-other-params natp))))
+                 (array1p 'translation-array translation-array)
+                 (equal old-dag-len (alen1 'translation-array translation-array))
+                 (bounded-translation-arrayp-aux (+ -1 old-dag-len) translation-array dag-len)
+                 (<= (mv-nth 2 (normalize-xors-aux n old-dag-array old-dag-len old-dag-parent-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist translation-array print))
+                     bound)
+                 (natp bound)
+                 )
+            (bounded-translation-arrayp-aux (+ -1 old-dag-len)
+                                            (mv-nth 6 (normalize-xors-aux n old-dag-array old-dag-len old-dag-parent-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist translation-array print))
+                                            bound))
+   :hints (("Goal" :use (:instance type-of-normalize-xors-aux-other-params)
+            :in-theory (disable type-of-normalize-xors-aux-other-params natp)))))
 
-(defthm type-of-normalize-xors-aux-other-params-gen-2
-  (implies (and (natp n)
-                (natp old-dag-len)
-                (<= n old-dag-len)
+(local
+ (defthm type-of-normalize-xors-aux-other-params-gen-2
+   (implies (and (natp n)
+                 (natp old-dag-len)
+                 (<= n old-dag-len)
                 ;;stuff about the old dag:
-                (pseudo-dag-arrayp 'normalize-xors-old-array old-dag-array old-dag-len)
-                (bounded-dag-parent-arrayp 'normalize-xors-old-parent-array old-dag-parent-array old-dag-len)
-                (equal (alen1 'normalize-xors-old-array old-dag-array)
-                       (alen1 'normalize-xors-old-parent-array old-dag-parent-array))
+                 (pseudo-dag-arrayp 'normalize-xors-old-array old-dag-array old-dag-len)
+                 (bounded-dag-parent-arrayp 'normalize-xors-old-parent-array old-dag-parent-array old-dag-len)
+                 (equal (alen1 'normalize-xors-old-array old-dag-array)
+                        (alen1 'normalize-xors-old-parent-array old-dag-parent-array))
                 ;; stuff about the new dag:
-                (wf-dagp 'normalize-xors-new-array dag-array dag-len 'normalize-xors-new-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                 (wf-dagp 'normalize-xors-new-array dag-array dag-len 'normalize-xors-new-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                 ;; stuff about the renaming array:
-                (array1p 'translation-array translation-array)
-                (equal old-dag-len (alen1 'translation-array translation-array))
-                (bounded-translation-arrayp-aux (+ -1 old-dag-len) translation-array dag-len)
-                (integerp v)
-                (<= v (+ -1 old-dag-len)))
-           (translation-arrayp-aux v
-                                   (mv-nth 6 (normalize-xors-aux n old-dag-array old-dag-len old-dag-parent-array
-                                                                dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
-                                                                translation-array print))))
-  :hints (("Goal" :use (:instance type-of-normalize-xors-aux-other-params)
-           :cases ((Natp v))
-           :in-theory (disable type-of-normalize-xors-aux-other-params))))
+                 (array1p 'translation-array translation-array)
+                 (equal old-dag-len (alen1 'translation-array translation-array))
+                 (bounded-translation-arrayp-aux (+ -1 old-dag-len) translation-array dag-len)
+                 (integerp v)
+                 (<= v (+ -1 old-dag-len)))
+            (translation-arrayp-aux v
+                                    (mv-nth 6 (normalize-xors-aux n old-dag-array old-dag-len old-dag-parent-array
+                                                                  dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                                                  translation-array print))))
+   :hints (("Goal" :use (:instance type-of-normalize-xors-aux-other-params)
+            :cases ((Natp v))
+            :in-theory (disable type-of-normalize-xors-aux-other-params)))))
 
 ;need a bound on the size?
 ;; (defthm renaming-arrayp-aux-of-mv-nth-5-of-normalize-xors-aux
