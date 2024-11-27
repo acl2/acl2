@@ -21,9 +21,8 @@
 (include-book "kestrel/alists-light/lookup-safe" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
 (include-book "kestrel/file-io-light/read-file-into-byte-list" :dir :system)
-(include-book "ihs/basic-definitions" :dir :system) ;for logext, todo: reduce
-(include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system)
 (include-book "kestrel/bv/getbit-def" :dir :system)
+(include-book "kestrel/bv/logext-def" :dir :system)
 (include-book "kestrel/typed-lists-light/bytes-to-printable-string" :dir :system)
 (include-book "kestrel/typed-lists-light/map-code-char" :dir :system)
 (local (include-book "kestrel/bv/bvcat" :dir :system))
@@ -31,6 +30,8 @@
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+
+(in-theory (disable mv-nth))
 
 (local (defthm integerp-when-unsigned-byte-p-32
          (implies (unsigned-byte-p 32 x)
