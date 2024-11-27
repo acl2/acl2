@@ -13,7 +13,7 @@
 (include-book "preprocess-file")
 (include-book "parser")
 (include-book "disambiguator")
-(include-book "implementation-environments")
+(include-book "validator")
 
 (include-book "kestrel/event-macros/make-event-terse" :dir :system)
 (include-book "kestrel/fty/string-option" :dir :system)
@@ -66,6 +66,7 @@
         :const-files
         :const-preproc
         :const-parsed
+        :const-disamb
         :gcc
         :short-bytes
         :int-bytes
@@ -100,7 +101,7 @@
 (define input-files-process-inputp (x)
   :returns (yes/no booleanp)
   :short "Recognize valid values of the @(':process') input."
-  (and (member-eq x '(:read :parse :disambiguate)) t))
+  (and (member-eq x '(:read :parse :disambiguate :validate)) t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -157,10 +158,10 @@
        (process-option (assoc-eq :process options))
        (process (if process-option
                     (cdr process-option)
-                  :disambiguate))
+                  :validate))
        ((unless (input-files-process-inputp process))
         (reterr (msg "The :PROCESS input must be ~
-                      :READ, :PARSE, or :DISAMBIGUATE, ~
+                      :READ, :PARSE, :DISAMBIGUATE, or :VALIDATE ~
                       but it is ~x0 instead."
                      process))))
     (retok process)))
@@ -174,13 +175,16 @@
                (const symbolp)
                (const-files symbolp)
                (const-preproc symbolp)
-               (const-parsed symbolp))
+               (const-parsed symbolp)
+               (const-disamb symbolp))
   :short "Process the
           @(':const'),
           @(':const-files'),
-          @(':const-preproc'), and
-          @(':const-parsed') inputs."
-  (b* (((reterr) nil nil nil nil)
+          @(':const-preproc'),
+          @(':const-parsed'), and
+          @(':const-disamb')
+          inputs."
+  (b* (((reterr) nil nil nil nil nil)
        ;; Process :CONST input.
        (const-option (assoc-eq :const options))
        ((unless const-option)
@@ -218,7 +222,7 @@
                      const-preproc)))
        ((when (and const-preproc
                    (not preprocess)))
-        (reterr (msg "The :CONST-FILES input must be NIL ~
+        (reterr (msg "The :CONST-PREPROC input must be NIL ~
                       if the :PREPROCESS input is NIL, ~
                       which is the case in this call of INPUT-FILES.")))
        ;; Process :CONST-PARSED input.
@@ -232,15 +236,39 @@
                      const-parsed)))
        ((when (and const-parsed
                    (eq process :read)))
-        (reterr (msg "The :CONST-FILES input must be NIL ~
+        (reterr (msg "The :CONST-PARSED input must be NIL ~
                       if the :PROCESS input is :READ, ~
                       which is the case in this call of INPUT-FILES.")))
        ((when (and const-parsed
                    (eq process :parse)))
-        (reterr (msg "The :CONST-FILES input must be NIL ~
+        (reterr (msg "The :CONST-PARSED input must be NIL ~
                       if the :PROCESS input is :PARSE, ~
+                      which is the case in this call of INPUT-FILES.")))
+       ;; Process :CONST-DISAMB input.
+       (const-disamb-option (assoc-eq :const-disamb options))
+       (const-disamb (if const-disamb-option
+                         (cdr const-disamb-option)
+                       nil))
+       ((unless (symbolp const-disamb))
+        (reterr (msg "The :CONST-DISAMB input must be a symbol, ~
+                      but it is ~x0 instead."
+                     const-disamb)))
+       ((when (and const-disamb
+                   (eq process :read)))
+        (reterr (msg "The :CONST-DISAMB input must be NIL ~
+                      if the :PROCESS input is :READ, ~
+                      which is the case in this call of INPUT-FILES.")))
+       ((when (and const-disamb
+                   (eq process :parse)))
+        (reterr (msg "The :CONST-DISAMB input must be NIL ~
+                      if the :PROCESS input is :PARSE, ~
+                      which is the case in this call of INPUT-FILES.")))
+       ((when (and const-disamb
+                   (eq process :disambiguate)))
+        (reterr (msg "The :CONST-DISAMB input must be NIL ~
+                      if the :PROCESS input is :DISAMBIGUATE, ~
                       which is the case in this call of INPUT-FILES."))))
-    (retok const const-files const-preproc const-parsed)))
+    (retok const const-files const-preproc const-parsed const-disamb)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -356,6 +384,7 @@
                (const-files symbolp)
                (const-preproc symbolp)
                (const-parsed symbolp)
+               (const-disamb symbolp)
                (gcc booleanp)
                (ienv ienvp))
   :short "Process the inputs."
@@ -372,7 +401,7 @@
     "The other results of this function are the homonymous inputs,
      except that the last five inputs are combined into
      an implementation environment result."))
-  (b* (((reterr) nil nil :read nil nil nil nil nil (ienv-default))
+  (b* (((reterr) nil nil :read nil nil nil nil nil nil (ienv-default))
        ;; Check and obtain options.
        ((mv erp extra options)
         (partition-rest-and-keyword-args
@@ -391,7 +420,7 @@
        ((erp paths) (input-files-process-files options))
        ((erp preprocessor) (input-files-process-preprocess options))
        ((erp process) (input-files-process-process options))
-       ((erp const const-files const-preproc const-parsed)
+       ((erp const const-files const-preproc const-parsed const-disamb)
         (input-files-process-const-inputs options preprocessor process))
        ((erp gcc) (input-files-process-gcc options))
        ((erp ienv) (input-files-process-ienv options)))
@@ -402,6 +431,7 @@
            const-files
            const-preproc
            const-parsed
+           const-disamb
            gcc
            ienv))
   :guard-hints (("Goal" :in-theory (enable acl2::alistp-when-symbol-alistp))))
@@ -444,7 +474,9 @@
                                 (const-files symbolp)
                                 (const-preproc symbolp)
                                 (const-parsed symbolp)
+                                (const-disamb symbolp)
                                 (gcc booleanp)
+                                (ienv ienvp)
                                 state)
   :returns (mv erp (events pseudo-event-form-listp) state)
   :short "Generate the events."
@@ -459,7 +491,7 @@
        ((erp files state) (input-files-read-files paths state))
        ;; Generate :CONST-FILE constant if required.
        (events (if const-files
-                   (cons `(defconst ,const-files ',files) events)
+                   (rcons `(defconst ,const-files ',files) events)
                  events))
        ;; Preprocess if required;
        ;; either way, after this, FILES contains the files to process.
@@ -469,27 +501,41 @@
                             (retok files state)))
        ;; Generate :CONST-PREPROC if required.
        (events (if const-preproc
-                   (cons `(defconst ,const-preproc ',files) events)
+                   (rcons `(defconst ,const-preproc ',files) events)
                  events))
        ;; If no processing is required, we are done;
        ;; generate :CONST constant with the files.
        ((when (eq process :read))
-        (b* ((events (cons `(defconst ,const ',files) events)))
+        (b* ((events (rcons `(defconst ,const ',files) events)))
           (retok events state)))
        ;; At least parsing is required.
        ((erp parsed) (parse-fileset files gcc))
        ;; Generate :CONST-PARSED constant if required.
        (events (if const-parsed
-                   (cons `(defconst ,const-parsed ',parsed) events)
+                   (rcons `(defconst ,const-parsed ',parsed) events)
                  events))
        ;; If only parsing is required, we are done;
        ;; generate :CONST constant with the parsed translation units.
        ((when (eq process :parse))
-        (b* ((events (cons `(defconst ,const ',parsed) events)))
+        (b* ((events (rcons `(defconst ,const ',parsed) events)))
           (retok events state)))
        ;; Disambiguation is required.
        ((erp disamb) (dimb-transunit-ensemble parsed gcc))
-       (events (cons `(defconst ,const ',disamb) events)))
+       ;; Generate :CONST-DISAMB constant if required.
+       (events (if const-disamb
+                   (rcons `(defconst ,const-disamb ',disamb) events)
+                 events))
+       ;; If no validation is required, we are done;
+       ;; generate :CONST constant with the disambiguated translation unit.
+       ((when (eq process :disambiguate))
+        (b* ((events (rcons `(defconst ,const ',disamb) events)))
+          (retok events state)))
+       ;; Validation is required.
+       ((erp) (valid-transunit-ensemble disamb ienv))
+       ;; Generate :CONST constant with the validated translation unit
+       ;; (currently the same as the result of disambiguation,
+       ;; but in the future it may contain additional information).
+       (events (rcons `(defconst ,const ',disamb) events)))
     (retok events state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -505,8 +551,9 @@
              const-files
              const-preproc
              const-parsed
+             const-disamb
              gcc
-             &) ; ienv
+             ienv)
         (input-files-process-inputs args))
        ((erp events state) (input-files-gen-events paths
                                                    preprocessor
@@ -515,7 +562,9 @@
                                                    const-files
                                                    const-preproc
                                                    const-parsed
+                                                   const-disamb
                                                    gcc
+                                                   ienv
                                                    state)))
     (retok `(progn ,@events) state)))
 
