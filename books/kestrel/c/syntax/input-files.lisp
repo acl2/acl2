@@ -13,6 +13,7 @@
 (include-book "preprocess-file")
 (include-book "parser")
 (include-book "disambiguator")
+(include-book "implementation-environments")
 
 (include-book "kestrel/event-macros/make-event-terse" :dir :system)
 (include-book "kestrel/fty/string-option" :dir :system)
@@ -65,7 +66,12 @@
         :const-files
         :const-preproc
         :const-parsed
-        :gcc)
+        :gcc
+        :short-bytes
+        :int-bytes
+        :long-bytes
+        :long-long-bytes
+        :plain-char-signed)
   ///
   (assert-event (keyword-listp *input-files-allowed-options*))
   (assert-event (no-duplicatesp-eq *input-files-allowed-options*)))
@@ -98,48 +104,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define input-files-process-inputs ((args true-listp))
-  :returns (mv erp
-               (paths filepath-setp)
-               (preprocessor string-optionp
-                             :hints
-                             (("Goal"
-                               :in-theory
-                               (enable input-files-preprocess-inputp))))
-               (process input-files-process-inputp)
-               (const symbolp)
-               (const-files symbolp)
-               (const-preproc symbolp)
-               (const-parsed symbolp)
-               (gcc booleanp))
-  :short "Process the inputs."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The @('paths') result of this function
-     is calculated from the @(':files') input.")
-   (xdoc::p
-    "The @('preprocessor') result of this function
-     is calculated from the @(':preprocess') input.
-     The use of `preprocessor' vs. `preprocess' is intentional.")
-   (xdoc::p
-    "The other results of this function are the homonymous inputs."))
-  (b* (((reterr) nil nil :read nil nil nil nil nil)
-       ;; Check and obtain options.
-       ((mv erp extra options)
-        (partition-rest-and-keyword-args
-         args *input-files-allowed-options*))
-       ((when erp)
-        (reterr (msg "The inputs must be the options ~&0, ~
-                      but instead they are ~x1."
-                     *input-files-allowed-options*
-                     args)))
-       ((when extra)
-        (reterr (msg "The only allowed inputs are the options ~&0, ~
-                      but instead the extra inputs ~x1 were supplied."
-                     *input-files-allowed-options*
-                     extra)))
-       ;; Process :FILES input.
+(define input-files-process-files ((options symbol-alistp))
+  :returns (mv erp (paths filepath-setp))
+  :short "Process the @(':files') input."
+  (b* (((reterr) nil)
        (files-option (assoc-eq :files options))
        ((unless files-option)
         (reterr (msg "The :FILES input must be supplied, ~
@@ -153,8 +121,20 @@
         (reterr (msg "The :FILES input must be a list without duplicates, ~
                       but the supplied ~x0 has duplicates."
                      files)))
-       (paths (input-files-strings-to-paths files))
-       ;; Process :PREPROCESS input.
+       (paths (input-files-strings-to-paths files)))
+    (retok paths)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define input-files-process-preprocess ((options symbol-alistp))
+  :returns (mv erp
+               (preprocessor string-optionp
+                             :hints
+                             (("Goal"
+                               :in-theory
+                               (enable input-files-preprocess-inputp)))))
+  :short "Process the @(':preprocess') input."
+  (b* (((reterr) nil)
        (preprocess-option (assoc-eq :preprocess options))
        (preprocess (if preprocess-option
                        (cdr preprocess-option)
@@ -165,8 +145,15 @@
                      preprocess)))
        (preprocessor (if (eq preprocess :auto)
                          "cpp"
-                       preprocess))
-       ;; Process :PROCESS input.
+                       preprocess)))
+    (retok preprocessor)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define input-files-process-process ((options symbol-alistp))
+  :returns (mv erp (process input-files-process-inputp))
+  :short "Process the @(':process') input."
+  (b* (((reterr) :read)
        (process-option (assoc-eq :process options))
        (process (if process-option
                     (cdr process-option)
@@ -175,7 +162,25 @@
         (reterr (msg "The :PROCESS input must be ~
                       :READ, :PARSE, or :DISAMBIGUATE, ~
                       but it is ~x0 instead."
-                     process)))
+                     process))))
+    (retok process)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define input-files-process-const-inputs ((options symbol-alistp)
+                                          (preprocess string-optionp)
+                                          (process input-files-process-inputp))
+  :returns (mv erp
+               (const symbolp)
+               (const-files symbolp)
+               (const-preproc symbolp)
+               (const-parsed symbolp))
+  :short "Process the
+          @(':const'),
+          @(':const-files'),
+          @(':const-preproc'), and
+          @(':const-parsed') inputs."
+  (b* (((reterr) nil nil nil nil)
        ;; Process :CONST input.
        (const-option (assoc-eq :const options))
        ((unless const-option)
@@ -234,8 +239,15 @@
                    (eq process :parse)))
         (reterr (msg "The :CONST-FILES input must be NIL ~
                       if the :PROCESS input is :PARSE, ~
-                      which is the case in this call of INPUT-FILES.")))
-       ;; Process :GCC input.
+                      which is the case in this call of INPUT-FILES."))))
+    (retok const const-files const-preproc const-parsed)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define input-files-process-gcc ((options symbol-alistp))
+  :returns (mv erp (gcc booleanp))
+  :short "Process the @(':gcc') input."
+  (b* (((reterr) nil)
        (gcc-option (assoc-eq :gcc options))
        (gcc (if gcc-option
                 (cdr gcc-option)
@@ -244,6 +256,145 @@
         (reterr (msg "The :GCC input must be a boolean, ~
                       but it is ~x0 instead."
                      gcc))))
+    (retok gcc)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define input-files-process-ienv ((options symbol-alistp))
+  :returns (mv erp (ienv ienvp))
+  :short "Process the
+          @(':short-bytes'),
+          @(':int-bytes'),
+          @(':long-bytes'),
+          @(':long-long-bytes'),
+          @(':plain-char-signed')
+          inputs."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are the inputs that define the implementation environment,
+     which we return if the processing of these inputs is successful."))
+  (b* (((reterr) (ienv-default))
+       ;; Process :SHORT-BYTES input.
+       (short-bytes-option (assoc-eq :short-bytes options))
+       (short-bytes (if short-bytes-option
+                        (cdr short-bytes-option)
+                      2))
+       ((unless (and (integerp short-bytes)
+                     (>= short-bytes 2)))
+        (reterr (msg "The :SHORT-BYTES input must be ~
+                      an integer greater than or equal to 2, ~
+                      but it is ~x0 instead."
+                     short-bytes)))
+       ;; Process :INT-BYTES input.
+       (int-bytes-option (assoc-eq :int-bytes options))
+       (int-bytes (if int-bytes-option
+                      (cdr int-bytes-option)
+                    4))
+       ((unless (and (integerp int-bytes)
+                     (>= int-bytes 4)
+                     (>= int-bytes short-bytes)))
+        (reterr (msg "The :INT-BYTES input must be ~
+                      an integer greater than or equal to 4, ~
+                      and greater than or equal to ~
+                      the value ~x0 of :SHORT-BYTES, ~
+                      but it is ~x1 instead."
+                     short-bytes int-bytes)))
+       ;; Process :LONG-BYTES input.
+       (long-bytes-option (assoc-eq :long-bytes options))
+       (long-bytes (if long-bytes-option
+                       (cdr long-bytes-option)
+                     8))
+       ((unless (and (integerp long-bytes)
+                     (>= long-bytes 8)
+                     (>= long-bytes int-bytes)))
+        (reterr (msg "The :LONG-BYTES input must be ~
+                      an integer greater than or equal to 8, ~
+                      and greater than or equal to ~
+                      the value ~x0 of :INT-BYTES, ~
+                      but it is ~x1 instead."
+                     int-bytes long-bytes)))
+       ;; Process :LONG-LONG-BYTES input.
+       (long-long-bytes-option (assoc-eq :long-long-bytes options))
+       (long-long-bytes (if long-long-bytes-option
+                            (cdr long-long-bytes-option)
+                          8))
+       ((unless (and (integerp long-long-bytes)
+                     (>= long-long-bytes 8)
+                     (>= long-long-bytes long-bytes)))
+        (reterr (msg "The :LONG-LONG-BYTES input must be ~
+                      an integer greater than or equal to 8, ~
+                      and greater than or equal to ~
+                      the value ~x0 of :LONG-BYTES, ~
+                      but it is ~x1 instead."
+                     long-bytes long-long-bytes)))
+       ;; Process :PLAIN-CHAR-SIGNED input.
+       (plain-char-signed-option (assoc-eq :plain-char-signed options))
+       (plain-char-signed (if plain-char-signed-option
+                              (cdr plain-char-signed-option)
+                            nil))
+       ((unless (booleanp plain-char-signed))
+        (reterr (msg "The :PLAIN-CHAR-SIGNED input must be a boolean, ~
+                      but it is ~x0 instead."
+                     plain-char-signed)))
+       ;; Build the implementation environment.
+       (ienv (make-ienv :short-bytes short-bytes
+                        :int-bytes int-bytes
+                        :long-bytes long-bytes
+                        :llong-bytes long-long-bytes
+                        :plain-char-signedp plain-char-signed)))
+    (retok ienv)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define input-files-process-inputs ((args true-listp))
+  :returns (mv erp
+               (paths filepath-setp)
+               (preprocessor string-optionp)
+               (process input-files-process-inputp)
+               (const symbolp)
+               (const-files symbolp)
+               (const-preproc symbolp)
+               (const-parsed symbolp)
+               (gcc booleanp)
+               (ienv ienvp))
+  :short "Process the inputs."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @('paths') result of this function
+     is calculated from the @(':files') input.")
+   (xdoc::p
+    "The @('preprocessor') result of this function
+     is calculated from the @(':preprocess') input.
+     The use of `preprocessor' vs. `preprocess' is intentional.")
+   (xdoc::p
+    "The other results of this function are the homonymous inputs,
+     except that the last five inputs are combined into
+     an implementation environment result."))
+  (b* (((reterr) nil nil :read nil nil nil nil nil (ienv-default))
+       ;; Check and obtain options.
+       ((mv erp extra options)
+        (partition-rest-and-keyword-args
+         args *input-files-allowed-options*))
+       ((when erp)
+        (reterr (msg "The inputs must be the options ~&0, ~
+                      but instead they are ~x1."
+                     *input-files-allowed-options*
+                     args)))
+       ((when extra)
+        (reterr (msg "The only allowed inputs are the options ~&0, ~
+                      but instead the extra inputs ~x1 were supplied."
+                     *input-files-allowed-options*
+                     extra)))
+       ;; Process the inputs.
+       ((erp paths) (input-files-process-files options))
+       ((erp preprocessor) (input-files-process-preprocess options))
+       ((erp process) (input-files-process-process options))
+       ((erp const const-files const-preproc const-parsed)
+        (input-files-process-const-inputs options preprocessor process))
+       ((erp gcc) (input-files-process-gcc options))
+       ((erp ienv) (input-files-process-ienv options)))
     (retok paths
            preprocessor
            process
@@ -251,7 +402,8 @@
            const-files
            const-preproc
            const-parsed
-           gcc))
+           gcc
+           ienv))
   :guard-hints (("Goal" :in-theory (enable acl2::alistp-when-symbol-alistp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -296,6 +448,10 @@
                                 state)
   :returns (mv erp (events pseudo-event-form-listp) state)
   :short "Generate the events."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Also perform all the necessary preprocessing and processing."))
   (b* (((reterr) nil state)
        ;; Initialize list of generated events.
        (events nil)
@@ -308,9 +464,9 @@
        ;; Preprocess if required;
        ;; either way, after this, FILES contains the files to process.
        ((erp files state) (if preprocessor
-                                 (preprocess-files paths
-                                                   :preprocessor preprocessor)
-                               (retok files state)))
+                              (preprocess-files paths
+                                                :preprocessor preprocessor)
+                            (retok files state)))
        ;; Generate :CONST-PREPROC if required.
        (events (if const-preproc
                    (cons `(defconst ,const-preproc ',files) events)
@@ -349,7 +505,8 @@
              const-files
              const-preproc
              const-parsed
-             gcc)
+             gcc
+             &) ; ienv
         (input-files-process-inputs args))
        ((erp events state) (input-files-gen-events paths
                                                    preprocessor

@@ -18,7 +18,7 @@
 
   :parents (syntax-for-tools)
 
-  :short "Read C files from the file system to an ACL2 representation."
+  :short "Read C files from the file system into an ACL2 representation."
 
   :long
 
@@ -53,14 +53,19 @@
    (xdoc::evmac-section-form
 
     (xdoc::codeblock
-     "(input-files :files         ...  ; no default"
-     "             :preprocess    ...  ; default nil"
-     "             :process       ...  ; default :disambiguate"
-     "             :const         ...  ; no default"
-     "             :const-files   ...  ; default nil"
-     "             :const-preproc ...  ; default nil"
-     "             :const-parsed  ...  ; default nil"
-     "             :gcc           ...  ; default nil"
+     "(input-files :files              ...  ; no default"
+     "             :preprocess         ...  ; default nil"
+     "             :process            ...  ; default :disambiguate"
+     "             :const              ...  ; no default"
+     "             :const-files        ...  ; default nil"
+     "             :const-preproc      ...  ; default nil"
+     "             :const-parsed       ...  ; default nil"
+     "             :gcc                ...  ; default nil"
+     "             :short-bytes        ...  ; default 2"
+     "             :int-bytes          ...  ; default 4"
+     "             :long-bytes         ...  ; default 8"
+     "             :long-long-bytes    ...  ; default 8"
+     "             :plain-char-signed  ... ; default nil"
      "  )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -256,7 +261,48 @@
      "@(':gcc') &mdash; default @('nil')"
      (xdoc::p
       "Boolean saying whether certain GCC extensions
-       should be accepted or not.")))
+       should be accepted or not."))
+
+    (xdoc::desc
+     "@(:short-bytes') &mdash; default 2"
+     (xdoc::p
+      "Positive integer saying how many bytes are used to represent
+       @('signed short int') and @('unsigned short int').")
+     (xdoc::p
+      "This must be at least 2."))
+
+    (xdoc::desc
+     "@(':int-bytes') &mdash; default 4"
+     (xdoc::p
+      "Positive integer saying how many bytes are used to represent
+       @('signed int') and @('unsigned int').")
+     (xdoc::p
+      "This must be at least 4,
+       and not less than @(':short-bytes')."))
+
+    (xdoc::desc
+     "@(':long-bytes') &mdash; default 8"
+     (xdoc::p
+      "Positive integer saying how many bytes are used to represent
+       @('signed long int') and @('unsigned long int').")
+     (xdoc::p
+      "This must be at least 8,
+       and not less than @(':int-bytes')."))
+
+    (xdoc::desc
+     "@(':long-long-bytes') &mdash; default 8"
+     (xdoc::p
+      "Positive integer saying how many bytes are used to represent
+       @('signed long long int') and @('unsigned long long int').")
+     (xdoc::p
+      "This must be at least 8,
+       and not less than @(':long-bytes')."))
+
+    (xdoc::desc
+     "@(':plain-char-signed') &mdash; default nil"
+     (xdoc::p
+      "Boolean saying whether the plain @('char') type consists of
+       the same value as the @('signed char') or @('unsigned char') type.")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
