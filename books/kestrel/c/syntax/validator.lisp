@@ -4274,7 +4274,8 @@
             ((erp index-type? more-types table)
              (valid-expr-option dirdeclor.expr? table ienv))
             ((when (and index-type?
-                        (not (type-integerp index-type?))))
+                        (not (type-integerp index-type?))
+                        (not (type-case index-type? :unknown))))
              (reterr (msg "The index expression ~
                            of the direct declarator ~x0 ~
                            has type ~x1."
@@ -4287,7 +4288,8 @@
              (valid-dirdeclor dirdeclor.decl fundef-params-p type table ienv))
             ((erp index-type more-types table)
              (valid-expr dirdeclor.expr table ienv))
-            ((unless (type-integerp index-type))
+            ((unless (or (type-integerp index-type)
+                         (type-case index-type :unknown)))
              (reterr (msg "The index expression ~
                            of the direct declarator ~x0 ~
                            has type ~x1."
@@ -4300,7 +4302,8 @@
              (valid-dirdeclor dirdeclor.decl fundef-params-p type table ienv))
             ((erp index-type more-types table)
              (valid-expr dirdeclor.expr table ienv))
-            ((unless (type-integerp index-type))
+            ((unless (or (type-integerp index-type)
+                         (type-case index-type :unknown)))
              (reterr (msg "The index expression ~
                            of the direct declarator ~x0 ~
                            has type ~x1."
@@ -4455,7 +4458,8 @@
             ((erp index-type? more-types table)
              (valid-expr-option dirabsdeclor.expr? table ienv))
             ((when (and index-type?
-                        (not (type-integerp index-type?))))
+                        (not (type-integerp index-type?))
+                        (not (type-case index-type? :unknown))))
              (reterr (msg "The index expression ~
                            of the direct abstract declarator ~x0 ~
                            has type ~x1."
@@ -4468,7 +4472,8 @@
              (valid-dirabsdeclor-option dirabsdeclor.decl? type table ienv))
             ((erp index-type more-types table)
              (valid-expr dirabsdeclor.expr table ienv))
-            ((unless (type-integerp index-type))
+            ((unless (or (type-integerp index-type)
+                         (type-case index-type :unknown)))
              (reterr (msg "The index expression ~
                            of the direct abstract declarator ~x0 ~
                            has type ~x1."
@@ -4481,7 +4486,8 @@
              (valid-dirabsdeclor-option dirabsdeclor.decl? type table ienv))
             ((erp index-type more-types table)
              (valid-expr dirabsdeclor.expr table ienv))
-            ((unless (type-integerp index-type))
+            ((unless (or (type-integerp index-type)
+                         (type-case index-type :unknown)))
              (reterr (msg "The index expression ~
                            of the direct abstract declarator ~x0 ~
                            has type ~x1."
@@ -4894,7 +4900,8 @@
          ((erp width-type? more-types table)
           (valid-const-expr-option structdeclor.expr? table ienv))
          ((when (and width-type?
-                     (not (type-integerp width-type?))))
+                     (not (type-integerp width-type?))
+                     (not (type-case width-type? :unknown))))
           (reterr (msg "The structure declarator ~x0 ~
                         has a width of type ~x1."
                        (structdeclor-fix structdeclor)
@@ -5004,7 +5011,8 @@
          ((erp type? types table)
           (valid-const-expr-option enumer.value table ienv))
          ((when (and type?
-                     (not (type-integerp type?))))
+                     (not (type-integerp type?))
+                     (not (type-case type? :unknown))))
           (reterr (msg "The value of the numerator ~x0 has type ~x1."
                        (enumer-fix enumer) type?))))
       (retok types table))
@@ -5054,7 +5062,8 @@
          ((statassert statassert) statassert)
          ((erp type types table)
           (valid-const-expr statassert.test table ienv))
-         ((unless (type-integerp type))
+         ((unless (or (type-integerp type)
+                      (type-case type :unknown)))
           (reterr (msg "The expression in the static assertion declaration ~x0 ~
                         has type ~x1."
                        (statassert-fix statassert)
@@ -5388,14 +5397,16 @@
        :casexpr
        (b* (((erp type types table)
              (valid-const-expr label.expr table ienv))
-            ((unless (type-integerp type))
+            ((unless (or (type-integerp type)
+                         (type-case type :unknown)))
              (reterr (msg "The first or only 'case' expression ~
                            in the label ~x0 has type ~x1."
                           (label-fix label) type)))
             ((erp type? more-types table)
              (valid-const-expr-option label.range? table ienv))
             ((when (and type?
-                        (not (type-integerp type?))))
+                        (not (type-integerp type?))
+                        (not (type-case type? :unknown))))
              (reterr (msg "The second 'case' expression~
                            in the label ~x0 has type ~x1."
                           (label-fix label) type?))))
@@ -5512,7 +5523,8 @@
        :if
        (b* ((table (valid-push-scope table))
             ((erp test-type test-types table) (valid-expr stmt.test table ienv))
-            ((unless (type-scalarp test-type))
+            ((unless (or (type-scalarp test-type)
+                         (type-case test-type :unknown)))
              (reterr (msg "The test of the statement ~x0 has type ~x1."
                           (stmt-fix stmt) test-type)))
             (table (valid-push-scope table))
@@ -5523,7 +5535,8 @@
        :ifelse
        (b* ((table (valid-push-scope table))
             ((erp test-type test-types table) (valid-expr stmt.test table ienv))
-            ((unless (type-scalarp test-type))
+            ((unless (or (type-scalarp test-type)
+                         (type-case test-type :unknown)))
              (reterr (msg "The test of the statement ~x0 has type ~x1."
                           (stmt-fix stmt) test-type)))
             (table (valid-push-scope table))
@@ -5540,7 +5553,8 @@
        (b* ((table (valid-push-scope table))
             ((erp target-type target-types table)
              (valid-expr stmt.target table ienv))
-            ((unless (type-integerp target-type))
+            ((unless (or (type-integerp target-type)
+                         (type-case target-type :unknown)))
              (reterr (msg "The target of the statement ~x0 has type ~x1."
                           (stmt-fix stmt) target-type)))
             (table (valid-push-scope table))
@@ -5551,7 +5565,8 @@
        :while
        (b* ((table (valid-push-scope table))
             ((erp test-type test-types table) (valid-expr stmt.test table ienv))
-            ((unless (type-scalarp test-type))
+            ((unless (or (type-scalarp test-type)
+                         (type-case test-type :unknown)))
              (reterr (msg "The test of the statement ~x0 has type ~x1."
                           (stmt-fix stmt) test-type)))
             (table (valid-push-scope table))
@@ -5566,7 +5581,8 @@
             ((erp body-types & table) (valid-stmt stmt.body table ienv))
             (table (valid-pop-scope table))
             ((erp test-type test-types table) (valid-expr stmt.test table ienv))
-            ((unless (type-scalarp test-type))
+            ((unless (or (type-scalarp test-type)
+                         (type-case test-type :unknown)))
              (reterr (msg "The test of the statement ~x0 has type ~x1."
                           (stmt-fix stmt) test-type)))
             (table (valid-pop-scope table)))
@@ -5578,7 +5594,8 @@
             ((erp test-type? test-types table)
              (valid-expr-option stmt.test table ienv))
             ((when (and test-type?
-                        (not (type-scalarp test-type?))))
+                        (not (type-scalarp test-type?))
+                        (not (type-case test-type? :unknown))))
              (reterr (msg "The test of the statement ~x0 has type ~x1."
                           (stmt-fix stmt) test-type?)))
             ((erp & next-types table)
@@ -5597,7 +5614,8 @@
             ((erp test-type? test-types table)
              (valid-expr-option stmt.test table ienv))
             ((when (and test-type?
-                        (not (type-scalarp test-type?))))
+                        (not (type-scalarp test-type?))
+                        (not (type-case test-type? :unknown))))
              (reterr (msg "The test of the statement ~x0 has type ~x1."
                           (stmt-fix stmt) test-type?)))
             ((erp & next-types table)
