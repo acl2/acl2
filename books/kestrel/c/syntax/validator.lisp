@@ -2479,6 +2479,7 @@
 (define valid-stor-spec-list ((storspecs stor-spec-listp)
                               (ident identp)
                               (type typep)
+                              (fundefp booleanp)
                               (table valid-tablep))
   :returns (mv erp
                (typedefp booleanp)
@@ -2613,7 +2614,19 @@
      We prove that if a function is being declared,
      then the linkage is always external or internal,
      and that the only possible sequences of storage class specifiers
-     are @('extern'), @('static'), and nothing."))
+     are @('extern'), @('static'), and nothing.")
+   (xdoc::p
+    "The @('fundefp') input is @('t') when this function is called on
+     the storage class specifiers of a function definition.
+     The reason is that, when this function is called in that situation,
+     the validation table contains a block scope for the function body,
+     but the storage class specifiers checked here are in the file scope:
+     so checking the validation table to determine,
+     for the purpose of validating the storage class specifiers,
+     whether we are in a block or file scope,
+     would give an incorrect result.
+     So we use the @('fundefp') flag to adjust the check.
+     This flag is @('nil') in all other situations."))
   (b* (((reterr) nil (irr-linkage) nil))
     (cond
      ((stor-spec-list-typedef-p storspecs)
@@ -2651,7 +2664,8 @@
                 previous-linkage))))
         (retok nil linkage (lifetime-thread))))
      ((stor-spec-list-static-p storspecs)
-      (b* ((block-scope-p (> (valid-table-num-scopes table) 1))
+      (b* ((block-scope-p (and (> (valid-table-num-scopes table) 1)
+                               (not fundefp)))
            ((when (and block-scope-p
                        (type-case type :function)))
             (reterr (msg "The storage class specifier 'static' ~
@@ -2671,7 +2685,8 @@
                           cannot be used in the declaration of
                           the function ~x0."
                          (ident-fix ident))))
-           (block-scope-p (> (valid-table-num-scopes table) 1))
+           (block-scope-p (and (> (valid-table-num-scopes table) 1)
+                               (not fundefp)))
            (linkage (if block-scope-p
                         (linkage-none)
                       (linkage-internal)))
@@ -2683,7 +2698,8 @@
                           cannot be used in the declaration of
                           the function ~x0."
                          (ident-fix ident))))
-           ((when (> (valid-table-num-scopes table) 1))
+           ((when (and (> (valid-table-num-scopes table) 1)
+                       (not fundefp)))
             (reterr (msg "The storage class specifier '_Thread_local' ~
                           cannot be used in a block scope ~
                           without 'extern' or 'static', ~
@@ -2700,7 +2716,8 @@
                              "auto"
                            "register")
                          (ident-fix ident))))
-           ((unless (> (valid-table-num-scopes table) 1))
+           ((unless (and (> (valid-table-num-scopes table) 1)
+                         (not fundefp)))
             (reterr (msg "The storage class specifier '~s0' ~
                           cannot be used in the file scope, ~
                           for identifier ~x1."
@@ -2720,7 +2737,8 @@
             (if (linkage-case previous-linkage :none)
                 (retok nil (linkage-external) nil)
               (retok nil previous-linkage nil)))
-        (if (> (valid-table-num-scopes table) 1)
+        (if (and (> (valid-table-num-scopes table) 1)
+                 (not fundefp))
             (retok nil (linkage-none) (lifetime-auto))
           (retok nil (linkage-external) (lifetime-static)))))
      (t (reterr (msg "The storage class specifier sequence ~x0 is invalid."
@@ -5182,7 +5200,7 @@
          ((erp & type ident types table)
           (valid-declor initdeclor.declor nil type table ienv))
          ((erp typedefp linkage lifetime?)
-          (valid-stor-spec-list storspecs ident type table))
+          (valid-stor-spec-list storspecs ident type nil table))
          ((when typedefp)
           (b* (((when initdeclor.init?)
                 (reterr (msg "The typedef name ~x0 ~
@@ -5811,7 +5829,7 @@
                       contains return statements."
                      (fundef-fix fundef))))
        ((erp typedefp linkage &)
-        (valid-stor-spec-list storspecs ident type table))
+        (valid-stor-spec-list storspecs ident type t table))
        ((when typedefp)
         (reterr (msg "The function definition ~x0 ~
                       declares a 'typedef' name instead of a function."
