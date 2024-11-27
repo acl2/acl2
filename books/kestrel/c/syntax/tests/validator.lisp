@@ -349,3 +349,13 @@
  "int f();
   static int f();
 ")
+
+(test-valid
+ "typedef unsigned short __uint16_t;
+static __inline __uint16_t
+__bswap_16 (__uint16_t __bsx)
+{
+  return 0;
+}
+"
+ :gcc t)
