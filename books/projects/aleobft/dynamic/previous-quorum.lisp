@@ -42,7 +42,7 @@
      in which case there must be no references.")
    (xdoc::p
     "When a certificate is received via a @('receive-certificate') event,
-     that event's preconditions impose a similar requirements.")
+     that event's preconditions impose a similar requirement.")
    (xdoc::p
     "Thus, all the certificates accepted by a validator
      satisfy that requirement.
