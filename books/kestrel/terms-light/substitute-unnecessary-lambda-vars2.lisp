@@ -75,7 +75,7 @@
                   (lambda-body (lambda-body fn))
                   ;;apply recursively to the lambda body:
                   (lambda-body (substitute-unnecessary-lambda-vars-in-term2 lambda-body print hands-off-fns))
-                  (formal-arg-alist (pairlis$ formals args))
+                  (formal-arg-alist (pairlis$ formals args)) ; todo: avoid consing?
                   ;; We try to substitute for a lambda var if:
                   ;; 1) It is not bound to itself (trivial formals
                   ;; don't really "count against" us, since lambdas must be closed)
