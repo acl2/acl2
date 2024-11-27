@@ -27,7 +27,7 @@
   :parents (correctness)
   :short "Invariant that each certificate in a DAG
           has references to previous certificates
-          that form a quorum in the committee in the previous,
+          that form a quorum in the committee for the previous round,
           unless the round is 1,
           in which case there are no references to previous certificates."
   :long
