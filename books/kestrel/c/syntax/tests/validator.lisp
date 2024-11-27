@@ -22,7 +22,7 @@
 ;; INT-BYTES is the number of bytes of ints (default 4).
 ;; LONG-BYTES is the number of bytes of longs (default 8).
 ;; LLONG-BYTES is the number of bytes of long longs (default 8).
-;; PLAIN-SIGNED is T if plain chars are signed, else NIL (which the default).
+;; PLAIN-CHAR-SIGNEDP is T if plain chars are signed, else NIL (the default).
 
 (defmacro test-valid (input &key
                             gcc
@@ -30,7 +30,7 @@
                             int-bytes
                             long-bytes
                             llong-bytes
-                            plain-signed)
+                            plain-char-signedp)
   `(assert-event
     (b* ((short-bytes (or ,short-bytes 2))
          (int-bytes (or ,int-bytes 4))
@@ -40,7 +40,7 @@
                           :int-bytes int-bytes
                           :long-bytes long-bytes
                           :llong-bytes llong-bytes
-                          :plain-char-signedp ,plain-signed))
+                          :plain-char-signedp ,plain-char-signedp))
          ((mv erp1 ast) (parse-file (filepath "test")
                                     (acl2::string=>nats ,input)
                                     ,gcc))
@@ -57,7 +57,7 @@
                                  int-bytes
                                  long-bytes
                                  llong-bytes
-                                 plain-signed)
+                                 plain-char-signedp)
   `(assert-event
     (b* ((short-bytes (or ,short-bytes 2))
          (int-bytes (or ,int-bytes 4))
@@ -67,7 +67,7 @@
                           :int-bytes int-bytes
                           :long-bytes long-bytes
                           :llong-bytes llong-bytes
-                          :plain-char-signedp ,plain-signed))
+                          :plain-char-signedp ,plain-char-signedp))
          ((mv erp1 ast) (parse-file (filepath "test")
                                     (acl2::string=>nats ,input)
                                     ,gcc))
