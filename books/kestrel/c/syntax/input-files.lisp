@@ -531,7 +531,7 @@
         (b* ((events (rcons `(defconst ,const ',disamb) events)))
           (retok events state)))
        ;; Validation is required.
-       ((erp) (valid-transunit-ensemble disamb ienv))
+       ((erp) (valid-transunit-ensemble disamb gcc ienv))
        ;; Generate :CONST constant with the validated translation unit
        ;; (currently the same as the result of disambiguation,
        ;; but in the future it may contain additional information).

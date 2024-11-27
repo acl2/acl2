@@ -5945,14 +5945,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define valid-transunit ((tunit transunitp) (ienv ienvp))
+(define valid-transunit ((tunit transunitp) (gcc booleanp) (ienv ienvp))
   :guard (transunit-unambp tunit)
   :returns (mv erp (table valid-tablep))
   :short "Validate a translation unit."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Starting with the initial validation table,
+    "If GCC extensions are not enabled,
+     the initial validation table is the one
+     returned by @(tsee valid-init-table).
+     If GCC extensions are enabled,
+     we add a number of objects and functions
+     that we have encountered in practical code;
+     we should eventually have a comprehensive list here.")
+   (xdoc::p
+    "Starting with the validation table as just described,
      we validate all the external declarations in the translation unit.
      Since these are translation units after preprocesing,
      all the referenced names must be declared in the translation unit,
@@ -5965,15 +5973,197 @@
      different translation units of a translation unit ensemble.
      In fact, we should probably extend this validation function
      to trim the returned validation table
-     so it only has entries for identifiers with external linkage."))
+     so it only has entries for identifiers with external linkage.")
+   (xdoc::p
+    "For each GCC function, the associated information consists of
+     the function type, external linkage, and defined status.
+     The latter two seem reasonable, given that these identifiers
+     are visible and have the same meaning in every translation unit,
+     and have their own (built-in) definitions.
+     For each GCC object, the associated information consists of
+     the unknown type, external linkage, and defined status;
+     the rationale for the latter two is the same as for functions."))
   (b* (((reterr) (irr-valid-table))
-       (table (valid-init-table)))
+       (table (valid-init-table))
+       (table
+         (if gcc
+             (b* ((finfo (make-valid-ord-info-objfun
+                          :type (type-function)
+                          :linkage (linkage-external)
+                          :defstatus (valid-defstatus-defined)))
+                  (oinfo (make-valid-ord-info-objfun
+                          :type (type-unknown)
+                          :linkage (linkage-external)
+                          :defstatus (valid-defstatus-defined)))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__atomic_signal_fence") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__builtin_add_overflow") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__builtin_bswap16") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__builtin_bswap32") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__builtin_bswap64") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__builtin_choose_expr") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__builtin_clz") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__builtin_clzl") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__builtin_clzll") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__builtin_constant_p") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__builtin_ctzl") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__builtin_dynamic_object_size") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__builtin_expect") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__builtin_memchr") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__builtin_memcmp") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__builtin_memcpy") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__builtin_memset") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__builtin_mul_overflow") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__builtin_object_size") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__builtin_return_address") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__builtin_strcpy") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__builtin_strlen") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__builtin_strncat") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__builtin_strncpy") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__builtin_sub_overflow") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__builtin_unreachable") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__builtin_va_end") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__builtin_va_start") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__eax") oinfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__ebx") oinfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__ecx") oinfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__edx") oinfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__esi") oinfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__edi") oinfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__ebp") oinfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__esp") oinfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__sync_add_and_fetch") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__sync_and_and_fetch") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__sync_bool_compare_and_swap") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__sync_fetch_and_add") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__sync_fetch_and_and") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__sync_fetch_and_nand") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__sync_fetch_and_or") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__sync_fetch_and_sub") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__sync_fetch_and_xor") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__sync_lock_release") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__sync_lock_test_and_set") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__sync_nand_and_fetch") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__sync_or_and_fetch") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__sync_sub_and_fetch") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__sync_synchronize") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__sync_val_compare_and_swap") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__sync_xor_and_fetch") finfo table)))
+               table)
+           table)))
     (valid-extdecl-list (transunit->decls tunit) table ienv))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define valid-transunit-ensemble ((tunits transunit-ensemblep) (ienv ienvp))
+(define valid-transunit-ensemble ((tunits transunit-ensemblep)
+                                  (gcc booleanp)
+                                  (ienv ienvp))
   :guard (transunit-ensemble-unambp tunits)
   :returns erp
   :short "Validate a translation unit ensemble."
@@ -5988,19 +6178,20 @@
     "If validation is successful, we return no information (@('nil')).
      Otherwise, we return an error message,
      which a caller can show to the user in an event macro."))
-  (valid-transunit-ensemble-loop (transunit-ensemble->unwrap tunits) ienv)
+  (valid-transunit-ensemble-loop (transunit-ensemble->unwrap tunits) gcc ienv)
   :prepwork
   ((define valid-transunit-ensemble-loop ((map filepath-transunit-mapp)
+                                          (gcc booleanp)
                                           (ienv ienvp))
      :guard (transunit-ensemble-unambp-loop map)
      :returns erp
      :parents nil
      (b* (((reterr))
           ((when (omap::emptyp map)) (retok))
-          ((erp &) (valid-transunit (omap::head-val map) ienv))
-          ((erp) (valid-transunit-ensemble-loop (omap::tail map) ienv)))
+          ((erp &) (valid-transunit (omap::head-val map) gcc ienv))
+          ((erp) (valid-transunit-ensemble-loop (omap::tail map) gcc ienv)))
        (retok))
      ///
      (fty::deffixequiv valid-transunit-ensemble-loop
-       :args ((ienv ienvp)))))
+       :args ((gcc booleanp) (ienv ienvp)))))
   :hooks (:fix))
