@@ -1,7 +1,7 @@
 ; Turning bytes into printable chars and strings
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2021 Kestrel Institute
+; Copyright (C) 2020-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,27 +11,30 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system) ; todo: use byte-listp instead?
+(include-book "kestrel/bv-lists/byte-listp-def" :dir :system)
+(local (include-book "kestrel/bv-lists/byte-listp" :dir :system))
 
 (defun printable-char-code-p (code)
-  (declare (xargs :guard (unsigned-byte-p 8 code)))
+  (declare (xargs :guard (bytep code)))
   (and (<= 32 code)
        (<= code 126)))
 
+;; Like CODE-CHAR, except turns non-printable chars int dots.
 ;; Turn a code into a char, but turn unprintable things into dots.
 (defun code-char-printable (code)
-  (declare (xargs :guard (unsigned-byte-p 8 code)))
+  (declare (xargs :guard (bytep code)))
   (if (printable-char-code-p code)
       (code-char code)
     #\.))
 
-(defun map-code-char-printable (codes)
-  (declare (xargs :guard (all-unsigned-byte-p 8 codes)))
-  (if (atom codes)
+;; Maps CODE-CHAR over the bytes, except turns non-printable chars int dots.
+(defun map-code-char-printable (bytes)
+  (declare (xargs :guard (byte-listp bytes)))
+  (if (atom bytes)
       nil
-    (cons (code-char-printable (first codes))
-          (map-code-char-printable (rest codes)))))
+    (cons (code-char-printable (first bytes))
+          (map-code-char-printable (rest bytes)))))
 
-(defun bytes-to-printable-string (bytes)
-  (declare (xargs :guard (all-unsigned-byte-p 8 bytes)))
+(defund bytes-to-printable-string (bytes)
+  (declare (xargs :guard (byte-listp bytes)))
   (coerce (map-code-char-printable bytes) 'string))
