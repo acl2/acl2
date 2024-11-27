@@ -865,11 +865,11 @@
                       for tag (i.e. structure/union/enumeration) declaration."
                      declspecs)))
        (declspec (car declspecs))
-       ((unless (decl-spec-case declspec :tyspec))
+       ((unless (decl-spec-case declspec :typespec))
         (reterr (msg "Unsupported declaration specifier ~x0 ~
                       for tag (i.e. structure/union/enumeration) declaration."
                      declspec)))
-       (tyspec (decl-spec-tyspec->spec declspec))
+       (tyspec (decl-spec-typespec->spec declspec))
        ((when (type-spec-case tyspec :struct))
         (b* (((strunispec strunispec) (type-spec-struct->spec tyspec))
              ((unless strunispec.name)

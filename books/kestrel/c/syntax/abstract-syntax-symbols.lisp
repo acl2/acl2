@@ -154,7 +154,7 @@
     decl-spec-fix
     decl-spec-count
     decl-spec-case
-    decl-spec-tyspec
+    decl-spec-typespec
     decl-spec-align
     decl-spec-attrib
 

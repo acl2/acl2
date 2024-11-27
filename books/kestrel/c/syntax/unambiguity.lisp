@@ -269,7 +269,7 @@
     :short "Check if a declaration specifier is unambiguous."
     (decl-spec-case declspec
                     :stoclass t
-                    :tyspec (type-spec-unambp declspec.spec)
+                    :typespec (type-spec-unambp declspec.spec)
                     :tyqual t
                     :function t
                     :align (align-spec-unambp declspec.spec)
@@ -1121,18 +1121,18 @@
            (const-expr-unambp cexpr))
     :expand (align-spec-unambp (align-spec-alignas-expr cexpr)))
 
-  (defrule decl-spec-unambp-of-decl-spec-tyspec
-    (equal (decl-spec-unambp (decl-spec-tyspec tyspec))
+  (defrule decl-spec-unambp-of-decl-spec-typespec
+    (equal (decl-spec-unambp (decl-spec-typespec tyspec))
            (type-spec-unambp tyspec))
-    :expand (decl-spec-unambp (decl-spec-tyspec tyspec)))
+    :expand (decl-spec-unambp (decl-spec-typespec tyspec)))
 
   (defrule decl-spec-unambp-of-decl-spec-align
     (equal (decl-spec-unambp (decl-spec-align alignspec))
            (align-spec-unambp alignspec))
     :expand (decl-spec-unambp (decl-spec-align alignspec)))
 
-  (defrule decl-spec-unambp-when-not-tyspec/align
-    (implies (and (not (decl-spec-case declspec :tyspec))
+  (defrule decl-spec-unambp-when-not-typespec/align
+    (implies (and (not (decl-spec-case declspec :typespec))
                   (not (decl-spec-case declspec :align)))
              (decl-spec-unambp declspec))
     :expand (decl-spec-unambp declspec))
@@ -1761,10 +1761,10 @@
              (not (equal (align-spec-kind alignspec) :alignas-ambig)))
     :rule-classes :forward-chaining)
 
-  (defrule type-spec-unambp-of-decl-spec-tyspec->spec
+  (defrule type-spec-unambp-of-decl-spec-typespec->spec
     (implies (and (decl-spec-unambp declspec)
-                  (decl-spec-case declspec :tyspec))
-             (type-spec-unambp (decl-spec-tyspec->spec declspec)))
+                  (decl-spec-case declspec :typespec))
+             (type-spec-unambp (decl-spec-typespec->spec declspec)))
     :expand (decl-spec-unambp declspec))
 
   (defrule align-spec-unambp-of-decl-spec-align->spec

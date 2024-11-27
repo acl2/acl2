@@ -204,7 +204,7 @@
 (defirrelevant irr-decl-spec
   :short "An irrelevant declaration specifier."
   :type decl-specp
-  :body (decl-spec-tyspec (irr-type-spec)))
+  :body (decl-spec-typespec (irr-type-spec)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1075,10 +1075,10 @@
      also return the list of type specifiers, in the same order."))
   (b* (((when (endp declspecs)) (mv t nil))
        (declspec (car declspecs))
-       ((unless (decl-spec-case declspec :tyspec)) (mv nil nil))
+       ((unless (decl-spec-case declspec :typespec)) (mv nil nil))
        ((mv yes/no tyspecs) (check-decl-spec-list-all-tyspec (cdr declspecs))))
     (if yes/no
-        (mv t (cons (decl-spec-tyspec->spec declspec) tyspecs))
+        (mv t (cons (decl-spec-typespec->spec declspec) tyspecs))
       (mv nil nil)))
   :hooks (:fix))
 
@@ -1098,12 +1098,12 @@
      in the same order."))
   (b* (((when (endp declspecs)) (mv t nil nil))
        (declspec (car declspecs))
-       ((when (decl-spec-case declspec :tyspec))
+       ((when (decl-spec-case declspec :typespec))
         (b* (((mv yes/no tyspecs stor-specs)
               (check-decl-spec-list-all-tyspec/storspec (cdr declspecs))))
           (if yes/no
               (mv t
-                  (cons (decl-spec-tyspec->spec declspec) tyspecs)
+                  (cons (decl-spec-typespec->spec declspec) tyspecs)
                   stor-specs)
             (mv nil nil nil))))
        ((when (decl-spec-case declspec :stoclass))
@@ -1146,8 +1146,8 @@
           preserving the order."
   (b* (((when (endp declspecs)) nil)
        (declspec (car declspecs)))
-    (if (decl-spec-case declspec :tyspec)
-        (cons (decl-spec-tyspec->spec declspec)
+    (if (decl-spec-case declspec :typespec)
+        (cons (decl-spec-typespec->spec declspec)
               (decl-spec-list-to-type-spec-list (cdr declspecs)))
       (decl-spec-list-to-type-spec-list (cdr declspecs))))
   :hooks (:fix))

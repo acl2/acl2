@@ -1916,7 +1916,7 @@
        and the @('__declspec') attribute syntax.
        See our ABNF grammar for details."))
     (:stoclass ((spec stor-spec)))
-    (:tyspec ((spec type-spec)))
+    (:typespec ((spec type-spec)))
     (:tyqual ((qual type-qual)))
     (:function ((spec fun-spec)))
     (:align ((spec align-spec)))

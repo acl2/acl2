@@ -2057,7 +2057,7 @@
     (decl-spec-case
      declspec
      :stoclass (print-stor-spec declspec.spec pstate)
-     :tyspec (print-type-spec declspec.spec pstate)
+     :typespec (print-type-spec declspec.spec pstate)
      :tyqual (print-type-qual declspec.qual pstate)
      :function (print-fun-spec declspec.spec pstate)
      :align (print-align-spec declspec.spec pstate)

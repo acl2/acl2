@@ -304,8 +304,10 @@
     :short "Transform an alignment specifier."
     (align-spec-case
      alignspec
-     :alignas-type (align-spec-alignas-type (simpadd0-tyname alignspec.type))
-     :alignas-expr (align-spec-alignas-expr (simpadd0-const-expr alignspec.expr))
+     :alignas-type (align-spec-alignas-type
+                    (simpadd0-tyname alignspec.type))
+     :alignas-expr (align-spec-alignas-expr
+                    (simpadd0-const-expr alignspec.expr))
      :alignas-ambig (prog2$ (impossible) (irr-align-spec)))
     :measure (align-spec-count alignspec))
 
@@ -319,7 +321,7 @@
     (decl-spec-case
      declspec
      :stoclass (decl-spec-fix declspec)
-     :tyspec (decl-spec-tyspec (simpadd0-type-spec declspec.spec))
+     :typespec (decl-spec-typespec (simpadd0-type-spec declspec.spec))
      :tyqual (decl-spec-fix declspec)
      :function (decl-spec-fix declspec)
      :align (decl-spec-align (simpadd0-align-spec declspec.spec))
