@@ -934,23 +934,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund acl2::packbv-unguarded (itemcount itemsize items)
-  (declare (xargs :guard t))
-  (if (zp (nfix itemcount))
-      0
-    (acl2::bvcat-unguarded itemsize (ifix (acl2::car-unguarded items))
-                           (* (fix itemsize) (fix (+ -1 (fix itemcount))))
-                           (acl2::packbv-unguarded (+ -1 (fix itemcount))
-                                                   itemsize (acl2::cdr-unguarded items)))))
-
-(defthm packbv-unguarded-correct
-  (equal (acl2::packbv-unguarded itemcount itemsize items)
-         (acl2::packbv itemcount itemsize items))
-  :hints (("Goal" :in-theory (enable acl2::packbv-unguarded
-                                     acl2::packbv))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defund x86isa::check-instruction-length$inline-unguarded (start-rip temp-rip delta-rip)
   (declare (xargs :guard t))
   (b* ((start-rip (ifix start-rip))

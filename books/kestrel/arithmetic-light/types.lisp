@@ -23,6 +23,7 @@
   (implies (integerp x)
            (acl2-numberp x)))
 
+;; Note that there is also a built-in theorem rationalp-implies-acl2-numberp.
 (defthmd acl2-numberp-when-rationalp
   (implies (rationalp x)
            (acl2-numberp x)))

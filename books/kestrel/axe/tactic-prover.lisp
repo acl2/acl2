@@ -18,6 +18,8 @@
 
 ;; TODO: Add support for :axe-prover option to call the Axe prover
 
+;; TODO: Add support for embedded DAGs in the inputs (without using the legacy rewriter)
+
 ;; See also the provers created by make-prover-simple (they are more
 ;; lightweight and do not depend on skip-proofs).
 
@@ -228,7 +230,7 @@
        (assumptions (second problem))
        (- (and print (cw "(Applying the Axe rewriter~%")))
        ((mv erp new-dag state)
-        (simp-dag dag ; TODO: Use the basic rewriter (but it will need to support rewriting nodes assuming their [approximate] contexts)
+        (simp-dag dag ; TODO: Use the basic rewriter (see below) but it will need to support embedded dags (e.g., in popcount-loop)
                   ;; todo: consider :exhaustivep t
                   :rule-alist rule-alist
                   :interpreted-function-alist interpreted-function-alist
@@ -238,6 +240,20 @@
                   :normalize-xors normalize-xors
                   :print print
                   :check-inputs nil))
+       ;; ((mv erp new-dag)
+       ;;  (simplify-dag-basic dag
+       ;;                      assumptions
+       ;;                      rule-alist
+       ;;                      interpreted-function-alist
+       ;;                      (known-booleans (w state))
+       ;;                      nil ; limits
+       ;;                      nil ; count-hints
+       ;;                      print
+       ;;                      monitor
+       ;;                      nil ; fns-to-elide
+       ;;                      normalize-xors
+       ;;                      t ; memoize
+       ;;                      ))
        ((when erp) (mv *error* nil state))
        (- (and print (cw "Done applying the Axe rewriter (term size: ~x0, DAG size: ~x1))~%"
                          (dag-or-quotep-size new-dag)
