@@ -80,7 +80,7 @@
    (xdoc::p
     "This is used by @(tsee previous-quorum-p) to define our invariant.
      The validator whose state is @('vstate') is
-     the one that has the accepted certificate.
+     the one that has the certificate in the DAG.
      The guard ensures that the validator can calculate the committee.")
    (xdoc::p
     "We prove a theorem about the cardinality of the predecessors of @('cert'),
