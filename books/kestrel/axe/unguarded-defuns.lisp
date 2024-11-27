@@ -42,6 +42,7 @@
 (include-book "kestrel/bv-lists/width-of-widest-int" :dir :system)
 (include-book "kestrel/bv-lists/array-patterns" :dir :system)
 (include-book "kestrel/bv-lists/negated-elems-listp" :dir :system)
+(include-book "kestrel/bv-lists/packbv" :dir :system)
 (include-book "kestrel/alists-light/lookup-equal" :dir :system)
 (include-book "unguarded-built-ins") ; for assoc-equal-unguarded
 (local (include-book "kestrel/lists-light/take" :dir :system))
@@ -781,3 +782,20 @@
   (equal (all-equal$-unguarded x lst)
          (all-equal$ x lst))
   :hints (("Goal" :in-theory (enable all-equal$-unguarded all-equal$))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund packbv-unguarded (itemcount itemsize items)
+  (declare (xargs :guard t))
+  (if (zp (nfix itemcount))
+      0
+    (bvcat-unguarded itemsize (ifix (car-unguarded items))
+                           (* (fix itemsize) (fix (+ -1 (fix itemcount))))
+                           (packbv-unguarded (+ -1 (fix itemcount))
+                                                   itemsize (cdr-unguarded items)))))
+
+(defthm packbv-unguarded-correct
+  (equal (packbv-unguarded itemcount itemsize items)
+         (packbv itemcount itemsize items))
+  :hints (("Goal" :in-theory (enable packbv-unguarded
+                                     packbv))))
