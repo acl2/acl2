@@ -324,7 +324,7 @@
        should be accepted or not."))
 
     (xdoc::desc
-     "@(:short-bytes') &mdash; default 2"
+     "@(':short-bytes') &mdash; default 2"
      (xdoc::p
       "Positive integer saying how many bytes are used to represent
        @('signed short int') and @('unsigned short int').")
