@@ -12,8 +12,10 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system)
+(include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system) ; drop?
+(include-book "kestrel/bv-lists/byte-listp-def" :dir :system)
 (local (include-book "kestrel/utilities/char-code" :dir :system))
+(local (include-book "kestrel/bv-lists/byte-listp" :dir :system))
 
 ;; Apply char-code to each element of CHARS, returning a list of bytes
 (defund map-char-code (chars)
@@ -25,6 +27,10 @@
 
 (defthm all-unsigned-byte-p-8-of-map-char-code
   (all-unsigned-byte-p 8 (map-char-code chars))
+  :hints (("Goal" :in-theory (enable map-char-code))))
+
+(defthm byte-listp-of-map-char-code
+  (byte-listp (map-char-code chars))
   :hints (("Goal" :in-theory (enable map-char-code))))
 
 (defthm len-of-map-char-code
