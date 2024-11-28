@@ -276,3 +276,79 @@ int main(void) {
 
 (acl2::assert-equal *parsed-simple/stdbool-5*
                     *parsed-simple/stdbool*)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Read and parse and disambiguate and validate.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(input-files :files ("simple.c")
+             :process :validate
+             :const *valid-simple*)
+
+(acl2::assert! (transunit-ensemblep *valid-simple*))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(input-files :files ("simple.c")
+             :process :validate
+             :const *valid-simple-2*
+             :const-files *files-simple-3*
+             :const-parsed *parsed-simple-3*
+             :const-disamb *disamb-simple-3*)
+
+(acl2::assert-equal *valid-simple-2*
+                    *valid-simple*)
+
+(acl2::assert-equal *files-simple-3*
+                    *files-simple*)
+
+(acl2::assert-equal *parsed-simple-3*
+                    *parsed-simple*)
+
+(acl2::assert-equal *disamb-simple-3*
+                    *disamb-simple*)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Read and preprocess and parse and disambiguate and validate.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(input-files :files ("simple.c" "stdbool.c")
+             ;; We exclude stdint.c because it has occurrences of #define
+             ;; (not at the left margin) even after preprocessing.
+             :preprocess :auto
+             :process :validate
+             :const *valid-simple/stdbool*)
+
+(acl2::assert! (transunit-ensemblep *valid-simple/stdbool*))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(input-files :files ("simple.c" "stdbool.c")
+             ;; We exclude stdint.c because it has occurrences of #define
+             ;; (not at the left margin) even after preprocessing.
+             :preprocess :auto
+             :process :validate
+             :const *valid-simple/stdbool-2*
+             :const-files *files-simple/stdbool-3*
+             :const-preproc *preproc-simple/stdbool-3*
+             :const-parsed *parsed-simple/stdbool-5*
+             :const-disamb *disamb-simple/stdbool-3*)
+
+(acl2::assert-equal *valid-simple/stdbool-2*
+                    *valid-simple/stdbool*)
+
+(acl2::assert-equal *files-simple/stdbool-3*
+                    *files-simple/stdbool*)
+
+(acl2::assert-equal *preproc-simple/stdbool-3*
+                    *preproc-simple/stdbool*)
+
+(acl2::assert-equal *parsed-simple/stdbool-5*
+                    *parsed-simple/stdbool*)
+
+(acl2::assert-equal *disamb-simple/stdbool-3*
+                    *disamb-simple/stdbool*)

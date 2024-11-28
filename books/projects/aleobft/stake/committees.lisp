@@ -49,8 +49,8 @@
      a finite map from validator addresses to their bonded stake,
      the latter expressed as a positive integer
      whose exact units is irrelevant (cf. @(tsee transaction)).
-     We introduce a fixtype to wrap that, to enforce non-emptiness,
-     and also for greater abstraction and extensibility.")
+     We introduce a fixtype to wrap that,
+     for greater abstraction and extensibility.")
    (xdoc::p
     "The genesis committee is arbitrary,
      but fixed for each execution of the protocol.
@@ -128,11 +128,7 @@
     "In our model, a committee is a map from addresses to bonded stake
      (the latter modeled as positive integers),
      but we wrap it in a fixtype for greater abstraction and extensibility."))
-  ((members-with-stake address-pos-map
-                       :reqfix (if (omap::emptyp members-with-stake)
-                                   (omap::update (address nil) 1 nil)
-                                 members-with-stake)))
-  :require (not (omap::emptyp members-with-stake))
+  ((members-with-stake address-pos-map))
   :pred committeep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -152,13 +148,26 @@
    (xdoc::p
     "The members of a committees are the keys of the map."))
   (omap::keys (committee->members-with-stake commtt))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define committee-nonemptyp ((commtt committeep))
+  :returns (yes/no booleanp)
+  :short "Check is a committee is not empty."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "That is, check whether it has members."))
+  (not (set::emptyp (committee-members commtt)))
   :hooks (:fix)
 
   ///
 
-  (defret not-emptyp-of-committee-members
-    (not (set::emptyp addresses))
-    :hints (("Goal" :in-theory (enable omap::emptyp-of-keys-to-emptyp)))))
+  (defruled committee-nonemptyp-when-nonempty-subset
+    (implies (and (set::subset members (committee-members commtt))
+                  (not (set::emptyp members)))
+             (committee-nonemptyp commtt))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -212,13 +221,19 @@
 
   ///
 
-  (defruled committee-members-stake-0-to-emptyp
+  (more-returns
+   (stake posp
+          :hyp (not (set::emptyp (address-set-fix members)))
+          :rule-classes (:rewrite :type-prescription)
+          :hints (("Goal" :induct t))))
+
+  (defruled committee-members-stake-0-to-emptyp-members
     (equal (equal (committee-members-stake members commtt) 0)
            (set::emptyp (address-set-fix members)))
     :induct t
     :enable fix)
 
-  (defrule committee-members-stake-when-emptyp
+  (defrule committee-members-stake-when-emptyp-members
     (implies (set::emptyp members)
              (equal (committee-members-stake members commtt)
                     0)))
@@ -314,7 +329,7 @@
 
     (local
      (defun genesis-committee ()
-       (make-committee :members-with-stake (omap::update (address nil) 1 nil))))
+       (make-committee :members-with-stake nil)))
 
     (defrule committeep-of-genesis-committee
       (committeep (genesis-committee)))))
@@ -343,40 +358,28 @@
      there is no change if the validator is not in the committee.
      The other kind of transaction leaves the committee unchanged.")
    (xdoc::p
-    "In order to maintain the non-emptiness of the committee,
-     attempting to remove the only member of the committee
-     does not actually remove it.
-     An implementation of AleoBFT may require larger minimal committees,
-     but for the purposes of our model,
-     it suffices for the committee to be never empty.
-     The protocol works, although in a degenerate way,
-     with just one validator.")
-   (xdoc::p
     "It is an interesting question whether an AleoBFT implementation
      should have mechanisms in place to guarantee minimal committee sizes.
-     If it does, our model of unbonding captures a form of that.
      If it does not, which is plausible since validators
      should be generally free to bond and unbond as they want,
      then the whole network could be considered to fail
-     if all validators unbond and there is nobody to run the network.
-     If that is the case, our model of unbonding is still adequate to capture
-     the situation in which the whole network has not failed;
-     as mentioned above, the unbonding transaction that does not unbond
-     can be simply regarded as if it were an @(':other') kind of transaction."))
+     if all validators unbond and there is nobody to run the network."))
   (transaction-case
    trans
-   :bond (b* ((members (committee->members-with-stake commtt))
-              (member (omap::assoc trans.validator members))
-              (new-stake (if member
-                             (+ trans.stake (cdr member))
+   :bond (b* ((members-with-stake (committee->members-with-stake commtt))
+              (member-with-stake (omap::assoc trans.validator
+                                              members-with-stake))
+              (new-stake (if member-with-stake
+                             (+ trans.stake (cdr member-with-stake))
                            trans.stake))
-              (new-members (omap::update trans.validator new-stake members)))
-           (committee new-members))
-   :unbond (b* ((members (committee->members-with-stake commtt))
-                (new-members (omap::delete trans.validator members)))
-             (if (omap::emptyp new-members)
-                 (committee-fix commtt)
-               (committee new-members)))
+              (new-members-with-stake (omap::update trans.validator
+                                                    new-stake
+                                                    members-with-stake)))
+           (committee new-members-with-stake))
+   :unbond (b* ((members-with-stake (committee->members-with-stake commtt))
+                (new-members-with-stake (omap::delete trans.validator
+                                                      members-with-stake)))
+             (committee new-members-with-stake))
    :other (committee-fix commtt))
   :hooks (:fix)
 
@@ -835,9 +838,7 @@
      and the output is the maximum @($f$) such that @($f < n/3$).
      We define the function to return 0 if @($n = 0$),
      although @($n = 0$) does not correspond to a practical situation.
-     So consider the normal case @($n > 0$)
-     (we could strengthen the guard of this function
-     to require a positive integer as input).
+     So consider the normal case @($n > 0$).
      If @($n$) is a multiple of 3,
      @($f$) is one less than the integer @($n/3$);
      if @($n$) is not a multiple of 3,
@@ -908,17 +909,18 @@
     :rule-classes ((:linear :trigger-terms ((max-faulty-for-total total)))))
 
   (defret max-faulty-for-total-leq-total
-    (<= max (nfix total))
+    (<= max total)
+    :hyp (natp total)
     :rule-classes ((:linear :trigger-terms ((max-faulty-for-total total))))
     :hints (("Goal" :in-theory (enable nfix))))
   (in-theory (disable max-faulty-for-total-leq-total))
 
-  (defret max-faulty-for-total-lt-total-when-posp
+  (defret max-faulty-for-total-lt-total
     (< max total)
     :hyp (posp total)
     :rule-classes ((:linear :trigger-terms ((max-faulty-for-total total))))
     :hints (("Goal" :in-theory (enable posp))))
-  (in-theory (disable max-faulty-for-total-lt-total-when-posp))
+  (in-theory (disable max-faulty-for-total-lt-total))
 
   (assert-event (= (max-faulty-for-total 0) 0))
   (assert-event (= (max-faulty-for-total 1) 0))
@@ -948,13 +950,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define committee-total-stake ((commtt committeep))
-  :returns (total posp
-                  :rule-classes (:rewrite :type-prescription)
-                  :hints
-                  (("Goal"
-                    :in-theory
-                    (enable posp
-                            committee-members-stake-0-to-emptyp))))
+  :returns (total natp :rule-classes (:rewrite :type-prescription))
   :short "Total stake of validators in a committee."
   :long
   (xdoc::topstring
@@ -963,7 +959,15 @@
      It is the sum of all the units of stake
      associated to members of the committee."))
   (committee-members-stake (committee-members commtt) commtt)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (more-returns
+   (total posp
+          :hyp (committee-nonemptyp commtt)
+          :rule-classes (:rewrite :type-prescription)
+          :hints (("Goal" :in-theory (enable committee-nonemptyp))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -982,14 +986,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define committee-quorum-stake ((commtt committeep))
-  :returns (quorum
-            posp
-            :rule-classes (:rewrite :type-prescription)
-            :hints (("Goal"
-                     :in-theory
-                     (enable posp
-                             committee-max-faulty-stake
-                             max-faulty-for-total-lt-total-when-posp))))
+  :returns (quorum natp
+                   :rule-classes (:rewrite :type-prescription)
+                   :hints (("Goal"
+                            :in-theory
+                            (enable natp
+                                    committee-max-faulty-stake
+                                    max-faulty-for-total-leq-total))))
   :short "Quorum stake in a committee."
   :long
   (xdoc::topstring
@@ -1014,7 +1017,18 @@
      works for any value of @($n$)."))
   (- (committee-total-stake commtt)
      (committee-max-faulty-stake commtt))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (more-returns
+   (quorum posp
+           :hyp (committee-nonemptyp commtt)
+           :rule-classes (:rewrite :type-prescription)
+           :hints
+           (("Goal" :in-theory (enable posp
+                                       committee-max-faulty-stake
+                                       max-faulty-for-total-lt-total))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

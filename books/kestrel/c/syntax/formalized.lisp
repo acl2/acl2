@@ -263,7 +263,7 @@
      We must also ensure that there are no type qualifiers,
      which are not supported in the formal semantics."))
   (b* (((tyname tyname) tyname)
-       ((mv okp tyspecs) (check-spec/qual-list-all-tyspec tyname.specqual)))
+       ((mv okp tyspecs) (check-spec/qual-list-all-typespec tyname.specqual)))
     (and okp
          (type-spec-list-integer-formalp tyspecs)
          (not tyname.decl?)))
@@ -580,7 +580,7 @@
    decl
    :decl (and (not decl.extension)
               (b* (((mv okp tyspecs)
-                    (check-decl-spec-list-all-tyspec decl.specs)))
+                    (check-decl-spec-list-all-typespec decl.specs)))
                 (and okp
                      (type-spec-list-formalp tyspecs)))
               (consp decl.init)
@@ -769,7 +769,7 @@
    decl
    :decl (and (not decl.extension)
               (b* (((mv okp tyspecs storspecs)
-                    (check-decl-spec-list-all-tyspec/storspec decl.specs)))
+                    (check-decl-spec-list-all-typespec/stoclass decl.specs)))
                 (and okp
                      (type-spec-list-formalp tyspecs)
                      (stor-spec-list-formalp storspecs)))
@@ -814,7 +814,7 @@
    structdecl
    :member (and (not structdecl.extension)
                 (b* (((mv okp tyspecs)
-                      (check-spec/qual-list-all-tyspec structdecl.specqual)))
+                      (check-spec/qual-list-all-typespec structdecl.specqual)))
                   (and okp
                        (type-spec-list-formalp tyspecs)))
                 (consp structdecl.declor)
@@ -874,11 +874,11 @@
    :decl (and (not decl.extension)
               (consp decl.specs)
               (endp (cdr decl.specs))
-              (decl-spec-case (car decl.specs) :tyspec)
-              (type-spec-case (decl-spec-tyspec->spec (car decl.specs))
+              (decl-spec-case (car decl.specs) :typespec)
+              (type-spec-case (decl-spec-typespec->spec (car decl.specs))
                               :struct)
               (strunispec-formalp (type-spec-struct->spec
-                                   (decl-spec-tyspec->spec (car decl.specs))))
+                                   (decl-spec-typespec->spec (car decl.specs))))
               (endp decl.init))
    :statassert nil)
   :hooks (:fix))
@@ -916,7 +916,7 @@
      and must form a supported type.
      The parameter declarator must be a supported one."))
   (b* (((paramdecl paramdecl) paramdecl)
-       ((mv okp tyspecs) (check-decl-spec-list-all-tyspec paramdecl.spec)))
+       ((mv okp tyspecs) (check-decl-spec-list-all-typespec paramdecl.spec)))
     (and okp
          (type-spec-list-formalp tyspecs)
          (paramdeclor-formalp paramdecl.decl)))
@@ -1010,7 +1010,7 @@
    decl
    :decl (and (not decl.extension)
               (b* (((mv okp tyspecs)
-                    (check-decl-spec-list-all-tyspec decl.specs)))
+                    (check-decl-spec-list-all-typespec decl.specs)))
                 (and okp
                      (type-spec-list-formalp tyspecs)))
               (consp decl.init)
@@ -1038,7 +1038,7 @@
      whose block items are all supported."))
   (b* (((fundef fundef) fundef))
     (and (not fundef.extension)
-         (b* (((mv okp tyspecs) (check-decl-spec-list-all-tyspec fundef.spec)))
+         (b* (((mv okp tyspecs) (check-decl-spec-list-all-typespec fundef.spec)))
            (and okp
                 (type-spec-list-formalp tyspecs)))
          (declor-fun-formalp fundef.declor)

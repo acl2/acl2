@@ -1846,8 +1846,8 @@
      (xdoc::p
       "As a GCC extension, we include attribute specifiers.
        See our ABNF grammar."))
-    (:tyspec ((spec type-spec)))
-    (:tyqual ((qual type-qual)))
+    (:typespec ((spec type-spec)))
+    (:typequal ((qual type-qual)))
     (:align ((spec align-spec)))
     (:attrib ((spec attrib-spec))) ; GCC extension
     :pred spec/qual-p
@@ -1916,8 +1916,8 @@
        and the @('__declspec') attribute syntax.
        See our ABNF grammar for details."))
     (:stoclass ((spec stor-spec)))
-    (:tyspec ((spec type-spec)))
-    (:tyqual ((qual type-qual)))
+    (:typespec ((spec type-spec)))
+    (:typequal ((qual type-qual)))
     (:function ((spec fun-spec)))
     (:align ((spec align-spec)))
     (:attrib ((spec attrib-spec))) ; GCC extension

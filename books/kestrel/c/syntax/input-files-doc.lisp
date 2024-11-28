@@ -12,18 +12,13 @@
 
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
 
-(local (include-book "kestrel/built-ins/disable" :dir :system))
-(local (acl2::disable-most-builtin-logic-defuns))
-(local (acl2::disable-builtin-rewrite-rules-for-defaults))
-(set-induction-depth-limit 0)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc input-files
 
   :parents (syntax-for-tools)
 
-  :short "Read C files from the file system to an ACL2 representation."
+  :short "Read C files from the file system into an ACL2 representation."
 
   :long
 
@@ -58,14 +53,20 @@
    (xdoc::evmac-section-form
 
     (xdoc::codeblock
-     "(input-files :files         ...  ; no default"
-     "             :preprocess    ...  ; default nil"
-     "             :process       ...  ; default :disambiguate"
-     "             :const         ...  ; no default"
-     "             :const-files   ...  ; default nil"
-     "             :const-preproc ...  ; default nil"
-     "             :const-parsed  ...  ; default nil"
-     "             :gcc           ...  ; default nil"
+     "(input-files :files              ...  ; no default"
+     "             :preprocess         ...  ; default nil"
+     "             :process            ...  ; default :disambiguate"
+     "             :const              ...  ; no default"
+     "             :const-files        ...  ; default nil"
+     "             :const-preproc      ...  ; default nil"
+     "             :const-parsed       ...  ; default nil"
+     "             :const-disamb       ...  ; default nil"
+     "             :gcc                ...  ; default nil"
+     "             :short-bytes        ...  ; default 2"
+     "             :int-bytes          ...  ; default 4"
+     "             :long-bytes         ...  ; default 8"
+     "             :long-long-bytes    ...  ; default 8"
+     "             :plain-char-signed  ... ; default nil"
      "  )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -110,7 +111,7 @@
        is performed via the @(tsee preprocess-file) tool."))
 
     (xdoc::desc
-     "@(':process') &mdash; default @(':disambiguate')"
+     "@(':process') &mdash; default @(':validate')"
      (xdoc::p
       "Specifies the processing to perform
        on the files specified by the @(':files') input
@@ -132,17 +133,32 @@
        (xdoc::seetopic "abstract-syntax" "abstract syntax")
        " representation, which may contain ambiguous constructs.")
       (xdoc::li
-       "@(':disambiguate') (the default),
-        to parse the files as with @(':parse'),
-        and then to "
+       "@(':disambiguate'),
+        to parse the files, and then to "
        (xdoc::seetopic "disambiguator" "disambiguate")
        " the possibly ambiguous abstract syntax representation
         obtained from the parser
-        into a non-ambiguous abstract syntax representation."))
+        into a non-ambiguous abstract syntax representation.")
+      (xdoc::li
+       "@(':validate') (the default),
+        to parse and disambiguate the files, and then to "
+       (xdoc::seetopic "validator" "validate")
+       " the disambiguated abstract syntax representation
+        obtained from the disambiguator.
+        Validation depends on the
+        @(':short-bytes'),
+        @(':int-bytes'),
+        @(':long-bytes'),
+        @(':long-long-bytes'), and
+        @(':plain-char-signed')
+        inputs, which determine an "
+       (xdoc::seetopic "implementation-environments"
+                       "implementation environment")
+       "."))
      (xdoc::p
       "These levels of processing are ordered as")
      (xdoc::codeblock
-      ":read < :parse < :disambiguate")
+      ":read < :parse < :disambiguate < :validate")
      (xdoc::p
       "where a larger level includes and extends
        the processing of smaller levels.
@@ -184,6 +200,14 @@
        (i.e. a value of type @(tsee transunit-ensemble)),
        containing the abstract syntax representation of the code
        obtained by disambiguating the one resulting from the parser.")
+     (xdoc::p
+      "If @(':process') is @(':validate'),
+       the value of the constant named by @(':const') is
+       a translation unit ensemble
+       (i.e. a value of type @(tsee transunit-ensemble)),
+       containing the abstract syntax representation of the code
+       obtained by disambiguating the one resulting from the parser,
+       and such that the abstract syntax representation passed validation.")
      (xdoc::p
       "In the rest of this documentation page,
        let @('*const*') be the name of this constant."))
@@ -258,10 +282,87 @@
        if not @('nil')."))
 
     (xdoc::desc
+     "@(':const-disamb') &mdash; default @('nil')"
+     (xdoc::p
+      "Name of the generated ACL2 constant whose value is
+       the translation unit ensemble
+       (i.e. a value of type @(tsee transunit-ensemble))
+       that represents the result of parsing and disambiguating
+       the files specified by @(':files')
+       (if @(':preprocess') is @('nil'))
+       or the files resulting from preprocessing those
+       (if @(':preprocess') is not @('nil')).")
+     (xdoc::p
+      "If this input is @('nil'),
+       this constant is not generated.")
+     (xdoc::p
+      "This input must be @('nil') if
+       the @(':process') input is @(':read') or @(':parse'),
+       because in that case the files are not parsed or disambiguated.")
+     (xdoc::p
+      "This input must be @('nil') if
+       the @(':process') input is @(':disambiguate'),
+       because in that case this constant would contain
+       the same value as the constant specified by the @(':const') input.")
+     (xdoc::p
+      "In the rest of this documentation page,
+       let @('*const-disamb*') be the name of this constant,
+       if not @('nil').")
+     (xdoc::p
+      "Currently the value of this constant, if generated,
+       is the same as the value of the @(':const') constant
+       when @(':process') is @(':validate').
+       This is because validation does not produce
+       an updated translation unit ensemble.
+       However, this may change soon:
+       validation may enrich the abstract syntax with information."))
+
+    (xdoc::desc
      "@(':gcc') &mdash; default @('nil')"
      (xdoc::p
       "Boolean saying whether certain GCC extensions
-       should be accepted or not.")))
+       should be accepted or not."))
+
+    (xdoc::desc
+     "@(':short-bytes') &mdash; default 2"
+     (xdoc::p
+      "Positive integer saying how many bytes are used to represent
+       @('signed short int') and @('unsigned short int').")
+     (xdoc::p
+      "This must be at least 2."))
+
+    (xdoc::desc
+     "@(':int-bytes') &mdash; default 4"
+     (xdoc::p
+      "Positive integer saying how many bytes are used to represent
+       @('signed int') and @('unsigned int').")
+     (xdoc::p
+      "This must be at least 4,
+       and not less than @(':short-bytes')."))
+
+    (xdoc::desc
+     "@(':long-bytes') &mdash; default 8"
+     (xdoc::p
+      "Positive integer saying how many bytes are used to represent
+       @('signed long int') and @('unsigned long int').")
+     (xdoc::p
+      "This must be at least 8,
+       and not less than @(':int-bytes')."))
+
+    (xdoc::desc
+     "@(':long-long-bytes') &mdash; default 8"
+     (xdoc::p
+      "Positive integer saying how many bytes are used to represent
+       @('signed long long int') and @('unsigned long long int').")
+     (xdoc::p
+      "This must be at least 8,
+       and not less than @(':long-bytes')."))
+
+    (xdoc::desc
+     "@(':plain-char-signed') &mdash; default nil"
+     (xdoc::p
+      "Boolean saying whether the plain @('char') type consists of
+       the same value as the @('signed char') or @('unsigned char') type.")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -300,6 +401,17 @@
       "Optionally,
        the named constant containing the abstract syntax representation,
        obtained from the parser without disambiguation, of
+       the files specified by @(':files')
+       (if @(':preprocess') is @('nil'))
+       or the files resulting from preprocessing those
+       (if @(':preprocess') is not @('nil'))."))
+
+    (xdoc::desc
+     "@('*const-disamb*')"
+     (xdoc::p
+      "Optionally,
+       the named constant containing the abstract syntax representation,
+       obtained from the disambiguator, of
        the files specified by @(':files')
        (if @(':preprocess') is @('nil'))
        or the files resulting from preprocessing those
