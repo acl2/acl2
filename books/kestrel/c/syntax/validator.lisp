@@ -4181,7 +4181,7 @@
        and we return the refined type,
        along with the declared identifier.")
      (xdoc::p
-      "The meaning of the @('param-open') flag passed as input is
+      "The meaning of the @('fundef-params-p') flag passed as input is
        the same as in @(tsee valid-declor): see that function's documentation.")
      (xdoc::p
       "If the direct declarator is just an identifier,
