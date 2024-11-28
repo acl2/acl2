@@ -3842,7 +3842,7 @@
                  (type-case target-type :union))
              (initer-case initer :list))
         (valid-desiniter-list
-         (initer-list->elems initer) target-type lifetime table ienv))
+         (initer-list->elems initer) (type-unknown) lifetime table ienv))
        (t (reterr (msg "The initializer ~x0 ~
                         for the target type ~x1 ~
                         is disallowed."
