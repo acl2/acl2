@@ -1615,10 +1615,10 @@
     (b* (((reterr) (irr-spec/qual) (irr-dimb-table)))
       (spec/qual-case
        specqual
-       :tyspec (b* (((erp new-tyspec table)
-                     (dimb-type-spec specqual.spec table)))
-                 (retok (spec/qual-tyspec new-tyspec)
-                        table))
+       :typespec (b* (((erp new-tyspec table)
+                       (dimb-type-spec specqual.spec table)))
+                   (retok (spec/qual-typespec new-tyspec)
+                          table))
        :tyqual (retok (spec/qual-tyqual specqual.qual)
                       (dimb-table-fix table))
        :align (b* (((erp new-alignspec table)

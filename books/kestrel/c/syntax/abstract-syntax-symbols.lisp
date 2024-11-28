@@ -134,7 +134,7 @@
     spec/qual-fix
     spec/qual-count
     spec/qual-case
-    spec/qual-tyspec
+    spec/qual-typespec
     spec/qual-align
     spec/qual-attrib
 

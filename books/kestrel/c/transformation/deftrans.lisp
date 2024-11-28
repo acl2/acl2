@@ -368,7 +368,7 @@
     (:linear c$::tyname-count-of-type-spec-atomic->type)
     (:linear c$::tyname-count-of-type-spec-typeof-type->type)
     (:linear c$::type-spec-count-of-decl-spec-typespec->spec)
-    (:linear c$::type-spec-count-of-spec/qual-tyspec->spec)))
+    (:linear c$::type-spec-count-of-spec/qual-typespec->spec)))
 
 (defthy deftrans-theory-type-prescription
   '((:type-prescription absdeclor)
@@ -533,7 +533,7 @@
     (:type-prescription spec/qual-align)
     (:type-prescription spec/qual-count)
     (:type-prescription spec/qual-list-count)
-    (:type-prescription spec/qual-tyspec)
+    (:type-prescription spec/qual-typespec)
     (:type-prescription statassert)
     (:type-prescription statassert-count)
     (:type-prescription stmt-compound)
@@ -928,7 +928,7 @@
    extra-args
    `(spec/qual-case
       specqual
-      :tyspec (spec/qual-tyspec (,(cdr (assoc-eq 'type-spec names)) specqual.spec ,@extra-args-names))
+      :typespec (spec/qual-typespec (,(cdr (assoc-eq 'type-spec names)) specqual.spec ,@extra-args-names))
       :tyqual (spec/qual-fix specqual)
       :align (spec/qual-align (,(cdr (assoc-eq 'align-spec names)) specqual.spec ,@extra-args-names))
       :attrib (spec/qual-fix specqual))

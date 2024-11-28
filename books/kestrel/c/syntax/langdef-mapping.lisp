@@ -554,7 +554,7 @@
      and must form a supported sequence."))
   (b* (((reterr) (c::tyname (c::tyspecseq-void) (c::obj-adeclor-none)))
        ((tyname tyname) tyname)
-       ((mv okp tyspecs) (check-spec/qual-list-all-tyspec tyname.specqual))
+       ((mv okp tyspecs) (check-spec/qual-list-all-typespec tyname.specqual))
        ((when (not okp))
         (reterr (msg "Unsupported specifiers and qualifiers ~
                       in type name ~x0."
@@ -754,7 +754,7 @@
                      (structdecl-fix structdecl))))
        (specquals (structdecl-member->specqual structdecl))
        (declors (structdecl-member->declor structdecl))
-       ((mv okp tyspecs) (check-spec/qual-list-all-tyspec specquals))
+       ((mv okp tyspecs) (check-spec/qual-list-all-typespec specquals))
        ((unless okp)
         (reterr (msg "Unsupported specifier and qualifier list ~
                       in structure declaration ~x0."
@@ -942,7 +942,7 @@
                                    (c::ident "irrelevant"))))
        (declspecs (paramdecl->spec paramdecl))
        (declor (paramdecl->decl paramdecl))
-       ((mv okp tyspecs) (check-decl-spec-list-all-tyspec declspecs))
+       ((mv okp tyspecs) (check-decl-spec-list-all-typespec declspecs))
        ((unless okp)
         (reterr (msg "Unsupported declaration specifier list ~
                       in parameter declaration ~x0."
@@ -1071,7 +1071,7 @@
         (reterr (msg "Unsupported GCC extension keyword ~
                       for tag (i.e. structure/union/enumeration) ~
                       declaration.")))
-       ((mv okp tyspecs) (check-decl-spec-list-all-tyspec declspecs))
+       ((mv okp tyspecs) (check-decl-spec-list-all-typespec declspecs))
        ((when (not okp))
         (reterr (msg "Unsupported declaration specifier list ~
                       in declaration ~x0 for function."
@@ -1182,7 +1182,7 @@
                       for tag (i.e. structure/union/enumeration) ~
                       declaration.")))
        ((mv okp tyspecs stor-specs)
-        (check-decl-spec-list-all-tyspec/storspec declspecs))
+        (check-decl-spec-list-all-typespec/storspec declspecs))
        ((unless okp)
         (reterr (msg "Unsupported declaration specifiers ~x0 ~
                       for object declaration."
@@ -1352,7 +1352,7 @@
                             (c::fun-declor-base (c::ident "irrelevant") nil)
                             nil))
        ((fundef fundef) fundef)
-       ((mv okp tyspecs) (check-decl-spec-list-all-tyspec fundef.spec))
+       ((mv okp tyspecs) (check-decl-spec-list-all-typespec fundef.spec))
        ((when (not okp))
         (reterr (msg "Unsupported declaration specifiers ~
                       in function definition ~x0."

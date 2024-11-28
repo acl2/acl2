@@ -1846,7 +1846,7 @@
      (xdoc::p
       "As a GCC extension, we include attribute specifiers.
        See our ABNF grammar."))
-    (:tyspec ((spec type-spec)))
+    (:typespec ((spec type-spec)))
     (:tyqual ((qual type-qual)))
     (:align ((spec align-spec)))
     (:attrib ((spec attrib-spec))) ; GCC extension

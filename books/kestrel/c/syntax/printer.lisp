@@ -2007,7 +2007,7 @@
     :short "Print a specifier or qualifier."
     (spec/qual-case
      specqual
-     :tyspec (print-type-spec specqual.spec pstate)
+     :typespec (print-type-spec specqual.spec pstate)
      :tyqual (print-type-qual specqual.qual pstate)
      :align (print-align-spec specqual.spec pstate)
      :attrib (print-attrib-spec specqual.spec pstate))

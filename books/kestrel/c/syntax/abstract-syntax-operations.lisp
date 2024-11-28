@@ -190,7 +190,7 @@
 (defirrelevant irr-spec/qual
   :short "An irrelevant type specifier or type qualifier."
   :type spec/qual-p
-  :body (spec/qual-tyspec (irr-type-spec)))
+  :body (spec/qual-typespec (irr-type-spec)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1064,7 +1064,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-decl-spec-list-all-tyspec ((declspecs decl-spec-listp))
+(define check-decl-spec-list-all-typespec ((declspecs decl-spec-listp))
   :returns (mv (yes/no booleanp) (tyspecs type-spec-listp))
   :short "Check if all the declaration specifiers in a list
           are type specifiers."
@@ -1076,7 +1076,7 @@
   (b* (((when (endp declspecs)) (mv t nil))
        (declspec (car declspecs))
        ((unless (decl-spec-case declspec :typespec)) (mv nil nil))
-       ((mv yes/no tyspecs) (check-decl-spec-list-all-tyspec (cdr declspecs))))
+       ((mv yes/no tyspecs) (check-decl-spec-list-all-typespec (cdr declspecs))))
     (if yes/no
         (mv t (cons (decl-spec-typespec->spec declspec) tyspecs))
       (mv nil nil)))
@@ -1084,7 +1084,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-decl-spec-list-all-tyspec/storspec ((declspecs decl-spec-listp))
+(define check-decl-spec-list-all-typespec/storspec ((declspecs decl-spec-listp))
   :returns (mv (yes/no booleanp)
                (tyspecs type-spec-listp)
                (stor-specs stor-spec-listp))
@@ -1100,7 +1100,7 @@
        (declspec (car declspecs))
        ((when (decl-spec-case declspec :typespec))
         (b* (((mv yes/no tyspecs stor-specs)
-              (check-decl-spec-list-all-tyspec/storspec (cdr declspecs))))
+              (check-decl-spec-list-all-typespec/storspec (cdr declspecs))))
           (if yes/no
               (mv t
                   (cons (decl-spec-typespec->spec declspec) tyspecs)
@@ -1108,7 +1108,7 @@
             (mv nil nil nil))))
        ((when (decl-spec-case declspec :stoclass))
         (b* (((mv yes/no tyspecs stor-specs)
-              (check-decl-spec-list-all-tyspec/storspec (cdr declspecs))))
+              (check-decl-spec-list-all-typespec/storspec (cdr declspecs))))
           (if yes/no
               (mv t
                   tyspecs
@@ -1119,7 +1119,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-spec/qual-list-all-tyspec ((specquals spec/qual-listp))
+(define check-spec/qual-list-all-typespec ((specquals spec/qual-listp))
   :returns (mv (yes/no booleanp) (tyspecs type-spec-listp))
   :short "Check if all the specifiers and qualifiers in a list
           are type specifiers."
@@ -1130,10 +1130,10 @@
      also return the list of type specifiers, in the same order."))
   (b* (((when (endp specquals)) (mv t nil))
        (specqual (car specquals))
-       ((unless (spec/qual-case specqual :tyspec)) (mv nil nil))
-       ((mv yes/no tyspecs) (check-spec/qual-list-all-tyspec (cdr specquals))))
+       ((unless (spec/qual-case specqual :typespec)) (mv nil nil))
+       ((mv yes/no tyspecs) (check-spec/qual-list-all-typespec (cdr specquals))))
     (if yes/no
-        (mv t (cons (spec/qual-tyspec->spec specqual) tyspecs))
+        (mv t (cons (spec/qual-typespec->spec specqual) tyspecs))
       (mv nil nil)))
   :hooks (:fix))
 
@@ -1176,8 +1176,8 @@
           preserving the order."
   (b* (((when (endp specquals)) nil)
        (specqual (car specquals)))
-    (if (spec/qual-case specqual :tyspec)
-        (cons (spec/qual-tyspec->spec specqual)
+    (if (spec/qual-case specqual :typespec)
+        (cons (spec/qual-typespec->spec specqual)
               (spec/qual-list-to-type-spec-list (cdr specquals)))
       (spec/qual-list-to-type-spec-list (cdr specquals))))
   :hooks (:fix))
