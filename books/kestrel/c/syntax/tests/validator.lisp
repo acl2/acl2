@@ -359,3 +359,8 @@ __bswap_16 (__uint16_t __bsx)
 }
 "
  :gcc t)
+
+(test-valid
+ "typedef unsigned char uint8_t;
+static uint8_t g_2[2][1][1] = {{{0UL}},{{0UL}}};
+")
