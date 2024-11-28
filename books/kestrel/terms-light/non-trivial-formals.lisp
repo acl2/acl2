@@ -17,6 +17,7 @@
 (defund non-trivial-formals (formals args)
   (declare (xargs :guard (and (symbol-listp formals)
                               (true-listp args) ; often, but not necessarily, pseudo-terms
+                              ;; todo: require formals and args to have the same length?
                               )))
   (if (endp formals)
       nil
@@ -76,3 +77,29 @@
   (implies (no-duplicatesp-equal formals)
            (no-duplicatesp-equal (non-trivial-formals formals args)))
   :hints (("Goal" :in-theory (enable non-trivial-formals))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; This avoids` consing up the list of non-trivial formals
+(defun non-trivial-formalp (formal formals args)
+  (declare (xargs :guard (and (symbolp formal)
+                              (symbol-listp formals)
+                              (member-eq formal formals)
+                              (true-listp args)
+                              (equal (len formals) (len args)))))
+  (if (endp formals) ; can't happen since FORMAL is a member of FORMALS
+      (er hard? 'non-trivial-formalp "No more formals.")
+    (let ((first-formal (first formals)))
+      (if (eq formal first-formal)
+          ;; this is the formal we are looking for.  it's a non-trivial formal
+          ;; iff the first arg is different from it:
+          (not (eq formal (first args)))
+        ;; Keep looking:
+        (non-trivial-formalp formal (rest formals) (rest args))))))
+
+;; Sanity check:
+(defthmd non-trivial-formalp-correct
+  (implies (no-duplicatesp-equal formals)
+           (iff (non-trivial-formalp formal formals args)
+                (member-equal formal (non-trivial-formals formals args))))
+  :hints (("Goal" :in-theory (enable non-trivial-formals non-trivial-formalp))))

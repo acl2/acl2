@@ -29,7 +29,7 @@
            (let* ((lambda-formals (lambda-formals (ffn-symb term)))
                   (args (fargs term)))
              (if (member-eq var lambda-formals)
-                 (if (member-eq var (non-trivial-formals lambda-formals args))
+                 (if (non-trivial-formalp var lambda-formals args)
                      ;; The var is a non-trivial lambda-formal, so count occs
                      ;; in all the args but not in the body (because that var
                      ;; in the body has a different meaning):
@@ -64,7 +64,7 @@
   (if (endp vars)
       nil
     (let ((var (first vars)))
-      (if (<= (count-free-occurences-in-term var term) 1)
+      (if (<= (count-free-occurences-in-term var term) 1) ; optimize?
           (cons var (vars-that-appear-only-once (rest vars) term))
         (vars-that-appear-only-once (rest vars) term)))))
 

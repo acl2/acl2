@@ -277,8 +277,8 @@
     :short "Transform a type specifier or qualifier."
     (spec/qual-case
      specqual
-     :tyspec (spec/qual-tyspec (simpadd0-type-spec specqual.spec))
-     :tyqual (spec/qual-fix specqual)
+     :typespec (spec/qual-typespec (simpadd0-type-spec specqual.spec))
+     :typequal (spec/qual-fix specqual)
      :align (spec/qual-align (simpadd0-align-spec specqual.spec))
      :attrib (spec/qual-fix specqual))
     :measure (spec/qual-count specqual))
@@ -304,8 +304,10 @@
     :short "Transform an alignment specifier."
     (align-spec-case
      alignspec
-     :alignas-type (align-spec-alignas-type (simpadd0-tyname alignspec.type))
-     :alignas-expr (align-spec-alignas-expr (simpadd0-const-expr alignspec.expr))
+     :alignas-type (align-spec-alignas-type
+                    (simpadd0-tyname alignspec.type))
+     :alignas-expr (align-spec-alignas-expr
+                    (simpadd0-const-expr alignspec.expr))
      :alignas-ambig (prog2$ (impossible) (irr-align-spec)))
     :measure (align-spec-count alignspec))
 
@@ -319,8 +321,8 @@
     (decl-spec-case
      declspec
      :stoclass (decl-spec-fix declspec)
-     :tyspec (decl-spec-tyspec (simpadd0-type-spec declspec.spec))
-     :tyqual (decl-spec-fix declspec)
+     :typespec (decl-spec-typespec (simpadd0-type-spec declspec.spec))
+     :typequal (decl-spec-fix declspec)
      :function (decl-spec-fix declspec)
      :align (decl-spec-align (simpadd0-align-spec declspec.spec))
      :attrib (decl-spec-fix declspec)

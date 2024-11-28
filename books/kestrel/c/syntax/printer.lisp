@@ -2007,8 +2007,8 @@
     :short "Print a specifier or qualifier."
     (spec/qual-case
      specqual
-     :tyspec (print-type-spec specqual.spec pstate)
-     :tyqual (print-type-qual specqual.qual pstate)
+     :typespec (print-type-spec specqual.spec pstate)
+     :typequal (print-type-qual specqual.qual pstate)
      :align (print-align-spec specqual.spec pstate)
      :attrib (print-attrib-spec specqual.spec pstate))
     :measure (two-nats-measure (spec/qual-count specqual) 0))
@@ -2057,8 +2057,8 @@
     (decl-spec-case
      declspec
      :stoclass (print-stor-spec declspec.spec pstate)
-     :tyspec (print-type-spec declspec.spec pstate)
-     :tyqual (print-type-qual declspec.qual pstate)
+     :typespec (print-type-spec declspec.spec pstate)
+     :typequal (print-type-qual declspec.qual pstate)
      :function (print-fun-spec declspec.spec pstate)
      :align (print-align-spec declspec.spec pstate)
      :attrib (print-attrib-spec declspec.spec pstate)

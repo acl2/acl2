@@ -367,8 +367,8 @@
     (:linear c$::tyname-count-of-expr-va-arg->type)
     (:linear c$::tyname-count-of-type-spec-atomic->type)
     (:linear c$::tyname-count-of-type-spec-typeof-type->type)
-    (:linear c$::type-spec-count-of-decl-spec-tyspec->spec)
-    (:linear c$::type-spec-count-of-spec/qual-tyspec->spec)))
+    (:linear c$::type-spec-count-of-decl-spec-typespec->spec)
+    (:linear c$::type-spec-count-of-spec/qual-typespec->spec)))
 
 (defthy deftrans-theory-type-prescription
   '((:type-prescription absdeclor)
@@ -492,7 +492,7 @@
     (:type-prescription decl-spec-align)
     (:type-prescription decl-spec-count)
     (:type-prescription decl-spec-list-count)
-    (:type-prescription decl-spec-tyspec)
+    (:type-prescription decl-spec-typespec)
     (:type-prescription designor-count)
     (:type-prescription designor-list-count)
     (:type-prescription designor-sub)
@@ -533,7 +533,7 @@
     (:type-prescription spec/qual-align)
     (:type-prescription spec/qual-count)
     (:type-prescription spec/qual-list-count)
-    (:type-prescription spec/qual-tyspec)
+    (:type-prescription spec/qual-typespec)
     (:type-prescription statassert)
     (:type-prescription statassert-count)
     (:type-prescription stmt-compound)
@@ -928,8 +928,8 @@
    extra-args
    `(spec/qual-case
       specqual
-      :tyspec (spec/qual-tyspec (,(cdr (assoc-eq 'type-spec names)) specqual.spec ,@extra-args-names))
-      :tyqual (spec/qual-fix specqual)
+      :typespec (spec/qual-typespec (,(cdr (assoc-eq 'type-spec names)) specqual.spec ,@extra-args-names))
+      :typequal (spec/qual-fix specqual)
       :align (spec/qual-align (,(cdr (assoc-eq 'align-spec names)) specqual.spec ,@extra-args-names))
       :attrib (spec/qual-fix specqual))
    '(:returns (new-specqual spec/qual-p)
@@ -988,8 +988,8 @@
    `(decl-spec-case
       declspec
       :stoclass (decl-spec-fix declspec)
-      :tyspec (decl-spec-tyspec (,(cdr (assoc-eq 'type-spec names)) declspec.spec ,@extra-args-names))
-      :tyqual (decl-spec-fix declspec)
+      :typespec (decl-spec-typespec (,(cdr (assoc-eq 'type-spec names)) declspec.spec ,@extra-args-names))
+      :typequal (decl-spec-fix declspec)
       :function (decl-spec-fix declspec)
       :align (decl-spec-align (,(cdr (assoc-eq 'align-spec names)) declspec.spec ,@extra-args-names))
       :attrib (decl-spec-fix declspec)

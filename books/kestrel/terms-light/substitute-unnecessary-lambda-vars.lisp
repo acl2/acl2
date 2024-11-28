@@ -150,7 +150,7 @@
                   (lambda-body (lambda-body fn))
                   ;;apply recursively to the lambda body:
                   (lambda-body (substitute-unnecessary-lambda-vars-in-term lambda-body print))
-                  (var-term-alist (pairlis$ formals args))
+                  (var-term-alist (pairlis$ formals args)) ; todo: avoid consing?
                   (trivial-formals (trivial-formals formals args))
                   (formals-bound-to-mv-nths (vars-bound-to-mv-nths formals args))
                   (non-trivial-formals (set-difference-eq formals trivial-formals))
