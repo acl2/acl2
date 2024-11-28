@@ -78,7 +78,10 @@
   (declare (xargs :stobjs x86))
   (make-standard-state-assumptions x86))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; A lifter target is either a numeric offset, the name of a subroutine (a string), or the symbol :entry-point.
+;move?
 (defun lifter-targetp (target)
   (declare (xargs :guard t))
   (or (natp target)

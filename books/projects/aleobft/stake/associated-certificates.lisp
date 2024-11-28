@@ -62,8 +62,7 @@
      and no messages addresses to them."))
   (b* (((validator-state vstate) (get-validator-state val systate)))
     (set::union (set::union vstate.dag vstate.buffer)
-                (message-certificates-with-destination
-                 val (get-network-state systate))))
+                (message-certs-with-dest val (get-network-state systate))))
   :hooks (:fix)
 
   ///
@@ -72,7 +71,7 @@
     (implies (set::in (message-fix msg) (get-network-state systate))
              (set::in (message->certificate msg)
                       (associated-certs (message->destination msg) systate)))
-    :enable in-of-message-certificates-with-destination))
+    :enable in-of-message-certs-with-dest))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -134,8 +133,8 @@
     (associated-certs
      validator-state->dag-of-create-next
      get-network-state-of-create-next
-     message-certificates-with-destination-of-union
-     message-certificates-with-destination-of-make-certificate-messages))
+     message-certs-with-dest-of-union
+     message-certs-with-dest-of-make-certificate-messages))
 
   (defruled associated-certs-of-receive-next
     (implies (and (set::in val (correct-addresses systate))
@@ -145,9 +144,9 @@
     :enable (associated-certs
              validator-state->buffer-of-receive-next
              get-network-state-of-receive-next
-             message-certificates-with-destination-of-delete
+             message-certs-with-dest-of-delete
              set::expensive-rules
-             in-of-message-certificates-with-destination
+             in-of-message-certs-with-dest
              receive-possiblep))
 
   (defruled associated-certs-of-store-next

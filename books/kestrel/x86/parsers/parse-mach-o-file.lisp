@@ -1,7 +1,7 @@
 ; A parser for Mach-O executables
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2022 Kestrel Institute
+; Copyright (C) 2020-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -42,6 +42,8 @@
 ;; The constants in this file are from /usr/include/mach-o/loader.h on
 ;; my Mac.  I believe they all agree with the ones in
 ;; projects/x86isa/tools/execution/exec-loaders/mach-o/mach-o-constants.lisp.
+
+(local (in-theory (disable mv-nth)))
 
 ;;;
 ;;; magic numbers
@@ -157,6 +159,7 @@
         (cons #x32 :LC_BUILD_VERSION)))
 
 (defun keep-non-zeros (bytes)
+  (declare (xargs :guard (byte-listp bytes)))
   (if (endp bytes)
       nil
     (let ((byte (first bytes)))
@@ -164,14 +167,31 @@
           nil
         (cons byte (keep-non-zeros (rest bytes)))))))
 
+(local
+ (defthm byte-listp-of-keep-non-zeros
+   (implies (byte-listp bytes)
+            (byte-listp (keep-non-zeros bytes)))
+   :hints (("Goal" :in-theory (enable keep-non-zeros)))))
+
 ;; Return (mv erp string bytes)
-(defun parse-n-bytes-into-string (n bytes)
+(defund parse-n-bytes-into-string (n bytes)
+  (declare (xargs :guard (and (natp n)
+                              (byte-listp bytes))))
   (b* (((mv erp string-bytes bytes) (parse-n-bytes n bytes))
        ((when erp) (mv erp "" bytes))
        (string (coerce (map-code-char (keep-non-zeros string-bytes)) 'string)) ;TODO: strip trailing 0 bytes
        )
-      (mv nil string bytes)))
+    (mv nil string bytes)))
 
+(defthm stringp-of-mv-nth-1-of-parse-n-bytes-into-string
+  (stringp (mv-nth 1 (parse-n-bytes-into-string n bytes)))
+  :hints (("Goal" :in-theory (enable parse-n-bytes-into-string))))
+
+(defthm byte-listp-of-mv-nth-2-of-parse-n-bytes-into-string
+  (implies (byte-listp bytes)
+           (byte-listp (mv-nth 2 (parse-n-bytes-into-string n bytes))))
+  :hints (("Goal" :in-theory (enable parse-n-bytes-into-string))))
+ 
 (defconst *mach-o-header-flags-alist*
   '((#x1 . :MH_NOUNDEFS)
     (#x2 . :MH_INCRLINK)
@@ -203,6 +223,7 @@
 ;; The magic number is already parsed
 ;; Returns (mv erp header bytes).
 (defun parse-mach-o-header-32 (bytes)
+  (declare (xargs :guard (byte-listp bytes)))
   (b* (((mv erp cputype bytes) (parse-u32 bytes))
        ((when erp) (mv erp nil bytes))
        (cputype (lookup-safe cputype *mach-o-CPU-types*))
@@ -213,15 +234,14 @@
        (filetype (lookup-safe filetype *mach-o-filetypes*))
        ((when (not (eq :MH_EXECUTE filetype)))
         (mv :unsupported-filetype
-            (er hard 'parse-mach-o-header-32 "Unsupported filetype: ~x0." filetype)
+            (er hard? 'parse-mach-o-header-32 "Unsupported filetype: ~x0." filetype)
             bytes))
        ((mv erp ncmds bytes) (parse-u32 bytes))
        ((when erp) (mv erp nil bytes))
        ((mv erp sizeofcmds bytes) (parse-u32 bytes))
        ((when erp) (mv erp nil bytes))
        ((mv erp flags bytes) (parse-u32 bytes)) ;TODO: decode
-       ((when erp) (mv erp nil bytes))
-       )
+       ((when erp) (mv erp nil bytes)))
     (mv nil
         (list (cons :cputype cputype)
                 (cons :cpusubtype cpusubtype)
@@ -234,6 +254,7 @@
 ;; The magic number is already parsed
 ;; Returns (mv erp header bytes).
 (defun parse-mach-o-header-64 (bytes)
+  (declare (xargs :guard (byte-listp bytes)))
   (b* (((mv erp cputype bytes) (parse-u32 bytes))
        ((when erp) (mv erp nil bytes))
        (cputype (lookup-safe cputype *mach-o-CPU-types*))
@@ -244,7 +265,7 @@
        (filetype (lookup-safe filetype *mach-o-filetypes*))
        ((when (not (eq :MH_EXECUTE filetype)))
         (mv :unsupported-filetype
-            (er hard 'parse-mach-o-header-64 "Unsupported filetype: ~x0." filetype)
+            (er hard? 'parse-mach-o-header-64 "Unsupported filetype: ~x0." filetype)
             bytes))
        ((mv erp ncmds bytes) (parse-u32 bytes))
        ((when erp) (mv erp nil bytes))
@@ -303,6 +324,9 @@
 
 ;; Returns (mv erp section bytes).
 (defun parse-mach-o-section (expected-segname all-bytes bytes)
+  (declare (xargs :guard (and (stringp expected-segname)
+                              (byte-listp all-bytes)
+                              (byte-listp bytes))))
   (b* (((mv erp sectname bytes) (parse-n-bytes-into-string 16 bytes))
        ((when erp) (mv erp nil bytes))
        ((mv erp segname bytes) (parse-n-bytes-into-string 16 bytes))
@@ -311,7 +335,7 @@
        ;;in the overarching load command for the segment
        ((when (not (equal segname expected-segname)))
         (mv :segname-mismatch
-            (er hard 'parse-mach-o-section "Segname mismatch (expected ~x0, got ~x1)." expected-segname segname)
+            (er hard? 'parse-mach-o-section "Segname mismatch (expected ~x0, got ~x1)." expected-segname segname)
             bytes))
        ((mv erp addr bytes) (parse-u32 bytes))
        ((when erp) (mv erp nil bytes))
@@ -358,6 +382,9 @@
 
 ;; Returns (mv erp section bytes).
 (defun parse-mach-o-section-64 (expected-segname all-bytes bytes)
+  (declare (xargs :guard (and (stringp expected-segname)
+                              (byte-listp all-bytes)
+                              (byte-listp bytes))))
   (b* (((mv erp sectname bytes) (parse-n-bytes-into-string 16 bytes))
        ((when erp) (mv erp nil bytes))
        ((mv erp segname bytes) (parse-n-bytes-into-string 16 bytes))
@@ -366,7 +393,7 @@
        ;;in the overarching load command for the segment
        ((when (not (equal segname expected-segname)))
         (mv :segname-mismatch
-            (er hard 'parse-mach-o-section-64 "Segname mismatch (expected ~x0, got ~x1)." expected-segname segname)
+            (er hard? 'parse-mach-o-section-64 "Segname mismatch (expected ~x0, got ~x1)." expected-segname segname)
             bytes))
        ((mv erp addr bytes) (parse-u64 bytes))
        ((when erp) (mv erp nil bytes))
@@ -396,33 +423,43 @@
                                 (mv nil `(:zero-fill ,size) nil) ;special handling for zerofill sections (don't try to read data from a meaningless offset)
                               (parse-n-bytes size (nthcdr offset all-bytes))))
        ((when erp) (mv erp nil bytes)))
-      (mv nil
-          (list (cons :sectname sectname)
-                (cons :type section-type)
-                (cons :segname segname)
-                (cons :addr addr)
+    (mv nil
+        (list (cons :sectname sectname)
+              (cons :type section-type)
+              (cons :segname segname)
+              (cons :addr addr)
 ;                (cons :size size)
  ;               (cons :offset offset)
-                (cons :align align)
-                (cons :reloff reloff)
-                (cons :nreloc nreloc)
-                (cons :attributes section-attributes)
-                (cons :reserved1 reserved1)
-                (cons :reserved2 reserved2)
-                (cons :reserved3 reserved3)
-                (cons :contents contents))
-          bytes)))
+              (cons :align align)
+              (cons :reloff reloff)
+              (cons :nreloc nreloc)
+              (cons :attributes section-attributes)
+              (cons :reserved1 reserved1)
+              (cons :reserved2 reserved2)
+              (cons :reserved3 reserved3)
+              (cons :contents contents))
+        bytes)))
 
 ;; Returns (mv erp sections bytes).
 (defun parse-mach-o-sections (nsects expected-segname acc all-bytes bytes)
+  (declare (xargs :guard (and (natp nsects)
+                              (stringp expected-segname)
+                              (true-listp acc)
+                              (byte-listp all-bytes)
+                              (byte-listp bytes))))
   (if (zp nsects)
       (mv nil (reverse acc) bytes)
     (b* (((mv erp section bytes) (parse-mach-o-section expected-segname all-bytes bytes))
          ((when erp) (mv erp nil bytes)))
-        (parse-mach-o-sections (+ -1 nsects) expected-segname (cons section acc) all-bytes bytes))))
+      (parse-mach-o-sections (+ -1 nsects) expected-segname (cons section acc) all-bytes bytes))))
 
 ;; Returns (mv erp sections bytes).
 (defun parse-mach-o-sections-64 (nsects expected-segname acc all-bytes bytes)
+  (declare (xargs :guard (and (natp nsects)
+                              (stringp expected-segname)
+                              (true-listp acc)
+                              (byte-listp all-bytes)
+                              (byte-listp bytes))))
   (if (zp nsects)
       (mv nil (reverse acc) bytes)
     (b* (((mv erp section bytes) (parse-mach-o-section-64 expected-segname all-bytes bytes))
@@ -477,6 +514,8 @@
 
 ;; Returns (mv erp result bytes).
 (defun parse-mach-o-nlist (string-table bytes)
+  (declare (xargs :guard (and (byte-listp string-table)
+                              (byte-listp bytes))))
   (b* (((mv erp n-strx bytes) (parse-u32 bytes))
        ((when erp) (mv erp nil bytes))
        ((mv erp n-type bytes) (parse-u8 bytes))
@@ -510,14 +549,20 @@
 
 ;; Returns (mv erp result).
 (defun parse-mach-o-nlists (nsyms acc string-table bytes)
+  (declare (xargs :guard (and (natp nsyms)
+                              (true-listp acc)
+                              (byte-listp string-table)
+                              (byte-listp bytes))))
   (if (zp nsyms)
       (mv nil (reverse acc))
     (b* (((mv erp sym bytes) (parse-mach-o-nlist string-table bytes))
          ((when erp) (mv erp nil)))
-        (parse-mach-o-nlists (+ -1 nsyms) (cons sym acc) string-table bytes))))
+      (parse-mach-o-nlists (+ -1 nsyms) (cons sym acc) string-table bytes))))
 
 ;; Returns (mv erp result bytes).
 (defun parse-mach-o-nlist-64 (string-table bytes)
+  (declare (xargs :guard (and (byte-listp string-table)
+                              (byte-listp bytes))))
   (b* (((mv erp n-strx bytes) (parse-u32 bytes))
        ((when erp) (mv erp nil bytes))
        ((mv erp n-type bytes) (parse-u8 bytes))
@@ -551,6 +596,10 @@
 
 ;; Returns (mv erp result).
 (defun parse-mach-o-nlist-64s (nsyms acc string-table bytes)
+  (declare (xargs :guard (and (natp nsyms)
+                              (true-listp acc)
+                              (byte-listp string-table)
+                              (byte-listp bytes))))
   (if (zp nsyms)
       (mv nil (reverse acc))
     (b* (((mv erp sym bytes) (parse-mach-o-nlist-64 string-table bytes))
@@ -568,6 +617,10 @@
                                   architecture
                                   all-bytes
                                   bytes)
+  (declare (xargs :guard (and (symbolp cmd)
+                              (member architecture '(32 64))
+                              (byte-listp all-bytes)
+                              (byte-listp bytes))))
   (let ((cmd-data nil)) ;empty accumulator (TODO: remove)
     (cond ((eq cmd :LC_UUID)
            (b* (((mv erp uuid bytes) (parse-n-bytes 16 bytes)) ;todo: assemble the value
@@ -690,8 +743,19 @@
              ;;     bytes)
              ))))
 
+(local
+ (defthm symbolp-of-lookup-equal
+   (implies (symbol-listp (strip-cdrs alist))
+            (symbolp (lookup-equal key alist)))
+   :hints (("Goal" :in-theory (enable lookup-equal assoc-equal strip-cdrs)))))
+
 ; Returns (mv erp cmd-data-list bytes).
 (defun parse-mach-o-load-commands (ncmds acc architecture all-bytes bytes)
+  (declare (xargs :guard (and (natp ncmds)
+                              (true-listp acc)
+                              (member architecture '(32 64))
+                              (byte-listp all-bytes)
+                              (byte-listp bytes))))
   (if (zp ncmds)
       (mv nil (reverse acc) bytes)
     (b* ((orig-bytes bytes)
@@ -718,16 +782,16 @@
 
 ;; Returns (mv erp result).
 (defun parse-mach-o-file-bytes (bytes)
+  (declare (xargs :guard (byte-listp bytes)))
   (b* ((all-bytes bytes) ;capture for later looking up things at given offsets
        ;; Parse the magic number:
        ((mv erp magic bytes) (parse-u32 bytes))
        ((when erp) (mv erp nil))
-       (magic (lookup-safe magic *mach-o-magic-numbers*))
-       (architecture (if (member-eq magic *32-bit-magic-numbers*)
-                         32
-                       (if (member-eq magic *64-bit-magic-numbers*)
-                           64
-                         (er hard 'parse-mach-o-file-bytes "Bad magic number."))))
+       (magic (lookup magic *mach-o-magic-numbers*))
+       ((when (not magic))
+        (er hard? 'parse-mach-o-file-bytes "Bad magic number: ~x0." magic)
+        (mv :bad-magic-number nil))
+       (architecture (if (member-eq magic *32-bit-magic-numbers*) 32 64)) ; todo: change to pass a 64-bitp value
        ((mv erp header bytes)
         (if (eql architecture 32)
             (parse-mach-o-header-32 bytes)

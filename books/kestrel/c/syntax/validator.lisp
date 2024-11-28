@@ -2479,6 +2479,7 @@
 (define valid-stor-spec-list ((storspecs stor-spec-listp)
                               (ident identp)
                               (type typep)
+                              (fundefp booleanp)
                               (table valid-tablep))
   :returns (mv erp
                (typedefp booleanp)
@@ -2613,7 +2614,19 @@
      We prove that if a function is being declared,
      then the linkage is always external or internal,
      and that the only possible sequences of storage class specifiers
-     are @('extern'), @('static'), and nothing."))
+     are @('extern'), @('static'), and nothing.")
+   (xdoc::p
+    "The @('fundefp') input is @('t') when this function is called on
+     the storage class specifiers of a function definition.
+     The reason is that, when this function is called in that situation,
+     the validation table contains a block scope for the function body,
+     but the storage class specifiers checked here are in the file scope:
+     so checking the validation table to determine,
+     for the purpose of validating the storage class specifiers,
+     whether we are in a block or file scope,
+     would give an incorrect result.
+     So we use the @('fundefp') flag to adjust the check.
+     This flag is @('nil') in all other situations."))
   (b* (((reterr) nil (irr-linkage) nil))
     (cond
      ((stor-spec-list-typedef-p storspecs)
@@ -2651,7 +2664,8 @@
                 previous-linkage))))
         (retok nil linkage (lifetime-thread))))
      ((stor-spec-list-static-p storspecs)
-      (b* ((block-scope-p (> (valid-table-num-scopes table) 1))
+      (b* ((block-scope-p (and (> (valid-table-num-scopes table) 1)
+                               (not fundefp)))
            ((when (and block-scope-p
                        (type-case type :function)))
             (reterr (msg "The storage class specifier 'static' ~
@@ -2671,7 +2685,8 @@
                           cannot be used in the declaration of
                           the function ~x0."
                          (ident-fix ident))))
-           (block-scope-p (> (valid-table-num-scopes table) 1))
+           (block-scope-p (and (> (valid-table-num-scopes table) 1)
+                               (not fundefp)))
            (linkage (if block-scope-p
                         (linkage-none)
                       (linkage-internal)))
@@ -2683,7 +2698,8 @@
                           cannot be used in the declaration of
                           the function ~x0."
                          (ident-fix ident))))
-           ((when (> (valid-table-num-scopes table) 1))
+           ((when (and (> (valid-table-num-scopes table) 1)
+                       (not fundefp)))
             (reterr (msg "The storage class specifier '_Thread_local' ~
                           cannot be used in a block scope ~
                           without 'extern' or 'static', ~
@@ -2700,7 +2716,8 @@
                              "auto"
                            "register")
                          (ident-fix ident))))
-           ((unless (> (valid-table-num-scopes table) 1))
+           ((unless (and (> (valid-table-num-scopes table) 1)
+                         (not fundefp)))
             (reterr (msg "The storage class specifier '~s0' ~
                           cannot be used in the file scope, ~
                           for identifier ~x1."
@@ -2720,7 +2737,8 @@
             (if (linkage-case previous-linkage :none)
                 (retok nil (linkage-external) nil)
               (retok nil previous-linkage nil)))
-        (if (> (valid-table-num-scopes table) 1)
+        (if (and (> (valid-table-num-scopes table) 1)
+                 (not fundefp))
             (retok nil (linkage-none) (lifetime-auto))
           (retok nil (linkage-external) (lifetime-static)))))
      (t (reterr (msg "The storage class specifier sequence ~x0 is invalid."
@@ -3295,7 +3313,7 @@
                    ((erp types table)
                     (valid-strunispec tyspec.spec table ienv)))
                 (retok (type-union) nil types table))
-       :enum (b* (((when (endp tyspecs)) (reterr msg-bad-preceding))
+       :enum (b* (((unless (endp tyspecs)) (reterr msg-bad-preceding))
                   ((erp types table)
                    (valid-enumspec tyspec.spec table ienv)))
                (retok (type-enum) nil types table))
@@ -3387,11 +3405,11 @@
     (b* (((reterr) nil nil nil (irr-valid-table)))
       (spec/qual-case
        specqual
-       :tyspec (valid-type-spec specqual.spec type? tyspecs table ienv)
-       :tyqual (retok (type-option-fix type?)
-                      (type-spec-list-fix tyspecs)
-                      nil
-                      (valid-table-fix table))
+       :typespec (valid-type-spec specqual.spec type? tyspecs table ienv)
+       :typequal (retok (type-option-fix type?)
+                        (type-spec-list-fix tyspecs)
+                        nil
+                        (valid-table-fix table))
        :align (b* (((erp types table)
                     (valid-align-spec specqual.spec table ienv)))
                 (retok (type-option-fix type?)
@@ -3554,24 +3572,24 @@
     (b* (((reterr) nil nil nil nil (irr-valid-table)))
       (decl-spec-case
        declspec
-       :stocla (retok (type-option-fix type?)
-                      (type-spec-list-fix tyspecs)
-                      (rcons declspec.spec (stor-spec-list-fix storspecs))
-                      nil
-                      (valid-table-fix table))
-       :tyspec (b* (((erp type? tyspecs types table)
-                     (valid-type-spec
-                      declspec.spec type? tyspecs table ienv)))
-                 (retok type?
-                        tyspecs
+       :stoclass (retok (type-option-fix type?)
+                        (type-spec-list-fix tyspecs)
+                        (rcons declspec.spec (stor-spec-list-fix storspecs))
+                        nil
+                        (valid-table-fix table))
+       :typespec (b* (((erp type? tyspecs types table)
+                       (valid-type-spec
+                        declspec.spec type? tyspecs table ienv)))
+                   (retok type?
+                          tyspecs
+                          (stor-spec-list-fix storspecs)
+                          types
+                          table))
+       :typequal (retok (type-option-fix type?)
+                        (type-spec-list-fix tyspecs)
                         (stor-spec-list-fix storspecs)
-                        types
-                        table))
-       :tyqual (retok (type-option-fix type?)
-                      (type-spec-list-fix tyspecs)
-                      (stor-spec-list-fix storspecs)
-                      nil
-                      (valid-table-fix table))
+                        nil
+                        (valid-table-fix table))
        :function (retok (type-option-fix type?)
                         (type-spec-list-fix tyspecs)
                         (stor-spec-list-fix storspecs)
@@ -3824,7 +3842,7 @@
                  (type-case target-type :union))
              (initer-case initer :list))
         (valid-desiniter-list
-         (initer-list->elems initer) target-type lifetime table ienv))
+         (initer-list->elems initer) (type-unknown) lifetime table ienv))
        (t (reterr (msg "The initializer ~x0 ~
                         for the target type ~x1 ~
                         is disallowed."
@@ -4163,7 +4181,7 @@
        and we return the refined type,
        along with the declared identifier.")
      (xdoc::p
-      "The meaning of the @('param-open') flag passed as input is
+      "The meaning of the @('fundef-params-p') flag passed as input is
        the same as in @(tsee valid-declor): see that function's documentation.")
      (xdoc::p
       "If the direct declarator is just an identifier,
@@ -4274,7 +4292,8 @@
             ((erp index-type? more-types table)
              (valid-expr-option dirdeclor.expr? table ienv))
             ((when (and index-type?
-                        (not (type-integerp index-type?))))
+                        (not (type-integerp index-type?))
+                        (not (type-case index-type? :unknown))))
              (reterr (msg "The index expression ~
                            of the direct declarator ~x0 ~
                            has type ~x1."
@@ -4287,7 +4306,8 @@
              (valid-dirdeclor dirdeclor.decl fundef-params-p type table ienv))
             ((erp index-type more-types table)
              (valid-expr dirdeclor.expr table ienv))
-            ((unless (type-integerp index-type))
+            ((unless (or (type-integerp index-type)
+                         (type-case index-type :unknown)))
              (reterr (msg "The index expression ~
                            of the direct declarator ~x0 ~
                            has type ~x1."
@@ -4300,7 +4320,8 @@
              (valid-dirdeclor dirdeclor.decl fundef-params-p type table ienv))
             ((erp index-type more-types table)
              (valid-expr dirdeclor.expr table ienv))
-            ((unless (type-integerp index-type))
+            ((unless (or (type-integerp index-type)
+                         (type-case index-type :unknown)))
              (reterr (msg "The index expression ~
                            of the direct declarator ~x0 ~
                            has type ~x1."
@@ -4326,7 +4347,7 @@
             ((erp more-types table)
              (if (equal dirdeclor.params
                         (list (make-paramdecl
-                               :spec (list (decl-spec-tyspec (type-spec-void)))
+                               :spec (list (decl-spec-typespec (type-spec-void)))
                                :decl (paramdeclor-none))))
                  (retok nil table)
                (valid-paramdecl-list
@@ -4455,7 +4476,8 @@
             ((erp index-type? more-types table)
              (valid-expr-option dirabsdeclor.expr? table ienv))
             ((when (and index-type?
-                        (not (type-integerp index-type?))))
+                        (not (type-integerp index-type?))
+                        (not (type-case index-type? :unknown))))
              (reterr (msg "The index expression ~
                            of the direct abstract declarator ~x0 ~
                            has type ~x1."
@@ -4468,7 +4490,8 @@
              (valid-dirabsdeclor-option dirabsdeclor.decl? type table ienv))
             ((erp index-type more-types table)
              (valid-expr dirabsdeclor.expr table ienv))
-            ((unless (type-integerp index-type))
+            ((unless (or (type-integerp index-type)
+                         (type-case index-type :unknown)))
              (reterr (msg "The index expression ~
                            of the direct abstract declarator ~x0 ~
                            has type ~x1."
@@ -4481,7 +4504,8 @@
              (valid-dirabsdeclor-option dirabsdeclor.decl? type table ienv))
             ((erp index-type more-types table)
              (valid-expr dirabsdeclor.expr table ienv))
-            ((unless (type-integerp index-type))
+            ((unless (or (type-integerp index-type)
+                         (type-case index-type :unknown)))
              (reterr (msg "The index expression ~
                            of the direct abstract declarator ~x0 ~
                            has type ~x1."
@@ -4507,7 +4531,7 @@
             ((erp more-types table)
              (if (equal dirabsdeclor.params
                         (list (make-paramdecl
-                               :spec (list (decl-spec-tyspec (type-spec-void)))
+                               :spec (list (decl-spec-typespec (type-spec-void)))
                                :decl (paramdeclor-none))))
                  (retok nil table)
                (valid-paramdecl-list dirabsdeclor.params nil table ienv)))
@@ -4894,7 +4918,8 @@
          ((erp width-type? more-types table)
           (valid-const-expr-option structdeclor.expr? table ienv))
          ((when (and width-type?
-                     (not (type-integerp width-type?))))
+                     (not (type-integerp width-type?))
+                     (not (type-case width-type? :unknown))))
           (reterr (msg "The structure declarator ~x0 ~
                         has a width of type ~x1."
                        (structdeclor-fix structdeclor)
@@ -5004,7 +5029,8 @@
          ((erp type? types table)
           (valid-const-expr-option enumer.value table ienv))
          ((when (and type?
-                     (not (type-integerp type?))))
+                     (not (type-integerp type?))
+                     (not (type-case type? :unknown))))
           (reterr (msg "The value of the numerator ~x0 has type ~x1."
                        (enumer-fix enumer) type?))))
       (retok types table))
@@ -5054,7 +5080,8 @@
          ((statassert statassert) statassert)
          ((erp type types table)
           (valid-const-expr statassert.test table ienv))
-         ((unless (type-integerp type))
+         ((unless (or (type-integerp type)
+                      (type-case type :unknown)))
           (reterr (msg "The expression in the static assertion declaration ~x0 ~
                         has type ~x1."
                        (statassert-fix statassert)
@@ -5173,7 +5200,7 @@
          ((erp & type ident types table)
           (valid-declor initdeclor.declor nil type table ienv))
          ((erp typedefp linkage lifetime?)
-          (valid-stor-spec-list storspecs ident type table))
+          (valid-stor-spec-list storspecs ident type nil table))
          ((when typedefp)
           (b* (((when initdeclor.init?)
                 (reterr (msg "The typedef name ~x0 ~
@@ -5388,14 +5415,16 @@
        :casexpr
        (b* (((erp type types table)
              (valid-const-expr label.expr table ienv))
-            ((unless (type-integerp type))
+            ((unless (or (type-integerp type)
+                         (type-case type :unknown)))
              (reterr (msg "The first or only 'case' expression ~
                            in the label ~x0 has type ~x1."
                           (label-fix label) type)))
             ((erp type? more-types table)
              (valid-const-expr-option label.range? table ienv))
             ((when (and type?
-                        (not (type-integerp type?))))
+                        (not (type-integerp type?))
+                        (not (type-case type? :unknown))))
              (reterr (msg "The second 'case' expression~
                            in the label ~x0 has type ~x1."
                           (label-fix label) type?))))
@@ -5512,7 +5541,8 @@
        :if
        (b* ((table (valid-push-scope table))
             ((erp test-type test-types table) (valid-expr stmt.test table ienv))
-            ((unless (type-scalarp test-type))
+            ((unless (or (type-scalarp test-type)
+                         (type-case test-type :unknown)))
              (reterr (msg "The test of the statement ~x0 has type ~x1."
                           (stmt-fix stmt) test-type)))
             (table (valid-push-scope table))
@@ -5523,7 +5553,8 @@
        :ifelse
        (b* ((table (valid-push-scope table))
             ((erp test-type test-types table) (valid-expr stmt.test table ienv))
-            ((unless (type-scalarp test-type))
+            ((unless (or (type-scalarp test-type)
+                         (type-case test-type :unknown)))
              (reterr (msg "The test of the statement ~x0 has type ~x1."
                           (stmt-fix stmt) test-type)))
             (table (valid-push-scope table))
@@ -5540,7 +5571,8 @@
        (b* ((table (valid-push-scope table))
             ((erp target-type target-types table)
              (valid-expr stmt.target table ienv))
-            ((unless (type-integerp target-type))
+            ((unless (or (type-integerp target-type)
+                         (type-case target-type :unknown)))
              (reterr (msg "The target of the statement ~x0 has type ~x1."
                           (stmt-fix stmt) target-type)))
             (table (valid-push-scope table))
@@ -5551,7 +5583,8 @@
        :while
        (b* ((table (valid-push-scope table))
             ((erp test-type test-types table) (valid-expr stmt.test table ienv))
-            ((unless (type-scalarp test-type))
+            ((unless (or (type-scalarp test-type)
+                         (type-case test-type :unknown)))
              (reterr (msg "The test of the statement ~x0 has type ~x1."
                           (stmt-fix stmt) test-type)))
             (table (valid-push-scope table))
@@ -5566,7 +5599,8 @@
             ((erp body-types & table) (valid-stmt stmt.body table ienv))
             (table (valid-pop-scope table))
             ((erp test-type test-types table) (valid-expr stmt.test table ienv))
-            ((unless (type-scalarp test-type))
+            ((unless (or (type-scalarp test-type)
+                         (type-case test-type :unknown)))
              (reterr (msg "The test of the statement ~x0 has type ~x1."
                           (stmt-fix stmt) test-type)))
             (table (valid-pop-scope table)))
@@ -5578,13 +5612,16 @@
             ((erp test-type? test-types table)
              (valid-expr-option stmt.test table ienv))
             ((when (and test-type?
-                        (not (type-scalarp test-type?))))
+                        (not (type-scalarp test-type?))
+                        (not (type-case test-type? :unknown))))
              (reterr (msg "The test of the statement ~x0 has type ~x1."
                           (stmt-fix stmt) test-type?)))
             ((erp & next-types table)
              (valid-expr-option stmt.next table ienv))
             (table (valid-push-scope table))
-            ((erp body-types & table) (valid-stmt stmt.body table ienv)))
+            ((erp body-types & table) (valid-stmt stmt.body table ienv))
+            (table (valid-pop-scope table))
+            (table (valid-pop-scope table)))
          (retok (set::union init-types
                             (set::union test-types
                                         (set::union next-types
@@ -5597,13 +5634,16 @@
             ((erp test-type? test-types table)
              (valid-expr-option stmt.test table ienv))
             ((when (and test-type?
-                        (not (type-scalarp test-type?))))
+                        (not (type-scalarp test-type?))
+                        (not (type-case test-type? :unknown))))
              (reterr (msg "The test of the statement ~x0 has type ~x1."
                           (stmt-fix stmt) test-type?)))
             ((erp & next-types table)
              (valid-expr-option stmt.next table ienv))
             (table (valid-push-scope table))
-            ((erp body-types & table) (valid-stmt stmt.body table ienv)))
+            ((erp body-types & table) (valid-stmt stmt.body table ienv))
+            (table (valid-pop-scope table))
+            (table (valid-pop-scope table)))
          (retok (set::union init-types
                             (set::union test-types
                                         (set::union next-types
@@ -5793,7 +5833,7 @@
                       contains return statements."
                      (fundef-fix fundef))))
        ((erp typedefp linkage &)
-        (valid-stor-spec-list storspecs ident type table))
+        (valid-stor-spec-list storspecs ident type t table))
        ((when typedefp)
         (reterr (msg "The function definition ~x0 ~
                       declares a 'typedef' name instead of a function."
@@ -5909,14 +5949,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define valid-transunit ((tunit transunitp) (ienv ienvp))
+(define valid-transunit ((tunit transunitp) (gcc booleanp) (ienv ienvp))
   :guard (transunit-unambp tunit)
   :returns (mv erp (table valid-tablep))
   :short "Validate a translation unit."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Starting with the initial validation table,
+    "If GCC extensions are not enabled,
+     the initial validation table is the one
+     returned by @(tsee valid-init-table).
+     If GCC extensions are enabled,
+     we add a number of objects and functions
+     that we have encountered in practical code;
+     we should eventually have a comprehensive list here.")
+   (xdoc::p
+    "Starting with the validation table as just described,
      we validate all the external declarations in the translation unit.
      Since these are translation units after preprocesing,
      all the referenced names must be declared in the translation unit,
@@ -5929,15 +5977,197 @@
      different translation units of a translation unit ensemble.
      In fact, we should probably extend this validation function
      to trim the returned validation table
-     so it only has entries for identifiers with external linkage."))
+     so it only has entries for identifiers with external linkage.")
+   (xdoc::p
+    "For each GCC function, the associated information consists of
+     the function type, external linkage, and defined status.
+     The latter two seem reasonable, given that these identifiers
+     are visible and have the same meaning in every translation unit,
+     and have their own (built-in) definitions.
+     For each GCC object, the associated information consists of
+     the unknown type, external linkage, and defined status;
+     the rationale for the latter two is the same as for functions."))
   (b* (((reterr) (irr-valid-table))
-       (table (valid-init-table)))
+       (table (valid-init-table))
+       (table
+         (if gcc
+             (b* ((finfo (make-valid-ord-info-objfun
+                          :type (type-function)
+                          :linkage (linkage-external)
+                          :defstatus (valid-defstatus-defined)))
+                  (oinfo (make-valid-ord-info-objfun
+                          :type (type-unknown)
+                          :linkage (linkage-external)
+                          :defstatus (valid-defstatus-defined)))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__atomic_signal_fence") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__builtin_add_overflow") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__builtin_bswap16") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__builtin_bswap32") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__builtin_bswap64") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__builtin_choose_expr") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__builtin_clz") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__builtin_clzl") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__builtin_clzll") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__builtin_constant_p") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__builtin_ctzl") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__builtin_dynamic_object_size") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__builtin_expect") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__builtin_memchr") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__builtin_memcmp") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__builtin_memcpy") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__builtin_memset") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__builtin_mul_overflow") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__builtin_object_size") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__builtin_return_address") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__builtin_strcpy") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__builtin_strlen") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__builtin_strncat") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__builtin_strncpy") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__builtin_sub_overflow") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__builtin_unreachable") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__builtin_va_end") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__builtin_va_start") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__eax") oinfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__ebx") oinfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__ecx") oinfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__edx") oinfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__esi") oinfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__edi") oinfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__ebp") oinfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__esp") oinfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__sync_add_and_fetch") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__sync_and_and_fetch") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__sync_bool_compare_and_swap") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__sync_fetch_and_add") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__sync_fetch_and_and") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__sync_fetch_and_nand") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__sync_fetch_and_or") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__sync_fetch_and_sub") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__sync_fetch_and_xor") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__sync_lock_release") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__sync_lock_test_and_set") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__sync_nand_and_fetch") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__sync_or_and_fetch") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__sync_sub_and_fetch") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__sync_synchronize") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__sync_val_compare_and_swap") finfo table))
+                  (table
+                    (valid-add-ord-file-scope
+                     (ident "__sync_xor_and_fetch") finfo table)))
+               table)
+           table)))
     (valid-extdecl-list (transunit->decls tunit) table ienv))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define valid-transunit-ensemble ((tunits transunit-ensemblep) (ienv ienvp))
+(define valid-transunit-ensemble ((tunits transunit-ensemblep)
+                                  (gcc booleanp)
+                                  (ienv ienvp))
   :guard (transunit-ensemble-unambp tunits)
   :returns erp
   :short "Validate a translation unit ensemble."
@@ -5952,19 +6182,20 @@
     "If validation is successful, we return no information (@('nil')).
      Otherwise, we return an error message,
      which a caller can show to the user in an event macro."))
-  (valid-transunit-ensemble-loop (transunit-ensemble->unwrap tunits) ienv)
+  (valid-transunit-ensemble-loop (transunit-ensemble->unwrap tunits) gcc ienv)
   :prepwork
   ((define valid-transunit-ensemble-loop ((map filepath-transunit-mapp)
+                                          (gcc booleanp)
                                           (ienv ienvp))
      :guard (transunit-ensemble-unambp-loop map)
      :returns erp
      :parents nil
      (b* (((reterr))
           ((when (omap::emptyp map)) (retok))
-          ((erp &) (valid-transunit (omap::head-val map) ienv))
-          ((erp) (valid-transunit-ensemble-loop (omap::tail map) ienv)))
+          ((erp &) (valid-transunit (omap::head-val map) gcc ienv))
+          ((erp) (valid-transunit-ensemble-loop (omap::tail map) gcc ienv)))
        (retok))
      ///
      (fty::deffixequiv valid-transunit-ensemble-loop
-       :args ((ienv ienvp)))))
+       :args ((gcc booleanp) (ienv ienvp)))))
   :hooks (:fix))

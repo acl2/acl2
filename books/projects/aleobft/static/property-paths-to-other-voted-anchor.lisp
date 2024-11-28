@@ -213,7 +213,7 @@
            anchorp
            not-emptyp-intersect-of-incoming-and-outgoing
            cardinality-of-outgoing-quorum
-           set::head-of-intersection-member-when-not-emptyp)
+           set::head-of-intersect-member-when-not-emptyp)
   :use ((:instance incoming-in-dag
                    (cert anchor)
                    (cert1 (common anchor witness dag1 dag2))

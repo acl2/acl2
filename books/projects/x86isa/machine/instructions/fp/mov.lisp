@@ -744,6 +744,75 @@
        (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 
+(def-inst x86-movhlps-sse
+
+  :parents (two-byte-opcodes fp-opcodes)
+
+  :short "Move Packed Single Precision Floating-Point Values High to Low"
+
+  :long
+  "<h3>Op/En = RM: \[OP XMM, XMM\]</h3>
+  NP 0F 12: MOVHLPS xmm1, xmm2<br/>"
+
+  :returns (x86 x86p :hyp (x86p x86))
+
+  :modr/m t
+
+  :body
+
+  (b* (((the (unsigned-byte 4) xmm-index)
+        (reg-index reg rex-byte #.*r*))
+
+       (p2 (prefixes->seg prefixes))
+
+       (p4? (eql #.*addr-size-override*
+                 (prefixes->adr prefixes)))
+
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+
+       (inst-ac? ;; Exceptions Type 5
+        t)
+       ((mv flg0
+            (the (unsigned-byte 128) xmm)
+            (the (integer 0 4) increment-RIP-by)
+            (the (signed-byte 64) ?addr)
+            x86)
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode
+                                                #.*xmm-access*
+                                                16
+                                                inst-ac?
+                                                nil ;; Not a memory pointer operand
+                                                seg-reg
+                                                p4?
+                                                temp-rip
+                                                rex-byte
+                                                r/m
+                                                mod
+                                                sib
+                                                0 ;; No immediate operand
+                                                x86))
+       ((when flg0)
+        (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
+
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error flg))
+
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+       (high-qword (mbe :logic (part-select xmm :low 64 :high 127)
+                        :exec  (the (unsigned-byte 64)
+                                 (logand #uxFFFF_FFFF_FFFF_FFFF
+                                         (ash xmm -64)))))
+
+       ;; Update the x86 state:
+       (x86 (!xmmi-size 8 xmm-index high-qword x86))
+
+       (x86 (write-*ip proc-mode temp-rip x86)))
+    x86))
+
 ; =============================================================================
 ; INSTRUCTION: AVX Data Movement Instructions
 ; =============================================================================

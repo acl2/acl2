@@ -305,7 +305,7 @@
        (elt-type-of-head-when-pred (acl2::packn-pos (list x.elt-type '-of-head-when- x.pred)
                                                     x.pred))
        (pred-of-tail-when-pred (acl2::packn-pos (list x.pred '-of-tail-when- x.pred)
-                                                 x.pred))
+                                                x.pred))
        (pred-of-insert (acl2::packn-pos (list x.pred '-of-insert) x.pred))
        (elt-type-when-in-pred-binds-free-xvar
         (acl2::packn-pos (list x.elt-type '-when-in- x.pred '-binds-free- x.xvar)
@@ -394,7 +394,8 @@
   (b* (((flexset x))
        (pred-of-fix (acl2::packn-pos (list x.pred '-of- x.fix) x.name))
        (fix-when-pred (acl2::packn-pos (list x.fix '-when- x.pred) x.name))
-       (emptyp-fix (acl2::packn-pos (list 'emptyp- x.fix) x.name)))
+       (emptyp-fix (acl2::packn-pos (list 'emptyp- x.fix) x.name))
+       (emptyp-of-fix (acl2::packn-pos (list 'emptyp-of- x.fix) x.pred)))
     (if x.fix-already-definedp
         '(progn)
       `(define ,x.fix ((,x.xvar ,x.pred))
@@ -427,7 +428,11 @@
          (defrule ,emptyp-fix
            (implies (or (set::emptyp ,x.xvar)
                         (not (,x.pred ,x.xvar)))
-                    (set::emptyp (,x.fix ,x.xvar))))))))
+                    (set::emptyp (,x.fix ,x.xvar))))
+         (defruled ,emptyp-of-fix
+           (equal (emptyp (,x.fix ,x.xvar))
+                  (or (not (,x.pred ,x.xvar))
+                      (emptyp ,x.xvar))))))))
 
 (define flexset-fix-postevents (x)
   :ignore-ok t

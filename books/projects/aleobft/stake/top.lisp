@@ -33,8 +33,6 @@
      the underlying DAG consensus layer.
      The level of abstraction of this model
      is about the same as the Bullshark papers.
-     This model does not capture garbage collection or syncing.")
-   (xdoc::p
-    "This is work in progress."))
+     This model does not capture garbage collection or syncing."))
   :order-subtopics (definition
                     correctness))

@@ -27,6 +27,7 @@
 ;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Sol Swords <sswords@centtech.com>
+; Constributing author: Grant Jurgensen <grant@kestrel.edu>
 
 (in-package "ACL2")
 (include-book "../bstar")
@@ -218,3 +219,28 @@ Testing of the patbind macro failed on expression ~x0~%~%" (car tests))
        '(value-triple :passed)
      (er hard 'test-local-stobj
          "test failed"))))
+
+(encapsulate ()
+  (defun patbind-macro-test0 (x y)
+    (b* (((macro (add a b)) `(+ ,a ,b)))
+      (add x y)))
+
+  (make-event
+    (if (equal (patbind-macro-test0 1 2)
+               3)
+        '(value-triple :passed)
+      (er hard 'test patbind-macro-test0
+          "test failed"))))
+
+(encapsulate ()
+  (defun patbind-macro-test1 (x y)
+    (b* (((macro notinline (add a b)) `(+ ,a ,b))
+         ((macro inline (minus a b)) `(- ,a ,b)))
+      (minus 0 (add x y))))
+
+  (make-event
+    (if (equal (patbind-macro-test1 1 2)
+               -3)
+        '(value-triple :passed)
+      (er hard 'test patbind-macro-test1
+          "test failed"))))

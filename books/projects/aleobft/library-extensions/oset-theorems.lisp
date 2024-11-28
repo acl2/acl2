@@ -99,7 +99,7 @@
     :use (:instance set::subset-cardinality (x (set::tail set)) (y set))
     :disable set::subset-cardinality)
 
-  (defruled set::head-of-intersection-member-when-not-emptyp
+  (defruled set::head-of-intersect-member-when-not-emptyp
     (implies (not (set::emptyp (set::intersect x y)))
              (and (set::in (set::head (set::intersect x y)) x)
                   (set::in (set::head (set::intersect x y)) y)))
@@ -158,4 +158,11 @@
              (set::subset x (set::difference y z)))
     :enable (set::expensive-rules
              set::not-member-when-member-of-disjoint
-             set::emptyp)))
+             set::emptyp))
+
+  (defruled set::not-emptyp-of-intersect-when-in-both
+    (implies (and (set::in a x)
+                  (set::in a y))
+             (not (set::emptyp (set::intersect x y))))
+    :use (:instance set::never-in-empty (a a) (x (set::intersect x y)))
+    :disable set::never-in-empty))

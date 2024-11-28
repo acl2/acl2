@@ -278,13 +278,13 @@
     (implies (pick-successor/predecessor dag1 dag2 cert1 cert2)
              (set::in (pick-successor/predecessor dag1 dag2 cert1 cert2)
                       (successors cert1 dag1)))
-    :enable set::head-of-intersection-member-when-not-emptyp)
+    :enable set::head-of-intersect-member-when-not-emptyp)
 
   (defruled pick-successor/predecessor-in-predecessors
     (implies (pick-successor/predecessor dag1 dag2 cert1 cert2)
              (set::in (pick-successor/predecessor dag1 dag2 cert1 cert2)
                       (predecessors cert2 dag2)))
-    :enable set::head-of-intersection-member-when-not-emptyp)
+    :enable set::head-of-intersect-member-when-not-emptyp)
 
   (defruled pick-successor/predecessor-in-dag1
     (implies (and (certificate-setp dag1)

@@ -386,22 +386,42 @@
      Therefore, @(tsee dimb-expr) uses this function defined here
      to combine @('T') and @('E') properly, and return the result.")
    (xdoc::p
-    "The same kind of adjustment may be needed
-     in functions like @(tsee dimb-cast/call-to-cast),
+    "Note that @('A') may be itself a binary expression, e.g. @('A1 op\' A2').
+     Thus, this function must be called recursively
+     when attempting to make a cast out of @('T') and @('A'),
+     because it may need to be adjusted to
+     a binary expression with @'op\''),
+     pushing the cast down.")
+   (xdoc::p
+    "The same kind of adjustment may be needed, besides in @(tsee dimb-expr),
+     also in functions like @(tsee dimb-cast/call-to-cast),
      which also normally build cast expressions.")
    (xdoc::p
     "This function takes @('T') and @('E') as inputs.
-     If @('E') is a binary expression, let that be @('A op B'),
-     then we return @('[ (T) A ] op B'),
-     where the square brackets show how things are grouped.
      If @('E') is not a binary expression,
-     then we return the cast expression @('(T) E')."))
+     we return the cast expression @('(T) E').
+     If @('E') is a binary expression, let that be @('A op B'),
+     then we return @('[ TA ] op B'),
+     where TA is the result of recursively calling this function
+     on @('T') and @('A'),
+     and where the square brackets show how things are grouped.")
+   (xdoc::p
+    "In other words, this builds and adjusts the expression
+     so that the sub-expressions have priorities greater than or equal to
+     the ones expected by the super-expressions at those place.
+     Another way to express this condition on priorities
+     is that the expression prints without any added parentheses.
+     But this is not a function to adjust all kinds of priority mismatches:
+     it only works on the ones that may arise during disambiguation."))
   (if (expr-case arg :binary)
       (make-expr-binary :op (expr-binary->op arg)
-                        :arg1 (make-expr-cast :type type
-                                              :arg (expr-binary->arg1 arg))
+                        :arg1 (dimb-make/adjust-expr-cast
+                               type (expr-binary->arg1 arg))
                         :arg2 (expr-binary->arg2 arg))
     (make-expr-cast :type type :arg arg))
+  :measure (expr-count arg)
+  :hints (("Goal" :in-theory (enable o< o-finp)))
+  :verify-guards :after-returns
   :hooks (:fix)
 
   ///
@@ -409,11 +429,14 @@
   (defret expr-unambp-of-dimb-make/adjust-expr-cast
     (expr-unambp expr)
     :hyp (and (tyname-unambp type)
-              (expr-unambp arg))))
+              (expr-unambp arg))
+    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define dimb-make/adjust-expr-binary ((op binopp) (left exprp) (right exprp))
+(define dimb-make/adjust-expr-binary ((op binopp) (arg1 exprp) (arg2 exprp))
+  :guard (and (expr-unambp arg1)
+              (expr-unambp arg2))
   :returns (expr exprp)
   :short "Build, and adjust if needed, a binary expression."
   :long
@@ -430,131 +453,221 @@
      But if @('A0') and/or @('B0') were ambiguous cast/binary expressions,
      and one or both get disambiguated to binary expressions,
      returning the expression @('A op B') could be incorrect.
-     There are four cases to consider (described in the paragraphs below),
-     based on whether the priority of @('A') is greater than or equal to
-     the expected priority of the left operand of @('op'),
-     and/or whether the priority of @('B') is greater than or equal to
-     the expected priority of the right operand of @('op').
-     If the priority of @('A')/@('B') is greater than or equal to
-     the exptected priority of the left-right operand of @('op'),
-     then that expression can be safely left as is;
-     otherwise, it needs to be broken up and re-grouped with the rest.
-     Recall that, in @('A0 op B0'),
-     both @('A0') and @('B0') have the priority of cast expressions,
-     which is greater than or equal to
-     the expected priorities of all the binary operators.
-     If @('A') and/or @('B') is a cast expression,
-     or a kind of expression with higher priority,
-     no re-grouping is necessary.
-     The only situation in which re-grouping is necessary is when
-     @('A') and/or @('B') is a binary expression,
-     and has priority less than the one expected as operand of @('op').
-     There is no need to consider any other other kinds of expressions,
-     because both @('A') and @('B') can never have
-     a priority lower than binary expressions.
-     In the code, @('left-okp') and @('right-okp') indicate whether
-     @('A') (left) and @('B') (right) can be used as operands of @('op'),
-     or instead they need to be broken up and re-grouped.
-     The following are the four cases.")
+     For instance,
+     @('op') could be @('*'),
+     @('A') could be a variable @('x'),
+     and @('B') could be the expression @('(y) & z')
+     where @('y') and @('z') are variables.
+     That is, @('A op B') is @('x * (y) & z'),
+     which must be grouped as @('[ x * (y) ] & z')
+     (where the square brackets indicate the grouping),
+     and not as @('x * [ (y) & z ]').
+     The cue is that the priority of @('(y) & z') is
+     lower than the expected priority of the right operand of @('*'):
+     since our parser preserves parenthesized expressions,
+     it should be the case that, in the AST,
+     each sub-expression has priority greater than or equal to
+     the expected priority by the super-expression at that place.
+     So the adjustment performed by this function,
+     like the one performed by @(tsee dimb-make/adjust-expr-cast),
+     can be seen as restoring that property of ASTs.")
    (xdoc::p
-    "If both @('A') and @('B') are cast expressions,
-     or binary expressions with priority greater than or equal to
-     the one expected by @('op') for its operands,
-     it is correct to return @('A op B') without adjustment.")
+    "This function assumes that @('arg1') and @('arg2')
+     already satisfy the property about priorities mentioned above,
+     which is in fact the case when this function is called.
+     This function attempts to construct the binary expression,
+     but adjusts it so that the prioperty on priorities will hold.
+     We compare the expected priorities
+     for the left and right operand of @('op')
+     with the actual priorities of @('arg1') and @('arg2').
+     Since each may match or mismatch, there are four possibilities.
+     This may be a bit more general than needed in the disambiguator,
+     because for instance the expression @('(x) + y * (z) & w')
+     could not lead, without adjustment, to @('[ (x) + y ] * [ (z) & w ]'),
+     because the parser would parse all of @('y * (z) & w') after the @('+'),
+     but the generality is easies to handle,
+     compared to establishing restrictions on what the parser can produce.
+     So we consider a case like @('[ (x) + y ] * [ (z) & w ]') possible,
+     with both sub-expressions mismatching,
+     in the sense of having priority lower than expected by @('op').")
    (xdoc::p
-    "If @('A') is a cast expression
-     or a binary expression with priority greater than or equal to
-     the priority expected by @('op') for the left operand,
-     while @('B') is a binary expression @('B1 Bop B2')
-     with priority less than
-     the priority expected by @('op') for the right operand,
-     we re-group and return @('[ A op B1 ] Bop B2').
-     An example is @('A * (x) + y')
-     (i.e. @('B1') is @('(x)') and @('B2') is @('y')),
-     with @('(x) + y') initially ambiguous,
-     initially grouped as @('A * [ (x) + y ]').")
+    "A mismatch should be possible only if the sub-expression is a binary one,
+     because the only decrease in priority during disambiguation
+     can happen when the lower-priority expression is a binary one.
+     We throw a hard error if that is not the case,
+     which we expect to never happen.")
    (xdoc::p
-    "If @('B') is a cast expression
-     or a binary expression with priority greater than or equal to
-     the priority expected by @('op') for the right operand,
-     while @('A') is a binary expression @('A1 Aop A2')
-     with priority less than
-     the priority expected by @('op') for the left operand,
-     we re-group and return @('A1 Aop [ A2 op B ]').
-     An example is @('(x) + y * B'
-     (i.e. @('A1') is @('(x)') and @('A2') is @('y')),
-     with @('(x) + y') initially ambiguous,
-     initially grouped as @('[ (x) + y ] * B').")
+    "If there is no mismatch, we just build the binary expression.")
    (xdoc::p
-    "The most complicated case is when
-     both @('A') and @('B') are binary expressions
-     @('A1 Aop A2') and @('B1 Bop B2'),
-     both with priorities less than
-     the expected left and right priorities of @('op').
-     There are two sub-cases to consider,
-     based on the relative priorities of @('A') and @('B').
-     If @('A') has priority greater than or equal to @('B'),
-     we return @('[ A1 Aop [ A2 op B1 ] ] Bop B2'),
-     otherwise @('A1 Aop [ [ A2 op B1 ] Bop B2 ]').
-     This critically depends on the fact that
-     the binary operators that may be involved are all left-associative.
-     For example, an initial @('[ (x) & y ] * [ (z) + w ]')
-     results in @('(x) & [ [ y * (z) ] + w ]'),
-     while an initial @('[ (x) + y ] * [ (z) & w ]')
-     results in @('[ (x) + [ y * (z) ] ] & w]').")
+    "If only one sub-expression mismatches,
+     we perform the adjustment by moving up the sub-expression's operator
+     and redirecting one of its operands to the lowered operator.
+     For instance, consider the adjustment
+     from @('A * [ B + C ]') to @('[ A * B ] + C'):")
+   (xdoc::codeblock
+    "   *               +    "
+    "  / \             / \   "
+    " A   +    --->   *   C  "
+    "    / \         / \     "
+    "   B   C       A   B    ")
    (xdoc::p
-    "Besides @(tsee dimb-expr),
-     the same kind of adjustment may be needed
-     in functions like @(tsee dimb-cast/mul-to-mul),
-     which also build binary expressions that may need re-grouping."))
-  (b* (((mv left-prio right-prio) (binop-expected-priorities op))
-       (left-okp (or (not (expr-case left :binary))
-                     (expr-priority-<= left-prio (expr->priority left))))
-       (right-okp (or (not (expr-case right :binary))
-                      (expr-priority-<= right-prio (expr->priority right)))))
+    "where the @('+') is moved up and
+     its operand @('B') is redirected under the lowered @('*').
+     The situation is symmetric if the expression is flipped,
+     i.e. if the mismatch is in the left operand instead of the right one.")
+   (xdoc::p
+    "But note that, in the example above,
+     @('B') itself could be a @('+') expression,
+     which is now under @('*'), and therefore needs to be adjusted.
+     So the adjustment may need to be recursive:
+     we recursively call this function to build the new binary sub-expression.")
+   (xdoc::p
+    "If both sub-expressions mismatch,
+     we compare the priorities of the two sub-expressions,
+     and we perform the adjustment as if only the lower-priority one mismatches.
+     For instance, consider @('[ A & B ] * [ C + D ]'):
+     since @('&') has lower priority than @('+'),
+     we move the @('&') up, not the @('+').
+     This results in @('A & [ B * [ C + D ] ]'),
+     where the @('[ B * [ C + D ] ]') is recursively adjusted:
+     this further adjustment moves up the @('+'),
+     but it does not need to go above the @('&'),
+     which has lower priority;
+     the result is then @('A & [ [ B * C] + D ]').")
+   (xdoc::p
+    "The case in which the two mismatching sub-expressions
+     have the same priority is handled in the same way as
+     when the right one has lower priority.
+     The reason for this asymmetry is that
+     all the binary operations involved are left-associative.
+     For instance, consider @('[ A + B ] * [ C + D ]').
+     The correct adjustment is @('[ A + [ B * C ] ] + D'),
+     not @('[A + [ [ B * C ] + D ]')."))
+  (b* (((mv arg1-expected arg2-expected) (binop-expected-priorities op))
+       (arg1-actual (expr->priority arg1))
+       (arg2-actual (expr->priority arg2))
+       (arg1-mismatch (expr-priority-< arg1-actual arg1-expected))
+       (arg2-mismatch (expr-priority-< arg2-actual arg2-expected))
+       ((when (and arg1-mismatch
+                   (not (expr-case arg1 :binary))))
+        (raise "Internal error: ~
+                non-binary expression ~x0 ~
+                used as left argument of binary operator ~x1."
+               (expr-fix arg1) (binop-fix op))
+        (expr-binary op arg1 arg2))
+       ((when (and arg2-mismatch
+                   (not (expr-case arg2 :binary))))
+        (raise "Internal error: ~
+                non-binary expression ~x0 ~
+                used as right argument of binary operator ~x1."
+               (expr-fix arg2) (binop-fix op))
+        (expr-binary op arg1 arg2)))
     (cond
-     ((and left-okp right-okp)
-      (make-expr-binary :op op :arg1 left :arg2 right))
-     (left-okp
-      (make-expr-binary :op (expr-binary->op right)
-                        :arg1 (make-expr-binary :op op
-                                                :arg1 left
-                                                :arg2 (expr-binary->arg1 right))
-                        :arg2 (expr-binary->arg2 right)))
-     (right-okp
-      (make-expr-binary :op (expr-binary->op left)
-                        :arg1 (expr-binary->arg1 left)
-                        :arg2 (make-expr-binary :op op
-                                                :arg1 (expr-binary->arg2 left)
-                                                :arg2 right)))
-     (t (b* ((left-op (expr-binary->op left))
-             (right-op (expr-binary->op right))
-             (left-left (expr-binary->arg1 left))
-             (left-right (expr-binary->arg2 left))
-             (right-left (expr-binary->arg1 right))
-             (right-right (expr-binary->arg2 right))
-             (middle (make-expr-binary :op op
-                                       :arg1 left-right
-                                       :arg2 right-left)))
-          (if (expr-priority-<= (expr->priority right) (expr->priority left))
-              (make-expr-binary :op right-op
-                                :arg1 (make-expr-binary :op left-op
-                                                        :arg1 left-left
-                                                        :arg2 middle)
-                                :arg2 right-right)
-            (make-expr-binary :op left-op
-                              :arg1 left-left
-                              :arg2 (make-expr-binary :op right-op
-                                                      :arg1 middle
-                                                      :arg2 right-right)))))))
+     ((and arg1-mismatch
+           (or (not arg2-mismatch)
+               (expr-priority-> arg1-actual arg2-actual)))
+      (b* ((new-op (expr-binary->op arg1))
+           (new-arg1 (expr-binary->arg1 arg1))
+           (new-arg2 (dimb-make/adjust-expr-binary op
+                                                   (expr-binary->arg2 arg1)
+                                                   arg2)))
+        (make-expr-binary :op new-op :arg1 new-arg1 :arg2 new-arg2)))
+     ((and arg2-mismatch
+           (or (not arg1-mismatch)
+               (expr-priority-<= arg1-actual arg2-actual)))
+      (b* ((new-op (expr-binary->op arg2))
+           (new-arg1 (dimb-make/adjust-expr-binary op
+                                                   arg1
+                                                   (expr-binary->arg1 arg2)))
+           (new-arg2 (expr-binary->arg2 arg2)))
+        (make-expr-binary :op new-op :arg1 new-arg1 :arg2 new-arg2)))
+     (t (make-expr-binary :op op :arg1 arg1 :arg2 arg2))))
+  :measure (+ (expr-count arg1) (expr-count arg2))
+  :hints (("Goal" :in-theory (enable o-p o< o-finp)))
+  :verify-guards :after-returns
   :hooks (:fix)
 
   ///
 
-  (defret expr-unambp-dimb-make/adjust-expr-binary
+  (defret expr-unambp-of-dimb-make/adjust-expr-binary
     (expr-unambp expr)
-    :hyp (and (expr-unambp left)
-              (expr-unambp right))))
+    :hyp (and (expr-unambp arg1)
+              (expr-unambp arg2))
+    :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define dimb-make/adjust-expr-unary ((op unopp) (arg exprp))
+  :guard (expr-unambp arg)
+  :returns (expr exprp)
+  :short "Build, and adjust if needed, a unary expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is similar to @(tsee dimb-make/adjust-expr-cast)
+     and @(tsee dimb-make/adjust-expr-binary).
+     Since some of the unary operators expect a cast expression as argument
+     (as well as an expression with priority higher than a cast),
+     the argument of a unary operators, as produced by the parser,
+     may be an ambiguous cast expression that becomes a binary expression,
+     which has therefore lower priority than a cast expression.
+     This makes it necessary to adjust the expression
+     so that the actual priorities match the expected priorities
+     (where `matching' includes being higher, besides being equal).")
+   (xdoc::p
+    "For instance, @('~ (a) + b') is parsed as
+     the unary operator @('~') applied to the ambiguous @('(a) + b'),
+     which may be disambiguated to a binary expression,
+     thus resulting (without adjustment) in @('~ [ (a) + b ]'),
+     where the square brackets indicate grouping.
+     Instead, the correct expression is @('[ ~ (a) ] + b').")
+   (xdoc::p
+    "So this function builds, and adjusts if needed,
+     a unary expression out of the operator @('op') and operand @('A').
+     If @('A') has priority greater than or equal to
+     the expected operand priority of @('op'),
+     we just build and return the unary expression.
+     Otherwise, @('A') must be a binary expression, say @('A1 op\' A2').
+     because this is the only kind that may arise from disambiguation
+     with a lower priority than a cast expression;
+     we throw a hard error if that is not the case,
+     which we never expect to happen.
+     To adjust the expression,
+     we push the unary operator into the left operand,
+     i.e. @('[ op A1 ] op\' A2').")
+   (xdoc::p
+    "Note that @('A1') may be itself a binary expression,
+     so we need to call this function recursively."))
+  (b* ((arg-expected (if (member-eq (unop-kind op)
+                                    '(:predec :preinc
+                                      :postdec :postinc
+                                      :sizeof))
+                         (expr-priority-unary)
+                       (expr-priority-cast)))
+       (arg-actual (expr->priority arg))
+       ((when (expr-priority->= arg-actual arg-expected))
+        (make-expr-unary :op op :arg arg))
+       ((unless (expr-case arg :binary))
+        (raise "Internal error: ~
+                non-binary expression ~x0 ~
+                used as argument of unary operator ~x1."
+               (expr-fix arg) (unop-fix op))
+        (expr-unary op arg)))
+    (make-expr-binary :op (expr-binary->op arg)
+                      :arg1 (dimb-make/adjust-expr-unary
+                             op (expr-binary->arg1 arg))
+                      :arg2 (expr-binary->arg2 arg)))
+  :measure (expr-count arg)
+  :hints (("Goal" :in-theory (enable o< o-finp)))
+  :verify-guards :after-returns
+  :hooks (:fix)
+
+  ///
+
+  (defret expr-unambp-of-dimb-make/adjust-expr-unary
+    (expr-unambp expr)
+    :hyp (expr-unambp arg)
+    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -713,9 +826,9 @@
      Note that the @('*'), which is unary in this disambiguation,
      is implicit in the abstract syntax of the ambiguous expression."))
   (dimb-make/adjust-expr-cast tyname
-                              (make-expr-unary
-                               :op (unop-indir)
-                               :arg (apply-pre-inc/dec-ops inc/dec arg)))
+                              (dimb-make/adjust-expr-unary
+                               (unop-indir)
+                               (apply-pre-inc/dec-ops inc/dec arg)))
   :hooks (:fix)
 
   ///
@@ -777,9 +890,9 @@
      Note that the @('+') or @('-'), which is unary in this disambiguation,
      is implicit in the abstract syntax of the ambiguous expression."))
   (dimb-make/adjust-expr-cast tyname
-                              (make-expr-unary
-                               :op plus/minus
-                               :arg (apply-pre-inc/dec-ops inc/dec arg)))
+                              (dimb-make/adjust-expr-unary
+                               plus/minus
+                               (apply-pre-inc/dec-ops inc/dec arg)))
   :hooks (:fix)
 
   ///
@@ -841,9 +954,9 @@
      Note that the @('&'), which is unary in this disambiguation,
      is implicit in the abstract syntax of the ambiguous expression."))
   (dimb-make/adjust-expr-cast tyname
-                              (make-expr-unary
-                               :op (unop-address)
-                               :arg (apply-pre-inc/dec-ops inc/dec arg)))
+                              (dimb-make/adjust-expr-unary
+                               (unop-address)
+                               (apply-pre-inc/dec-ops inc/dec arg)))
   :hooks (:fix)
 
   ///
@@ -963,8 +1076,8 @@
           ((unless (and (consp declspecs) (endp (cdr declspecs))))
            (mv nil nil))
           (declspec (car declspecs))
-          ((unless (decl-spec-case declspec :tyspec)) (mv nil nil))
-          (tyspec (decl-spec-tyspec->spec declspec))
+          ((unless (decl-spec-case declspec :typespec)) (mv nil nil))
+          (tyspec (decl-spec-typespec->spec declspec))
           ((unless (type-spec-case tyspec :typedef)) (mv nil nil))
           (ident (type-spec-typedef->name tyspec))
           (kind? (dimb-lookup-ident ident table))
@@ -1109,8 +1222,8 @@
                 table))
        :unary
        (b* (((erp new-arg table) (dimb-expr expr.arg table)))
-         (retok (make-expr-unary :op expr.op
-                                 :arg new-arg)
+         (retok (dimb-make/adjust-expr-unary expr.op
+                                             new-arg)
                 table))
        :sizeof
        (b* (((erp new-tyname table) (dimb-tyname expr.type table)))
@@ -1120,9 +1233,8 @@
              (dimb-amb-expr/tyname expr.expr/tyname t table)))
          (expr/tyname-case
           expr-or-tyname
-          :expr (retok (make-expr-unary
-                        :op (unop-sizeof)
-                        :arg expr-or-tyname.unwrap)
+          :expr (retok (dimb-make/adjust-expr-unary (unop-sizeof)
+                                                    expr-or-tyname.unwrap)
                        table)
           :tyname (retok (expr-sizeof expr-or-tyname.unwrap)
                          table)))
@@ -1503,12 +1615,12 @@
     (b* (((reterr) (irr-spec/qual) (irr-dimb-table)))
       (spec/qual-case
        specqual
-       :tyspec (b* (((erp new-tyspec table)
-                     (dimb-type-spec specqual.spec table)))
-                 (retok (spec/qual-tyspec new-tyspec)
-                        table))
-       :tyqual (retok (spec/qual-tyqual specqual.qual)
-                      (dimb-table-fix table))
+       :typespec (b* (((erp new-tyspec table)
+                       (dimb-type-spec specqual.spec table)))
+                   (retok (spec/qual-typespec new-tyspec)
+                          table))
+       :typequal (retok (spec/qual-typequal specqual.qual)
+                        (dimb-table-fix table))
        :align (b* (((erp new-alignspec table)
                     (dimb-align-spec specqual.spec table)))
                 (retok (spec/qual-align new-alignspec)
@@ -1599,21 +1711,21 @@
     (b* (((reterr) (irr-decl-spec) (irr-dimb-kind) (irr-dimb-table)))
       (decl-spec-case
        declspec
-       :stocla (if (stor-spec-case declspec.spec :typedef)
+       :stoclass (if (stor-spec-case declspec.spec :typedef)
+                     (retok (decl-spec-fix declspec)
+                            (dimb-kind-typedef)
+                            (dimb-table-fix table))
                    (retok (decl-spec-fix declspec)
-                          (dimb-kind-typedef)
-                          (dimb-table-fix table))
-                 (retok (decl-spec-fix declspec)
+                          (dimb-kind-fix kind)
+                          (dimb-table-fix table)))
+       :typespec (b* (((erp new-tyspec table)
+                       (dimb-type-spec declspec.spec table)))
+                   (retok (decl-spec-typespec new-tyspec)
+                          (dimb-kind-fix kind)
+                          (dimb-table-fix table)))
+       :typequal (retok (decl-spec-fix declspec)
                         (dimb-kind-fix kind)
-                        (dimb-table-fix table)))
-       :tyspec (b* (((erp new-tyspec table)
-                     (dimb-type-spec declspec.spec table)))
-                 (retok (decl-spec-tyspec new-tyspec)
-                        (dimb-kind-fix kind)
-                        (dimb-table-fix table)))
-       :tyqual (retok (decl-spec-fix declspec)
-                      (dimb-kind-fix kind)
-                      (dimb-table-fix table))
+                        (dimb-table-fix table))
        :function (retok (decl-spec-fix declspec)
                         (dimb-kind-fix kind)
                         (dimb-table-fix table))
@@ -3337,8 +3449,8 @@
                     (ident "__builtin_clzll")
                     (ident "__builtin_constant_p")
                     (ident "__builtin_ctzl")
-                    (ident "__builtin_expect")
                     (ident "__builtin_dynamic_object_size")
+                    (ident "__builtin_expect")
                     (ident "__builtin_memchr")
                     (ident "__builtin_memcmp")
                     (ident "__builtin_memcpy")

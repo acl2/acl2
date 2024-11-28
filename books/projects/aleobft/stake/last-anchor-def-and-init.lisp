@@ -57,14 +57,17 @@
      If no round has been committed yet, we also return @('nil').
      The validator must be able to calculate
      the active committee for the last committed round,
+     and the committee must be non-empty,
      in order to calculate the leader;
      we return @('nil') if the validator cannot calculate that committee."))
   (b* (((validator-state vstate) vstate)
        ((when (equal vstate.last 0)) nil)
        (commtt (active-committee-at-round vstate.last vstate.blockchain))
        ((unless commtt) nil)
+       ((unless (committee-nonemptyp commtt)) nil)
        (leader (leader-at-round vstate.last commtt)))
     (cert-with-author+round leader vstate.last vstate.dag))
+  :hooks (:fix)
 
   ///
 

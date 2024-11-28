@@ -232,8 +232,8 @@
     :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if a specifier or qualifier is unambiguous."
     (spec/qual-case specqual
-                    :tyspec (type-spec-unambp specqual.spec)
-                    :tyqual t
+                    :typespec (type-spec-unambp specqual.spec)
+                    :typequal t
                     :align (align-spec-unambp specqual.spec)
                     :attrib t)
     :measure (spec/qual-count specqual))
@@ -268,9 +268,9 @@
     :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if a declaration specifier is unambiguous."
     (decl-spec-case declspec
-                    :stocla t
-                    :tyspec (type-spec-unambp declspec.spec)
-                    :tyqual t
+                    :stoclass t
+                    :typespec (type-spec-unambp declspec.spec)
+                    :typequal t
                     :function t
                     :align (align-spec-unambp declspec.spec)
                     :attrib t
@@ -1096,14 +1096,14 @@
            (tyname-unambp tyname))
     :expand (type-spec-unambp (type-spec-typeof-type tyname uscores)))
 
-  (defrule spec/qual-unambp-of-spec/qual-tyspec
-    (equal (spec/qual-unambp (spec/qual-tyspec tyspec))
+  (defrule spec/qual-unambp-of-spec/qual-typespec
+    (equal (spec/qual-unambp (spec/qual-typespec tyspec))
            (type-spec-unambp tyspec))
-    :expand (spec/qual-unambp (spec/qual-tyspec tyspec)))
+    :expand (spec/qual-unambp (spec/qual-typespec tyspec)))
 
-  (defrule spec/qual-unambp-when-tyqual/attrib
+  (defrule spec/qual-unambp-when-typequal/attrib
     (implies (member-eq (spec/qual-kind spec/qual)
-                        '(:tyqual :attrib))
+                        '(:typequal :attrib))
              (spec/qual-unambp spec/qual)))
 
   (defrule spec/qual-unambp-of-spec/qual-align
@@ -1121,18 +1121,18 @@
            (const-expr-unambp cexpr))
     :expand (align-spec-unambp (align-spec-alignas-expr cexpr)))
 
-  (defrule decl-spec-unambp-of-decl-spec-tyspec
-    (equal (decl-spec-unambp (decl-spec-tyspec tyspec))
+  (defrule decl-spec-unambp-of-decl-spec-typespec
+    (equal (decl-spec-unambp (decl-spec-typespec tyspec))
            (type-spec-unambp tyspec))
-    :expand (decl-spec-unambp (decl-spec-tyspec tyspec)))
+    :expand (decl-spec-unambp (decl-spec-typespec tyspec)))
 
   (defrule decl-spec-unambp-of-decl-spec-align
     (equal (decl-spec-unambp (decl-spec-align alignspec))
            (align-spec-unambp alignspec))
     :expand (decl-spec-unambp (decl-spec-align alignspec)))
 
-  (defrule decl-spec-unambp-when-not-tyspec/align
-    (implies (and (not (decl-spec-case declspec :tyspec))
+  (defrule decl-spec-unambp-when-not-typespec/align
+    (implies (and (not (decl-spec-case declspec :typespec))
                   (not (decl-spec-case declspec :align)))
              (decl-spec-unambp declspec))
     :expand (decl-spec-unambp declspec))
@@ -1732,10 +1732,10 @@
              (not (equal (type-spec-kind tyspec) :typeof-ambig)))
     :rule-classes :forward-chaining)
 
-  (defrule type-spec-unambp-of-spec/qual-tyspec->unwrap
+  (defrule type-spec-unambp-of-spec/qual-typespec->spec
     (implies (and (spec/qual-unambp specqual)
-                  (spec/qual-case specqual :tyspec))
-             (type-spec-unambp (spec/qual-tyspec->spec specqual)))
+                  (spec/qual-case specqual :typespec))
+             (type-spec-unambp (spec/qual-typespec->spec specqual)))
     :expand (spec/qual-unambp specqual))
 
   (defrule align-spec-unambp-of-spec/qual-align->spec
@@ -1761,10 +1761,10 @@
              (not (equal (align-spec-kind alignspec) :alignas-ambig)))
     :rule-classes :forward-chaining)
 
-  (defrule type-spec-unambp-of-decl-spec-tyspec->spec
+  (defrule type-spec-unambp-of-decl-spec-typespec->spec
     (implies (and (decl-spec-unambp declspec)
-                  (decl-spec-case declspec :tyspec))
-             (type-spec-unambp (decl-spec-tyspec->spec declspec)))
+                  (decl-spec-case declspec :typespec))
+             (type-spec-unambp (decl-spec-typespec->spec declspec)))
     :expand (decl-spec-unambp declspec))
 
   (defrule align-spec-unambp-of-decl-spec-align->spec
@@ -2512,30 +2512,30 @@
           extracted via some abstract syntax operations
           is unambiguous if the initial list is unambiguous."
 
-  (defrule type-spec-list-unambp-of-check-spec/qual-list-all-tyspec
-    (b* (((mv okp tyspecs) (check-spec/qual-list-all-tyspec specquals)))
+  (defrule type-spec-list-unambp-of-check-spec/qual-list-all-typespec
+    (b* (((mv okp tyspecs) (check-spec/qual-list-all-typespec specquals)))
       (implies (and (spec/qual-list-unambp specquals)
                     okp)
                (type-spec-list-unambp tyspecs)))
     :induct t
-    :enable check-spec/qual-list-all-tyspec)
+    :enable check-spec/qual-list-all-typespec)
 
-  (defrule type-spec-list-unambp-of-check-decl-spec-list-all-tyspec
-    (b* (((mv okp tyspecs) (check-decl-spec-list-all-tyspec specquals)))
+  (defrule type-spec-list-unambp-of-check-decl-spec-list-all-typespec
+    (b* (((mv okp tyspecs) (check-decl-spec-list-all-typespec specquals)))
       (implies (and (decl-spec-list-unambp specquals)
                     okp)
                (type-spec-list-unambp tyspecs)))
     :induct t
-    :enable check-decl-spec-list-all-tyspec)
+    :enable check-decl-spec-list-all-typespec)
 
-  (defrule type-spec-list-unambp-of-check-decl-spec-list-all-tyspec/storspec
+  (defrule type-spec-list-unambp-of-check-decl-spec-list-all-typespec/stoclass
     (b* (((mv okp tyspecs &)
-          (check-decl-spec-list-all-tyspec/storspec declspecs)))
+          (check-decl-spec-list-all-typespec/stoclass declspecs)))
       (implies (and (decl-spec-list-unambp declspecs)
                     okp)
                (type-spec-list-unambp tyspecs)))
     :induct t
-    :enable check-decl-spec-list-all-tyspec/storspec))
+    :enable check-decl-spec-list-all-typespec/stoclass))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

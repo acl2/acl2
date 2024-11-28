@@ -116,8 +116,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define message-certificates-with-destination ((dest addressp)
-                                               (msgs message-setp))
+(define message-certs-with-dest ((dest addressp) (msgs message-setp))
   :returns (certs certificate-setp)
   :short "Extract, from a set of messages,
           the ones with a given destination,
@@ -131,86 +130,82 @@
        (msg (set::head msgs)))
     (if (equal (message->destination msg) (address-fix dest))
         (set::insert (message->certificate msg)
-                     (message-certificates-with-destination dest
-                                                            (set::tail msgs)))
-      (message-certificates-with-destination dest (set::tail msgs))))
+                     (message-certs-with-dest dest (set::tail msgs)))
+      (message-certs-with-dest dest (set::tail msgs))))
   :verify-guards :after-returns
 
   ///
 
-  (fty::deffixequiv message-certificates-with-destination
+  (fty::deffixequiv message-certs-with-dest
     :args ((dest addressp)))
 
-  (defrule message-certificates-with-destination-of-empty-msgs
+  (defrule message-certs-with-dest-of-empty-msgs
     (implies (set::emptyp msgs)
-             (equal (message-certificates-with-destination dest msgs)
+             (equal (message-certs-with-dest dest msgs)
                     nil)))
 
-  (defruled in-of-message-certificates-with-destination
+  (defruled in-of-message-certs-with-dest
     (implies (message-setp msgs)
              (equal (set::in cert
-                             (message-certificates-with-destination dest msgs))
+                             (message-certs-with-dest dest msgs))
                     (and (set::in (message cert dest) msgs)
                          (certificatep cert))))
     :induct t
     :enable set::in)
 
-  (defruled message-certificates-with-destination-of-insert
+  (defruled message-certs-with-dest-of-insert
     (implies (and (messagep msg)
                   (message-setp msgs))
-             (equal (message-certificates-with-destination
+             (equal (message-certs-with-dest
                      dest (set::insert msg msgs))
                     (if (equal (message->destination msg) (address-fix dest))
                         (set::insert (message->certificate msg)
-                                     (message-certificates-with-destination
-                                      dest msgs))
-                      (message-certificates-with-destination dest msgs))))
-    :enable (in-of-message-certificates-with-destination
+                                     (message-certs-with-dest dest msgs))
+                      (message-certs-with-dest dest msgs))))
+    :enable (in-of-message-certs-with-dest
              set::expensive-rules
              set::double-containment-no-backchain-limit)
-    :disable message-certificates-with-destination)
+    :disable message-certs-with-dest)
 
-  (defruled message-certificates-with-destination-of-union
+  (defruled message-certs-with-dest-of-union
     (implies (and (message-setp msgs1)
                   (message-setp msgs2))
-             (equal (message-certificates-with-destination
+             (equal (message-certs-with-dest
                      dest (set::union msgs1 msgs2))
                     (set::union
-                     (message-certificates-with-destination dest msgs1)
-                     (message-certificates-with-destination dest msgs2))))
-    :enable (in-of-message-certificates-with-destination
+                     (message-certs-with-dest dest msgs1)
+                     (message-certs-with-dest dest msgs2))))
+    :enable (in-of-message-certs-with-dest
              set::expensive-rules
              set::double-containment-no-backchain-limit)
-    :disable message-certificates-with-destination)
+    :disable message-certs-with-dest)
 
-  (defruled message-certificates-with-destination-of-delete
+  (defruled message-certs-with-dest-of-delete
     (implies (message-setp msgs)
-             (equal (message-certificates-with-destination
-                     dest (set::delete msg msgs))
+             (equal (message-certs-with-dest dest (set::delete msg msgs))
                     (if (and (set::in msg msgs)
                              (equal (message->destination msg)
                                     (address-fix dest)))
                         (set::delete (message->certificate msg)
-                                     (message-certificates-with-destination
-                                      dest msgs))
-                      (message-certificates-with-destination dest msgs))))
-    :enable (in-of-message-certificates-with-destination
+                                     (message-certs-with-dest dest msgs))
+                      (message-certs-with-dest dest msgs))))
+    :enable (in-of-message-certs-with-dest
              set::expensive-rules
              set::double-containment-no-backchain-limit)
-    :disable message-certificates-with-destination))
+    :disable message-certs-with-dest))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled message-certificates-with-destination-of-make-certificate-messages
+(defruled message-certs-with-dest-of-make-certificate-messages
   :parents (make-certificate-messages
-            message-certificates-with-destination)
+            message-certs-with-dest)
   :short "Relation between message extraction and message creation."
   (implies (address-setp dests)
-           (equal (message-certificates-with-destination
+           (equal (message-certs-with-dest
                    dest (make-certificate-messages cert dests))
                   (if (set::in (address-fix dest) dests)
                       (set::insert (certificate-fix cert) nil)
                     nil)))
   :induct t
-  :enable (message-certificates-with-destination-of-insert
+  :enable (message-certs-with-dest-of-insert
            make-certificate-messages))

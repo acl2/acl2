@@ -35,6 +35,8 @@
 (include-book "kestrel/utilities/runes" :dir :system)
 (include-book "kestrel/x86/parsers/parsed-executable-tools" :dir :system)
 (include-book "kestrel/x86/parsers/parse-executable" :dir :system)
+(include-book "kestrel/x86/run-until-return" :dir :system)
+(include-book "kestrel/x86/assumptions64" :dir :system)
 
 ;todo: factor some of this stuff out into a lifter-common file
 

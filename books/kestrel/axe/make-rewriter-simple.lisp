@@ -5565,7 +5565,6 @@
                                 normalize-xors
                                 memoize)
       (declare (xargs :guard (and (pseudo-dagp dag)
-                                  (< (top-nodenum dag) *max-1d-array-length*)
                                   (pseudo-term-listp assumptions)
                                   (rule-limitsp limits)
                                   (rule-alistp rule-alist)
@@ -5647,7 +5646,6 @@
       (implies (and (not (myquotep (mv-nth 1 (,simplify-dag-name dag assumptions rule-alist interpreted-function-alist known-booleans limits count-hits print monitored-symbols fns-to-elide normalize-xors memoize))))
                     (not (mv-nth 0 (,simplify-dag-name dag assumptions rule-alist interpreted-function-alist known-booleans limits count-hits print monitored-symbols fns-to-elide normalize-xors memoize))) ; no error
                     (pseudo-dagp dag)
-                    (< (top-nodenum dag) *max-1d-array-length*)
                     (pseudo-term-listp assumptions)
                     (rule-limitsp limits)
                     (rule-alistp rule-alist)
@@ -5703,7 +5701,6 @@
     (defthm ,(pack$ simplify-dag-name '-return-type-corollary-2)
       (implies (and (not (mv-nth 0 (,simplify-dag-name dag assumptions rule-alist interpreted-function-alist known-booleans limits count-hits print monitored-symbols fns-to-elide normalize-xors memoize))) ; no error
                     (pseudo-dagp dag)
-                    (< (top-nodenum dag) *max-1d-array-length*)
                     (pseudo-term-listp assumptions)
                     (rule-limitsp limits)
                     (rule-alistp rule-alist)
@@ -5724,7 +5721,6 @@
     (defthm ,(pack$ simplify-dag-name '-return-type-corollary-3)
       (implies (and (not (mv-nth 0 (,simplify-dag-name dag assumptions rule-alist interpreted-function-alist known-booleans limits count-hits print monitored-symbols fns-to-elide normalize-xors memoize))) ; no error
                     (pseudo-dagp dag)
-                    (< (top-nodenum dag) *max-1d-array-length*)
                     (pseudo-term-listp assumptions)
                     (rule-limitsp limits)
                     (rule-alistp rule-alist)
@@ -6107,7 +6103,7 @@
                                          state)
       (declare (xargs :guard (and (symbolp name)
                                   (pseudo-dagp dag)
-                                  (< (top-nodenum dag) *max-1d-array-length*)
+                                  (< (top-nodenum dag) *max-1d-array-length*) ; drop?
                                   (pseudo-term-listp assumptions)
                                   (interpreted-function-alistp interpreted-function-alist)
                                   (rule-limitsp limits)

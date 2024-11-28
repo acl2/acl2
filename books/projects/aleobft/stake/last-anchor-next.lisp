@@ -74,7 +74,7 @@
      the last committed round or the blockchain or the DAG,
      and thus the last committed anchor does not change."))
 
-  (defruled last-anchor-of-create-next
+  (defrule last-anchor-of-create-next
     (implies (and (system-committees-fault-tolerant-p systate)
                   (same-associated-certs-p systate)
                   (no-self-endorsed-p systate)
@@ -93,7 +93,7 @@
              cert-with-author+round-of-create-next)
     :use last-anchor-present-p-necc)
 
-  (defruled last-anchor-of-receive-next
+  (defrule last-anchor-of-receive-next
     (implies (and (set::in val (correct-addresses systate))
                   (receive-possiblep msg systate))
              (equal (last-anchor (get-validator-state
@@ -101,7 +101,7 @@
                     (last-anchor (get-validator-state val systate))))
     :enable last-anchor)
 
-  (defruled last-anchor-of-store-next
+  (defrule last-anchor-of-store-next
     (implies (and (system-committees-fault-tolerant-p systate)
                   (same-associated-certs-p systate)
                   (dag-committees-p systate)
@@ -121,7 +121,7 @@
              cert-with-author+round-of-store-next)
     :use last-anchor-present-p-necc)
 
-  (defruled last-anchor-of-advance-next
+  (defrule last-anchor-of-advance-next
     (implies (and (set::in val (correct-addresses systate))
                   (advance-possiblep val1 systate))
              (equal (last-anchor (get-validator-state
@@ -165,7 +165,7 @@
              evenp
              nfix))
 
-  (defruled last-anchor-of-timeout-next
+  (defrule last-anchor-of-timeout-next
     (implies (and (set::in val (correct-addresses systate))
                   (timeout-possiblep val1 systate))
              (equal (last-anchor (get-validator-state

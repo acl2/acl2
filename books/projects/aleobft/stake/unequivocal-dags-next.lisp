@@ -267,7 +267,8 @@
              associated-certs
              in-signed-certs-when-in-associated-and-signer
              same-committees-p-necc
-             cert-with-author+round-element)
+             cert-with-author+round-element
+             committee-nonemptyp-when-nonempty-subset)
     :use ((:instance quorum-intersection-has-correct-validator
                      (commtt (active-committee-at-round
                               (certificate->round cert)
@@ -387,7 +388,8 @@
              unequivocal-signed-certs-p-necc
              associated-certs
              in-signed-certs-when-in-associated-and-signer
-             same-committees-p-necc)
+             same-committees-p-necc
+             committee-nonemptyp-when-nonempty-subset)
     :use ((:instance quorum-intersection-has-correct-validator
                      (commtt (active-committee-at-round
                               (certificate->round cert)

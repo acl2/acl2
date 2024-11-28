@@ -1,7 +1,7 @@
 ; A parser for PE executables
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2021 Kestrel Institute
+; Copyright (C) 2020-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -21,16 +21,17 @@
 (include-book "kestrel/alists-light/lookup-safe" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
 (include-book "kestrel/file-io-light/read-file-into-byte-list" :dir :system)
-(include-book "ihs/basic-definitions" :dir :system) ;for logext, todo: reduce
-(include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system)
 (include-book "kestrel/bv/getbit-def" :dir :system)
+(include-book "kestrel/bv/logext-def" :dir :system)
 (include-book "kestrel/typed-lists-light/bytes-to-printable-string" :dir :system)
 (include-book "kestrel/typed-lists-light/map-code-char" :dir :system)
-(local (include-book "std/typed-lists/integer-listp" :dir :system))
 (local (include-book "kestrel/bv/bvcat" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
+(local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+
+(in-theory (disable mv-nth))
 
 (local (defthm integerp-when-unsigned-byte-p-32
          (implies (unsigned-byte-p 32 x)
@@ -52,7 +53,11 @@
          (implies (unsigned-byte-p 32 x)
                   (<= 0 x))))
 
-(local (in-theory (disable natp)))
+(local (defthm true-listp-when-byte-listp
+         (implies (byte-listp x)
+                  (true-listp x))))
+
+;(local (in-theory (disable natp reverse-removal revappend-removal)))
 
 (local (in-theory (enable unsigned-byte-p-of-mv-nth-1-of-parse-u8
                           unsigned-byte-p-of-mv-nth-1-of-parse-u16
@@ -364,6 +369,9 @@
       (mv nil (reverse header) bytes)))
 
 (defun parse-optional-data-directories-aux (num bytes acc)
+  (declare (xargs :guard (and (natp num)
+                              (byte-listp bytes)
+                              (true-listp acc))))
   (if (zp num)
       (mv nil (reverse acc) bytes)
     (b* (((mv erp rva bytes) (parse-u32 bytes))
@@ -371,9 +379,16 @@
          ((mv erp size bytes) (parse-u32 bytes))
          ((when erp) (mv erp nil bytes))
          (data-directory (acons :rva rva (acons :size size nil))))
-        (parse-optional-data-directories-aux (+ -1 num) bytes (cons data-directory acc)))))
+      (parse-optional-data-directories-aux (+ -1 num) bytes (cons data-directory acc)))))
+
+(local
+ (defthm true-listp-of-mv-nth-1-of-parse-optional-data-directories-aux
+   (implies (true-listp acc)
+            (true-listp (mv-nth 1 (parse-optional-data-directories-aux num bytes acc))))))
 
 (defun pair-data-directories-with-names (data-directories names)
+  (declare (xargs :guard (and (true-listp data-directories)
+                              (true-listp names))))
   (if (endp data-directories)
       nil ;The data-directories may run out before the names
     (acons (first names)
@@ -401,6 +416,8 @@
 
 ;TODO: check that we don't run out of names before we run out of directories
 (defun parse-optional-data-directories (number-of-rva-and-sizes bytes)
+  (declare (xargs :guard (and (natp number-of-rva-and-sizes)
+                              (byte-listp bytes))))
   (b* (((mv erp data-directories bytes)
         (parse-optional-data-directories-aux number-of-rva-and-sizes bytes nil))
        ((when erp) (mv erp nil bytes)))
@@ -409,6 +426,7 @@
         bytes)))
 
 (defun keep-bytes-until-0 (bytes)
+  (declare (xargs :guard (byte-listp bytes)))
   (if (endp bytes)
       nil
     (if (eql 0 (first bytes))
@@ -417,6 +435,7 @@
 
 ;; the string will be null-terminated if shorter than name-bytes, and we drop the null
 (defun name-to-string (name-bytes)
+  (declare (xargs :guard (byte-listp name-bytes)))
   (let* ((name-bytes (keep-bytes-until-0 name-bytes))
          (name-chars (map-code-char name-bytes)) ;TODO; Handle UTF-8 !
          (name-string (coerce name-chars 'string)))
@@ -488,48 +507,76 @@
         (cons (char-code #\8) 8)
         (cons (char-code #\9) 9)))
 
+;; Returns (mv erp val).
 (defun decode-ascii-number (bytes curr)
+  (declare (xargs :guard (and (byte-listp bytes)
+                              (natp curr))))
   (if (endp bytes)
-      curr
+      (mv nil curr)
     (let* ((byte (first bytes))
-           (curr (* 10 curr))
-           (curr (+ curr (lookup-safe byte *char-to-digit-alist*))))
-      (decode-ascii-number (rest bytes) curr))))
+           (byte-val (lookup byte *char-to-digit-alist*)))
+      (if (not (natp byte-val))
+          (prog2$ (er hard? 'decode-ascii-number "Non-ASCII-digit byte: ~x0." byte)
+                  (mv :bad-byte curr))
+        (let* ((curr (* 10 curr))
+               (curr (+ curr byte-val)))
+          (decode-ascii-number (rest bytes) curr))))))
+
+(local
+ (defthm integerp-of-mv-nth-1-of-decode-ascii-number
+   (implies (integerp curr)
+            (integerp (mv-nth 1 (decode-ascii-number bytes curr))))))
 
 (defun drop-leading-zeros (bytes)
+  (declare (xargs :guard (byte-listp bytes)))
   (if (endp bytes)
       nil
     (if (eql 0 (first bytes))
         (drop-leading-zeros (rest bytes))
       bytes)))
 
+(defthm byte-listp-of-drop-leading-zeros
+  (implies (byte-listp bytes)
+           (byte-listp (drop-leading-zeros bytes)))
+  :hints (("Goal" :in-theory (enable drop-leading-zeros))))
+
 (defun drop-trailing-zeros (bytes)
+  (declare (xargs :guard (byte-listp bytes)))
   (reverse (drop-leading-zeros (reverse bytes))))
 
+;; Returns (mv erp result).
 (defun decode-section-name (name-bytes string-table-bytes)
+  (declare (xargs :guard (and (byte-listp name-bytes)
+                              (byte-listp string-table-bytes))))
   (if (and (consp name-bytes)
            (equal (first name-bytes) (char-code #\/)))
       (if (not string-table-bytes)
-          :unknown ;todo: print a message
+          (mv nil :unknown) ;todo: print a message
         (b* ((name-bytes (drop-trailing-zeros name-bytes))
              ;;(- (cw "trimmed bytes: ~x0. string-table-bytes: ~x1." name-bytes string-table-bytes))
-             (string-table-index (decode-ascii-number (rest name-bytes) 0))
+             ((mv erp string-table-index) (decode-ascii-number (rest name-bytes) 0))
+             ((when erp) (mv erp nil))
+             ((when (not (<= 4 string-table-index)))
+              (mv :bad-string-table-index nil))
              (string-table-offset (- string-table-index 4)) ; 4 for the string table size
              ;; (- (cw "string-table-offset: ~x0" string-table-offset))
              )
           ;; todo: check that there are enough bytes:
-          (name-to-string (nthcdr string-table-offset string-table-bytes))))
-    (name-to-string name-bytes)))
+          (mv nil (name-to-string (nthcdr string-table-offset string-table-bytes)))))
+    (mv nil (name-to-string name-bytes))))
 
 ;; Returns (mv erp header bytes).
 ;; TODO: Add the special handling for $ in section names in object files.
 (defun parse-pe-section-header (file-type bytes string-table-bytes)
-  ;;(declare (xargs :guard (member-eq file-type '(:image :object))))
+  (declare (xargs :guard (and (member-eq file-type '(:image :object))
+                              (byte-listp bytes)
+                              (byte-listp string-table-bytes))))
   (b* ((header nil) ;to accumulate results
        ((mv erp name-bytes bytes) (parse-n-bytes 8 bytes))
        ((when erp) (mv erp nil bytes))
        ;; (- (cw "section name-bytes: ~x0~%" name-bytes))
-       (name (decode-section-name name-bytes string-table-bytes))
+       ((mv erp name) (decode-section-name name-bytes string-table-bytes))
+       ((when erp) (mv erp nil bytes))
        (header (acons :name name header))
        ((mv erp virtual-size bytes) (parse-u32 bytes))
        ((when erp) (mv erp nil bytes))
@@ -569,14 +616,23 @@
       (mv nil (reverse header) bytes)))
 
 (defun parse-pe-section-headers (number-of-sections file-type acc bytes string-table-bytes)
-  ;(declare (xargs :guard (member-eq file-type '(:image :object))))
+  (declare (xargs :guard (and (natp number-of-sections)
+                              (member-eq file-type '(:image :object))
+                              (true-listp acc)
+                              (byte-listp bytes)
+                              (byte-listp string-table-bytes))))
   (if (zp number-of-sections)
       (mv nil (reverse acc) bytes)
     (b* (((mv erp section-header bytes) (parse-pe-section-header file-type bytes string-table-bytes))
          ((when erp) (mv erp nil bytes)))
         (parse-pe-section-headers (+ -1 number-of-sections) file-type (cons section-header acc) bytes string-table-bytes))))
 
+;; todo: continue adding and verifying guards from this point
 (defun parse-section (section-header all-bytes len-all-bytes acc)
+  ;; (declare (xargs :guard (and (alistp section-header)
+  ;;                             (byte-listp all-bytes)
+  ;;                             (equal len-all-bytes (len all-bytes))
+  ;;                             (alistp acc))))
   (let* ((name (lookup-eq-safe :name section-header))
          (size-of-raw-data (lookup-eq-safe :size-of-raw-data section-header))
          (pointer-to-raw-data (lookup-eq-safe :pointer-to-raw-data section-header))

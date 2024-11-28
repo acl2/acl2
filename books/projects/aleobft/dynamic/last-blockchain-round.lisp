@@ -60,6 +60,9 @@
 
   ///
 
+  (fty::deffixequiv-sk last-blockchain-round-p
+    :args ((systate system-statep)))
+
   (defruled last-blockchain-round-p-necc-fixing
     (implies (and (last-blockchain-round-p systate)
                   (set::in (address-fix val) (correct-addresses systate)))
@@ -194,8 +197,7 @@
           reachable from an initial state via a sequence of events."
 
   (defruled last-blockchain-round-p-of-events-next
-    (implies (and (system-statep systate)
-                  (last-blockchain-round-p systate)
+    (implies (and (last-blockchain-round-p systate)
                   (events-possiblep events systate))
              (last-blockchain-round-p (events-next events systate)))
     :induct t
@@ -205,8 +207,7 @@
              last-blockchain-round-p-of-event-next))
 
   (defruled last-blockchain-round-p-when-reachable
-    (implies (and (system-statep systate)
-                  (system-initp systate)
+    (implies (and (system-initp systate)
                   (events-possiblep events systate))
              (last-blockchain-round-p (events-next events systate)))
     :disable ((:e tau-system))

@@ -85,7 +85,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule certificate-set-unequivocalp-of-certificates-with-authors
+(defruled certificate-set-unequivocalp-of-certificates-with-authors
   :short "The certificates with given authors of an unequivocal DAG
           is also an unequivocal set of certificates."
   :long
@@ -103,7 +103,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule certificate-set-unequivocalp-of-certificates-with-round
+(defruled certificate-set-unequivocalp-of-certificates-with-round
   :short "The certificates with a given round of an unequivocal DAG
           is also an unequivocal set of certificates."
   :long
