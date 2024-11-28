@@ -5619,7 +5619,9 @@
             ((erp & next-types table)
              (valid-expr-option stmt.next table ienv))
             (table (valid-push-scope table))
-            ((erp body-types & table) (valid-stmt stmt.body table ienv)))
+            ((erp body-types & table) (valid-stmt stmt.body table ienv))
+            (table (valid-pop-scope table))
+            (table (valid-pop-scope table)))
          (retok (set::union init-types
                             (set::union test-types
                                         (set::union next-types
@@ -5639,7 +5641,9 @@
             ((erp & next-types table)
              (valid-expr-option stmt.next table ienv))
             (table (valid-push-scope table))
-            ((erp body-types & table) (valid-stmt stmt.body table ienv)))
+            ((erp body-types & table) (valid-stmt stmt.body table ienv))
+            (table (valid-pop-scope table))
+            (table (valid-pop-scope table)))
          (retok (set::union init-types
                             (set::union test-types
                                         (set::union next-types
