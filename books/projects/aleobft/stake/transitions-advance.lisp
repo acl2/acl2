@@ -145,22 +145,29 @@
      so we add an explicit check,
      which turns out to be superfluous under that invariant.")
    (xdoc::p
-    "Above we said `more than @($f$)',
-     which is equivalent to `at least @($f+1$).
+    "Above we say `more than @($f$)', which is equivalent to `at least @($f+1$).
      The latter is more common when talking about numbers of validators,
      because it often is exactly @($f+1$),
      but with stake it seems cleaner to talk about @($f$),
-     since generally stake does not align exactly that way."))
+     since generally stake does not align exactly that way.")
+   (xdoc::p
+    "To satisfy the guard of @(tsee leader-at-round),
+     we check that the committee at the even round is not empty.
+     If it is empty, there is no leader, and no leader certificate;
+     it is similar to the case in which
+     there is a leader but no leader certificate."))
   (b* (((unless (set::in (address-fix val) (correct-addresses systate)))
         nil)
        ((validator-state vstate) (get-validator-state val systate))
+       ((when (= vstate.round 1))
+        t)
        (commtt (active-committee-at-round vstate.round vstate.blockchain))
        ((unless commtt)
-        nil)
-       ((when (= vstate.round 1))
-        t))
+        nil))
     (if (evenp vstate.round)
-        (b* ((leader (leader-at-round vstate.round commtt))
+        (b* (((unless (committee-nonemptyp commtt))
+              nil)
+             (leader (leader-at-round vstate.round commtt))
              (anchor? (cert-with-author+round leader
                                               vstate.round
                                               vstate.dag))
@@ -173,6 +180,8 @@
                        (committee-quorum-stake commtt)))))
       (b* ((prev-commtt
             (active-committee-at-round (1- vstate.round) vstate.blockchain))
+           ((unless (committee-nonemptyp prev-commtt))
+            nil)
            (leader (leader-at-round (1- vstate.round) prev-commtt))
            (anchor? (cert-with-author+round leader
                                             (1- vstate.round)

@@ -200,10 +200,14 @@
   (xdoc::topstring
    (xdoc::p
     "We show that the intersection of two quora
-     that are both subsets of a committee of total stake @($n$)
+     that are both subsets of a non-empty committee of total stake @($n$)
      have more than @($f$) stake.
      Refer to @(tsee max-faulty-for-total) for
      a description of @($f$) and @($n$).")
+   (xdoc::p
+    "The non-emptiness of the committee is a critical assumption.
+     If the committee is empty, we have @($n = f = 0$),
+     and the intersection does not have a non-zero stake.")
    (xdoc::p
     "Let @($A$) and @($B$) be the two sets of (addresses of) validators
      whose total stakes are @($S(A)$) and @($S(B)$).
@@ -276,6 +280,7 @@
      We also need a lemma, as mentioned earlier."))
   (implies (and (address-setp vals1)
                 (address-setp vals2)
+                (committee-nonemptyp commtt)
                 (set::subset vals1 (committee-members commtt))
                 (set::subset vals2 (committee-members commtt))
                 (>= (committee-members-stake vals1 commtt)
@@ -305,12 +310,12 @@
 
 (defruled quorum-intersection-has-correct-validator
   :short "A quorum intersection has at least one correct validator
-          if the committee is fault-tolerant."
+          if the committee is non-empty and fault-tolerant."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is the main property of quorum intersection.
-     Given a fault-tolerant committee,
+     Given a non-empty fault-tolerant committee,
      and two quora of validators in the committee,
      the function @(tsee pick-common-correct-validator)
      returns a validator that is in both quora and is correct.")
@@ -321,6 +326,7 @@
      a correct validator in both quora."))
   (implies (and (address-setp vals1)
                 (address-setp vals2)
+                (committee-nonemptyp commtt)
                 (committee-fault-tolerant-p commtt systate)
                 (set::subset vals1 (committee-members commtt))
                 (set::subset vals2 (committee-members commtt))
@@ -337,6 +343,7 @@
   ((defruled lemma
      (implies (and (address-setp vals1)
                    (address-setp vals2)
+                   (committee-nonemptyp commtt)
                    (committee-fault-tolerant-p commtt systate)
                    (set::subset vals1 (committee-members commtt))
                    (set::subset vals2 (committee-members commtt))

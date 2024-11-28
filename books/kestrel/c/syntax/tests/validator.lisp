@@ -22,7 +22,7 @@
 ;; INT-BYTES is the number of bytes of ints (default 4).
 ;; LONG-BYTES is the number of bytes of longs (default 8).
 ;; LLONG-BYTES is the number of bytes of long longs (default 8).
-;; PLAIN-SIGNED is T if plain chars are signed, else NIL (which the default).
+;; PLAIN-CHAR-SIGNEDP is T if plain chars are signed, else NIL (the default).
 
 (defmacro test-valid (input &key
                             gcc
@@ -30,7 +30,7 @@
                             int-bytes
                             long-bytes
                             llong-bytes
-                            plain-signed)
+                            plain-char-signedp)
   `(assert-event
     (b* ((short-bytes (or ,short-bytes 2))
          (int-bytes (or ,int-bytes 4))
@@ -40,12 +40,12 @@
                           :int-bytes int-bytes
                           :long-bytes long-bytes
                           :llong-bytes llong-bytes
-                          :plain-char-signedp ,plain-signed))
+                          :plain-char-signedp ,plain-char-signedp))
          ((mv erp1 ast) (parse-file (filepath "test")
                                     (acl2::string=>nats ,input)
                                     ,gcc))
          ((mv erp2 ast) (dimb-transunit ast ,gcc))
-         ((mv erp3 &) (valid-transunit ast ienv)))
+         ((mv erp3 &) (valid-transunit ast ,gcc ienv)))
       (cond (erp1 (cw "~%PARSER ERROR: ~@0~%" erp1))
             (erp2 (cw "~%DISAMBIGUATOR ERROR: ~@0~%" erp2))
             (erp3 (cw "~%VALIDATOR ERROR: ~@0~%" erp3))
@@ -57,7 +57,7 @@
                                  int-bytes
                                  long-bytes
                                  llong-bytes
-                                 plain-signed)
+                                 plain-char-signedp)
   `(assert-event
     (b* ((short-bytes (or ,short-bytes 2))
          (int-bytes (or ,int-bytes 4))
@@ -67,12 +67,12 @@
                           :int-bytes int-bytes
                           :long-bytes long-bytes
                           :llong-bytes llong-bytes
-                          :plain-char-signedp ,plain-signed))
+                          :plain-char-signedp ,plain-char-signedp))
          ((mv erp1 ast) (parse-file (filepath "test")
                                     (acl2::string=>nats ,input)
                                     ,gcc))
          ((mv erp2 ast) (dimb-transunit ast ,gcc))
-         ((mv erp3 &) (valid-transunit ast ienv)))
+         ((mv erp3 &) (valid-transunit ast ,gcc ienv)))
       (cond (erp1 (not (cw "~%PARSER ERROR: ~@0~%" erp1)))
             (erp2 (not (cw "~%DISAMBIGUATOR ERROR: ~@0~%" erp2)))
             (erp3 (not (cw "~%VALIDATOR ERROR: ~@0~%" erp3)))
@@ -348,4 +348,19 @@
 (test-valid-fail
  "int f();
   static int f();
+")
+
+(test-valid
+ "typedef unsigned short __uint16_t;
+static __inline __uint16_t
+__bswap_16 (__uint16_t __bsx)
+{
+  return 0;
+}
+"
+ :gcc t)
+
+(test-valid
+ "typedef unsigned char uint8_t;
+static uint8_t g_2[2][1][1] = {{{0UL}},{{0UL}}};
 ")

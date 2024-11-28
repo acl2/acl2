@@ -33,7 +33,7 @@
     "In AleoBFT, certificates are created through an exchange of messages
      involving proposals, signatures, and certificates,
      following the Narwhal protocol, which AleoBFT is based on.
-     Currently we model certificate creation as one atomic event,
+     Currently we model certificate creation as an atomic event,
      which abstracts the aforementioned message exchange process.
      Our @('create') event ``instantly'' creates a certificates,
      and broadcasts it to the other validators.
@@ -145,7 +145,18 @@
      it must have no references to previous certificates,
      because there is no round 0.
      If the round of the certificate is not 1,
-     the following two additional requirements apply.")
+     the following three additional requirements apply.")
+   (xdoc::p
+    "There must be at least one reference to a previous certificate.
+     This serves to ensure, indirectly,
+     that the committee at the previous round is not empty,
+     and in general that there are no blocks with an empty active committee.
+     It is an invariant, proved elsewhere,
+     that the authors of certificates in DAGs
+     are members of the active committees at their rounds:
+     thus, the non-emptiness of the set of previous certificate references
+     implies, with this invariant,
+     that the committee at the previous round has at least one member.")
    (xdoc::p
     "The signer's DAG must include
      all the previous certificates referenced by the certificate.
@@ -201,6 +212,8 @@
         nil)
        ((when (= cert.round 1))
         (set::emptyp cert.previous))
+       ((when (set::emptyp cert.previous))
+        nil)
        ((unless (set::subset cert.previous
                              (certificate-set->author-set
                               (certs-with-round (1- cert.round) vstate.dag))))

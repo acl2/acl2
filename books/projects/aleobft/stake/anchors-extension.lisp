@@ -90,6 +90,7 @@
      and the induction hypothesis ensures equality."))
   (implies (and (certificate-setp dag)
                 (dag-has-committees-p dag blockchain)
+                (dag-in-committees-p dag blockchain)
                 (set::in anchor dag)
                 (evenp (certificate->round anchor))
                 (equal (certificate->author anchor)
@@ -128,6 +129,7 @@
   :enable (collect-anchors
            active-committee-at-earlier-round-when-at-later-round
            path-to-author+round-in-dag
+           committee-nonemptyp-when-dag-in-committees-p
            append
            evenp)
   :hints ('(:use ((:instance dag-omni-paths-p-necc
@@ -148,6 +150,7 @@
      a wrapper of @(tsee collect-anchors)."))
   (implies (and (certificate-setp dag)
                 (dag-has-committees-p dag blockchain)
+                (dag-in-committees-p dag blockchain)
                 (set::in anchor dag)
                 (evenp (certificate->round anchor))
                 (equal (certificate->author anchor)
@@ -199,6 +202,8 @@
                 (dag-closedp dag2)
                 (dag-has-committees-p dag1 blockchain1)
                 (dag-has-committees-p dag2 blockchain2)
+                (dag-in-committees-p dag1 blockchain1)
+                (dag-in-committees-p dag2 blockchain2)
                 (same-active-committees-p blockchain1 blockchain2)
                 (set::in anchor1 dag1)
                 (evenp (certificate->round anchor1))

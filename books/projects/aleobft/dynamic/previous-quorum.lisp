@@ -42,7 +42,7 @@
      in which case there must be no references.")
    (xdoc::p
     "When a certificate is received via a @('receive-certificate') event,
-     that event's preconditions impose a similar requirements.")
+     that event's preconditions impose a similar requirement.")
    (xdoc::p
     "Thus, all the certificates accepted by a validator
      satisfy that requirement.
@@ -80,7 +80,7 @@
    (xdoc::p
     "This is used by @(tsee previous-quorum-p) to define our invariant.
      The validator whose state is @('vstate') is
-     the one that has the accepted certificate.
+     the one that has accepted the certificate.
      The guard ensures that the validator can calculate the committee.")
    (xdoc::p
     "We prove a theorem about the cardinality of the predecessors of @('cert'),

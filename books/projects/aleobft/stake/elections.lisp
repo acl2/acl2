@@ -62,7 +62,7 @@
   (xdoc::topstring
    (xdoc::p
     "We introduce a constrained function that,
-     given a round number and a committee,
+     given a round number and a non-empty committee,
      returns an address in the committee.
      This is the chosen leader at that round.")
    (xdoc::p
@@ -75,7 +75,8 @@
     (((leader-at-round * *) => *
       :formals (round commtt)
       :guard (and (posp round)
-                  (committeep commtt))))
+                  (committeep commtt)
+                  (committee-nonemptyp commtt))))
 
     (local
      (defun leader-at-round (round commtt)
@@ -86,8 +87,10 @@
       (addressp (leader-at-round round commtt)))
 
     (defrule leader-in-committee
-      (set::in (leader-at-round round commtt) (committee-members commtt))
-      :enable not-emptyp-of-committee-members)
+      (implies (committee-nonemptyp commtt)
+               (set::in (leader-at-round round commtt)
+                        (committee-members commtt)))
+      :enable committee-nonemptyp)
 
     (defrule leader-at-round-of-pos-fix
       (equal (leader-at-round (pos-fix round) commtt)
@@ -114,7 +117,7 @@
      as returned by @(tsee leader-at-round).
      The @('voters') input to this function
      is the set of all the certificates in the DAG
-     who are members of the committee active
+     whose authors are members of the committee active
      at the immediately following odd round:
      these are all the possible voters for the leader.
      The @('commtt') input to this function
