@@ -769,7 +769,7 @@
    decl
    :decl (and (not decl.extension)
               (b* (((mv okp tyspecs storspecs)
-                    (check-decl-spec-list-all-typespec/storspec decl.specs)))
+                    (check-decl-spec-list-all-typespec/stoclass decl.specs)))
                 (and okp
                      (type-spec-list-formalp tyspecs)
                      (stor-spec-list-formalp storspecs)))

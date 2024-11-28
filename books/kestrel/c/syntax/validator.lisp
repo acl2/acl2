@@ -3388,10 +3388,10 @@
       (spec/qual-case
        specqual
        :typespec (valid-type-spec specqual.spec type? tyspecs table ienv)
-       :tyqual (retok (type-option-fix type?)
-                      (type-spec-list-fix tyspecs)
-                      nil
-                      (valid-table-fix table))
+       :typequal (retok (type-option-fix type?)
+                        (type-spec-list-fix tyspecs)
+                        nil
+                        (valid-table-fix table))
        :align (b* (((erp types table)
                     (valid-align-spec specqual.spec table ienv)))
                 (retok (type-option-fix type?)

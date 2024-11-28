@@ -233,7 +233,7 @@
     :short "Check if a specifier or qualifier is unambiguous."
     (spec/qual-case specqual
                     :typespec (type-spec-unambp specqual.spec)
-                    :tyqual t
+                    :typequal t
                     :align (align-spec-unambp specqual.spec)
                     :attrib t)
     :measure (spec/qual-count specqual))
@@ -1101,9 +1101,9 @@
            (type-spec-unambp tyspec))
     :expand (spec/qual-unambp (spec/qual-typespec tyspec)))
 
-  (defrule spec/qual-unambp-when-tyqual/attrib
+  (defrule spec/qual-unambp-when-typequal/attrib
     (implies (member-eq (spec/qual-kind spec/qual)
-                        '(:tyqual :attrib))
+                        '(:typequal :attrib))
              (spec/qual-unambp spec/qual)))
 
   (defrule spec/qual-unambp-of-spec/qual-align
@@ -2528,14 +2528,14 @@
     :induct t
     :enable check-decl-spec-list-all-typespec)
 
-  (defrule type-spec-list-unambp-of-check-decl-spec-list-all-typespec/storspec
+  (defrule type-spec-list-unambp-of-check-decl-spec-list-all-typespec/stoclass
     (b* (((mv okp tyspecs &)
-          (check-decl-spec-list-all-typespec/storspec declspecs)))
+          (check-decl-spec-list-all-typespec/stoclass declspecs)))
       (implies (and (decl-spec-list-unambp declspecs)
                     okp)
                (type-spec-list-unambp tyspecs)))
     :induct t
-    :enable check-decl-spec-list-all-typespec/storspec))
+    :enable check-decl-spec-list-all-typespec/stoclass))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

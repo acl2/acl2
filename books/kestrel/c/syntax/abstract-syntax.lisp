@@ -1847,7 +1847,7 @@
       "As a GCC extension, we include attribute specifiers.
        See our ABNF grammar."))
     (:typespec ((spec type-spec)))
-    (:tyqual ((qual type-qual)))
+    (:typequal ((qual type-qual)))
     (:align ((spec align-spec)))
     (:attrib ((spec attrib-spec))) ; GCC extension
     :pred spec/qual-p

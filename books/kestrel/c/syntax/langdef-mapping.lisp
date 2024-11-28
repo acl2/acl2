@@ -1182,7 +1182,7 @@
                       for tag (i.e. structure/union/enumeration) ~
                       declaration.")))
        ((mv okp tyspecs stor-specs)
-        (check-decl-spec-list-all-typespec/storspec declspecs))
+        (check-decl-spec-list-all-typespec/stoclass declspecs))
        ((unless okp)
         (reterr (msg "Unsupported declaration specifiers ~x0 ~
                       for object declaration."

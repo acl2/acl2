@@ -278,7 +278,7 @@
     (spec/qual-case
      specqual
      :typespec (spec/qual-typespec (simpadd0-type-spec specqual.spec))
-     :tyqual (spec/qual-fix specqual)
+     :typequal (spec/qual-fix specqual)
      :align (spec/qual-align (simpadd0-align-spec specqual.spec))
      :attrib (spec/qual-fix specqual))
     :measure (spec/qual-count specqual))

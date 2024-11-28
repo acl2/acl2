@@ -9986,7 +9986,7 @@
                 ;; If we have already seen a type specifier,
                 ;; this must be a type qualifier.
                 (b* ((parstate (unread-token parstate))) ; _Atomic
-                  (retok (spec/qual-tyqual (type-qual-atomic))
+                  (retok (spec/qual-typequal (type-qual-atomic))
                          span
                          parstate))
               ;; If we have not already seen a type specifier,
@@ -10005,7 +10005,7 @@
            (t ; _Atomic other
             (b* ((parstate ; _Atomic
                   (if token2 (unread-token parstate) parstate)))
-              (retok (spec/qual-tyqual (type-qual-atomic))
+              (retok (spec/qual-typequal (type-qual-atomic))
                      span
                      parstate))))))
        ;; If token is the keyword struct,
@@ -10077,7 +10077,7 @@
        ;; If token is a type qualifier, which is always a single keyword,
        ;; we have that type qualifier.
        ((token-type-qualifier-p token) ; tyqual
-        (retok (spec/qual-tyqual (token-to-type-qualifier token))
+        (retok (spec/qual-typequal (token-to-type-qualifier token))
                span
                parstate))
        ;; If token is the keyword _Alignas,

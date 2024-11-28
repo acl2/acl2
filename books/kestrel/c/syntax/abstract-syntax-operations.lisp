@@ -1084,7 +1084,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define check-decl-spec-list-all-typespec/storspec ((declspecs decl-spec-listp))
+(define check-decl-spec-list-all-typespec/stoclass ((declspecs decl-spec-listp))
   :returns (mv (yes/no booleanp)
                (tyspecs type-spec-listp)
                (stor-specs stor-spec-listp))
@@ -1100,7 +1100,7 @@
        (declspec (car declspecs))
        ((when (decl-spec-case declspec :typespec))
         (b* (((mv yes/no tyspecs stor-specs)
-              (check-decl-spec-list-all-typespec/storspec (cdr declspecs))))
+              (check-decl-spec-list-all-typespec/stoclass (cdr declspecs))))
           (if yes/no
               (mv t
                   (cons (decl-spec-typespec->spec declspec) tyspecs)
@@ -1108,7 +1108,7 @@
             (mv nil nil nil))))
        ((when (decl-spec-case declspec :stoclass))
         (b* (((mv yes/no tyspecs stor-specs)
-              (check-decl-spec-list-all-typespec/storspec (cdr declspecs))))
+              (check-decl-spec-list-all-typespec/stoclass (cdr declspecs))))
           (if yes/no
               (mv t
                   tyspecs

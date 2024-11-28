@@ -929,7 +929,7 @@
    `(spec/qual-case
       specqual
       :typespec (spec/qual-typespec (,(cdr (assoc-eq 'type-spec names)) specqual.spec ,@extra-args-names))
-      :tyqual (spec/qual-fix specqual)
+      :typequal (spec/qual-fix specqual)
       :align (spec/qual-align (,(cdr (assoc-eq 'align-spec names)) specqual.spec ,@extra-args-names))
       :attrib (spec/qual-fix specqual))
    '(:returns (new-specqual spec/qual-p)
