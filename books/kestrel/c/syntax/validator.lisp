@@ -3405,11 +3405,11 @@
     (b* (((reterr) nil nil nil (irr-valid-table)))
       (spec/qual-case
        specqual
-       :tyspec (valid-type-spec specqual.spec type? tyspecs table ienv)
-       :tyqual (retok (type-option-fix type?)
-                      (type-spec-list-fix tyspecs)
-                      nil
-                      (valid-table-fix table))
+       :typespec (valid-type-spec specqual.spec type? tyspecs table ienv)
+       :typequal (retok (type-option-fix type?)
+                        (type-spec-list-fix tyspecs)
+                        nil
+                        (valid-table-fix table))
        :align (b* (((erp types table)
                     (valid-align-spec specqual.spec table ienv)))
                 (retok (type-option-fix type?)
@@ -3577,19 +3577,19 @@
                         (rcons declspec.spec (stor-spec-list-fix storspecs))
                         nil
                         (valid-table-fix table))
-       :tyspec (b* (((erp type? tyspecs types table)
-                     (valid-type-spec
-                      declspec.spec type? tyspecs table ienv)))
-                 (retok type?
-                        tyspecs
+       :typespec (b* (((erp type? tyspecs types table)
+                       (valid-type-spec
+                        declspec.spec type? tyspecs table ienv)))
+                   (retok type?
+                          tyspecs
+                          (stor-spec-list-fix storspecs)
+                          types
+                          table))
+       :typequal (retok (type-option-fix type?)
+                        (type-spec-list-fix tyspecs)
                         (stor-spec-list-fix storspecs)
-                        types
-                        table))
-       :tyqual (retok (type-option-fix type?)
-                      (type-spec-list-fix tyspecs)
-                      (stor-spec-list-fix storspecs)
-                      nil
-                      (valid-table-fix table))
+                        nil
+                        (valid-table-fix table))
        :function (retok (type-option-fix type?)
                         (type-spec-list-fix tyspecs)
                         (stor-spec-list-fix storspecs)
@@ -4347,7 +4347,7 @@
             ((erp more-types table)
              (if (equal dirdeclor.params
                         (list (make-paramdecl
-                               :spec (list (decl-spec-tyspec (type-spec-void)))
+                               :spec (list (decl-spec-typespec (type-spec-void)))
                                :decl (paramdeclor-none))))
                  (retok nil table)
                (valid-paramdecl-list
@@ -4531,7 +4531,7 @@
             ((erp more-types table)
              (if (equal dirabsdeclor.params
                         (list (make-paramdecl
-                               :spec (list (decl-spec-tyspec (type-spec-void)))
+                               :spec (list (decl-spec-typespec (type-spec-void)))
                                :decl (paramdeclor-none))))
                  (retok nil table)
                (valid-paramdecl-list dirabsdeclor.params nil table ienv)))

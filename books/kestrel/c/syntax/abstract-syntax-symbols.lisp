@@ -134,7 +134,7 @@
     spec/qual-fix
     spec/qual-count
     spec/qual-case
-    spec/qual-tyspec
+    spec/qual-typespec
     spec/qual-align
     spec/qual-attrib
 
@@ -154,7 +154,7 @@
     decl-spec-fix
     decl-spec-count
     decl-spec-case
-    decl-spec-tyspec
+    decl-spec-typespec
     decl-spec-align
     decl-spec-attrib
 
