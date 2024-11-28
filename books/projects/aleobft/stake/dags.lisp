@@ -796,7 +796,13 @@
    (xdoc::p
     "We prove a theorem saying that, under this predicate,
      the authors of all the certificates in any given round
-     are members of the committee at that round."))
+     are members of the committee at that round.")
+   (xdoc::p
+    "We prove a theorem saying that, under this predicate,
+     given a certificate in the DAG,
+     the committee at that round is not empty.
+     The reason is that the author of that certificate
+     must be in the committee."))
   (forall (cert)
           (implies (set::in cert dag)
                    (set::in (certificate->author cert)
@@ -816,12 +822,10 @@
                        (active-committee-at-round
                         (certificate->round cert)
                         blockchain))))
-    :enable dag-in-committees-p-necc
     :disable dag-in-committees-p)
 
   (defrule dag-in-committees-p-of-empty-dag
-    (dag-in-committees-p nil blockchain)
-    :enable dag-in-committees-p)
+    (dag-in-committees-p nil blockchain))
 
   (defruled dag-in-committees-p-of-insert
     (equal (dag-in-committees-p (set::insert cert dag) blockchain)
@@ -916,6 +920,18 @@
                     (certs (certs-with-round round dag)))
     :enable certificate-set->round-set-of-certs-with-round
     :disable (dag-in-committees-p
+              dag-in-committees-p-necc))
+
+  (defruled committee-nonemptyp-when-dag-in-committees-p
+    (implies (and (dag-in-committees-p dag blockchain)
+                  (set::in cert dag))
+             (committee-nonemptyp
+              (active-committee-at-round
+               (certificate->round cert)
+               blockchain)))
+    :enable committee-nonemptyp
+    :use dag-in-committees-p-necc
+    :disable (dag-in-committees-p
               dag-in-committees-p-necc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -941,8 +957,8 @@
               (dag-in-committees-p dag blockchain))
   :returns (yes/no booleanp)
   :short "Check if the total stake of the precedessor certificates
-          of each certificate in a DAG at a round later than 1 is at least
-          the quorum stake of the active committee at the previous round."
+          of each certificate in a DAG at a round later than 1 is non-zero and
+          at least the quorum of the active committee at the previous round."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -955,23 +971,21 @@
    (xdoc::p
     "This is an invariant of the DAGs of validators, as proved elsewhere.")
    (xdoc::p
-    "Since committees are never empty by definition,
-     the quorum stake is always positive,
-     as proved in the return theorem of @(tsee committee-quorum-stake).
-     Thus, this predicate guarantees that
-     certificates in rounds above 1
-     have at least one predecessor."))
+    "The fact that the stake is non-zero implies that
+     there is at least one predecessor."))
   (forall (cert)
           (implies (and (set::in cert dag)
                         (not (equal (certificate->round cert) 1)))
                    (b* ((commtt (active-committee-at-round
                                  (1- (certificate->round cert))
-                                 blockchain)))
-                     (>= (committee-members-stake
-                          (certificate-set->author-set
-                           (predecessors cert dag))
-                          commtt)
-                         (committee-quorum-stake commtt)))))
+                                 blockchain))
+                        (stake (committee-members-stake
+                                (certificate-set->author-set
+                                 (predecessors cert dag))
+                                commtt)))
+                     (and (> stake 0)
+                          (>= stake
+                              (committee-quorum-stake commtt))))))
   :guard-hints
   (("Goal"
     :use (:instance authors-at-same-round-in-committee-when-dag-in-committees-p
@@ -994,14 +1008,7 @@
                   (set::in cert dag)
                   (not (equal (certificate->round cert) 1)))
              (not (set::emptyp (predecessors cert dag))))
-    :use (dag-predecessor-quorum-p-necc
-          (:instance committee-members-stake-0-to-emptyp
-                     (members
-                      (certificate-set->author-set (predecessors cert dag)))
-                     (commtt
-                      (active-committee-at-round
-                       (+ -1 (certificate->round cert))
-                       blockchain))))
+    :use dag-predecessor-quorum-p-necc
     :disable (dag-predecessor-quorum-p
               dag-predecessor-quorum-p-necc)))
 

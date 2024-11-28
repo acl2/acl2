@@ -122,6 +122,13 @@
      in order to make the quorum check,
      the validator must be able to calculate that active committee.")
    (xdoc::p
+    "We also ensure that there is at least
+     one reference to previous certificates,
+     unless the certificate round is 1.
+     As in @(tsee create-signer-possiblep),
+     this indirectly ensures the non-emptiness of
+     the committee at the round just before the certificate.")
+   (xdoc::p
     "The address @('val') of the validator indicated in the event
      must be a correct validator of the system.
      The certificate must be in the buffer of the validator.
@@ -150,6 +157,8 @@
         nil)
        ((when (= cert.round 1))
         (set::emptyp cert.previous))
+       ((when (set::emptyp cert.previous))
+        nil)
        (prev-commtt
         (active-committee-at-round (1- cert.round) vstate.blockchain))
        ((unless (set::subset cert.previous

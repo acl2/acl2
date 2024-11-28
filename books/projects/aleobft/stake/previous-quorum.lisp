@@ -27,7 +27,7 @@
   :parents (correctness)
   :short "Invariant that each certificate in a DAG
           has references to previous certificates
-          that form a quorum in the committee for the previous round,
+          that form a non-zero quorum in the committee for the previous round,
           unless the round is 1,
           in which case there are no references to previous certificates."
   :long
@@ -35,12 +35,12 @@
    (xdoc::p
     "When a new certificate is created via a @('create') event,
      that event's preconditions require that the certificate includes
-     a quorum of references to certificates in the previous round,
+     a non-zero quorum of references to certificates in the previous round,
      unless the certificate round is 1,
      in which case there must be no references.")
    (xdoc::p
     "When a certificate is stored into the DAG via a @('store') event,
-     that event's preconditions impose a similar requirements.")
+     that event's preconditions impose a similar requirement.")
    (xdoc::p
     "Thus, all the certificates in a validator's DAG satisfy that requirement.
      The other events do not modify DAGs.")
@@ -67,7 +67,7 @@
           or the round is not 1 and
           the certificate's references to previous certificates
           are in the committee for the round just before the certificate round
-          and form a quorum in that committee,
+          and form a non-zero quorum in that committee,
           where the committee is calculated by a validator
           (represented by its state)."
   :long
@@ -75,8 +75,10 @@
    (xdoc::p
     "This is used by @(tsee previous-quorum-p) to define our invariant.
      The validator whose state is @('vstate') is
-     the one that has the accepted certificate.
-     The guard ensures that the validator can calculate the committee.")
+     the one that has the certificate in the DAG.
+     The guard ensures that the validator can calculate the committee.
+     We check the non-zeroness of the quorum,
+     we equivalently check the non-emptiness of the previous references.")
    (xdoc::p
     "We prove a theorem about the predecessors of @('cert'),
      which we use to prove @(tsee dag-predecessor-quorum-p)
@@ -100,7 +102,8 @@
         (set::emptyp cert.previous)
       (b* ((commtt
             (active-committee-at-round (1- cert.round) vstate.blockchain)))
-        (and (set::subset cert.previous
+        (and (not (set::emptyp cert.previous))
+             (set::subset cert.previous
                           (committee-members commtt))
              (>= (committee-members-stake cert.previous commtt)
                  (committee-quorum-stake commtt))))))
@@ -116,16 +119,19 @@
                   (not (equal (certificate->round cert) 1)))
              (b* ((commtt (active-committee-at-round
                            (1- (certificate->round cert))
-                           (validator-state->blockchain vstate))))
-               (>= (committee-members-stake
-                    (certificate-set->author-set
-                     (predecessors cert (validator-state->dag vstate)))
-                    commtt)
-                   (committee-quorum-stake commtt))))
+                           (validator-state->blockchain vstate)))
+                  (stake (committee-members-stake
+                          (certificate-set->author-set
+                           (predecessors cert (validator-state->dag vstate)))
+                          commtt)))
+               (and (> stake 0)
+                    (>= stake
+                        (committee-quorum-stake commtt)))))
     :enable (predecessors
              certs-with-authors+round-to-authors-of-round
              certificate-set->author-set-of-certs-with-authors
              certificate-previous-in-dag-p
+             committee-members-stake-0-to-emptyp-members
              set::expensive-rules)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -134,12 +140,12 @@
   :guard (dag-committees-p systate)
   :returns (yes/no booleanp)
   :short "Definition of the invariant:
-          for each certificate accepted by a validator,
+          for each certificate in the DAG of each validator,
           either the certificate's round is 1
           and the certificate has no references to previous certificates,
           or the certificate's round is not 1
           and the references to previous certificates
-          form a quorum in the committee of
+          form a non-zero quorum in the committee of
           the preceding round of the certificate."
   :long
   (xdoc::topstring
