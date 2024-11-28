@@ -54,7 +54,7 @@
                     (* (fp-arith-triple->rational x)
                        (fp-arith-triple->rational y))))
     :hints (("Goal" :in-theory (enable fp-arith-triple->rational
-                                      b-xor))))
+                                       b-xor))))
 
   (local (defthm posp-expt
            (implies (natp x)
@@ -68,8 +68,8 @@
                    (unsigned-byte-p y-width (fp-arith-triple->man y)))
               (unsigned-byte-p (+ x-width y-width) (fp-arith-triple->man prod)))
      :hints (("Goal" :in-theory (enable unsigned-byte-p))
-            (and stable-under-simplificationp
-                 '(:nonlinearp t)))))
+             (and stable-under-simplificationp
+                  '(:nonlinearp t)))))
 
   (defret <fn>-unsigned-byte-p
     (implies (and (not product-man-override)
@@ -78,21 +78,24 @@
                   (<= (+ x-width y-width) width)
                   (natp width))
              (unsigned-byte-p width (fp-arith-triple->man prod)))
-    :hints (("Goal" :use <fn>-unsigned-byte-p-lemma
-            :in-theory (disable <fn>-unsigned-byte-p-lemma <fn>)))))
+    :hints (("Goal"
+             :use <fn>-unsigned-byte-p-lemma
+             :in-theory (disable <fn>-unsigned-byte-p-lemma <fn>)))))
 
-(local (defthm equal-0-of-leftshift
-         (implies (natp sh)
-                  (equal (equal 0 (ash x sh))
-                         (zip x)))
-         :hints (("Goal" :in-theory (enable* bitops::ihsext-inductions
-                                            bitops::ihsext-recursive-redefs)))))
+(local
+ (defthm equal-0-of-leftshift
+   (implies (natp sh)
+            (equal (equal 0 (ash x sh))
+                   (zip x)))
+   :hints (("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                       bitops::ihsext-recursive-redefs)))))
 
-(local (defthm logtail-nonzero-by-integer-length
-         (implies (< (nfix n) (integer-length x))
-                  (not (equal 0 (logtail n x))))
-         :hints (("Goal" :in-theory (enable* bitops::ihsext-inductions
-                                            bitops::ihsext-recursive-redefs)))))
+(local
+ (defthm logtail-nonzero-by-integer-length
+   (implies (< (nfix n) (integer-length x))
+            (not (equal 0 (logtail n x))))
+   :hints (("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                       bitops::ihsext-recursive-redefs)))))
 
 (local
  (defret <fn>-nonzero-when-add-core-naive-nonzero
@@ -107,12 +110,13 @@
                  ((fp-arith-triple sum)))
               (implies (not (equal sum-spec.man 0))
                        (not (equal sum.man 0)))))
-   :hints (("Goal" :use ((:instance fp-add-core2-correct-by-normalization-when-big-leftshift
-                                   (size (fp-size 2 nil 1))))
-           :in-theory (e/d (normalize-arith-triple
-                            fp-arith-leftshift
-                            fp-arith-rightshift)
-                           (fp-add-core2-correct-by-normalization-when-big-leftshift))))
+   :hints (("Goal"
+            :use ((:instance fp-add-core2-correct-by-normalization-when-big-leftshift
+                             (size (fp-size 2 nil 1))))
+            :in-theory (e/d (normalize-arith-triple
+                             fp-arith-leftshift
+                             fp-arith-rightshift)
+                            (fp-add-core2-correct-by-normalization-when-big-leftshift))))
    :fn fp-add-core2))
 
 (local
