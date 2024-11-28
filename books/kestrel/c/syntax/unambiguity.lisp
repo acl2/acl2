@@ -270,7 +270,7 @@
     (decl-spec-case declspec
                     :stoclass t
                     :typespec (type-spec-unambp declspec.spec)
-                    :tyqual t
+                    :typequal t
                     :function t
                     :align (align-spec-unambp declspec.spec)
                     :attrib t

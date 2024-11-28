@@ -989,7 +989,7 @@
       declspec
       :stoclass (decl-spec-fix declspec)
       :typespec (decl-spec-typespec (,(cdr (assoc-eq 'type-spec names)) declspec.spec ,@extra-args-names))
-      :tyqual (decl-spec-fix declspec)
+      :typequal (decl-spec-fix declspec)
       :function (decl-spec-fix declspec)
       :align (decl-spec-align (,(cdr (assoc-eq 'align-spec names)) declspec.spec ,@extra-args-names))
       :attrib (decl-spec-fix declspec)

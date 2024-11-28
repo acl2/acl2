@@ -3567,11 +3567,11 @@
                           (stor-spec-list-fix storspecs)
                           types
                           table))
-       :tyqual (retok (type-option-fix type?)
-                      (type-spec-list-fix tyspecs)
-                      (stor-spec-list-fix storspecs)
-                      nil
-                      (valid-table-fix table))
+       :typequal (retok (type-option-fix type?)
+                        (type-spec-list-fix tyspecs)
+                        (stor-spec-list-fix storspecs)
+                        nil
+                        (valid-table-fix table))
        :function (retok (type-option-fix type?)
                         (type-spec-list-fix tyspecs)
                         (stor-spec-list-fix storspecs)

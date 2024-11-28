@@ -10282,7 +10282,7 @@
                 ;; If we have already seen a type specifier,
                 ;; this must be a type qualifier.
                 (b* ((parstate (unread-token parstate))) ; _Atomic
-                  (retok (decl-spec-tyqual (type-qual-atomic))
+                  (retok (decl-spec-typequal (type-qual-atomic))
                          span
                          parstate))
               ;; If we have not already seen a type specifier,
@@ -10301,7 +10301,7 @@
            (t ; _Atomic other
             (b* ((parstate ; _Atomic
                   (if token2 (unread-token parstate) parstate)))
-              (retok (decl-spec-tyqual (type-qual-atomic))
+              (retok (decl-spec-typequal (type-qual-atomic))
                      span
                      parstate))))))
        ;; If token is the keyword struct,
@@ -10373,7 +10373,7 @@
        ;; If token is a type qualifier, which is always a single keyword,
        ;; we have that type qualifier.
        ((token-type-qualifier-p token) ; tyqual
-        (retok (decl-spec-tyqual (token-to-type-qualifier token))
+        (retok (decl-spec-typequal (token-to-type-qualifier token))
                span
                parstate))
        ;; If token is a function specifier, which is always a single keyword,

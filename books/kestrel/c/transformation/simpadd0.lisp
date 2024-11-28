@@ -322,7 +322,7 @@
      declspec
      :stoclass (decl-spec-fix declspec)
      :typespec (decl-spec-typespec (simpadd0-type-spec declspec.spec))
-     :tyqual (decl-spec-fix declspec)
+     :typequal (decl-spec-fix declspec)
      :function (decl-spec-fix declspec)
      :align (decl-spec-align (simpadd0-align-spec declspec.spec))
      :attrib (decl-spec-fix declspec)

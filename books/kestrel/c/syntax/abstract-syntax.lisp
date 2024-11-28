@@ -1917,7 +1917,7 @@
        See our ABNF grammar for details."))
     (:stoclass ((spec stor-spec)))
     (:typespec ((spec type-spec)))
-    (:tyqual ((qual type-qual)))
+    (:typequal ((qual type-qual)))
     (:function ((spec fun-spec)))
     (:align ((spec align-spec)))
     (:attrib ((spec attrib-spec))) ; GCC extension
