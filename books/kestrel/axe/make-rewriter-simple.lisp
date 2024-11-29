@@ -5967,7 +5967,8 @@
                              count-hits
                              print
                              normalize-xors
-                             known-booleans)
+                             known-booleans
+                             limits)
       (declare (xargs :guard (and (pseudo-termp term)
                                   (pseudo-term-listp assumptions)
                                   (rule-alistp rule-alist)
@@ -5978,13 +5979,14 @@
                                   (booleanp count-hits)
                                   (print-levelp print)
                                   (booleanp normalize-xors)
-                                  (symbol-listp known-booleans))))
+                                  (symbol-listp known-booleans)
+                                  (rule-limitsp limits))))
       (b* (((mv erp dag) (,simplify-term-name term
                                               assumptions
                                               rule-alist
                                               interpreted-function-alist
                                               known-booleans
-                                              nil ; todo: pass in limits
+                                              limits
                                               monitored-symbols fns-to-elide
                                               memoizep
                                               ;; todo: add context array and other args?
@@ -6007,9 +6009,10 @@
                     (booleanp count-hits)
                     (print-levelp print)
                     (booleanp normalize-xors)
-                    (symbol-listp known-booleans))
-               (pseudo-termp (mv-nth 1 (,simp-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols fns-to-elide memoizep count-hits print normalize-xors known-booleans))))
-      :hints (("Goal" :use (:instance ,(pack$ 'type-of-mv-nth-1-of- simplify-term-name) (limits nil))
+                    (symbol-listp known-booleans)
+                    (rule-limitsp limits))
+               (pseudo-termp (mv-nth 1 (,simp-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols fns-to-elide memoizep count-hits print normalize-xors known-booleans limits))))
+      :hints (("Goal" :use (:instance ,(pack$ 'type-of-mv-nth-1-of- simplify-term-name))
                :do-not '(generalize eliminate-destructors)
                :do-not-induct t
                :in-theory (e/d (,simp-term-name) (,(pack$ 'pseudo-dagp-of-mv-nth-1-of- simplify-term-name))))))
@@ -6029,7 +6032,8 @@
                              count-hits
                              print
                              normalize-xors
-                             known-booleans)
+                             known-booleans
+                             limits)
       (declare (xargs :guard (and (pseudo-term-listp terms)
                                   (pseudo-term-listp assumptions)
                                   (rule-alistp rule-alist)
@@ -6040,7 +6044,8 @@
                                   (booleanp count-hits)
                                   (print-levelp print)
                                   (booleanp normalize-xors)
-                                  (symbol-listp known-booleans))))
+                                  (symbol-listp known-booleans)
+                                  (rule-limitsp limits))))
       (if (endp terms)
           (mv (erp-nil) nil)
         (b* (((mv erp first-res)
@@ -6053,7 +6058,7 @@
                                nil
                                t
                                print
-                               normalize-xors known-booleans))
+                               normalize-xors known-booleans limits))
              ((when erp) (mv erp nil))
              ((mv erp rest-res)
               (,simp-terms-name (rest terms)
@@ -6064,13 +6069,13 @@
                                 memoizep
                                 count-hits
                                 print
-                                normalize-xors known-booleans))
+                                normalize-xors known-booleans limits))
              ((when erp) (mv erp nil)))
           (mv (erp-nil)
               (cons first-res rest-res)))))
 
     (defthm ,(pack$ 'true-listp-of-mv-nth-1-of- simp-terms-name)
-      (true-listp (mv-nth 1 (,simp-terms-name terms assumptions rule-alist interpreted-function-alist monitored-symbols fns-to-elide memoizep count-hits print normalize-xors known-booleans)))
+      (true-listp (mv-nth 1 (,simp-terms-name terms assumptions rule-alist interpreted-function-alist monitored-symbols fns-to-elide memoizep count-hits print normalize-xors known-booleans limits)))
       :rule-classes :type-prescription
       :hints (("Goal" :in-theory (enable ,simp-terms-name))))
 
@@ -6085,8 +6090,9 @@
                     (booleanp count-hits)
                     (print-levelp print)
                     (booleanp normalize-xors)
-                    (symbol-listp known-booleans))
-               (pseudo-term-listp (mv-nth 1 (,simp-terms-name terms assumptions rule-alist interpreted-function-alist monitored-symbols fns-to-elide memoizep count-hits print normalize-xors known-booleans))))
+                    (symbol-listp known-booleans)
+                    (rule-limitsp limits))
+               (pseudo-term-listp (mv-nth 1 (,simp-terms-name terms assumptions rule-alist interpreted-function-alist monitored-symbols fns-to-elide memoizep count-hits print normalize-xors known-booleans limits))))
       :hints (("Goal" :in-theory (enable ,simp-terms-name))))
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

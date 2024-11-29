@@ -42,7 +42,7 @@
                                     (count-hits 't)
                                     (print 't)
                                     (normalize-xors 'nil)
-                                    )
+                                    (limits 'nil))
   `(simp-term-basic ,term
                     ,assumptions
                     ,rule-alist
@@ -54,7 +54,8 @@
                     ,count-hits
                     ,print
                     ,normalize-xors
-                    ,known-booleans))
+                    ,known-booleans
+                    ,limits))
 
 ;; A simple test that applies the rewrite rule CAR-CONS to simplify a term:
 (assert!
@@ -86,14 +87,14 @@
 ;; A test that returns a variable
 (assert!
  (mv-let (erp res)
-   (simp-term-basic '(car (cons x y)) nil (make-rule-alist! '(car-cons) (w state)) nil nil nil nil nil t nil (known-booleans (w state)))
+   (simp-term-basic '(car (cons x y)) nil (make-rule-alist! '(car-cons) (w state)) nil nil nil nil nil t nil (known-booleans (w state)) nil)
    (and (not erp)
         (equal res 'x))))
 
 ;; A test that returns a constant
 (assert!
  (mv-let (erp res)
-   (simp-term-basic '(car (cons '2 y)) nil (make-rule-alist! '(car-cons) (w state)) nil nil nil nil nil t nil (known-booleans (w state)))
+   (simp-term-basic '(car (cons '2 y)) nil (make-rule-alist! '(car-cons) (w state)) nil nil nil nil nil t nil (known-booleans (w state)) nil)
    (and (not erp)
         (equal res ''2))))
 
@@ -116,7 +117,8 @@
                         nil   ; count-hits
                         nil ; print
                         nil ; normalize-xors
-                        (known-booleans (w state)))
+                        (known-booleans (w state))
+                        nil)
        (and (not erp)
             (equal term ',output-term)))))
 
@@ -830,7 +832,8 @@
                     t       ; count-hits
                     t       ; print
                     nil     ; normalize-xors
-                    (known-booleans (w state)))
+                    (known-booleans (w state))
+                    nil)
    (and (not erp) ;no error
         ;; resulting term is (FOO X):
         (equal term '(binary-+ '6 (len y))))))
@@ -848,7 +851,8 @@
                     t       ; count-hits
                     t       ; print
                     nil     ; normalize-xors
-                    (known-booleans (w state)))
+                    (known-booleans (w state))
+                    nil)
    (and (not erp) ;no error
         ;; resulting term is (FOO X):
         (equal term '(len (binary-append '(1 2 3) y))))))
