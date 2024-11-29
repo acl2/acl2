@@ -80,7 +80,9 @@
                                              nil ; count-hits
                                              nil ; print
                                              nil ; normalize-xors
-                                             (acl2::known-booleans wrld)))
+                                             (acl2::known-booleans wrld)
+                                             nil ; limits
+                                             ))
        ((when erp) (er-soft+ ctx t nil
                              "The Axe rewiter failed on the term ~x0, ~
                               with error ~x1 and result ~x2."

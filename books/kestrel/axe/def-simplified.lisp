@@ -133,6 +133,7 @@
                              rule-alist
                              interpreted-function-alist
                              (known-booleans (w state))
+                             nil
                              monitor
                              nil ; fns-to-elide
                              memoizep
