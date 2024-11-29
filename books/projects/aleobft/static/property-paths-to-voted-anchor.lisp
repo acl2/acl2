@@ -228,7 +228,7 @@
 ; are all in the same round, between the two rounds.
 ; This follows mainly from facts about INCOMING and OUTGOING proved elsewhere.
 
-(defrulel incoming+outgoing-subset-same-round
+(defruledl incoming+outgoing-subset-same-round
   (implies (and (certificate-setp dag)
                 (equal (certificate->round cert1)
                        (+ 2 (certificate->round cert))))
