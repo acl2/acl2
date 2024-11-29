@@ -59,11 +59,14 @@
           (implies (set::in val (correct-addresses systate))
                    (dag-closedp
                     (validator-state->dag
-                     (get-validator-state val systate))))))
+                     (get-validator-state val systate)))))
+  ///
+  (fty::deffixequiv-sk backward-closed-p
+    :args ((systate system-statep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule backward-closed-p-when-init
+(defruled backward-closed-p-when-init
   :short "Establishment of the invariant:
           the invariant holds in any initial system state."
   :long
@@ -226,8 +229,7 @@
           reachable from an initial state via a sequence of events."
 
   (defruled backward-closed-p-of-events-next
-    (implies (and (system-statep systate)
-                  (backward-closed-p systate)
+    (implies (and (backward-closed-p systate)
                   (events-possiblep events systate))
              (backward-closed-p (events-next events systate)))
     :induct t
@@ -237,8 +239,7 @@
              backward-closed-p-of-event-next))
 
   (defruled backward-closed-p-when-reachable
-    (implies (and (system-statep systate)
-                  (system-initp systate)
+    (implies (and (system-initp systate)
                   (events-possiblep events systate))
              (backward-closed-p (events-next events systate)))
     :disable ((:e tau-system))
