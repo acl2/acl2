@@ -265,7 +265,7 @@
 ; the number of incoming certificates of CERT and outgoing certificates of CERT1
 ; is bounded by the number of validators, generically represented as VALS here.
 
-(defrulel incoming+outgoing-upper-bound
+(defruledl incoming+outgoing-upper-bound
   (implies (and (certificate-setp dag)
                 (certificate-set-unequivocalp dag)
                 (set::subset (certificate-set->author-set dag)
