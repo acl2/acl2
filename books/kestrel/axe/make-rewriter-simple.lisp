@@ -430,7 +430,7 @@
                                                   rewrite-stobj2 memoization hit-counts tries limits
                                                   node-replacement-array node-replacement-count refined-assumption-alist
                                                   rewrite-stobj count))
-         (call-of-simplify-term `(,simplify-term-name term assumptions rule-alist interpreted-function-alist known-booleans monitored-symbols fns-to-elide memoizep count-hits print normalize-xors))
+         (call-of-simplify-term `(,simplify-term-name term assumptions rule-alist interpreted-function-alist known-booleans limits monitored-symbols fns-to-elide memoizep count-hits print normalize-xors))
 
          )
     `(encapsulate ()
@@ -5747,6 +5747,7 @@
                                  rule-alist
                                  interpreted-function-alist
                                  known-booleans
+                                 limits
                                  monitored-symbols
                                  fns-to-elide
                                  memoizep
@@ -5760,6 +5761,7 @@
                                   (rule-alistp rule-alist)
                                   (interpreted-function-alistp interpreted-function-alist)
                                   (symbol-listp known-booleans)
+                                  (rule-limitsp limits)
                                   (symbol-listp monitored-symbols)
                                   (symbol-listp fns-to-elide)
                                   (booleanp memoizep)
@@ -5847,7 +5849,7 @@
                                                           nil)
                                                         (if (or (not count-hits) (null print)) (no-hit-counting) (if (print-level-at-least-tp print) (empty-hit-counts) (zero-hits)))
                                                         tries
-                                                        nil ; limits ; todo: pass in
+                                                        limits
                                                         node-replacement-array node-replacement-count refined-assumption-alist
                                                         rewrite-stobj
                                                         1000000000 ;count
@@ -5879,7 +5881,8 @@
                     (print-levelp print)
                     (booleanp normalize-xors)
                     (booleanp count-hits)
-                    (symbol-listp known-booleans))
+                    (symbol-listp known-booleans)
+                    (rule-limitsp limits))
                (or (myquotep (mv-nth 1 ,call-of-simplify-term))
                    (pseudo-dagp (mv-nth 1 ,call-of-simplify-term))))
       :rule-classes nil
@@ -5908,7 +5911,8 @@
                     (print-levelp print)
                     (booleanp normalize-xors)
                     (booleanp count-hits)
-                    (symbol-listp known-booleans))
+                    (symbol-listp known-booleans)
+                    (rule-limitsp limits))
                (consp (cdr (mv-nth 1 ,call-of-simplify-term))))
       :hints (("Goal" :use (:instance ,(pack$ 'type-of-mv-nth-1-of- simplify-term-name)))))
 
@@ -5925,7 +5929,8 @@
                     (print-levelp print)
                     (booleanp normalize-xors)
                     (booleanp count-hits)
-                    (symbol-listp known-booleans))
+                    (symbol-listp known-booleans)
+                    (rule-limitsp limits))
                (pseudo-dagp (mv-nth 1 ,call-of-simplify-term)))
       :hints (("Goal" :use (:instance ,(pack$ 'type-of-mv-nth-1-of- simplify-term-name)))))
 
@@ -5942,7 +5947,8 @@
                     (print-levelp print)
                     (booleanp normalize-xors)
                     (booleanp count-hits)
-                    (symbol-listp known-booleans))
+                    (symbol-listp known-booleans)
+                    (rule-limitsp limits))
                (myquotep (mv-nth 1 ,call-of-simplify-term)))
       :hints (("Goal" :use (:instance ,(pack$ 'type-of-mv-nth-1-of- simplify-term-name)))))
 
@@ -5978,6 +5984,7 @@
                                               rule-alist
                                               interpreted-function-alist
                                               known-booleans
+                                              nil ; todo: pass in limits
                                               monitored-symbols fns-to-elide
                                               memoizep
                                               ;; todo: add context array and other args?
@@ -6002,7 +6009,7 @@
                     (booleanp normalize-xors)
                     (symbol-listp known-booleans))
                (pseudo-termp (mv-nth 1 (,simp-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols fns-to-elide memoizep count-hits print normalize-xors known-booleans))))
-      :hints (("Goal" :use (:instance ,(pack$ 'type-of-mv-nth-1-of- simplify-term-name))
+      :hints (("Goal" :use (:instance ,(pack$ 'type-of-mv-nth-1-of- simplify-term-name) (limits nil))
                :do-not '(generalize eliminate-destructors)
                :do-not-induct t
                :in-theory (e/d (,simp-term-name) (,(pack$ 'pseudo-dagp-of-mv-nth-1-of- simplify-term-name))))))

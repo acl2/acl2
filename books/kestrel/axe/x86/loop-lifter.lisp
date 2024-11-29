@@ -807,7 +807,7 @@
        (- (cw "(Proving that there is no overlap between ~x0 bytes starting at ~x1 and ~x2 bytes starting at ~x3.~%" (unquote num-bytes1) base-addr1 (unquote num-bytes2) base-addr2))
        (separation-term `(separate ':r ,num-bytes1 ,base-addr1 ':r ,num-bytes2 ,base-addr2))
        ((mv erp result)
-        (acl2::simplify-term-x86 separation-term assumptions rule-alist nil (acl2::known-booleans (w state)) nil nil nil nil nil nil))
+        (acl2::simplify-term-x86 separation-term assumptions rule-alist nil (acl2::known-booleans (w state)) nil nil nil nil nil nil nil))
        ((when erp) (mv erp nil state)))
     (if (equal result *t*)
         (progn$ (cw "Proved that there is not overlap.)~%")
@@ -1714,7 +1714,7 @@
          (acl2::simplify-term-x86 loop-function-call-term
                                   nil ; assumptions
                                   (acl2::make-rule-alist! (append (extra-loop-lifter-rules) lifter-rules) (w state))
-                                  nil (acl2::known-booleans (w state)) nil nil nil nil nil nil))
+                                  nil (acl2::known-booleans (w state)) nil nil nil nil nil nil nil))
         ((when erp) (mv erp nil nil nil state))
         ;; Write the values computed by the loop back into the state:
         ((mv erp new-state-dag) (acl2::wrap-term-around-dag updated-state-term :loop-function-result loop-function-call-dag))
