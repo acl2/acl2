@@ -125,7 +125,7 @@
 
 (defsection fp-expsize
   :set-as-default-parent t
-  :short "Fp-expsize data dype"
+  :short "Fp-expsize data type"
   (define fp-expsize-p (x)
     :short "Recognizer for @(see fp-expsize)"
     (and (integerp x)
@@ -152,11 +152,10 @@
    (xdoc::set-default-parents fp-common))
 
   (fty::deffixtype fp-expsize
-    :pred fp-expsize-p
-    :fix fp-expsize-fix
-    :equiv fp-expsize-equiv
-    :define t
-    ))
+                   :pred fp-expsize-p
+                   :fix fp-expsize-fix
+                   :equiv fp-expsize-equiv
+                   :define t))
 
 (fty::defflexsum fp-size
   (:fp-size
@@ -2501,15 +2500,13 @@ upper bits that may otherwise be always zero without being syntactically zero."
     (natp bits)
     :rule-classes :type-prescription))
 
-
-
 ;; BOZO We should get rid of either fp-arith-triple-left-normalize or left-normalize-arith-triple
 (define fp-arith-triple-left-normalize ((x fp-arith-triple-p)
                                         (width natp))
   :guard (unsigned-byte-p width (fp-arith-triple->man x))
   :prepwork ((local (defthm unsigned-byte-p-in-terms-of-integer-length
                       (equal (unsigned-byte-p n x)
-                             (And (natp n)
+                             (and (natp n)
                                   (natp x)
                                   (<= (integer-length x) n)))
                       :hints (("Goal" :in-theory (enable* bitops::ihsext-inductions
@@ -2542,8 +2539,6 @@ upper bits that may otherwise be always zero without being syntactically zero."
   (defret <fn>-sign
     (equal (fp-arith-triple->sign new-x)
            (fp-arith-triple->sign x))))
-
-
 
 ;; BOZO We should get rid of either fp-arith-triple-left-normalize or left-normalize-arith-triple
 (define left-normalize-arith-triple ((x fp-arith-triple-p)
@@ -2626,3 +2621,52 @@ upper bits that may otherwise be always zero without being syntactically zero."
     :hints (("Goal" :in-theory (enable fp-arith-triple-negate
                                        fp-arith-leftshift))))
   )
+
+(local
+ (encapsulate
+   nil
+
+   (local (defthm not-equal-by-logbitp-0
+            (implies (not (equal (logbitp 0 (ash x n)) (logbitp 0 (logmask m))))
+                     (not (equal (ash x n) (logmask m))))))
+
+   (local (defthm not-equal-by-integer-length
+            (implies (not (equal (integer-length (logtail n x)) (integer-length (logmask m))))
+                     (not (equal (logtail n x) (logmask m))))
+            :hints (("Goal" :in-theory (disable bitops::integer-length-of-logtail)))))
+
+   (defthm left-normalize-man-is-logmask-means-orig-man
+     (b* (((fp-arith-triple x))
+          ((fp-arith-triple norm) (left-normalize-arith-triple x frac-size)))
+       (implies (and (posp frac-size)
+                     (unsigned-byte-p (+ 1 frac-size) x.man))
+                (iff (equal norm.man (logmask (+ 1 frac-size)))
+                     (equal x.man (logmask (+ 1 frac-size))))))
+     :hints (("Goal" :in-theory (e/d (left-normalize-arith-triple
+                                      fp-arith-leftshift)
+                                     (logmask))
+              :cases ((< 0 (+ 1 (pos-fix frac-size)
+                              (- (integer-length (fp-arith-triple->man x)))))
+                      (> 0 (+ 1 (pos-fix frac-size)
+                              (- (integer-length (fp-arith-triple->man x))))))))
+     :otf-flg t)))
+
+(defthm left-normalize-man-is-max-means-orig-man
+  (b* (((fp-arith-triple x))
+       ((fp-arith-triple norm) (left-normalize-arith-triple x frac-size)))
+    (implies (and (posp frac-size)
+                  (unsigned-byte-p (+ 1 frac-size) x.man))
+             (iff (equal norm.man (+ -1 (* 2 (expt 2 frac-size))))
+                  (equal x.man (+ -1 (* 2 (expt 2 frac-size)))))))
+  :hints (("Goal"
+           :use left-normalize-man-is-logmask-means-orig-man
+           :in-theory (enable logmask))))
+
+(defthmd left-normalize-man-is-max-when-orig-man
+   (b* (((fp-arith-triple x))
+        ((fp-arith-triple norm) (left-normalize-arith-triple x frac-size)))
+     (implies (and (posp frac-size)
+                   (unsigned-byte-p (+ 1 frac-size) x.man)
+                   (equal x.man (+ -1 (* 2 (expt 2 frac-size)))))
+              (equal norm.man (+ -1 (* 2 (expt 2 frac-size))))))
+   :hints (("Goal" :use left-normalize-man-is-max-means-orig-man)))
