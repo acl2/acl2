@@ -2,7 +2,7 @@
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,12 +12,10 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system)
-
-;; todo: move to a book about char-code
-(defthm unsigned-byte-p-of-char-code
-  (unsigned-byte-p 8 (char-code char))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p))))
+(include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system) ; drop?
+(include-book "kestrel/bv-lists/byte-listp-def" :dir :system)
+(local (include-book "kestrel/utilities/char-code" :dir :system))
+(local (include-book "kestrel/bv-lists/byte-listp" :dir :system))
 
 ;; Apply char-code to each element of CHARS, returning a list of bytes
 (defund map-char-code (chars)
@@ -29,6 +27,10 @@
 
 (defthm all-unsigned-byte-p-8-of-map-char-code
   (all-unsigned-byte-p 8 (map-char-code chars))
+  :hints (("Goal" :in-theory (enable map-char-code))))
+
+(defthm byte-listp-of-map-char-code
+  (byte-listp (map-char-code chars))
   :hints (("Goal" :in-theory (enable map-char-code))))
 
 (defthm len-of-map-char-code
