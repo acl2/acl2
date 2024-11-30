@@ -83,7 +83,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule certificate-list-pathp-of-committed-anchors
+(defruled certificate-list-pathp-of-committed-anchors
   :short "The anchors returned by @(tsee committed-anchors)
           are all in the DAG and are all connected by paths."
   (implies (or (equal (validator-state->last vstate) 0)
