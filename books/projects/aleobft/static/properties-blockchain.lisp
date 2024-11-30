@@ -71,7 +71,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule certificate-list-pathp-of-collect-all-anchors
+(defruled certificate-list-pathp-of-collect-all-anchors
   :short "The anchors returned by @(tsee collect-all-anchors)
           are all in the DAG and are all connected by paths."
   (implies (and (certificate-setp dag)
@@ -92,7 +92,8 @@
            (certificate-list-pathp (committed-anchors vstate vals)
                                    (validator-state->dag vstate)))
   :enable (committed-anchors
-           certificate-list-pathp-of-nil))
+           certificate-list-pathp-of-nil
+           certificate-list-pathp-of-collect-all-anchors))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
