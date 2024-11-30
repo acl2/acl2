@@ -40,7 +40,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule certificate-list-pathp-of-collect-anchors
+(defruled certificate-list-pathp-of-collect-anchors
   :short "The anchors returned by @(tsee collect-anchors)
           are all in the DAG and are all connected by paths."
   :long
@@ -78,7 +78,8 @@
                 (set::in last-anchor dag))
            (certificate-list-pathp (collect-all-anchors last-anchor dag vals)
                                    dag))
-  :enable collect-all-anchors)
+  :enable (collect-all-anchors
+           certificate-list-pathp-of-collect-anchors))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
