@@ -121,6 +121,7 @@
            system-previous-in-dag-p-necc
            list-in-when-certificate-list-pathp
            last-anchor-in-dag
+           certificate-list-pathp-of-committed-anchors
            fix)
   :use (system-anchors-nofork-p-necc
         (:instance calculate-blockchain-of-unequivocal-dags

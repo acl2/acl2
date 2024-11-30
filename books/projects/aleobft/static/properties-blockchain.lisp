@@ -40,7 +40,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule certificate-list-pathp-of-collect-anchors
+(defruled certificate-list-pathp-of-collect-anchors
   :short "The anchors returned by @(tsee collect-anchors)
           are all in the DAG and are all connected by paths."
   :long
@@ -71,18 +71,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule certificate-list-pathp-of-collect-all-anchors
+(defruled certificate-list-pathp-of-collect-all-anchors
   :short "The anchors returned by @(tsee collect-all-anchors)
           are all in the DAG and are all connected by paths."
   (implies (and (certificate-setp dag)
                 (set::in last-anchor dag))
            (certificate-list-pathp (collect-all-anchors last-anchor dag vals)
                                    dag))
-  :enable collect-all-anchors)
+  :enable (collect-all-anchors
+           certificate-list-pathp-of-collect-anchors))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule certificate-list-pathp-of-committed-anchors
+(defruled certificate-list-pathp-of-committed-anchors
   :short "The anchors returned by @(tsee committed-anchors)
           are all in the DAG and are all connected by paths."
   (implies (or (equal (validator-state->last vstate) 0)
@@ -91,7 +92,8 @@
            (certificate-list-pathp (committed-anchors vstate vals)
                                    (validator-state->dag vstate)))
   :enable (committed-anchors
-           certificate-list-pathp-of-nil))
+           certificate-list-pathp-of-nil
+           certificate-list-pathp-of-collect-all-anchors))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

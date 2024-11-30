@@ -139,7 +139,8 @@
              list-in-when-certificate-list-pathp
              validator-state->dag-subset-create-certificate-next
              validator-state->blockchain-of-create-certificate-next
-             last-anchor-in-dag)
+             last-anchor-in-dag
+             certificate-list-pathp-of-committed-anchors)
     :use (:instance calculate-blockchain-of-unequivocal-dag-superset
                     (dag (validator-state->dag
                           (get-validator-state val systate)))
@@ -238,7 +239,8 @@
              list-in-when-certificate-list-pathp
              validator-state->dag-subset-store-certificate-next
              validator-state->blockchain-of-store-certificate-next
-             last-anchor-in-dag)
+             last-anchor-in-dag
+             certificate-list-pathp-of-committed-anchors)
     :use (:instance calculate-blockchain-of-unequivocal-dag-superset
                     (dag (validator-state->dag
                           (get-validator-state val systate)))
@@ -348,7 +350,8 @@
              validator-state->dag-of-commit-anchors-next
              validator-state->blockchain-of-commit-anchors-next
              last-anchor-in-dag
-             car-of-committed-anchors)
+             car-of-committed-anchors
+             certificate-list-pathp-of-committed-anchors)
     :use system-committed-redundantp-necc)
 
   (defrule system-blockchain-redundantp-of-commit-anchors-next
