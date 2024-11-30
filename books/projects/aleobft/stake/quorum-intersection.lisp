@@ -152,7 +152,7 @@
              (set::emptyp (set::intersect vals (correct-addresses systate))))
     :induct t
     :enable (set::intersect
-             not-in-address-set-when-not-address))
+             not-in-address-setp-when-not-addressp))
 
   (defruled pick-correct-validator-when-fault-tolerant-p
     (implies (and (address-setp vals)
