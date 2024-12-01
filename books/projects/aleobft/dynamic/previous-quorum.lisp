@@ -112,6 +112,7 @@
              (equal (set::cardinality cert.previous)
                     (committee-quorum commtt))))))
   :guard-hints (("Goal" :in-theory (enable posp)))
+  :hooks (:fix)
 
   ///
 
@@ -170,6 +171,9 @@
                        posp)))
 
   ///
+
+  (fty::deffixequiv-sk previous-quorum-p
+    :args ((systate system-statep)))
 
   (defruled dag-predecessor-cardinality-p-when-previous-quorum-p
     (implies (and (previous-quorum-p systate)
@@ -605,19 +609,18 @@
           reachable from an initial state via a sequence of events."
 
   (defruled previous-quorum-p-of-events-next
-    (implies
-     (and (system-statep systate)
-          (previous-quorum-p systate)
-          (signer-quorum-p systate)
-          (accepted-certificate-committee-p systate)
-          (ordered-even-p systate)
-          (last-blockchain-round-p systate)
-          (events-possiblep events systate))
-     (and (previous-quorum-p (events-next events systate))
-          (signer-quorum-p (events-next events systate))
-          (accepted-certificate-committee-p (events-next events systate))
-          (ordered-even-p (events-next events systate))
-          (last-blockchain-round-p (events-next events systate))))
+    (implies (and (previous-quorum-p systate)
+                  (signer-quorum-p systate)
+                  (accepted-certificate-committee-p systate)
+                  (ordered-even-p systate)
+                  (last-blockchain-round-p systate)
+                  (events-possiblep events systate))
+             (and (previous-quorum-p (events-next events systate))
+                  (signer-quorum-p (events-next events systate))
+                  (accepted-certificate-committee-p
+                   (events-next events systate))
+                  (ordered-even-p (events-next events systate))
+                  (last-blockchain-round-p (events-next events systate))))
     :induct t
     :disable ((:e tau-system))
     :enable (events-possiblep
@@ -629,8 +632,7 @@
              last-blockchain-round-p-of-event-next))
 
   (defruled previous-quorum-p-when-reachable
-    (implies (and (system-statep systate)
-                  (system-initp systate)
+    (implies (and (system-initp systate)
                   (events-possiblep events systate))
              (previous-quorum-p (events-next events systate)))
     :disable ((:e tau-system))
