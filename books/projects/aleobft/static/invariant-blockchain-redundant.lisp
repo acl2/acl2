@@ -140,7 +140,8 @@
              validator-state->dag-subset-create-certificate-next
              validator-state->blockchain-of-create-certificate-next
              last-anchor-in-dag
-             certificate-list-pathp-of-committed-anchors)
+             certificate-list-pathp-of-committed-anchors
+             committed-anchors-of-create-certificate-next)
     :use (:instance calculate-blockchain-of-unequivocal-dag-superset
                     (dag (validator-state->dag
                           (get-validator-state val systate)))
@@ -191,7 +192,8 @@
               (all-addresses systate)))
     :enable (validator-blockchain-redundantp
              validator-state->dag-of-receive-certificate-next
-             validator-state->blockchain-of-receive-certificate-next))
+             validator-state->blockchain-of-receive-certificate-next
+             committed-anchors-of-receive-certificate-next))
 
   (defrule system-blockchain-redundantp-of-receive-certificate-next
     (implies (and (receive-certificate-possiblep msg systate)
@@ -240,7 +242,8 @@
              validator-state->dag-subset-store-certificate-next
              validator-state->blockchain-of-store-certificate-next
              last-anchor-in-dag
-             certificate-list-pathp-of-committed-anchors)
+             certificate-list-pathp-of-committed-anchors
+             committed-anchors-of-store-certificate-next)
     :use (:instance calculate-blockchain-of-unequivocal-dag-superset
                     (dag (validator-state->dag
                           (get-validator-state val systate)))
@@ -289,7 +292,8 @@
               (all-addresses systate)))
     :enable (validator-blockchain-redundantp
              validator-state->dag-of-advance-round-next
-             validator-state->blockchain-of-advance-round-next))
+             validator-state->blockchain-of-advance-round-next
+             committed-anchors-of-advance-round-next))
 
   (defrule system-blockchain-redundantp-of-advance-round-next
     (implies (and (advance-round-possiblep val1 systate)
@@ -351,7 +355,8 @@
              validator-state->blockchain-of-commit-anchors-next
              last-anchor-in-dag
              car-of-committed-anchors
-             certificate-list-pathp-of-committed-anchors)
+             certificate-list-pathp-of-committed-anchors
+             committed-anchors-of-commit-anchors)
     :use system-committed-redundantp-necc)
 
   (defrule system-blockchain-redundantp-of-commit-anchors-next
@@ -390,7 +395,8 @@
               (all-addresses systate)))
     :enable (validator-blockchain-redundantp
              validator-state->dag-of-timer-expires-next
-             validator-state->blockchain-of-timer-expires-next))
+             validator-state->blockchain-of-timer-expires-next
+             committed-anchors-of-timer-expires-next))
 
   (defrule system-blockchain-redundantp-of-timer-expires-next
     (implies (and (timer-expires-possiblep val1 systate)
