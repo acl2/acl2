@@ -72,7 +72,8 @@
            validator-state->dag-subset-create-certificate-next
            validator-state->dag-of-create-certificate-next-same
            validator-state->last-of-create-certificate-next
-           last-anchor-in-dag)
+           last-anchor-in-dag
+           last-anchor-of-create-certificate-next)
   :cases ((equal val (certificate->author cert)))
   :use ((:instance collect-all-anchors-of-unequivocal-dag-superset
                    (vals (all-addresses systate))
@@ -111,7 +112,8 @@
                                      (all-addresses systate))))
   :enable (committed-anchors
            validator-state->dag-of-receive-certificate-next
-           validator-state->last-of-receive-certificate-next))
+           validator-state->last-of-receive-certificate-next
+           last-anchor-of-receive-certificate-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -148,7 +150,8 @@
            system-last-anchor-present-p-necc
            validator-state->dag-subset-store-certificate-next
            validator-state->last-of-store-certificate-next
-           last-anchor-in-dag)
+           last-anchor-in-dag
+           last-anchor-of-store-certificate-next)
   :use (:instance collect-all-anchors-of-unequivocal-dag-superset
                   (vals (all-addresses systate))
                   (last-anchor
@@ -182,7 +185,8 @@
                                      (all-addresses systate))))
   :enable (committed-anchors
            validator-state->dag-of-advance-round-next
-           validator-state->last-of-advance-round-next))
+           validator-state->last-of-advance-round-next
+           last-anchor-of-advance-round-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -242,7 +246,8 @@
            validator-state->last-of-commit-anchors-next
            certificate->author-of-last-anchor
            certificate->round-of-last-anchor
-           last-anchor-in-dag)
+           last-anchor-in-dag
+           last-anchor-of-commit-anchors-next)
   :use (:instance collect-all-anchors-to-append-of-collect-anchors
                   (anchor (last-anchor (get-validator-state val systate)
                                        (all-addresses systate)))
@@ -289,4 +294,5 @@
                                      (all-addresses systate))))
   :enable (committed-anchors
            validator-state->dag-of-timer-expires-next
-           validator-state->last-of-timer-expires-next))
+           validator-state->last-of-timer-expires-next
+           last-anchor-of-timer-expires-next))
