@@ -33,7 +33,7 @@
     "In AleoBFT, certificates are created through an exchange of messages
      involving proposals, signatures, and certificates,
      following the Narwhal protocol, which AleoBFT is based on.
-     Currently we model certificate creation as one atomic event,
+     Currently we model certificate creation as an atomic event,
      which abstracts the aforementioned message exchange process.
      Our @('create-certificate') event ``instantly'' creates a certificates,
      and broadcasts it to the other validators.
@@ -96,39 +96,32 @@
      further conditions for the endorsers are
      formalized in @(tsee create-certificate-endorser-possiblep).")
    (xdoc::p
-    "First, the signer must be able to calculate
+    "The endorsers only see the proposal, not the whole certificate,
+     so in our model they can only check conditions on
+     the certificate components except the endorser addresses;
+     even though we model certificate creation as an atomic event,
+     we still need to model the right checks at the right times.
+     As a consequence, this predicate only checks conditions
+     on the certificate components except the endorser addresses,
+     since it applies to all signers.")
+   (xdoc::p
+    "The first condition is that the signer must be able to calculate
      the active committee at the certificate's round.
-     That is, its local blockchain is sufficiently far along.
+     That is, its local blockchain must be sufficiently far along.
      If the validator cannot calculate the active committee,
      it is unable to author or endorse a certificate for that round,
      so this event cannot happen from the point of view of the validator.")
    (xdoc::p
-    "Both author and endorsers must be in the active committee,
-     and must be distinct from each other.
-     If the signer is the author, it directly enforces these conditions,
-     before broadcasting the certificate.
-     If the signer is an endorser, it initially only sees the proposal,
-     which does not include the other endorsers,
-     so it would be possible that a faulty author
-     may send a good proposal but a bad certificate for the proposal.
-     However, it must be kept in mind that,
-     besides endorsers checking proposals,
-     validators also check certificates as they realize
-     the reliable broadcast mechanism that our model assumes.
-     Thus a bad certificate would not correspond to
-     a @('create-certificate') event in our model,
-     which involves reliable broadcast.
-     This is a somewhat complex and perhaps not fully persuasive aspect
-     of our current formalization of atomic certificate creation,
-     but we plan to develop a more refined model
-     with explcit proposals, signatures, and checks on certificates,
-     which should clarify this aspect of AleoBFT.")
-   (xdoc::p
-    "The number of endorsers must be one less than the quorum,
-     so that, with the author, there is a quorum of signatures.
-     The aforementioned distinctness of the author from the endorsers
-     ensures that they indeed form a quorum,
-     i.e. that the author adds one to the quorum minus one.")
+    "That committee is used to check that
+     the author of the certificate is a member of the committee:
+     only validators in the active committee for a round
+     can create certificates for that round.
+     In the case of the certificate's author,
+     this condition corresponds to the fact that
+     a (correct) author would generate a certificate
+     only if the author knows to be in the active committee.
+     In the case of an endorser,
+     this condition represents a check made by the endorser on the proposal.")
    (xdoc::p
     "The DAG of the signer must not already have
      a certificate with the given author and round.
@@ -136,6 +129,12 @@
      two different certificates with the same author and round.
      Further conditions about this apply to endorsers,
      but here we are defining conditions common to author and endorsers.")
+   (xdoc::p
+    "If the round of the certificate is 1,
+     it must have no references to previous certificates,
+     because there is no round 0.
+     If the round of the certificate is not 1,
+     the following additional requirements apply.")
    (xdoc::p
     "The signer's DAG must include
      all the previous certificates referenced by the certificate.
@@ -153,14 +152,9 @@
      before endorsing a certificate from another validator,
      a validator checks it against the predecessors
      (something not explicit in our model),
-     and therefore the validator must have those predecessors in the DAG.
-     If the certificate's round is 1,
-     there is no previous round, and thus no previous certificates,
-     and thus no requirements on them being in the DAG.")
+     and therefore the validator must have those predecessors in the DAG.")
    (xdoc::p
-    "The referenced certificate in the previous round must form a quorum,
-     unless the certificate's round is 1,
-     in which case there must be no references to previous certificates.
+    "The referenced certificates in the previous round must form a quorum.
      However, note that the active committee of the previous round
      may differ from the one of the certificate's round.
      Since we already checked that the active committee of the certificate round
@@ -175,12 +169,7 @@
        (commtt
         (active-committee-at-round cert.round vstate.blockchain all-vals))
        ((unless commtt) nil)
-       ((when (set::in cert.author cert.endorsers)) nil)
        ((unless (set::in cert.author (committee-members commtt))) nil)
-       ((unless (set::subset cert.endorsers (committee-members commtt))) nil)
-       ((unless (= (set::cardinality cert.endorsers)
-                   (1- (committee-quorum commtt))))
-        nil)
        ((when (certificate-with-author+round
                cert.author cert.round vstate.dag))
         nil)
@@ -240,18 +229,33 @@
      This function puts these additional conditions
      together with the conditions in that function.")
    (xdoc::p
+    "Unlike an endorser, an author can check conditions
+     on the endorser addresses component of the certificate.
+     This is because, after generating and sending a proposal,
+     and receiving endorsements, has access to those endorsements,
+     which it can check before creating the certificate.")
+   (xdoc::p
     "The round of the certificate must be the current round of the validator.
      A correct validator only creates (at most) one certificate per round,
      and does so for the current round every time.")
    (xdoc::p
-    "That is the only additional condition.
-     A correct validator only authors a certificate
-     if the validator is in the active committee for that round,
-     but @(tsee create-certificate-signer-possiblep)
-     already checks that the certificate author is in the committee.
-     The other conditions in @(tsee create-certificate-signer-possiblep)
-     are naturally checked by the certificate's author,
-     who is in charge of creating the certificate.")
+    "The author must be distinct from the endorsers.
+     This corresponds to the fact that an author
+     sends proposals to, and collects endorsements from,
+     validators other than itself.")
+   (xdoc::p
+    "Recall that @(tsee create-signer-possiblep) has already checked that
+     the active committee at the certificate's round is known,
+     and that the author is a member of that committee.
+     Here the author also checks that the endorsers are in the committee.
+     This corresponds to the fact that the author accepts endorsements
+     only from members of the committe.")
+   (xdoc::p
+    "The number of endorsers must be one less than the quorum,
+     so that, with the author, there is a quorum of signatures.
+     The aforementioned distinctness of the author from the endorsers
+     ensures that they indeed form a quorum,
+     i.e. that the author adds one to the quorum minus one.")
    (xdoc::p
     "The role of the @('all-vals') input is
      explained in @(tsee update-committee-with-transaction)."))
@@ -259,7 +263,14 @@
        ((validator-state vstate) vstate)
        ((unless (create-certificate-signer-possiblep cert vstate all-vals))
         nil)
-       ((unless (= cert.round vstate.round)) nil))
+       ((unless (= cert.round vstate.round)) nil)
+       ((when (set::in cert.author cert.endorsers)) nil)
+       (commtt
+        (active-committee-at-round cert.round vstate.blockchain all-vals))
+       ((unless (set::subset cert.endorsers (committee-members commtt))) nil)
+       ((unless (= (set::cardinality cert.endorsers)
+                   (1- (committee-quorum commtt))))
+        nil))
     t)
   :hooks (:fix))
 
@@ -288,6 +299,11 @@
      This function puts these additional conditions
      together with the conditions of that function.")
    (xdoc::p
+    "Recall that, as noted in @(tsee create-certificate-signer-possiblep),
+     an endorser does not have access to
+     the endorser addresses component of a certificate,
+     because it only sees the proposal.")
+   (xdoc::p
     "While @(tsee create-certificate-signer-possiblep) checks that
      the DAG has no certificate already with the same author and round,
      which is sufficient for the author to check,
@@ -299,12 +315,6 @@
      The presence of a pair in this set indicates that the validators
      has already endorsed a certificate with that author and round,
      but has not yet received the actual certificate from the network.")
-   (xdoc::p
-    "Together with the check that the DAG does not have a certificate
-     with the same author and round as this new certificate,
-     we are checking that the endorser has not any trace, anywhere,
-     of the author-round pair of the new certificate.
-     This serves to ensure the non-equivocation of certificates.")
    (xdoc::p
     "For the certificate author, in @(tsee create-certificate-author-possiblep),
      it is not necessary to check the buffer and author-round pairs:
