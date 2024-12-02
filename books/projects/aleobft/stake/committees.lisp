@@ -1050,6 +1050,7 @@
     (implies (committee-nonemptyp commtt)
              (< (committee-max-faulty-stake commtt)
                 (committee-quorum-stake commtt)))
+    :rule-classes :linear
     :enable (committee-max-faulty-stake
              max-faulty-for-total-lt-quorum)))
 
