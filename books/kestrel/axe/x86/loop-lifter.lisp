@@ -382,10 +382,10 @@
                             nil
                             nil ; known-booleans
                             nil
+                            nil
+                            nil
                             t ; count-hints
                             nil ;print
-                            nil
-                            nil
                             nil
                             nil)))
 
@@ -411,10 +411,10 @@
                             nil
                             nil ; known-booleans
                             nil
+                            nil
+                            nil
                             t   ; count-hints
                             nil ;print
-                            nil
-                            nil
                             nil
                             nil)))
 
@@ -440,6 +440,8 @@
                             nil
                             nil ; known-booleans
                             nil
+                            nil
+                            nil
                             nil ;count-hits
                             nil ;print
                             '(x86isa::logext-48-does-nothing-when-canonical-address-p
@@ -447,8 +449,6 @@
                               ;;acl2::integerp-of-+
                               ;;x86isa::integerp-when-canonical-address-p-cheap
                               )
-                            nil
-                            nil
                             nil)))
 
 (defun offsets-up-to (num)
@@ -540,11 +540,11 @@
             (acl2::simplify-dag-x86 dag-to-prove
                                     all-assumptions
                                     rule-alist
-                                    nil known-booleans nil nil nil
+                                    nil known-booleans nil nil nil nil nil
                                     (append '( ;xr-wb-in-app-view
                                               )
                                             rules-to-monitor)
-                                    nil nil nil)))
+                                    nil)))
          ((when erp) (mv erp nil nil)))
       (if (equal res *t*) ;todo: allow other non-nil constants?
           (prog2$ (cw "Success.)~%")
@@ -1736,14 +1736,14 @@
          (acl2::simplify-dag-x86 new-state-dag
                                  nil
                                  (acl2::make-rule-alist! (append (extra-loop-lifter-rules) lifter-rules) (w state))
-                                 nil (acl2::known-booleans (w state)) nil nil nil
+                                 nil (acl2::known-booleans (w state)) nil nil nil nil nil
                                  ;; todo: respect the monitor arg?
                                  '(;;x86isa::set-flag-set-flag-same
                                    ;;x86isa::x86p-set-flag
                                    ;;x86p-of-write
                                    ;;x86isa::x86p-xw
                                    )
-                                 nil nil nil))
+                                 nil))
         ((when erp) (mv erp nil nil nil state))
         (- (cw "Done Splicing in the loop function)~%"))
         (generated-events (append generated-events
@@ -1960,12 +1960,12 @@
                                                                    extra-rules)
                                                            remove-rules)
                                                          (w state))
-                                 nil (acl2::known-booleans (w state)) nil nil print
+                                 nil (acl2::known-booleans (w state)) nil nil nil nil print
                                  (append '(;get-flag-of-set-flag
                                            x86-fetch-decode-execute-opener-safe-64
                                            )
                                          rules-to-monitor)
-                                 nil nil nil))
+                                 nil))
         ((when erp) (mv erp nil nil nil state))
         ;; Check for problems:
         ((when (member-eq 'run-until-exit-segment-or-hit-loop-header
@@ -2243,7 +2243,7 @@
                                                                   extra-rules)
                                                           remove-rules)
                                                         (w state))
-                                nil (acl2::known-booleans (w state)) nil nil print rules-to-monitor nil nil nil))
+                                nil (acl2::known-booleans (w state)) nil nil nil nil print rules-to-monitor nil))
        ((when erp) (mv erp nil state))
        (output-term (dag-to-term output-dag))
        ;; TODO: Generalize:

@@ -246,13 +246,13 @@
        ;;                      rule-alist
        ;;                      interpreted-function-alist
        ;;                      (known-booleans (w state))
+       ;;                      normalize-xors
        ;;                      nil ; limits
+       ;;                      t ; memoize
        ;;                      nil ; count-hints
        ;;                      print
        ;;                      monitor
        ;;                      nil ; fns-to-elide
-       ;;                      normalize-xors
-       ;;                      t ; memoize
        ;;                      ))
        ((when erp) (mv *error* nil state))
        (- (and print (cw "Done applying the Axe rewriter (term size: ~x0, DAG size: ~x1))~%"
@@ -533,13 +533,13 @@
                             rule-alist
                             interpreted-function-alist
                             (known-booleans (w state))
+                            normalize-xors
                             nil ; limits
+                            nil ; memoize
                             nil ; count-hits
                             print
                             monitor ; monitored-symbols
                             nil ; fns-to-elide
-                            normalize-xors
-                            nil ; memoize
                             ))
        ((when erp) (mv *error* nil state))
        ((when (quotep dag))

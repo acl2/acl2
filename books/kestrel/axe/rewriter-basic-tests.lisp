@@ -641,22 +641,19 @@
 
 (assert!
  (mv-let (erp res)
-   (simplify-dag-basic (make-term-into-dag-simple! '(not 't))
-                       nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil)
+   (simplify-dag-basic (make-term-into-dag-simple! '(not 't)) nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil)
    (and (not erp)
         (equal res (make-term-into-dag-simple! ''nil)))))
 
 (assert!
  (mv-let (erp res)
-   (simplify-dag-basic (make-term-into-dag-simple! '(not '3))
-                       nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil)
+   (simplify-dag-basic (make-term-into-dag-simple! '(not '3)) nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil)
    (and (not erp)
         (equal res (make-term-into-dag-simple! ''nil)))))
 
 (assert!
  (mv-let (erp res)
-   (simplify-dag-basic (make-term-into-dag-simple! '(not 'nil))
-                       nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil)
+   (simplify-dag-basic (make-term-into-dag-simple! '(not 'nil)) nil (empty-rule-alist) nil nil nil nil nil nil nil nil nil)
    (and (not erp)
         (equal res (make-term-into-dag-simple! ''t)))))
 
@@ -664,15 +661,7 @@
  (mv-let (erp res)
    (simplify-dag-basic (make-term-into-dag-simple! '(not x))
                        '(x) ; assumptions
-                       (empty-rule-alist)
-                       nil nil
-                       nil
-                       nil
-                       nil
-                       nil
-                       nil
-                       nil
-                       nil)
+                       (empty-rule-alist) nil nil nil nil nil nil nil nil nil)
    (and (not erp)
         (equal res (make-term-into-dag-simple! ''nil)))))
 
@@ -681,15 +670,7 @@
  (mv-let (erp res)
    (simplify-dag-basic (make-term-into-dag-simple! '(not (foo x)))
                        '((foo x)) ; assumptions
-                       (empty-rule-alist)
-                       nil nil
-                       nil
-                       nil
-                       nil
-                       nil
-                       nil
-                       nil
-                       nil)
+                       (empty-rule-alist) nil nil nil nil nil nil nil nil nil)
    (and (not erp)
         (equal res (make-term-into-dag-simple! ''nil)))))
 
@@ -698,15 +679,7 @@
  (mv-let (erp res)
    (simplify-dag-basic (make-term-into-dag-simple! '(boolif test (foo x) 'nil))
                        '((foo x)) ; assumptions
-                       (empty-rule-alist)
-                       nil nil
-                       nil
-                       nil
-                       nil
-                       nil
-                       nil
-                       nil
-                       nil)
+                       (empty-rule-alist) nil nil nil nil nil nil nil nil nil)
    (and (not erp)
         (equal res (make-term-into-dag-simple! '(boolif test 't 'nil))))))
 
@@ -715,15 +688,7 @@
  (mv-let (erp res)
    (simplify-dag-basic (make-term-into-dag-simple! '(boolif test 'nil (foo x)))
                        '((foo x)) ; assumptions
-                       (empty-rule-alist)
-                       nil nil
-                       nil
-                       nil
-                       nil
-                       nil
-                       nil
-                       nil
-                       nil)
+                       (empty-rule-alist) nil nil nil nil nil nil nil nil nil)
    (and (not erp)
         (equal res (make-term-into-dag-simple! '(boolif test 'nil 't))))))
 
