@@ -30,16 +30,6 @@
                   (set::subset x y))
              (not (set::emptyp y))))
 
-  (defruled set::expand-cardinality-of-intersect
-    (equal (set::cardinality (set::intersect x y))
-           (+ (set::cardinality x)
-              (set::cardinality y)
-              (- (set::cardinality (set::union x y))))))
-
-  (theory-invariant
-   (incompatible (:rewrite set::expand-cardinality-of-union)
-                 (:rewrite set::expand-cardinality-of-intersect)))
-
   (defrule set::subset-of-union-when-both-subset
     (implies (and (set::subset a s)
                   (set::subset b s))
