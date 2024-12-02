@@ -114,7 +114,7 @@
   :hooks (:fix)
   ///
 
-  (defrule system-buffer-not-self-p-of-update-network-state
+  (defruled system-buffer-not-self-p-of-update-network-state
     (equal (system-buffer-not-self-p (update-network-state network systate))
            (system-buffer-not-self-p systate))
     :enable update-network-state)
@@ -239,7 +239,8 @@
              (system-buffer-not-self-p
               (create-certificate-next cert systate)))
     :enable (create-certificate-possiblep
-             create-certificate-next)))
+             create-certificate-next
+             system-buffer-not-self-p-of-update-network-state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -279,7 +280,8 @@
              receive-certificate-next
              system-messages-not-self-p
              message-not-self-p
-             get-network-state)
+             get-network-state
+             system-buffer-not-self-p-of-update-network-state)
     :use (:instance message-set-not-self-p-element
                     (msgs (system-state->network systate)))))
 
