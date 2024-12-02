@@ -339,7 +339,14 @@
      the committee's faulty members,
      whose total stake does not exceed @($f$) by fault tolerance,
      and thus the total stake of @('vals') does not exceed @($f$) either,
-     which contradicts the hypothesis that it does."))
+     which contradicts the hypothesis that it does.")
+   (xdoc::p
+    "A related fact, which we also prove,
+     is that, if the committee is fault-tolerant and not-empty,
+     and the validators' total stake is at least the quorum,
+     then the function will pick a correct validator.
+     This is a simple consequence of the previous theorem,
+     given that @($f < n - f$) when @($n \\neq 0$)."))
   (b* (((when (set::emptyp vals)) nil)
        (val (set::head vals))
        ((when (set::in val (correct-addresses systate))) (address-fix val)))
@@ -383,4 +390,15 @@
     :use (all-faulty-when-not-pick-correct-validator
           (:instance committee-members-stake-monotone
                      (members1 vals)
-                     (members2 (committee-faulty-members commtt systate))))))
+                     (members2 (committee-faulty-members commtt systate)))))
+
+  (defruled pick-correct-validator-when-fault-tolerant-and-geq-quorum
+    (implies (and (address-setp vals)
+                  (set::subset vals (committee-members commtt))
+                  (committee-fault-tolerant-p commtt systate)
+                  (committee-nonemptyp commtt)
+                  (>= (committee-members-stake vals commtt)
+                      (committee-quorum-stake commtt)))
+             (pick-correct-validator vals systate))
+    :enable (pick-correct-validator-when-fault-tolerant-and-gt-max-faulty
+             committee-max-faulty-stake-lt-committee-quorum-stake)))
