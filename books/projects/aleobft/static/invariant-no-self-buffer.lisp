@@ -85,7 +85,7 @@
     :induct t
     :enable omap::lookup)
 
-  (defrule validators-buffer-not-self-p-of-update
+  (defruled validators-buffer-not-self-p-of-update
     (implies (and (validators-buffer-not-self-p vstates)
                   (validator-buffer-not-self-p val vstate)
                   (addressp val))
