@@ -881,10 +881,10 @@
     :hints (("Goal" :in-theory (enable nfix))))
 
   (defruled max-faulty-for-total-alt-def
-    (equal (max-faulty-for-total n)
-           (if (zp n)
+    (equal (max-faulty-for-total total)
+           (if (zp total)
                0
-             (floor (1- n) 3))))
+             (floor (1- total) 3))))
 
   (theory-invariant (incompatible (:definition max-faulty-for-total)
                                   (:rewrite max-faulty-for-total-alt-def)))
