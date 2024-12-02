@@ -67,6 +67,7 @@
        ((unless commtt) nil)
        (leader (leader-at-round vstate.last commtt)))
     (certificate-with-author+round leader vstate.last vstate.dag))
+  :hooks (:fix)
 
   ///
 

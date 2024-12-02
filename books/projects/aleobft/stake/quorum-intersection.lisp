@@ -74,104 +74,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define pick-correct-validator ((vals address-setp) (systate system-statep))
-  :returns (val? address-optionp)
-  :short "Pick a correct validator address from a set of addresses."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Correct validators are identified via a system state,
-     so we pass a system state to this function.
-     The correct validators are the keys of
-     the map from addresses to validator states,
-     in the system state.")
-   (xdoc::p
-    "We go through all the addresses in the set,
-     returning the first one we find that is of a correct validator.
-     We return @('nil') if there is no correct validator address in the set.")
-   (xdoc::p
-    "We show that if this function returns an address,
-     the address is in the input set,
-     and it is the address of a correct validator.
-     We show that if this function returns @('nil'),
-     then all the addresses are of faulty validators
-     (expressed by saying that they have an empty intersection
-     with the set of correct validators),
-     because otherwise we would have found a correct one.")
-   (xdoc::p
-    "From the latter fact,
-     we prove that this function will return an address
-     if the following conditions are satisfied:
-     the input set is a subset of a fault-tolerant committee,
-     and the total stake of validators is more than @($f$),
-     i.e. the maximum tolerated stake of faulty validators
-     (see @(tsee max-faulty-for-total)).
-     The reason is that if @('pick-correct-validator') returned @('nil'),
-     then, as proved in @('all-faulty-when-not-pick-correct-validator'),
-     all the validators in @('vals') are faulty.
-     But since we hypothesize that their stake is more than @($f$),
-     and since the fault tolerance hypothesis means that
-     the total stake of faulty validators is no more than @($f$),
-     we have an impossibility.
-     Thus @('pick-correct-validator') must return an address,
-     which as previously proved is in @('vals') and is a correct validator.
-     We use the @('committee-members-stake-monotone')
-     to inject the appropriate facts into the proof.
-     Given that @('vals') is a subset of the committee members,
-     but that @('vals') is disjoint from correct addresses
-     (by @('all-faulty-when-not-pick-correct-validator'),
-     we have that @('vals') is in fact a subset of
-     the committee's faulty members,
-     whose total stake does not exceed @($f$) by fault tolerance,
-     and thus the total stake of @('vals') does not exceed @($f$) either,
-     which contradicts the hypothesis that it does."))
-  (b* (((when (set::emptyp vals)) nil)
-       (val (set::head vals))
-       ((when (set::in val (correct-addresses systate))) (address-fix val)))
-    (pick-correct-validator (set::tail vals) systate))
-
-  ///
-
-  (fty::deffixequiv pick-correct-validator
-    :args ((systate system-statep)))
-
-  (defruled pick-correct-validator-in-set
-    (implies (pick-correct-validator vals systate)
-             (set::in (pick-correct-validator vals systate)
-                      vals))
-    :induct t)
-
-  (defruled pick-correct-validator-is-correct
-    (implies (pick-correct-validator vals systate)
-             (set::in (pick-correct-validator vals systate)
-                      (correct-addresses systate)))
-    :induct t)
-
-  (defruled all-faulty-when-not-pick-correct-validator
-    (implies (not (pick-correct-validator vals systate))
-             (set::emptyp (set::intersect vals (correct-addresses systate))))
-    :induct t
-    :enable (set::intersect
-             not-in-address-set-when-not-address))
-
-  (defruled pick-correct-validator-when-fault-tolerant-p
-    (implies (and (address-setp vals)
-                  (set::subset vals (committee-members commtt))
-                  (committee-fault-tolerant-p commtt systate)
-                  (> (committee-members-stake vals commtt)
-                     (committee-max-faulty-stake commtt)))
-             (pick-correct-validator vals systate))
-    :enable (committee-fault-tolerant-p
-             committee-faulty-members
-             set::subset-of-difference-when-disjoint)
-    :disable pick-correct-validator
-    :use (all-faulty-when-not-pick-correct-validator
-          (:instance committee-members-stake-monotone
-                     (members1 vals)
-                     (members2 (committee-faulty-members commtt systate))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define pick-common-correct-validator ((vals1 address-setp)
                                        (vals2 address-setp)
                                        (systate system-statep))
@@ -359,5 +261,6 @@
               pick-correct-validator-in-set
               pick-correct-validator-is-correct
               set::expensive-rules)
-     :use (:instance pick-correct-validator-when-fault-tolerant-p
-                     (vals (set::intersect vals1 vals2))))))
+     :use (:instance
+           pick-correct-validator-when-fault-tolerant-and-gt-max-faulty
+           (vals (set::intersect vals1 vals2))))))

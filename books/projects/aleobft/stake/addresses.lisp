@@ -69,11 +69,4 @@
   :short "Fixtype of sets of addresses."
   :elt-type address
   :elementp-of-nil nil
-  :pred address-setp
-
-  ///
-
-  (defruled not-in-address-set-when-not-address
-    (implies (and (address-setp set)
-                  (not (addressp elem)))
-             (not (set::in elem set)))))
+  :pred address-setp)

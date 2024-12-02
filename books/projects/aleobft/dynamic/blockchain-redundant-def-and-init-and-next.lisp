@@ -78,7 +78,10 @@
   (("Goal" :in-theory (enable last-anchor-present-p-necc
                               evenp-of-blocks-last-round
                               ordered-even-p-necc
-                              last-blockchain-round-p-necc))))
+                              last-blockchain-round-p-necc)))
+  ///
+  (fty::deffixequiv-sk blockchain-redundant-p
+    :args ((systate system-statep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

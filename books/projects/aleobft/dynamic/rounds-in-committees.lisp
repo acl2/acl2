@@ -71,7 +71,10 @@
   :guard-hints
   (("Goal"
     :in-theory
-    (enable dag-committees-p-when-accepted-certificate-committee-p))))
+    (enable dag-committees-p-when-accepted-certificate-committee-p)))
+  ///
+  (fty::deffixequiv-sk rounds-in-committees-p
+    :args ((systate system-statep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -196,8 +199,7 @@
           reachable from an initial state via a sequence of events."
 
   (defruled rounds-in-committees-p-when-reachable
-    (implies (and (system-statep systate)
-                  (system-initp systate)
+    (implies (and (system-initp systate)
                   (events-possiblep events systate))
              (rounds-in-committees-p (events-next events systate)))
     :disable ((:e tau-system))

@@ -36,10 +36,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
-
-
-
 (define collect-anchors ((current-anchor certificatep)
                          (previous-round natp)
                          (last-committed-round natp)

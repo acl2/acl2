@@ -42,5 +42,5 @@
   (defruled unequivocal-accepted-certificates-p-when-reachable
     (implies (and (system-initp systate)
                   (events-possiblep events systate)
-                  (all-system-committees-fault-tolerant-p events systate))
+                  (all-system-committees-fault-tolerant-p systate events))
              (unequivocal-dags-p (events-next events systate)))))

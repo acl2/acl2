@@ -109,7 +109,10 @@
                      (get-validator-state val1 systate))
                     (validator-state->blockchain
                      (get-validator-state val2 systate))
-                    (all-addresses systate)))))
+                    (all-addresses systate))))
+  ///
+  (fty::deffixequiv-sk same-committees-p
+    :args ((systate system-statep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

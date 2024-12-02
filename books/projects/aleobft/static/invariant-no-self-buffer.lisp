@@ -77,7 +77,7 @@
     (validators-buffer-not-self-p (omap::tail vstates)))
   ///
 
-  (defrule validator-buffer-not-self-p-of-lookup
+  (defruled validator-buffer-not-self-p-of-lookup
     (implies (and (validators-buffer-not-self-p vstates)
                   (omap::assoc val vstates)
                   (omap::lookup val vstates))
@@ -85,7 +85,7 @@
     :induct t
     :enable omap::lookup)
 
-  (defrule validators-buffer-not-self-p-of-update
+  (defruled validators-buffer-not-self-p-of-update
     (implies (and (validators-buffer-not-self-p vstates)
                   (validator-buffer-not-self-p val vstate)
                   (addressp val))
@@ -114,12 +114,12 @@
   :hooks (:fix)
   ///
 
-  (defrule system-buffer-not-self-p-of-update-network-state
+  (defruled system-buffer-not-self-p-of-update-network-state
     (equal (system-buffer-not-self-p (update-network-state network systate))
            (system-buffer-not-self-p systate))
     :enable update-network-state)
 
-  (defrule system-buffer-not-self-p-of-update-validator-state
+  (defruled system-buffer-not-self-p-of-update-validator-state
     (implies (and (system-buffer-not-self-p systate)
                   (validator-buffer-not-self-p val vstate)
                   (addressp val)
@@ -128,7 +128,7 @@
               (update-validator-state val vstate systate)))
     :enable update-validator-state)
 
-  (defrule validator-buffer-not-self-p-of-get-validator-state
+  (defruled validator-buffer-not-self-p-of-get-validator-state
     (implies (and (system-buffer-not-self-p systate)
                   (set::in val (correct-addresses systate)))
              (validator-buffer-not-self-p val
@@ -136,7 +136,8 @@
     :enable (get-validator-state
              correct-addresses
              in-of-correct-addresses-loop
-             lookup-nonnil-of-correct-addresses)))
+             lookup-nonnil-of-correct-addresses
+             validator-buffer-not-self-p-of-lookup)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -212,7 +213,9 @@
     :induct t
     :enable (in-correct-validator-addresess-when-get-validator-state
              add-endorsed
-             set::expensive-rules)))
+             set::expensive-rules
+             system-buffer-not-self-p-of-update-validator-state
+             validator-buffer-not-self-p-of-get-validator-state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -238,7 +241,10 @@
              (system-buffer-not-self-p
               (create-certificate-next cert systate)))
     :enable (create-certificate-possiblep
-             create-certificate-next)))
+             create-certificate-next
+             system-buffer-not-self-p-of-update-network-state
+             system-buffer-not-self-p-of-update-validator-state
+             validator-buffer-not-self-p-of-get-validator-state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -278,7 +284,10 @@
              receive-certificate-next
              system-messages-not-self-p
              message-not-self-p
-             get-network-state)
+             get-network-state
+             system-buffer-not-self-p-of-update-network-state
+             system-buffer-not-self-p-of-update-validator-state
+             validator-buffer-not-self-p-of-get-validator-state)
     :use (:instance message-set-not-self-p-element
                     (msgs (system-state->network systate)))))
 
@@ -308,7 +317,9 @@
              (system-buffer-not-self-p
               (store-certificate-next cert val systate)))
     :enable (store-certificate-possiblep
-             store-certificate-next)))
+             store-certificate-next
+             system-buffer-not-self-p-of-update-validator-state
+             validator-buffer-not-self-p-of-get-validator-state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -333,7 +344,9 @@
              (system-buffer-not-self-p
               (advance-round-next val systate)))
     :enable (advance-round-possiblep
-             advance-round-next)))
+             advance-round-next
+             system-buffer-not-self-p-of-update-validator-state
+             validator-buffer-not-self-p-of-get-validator-state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -358,7 +371,9 @@
              (system-buffer-not-self-p
               (commit-anchors-next val systate)))
     :enable (commit-anchors-possiblep
-             commit-anchors-next)))
+             commit-anchors-next
+             system-buffer-not-self-p-of-update-validator-state
+             validator-buffer-not-self-p-of-get-validator-state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -382,7 +397,9 @@
                   (timer-expires-possiblep val systate))
              (system-buffer-not-self-p (timer-expires-next val systate)))
     :enable (timer-expires-possiblep
-             timer-expires-next)))
+             timer-expires-next
+             system-buffer-not-self-p-of-update-validator-state
+             validator-buffer-not-self-p-of-get-validator-state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
