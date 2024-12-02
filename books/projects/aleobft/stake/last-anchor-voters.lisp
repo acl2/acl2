@@ -42,5 +42,5 @@
   (defruled last-anchor-voters-p-when-reachable
     (implies (and (system-initp systate)
                   (events-possiblep events systate)
-                  (all-system-committees-fault-tolerant-p events systate))
+                  (all-system-committees-fault-tolerant-p systate events))
              (last-anchor-voters-p (events-next events systate)))))

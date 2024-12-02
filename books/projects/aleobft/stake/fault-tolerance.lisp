@@ -255,12 +255,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define all-system-committees-fault-tolerant-p ((events event-listp)
-                                                (systate system-statep))
+(define all-system-committees-fault-tolerant-p ((systate system-statep)
+                                                (events event-listp))
   :guard (events-possiblep events systate)
   :returns (yes/no booleanp)
   :short "Check if all the system states
-          in an execution corresponding to a sequence of events
+          in an execution from a system state via a sequence of events
           are fault-tolerant."
   :long
   (xdoc::topstring
@@ -270,18 +270,22 @@
      through a serie of states that result from a sequence of events,
      we need to make the hypothesis that
      all the committees along the way are fault-tolerant.
-     This predicate expresses that.")
+     This predicate expresses that:
+     @('systate') is the starting state,
+     and @('events') are the events that take the system
+     through a sequence of states from the starting state.")
    (xdoc::p
     "For this predicate to hold,
-     first the input state must be fault-tolerant.
+     first the starting state must be fault-tolerant.
      If there are no events, there is no other requirement.
      Otherwise, we execute the event
      and we recursively call this predicate with the resulting state:
      this covers all the states in the execution."))
   (b* (((unless (system-committees-fault-tolerant-p systate)) nil)
        ((when (endp events)) t))
-    (all-system-committees-fault-tolerant-p (cdr events)
-                                            (event-next (car events) systate)))
+    (all-system-committees-fault-tolerant-p (event-next (car events) systate)
+                                            (cdr events)))
+  :measure (acl2-count events)
   :guard-hints (("Goal" :in-theory (enable events-possiblep)))
   :hooks (:fix))
 
