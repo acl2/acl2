@@ -1026,7 +1026,11 @@
      There is indeed no reason for making this assumption,
      which is unnecessarily restrictive,
      given that the more general quorum @($n - f$)
-     works for any value of @($n$)."))
+     works for any value of @($n$).")
+   (xdoc::p
+    "If the committee is not empty,
+     the maximum tolerated faulty stake
+     is less than the quorum stake."))
   (- (committee-total-stake commtt)
      (committee-max-faulty-stake commtt))
   :hooks (:fix)
@@ -1040,7 +1044,14 @@
            :hints
            (("Goal" :in-theory (enable posp
                                        committee-max-faulty-stake
-                                       max-faulty-for-total-lt-total))))))
+                                       max-faulty-for-total-lt-total)))))
+
+  (defruled committee-max-faulty-stake-lt-committee-quorum-stake
+    (implies (committee-nonemptyp commtt)
+             (< (committee-max-faulty-stake commtt)
+                (committee-quorum-stake commtt)))
+    :enable (committee-max-faulty-stake
+             max-faulty-for-total-lt-quorum)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
