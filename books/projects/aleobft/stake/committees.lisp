@@ -858,7 +858,13 @@
      via a recursion to find it, or even in a non-executable way,
      but instead we pick the definition with ceiling,
      and prove it equivalent to the other two possible definitions.
-     We also prove that @($n \\geq 3f + 1$).")
+     We also prove that @($n \\geq 3f + 1$) when @($n \\neq 0$),
+     that @($n \\geq f$) even if @($n = 0$),
+     that @($n > f$) when @($n \\neq 0$),
+     and that @($f < n - f$) when @($n \\neq 0$);
+     in the latter, the significance of @($n - f$) is that
+     it is the quorum, corresponding to @($f$),
+     necessary for fault tolerance conditions.")
    (xdoc::p
     "If @($n$) is 1 or 2 or 3, no failures are tolerated:
      @($f$), and hence @($f$), must be 0.
@@ -921,6 +927,12 @@
     :rule-classes ((:linear :trigger-terms ((max-faulty-for-total total))))
     :hints (("Goal" :in-theory (enable posp))))
   (in-theory (disable max-faulty-for-total-lt-total))
+
+  (defret max-faulty-for-total-lt-quorum
+    (< max (- total max))
+    :hyp (posp total)
+    :rule-classes :linear)
+  (in-theory (disable max-faulty-for-total-lt-quorum))
 
   (assert-event (= (max-faulty-for-total 0) 0))
   (assert-event (= (max-faulty-for-total 1) 0))
