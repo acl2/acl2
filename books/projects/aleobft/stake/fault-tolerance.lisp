@@ -369,7 +369,7 @@
     :enable (set::intersect
              not-in-address-setp-when-not-addressp))
 
-  (defruled pick-correct-validator-when-fault-tolerant-p
+  (defruled pick-correct-validator-when-fault-tolerant-and-gt-max-faulty
     (implies (and (address-setp vals)
                   (set::subset vals (committee-members commtt))
                   (committee-fault-tolerant-p commtt systate)

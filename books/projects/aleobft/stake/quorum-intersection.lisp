@@ -261,5 +261,6 @@
               pick-correct-validator-in-set
               pick-correct-validator-is-correct
               set::expensive-rules)
-     :use (:instance pick-correct-validator-when-fault-tolerant-p
-                     (vals (set::intersect vals1 vals2))))))
+     :use (:instance
+           pick-correct-validator-when-fault-tolerant-and-gt-max-faulty
+           (vals (set::intersect vals1 vals2))))))
