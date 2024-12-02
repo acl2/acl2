@@ -77,7 +77,7 @@
     (validators-buffer-not-self-p (omap::tail vstates)))
   ///
 
-  (defrule validator-buffer-not-self-p-of-lookup
+  (defruled validator-buffer-not-self-p-of-lookup
     (implies (and (validators-buffer-not-self-p vstates)
                   (omap::assoc val vstates)
                   (omap::lookup val vstates))
@@ -136,7 +136,8 @@
     :enable (get-validator-state
              correct-addresses
              in-of-correct-addresses-loop
-             lookup-nonnil-of-correct-addresses)))
+             lookup-nonnil-of-correct-addresses
+             validator-buffer-not-self-p-of-lookup)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
