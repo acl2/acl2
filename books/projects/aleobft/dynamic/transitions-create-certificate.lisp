@@ -244,7 +244,7 @@
      sends proposals to, and collects endorsements from,
      validators other than itself.")
    (xdoc::p
-    "Recall that @(tsee create-certiricate-signer-possiblep)
+    "Recall that @(tsee create-certificate-signer-possiblep)
      has already checked that
      the active committee at the certificate's round is known,
      and that the author is a member of that committee.
