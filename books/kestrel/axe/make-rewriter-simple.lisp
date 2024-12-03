@@ -432,7 +432,7 @@
                                                   rewrite-stobj count))
          (call-of-simplify-term `(,simplify-term-name term assumptions rule-alist interpreted-function-alist known-booleans normalize-xors limits memoizep monitored-symbols fns-to-elide count-hits print))
          (call-of-simplify-dag `(,simplify-dag-name dag assumptions rule-alist interpreted-function-alist known-booleans normalize-xors limits memoize count-hits print monitored-symbols fns-to-elide))
-         (call-of-simplify-dag-core `(,simplify-dag-core-name dag assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist maybe-internal-context-array interpreted-function-alist limits rule-alist count-hits print known-booleans monitored-symbols fns-to-elide normalize-xors memoize))
+         (call-of-simplify-dag-core `(,simplify-dag-core-name dag assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist maybe-internal-context-array rule-alist interpreted-function-alist known-booleans normalize-xors limits memoize count-hits print monitored-symbols fns-to-elide))
          )
     `(encapsulate ()
 
@@ -5359,27 +5359,27 @@
                                      ;; may be pre-loaded with context info:
                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                      maybe-internal-context-array
-                                     interpreted-function-alist
-                                     limits
                                      rule-alist
+                                     interpreted-function-alist
+                                     known-booleans
+                                     normalize-xors
+                                     limits
+                                     memoize
                                      count-hits
                                      print
-                                     known-booleans
                                      monitored-symbols
-                                     fns-to-elide
-                                     normalize-xors
-                                     memoize)
+                                     fns-to-elide)
       (declare (xargs :guard (and (pseudo-dagp dag)
                                   (< (top-nodenum dag) *max-1d-array-length*)
                                   (pseudo-term-listp assumptions)
                                   (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
                                   (or (null maybe-internal-context-array)
                                       (bounded-context-arrayp 'context-array maybe-internal-context-array (+ 1 (car (car dag))) dag-len))
-                                  (rule-limitsp limits)
                                   (rule-alistp rule-alist)
+                                  (interpreted-function-alistp interpreted-function-alist)
+                                  (rule-limitsp limits)
                                   (booleanp count-hits)
                                   (print-levelp print)
-                                  (interpreted-function-alistp interpreted-function-alist)
                                   (symbol-listp known-booleans)
                                   (symbol-listp monitored-symbols)
                                   (symbol-listp fns-to-elide)
@@ -5598,7 +5598,9 @@
                    ((mv dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                     (empty-dag-array initial-array-size))
                    ((mv erp dag-or-quotep limits)
-                    (,simplify-dag-core-name dag assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nil interpreted-function-alist limits rule-alist count-hits print known-booleans monitored-symbols fns-to-elide normalize-xors memoize))
+                    (,simplify-dag-core-name dag assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
+                                             nil ; no internal-context-array (but see below)
+                                             rule-alist interpreted-function-alist known-booleans normalize-xors limits memoize count-hits print monitored-symbols fns-to-elide))
                    ((when erp) (mv erp nil limits))
                    (- (and print (cw ")~%"))) ; balances "(Simplifying DAG with memoization ..."
                    )
@@ -5626,10 +5628,9 @@
                ((mv erp dag-or-quotep
                     & ;limits
                     )
-                (,simplify-dag-core-name dag assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist internal-context-array interpreted-function-alist limits rule-alist
-                                         count-hits print known-booleans monitored-symbols fns-to-elide normalize-xors
+                (,simplify-dag-core-name dag assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist internal-context-array rule-alist interpreted-function-alist known-booleans normalize-xors limits
                                          nil ;memoize (would be unsound)
-                                         ))
+                                         count-hits print monitored-symbols fns-to-elide))
                ((when erp) (mv erp nil))
                (- (and print (cw ")~%"))) ; balances "(Simplifying DAG with internal contexts ..."
                )
