@@ -2826,7 +2826,13 @@
        The reason for the set of @('return') types
        is that, as a GCC extension, an expression may consist of a statement,
        and the validation of statements involves sets of @('return') types:
-       see @(tsee valid-stmt).")
+       see @(tsee valid-stmt).
+       In case of successful validation,
+       we also return a possibly enriched expression:
+       the enrichment consists of a type added as
+       information for identifier expression;
+       that is the type of the identifier expression,
+       calculated by the validator.")
      (xdoc::p
       "For now we do not distinguish lvalues [C:6.3.2.1/1].
        To do that, we will introduce a richer notion of expression type
@@ -2896,7 +2902,11 @@
       (expr-case
        expr
        :ident (b* (((erp type) (valid-var expr.ident table)))
-                (retok (expr-fix expr) type nil (valid-table-fix table)))
+                (retok (make-expr-ident :ident expr.ident
+                                        :info type)
+                       type
+                       nil
+                       (valid-table-fix table)))
        :const (b* (((erp type) (valid-const expr.const table ienv)))
                 (retok (expr-fix expr) type nil (valid-table-fix table)))
        :string (b* (((erp type) (valid-stringlit-list expr.strings)))
