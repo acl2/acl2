@@ -1949,7 +1949,7 @@
   (fty::deftagsum typequal/attribspec
     :parents (abstract-syntax exprs/decls/stmts)
     :short "Fixtype of type qualifiers and attribute specifiers."
-    (:tyqual ((unwrap type-qual)))
+    (:typequal ((unwrap type-qual)))
     (:attrib ((unwrap attrib-spec)))
     :pred typequal/attribspec-p
     :measure (two-nats-measure (acl2-count x) 0))
