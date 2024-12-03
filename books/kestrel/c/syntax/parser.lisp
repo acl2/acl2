@@ -10564,7 +10564,7 @@
          ((erp token span parstate) (read-token parstate)))
       (cond
        ((token-type-qualifier-p token) ; tyqual
-        (retok (typequal/attribspec-typequal (token-to-type-qualifier token))
+        (retok (typequal/attribspec-type (token-to-type-qualifier token))
                span
                parstate))
        ((or (token-keywordp token "__attribute") ; __attribute

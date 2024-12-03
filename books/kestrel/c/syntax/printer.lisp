@@ -2094,7 +2094,7 @@
     :short "Print a type qualifier or attribute specifier."
     (typequal/attribspec-case
      tyqualattrib
-     :typequal (print-type-qual tyqualattrib.unwrap pstate)
+     :type (print-type-qual tyqualattrib.unwrap pstate)
      :attrib (print-attrib-spec tyqualattrib.unwrap pstate))
     :measure (two-nats-measure (typequal/attribspec-count tyqualattrib) 0))
 

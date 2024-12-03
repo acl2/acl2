@@ -211,7 +211,7 @@
 (defirrelevant irr-typequal/attribspec
   :short "An irrelevant type qualifier or attribute specifier."
   :type typequal/attribspec-p
-  :body (typequal/attribspec-typequal (irr-type-qual)))
+  :body (typequal/attribspec-type (irr-type-qual)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
