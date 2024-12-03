@@ -493,6 +493,15 @@
     mxcsr-of-write-byte-to-segment
     ))
 
+;; sophisticated scheme for removing inner, shadowed writes
+(defund shadowed-write-rules ()
+  (declare (xargs :guard t))
+  '(write-becomes-write-of-clear-extend-axe
+    clear-extend-of-write-continue-axe
+    clear-extend-of-write-finish
+    clear-extend-of-write-of-clear-retract
+    write-of-clear-retract))
+
 ;; 'Read Over Write' and similar rules for state components. Our normal form
 ;; (at least for 64-bit code) includes 3 kinds of state changes, namely calls
 ;; to XW, WRITE, and SET-FLAG (todo: update this comment).
@@ -1590,6 +1599,7 @@
   (append (symbolic-execution-rules)
           (reader-and-writer-intro-rules)
           (read-over-write-rules)
+          (shadowed-write-rules) ; requires the x86 rewriter
           (acl2::base-rules)
           (acl2::type-rules)
           ;; (acl2::logext-rules) ;;caused problems ;;todo: there are also logext rules below
@@ -1781,7 +1791,7 @@
             acl2::<-of-+-cancel-1+-1 ; todo: same as acl2::<-of-+-cancel.  kill that one
             acl2::<-of-+-cancel-3-1
 
-            acl2::<-of-+-and-+-cancel-constants ; for array index calcs, and separateness
+            acl2::<-of-+-and-+-cancel-constants ; for array index calcs, and separateness ; todo: make these 3 names more similar?
             acl2::<-of-+-combine-constants-1
             acl2::<-of-+-combine-constants-2
 
