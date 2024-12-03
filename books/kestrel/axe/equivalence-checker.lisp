@@ -18893,7 +18893,7 @@
                   (mv :non-t-constant nil state rand result-array-stobj))))
        (dag dag-or-quotep)
        (interpreted-function-alist (make-interpreted-function-alist
-                                    (get-non-built-in-supporting-fns-list (dag-fns dag) (w state)) (w state))) ;Sat Feb 19 14:20:09 2011
+                                    (get-non-built-in-supporting-fns-list (dag-fns dag) *axe-evaluator-functions* (w state)) (w state))) ;Sat Feb 19 14:20:09 2011
        ;;doesn't actually check that the user supplied alist is consistent with the state (fixme just pass in the names and look them up in the current state)?
        (interpreted-function-alist (if (not (consistent-alists interpreted-function-alist user-interpreted-function-alist))
                                        (prog2$ (hard-error 'prove-miter-core "inconsistent interpreted function alists." nil) ;print more?
