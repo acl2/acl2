@@ -114,7 +114,24 @@
     "Unlike some approaches suggested in the above resources,
      we prefer to defer the disambiguation of these constructs after parsing,
      so that parsing is purely syntactical,
-     without the need for any semantic analysis during parsing."))
+     without the need for any semantic analysis during parsing.")
+   (xdoc::p
+    "Our abstract syntax also includes some information
+     that is initially absent (after "
+    (xdoc::seetopic "parser" "parsing")
+    " and "
+    (xdoc::seetopic "disambiguator" "disambiguation")
+    ") and that is calculated by "
+    (xdoc::seetopic "validator" "validation")
+    ". This information is stored in the abstract syntax for easy access,
+     e.g. access by tools to transform the abstract syntax.")
+   (xdoc::p
+    "This additional information can be also used, in the future,
+     for other purposes than storing results from validation.
+     This information in our fixtypes is untyped,
+     which, in ACL2, can be regarded as analogous to
+     using polymorphic types for the abstract syntax,
+     parameterized over the type of the additional information."))
   :order-subtopics t
   :default-parent t)
 
@@ -1332,6 +1349,11 @@
        This means that our fixtypes are a bit more general,
        but we can use separate predicates to enforce restrictions.")
      (xdoc::p
+      "Identifiers may be accompanied by some additional information,
+       such as types calculated during validation.
+       This is an instance of the additional information
+       discussed in @(tsee abstract-syntax).")
+     (xdoc::p
       "In order to capture
        possibly redundant parenthesization from the concrete syntax,
        we include, in this fixtype, a case @(':paren')
@@ -1562,7 +1584,8 @@
       "As a GCC extesntion, we include
        expressions preceded by @('__extension__').
        See our ABNF grammar."))
-    (:ident ((ident ident)))
+    (:ident ((ident ident)
+             (info any)))
     (:const ((const const)))
     (:string ((strings stringlit-list)))
     (:paren ((inner expr)))

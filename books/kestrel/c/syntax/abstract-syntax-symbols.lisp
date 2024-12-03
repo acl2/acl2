@@ -55,7 +55,7 @@
     expr-fix
     expr-count
     expr-case
-    expr-ident
+    make-expr-ident
     expr-const
     expr-const->const
     expr-paren

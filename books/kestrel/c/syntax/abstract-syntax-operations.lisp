@@ -155,7 +155,7 @@
 (defirrelevant irr-expr
   :short "An irrelevant expression."
   :type exprp
-  :body (expr-ident (irr-ident)))
+  :body (make-expr-ident :ident (irr-ident) :info nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

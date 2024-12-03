@@ -79,7 +79,7 @@
     (expr-case
      expr
      :ident (if (equal expr.ident old-fn)
-                (expr-ident new-fn)
+                (make-expr-ident :ident new-fn :info nil)
               (expr-fix expr))
      :paren (expr-paren (rename-fn-funcall-fun expr.inner old-fn new-fn))
      :gensel

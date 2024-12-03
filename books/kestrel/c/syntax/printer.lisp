@@ -1432,11 +1432,12 @@
      (xdoc::codeblock
       "(expr-binary (binop-mul)"
       "             (expr-binary (binop-add)"
-      "                          (expr-ident (ident \"x\"))"
-      "                          (expr-ident (ident \"y\")))"
-      "             (expr-ident (ident \"z\")))")
+      "                          (expr-ident (ident \"x\") ...)"
+      "                          (expr-ident (ident \"y\") ...))"
+      "             (expr-ident (ident \"z\") ...))")
      (xdoc::p
-      "represents the expression @('(x + y) * z').
+      "(where @('...') is the additional information, irrelevant here)
+       represents the expression @('(x + y) * z').
        When this expression is written in concrete syntax as just done,
        parentheses must be added,
        because @('*') binds tighter (i.e. has a higher priority) than @('+').")

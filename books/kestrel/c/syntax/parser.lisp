@@ -9027,7 +9027,10 @@
          ((erp token span parstate) (read-token parstate)))
       (cond
        ((and token (token-case token :ident)) ; identifier
-        (retok (expr-ident (token-ident->unwrap token)) span parstate))
+        (retok (make-expr-ident :ident (token-ident->unwrap token)
+                                :info nil)
+               span
+               parstate))
        ((and token (token-case token :const)) ; constant
         (retok (expr-const (token-const->unwrap token)) span parstate))
        ((and token (token-case token :string)) ; stringlit

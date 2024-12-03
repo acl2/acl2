@@ -910,7 +910,7 @@
   ;; e.g. the rule for constructor EXPR-IDENT,
   ;; are formulated differently from other rules.
   ;; For uniformity with other rules, they should have
-  ;; a conclusion like (EXPR-UNAMBP (EXPR-IDENT IDENT)).
+  ;; a conclusion like (EXPR-UNAMBP (EXPR-IDENT IDENT INFO)).
   ;; But that fails to apply in proofs,
   ;; such as the ones for the disambiguator.
   ;; Thus, we formulate those rules with conclusion (EXPR-UNAMBP EXPR)
