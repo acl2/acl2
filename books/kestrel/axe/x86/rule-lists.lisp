@@ -1193,7 +1193,6 @@
 ;; ;; x86isa::xr-of-if-special-case-for-fault ; this was bad without x86isa::64-bit-modep-of-if.  why?  maybe lets us expand fetch-decode-execute when we shouldn't?  may also need rb-of-if and such to help get-prefixes.  maybe only open fetch-code-execute when we can resolve the get-prefixes.  but that might cause work to be redone, unless we add support for binding hyps
 ;; ;; ;x86isa::rb-of-if-arg2
 ;;   ;; x86isa::app-view-of-if x86isa::x86p-of-if read-of-if
-;;   ;;acl2::<-of-+-cancel-1+-1
 ;;   ;;acl2::<-minus-zero
 ;;   x86isa::64-bit-modep-of-if
 ;;   x86isa::app-view-of-if
@@ -1777,6 +1776,12 @@
             acl2::<-of-+-cancel-1-2
             acl2::<-of-+-cancel-2-1
             acl2::<-of-+-cancel-2-2
+            acl2::<-of-+-cancel-second-of-more-and-only ; more?
+            acl2::<-of-+-cancel-1+-1+ ;; acl2::<-of-+-cancel-first-and-first
+            acl2::<-of-+-and-+-cancel-constants ; for array index calcs
+            acl2::<-of-+-cancel-1+-1 ; todo: same as acl2::<-of-+-cancel.  kill that one
+            acl2::<-of-+-cancel-3-1
+
             acl2::integerp-of-+-when-integerp-1-cheap
             acl2::fix-when-integerp
             x86isa::integerp-when-canonical-address-p-cheap ; requires acl2::equal-same
@@ -4444,7 +4449,6 @@
   (declare (xargs :guard t))
   (append '(acl2::integerp-of-expt
             acl2::integerp-of-*                 ; for array index calcs
-            acl2::<-of-+-and-+-cancel-constants ; for array index calcs
             acl2::my-integerp-<-non-integerp    ; for array index calcs
             acl2::bvsx-when-bvlt
             x86isa::canonical-address-p-between-special5
@@ -4459,13 +4463,10 @@
             acl2::not-bvlt-of-max-arg2
             acl2::<-of-*-when-constant-integers
             ;separate-when-separate-2 ; todo: drop? but that caused problems
-            acl2::<-of-+-cancel-second-of-more-and-only ; more?
-            acl2::<-of-+-cancel-1+-1+ ;; acl2::<-of-+-cancel-first-and-first
             acl2::collect-constants-over-<-2
             acl2::commutativity-of-*-when-constant
             acl2::<-of-*-of-constant-and-constant
             acl2::rationalp-when-integerp
-            acl2::<-of-+-cancel-1+-1 ; todo: same as acl2::<-of-+-cancel.  kill that one
             acl2::+-of-+-of---same
             acl2::<-of-minus-and-constant ; ensure needed
             acl2::fix-when-acl2-numberp
@@ -4522,12 +4523,10 @@
             read-1-of-write-1-both
             acl2::bvlt-of-constant-when-usb-dag ; rename
             ;; separate-of-1-and-1 ; do we ever need this?
-            acl2::<-of-+-cancel-3-1
             acl2::equal-of-bvshl-and-constant ; move to core-rules-bv?
             ;; acl2::equal-of-myif-arg1-safe
             ;; acl2::equal-of-myif-arg2-safe
             acl2::bvminus-of-bvplus-and-bvplus-same-2-2
-            acl2::right-cancellation-for-+ ; todo: switch to an arithmetic-light rule
             acl2::bvplus-of-unary-minus
             acl2::bvplus-of-unary-minus-arg2
             acl2::if-becomes-bvif-1-axe
@@ -4785,7 +4784,6 @@
      acl2::memberp-of-nil
 ;     acl2::member-equal-of-cons
      acl2::equal-of-same-cancel-4
-     acl2::right-cancellation-for-+
      x86isa::logext-64-does-nothing-when-canonical-address-p
      x86isa::equal-of-if-constants
      x86isa::equal-of-if-constants-alt
