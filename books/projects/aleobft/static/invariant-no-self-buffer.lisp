@@ -141,7 +141,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule validator-buffer-not-self-p-of-validator-init
+(defruled validator-buffer-not-self-p-of-validator-init
   :short "Establishment of the invariant at the validator level:
           the invariant holds on the initial validator state."
   :long
@@ -166,7 +166,8 @@
            (validators-buffer-not-self-p vstates))
   :induct t
   :enable (validators-buffer-not-self-p
-           validators-state-initp))
+           validators-state-initp
+           validator-buffer-not-self-p-of-validator-init))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
