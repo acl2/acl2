@@ -171,7 +171,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule system-buffer-not-self-p-when-system-state-initp
+(defruled system-buffer-not-self-p-when-system-state-initp
   :short "Establishment of the invariant at the system level:
           the invariant holds on any initial system state."
   :long
