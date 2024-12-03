@@ -17,7 +17,7 @@
 
 ;; TODO: See also count-worlds.lisp.  Can we just use that machinery?
 ;; TODO: Or generalize this machinery to count things other than counts, eg.,
-;; useful and useles tries.
+;; useful and useless tries.
 
 ;; TODO: Consider just using a fast alist.
 
@@ -136,7 +136,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Either nil (not counting hits), or a natp (total numnber of rule hits, not
+;; Either nil (not counting hits), or a natp (total number of rule hits, not
 ;; split out by rule), or a hit-count-info-worldp that assigns hit counts to
 ;; individual rules.
 (defund hit-countsp (hit-counts)
