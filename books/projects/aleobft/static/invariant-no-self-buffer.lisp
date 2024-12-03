@@ -198,7 +198,7 @@
      but we need to have a theorem about that,
      which is proved here."))
 
-  (defrule validator-buffer-not-self-p-of-add-endorsed-val
+  (defruled validator-buffer-not-self-p-of-add-endorsed-val
     (implies (validator-buffer-not-self-p val vstate)
              (validator-buffer-not-self-p
               val (add-endorsed-val author round vstate)))
@@ -216,7 +216,8 @@
              add-endorsed
              set::expensive-rules
              system-buffer-not-self-p-of-update-validator-state
-             validator-buffer-not-self-p-of-get-validator-state)))
+             validator-buffer-not-self-p-of-get-validator-state
+             validator-buffer-not-self-p-of-add-endorsed-val)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
