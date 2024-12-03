@@ -245,9 +245,9 @@
                              (known-booleans (w state))
                              normalize-xors
                              nil
+                             memoizep
                              monitor
                              nil ; fns-to-elide
-                             memoizep
                              count-hits
                              print))
        ((when erp) (mv erp nil state))

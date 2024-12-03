@@ -430,7 +430,7 @@
                                                   rewrite-stobj2 memoization hit-counts tries limits
                                                   node-replacement-array node-replacement-count refined-assumption-alist
                                                   rewrite-stobj count))
-         (call-of-simplify-term `(,simplify-term-name term assumptions rule-alist interpreted-function-alist known-booleans normalize-xors limits monitored-symbols fns-to-elide memoizep count-hits print))
+         (call-of-simplify-term `(,simplify-term-name term assumptions rule-alist interpreted-function-alist known-booleans normalize-xors limits memoizep monitored-symbols fns-to-elide count-hits print))
          (call-of-simplify-dag `(,simplify-dag-name dag assumptions rule-alist interpreted-function-alist known-booleans normalize-xors limits memoize count-hits print monitored-symbols fns-to-elide))
          (call-of-simplify-dag-core `(,simplify-dag-core-name dag assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist maybe-internal-context-array interpreted-function-alist limits rule-alist count-hits print known-booleans monitored-symbols fns-to-elide normalize-xors memoize))
          )
@@ -5742,9 +5742,9 @@
                                  known-booleans
                                  normalize-xors
                                  limits
+                                 memoizep
                                  monitored-symbols
                                  fns-to-elide
-                                 memoizep
                                  ;; todo: add context array and other args?
                                  count-hits
                                  print)
@@ -5755,9 +5755,9 @@
                                   (symbol-listp known-booleans)
                                   (booleanp normalize-xors)
                                   (rule-limitsp limits)
+                                  (booleanp memoizep)
                                   (symbol-listp monitored-symbols)
                                   (symbol-listp fns-to-elide)
-                                  (booleanp memoizep)
                                   (booleanp count-hits)
                                   (print-levelp print))
                       :guard-hints (("Goal" :in-theory (e/d (natp-when-dargp
@@ -5978,9 +5978,8 @@
                                               assumptions
                                               rule-alist
                                               interpreted-function-alist
-                                              known-booleans normalize-xors limits
+                                              known-booleans normalize-xors limits memoizep
                                               monitored-symbols fns-to-elide
-                                              memoizep
                                               ;; todo: add context array and other args?
                                               count-hits
                                               print))

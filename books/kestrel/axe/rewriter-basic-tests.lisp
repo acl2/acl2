@@ -226,12 +226,11 @@
                         ,known-booleans
                         ,normalize-xors
                         ,limits
+                        ,memoizep
                         ,monitored-symbols
                         ,fns-to-elide
-                        ,memoizep
                         ,count-hits
-                        ,print
-                        ))
+                        ,print))
 
 (assert!
  (mv-let (erp result) ;; result is always DAG or a quotep

@@ -241,10 +241,10 @@
                              interpreted-function-alist
                              (known-booleans (w state))
                              nil ; normalize-xors
-                             nil
+                             nil ; limits
+                             nil ; memoizep
                              monitored-rules
                              nil ; fns-to-elide
-                             nil ; memoizep
                              nil ; count-hits
                              nil ; print
                              ))

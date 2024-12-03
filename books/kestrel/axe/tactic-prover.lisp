@@ -302,9 +302,9 @@
                              (known-booleans (w state))
                              normalize-xors
                              nil ; limits
+                             nil ; memoizep
                              monitor
                              nil ; fns-to-elide
-                             nil ; memoizep
                              t ; count-hits ; todo: pass in
                              print))
        ((when erp) (mv *error* nil state))
