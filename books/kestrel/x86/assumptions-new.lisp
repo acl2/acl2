@@ -48,6 +48,7 @@
     `(+ ',constant ,term)))
 
 ;; Returns (mv erp assumptions).
+;; Generates assumptions asserting that a chunk of data has been loaded into memory (e.g., a section or segment of the executable).
 (defund assumptions-for-memory-chunk (addr bytes relp state-var base-var stack-slots-needed)
   (declare (xargs :guard (and (natp addr)
                               (acl2::byte-listp bytes)
@@ -62,7 +63,7 @@
                (last-addr-term (symbolic-add-constant (+ 1 ; todo: why is this needed?  I have code that ends in RET and checks whether the address after the RET is canonical.  however, making this change elsewhere broke other proofs.
                                                                  (+ -1 addr numbytes)) base-var)) ; todo: use bvplus?
                )
-          (mv nil
+          (mv nil ; no error
               `((canonical-address-p ,first-addr-term)
                 (canonical-address-p ,last-addr-term)
                 ;; Assert that the chunk is loaded into memory:
@@ -70,7 +71,11 @@
                 (program-at ,first-addr-term ; todo: use something better that includes the length, for speed
                             ',bytes
                             ,state-var)
-                ;; Assert that the chunk is disjoint the part of the stack that will be written:
+                ;; Assert that the chunk is disjoint from the saved return address (so writing to the chunk doesn't change it)
+                ;; TODO: Do this only for writable chunks?
+                (separate ':r ',(len bytes) ,first-addr-term
+                          ':r '8 (rsp ,state-var))
+                ;; Assert that the chunk is disjoint from the part of the stack that will be written:
                 ,@(if (posp stack-slots-needed)
                       ;; todo: make a better version of separate that doesn't require the Ns to be positive (and that doesn't have the useless rwx params):
                       `((separate ':r ',(len bytes) ,first-addr-term
@@ -78,22 +83,26 @@
                     ;; Can't call separate here because (* 8 stack-slots-needed) = 0:
                     nil))))
       ;; Absolute addresses are just numbers:
-      (let ((first-addr addr)
-            (last-addr (+ -1 addr numbytes)) ; todo: use bvplus? ; don't need to add 1 here for that RET issue, because the number should be clearly canonical
-            )
-        (if (not (and (canonical-address-p first-addr)
+      (let* ((first-addr addr)
+             (last-addr (+ -1 addr numbytes)) ; todo: use bvplus? ; don't need to add 1 here for that RET issue, because the number should be clearly canonical
+             (first-addr-term `',first-addr))
+        (if (not (and (canonical-address-p first-addr) ; we can test these here instead of adding them as assumptions
                       (canonical-address-p last-addr)))
             (mv :bad-address nil)
-          (mv nil
+          (mv nil ; no error
               `(;; In the absolute case, the start and end addresses are just numbers, so we don't need canonical claims for them:
                 ;; Assert that the chunk is loaded into memory:
-                (program-at ',first-addr ; todo: use something better that includes the length, for speed
+                (program-at ,first-addr-term ; todo: use something better that includes the length, for speed
                             ',bytes
                             ,state-var)
+                ;; Assert that the chunk is disjoint from the saved return address (so writing to the chunk doesn't change it)
+                ;; TODO: Do this only for writable chunks?
+                (separate ':r ',(len bytes) ,first-addr-term
+                          ':r '8 (rsp ,state-var))
                 ;; Assert that the chunk is disjoint from the part of the stack that will be written:
                 ,@(if (posp stack-slots-needed)
                       ;; todo: make a better version of separate that doesn't require the Ns to be positive (and that doesn't have the useless rwx params):
-                      `((separate ':r ',(len bytes) ',first-addr
+                      `((separate ':r ',(len bytes) ,first-addr-term
                                   ':r ',(* 8 stack-slots-needed) (binary-+ ',(* '-8 stack-slots-needed) (rsp ,state-var))))
                     ;; Can't call separate here because (* 8 stack-slots-needed) = 0:
                     nil))))))))

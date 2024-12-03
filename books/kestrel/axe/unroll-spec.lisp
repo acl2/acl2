@@ -130,7 +130,7 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
                               (dag-to-term dag)
                             `(dag-val-with-axe-evaluator ,defconst-name
                                                          ,(make-acons-nest dag-vars)
-                                                         ',(make-interpreted-function-alist (get-non-built-in-supporting-fns-list dag-fns (w state)) (w state))
+                                                         ',(make-interpreted-function-alist (get-non-built-in-supporting-fns-list dag-fns *axe-evaluator-functions* (w state)) (w state))
                                                          '0 ;array depth (not very important)
                                                          ))
                         ;; function-type must be :lets:

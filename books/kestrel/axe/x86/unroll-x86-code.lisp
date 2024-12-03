@@ -57,7 +57,8 @@
 (include-book "../prune-dag-approximately")
 (include-book "../arithmetic-rules-axe")
 (include-book "../make-evaluator") ; for make-acons-nest ; todo: split out
-(include-book "../evaluator") ; for get-non-built-in-supporting-fns-list, todo: split out! ; this book has skip-proofs
+(include-book "../supporting-functions") ; for get-non-built-in-supporting-fns-list
+(include-book "../evaluator") ; todo: this book has skip-proofs
 (include-book "rewriter-x86")
 (include-book "kestrel/utilities/print-levels" :dir :system)
 (include-book "kestrel/utilities/widen-margins" :dir :system)
@@ -948,7 +949,7 @@
                                   maybe-result-term
                                 `(acl2::dag-val-with-axe-evaluator ',result-dag
                                                                    ,(acl2::make-acons-nest result-dag-vars)
-                                                                   ',(acl2::make-interpreted-function-alist (acl2::get-non-built-in-supporting-fns-list result-dag-fns (w state)) (w state))
+                                                                   ',(acl2::make-interpreted-function-alist (acl2::get-non-built-in-supporting-fns-list result-dag-fns acl2::*axe-evaluator-functions* (w state)) (w state))
                                                                    '0 ;array depth (not very important)
                                                                    )))
                (function-body-untranslated (if untranslatep (untranslate function-body nil (w state)) function-body)) ;todo: is this unsound (e.g., because of user changes in how untranslate works)?

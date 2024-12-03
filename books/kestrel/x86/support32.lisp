@@ -1465,8 +1465,8 @@
   (implies (and (stack-segment-assumptions32 10 x86)
                 (x86p x86) ;;drop?
                 )
-           (equal (BVCHOP '32 (BINARY-+ '-4 (ESP X86)))
-                  (BINARY-+ '-4 (ESP X86))))
+           (equal (BVCHOP 32 (+ -4 (ESP X86)))
+                  (+ -4 (ESP X86))))
   :hints (("Goal" :in-theory (enable esp acl2::bvchop-of-sum-cases))))
 
 (defthm read-byte-from-segment-of-xw
@@ -1765,7 +1765,7 @@
 ;; (defthm <-of-
 ;;  (implies (well-formed-32-bit-segmentp seg-reg x86)
 ;;           (NOT (< '4294967296
-;;                   (BINARY-+ (32-BIT-SEGMENT-SIZE seg-reg X86)
+;;                   (+ (32-BIT-SEGMENT-SIZE seg-reg X86)
 ;;                             (32-BIT-SEGMENT-START seg-reg X86))))))
 
 
@@ -1865,7 +1865,7 @@
                 (<= (+ -1 (* -4 stack-slots-needed)) k) ;not sure about the -1, but it seems harmless
                 (integerp k)
                 (x86p x86))
-           (natp (binary-+ k (esp x86))))
+           (natp (+ k (esp x86))))
   :hints (("Goal" :in-theory (enable esp))))
 
 (defthm not-<-of-32-bit-segment-size
@@ -1945,7 +1945,7 @@
                 (natp stack-slots-needed)
                 (<= 1 stack-slots-needed)
                 (x86p x86))
-           (eff-addrs-okp '4 (binary-+ '-4 (esp x86)) *ss* x86))
+           (eff-addrs-okp 4 (+ -4 (esp x86)) *ss* x86))
   :hints (("Goal" :use ( segment-max-eff-addr32-bound-when-stack-segment-assumptions32
                                   segment-min-eff-addr32-bound-when-stack-segment-assumptions32)
            :in-theory (disable segment-min-eff-addr32-bound-when-stack-segment-assumptions32
@@ -1962,7 +1962,7 @@
                 (<= n (- k))
                 (integerp n)
                 (x86p x86))
-           (eff-addrs-okp n (binary-+ k (esp x86)) *ss* x86))
+           (eff-addrs-okp n (+ k (esp x86)) *ss* x86))
   :hints (("Goal" :use ( segment-max-eff-addr32-bound-when-stack-segment-assumptions32
                                   segment-min-eff-addr32-bound-when-stack-segment-assumptions32)
            :in-theory (disable segment-min-eff-addr32-bound-when-stack-segment-assumptions32
@@ -2016,7 +2016,7 @@
                 (<= n (expt 2 32))
                 (unsigned-byte-p 32 (esp x86))
                 )
-           (signed-byte-p '64 (binary-+ n (esp x86))))
+           (signed-byte-p '64 (+ n (esp x86))))
   :hints (("Goal" :in-theory (enable esp SIGNED-BYTE-P))))
 
 (defthm x86isa::ea-to-la-of-write-byte-to-segment
@@ -2339,7 +2339,7 @@
                 (integerp off)
                 (<= (* -4 stack-slots-needed) off)
                 (x86p x86))
-           (eff-addr-okp (binary-+ off (esp x86)) *ss* x86-2))
+           (eff-addr-okp (+ off (esp x86)) *ss* x86-2))
   :hints (("Goal" :in-theory (enable esp segment-max-eff-addr32 segment-min-eff-addr32 SEGMENT-BASE-AND-BOUNDS))))
 
 (defthm eff-addr-okp-of-esp
@@ -2364,7 +2364,7 @@
                 (x86p x86)
 ;                (x86p x86-2)
                 )
-           (eff-addr-okp (binary-+ off (esp x86)) *ss* x86-2))
+           (eff-addr-okp (+ off (esp x86)) *ss* x86-2))
   :hints (("Goal" :in-theory (enable esp segment-max-eff-addr32 segment-min-eff-addr32 SEGMENT-BASE-AND-BOUNDS))))
 
 (defthm ea-to-la-of-set-flag
@@ -2772,8 +2772,8 @@
                 (integerp b0)
                 (integerp a)
                 (integerp c))
-           (equal (bvchop '32 (binary-+ a (binary-+ c (- b))))
-                  (bvchop '32 (binary-+ a (binary-+ c (- b0)))))))
+           (equal (bvchop '32 (+ a (+ c (- b))))
+                  (bvchop '32 (+ a (+ c (- b0)))))))
 
 ;dup
 (defun double-write-induct-two-addrs
@@ -3213,7 +3213,7 @@
 (defthm canonical-address-p$inline-of-n-minus-2 ;gen
   (implies (and (natp n)
                 (< n (expt 2 32)))
-           (canonical-address-p$inline (binary-+ '-2 n)))
+           (canonical-address-p$inline (+ -2 n)))
   :hints (("Goal" :in-theory (enable canonical-address-p$inline signed-byte-p))))
 
 
@@ -4492,7 +4492,7 @@
                 (natp n)
                 (<= n (- off))
                 (x86p x86))
-           (eff-addrs-okp n (binary-+ off (esp x86)) *ss* x86-2))
+           (eff-addrs-okp n (+ off (esp x86)) *ss* x86-2))
   :hints (("Goal" :in-theory (e/d (esp segment-max-eff-addr32 segment-min-eff-addr32 segment-base-and-bounds
                                        bvuminus
                                        32-bit-segment-size

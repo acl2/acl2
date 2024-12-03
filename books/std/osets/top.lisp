@@ -1076,6 +1076,11 @@ from the accompanying talk.</p>")
          (- (+ (cardinality X) (cardinality Y))
             (cardinality (intersect X Y)))))
 
+(defthmd expand-cardinality-of-intersect
+  (equal (cardinality (intersect x y))
+         (+ (cardinality x) (cardinality y)
+            (- (cardinality (union x y))))))
+
 (defthm expand-cardinality-of-difference
   (equal (cardinality (difference X Y))
          (- (cardinality X)
