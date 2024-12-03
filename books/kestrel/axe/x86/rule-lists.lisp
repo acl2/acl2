@@ -1778,9 +1778,12 @@
             acl2::<-of-+-cancel-2-2
             acl2::<-of-+-cancel-second-of-more-and-only ; more?
             acl2::<-of-+-cancel-1+-1+ ;; acl2::<-of-+-cancel-first-and-first
-            acl2::<-of-+-and-+-cancel-constants ; for array index calcs
             acl2::<-of-+-cancel-1+-1 ; todo: same as acl2::<-of-+-cancel.  kill that one
             acl2::<-of-+-cancel-3-1
+
+            acl2::<-of-+-and-+-cancel-constants ; for array index calcs, and separateness
+            acl2::<-of-+-combine-constants-1
+            acl2::<-of-+-combine-constants-2
 
             acl2::integerp-of-+-when-integerp-1-cheap
             acl2::fix-when-integerp
