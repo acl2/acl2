@@ -2238,7 +2238,7 @@
             ;; explosion in the term size:
             `(dag-val-with-axe-evaluator ',item
                                          ,(make-acons-nest (dag-vars item))
-                                         ',(make-interpreted-function-alist (get-non-built-in-supporting-fns-list dag-fns (w state)) (w state))
+                                         ',(make-interpreted-function-alist (get-non-built-in-supporting-fns-list dag-fns *axe-evaluator-functions* (w state)) (w state))
                                          '0 ;array depth (not very important)
                                          )))
       item)))
