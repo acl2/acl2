@@ -35,7 +35,7 @@
      For now we cover all the constructs after preprocessing,
      but we plan to add some preprocessing constructs.")
    (xdoc::p
-    "We also include fixtypes for certain GCC extensions,
+    "We also include certain GCC extensions,
      as mentioned in @(see syntax-for-tools).")
    (xdoc::p
     "According to the rationale explained in @(see syntax-for-tools),
@@ -44,7 +44,8 @@
      the @('0x') and @('0X') hexadecimal prefixes.")
    (xdoc::p
     "We try and pick short yet clear names for these fixtypes,
-     so that tools' code manipulating them can be a bit more more compact.
+     so that code that manipulates these fixtypes
+     can be a bit more more compact.
      While the grammar in [C]
      uses the `hexadecimal' and `binary' qualifications
      for certain hexadecimal and binary entities
@@ -113,9 +114,7 @@
     "Unlike some approaches suggested in the above resources,
      we prefer to defer the disambiguation of these constructs after parsing,
      so that parsing is purely syntactical,
-     without the need for any semantic analysis during parsing.
-     The exact characterization of these ambiguous constructs
-     is still work in progress; it is currently partial."))
+     without the need for any semantic analysis during parsing."))
   :order-subtopics t
   :default-parent t)
 
