@@ -13,6 +13,7 @@
 
 (include-book "kestrel/utilities/make-cons-nest" :dir :system)
 (include-book "kestrel/alists-light/lookup-equal" :dir :system)
+(include-book "kestrel/bv-lists/bv-array-conversions" :dir :system)
 (include-book "kestrel/bv/bvchop-def" :dir :system) ; mentioned below
 
 ;; why "normal"?  maybe "component" ?
@@ -35,6 +36,12 @@
             (eq (first x) :mem32)
             (eql 2 (len x))
             (pseudo-termp (second x)) ; argument should be a term (should we translate it)
+            )
+       (and (true-listp x) ;; (:byte-array <ADDR-TERM> <LEN>)
+            (eq (first x) :byte-array)
+            (eql 3 (len x))
+            (pseudo-termp (second x)) ; argument should be a term (should we translate it)
+            (posp (third x)) ; number of bytes to read
             )
        (and (true-listp x) ;; (:tuple ... output-indicators ...)
             (eq (first x) :tuple)
@@ -71,16 +78,19 @@
          `(xr ':rgf ',(second output-indicator) ,term)
        (if (and (consp output-indicator)
                 (eq :register-bool (first output-indicator)))
-         ;; On Linux with gcc, a C function that returns a boolean has been observed to only set the low byte of RAX
-         ;; TODO: Should we chop to a single bit?
-           `(acl2::bvchop '8 (xr ':rgf ',(second output-indicator) ,term))
+           ;; On Linux with gcc, a C function that returns a boolean has been observed to only set the low byte of RAX
+           ;; TODO: Should we chop to a single bit?
+           `(bvchop '8 (xr ':rgf ',(second output-indicator) ,term))
          (if (and (consp output-indicator)
                   (eq :mem32 (first output-indicator)))
              `(read '4 ,(second output-indicator) ,term)
            (if (and (consp output-indicator)
-                    (eq :tuple (first output-indicator)))
-               (acl2::make-cons-nest (wrap-in-normal-output-extractors (rest output-indicator) term))
-             (er hard 'wrap-in-output-extractor "Invalid output indicator: ~x0" output-indicator)))))))
+                    (eq :byte-array (first output-indicator)))
+               `(acl2::list-to-byte-array (read-bytes ,(second output-indicator) ',(third output-indicator) ,term))
+             (if (and (consp output-indicator)
+                      (eq :tuple (first output-indicator)))
+                 (acl2::make-cons-nest (wrap-in-normal-output-extractors (rest output-indicator) term))
+               (er hard 'wrap-in-output-extractor "Invalid output indicator: ~x0" output-indicator))))))))
 
  (defun wrap-in-normal-output-extractors (output-indicators term)
    (declare (xargs :guard (normal-output-indicatorsp output-indicators)))
