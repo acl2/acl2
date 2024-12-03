@@ -244,7 +244,7 @@
     (:linear c$::decl-spec-list-count-of-paramdecl->spec)
     (:linear c$::designor-count-of-car)
     (:linear c$::designor-list-count-of-cdr)
-    (:linear c$::designor-list-count-of-desiniter->design)
+    (:linear c$::designor-list-count-of-desiniter->designors)
     (:linear c$::desiniter-count-of-car)
     (:linear c$::desiniter-list-count-of-cdr)
     (:linear c$::desiniter-list-count-of-expr-complit->elems)
@@ -1067,7 +1067,7 @@
    extra-args
    `(b* (((desiniter desiniter) desiniter))
       (make-desiniter
-        :design (,(cdr (assoc-eq 'designor-list names)) desiniter.design ,@extra-args-names)
+        :designors (,(cdr (assoc-eq 'designor-list names)) desiniter.designors ,@extra-args-names)
         :init (,(cdr (assoc-eq 'initer names)) desiniter.init ,@extra-args-names)))
    '(:returns (new-desiniter desiniterp)
      :measure (desiniter-count desiniter))))

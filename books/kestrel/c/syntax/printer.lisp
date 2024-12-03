@@ -2207,8 +2207,9 @@
     :parents (printer print-exprs/decls/stmts)
     :short "Print an initializer with optional designations."
     (b* (((desiniter desiniter) desiniter)
-         (pstate (if desiniter.design
-                     (b* ((pstate (print-designor-list desiniter.design pstate))
+         (pstate (if desiniter.designors
+                     (b* ((pstate (print-designor-list desiniter.designors
+                                                       pstate))
                           (pstate (print-astring " = " pstate)))
                        pstate)
                    pstate))

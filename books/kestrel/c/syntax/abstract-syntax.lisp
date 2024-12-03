@@ -2035,7 +2035,7 @@
        where the empty list means that the designation is absent,
        while a non-empty list captures the designation,
        which has a non-empty list of designators."))
-    ((design designor-list)
+    ((designors designor-list)
      (init initer))
     :parents (abstract-syntax exprs/decls/stmts)
     :pred desiniterp

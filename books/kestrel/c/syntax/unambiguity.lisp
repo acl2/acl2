@@ -317,7 +317,7 @@
     :returns (yes/no booleanp)
     :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if an initializer with optional designations is unambiguous."
-    (and (designor-list-unambp (desiniter->design desiniter))
+    (and (designor-list-unambp (desiniter->designors desiniter))
          (initer-unambp (desiniter->init desiniter)))
     :measure (desiniter-count desiniter))
 
@@ -1148,10 +1148,10 @@
     :expand (initer-unambp (initer-list elems final-comma)))
 
   (defrule desiniter-unambp-of-desiniter
-    (equal (desiniter-unambp (desiniter design init))
-           (and (designor-list-unambp design)
+    (equal (desiniter-unambp (desiniter designors init))
+           (and (designor-list-unambp designors)
                 (initer-unambp init)))
-    :expand (desiniter-unambp (desiniter design init)))
+    :expand (desiniter-unambp (desiniter designors init)))
 
   (defrule designor-unambp-of-designor-sub
     (equal (designor-unambp (designor-sub index))
@@ -1785,9 +1785,9 @@
              (desiniter-list-unambp (initer-list->elems initer)))
     :expand (initer-unambp initer))
 
-  (defrule designor-list-unambp-of-desiniter->design
+  (defrule designor-list-unambp-of-desiniter->designors
     (implies (desiniter-unambp desiniter)
-             (designor-list-unambp (desiniter->design desiniter)))
+             (designor-list-unambp (desiniter->designors desiniter)))
     :expand (desiniter-unambp desiniter))
 
   (defrule initer-unambp-of-desiniter->init

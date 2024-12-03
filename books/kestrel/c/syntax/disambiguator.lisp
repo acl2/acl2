@@ -1811,9 +1811,10 @@
     :short "Disambiguate an initializer with optional designations."
     (b* (((reterr) (irr-desiniter) (irr-dimb-table))
          ((desiniter desiniter) desiniter)
-         ((erp new-designs table) (dimb-designor-list desiniter.design table))
+         ((erp new-designors table)
+          (dimb-designor-list desiniter.designors table))
          ((erp new-initer table) (dimb-initer desiniter.init table)))
-      (retok (make-desiniter :design new-designs :init new-initer)
+      (retok (make-desiniter :designors new-designors :init new-initer)
              table))
     :measure (desiniter-count desiniter))
 

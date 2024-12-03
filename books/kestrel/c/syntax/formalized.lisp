@@ -443,7 +443,7 @@
      have no designations
      and be a single supported pure expression."))
   (b* (((desiniter desiniter) desiniter))
-    (and (endp desiniter.design)
+    (and (endp desiniter.designors)
          (initer-case desiniter.init :single)
          (expr-pure-formalp (initer-single->expr desiniter.init))))
   :hooks (:fix))

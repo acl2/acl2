@@ -3781,7 +3781,7 @@
                                       (type-fix target-type))
                                  (irr-expr)))
                             ((desiniter desiniter) (car initer.elems))
-                            ((unless (endp desiniter.design))
+                            ((unless (endp desiniter.designors))
                              (mv (msg "The initializer list ~x0 ~
                                        for the target type ~x1 ~
                                        is a singleton ~
@@ -3912,7 +3912,7 @@
     (b* (((reterr) nil (irr-valid-table))
          ((desiniter desiniter) desiniter)
          ((erp & types table)
-          (valid-designor-list desiniter.design target-type table ienv))
+          (valid-designor-list desiniter.designors target-type table ienv))
          ((erp more-types table)
           (valid-initer desiniter.init target-type lifetime table ienv)))
       (retok (set::union types more-types) table))

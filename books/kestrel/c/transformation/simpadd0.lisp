@@ -379,7 +379,7 @@
     :short "Transform an initializer with optional designations."
     (b* (((desiniter desiniter) desiniter))
       (make-desiniter
-       :design (simpadd0-designor-list desiniter.design)
+       :designors (simpadd0-designor-list desiniter.designors)
        :init (simpadd0-initer desiniter.init)))
     :measure (desiniter-count desiniter))
 
