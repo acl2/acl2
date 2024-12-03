@@ -388,7 +388,7 @@
     ))
 
 ;; Keep this in sync with unsigned-byte-p-rules above.
-(defun unsigned-byte-p-forced-rules ()
+(defund unsigned-byte-p-forced-rules ()
   (declare (xargs :guard t))
   '(unsigned-byte-p-forced-of-bvchop
     unsigned-byte-p-forced-of-bvcat
@@ -570,6 +570,7 @@
    (leftrotate-intro-rules) ; todo: remove, but this breaks proofs
    (safe-trim-rules) ;in case trimming is disabled
    (bv-function-of-bvchop-rules)
+   (unsigned-byte-p-forced-rules) ; needed for some rules below
    '(;; our normal form is to let these open up to calls to bvlt and sbvlt:
      bvle ;Thu Jan 19 16:35:59 2017
      bvge ;Thu Jan 19 16:35:59 2017
@@ -886,9 +887,12 @@
 ;    bvchop-of-bvxor-does-nothing ;this one seems safe..
      bvchop-of-bvxor ; drop?
 
-     ;; these replace the numeric bound rules
+     ;; these replace the numeric bound rules, and require the unsigned-byte-p-forced rules
      <-lemma-for-known-operators-axe-alt
      <-lemma-for-known-operators-axe
+     <-lemma-for-known-operators-axe2
+     <-lemma-for-known-operators-axe3
+
      <-of-bv-and-non-positive-constant ;Thu May 17 00:37:24 2012
 
      ;; We leave most commutativity rules out of core-rules-bv, because they can be expensive for large nests
@@ -1949,7 +1953,6 @@
 
             bvcat-trim-high-size-when-constant-1
             )
-          (unsigned-byte-p-forced-rules)
           (boolean-rules)
           (base-rules)
           (bv-array-rules) ;todo: drop?
@@ -3752,8 +3755,6 @@
              +-becomes-bvplus-axe
              bvmult-of-bvplus-hack
              bvmult-of-bvmult-hack
-             <-lemma-for-known-operators-axe2
-             <-lemma-for-known-operators-axe3
              nthcdr-of-nthcdr
 
              cdr-of-group2

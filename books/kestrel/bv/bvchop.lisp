@@ -187,6 +187,7 @@
   :rule-classes :type-prescription)
 
 ;bozo drop any special cases
+;rename
 (defthm bvchop-bound
   (implies (and (syntaxp (and (quotep k)
                               (quotep n)))
@@ -196,6 +197,26 @@
            :do-not '(generalize eliminate-destructors)
            :in-theory (e/d (zip bvchop)
                            (unsigned-byte-p-of-bvchop)))))
+
+;rename
+(defthm bvchop-bound-2
+  (implies (and (<= (expt 2 size) k)
+                (natp size))
+           (< (bvchop size x) k)))
+
+;rename
+(defthm bvchop-bound-other
+  (implies (and (syntaxp (and (quotep k) (quotep n)))
+                (integerp k)
+                (<= (+ -1 (expt 2 n)) k))
+           (not (< k (bvchop n x)))))
+
+;rename
+(defthm bvchop-bound-lemma
+  (implies (posp size)
+           (not (< (expt 2 size) (bvchop (+ -1 size) x))))
+  :hints (("Goal" :use (:instance bvchop-upper-bound (n (+ -1 size)) (x x))
+           :in-theory (disable bvchop-upper-bound bvchop-bound-2))))
 
 ;; Do not remove: helps justify the correctness of some operations done by Axe.
 (defthm bvchop-of-ifix
@@ -574,8 +595,6 @@
   (implies (<= 0 x)
            (not (< x (bvchop size x))))
   :hints (("Goal" :in-theory (enable bvchop))))
-
-
 
 (defthm <-of-bvchop-and-bvchop-same
   (implies (and (<= s1 s2)

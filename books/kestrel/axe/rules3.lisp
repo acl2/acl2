@@ -2150,14 +2150,6 @@
 ;;                  ))
 ;;  :hints (("Goal" :in-theory (enable unsigned-byte-p))))
 
-(defthm bvchop-bound-lemma
-  (implies (posp size)
-           (not (< (EXPT 2 SIZE) (BVCHOP (+ -1 SIZE) x))))
-  :hints (("Goal" :use (:instance BVCHOP-UPPER-BOUND (n (+ -1 size)) (x x))
-           :in-theory (disable BVCHOP-UPPER-BOUND BVCHOP-BOUND-2)
-           )))
-
-
 ;; (skip -proofs
 ;; (defthm sbvdivdown-by-minus4-equal-0
 ;;    (implies (unsigned-byte-p 32 x)
