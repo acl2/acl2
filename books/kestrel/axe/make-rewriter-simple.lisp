@@ -431,7 +431,9 @@
                                                   node-replacement-array node-replacement-count refined-assumption-alist
                                                   rewrite-stobj count))
          (call-of-simplify-term `(,simplify-term-name term assumptions rule-alist interpreted-function-alist known-booleans limits monitored-symbols fns-to-elide memoizep count-hits print normalize-xors))
-         (call-of-simplify-dag `(,simplify-dag-name dag assumptions rule-alist interpreted-function-alist known-booleans normalize-xors limits memoize count-hits print monitored-symbols fns-to-elide)))
+         (call-of-simplify-dag `(,simplify-dag-name dag assumptions rule-alist interpreted-function-alist known-booleans normalize-xors limits memoize count-hits print monitored-symbols fns-to-elide))
+         (call-of-simplify-dag-core `(,simplify-dag-core-name dag assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist maybe-internal-context-array interpreted-function-alist limits rule-alist count-hits print known-booleans monitored-symbols fns-to-elide normalize-xors memoize))
+         )
     `(encapsulate ()
 
        (local (include-book "kestrel/lists-light/cdr" :dir :system))
@@ -5484,10 +5486,8 @@
                    limits)))))))
 
     (defthm ,(pack$ simplify-dag-core-name '-return-type)
-      (implies (and (not (myquotep (mv-nth 1 (,simplify-dag-core-name dag assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist maybe-internal-context-array interpreted-function-alist
-                                                                      limits rule-alist count-hits print known-booleans monitored-symbols fns-to-elide normalize-xors memoize))))
-                    (not (mv-nth 0 (,simplify-dag-core-name dag assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist maybe-internal-context-array interpreted-function-alist
-                                                            limits rule-alist count-hits print known-booleans monitored-symbols fns-to-elide normalize-xors memoize))) ; no error
+      (implies (and (not (myquotep (mv-nth 1 ,call-of-simplify-dag-core)))
+                    (not (mv-nth 0 ,call-of-simplify-dag-core)) ; no error
                     (pseudo-dagp dag)
                     (< (top-nodenum dag) *max-1d-array-length*)
                     (pseudo-term-listp assumptions)
@@ -5504,13 +5504,10 @@
                     (symbol-listp fns-to-elide)
                     (booleanp normalize-xors)
                     (booleanp memoize))
-               (and (pseudo-dagp (mv-nth 1 (,simplify-dag-core-name dag assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist maybe-internal-context-array interpreted-function-alist
-                                                                    limits rule-alist count-hits print known-booleans monitored-symbols fns-to-elide normalize-xors memoize)))
-                    (<= (len (mv-nth 1 (,simplify-dag-core-name dag assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist maybe-internal-context-array interpreted-function-alist
-                                                                limits rule-alist count-hits print known-booleans monitored-symbols fns-to-elide normalize-xors memoize)))
+               (and (pseudo-dagp (mv-nth 1 ,call-of-simplify-dag-core))
+                    (<= (len (mv-nth 1 ,call-of-simplify-dag-core))
                         *max-1d-array-length*)
-                    (rule-limitsp (mv-nth 2 (,simplify-dag-core-name dag assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist maybe-internal-context-array interpreted-function-alist
-                                                                limits rule-alist count-hits print known-booleans monitored-symbols fns-to-elide normalize-xors memoize)))))
+                    (rule-limitsp (mv-nth 2 ,call-of-simplify-dag-core))))
       :hints (("Goal" :do-not '(generalize eliminate-destructors)
                :in-theory (e/d (,simplify-dag-core-name
                                 natp-of-renumberingi
@@ -5521,10 +5518,8 @@
                                (myquotep natp)))))
 
     (defthm ,(pack$ simplify-dag-core-name '-return-type-corollary-linear)
-      (implies (and (not (myquotep (mv-nth 1 (,simplify-dag-core-name dag assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist maybe-internal-context-array interpreted-function-alist
-                                                                      limits rule-alist count-hits print known-booleans monitored-symbols fns-to-elide normalize-xors memoize))))
-                    (not (mv-nth 0 (,simplify-dag-core-name dag assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist maybe-internal-context-array interpreted-function-alist
-                                                            limits rule-alist count-hits print known-booleans monitored-symbols fns-to-elide normalize-xors memoize))) ; no error
+      (implies (and (not (myquotep (mv-nth 1 ,call-of-simplify-dag-core)))
+                    (not (mv-nth 0 ,call-of-simplify-dag-core)) ; no error
                     (pseudo-dagp dag)
                     (< (top-nodenum dag) *max-1d-array-length*)
                     (pseudo-term-listp assumptions)
@@ -5541,8 +5536,8 @@
                     (symbol-listp fns-to-elide)
                     (booleanp normalize-xors)
                     (booleanp memoize))
-               (and (not (< '1152921504606846973 (caar (mv-nth 1 (,simplify-dag-core-name dag assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist maybe-internal-context-array interpreted-function-alist limits rule-alist count-hits print known-booleans monitored-symbols fns-to-elide normalize-xors memoize)))))
-                    (<= 0 (caar (mv-nth 1 (,simplify-dag-core-name dag assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist maybe-internal-context-array interpreted-function-alist limits rule-alist count-hits print known-booleans monitored-symbols fns-to-elide normalize-xors memoize))))))
+               (and (not (< '1152921504606846973 (caar (mv-nth 1 ,call-of-simplify-dag-core))))
+                    (<= 0 (caar (mv-nth 1 ,call-of-simplify-dag-core)))))
                :rule-classes :linear
                :hints (("Goal" :use ,(pack$ simplify-dag-core-name '-return-type)
                :in-theory (e/d (car-of-car-when-pseudo-dagp-cheap) (,(pack$ simplify-dag-core-name '-return-type))))))
@@ -5603,8 +5598,7 @@
                    ((mv dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
                     (empty-dag-array initial-array-size))
                    ((mv erp dag-or-quotep limits)
-                    (,simplify-dag-core-name dag assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nil interpreted-function-alist limits rule-alist
-                                             count-hits print known-booleans monitored-symbols fns-to-elide normalize-xors memoize))
+                    (,simplify-dag-core-name dag assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist nil interpreted-function-alist limits rule-alist count-hits print known-booleans monitored-symbols fns-to-elide normalize-xors memoize))
                    ((when erp) (mv erp nil limits))
                    (- (and print (cw ")~%"))) ; balances "(Simplifying DAG with memoization ..."
                    )
@@ -5959,27 +5953,28 @@
                              assumptions
                              rule-alist
                              interpreted-function-alist
+                             known-booleans
+                             normalize-xors
+                             limits
+                             memoizep
                              monitored-symbols
                              fns-to-elide
-                             memoizep
                              ;; todo: add context array and other args?
                              count-hits
-                             print
-                             normalize-xors
-                             known-booleans
-                             limits)
+                             print)
       (declare (xargs :guard (and (pseudo-termp term)
                                   (pseudo-term-listp assumptions)
                                   (rule-alistp rule-alist)
                                   (interpreted-function-alistp interpreted-function-alist)
+                                  (symbol-listp known-booleans)
+                                  (booleanp normalize-xors)
+                                  (rule-limitsp limits)
                                   (symbol-listp monitored-symbols)
                                   (symbol-listp fns-to-elide)
                                   (booleanp memoizep)
                                   (booleanp count-hits)
                                   (print-levelp print)
-                                  (booleanp normalize-xors)
-                                  (symbol-listp known-booleans)
-                                  (rule-limitsp limits))))
+                                  )))
       (b* (((mv erp dag) (,simplify-term-name term
                                               assumptions
                                               rule-alist
@@ -6010,7 +6005,7 @@
                     (booleanp normalize-xors)
                     (symbol-listp known-booleans)
                     (rule-limitsp limits))
-               (pseudo-termp (mv-nth 1 (,simp-term-name term assumptions rule-alist interpreted-function-alist monitored-symbols fns-to-elide memoizep count-hits print normalize-xors known-booleans limits))))
+               (pseudo-termp (mv-nth 1 (,simp-term-name term assumptions rule-alist interpreted-function-alist known-booleans normalize-xors limits memoizep monitored-symbols fns-to-elide count-hits print))))
       :hints (("Goal" :use (:instance ,(pack$ 'type-of-mv-nth-1-of- simplify-term-name))
                :do-not '(generalize eliminate-destructors)
                :do-not-induct t
@@ -6024,57 +6019,55 @@
                              assumptions
                              rule-alist
                              interpreted-function-alist
+                             known-booleans
+                             normalize-xors
+                             limits
+                             memoizep
                              monitored-symbols
                              fns-to-elide
-                             memoizep
                              ;; todo: add context array and other args?
                              count-hits
-                             print
-                             normalize-xors
-                             known-booleans
-                             limits)
+                             print)
       (declare (xargs :guard (and (pseudo-term-listp terms)
                                   (pseudo-term-listp assumptions)
                                   (rule-alistp rule-alist)
                                   (interpreted-function-alistp interpreted-function-alist)
+                                  (symbol-listp known-booleans)
+                                  (booleanp normalize-xors)
+                                  (rule-limitsp limits)
+                                  (booleanp memoizep)
                                   (symbol-listp monitored-symbols)
                                   (symbol-listp fns-to-elide)
-                                  (booleanp memoizep)
                                   (booleanp count-hits)
-                                  (print-levelp print)
-                                  (booleanp normalize-xors)
-                                  (symbol-listp known-booleans)
-                                  (rule-limitsp limits))))
+                                  (print-levelp print))))
       (if (endp terms)
           (mv (erp-nil) nil)
         (b* (((mv erp first-res)
               (,simp-term-name (first terms)
                                assumptions
                                rule-alist
-                               nil
+                               nil ; todo
+                               known-booleans normalize-xors limits nil
                                monitored-symbols
                                fns-to-elide
-                               nil
-                               t
-                               print
-                               normalize-xors known-booleans limits))
+                               t ; todo
+                               print))
              ((when erp) (mv erp nil))
              ((mv erp rest-res)
               (,simp-terms-name (rest terms)
                                 assumptions
                                 rule-alist
                                 interpreted-function-alist
+                                known-booleans normalize-xors limits memoizep
                                 monitored-symbols fns-to-elide
-                                memoizep
                                 count-hits
-                                print
-                                normalize-xors known-booleans limits))
+                                print))
              ((when erp) (mv erp nil)))
           (mv (erp-nil)
               (cons first-res rest-res)))))
 
     (defthm ,(pack$ 'true-listp-of-mv-nth-1-of- simp-terms-name)
-      (true-listp (mv-nth 1 (,simp-terms-name terms assumptions rule-alist interpreted-function-alist monitored-symbols fns-to-elide memoizep count-hits print normalize-xors known-booleans limits)))
+      (true-listp (mv-nth 1 (,simp-terms-name terms assumptions rule-alist interpreted-function-alist known-booleans normalize-xors limits memoizep monitored-symbols fns-to-elide count-hits print)))
       :rule-classes :type-prescription
       :hints (("Goal" :in-theory (enable ,simp-terms-name))))
 
@@ -6091,7 +6084,7 @@
                     (booleanp normalize-xors)
                     (symbol-listp known-booleans)
                     (rule-limitsp limits))
-               (pseudo-term-listp (mv-nth 1 (,simp-terms-name terms assumptions rule-alist interpreted-function-alist monitored-symbols fns-to-elide memoizep count-hits print normalize-xors known-booleans limits))))
+               (pseudo-term-listp (mv-nth 1 (,simp-terms-name terms assumptions rule-alist interpreted-function-alist known-booleans normalize-xors limits memoizep monitored-symbols fns-to-elide count-hits print))))
       :hints (("Goal" :in-theory (enable ,simp-terms-name))))
 
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

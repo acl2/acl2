@@ -200,14 +200,14 @@
                        assumptions
                        rule-alist
                        nil
+                       (acl2::known-booleans wrld)
+                       nil
+                       nil ; limits
+                       t ; memoizep
                        monitor
                        nil
-                       t ; memoizep
                        nil
                        t ;:brief  ;nil
-                       nil
-                       (acl2::known-booleans wrld)
-                       nil ; limits
                        ))
 
 ;; Test whether the stack height of X86 is less than it was when the stack pointer was OLD-RSP.
@@ -883,9 +883,7 @@
           `(equal ,address-term ,(acl2::sublis-var-simple (acons state-var one-rep-term nil) address-term)))
          ((mv erp result)
           (acl2::simp-term-x86 address-unchanged-term nil ; assumptions
-                               rule-alist nil nil nil nil nil nil nil (acl2::known-booleans (w state))
-                               nil ; limits
-                               ))
+                               rule-alist nil (acl2::known-booleans (w state)) nil nil nil nil nil nil nil))
          ((when erp) (mv erp nil state)))
       (if (equal result *t*)
           (prog2$ (cw "(Proved that address ~x0 is unchanged.)~%" address-term)
@@ -1127,11 +1125,9 @@
 
          ;; Try to prove the invariant by rewriting:
          ((mv erp simplified-invariant)
-          (acl2::simp-term-x86 term-to-prove assumptions rule-alist nil
+          (acl2::simp-term-x86 term-to-prove assumptions rule-alist nil (acl2::known-booleans (w state)) nil nil nil
                                '(x86isa::xr-of-xw-diff) ; rules-to-monitor
-                               nil nil nil nil nil (acl2::known-booleans (w state))
-                               nil ; limits
-                               ))
+                               nil nil nil))
          ((when erp) (mv erp nil nil state)))
       (if (equal *t* simplified-invariant)
           (prog2$ (cw "Proved it!)~%")

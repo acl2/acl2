@@ -12,12 +12,8 @@
 
 (in-package "ACL2")
 
-;; Tests of the basic rewriter
-
 ;; TODO: add more tests
-
 ;; TODO: Add tests of simplify-dag-basic
-
 ;; TODO: test xor normalization
 
 (include-book "rewriter-basic")
@@ -47,15 +43,15 @@
                     ,assumptions
                     ,rule-alist
                     ,interpreted-function-alist
+                    ,known-booleans
+                    ,normalize-xors
+                    ,limits
+                    ,memoizep
                     ,monitored-symbols
                     ,fns-to-elide
-                    ,memoizep
                     ;; todo: add context array and other args?
                     ,count-hits
-                    ,print
-                    ,normalize-xors
-                    ,known-booleans
-                    ,limits))
+                    ,print))
 
 ;; A simple test that applies the rewrite rule CAR-CONS to simplify a term:
 (assert!
@@ -87,14 +83,14 @@
 ;; A test that returns a variable
 (assert!
  (mv-let (erp res)
-   (simp-term-basic '(car (cons x y)) nil (make-rule-alist! '(car-cons) (w state)) nil nil nil nil nil t nil (known-booleans (w state)) nil)
+   (simp-term-basic '(car (cons x y)) nil (make-rule-alist! '(car-cons) (w state)) nil (known-booleans (w state)) nil nil nil nil nil nil t)
    (and (not erp)
         (equal res 'x))))
 
 ;; A test that returns a constant
 (assert!
  (mv-let (erp res)
-   (simp-term-basic '(car (cons '2 y)) nil (make-rule-alist! '(car-cons) (w state)) nil nil nil nil nil t nil (known-booleans (w state)) nil)
+   (simp-term-basic '(car (cons '2 y)) nil (make-rule-alist! '(car-cons) (w state)) nil (known-booleans (w state)) nil nil nil nil nil nil t)
    (and (not erp)
         (equal res ''2))))
 
@@ -111,14 +107,15 @@
                         ',assumptions
                         nil ; rule-alist
                         nil ; interpreted-function-alist
+                        (known-booleans (w state))
+                        nil ; normalize-xors
+                        nil
+                        ,memoizep
                         nil ; monitored-symbols
                         nil ; fns-to-elide
-                        ,memoizep
                         nil   ; count-hits
                         nil ; print
-                        nil ; normalize-xors
-                        (known-booleans (w state))
-                        nil)
+                        )
        (and (not erp)
             (equal term ',output-term)))))
 
@@ -709,14 +706,15 @@
                     nil     ; assumptions
                     (make-rule-alist! '(rule1) (w state))
                     nil     ; interpreted-function-alist
+                    (known-booleans (w state))
+                    nil     ; normalize-xors
+                    nil
+                    t       ; memoizep
                     nil     ; monitored-symbols
                     nil     ; fns-to-elide
-                    t       ; memoizep
                     t       ; count-hits
                     t       ; print
-                    nil     ; normalize-xors
-                    (known-booleans (w state))
-                    nil)
+                    )
    (and (not erp) ;no error
         ;; resulting term is (FOO X):
         (equal term '(binary-+ '6 (len y))))))
@@ -728,14 +726,15 @@
                     nil     ; assumptions
                     (make-rule-alist! '(rule1) (w state))
                     nil     ; interpreted-function-alist
+                    (known-booleans (w state))
+                    nil     ; normalize-xors
+                    nil
+                    t       ; memoizep
                     nil     ; monitored-symbols
                     nil     ; fns-to-elide
-                    t       ; memoizep
                     t       ; count-hits
                     t       ; print
-                    nil     ; normalize-xors
-                    (known-booleans (w state))
-                    nil)
+                    )
    (and (not erp) ;no error
         ;; resulting term is (FOO X):
         (equal term '(len (binary-append '(1 2 3) y))))))
