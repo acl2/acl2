@@ -565,14 +565,6 @@
 ;; ;;BBOZO, yikes i think the guards might sometimes fail to be satisfied, since we sometimes evaluate both branches of an if...
 ;; ;so the skip-proofs can lead to bad things...
 
-;; ;fixme is this the complete list?
-;; ;fixme does this list exist somewhere else?
-;; (defconst *acl2-primitives*
-;;   '(;;these don't have guards:
-;;     equal stringp characterp acl2-numberp integerp rationalp complex-rationalp consp symbolp if cons
-;;           ;;these do have guards:
-;;           binary-+ binary-* < unary-- unary-/ car cdr realpart imagpart complex numerator denominator char-code code-char symbol-package-name symbol-name coerce bad-atom<= pkg-witness pkg-imports intern-in-package-of-symbol))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (mutual-recursion
