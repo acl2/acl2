@@ -405,9 +405,29 @@
        (create-endorsers-possiblep-loop cert
                                         (set::tail endorsers)
                                         systate))
+
      ///
+
      (fty::deffixequiv create-endorsers-possiblep-loop
-       :args ((cert certificatep) (systate system-statep))))))
+       :args ((cert certificatep) (systate system-statep)))
+
+     (defruled create-endorser-possiblep-when-create-endorsers-possiblep-loop
+       (implies (and (create-endorsers-possiblep-loop cert endorsers systate)
+                     (set::in endorser endorsers)
+                     (set::in endorser (correct-addresses systate)))
+                (create-endorser-possiblep
+                 cert (get-validator-state endorser systate)))
+       :induct t)))
+
+  ///
+
+  (defruled create-endorser-possiblep-when-create-endorsers-possiblep
+    (implies (and (create-endorsers-possiblep cert systate)
+                  (set::in endorser (certificate->endorsers cert))
+                  (set::in endorser (correct-addresses systate)))
+             (create-endorser-possiblep
+              cert (get-validator-state endorser systate)))
+    :enable create-endorser-possiblep-when-create-endorsers-possiblep-loop))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
