@@ -6151,6 +6151,7 @@
 
     ;; A utility to simplify a dag and name the result.
     ;; Creates a constant named NAME, whose value is a DAG representing the simplified form of DAG.
+    ;; See def-simplified.lisp for a version of this for terms (todo: add that to this generator)
     (defmacro ,def-simplified-dag-name (&whole whole-form
                                         name
                                         dag
