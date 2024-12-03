@@ -1625,7 +1625,6 @@
           (x86-bv-rules)
           (acl2::reassemble-bv-rules) ; add to core-rules-bv?
           (acl2::array-reduction-rules)
-          (acl2::unsigned-byte-p-forced-rules)
           (if-lifting-rules)
           (acl2::convert-to-bv-rules)
           '(acl2::boolor-of-non-nil)
@@ -4722,7 +4721,8 @@
             )
           (acl2::core-rules-bv) ; trying
           (acl2::unsigned-byte-p-rules)
-          (acl2::unsigned-byte-p-forced-rules)))
+          (acl2::unsigned-byte-p-forced-rules) ;remove?
+          ))
 
 (defun tester-proof-rules ()
   (declare (xargs :guard t))
@@ -4781,8 +4781,7 @@
           (acl2::base-rules)
           (acl2::core-rules-bv) ; trying
           (acl2::bv-of-logext-rules)
-          (acl2::unsigned-byte-p-rules)
-          (acl2::unsigned-byte-p-forced-rules)))
+          (acl2::unsigned-byte-p-rules)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
