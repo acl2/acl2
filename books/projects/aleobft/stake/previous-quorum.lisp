@@ -76,8 +76,9 @@
     "This is used by @(tsee previous-quorum-p) to define our invariant.
      The validator whose state is @('vstate') is
      the one that has the certificate in the DAG.
-     The guard ensures that the validator can calculate the committee.
-     We check the non-zeroness of the quorum,
+     The guard ensures that the validator can calculate the committee.")
+   (xdoc::p
+    "To check the non-zeroness of the quorum,
      we equivalently check the non-emptiness of the previous references.")
    (xdoc::p
     "We prove a theorem about the predecessors of @('cert'),
