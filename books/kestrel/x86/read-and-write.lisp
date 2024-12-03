@@ -2681,13 +2681,10 @@
 ;;
 ;;                            )))
 
-
-
-
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Read N bytes, starting at ADDR.  Unlike read, this returns a list.
+;; TODO: Consider putting the N parameter first
 (defund read-bytes (addr n x86)
   (declare (xargs :guard (and (integerp addr)
                               (natp n))
