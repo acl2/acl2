@@ -130,6 +130,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defthm bv-array-read-of-+-of-constant-shorten
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep vals)))
+                (< (+ k index) len) ; gen?
+                (natp k)
+                (natp len)
+                (natp index))
+           (equal (bv-array-read width len (+ k index) vals)
+                  (bv-array-read width (- len k) index (nthcdr k vals))))
+  :hints (("Goal" :in-theory (enable bv-array-read))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; a variant for index n*k+i where i<k
 (defthm bv-array-read-of-bvplus-of-bvmult-discard-vals
   (implies (and (syntaxp (and (quotep data)
