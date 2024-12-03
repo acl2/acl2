@@ -300,13 +300,13 @@
                              rule-alist
                              interpreted-function-alist
                              (known-booleans (w state))
+                             normalize-xors
                              nil ; limits
                              monitor
                              nil ; fns-to-elide
                              nil ; memoizep
                              t ; count-hits ; todo: pass in
-                             print
-                             normalize-xors))
+                             print))
        ((when erp) (mv *error* nil state))
        ((when (quotep dag))
         ;; todo: factor out:

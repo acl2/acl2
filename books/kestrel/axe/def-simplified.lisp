@@ -133,13 +133,13 @@
                              rule-alist
                              interpreted-function-alist
                              (known-booleans (w state))
-                             nil
+                             normalize-xors
+                             nil ; limits
                              monitor
                              nil ; fns-to-elide
                              memoizep
                              count-hits
-                             print
-                             normalize-xors))
+                             print))
        ((when erp)
         (mv erp nil state)))
     (mv (erp-nil)
