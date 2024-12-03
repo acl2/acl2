@@ -6043,11 +6043,11 @@
               (,simp-term-name (first terms)
                                assumptions
                                rule-alist
-                               nil ; todo
+                               interpreted-function-alist
                                known-booleans normalize-xors limits nil
                                monitored-symbols
                                fns-to-elide
-                               t ; todo
+                               count-hits
                                print))
              ((when erp) (mv erp nil))
              ((mv erp rest-res)
