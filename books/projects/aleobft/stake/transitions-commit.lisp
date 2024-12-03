@@ -82,7 +82,8 @@
     "The anchor must be present in the commit round,
      i.e. there must be a certificate authored by the leader.
      To calculate the leader,
-     we need the active committee at the even round.")
+     we need the active committee at the even round.
+     The committee must be non-empty in order to calculate the leader.")
    (xdoc::p
     "The current odd round must have sufficient stake of
      voters with edges to the anchor.
@@ -129,6 +130,8 @@
        ((unless (> commit-round vstate.last))
         nil)
        (prev-commtt (active-committee-at-round commit-round vstate.blockchain))
+       ((unless (committee-nonemptyp prev-commtt))
+        nil)
        (leader (leader-at-round commit-round prev-commtt))
        (anchor? (cert-with-author+round leader commit-round vstate.dag))
        ((unless anchor?)

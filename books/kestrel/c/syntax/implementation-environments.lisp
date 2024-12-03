@@ -122,6 +122,22 @@
                 (<= 8 llong-bytes))
   :pred ienvp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv-default ()
+  :short "A default implementation environment."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This has no particular significance,
+     but we set all the byte sizes to their minima,
+     and the plain @('char') flag to @('nil') (i.e. unsigned)."))
+  (make-ienv :short-bytes 2
+             :int-bytes 4
+             :long-bytes 8
+             :llong-bytes 8
+             :plain-char-signedp nil))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define schar-min ()

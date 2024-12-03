@@ -133,6 +133,7 @@
                              rule-alist
                              interpreted-function-alist
                              (known-booleans (w state))
+                             nil
                              monitor
                              nil ; fns-to-elide
                              memoizep
@@ -151,7 +152,7 @@
                 )
         state)))
 
-;; ;; TODO: update
+;; ;; TODO: update, or use defmacro-doc
 ;; (defxdoc def-simplified
 ;;   :parents (axe)
 ;;   :short "Given a specification, unroll all recursion, yielding a DAG that only includes bit-vector and array operations."
@@ -174,6 +175,7 @@
 ;; <p>To inspect the resulting form, you can use @('print-list') on the generated defconst.</p>")
 
 ;TODO: Automate even more by unrolling all functions down to the BV and array ops?
+;; TODO: Should "term" be in the name?
 (defmacro def-simplified (&whole whole-form
                                  defconst-name ;; The name of the dag to create
                                  term          ;; The term to simplify

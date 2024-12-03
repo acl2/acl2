@@ -777,6 +777,7 @@
     defconst-computed
     defconst-computed2 ;drop?
     defconst-computed3
+    def-simplified-dag-basic
 
     ;; Axe stuff (TODO: Maybe remove these since they are just functions we call):
     simp-dag
@@ -793,6 +794,7 @@
     ;; simplify-terms-using-each-other
     make-cons-nest
     dag-fns
+    dag-vars
     make-rule-alist
     make-rule-alist!
     dagify-term

@@ -62,6 +62,9 @@
      and we use @(tsee path-to-author+round) to find the anchor, if any,
      at @('previous-round') reachable from the current anchor.
      If there is no such reachable previous anchor,
+     including the possibility that
+     there is no leader because the committee is empty
+     (although this never happens, due to invariants proved elsewhere),
      we recursively examine the even round
      just before @('previous-round'),
      with the same @('current-anchor');
@@ -93,7 +96,7 @@
      and we require in the guard that the active committee
      is known at @('previous-round'),
      which implies that it is also known at smaller rounds.
-     Note that this @('blockchain') input does not change in the recursion:
+     Note that the @('blockchain') input does not change in the recursion:
      it is simply the current blockchain,
      which this operation is not extending;
      this operation is just collecting the anchors
@@ -139,23 +142,29 @@
                      (> previous-round last-committed-round)))
         (list (certificate-fix current-anchor)))
        (commtt (active-committee-at-round previous-round blockchain))
+       ((unless (committee-nonemptyp commtt))
+        (collect-anchors current-anchor
+                         (- previous-round 2)
+                         last-committed-round
+                         dag
+                         blockchain))
        (previous-leader (leader-at-round previous-round commtt))
        (previous-anchor? (path-to-author+round current-anchor
                                                previous-leader
                                                previous-round
-                                               dag)))
-    (if previous-anchor?
-        (cons (certificate-fix current-anchor)
-              (collect-anchors previous-anchor?
-                               (- previous-round 2)
-                               last-committed-round
-                               dag
-                               blockchain))
-      (collect-anchors current-anchor
-                       (- previous-round 2)
-                       last-committed-round
-                       dag
-                       blockchain)))
+                                               dag))
+       ((unless previous-anchor?)
+        (collect-anchors current-anchor
+                         (- previous-round 2)
+                         last-committed-round
+                         dag
+                         blockchain)))
+    (cons (certificate-fix current-anchor)
+          (collect-anchors previous-anchor?
+                           (- previous-round 2)
+                           last-committed-round
+                           dag
+                           blockchain)))
   :measure (nfix previous-round)
   :hints (("Goal" :in-theory (enable o-p o-finp o< nfix)))
   :guard-hints

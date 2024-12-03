@@ -65,7 +65,7 @@
                            monitored-symbols
                            nil
                            memoizep
-                           nil nil nil known-booleans))
+                           nil nil nil known-booleans nil))
          ((when erp) (mv erp nil nil))
          )
       (if (equal result-term term) ;; no change: ; todo: flatten, as we do below?

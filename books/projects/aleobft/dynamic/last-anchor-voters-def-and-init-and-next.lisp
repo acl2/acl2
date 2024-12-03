@@ -83,7 +83,8 @@
          (>= (set::cardinality (successors (last-anchor vstate all-vals)
                                            vstate.dag))
              (1+ (committee-max-faulty commtt)))))
-  :guard-hints (("Goal" :in-theory (enable last-anchor-in-dag))))
+  :guard-hints (("Goal" :in-theory (enable last-anchor-in-dag)))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -102,7 +103,10 @@
                    (validator-last-anchor-voters-p
                     (get-validator-state val systate)
                     (all-addresses systate))))
-  :guard-hints (("Goal" :in-theory (enable last-anchor-present-p-necc))))
+  :guard-hints (("Goal" :in-theory (enable last-anchor-present-p-necc)))
+  ///
+  (fty::deffixequiv-sk last-anchor-voters-p
+    :args ((systate system-statep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

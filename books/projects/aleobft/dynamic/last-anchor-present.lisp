@@ -61,11 +61,14 @@
                    (b* ((vstate (get-validator-state val systate)))
                      (implies (not (equal (validator-state->last vstate) 0))
                               (last-anchor vstate
-                                           (all-addresses systate)))))))
+                                           (all-addresses systate))))))
+  ///
+  (fty::deffixequiv-sk last-anchor-present-p
+    :args ((systate system-statep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule last-anchor-present-p-when-init
+(defruled last-anchor-present-p-when-init
   :short "Establishment of the invariant:
           the invariant holds in any initial state."
   :long
@@ -345,15 +348,13 @@
           reachable from an initial state via a sequence of events."
 
   (defruled last-anchor-present-p-of-events-next
-    (implies
-     (and (system-statep systate)
-          (last-anchor-present-p systate)
-          (ordered-even-p systate)
-          (last-blockchain-round-p systate)
-          (events-possiblep events systate))
-     (and (last-anchor-present-p (events-next events systate))
-          (ordered-even-p (events-next events systate))
-          (last-blockchain-round-p (events-next events systate))))
+    (implies (and (last-anchor-present-p systate)
+                  (ordered-even-p systate)
+                  (last-blockchain-round-p systate)
+                  (events-possiblep events systate))
+             (and (last-anchor-present-p (events-next events systate))
+                  (ordered-even-p (events-next events systate))
+                  (last-blockchain-round-p (events-next events systate))))
     :induct t
     :disable ((:e tau-system))
     :enable (events-possiblep
@@ -363,8 +364,7 @@
              last-blockchain-round-p-of-event-next))
 
   (defruled last-anchor-present-p-when-reachable
-    (implies (and (system-statep systate)
-                  (system-initp systate)
+    (implies (and (system-initp systate)
                   (events-possiblep events systate))
              (last-anchor-present-p (events-next events systate)))
     :disable ((:e tau-system))

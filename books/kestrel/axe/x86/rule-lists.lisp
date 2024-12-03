@@ -493,6 +493,15 @@
     mxcsr-of-write-byte-to-segment
     ))
 
+;; sophisticated scheme for removing inner, shadowed writes
+(defund shadowed-write-rules ()
+  (declare (xargs :guard t))
+  '(write-becomes-write-of-clear-extend-axe
+    clear-extend-of-write-continue-axe
+    clear-extend-of-write-finish
+    clear-extend-of-write-of-clear-retract
+    write-of-clear-retract))
+
 ;; 'Read Over Write' and similar rules for state components. Our normal form
 ;; (at least for 64-bit code) includes 3 kinds of state changes, namely calls
 ;; to XW, WRITE, and SET-FLAG (todo: update this comment).
@@ -1193,7 +1202,6 @@
 ;; ;; x86isa::xr-of-if-special-case-for-fault ; this was bad without x86isa::64-bit-modep-of-if.  why?  maybe lets us expand fetch-decode-execute when we shouldn't?  may also need rb-of-if and such to help get-prefixes.  maybe only open fetch-code-execute when we can resolve the get-prefixes.  but that might cause work to be redone, unless we add support for binding hyps
 ;; ;; ;x86isa::rb-of-if-arg2
 ;;   ;; x86isa::app-view-of-if x86isa::x86p-of-if read-of-if
-;;   ;;acl2::<-of-+-cancel-1+-1
 ;;   ;;acl2::<-minus-zero
 ;;   x86isa::64-bit-modep-of-if
 ;;   x86isa::app-view-of-if
@@ -1591,6 +1599,7 @@
   (append (symbolic-execution-rules)
           (reader-and-writer-intro-rules)
           (read-over-write-rules)
+          (shadowed-write-rules) ; requires the x86 rewriter
           (acl2::base-rules)
           (acl2::type-rules)
           ;; (acl2::logext-rules) ;;caused problems ;;todo: there are also logext rules below
@@ -1616,7 +1625,6 @@
           (x86-bv-rules)
           (acl2::reassemble-bv-rules) ; add to core-rules-bv?
           (acl2::array-reduction-rules)
-          (acl2::unsigned-byte-p-forced-rules)
           (if-lifting-rules)
           (acl2::convert-to-bv-rules)
           '(acl2::boolor-of-non-nil)
@@ -1774,14 +1782,23 @@
             x86isa::canonical-address-p-between-special3
             x86isa::canonical-address-p-between-special4
 
-            acl2::<-of-+-cancel-2-2
+            acl2::<-of-+-cancel-1-2
             acl2::<-of-+-cancel-2-1
+            acl2::<-of-+-cancel-2-2
+            acl2::<-of-+-cancel-second-of-more-and-only ; more?
+            acl2::<-of-+-cancel-1+-1+ ;; acl2::<-of-+-cancel-first-and-first
+            acl2::<-of-+-cancel-1+-1 ; todo: same as acl2::<-of-+-cancel.  kill that one
+            acl2::<-of-+-cancel-3-1
+
+            acl2::<-of-+-and-+-cancel-constants ; for array index calcs, and separateness ; todo: make these 3 names more similar?
+            acl2::<-of-+-combine-constants-1
+            acl2::<-of-+-combine-constants-2
+
             acl2::integerp-of-+-when-integerp-1-cheap
             acl2::fix-when-integerp
             x86isa::integerp-when-canonical-address-p-cheap ; requires acl2::equal-same
             x86isa::member-p-canonical-address-listp
             acl2::fold-consts-in-+
-            acl2::<-of-+-cancel-2-1
             acl2::ash-negative-becomes-slice-axe ; move?
 
             ;;one-byte-opcode-execute ;shilpi leaves this enabled, but it seems dangerous
@@ -1803,7 +1820,6 @@
             ;;x86isa::xr-xw-intra-array-field
             x86isa::xr-of-xw-intra-field
             x86isa::xr-of-xw-inter-field
-            acl2::<-of-+-cancel-1-2
             x86isa::program-at-xw-in-app-view
             x86isa::xr-app-view-mv-nth-1-wb ;has a hyp of t
             x86isa::program-at-wb-disjoint ;drop?
@@ -4445,7 +4461,6 @@
   (declare (xargs :guard t))
   (append '(acl2::integerp-of-expt
             acl2::integerp-of-*                 ; for array index calcs
-            acl2::<-of-+-and-+-cancel-constants ; for array index calcs
             acl2::my-integerp-<-non-integerp    ; for array index calcs
             acl2::bvsx-when-bvlt
             x86isa::canonical-address-p-between-special5
@@ -4460,13 +4475,10 @@
             acl2::not-bvlt-of-max-arg2
             acl2::<-of-*-when-constant-integers
             ;separate-when-separate-2 ; todo: drop? but that caused problems
-            acl2::<-of-+-cancel-second-of-more-and-only ; more?
-            acl2::<-of-+-cancel-1+-1+ ;; acl2::<-of-+-cancel-first-and-first
             acl2::collect-constants-over-<-2
             acl2::commutativity-of-*-when-constant
             acl2::<-of-*-of-constant-and-constant
             acl2::rationalp-when-integerp
-            acl2::<-of-+-cancel-1+-1 ; todo: same as acl2::<-of-+-cancel.  kill that one
             acl2::+-of-+-of---same
             acl2::<-of-minus-and-constant ; ensure needed
             acl2::fix-when-acl2-numberp
@@ -4523,12 +4535,10 @@
             read-1-of-write-1-both
             acl2::bvlt-of-constant-when-usb-dag ; rename
             ;; separate-of-1-and-1 ; do we ever need this?
-            acl2::<-of-+-cancel-3-1
             acl2::equal-of-bvshl-and-constant ; move to core-rules-bv?
             ;; acl2::equal-of-myif-arg1-safe
             ;; acl2::equal-of-myif-arg2-safe
             acl2::bvminus-of-bvplus-and-bvplus-same-2-2
-            acl2::right-cancellation-for-+ ; todo: switch to an arithmetic-light rule
             acl2::bvplus-of-unary-minus
             acl2::bvplus-of-unary-minus-arg2
             acl2::if-becomes-bvif-1-axe
@@ -4711,7 +4721,8 @@
             )
           (acl2::core-rules-bv) ; trying
           (acl2::unsigned-byte-p-rules)
-          (acl2::unsigned-byte-p-forced-rules)))
+          (acl2::unsigned-byte-p-forced-rules) ;remove?
+          ))
 
 (defun tester-proof-rules ()
   (declare (xargs :guard t))
@@ -4770,8 +4781,7 @@
           (acl2::base-rules)
           (acl2::core-rules-bv) ; trying
           (acl2::bv-of-logext-rules)
-          (acl2::unsigned-byte-p-rules)
-          (acl2::unsigned-byte-p-forced-rules)))
+          (acl2::unsigned-byte-p-rules)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4786,7 +4796,6 @@
      acl2::memberp-of-nil
 ;     acl2::member-equal-of-cons
      acl2::equal-of-same-cancel-4
-     acl2::right-cancellation-for-+
      x86isa::logext-64-does-nothing-when-canonical-address-p
      x86isa::equal-of-if-constants
      x86isa::equal-of-if-constants-alt

@@ -67,7 +67,8 @@
          (if (equal (validator-state->last vstate) 0)
              nil
            (certificate-causal-history (last-anchor vstate all-vals)
-                                       (validator-state->dag vstate)))))
+                                       (validator-state->dag vstate))))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -83,7 +84,10 @@
                    (validator-committed-redundant-p
                     (get-validator-state val systate)
                     (all-addresses systate))))
-  :guard-hints (("Goal" :in-theory (enable last-anchor-present-p-necc))))
+  :guard-hints (("Goal" :in-theory (enable last-anchor-present-p-necc)))
+  ///
+  (fty::deffixequiv-sk committed-redundant-p
+    :args ((systate system-statep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

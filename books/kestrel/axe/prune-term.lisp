@@ -240,6 +240,7 @@
                              rule-alist
                              interpreted-function-alist
                              (known-booleans (w state))
+                             nil
                              monitored-rules
                              nil ; fns-to-elide
                              nil ; memoizep

@@ -2535,7 +2535,7 @@
 ;;                             )))))
 
 ;gen the n's?
-(defthm write-of-write-same
+(defthm write-of-write-same-helper
   (implies (and ;(app-view x86)
                 (integerp addr)
                 (unsigned-byte-p 48 n)
@@ -2556,6 +2556,14 @@
                                      )
                            (;X86ISA::!MEMI$INLINE
                             )))))
+
+(defthm write-of-write-same
+  (implies (and (unsigned-byte-p 48 n) ; drop?
+                )
+           (equal (write n addr val1 (write n addr val2 x86))
+                  (write n addr val1 x86)))
+  :hints (("Goal" :use (:instance write-of-write-same-helper (addr (ifix addr)))
+           :in-theory (e/d (ifix) (write-of-write-same-helper)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2586,15 +2594,18 @@
 ;todo: gen
 (defthm write-of-write-of-write-same
   (implies (and (integerp addr)
-                (integerp addr2)
+;                (integerp addr2)
                 (natp n)
                 ;(natp n2)
                 (unsigned-byte-p 48 n) ; drop? but first change the write-of-write-same
                 )
            (equal (write n addr val3 (write n2 addr2 val2 (write n addr val1 x86)))
                   (write n addr val3 (write n2 addr2 val2 x86))))
-  :hints (("Goal" :expand (write n2 addr2 val2 (write n addr val1 x86))
-           :in-theory (enable write)
+  :hints (("Goal" :expand ((write n2 addr2 val2 (write n addr val1 x86))
+                           (write n2 0 val2 (write n addr val1 x86))
+                           (write n2 addr2 val2 (write n 0 val1 x86))
+                           (write n2 0 val2 (write n 0 val1 x86)))
+           :in-theory (enable write ifix)
            :do-not '(generalize eliminate-destructors)
            :induct (write n2 addr2 val2 x86))))
 
@@ -2670,13 +2681,10 @@
 ;;
 ;;                            )))
 
-
-
-
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Read N bytes, starting at ADDR.  Unlike read, this returns a list.
+;; TODO: Consider putting the N parameter first
 (defund read-bytes (addr n x86)
   (declare (xargs :guard (and (integerp addr)
                               (natp n))
@@ -3812,3 +3820,28 @@
            (equal (x86isa::rml-size 32 addr r-x x86)
                   (mv nil (read 32 addr x86) x86)))
   :hints (("Goal" :in-theory (enable x86isa::rml-size rb-becomes-read))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund clear (n addr x86)
+  (declare (xargs :guard (and (natp n)
+                              (integerp addr))
+                  :stobjs x86))
+  (write n addr 0 x86))
+
+;drop hyps?
+(defthm write-of-clear
+  (implies (and ;(integerp ad)
+                (unsigned-byte-p 48 n))
+           (equal (write n ad val (clear n ad x86))
+                  (write n ad val x86)))
+  :hints (("Goal" :in-theory (enable clear))))
+
+(defthm clear-of-write-of-clear
+  (implies (and (integerp ad1)
+                (unsigned-byte-p 48 n1)
+                ;(integerp ad2)
+                (unsigned-byte-p 48 n2))
+           (equal (clear n1 ad1 (write n2 ad2 val (clear n1 ad1 x86)))
+                  (clear n1 ad1 (write n2 ad2 val x86))))
+  :hints (("Goal" :in-theory (enable clear))))

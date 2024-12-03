@@ -32,7 +32,7 @@
    (xdoc::p
     "A certificate storage event involves just one correct validator.")
    (xdoc::p
-    "The event identifies, besides a validator address, a certificate,
+    "The event identifies, besides a validator address, also a certificate,
      which is moved from the buffer to the DAG.
      In addition, if the validator had endorsed the certificate,
      the author-round pair of the certificate is removed from
@@ -45,8 +45,7 @@
      and all the authors referenced for the previous certificates
      form a quorum in the active committee of the previous round
      (unless the certificate's round is 1).
-     These checks are needed because,
-     as mentioned in @(tsee create-endorser-possiblep),
+     These checks are needed because
      an equivocal certificate could be signed by faulty validators
      and broadcast on the network, and make it to a validator's buffer.
      The checks above on signers and predecessors
@@ -98,7 +97,8 @@
    (xdoc::p
     "Importantly, a validator stores the certificate into the DAG
      only if its signers form a quorum
-     in the active committee for the certificate's round.
+     in the active committee for the certificate's round,
+     of which they must be members.
      Thus, the validator must be able to calculate (from its blockchain)
      the committee for the certificate's round, in order to perform the check.
      This check is important because, in our formal model,
@@ -121,6 +121,13 @@
      If the certificate's round is not 1,
      in order to make the quorum check,
      the validator must be able to calculate that active committee.")
+   (xdoc::p
+    "We also ensure that there is at least
+     one reference to previous certificates,
+     unless the certificate round is 1.
+     As in @(tsee create-signer-possiblep),
+     this indirectly ensures the non-emptiness of
+     the committee at the round just before the certificate.")
    (xdoc::p
     "The address @('val') of the validator indicated in the event
      must be a correct validator of the system.
@@ -150,6 +157,12 @@
         nil)
        ((when (= cert.round 1))
         (set::emptyp cert.previous))
+       ((unless (set::subset cert.previous
+                             (certificate-set->author-set
+                              (certs-with-round (1- cert.round) vstate.dag))))
+        nil)
+       ((when (set::emptyp cert.previous))
+        nil)
        (prev-commtt
         (active-committee-at-round (1- cert.round) vstate.blockchain))
        ((unless (set::subset cert.previous
@@ -157,10 +170,6 @@
         nil)
        ((unless (>= (committee-members-stake cert.previous prev-commtt)
                     (committee-quorum-stake prev-commtt)))
-        nil)
-       ((unless (set::subset cert.previous
-                             (certificate-set->author-set
-                              (certs-with-round (1- cert.round) vstate.dag))))
         nil))
     t)
   :guard-hints

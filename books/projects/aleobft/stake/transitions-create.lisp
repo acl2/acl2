@@ -33,7 +33,7 @@
     "In AleoBFT, certificates are created through an exchange of messages
      involving proposals, signatures, and certificates,
      following the Narwhal protocol, which AleoBFT is based on.
-     Currently we model certificate creation as one atomic event,
+     Currently we model certificate creation as an atomic event,
      which abstracts the aforementioned message exchange process.
      Our @('create') event ``instantly'' creates a certificates,
      and broadcasts it to the other validators.
@@ -48,7 +48,7 @@
      on the one hand simplifies things,
      because there are fewer events and messages to consider,
      but on the other hand makes the definition of
-     the certificate creation transitions slightlly more complicated,
+     the certificate creation transitions more complicated,
      because we need to model things related to
      not only the actual certificate creation,
      but also the (implicit) exchange of proposals and signatures.")
@@ -94,45 +94,32 @@
      further conditions for the endorsers are
      formalized in @(tsee create-endorser-possiblep).")
    (xdoc::p
-    "First, the signer must be able to calculate
+    "The endorsers only see the proposal, not the whole certificate,
+     so in our model they can only check conditions on
+     the certificate components except the endorser addresses;
+     even though we model certificate creation as an atomic event,
+     we still need to model the right checks at the right times.
+     As a consequence, this predicate only checks conditions
+     on the certificate components except the endorser addresses,
+     since it applies to all signers.")
+   (xdoc::p
+    "The first condition is that the signer must be able to calculate
      the active committee at the certificate's round.
      That is, its local blockchain must be sufficiently far along.
      If the validator cannot calculate the active committee,
      it is unable to author or endorse a certificate for that round,
      so this event cannot happen from the point of view of the validator.")
    (xdoc::p
-    "Both author and endorsers must be in the active committee,
-     and must be distinct from each other.
-     If the signer is the author, it directly enforces these conditions,
-     before broadcasting the certificate.
-     If the signer is an endorser, it initially only sees the proposal,
-     which does not include the other endorsers,
-     so it would be possible that a faulty author
-     may send a good proposal but a bad certificate for the proposal.
-     However, it must be kept in mind that,
-     besides endorsers checking proposals,
-     validators also check certificates as they realize
-     the reliable broadcast mechanism that our model assumes.
-     Thus a bad certificate would not correspond to
-     a @('create') event in our model,
-     which involves reliable broadcast.
-     This is a somewhat complex and perhaps not fully persuasive aspect
-     of our current formalization of atomic certificate creation,
-     but we plan to develop a more refined model
-     with explcit proposals, signatures, and checks on certificates,
-     which should clarify this aspect of AleoBFT.")
-   (xdoc::p
-    "The total stake of the signers must be
-     at least the quorum stake of the committee.
-     This is the proper generalization to stake
-     of the analogous condition on number of validators.
-     For the latter, the condition is
-     equality between the number of signers and the quorum number.
-     With stake, the granularity is a whole validator (it either signs or not),
-     and the total stake may not be exactly equal to the quorum stake,
-     because the signers may have arbitrary amounts of stake.
-     So the proper condition with stake is that
-     the quorum stake is an (inclusive) lower bound.")
+    "That committee is used to check that
+     the author of the certificate is a member of the committee:
+     only validators in the active committee for a round
+     can create certificates for that round.
+     In the case of the certificate's author,
+     this condition corresponds to the fact that
+     a (correct) author would generate a certificate
+     only if the author knows to be in the active committee.
+     In the case of an endorser,
+     this condition represents a check made by the endorser on the proposal.")
    (xdoc::p
     "The DAG of the signer must not already have
      a certificate with the given author and round.
@@ -145,7 +132,20 @@
      it must have no references to previous certificates,
      because there is no round 0.
      If the round of the certificate is not 1,
-     the following two additional requirements apply.")
+     the following additional requirements apply.")
+   (xdoc::p
+    "There must be at least one reference to a previous certificate.
+     This serves to ensure, indirectly,
+     that the committee at the previous round is not empty,
+     and in general that there are no rounds with an empty active committee.
+     It is an invariant, proved elsewhere,
+     that the authors of certificates in DAGs
+     are members of the active committees at their rounds:
+     thus, the non-emptiness of the set of previous certificate references
+     implies, with this invariant,
+     that the committee at the previous round has at least one member.
+     Note also that, since the committee at the certificate's round is known,
+     it is the case that the committee at the previous round is known too.")
    (xdoc::p
     "The signer's DAG must include
      all the previous certificates referenced by the certificate.
@@ -162,20 +162,12 @@
      When the signer is an endorser,
      this condition corresponds to the fact that,
      before endorsing a certificate from another validator,
-     a validator checks it against the predecessors
-     (something not explicit in our current model),
+     a validator checks it against the predecessors,
      and therefore the validator must have those predecessors in the DAG.")
    (xdoc::p
-    "The total stake of the certificate referenced in the previous round
+    "The total stake of the certificates referenced in the previous round
      must be at least the committee quorum stake.
-     Similarly to the condition on the stake of the signers,
-     this is the proper generalization from numbers of validators to stake.
-     Note that the active committee of the previous round
-     may differ from the one of the certificate's round.
-     Since we already checked that the active committee of the certificate round
-     is known to the signer whose conditions we are checking,
-     it follows that the active committee at the previous round is also known,
-     as proved in @(tsee active-committee-at-round).
+     This is the proper generalization from numbers of validators to stake.
      It is an invariant, proved elsewhere,
      that the authors of the certificates in the previous round
      that are referenced in the @('previous') component of @('cert')
@@ -188,19 +180,14 @@
        (commtt (active-committee-at-round cert.round vstate.blockchain))
        ((unless commtt)
         nil)
-       ((when (set::in cert.author cert.endorsers))
-        nil)
        ((unless (set::in cert.author (committee-members commtt)))
-        nil)
-       ((unless (set::subset cert.endorsers (committee-members commtt)))
-        nil)
-       ((unless (>= (committee-members-stake (certificate->signers cert) commtt)
-                    (committee-quorum-stake commtt)))
         nil)
        ((when (cert-with-author+round cert.author cert.round vstate.dag))
         nil)
        ((when (= cert.round 1))
         (set::emptyp cert.previous))
+       ((when (set::emptyp cert.previous))
+        nil)
        ((unless (set::subset cert.previous
                              (certificate-set->author-set
                               (certs-with-round (1- cert.round) vstate.dag))))
@@ -252,25 +239,56 @@
      This function puts these additional conditions
      together with the conditions in that function.")
    (xdoc::p
+    "Unlike an endorser, an author can check conditions
+     on the endorser addresses component of the certificate.
+     This is because, after generating and sending a proposal,
+     and receiving endorsements, has access to those endorsements,
+     which it can check before creating the certificate.")
+   (xdoc::p
     "The round of the certificate must be the current round of the validator.
      A correct validator only creates (at most) one certificate per round,
      and does so for the current round every time.")
    (xdoc::p
-    "That is the only additional condition.
-     A correct validator only authors a certificate
-     if the validator is in the active committee for that round,
-     but @(tsee create-signer-possiblep)
-     already checks that the certificate author is in the committee.
-     The other conditions in @(tsee create-signer-possiblep)
-     are naturally checked by the certificate's author,
-     who is in charge of creating the certificate."))
+    "The author must be distinct from the endorsers.
+     This corresponds to the fact that an author
+     sends proposals to, and collects endorsements from,
+     validators other than itself.")
+   (xdoc::p
+    "Recall that @(tsee create-signer-possiblep) has already checked that
+     the active committee at the certificate's round is known,
+     and that the author is a member of that committee.
+     Here the author also checks that the endorsers are in the committee.
+     This corresponds to the fact that the author accepts endorsements
+     only from members of the committe.")
+   (xdoc::p
+    "The total stake of the signers must be at least
+     the quorum stake of the active committee for the certificate's round.
+     This is the proper generalization to stake
+     of the analogous condition on number of validators.
+     For the latter, the condition is
+     equality between the number of signers and the quorum number.
+     With stake, the granularity is a whole validator (it either signs or not),
+     and the total stake may not be exactly equal to the quorum stake,
+     because the signers may have arbitrary amounts of stake.
+     So the proper condition with stake is that
+     the quorum stake is an (inclusive) lower bound."))
   (b* (((certificate cert) cert)
        ((validator-state vstate) vstate)
        ((unless (create-signer-possiblep cert vstate))
         nil)
        ((unless (= cert.round vstate.round))
+        nil)
+       ((when (set::in cert.author cert.endorsers))
+        nil)
+       (commtt (active-committee-at-round cert.round vstate.blockchain))
+       ((unless (set::subset cert.endorsers (committee-members commtt)))
+        nil)
+       ((unless (>= (committee-members-stake (certificate->signers cert) commtt)
+                    (committee-quorum-stake commtt)))
         nil))
     t)
+  :guard-hints (("Goal" :in-theory (enable create-signer-possiblep
+                                           certificate->signers)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -297,6 +315,11 @@
      This function puts these additional conditions
      together with the conditions of that function.")
    (xdoc::p
+    "Recall that, as noted in @(tsee create-signer-possiblep),
+     an endorser does not have access to
+     the endorser addresses component of a certificate,
+     because it only sees the proposal.")
+   (xdoc::p
     "While @(tsee create-signer-possiblep) checks that
      the DAG has no certificate already with the same author and round,
      which is sufficient for the author to check,
@@ -307,40 +330,10 @@
      has already endorsed a certificate with that author and round,
      but has not yet received the actual certificate from the network,
      and incorporated it into its own DAG.
-     This check is not needed for the signer,
+     This check is not needed for the author,
      because it is an invariant, proved elsewhere,
      that the set of endorsed author-round pairs
-     does not contain any pair with the validator as author.")
-   (xdoc::p
-    "Note that, unlike in our previous model
-     with dynamic committees but without stake,
-     here we are not checking that
-     the buffer does not contain a certificate
-     with the same author and round as @('cert').
-     This difference has nothing to do with stake:
-     we are simply experimenting with a slightly different modeling approach,
-     in which we let the buffer accept any certificate from the network,
-     but we make certain additional checks before storing it into the DAG;
-     those additional checks,
-     in the model with dynamic committees without stake,
-     are performed as part of the event
-     to receive a certificate from the network.
-     Both in that and in this model of AleoBFT,
-     nothing prevents the creation and broadcast of a certificate
-     that is signed by only faulty validators
-     and that has the same author and round of
-     some existing certificate in the DAGs of correct validators.
-     In the model without stake,
-     that certificate will stay forever in the network,
-     never moved to any correct validator's buffer,
-     because the event to receive the certificate
-     can only happen (because we model it that way)
-     if the signers are in the appropriate committee,
-     which must be fault-tolerant by assumption.
-     But in this model with stake,
-     we let any certificate to be received,
-     and instead move that committee check
-     to the event that moves the certificate from the buffer to the DAG."))
+     does not contain any pair with the validator as author."))
   (b* (((certificate cert) cert)
        ((validator-state vstate) vstate)
        ((unless (create-signer-possiblep cert vstate))

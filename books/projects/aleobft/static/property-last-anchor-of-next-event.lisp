@@ -38,7 +38,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule last-anchor-of-create-certificate-next
+(defruled last-anchor-of-create-certificate-next
   :short "There is no change in @(tsee last-anchor)
           under a @('create-certificate') event."
   :long
@@ -71,7 +71,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule last-anchor-of-receive-certificate-next
+(defruled last-anchor-of-receive-certificate-next
   :short "There is no change in @(tsee last-anchor)
           under a @('receive-certificate') event."
   :long
@@ -92,7 +92,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule last-anchor-of-store-certificate-next
+(defruled last-anchor-of-store-certificate-next
   :short "There is no change in @(tsee last-anchor)
           under a @('store-certificate') event."
   :long
@@ -122,7 +122,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule last-anchor-of-advance-round-next
+(defruled last-anchor-of-advance-round-next
   :short "There is no change in @(tsee last-anchor)
           under a @('advance-round') event."
   :long
@@ -143,7 +143,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule last-anchor-of-commit-anchors-next
+(defruled last-anchor-of-commit-anchors-next
   :short "How the last committed anchor changes
           under a @('commit-anchors') event."
   :long
@@ -181,7 +181,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule last-anchor-of-timer-expires-next
+(defruled last-anchor-of-timer-expires-next
   :short "There is no change in @(tsee last-anchor)
           under a @('timer-expires') event."
   :long

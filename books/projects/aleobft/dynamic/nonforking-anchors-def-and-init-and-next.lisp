@@ -85,7 +85,10 @@
                      (get-validator-state val2 systate)
                      (all-addresses systate)))))
   :guard-hints (("Goal" :in-theory (enable evenp-of-last-when-ordered-even-p
-                                           last-anchor-present-p-necc))))
+                                           last-anchor-present-p-necc)))
+  ///
+  (fty::deffixequiv-sk nonforking-anchors-p
+    :args ((systate system-statep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -57,7 +57,8 @@
 (include-book "../prune-dag-approximately")
 (include-book "../arithmetic-rules-axe")
 (include-book "../make-evaluator") ; for make-acons-nest ; todo: split out
-(include-book "../evaluator") ; for get-non-built-in-supporting-fns-list, todo: split out! ; this book has skip-proofs
+(include-book "../supporting-functions") ; for get-non-built-in-supporting-fns-list
+(include-book "../evaluator") ; todo: this book has skip-proofs
 (include-book "rewriter-x86")
 (include-book "kestrel/utilities/print-levels" :dir :system)
 (include-book "kestrel/utilities/widen-margins" :dir :system)
@@ -516,6 +517,7 @@
                              parsed-executable
                              extra-assumptions ; todo: can these introduce vars for state components?  support that more directly?  could also replace register expressions with register names (vars)
                              suppress-assumptions
+                             inputs-disjoint-from
                              stack-slots
                              position-independent
                              inputs
@@ -537,6 +539,7 @@
                               ;; parsed-executable
                               (true-listp extra-assumptions) ; untranslated terms
                               (booleanp suppress-assumptions)
+                              (member-eq inputs-disjoint-from '(nil :code :all))
                               (natp stack-slots)
                               (member-eq position-independent '(t nil :auto))
                               (or (eq :skip inputs) (names-and-typesp inputs))
@@ -564,6 +567,7 @@
        (state (acl2::widen-margins state))
        ;; Get and check the executable-type:
        (executable-type (acl2::parsed-executable-type parsed-executable))
+       (- (cw "Executable type: ~x0.~%" executable-type))
        (- (acl2::ensure-x86 parsed-executable))
        (- (and (acl2::print-level-at-least-tp print) (cw "(Executable type: ~x0.)~%" executable-type)))
        ;; Handle a :position-independent of :auto:
@@ -571,10 +575,13 @@
                                   (if (eq executable-type :mach-o-64)
                                       t ; since clang seems to produce position-independent code by default ; todo: think about this
                                     (if (eq executable-type :elf-64)
-                                        ;; TODO: Put this back
-                                        ;; For ELF64, we treat :dyn and :rel as position-independent (addresses relative to the var base-address) and :exec as absolute:
-                                        ;; (member-eq (acl2::parsed-elf-type parsed-executable) '(:rel :dyn))
-                                        nil
+                                        (let ((elf-type (acl2::parsed-elf-type parsed-executable)))
+                                          (prog2$ (cw "ELF type: ~x0.~%" elf-type)
+                                                  (if (acl2::parsed-elf-program-header-table parsed-executable)
+                                                      ;; For ELF64, we treat :dyn and :rel as position-independent (addresses relative to the var base-address) and :exec as absolute:
+                                                      (if (member-eq elf-type '(:rel :dyn)) t nil)
+                                                    ;; TTODO: Get this to work:
+                                                    nil)))
                                       ;; TODO: Think about the other cases:
                                       t))
                                 position-independent))
@@ -582,7 +589,7 @@
                    (not (member-eq executable-type '(:mach-o-64 :elf-64)))))
         (er hard? 'unroll-x86-code-core "Non-position-independent lifting is currently only supported for ELF64 and MACHO64 files.")
         (mv :bad-options nil nil nil nil state))
-
+       (- (if position-independentp (cw "Using position-independent lifting.~%") (cw "Using non-position-independent lifting.~%")))
        ;;todo: finish adding support for :entry-point!
        ((when (and (eq :entry-point target)
                    (not (eq :pe-32 executable-type))))
@@ -598,7 +605,6 @@
        (64-bitp (member-equal executable-type '(:mach-o-64 :pe-64 :elf-64)))
        (debug-rules (if 64-bitp (debug-rules64) (debug-rules32)))
        (rules-to-monitor (maybe-add-debug-rules debug-rules monitor))
-
        ;; Generate assumptions:
        ((mv erp assumptions untranslated-assumptions
             assumption-rules ; drop? todo: includes rules that were not used, but we return these as an RV named assumption-rules-used
@@ -608,16 +614,41 @@
                  (acl2::parsed-elf-program-header-table parsed-executable) ; there are segments present (todo: improve the "new" behavior to use sections when there are no segments)
                  )
             ;; New assumption generation behavior, only for ELF64 (for now):
-            (b* (((mv erp automatic-assumptions)
+            (b* ((- (cw "Using new-style assumptions.~%"))
+                 (code-address (acl2::get-elf-code-address parsed-executable))
+                 (base-var 'base-address) ; only used if position-independentp
+                 (text-offset-term (if position-independentp
+                                       (symbolic-add-constant code-address base-var)
+                                     code-address))
+                 ((mv erp disjoint-chunk-addresses-and-lens)
+                  (if (eq nil inputs-disjoint-from)
+                      (mv nil nil)
+                    (if (eq :all inputs-disjoint-from)
+                        (if (not (eq :elf-64 executable-type))
+                            (mv :unsupported
+                                (er hard? 'unroll-x86-code-core "The :inputs-disjoint-from option is only supported for ELF64 executables.")) ;todo!
+                          (elf64-segment-addresses-and-lens (acl2::parsed-elf-program-header-table parsed-executable)
+                                                            position-independentp
+                                                            base-var
+                                                            (len (acl2::parsed-elf-bytes parsed-executable))
+                                                            nil))
+                      (mv nil (acons text-offset-term (len (acl2::get-elf-code parsed-executable)) nil)))))
+                 ((when erp)
+                  (er hard? 'unroll-x86-code-core "Error generating disjointnes assumptions for inputs: ~x0." erp)
+                  (mv erp nil nil nil state))
+                 ((mv erp automatic-assumptions)
                   (if suppress-assumptions
                       (mv nil nil) ; todo: this also suppresses input assumptions - should it?  the user can just not give inputs..
                     (assumptions-elf64-new target
-                                           (if (eq :auto position-independent) :auto position-independent) ; todo: clean up the handling of this
+                                           position-independentp ;(if (eq :auto position-independent) :auto position-independent) ; todo: clean up the handling of this
                                            stack-slots
                                            'x86
+                                           base-var
                                            inputs
+                                           disjoint-chunk-addresses-and-lens
                                            parsed-executable)))
                  ((when erp) (mv erp nil nil nil state))
+
                  (untranslated-assumptions (append automatic-assumptions extra-assumptions)) ; includes any user assumptions
                  ;; Translate all the assumptions:
                  (assumptions (acl2::translate-terms untranslated-assumptions 'unroll-x86-code-core (w state)))
@@ -698,7 +729,8 @@
                                                               ;; See the System V AMD64 ABI
                                                               '((rdi x86) (rsi x86) (rdx x86) (rcx x86) (r8 x86) (r9 x86))
                                                               stack-slots
-                                                              (acons text-offset code-length nil))
+                                                              (acons text-offset code-length nil) ;; disjoint-chunk-addresses-and-lens
+                                                              )
                                     nil))
                (assumptions (append standard-assumptions input-assumptions)) ; call these automatic-assumptions?
                (assumptions (append assumptions extra-assumptions))
@@ -776,6 +808,7 @@
                         executable
                         extra-assumptions
                         suppress-assumptions
+                        inputs-disjoint-from
                         stack-slots
                         position-independent
                         inputs
@@ -804,6 +837,7 @@
                               ;; executable
                               ;; extra-assumptions ; untranslated-terms
                               (booleanp suppress-assumptions)
+                              (member-eq inputs-disjoint-from '(nil :code :all))
                               (natp stack-slots)
                               (member-eq position-independent '(t nil :auto))
                               (or (eq :skip inputs) (names-and-typesp inputs))
@@ -849,7 +883,7 @@
        ;; Lift the function to obtain the DAG:
        ((mv erp result-dag assumptions lifter-rules-used assumption-rules-used state)
         (unroll-x86-code-core target parsed-executable
-          extra-assumptions suppress-assumptions stack-slots position-independent
+          extra-assumptions suppress-assumptions inputs-disjoint-from stack-slots position-independent
           inputs output use-internal-contextsp prune extra-rules remove-rules extra-assumption-rules
           step-limit step-increment memoizep monitor print print-base untranslatep state))
        ((when erp) (mv erp nil state))
@@ -915,7 +949,7 @@
                                   maybe-result-term
                                 `(acl2::dag-val-with-axe-evaluator ',result-dag
                                                                    ,(acl2::make-acons-nest result-dag-vars)
-                                                                   ',(acl2::make-interpreted-function-alist (acl2::get-non-built-in-supporting-fns-list result-dag-fns (w state)) (w state))
+                                                                   ',(acl2::make-interpreted-function-alist (acl2::get-non-built-in-supporting-fns-list result-dag-fns acl2::*axe-evaluator-functions* (w state)) (w state))
                                                                    '0 ;array depth (not very important)
                                                                    )))
                (function-body-untranslated (if untranslatep (untranslate function-body nil (w state)) function-body)) ;todo: is this unsound (e.g., because of user changes in how untranslate works)?
@@ -989,6 +1023,7 @@
                                   (target ':entry-point)
                                   (extra-assumptions 'nil)
                                   (suppress-assumptions 'nil)
+                                  (inputs-disjoint-from ':code)
                                   (stack-slots '100)
                                   (position-independent ':auto)
                                   (inputs ':skip)
@@ -1018,6 +1053,7 @@
       ,executable ; gets evaluated
       ,extra-assumptions
       ',suppress-assumptions
+      ',inputs-disjoint-from
       ',stack-slots
       ',position-independent
       ',inputs
@@ -1047,7 +1083,8 @@
          (executable "The x86 binary executable that contains the target function.  Usually a string (a filename), or this can be a parsed executable of the form created by defconst-x86.")
          (target "Where to start lifting (a numeric offset, the name of a subroutine (a string), or the symbol :entry-point)")
          (extra-assumptions "Extra assumptions for lifting, in addition to the standard-assumptions")
-         (suppress-assumptions "Whether to suppress the standard assumptions.")
+         (suppress-assumptions "Whether to suppress the standard assumptions.  This does not suppress any assumptions generated about the :inputs.")
+         (inputs-disjoint-from "What to assume about the inputs (specified using the :inputs option) being disjoint from the sections/segments in the executable.  The value :all means assume the inputs are disjoint from all sections/segments.  The value :code means assume the inputs are disjoint from the code/text section.  The value nil means do not include any assumptions of this kind.")
          (stack-slots "How much available stack space to assume exists.") ; 4 or 8 bytes each?
          (position-independent "Whether to attempt the lifting without assuming that the binary is loaded at a particular position.")
          (inputs "Either the special value :skip (meaning generate no additional assumptions on the input) or a doublet list pairing input names with types.  Types include things like u32, u32*, and u32[2].")

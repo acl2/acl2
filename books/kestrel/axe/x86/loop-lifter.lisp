@@ -206,7 +206,9 @@
                        nil
                        t ;:brief  ;nil
                        nil
-                       (acl2::known-booleans wrld)))
+                       (acl2::known-booleans wrld)
+                       nil ; limits
+                       ))
 
 ;; Test whether the stack height of X86 is less than it was when the stack pointer was OLD-RSP.
 ;; Since the stack grows from high to low, the stack height is less when the RSP is greater.
@@ -807,7 +809,7 @@
        (- (cw "(Proving that there is no overlap between ~x0 bytes starting at ~x1 and ~x2 bytes starting at ~x3.~%" (unquote num-bytes1) base-addr1 (unquote num-bytes2) base-addr2))
        (separation-term `(separate ':r ,num-bytes1 ,base-addr1 ':r ,num-bytes2 ,base-addr2))
        ((mv erp result)
-        (acl2::simplify-term-x86 separation-term assumptions rule-alist nil (acl2::known-booleans (w state)) nil nil nil nil nil nil))
+        (acl2::simplify-term-x86 separation-term assumptions rule-alist nil (acl2::known-booleans (w state)) nil nil nil nil nil nil nil))
        ((when erp) (mv erp nil state)))
     (if (equal result *t*)
         (progn$ (cw "Proved that there is not overlap.)~%")
@@ -881,7 +883,9 @@
           `(equal ,address-term ,(acl2::sublis-var-simple (acons state-var one-rep-term nil) address-term)))
          ((mv erp result)
           (acl2::simp-term-x86 address-unchanged-term nil ; assumptions
-                               rule-alist nil nil nil nil nil nil nil (acl2::known-booleans (w state))))
+                               rule-alist nil nil nil nil nil nil nil (acl2::known-booleans (w state))
+                               nil ; limits
+                               ))
          ((when erp) (mv erp nil state)))
       (if (equal result *t*)
           (prog2$ (cw "(Proved that address ~x0 is unchanged.)~%" address-term)
@@ -1125,7 +1129,9 @@
          ((mv erp simplified-invariant)
           (acl2::simp-term-x86 term-to-prove assumptions rule-alist nil
                                '(x86isa::xr-of-xw-diff) ; rules-to-monitor
-                               nil nil nil nil nil (acl2::known-booleans (w state))))
+                               nil nil nil nil nil (acl2::known-booleans (w state))
+                               nil ; limits
+                               ))
          ((when erp) (mv erp nil nil state)))
       (if (equal *t* simplified-invariant)
           (prog2$ (cw "Proved it!)~%")
@@ -1714,7 +1720,7 @@
          (acl2::simplify-term-x86 loop-function-call-term
                                   nil ; assumptions
                                   (acl2::make-rule-alist! (append (extra-loop-lifter-rules) lifter-rules) (w state))
-                                  nil (acl2::known-booleans (w state)) nil nil nil nil nil nil))
+                                  nil (acl2::known-booleans (w state)) nil nil nil nil nil nil nil))
         ((when erp) (mv erp nil nil nil state))
         ;; Write the values computed by the loop back into the state:
         ((mv erp new-state-dag) (acl2::wrap-term-around-dag updated-state-term :loop-function-result loop-function-call-dag))

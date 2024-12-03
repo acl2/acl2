@@ -984,11 +984,6 @@
   :hints (("Goal" :use (:instance unsigned-byte-p-of-bvplus (n size) (m size))
            :in-theory (disable unsigned-byte-p-of-bvplus))))
 
-(defthm bvchop-bound-2
-  (implies (and (<= (expt 2 size) k)
-                (natp size))
-           (< (bvchop size x) k)))
-
 ;; ;fixme
 ;; (defthmd logxor-logapp-24
 ;;   (equal (logxor x (logapp 24 y z))
@@ -1163,14 +1158,6 @@
   :hints (("Goal" :use ((:instance bvchop-of-minus-of-bvchop (x x))
                         (:instance bvchop-of-minus-of-bvchop (x (logext size2 x))))
            :in-theory (disable bvchop-of-minus-of-bvchop))))
-
-
-
-(defthm bvchop-bound-other
-  (implies (and (syntaxp (and (quotep k) (quotep n)))
-                (integerp k)
-                (<= (+ -1 (expt 2 n)) k))
-           (not (< k (bvchop n x)))))
 
 (defthm slice-bound-hack
   (not (> (slice 31 27 x) 32))

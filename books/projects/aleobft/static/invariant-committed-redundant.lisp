@@ -154,7 +154,8 @@
              system-last-anchor-present-p-necc
              validator-state->last-of-create-certificate-next
              validator-state->committed-of-create-certificate-next
-             last-anchor-in-dag))
+             last-anchor-in-dag
+             last-anchor-of-create-certificate-next))
 
   (defrule system-committed-redundantp-of-create-certificate-next
     (implies (and (system-committed-redundantp systate)
@@ -195,7 +196,8 @@
               (all-addresses systate)))
     :enable (validator-committed-redundantp
              validator-state->last-of-receive-certificate-next
-             validator-state->committed-of-receive-certificate-next))
+             validator-state->committed-of-receive-certificate-next
+             last-anchor-of-receive-certificate-next))
 
   (defrule system-committed-redundantp-of-receive-certificate-next
     (implies (and (system-committed-redundantp systate)
@@ -237,7 +239,8 @@
              system-last-anchor-present-p-necc
              validator-state->last-of-store-certificate-next
              validator-state->committed-of-store-certificate-next
-             last-anchor-in-dag))
+             last-anchor-in-dag
+             last-anchor-of-store-certificate-next))
 
   (defrule system-committed-redundantp-of-store-certificate-next
     (implies (and (system-committed-redundantp systate)
@@ -276,7 +279,8 @@
               (all-addresses systate)))
     :enable (validator-committed-redundantp
              validator-state->last-of-advance-round-next
-             validator-state->committed-of-advance-round-next))
+             validator-state->committed-of-advance-round-next
+             last-anchor-of-advance-round-next))
 
   (defrule system-committed-redundantp-of-advance-round-next
     (implies (and (system-committed-redundantp systate)
@@ -419,7 +423,8 @@
               (all-addresses systate)))
     :enable (validator-committed-redundantp
              validator-state->last-of-timer-expires-next
-             validator-state->committed-of-timer-expires-next))
+             validator-state->committed-of-timer-expires-next
+             last-anchor-of-timer-expires-next))
 
   (defrule system-committed-redundantp-of-timer-expires-next
     (implies (and (system-committed-redundantp systate)

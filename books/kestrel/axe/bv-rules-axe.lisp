@@ -1518,8 +1518,8 @@
 
 (defthmd <-lemma-for-known-operators-axe3
   (implies (and (syntaxp (quotep k))
-                (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (< k 0)
+                (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (unsigned-byte-p-forced xsize x))
            (< k x))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))

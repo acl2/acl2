@@ -39,8 +39,7 @@
           reachable from an initial state via a sequence of events."
 
   (defruled blockchain-redundant-p-when-reachable
-    (implies (and (system-statep systate)
-                  (system-initp systate)
+    (implies (and (system-initp systate)
                   (events-possiblep events systate)
                   (all-system-fault-tolerant-p events systate))
              (blockchain-redundant-p (events-next events systate)))

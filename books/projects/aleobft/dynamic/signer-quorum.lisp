@@ -83,7 +83,8 @@
     (and (set::subset (certificate->signers cert)
                       (committee-members commtt))
          (equal (set::cardinality (certificate->signers cert))
-                (committee-quorum commtt)))))
+                (committee-quorum commtt))))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -102,7 +103,10 @@
                     (get-validator-state val systate)
                     (all-addresses systate))))
   :guard-hints
-  (("Goal" :in-theory (enable accepted-certificate-committee-p-necc))))
+  (("Goal" :in-theory (enable accepted-certificate-committee-p-necc)))
+  ///
+  (fty::deffixequiv-sk signer-quorum-p
+    :args ((systate system-statep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -423,17 +427,15 @@
           reachable from an initial state via a sequence of events."
 
   (defruled signer-quorum-p-of-events-next
-    (implies
-     (and (system-statep systate)
-          (signer-quorum-p systate)
-          (accepted-certificate-committee-p systate)
-          (ordered-even-p systate)
-          (last-blockchain-round-p systate)
-          (events-possiblep events systate))
-     (and (signer-quorum-p (events-next events systate))
-          (accepted-certificate-committee-p (events-next events systate))
-          (ordered-even-p (events-next events systate))
-          (last-blockchain-round-p (events-next events systate))))
+    (implies (and (signer-quorum-p systate)
+                  (accepted-certificate-committee-p systate)
+                  (ordered-even-p systate)
+                  (last-blockchain-round-p systate)
+                  (events-possiblep events systate))
+             (and (signer-quorum-p (events-next events systate))
+                  (accepted-certificate-committee-p (events-next events systate))
+                  (ordered-even-p (events-next events systate))
+                  (last-blockchain-round-p (events-next events systate))))
     :induct t
     :disable ((:e tau-system))
     :enable (events-possiblep
@@ -444,8 +446,7 @@
              last-blockchain-round-p-of-event-next))
 
   (defruled signer-quorum-p-when-reachable
-    (implies (and (system-statep systate)
-                  (system-initp systate)
+    (implies (and (system-initp systate)
                   (events-possiblep events systate))
              (signer-quorum-p (events-next events systate)))
     :disable ((:e tau-system))
