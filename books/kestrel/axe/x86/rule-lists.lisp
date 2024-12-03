@@ -1774,14 +1774,14 @@
             x86isa::canonical-address-p-between-special3
             x86isa::canonical-address-p-between-special4
 
-            acl2::<-of-+-cancel-2-2
+            acl2::<-of-+-cancel-1-2
             acl2::<-of-+-cancel-2-1
+            acl2::<-of-+-cancel-2-2
             acl2::integerp-of-+-when-integerp-1-cheap
             acl2::fix-when-integerp
             x86isa::integerp-when-canonical-address-p-cheap ; requires acl2::equal-same
             x86isa::member-p-canonical-address-listp
             acl2::fold-consts-in-+
-            acl2::<-of-+-cancel-2-1
             acl2::ash-negative-becomes-slice-axe ; move?
 
             ;;one-byte-opcode-execute ;shilpi leaves this enabled, but it seems dangerous
@@ -1803,7 +1803,6 @@
             ;;x86isa::xr-xw-intra-array-field
             x86isa::xr-of-xw-intra-field
             x86isa::xr-of-xw-inter-field
-            acl2::<-of-+-cancel-1-2
             x86isa::program-at-xw-in-app-view
             x86isa::xr-app-view-mv-nth-1-wb ;has a hyp of t
             x86isa::program-at-wb-disjoint ;drop?
