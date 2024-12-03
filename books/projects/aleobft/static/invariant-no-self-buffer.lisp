@@ -154,7 +154,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule validators-buffer-not-self-p-when-validators-state-initp
+(defruled validators-buffer-not-self-p-when-validators-state-initp
   :short "Establishment of the invariant at the validator map level:
           the invariant holds on any initial validator map."
   :long
