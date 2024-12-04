@@ -1811,9 +1811,10 @@
     :short "Disambiguate an initializer with optional designations."
     (b* (((reterr) (irr-desiniter) (irr-dimb-table))
          ((desiniter desiniter) desiniter)
-         ((erp new-designs table) (dimb-designor-list desiniter.design table))
-         ((erp new-initer table) (dimb-initer desiniter.init table)))
-      (retok (make-desiniter :design new-designs :init new-initer)
+         ((erp new-designors table)
+          (dimb-designor-list desiniter.designors table))
+         ((erp new-initer table) (dimb-initer desiniter.initer table)))
+      (retok (make-desiniter :designors new-designors :initer new-initer)
              table))
     :measure (desiniter-count desiniter))
 
@@ -1897,9 +1898,9 @@
     (b* (((reterr) (irr-declor) (irr-ident) (irr-dimb-table))
          ((declor declor) declor)
          ((erp new-dirdeclor ident table)
-          (dimb-dirdeclor declor.decl fundefp table)))
+          (dimb-dirdeclor declor.direct fundefp table)))
       (retok (make-declor :pointers declor.pointers
-                          :decl new-dirdeclor)
+                          :direct new-dirdeclor)
              ident
              table))
     :measure (declor-count declor))
