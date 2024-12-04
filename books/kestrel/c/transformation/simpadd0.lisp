@@ -380,7 +380,7 @@
     (b* (((desiniter desiniter) desiniter))
       (make-desiniter
        :designors (simpadd0-designor-list desiniter.designors)
-       :init (simpadd0-initer desiniter.init)))
+       :initer (simpadd0-initer desiniter.initer)))
     :measure (desiniter-count desiniter))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

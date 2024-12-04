@@ -222,7 +222,7 @@
      (acc ident-ident-option-set-mapp))
     :returns (call-graph ident-ident-option-set-mapp)
     (b* (((desiniter desiniter) desiniter))
-      (call-graph-initer desiniter.init fn-name acc))
+      (call-graph-initer desiniter.initer fn-name acc))
     :measure (desiniter-count desiniter))
 
   (define call-graph-desiniter-list

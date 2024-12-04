@@ -444,8 +444,8 @@
      and be a single supported pure expression."))
   (b* (((desiniter desiniter) desiniter))
     (and (endp desiniter.designors)
-         (initer-case desiniter.init :single)
-         (expr-pure-formalp (initer-single->expr desiniter.init))))
+         (initer-case desiniter.initer :single)
+         (expr-pure-formalp (initer-single->expr desiniter.initer))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

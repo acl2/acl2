@@ -318,7 +318,7 @@
     :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if an initializer with optional designations is unambiguous."
     (and (designor-list-unambp (desiniter->designors desiniter))
-         (initer-unambp (desiniter->init desiniter)))
+         (initer-unambp (desiniter->initer desiniter)))
     :measure (desiniter-count desiniter))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1790,9 +1790,9 @@
              (designor-list-unambp (desiniter->designors desiniter)))
     :expand (desiniter-unambp desiniter))
 
-  (defrule initer-unambp-of-desiniter->init
+  (defrule initer-unambp-of-desiniter->initer
     (implies (desiniter-unambp desiniter)
-             (initer-unambp (desiniter->init desiniter)))
+             (initer-unambp (desiniter->initer desiniter)))
     :expand (desiniter-unambp desiniter))
 
   (defrule const-expr-unambp-of-designor-sub->index

@@ -3789,7 +3789,7 @@
                                       (initer-fix initer)
                                       (type-fix target-type))
                                  (irr-expr)))
-                            ((unless (initer-case desiniter.init :single))
+                            ((unless (initer-case desiniter.initer :single))
                              (mv (msg "The initializer list ~x0 ~
                                        for the target type ~x1 ~
                                        is a singleton without designators ~
@@ -3798,7 +3798,7 @@
                                       (initer-fix initer)
                                       (type-fix target-type))
                                  (irr-expr))))
-                         (mv nil (initer-single->expr desiniter.init))))))
+                         (mv nil (initer-single->expr desiniter.initer))))))
              ((erp init-type types table) (valid-expr expr table ienv))
              (type (type-fpconvert (type-apconvert init-type)))
              ((unless (or (and (or (type-arithmeticp target-type)
@@ -3914,7 +3914,7 @@
          ((erp & types table)
           (valid-designor-list desiniter.designors target-type table ienv))
          ((erp more-types table)
-          (valid-initer desiniter.init target-type lifetime table ienv)))
+          (valid-initer desiniter.initer target-type lifetime table ienv)))
       (retok (set::union types more-types) table))
     :measure (desiniter-count desiniter))
 

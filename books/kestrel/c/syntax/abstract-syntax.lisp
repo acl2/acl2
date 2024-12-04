@@ -2036,7 +2036,7 @@
        while a non-empty list captures the designation,
        which has a non-empty list of designators."))
     ((designors designor-list)
-     (init initer))
+     (initer initer))
     :parents (abstract-syntax exprs/decls/stmts)
     :pred desiniterp
     :measure (two-nats-measure (acl2-count x) 2))

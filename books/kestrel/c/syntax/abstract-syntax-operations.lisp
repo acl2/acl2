@@ -225,7 +225,7 @@
 (defirrelevant irr-desiniter
   :short "An irrelevant initializer with optional designation."
   :type desiniterp
-  :body (make-desiniter :designors nil :init (irr-initer)))
+  :body (make-desiniter :designors nil :initer (irr-initer)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

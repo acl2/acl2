@@ -9642,14 +9642,14 @@
               (read-punctuator "=" parstate))
              ((erp initer last-span parstate) ; designators = initializer
               (parse-initializer parstate)))
-          (retok (make-desiniter :designors designors :init initer)
+          (retok (make-desiniter :designors designors :initer initer)
                  (span-join span last-span)
                  parstate)))
        ((token-initializer-start-p token) ; initializer...
         (b* ((parstate (unread-token parstate))
              ((erp initer span parstate) ; initializer
               (parse-initializer parstate)))
-          (retok (make-desiniter :designors nil :init initer)
+          (retok (make-desiniter :designors nil :initer initer)
                  span
                  parstate)))
        (t ; other

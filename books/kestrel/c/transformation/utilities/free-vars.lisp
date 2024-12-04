@@ -175,7 +175,7 @@
             designations."
     :returns (free-vars ident-setp)
     (b* (((desiniter desiniter) desiniter))
-      (free-vars-initer desiniter.init bound-vars))
+      (free-vars-initer desiniter.initer bound-vars))
     :measure (desiniter-count desiniter))
 
   (define free-vars-desiniter-list

@@ -2213,7 +2213,7 @@
                           (pstate (print-astring " = " pstate)))
                        pstate)
                    pstate))
-         (pstate (print-initer desiniter.init pstate)))
+         (pstate (print-initer desiniter.initer pstate)))
       pstate)
     :measure (two-nats-measure (desiniter-count desiniter) 0))
 

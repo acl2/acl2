@@ -1115,9 +1115,9 @@
        ((desiniter desiniter) desiniter)
        ((when desiniter.designors)
         (reterr (msg "Unsupported designators ~x0." desiniter.designors)))
-       ((unless (initer-case desiniter.init :single))
-        (reterr (msg "Unsupported nested initializer ~x0." desiniter.init))))
-    (ldm-expr (initer-single->expr desiniter.init)))
+       ((unless (initer-case desiniter.initer :single))
+        (reterr (msg "Unsupported nested initializer ~x0." desiniter.initer))))
+    (ldm-expr (initer-single->expr desiniter.initer)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -1813,8 +1813,8 @@
          ((desiniter desiniter) desiniter)
          ((erp new-designors table)
           (dimb-designor-list desiniter.designors table))
-         ((erp new-initer table) (dimb-initer desiniter.init table)))
-      (retok (make-desiniter :designors new-designors :init new-initer)
+         ((erp new-initer table) (dimb-initer desiniter.initer table)))
+      (retok (make-desiniter :designors new-designors :initer new-initer)
              table))
     :measure (desiniter-count desiniter))
 

@@ -319,7 +319,7 @@
     (:linear c$::initdeclor-count-of-car)
     (:linear c$::initdeclor-list-count-of-cdr)
     (:linear c$::initdeclor-list-count-of-decl-decl->init)
-    (:linear c$::initer-count-of-desiniter->init)
+    (:linear c$::initer-count-of-desiniter->initer)
     (:linear c$::initer-count-of-initer-option-some->val)
     (:linear c$::initer-option-count-of-initdeclor->init?)
     (:linear c$::label-count-of-stmt-labeled->label)
@@ -1068,7 +1068,7 @@
    `(b* (((desiniter desiniter) desiniter))
       (make-desiniter
         :designors (,(cdr (assoc-eq 'designor-list names)) desiniter.designors ,@extra-args-names)
-        :init (,(cdr (assoc-eq 'initer names)) desiniter.init ,@extra-args-names)))
+        :initer (,(cdr (assoc-eq 'initer names)) desiniter.initer ,@extra-args-names)))
    '(:returns (new-desiniter desiniterp)
      :measure (desiniter-count desiniter))))
 
