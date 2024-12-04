@@ -3997,7 +3997,7 @@
                                       (type-fix target-type))
                                  (irr-expr)))
                             ((desiniter desiniter) (car initer.elems))
-                            ((unless (endp desiniter.design))
+                            ((unless (endp desiniter.designors))
                              (mv (msg "The initializer list ~x0 ~
                                        for the target type ~x1 ~
                                        is a singleton ~
@@ -4005,7 +4005,7 @@
                                       (initer-fix initer)
                                       (type-fix target-type))
                                  (irr-expr)))
-                            ((unless (initer-case desiniter.init :single))
+                            ((unless (initer-case desiniter.initer :single))
                              (mv (msg "The initializer list ~x0 ~
                                        for the target type ~x1 ~
                                        is a singleton without designators ~
@@ -4014,7 +4014,7 @@
                                       (initer-fix initer)
                                       (type-fix target-type))
                                  (irr-expr))))
-                         (mv nil (initer-single->expr desiniter.init))))))
+                         (mv nil (initer-single->expr desiniter.initer))))))
              ((erp new-expr init-type types table) (valid-expr expr table ienv))
              (type (type-fpconvert (type-apconvert init-type)))
              ((unless (or (and (or (type-arithmeticp target-type)
@@ -4038,8 +4038,8 @@
                :single (initer-single new-expr)
                :list (make-initer-list
                       :elems (list (make-desiniter
-                                    :design nil
-                                    :init (initer-single new-expr)))
+                                    :designors nil
+                                    :initer (initer-single new-expr)))
                       :final-comma initer.final-comma))))
           (retok new-initer types table)))
        ((and (or (type-case target-type :struct)
@@ -4149,10 +4149,10 @@
     (b* (((reterr) (irr-desiniter) nil (irr-valid-table))
          ((desiniter desiniter) desiniter)
          ((erp new-design & types table)
-          (valid-designor-list desiniter.design target-type table ienv))
+          (valid-designor-list desiniter.designors target-type table ienv))
          ((erp new-init more-types table)
-          (valid-initer desiniter.init target-type lifetime table ienv)))
-      (retok (make-desiniter :design new-design :init new-init)
+          (valid-initer desiniter.initer target-type lifetime table ienv)))
+      (retok (make-desiniter :designors new-design :initer new-init)
              (set::union types more-types)
              table))
     :measure (desiniter-count desiniter))
@@ -4372,8 +4372,8 @@
                    (type-pointer)
                  type))
          ((erp new-dirdeclor fundef-params-p type ident types table)
-          (valid-dirdeclor declor.decl fundef-params-p type table ienv)))
-      (retok (make-declor :pointers declor.pointers :decl new-dirdeclor)
+          (valid-dirdeclor declor.direct fundef-params-p type table ienv)))
+      (retok (make-declor :pointers declor.pointers :direct new-dirdeclor)
              fundef-params-p
              type
              ident

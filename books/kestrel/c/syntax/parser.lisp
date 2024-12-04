@@ -9645,14 +9645,14 @@
               (read-punctuator "=" parstate))
              ((erp initer last-span parstate) ; designators = initializer
               (parse-initializer parstate)))
-          (retok (make-desiniter :design designors :init initer)
+          (retok (make-desiniter :designors designors :initer initer)
                  (span-join span last-span)
                  parstate)))
        ((token-initializer-start-p token) ; initializer...
         (b* ((parstate (unread-token parstate))
              ((erp initer span parstate) ; initializer
               (parse-initializer parstate)))
-          (retok (make-desiniter :design nil :init initer)
+          (retok (make-desiniter :designors nil :initer initer)
                  span
                  parstate)))
        (t ; other
@@ -10567,7 +10567,7 @@
          ((erp token span parstate) (read-token parstate)))
       (cond
        ((token-type-qualifier-p token) ; tyqual
-        (retok (typequal/attribspec-tyqual (token-to-type-qualifier token))
+        (retok (typequal/attribspec-type (token-to-type-qualifier token))
                span
                parstate))
        ((or (token-keywordp token "__attribute") ; __attribute
@@ -11834,7 +11834,7 @@
              ((erp dirdeclor last-span parstate) ; pointer dirdeclor
               (parse-direct-declarator parstate)))
           (retok (make-declor :pointers tyqualss
-                              :decl dirdeclor)
+                              :direct dirdeclor)
                  (span-join span last-span)
                  parstate)))
        ;; If token is not a star, we must have a direct declarator.
@@ -11843,7 +11843,7 @@
              ((erp dirdeclor span parstate) ; dirdeclor
               (parse-direct-declarator parstate)))
           (retok (make-declor :pointers nil
-                              :decl dirdeclor)
+                              :direct dirdeclor)
                  span
                  parstate)))))
     :measure (two-nats-measure (parsize parstate) 1))

@@ -1971,7 +1971,7 @@
   (fty::deftagsum typequal/attribspec
     :parents (abstract-syntax exprs/decls/stmts)
     :short "Fixtype of type qualifiers and attribute specifiers."
-    (:tyqual ((unwrap type-qual)))
+    (:type ((unwrap type-qual)))
     (:attrib ((unwrap attrib-spec)))
     :pred typequal/attribspec-p
     :measure (two-nats-measure (acl2-count x) 0))
@@ -2057,8 +2057,8 @@
        where the empty list means that the designation is absent,
        while a non-empty list captures the designation,
        which has a non-empty list of designators."))
-    ((design designor-list)
-     (init initer))
+    ((designors designor-list)
+     (initer initer))
     :parents (abstract-syntax exprs/decls/stmts)
     :pred desiniterp
     :measure (two-nats-measure (acl2-count x) 2))
@@ -2129,7 +2129,7 @@
        the type qualifiers and attribute specifiers
        that immediately follow the star."))
     ((pointers typequal/attribspec-list-list)
-     (decl dirdeclor))
+     (direct dirdeclor))
     :pred declorp
     :measure (two-nats-measure (acl2-count x) 1))
 

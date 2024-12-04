@@ -379,8 +379,8 @@
     :short "Transform an initializer with optional designations."
     (b* (((desiniter desiniter) desiniter))
       (make-desiniter
-       :design (simpadd0-designor-list desiniter.design)
-       :init (simpadd0-initer desiniter.init)))
+       :designors (simpadd0-designor-list desiniter.designors)
+       :initer (simpadd0-initer desiniter.initer)))
     :measure (desiniter-count desiniter))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -430,7 +430,7 @@
     (b* (((declor declor) declor))
       (make-declor
        :pointers declor.pointers
-       :decl (simpadd0-dirdeclor declor.decl)))
+       :direct (simpadd0-dirdeclor declor.direct)))
     :measure (declor-count declor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -211,7 +211,7 @@
 (defirrelevant irr-typequal/attribspec
   :short "An irrelevant type qualifier or attribute specifier."
   :type typequal/attribspec-p
-  :body (typequal/attribspec-tyqual (irr-type-qual)))
+  :body (typequal/attribspec-type (irr-type-qual)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -225,7 +225,7 @@
 (defirrelevant irr-desiniter
   :short "An irrelevant initializer with optional designation."
   :type desiniterp
-  :body (make-desiniter :design nil :init (irr-initer)))
+  :body (make-desiniter :designors nil :initer (irr-initer)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -239,7 +239,7 @@
 (defirrelevant irr-declor
   :short "An irrelevant declarator."
   :type declorp
-  :body (make-declor :pointers nil :decl (dirdeclor-ident (irr-ident))))
+  :body (make-declor :pointers nil :direct (dirdeclor-ident (irr-ident))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -861,7 +861,7 @@
 
   (define declor->ident ((declor declorp))
     :returns (ident identp)
-    (dirdeclor->ident (declor->decl declor))
+    (dirdeclor->ident (declor->direct declor))
     :measure (declor-count declor))
 
   (define dirdeclor->ident ((dirdeclor dirdeclorp))

@@ -200,7 +200,7 @@
     declor
     make-declor
     declor->ident
-    declor->decl
+    declor->direct
 
     declor-optionp
     declor-option-fix
