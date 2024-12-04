@@ -110,12 +110,30 @@
  "void f() {}
 ")
 
+
+
 (test-valid
  "int x;
   void f() {
   int y = sizeof(x);
   }
-")
+"
+ :cond (b* ((edecls (transunit->decls ast))
+            (edecl (cadr edecls))
+            (fundef (extdecl-fundef->unwrap edecl))
+            (stmt (fundef->body fundef))
+            (items (stmt-compound->items stmt))
+            (item (car items))
+            (decl (block-item-decl->unwrap item))
+            (ideclors (decl-decl->init decl))
+            (ideclor (car ideclors))
+            (initer (initdeclor->init? ideclor))
+            (expr-sizeof (initer-single->expr initer))
+            (expr-xp (expr-unary->arg expr-sizeof))
+            (expr-x (expr-paren->inner expr-xp)))
+         (and (expr-case expr-x :ident)
+              (equal (expr-ident->info expr-x)
+                     (type-sint)))))
 
 (test-valid
  "typedef char x;
