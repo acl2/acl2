@@ -249,7 +249,7 @@
        ;;                      normalize-xors
        ;;                      nil ; limits
        ;;                      t ; memoize
-       ;;                      nil ; count-hints
+       ;;                      nil ; count-hits
        ;;                      print
        ;;                      monitor
        ;;                      nil ; fns-to-elide

@@ -207,7 +207,6 @@
 (defthmd hit-countsp-of-zero-hits
   (hit-countsp (zero-hits)))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Empty so far, but being extended.
@@ -479,3 +478,23 @@
 ;; ;;     (implies (and (hit-count-alistp alist1)
 ;; ;;                   (hit-count-alistp alist2))
 ;; ;;              (all-cdrs-rationalp (subtract-hit-count-alists alist1 alist2)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund count-hits-argp (count-hits)
+  (declare (xargs :guard t))
+  (member-eq count-hits '(t nil :total)))
+
+(defund initialize-hit-counts (count-hits)
+  (declare (xargs :guard (count-hits-argp count-hits)))
+  (if (eq t count-hits)
+      (empty-hit-counts) ; count hits for each rule
+    (if (eq :total count-hits)
+        (zero-hits)
+      ;; must be nil:
+      (no-hit-counting))))
+
+(defthm hit-countsp-of-initialize-hit-counts
+  (hit-countsp (initialize-hit-counts arga))
+  :hints (("Goal" :in-theory (enable initialize-hit-counts))))
+

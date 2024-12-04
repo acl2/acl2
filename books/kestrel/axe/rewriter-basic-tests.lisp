@@ -100,12 +100,14 @@
 (defmacro test-simp-term (input-term output-term
                                      &key
                                      (assumptions 'nil)
-                                     (memoizep 't))
+                                     (rules 'nil)
+                                     (memoizep 't)
+                                     (count-hits 't))
   `(assert!
      (mv-let (erp term)
        (simp-term-basic ',input-term
                         ',assumptions
-                        nil ; rule-alist
+                        (make-rule-alist! ,rules (w state))
                         nil ; interpreted-function-alist
                         (known-booleans (w state))
                         nil ; normalize-xors
@@ -113,7 +115,7 @@
                         ,memoizep
                         nil ; monitored-symbols
                         nil ; fns-to-elide
-                        nil   ; count-hits
+                        ,count-hits   ; count-hits
                         nil ; print
                         )
        (and (not erp)
@@ -195,10 +197,17 @@
 (test-simp-term (bvif '32 (equal x '8) x y)
                 (bvif '32 (equal x '8) '8 y)
                 :memoizep nil)
+
 ;; The negation of the test is used to rewrite the else-branch:
 (test-simp-term (bvif '32 (not (equal x '8)) y x)
                 (bvif '32 (not (equal x '8)) y '8)
                 :memoizep nil)
+
+;; Tests with rules:
+
+(test-simp-term (car (cons x y)) x :rules '(car-cons) :count-hits :total)
+(test-simp-term (car (cons x y)) x :rules '(car-cons) :count-hits t)
+(test-simp-term (car (cons x y)) x :rules '(car-cons) :count-hits nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

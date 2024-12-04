@@ -114,7 +114,7 @@
                               (interpreted-function-alistp interpreted-function-alist) ;todo: extract from the terms and rules?
                               (symbol-listp monitor)
                               (booleanp memoizep)
-                              (booleanp count-hits)
+                              (count-hits-argp count-hits)
                               (booleanp normalize-xors)
                               )))
   (b* (((when (command-is-redundantp whole-form state))

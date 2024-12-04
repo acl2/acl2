@@ -384,7 +384,7 @@
                             nil
                             nil
                             nil
-                            t ; count-hints
+                            t ; count-hits
                             nil ;print
                             nil
                             nil)))
@@ -413,7 +413,7 @@
                             nil
                             nil
                             nil
-                            t   ; count-hints
+                            t   ; count-hits
                             nil ;print
                             nil
                             nil)))

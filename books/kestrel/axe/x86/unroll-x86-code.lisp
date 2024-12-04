@@ -323,7 +323,7 @@
                                       t             ; normalize-xors
                                       limits
                                       memoizep
-                                      t ; count-hints ; todo: think about this
+                                      t ; count-hits ; todo: think about this
                                       print
                                       rules-to-monitor
                                       '(program-at) ; fns-to-elide
@@ -416,7 +416,7 @@
                                             t ; normalize-xors
                                             limits
                                             memoizep
-                                            t ; count-hints ; todo: think about this
+                                            t ; count-hits ; todo: think about this
                                             print
                                             rules-to-monitor
                                             '(program-at code-segment-assumptions32-for-code) ; fns-to-elide
