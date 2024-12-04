@@ -1943,7 +1943,7 @@
 
             x86isa::<-of-logext-and-+-of-constant
             x86isa::canonical-address-p-+-signed-byte-p-16-is-signed-byte-p-64 ;looped
-            x86isa::not-<-when-canonical-address-p
+            ;; x86isa::not-<-when-canonical-address-p ;looped with the between lemma?
 ;                    canonical-address-p-of-+-when-canonical-address-p-of-+ ;has a natp hyp that is problematic ;todo: drop?
 ;                    canonical-address-p-of-+-when-canonical-address-p-of-+-alt ;todo: drop?
             ;;signed-byte-p-of-+-between
