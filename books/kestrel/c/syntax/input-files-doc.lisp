@@ -307,15 +307,7 @@
      (xdoc::p
       "In the rest of this documentation page,
        let @('*const-disamb*') be the name of this constant,
-       if not @('nil').")
-     (xdoc::p
-      "Currently the value of this constant, if generated,
-       is the same as the value of the @(':const') constant
-       when @(':process') is @(':validate').
-       This is because validation does not produce
-       an updated translation unit ensemble.
-       However, this may change soon:
-       validation may enrich the abstract syntax with information."))
+       if not @('nil')."))
 
     (xdoc::desc
      "@(':gcc') &mdash; default @('nil')"

@@ -116,7 +116,8 @@
      the DAG has some certificate with the given author and round,
      or the given author and round are in the set of endorsed pairs.
      We express the first condition by saying that
-     @(tsee cert-with-author+round) does not return @('nil')."))
+     @(tsee cert-with-author+round) does not return @('nil').
+     The signer is represented by its state @('vstate') here."))
   (b* (((validator-state vstate) vstate)
        (author (address-fix author))
        (round (pos-fix round)))
