@@ -11831,7 +11831,7 @@
              ((erp dirdeclor last-span parstate) ; pointer dirdeclor
               (parse-direct-declarator parstate)))
           (retok (make-declor :pointers tyqualss
-                              :decl dirdeclor)
+                              :direct dirdeclor)
                  (span-join span last-span)
                  parstate)))
        ;; If token is not a star, we must have a direct declarator.
@@ -11840,7 +11840,7 @@
              ((erp dirdeclor span parstate) ; dirdeclor
               (parse-direct-declarator parstate)))
           (retok (make-declor :pointers nil
-                              :decl dirdeclor)
+                              :direct dirdeclor)
                  span
                  parstate)))))
     :measure (two-nats-measure (parsize parstate) 1))

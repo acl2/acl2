@@ -427,7 +427,7 @@
      not a function declarator, for which we have a separate function."))
   (b* (((reterr) (c::obj-declor-ident (c::ident "irrelevant")))
        ((declor declor) declor)
-       ((erp declor1) (ldm-dirdeclor-obj declor.decl)))
+       ((erp declor1) (ldm-dirdeclor-obj declor.direct)))
     (ldm-declor-obj-loop declor1 declor.pointers))
   :hooks (:fix)
 
@@ -1021,7 +1021,7 @@
      not an object declarator, for which we have a separate function."))
   (b* (((reterr) (c::fun-declor-base (c::ident "irrelevant") nil))
        ((declor declor) declor)
-       ((erp declor1) (ldm-dirdeclor-fun declor.decl)))
+       ((erp declor1) (ldm-dirdeclor-fun declor.direct)))
     (ldm-declor-fun-loop declor1 declor.pointers))
   :hooks (:fix)
 

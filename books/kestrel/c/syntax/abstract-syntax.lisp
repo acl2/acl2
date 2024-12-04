@@ -2107,7 +2107,7 @@
        the type qualifiers and attribute specifiers
        that immediately follow the star."))
     ((pointers typequal/attribspec-list-list)
-     (decl dirdeclor))
+     (direct dirdeclor))
     :pred declorp
     :measure (two-nats-measure (acl2-count x) 1))
 

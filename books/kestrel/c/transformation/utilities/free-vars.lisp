@@ -48,7 +48,7 @@
     :short "Get the identifier described by a declarator."
     :returns (ident? ident-optionp)
     (b* (((declor declor) declor))
-      (dirdeclor-get-ident declor.decl))
+      (dirdeclor-get-ident declor.direct))
     :measure (declor-count declor))
 
   (define dirdeclor-get-ident

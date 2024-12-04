@@ -2283,7 +2283,7 @@
                      (print-typequal/attribspec-list-list declor.pointers
                                                           pstate)
                    pstate))
-         (pstate (print-dirdeclor declor.decl pstate)))
+         (pstate (print-dirdeclor declor.direct pstate)))
       pstate)
     :measure (two-nats-measure (declor-count declor) 0))
 

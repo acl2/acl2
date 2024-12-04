@@ -256,7 +256,7 @@
     (:linear c$::dirabsdeclor-option-count-of-dirabsdeclor-array-static1->decl?)
     (:linear c$::dirabsdeclor-option-count-of-dirabsdeclor-array-static2->decl?)
     (:linear c$::dirabsdeclor-option-count-of-dirabsdeclor-function->decl?)
-    (:linear c$::dirdeclor-count-of-declor->decl)
+    (:linear c$::dirdeclor-count-of-declor->direct)
     (:linear c$::dirdeclor-count-of-dirdeclor-array->decl)
     (:linear c$::dirdeclor-count-of-dirdeclor-array-star->decl)
     (:linear c$::dirdeclor-count-of-dirdeclor-array-static1->decl)
@@ -1140,7 +1140,7 @@
    `(b* (((declor declor) declor))
       (make-declor
         :pointers declor.pointers
-        :decl (,(cdr (assoc-eq 'dirdeclor names)) declor.decl ,@extra-args-names)))
+        :direct (,(cdr (assoc-eq 'dirdeclor names)) declor.direct ,@extra-args-names)))
    '(:returns (new-declor declorp)
      :measure (declor-count declor))))
 

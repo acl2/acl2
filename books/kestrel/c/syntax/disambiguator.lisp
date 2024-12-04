@@ -1898,9 +1898,9 @@
     (b* (((reterr) (irr-declor) (irr-ident) (irr-dimb-table))
          ((declor declor) declor)
          ((erp new-dirdeclor ident table)
-          (dimb-dirdeclor declor.decl fundefp table)))
+          (dimb-dirdeclor declor.direct fundefp table)))
       (retok (make-declor :pointers declor.pointers
-                          :decl new-dirdeclor)
+                          :direct new-dirdeclor)
              ident
              table))
     :measure (declor-count declor))

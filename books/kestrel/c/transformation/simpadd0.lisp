@@ -430,7 +430,7 @@
     (b* (((declor declor) declor))
       (make-declor
        :pointers declor.pointers
-       :decl (simpadd0-dirdeclor declor.decl)))
+       :direct (simpadd0-dirdeclor declor.direct)))
     :measure (declor-count declor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

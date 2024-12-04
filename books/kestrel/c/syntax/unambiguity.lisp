@@ -361,7 +361,7 @@
     :returns (yes/no booleanp)
     :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if a declarator is unambiguous."
-    (dirdeclor-unambp (declor->decl declor))
+    (dirdeclor-unambp (declor->direct declor))
     :measure (declor-count declor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1801,9 +1801,9 @@
              (const-expr-unambp (designor-sub->index designor)))
     :expand (designor-unambp designor))
 
-  (defrule dirdeclor-unambp-of-declor->decl
+  (defrule dirdeclor-unambp-of-declor->direct
     (implies (declor-unambp declor)
-             (dirdeclor-unambp (declor->decl declor)))
+             (dirdeclor-unambp (declor->direct declor)))
     :expand (declor-unambp declor))
 
   (defrule declor-unambp-of-dirdeclor-paren->unwrap

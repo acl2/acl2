@@ -398,10 +398,10 @@
   (b* (((fundef fundef) fundef)
        ((declor fundef.declor) fundef.declor))
     (dirdeclor-case
-      fundef.declor.decl
-      :function-params (b* ((fn-name (dirdeclor-get-ident fundef.declor.decl.decl)))
+      fundef.declor.direct
+      :function-params (b* ((fn-name (dirdeclor-get-ident fundef.declor.direct.decl)))
                          (call-graph-stmt fundef.body fn-name acc))
-      :function-names (b* ((fn-name (dirdeclor-get-ident fundef.declor.decl.decl)))
+      :function-names (b* ((fn-name (dirdeclor-get-ident fundef.declor.direct.decl)))
                          (call-graph-stmt fundef.body fn-name acc))
       :otherwise (ident-ident-option-set-map-fix acc))))
 

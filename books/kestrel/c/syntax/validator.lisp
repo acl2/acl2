@@ -4117,7 +4117,7 @@
          (type (if (consp declor.pointers)
                    (type-pointer)
                  type)))
-      (valid-dirdeclor declor.decl fundef-params-p type table ienv))
+      (valid-dirdeclor declor.direct fundef-params-p type table ienv))
     :measure (declor-count declor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

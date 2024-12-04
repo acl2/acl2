@@ -189,20 +189,20 @@
   (b* (((fundef fundef) fundef)
        ((declor fundef.declor) fundef.declor))
     (dirdeclor-case
-      fundef.declor.decl
+      fundef.declor.direct
       :function-params
       (if (equal target-fn
-                 (dirdeclor-get-ident fundef.declor.decl.decl))
+                 (dirdeclor-get-ident fundef.declor.direct.decl))
           ;; Return
           (make-fundef
             :extension fundef.extension
             :spec fundef.spec
             :declor (make-declor
                       :pointers fundef.declor.pointers
-                      :decl (make-dirdeclor-function-params
-                              :decl (dirdeclor-ident new-fn)
-                              :params fundef.declor.decl.params
-                              :ellipsis fundef.declor.decl.ellipsis))
+                      :direct (make-dirdeclor-function-params
+                               :decl (dirdeclor-ident new-fn)
+                               :params fundef.declor.direct.params
+                               :ellipsis fundef.declor.direct.ellipsis))
             :decls fundef.decls
             :body (rename-fn-stmt fundef.body target-fn new-fn))
         nil)

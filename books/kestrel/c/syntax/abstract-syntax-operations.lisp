@@ -239,7 +239,7 @@
 (defirrelevant irr-declor
   :short "An irrelevant declarator."
   :type declorp
-  :body (make-declor :pointers nil :decl (dirdeclor-ident (irr-ident))))
+  :body (make-declor :pointers nil :direct (dirdeclor-ident (irr-ident))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -861,7 +861,7 @@
 
   (define declor->ident ((declor declorp))
     :returns (ident identp)
-    (dirdeclor->ident (declor->decl declor))
+    (dirdeclor->ident (declor->direct declor))
     :measure (declor-count declor))
 
   (define dirdeclor->ident ((dirdeclor dirdeclorp))
