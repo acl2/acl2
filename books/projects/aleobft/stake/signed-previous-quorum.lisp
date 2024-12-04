@@ -148,7 +148,7 @@
    (xdoc::p
     "The only kind of event that creates a new certificate is @('create').
      As proved in @(see signed-certs-of-next),
-     @(tsee signe-certs) changes only under this kind of event.")
+     @(tsee signed-certs) changes only under this kind of event.")
    (xdoc::p
     "For a @('create') event, there are two cases to consider.
      For an existing (i.e. old) certificate,
