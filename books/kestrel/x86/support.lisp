@@ -1611,6 +1611,13 @@
                 )
            (canonical-address-p (+ k ad))))
 
+(defthm canonical-address-p-of-+-of-constant-when-natp
+  (implies (and (syntaxp (quotep k))
+                (natp k)
+                (natp x))
+           (equal (canonical-address-p (+ k x))
+                  (< x (- (expt 2 47) k)))))
+
 ;; (defthm +-of-bvplus-of-x-and-minus-x
 ;;   (implies (unsigned-byte-p 32 x)
 ;;            (equal (+ (BVPLUS 32 1 x)

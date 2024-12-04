@@ -1781,6 +1781,7 @@
             x86isa::canonical-address-p-between-special2
             x86isa::canonical-address-p-between-special3
             x86isa::canonical-address-p-between-special4
+            x86isa::canonical-address-p-of-+-of-constant-when-natp ; useful for non-PIE code
 
             acl2::<-of-+-cancel-1-2
             acl2::<-of-+-cancel-2-1
@@ -4463,7 +4464,7 @@
             acl2::integerp-of-*                 ; for array index calcs
             acl2::my-integerp-<-non-integerp    ; for array index calcs
             acl2::bvsx-when-bvlt
-            x86isa::canonical-address-p-between-special5
+            x86isa::canonical-address-p-between-special5 ; todo: move these
             x86isa::canonical-address-p-between-special5-alt
             x86isa::canonical-address-p-between-special6
             x86isa::canonical-address-p-between-special7
