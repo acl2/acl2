@@ -459,10 +459,11 @@
   (("Goal"
     :in-theory (enable canonical-address-p signed-byte-p))))
 
+;; General rule.  May often fail to apply.
 (defthm canonical-address-p-between
-  (implies (and (canonical-address-p low) ; low and high are free vars
+  (implies (and (canonical-address-p low) ; low is a free var
                 (<= low ad)
-                (canonical-address-p high)
+                (canonical-address-p high) ; high is a free var
                 (<= ad high))
            (equal (canonical-address-p ad)
                   (integerp ad)))
@@ -512,23 +513,23 @@
            (canonical-address-p (+ offset x))))
 
 (defthm canonical-address-p-between-special5
-  (implies (and (canonical-address-p text-offset)
-                (canonical-address-p (+ k2 text-offset)) ; k2 is a free var
+  (implies (and (canonical-address-p offset)
+                (canonical-address-p (+ k2 offset)) ; k2 is a free var
                 (<= (+ k x) k2)
                 (natp k)
                 (natp x)
                 (natp k2))
-           ;; ex (+ 192 (+ text-offset (ash (bvchop 32 (rdi x86)) 2)))
-           (canonical-address-p (+ k text-offset x))))
+           ;; ex (+ 192 (+ offset (ash (bvchop 32 (rdi x86)) 2)))
+           (canonical-address-p (+ k offset x))))
 
 (defthm canonical-address-p-between-special5-alt
-  (implies (and (canonical-address-p text-offset)
-                (canonical-address-p (+ k2 text-offset)) ; k2 is a free var
+  (implies (and (canonical-address-p offset)
+                (canonical-address-p (+ k2 offset)) ; k2 is a free var
                 (<= (+ k x) k2)
                 (natp k)
                 (natp x)
                 (natp k2))
-           (canonical-address-p (+ k x text-offset))))
+           (canonical-address-p (+ k x offset))))
 
 (defthm canonical-address-p-between-special6
   (implies (and (canonical-address-p (+ k1 base))
