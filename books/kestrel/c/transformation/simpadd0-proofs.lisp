@@ -108,7 +108,7 @@
                                                    (cdr extdecls)))
           (fundef (extdecl-fundef->unwrap extdecl))
           (declor (fundef->declor fundef))
-          (dirdeclor (declor->decl declor))
+          (dirdeclor (declor->direct declor))
           ((unless (member-eq (dirdeclor-kind dirdeclor)
                               '(:function-params :function-names)))
            (raise "Internal error: ~
