@@ -45,7 +45,7 @@
 (set-verify-guards-eagerness 2)
 
 
-#|| 
+#||
 Q. Why do we need SUBSET enabled?
 
 I think I understand what's going on here.  For a reproducible example, you can
@@ -181,6 +181,15 @@ Jared
   (equal (cardinality (union X Y))
          (- (+ (cardinality X) (cardinality Y))
             (cardinality (intersect X Y)))))
+
+(defthmd expand-cardinality-of-intersect
+  (equal (cardinality (intersect x y))
+         (+ (cardinality x) (cardinality y)
+            (- (cardinality (union x y))))))
+
+(theory-invariant
+ (incompatible (:rewrite expand-cardinality-of-union)
+               (:rewrite expand-cardinality-of-intersect)))
 
 (defthm expand-cardinality-of-difference
   ;; Also questionable, also used to be :linear

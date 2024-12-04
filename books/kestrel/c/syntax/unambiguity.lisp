@@ -317,8 +317,8 @@
     :returns (yes/no booleanp)
     :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if an initializer with optional designations is unambiguous."
-    (and (designor-list-unambp (desiniter->design desiniter))
-         (initer-unambp (desiniter->init desiniter)))
+    (and (designor-list-unambp (desiniter->designors desiniter))
+         (initer-unambp (desiniter->initer desiniter)))
     :measure (desiniter-count desiniter))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -361,7 +361,7 @@
     :returns (yes/no booleanp)
     :parents (unambiguity exprs/decls/stmts-unambp)
     :short "Check if a declarator is unambiguous."
-    (dirdeclor-unambp (declor->decl declor))
+    (dirdeclor-unambp (declor->direct declor))
     :measure (declor-count declor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -910,7 +910,7 @@
   ;; e.g. the rule for constructor EXPR-IDENT,
   ;; are formulated differently from other rules.
   ;; For uniformity with other rules, they should have
-  ;; a conclusion like (EXPR-UNAMBP (EXPR-IDENT IDENT)).
+  ;; a conclusion like (EXPR-UNAMBP (EXPR-IDENT IDENT INFO)).
   ;; But that fails to apply in proofs,
   ;; such as the ones for the disambiguator.
   ;; Thus, we formulate those rules with conclusion (EXPR-UNAMBP EXPR)
@@ -1148,10 +1148,10 @@
     :expand (initer-unambp (initer-list elems final-comma)))
 
   (defrule desiniter-unambp-of-desiniter
-    (equal (desiniter-unambp (desiniter design init))
-           (and (designor-list-unambp design)
+    (equal (desiniter-unambp (desiniter designors init))
+           (and (designor-list-unambp designors)
                 (initer-unambp init)))
-    :expand (desiniter-unambp (desiniter design init)))
+    :expand (desiniter-unambp (desiniter designors init)))
 
   (defrule designor-unambp-of-designor-sub
     (equal (designor-unambp (designor-sub index))
@@ -1785,14 +1785,14 @@
              (desiniter-list-unambp (initer-list->elems initer)))
     :expand (initer-unambp initer))
 
-  (defrule designor-list-unambp-of-desiniter->design
+  (defrule designor-list-unambp-of-desiniter->designors
     (implies (desiniter-unambp desiniter)
-             (designor-list-unambp (desiniter->design desiniter)))
+             (designor-list-unambp (desiniter->designors desiniter)))
     :expand (desiniter-unambp desiniter))
 
-  (defrule initer-unambp-of-desiniter->init
+  (defrule initer-unambp-of-desiniter->initer
     (implies (desiniter-unambp desiniter)
-             (initer-unambp (desiniter->init desiniter)))
+             (initer-unambp (desiniter->initer desiniter)))
     :expand (desiniter-unambp desiniter))
 
   (defrule const-expr-unambp-of-designor-sub->index
@@ -1801,9 +1801,9 @@
              (const-expr-unambp (designor-sub->index designor)))
     :expand (designor-unambp designor))
 
-  (defrule dirdeclor-unambp-of-declor->decl
+  (defrule dirdeclor-unambp-of-declor->direct
     (implies (declor-unambp declor)
-             (dirdeclor-unambp (declor->decl declor)))
+             (dirdeclor-unambp (declor->direct declor)))
     :expand (declor-unambp declor))
 
   (defrule declor-unambp-of-dirdeclor-paren->unwrap

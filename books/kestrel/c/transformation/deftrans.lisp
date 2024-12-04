@@ -244,7 +244,7 @@
     (:linear c$::decl-spec-list-count-of-paramdecl->spec)
     (:linear c$::designor-count-of-car)
     (:linear c$::designor-list-count-of-cdr)
-    (:linear c$::designor-list-count-of-desiniter->design)
+    (:linear c$::designor-list-count-of-desiniter->designors)
     (:linear c$::desiniter-count-of-car)
     (:linear c$::desiniter-list-count-of-cdr)
     (:linear c$::desiniter-list-count-of-expr-complit->elems)
@@ -256,7 +256,7 @@
     (:linear c$::dirabsdeclor-option-count-of-dirabsdeclor-array-static1->decl?)
     (:linear c$::dirabsdeclor-option-count-of-dirabsdeclor-array-static2->decl?)
     (:linear c$::dirabsdeclor-option-count-of-dirabsdeclor-function->decl?)
-    (:linear c$::dirdeclor-count-of-declor->decl)
+    (:linear c$::dirdeclor-count-of-declor->direct)
     (:linear c$::dirdeclor-count-of-dirdeclor-array->decl)
     (:linear c$::dirdeclor-count-of-dirdeclor-array-star->decl)
     (:linear c$::dirdeclor-count-of-dirdeclor-array-static1->decl)
@@ -319,7 +319,7 @@
     (:linear c$::initdeclor-count-of-car)
     (:linear c$::initdeclor-list-count-of-cdr)
     (:linear c$::initdeclor-list-count-of-decl-decl->init)
-    (:linear c$::initer-count-of-desiniter->init)
+    (:linear c$::initer-count-of-desiniter->initer)
     (:linear c$::initer-count-of-initer-option-some->val)
     (:linear c$::initer-option-count-of-initdeclor->init?)
     (:linear c$::label-count-of-stmt-labeled->label)
@@ -658,7 +658,9 @@
    extra-args
    `(expr-case
       expr
-      :ident (expr-ident (,(cdr (assoc-eq 'ident names)) expr.ident ,@extra-args-names))
+      :ident (make-expr-ident
+               :ident (,(cdr (assoc-eq 'ident names)) expr.ident ,@extra-args-names)
+               :info expr.info)
       :const (expr-fix expr)
       :string (expr-fix expr)
       :paren (expr-paren (,(cdr (assoc-eq 'expr names)) expr.inner ,@extra-args-names))
@@ -1067,8 +1069,8 @@
    extra-args
    `(b* (((desiniter desiniter) desiniter))
       (make-desiniter
-        :design (,(cdr (assoc-eq 'designor-list names)) desiniter.design ,@extra-args-names)
-        :init (,(cdr (assoc-eq 'initer names)) desiniter.init ,@extra-args-names)))
+        :designors (,(cdr (assoc-eq 'designor-list names)) desiniter.designors ,@extra-args-names)
+        :initer (,(cdr (assoc-eq 'initer names)) desiniter.initer ,@extra-args-names)))
    '(:returns (new-desiniter desiniterp)
      :measure (desiniter-count desiniter))))
 
@@ -1140,7 +1142,7 @@
    `(b* (((declor declor) declor))
       (make-declor
         :pointers declor.pointers
-        :decl (,(cdr (assoc-eq 'dirdeclor names)) declor.decl ,@extra-args-names)))
+        :direct (,(cdr (assoc-eq 'dirdeclor names)) declor.direct ,@extra-args-names)))
    '(:returns (new-declor declorp)
      :measure (declor-count declor))))
 
