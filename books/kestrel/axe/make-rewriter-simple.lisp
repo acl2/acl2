@@ -6091,14 +6091,16 @@
     (defund ,def-simplified-dag-fn-name (name ; the name of the constant to create
                                          dag
                                          assumptions
-                                         interpreted-function-alist
-                                         limits
                                          rules
+                                         interpreted-function-alist
+                                         ;; known-booleans
+                                         normalize-xors
+                                         limits
+                                         memoize ; todo: rename memoizep?
                                          count-hits
                                          print
-                                         monitored-symbols fns-to-elide
-                                         normalize-xors
-                                         memoize
+                                         monitored-symbols
+                                         fns-to-elide
                                          whole-form
                                          state)
       (declare (xargs :guard (and (symbolp name)
@@ -6153,7 +6155,7 @@
                                         (fns-to-elide 'nil)
                                         (normalize-xors 'nil)
                                         (memoize 't))
-      `(make-event-quiet (,',def-simplified-dag-fn-name ',name ,dag ,assumptions ,interpreted-function-alist ,limits ,rules ,count-hits ,print ,monitored-symbols ,fns-to-elide ,normalize-xors ,memoize ',whole-form state)))
+      `(make-event-quiet (,',def-simplified-dag-fn-name ',name ,dag ,assumptions ,rules ,interpreted-function-alist ,normalize-xors ,limits ,memoize ,count-hits ,print ,monitored-symbols ,fns-to-elide ',whole-form state)))
     ) ; end of the generated encapsulate
     ))
 
