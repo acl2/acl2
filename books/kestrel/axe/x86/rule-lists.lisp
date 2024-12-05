@@ -1775,12 +1775,12 @@
 
             x86isa::get-one-byte-prefix-array-code-rewrite-quotep ;;get-one-byte-prefix-array-code ;this is applied to a constant (the function is gross because it uses an array)
             x86isa::car-create-canonical-address-list
-            ;;canonical-address-p-between ;this is involved in loops (other rules backchain from < to canonical-address-p but this does the reverse)
+            x86isa::canonical-address-p-between ;this was involved in loops (other rules backchained from < to canonical-address-p but this does the reverse)
             ;;will axe try all free variable matches?
-            x86isa::canonical-address-p-between-special1
-            x86isa::canonical-address-p-between-special2
-            x86isa::canonical-address-p-between-special3
-            x86isa::canonical-address-p-between-special4
+            ;; x86isa::canonical-address-p-between-special1
+            ;; x86isa::canonical-address-p-between-special2
+            ;; x86isa::canonical-address-p-between-special3
+            ;; x86isa::canonical-address-p-between-special4
             x86isa::canonical-address-p-of-+-of-constant-when-natp ; useful for non-PIE code
 
             acl2::<-of-+-cancel-1-2
@@ -2278,9 +2278,10 @@
      acl2::get-elf-section-header-base-1
      acl2::get-elf-section-header-base-2
      acl2::get-elf-section-header-unroll
-     acl2::get-elf-symbol-address-base-1
-     acl2::get-elf-symbol-address-base-2
-     acl2::get-elf-symbol-address-unroll
+     acl2::get-elf-symbol-address-base
+     acl2::get-elf-symbol-address-aux-base-1
+     acl2::get-elf-symbol-address-aux-base-2
+     acl2::get-elf-symbol-address-aux-unroll
 
      ;;     read64
 ;     read-becomes-mv-nth-1-of-rb
@@ -4464,10 +4465,10 @@
             acl2::integerp-of-*                 ; for array index calcs
             acl2::my-integerp-<-non-integerp    ; for array index calcs
             acl2::bvsx-when-bvlt
-            x86isa::canonical-address-p-between-special5 ; todo: move these
-            x86isa::canonical-address-p-between-special5-alt
-            x86isa::canonical-address-p-between-special6
-            x86isa::canonical-address-p-between-special7
+            ;; x86isa::canonical-address-p-between-special5 ; todo: move these
+            ;; x86isa::canonical-address-p-between-special5-alt
+            ;; x86isa::canonical-address-p-between-special6
+            ;; x86isa::canonical-address-p-between-special7
             bitops::ash-is-expt-*-x
             acl2::natp-of-*
             acl2::<-of-constant-and-+-of-constant ; for address calcs
