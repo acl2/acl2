@@ -577,7 +577,7 @@
                   :stobjs state
                   :mode :program ; todo: need a magic wrapper for translate-terms
                   ))
-  (b* ((- (cw "(Lifting ~s0.~%" target)) ;todo: print the executable name
+  (b* ((- (cw "(Lifting ~s0.~%" target)) ;todo: print the executable name, also handle non-string targets better
        ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
        (state (acl2::widen-margins state))
        ;; Get and check the executable-type:
@@ -609,15 +609,6 @@
                                         ;; todo: remove this, but we have odd, unlinked ELFs that put both the text and data segments at address 0 !
                                         (acl2::parsed-elf-program-header-table parsed-executable) ; there are segments present (todo: improve the "new" behavior to use sections when there are no segments)
                                         ))
-       ;;todo: finish adding support for :entry-point!
-       ((when (and (eq :entry-point target)
-                   (not (eq :pe-32 executable-type))))
-        (er hard? 'unroll-x86-code-core "Starting from the :entry-point is currently only supported for PE-32 files.")
-        (mv :bad-entry-point nil nil nil nil state))
-       ((when (and (natp target)
-                   (not (eq :pe-32 executable-type))))
-        (er hard? 'unroll-x86-code-core "Starting from a numeric offset is currently only supported for PE-32 files.")
-        (mv :bad-entry-point nil nil nil nil state))
        (- (and (stringp target)
                ;; Throws an error if the target doesn't exist:
                (acl2::ensure-target-exists-in-executable target parsed-executable)))
@@ -678,7 +669,16 @@
                   untranslated-assumptions ; seems ok to use the original, unrewritten assumptions here
                   assumption-rules state))
           ;; legacy case (generate some assumptions and then simplify them):
-          (b* ((text-offset
+          (b* (;;todo: finish adding support for :entry-point!
+               ((when (and (eq :entry-point target)
+                           (not (eq :pe-32 executable-type))))
+                (er hard? 'unroll-x86-code-core "Starting from the :entry-point is currently only supported for PE32 files and certain ELF64 files.")
+                (mv :bad-entry-point nil nil nil state))
+               ((when (and (natp target)
+                           (not (eq :pe-32 executable-type))))
+                (er hard? 'unroll-x86-code-core "Starting from a numeric offset is currently only supported for PE32 files and certain ELF64 files.")
+                (mv :bad-entry-point nil nil nil state))
+               (text-offset
                  (and 64-bitp ; todo
                       (if (eq :mach-o-64 executable-type)
                           (if position-independentp 'text-offset `,(acl2::get-mach-o-code-address parsed-executable))
