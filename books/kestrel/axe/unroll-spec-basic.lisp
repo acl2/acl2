@@ -246,10 +246,11 @@
                              normalize-xors
                              nil
                              memoizep
+                             count-hits
+                             print
                              monitor
                              nil ; fns-to-elide
-                             count-hits
-                             print))
+                             ))
        ((when erp) (mv erp nil state))
        ((when (quotep dag)) ;; TODO: Should we allow this?
         (er hard? 'unroll-spec-basic-fn "Spec unexpectedly rewrote to the constant ~x0." dag)
