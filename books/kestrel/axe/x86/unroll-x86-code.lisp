@@ -235,6 +235,19 @@
                   :stobjs state))
   (magic-ev-fncall 'untranslate (list term nil wrld) state nil nil))
 
+;; ;; Returns (mv erp result).
+;; ;move
+;; ; TODO: Errors about program-only code
+;; (defund acl2::translate-terms-logic (terms ctx wrld state)
+;;   (declare (xargs :guard (and (true-listp terms) ; untranslated
+;;                                     (plist-worldp wrld))
+;;                   :stobjs state))
+;;   (mv-let (v1 v2)
+;;       (magic-ev-fncall 'translate-terms (list terms ctx wrld) state nil nil)
+;;     (if v1
+;;         (mv (or v2 :error) nil)
+;;         (mv nil v2))))
+
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 
 (local (in-theory (disable set-print-base-radix
