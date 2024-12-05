@@ -605,6 +605,10 @@
         (er hard? 'unroll-x86-code-core "Non-position-independent lifting is currently only supported for ELF64 and MACHO64 files.")
         (mv :bad-options nil nil nil nil state))
        (- (if position-independentp (cw "Using position-independent lifting.~%") (cw "Using non-position-independent lifting.~%")))
+       (new-style-elf-assumptionsp (and (eq :elf-64 executable-type)
+                                        ;; todo: remove this, but we have odd, unlinked ELFs that put both the text and data segments at address 0 !
+                                        (acl2::parsed-elf-program-header-table parsed-executable) ; there are segments present (todo: improve the "new" behavior to use sections when there are no segments)
+                                        ))
        ;;todo: finish adding support for :entry-point!
        ((when (and (eq :entry-point target)
                    (not (eq :pe-32 executable-type))))
@@ -624,10 +628,7 @@
        ((mv erp assumptions untranslated-assumptions
             assumption-rules ; drop? todo: includes rules that were not used, but we return these as an RV named assumption-rules-used
             state)
-        (if (and (eq :elf-64 executable-type)
-                 ;; todo: remove this, but we have odd, unlinked ELFs that put both the text and data segments at address 0 !
-                 (acl2::parsed-elf-program-header-table parsed-executable) ; there are segments present (todo: improve the "new" behavior to use sections when there are no segments)
-                 )
+        (if new-style-elf-assumptionsp
             ;; New assumption generation behavior, only for ELF64 (for now):
             (b* ((- (cw "Using new-style assumptions.~%"))
                  (code-address (acl2::get-elf-code-address parsed-executable))
