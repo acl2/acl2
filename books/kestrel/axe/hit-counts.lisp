@@ -17,7 +17,7 @@
 
 ;; TODO: See also count-worlds.lisp.  Can we just use that machinery?
 ;; TODO: Or generalize this machinery to count things other than counts, eg.,
-;; useful and useles tries.
+;; useful and useless tries.
 
 ;; TODO: Consider just using a fast alist.
 
@@ -136,7 +136,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Either nil (not counting hits), or a natp (total numnber of rule hits, not
+;; Either nil (not counting hits), or a natp (total number of rule hits, not
 ;; split out by rule), or a hit-count-info-worldp that assigns hit counts to
 ;; individual rules.
 (defund hit-countsp (hit-counts)
@@ -206,7 +206,6 @@
 ;; Disabled since this is a ground term
 (defthmd hit-countsp-of-zero-hits
   (hit-countsp (zero-hits)))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -479,3 +478,23 @@
 ;; ;;     (implies (and (hit-count-alistp alist1)
 ;; ;;                   (hit-count-alistp alist2))
 ;; ;;              (all-cdrs-rationalp (subtract-hit-count-alists alist1 alist2)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund count-hits-argp (count-hits)
+  (declare (xargs :guard t))
+  (member-eq count-hits '(t nil :total)))
+
+(defund initialize-hit-counts (count-hits)
+  (declare (xargs :guard (count-hits-argp count-hits)))
+  (if (eq t count-hits)
+      (empty-hit-counts) ; count hits for each rule
+    (if (eq :total count-hits)
+        (zero-hits)
+      ;; must be nil:
+      (no-hit-counting))))
+
+(defthm hit-countsp-of-initialize-hit-counts
+  (hit-countsp (initialize-hit-counts arga))
+  :hints (("Goal" :in-theory (enable initialize-hit-counts))))
+
