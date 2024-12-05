@@ -32,13 +32,13 @@
                                     (rule-alist 'nil)
                                     (interpreted-function-alist 'nil)
                                     (known-booleans 'nil)
-                                    (monitored-symbols 'nil)
-                                    (fns-to-elide 'nil)
+                                    (normalize-xors 'nil)
+                                    (limits 'nil)
                                     (memoizep 't)
                                     (count-hits 't)
                                     (print 't)
-                                    (normalize-xors 'nil)
-                                    (limits 'nil))
+                                    (monitored-symbols 'nil)
+                                    (fns-to-elide 'nil))
   `(simp-term-basic ,term
                     ,assumptions
                     ,rule-alist
@@ -47,11 +47,10 @@
                     ,normalize-xors
                     ,limits
                     ,memoizep
-                    ,monitored-symbols
-                    ,fns-to-elide
-                    ;; todo: add context array and other args?
                     ,count-hits
-                    ,print))
+                    ,print
+                    ,monitored-symbols
+                    ,fns-to-elide))
 
 ;; A simple test that applies the rewrite rule CAR-CONS to simplify a term:
 (assert!
@@ -83,14 +82,14 @@
 ;; A test that returns a variable
 (assert!
  (mv-let (erp res)
-   (simp-term-basic '(car (cons x y)) nil (make-rule-alist! '(car-cons) (w state)) nil (known-booleans (w state)) nil nil nil nil nil nil t)
+   (simp-term-basic '(car (cons x y)) nil (make-rule-alist! '(car-cons) (w state)) nil (known-booleans (w state)) nil nil nil nil t nil nil)
    (and (not erp)
         (equal res 'x))))
 
 ;; A test that returns a constant
 (assert!
  (mv-let (erp res)
-   (simp-term-basic '(car (cons '2 y)) nil (make-rule-alist! '(car-cons) (w state)) nil (known-booleans (w state)) nil nil nil nil nil nil t)
+   (simp-term-basic '(car (cons '2 y)) nil (make-rule-alist! '(car-cons) (w state)) nil (known-booleans (w state)) nil nil nil nil t nil nil)
    (and (not erp)
         (equal res ''2))))
 
@@ -113,10 +112,10 @@
                         nil ; normalize-xors
                         nil
                         ,memoizep
-                        nil ; monitored-symbols
-                        nil ; fns-to-elide
                         ,count-hits   ; count-hits
                         nil ; print
+                        nil ; monitored-symbols
+                        nil ; fns-to-elide
                         )
        (and (not erp)
             (equal term ',output-term)))))
@@ -221,13 +220,13 @@
                                        (rule-alist 'nil)
                                        (interpreted-function-alist 'nil)
                                        (known-booleans 'nil)
+                                       (normalize-xors 'nil)
                                        (limits 'nil)
-                                       (monitored-symbols 'nil)
-                                       (fns-to-elide 'nil)
                                        (memoizep 't)
                                        (count-hits 't)
                                        (print 't)
-                                       (normalize-xors 'nil))
+                                       (monitored-symbols 'nil)
+                                       (fns-to-elide 'nil))
   `(simplify-term-basic ,term
                         ,assumptions
                         ,rule-alist
@@ -236,10 +235,10 @@
                         ,normalize-xors
                         ,limits
                         ,memoizep
-                        ,monitored-symbols
-                        ,fns-to-elide
                         ,count-hits
-                        ,print))
+                        ,print
+                        ,monitored-symbols
+                        ,fns-to-elide))
 
 (assert!
  (mv-let (erp result) ;; result is always DAG or a quotep
@@ -719,10 +718,10 @@
                     nil     ; normalize-xors
                     nil
                     t       ; memoizep
-                    nil     ; monitored-symbols
-                    nil     ; fns-to-elide
                     t       ; count-hits
                     t       ; print
+                    nil     ; monitored-symbols
+                    nil     ; fns-to-elide
                     )
    (and (not erp) ;no error
         ;; resulting term is (FOO X):
@@ -739,10 +738,10 @@
                     nil     ; normalize-xors
                     nil
                     t       ; memoizep
-                    nil     ; monitored-symbols
-                    nil     ; fns-to-elide
                     t       ; count-hits
                     t       ; print
+                    nil     ; monitored-symbols
+                    nil     ; fns-to-elide
                     )
    (and (not erp) ;no error
         ;; resulting term is (FOO X):

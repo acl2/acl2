@@ -243,10 +243,10 @@
                              nil ; normalize-xors
                              nil ; limits
                              nil ; memoizep
-                             monitored-rules
-                             nil ; fns-to-elide
                              nil ; count-hits
                              nil ; print
+                             monitored-rules
+                             nil ; fns-to-elide
                              ))
        ((when erp)
         (cw "ERROR simplifying test.))~%")
