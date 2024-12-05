@@ -5377,16 +5377,16 @@
                                       (bounded-context-arrayp 'context-array maybe-internal-context-array (+ 1 (car (car dag))) dag-len))
                                   (rule-alistp rule-alist)
                                   (interpreted-function-alistp interpreted-function-alist)
-                                  (rule-limitsp limits)
-                                  (count-hits-argp count-hits)
-                                  (print-levelp print)
                                   (symbol-listp known-booleans)
-                                  (symbol-listp monitored-symbols)
-                                  (symbol-listp fns-to-elide)
                                   (booleanp normalize-xors)
+                                  (rule-limitsp limits)
                                   (booleanp memoize)
                                   (not (and memoize
-                                            (not (null maybe-internal-context-array)))))
+                                            (not (null maybe-internal-context-array))))
+                                  (count-hits-argp count-hits)
+                                  (print-levelp print)
+                                  (symbol-listp monitored-symbols)
+                                  (symbol-listp fns-to-elide))
                       :guard-hints (("Goal" :do-not '(generalize eliminate-destructors)
                                      :in-theory (e/d (not-<-of-0-when-natp-disabled
                                                       acl2-numberp-when-natp
