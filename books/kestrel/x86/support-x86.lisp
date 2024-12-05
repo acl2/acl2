@@ -459,7 +459,10 @@
   (("Goal"
     :in-theory (enable canonical-address-p signed-byte-p))))
 
-;; General rule.  May often fail to apply.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; General rule.  Hyps may often fail to be relieved (so monitoring this rule
+;; may cause many failures to be printed).
 (defthm canonical-address-p-between
   (implies (and (canonical-address-p low) ; low is a free var
                 (<= low ad)

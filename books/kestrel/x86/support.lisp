@@ -427,7 +427,8 @@
            (integerp x)))
 
 (defthmd integerp-when-canonical-address-p-cheap
-  (implies (and (canonical-address-p free)
+  (implies (and (canonical-address-p free) ; poor man's backchain limit
+                ;; todo: could require syntactic equality here:
                 (equal free x))
            (integerp x)))
 
