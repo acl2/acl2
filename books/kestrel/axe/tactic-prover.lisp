@@ -246,13 +246,13 @@
        ;;                      rule-alist
        ;;                      interpreted-function-alist
        ;;                      (known-booleans (w state))
+       ;;                      normalize-xors
        ;;                      nil ; limits
-       ;;                      nil ; count-hints
+       ;;                      t ; memoize
+       ;;                      nil ; count-hits
        ;;                      print
        ;;                      monitor
        ;;                      nil ; fns-to-elide
-       ;;                      normalize-xors
-       ;;                      t ; memoize
        ;;                      ))
        ((when erp) (mv *error* nil state))
        (- (and print (cw "Done applying the Axe rewriter (term size: ~x0, DAG size: ~x1))~%"
@@ -300,13 +300,13 @@
                              rule-alist
                              interpreted-function-alist
                              (known-booleans (w state))
+                             normalize-xors
                              nil ; limits
+                             nil ; memoizep
                              monitor
                              nil ; fns-to-elide
-                             nil ; memoizep
                              t ; count-hits ; todo: pass in
-                             print
-                             normalize-xors))
+                             print))
        ((when erp) (mv *error* nil state))
        ((when (quotep dag))
         ;; todo: factor out:
@@ -533,13 +533,13 @@
                             rule-alist
                             interpreted-function-alist
                             (known-booleans (w state))
+                            normalize-xors
                             nil ; limits
+                            nil ; memoize
                             nil ; count-hits
                             print
                             monitor ; monitored-symbols
                             nil ; fns-to-elide
-                            normalize-xors
-                            nil ; memoize
                             ))
        ((when erp) (mv *error* nil state))
        ((when (quotep dag))

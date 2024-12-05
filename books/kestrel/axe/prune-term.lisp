@@ -240,13 +240,13 @@
                              rule-alist
                              interpreted-function-alist
                              (known-booleans (w state))
-                             nil
+                             nil ; normalize-xors
+                             nil ; limits
+                             nil ; memoizep
                              monitored-rules
                              nil ; fns-to-elide
-                             nil ; memoizep
                              nil ; count-hits
                              nil ; print
-                             nil ; normalize-xors
                              ))
        ((when erp)
         (cw "ERROR simplifying test.))~%")
