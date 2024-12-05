@@ -114,7 +114,7 @@
                               (interpreted-function-alistp interpreted-function-alist) ;todo: extract from the terms and rules?
                               (symbol-listp monitor)
                               (booleanp memoizep)
-                              (booleanp count-hits)
+                              (count-hits-argp count-hits)
                               (booleanp normalize-xors)
                               )))
   (b* (((when (command-is-redundantp whole-form state))
@@ -133,13 +133,13 @@
                              rule-alist
                              interpreted-function-alist
                              (known-booleans (w state))
-                             nil
+                             normalize-xors
+                             nil ; limits
+                             memoizep
                              monitor
                              nil ; fns-to-elide
-                             memoizep
                              count-hits
-                             print
-                             normalize-xors))
+                             print))
        ((when erp)
         (mv erp nil state)))
     (mv (erp-nil)

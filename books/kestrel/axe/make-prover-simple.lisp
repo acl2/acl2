@@ -5672,8 +5672,8 @@
                  (mv (erp-nil) :proved state))
                 (- (and (member-eq print '(t :verbose :verbose!))
                         (print-axe-prover-case literal-nodenums 'dag-array dag-array dag-len "initial" (lookup-eq :print-as-clausesp options) (lookup-eq :no-print-fns options))))
-                (count-hits (lookup-eq :count-hits options)) ; t, nil, or :brief
-                (hit-counts (if (or (not count-hits) (null print)) (no-hit-counting) (if (print-level-at-least-tp print) (empty-hit-counts) (zero-hits))))
+                (count-hits (lookup-eq :count-hits options))
+                (hit-counts (initialize-hit-counts count-hits))
                 ;; Decide whether to count and print tries:
                 (tries (if (print-level-at-least-verbosep print) (zero-tries) nil)) ; nil means not counting tries
                 ((mv erp result & & & & & ; dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
@@ -5893,7 +5893,7 @@
                 ((when (not (symbol-listp no-print-fns)))
                  (er hard? ',prove-dag-implication-name "Bad :no-print-fns hint: ~x0." no-print-fns)
                  (mv :bad-input nil state))
-                ((when (not (member-eq count-hits '(t nil :brief))))
+                ((when (not (count-hits-argp count-hits)))
                  (er hard? ',prove-dag-implication-name "Bad :count-hits hint: ~x0." count-hits)
                  (mv :bad-input nil state))
                 ;; Form the implication to prove:
@@ -6000,7 +6000,7 @@
                                        (booleanp no-splitp)
                                        (booleanp print-as-clausesp)
                                        (symbol-listp no-print-fns)
-                                       (member-eq count-hits '(t nil :brief))
+                                       (count-hits-argp count-hits)
                                        (symbol-listp monitor)
                                        (print-levelp print)
                                        ;; use
@@ -6143,7 +6143,7 @@
                 (print-as-clausesp (lookup-eq :print-as-clausesp hint))
                 (no-print-fns (lookup-eq :no-print-fns hint))
                 (count-hits (lookup-eq :count-hits hint))
-                ((when (not (member-equal count-hits '(t nil :brief))))
+                ((when (not (count-hits-argp count-hits)))
                  (er hard? ',clause-processor-name "Bad :count-hits argument: ~x0." count-hits)
                  (mv (erp-t) (list clause) state))
                 (var-ordering (lookup-eq :var-ordering hint))

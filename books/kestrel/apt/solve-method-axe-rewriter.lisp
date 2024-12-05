@@ -74,14 +74,14 @@
                                              nil ; assumptions
                                              rule-alist
                                              nil ; interpreted-function-alist
+                                             (acl2::known-booleans wrld)
+                                             nil ; normalize-xors
+                                             nil ; limits
+                                             nil ; memoizep
                                              nil ; monitored-symbols
                                              nil ; fns-to-elide
-                                             nil ; memoizep
                                              nil ; count-hits
                                              nil ; print
-                                             nil ; normalize-xors
-                                             (acl2::known-booleans wrld)
-                                             nil ; limits
                                              ))
        ((when erp) (er-soft+ ctx t nil
                              "The Axe rewiter failed on the term ~x0, ~

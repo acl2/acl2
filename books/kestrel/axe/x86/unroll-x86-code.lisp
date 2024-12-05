@@ -235,6 +235,19 @@
                   :stobjs state))
   (magic-ev-fncall 'untranslate (list term nil wrld) state nil nil))
 
+;; ;; Returns (mv erp result).
+;; ;move
+;; ; TODO: Errors about program-only code
+;; (defund acl2::translate-terms-logic (terms ctx wrld state)
+;;   (declare (xargs :guard (and (true-listp terms) ; untranslated
+;;                                     (plist-worldp wrld))
+;;                   :stobjs state))
+;;   (mv-let (v1 v2)
+;;       (magic-ev-fncall 'translate-terms (list terms ctx wrld) state nil nil)
+;;     (if v1
+;;         (mv (or v2 :error) nil)
+;;         (mv nil v2))))
+
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 
 (local (in-theory (disable set-print-base-radix
@@ -320,13 +333,14 @@
                                       rule-alist
                                       nil ; interpreted-function-alist
                                       (acl2::known-booleans (w state))
+                                      t             ; normalize-xors
                                       limits
-                                      t ; count-hints ; todo: think about this
+                                      memoizep
+                                      t ; count-hits ; todo: think about this
                                       print
                                       rules-to-monitor
                                       '(program-at) ; fns-to-elide
-                                      t             ; normalize-xors
-                                      memoizep)
+                                      )
               (mv erp result state))
             ;)
             )
@@ -412,13 +426,14 @@
                                             rule-alist
                                             nil ; interpreted-function-alist
                                             (acl2::known-booleans (w state))
+                                            t ; normalize-xors
                                             limits
-                                            t ; count-hints ; todo: think about this
+                                            memoizep
+                                            t ; count-hits ; todo: think about this
                                             print
                                             rules-to-monitor
                                             '(program-at code-segment-assumptions32-for-code) ; fns-to-elide
-                                            t ; normalize-xors
-                                            memoizep)
+                                            )
                     (mv erp result state))
                   ;)
                   )
