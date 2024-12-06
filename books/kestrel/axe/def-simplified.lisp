@@ -70,9 +70,11 @@
 (include-book "kestrel/lists-light/rules2" :dir :system) ; for EQUAL-OF-NTHCDR-AND-CONS-OF-NTH
 (include-book "kestrel/booleans/booleans" :dir :system)
 (include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system) ;for <-0-minus
+(local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 
 ;; The rules used by def-simplified by default.
 (defun def-simplified-rules ()
+  (declare (xargs :guard t))
   (append (base-rules)
           (amazing-rules-bv)
           (list-rules)
@@ -82,10 +84,13 @@
 
 (ensure-rules-known (def-simplified-rules))
 
+(local (in-theory (disable ilks-plist-worldp)))
+
 ;; TODO: Add more options, such as :print and :print-interval, to pass through to simp-term
-;; Returns (mv erp event state)
 ;; TODO: Compare to the generated ,def-simplified-dag-name.
-(defund def-simplified-fn (defconst-name ;should begin and end with *
+;; Returns an error triple, (mv erp event state).
+;; This core function is in :logic mode, unlike the wrapper function.
+(defund def-simplified-fn-core (defconst-name ;should begin and end with *
                             term
                             rules
                             ;rule-lists
@@ -101,26 +106,26 @@
                             whole-form
                             state)
   (declare (xargs :stobjs state
-                  :mode :program ;; because this calls translate (todo: factor that out)
                   :guard (and (symbolp defconst-name)
-                              ;; (pseudo-termp term) ;; really an untranlated term
+                              (pseudo-termp term)
                               (or (eq :auto rules)
                                   (symbol-listp rules))
                               ;; (or (eq :auto rule-lists)
                               ;;     (symbol-list-listp rule-lists))
                               (symbol-listp extra-rules)
                               (symbol-listp remove-rules)
-                              ;; (pseudo-term-listp assumptions) ;; untranslated terms
+                              (pseudo-term-listp assumptions)
                               (interpreted-function-alistp interpreted-function-alist) ;todo: extract from the terms and rules?
                               (symbol-listp monitor)
                               (booleanp memoizep)
                               (count-hits-argp count-hits)
                               (booleanp normalize-xors)
-                              )))
+                              (print-levelp print)
+                              (consp whole-form)
+                              (symbolp (car whole-form))
+                              (ilks-plist-worldp (w state)))))
   (b* (((when (command-is-redundantp whole-form state))
-        (mv nil '(value-triple :invisible) state))
-       (term (translate-term term 'def-simplified-fn (w state)))
-       (assumptions (translate-terms assumptions 'def-simplified-fn (w state)))
+        (mv nil '(value-triple :invisible) state))  ; todo: return (value-triple :redundant) instead?
        ;; Choose which set of rules to use:
        (rule-list (choose-rules rules ;rule-lists
                                 extra-rules remove-rules (def-simplified-rules)))
@@ -146,11 +151,51 @@
         ;; If dag is a quoted constant, then it gets doubly quoted here.  This
         ;; makes sense: You unquote this thing and either get a DAG or a quoted
         ;; constant, as usual:
+        ;; TODO: Should the wrapper do this?
         `(progn (defconst ,defconst-name ',dag)
                 (table def-simplified-table ',whole-form ':fake)
                 (value-triple ',defconst-name) ;todo: use cw-event and then return :invisible here?
                 )
         state)))
+
+;; Returns an error triple, (mv erp event state).
+;; Most of the work is done in the :logic mode core function.
+(defund def-simplified-fn (defconst-name ;should begin and end with *
+                           term
+                           rules
+                            ;;rule-lists
+                            extra-rules
+                            remove-rules
+                            assumptions
+                            interpreted-function-alist
+                            monitor
+                            memoizep
+                            count-hits
+                            normalize-xors
+                            print
+                            whole-form
+                            state)
+  (declare (xargs :stobjs state
+                  :mode :program ;; because this translates terms
+                  :guard (and (symbolp defconst-name)
+                              ;; (pseudo-termp term) ;; really an untranlated term
+                              (or (eq :auto rules)
+                                  (symbol-listp rules))
+                              ;; (or (eq :auto rule-lists)
+                              ;;     (symbol-list-listp rule-lists))
+                              (symbol-listp extra-rules)
+                              (symbol-listp remove-rules)
+                              ;; (pseudo-term-listp assumptions) ;; untranslated terms
+                              (interpreted-function-alistp interpreted-function-alist) ;todo: extract from the terms and rules?
+                              (symbol-listp monitor)
+                              (booleanp memoizep)
+                              (count-hits-argp count-hits)
+                              (booleanp normalize-xors)
+                              (consp whole-form)
+                              (symbolp (car whole-form)))))
+  (b* ((term (translate-term term 'def-simplified-fn (w state)))
+       (assumptions (translate-terms assumptions 'def-simplified-fn (w state))))
+    (def-simplified-fn-core defconst-name term rules extra-rules remove-rules assumptions interpreted-function-alist monitor memoizep count-hits normalize-xors print whole-form state)))
 
 ;; ;; TODO: update, or use defmacro-doc
 ;; (defxdoc def-simplified
