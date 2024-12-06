@@ -204,11 +204,10 @@
                        nil
                        nil ; limits
                        t ; memoizep
-                       monitor
-                       nil
                        nil
                        t ;:brief  ;nil
-                       ))
+                       monitor
+                       nil))
 
 ;; Test whether the stack height of X86 is less than it was when the stack pointer was OLD-RSP.
 ;; Since the stack grows from high to low, the stack height is less when the RSP is greater.
@@ -1126,8 +1125,9 @@
          ;; Try to prove the invariant by rewriting:
          ((mv erp simplified-invariant)
           (acl2::simp-term-x86 term-to-prove assumptions rule-alist nil (acl2::known-booleans (w state)) nil nil nil
+                               nil nil
                                '(x86isa::xr-of-xw-diff) ; rules-to-monitor
-                               nil nil nil))
+                               nil))
          ((when erp) (mv erp nil nil state)))
       (if (equal *t* simplified-invariant)
           (prog2$ (cw "Proved it!)~%")

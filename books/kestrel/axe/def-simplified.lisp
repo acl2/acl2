@@ -141,10 +141,11 @@
                              normalize-xors
                              nil ; limits
                              memoizep
+                             count-hits
+                             print
                              monitor
                              nil ; fns-to-elide
-                             count-hits
-                             print))
+                             ))
        ((when erp)
         (mv erp nil state)))
     (mv (erp-nil)

@@ -78,10 +78,10 @@
                                              nil ; normalize-xors
                                              nil ; limits
                                              nil ; memoizep
-                                             nil ; monitored-symbols
-                                             nil ; fns-to-elide
                                              nil ; count-hits
                                              nil ; print
+                                             nil ; monitored-symbols
+                                             nil ; fns-to-elide
                                              ))
        ((when erp) (er-soft+ ctx t nil
                              "The Axe rewiter failed on the term ~x0, ~

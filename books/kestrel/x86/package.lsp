@@ -869,6 +869,7 @@
     subset-eq
     submit-event
     must-be-redundant
+    must-fail
 
     ;; x86 stuff (move to x package?):
     elf-info

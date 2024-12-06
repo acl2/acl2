@@ -427,7 +427,8 @@
            (integerp x)))
 
 (defthmd integerp-when-canonical-address-p-cheap
-  (implies (and (canonical-address-p free)
+  (implies (and (canonical-address-p free) ; poor man's backchain limit
+                ;; todo: could require syntactic equality here:
                 (equal free x))
            (integerp x)))
 
@@ -759,12 +760,12 @@
 
 
 ;add one for the upper bound as well?
-(defthmd <-when-canonical-address-p
+;looped with the between lemma?
+(defthmd not-<-when-canonical-address-p
   (implies (and (syntaxp (quotep k))
                 (< k (- (expt 2 47)))
                 (canonical-address-p x))
-           (equal (< x k)
-                  nil)))
+           (not (< x k))))
 
 ;;todo #1
 ;; (CANONICAL-ADDRESS-P$INLINE (LOGEXT '64
@@ -913,16 +914,6 @@
 ;;            (signed-byte-p '64 (+ small-neg-offset x)))
 ;;   :hints (("Goal" :in-theory (enable ;canonical-address-p signed-byte-p
 ;;                               ))))
-
-;looped with the between lemma?
-(defthmd <-when-canonical-address-p-impossible
-  (implies (and (syntaxp (quotep k))
-                (< k (- (expt 2 47)))
-                (canonical-address-p x))
-           (equal (< x k)
-                  nil))
-  :hints (("Goal" :use (:instance <-when-canonical-address-p (x (xr ':rgf '4 x86)))
-           :in-theory (disable <-when-canonical-address-p))))
 
 ; Maybe this is the loop: CANONICAL-ADDRESS-P-BETWEEN backchains from CANONICAL-ADDRESS-P to
 ; some < claims, but several rules (such as <-WHEN-CANONICAL-ADDRESS-P)
@@ -1610,6 +1601,13 @@
                 (unsigned-byte-p 32 k) ;gen
                 )
            (canonical-address-p (+ k ad))))
+
+(defthm canonical-address-p-of-+-of-constant-when-natp
+  (implies (and (syntaxp (quotep k))
+                (natp k)
+                (natp x))
+           (equal (canonical-address-p (+ k x))
+                  (< x (- (expt 2 47) k)))))
 
 ;; (defthm +-of-bvplus-of-x-and-minus-x
 ;;   (implies (unsigned-byte-p 32 x)

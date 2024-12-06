@@ -303,10 +303,11 @@
                              normalize-xors
                              nil ; limits
                              nil ; memoizep
+                             t ; count-hits ; todo: pass in
+                             print
                              monitor
                              nil ; fns-to-elide
-                             t ; count-hits ; todo: pass in
-                             print))
+                             ))
        ((when erp) (mv *error* nil state))
        ((when (quotep dag))
         ;; todo: factor out:
