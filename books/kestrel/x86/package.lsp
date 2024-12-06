@@ -103,7 +103,30 @@
     x86isa::*r14*
     x86isa::*r15*
 
+    ;; See books/projects/x86isa/utils/basic-structs.lisp
     x86isa::2bits-fix
+    x86isa::3bits-fix
+    x86isa::4bits-fix
+    x86isa::5bits-fix
+    x86isa::6bits-fix
+    x86isa::7bits-fix
+    x86isa::8bits-fix
+    x86isa::10bits-fix
+    x86isa::11bits-fix
+    x86isa::12bits-fix
+    x86isa::13bits-fix
+    x86isa::16bits-fix
+    x86isa::17bits-fix
+    x86isa::19bits-fix
+    x86isa::22bits-fix
+    x86isa::24bits-fix
+    x86isa::31bits-fix
+    x86isa::32bits-fix
+    x86isa::36bits-fix
+    x86isa::40bits-fix
+    x86isa::45bits-fix
+    x86isa::54bits-fix
+    x86isa::64bits-fix
 
     ;; flags:
     x86isa::*flg-names*
