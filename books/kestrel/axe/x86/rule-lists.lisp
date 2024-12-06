@@ -502,6 +502,12 @@
     clear-extend-of-write-of-clear-retract
     write-of-clear-retract))
 
+;; Rules that require the rewriter-x86, due to axe-syntaxp or axe-bind-free functions.
+;; To be excluded when pruning (with the non-x86 rewriter)
+(defund x86-rewriter-rules ()
+  (declare (xargs :guard t))
+  (shadowed-write-rules))
+
 ;; 'Read Over Write' and similar rules for state components. Our normal form
 ;; (at least for 64-bit code) includes 3 kinds of state changes, namely calls
 ;; to XW, WRITE, and SET-FLAG (todo: update this comment).
@@ -1788,7 +1794,7 @@
             acl2::<-of-+-cancel-1-2
             acl2::<-of-+-cancel-2-1
             acl2::<-of-+-cancel-2-2
-            acl2::<-of-+-cancel-second-of-more-and-only ; more?
+            acl2::<-of-+-cancel-second-of-more-and-only ; more? rename
             acl2::<-of-+-cancel-1+-1+ ;; acl2::<-of-+-cancel-first-and-first
             acl2::<-of-+-cancel-1+-1 ; todo: same as acl2::<-of-+-cancel.  kill that one
             acl2::<-of-+-cancel-3-1
@@ -4556,7 +4562,7 @@
             acl2::bvif-of-if-constants-nil-nonnil
             acl2::bvif-of-if-constants-nonnil-nil
             acl2::equal-of-1-and-bitand
-            acl2::boolif-of-nil-and-t
+            ;acl2::boolif-of-nil-and-t
             ;; acl2::booleanp-of-myif ; or convert myif to boolif when needed
             acl2::bitxor-of-1-becomes-bitnot-arg1 ; not in core-rules-bv since we have special handling of bitxor nests for crypto code
             acl2::bitxor-of-1-becomes-bitnot-arg2 ; not in core-rules-bv since we have special handling of bitxor nests for crypto code
