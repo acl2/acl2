@@ -114,8 +114,8 @@
   :hints (("Goal" :in-theory (enable bitor))))
 
 (defthmd bitor-combine-constants
-  (implies (and (syntaxp (quotep y)) ;put this hyp first to fail faster
-                (syntaxp (quotep x)))
+  (implies (syntaxp (and (quotep y) ;put this hyp first to fail faster
+                         (quotep x)))
            (equal (bitor x (bitor y z))
                   (bitor (bitor x y) z))))
 
