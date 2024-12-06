@@ -242,8 +242,12 @@
 
 (defun read-introduction-rules ()
   (declare (xargs :guard t))
-  '(rb-becomes-read
-    ;mv-nth-1-of-rb-becomes-read
+  '(rb-becomes-read ; no need to target mv-nth-1-of-rv, etc. since this rewrites the entire rb
+    ;;mv-nth-1-of-rb-becomes-read
+    ;; These just clarify failures to turn RB into READ: ; TODO: Only use when debugging?
+    mv-nth-1-of-rb-of-set-rip
+    mv-nth-1-of-rb-of-set-rax ; could add more like this
+
     mv-nth-1-of-rb-1-becomes-read))
 
 (set-axe-rule-priority rb-becomes-read -1) ; get rid of RB immediately
@@ -544,8 +548,7 @@
 ;;     x86isa::rflagsbits->zf$inline
 
     x86isa::rflagsbits$inline-constant-opener
-    x86isa::10bits-fix-constant-opener
-    x86isa::2bits-fix-constant-opener
+
     acl2::expt2$inline-constant-opener
 
     x86isa::!rflagsbits->af$inline-constant-opener
@@ -740,8 +743,6 @@
 
     ;; Just for making terms in failures more readable:
     mv-nth-1-of-rb-1-of-set-rip
-    mv-nth-1-of-rb-of-set-rip
-    mv-nth-1-of-rb-of-set-rax ; could add more like this
     ))
 
 (defun decoding-and-dispatch-rules ()
@@ -843,8 +844,6 @@
     x86isa::sib->base$inline
     x86isa::sib->index$inline
     x86isa::sib-fix$inline
-    x86isa::4bits-fix
-    x86isa::8bits-fix
 
     x86isa::vex-opcode-modr/m-p$inline-constant-opener
     x86isa::vex-prefixes-map-p$inline-constant-opener
@@ -2210,7 +2209,54 @@
             bvchop-of-sub-zf-spec32
             equal-of-sub-zf-spec32-and-1
             equal-of-1-and-sub-zf-spec32
-            )))
+
+            ;; See books/projects/x86isa/utils/basic-structs.lisp
+            ;; x86isa::2bits-fix-constant-opener
+            ;; x86isa::3bits-fix-constant-opener
+            ;; x86isa::4bits-fix-constant-opener
+            ;; x86isa::5bits-fix-constant-opener
+            ;; x86isa::6bits-fix-constant-opener
+            ;; x86isa::7bits-fix-constant-opener
+            ;; x86isa::8bits-fix-constant-opener
+            ;; x86isa::10bits-fix-constant-opener
+            ;; x86isa::11bits-fix-constant-opener
+            ;; x86isa::12bits-fix-constant-opener
+            ;; x86isa::13bits-fix-constant-opener
+            ;; x86isa::16bits-fix-constant-opener
+            ;; x86isa::17bits-fix-constant-opener
+            ;; x86isa::19bits-fix-constant-opener
+            ;; x86isa::22bits-fix-constant-opener
+            ;; x86isa::24bits-fix-constant-opener
+            ;; x86isa::31bits-fix-constant-opener
+            ;; x86isa::32bits-fix-constant-opener
+            ;; x86isa::36bits-fix-constant-opener
+            ;; x86isa::40bits-fix-constant-opener
+            ;; x86isa::45bits-fix-constant-opener
+            ;; x86isa::54bits-fix-constant-opener
+            ;; x86isa::64bits-fix-constant-opener
+            2bits-fix
+            3bits-fix
+            4bits-fix
+            5bits-fix
+            6bits-fix
+            7bits-fix
+            8bits-fix
+            10bits-fix
+            11bits-fix
+            12bits-fix
+            13bits-fix
+            16bits-fix
+            17bits-fix
+            19bits-fix
+            22bits-fix
+            24bits-fix
+            31bits-fix
+            32bits-fix
+            36bits-fix
+            40bits-fix
+            45bits-fix
+            54bits-fix
+            64bits-fix)))
 
 ;; This needs to fire before bvplus-convert-arg3-to-bv-axe-restricted to avoid loops on things like (bvplus 32 k (+ k (esp x86))).
 ;; Note that bvplus-of-constant-and-esp-when-overflow will turn a bvplus into a +.
