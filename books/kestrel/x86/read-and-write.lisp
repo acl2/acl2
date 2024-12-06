@@ -515,7 +515,7 @@
                                    ))
            :do-not '(generalize eliminate-destructors))))
 
-;; Introduces read
+;; Introduces read, but see rb-becomes-read below.
 (defthm mv-nth-1-of-rb-becomes-read
   (implies (and (app-view x86)
                 (x86p x86)
