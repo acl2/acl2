@@ -42,8 +42,11 @@
 
 ;; TODO: Consider adding special handling for bv-array-if.
 
+;; TODO: Use native stobj arrays for the DAG, for speed (could be quite a bit of work).
+
 ;; TODO: Add more common parameters to the rewrite-stobj instead of passing them around.
 
+;; TODO: Move some of these to the generated encapsulate:
 (include-book "rewriter-common")
 (include-book "supporting-nodes") ; for drop-non-supporters-array
 (include-book "node-replacement-array3")
@@ -73,7 +76,7 @@
 ;(include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system) ;drop?
 (include-book "kestrel/alists-light/strip-cdrs" :dir :system) ;need strip-cdrs-of-append for the generated proofs
 (include-book "kestrel/utilities/with-local-stobjs" :dir :system)
-(include-book "kestrel/utilities/redundancy" :dir :system)
+(include-book "kestrel/utilities/redundancy" :dir :system) ; for command-is-redundantp
 (include-book "kestrel/utilities/strip-stars-from-name" :dir :system) ; for starts-and-ends-with-starsp
 (include-book "renumbering-stobj")
 (include-book "rewrite-stobj")
@@ -156,14 +159,14 @@
                 (not (member-equal y vals)))
            (not (equal y x))))
 
-;why is this needed?  the hyp is not being rewritten right during backchaining
-(defthmd max-key-hack
-  (equal (if (consp alist) x (< y (max-key alist z)))
-         (if (consp alist) x (< y z))))
+;; ;why is this needed?  the hyp is not being rewritten right during backchaining
+;; (defthmd max-key-hack
+;;   (equal (if (consp alist) x (< y (max-key alist z)))
+;;          (if (consp alist) x (< y z))))
 
-(defthmd max-key-hack-2
-  (equal (if (consp alist) x (< (max-key alist z) y))
-         (if (consp alist) x (< z y))))
+;; (defthmd max-key-hack-2
+;;   (equal (if (consp alist) x (< (max-key alist z) y))
+;;          (if (consp alist) x (< z y))))
 
 ;; used in generated proofs, to be kept disabled
 (defthmd integerp-when-natp-disabled
@@ -5886,10 +5889,10 @@
       :hints (("Goal" :in-theory (e/d (,simplify-term-name
                                        axe-treep-when-pseudo-termp
                                        natp-of-+-of-1
-                                       natp-of-max-key-2
+                                       ;natp-of-max-key-2
                                        <-of-if-arg1
-                                       max-key-hack
-                                       max-key-hack-2
+                                       ;max-key-hack
+                                       ;max-key-hack-2
                                        <-OF-+-OF-1-WHEN-INTEGERS
                                        integerp-when-natp-disabled
                                        <-of-if-arg2-axe)
