@@ -509,11 +509,10 @@
   (declare (xargs :guard t))
   '(
     ;x86isa::x86p-set-flag
-    force ;todo: think about this
-        x86isa::x86p-of-wb ;  wb-returns-x86p ;targets x86p-of-mv-nth-1-of-wb ;drop if WB will always be rewritten to WRITE
+    force ;todo: think about this, could only open force on a constant arg
+    x86isa::x86p-of-wb ;  wb-returns-x86p ;targets x86p-of-mv-nth-1-of-wb ;drop if WB will always be rewritten to WRITE
 
     ;; Flags:
-
     get-flag-of-xw
     xr-of-set-flag
     set-flag-of-xw
@@ -522,7 +521,8 @@
     set-flag-of-set-flag-same
     set-flag-of-get-flag-same
     x86isa::alignment-checking-enabled-p-of-set-flag
-    X86ISA::XW-RGF-OF-XR-RGF-SAME
+
+    x86isa::xw-rgf-of-xr-rgf-same
 
 ;;     ;; x86isa::get-flag-set-flag ;covers both cases, with a twist for a 2-bit flag
 ;;     ;; x86isa::set-flag-set-flag-same
@@ -1035,7 +1035,14 @@
     acl2::integerp-of-logxor
     ))
 
-;; Theses are x86-specific since they know about READ:
+;; combine with the logops-to-bv-rules rules?
+(defund logops-rules ()
+  (declare (xargs :guard t))
+  '(acl2::logapp-constant-opener
+    common-lisp::lognot-constant-opener
+    common-lisp::logcount-constant-opener))
+
+;; These are x86-specific since they know about READ:
 (defund logops-to-bv-rules-x86 ()
   (declare (xargs :guard t))
   '(logtail-of-read-becomes-slice
@@ -1072,11 +1079,6 @@
     acl2::rotate-left-constant-opener
     acl2::rotate-right-constant-opener))
 
-(defund logops-rules ()
-  (declare (xargs :guard t))
-  '(acl2::logapp-constant-opener
-    common-lisp::lognot-constant-opener
-    common-lisp::logcount-constant-opener))
 
 ;todo: classify these
 (defun x86-bv-rules ()
@@ -1619,6 +1621,7 @@
           (x86-type-rules)
           (logops-to-bv-rules)
           (logops-to-bv-rules-x86)
+          (logops-rules)
           (acl2::bv-of-logext-rules)
           (arith-to-bv-rules)
           (bitops-to-bv-rules)
@@ -1633,7 +1636,6 @@
           (acl2::core-rules-bv)
           (acl2::bvif-rules)
           (bitops-rules)
-          (logops-rules)
           (acl2::if-becomes-bvif-rules)
           '(;; It would be nice is all uses of !rflags could become calls to set-flag, but sometimes we seem to set all of the flags?
             ;; !rflags-becomes-xw ; todo: now get rid of rules about !rflags and rflags
@@ -2374,7 +2376,6 @@
             acl2::collect-constants-over-<
             acl2::bvlt-of-bvplus-constant-and-constant-safe2
             acl2::<-of-bvplus-same-gen
-            bvle
             acl2::+-of-bvplus-of-x-and-minus-x
             acl2::<-of-minus-and-constant
             acl2::equal-of-constant-when-bvlt-constant-1
@@ -4557,8 +4558,8 @@
             acl2::equal-of-1-and-bitand
             acl2::boolif-of-nil-and-t
             ;; acl2::booleanp-of-myif ; or convert myif to boolif when needed
-            acl2::bitxor-of-1-becomes-bitnot-arg1
-            acl2::bitxor-of-1-becomes-bitnot-arg2
+            acl2::bitxor-of-1-becomes-bitnot-arg1 ; not in core-rules-bv since we have special handling of bitxor nests for crypto code
+            acl2::bitxor-of-1-becomes-bitnot-arg2 ; not in core-rules-bv since we have special handling of bitxor nests for crypto code
             ;; these next few did seem needed after lifting (todo: either add the rest like this or drop these):
             booleanp-of-jp-condition
             booleanp-of-jnp-condition
@@ -4606,7 +4607,6 @@
             acl2::ifix-of-if
 
             ;; move all of these:
-            ;bvle
             ;acl2::integerp-of-bvplus ;todo: more
             ;acl2::integerp-of-bvchop
 
@@ -4642,7 +4642,6 @@
             acl2::bvchop-of-bvsx
             ;acl2::bvchop-of-bvchop
             ;acl2::bvplus-of-bvchop-arg2
-            ;sbvle ; expand to sbvlt
             ;acl2::sbvlt-of-bvchop-arg2
             ;acl2::bvuminus-of-bvuminus
             ;acl2::bvplus-of-bvuminus-same
