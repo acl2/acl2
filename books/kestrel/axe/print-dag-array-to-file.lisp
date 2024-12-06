@@ -22,7 +22,7 @@
 ;returns state
 ;;elements after the first are preceded by a newline and a space:
 (defun print-dag-array-to-file-aux (dag-array-name dag-array nodenum channel state)
-  (declare (xargs :mode :program ; because this calls pprint-object-or-string
+  (declare (xargs :mode :program ; because this calls pprint-object-or-string (todo: call print-object$+ instead?)
                   :stobjs state))
   (if (not (natp nodenum))
       state
