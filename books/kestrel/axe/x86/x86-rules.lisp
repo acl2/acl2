@@ -211,8 +211,32 @@
 
 (def-constant-opener x86isa::!rflagsbits->af$inline)
 
-(def-constant-opener x86isa::10bits-fix)
-(def-constant-opener x86isa::2bits-fix)
+;; For now, I'm trying just always opening these:
+;; See books/projects/x86isa/utils/basic-structs.lisp
+;; (def-constant-opener x86isa::2bits-fix)
+;; (def-constant-opener x86isa::3bits-fix)
+;; (def-constant-opener x86isa::4bits-fix)
+;; (def-constant-opener x86isa::5bits-fix)
+;; (def-constant-opener x86isa::6bits-fix)
+;; (def-constant-opener x86isa::7bits-fix)
+;; (def-constant-opener x86isa::8bits-fix)
+;; (def-constant-opener x86isa::10bits-fix)
+;; (def-constant-opener x86isa::11bits-fix)
+;; (def-constant-opener x86isa::12bits-fix)
+;; (def-constant-opener x86isa::13bits-fix)
+;; (def-constant-opener x86isa::16bits-fix)
+;; (def-constant-opener x86isa::17bits-fix)
+;; (def-constant-opener x86isa::19bits-fix)
+;; (def-constant-opener x86isa::22bits-fix)
+;; (def-constant-opener x86isa::24bits-fix)
+;; (def-constant-opener x86isa::31bits-fix)
+;; (def-constant-opener x86isa::32bits-fix)
+;; (def-constant-opener x86isa::36bits-fix)
+;; (def-constant-opener x86isa::40bits-fix)
+;; (def-constant-opener x86isa::45bits-fix)
+;; (def-constant-opener x86isa::54bits-fix)
+;; (def-constant-opener x86isa::64bits-fix)
+
 (def-constant-opener acl2::expt2$inline)
 
 (def-constant-opener X86ISA::RFLAGSBITS-FIX$INLINE)

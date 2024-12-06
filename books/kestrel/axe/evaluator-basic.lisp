@@ -98,7 +98,7 @@
     (symbol-name symbol-name-unguarded) ; primitive
     (symbol-package-name symbol-package-name-unguarded) ; primitive
     unsigned-byte-p ; unguarded
-    unsigned-byte-p-forced
+    unsigned-byte-p-forced ; unguarded
     signed-byte-p ; unguarded
     fix ; unguarded
     ifix ; unguarded
@@ -163,6 +163,8 @@
 
     (every-nth every-nth-unguarded)
     (all-equal$ all-equal$-unguarded)
+
+    force ; Axe doesn't really support force, but we should open it on constants
     ))
 
 ;; Makes the evaluator (also checks that each alias given is equivalent to its function):
