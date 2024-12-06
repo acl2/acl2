@@ -6043,21 +6043,13 @@
       (if (endp terms)
           (mv (erp-nil) nil)
         (b* (((mv erp first-res)
-              (,simp-term-name (first terms)
-                               assumptions
-                               rule-alist
-                               interpreted-function-alist
-                               known-booleans normalize-xors limits nil
-                               count-hits
-                               print
-                               monitored-symbols
-                               fns-to-elide))
+              (,simp-term-name (first terms) assumptions rule-alist interpreted-function-alist
+                               known-booleans normalize-xors limits
+                               nil ; todo: memoizep
+                               count-hits print monitored-symbols fns-to-elide))
              ((when erp) (mv erp nil))
              ((mv erp rest-res)
-              (,simp-terms-name (rest terms)
-                                assumptions
-                                rule-alist
-                                interpreted-function-alist
+              (,simp-terms-name (rest terms) assumptions rule-alist interpreted-function-alist
                                 known-booleans normalize-xors limits memoizep
                                 count-hits print monitored-symbols fns-to-elide))
              ((when erp) (mv erp nil)))
@@ -6149,15 +6141,15 @@
                                         dag
                                         &key
                                         (assumptions 'nil)
-                                        (interpreted-function-alist 'nil)
-                                        (limits 'nil)
                                         (rules 'nil)
+                                        (interpreted-function-alist 'nil)
+                                        (normalize-xors 'nil)
+                                        (limits 'nil)
+                                        (memoize 't)
                                         (count-hits 'nil)
                                         (print ':brief)
                                         (monitored-symbols 'nil)
-                                        (fns-to-elide 'nil)
-                                        (normalize-xors 'nil)
-                                        (memoize 't))
+                                        (fns-to-elide 'nil))
       `(make-event-quiet (,',def-simplified-dag-fn-name ',name ,dag ,assumptions ,rules ,interpreted-function-alist ,normalize-xors ,limits ,memoize ,count-hits ,print ,monitored-symbols ,fns-to-elide ',whole-form state)))
     ) ; end of the generated encapsulate
     ))
