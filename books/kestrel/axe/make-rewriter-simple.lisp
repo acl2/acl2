@@ -6044,8 +6044,7 @@
           (mv (erp-nil) nil)
         (b* (((mv erp first-res)
               (,simp-term-name (first terms) assumptions rule-alist interpreted-function-alist
-                               known-booleans normalize-xors limits
-                               nil ; todo: memoizep
+                               known-booleans normalize-xors limits memoizep
                                count-hits print monitored-symbols fns-to-elide))
              ((when erp) (mv erp nil))
              ((mv erp rest-res)
