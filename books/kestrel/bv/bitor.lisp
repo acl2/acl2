@@ -185,3 +185,15 @@
            (equal (bitor y (bvchop size x))
                   (bitor y x)))
   :hints (("Goal" :in-theory (enable bitor))))
+
+(defthm equal-of-bitor-and-constant
+  (implies (syntaxp (quotep k))
+           (equal (equal (bitor x y) k)
+                  (if (equal 0 k)
+                      (and (equal 0 (getbit 0 x))
+                           (equal 0 (getbit 0 y)))
+                    (if (equal 1 k)
+                        (if (equal 1 (getbit 0 x))
+                            t
+                          (equal 1 (getbit 0 y)))
+                      nil)))))
