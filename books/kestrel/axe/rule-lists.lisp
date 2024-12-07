@@ -896,6 +896,7 @@
      <-of-bv-and-non-positive-constant ;Thu May 17 00:37:24 2012
 
      ;; We leave most commutativity rules out of core-rules-bv, because they can be expensive for large nests
+     ;; TODO: What about rules like bvplus-commute-constant2 ?
      bvplus-commute-constant
      bvmult-commute-constant
      bvand-commute-constant
