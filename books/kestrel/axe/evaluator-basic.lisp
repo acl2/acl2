@@ -164,7 +164,10 @@
     (every-nth every-nth-unguarded)
     (all-equal$ all-equal$-unguarded)
 
-    force ; Axe doesn't really support force, but we should open it on constants
+    ; Axe doesn't really support force and case-split, but including them here
+    ; means they will at least be evaluated on constants:
+    force ; unguarded
+    case-split ; unguarded
     ))
 
 ;; Makes the evaluator (also checks that each alias given is equivalent to its function):
