@@ -83,7 +83,7 @@
        ((unless (mbt (posp chunk-size))) 0)
        (x-lo (loghead chunk-size x))
        (y-lo (loghead chunk-size y))
-       (result-lo (loghead chunk-size (+ x-lo y-lo)))
+       (result-lo (loghead chunk-size (- x-lo y-lo)))
        (x-hi (logtail chunk-size x))
        (y-hi (logtail chunk-size y))
        (result-hi
