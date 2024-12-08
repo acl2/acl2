@@ -16,7 +16,7 @@
 (include-book "signed-previous-quorum")
 (include-book "same-committees-def-and-implied")
 (include-book "fault-tolerance")
-(include-book "same-associated-certificates")
+(include-book "signed-and-associated-cerificates")
 
 (local (include-book "arithmetic-3/top" :dir :system))
 
@@ -227,27 +227,6 @@
            system-initp
            system-validators-initp-necc
            validator-init))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; This is the same as in unequivocal-dags-next.lisp.
-; We make it local here to avoid conflicts,
-; but we should refactor things so it is somewhere non-local and more central,
-; included both here and in unequivocal-dags-next.lisp.
-(defruledl in-signed-certs-when-in-associated-and-signer
-  (implies (and (same-associated-certs-p systate)
-                (set::in val (correct-addresses systate))
-                (set::in cert (associated-certs val systate))
-                (set::in signer (certificate->signers cert))
-                (set::in signer (correct-addresses systate)))
-           (set::in cert (signed-certs signer systate)))
-  :enable (signed-certs
-           in-of-certs-with-signer)
-  :disable (same-associated-certs-p
-            same-associated-certs-p-necc)
-  :use (:instance same-associated-certs-p-necc
-                  (val1 val)
-                  (val2 signer)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

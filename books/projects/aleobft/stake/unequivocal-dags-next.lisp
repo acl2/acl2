@@ -17,7 +17,7 @@
 (include-book "unequivocal-signed-certificates")
 (include-book "quorum-intersection")
 (include-book "signer-quorum")
-(include-book "same-associated-certificates")
+(include-book "signed-and-associated-cerificates")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -98,50 +98,6 @@
      the invariant holds in every reachable state."))
   :order-subtopics t
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defruled in-signed-certs-when-in-associated-and-signer
-  :short "If all validators have the same associated certificates,
-          then each certificate signed by a validator
-          is in the set of the validator's signed certificates."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is used in the proofs of the preservation of
-     the unequivocal DAGs invariant,
-     but it is a more general theorem.
-     However, currently there is no obvious place to put it,
-     because it needs both @(see same-associated-certificates)
-     and @(see signed-certificates);
-     we would have to create a new file just for this,
-     which does not seem worth at this time,
-     also given that this theorem is only used in the proofs of
-     the preservation of the unequivocal DAGs invariant.")
-   (xdoc::p
-    "The set of signed certificates, @(tsee signed-certs),
-     is defined over the associated certificates of the same validator.
-     But this theorem involves a generic validator @('val'),
-     and a certificate @('cert') associated to it,
-     and a signer @('signer') of the certificate.
-     It says that if all validators have the same associated certificates
-     (which they do, as proved in @(see same-associated-certificates)),
-     the @('cert') is in the signed certificates of @('signer').
-     The equality of the sets of associated certificates is needed
-     as a bridge between (the certificates of) @('val') and @('signer')."))
-  (implies (and (same-associated-certs-p systate)
-                (set::in val (correct-addresses systate))
-                (set::in cert (associated-certs val systate))
-                (set::in signer (certificate->signers cert))
-                (set::in signer (correct-addresses systate)))
-           (set::in cert (signed-certs signer systate)))
-  :enable (signed-certs
-           in-of-certs-with-signer)
-  :disable (same-associated-certs-p
-            same-associated-certs-p-necc)
-  :use (:instance same-associated-certs-p-necc
-                  (val1 val)
-                  (val2 signer)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

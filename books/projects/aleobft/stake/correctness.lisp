@@ -18,6 +18,7 @@
 (include-book "associated-certificates")
 (include-book "same-associated-certificates")
 (include-book "signed-certificates")
+(include-book "signed-and-associated-cerificates")
 (include-book "signed-previous-quorum")
 (include-book "no-self-messages")
 (include-book "no-self-buffer")
@@ -75,6 +76,7 @@
                     associated-certificates
                     same-associated-certificates
                     signed-certificates
+                    signed-and-associated-cerificates
                     signed-previous-quorum
                     no-self-messages
                     no-self-buffer
