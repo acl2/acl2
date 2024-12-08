@@ -125,7 +125,7 @@
      @('certificate-causal-history-of-unequivocal-superdag').
      To discharge its hypothesis that the extended DAG is unequivocal,
      we use the already proved preservation theorem
-     @('unequivocal-accepted-certificates-p-of-create-next'),
+     @('unequivocal-dags-certificates-p-of-create-next'),
      along with a @(':use') hint to force the application of non-equivocation
      on the new state rather than the old one.")
    (xdoc::p
