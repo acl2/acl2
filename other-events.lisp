@@ -35052,11 +35052,11 @@
              (let* ((val (reverse table-tuples))
                     (key (cadr (car val))))
                `(table partial-functions-table ',key
-                       (append?
-                        ',val
+                       (put-assoc-eq-alist
                         (cdr (assoc-eq ',key
                                        (table-alist 'partial-functions-table
-                                                    world))))))))
+                                                    world)))
+                        ',val)))))
         (t (mv-let (msg1 defs1 table-tuple)
               (let ((tuple (car tuples)))
                 (memoize-partial-supporting-events-1
@@ -35233,7 +35233,11 @@
                                                      wrld))))
          (len-old-tuples (len old-tuples))
          (len-new-tuples/old-tuples (len new-tuples/old-tuples))
-         (len-new (- len-new-tuples/old-tuples len-old-tuples)))
+         (len-new (- len-new-tuples/old-tuples len-old-tuples))
+         (common-case (and (true-listp new-tuples/old-tuples)
+                           (< len-old-tuples len-new-tuples/old-tuples)
+                           (equal (nthcdr len-new new-tuples/old-tuples)
+                                  old-tuples))))
     (cond
      ((not (and (symbolp key)
                 (function-symbolp key wrld)))
@@ -35243,12 +35247,14 @@
      ((null (cdr (formals key wrld)))
       (msg "The key is a guard-verified function symbol but it needs at least ~
             two formal parameters."))
-     ((not (and (true-listp new-tuples/old-tuples)
-                (< len-old-tuples len-new-tuples/old-tuples)
-                (equal (nthcdr len-new new-tuples/old-tuples)
-                       old-tuples)))
+     ((not (or common-case
+               (subsetp-equal old-tuples
+                              new-tuples/old-tuples)))
       (msg "The value is not an extension of the previous value."))
-     (t (let ((new-tuples (take len-new new-tuples/old-tuples)))
+     (t (let ((new-tuples (if common-case
+                              (take len-new new-tuples/old-tuples)
+                            (set-difference-equal new-tuples/old-tuples
+                                                  old-tuples))))
           (cond
            ((not (memoize-partial-tuple-shape-p new-tuples))
             (msg "The extension of the old value is not a list of 5-tuples ~
