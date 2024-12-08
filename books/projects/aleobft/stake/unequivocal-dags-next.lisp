@@ -152,7 +152,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The only two kinds of events that change the accepted certificates
+    "The only two kinds of events that change the certificates in DAGs
      are @('create') and @('store').
      The former adds a certificate to the author's DAG;
      the latter adds a certificate to the storer's DAG.")
