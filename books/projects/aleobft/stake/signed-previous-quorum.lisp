@@ -56,7 +56,9 @@
      just mention `quorum' for brevity,
      even though that does not apply to round 1.
      But rounds greater than 1 are the ``normal'' case,
-     while round 1 is a special case."))
+     while round 1 is a special case.
+     The names do not mention the `non-zero' requirement either,
+     but the quorum aspect is the main one here."))
   :order-subtopics t
   :default-parent t)
 

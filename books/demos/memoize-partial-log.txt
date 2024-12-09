@@ -1655,11 +1655,21 @@ value  = ((EVENLP EVENLP-BDD
                   EVENLP-BDD-CHANGE EVENLP-BDD-STABLE
                   (DEFUN EVENLP (X)
                     (DECLARE (IGNORABLE X))
-                    (FLET (#) (DECLARE #) (LET # # #)))))
+                    (FLET (#) (DECLARE #) (LET # # #))))
+          (EVENLP EVENLP-BDD
+                  EVENLP-BDD-CHANGE EVENLP-BDD-STABLE
+                  (DEFUN EVENLP (X)
+                    (DECLARE (IGNORABLE X))
+                    (FLET (# #) (DECLARE #) (LET # # #))))
+          (ODDLP ODDLP-BDD
+                 ODDLP-BDD-CHANGE ODDLP-BDD-STABLE
+                 (DEFUN ODDLP (X)
+                   (DECLARE (IGNORABLE X))
+                   (FLET (# #) (DECLARE #) (LET # # #)))))
 Reason:
-The strip-cadrs of the proposed value is not the list of function symbols,
-in order, defined by mutual-recursion with the key.  That expected
-list of functions is (EVENLP-BDD ODDLP-BDD).
+The strip-cadrs of the proposed extension of the old value is not the
+list of function symbols, in order, defined by mutual-recursion with
+the key.  That expected list of functions is (EVENLP-BDD ODDLP-BDD).
 
 (See :DOC set-iprint to be able to see elided values in this message.)
 
@@ -1683,9 +1693,9 @@ value  = ((ODDLP ODDLP-BDD
                    (DECLARE (IGNORABLE X))
                    (FLET (#) (DECLARE #) (LET # # #)))))
 Reason:
-The strip-cadrs of the proposed value is not the list of function symbols,
-in order, defined by mutual-recursion with the key.  That expected
-list of functions is (EVENLP-BDD ODDLP-BDD).
+The strip-cadrs of the proposed extension of the old value is not the
+list of function symbols, in order, defined by mutual-recursion with
+the key.  That expected list of functions is (EVENLP-BDD ODDLP-BDD).
 
 (See :DOC set-iprint to be able to see elided values in this message.)
 
@@ -1715,9 +1725,9 @@ value  = ((ODDLP ODDLP-BDD
                     (DECLARE (IGNORABLE X))
                     (FLET (# #) (DECLARE #) (LET # # #)))))
 Reason:
-The strip-cadrs of the proposed value is not the list of function symbols,
-in order, defined by mutual-recursion with the key.  That expected
-list of functions is (EVENLP-BDD ODDLP-BDD).
+The strip-cadrs of the proposed extension of the old value is not the
+list of function symbols, in order, defined by mutual-recursion with
+the key.  That expected list of functions is (EVENLP-BDD ODDLP-BDD).
 
 (See :DOC set-iprint to be able to see elided values in this message.)
 
@@ -2051,6 +2061,15 @@ Summary
 Form:  ( PROGN (MAKE-EVENT ...) ...)
 Rules: NIL
  FIB2-NEW
+ACL2 !>>(ASSERT-EVENT (EQUAL (FIB2-NEW 30)
+                             (FIB2-CLOCK 30 50)))
+ :PASSED
+ACL2 !>>(ASSERT-EVENT (EQUAL (FIB2-NEW 80) 37889062373143906))
+ :PASSED
+ACL2 !>>(SAVE-AND-CLEAR-MEMOIZATION-SETTINGS)
+ MEMOIZE-TABLE
+ACL2 !>>(RESTORE-MEMOIZATION-SETTINGS)
+ MEMOIZE-TABLE
 ACL2 !>>(ASSERT-EVENT (EQUAL (FIB2-NEW 30)
                              (FIB2-CLOCK 30 50)))
  :PASSED
