@@ -20989,6 +20989,101 @@
    :print-radix nil
    :print-lowercase t))
 
+
+(include-book "std/strings/printtree-fty" :dir :system)
+
+
+(define opcode-print-syms ((acc str::printtree-p)
+                           (syms symbol-listp))
+  :returns (new-acc str::printtree-p)
+  (cond ((atom syms)
+         (str::printtree-fix acc))
+        ((atom (cdr syms))
+         (str::pcat acc (symbol-name (car syms))))
+        (t (opcode-print-syms (str::pcat acc (symbol-name (car syms)) ".") (cdr syms)))))
+      
+
+;; examples: EVEX.512.66.0F.W0 6F /r
+;;           VEX.128.66.0F.WIG 7F /r
+;;           F3 0F 10 /r
+
+
+
+(define opcode-string-bytes ((acc str::printtree-p)
+                             (x natp))
+  :returns (new-acc str::printtree-p)
+  :verify-guards nil
+  :prepwork ((local (include-book "centaur/bitops/ihsext-basics" :dir :system))
+             (local (defthm logcdr-less-when-not-zp
+                      (and (implies (natp x)
+                                    (<= (logcdr x) x))
+                           (implies (posp x)
+                                    (< (logcdr x) x)))
+                      :hints (("goal" :use ((:instance acl2::logcar-logcdr-elim
+                                             (i x)))
+                               :in-theory (e/d (logcons)
+                                               (bitops::logcons-destruct))))
+                      :rule-classes :linear))
+
+             (local (defthm logtail-less-when-not-zp
+                      (and (implies (and (not (zp x))
+                                         (not (Zp n)))
+                                    (< (logtail n x) x))
+                           (implies (natp x)
+                                    (<= (logtail n x) x)))
+                      :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions bitops::ihsext-recursive-redefs))))))
+  (b* (((when (zp x)) (str::printtree-fix acc))
+       (acc (opcode-string-bytes acc (logtail 8 x)))
+       (acc (if (eql 0 (logtail 8 x)) acc (str::pcat acc " ")))
+       (digits (str::nat-to-hex-string (loghead 8 x)))
+       (digits (cond ((eql (length digits) 0) "00")
+                     ((eql (length digits) 1) (str::pcat "0" digits))
+                     (t digits))))
+    (str::pcat acc digits))
+  ///
+  (verify-guards opcode-string-bytes))
+
+(define opcode-prefix-string ((acc str::printtree-p)
+                              (pfx op-pfx-p))
+  :returns (new-acc str::printtree-p)
+  :guard-hints ((and stable-under-simplificationp
+                     '(:in-theory (enable op-pfx-p))))
+  (cond (pfx (b* ((pfx (case pfx
+                         (:no-prefix :np)
+                         (t pfx))))
+               (str::pcat acc (symbol-name pfx) " ")))
+        (t (str::printtree-fix acc))))
+
+(defconst *evex-syms-for-opcode-string*
+  (set-difference-equal *evex-pfx-cases* *vvvv-pfx*))
+
+(defconst *vex-syms-for-opcode-string*
+  (set-difference-equal *vex-pfx-cases* *vvvv-pfx*))
+
+(define opcode-string ((x opcode-p))
+  ;; NOT complete!
+  :prepwork ((local (defthm symbol-listp-of-intersection-equal
+                      (implies (symbol-listp x)
+                               (symbol-listp (intersection-equal x y)))))
+             (local (in-theory (disable loghead)))
+             (local (in-theory (disable intersection-equal))))
+  (b* (((opcode x))
+       (acc nil)
+       (acc (opcode-prefix-string acc x.pfx))
+       (acc (cond (x.evex
+                   (b* ((acc (opcode-print-syms acc (cons 'evex (intersection-eq *evex-syms-for-opcode-string* x.evex)))))
+                     (str::pcat acc " ")))
+                  (x.vex
+                   (B* ((acc (opcode-print-syms acc (cons 'vex (intersection-eq *vex-syms-for-opcode-string* x.vex)))))
+                     (str::pcat acc " ")))
+                  (t acc)))
+       (opcode-bytes (if (or x.evex x.vex)
+                         (loghead 8 x.op)
+                       x.op))
+       (acc (opcode-string-bytes acc opcode-bytes)))
+    (str::printtree->str acc)))
+
+
 (define create-inst-doc ((inst inst-p)
                          &key
                          ((fn-ok? booleanp
@@ -20999,6 +21094,10 @@
                                    "Include information about the
                           operands (@('inst.operands') field) in the
                           documentation or not")
+                          'nil)
+                         ((full-opcode? booleanp
+                                        "Include a SDM-like representation of
+                         the full opcode, not just the low byte")
                           'nil))
 
   :guard-hints (("Goal" :in-theory (e/d () (subseq))))
@@ -21188,7 +21287,9 @@
        ;; opcodes don't really have two- or three-byte opcodes because the map
        ;; is encoded in the VEX/EVEX prefixes, so it can be misleading to list
        ;; their opcode as two or three bytes long.
-       (opcode-byte (loghead 8 opcode.op))
+       (opcode-str (if full-opcode?
+                       (opcode-string opcode)
+                       (subseq (str::hexify-width (loghead 8 opcode.op) 2) 3 nil)))
        (mnemonic (if (stringp inst.mnemonic)
                      inst.mnemonic
                    (symbol-name inst.mnemonic)))
@@ -21225,7 +21326,7 @@
         (concatenate
          'string
          "<tr> "
-         " <td> " (subseq (str::hexify-width opcode-byte 2) 3 nil) " </td> "
+         " <td> " opcode-str " </td> "
          " <td> " mnemonic                " </td> "
          " <td> " extra-info              " </td> "
                   arg-str
@@ -21243,7 +21344,11 @@
                                         "Include information about the
                           operands (@('inst.operands') field) in the
                           documentation or not")
-                               'nil))
+                               'nil)
+                         ((full-opcode? booleanp
+                                        "Include a SDM-like representation of
+                         the full opcode, not just the low byte")
+                          'nil))
 
   :returns (insts-doc-string stringp)
 
@@ -21251,8 +21356,8 @@
       ""
     (concatenate
      'string
-     (create-inst-doc (car inst-lst) :fn-ok? fn-ok? :arg-ok? arg-ok?)
-     (create-insts-doc-aux (cdr inst-lst) :fn-ok? fn-ok? :arg-ok? arg-ok?))))
+     (create-inst-doc (car inst-lst) :fn-ok? fn-ok? :arg-ok? arg-ok? :full-opcode? full-opcode?)
+     (create-insts-doc-aux (cdr inst-lst) :fn-ok? fn-ok? :arg-ok? arg-ok? :full-opcode? full-opcode?))))
 
 (define create-insts-doc ((inst-lst inst-list-p)
                           &key
@@ -21264,12 +21369,16 @@
                                     "Include information about the
                           operands (@('inst.operands') field) in the
                           documentation or not")
-                           'nil))
+                           'nil)
+                         ((full-opcode? booleanp
+                                        "Include a SDM-like representation of
+                         the full opcode, not just the low byte")
+                          'nil))
 
   :returns (insts-doc-string stringp)
 
   (b* ((insts-doc-string (create-insts-doc-aux
-                          inst-lst :fn-ok? fn-ok? :arg-ok? arg-ok?))
+                          inst-lst :fn-ok? fn-ok? :arg-ok? arg-ok? :full-opcode? full-opcode?))
        (table-header-1 "<th> Opcode </th>")
        (table-header-2 "<th> Mnemonic </th>")
        (table-header-3 "<th> Other Information </th>")
