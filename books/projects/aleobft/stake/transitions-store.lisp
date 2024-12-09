@@ -110,25 +110,6 @@
      Instead, by having the receiving validator check the signers,
      we avoid that, as proved elsewhere.")
    (xdoc::p
-    "Also importantly, and for a similar reason,
-     a validator stores the certificate into the DAG
-     only if the referenced previous certificates
-     form a quorum in the active committee
-     of the round just before the certificate,
-     unless the certificate's round is 1,
-     in which case the certificate
-     must have no references to previous certificates.
-     If the certificate's round is not 1,
-     in order to make the quorum check,
-     the validator must be able to calculate that active committee.")
-   (xdoc::p
-    "We also ensure that there is at least
-     one reference to previous certificates,
-     unless the certificate round is 1.
-     As in @(tsee create-signer-possiblep),
-     this indirectly ensures the non-emptiness of
-     the committee at the round just before the certificate.")
-   (xdoc::p
     "The address @('val') of the validator indicated in the event
      must be a correct validator of the system.
      The certificate must be in the buffer of the validator.
@@ -156,26 +137,13 @@
                     (committee-quorum-stake commtt)))
         nil)
        ((when (= cert.round 1))
-        (set::emptyp cert.previous))
+        t)
        ((unless (set::subset cert.previous
                              (certificate-set->author-set
                               (certs-with-round (1- cert.round) vstate.dag))))
-        nil)
-       ((when (set::emptyp cert.previous))
-        nil)
-       (prev-commtt
-        (active-committee-at-round (1- cert.round) vstate.blockchain))
-       ((unless (set::subset cert.previous
-                             (committee-members prev-commtt)))
-        nil)
-       ((unless (>= (committee-members-stake cert.previous prev-commtt)
-                    (committee-quorum-stake prev-commtt)))
         nil))
     t)
-  :guard-hints
-  (("Goal"
-    :in-theory (enable posp
-                       active-committee-at-previous-round-when-at-round)))
+  :guard-hints (("Goal" :in-theory (enable posp)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

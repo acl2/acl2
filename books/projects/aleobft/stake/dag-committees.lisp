@@ -112,7 +112,7 @@
      follows from the assumption of the invariant
      in the state before the transition.")
    (xdoc::p
-    "The other events do not change the accepted certificates or blockchains,
+    "The other events do not change the DAGs or blockchains,
      but @('commit') changes the blockchain of the target validator.
      However, it extends it, and thus the previously calculated committee
      can be still calculated with the extended blockchain,
