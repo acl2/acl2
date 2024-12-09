@@ -457,7 +457,7 @@
        (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
        (local (include-book "kestrel/axe/rewriter-support" :dir :system))
        (local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system)) ; reduce?
-       (local (include-book "tools/mv-nth" :dir :system)) ; todo
+       (local (include-book "kestrel/utilities/mv-nth" :dir :system))
 
        (local (in-theory (disable mv-nth
                                   wf-dagp wf-dagp-expander
@@ -544,7 +544,7 @@
                                                            rewrite-stobj count)
           (declare (xargs :guard (and (wf-rewrite-stobj2 rewrite-stobj2)
                                       (bounded-darg-list-listp assumption-arg-lists (get-dag-len rewrite-stobj2))
-                                      (axe-tree-listp hyp-args) ; todo replace this and the next one with axe-tree-listp?
+                                      (axe-tree-listp hyp-args)
                                       (posp hyp-num)
                                       (axe-rule-hyp-listp other-hyps)
                                       (symbol-alistp alist)
@@ -614,13 +614,13 @@
                                               rewrite-stobj2 memoization hit-counts tries limits
                                               node-replacement-array node-replacement-count refined-assumption-alist
                                               rewrite-stobj count)
-          (declare (xargs :guard (and (wf-rewrite-stobj2 rewrite-stobj2)
-                                      (axe-rule-hyp-listp hyps)
+          (declare (xargs :guard (and (axe-rule-hyp-listp hyps)
                                       (posp hyp-num)
                                       (symbol-alistp alist)
-                                      (bounded-darg-listp (strip-cdrs alist) (get-dag-len rewrite-stobj2))
                                       (alist-suitable-for-hypsp alist hyps)
                                       (symbolp rule-symbol)
+                                      (wf-rewrite-stobj2 rewrite-stobj2)
+                                      (bounded-darg-listp (strip-cdrs alist) (get-dag-len rewrite-stobj2))
                                       (maybe-bounded-memoizationp memoization (get-dag-len rewrite-stobj2))
                                       (hit-countsp hit-counts)
                                       (triesp tries)
@@ -638,22 +638,21 @@
                    )
           (if (or (not (mbt (natp count)))
                   (= 0 count))
-              (mv :count-exceeded t alist rewrite-stobj2 memoization hit-counts tries limits
-                  node-replacement-array)
+              (mv :count-exceeded t alist rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)
             (if (endp hyps)
                 ;; all hyps relieved:
                 (mv (erp-nil) t alist rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)
               (b* ((hyp (first hyps))
                    (print (get-print rewrite-stobj))
-                   (fn (ffn-symb hyp)) ;; all hyps are conses
                    (- (and (eq :verbose! print)
-                           (cw "Relieving hyp: ~x0 with alist ~x1.~%" hyp alist))))
+                           (cw "Relieving hyp: ~x0 with alist ~x1.~%" hyp alist)))
+                   (fn (ffn-symb hyp)) ;; all hyps are conses, fn may be a special keyword tag, like :axe-syntaxp
+                   )
                 ;; todo: consider using CASE here:
-                (if (eq :axe-syntaxp fn)
+                (if (eq :axe-syntaxp fn) ; (:axe-syntaxp . <expr>) ; note the dot!
                     (let* ((syntaxp-expr (cdr hyp)) ;; strip off the :axe-syntaxp
-                           (result (and
-                                        (,eval-axe-syntaxp-expr-fn syntaxp-expr alist (get-dag-array rewrite-stobj2)) ;could make a version without dag-array (may be very common?).. TODO: use :dag-array?
-                                        )))
+                           (result (,eval-axe-syntaxp-expr-fn syntaxp-expr alist (get-dag-array rewrite-stobj2)) ;could make a version without dag-array (may be very common?).. TODO: use :dag-array?
+                                   ))
                       (if result
                           ;;this hyp counts as relieved
                           (,relieve-rule-hyps-name (rest hyps) (+ 1 hyp-num) alist rule-symbol
@@ -669,21 +668,19 @@
                                              ;; (cw ")~%")
                                              ))
                                 (mv (erp-nil) nil alist rewrite-stobj2 memoization hit-counts tries limits node-replacement-array))))
-                  (if (eq :axe-bind-free fn)
+                  (if (eq :axe-bind-free fn) ; (:axe-bind-free <expr> . <vars-to-bind>) ; note the dot
                       ;; To evaluate the axe-bind-free hyp, we use alist, which binds vars to their nodenums or quoteps.
-                      ;;The soundness of Axe should not depend on what an axe-bind-free function does; thus we cannot pass alist to such a function and trust it to faithfully extend it.  Nor can we trust it to extend the dag without changing any existing nodes. TODO: What if the axe-bind-free function gives back a result that is not even well-formed?
-                      ;;TODO: It might be nice to be able to pass in the assumptions to the axe-bind-free-function? e.g., for finding usbp facts.
+                      ;; The soundness of Axe should not depend on what an axe-bind-free function does; thus we cannot pass alist to such a function and trust it to faithfully extend it.  Nor can we trust it to extend the dag without changing any existing nodes. So we require the axe-bind-free-function to return an alist binding exactly certain vars, and we check the keys and vals of that alist.
+                      ;;TODO: It might be nice to be able to pass in the assumptions to the axe-bind-free-function? e.g., for finding sizes from unsigned-byte-p assumptions.
                       (let* ((bind-free-expr (cadr hyp)) ;; strip off the :axe-bind-free
-                             (result (and ; (all-vars-in-terms-bound-in-alistp (fargs bind-free-expr) alist) ; TODO: remove this check, since it should be guaranteed statically!  need a better guards in the alist wrt future hyps
-                                          (,eval-axe-bind-free-function-application-fn (ffn-symb bind-free-expr) (fargs bind-free-expr) alist (get-dag-array rewrite-stobj2)) ;could make a version without dag-array (may be very common?).. TODO: use :dag-array?
-                                          )))
-                        (if result ;; nil to indicate failure, or an alist whose keys should be exactly (cddr hyp)
+                             (result (,eval-axe-bind-free-function-application-fn (ffn-symb bind-free-expr) (fargs bind-free-expr) alist (get-dag-array rewrite-stobj2))  ;could make a version without dag-array (may be very common?).. TODO: use :dag-array?
+                                     ))
+                        (if result ;; nil to indicate failure, or an alist whose keys should be exactly the vars-to-bind
                             (let ((vars-to-bind (cddr hyp)))
                               (if (not (axe-bind-free-result-okayp result vars-to-bind (get-dag-len rewrite-stobj2)))
                                   (mv (erp-t)
                                       (er hard? ',relieve-rule-hyps-name "Bind free hyp ~x0 for rule ~x1 returned ~x2, but this is not a well-formed alist that binds ~x3." hyp rule-symbol result vars-to-bind)
-                                      alist rewrite-stobj2 memoization hit-counts tries limits
-                                      node-replacement-array)
+                                      alist rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)
                                 ;; this hyp counts as relieved:
                                 (,relieve-rule-hyps-name (rest hyps) (+ 1 hyp-num)
                                                          (append result alist) ;; guaranteed to be disjoint given the analysis done when the rule was made and the call of axe-bind-free-result-okayp above
@@ -3035,7 +3032,7 @@
                    (:rewrite maybe-bounded-memoizationp-of-add-pairs-to-memoization)
                    (:rewrite maybe-bounded-memoizationp-of-nil)
                    (:rewrite member-equal-when-member-equal-and-subsetp-equal)
-                   (:rewrite mv-nth-of-cons)
+                   (:rewrite mv-nth-of-cons-safe)
                    (:rewrite mv-nth-of-if)
                    (:rewrite natp-of-apply-node-replacement-array-bool-to-darg)
                    (:rewrite natp-of-get-dag-len)
@@ -6132,7 +6129,7 @@
                     (with-output :off :all (table ,',(pack$ def-simplified-dag-name '-table) ',whole-form ':fake)))
             state)))
 
-    ;; A utility to simplify a dag and name the result.
+    ;; A utility to simplify a dag and name the resulting DAG.
     ;; Creates a constant named NAME, whose value is a DAG representing the simplified form of DAG.
     ;; See def-simplified.lisp for a version of this for terms (todo: add that to this generator)
     (defmacro ,def-simplified-dag-name (&whole whole-form
