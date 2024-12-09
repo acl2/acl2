@@ -1483,7 +1483,7 @@ chapter 5)."
              ((mv sub-impl sub-unimpl)
               (sdm-instruction-table-instruction-counts subsecs)))
           (str::cat
-           "<p>Note: this summary is based on the opcode maps (see @(see implemented-instructions) and subtopics).
+           "<p>Note: this summary is based on the opcode maps (see @(see implemented-opcodes) and subtopics).
 To the extent that the opcode maps are incomplete (as noted in several of the
 below topics), the instruction counts listed below and in subtopics are as
 well.</p>"
