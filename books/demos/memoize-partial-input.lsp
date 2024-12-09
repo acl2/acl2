@@ -1028,6 +1028,7 @@ with FIB2-NEW.  See :DOC memoize-partial.
                             :stable fib2-clock-stable0-new
                             :condition '(eql (mod n 4) 0)))
                  :condition t)
+
 ; Test that we get the expected value:
 (assert-event (equal (fib2-new 30)
                      (fib2-clock 30 50)))
@@ -1035,6 +1036,17 @@ with FIB2-NEW.  See :DOC memoize-partial.
 (assert-event (equal (fib2-new 80) ; 100 can get us into bignums; slow!
                      37889062373143906))
 
+; Test that (partial) memoization is properly restored, and then run the two
+; tests again that are just above.
+
+(save-and-clear-memoization-settings)
+(restore-memoization-settings)
+
+(assert-event (equal (fib2-new 30)
+                     (fib2-clock 30 50)))
+
+(assert-event (equal (fib2-new 80) ; 100 can get us into bignums; slow!
+                     37889062373143906))
 (mf
 #||
 HARD ACL2 ERROR in MEMOIZE-PARTIAL:  Ill-formed argument for memoize-
