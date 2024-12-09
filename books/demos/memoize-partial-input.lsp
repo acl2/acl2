@@ -1029,7 +1029,7 @@ with FIB2-NEW.  See :DOC memoize-partial.
                             :condition '(eql (mod n 4) 0)))
                  :condition t)
 
-(assign old-world-length (length (w state)))
+(f-put-global 'old-world-length (length (w state)) state)
 
 ; Check redundancy (though this won't be shown as redundant):
 (memoize-partial ((fib2-new fib2-clock
@@ -1065,7 +1065,8 @@ with FIB2-NEW.  See :DOC memoize-partial.
 
 (save-and-clear-memoization-settings)
 
-(comp 'plain-fib) ; for other than sbcl and ccl
+(er-progn (comp 'plain-fib) ; for other than sbcl and ccl
+          (value nil)) ; avoid different values for comp in different lisps
 
 (plain-fib 40) ; takes 0.63 seconds on 2019 MacBook Pro
 
