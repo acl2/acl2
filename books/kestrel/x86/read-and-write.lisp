@@ -2718,6 +2718,11 @@
   :hints (("Goal" :induct (inc-dec-dec-induct addr n1 n2)
            :in-theory (enable read-bytes))))
 
+(defthm len-of-read-bytes
+  (equal (len (read-bytes addr n x86))
+         (nfix n))
+  :hints (("Goal" :in-theory (enable read-bytes))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund write-bytes (addr bytes x86)

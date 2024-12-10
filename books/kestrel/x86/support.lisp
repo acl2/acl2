@@ -13,6 +13,9 @@
 
 ;TODO: Organize this material.
 
+;; This book is for things that mix x86isa notions with our notions.  Pure x86
+;; theorems should go in support-x86.lisp.
+
 (include-book "support-x86") ;drop? for stuff about create-canonical-address-list
 (include-book "flags") ; reduce?
 (include-book "projects/x86isa/proofs/utilities/app-view/top" :dir :system)

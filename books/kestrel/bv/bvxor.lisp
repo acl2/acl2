@@ -56,6 +56,13 @@
            (equal (bvxor size x y)
                   (bvxor size y x))))
 
+;; not needed if we are commuting more generally
+(defthmd bvxor-commute-constant2
+  (implies (syntaxp (and (quotep k)
+                         (not (quotep x))))
+           (equal (bvxor size x (bvxor size k y))
+                  (bvxor size k (bvxor size x y)))))
+
 (defthm bvxor-same
   (equal (bvxor size x x)
          0)
