@@ -1085,7 +1085,6 @@
     acl2::rotate-left-constant-opener
     acl2::rotate-right-constant-opener))
 
-
 ;todo: classify these
 (defun x86-bv-rules ()
   (declare (xargs :guard t))
@@ -1102,7 +1101,9 @@
     ;; this is needed to handle a divide:
     acl2::bvcat-of-if-becomes-bvsx-64-64
     acl2::bvlt-of-bvplus-1-cancel
-    acl2::bvlt-of-bvplus-1-cancel-alt))
+    acl2::bvlt-of-bvplus-1-cancel-alt
+    acl2::bvsx-when-unsigned-byte-p ; without this, we'd need rules like bvsx-of-read (when the read is small)
+    ))
 
 ;; ;not used?
 ;; (defun canonical-address-rules ()
@@ -3198,7 +3199,8 @@
           (write-rules)
           (read-and-write-rules)
           '(read-byte-becomes-read) ; (read-byte-rules) ; read-byte can come from read-bytes
-          '(len-of-read-bytes nth-of-read-bytes) ; read-bytes can come from an output-indicator
+          '(len-of-read-bytes nth-of-read-bytes) ; read-bytes can come from an output-extractor
+          (acl2::list-to-bv-array-rules) ; for simplifying output-extractors
           (linear-memory-rules)
           (get-prefixes-rules64)
           '(;x86isa::x86-fetch-decode-execute-base-new
