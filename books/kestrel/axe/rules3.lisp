@@ -37,7 +37,7 @@
 ;(include-book "kestrel/bv-lists/bv-array-clear" :dir :system)
 (include-book "kestrel/utilities/bind-from-rules" :dir :system)
 ;(local (include-book "kestrel/lists-light/rules2" :dir :system)) ;todo
-(include-book "kestrel/arithmetic-light/floor" :dir :system)
+(local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 ;(local (include-book "arithmetic/equalities" :dir :system))
 (local (include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system))
@@ -132,13 +132,6 @@
              (integerp (+ x y)))
     :rule-classes :type-prescription)
   )
-
-;rename and move
-(defthm logtail-hack77
-  (implies (posp size)
-           (equal (logtail (+ -1 size) (- (expt 2 size)))
-                  -2))
-  :hints (("Goal" :in-theory (enable logtail))))
 
 ;drop?:
 (defconst *minus-1* 4294967295)
@@ -666,13 +659,6 @@
 
 (local (in-theory (disable MOD-OF-EXPT-OF-2-CONSTANT-VERSION MOD-OF-EXPT-OF-2)))
 
-;move
-(defthm expt-split-hack
-  (implies (posp size)
-           (equal (+ (- (EXPT 2 SIZE)) (EXPT 2 (+ -1 SIZE)))
-                  (- (EXPT 2 (+ -1 SIZE)))))
-  :hints (("Goal" :in-theory (enable expt-of-+))))
-
 ;gen
 (defthm sbvlt-0-bvuminus
   (equal (sbvlt 32 0 (bvuminus 32 x))
@@ -890,9 +876,10 @@
            (equal (floor x 4)
                   (logtail 2 x)))
   :hints (("Goal" :in-theory (enable logtail))))
+(theory-invariant (incompatible (:definition logtail ) (:rewrite floor-of-4-becomes-logtail)))
 
 ;;strength reduction
-;rename
+;rename and gen
 (defthm bvdiv-of-4
   (equal (bvdiv 32 x 4)
          (slice 31 2 x))
@@ -1829,8 +1816,6 @@
                   (< (bvchop 31 x) (bvmult 31 536870911 4))))
   :hints (("Goal" :in-theory (e/d (slice) (anti-slice)))))
 
-(theory-invariant (incompatible (:definition logtail ) (:rewrite FLOOR-OF-4-BECOMES-LOGTAIL)))
-
 ;gen
 (defthm logtail-is-max
   (implies (and (<= 2147483645 x)
@@ -1838,7 +1823,7 @@
                 (integerp x))
            (equal (logtail 2 x)
                   (+ -1 (expt 2 29))))
-  :hints (("Goal" :in-theory (e/d (logtail) (floor-of-4-becomes-logtail)))))
+  :hints (("Goal" :in-theory (e/d (logtail) ()))))
 
 (defthm slice-is-max
   (implies (and (<= 2147483645 (bvchop 31 x))
@@ -2093,8 +2078,6 @@
            (equal (< (slice high low x) k)
                   (< (bvchop (+ 1 high) x) (* k (expt 2 low)))))
   :hints (("Goal" :in-theory (e/d (slice bvmult) (anti-slice)))))
-
-(in-theory (disable FLOOR-OF-4-BECOMES-LOGTAIL))
 
 ;; (thm
 ;;  (implies (and (natp i)
@@ -10200,7 +10183,7 @@
   :hints (("Goal" :in-theory (e/d (bvlt slice bvchop-of-logtail)
                                   (logtail-lessp <-of-logtail-arg2 anti-slice)))))
 
-(in-theory (disable LOGTAIL-OF-ONE-MORE)) ;add syntaxp hyp
+(in-theory (disable LOGTAIL-OF-ONE-MORE))
 
 ;gen
 (defthm bound-gap-theorem
