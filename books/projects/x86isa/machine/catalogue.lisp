@@ -1,5 +1,11 @@
+; x86isa categorized listings of implemented/unimplemented instructions
+;
 ; X86ISA Library
-
+; Copyright (C) 2024 Kestrel Technology, LLC
+;
+; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
+;
+; Author: Sol Swords (sswords@gmail.com)
 
 (in-package "X86ISA")
 
