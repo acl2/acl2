@@ -38,7 +38,6 @@
 (include-book "def-dag-builder-theorems")
 (include-book "translation-array")
 (include-book "merge-sort-less-than")
-(include-book "kestrel/bv/bitxor" :dir :system)
 (local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
@@ -1447,9 +1446,9 @@
            (new-dag-len 0) ; initially empty
            (new-dag-parent-array-name 'normalize-xors-new-parent-array)
            (new-dag-parent-array (make-empty-array new-dag-parent-array-name new-dag-size))
-           (new-dag-constant-alist nil)
+           (new-dag-constant-alist (empty-dag-constant-alist))
            (new-dag-variable-alist (empty-dag-variable-alist))
-           ;; indicates what each node in the old-dag becomes in the new-dag:
+           ;; a map from nodes in the old-dag to nodes in the new-dag:
            (translation-array (make-empty-array 'translation-array old-dag-len)))
       (prog2$ (and print
                    (cw "(Simplifying xors (len is ~x0)...~%" old-dag-len))
@@ -1468,10 +1467,10 @@
                           (prog2$ (and print
                                        (cw ")~%"))
                                   (mv (erp-nil) result t))
-                        (b* ((new-dag (drop-non-supporters-array-with-name new-dag-array-name new-dag-array result print))
+                        (b* ((new-dag (drop-non-supporters-array-with-name new-dag-array-name new-dag-array result print)) ; todo: are there actually any non-supporters?
                              ((when (<= *max-1d-array-length* (+ (len dag) ;;todo: this is for equivalent-dagsp below but that should be made more flexible (returning an erp)
                                                       (len new-dag))))
-                              (er hard? 'normalize-xors "DAGs too large.")
+                              (er hard? 'normalize-xors "DAG too large.")
                               (mv :dag-too-large nil nil))
                              (changep (not (equivalent-dagsp dag new-dag))))
                           (progn$ (and (eq :verbose print)
@@ -1886,9 +1885,9 @@
 ;; (skip- proofs (verify-guards add-term-to-dag))
 
 ;move
-(DEFTHM rationalp-OF-NTH-WHEN-ALL-INTEGERP
-  (IMPLIES (AND (ALL-INTEGERP X)
-                (NATP N)
-                (< N (LEN X)))
-           (rationalp (NTH N X)))
-  :HINTS (("Goal" :IN-THEORY (ENABLE ALL-INTEGERP (:i NTH)))))
+(defthmd rationalp-of-nth-when-all-integerp
+  (implies (and (all-integerp x)
+                (natp n)
+                (< n (len x)))
+           (rationalp (nth n x)))
+  :hints (("Goal" :in-theory (enable all-integerp (:i nth)))))
