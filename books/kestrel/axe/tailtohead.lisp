@@ -1,7 +1,7 @@
 ; Making a function non-tail-recursive
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -132,7 +132,13 @@
                                          update-function-name
                                          base-val-function-name
                                          reps-hints)
-  (declare (ignore base-val-function-name))
+  (declare (xargs :guard (and (symbolp original-function-name)
+                              (symbolp exit-test-function-name)
+                              (symbolp measure-function-name)
+                              (symbolp update-function-name)
+                              (symbolp base-val-function-name)))
+           (ignore base-val-function-name) ; why?
+           )
   (let* ((head-function-name (concat-symbols original-function-name '-head))
          (reps-function-name (concat-symbols original-function-name '-reps))
          (aux-function-name (concat-symbols head-function-name '-aux))

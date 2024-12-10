@@ -4594,6 +4594,11 @@
 
 (mutual-recursion
  (defun fixup-inner-body-for-make-induction-function (expr outer-vars outer-rec-call-exprs inner-fn-name new-fn-name)
+   (declare (xargs :guard (and (pseudo-termp expr)
+                               (symbol-listp outer-vars)
+                               (true-listp outer-rec-call-exprs)
+                               (symbolp inner-fn-name)
+                               (symbolp new-fn-name))))
    (if (atom expr)
        expr
      (let ((fn (ffn-symb expr)))
@@ -4613,6 +4618,11 @@
                (cons fn args))))))))
 
  (defun fixup-inner-body-for-make-induction-function-list (exprs outer-vars outer-rec-call-exprs inner-fn-name new-fn-name)
+   (declare (xargs :guard (and (pseudo-term-listp exprs)
+                               (symbol-listp outer-vars)
+                               (true-listp outer-rec-call-exprs)
+                               (symbolp inner-fn-name)
+                               (symbolp new-fn-name))))
    (if (endp exprs)
        nil
      (cons (fixup-inner-body-for-make-induction-function (car exprs) outer-vars outer-rec-call-exprs inner-fn-name new-fn-name)
@@ -4623,6 +4633,14 @@
 ;;returns (mv new-expr contains-recursive-callp)
 (mutual-recursion
  (defun make-induction-function-aux (expr outer-fn inner-function-body inner-function-params new-fn-name inner-fn-name)
+   (declare (xargs :guard (and (pseudo-termp expr)
+                               (symbolp outer-fn)
+                               (pseudo-termp inner-function-body)
+                               (symbol-listp inner-function-params)
+                               (symbolp new-fn-name)
+                               (symbolp inner-fn-name))
+                   :verify-guards nil ; done below
+                   ))
    (if (atom expr)
        (mv expr nil)
      (let ((fn (ffn-symb expr)))
@@ -4662,6 +4680,12 @@
                          args-contain-recursive-callp))))))))
 
  (defun make-induction-function-aux-list (exprs fn inner-function-body inner-function-params new-fn-name inner-fn-name)
+   (declare (xargs :guard (and (pseudo-term-listp exprs)
+                               (symbolp fn)
+                               (pseudo-termp inner-function-body)
+                               (symbol-listp inner-function-params)
+                               (symbolp new-fn-name)
+                               (symbolp inner-fn-name))))
    (if (endp exprs)
        (mv nil nil)
      (mv-let (new-expr contains-recursive-callp)
@@ -4672,7 +4696,22 @@
                          (or contains-recursive-callp
                              contains-recursive-callp-cdr)))))))
 
+(local
+ (defthm true-listp-of-mv-nth-0-of-make-induction-function-aux-list
+     (true-listp (mv-nth 0 (make-induction-function-aux-list exprs fn inner-function-body inner-function-params new-fn-name inner-fn-name)))
+   :hints (("Goal" :induct (len exprs)
+                   :in-theory (enable (:i len))))))
+
+(verify-guards make-induction-function-aux)
+
 (defun make-induction-function-helper (fn1 formals1 body1 fn2 formals2 body2 induction-fn-name)
+  (declare (xargs :guard (and (symbolp fn1)
+                              (symbol-listp formals1)
+                              (pseudo-termp body1)
+                              (symbolp fn2)
+                              (symbol-listp formals2)
+                              (pseudo-termp body2)
+                              (symbolp induction-fn-name))))
   (let* ((arity1 (len formals1))
          (arity2 (len formals2))
          (new-formals1 (make-var-names 'farg arity1))
@@ -4699,36 +4738,56 @@
 ;could check that they are in fact recursive
 ;returns a defun
 ;ffixme what does this do if one of the functions is undefined?
+;; todo: just take world?
 (defun make-induction-function (fn1 fn2 induction-fn-name state)
-  (declare (xargs ;:mode :program
-                  :stobjs state
-                  :verify-guards nil
-                  ))
-  (let* ((props1 (getprops-non-nil fn1 state))
-         (props2 (getprops-non-nil fn2 state))
-         (body1 (lookup-eq-safe 'unnormalized-body props1))
-         (body2 (lookup-eq-safe 'unnormalized-body props2))
-         (formals1 (lookup-eq-safe 'formals props1))
-         (formals2 (lookup-eq-safe 'formals props2)))
+  (declare (xargs :guard (and (symbolp fn1)
+                              (symbolp fn2)
+                              (symbolp induction-fn-name))
+                  :stobjs state))
+  (let* (;;(props1 (getprops-non-nil fn1 state))
+         ;;(props2 (getprops-non-nil fn2 state))
+         ;;(body1 (lookup-eq-safe 'unnormalized-body props1))
+         ;;(body2 (lookup-eq-safe 'unnormalized-body props2))
+         (body1 (fn-body fn1 t (w state)))
+         (body2 (fn-body fn2 t (w state)))
+         ;;(formals1 (lookup-eq-safe 'formals props1))
+         ;;(formals2 (lookup-eq-safe 'formals props2))
+         (formals1 (fn-formals fn1 (w state)))
+         (formals2 (fn-formals fn2 (w state)))
+         )
     (make-induction-function-helper fn1 formals1 body1 fn2 formals2 body2 induction-fn-name)))
 
 (defun make-induction-function2 (fn1 fn2 formals2 body2 induction-fn-name state)
-  (declare (xargs ;:mode :program
-            :stobjs state
-            :verify-guards nil))
-  (let* ((props1 (getprops fn1 'current-acl2-world (w state)))
-         (body1 (lookup-eq 'unnormalized-body props1))
-         (formals1 (lookup-eq 'formals props1)))
+  (declare (xargs :guard (and (symbolp fn1)
+                              (symbolp fn2)
+                              (symbol-listp formals2)
+                              (pseudo-termp body2)
+                              (symbolp induction-fn-name))
+                  :guard-debug t
+                  :stobjs state))
+  (let* (;(props1 (getprops fn1 'current-acl2-world (w state)))
+         ;;(body1 (lookup-eq 'unnormalized-body props1))
+         (body1 (fn-body fn1 t (w state)))
+         ;(formals1 (lookup-eq 'formals props1))
+         (formals1 (fn-formals fn1 (w state))))
     (make-induction-function-helper fn1 formals1 body1 fn2 formals2 body2 induction-fn-name)))
 
 (defun make-arg-symbols (current symbol)
-  (declare (xargs :measure (nfix (+ 1 current))))
+  (declare (xargs :guard (and (integerp current)
+                              (symbolp symbol))
+                  :measure (nfix (+ 1 current))))
   (if (not (natp current))
       nil
     (cons (pack$ symbol (nat-to-string current))
           (make-arg-symbols (+ -1 current) symbol))))
 
+(local
+ (defthm symbol-listp-of-make-arg-symbols
+     (symbol-listp (make-arg-symbols current symbol))))
+
 (defun nth-nest-around-some-symbol (term symbols)
+  (declare (xargs :guard (and (pseudo-termp term)
+                              (symbol-listp symbols))))
   (if (atom term)
       (member-eq term symbols)
     (and (eq 'nth (ffn-symb term))
@@ -4737,6 +4796,10 @@
 
 (mutual-recursion
  (defun get-mentioned-arg-components-aux (term arg-symbols)
+   (declare (xargs :guard (and (pseudo-termp term)
+                               (symbol-listp arg-symbols))
+                   :verify-guards nil ; done below
+                   ))
    (if (atom term)
        (member-eq term arg-symbols)
      (if (quotep term)
@@ -4746,12 +4809,34 @@
          (get-mentioned-arg-components-aux-lst (fargs term) arg-symbols)))))
 
  (defun get-mentioned-arg-components-aux-lst (terms arg-symbols)
+   (declare (xargs :guard (and (pseudo-term-listp terms)
+                               (symbol-listp arg-symbols))))
    (if (endp terms)
        nil
      (append (get-mentioned-arg-components-aux (car terms) arg-symbols)
              (get-mentioned-arg-components-aux-lst (cdr terms) arg-symbols)))))
 
+(local (make-flag get-mentioned-arg-components-aux))
+
+(local
+ (defthm-flag-get-mentioned-arg-components-aux
+     (defthm theorem-for-get-mentioned-arg-components-aux
+         (implies (and (pseudo-termp term)
+                       (symbol-listp arg-symbols))
+                  (true-listp (get-mentioned-arg-components-aux term arg-symbols)))
+       :flag get-mentioned-arg-components-aux)
+     (defthm theorem-for-get-mentioned-arg-components-aux-lst
+         (implies (and (pseudo-term-listp terms)
+                       (symbol-listp arg-symbols))
+                  (true-listp (get-mentioned-arg-components-aux-lst terms arg-symbols)))
+       :flag get-mentioned-arg-components-aux-lst)))
+
+(verify-guards get-mentioned-arg-components-aux)
+
 (defun get-mentioned-arg-components (terms arity symbol)
+  (declare (xargs :guard (and (pseudo-term-listp terms)
+                              (natp arity)
+                              (symbolp symbol))))
   (let* ((arg-symbols (make-arg-symbols arity symbol)))
     (get-mentioned-arg-components-aux-lst terms arg-symbols)))
 
@@ -5906,7 +5991,7 @@
           (make-connection-equalities3 (cdr lhses) (cdr rhses)))))
 
 (defun packnew-list (item lst state)
-  (declare (xargs :mode :program ;todo
+  (declare (xargs :guard (true-listp lst)
                   :stobjs state))
   (if (endp lst)
       nil
@@ -6454,7 +6539,7 @@
 ;;                         state)
 
 (defun convert-to-head-recursive-events-wrapper (original-function-name state)
-  (declare (xargs :mode :program ;todo
+  (declare (xargs :guard (symbolp original-function-name)
                   :stobjs state))
   (convert-to-head-recursive-events original-function-name
                                     (packnew original-function-name '-exit-test)
@@ -6759,7 +6844,8 @@
                                    ;;base-case-expr
                                    update-expr-list ;the expressions passed as arguments to the recursive call
                                    state)
-  (declare (xargs :mode :program :stobjs state))
+  (declare (xargs :mode :program ; because this calls submit-events-brief
+                  :stobjs state))
   (let* ((arity (len formals)) ;pass in?
          (split-lemma-helper-name (packnew fn '-split-lemma-helper))
          (base-case-lemma-name (packnew limited-fn '-base-case))
@@ -6809,7 +6895,8 @@
                                                ;;base-case-expr
                                                update-expr-list ;the expressions passed as arguments to the recursive call
                                                state)
-  (declare (xargs :mode :program :stobjs state))
+  (declare (xargs :mode :program ; because this calls submit-events-brief
+                  :stobjs state))
   (let* ((arity (len formals)) ;pass in?
          (unroller-lemma-name (packnew limited-fn '-unroller))
          (split-lemma-helper-name ;(packnew unroller-lemma-name '-helper) ;why is unroller part of this name?
@@ -9502,8 +9589,6 @@
                                                              nil state))
                 (mv nil state))
               (make-rules-to-expose-tuple-elements (rest dag-lst) analyzed-function-table (append runes acc) state)))))
-;zz
-
 
 ;returns (mv erp dag state result-array-stobj)
 (defun get-dag-for-expr-no-theorem (expr interpreted-function-alist state result-array-stobj)

@@ -17,7 +17,8 @@
 
 (defund get-disjuncts-tester (term state)
   (declare (xargs :stobjs state
-                  :mode :program))
+                  :mode :program ; because this calls translate-term
+                  ))
   (b* ((term (translate-term term 'get-disjuncts-tester (w state)))
        ((mv erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
         (make-term-into-dag-array-basic term 'dag-array 'dag-parent-array nil))
