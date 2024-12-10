@@ -1,7 +1,7 @@
 ; A tool to make an axe-bind-free evaluator for given functions
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -12,7 +12,7 @@
 
 (in-package "ACL2")
 
-(include-book "make-axe-syntaxp-evaluator") ;todo: reduce
+(include-book "make-axe-syntaxp-evaluator") ;todo: reduce, for bind-fns-to-arities
 (include-book "kestrel/alists-light/symbol-alistp" :dir :system) ;todo: make local to the generated event (but need the :dir to make that convenient)
 
 (local (in-theory (enable rational-listp-when-integer-listp)))
@@ -72,6 +72,6 @@
 
 (defmacro make-axe-bind-free-evaluator (suffix
                                         fns &key
-                                        (enables 'nil) ;for proving the generated function returns an alist
+                                        (enables 'nil) ;for proving the generated function returns a symbol-alist
                                         )
   `(make-event (make-axe-bind-free-evaluator-fn ,suffix ,fns ,enables (w state))))
