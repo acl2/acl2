@@ -210,7 +210,16 @@
            0))
   :hints (("Goal" :in-theory (enable bitand getbit))))
 
-(defthm equal-of-1-and-bitand
-  (equal (equal 1 (bitand x y))
-         (and (equal 1 (getbit 0 x))
-              (equal 1 (getbit 0 y)))))
+(defthm equal-of-bitand-and-constant
+  (implies (syntaxp (quotep k))
+           (equal (equal (bitand x y) k)
+                  (if (equal 1 k)
+                      (and (equal 1 (getbit 0 x))
+                           (equal 1 (getbit 0 y)))
+                    (if (equal 0 k)
+                        (if (equal 0 (getbit 0 x))
+                            t
+                          (equal 0 (getbit 0 y)))
+                      nil)))))
+
+

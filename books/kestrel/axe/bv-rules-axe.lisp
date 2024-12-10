@@ -2261,3 +2261,33 @@
                 (syntaxp (quotep free))
                 (<= y free))
            (not (equal y x))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd equal-of-constant-and-bitand
+  (implies (syntaxp (quotep k))
+           (equal (equal k (bitand x y))
+                  (if (equal 1 k)
+                      (and (equal 1 (getbit 0 x))
+                           (equal 1 (getbit 0 y)))
+                    (if (equal 0 k)
+                        (if (equal 0 (getbit 0 x))
+                            t
+                          (equal 0 (getbit 0 y)))
+                      nil))))
+  :hints (("Goal" :use equal-of-bitand-and-constant
+           :in-theory (disable equal-of-bitand-and-constant))))
+
+(defthmd equal-of-constanr-and-bitor
+  (implies (syntaxp (quotep k))
+           (equal (equal k (bitor x y))
+                  (if (equal 0 k)
+                      (and (equal 0 (getbit 0 x))
+                           (equal 0 (getbit 0 y)))
+                    (if (equal 1 k)
+                        (if (equal 1 (getbit 0 x))
+                            t
+                          (equal 1 (getbit 0 y)))
+                      nil))))
+  :hints (("Goal" :use equal-of-bitor-and-constant
+           :in-theory (disable equal-of-bitor-and-constant))))

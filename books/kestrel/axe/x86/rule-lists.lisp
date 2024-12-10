@@ -4612,7 +4612,8 @@
             acl2::getbit-of-lognot ; todo: handle all cases of logops inside bvops
             acl2::bvif-of-if-constants-nil-nonnil
             acl2::bvif-of-if-constants-nonnil-nil
-            acl2::equal-of-1-and-bitand
+            acl2::equal-of-constant-and-bitand
+            acl2::equal-of-bitand-and-constant
             ;acl2::boolif-of-nil-and-t
             ;; acl2::booleanp-of-myif ; or convert myif to boolif when needed
             acl2::bitxor-of-1-becomes-bitnot-arg1 ; not in core-rules-bv since we have special handling of bitxor nests for crypto code
