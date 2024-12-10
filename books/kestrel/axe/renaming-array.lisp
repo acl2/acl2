@@ -624,7 +624,7 @@
                 (dargp-less-than val bound)
                 )
            (bounded-renaming-arrayp renaming-array-name (aset1 renaming-array-name renaming-array n val) num-nodes-to-check bound))
-  :hints (("Goal" :in-theory (e/d (bounded-renaming-arrayp) ()))))
+  :hints (("Goal" :in-theory (enable bounded-renaming-arrayp))))
 
 ;;;
 ;;; rename-var-or-fn-call-expr
