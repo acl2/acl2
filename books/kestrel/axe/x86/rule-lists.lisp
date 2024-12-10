@@ -268,14 +268,15 @@
     program-at-of-set-mxcsr
     ))
 
-(defun read-byte-rules ()
-  (declare (xargs :guard t))
-  '(read-byte-of-xw-irrel
-    ;;read-byte-when-program-at read-byte-when-program-at-gen
-    read-byte-of-set-flag
-    read-byte-of-write-byte
-    read-byte-of-logext
-    ))
+;; Now we just go to read
+;; (defun read-byte-rules ()
+;;   (declare (xargs :guard t))
+;;   '(read-byte-of-xw-irrel
+;;     ;;read-byte-when-program-at read-byte-when-program-at-gen
+;;     read-byte-of-set-flag
+;;     read-byte-of-write-byte
+;;     read-byte-of-logext
+;;     ))
 
 (defun read-rules ()
   (declare (xargs :guard t))
@@ -3196,7 +3197,8 @@
           (read-rules)
           (write-rules)
           (read-and-write-rules)
-          (read-byte-rules)
+          '(read-byte-becomes-read) ; (read-byte-rules) ; read-byte can come from read-bytes
+          '(len-of-read-bytes nth-of-read-bytes) ; read-bytes can come from an output-indicator
           (linear-memory-rules)
           (get-prefixes-rules64)
           '(;x86isa::x86-fetch-decode-execute-base-new
