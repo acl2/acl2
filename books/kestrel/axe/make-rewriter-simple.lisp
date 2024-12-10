@@ -6078,6 +6078,7 @@
     ;; Macro helper function for ,def-simplified-dag-name
     ;; Returns (mv erp event state).
     ;; TODO: Perhaps add an option to take a rule-alist.
+    ;; TODO: Allow passing a term instead of a DAG.
     (defund ,def-simplified-dag-fn-name (name ; the name of the constant to create
                                          dag
                                          assumptions
@@ -6097,15 +6098,15 @@
                                   (pseudo-dagp dag)
                                   (< (top-nodenum dag) *max-1d-array-length*) ; drop?
                                   (pseudo-term-listp assumptions)
-                                  (interpreted-function-alistp interpreted-function-alist)
-                                  (rule-limitsp limits)
                                   (symbol-listp rules)
+                                  (interpreted-function-alistp interpreted-function-alist)
+                                  (booleanp normalize-xors)
+                                  (rule-limitsp limits)
+                                  (booleanp memoize)
                                   (count-hits-argp count-hits)
                                   (print-levelp print)
                                   (symbol-listp monitored-symbols)
                                   (symbol-listp fns-to-elide)
-                                  (booleanp normalize-xors)
-                                  (booleanp memoize)
                                   (consp whole-form)
                                   (symbolp (car whole-form))
                                   (ilks-plist-worldp (w state)))
@@ -6121,6 +6122,7 @@
            (known-booleans (known-booleans (w state)))
            ((mv erp rule-alist) (make-rule-alist rules (w state)))
            ((when erp) (mv erp nil state))
+           ;; Simplify the DAG:
            ((mv erp dag-or-quotep) ,call-of-simplify-dag)
            ((when erp) (mv erp nil state)))
         (mv (erp-nil)
@@ -6130,7 +6132,7 @@
                )
             state)))
 
-    ;; A utility to simplify a dag and name the resulting DAG.
+    ;; A utility to simplify a DAG and name the resulting DAG.
     ;; Creates a constant named NAME, whose value is a DAG representing the simplified form of DAG.
     ;; See def-simplified.lisp for a version of this for terms (todo: add that to this generator)
     (defmacro ,def-simplified-dag-name (&whole whole-form
