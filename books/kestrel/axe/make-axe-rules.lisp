@@ -409,9 +409,10 @@
             (prog2$ (er hard? 'make-axe-rule-hyps-for-hyp "Hyp ~x0 in rule ~x1 is an unsupported call of SYNP.  If it is a (translated) bind-free hyp, considering using axe-bind-free instead, along with DAG-aware versions of the function(s) called inside the bind-free."
                         hyp rule-symbol)
                     (mv :unsupported-synp *unrelievable-hyps* bound-vars)))
-        (if (call-of 'axe-syntaxp hyp)
-            (b* (((when (not (and (true-listp (fargs hyp))
-                                  (= 1 (len (fargs hyp))))))
+        (if (call-of 'axe-syntaxp hyp) ; (axe-syntaxp <expr>)
+            (b* ((args (fargs hyp))
+                 ((when (not (and (consp args) ; must be exactly 1 arg
+                                  (null (cdr args)))))
                   (er hard? 'make-axe-rule-hyps-for-hyp "Ill-formed axe-syntaxp hyp ~x0 in rule ~x1." hyp rule-symbol)
                   (mv :bad-syntaxp-hyp *unrelievable-hyps* bound-vars))
                  ;; drop this?:
@@ -419,13 +420,13 @@
                  ;;  (er hard? 'make-axe-rule-hyps-for-hyp "The variable dag-array is bound in rule ~x0, but that variable has a special meaning in axe-syntaxp hyps and cannot appear in such rules."
                  ;;      rule-symbol)
                  ;;  (mv *unrelievable-hyps* bound-vars))
-                 (axe-syntaxp-expr (farg1 hyp))
-                 ((when (not (axe-syntaxp-exprp axe-syntaxp-expr)))
-                  (er hard? 'make-axe-rule-hyps-for-hyp "Ill-formed axe-syntaxp argument ~x0 in rule ~x1." axe-syntaxp-expr rule-symbol)
+                 (expr (first args))
+                 ((when (not (axe-syntaxp-exprp expr)))
+                  (er hard? 'make-axe-rule-hyps-for-hyp "Ill-formed axe-syntaxp argument ~x0 in rule ~x1." expr rule-symbol)
                   (mv :bad-syntaxp-argument *unrelievable-hyps* bound-vars))
                  ;; Drops dag-array formals passed as last args to functions:
-                 (processed-axe-syntaxp-expr (process-axe-syntaxp-expr axe-syntaxp-expr wrld))
-                 (mentioned-vars (free-vars-in-term processed-axe-syntaxp-expr)) ;dag-array has been perhaps removed
+                 (processed-expr (process-axe-syntaxp-expr expr wrld))
+                 (mentioned-vars (free-vars-in-term processed-expr)) ;dag-array has been perhaps removed
                  (allowed-vars bound-vars ;(cons 'dag-array bound-vars)
                                )
                  ((when (not (subsetp-eq mentioned-vars allowed-vars)))
@@ -434,17 +435,19 @@
                   (mv :unallowed-vars *unrelievable-hyps* bound-vars))
                  ;; TODO: Should we convert any calls of quote to axe-quotep?
                  )
-              (mv (erp-nil) `((:axe-syntaxp . ,processed-axe-syntaxp-expr)) bound-vars))
+              (mv (erp-nil) `((:axe-syntaxp . ,processed-expr)) bound-vars))
           (if (call-of 'axe-bind-free hyp) ;; (axe-bind-free <term> '<vars-to-bind>)
-              (b* (((when (not (and (true-listp hyp)
-                                    (eql 2 (len (fargs hyp))))))
+              (b* ((args (fargs hyp))
+                   ((when (not (and (consp args) ; must be exactly 2 args
+                                    (consp (cdr args))
+                                    (null (cddr args)))))
                     (er hard? 'make-axe-rule-hyps-for-hyp "The axe-bind-free hyp ~x0 is not well-formed (should be a call of axe-bind-free on exactly 2 arguments, a term and a quoted list of vars to bind)." hyp)
                     (mv :bad-bind-free-hyp *unrelievable-hyps* bound-vars))
                    ;; ((when (member-eq 'dag-array bound-vars))
                    ;;  (er hard? 'make-axe-rule-hyps-for-hyp "The variable DAG-ARRAY is bound in rule ~x0, but that variable has a special meaning in axe-bind-free hyps and cannot already be bound when an axe-bind-free hyp is encountered."
                    ;;      rule-symbol)
                    ;;  (mv *unrelievable-hyps* bound-vars))
-                   (axe-bind-free-expr (farg1 hyp))
+                   (axe-bind-free-expr (first args))
                    ((when (not (axe-bind-free-function-applicationp axe-bind-free-expr)))
                     (er hard? 'make-axe-rule-hyps-for-hyp "Ill-formed axe-bind-free argument ~x0 in rule ~x1." axe-bind-free-expr rule-symbol)
                     (mv :bad-bind-free-argument *unrelievable-hyps* bound-vars))
@@ -456,7 +459,7 @@
                     (er hard? 'make-axe-rule-hyps-for-hyp "Axe-bind-free hyp ~x0 in rule ~x1 mentions vars ~x2 that are not bound by the LHS or preceding hyps."
                         hyp rule-symbol (set-difference-eq mentioned-vars allowed-vars))
                     (mv :disallowed-vars-in-bind-free-hyp *unrelievable-hyps* bound-vars))
-                   (quoted-vars-to-bind (farg2 hyp))
+                   (quoted-vars-to-bind (second args))
                    ((when (not (quoted-symbol-listp quoted-vars-to-bind)))
                     (er hard? 'make-axe-rule-hyps-for-hyp "The second argument to an axe-bind-free hyp must be a quoted list of vars, but we got ~x0 in hyp ~x1." quoted-vars-to-bind hyp)
                     (mv :bad-bind-free-vars-arg *unrelievable-hyps* bound-vars))
@@ -475,23 +478,24 @@
                     (append vars-to-bind bound-vars)))
             (if (call-of 'axe-binding-hyp hyp) ; (axe-binding-hyp (equal <free-var> <expr-with-no-free-vars>))
                 ;; Special treatment for a binding hyp (see "binding hypothesis" in :doc free-variables to see how ACL2 handles these):
-                (b* (((when (not (and (true-listp (fargs hyp))
-                                      (= 1 (len (fargs hyp))))))
+                (b* ((args (fargs hyp))
+                     ((when (not (and (consp args) ; must be exactly 1 arg
+                                      (null (cdr args)))))
                       (er hard? 'make-axe-rule-hyps-for-hyp "Ill-formed axe-binding-hyp ~x0 in rule ~x1." hyp rule-symbol)
                       (mv :bad-axe-binding-hyp *unrelievable-hyps* bound-vars))
-                     (hyp (farg1 hyp)) ; strip the call of axe-binding-hyp
-                     ((when (not (and (consp hyp)
-                                      (eq 'equal (ffn-symb hyp)) ; (equal <free-var> <expr-with-no-free-vars>)
-                                      (= 2 (len (fargs hyp))) ; for guards
-                                      (variablep (farg1 hyp))
-                                      (not (member-equal (farg1 hyp) bound-vars))
+                     (equality (first args)) ; strip the call of axe-binding-hyp
+                     ((when (not (and (consp equality)
+                                      (eq 'equal (ffn-symb equality)) ; (equal <free-var> <expr-with-no-free-vars>)
+                                      (= 2 (len (fargs equality))) ; for guards
+                                      (variablep (farg1 equality))
+                                      (not (member-equal (farg1 equality) bound-vars))
                                       ;; second arg should already be known to be a pseudo-term
-                                      (subsetp-equal (free-vars-in-term (farg2 hyp)) bound-vars))))
+                                      (subsetp-equal (free-vars-in-term (farg2 equality)) bound-vars))))
                       (er hard? 'make-axe-rule-hyps-for-hyp "Ill-formed axe-binding-hyp ~x0 in rule ~x1." hyp rule-symbol)
                       (mv :bad-axe-binding-hyp *unrelievable-hyps* bound-vars))
                      ;; (- (cw "Note: Binding hyp detected in rule ~x0.~%" rule-symbol))
-                     (var (farg1 hyp))
-                     (expr (farg2 hyp))
+                     (var (farg1 equality))
+                     (expr (farg2 equality))
                      ;; We do not expand lambdas, but we do pre-simplify:
                      (expr (pre-simplify-term expr nil nil)) ; preserves equal, not iff
                      ((when (not (subsetp-equal (free-vars-in-term expr) bound-vars))) ; todo: prove this can't happen (but strengthen the guard)

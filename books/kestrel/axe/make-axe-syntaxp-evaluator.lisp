@@ -72,6 +72,16 @@
                                (free-vars-in-terms (rest terms)))))
   :hints (("Goal" :in-theory (enable free-vars-in-terms))))
 
+
+(defthmd symbol-listp-of-lookup-equal
+  (implies (symbol-list-listp (strip-cdrs alist))
+           (symbol-listp (lookup-equal key alist)))
+  :hints (("Goal" :in-theory (enable lookup-equal))))
+
+(local (in-theory (enable symbol-listp-of-lookup-equal)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Here, the arities exclude the final dag-array formal, if present.  This
 ;; arity thus corresponds to the number of args stored for the call in the
 ;; axe-syntaxp hyp.
@@ -104,18 +114,13 @@
            (integer-listp (strip-cars (bind-fns-to-arities fns wrld acc))))
   :hints (("Goal" :in-theory (enable bind-fns-to-arities))))
 
-(defthmd symbol-listp-of-lookup-equal
-  (implies (symbol-list-listp (strip-cdrs alist))
-           (symbol-listp (lookup-equal key alist)))
-  :hints (("Goal" :in-theory (enable lookup-equal))))
-
-(local (in-theory (enable symbol-listp-of-lookup-equal)))
-
 (defthm symbol-list-listp-of-strip-cdrs-of-bind-fns-to-arities
   (implies (and (symbol-list-listp (strip-cdrs acc))
                 (symbol-listp fns))
            (symbol-list-listp (strip-cdrs (bind-fns-to-arities fns wrld acc))))
   :hints (("Goal" :in-theory (enable bind-fns-to-arities))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund make-axe-syntaxp-evaluator-args (formals num)
   (declare (xargs :guard (and (symbol-listp formals)
@@ -179,6 +184,8 @@
               (args (rest args)))
          (declare (ignorable args ,(pack$ 'arg current-arity)))
          ,(make-axe-syntaxp-evaluator-cases (+ 1 current-arity) max-arity arity-alist eval-axe-syntaxp-function-application-fn wrld)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund max-val (vals current-max)
   (declare (xargs :guard (and (rational-listp vals)
