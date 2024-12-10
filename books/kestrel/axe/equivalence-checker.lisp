@@ -6539,7 +6539,7 @@
 ;;                         state)
 
 (defun convert-to-head-recursive-events-wrapper (original-function-name state)
-  (declare (xargs :mode :program ;todo
+  (declare (xargs :guard (symbolp original-function-name)
                   :stobjs state))
   (convert-to-head-recursive-events original-function-name
                                     (packnew original-function-name '-exit-test)
@@ -9589,8 +9589,6 @@
                                                              nil state))
                 (mv nil state))
               (make-rules-to-expose-tuple-elements (rest dag-lst) analyzed-function-table (append runes acc) state)))))
-;zz
-
 
 ;returns (mv erp dag state result-array-stobj)
 (defun get-dag-for-expr-no-theorem (expr interpreted-function-alist state result-array-stobj)
