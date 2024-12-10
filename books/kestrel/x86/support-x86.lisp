@@ -661,8 +661,7 @@
                 ;(< k 0)
                 (integerp x)
                 (equal (acl2::getbit 63 x) 0))
-           (equal (< x -9223372036854775808
-                     ) ;gen
+           (equal (< x -9223372036854775808) ;gen
                   (< x 0)))
   :hints (("Goal" :in-theory (e/d (acl2::getbit acl2::slice acl2::logtail)
                                   (acl2::slice-becomes-getbit
@@ -672,11 +671,12 @@
 ;rewrite: (< (BVCHOP 64 Y) 9223372036854775808)
 ;rewrite: (<= (BVCHOP 64 Y) (BVCHOP 63 Y))
 
+;; each of the 2 branches in the RHS has a clear RIP
 (defthm xw-rip-of-if-arg3
-  (equal (XW :RIP NIL (IF test rip1 rip2) x86)
+  (equal (xw :rip nil (if test rip1 rip2) x86)
          (if test
-             (XW :RIP NIL rip1 x86)
-           (XW :RIP NIL rip2 x86))))
+             (xw :rip nil rip1 x86)
+           (xw :rip nil rip2 x86))))
 
 ; not strictly necessary since not-mv-nth-0-of-rme-size$inline should fire, but this can get rid of irrelevant stuff
 (defthm mv-nth-0-of-rme-size-of-xw-when-app-view

@@ -139,6 +139,12 @@
            (equal (bvmult size x y)
                   (bvmult size y x))))
 
+;; not needed if we are commuting more generally
+(defthmd bvmult-commute-constant2
+  (implies (syntaxp (and (quotep k)
+                         (not (quotep x))))
+           (equal (bvmult size x (bvmult size k y))
+                  (bvmult size k (bvmult size x y)))))
 
 (defthm bvmult-when-arg1-is-not-an-integer
   (implies (not (integerp x))
