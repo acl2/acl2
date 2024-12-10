@@ -524,7 +524,8 @@
                                          (acons-fast var nodenum acc)
                                          dag-array-name dag-parent-array-name))))))
 
-(def-dag-builder-theorems
+(local
+ (def-dag-builder-theorems
   (make-nodes-for-vars-with-name vars alist-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc dag-array-name dag-parent-array-name)
   (mv erp result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
   :hyps ((alistp variable-replacement-alist)
@@ -532,21 +533,24 @@
          (and (natp alist-nodenum)
               (< alist-nodenum dag-len)))
   :dag-parent-array-name dag-parent-array-name
-  :dag-array-name dag-array-name)
+  :dag-array-name dag-array-name))
 
-(defthm <-of-mv-nth-3-of-make-nodes-for-vars-with-name
+(local
+ (defthm <-of-mv-nth-3-of-make-nodes-for-vars-with-name
   (implies (and (<= bound dag-len)
                 (natp dag-len)
                 )
            (<= bound (mv-nth 3 (make-nodes-for-vars-with-name vars alist-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc dag-array-name dag-parent-array-name))))
-  :hints (("Goal" :in-theory (enable make-nodes-for-vars-with-name))))
+  :hints (("Goal" :in-theory (enable make-nodes-for-vars-with-name)))))
 
-(defthm alistp-of-mv-nth-1-of-make-nodes-for-vars-with-name
+(local
+ (defthm alistp-of-mv-nth-1-of-make-nodes-for-vars-with-name
   (implies (alistp acc)
            (alistp (mv-nth 1 (make-nodes-for-vars-with-name vars alist-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc dag-array-name dag-parent-array-name))))
-  :hints (("Goal" :in-theory (enable make-nodes-for-vars-with-name))))
+  :hints (("Goal" :in-theory (enable make-nodes-for-vars-with-name)))))
 
-(defthm bounded-darg-listp-of-strip-cdrs-of-mv-nth-1-of-make-nodes-for-vars-with-name
+(local
+ (defthm bounded-darg-listp-of-strip-cdrs-of-mv-nth-1-of-make-nodes-for-vars-with-name
   (implies (and (bounded-darg-listp (strip-cdrs acc) dag-len)
                 (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                 (natp alist-nodenum)
@@ -555,7 +559,7 @@
            (bounded-darg-listp (strip-cdrs (mv-nth 1 (make-nodes-for-vars-with-name vars alist-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc dag-array-name dag-parent-array-name)))
                                            (mv-nth 3 (make-nodes-for-vars-with-name vars alist-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc dag-array-name dag-parent-array-name))
                                            ))
-  :hints (("Goal" :in-theory (enable make-nodes-for-vars-with-name))))
+  :hints (("Goal" :in-theory (enable make-nodes-for-vars-with-name)))))
 
 ;; (defthm bounded-dag-parent-arrayp-of-mv-nth-4-of-make-nodes-for-vars-with-name
 ;;   (implies (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
@@ -568,11 +572,12 @@
 ;;            :in-theory (e/d (make-nodes-for-vars-with-name)
 ;;                            (pseudo-dag-arrayp)))))
 
-(defthm dag-constant-alistp-of-mv-nth-5-of-make-nodes-for-vars-with-name
+(local
+ (defthm dag-constant-alistp-of-mv-nth-5-of-make-nodes-for-vars-with-name
   (implies (and (dag-constant-alistp dag-constant-alist)
                 (natp dag-len))
            (dag-constant-alistp (mv-nth 5 (make-nodes-for-vars-with-name vars alist-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc dag-array-name dag-parent-array-name))))
-  :hints (("Goal" :in-theory (enable make-nodes-for-vars-with-name))))
+  :hints (("Goal" :in-theory (enable make-nodes-for-vars-with-name)))))
 
 ;; (defthm all-<-strip-cdrs-of-mv-nth-5-of-make-nodes-for-vars-with-name
 ;;   (implies (and (bounded-dag-constant-alistp dag-constant-alist dag-len)
@@ -582,19 +587,21 @@
 ;;                   (mv-nth 3 (make-nodes-for-vars-with-name vars alist-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc dag-array-name dag-parent-array-name))))
 ;;   :hints (("Goal" :in-theory (enable make-nodes-for-vars-with-name))))
 
-(defthm bounded-dag-constant-alistp-of-mv-nth-5-of-make-nodes-for-vars-with-name
+(local
+ (defthm bounded-dag-constant-alistp-of-mv-nth-5-of-make-nodes-for-vars-with-name
   (implies (and (bounded-dag-constant-alistp dag-constant-alist dag-len)
                 (natp dag-len))
            (bounded-dag-constant-alistp (mv-nth 5 (make-nodes-for-vars-with-name vars alist-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc dag-array-name dag-parent-array-name))
                                        (mv-nth 3 (make-nodes-for-vars-with-name vars alist-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc dag-array-name dag-parent-array-name))))
-  :hints (("Goal" :in-theory (enable make-nodes-for-vars-with-name))))
+  :hints (("Goal" :in-theory (enable make-nodes-for-vars-with-name)))))
 
-(defthm dag-variable-alistp-of-mv-nth-6-of-make-nodes-for-vars-with-name
+(local
+ (defthm dag-variable-alistp-of-mv-nth-6-of-make-nodes-for-vars-with-name
   (implies (and (dag-variable-alistp dag-variable-alist)
                 ;; (natp dag-len)
                 )
            (dag-variable-alistp (mv-nth 6 (make-nodes-for-vars-with-name vars alist-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc dag-array-name dag-parent-array-name))))
-  :hints (("Goal" :in-theory (enable make-nodes-for-vars-with-name))))
+  :hints (("Goal" :in-theory (enable make-nodes-for-vars-with-name)))))
 
 ;; (defthm all-<-strip-cdrs-of-mv-nth-6-of-make-nodes-for-vars-with-name
 ;;   (implies (and (dag-variable-alistp dag-variable-alist)
@@ -604,14 +611,16 @@
 ;;                   (mv-nth 3 (make-nodes-for-vars-with-name vars alist-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc dag-array-name dag-parent-array-name))))
 ;;   :hints (("Goal" :in-theory (enable make-nodes-for-vars-with-name))))
 
-(defthm bounded-dag-variable-alistp-of-mv-nth-6-of-make-nodes-for-vars-with-name
+(local
+ (defthm bounded-dag-variable-alistp-of-mv-nth-6-of-make-nodes-for-vars-with-name
   (implies (and (bounded-dag-variable-alistp dag-variable-alist dag-len)
                 (natp dag-len))
            (bounded-dag-variable-alistp (mv-nth 6 (make-nodes-for-vars-with-name vars alist-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc dag-array-name dag-parent-array-name))
                                         (mv-nth 3 (make-nodes-for-vars-with-name vars alist-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc dag-array-name dag-parent-array-name))))
-  :hints (("Goal" :in-theory (enable make-nodes-for-vars-with-name))))
+  :hints (("Goal" :in-theory (enable make-nodes-for-vars-with-name)))))
 
-(defthm pseudo-dag-arrayp-after-make-nodes-for-vars-with-name
+(local
+ (defthm pseudo-dag-arrayp-after-make-nodes-for-vars-with-name
   (implies (and (bounded-darg-listp (strip-cdrs acc) dag-len)
                 (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                 (natp alist-nodenum)
@@ -621,7 +630,7 @@
                               (mv-nth 2 (make-nodes-for-vars-with-name vars alist-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc dag-array-name dag-parent-array-name))
                               (mv-nth 3 (make-nodes-for-vars-with-name vars alist-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc dag-array-name dag-parent-array-name))
                               ))
-  :hints (("Goal" :in-theory (enable make-nodes-for-vars-with-name))))
+  :hints (("Goal" :in-theory (enable make-nodes-for-vars-with-name)))))
 
 ;this inlines any dag found inside a call to the dag evaluator, but only if the interpreted-function-alist is a subset of the one passed in
 ;could consider returning an interpreted-function-alist for the created dag?
