@@ -6077,7 +6077,6 @@
 
     ;; Macro helper function for ,def-simplified-dag-name
     ;; Returns (mv erp event state).
-    ;; todo: check if name already exists
     ;; TODO: Perhaps add an option to take a rule-alist.
     (defund ,def-simplified-dag-fn-name (name ; the name of the constant to create
                                          dag
@@ -6111,7 +6110,7 @@
                                   (symbolp (car whole-form))
                                   (ilks-plist-worldp (w state)))
                       :stobjs state))
-      (b* (((when (command-is-redundantp whole-form state))
+      (b* (((when (command-is-redundantp whole-form state)) ; will check the table named (pack$ def-simplified-dag-name '-table)
             (mv nil '(value-triple :invisible) state))
            ((when (not (starts-and-ends-with-starsp name))) ; todo: stricter check?
             (er hard? ',def-simplified-dag-fn-name "The name ~x0 is not a legal constant name." name)
@@ -6126,7 +6125,9 @@
            ((when erp) (mv erp nil state)))
         (mv (erp-nil)
             `(progn (defconst ,name ',dag-or-quotep)
-                    (with-output :off :all (table ,',(pack$ def-simplified-dag-name '-table) ',whole-form ':fake)))
+               (with-output :off :all (table ,',(pack$ def-simplified-dag-name '-table) ',whole-form ':fake))
+               (value-triple ',name) ; print the name
+               )
             state)))
 
     ;; A utility to simplify a dag and name the resulting DAG.
