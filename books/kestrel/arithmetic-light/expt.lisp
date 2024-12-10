@@ -260,6 +260,13 @@
          (/ (expt r i)))
   :hints (("Goal" :in-theory (enable expt))))
 
+(defthmd /-of-expt
+  (equal (/ (expt r i))
+         (expt r (- i)))
+  :hints (("Goal" :in-theory (enable expt-of-+))))
+
+(theory-invariant (incompatible (:rewrite expt-of-unary--) (:rewrite /-of-expt)))
+
 ;seems helpful (e.g., in proving that 2^(i-1) + x < 2^i when x < 2^(i-1)).
 (defthm expt-half-linear
   (implies (integerp i)
@@ -453,6 +460,18 @@
                                    integerp-of-expt-when-natp
                                    INTEGERP-OF-EXPT-HELPER))
            :use (:instance integerp-of-expt-when-natp (r 2) (i (+ i j))))))
+
+(defthm integerp-of-*-of-expt-and-/-of-expt
+  (implies (and (integerp i)
+                (integerp j))
+           (equal (integerp (* (expt 2 i) (/ (expt 2 j))))
+                  (<= j i)))
+  :hints (("Goal" :in-theory (e/d (expt-of-+)
+                                  ( ;integerp-of-expt
+                                   ;;<-OF-0-AND-EXPT
+                                   integerp-of-expt-when-natp
+                                   INTEGERP-OF-EXPT-HELPER))
+           :use (:instance integerp-of-expt-when-natp (r 2) (i (+ i (- j)))))))
 
 ;gen the 1
 (defthm *-of-expt-and-expt-of-1minus

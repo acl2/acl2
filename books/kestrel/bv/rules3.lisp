@@ -1917,9 +1917,10 @@
                               (+ -1 (expt 2 32))))))
   :hints (("Goal" :in-theory (enable bvplus bvchop-of-sum-cases BVCHOP-WHEN-I-IS-NOT-AN-INTEGER))))
 
+;move
 (defthm logtail-of-one-more
-  (implies (and (integerp x)
-;                (equal n 32)
+  (implies (and (syntaxp (not (quotep x)))
+                (integerp x)
                 (posp n))
            (equal (logtail n (+ 1 x))
                   (if (equal (+ -1 (expt 2 n)) (bvchop n x))
