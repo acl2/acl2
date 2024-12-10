@@ -60,6 +60,15 @@
               (dag-constant-alistp alist)))
   :hints (("Goal" :in-theory (enable dag-constant-alistp))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund empty-dag-constant-alist ()
+  (declare (xargs :guard t))
+  ;; can't use anything else here, such as a fast-alist size or name, since we
+  ;; call strip-cars and strip-cdrs (for now).  Also, this is not (yet) a fast alist!
+  nil
+  )
+
 ;;;
 ;;; bounded-dag-constant-alistp
 ;;;

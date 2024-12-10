@@ -367,7 +367,7 @@
 
 (defthm add-of-mul-of-power-of-2-and-add
   (implies (and (syntaxp (quotep k))
-                (acl2::power-of-2p k)
+                (power-of-2p k)
                 (bitp x)
                 (unsigned-byte-p (+ -1 (acl2::integer-length k)) y)
                 (posp p)
@@ -378,11 +378,11 @@
                        z
                        p)))
   :hints (("Goal" :in-theory (enable bitp acl2::bvcat acl2::logapp add
-                                     ACL2::POWER-OF-2P))))
+                                     POWER-OF-2P))))
 
 (defthm add-of-mul-of-power-of-2
   (implies (and (syntaxp (quotep k))
-                (acl2::power-of-2p k)
+                (power-of-2p k)
                 (bitp x)
                 (unsigned-byte-p (+ -1 (acl2::integer-length k)) y)
                 (posp p))
@@ -390,7 +390,7 @@
                   (mod (acl2::bvcat 1 x (+ -1 (acl2::integer-length k)) y)
                        p)))
   :hints (("Goal" :in-theory (enable bitp acl2::bvcat acl2::logapp add
-                                     ACL2::POWER-OF-2P))))
+                                     POWER-OF-2P))))
 
 (defthm bvcat-intro--4--2-simple
   (implies (and (acl2::bitp x)
@@ -453,7 +453,7 @@
 
 (defthm add-of-mul-of-negated-power-of-2-and-add
   (implies (and (syntaxp (quotep k))
-                (acl2::power-of-2p (- k))
+                (power-of-2p (- k))
                 (bitp x)
                 (unsigned-byte-p (+ -1 (acl2::integer-length (- k))) y)
                 (posp p)
@@ -465,13 +465,13 @@
   :hints (("Goal"
            :use (:instance ACL2::MOD-OF-MINUS-ARG1 (x (+ K P (- Y))) (y p))
            :in-theory (e/d (bitp acl2::bvcat acl2::logapp add NEG
-                                 ACL2::POWER-OF-2P
+                                 POWER-OF-2P
                                  ) (ACL2::MOD-OF-MINUS-ARG1)))))
 
 ;slow
 (defthm add-of-mul-of-negated-power-of-2-and-add-alt
   (implies (and (syntaxp (quotep k))
-                (acl2::power-of-2p (- k))
+                (power-of-2p (- k))
                 (bitp x)
                 (unsigned-byte-p (+ -1 (acl2::integer-length (- k))) y)
                 (posp p)
@@ -485,18 +485,18 @@
 
 (defthm add-of-mul-of-negated-power-of-2
   (implies (and (syntaxp (quotep k))
-                (acl2::power-of-2p (- k))
+                (power-of-2p (- k))
                 (bitp x)
                 (unsigned-byte-p (+ -1 (acl2::integer-length (- k))) y)
                 (posp p))
            (equal (add (mul k x p) (neg y p) p)
                   (neg (acl2::bvcat 1 x (+ -1 (acl2::integer-length (- k))) y) p)))
   :hints (("Goal" :in-theory (enable bitp acl2::bvcat acl2::logapp add NEG
-                                     ACL2::POWER-OF-2P))))
+                                     POWER-OF-2P))))
 
 (defthm add-of-mul-of-negated-power-of-2-alt
   (implies (and (syntaxp (quotep k))
-                (acl2::power-of-2p (- k))
+                (power-of-2p (- k))
                 (bitp x)
                 (unsigned-byte-p (+ -1 (acl2::integer-length (- k))) y)
                 (posp p))
@@ -625,7 +625,7 @@
 (defthm add-of-mul-of-add-of-mul-when-double
   (implies (and (syntaxp (and (quotep k)
                               (quotep k2)))
-                ;;(acl2::power-of-2p k)
+                ;;(power-of-2p k)
                 (equal k2 (* 2 k))
                 (integerp k)
                 (bitp x)
@@ -636,10 +636,10 @@
   :hints (("Goal" :in-theory (enable bitp MUL ADD triple double))))
 
 (defthm expt-of-CEILING-OF-LG-when-power-of-2p
-  (implies (acl2::power-of-2p x)
+  (implies (power-of-2p x)
            (equal (EXPT 2 (ACL2::CEILING-OF-LG x))
                   x))
-  :hints (("Goal" :in-theory (enable acl2::power-of-2p
+  :hints (("Goal" :in-theory (enable power-of-2p
                                      ACL2::CEILING-OF-LG))))
 
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
@@ -660,25 +660,28 @@
   :hints (("Goal" :cases ((equal n 0))
            :in-theory (enable acl2::expt-of-+))))
 
-(defthm power-of-2p-of-*-of-/
+(defthm acl2::power-of-2p-of-*-of-/
   (implies (and (< k1 k2)
-                (acl2::power-of-2p k1)
-                (acl2::power-of-2p k2))
-           (acl2::power-of-2p (* (/ k1) k2)))
+                (power-of-2p k1)
+                (power-of-2p k2))
+           (power-of-2p (* (/ k1) k2)))
   :hints (("Goal" :use (:instance acl2::power-of-2p-of-expt-2
                                   (n (- (acl2::lg k2)
                                         (acl2::lg k1))))
-           :expand ((ACL2::POWER-OF-2P K1)
-                    (ACL2::POWER-OF-2P K2))
+           :expand ((POWER-OF-2P K1)
+                    (POWER-OF-2P K2))
            :in-theory (e/d (ACL2::EXPT-OF-+)
                            (acl2::power-of-2p-of-expt-2)))))
 
 (defthm integerp-of-*-of-/-when-POWER-OF-2P-and-POWER-OF-2P
   (implies (and (< K1 K2)
-                (ACL2::POWER-OF-2P K1)
-                (ACL2::POWER-OF-2P K2))
+                (POWER-OF-2P K1)
+                (POWER-OF-2P K2))
            (INTEGERP (* (/ K1) K2)))
-  :hints (("Goal" :in-theory (enable ACL2::POWER-OF-2P))))
+  :hints (("Goal" :use (:instance acl2::integerp-of-*-of-expt-and-/-of-expt
+                                  (i (+ -1 (INTEGER-LENGTH K2)))
+                                  (j (+ -1 (INTEGER-LENGTH K1))))
+           :in-theory (e/d (POWER-OF-2P) (acl2::integerp-of-*-of-expt-and-/-of-expt)))))
 
 (local (include-book "kestrel/arithmetic-light/times-and-divide" :dir :system))
 
@@ -687,8 +690,8 @@
                               (quotep k2)))
                 (acl2::axe-bind-free (acl2::bind-bv-size-axe bv2 'bv2size dag-array) '(bv2size))
                 (< k1 k2)
-                (acl2::power-of-2p k1)
-                (acl2::power-of-2p k2)
+                (power-of-2p k1)
+                (power-of-2p k2)
                 (unsigned-byte-p (acl2::lg (/ k2 k1)) bv1)
                 (unsigned-byte-p bv2size bv2)
                 (integerp k1)
@@ -702,7 +705,7 @@
                                                (acl2::lg (/ k2 k1))
                                                bv1)
                                p)))
-  :hints (("Goal" :in-theory (e/d (ACL2::BVCAT acl2::logapp ADD mul acl2::power-of-2p)
+  :hints (("Goal" :in-theory (e/d (ACL2::BVCAT acl2::logapp ADD mul power-of-2p)
                                   (ACL2::UNSIGNED-BYTE-P-OF-+-WHEN-<-OF-LOGTAIL-AND-EXPT
                                    PFIELD::MOD-WHEN-FEP
                                    ACL2::<-OF-*-SAME-LINEAR-SPECIAL
@@ -713,8 +716,8 @@
                               (quotep k2)))
                 (acl2::axe-bind-free (acl2::bind-bv-size-axe bv2 'bv2size dag-array) '(bv2size))
                 (< k1 k2)
-                (acl2::power-of-2p k1)
-                (acl2::power-of-2p k2)
+                (power-of-2p k1)
+                (power-of-2p k2)
                 (unsigned-byte-p (acl2::lg (/ k2 k1)) bv1)
                 (unsigned-byte-p bv2size bv2)
                 (integerp k1)
@@ -795,15 +798,15 @@
   :hints (("Goal" :in-theory (e/d (acl2::--becomes-*-of--1) (ACL2::*-OF--1)))))
 
 (local
- (defthm power-of-2p-helper
-   (implies (and (acl2::power-of-2p (- k1))
-                 (acl2::power-of-2p (- k2))
+ (defthm acl2::power-of-2p-helper
+   (implies (and (power-of-2p (- k1))
+                 (power-of-2p (- k2))
                  (< k2 k1))
-            (acl2::power-of-2p (* (/ k1) k2)))
-   :hints (("Goal" :use (:instance power-of-2p-of-*-of-/
+            (power-of-2p (* (/ k1) k2)))
+   :hints (("Goal" :use (:instance acl2::power-of-2p-of-*-of-/
                                    (k1 (- k1))
                                    (k2 (- k2)))
-            :in-theory (disable power-of-2p-of-*-of-/)))))
+            :in-theory (disable acl2::power-of-2p-of-*-of-/)))))
 
 (defthm add-of-mul-and-mul-combine-negated
   (implies (and (syntaxp (and (quotep k1)
@@ -812,8 +815,8 @@
                 (< k1 0)
                 (< k2 0)
                 (< (- k1) (- k2))
-                (acl2::power-of-2p (- k1))
-                (acl2::power-of-2p (- k2))
+                (power-of-2p (- k1))
+                (power-of-2p (- k2))
                 (unsigned-byte-p (acl2::lg (/ k2 k1)) bv1)
                 (unsigned-byte-p bv2size bv2)
                 (integerp k1)
@@ -842,8 +845,8 @@
                 (< k1 0)
                 (< k2 0)
                 (< (- k1) (- k2))
-                (acl2::power-of-2p (- k1))
-                (acl2::power-of-2p (- k2))
+                (power-of-2p (- k1))
+                (power-of-2p (- k2))
                 (unsigned-byte-p (acl2::lg (/ k2 k1)) bv1)
                 (unsigned-byte-p 1 bv2)
                 (integerp k1)
@@ -866,8 +869,8 @@
                 (< k1 0)
                 (< k2 0)
                 (< (- k1) (- k2))
-                (acl2::power-of-2p (- k1))
-                (acl2::power-of-2p (- k2))
+                (power-of-2p (- k1))
+                (power-of-2p (- k2))
                 (unsigned-byte-p (acl2::lg (/ k2 k1)) bv1)
                 (unsigned-byte-p bv2size bv2)
                 (integerp k1)
