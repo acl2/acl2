@@ -2559,6 +2559,17 @@ You are using version ~s.~s.~s."
    (when (and (not use-acl2-proclaims)
               (eq *do-proclaims* :gcl))
      (compiler::make-all-proclaims "*.fn"))
+   #+gcl-2.7.0+
+
+; Camm Maguire points out that the following call of si::do-recomp will
+; invoke a process that can recompile to avoid signature conflicts.  The
+; handler-bind is an attempt to avoid warnings in that process.
+
+   (handler-bind
+       ((warning (lambda (c)
+                   (declare (ignore c))
+                   (invoke-restart 'muffle-warning))))
+     (si::do-recomp))
    (note-compile-ok)))
 
 #+gcl

@@ -937,7 +937,7 @@
         ;; Statelist
         NIL
         ;; Occurences
-        (list
+        (list$
          ;;  Decoded state
          ,@(id-occs-from-decoded-state state-names 0)
          ;;  Common subexpressions
