@@ -582,8 +582,7 @@
                   (if (< key n)
                       (bvchop-list element-size (nthcdr n (true-list-fix lst)))
                     (bv-array-write element-size (- len n) (- key n) val (nthcdr n lst)))))
-  :hints (("Goal" :in-theory (e/d (UPDATE-NTH2 bv-array-write ceiling-of-lg NTHCDR-of-true-list-fix)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable UPDATE-NTH2 bv-array-write ceiling-of-lg NTHCDR-of-true-list-fix))))
 
 (defthm nthcdr-of-bv-array-write-better
   (implies (and (<= n len)
@@ -598,8 +597,7 @@
                     (bv-array-write element-size (- len n) (- key n) val (nthcdr n lst)))))
   :hints (("Goal"
            :cases ((< key n))
-           :in-theory (e/d (update-nth2 bv-array-write-opener)
-                           ()))))
+           :in-theory (enable update-nth2 bv-array-write-opener))))
 
 (defthmd bv-array-write-of-bv-array-write-when-length-is-1
   (equal (bv-array-write size 1 index1 val1 (bv-array-write size 1 index2 val2 data))
@@ -633,7 +631,6 @@
 ;;                 (natp key))
 ;;            (equal (bv-array-write element-size len key val (logext-list size lst))
 ;;                   (bv-array-write element-size len key val lst)))
-;;   :otf-flg t
 ;;   :hints (("Goal" :cases ((< key len))
 ;;            :use ((:instance bvchop-list-of-take-of-bvchop-list
 ;;                            (size element-size)
@@ -654,7 +651,6 @@
 ;;                 (INTEGERP SIZE2))
 ;;            (EQUAL (BV-ARRAY-READ SIZE LEN INDEX (LOGEXT-LIST SIZE2 LST))
 ;;                   (BV-ARRAY-READ SIZE LEN INDEX LST)))
-;;   :otf-flg t
 ;;   :HINTS
 ;;   (("Goal" :cases ((< INDEX (LEN LST)))
 ;;     :IN-THEORY (E/d (BVCHOP-WHEN-I-IS-NOT-AN-INTEGER
