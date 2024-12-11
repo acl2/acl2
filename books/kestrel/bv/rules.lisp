@@ -1280,11 +1280,8 @@
 ;;                 (natp n))
 ;;            (equal (signed-byte-p m (LOGAPP n a b))
 ;;                   (signed-byte-p (- m n) b)))
-;;   :otf-flg t
 ;;   :hints (("Goal" :in-theory (enable signed-byte-p logapp))))
 
-
-;;   :otf-flg t
 ;;   :hints (("Goal" :use ((:instance integer-squeeze-0-1 (x (* (/ (EXPT 2 N)) (BVCHOP N A))))
 ;;                          (:instance multiply-both-sides-hack (x (+ (BVCHOP N A) (* B (EXPT 2 N)))) (y (EXPT 2 (+ -1 M))) (z (/ (expt 2 n))))
 ;;                          (:instance multiply-both-sides-hack (x (+ (BVCHOP N A) (* B (EXPT 2 N)))) (y (- (EXPT 2 (+ -1 M)))) (z (/ (expt 2 n))))
@@ -1376,7 +1373,6 @@
 ;;                  (integerp highval))
 ;;             (equal (signed-byte-p n (logapp lowsize lowval highval))
 ;;                    (signed-byte-p (- n lowsize) highval)))
-;;    :otf-flg t
 ;;    :hints (("Goal" :in-theory (enable))))
 
 ;; (defthm bvxor-1-equal-0
