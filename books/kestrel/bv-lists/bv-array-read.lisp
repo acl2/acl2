@@ -200,8 +200,7 @@
          (bv-array-read (min (nfix n) (ifix element-size)) len index data))
   :hints (("Goal"
 ;           :cases ((natp n))
-           :in-theory (e/d (bv-array-read natp)
-                           ()))))
+           :in-theory (enable bv-array-read natp))))
 
 (defthm bvchop-of-bv-array-read-same
   (equal (bvchop element-size (bv-array-read element-size len index data))
