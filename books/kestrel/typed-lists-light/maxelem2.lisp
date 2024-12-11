@@ -51,8 +51,7 @@
   (implies (and (subsetp-equal lst1 lst2)
                 (consp lst1) ;handle..
                 )
-           (equal (< (MAXELEM lst2) (MAXELEM lst1))
-                  nil))
+           (not (< (MAXELEM lst2) (MAXELEM lst1))))
   :hints (;; ("Subgoal *1/5.1" :use (:instance maxelem-of-remove1 (lst lst2) (a (car lst1)))
           ;;  :in-theory (e/d (maxelem ;len-less-than-2-rewrite
           ;;                   ) ( maxelem-of-remove1)))
