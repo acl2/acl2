@@ -24,6 +24,7 @@
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
+(local (include-book "kestrel/utilities/mv-nth" :dir :system))
 
 ;; Note that DAGs are usually built in fast ways that use array, not using the functions in this book
 

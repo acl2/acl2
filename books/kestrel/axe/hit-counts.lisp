@@ -260,7 +260,7 @@
              (or (natp (lookup-equal sym alist))
                  (not (lookup-equal sym alist))))
     :rule-classes :type-prescription
-    :otf-flg t
+    :otf-flg t ; why?
     :hints (("Goal" :in-theory (e/d (hit-count-alistp lookup-equal assoc-equal STRIP-CDRS) (CDR-IFF))))))
 
 (local
@@ -497,4 +497,3 @@
 (defthm hit-countsp-of-initialize-hit-counts
   (hit-countsp (initialize-hit-counts arga))
   :hints (("Goal" :in-theory (enable initialize-hit-counts))))
-

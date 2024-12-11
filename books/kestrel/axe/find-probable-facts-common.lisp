@@ -35,6 +35,7 @@
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/typed-lists-light/rational-lists" :dir :system))
+(local (include-book "kestrel/utilities/mv-nth" :dir :system))
 
 (local (in-theory (e/d (true-listp-of-cdr-strong)
                        (true-listp-of-cdr))))
