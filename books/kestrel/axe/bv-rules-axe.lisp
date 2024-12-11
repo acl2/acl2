@@ -2291,3 +2291,10 @@
                       nil))))
   :hints (("Goal" :use equal-of-bitor-and-constant
            :in-theory (disable equal-of-bitor-and-constant))))
+
+;; Reorders the args to EQUAL in the LHS
+;; Only needed for Axe.
+(defthmd logext-does-nothing-rewrite-alt
+  (implies (posp size)
+           (equal (equal (logext size x) x)
+                  (signed-byte-p size x))))
