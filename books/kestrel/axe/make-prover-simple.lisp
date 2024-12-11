@@ -966,6 +966,7 @@
          (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
          (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
          (local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system)) ; reduce?
+         (local (include-book "kestrel/utilities/mv-nth" :dir :system))
 
          (set-inhibit-warnings "double-rewrite") ; todo: think about these
 

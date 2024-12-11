@@ -414,6 +414,10 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable read))))
 
+; just for axe
+(defthmd natp-of-read
+  (natp (read n addr x86)))
+
 (defthm unsigned-byte-p-of-read
   (implies (<= (* n 8) size)
            (equal (unsigned-byte-p size (read n addr x86))

@@ -306,7 +306,6 @@
 ;;                         (* 8 (bvminus 48 offset2 offset1) ;(- offset2 offset1) ;(- (bvchop 48 offset2) (bvchop 48 offset1))
 ;;                            )
 ;;                         val)))
-;;  :otf-flg t
 ;;  :hints (("Goal" :expand ((write 4 (+ addr offset1) val x86)
 ;;                           (write 3 (+ 1 addr offset1)
 ;;                                  (logtail 8 val)
