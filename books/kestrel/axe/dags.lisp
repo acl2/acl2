@@ -21,7 +21,6 @@
 ;(include-book "kestrel/alists-light/lookup-eq" :dir :system)
 ;(include-book "kestrel/utilities/polarity" :dir :system)
 (include-book "kestrel/utilities/printing" :dir :system) ;for print-list
-(include-book "kestrel/utilities/mv-nth" :dir :system) ; could make local, but many other books may need this
 (include-book "kestrel/acl2-arrays/bounded-nat-alists" :dir :system) ; for bounded-natp-alistp
 (include-book "kestrel/typed-lists-light/maxelem" :dir :system)
 (include-book "kestrel/typed-lists-light/all-natp" :dir :system) ; drop?
@@ -31,6 +30,7 @@
 (include-book "keep-nodenum-dargs")
 ;(include-book "darg-listp")
 ;(include-book "tools/flag" :dir :system)
+(local (include-book "kestrel/utilities/mv-nth" :dir :system))
 (local (include-book "kestrel/alists-light/acons" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
@@ -561,10 +561,7 @@
                 (natp n)
                 (< 0 (- (len dag) n)) ;must be at least one node left)
                 )
-           (equal (pseudo-dagp (nthcdr n dag))
-                  t
-                  ))
-  :otf-flg t
+           (pseudo-dagp (nthcdr n dag)))
   :hints (("Goal" :in-theory (e/d (pseudo-dagp
                                    natp-of-car-of-nth-when-pseudo-dagp-aux
                                    consp-of-nth-when-pseudo-dagp-aux
