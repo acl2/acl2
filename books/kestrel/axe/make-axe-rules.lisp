@@ -603,7 +603,6 @@
  (defthm axe-rule-hyp-listp-of-mv-nth-1-of-make-axe-rule-hyps-for-hyp
    (implies (pseudo-termp hyp)
             (axe-rule-hyp-listp (mv-nth 1 (make-axe-rule-hyps-for-hyp hyp bound-vars rule-symbol wrld))))
-   :otf-flg t
    :hints (("Goal" :in-theory (e/d (make-axe-rule-hyps-for-hyp
                                     axe-rule-hypp
                                     symbolp-when-pseudo-termp

@@ -447,5 +447,4 @@
 ;;                   (or (sbvlt highsize highval (slice (+ -1 size) lowsize x))
 ;;                       (and (equal (bvchop highsize highval) (slice (+ -1 size) lowsize x))
 ;;                            (bvlt lowsize lowval (bvchop lowsize x))))))
-;;   :otf-flg t
 ;;   :hints (("Goal" :in-theory (enable sbvlt-rewrite boolor booland))))

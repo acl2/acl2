@@ -544,7 +544,6 @@
 ;ffffixme could lead to crashes?
 (skip-proofs
 (verify-guards apply-axe-evaluator
-  :otf-flg t
   :hints (("Goal" :in-theory (e/d (TRUE-LIST-FIX
                                    true-listp-of-cadr-of-assoc-equal-when-interpreted-function-alistp
                                    symbol-listp-of-cadr-of-assoc-equal-when-interpreted-function-alistp)
