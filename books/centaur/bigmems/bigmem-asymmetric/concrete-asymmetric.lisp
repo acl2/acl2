@@ -33,8 +33,9 @@
 ;   Original Author(s): Warren A. Hunt, Jr <warren.hunt@intel.com>
 
 ; Matt K. mod to avoid array-dimension-limit error for LispWorks and CMUCL,
-; which is 536870911 but is exceeded by *mem-size* = 6442450944.
-; cert_param: ( non-lispworks , non-cmucl )
+; which is 536870911, and for GCL 2.7.0 (and presumably later versions), which
+; is 268435456, as these are exceeded by *mem-size* = 6442450944.
+; cert_param: ( non-lispworks , non-cmucl , non-gcl)
 
 (in-package "BIGMEM-ASYMMETRIC")
 

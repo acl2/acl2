@@ -4939,7 +4939,10 @@ COLLATZ-1
 
 ACL2 !>>>(TABLE PARTIAL-FUNCTIONS-TABLE
           'COLLATZ-1-LIMIT
-          (APPEND?
+          (PUT-ASSOC-EQ-ALIST
+           (CDR (ASSOC-EQ 'COLLATZ-1-LIMIT
+                          (TABLE-ALIST 'PARTIAL-FUNCTIONS-TABLE
+                                       WORLD)))
            '((COLLATZ-1
               COLLATZ-1-LIMIT COLLATZ-1-LIMIT-CHANGE
               COLLATZ-1-LIMIT-STABLE
@@ -4959,10 +4962,7 @@ ACL2 !>>>(TABLE PARTIAL-FUNCTIONS-TABLE
                                                 (AND (INTEGERP K) (EVENP K)))
                                               (DF/ N 2)
                                             (DF+ 1 (DF* 3 N)))
-                                          LIMIT))))))))
-           (CDR (ASSOC-EQ 'COLLATZ-1-LIMIT
-                          (TABLE-ALIST 'PARTIAL-FUNCTIONS-TABLE
-                                       WORLD)))))
+                                          LIMIT))))))))))
 
 Summary
 Form:  ( TABLE PARTIAL-FUNCTIONS-TABLE ...)
@@ -5119,7 +5119,10 @@ COLLATZ-2
 
 ACL2 !>>>(TABLE PARTIAL-FUNCTIONS-TABLE
           'COLLATZ-2-LIMIT
-          (APPEND?
+          (PUT-ASSOC-EQ-ALIST
+           (CDR (ASSOC-EQ 'COLLATZ-2-LIMIT
+                          (TABLE-ALIST 'PARTIAL-FUNCTIONS-TABLE
+                                       WORLD)))
            '((COLLATZ-2
               COLLATZ-2-LIMIT COLLATZ-2-LIMIT-CHANGE
               COLLATZ-2-LIMIT-STABLE
@@ -5140,10 +5143,7 @@ ACL2 !>>>(TABLE PARTIAL-FUNCTIONS-TABLE
                                                 (AND (INTEGERP K) (EVENP K)))
                                               (DF/ N 2)
                                             (DF+ 1 (DF* 3 N)))
-                                          LIMIT))))))))
-           (CDR (ASSOC-EQ 'COLLATZ-2-LIMIT
-                          (TABLE-ALIST 'PARTIAL-FUNCTIONS-TABLE
-                                       WORLD)))))
+                                          LIMIT))))))))))
 
 Summary
 Form:  ( TABLE PARTIAL-FUNCTIONS-TABLE ...)

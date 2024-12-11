@@ -2171,6 +2171,15 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
   (list-macro args))
 
+(defmacro list$ (&rest args)
+
+; The logical definitions agree for this macro and list.  But in raw Lisp, a
+; macro call of list$ expands to a nest of cons calls, which allows GCL version
+; 2.7.0 (and presumably later versions) to avoid causing an error when list is
+; called on too many arguments.
+
+  (list-macro args))
+
 (defun and-macro (lst)
   (declare (xargs :guard t))
   (if (consp lst)
@@ -2309,9 +2318,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defun len (x)
   (declare (xargs :guard t :mode :program))
   #-acl2-loop-only
-  (loop with acc of-type fixnum = 0
+  (loop with acc of-type (and fixnum (integer 0 *)) = 0
         for nil on x
-        do (if (eql (the fixnum acc) most-positive-fixnum)
+        do (if (= acc most-positive-fixnum)
 
 ; We really don't expect lists of length greater than most-positive-fixnum.
 ; But we do the check above, potentially (though unlikely) causing this error,
@@ -21398,9 +21407,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 #-acl2-loop-only
 (defun our-get-internal-run-time ()
-  #-gcl
+  #-(and gcl (not gcl-2.7.0+))
   (get-internal-run-time)
-  #+gcl
+  #+(and gcl (not gcl-2.7.0+))
   (multiple-value-bind
    (top child)
 
@@ -27929,7 +27938,11 @@ Lisp definition."
          (let* ((,g-start-real-time (get-internal-real-time))
                 (,g-start-run-time
                  #-gcl (get-internal-run-time)
-                 #+gcl (multiple-value-list (get-internal-run-time)))
+                 #+gcl (multiple-value-list
+                        #+gcl-2.7.0+
+                        (si::get-internal-run-times)
+                        #-gcl-2.7.0+
+                        (get-internal-run-time)))
                 #+(or ccl sbcl lispworks)
                 (,g-start-alloc (heap-bytes-allocated)))
            (our-multiple-value-prog1
@@ -27937,7 +27950,11 @@ Lisp definition."
             ,(protect-mv
               `(let* ((end-run-time
                        #-gcl (get-internal-run-time)
-                       #+gcl (multiple-value-list (get-internal-run-time)))
+                       #+gcl (multiple-value-list
+                              #+gcl-2.7.0+
+                              (si::get-internal-run-times)
+                              #-gcl-2.7.0+
+                              (get-internal-run-time)))
                       (end-real-time (get-internal-real-time))
                       #+(or ccl sbcl lispworks) ; before computations below:
                       (allocated (- (heap-bytes-allocated)
