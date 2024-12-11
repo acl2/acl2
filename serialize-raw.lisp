@@ -920,7 +920,7 @@
 ; stack size requirements by eliminating a parameter, and simplifies the flow
 ; because we don't need to return multiple values.
 
-  (free-index  0 :type fixnum)
+  (free-index  0 :type (and (integer 0 *) fixnum))
 
 ; The stream that we are writing into.  Bundling this into the encoder instead
 ; of passing it as an extra argument helps to reduce the stack size
