@@ -561,10 +561,7 @@
                 (natp n)
                 (< 0 (- (len dag) n)) ;must be at least one node left)
                 )
-           (equal (pseudo-dagp (nthcdr n dag))
-                  t
-                  ))
-  :otf-flg t
+           (pseudo-dagp (nthcdr n dag)))
   :hints (("Goal" :in-theory (e/d (pseudo-dagp
                                    natp-of-car-of-nth-when-pseudo-dagp-aux
                                    consp-of-nth-when-pseudo-dagp-aux

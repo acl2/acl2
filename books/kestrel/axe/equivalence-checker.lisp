@@ -11155,7 +11155,6 @@
                                                ) ;open this manually? and close up in the next theorem?
                                           (,connection-relation-name ,@update-expr-list ,@updated-new-formals-in-terms-of-old-formals ,@old-vars-in-explanations))
                                  :rule-classes nil
-                                 :otf-flg t
                                  :hints (("Goal" :in-theory (union-theories (theory 'minimal-theory)
                                                                             '(,connection-relation-name
                                                                               ,invariant-name
@@ -11186,7 +11185,6 @@
                                                ) ;open this manually? and close up in the next theorem?
                                           (,connection-relation-name ,@update-expr-list ,@new-update-exprs ,@old-vars-in-explanations))
                                  :rule-classes nil
-                                 :otf-flg t
                                  :hints (("Goal" :in-theory (theory 'minimal-theory)
                                           :use (,updates-preserve-connection-relation-theorem-name
                                                 ,@update-fn-defthms ;could use these as rewrites if we first subst in the old vars for the new vars
@@ -11202,7 +11200,6 @@
                                           (equal (,fn ,@formals)
                                                  (,new-fn ,@new-formals ,@old-vars-in-explanations)))
                                  :rule-classes nil
-                                 :otf-flg t
                                  :hints (("Goal"
                                           ;;fffixme what about name clashes between the formals?
 ;ffixme can we use a generic result here, even though the arities of the functions may be different in different cases?
@@ -11255,7 +11252,6 @@
                                  (implies (,invariant-name ,@formals-in-invar ,@old-vars-in-invar)
                                           (,connection-relation-name ,@formals ,@new-formals-in-terms-of-old ,@old-vars-in-explanations))
                                  :rule-classes nil
-                                 :otf-flg t
                                  :hints (("Goal" :use (:instance ,fns-equal-helper2-theorem-name)
                                           :in-theory (union-theories '(,invariant-name
                                                                        ,connection-relation-name
@@ -12791,7 +12787,6 @@
  ;;                        (implies (and ,@hyps)
  ;;                                 ,conjunct)
  ;;                        :rule-classes nil
- ;;                        :otf-flg t
  ;;                        :hints (("Goal" :in-theory (union-theories (theory 'minimal-theory)
  ;;                                                                   '(,connection-relation-name
  ;;                                                                     ,invariant-name
