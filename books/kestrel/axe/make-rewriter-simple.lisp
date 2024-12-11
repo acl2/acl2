@@ -434,8 +434,8 @@
                                                   node-replacement-array node-replacement-count refined-assumption-alist
                                                   rewrite-stobj count))
          (call-of-simplify-term `(,simplify-term-name term assumptions rule-alist interpreted-function-alist known-booleans normalize-xors limits memoizep count-hits print monitored-symbols fns-to-elide))
-         (call-of-simplify-dag `(,simplify-dag-name dag assumptions rule-alist interpreted-function-alist known-booleans normalize-xors limits memoize count-hits print monitored-symbols fns-to-elide))
-         (call-of-simplify-dag-core `(,simplify-dag-core-name dag assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist maybe-internal-context-array rule-alist interpreted-function-alist known-booleans normalize-xors limits memoize count-hits print monitored-symbols fns-to-elide))
+         (call-of-simplify-dag `(,simplify-dag-name dag assumptions rule-alist interpreted-function-alist known-booleans normalize-xors limits memoizep count-hits print monitored-symbols fns-to-elide))
+         (call-of-simplify-dag-core `(,simplify-dag-core-name dag assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist maybe-internal-context-array rule-alist interpreted-function-alist known-booleans normalize-xors limits memoizep count-hits print monitored-symbols fns-to-elide))
          )
     `(encapsulate ()
 
@@ -5352,7 +5352,7 @@
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
     ;; Returns (mv erp dag-or-quotep limits).
-    ;; This optionally takes an internal-context-array, but if one is given, memoize can't be non-nil.
+    ;; This optionally takes an internal-context-array, but if one is given, memoizep can't be non-nil.
     ;; TODO: Perhaps return hit-counts or tries, to be summed across invocations.
     (defund ,simplify-dag-core-name (dag
                                      assumptions
@@ -5364,7 +5364,7 @@
                                      known-booleans
                                      normalize-xors
                                      limits
-                                     memoize
+                                     memoizep
                                      count-hits
                                      print
                                      monitored-symbols
@@ -5380,8 +5380,8 @@
                                   (symbol-listp known-booleans)
                                   (booleanp normalize-xors)
                                   (rule-limitsp limits)
-                                  (booleanp memoize)
-                                  (not (and memoize
+                                  (booleanp memoizep)
+                                  (not (and memoizep
                                             (not (null maybe-internal-context-array))))
                                   (count-hits-argp count-hits)
                                   (print-levelp print)
@@ -5401,7 +5401,7 @@
                                                      (natp))))))
       (b* (;; The guard excludes the error here, but this is critical to soundness, so we check it
            ;; in case this function is called from non-guard-verified code:
-           ((when (and memoize
+           ((when (and memoizep
                        (not (null maybe-internal-context-array))))
             (er hard? ',simplify-dag-core-name "It is unsound to memoize when using internal contexts.")
             (mv :unsound nil limits))
@@ -5454,7 +5454,7 @@
                  (,simplify-dag-aux-name (reverse-list dag) ;;we'll simplify nodes from the bottom-up
                                          rewrite-stobj2
                                          maybe-internal-context-array
-                                         (and memoize (empty-memoization)) ; todo: add an option to make this bigger?
+                                         (and memoizep (empty-memoization)) ; todo: add an option to make this bigger?
                                          (initialize-hit-counts count-hits)
                                          tries
                                          limits
@@ -5505,7 +5505,7 @@
                     (symbol-listp monitored-symbols)
                     ;; (symbol-listp fns-to-elide)
                     (booleanp normalize-xors)
-                    (booleanp memoize))
+                    (booleanp memoizep))
                (and (pseudo-dagp (mv-nth 1 ,call-of-simplify-dag-core))
                     (<= (len (mv-nth 1 ,call-of-simplify-dag-core))
                         *max-1d-array-length*)
@@ -5537,7 +5537,7 @@
                     (symbol-listp monitored-symbols)
                     ;; (symbol-listp fns-to-elide)
                     (booleanp normalize-xors)
-                    (booleanp memoize))
+                    (booleanp memoizep))
                (and (not (< '1152921504606846973 (caar (mv-nth 1 ,call-of-simplify-dag-core))))
                     (<= 0 (caar (mv-nth 1 ,call-of-simplify-dag-core)))))
                :rule-classes :linear
@@ -5555,7 +5555,7 @@
                                 known-booleans
                                 normalize-xors ; next few args do affect the result
                                 limits
-                                memoize
+                                memoizep
                                 count-hits
                                 print
                                 monitored-symbols
@@ -5567,7 +5567,7 @@
                                   (symbol-listp known-booleans)
                                   (booleanp normalize-xors)
                                   (rule-limitsp limits)
-                                  (booleanp memoize)
+                                  (booleanp memoizep)
                                   (count-hits-argp count-hits)
                                   (print-levelp print)
                                   (symbol-listp monitored-symbols)
@@ -5592,7 +5592,7 @@
            ;; If we are to memoize, start with a rewrite that memoizes but does not use internal contexts (for soundness):
            ;; This may be critical to performance.
            ((mv erp dag-or-quotep limits)
-            (if (not memoize)
+            (if (not memoizep)
                 (mv (erp-nil) dag limits)
               (b* ((dag-len (+ 1 top-nodenum))
                    (- (and print (cw "(Simplifying DAG with memoization and no internal contexts (~x0 nodes, ~x1 assumptions):~%" dag-len (len assumptions))))
@@ -5602,7 +5602,7 @@
                    ((mv erp dag-or-quotep limits)
                     (,simplify-dag-core-name dag assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist
                                              nil ; no internal-context-array (but see below)
-                                             rule-alist interpreted-function-alist known-booleans normalize-xors limits memoize count-hits print monitored-symbols fns-to-elide))
+                                             rule-alist interpreted-function-alist known-booleans normalize-xors limits memoizep count-hits print monitored-symbols fns-to-elide))
                    ((when erp) (mv erp nil limits))
                    (- (and print (cw ")~%"))) ; balances "(Simplifying DAG with memoization ..."
                    )
@@ -5612,7 +5612,7 @@
            (dag dag-or-quotep) ; it was not a quotep, so we rename it
            )
         ;; Continue (usually) with a pass that does use contexts (and does not memoize):
-        (if (and memoize ; means we already simplified above
+        (if (and memoizep ; means we already simplified above
                  (not (dag-has-internal-contextsp dag)) ; no context info to use
                  )
             (mv (erp-nil) dag)
@@ -5631,7 +5631,7 @@
                     & ;limits
                     )
                 (,simplify-dag-core-name dag assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist internal-context-array rule-alist interpreted-function-alist known-booleans normalize-xors limits
-                                         nil ;memoize (would be unsound)
+                                         nil ;memoizep (would be unsound)
                                          count-hits print monitored-symbols fns-to-elide))
                ((when erp) (mv erp nil))
                (- (and print (cw ")~%"))) ; balances "(Simplifying DAG with internal contexts ..."
@@ -5652,7 +5652,7 @@
                     (symbol-listp monitored-symbols)
                     ;; (symbol-listp fns-to-elide)
                     (booleanp normalize-xors)
-                    (booleanp memoize))
+                    (booleanp memoizep))
                (and (pseudo-dagp (mv-nth 1 ,call-of-simplify-dag))
                     (<= (len (mv-nth 1 ,call-of-simplify-dag))
                         *max-1d-array-length*) ;; todo
@@ -5687,7 +5687,7 @@
     ;;                 (symbol-listp known-booleans)
     ;;                 (symbol-listp monitored-symbols)
     ;;                 (booleanp normalize-xors)
-    ;;                 (booleanp memoize))
+    ;;                 (booleanp memoizep))
     ;;            (consp (mv-nth 1 ,call-of-simplify-dag))
     ;;                   )
     ;;   :hints (("Goal" :use (:instance ,(pack$ simplify-dag-name '-return-type))
@@ -5707,7 +5707,7 @@
                     (symbol-listp monitored-symbols)
                     ;; (symbol-listp fns-to-elide)
                     (booleanp normalize-xors)
-                    (booleanp memoize))
+                    (booleanp memoizep))
                (equal (quotep (mv-nth 1 ,call-of-simplify-dag))
                       (myquotep (mv-nth 1 ,call-of-simplify-dag))))
       :hints (("Goal" :use (:instance ,(pack$ simplify-dag-name '-return-type))
@@ -5727,7 +5727,7 @@
                     (symbol-listp monitored-symbols)
                     ;; (symbol-listp fns-to-elide)
                     (booleanp normalize-xors)
-                    (booleanp memoize))
+                    (booleanp memoizep))
                (equal (pseudo-dagp (mv-nth 1 ,call-of-simplify-dag))
                       (not (myquotep (mv-nth 1 ,call-of-simplify-dag)))))
       :hints (("Goal" :use (:instance ,(pack$ simplify-dag-name '-return-type))
@@ -6087,7 +6087,7 @@
                                          ;; known-booleans
                                          normalize-xors
                                          limits
-                                         memoize ; todo: rename memoizep?
+                                         memoizep ; we use the name memoizep internally for the :memoize argument
                                          count-hits
                                          print
                                          monitored-symbols
@@ -6096,13 +6096,12 @@
                                          state)
       (declare (xargs :guard (and (symbolp name)
                                   (pseudo-dagp dag)
-                                  (< (top-nodenum dag) *max-1d-array-length*) ; drop?
                                   (pseudo-term-listp assumptions)
                                   (symbol-listp rules)
                                   (interpreted-function-alistp interpreted-function-alist)
                                   (booleanp normalize-xors)
                                   (rule-limitsp limits)
-                                  (booleanp memoize)
+                                  (booleanp memoizep)
                                   (count-hits-argp count-hits)
                                   (print-levelp print)
                                   (symbol-listp monitored-symbols)
@@ -6144,7 +6143,7 @@
                                         (interpreted-function-alist 'nil)
                                         (normalize-xors 'nil)
                                         (limits 'nil)
-                                        (memoize 't)
+                                        (memoize 't) ; not memoizep, since this is user-facing
                                         (count-hits 'nil)
                                         (print ':brief)
                                         (monitored-symbols 'nil)
