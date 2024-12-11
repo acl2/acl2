@@ -1656,20 +1656,13 @@ value  = ((EVENLP EVENLP-BDD
                   (DEFUN EVENLP (X)
                     (DECLARE (IGNORABLE X))
                     (FLET (#) (DECLARE #) (LET # # #))))
-          (EVENLP EVENLP-BDD
-                  EVENLP-BDD-CHANGE EVENLP-BDD-STABLE
-                  (DEFUN EVENLP (X)
-                    (DECLARE (IGNORABLE X))
-                    (FLET (# #) (DECLARE #) (LET # # #))))
           (ODDLP ODDLP-BDD
                  ODDLP-BDD-CHANGE ODDLP-BDD-STABLE
                  (DEFUN ODDLP (X)
                    (DECLARE (IGNORABLE X))
                    (FLET (# #) (DECLARE #) (LET # # #)))))
 Reason:
-The strip-cadrs of the proposed extension of the old value is not the
-list of function symbols, in order, defined by mutual-recursion with
-the key.  That expected list of functions is (EVENLP-BDD ODDLP-BDD).
+The value is not an extension of the previous value.
 
 (See :DOC set-iprint to be able to see elided values in this message.)
 
@@ -2061,18 +2054,121 @@ Summary
 Form:  ( PROGN (MAKE-EVENT ...) ...)
 Rules: NIL
  FIB2-NEW
+ACL2 !>>(F-PUT-GLOBAL 'OLD-WORLD-LENGTH
+                      (LENGTH (W STATE))
+                      STATE)
+<state>
+ACL2 !>>(MEMOIZE-PARTIAL ((FIB2-NEW FIB2-CLOCK
+                                    :CHANGE FIB2-CLOCK-CHANGE0-NEW
+                                    :STABLE FIB2-CLOCK-STABLE0-NEW
+                                    :CONDITION '(EQL (MOD N 4) 0)))
+                         :CONDITION T)
+
+The event ( DEFCHOOSE FIB2-CLOCK-CHANGE0-NEW ...) is redundant.  See
+:DOC redundant-events.
+
+Summary
+Form:  ( DEFCHOOSE FIB2-CLOCK-CHANGE0-NEW ...)
+Rules: NIL
+:REDUNDANT
+
+The event ( DEFCHOOSE FIB2-CLOCK-STABLE0-NEW ...) is redundant.  See
+:DOC redundant-events.
+
+Summary
+Form:  ( DEFCHOOSE FIB2-CLOCK-STABLE0-NEW ...)
+Rules: NIL
+:REDUNDANT
+
+The event ( DEFUN FIB2-NEW ...) is redundant.  See :DOC redundant-
+events.
+
+Summary
+Form:  ( DEFUN FIB2-NEW ...)
+Rules: NIL
+:REDUNDANT
+
+The event ( TABLE PARTIAL-FUNCTIONS-TABLE ...) is redundant.  See :DOC
+redundant-events.
+
+Summary
+Form:  ( TABLE PARTIAL-FUNCTIONS-TABLE ...)
+Rules: NIL
+:REDUNDANT
+
+Summary
+Form:  ( PROGN (DEFCHOOSE FIB2-CLOCK-CHANGE0-NEW ...) ...)
+Rules: NIL
+
+Summary
+Form:  ( MAKE-EVENT (ER-PROGN ...) ...)
+Rules: NIL
+:REDUNDANT
+FIB2-NEW
+
+Summary
+Form:  ( PROGN (MAKE-EVENT ...) ...)
+Rules: NIL
+ FIB2-NEW
+ACL2 !>>(ASSERT-EVENT (EQUAL (LENGTH (W STATE))
+                             (@ OLD-WORLD-LENGTH)))
+ :PASSED
 ACL2 !>>(ASSERT-EVENT (EQUAL (FIB2-NEW 30)
                              (FIB2-CLOCK 30 50)))
  :PASSED
 ACL2 !>>(ASSERT-EVENT (EQUAL (FIB2-NEW 80) 37889062373143906))
  :PASSED
+ACL2 !>>(DEFUN PLAIN-FIB (N)
+          (DECLARE (XARGS :GUARD (NATP N)))
+          (IF (ZP N)
+              0
+            (IF (EQL N 1)
+                1
+              (+ (PLAIN-FIB (- N 1))
+                 (PLAIN-FIB (- N 2))))))
+Goal'
+Subgoal 2
+Subgoal 1
+Goal'
+Goal''
+
+Summary
+Form:  ( DEFUN PLAIN-FIB ...)
+Rules: ((:COMPOUND-RECOGNIZER NATP-COMPOUND-RECOGNIZER)
+        (:COMPOUND-RECOGNIZER ZP-COMPOUND-RECOGNIZER)
+        (:DEFINITION ACL2-COUNT)
+        (:DEFINITION EQL)
+        (:DEFINITION INTEGER-ABS)
+        (:DEFINITION NATP)
+        (:DEFINITION NOT)
+        (:DEFINITION O-FINP)
+        (:DEFINITION O<)
+        (:EXECUTABLE-COUNTERPART EQLABLEP)
+        (:EXECUTABLE-COUNTERPART TAU-SYSTEM)
+        (:EXECUTABLE-COUNTERPART UNARY--)
+        (:FAKE-RUNE-FOR-TYPE-SET NIL)
+        (:REWRITE DISTRIBUTIVITY-OF-MINUS-OVER-+)
+        (:TYPE-PRESCRIPTION PLAIN-FIB))
+ PLAIN-FIB
+ACL2 !>>(MEMOIZE 'PLAIN-FIB)
+ PLAIN-FIB
+ACL2 !>>(PLAIN-FIB 100)
+354224848179261915075
 ACL2 !>>(SAVE-AND-CLEAR-MEMOIZATION-SETTINGS)
  MEMOIZE-TABLE
-ACL2 !>>(RESTORE-MEMOIZATION-SETTINGS)
- MEMOIZE-TABLE
+ACL2 !>>(ER-PROGN (COMP 'PLAIN-FIB) (VALUE NIL))
+ NIL
+ACL2 !>>(PLAIN-FIB 40)
+102334155
 ACL2 !>>(ASSERT-EVENT (EQUAL (FIB2-NEW 30)
                              (FIB2-CLOCK 30 50)))
  :PASSED
+ACL2 !>>(ASSERT-EVENT (EQUAL (FIB2-NEW 80) 37889062373143906))
+ :PASSED
+ACL2 !>>(RESTORE-MEMOIZATION-SETTINGS)
+ MEMOIZE-TABLE
+ACL2 !>>(PLAIN-FIB 100)
+354224848179261915075
 ACL2 !>>(ASSERT-EVENT (EQUAL (FIB2-NEW 80) 37889062373143906))
  :PASSED
 ACL2 !>>(MF (MEMOIZE-PARTIAL ((FIB2-NEW FIB2-CLOCK
