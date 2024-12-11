@@ -67,6 +67,7 @@
 (local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
 (local (include-book "kestrel/arithmetic-light/ceiling" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
+(local (include-book "kestrel/arithmetic-light/floor2" :dir :system))
 (local (include-book "kestrel/library-wrappers/ihs-quotient-remainder-lemmas" :dir :system)) ;drop
 (local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system)) ;drop
 
@@ -255,8 +256,6 @@
   :hints (("Goal" :in-theory (enable SLICE-TOO-HIGH-IS-0))))
 
 ;(local (in-theory (disable <-of-constant-and-*-of-constant))) ;investigate this
-
-(include-book "kestrel/arithmetic-light/floor2" :dir :system) ;move up or drop? make local
 
 (defthmd floor-of-sum-no-split
   (implies (and (rationalp j)
