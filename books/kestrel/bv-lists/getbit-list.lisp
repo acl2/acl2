@@ -76,7 +76,7 @@
                 (natp n))
            (equal (getbit-list esize (take n lst))
                   (take n (getbit-list esize lst))))
-  :hints (("Goal" :in-theory (e/d (getbit-list take) ()))))
+  :hints (("Goal" :in-theory (enable getbit-list take))))
 
 (defthm getbit-list-of-cons
   (equal (getbit-list n (cons a b))

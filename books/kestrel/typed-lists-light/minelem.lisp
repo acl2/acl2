@@ -47,8 +47,7 @@
            (equal (minelem (append x y))
                   (min (minelem x)
                        (minelem y))))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (enable minelem append))))
+  :hints (("Goal" :in-theory (enable minelem append))))
 
 (defthm minelem-singleton
   (equal (minelem (cons a nil))
@@ -66,8 +65,7 @@
                 )
            (equal (< (minelem lst1) (minelem lst2))
                   nil))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (enable minelem subsetp-equal))))
+  :hints (("Goal" :in-theory (enable minelem subsetp-equal))))
 
 (defthm minelem-when-subsetp-equal
   (implies (subsetp-equal lst1 lst2)
