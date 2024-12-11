@@ -45,8 +45,8 @@ def load(path, allow_empty):
             content = f.read()
             content = '\n(funcdef'.join(content.split("(funcdef"))
             content = '\n  (block'.join(content.split("(block"))
-            content = '\n    (declare'.join(content.split("(declare")) 
-            content = '\n    (assign'.join(content.split("(assign")) 
+            content = '\n    (declare'.join(content.split("(declare"))
+            content = '\n    (assign'.join(content.split("(assign"))
             return content
 
     except OSError as err:

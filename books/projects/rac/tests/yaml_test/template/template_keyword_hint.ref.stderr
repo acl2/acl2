@@ -1,0 +1,4 @@
+template_keyword_hint.cpp:7 (15-16): syntax error, unexpected ID, expecting NAT
+  7 |   return x.slc<n>(0);
+    |                ^
+note: Consider adding the `template` keyword: ID.template slc<...

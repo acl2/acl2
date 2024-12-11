@@ -30,3 +30,6 @@
 
 - name: illegal-type
   should_report_error: true
+
+- name: template_keyword_hint
+  should_report_error: true

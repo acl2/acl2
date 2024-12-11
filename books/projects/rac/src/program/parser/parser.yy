@@ -4,11 +4,18 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wfree-nonheap-object"
 
+bool is_slc_expression = false;
+
 void yyerror (const char *s)
 {
-  yyast.diag()
-      .new_error(yylloc, s)
-      .report();
+  if (is_slc_expression) {
+    yyast.diag()
+          .new_error(yylloc, s)
+          .note("Consider adding the `template` keyword: ID.template slc<...")
+          .report();
+  } else {
+    yyast.diag().new_error(yylloc, s).report();
+  }
 }
 
 SymbolStack symTab;
@@ -567,9 +574,10 @@ struct_ref
 }
 
 subrange
-    : postfix_expression '.' SLC '<' NAT '>' '(' expression ')'
+    : postfix_expression '.' SLC { is_slc_expression = true; } '<' NAT '>' '(' expression ')'
 {
-  $$ = new Subrange (@$, $1, $8, new Integer (@$, $5));
+  $$ = new Subrange (@$, $1, $9, new Integer (@$, $6));
+  is_slc_expression = false;
 }
     | postfix_expression '.' TEMPLATE SLC '<' arithmetic_expression '>' '(' expression ')'
 {
