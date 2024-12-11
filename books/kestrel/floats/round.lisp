@@ -500,6 +500,7 @@
     :hints (("Goal" :use (<=-of-1-and-*-of-/-of-expt-of-log-same)
              :in-theory (disable <=-of-1-and-*-of-/-of-expt-of-log-same)))))
 
+;slow
 (defthm representable-positive-normalp-of-round-positive-normal-ties-to-even
   (implies (and (formatp k p)
                 (rationalp rat)
@@ -516,9 +517,12 @@
                                    (i (+ -1 p))))
            :in-theory (e/d (round-positive-normal-ties-to-even representable-positive-normalp
                                          infinity-threshold
-                                         smallest-positive-normal-redef)
+                                         smallest-positive-normal-redef
+                                         ;expt-of-+ ;bad
+                                         )
                            (log2-of-round-to-nearest-integer-ties-to-even
-                            log2-of-round-to-nearest-integer-ties-to-even)))))
+                            log2-of-round-to-nearest-integer-ties-to-even
+                            /-of-expt-of-diff)))))
 
 (defthm round-positive-normal-ties-to-even-when-representable-positive-normalp
   (implies (and (formatp k p)

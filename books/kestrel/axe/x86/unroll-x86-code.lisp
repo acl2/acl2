@@ -1025,8 +1025,7 @@
                                             `(("Goal" :in-theory '(,lifted-name ;,@runes ;without the runes here, this won't work
                                                                    )))
                                           `(("Goal" :in-theory (enable ,@lifter-rules-used
-                                                                       ,@assumption-rules-used))))
-                                :otf-flg t))
+                                                                       ,@assumption-rules-used))))))
                      (defthm (if prove-theorem
                                  defthm
                                `(skip-proofs ,defthm))))

@@ -1720,9 +1720,7 @@
 ;;            (equal (bvcat 5 x 1 1)
 ;;                   (+ 1 (* 2 x))))
 ;;   :hints (("Goal" :in-theory (e/d (bvcat logtail bvplus getbit)
-;;                                   (
-;;
-;;                                    bvplus-1-becomes-bitxor)))))
+;;                                   (bvplus-1-becomes-bitxor)))))
 
 ;; (defthm bvcat-hack22b
 ;;   (implies (and (< x 32)
@@ -1730,9 +1728,7 @@
 ;;            (equal (bvcat 5 x 1 0)
 ;;                   (* 2 x)))
 ;;   :hints (("Goal" :in-theory (e/d (bvcat logtail bvplus getbit)
-;;                                   (
-;;
-;;                                    bvplus-1-becomes-bitxor)))))
+;;                                   (bvplus-1-becomes-bitxor)))))
 
 
 (defthm bvcat-of-*-high
@@ -1917,9 +1913,10 @@
                               (+ -1 (expt 2 32))))))
   :hints (("Goal" :in-theory (enable bvplus bvchop-of-sum-cases BVCHOP-WHEN-I-IS-NOT-AN-INTEGER))))
 
+;move
 (defthm logtail-of-one-more
-  (implies (and (integerp x)
-;                (equal n 32)
+  (implies (and (syntaxp (not (quotep x)))
+                (integerp x)
                 (posp n))
            (equal (logtail n (+ 1 x))
                   (if (equal (+ -1 (expt 2 n)) (bvchop n x))
@@ -2174,7 +2171,6 @@
 ;;                  (unsigned-byte-p 1 carry))
 ;;             (equal (+ carry x y) ;(bvplus (+ 1 n) carry (bvplus (+ 1 n) x y))
 ;;                    (ripple-carry-adder n x y carry)))
-;;    :otf-flg t
 ;;    :hints (("Goal" :in-theory (enable ripple-carry-adder
 ;;                                       unsigned-byte-p-of-size-1
 ;;                                       ;GETBIT-OF-+ yuck

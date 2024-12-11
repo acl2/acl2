@@ -268,19 +268,21 @@
     program-at-of-set-mxcsr
     ))
 
-(defun read-byte-rules ()
-  (declare (xargs :guard t))
-  '(read-byte-of-xw-irrel
-    ;;read-byte-when-program-at read-byte-when-program-at-gen
-    read-byte-of-set-flag
-    read-byte-of-write-byte
-    read-byte-of-logext
-    ))
+;; Now we just go to read
+;; (defun read-byte-rules ()
+;;   (declare (xargs :guard t))
+;;   '(read-byte-of-xw-irrel
+;;     ;;read-byte-when-program-at read-byte-when-program-at-gen
+;;     read-byte-of-set-flag
+;;     read-byte-of-write-byte
+;;     read-byte-of-logext
+;;     ))
 
 (defun read-rules ()
   (declare (xargs :guard t))
   '(unsigned-byte-p-of-read
     integerp-of-read
+    natp-of-read
     <-of-read-and-non-positive
     read-of-xw-irrel
     read-of-set-flag
@@ -1084,7 +1086,6 @@
     acl2::rotate-left-constant-opener
     acl2::rotate-right-constant-opener))
 
-
 ;todo: classify these
 (defun x86-bv-rules ()
   (declare (xargs :guard t))
@@ -1101,7 +1102,9 @@
     ;; this is needed to handle a divide:
     acl2::bvcat-of-if-becomes-bvsx-64-64
     acl2::bvlt-of-bvplus-1-cancel
-    acl2::bvlt-of-bvplus-1-cancel-alt))
+    acl2::bvlt-of-bvplus-1-cancel-alt
+    acl2::bvsx-when-unsigned-byte-p ; without this, we'd need rules like bvsx-of-read (when the read is small)
+    ))
 
 ;; ;not used?
 ;; (defun canonical-address-rules ()
@@ -3196,7 +3199,9 @@
           (read-rules)
           (write-rules)
           (read-and-write-rules)
-          (read-byte-rules)
+          '(read-byte-becomes-read) ; (read-byte-rules) ; read-byte can come from read-bytes
+          '(len-of-read-bytes nth-of-read-bytes) ; read-bytes can come from an output-extractor
+          (acl2::list-to-bv-array-rules) ; for simplifying output-extractors
           (linear-memory-rules)
           (get-prefixes-rules64)
           '(;x86isa::x86-fetch-decode-execute-base-new
@@ -4607,7 +4612,8 @@
             acl2::getbit-of-lognot ; todo: handle all cases of logops inside bvops
             acl2::bvif-of-if-constants-nil-nonnil
             acl2::bvif-of-if-constants-nonnil-nil
-            acl2::equal-of-1-and-bitand
+            acl2::equal-of-constant-and-bitand
+            acl2::equal-of-bitand-and-constant
             ;acl2::boolif-of-nil-and-t
             ;; acl2::booleanp-of-myif ; or convert myif to boolif when needed
             acl2::bitxor-of-1-becomes-bitnot-arg1 ; not in core-rules-bv since we have special handling of bitxor nests for crypto code
