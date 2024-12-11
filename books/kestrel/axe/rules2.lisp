@@ -528,7 +528,6 @@
 ;;    (implies (and (bag::unique (addresses-of-array-ref ref dims heap))
 ;;                  (consp dims))
 ;;             (not (memberp ref (get-field ref (array-contents-pair) heap))))
-;;    :otf-flg t
 ;;    :hints (("Goal" :expand ((ADDRESSES-OF-ARRAY-REF-LIST (GET-FIELD REF (array-contents-pair)
 ;;                                                                     HEAP)
 ;;                                                          (CAR DIMS)
@@ -545,7 +544,6 @@
 ;;                 ;(consp dims)
 ;;                 )
 ;;            (not (memberp ref (get-field ref (array-contents-pair) heap))))
-;;   :otf-flg t
 ;;   :hints (("Goal" :in-theory (e/d (JVM::CONS-EQUAL-REWRITE LIST::LEN-OF-CDR) (CAR-OF-GET-FIELD-OF-CONTENTS-HACK
 ;;                                                             ))
 ;;                                      :cases ((equal  (GET-FIELD REF (array-contents-pair)
@@ -992,7 +990,6 @@
 ;;                                       heap))
 ;;                       (array-contents-pair)
 ;;                       heap2))))))
-;;   :otf-flg t
 ;;   :hints (("Goal" :do-not '(generalize eliminate-destructors)
 ;;            :expand ((:free (REF-LIST CONTENTS-LIST LEN TYPE HEAP)
 ;;                            (STORE-ARRAY-LIST REF-LIST CONTENTS-LIST LEN TYPE HEAP))
@@ -1224,7 +1221,6 @@
 ;;  (defthm byte-fix-becomes-logext
 ;;    (equal (jvm::byte-fix x)
 ;;           (logext 8 x))
-;;    :otf-flg t
 ;;    :hints (("Goal" :in-theory (enable JVM::BYTE-FIX jvm::s-fix)))))
 
 ;; (skip -proofs
@@ -1428,7 +1424,6 @@
 ;; (DEFTHM INT-FIX-REWRITE-strong
 ;;   (IMPLIES t ;(INTEGERP X)
 ;;            (EQUAL (JVM::INT-FIX X) (LOGEXT 32 X)))
-;;   :OTF-FLG T
 ;;   :HINTS (("Goal" :IN-THEORY (E/D (JVM::BYTE-FIX)
 ;;                                   (FLOOR-MOD-ELIM EVENP)))))
 
@@ -2010,7 +2005,6 @@
 ;;                                 (store-array-2d ref vals 4 4 ':byte heap2)
 ;;                                 heap)
 ;;                   (store-array-2d ref vals 4 4 ':byte (copy-objects (list::2set (get-field ref (array-contents-pair) heap2)) heap2 heap))))
-;;   :otf-flg t
 ;;   :hints (("Goal"
 ;;            :cases ((equal (GET-FIELD REF (array-contents-pair) HEAP)
 ;;                           (list (nth 0 (GET-FIELD REF (array-contents-pair) HEAP))
@@ -2912,7 +2906,6 @@
 ;;                           (IF (< VAL (MAXELEM (TAKE (NFIX N) LST)))
 ;;                               (MAXELEM (TAKE (NFIX N) LST))
 ;;                               VAL)))))))
-;;   :OTF-FLG T
 ;;   :HINTS
 ;;   (("Goal" :DO-NOT-INDUCT T
 ;;     :IN-THEORY (E/D (UPDATE-NTH-REWRITE) ((FORCE))))))

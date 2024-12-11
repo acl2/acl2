@@ -269,7 +269,6 @@
   (implies (unsigned-byte-p 31 x) ;gen!
            (equal (sbvdivdown 32 (bvplus 32 4294967292 x) 4)
                   (bvplus 32 -1 (sbvdivdown 32 x 4))))
-  :otf-flg t
   :hints (("Goal" :in-theory (e/d (;sbvdivdown
                                    sbvdiv
                                    bvplus

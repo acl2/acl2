@@ -366,8 +366,7 @@
                                                    :expand ((possibly-negated-nodenumsp predicates-or-negations)
                                                             ;(max-nodenum-in-possibly-negated-nodenums predicates-or-negations)
                                                             ;;(max-nodenum-in-possibly-negated-nodenums-aux predicates-or-negations -1)
-                                                            )))
-  :otf-flg t)
+                                                            ))))
 
 ;context is a possibly-negated-nodenumsp (list of items of the form: <nodenum> or (not <nodenum>))
 ;fixme do we end up doing this over and over for the same context predicates?
