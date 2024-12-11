@@ -256,7 +256,7 @@
 
 ;(local (in-theory (disable <-of-constant-and-*-of-constant))) ;investigate this
 
-(include-book "kestrel/arithmetic-light/floor2" :dir :system) ;move up or drop?
+(include-book "kestrel/arithmetic-light/floor2" :dir :system) ;move up or drop? make local
 
 (defthmd floor-of-sum-no-split
   (implies (and (rationalp j)
@@ -288,8 +288,6 @@
                                          ;mod-recollapse-lemma2
                                          mod-of-expt-of-2-constant-version
                                          )))))
-
-(in-theory (disable MOD-OF-FLOOR-EQUAL-REWRITE))
 
 (in-theory (disable  ;TRIM-TO-N-BITS-META-RULE
                     ))
