@@ -60,8 +60,7 @@
              (equal (maxelem (append x y))
                     (max (maxelem x)
                          (maxelem y))))
-    :hints (("Goal" :do-not '(generalize eliminate-destructors)
-             :in-theory (enable maxelem append)))))
+    :hints (("Goal" :in-theory (enable maxelem append)))))
 
 (defthm maxelem-of-append
   (implies (true-listp y) ;drop?

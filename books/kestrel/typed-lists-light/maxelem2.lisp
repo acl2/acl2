@@ -53,11 +53,11 @@
                 )
            (equal (< (MAXELEM lst2) (MAXELEM lst1))
                   nil))
-  :hints (("Subgoal *1/5.1" :use (:instance maxelem-of-remove1 (lst lst2) (a (car lst1)))
-           :in-theory (e/d (maxelem ;len-less-than-2-rewrite
-                            ) ( maxelem-of-remove1)))
-          ("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (maxelem (:definition maxelem)
+  :hints (;; ("Subgoal *1/5.1" :use (:instance maxelem-of-remove1 (lst lst2) (a (car lst1)))
+          ;;  :in-theory (e/d (maxelem ;len-less-than-2-rewrite
+          ;;                   ) ( maxelem-of-remove1)))
+          ("Goal" ;:do-not '(generalize eliminate-destructors)
+           :in-theory (e/d (maxelem
                             ;bag::subbagp
                                     ;;BAG::PERM-OF-REMOVE1-ONE
                             ;len-less-than-2-rewrite
