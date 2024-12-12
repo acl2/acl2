@@ -1,2 +1,1 @@
 (include-book "std/portcullis" :dir :system)
-; cert-flags: ? t :ttags :all
