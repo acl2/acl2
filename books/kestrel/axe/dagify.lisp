@@ -53,7 +53,7 @@
                            largest-non-quotep-bound
                            largest-non-quotep-bound-alt
                            myquotep
-                           mv-nth-of-if
+                           ;; mv-nth-of-if
                            symbol-alistp ;don't induct
                            )))
 
