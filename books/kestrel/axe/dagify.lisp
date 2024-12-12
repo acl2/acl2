@@ -53,6 +53,8 @@
                            largest-non-quotep-bound
                            largest-non-quotep-bound-alt
                            myquotep
+                           ;; mv-nth-of-if
+                           symbol-alistp ;don't induct
                            )))
 
 ;dup
@@ -256,8 +258,7 @@
                                      variable-replacement-alist
                                      dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
                                      renaming-array
-                                     interpreted-function-alist
-                                     )
+                                     interpreted-function-alist)
   (mv erp renaming-array dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
   :hyps ((alistp variable-replacement-alist)
          (bounded-darg-listp (strip-cdrs variable-replacement-alist) dag-len)
@@ -375,41 +376,41 @@
           ("Goal" :induct t
            :in-theory (enable merge-embedded-dag-into-dag-array))))
 
-(defthm dag-parent-arrayp-of-mv-nth-4-of-merge-embedded-dag-into-dag-array
-  (implies (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
-;                (<= dag-len 1152921504606846973)
-                (not (mv-nth 0 (merge-embedded-dag-into-dag-array rev-dag-lst
-                                                                  variable-replacement-alist
-                                                                  dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
-                                                                  renaming-array
-                                                                  interpreted-function-alist)))
-                ;; (<= (+ (len rev-dag-lst)
-                ;;        dag-len)
-                ;;     1152921504606846973)
-                (if (consp rev-dag-lst)
-                    (and (renaming-arrayp 'renaming-array-for-merge-embedded-dag-into-dag-array renaming-array (car (car rev-dag-lst)))
-                         (bounded-renaming-entriesp (+ -1 (car (car rev-dag-lst))) 'renaming-array-for-merge-embedded-dag-into-dag-array renaming-array dag-len))
-                  t)
-                (weak-dagp-aux rev-dag-lst)
-                (all-< (strip-cars rev-dag-lst) (alen1 'renaming-array-for-merge-embedded-dag-into-dag-array renaming-array) ;orig-len
-                       )
-                (consecutivep (strip-cars rev-dag-lst))
-                (alistp variable-replacement-alist)
-                (bounded-darg-listp (strip-cdrs variable-replacement-alist) dag-len))
-           (dag-parent-arrayp dag-parent-array-name (mv-nth
-                                                     4
-                                                     (merge-embedded-dag-into-dag-array rev-dag-lst
-                                                                                        variable-replacement-alist
-                                                                                        dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
-                                                                                        renaming-array
-                                                                                        interpreted-function-alist))))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (merge-embedded-dag-into-dag-array
-                            bounded-renaming-entriesp-of-aset1-special-gen
-                            <-of-lookup-equal-when-bounded-darg-listp-of-strip-cdrs)
-                           (pseudo-dag-arrayp
-                            ;;bounded-dag-parent-arrayp
-                            dargp)))))
+;; (defthm dag-parent-arrayp-of-mv-nth-4-of-merge-embedded-dag-into-dag-array
+;;   (implies (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
+;; ;                (<= dag-len 1152921504606846973)
+;;                 (not (mv-nth 0 (merge-embedded-dag-into-dag-array rev-dag-lst
+;;                                                                   variable-replacement-alist
+;;                                                                   dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
+;;                                                                   renaming-array
+;;                                                                   interpreted-function-alist)))
+;;                 ;; (<= (+ (len rev-dag-lst)
+;;                 ;;        dag-len)
+;;                 ;;     1152921504606846973)
+;;                 (if (consp rev-dag-lst)
+;;                     (and (renaming-arrayp 'renaming-array-for-merge-embedded-dag-into-dag-array renaming-array (car (car rev-dag-lst)))
+;;                          (bounded-renaming-entriesp (+ -1 (car (car rev-dag-lst))) 'renaming-array-for-merge-embedded-dag-into-dag-array renaming-array dag-len))
+;;                   t)
+;;                 (weak-dagp-aux rev-dag-lst)
+;;                 (all-< (strip-cars rev-dag-lst) (alen1 'renaming-array-for-merge-embedded-dag-into-dag-array renaming-array) ;orig-len
+;;                        )
+;;                 (consecutivep (strip-cars rev-dag-lst))
+;;                 (alistp variable-replacement-alist)
+;;                 (bounded-darg-listp (strip-cdrs variable-replacement-alist) dag-len))
+;;            (dag-parent-arrayp dag-parent-array-name (mv-nth
+;;                                                      4
+;;                                                      (merge-embedded-dag-into-dag-array rev-dag-lst
+;;                                                                                         variable-replacement-alist
+;;                                                                                         dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
+;;                                                                                         renaming-array
+;;                                                                                         interpreted-function-alist))))
+;;   :hints (("Goal" :do-not '(generalize eliminate-destructors)
+;;            :in-theory (e/d (merge-embedded-dag-into-dag-array
+;;                             bounded-renaming-entriesp-of-aset1-special-gen
+;;                             <-of-lookup-equal-when-bounded-darg-listp-of-strip-cdrs)
+;;                            (pseudo-dag-arrayp
+;;                             ;;bounded-dag-parent-arrayp
+;;                             dargp)))))
 
 (defthm alen1-of-mv-nth-4-of-merge-embedded-dag-into-dag-array
   (implies (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
@@ -524,29 +525,33 @@
                                          (acons-fast var nodenum acc)
                                          dag-array-name dag-parent-array-name))))))
 
-(def-dag-builder-theorems
-  (make-nodes-for-vars-with-name vars alist-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc dag-array-name dag-parent-array-name)
-  (mv erp result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-  :hyps ((alistp variable-replacement-alist)
-         (symbol-listp vars)
-         (and (natp alist-nodenum)
-              (< alist-nodenum dag-len)))
-  :dag-parent-array-name dag-parent-array-name
-  :dag-array-name dag-array-name)
+(local
+ (def-dag-builder-theorems
+     (make-nodes-for-vars-with-name vars alist-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc dag-array-name dag-parent-array-name)
+     (mv erp result dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
+   :hyps ((alistp variable-replacement-alist)
+          (symbol-listp vars)
+          (natp alist-nodenum)
+          (< alist-nodenum dag-len))
+   :dag-parent-array-name dag-parent-array-name
+   :dag-array-name dag-array-name))
 
-(defthm <-of-mv-nth-3-of-make-nodes-for-vars-with-name
-  (implies (and (<= bound dag-len)
-                (natp dag-len)
-                )
-           (<= bound (mv-nth 3 (make-nodes-for-vars-with-name vars alist-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc dag-array-name dag-parent-array-name))))
-  :hints (("Goal" :in-theory (enable make-nodes-for-vars-with-name))))
+;; (local
+;;  (defthm <-of-mv-nth-3-of-make-nodes-for-vars-with-name
+;;   (implies (and (<= bound dag-len)
+;;                 (natp dag-len)
+;;                 )
+;;            (<= bound (mv-nth 3 (make-nodes-for-vars-with-name vars alist-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc dag-array-name dag-parent-array-name))))
+;;   :hints (("Goal" :in-theory (enable make-nodes-for-vars-with-name)))))
 
-(defthm alistp-of-mv-nth-1-of-make-nodes-for-vars-with-name
+(local
+ (defthm alistp-of-mv-nth-1-of-make-nodes-for-vars-with-name
   (implies (alistp acc)
            (alistp (mv-nth 1 (make-nodes-for-vars-with-name vars alist-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc dag-array-name dag-parent-array-name))))
-  :hints (("Goal" :in-theory (enable make-nodes-for-vars-with-name))))
+  :hints (("Goal" :in-theory (enable make-nodes-for-vars-with-name)))))
 
-(defthm bounded-darg-listp-of-strip-cdrs-of-mv-nth-1-of-make-nodes-for-vars-with-name
+(local
+ (defthm bounded-darg-listp-of-strip-cdrs-of-mv-nth-1-of-make-nodes-for-vars-with-name
   (implies (and (bounded-darg-listp (strip-cdrs acc) dag-len)
                 (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                 (natp alist-nodenum)
@@ -555,7 +560,7 @@
            (bounded-darg-listp (strip-cdrs (mv-nth 1 (make-nodes-for-vars-with-name vars alist-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc dag-array-name dag-parent-array-name)))
                                            (mv-nth 3 (make-nodes-for-vars-with-name vars alist-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc dag-array-name dag-parent-array-name))
                                            ))
-  :hints (("Goal" :in-theory (enable make-nodes-for-vars-with-name))))
+  :hints (("Goal" :in-theory (enable make-nodes-for-vars-with-name)))))
 
 ;; (defthm bounded-dag-parent-arrayp-of-mv-nth-4-of-make-nodes-for-vars-with-name
 ;;   (implies (and (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
@@ -568,11 +573,12 @@
 ;;            :in-theory (e/d (make-nodes-for-vars-with-name)
 ;;                            (pseudo-dag-arrayp)))))
 
-(defthm dag-constant-alistp-of-mv-nth-5-of-make-nodes-for-vars-with-name
+(local
+ (defthm dag-constant-alistp-of-mv-nth-5-of-make-nodes-for-vars-with-name
   (implies (and (dag-constant-alistp dag-constant-alist)
                 (natp dag-len))
            (dag-constant-alistp (mv-nth 5 (make-nodes-for-vars-with-name vars alist-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc dag-array-name dag-parent-array-name))))
-  :hints (("Goal" :in-theory (enable make-nodes-for-vars-with-name))))
+  :hints (("Goal" :in-theory (enable make-nodes-for-vars-with-name)))))
 
 ;; (defthm all-<-strip-cdrs-of-mv-nth-5-of-make-nodes-for-vars-with-name
 ;;   (implies (and (bounded-dag-constant-alistp dag-constant-alist dag-len)
@@ -582,19 +588,21 @@
 ;;                   (mv-nth 3 (make-nodes-for-vars-with-name vars alist-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc dag-array-name dag-parent-array-name))))
 ;;   :hints (("Goal" :in-theory (enable make-nodes-for-vars-with-name))))
 
-(defthm bounded-dag-constant-alistp-of-mv-nth-5-of-make-nodes-for-vars-with-name
-  (implies (and (bounded-dag-constant-alistp dag-constant-alist dag-len)
-                (natp dag-len))
-           (bounded-dag-constant-alistp (mv-nth 5 (make-nodes-for-vars-with-name vars alist-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc dag-array-name dag-parent-array-name))
-                                       (mv-nth 3 (make-nodes-for-vars-with-name vars alist-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc dag-array-name dag-parent-array-name))))
-  :hints (("Goal" :in-theory (enable make-nodes-for-vars-with-name))))
+;; (local
+;;  (defthm bounded-dag-constant-alistp-of-mv-nth-5-of-make-nodes-for-vars-with-name
+;;   (implies (and (bounded-dag-constant-alistp dag-constant-alist dag-len)
+;;                 (natp dag-len))
+;;            (bounded-dag-constant-alistp (mv-nth 5 (make-nodes-for-vars-with-name vars alist-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc dag-array-name dag-parent-array-name))
+;;                                        (mv-nth 3 (make-nodes-for-vars-with-name vars alist-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc dag-array-name dag-parent-array-name))))
+;;   :hints (("Goal" :in-theory (enable make-nodes-for-vars-with-name)))))
 
-(defthm dag-variable-alistp-of-mv-nth-6-of-make-nodes-for-vars-with-name
+(local
+ (defthm dag-variable-alistp-of-mv-nth-6-of-make-nodes-for-vars-with-name
   (implies (and (dag-variable-alistp dag-variable-alist)
                 ;; (natp dag-len)
                 )
            (dag-variable-alistp (mv-nth 6 (make-nodes-for-vars-with-name vars alist-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc dag-array-name dag-parent-array-name))))
-  :hints (("Goal" :in-theory (enable make-nodes-for-vars-with-name))))
+  :hints (("Goal" :in-theory (enable make-nodes-for-vars-with-name)))))
 
 ;; (defthm all-<-strip-cdrs-of-mv-nth-6-of-make-nodes-for-vars-with-name
 ;;   (implies (and (dag-variable-alistp dag-variable-alist)
@@ -604,14 +612,16 @@
 ;;                   (mv-nth 3 (make-nodes-for-vars-with-name vars alist-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc dag-array-name dag-parent-array-name))))
 ;;   :hints (("Goal" :in-theory (enable make-nodes-for-vars-with-name))))
 
-(defthm bounded-dag-variable-alistp-of-mv-nth-6-of-make-nodes-for-vars-with-name
+(local
+ (defthm bounded-dag-variable-alistp-of-mv-nth-6-of-make-nodes-for-vars-with-name
   (implies (and (bounded-dag-variable-alistp dag-variable-alist dag-len)
                 (natp dag-len))
            (bounded-dag-variable-alistp (mv-nth 6 (make-nodes-for-vars-with-name vars alist-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc dag-array-name dag-parent-array-name))
                                         (mv-nth 3 (make-nodes-for-vars-with-name vars alist-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc dag-array-name dag-parent-array-name))))
-  :hints (("Goal" :in-theory (enable make-nodes-for-vars-with-name))))
+  :hints (("Goal" :in-theory (enable make-nodes-for-vars-with-name)))))
 
-(defthm pseudo-dag-arrayp-after-make-nodes-for-vars-with-name
+(local
+ (defthm pseudo-dag-arrayp-after-make-nodes-for-vars-with-name
   (implies (and (bounded-darg-listp (strip-cdrs acc) dag-len)
                 (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                 (natp alist-nodenum)
@@ -621,7 +631,9 @@
                               (mv-nth 2 (make-nodes-for-vars-with-name vars alist-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc dag-array-name dag-parent-array-name))
                               (mv-nth 3 (make-nodes-for-vars-with-name vars alist-nodenum dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist acc dag-array-name dag-parent-array-name))
                               ))
-  :hints (("Goal" :in-theory (enable make-nodes-for-vars-with-name))))
+  :hints (("Goal" :in-theory (enable make-nodes-for-vars-with-name)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;this inlines any dag found inside a call to the dag evaluator, but only if the interpreted-function-alist is a subset of the one passed in
 ;could consider returning an interpreted-function-alist for the created dag?
@@ -1126,8 +1138,9 @@
                                     pseudo-dag-arrayp))
             :do-not '(generalize eliminate-destructors))))
 
-(in-theory (disable MERGE-TREE-INTO-DAG-ARRAY-RETURN-TYPE)) ;needed for the call to def-dag-builder-theorems
+;(in-theory (disable MERGE-TREE-INTO-DAG-ARRAY-RETURN-TYPE)) ;needed for the call to def-dag-builder-theorems
 
+;move up?
 (def-dag-builder-theorems
   (merge-tree-into-dag-array tree var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist)
   (mv erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
@@ -1140,7 +1153,7 @@
          )
   :recursivep nil
   :hints (("Goal" ;:expand (merge-tree-into-dag-array tree var-replacement-alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name interpreted-function-alist)
-           :in-theory (disable wf-dagp)
+           :in-theory (disable wf-dagp merge-tree-into-dag-array-return-type)
            :use (:instance merge-tree-into-dag-array-return-type)
            ))
   :dag-parent-array-name dag-parent-array-name
@@ -1907,9 +1920,14 @@
                                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name
                                              interpreted-function-alist))))
     :flag merge-terms-into-dag-array)
-  :hints (("Goal" :in-theory (e/d (merge-term-into-dag-array
+  :hints (("Goal" :expand ((MERGE-TERM-INTO-DAG-ARRAY TERM VAR-REPLACEMENT-ALIST
+                                                      DAG-ARRAY DAG-LEN DAG-PARENT-ARRAY
+                                                      DAG-CONSTANT-ALIST DAG-VARIABLE-ALIST
+                                                      DAG-ARRAY-NAME DAG-PARENT-ARRAY-NAME
+                                                      INTERPRETED-FUNCTION-ALIST))
+                  :in-theory (e/d (merge-term-into-dag-array
                                    merge-terms-into-dag-array
-                                   call-of-dag-val-with-axe-evaluator-with-inlineable-dagp ;somewhat slow. why didn't the forward-chaining rules suffice?
+                                   ;call-of-dag-val-with-axe-evaluator-with-inlineable-dagp ;somewhat slow. why didn't the forward-chaining rules suffice?
                                    )
                                   ()))))
 
@@ -1925,8 +1943,6 @@
                            ;use-all-consp-for-car
                            default-+-2 default-cdr
                            quote-lemma-for-bounded-darg-listp-gen-alt)))
-
-(local (in-theory (disable symbol-alistp))) ;don't induct
 
 ;; (thm
 ;;  (implies (and (pseudo-termp term)
@@ -2075,25 +2091,11 @@
                                     DAG-LEN)
     (INTERPRETED-FUNCTION-ALISTP INTERPRETED-FUNCTION-ALIST)
     (NATP DAG-LEN))
-   (<=
-    DAG-LEN
-    (MV-NTH
-     3
-     (MERGE-TERM-INTO-DAG-ARRAY TERM VAR-REPLACEMENT-ALIST
-                                DAG-ARRAY DAG-LEN DAG-PARENT-ARRAY
-                                DAG-CONSTANT-ALIST DAG-VARIABLE-ALIST
-                                DAG-ARRAY-NAME DAG-PARENT-ARRAY-NAME
-                                INTERPRETED-FUNCTION-ALIST))))
+   (<= DAG-LEN (MV-NTH 3 (MERGE-TERM-INTO-DAG-ARRAY TERM VAR-REPLACEMENT-ALIST DAG-ARRAY DAG-LEN DAG-PARENT-ARRAY DAG-CONSTANT-ALIST DAG-VARIABLE-ALIST DAG-ARRAY-NAME DAG-PARENT-ARRAY-NAME INTERPRETED-FUNCTION-ALIST))))
   :RULE-CLASSES
   ((:LINEAR
     :TRIGGER-TERMS
-    ((MV-NTH
-      3
-      (MERGE-TERM-INTO-DAG-ARRAY TERM VAR-REPLACEMENT-ALIST
-                                 DAG-ARRAY DAG-LEN DAG-PARENT-ARRAY
-                                 DAG-CONSTANT-ALIST DAG-VARIABLE-ALIST
-                                 DAG-ARRAY-NAME DAG-PARENT-ARRAY-NAME
-                                 INTERPRETED-FUNCTION-ALIST)))))
+    ((MV-NTH 3 (MERGE-TERM-INTO-DAG-ARRAY TERM VAR-REPLACEMENT-ALIST DAG-ARRAY DAG-LEN DAG-PARENT-ARRAY DAG-CONSTANT-ALIST DAG-VARIABLE-ALIST DAG-ARRAY-NAME DAG-PARENT-ARRAY-NAME INTERPRETED-FUNCTION-ALIST)))))
   :HINTS (("Goal" :in-theory (enable <=-of-mv-nth-3-of-merge-term-into-dag-array-2))))
 
 (def-dag-builder-theorems
@@ -2223,6 +2225,7 @@
       (dagify-term-unguarded
        (translate-term item 'dag-or-term-to-dag wrld)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; does not translate the term
 ;todo: reduce to take wlrd instead of state?
