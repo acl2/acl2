@@ -206,6 +206,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; MXCSR is already defined by the model.
+
 ;; Introduces mxcsr
 (defthmd xr-becomes-mxcsr
   (equal (xr :mxcsr nil x86)
