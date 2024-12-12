@@ -300,7 +300,6 @@
                               )
                     ;; divisor is so big we get 0:
                     0)))
-  :otf-flg t
   :hints (("Goal" :cases ((equal y1 0)
                           (and (not (equal y1 0))
                                (EQUAL (BVCHOP (+ '-1 SIZE) X) '0)))

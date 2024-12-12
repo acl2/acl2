@@ -336,7 +336,7 @@
 ;;            (integer-listp (mv-nth 1 (myif-nest-needs-bvchop-list-aux node size dag-array nodes-checked))))
 ;;   :hints (("Goal" :in-theory (enable integer-listp))))
 
-;; (verify-guards myif-nest-needs-bvchop-list-aux :otf-flg t
+;; (verify-guards myif-nest-needs-bvchop-list-aux
 ;;   :hints (("Goal" :in-theory (enable car-becomes-nth-of-0)))
 ;;   )
 

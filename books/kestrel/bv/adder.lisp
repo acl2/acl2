@@ -380,7 +380,6 @@
 ;;   (implies (and (natp n) (integerp x) (integerp y))
 ;;            (equal (bvminus n x y)
 ;;                   (ripple-carry-adder n x (bvnot n y) 1)))
-;;   :otf-flg t
 ;;   :hints (("Goal"
 ;;            :use (;(:instance RIPPLE-CARRY-ADDER-of-bvchop-arg3 (y (+ -1 (- Y))) (carry 1))
 ;;                  (:instance bvplus-becomes-ripple-carry-adder-helper (carry 1) (x (bvchop n x)) (y (BVNOT N Y)))

@@ -282,6 +282,7 @@
   (declare (xargs :guard t))
   '(unsigned-byte-p-of-read
     integerp-of-read
+    natp-of-read
     <-of-read-and-non-positive
     read-of-xw-irrel
     read-of-set-flag
