@@ -11,9 +11,9 @@
 
 (in-package "X")
 
-;; This book focues on things that are not specific to 32-bit or 64-bit mode.
+;; This book focuses on things that are not specific to 32-bit or 64-bit mode.
 
-;; The readers are: undef, x86p, alignment-checking-enabled-p, get-flag, 64-bit-modep, app-view, ctri, msri, segment-base-and-bounds
+;; The readers are: program-at, undef, x86p, alignment-checking-enabled-p, get-flag, 64-bit-modep, app-view, ctri, msri, segment-base-and-bounds
 ;; The writers are set-flag, set-undef, set-mxcsr, !rflags (currently) -- also if and myif (kind of)
 ;; We avoid using rules about set-ms and set-fault since execution should just stop is either of those is set.
 
@@ -44,6 +44,9 @@
 
 (defthm x86p-of-set-flag (implies (x86p x86) (x86p (set-flag flag val x86))) :hints (("Goal" :in-theory (enable set-flag))))
 (defthm x86p-of-!rflags (implies (x86p x86) (x86p (!rflags v x86))))
+(defthm x86p-of-set-undef (implies (x86p x86) (x86p (set-undef undef x86))) :hints (("Goal" :in-theory (enable set-undef))))
+(defthm x86p-of-set-mxcsr (implies (x86p x86) (x86p (set-mxcsr mxcsr x86))) :hints (("Goal" :in-theory (enable set-mxcsr))))
+;(defthm x86p-of-set-ms (implies (x86p x86) (x86p (set-ms ms x86))) :hints (("Goal" :in-theory (enable set-ms))))
 
 (defthm undef-of-!rflags (equal (undef (!rflags flags x86)) (undef x86)) :hints (("Goal" :in-theory (enable !rflags undef))))
 (defthm undef-of-set-flag (equal (undef (set-flag flg val x86)) (undef x86)) :hints (("Goal" :in-theory (enable undef))))

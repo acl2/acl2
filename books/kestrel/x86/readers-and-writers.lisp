@@ -11,7 +11,7 @@
 
 (in-package "X")
 
-;; This book focues on things that are not specific to 32-bit or 64-bit mode.
+;; This book focuses on things that are not specific to 32-bit or 64-bit mode.
 
 (include-book "projects/x86isa/machine/state" :dir :system) ;for xr
 ;(include-book "projects/x86isa/machine/register-readers-and-writers" :dir :system) ; has a ttag!
