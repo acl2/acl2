@@ -43,8 +43,12 @@
 
 (in-package "X86ISA")
 
-(include-book "other-non-det"
-              :ttags (:include-raw :undef-flg :syscall-exec :other-non-det))
+(include-book "std/util/def-bound-theorems" :dir :system)
+(include-book "state")
+(include-book "application-level-memory")
+(include-book "segmentation")
+(include-book "top-level-memory")
+(include-book "../utils/segmentation-structures")
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (in-theory (e/d () (mv-nth)))

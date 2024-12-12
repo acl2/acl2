@@ -1,10 +1,10 @@
 ; Event Macros Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -31,8 +31,7 @@
     "The expectation that these generated proofs never fail
      may not be met if the carefully architected hints are ``sabotaged''
      by things like default hints or special treatment of built-in functions
-     (e.g. functions that get expanded
-     even if their definition is disabled).
+     (e.g. functions that get expanded even if their definition is disabled).
      Thus, an event macro should generate, prior to the proofs in question,
      events that eliminate these possible saboteurs.
      These are preparatory events for the proofs.")
@@ -65,6 +64,15 @@
      which is accomplished via a system attachment.")
    (xdoc::p
     "We add an implicitly local event to set the "
+    (xdoc::seetopic "set-dwp" "double-whammy property")
+    " to @('nil').
+     Since we mainly want to avoid dependencies on variable settings,
+     we could equally set it to @('t') for that purpose.
+     But we prefer the higher efficiency of setting it to @('nil'),
+     also given that the generated proofs are crafted to always work,
+     which should factor in the effort made by type reasoning.")
+   (xdoc::p
+    "We add an implicitly local event to set the "
     (xdoc::seetopic "induction-depth-limit" "induction depth limit")
     " to 1.
      This lets generated proofs by inductions work
@@ -80,6 +88,7 @@
      (set-override-hints nil)
      (local
       (defattach-system simplifiable-mv-nth-p constant-nil-function-arity-0))
+     (set-dwp nil)
      (set-induction-depth-limit 1)
      (set-inhibit-warnings "disable"
                            "double-rewrite"
