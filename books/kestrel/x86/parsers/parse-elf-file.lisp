@@ -483,7 +483,7 @@
         :none
       (lookup-eq-safe :offset header))))
 
-;; Returns (mv erp result bytes).
+;; Returns (mv erp result bytes) where RESULT is an alist representing the symbol-table-entry.
 (defun parse-elf-symbol-table-entry (64-bitp string-table-bytes-etc bytes)
   (declare (xargs :guard (and (booleanp 64-bitp)
                               (byte-listp string-table-bytes-etc)
@@ -514,7 +514,7 @@
        (result (acons :size st_size result)))
     (mv nil (reverse result) bytes)))
 
-;; Returns (mv erp result).
+;; Returns (mv erp result) where RESULT is a list of alists, each representing a symbol-table-entry.
 (defund parse-elf-symbol-table (symbol-table-size 64-bitp string-table-bytes-etc acc bytes)
   (declare (xargs :guard (and (integerp symbol-table-size)
                               ;; (equal 0 (mod symbol-table-size 24))
