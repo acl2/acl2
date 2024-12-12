@@ -3719,8 +3719,7 @@
 ;;  (implies (equal (getbit 31 x) 1)
 ;;           (equal (bvlt 32 x 2147483644)
 ;;                  nil))
-;;  :hints (("Goal" :in-theory (e/d (getbit-of-bvplus-split bvcat logapp bvlt)
-;;                                  ())
+;;  :hints (("Goal" :in-theory (enable getbit-of-bvplus-split bvcat logapp bvlt)
 ;;           :use (:instance split-with-bvcat (x x) (hs 1) (ls 31)))))
 
 

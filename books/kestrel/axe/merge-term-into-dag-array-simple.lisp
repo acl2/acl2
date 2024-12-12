@@ -224,7 +224,7 @@
                                              terms var-replacement-alist
                                              dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist dag-array-name dag-parent-array-name))))
     :flag merge-terms-into-dag-array-simple)
-  :hints (("Goal" :in-theory (e/d (merge-term-into-dag-array-simple merge-terms-into-dag-array-simple) ()))))
+  :hints (("Goal" :in-theory (enable merge-term-into-dag-array-simple merge-terms-into-dag-array-simple))))
 
 (defthm-flag-merge-term-into-dag-array-simple
   (defthm merge-term-into-dag-array-simple-return-type

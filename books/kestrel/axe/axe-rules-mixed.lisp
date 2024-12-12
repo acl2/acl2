@@ -153,8 +153,7 @@
                 (unsigned-byte-p-forced x-size x)
                 (unsigned-byte-p-forced y-size y))
            (unsigned-byte-p '31 (bvplus '32 x y)))
-  :hints (("Goal" :in-theory (e/d (bvlt bvplus unsigned-byte-p-forced)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bvlt bvplus unsigned-byte-p-forced))))
 
 (defthmd plus-of-minus-one-and-bv-dag
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
