@@ -801,7 +801,7 @@
 
      bvplus-of-bvchop-and-bvshl ;new
      bvchop-of-bvshr-becomes-slice-safe ;newish: remove?? with bvshr we can split into cases easily.
-     bvchop-of-bvashr ; introduces slice
+     bvchop-of-bvashr-safe ; introduces slice
      bvchop-of-bvif
 
      ;; TODO: More like this:
