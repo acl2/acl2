@@ -1,7 +1,7 @@
 ; Tests of the DAG machinery
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -185,3 +185,10 @@
 
 ;(make-term-into-dag-array 'x 'dag-array 'dag-parent-array nil)
 ;(make-term-into-dag-array '(foo '3 x) 'dag-array 'dag-parent-array nil)
+
+;; Ensures that a DAG cannot be confused for a term, so we can build tools that
+;; take either kind of argument and can always tell how to interpret the
+;; arguments.
+(thm
+ (not (and (pseudo-dagp x)
+           (pseudo-termp x))))
