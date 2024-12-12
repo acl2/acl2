@@ -352,6 +352,9 @@ writes the final value of the instruction pointer into RIP.</p>")
 ;; INSTRUCTION: RDRAND
 ;; ======================================================================
 
+(include-book "../other-non-det"
+              :ttags (:include-raw :undef-flg :syscall-exec :other-non-det))
+
 (def-inst x86-rdrand
 
   ;; 0F C7:

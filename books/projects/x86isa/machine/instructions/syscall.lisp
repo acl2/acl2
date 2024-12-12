@@ -45,6 +45,7 @@
 
 (include-book "../decoding-and-spec-utils"
               :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+(include-book "../syscalls")
 
 ;; ======================================================================
 ;; INSTRUCTION: SYSCALL
