@@ -1578,7 +1578,7 @@
 ;;   (equal (unsigned-byte-p 3 x)
 ;;          (or (equal x 0)(equal x 1)(equal x 2)(equal x 3)(equal x 4)(equal x 5)(equal x 6)(equal x 7))))
 
-(in-theory (enable floor-when-multiple)) ;drop?
+;(in-theory (enable floor-when-multiple)) ;drop?
 
 (defthmd bvchop-extend-by-1
   (implies (posp size)
