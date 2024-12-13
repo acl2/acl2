@@ -768,6 +768,7 @@
     ceiling-of-lg
     lg
     log2
+    power-of-2p
 
     farg1
     farg2
