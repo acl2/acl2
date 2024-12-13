@@ -6277,6 +6277,7 @@
                                   (x (bvchop free x)) (x-size free) (y (bvchop n x)) (y-size n)))))
 
 ;compare to UNSIGNED-BYTE-P-OF-BVCHOP-BIGGER
+;rename unsigned-byte-p-of-bvchop-becomes-equal-of-slice-and-0
 (defthm unsigned-byte-p-of-bvchop-bigger2
   (implies (and (< size1 size2)
                 (natp size1)
@@ -6287,7 +6288,17 @@
            :in-theory (enable bvcat logapp)
            :use (:instance split-bv (x (bvchop size2 x)) (n size2) (m size1)))))
 
-(defthm unsigned-byte-p-of-bvchop-bigger
+;; not sure if we want this
+(defthmd unsigned-byte-p-of-bvchop-becomes-bvlt
+  (implies (and (< size1 size2)
+                (natp size1)
+                (natp size2))
+           (equal (unsigned-byte-p size1 (bvchop size2 x))
+                  (bvlt size2 x (expt 2 size1))))
+  :hints (("Goal" :in-theory (e/d (bvlt) (unsigned-byte-p-of-bvchop-bigger2)))))
+
+;todo: drop
+(defthmd unsigned-byte-p-of-bvchop-bigger
   (equal (unsigned-byte-p '31 (bvchop '32 x))
          (bvlt 32 x 2147483648))
   :hints (("Goal" :in-theory (enable bvlt))))
