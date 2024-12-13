@@ -44,7 +44,7 @@
 ;; ======================================================================
 
 (include-book "../decoding-and-spec-utils"
-              :ttags (:syscall-exec :other-non-det :undef-flg))
+              :ttags (:syscall-exec :undef-flg))
 (include-book "../syscalls")
 
 ;; ======================================================================
