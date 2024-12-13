@@ -339,7 +339,7 @@
   :hints (("Goal" :use (:instance usb1-cases (x (getbit n x)))))
   :rule-classes ((:rewrite :backchain-limit-lst (0))))
 
-(defthm getbit-when-not-0
+(defthmd getbit-when-not-0
   (implies (not (equal 0 (getbit n x)))
            (equal (getbit n x)
                   1))
