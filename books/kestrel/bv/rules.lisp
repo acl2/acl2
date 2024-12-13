@@ -6291,3 +6291,26 @@
   (equal (unsigned-byte-p '31 (bvchop '32 x))
          (bvlt 32 x 2147483648))
   :hints (("Goal" :in-theory (enable bvlt))))
+
+;improve?
+(defthm unsigned-byte-p-of-bvmult-of-expt2
+  (implies (and (unsigned-byte-p (- size2 i) x) ; we don't shift any bits out the top
+                (<= i size) ; gen?
+                (natp size)
+                (natp size2)
+                (natp i))
+           (equal (unsigned-byte-p size (bvmult size2 (expt 2 i) x))
+                  (unsigned-byte-p (- size i) x))))
+
+;improve?
+(defthm unsigned-byte-p-of-bvmult-of-expt2-constant-version
+  (implies (and (syntaxp (quotep k))
+                (acl2::power-of-2p k)
+                (unsigned-byte-p (- size2 (lg k)) x) ; we don't shift any bits out the top
+                (<= (lg k) size) ; gen?
+                (natp size)
+                (natp size2))
+           (equal (unsigned-byte-p size (bvmult size2 k x))
+                  (unsigned-byte-p (- size (lg k)) x)))
+  :hints (("Goal" :use (:instance unsigned-byte-p-of-bvmult-of-expt2 (i (lg k)))
+           :in-theory (e/d (acl2::power-of-2p lg) (unsigned-byte-p-of-bvmult-of-expt2)))))
