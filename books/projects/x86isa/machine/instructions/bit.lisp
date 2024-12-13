@@ -48,7 +48,7 @@
 ;; ======================================================================
 
 (include-book "../decoding-and-spec-utils"
-          :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+          :ttags (:syscall-exec :other-non-det :undef-flg))
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
 
