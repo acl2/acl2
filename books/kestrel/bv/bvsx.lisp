@@ -13,6 +13,7 @@
 
 (include-book "bvsx-def")
 (include-book "logext-def")
+(local (include-book "logapp"))
 (local (include-book "unsigned-byte-p"))
 (local (include-book "bvcat"))
 (local (include-book "bvchop"))
