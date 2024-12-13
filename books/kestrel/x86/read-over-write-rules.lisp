@@ -23,6 +23,7 @@
 (include-book "readers-and-writers")
 (include-book "flags")
 (local (include-book "linear-memory"))
+(local (include-book "kestrel/bv/logapp" :dir :system)) ; why? for acl2::loghead-becomes-bvchop
 
 (defthm program-at-of-set-flag
   (implies (app-view x86)
