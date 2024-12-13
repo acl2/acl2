@@ -42,7 +42,7 @@
 
 (include-book "segmentation-structures" :dir :utils)
 (include-book "paging-structures" :dir :utils)
-(include-book "register-readers-and-writers" :ttags (:undef-flg :include-raw))
+(include-book "register-readers-and-writers" :ttags (:undef-flg))
 (include-book "std/bitsets/bignum-extract" :dir :system) ;; For 64-bit-modep
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
