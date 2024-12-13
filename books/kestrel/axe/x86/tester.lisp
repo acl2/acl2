@@ -25,6 +25,7 @@
 (include-book "kestrel/strings-light/strings-starting-with" :dir :system)
 (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system) ; for +-OF-+-OF---SAME
 (include-book "kestrel/arithmetic-light/types" :dir :system) ; for rationalp-when-integerp
+(include-book "kestrel/arithmetic-light/floor" :dir :system)
 (include-book "unroll-x86-code")
 (include-book "tester-rules-bv")
 (include-book "tester-rules")
