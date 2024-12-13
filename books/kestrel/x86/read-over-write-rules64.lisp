@@ -19,72 +19,16 @@
 
 ;; TODO: Make sure we have the complete set of these rules
 
-;; The readers are: the 16 register readers, rip, get-flag, ctri, undef, read, (todo: read-byte?) (todo: rflags?), msri
+;; The readers are: rip, the 16 (other) register readers, get-flag, ctri, undef, read, (todo: read-byte?) (todo: rflags?), msri
 
 ;; The predicates are: x86p, alignment-checking-enabled-p, 64-bit-modep, app-view
 
-;; The writers are: the 16 register writers, set-flag, set-undef, write, write-byte, !rflags (todo: why?)
-
-(defthm rip-of-set-undef (equal (rip (set-undef undef x86)) (rip x86)) :hints (("Goal" :in-theory (enable set-undef))))
-(defthm rip-of-set-mxcsr (equal (rip (set-mxcsr mxcsr x86)) (rip x86)) :hints (("Goal" :in-theory (enable set-mxcsr))))
-(defthm rip-of-set-ms (equal (rip (set-ms ms x86)) (rip x86)) :hints (("Goal" :in-theory (enable set-ms))))
-
-(defthm rax-of-set-undef (equal (rax (set-undef val x86)) (rax x86)) :hints (("Goal" :in-theory (enable rax set-undef))))
-(defthm rbx-of-set-undef (equal (rbx (set-undef val x86)) (rbx x86)) :hints (("Goal" :in-theory (enable rbx set-undef))))
-(defthm rcx-of-set-undef (equal (rcx (set-undef val x86)) (rcx x86)) :hints (("Goal" :in-theory (enable rcx set-undef))))
-(defthm rdx-of-set-undef (equal (rdx (set-undef val x86)) (rdx x86)) :hints (("Goal" :in-theory (enable rdx set-undef))))
-(defthm rsi-of-set-undef (equal (rsi (set-undef val x86)) (rsi x86)) :hints (("Goal" :in-theory (enable rsi set-undef))))
-(defthm rdi-of-set-undef (equal (rdi (set-undef val x86)) (rdi x86)) :hints (("Goal" :in-theory (enable rdi set-undef))))
-(defthm r8-of-set-undef (equal (r8 (set-undef val x86)) (r8 x86)) :hints (("Goal" :in-theory (enable r8 set-undef))))
-(defthm r9-of-set-undef (equal (r9 (set-undef val x86)) (r9 x86)) :hints (("Goal" :in-theory (enable r9 set-undef))))
-(defthm r10-of-set-undef (equal (r10 (set-undef val x86)) (r10 x86)) :hints (("Goal" :in-theory (enable r10 set-undef))))
-(defthm r11-of-set-undef (equal (r11 (set-undef val x86)) (r11 x86)) :hints (("Goal" :in-theory (enable r11 set-undef))))
-(defthm r12-of-set-undef (equal (r12 (set-undef val x86)) (r12 x86)) :hints (("Goal" :in-theory (enable r12 set-undef))))
-(defthm r13-of-set-undef (equal (r13 (set-undef val x86)) (r13 x86)) :hints (("Goal" :in-theory (enable r13 set-undef))))
-(defthm r14-of-set-undef (equal (r14 (set-undef val x86)) (r14 x86)) :hints (("Goal" :in-theory (enable r14 set-undef))))
-(defthm r15-of-set-undef (equal (r15 (set-undef val x86)) (r15 x86)) :hints (("Goal" :in-theory (enable r15 set-undef))))
-(defthm rsp-of-set-undef (equal (rsp (set-undef val x86)) (rsp x86)) :hints (("Goal" :in-theory (enable rsp set-undef))))
-(defthm rbp-of-set-undef (equal (rbp (set-undef val x86)) (rbp x86)) :hints (("Goal" :in-theory (enable rbp set-undef))))
+;; The writers are: the 16 register writers, set-rip, set-flag, set-undef, write, write-byte, !rflags (todo: why?)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm rax-of-set-mxcsr (equal (rax (set-mxcsr val x86)) (rax x86)) :hints (("Goal" :in-theory (enable rax set-mxcsr))))
-(defthm rbx-of-set-mxcsr (equal (rbx (set-mxcsr val x86)) (rbx x86)) :hints (("Goal" :in-theory (enable rbx set-mxcsr))))
-(defthm rcx-of-set-mxcsr (equal (rcx (set-mxcsr val x86)) (rcx x86)) :hints (("Goal" :in-theory (enable rcx set-mxcsr))))
-(defthm rdx-of-set-mxcsr (equal (rdx (set-mxcsr val x86)) (rdx x86)) :hints (("Goal" :in-theory (enable rdx set-mxcsr))))
-(defthm rsi-of-set-mxcsr (equal (rsi (set-mxcsr val x86)) (rsi x86)) :hints (("Goal" :in-theory (enable rsi set-mxcsr))))
-(defthm rdi-of-set-mxcsr (equal (rdi (set-mxcsr val x86)) (rdi x86)) :hints (("Goal" :in-theory (enable rdi set-mxcsr))))
-(defthm r8-of-set-mxcsr (equal (r8 (set-mxcsr val x86)) (r8 x86)) :hints (("Goal" :in-theory (enable r8 set-mxcsr))))
-(defthm r9-of-set-mxcsr (equal (r9 (set-mxcsr val x86)) (r9 x86)) :hints (("Goal" :in-theory (enable r9 set-mxcsr))))
-(defthm r10-of-set-mxcsr (equal (r10 (set-mxcsr val x86)) (r10 x86)) :hints (("Goal" :in-theory (enable r10 set-mxcsr))))
-(defthm r11-of-set-mxcsr (equal (r11 (set-mxcsr val x86)) (r11 x86)) :hints (("Goal" :in-theory (enable r11 set-mxcsr))))
-(defthm r12-of-set-mxcsr (equal (r12 (set-mxcsr val x86)) (r12 x86)) :hints (("Goal" :in-theory (enable r12 set-mxcsr))))
-(defthm r13-of-set-mxcsr (equal (r13 (set-mxcsr val x86)) (r13 x86)) :hints (("Goal" :in-theory (enable r13 set-mxcsr))))
-(defthm r14-of-set-mxcsr (equal (r14 (set-mxcsr val x86)) (r14 x86)) :hints (("Goal" :in-theory (enable r14 set-mxcsr))))
-(defthm r15-of-set-mxcsr (equal (r15 (set-mxcsr val x86)) (r15 x86)) :hints (("Goal" :in-theory (enable r15 set-mxcsr))))
-(defthm rsp-of-set-mxcsr (equal (rsp (set-mxcsr val x86)) (rsp x86)) :hints (("Goal" :in-theory (enable rsp set-mxcsr))))
-(defthm rbp-of-set-mxcsr (equal (rbp (set-mxcsr val x86)) (rbp x86)) :hints (("Goal" :in-theory (enable rbp set-mxcsr))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defthm rax-of-set-ms (equal (rax (set-ms val x86)) (rax x86)) :hints (("Goal" :in-theory (enable rax set-ms))))
-(defthm rbx-of-set-ms (equal (rbx (set-ms val x86)) (rbx x86)) :hints (("Goal" :in-theory (enable rbx set-ms))))
-(defthm rcx-of-set-ms (equal (rcx (set-ms val x86)) (rcx x86)) :hints (("Goal" :in-theory (enable rcx set-ms))))
-(defthm rdx-of-set-ms (equal (rdx (set-ms val x86)) (rdx x86)) :hints (("Goal" :in-theory (enable rdx set-ms))))
-(defthm rsi-of-set-ms (equal (rsi (set-ms val x86)) (rsi x86)) :hints (("Goal" :in-theory (enable rsi set-ms))))
-(defthm rdi-of-set-ms (equal (rdi (set-ms val x86)) (rdi x86)) :hints (("Goal" :in-theory (enable rdi set-ms))))
-(defthm r8-of-set-ms (equal (r8 (set-ms val x86)) (r8 x86)) :hints (("Goal" :in-theory (enable r8 set-ms))))
-(defthm r9-of-set-ms (equal (r9 (set-ms val x86)) (r9 x86)) :hints (("Goal" :in-theory (enable r9 set-ms))))
-(defthm r10-of-set-ms (equal (r10 (set-ms val x86)) (r10 x86)) :hints (("Goal" :in-theory (enable r10 set-ms))))
-(defthm r11-of-set-ms (equal (r11 (set-ms val x86)) (r11 x86)) :hints (("Goal" :in-theory (enable r11 set-ms))))
-(defthm r12-of-set-ms (equal (r12 (set-ms val x86)) (r12 x86)) :hints (("Goal" :in-theory (enable r12 set-ms))))
-(defthm r13-of-set-ms (equal (r13 (set-ms val x86)) (r13 x86)) :hints (("Goal" :in-theory (enable r13 set-ms))))
-(defthm r14-of-set-ms (equal (r14 (set-ms val x86)) (r14 x86)) :hints (("Goal" :in-theory (enable r14 set-ms))))
-(defthm r15-of-set-ms (equal (r15 (set-ms val x86)) (r15 x86)) :hints (("Goal" :in-theory (enable r15 set-ms))))
-(defthm rsp-of-set-ms (equal (rsp (set-ms val x86)) (rsp x86)) :hints (("Goal" :in-theory (enable rsp set-ms))))
-(defthm rbp-of-set-ms (equal (rbp (set-ms val x86)) (rbp x86)) :hints (("Goal" :in-theory (enable rbp set-ms))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; This section contains rules for the 17 register readers (including RIP)
+;; applied after various writers, organized by writer.
 
 ;; This first one may be rarely needed, since set-rip is moved above set-flag:
 (defthm rip-of-set-flag (equal (rip (set-flag flag val x86)) (rip x86)) :hints (("Goal" :in-theory (enable set-flag))))
@@ -105,7 +49,60 @@
 (defthm rsp-of-set-flag (equal (rsp (set-flag flg val x86)) (rsp x86)) :hints (("Goal" :in-theory (enable rsp))))
 (defthm rbp-of-set-flag (equal (rbp (set-flag flg val x86)) (rbp x86)) :hints (("Goal" :in-theory (enable rbp))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Drop these?
+;; (defthm rip-of-set-ms (equal (rip (set-ms val x86)) (rip x86)) :hints (("Goal" :in-theory (enable set-ms))))
+;; (defthm rax-of-set-ms (equal (rax (set-ms val x86)) (rax x86)) :hints (("Goal" :in-theory (enable rax set-ms))))
+;; (defthm rbx-of-set-ms (equal (rbx (set-ms val x86)) (rbx x86)) :hints (("Goal" :in-theory (enable rbx set-ms))))
+;; (defthm rcx-of-set-ms (equal (rcx (set-ms val x86)) (rcx x86)) :hints (("Goal" :in-theory (enable rcx set-ms))))
+;; (defthm rdx-of-set-ms (equal (rdx (set-ms val x86)) (rdx x86)) :hints (("Goal" :in-theory (enable rdx set-ms))))
+;; (defthm rsi-of-set-ms (equal (rsi (set-ms val x86)) (rsi x86)) :hints (("Goal" :in-theory (enable rsi set-ms))))
+;; (defthm rdi-of-set-ms (equal (rdi (set-ms val x86)) (rdi x86)) :hints (("Goal" :in-theory (enable rdi set-ms))))
+;; (defthm r8-of-set-ms (equal (r8 (set-ms val x86)) (r8 x86)) :hints (("Goal" :in-theory (enable r8 set-ms))))
+;; (defthm r9-of-set-ms (equal (r9 (set-ms val x86)) (r9 x86)) :hints (("Goal" :in-theory (enable r9 set-ms))))
+;; (defthm r10-of-set-ms (equal (r10 (set-ms val x86)) (r10 x86)) :hints (("Goal" :in-theory (enable r10 set-ms))))
+;; (defthm r11-of-set-ms (equal (r11 (set-ms val x86)) (r11 x86)) :hints (("Goal" :in-theory (enable r11 set-ms))))
+;; (defthm r12-of-set-ms (equal (r12 (set-ms val x86)) (r12 x86)) :hints (("Goal" :in-theory (enable r12 set-ms))))
+;; (defthm r13-of-set-ms (equal (r13 (set-ms val x86)) (r13 x86)) :hints (("Goal" :in-theory (enable r13 set-ms))))
+;; (defthm r14-of-set-ms (equal (r14 (set-ms val x86)) (r14 x86)) :hints (("Goal" :in-theory (enable r14 set-ms))))
+;; (defthm r15-of-set-ms (equal (r15 (set-ms val x86)) (r15 x86)) :hints (("Goal" :in-theory (enable r15 set-ms))))
+;; (defthm rsp-of-set-ms (equal (rsp (set-ms val x86)) (rsp x86)) :hints (("Goal" :in-theory (enable rsp set-ms))))
+;; (defthm rbp-of-set-ms (equal (rbp (set-ms val x86)) (rbp x86)) :hints (("Goal" :in-theory (enable rbp set-ms))))
+
+(defthm rip-of-set-mxcsr (equal (rip (set-mxcsr val x86)) (rip x86)) :hints (("Goal" :in-theory (enable set-mxcsr))))
+(defthm rax-of-set-mxcsr (equal (rax (set-mxcsr val x86)) (rax x86)) :hints (("Goal" :in-theory (enable rax set-mxcsr))))
+(defthm rbx-of-set-mxcsr (equal (rbx (set-mxcsr val x86)) (rbx x86)) :hints (("Goal" :in-theory (enable rbx set-mxcsr))))
+(defthm rcx-of-set-mxcsr (equal (rcx (set-mxcsr val x86)) (rcx x86)) :hints (("Goal" :in-theory (enable rcx set-mxcsr))))
+(defthm rdx-of-set-mxcsr (equal (rdx (set-mxcsr val x86)) (rdx x86)) :hints (("Goal" :in-theory (enable rdx set-mxcsr))))
+(defthm rsi-of-set-mxcsr (equal (rsi (set-mxcsr val x86)) (rsi x86)) :hints (("Goal" :in-theory (enable rsi set-mxcsr))))
+(defthm rdi-of-set-mxcsr (equal (rdi (set-mxcsr val x86)) (rdi x86)) :hints (("Goal" :in-theory (enable rdi set-mxcsr))))
+(defthm r8-of-set-mxcsr (equal (r8 (set-mxcsr val x86)) (r8 x86)) :hints (("Goal" :in-theory (enable r8 set-mxcsr))))
+(defthm r9-of-set-mxcsr (equal (r9 (set-mxcsr val x86)) (r9 x86)) :hints (("Goal" :in-theory (enable r9 set-mxcsr))))
+(defthm r10-of-set-mxcsr (equal (r10 (set-mxcsr val x86)) (r10 x86)) :hints (("Goal" :in-theory (enable r10 set-mxcsr))))
+(defthm r11-of-set-mxcsr (equal (r11 (set-mxcsr val x86)) (r11 x86)) :hints (("Goal" :in-theory (enable r11 set-mxcsr))))
+(defthm r12-of-set-mxcsr (equal (r12 (set-mxcsr val x86)) (r12 x86)) :hints (("Goal" :in-theory (enable r12 set-mxcsr))))
+(defthm r13-of-set-mxcsr (equal (r13 (set-mxcsr val x86)) (r13 x86)) :hints (("Goal" :in-theory (enable r13 set-mxcsr))))
+(defthm r14-of-set-mxcsr (equal (r14 (set-mxcsr val x86)) (r14 x86)) :hints (("Goal" :in-theory (enable r14 set-mxcsr))))
+(defthm r15-of-set-mxcsr (equal (r15 (set-mxcsr val x86)) (r15 x86)) :hints (("Goal" :in-theory (enable r15 set-mxcsr))))
+(defthm rsp-of-set-mxcsr (equal (rsp (set-mxcsr val x86)) (rsp x86)) :hints (("Goal" :in-theory (enable rsp set-mxcsr))))
+(defthm rbp-of-set-mxcsr (equal (rbp (set-mxcsr val x86)) (rbp x86)) :hints (("Goal" :in-theory (enable rbp set-mxcsr))))
+
+(defthm rip-of-set-undef (equal (rip (set-undef val x86)) (rip x86)) :hints (("Goal" :in-theory (enable set-undef))))
+(defthm rax-of-set-undef (equal (rax (set-undef val x86)) (rax x86)) :hints (("Goal" :in-theory (enable rax set-undef))))
+(defthm rbx-of-set-undef (equal (rbx (set-undef val x86)) (rbx x86)) :hints (("Goal" :in-theory (enable rbx set-undef))))
+(defthm rcx-of-set-undef (equal (rcx (set-undef val x86)) (rcx x86)) :hints (("Goal" :in-theory (enable rcx set-undef))))
+(defthm rdx-of-set-undef (equal (rdx (set-undef val x86)) (rdx x86)) :hints (("Goal" :in-theory (enable rdx set-undef))))
+(defthm rsi-of-set-undef (equal (rsi (set-undef val x86)) (rsi x86)) :hints (("Goal" :in-theory (enable rsi set-undef))))
+(defthm rdi-of-set-undef (equal (rdi (set-undef val x86)) (rdi x86)) :hints (("Goal" :in-theory (enable rdi set-undef))))
+(defthm r8-of-set-undef (equal (r8 (set-undef val x86)) (r8 x86)) :hints (("Goal" :in-theory (enable r8 set-undef))))
+(defthm r9-of-set-undef (equal (r9 (set-undef val x86)) (r9 x86)) :hints (("Goal" :in-theory (enable r9 set-undef))))
+(defthm r10-of-set-undef (equal (r10 (set-undef val x86)) (r10 x86)) :hints (("Goal" :in-theory (enable r10 set-undef))))
+(defthm r11-of-set-undef (equal (r11 (set-undef val x86)) (r11 x86)) :hints (("Goal" :in-theory (enable r11 set-undef))))
+(defthm r12-of-set-undef (equal (r12 (set-undef val x86)) (r12 x86)) :hints (("Goal" :in-theory (enable r12 set-undef))))
+(defthm r13-of-set-undef (equal (r13 (set-undef val x86)) (r13 x86)) :hints (("Goal" :in-theory (enable r13 set-undef))))
+(defthm r14-of-set-undef (equal (r14 (set-undef val x86)) (r14 x86)) :hints (("Goal" :in-theory (enable r14 set-undef))))
+(defthm r15-of-set-undef (equal (r15 (set-undef val x86)) (r15 x86)) :hints (("Goal" :in-theory (enable r15 set-undef))))
+(defthm rsp-of-set-undef (equal (rsp (set-undef val x86)) (rsp x86)) :hints (("Goal" :in-theory (enable rsp set-undef))))
+(defthm rbp-of-set-undef (equal (rbp (set-undef val x86)) (rbp x86)) :hints (("Goal" :in-theory (enable rbp set-undef))))
 
 (defthm rip-of-write-byte (equal (rip (write-byte base-addr byte x86)) (rip x86)) :hints (("Goal" :in-theory (enable write-byte))))
 (defthm rax-of-write-byte (equal (rax (write-byte base-addr byte x86)) (rax x86)) :hints (("Goal" :in-theory (enable write-byte))))
@@ -124,8 +121,6 @@
 (defthm r15-of-write-byte (equal (r15 (write-byte base-addr byte x86)) (r15 x86)) :hints (("Goal" :in-theory (enable write-byte))))
 (defthm rsp-of-write-byte (equal (rsp (write-byte base-addr byte x86)) (rsp x86)) :hints (("Goal" :in-theory (enable write-byte))))
 (defthm rbp-of-write-byte (equal (rbp (write-byte base-addr byte x86)) (rbp x86)) :hints (("Goal" :in-theory (enable write-byte))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm rip-of-write (equal (rip (write n base-addr val x86)) (rip x86)) :hints (("Goal" :in-theory (enable write))))
 (defthm rax-of-write (equal (rax (write n base-addr val x86)) (rax x86)) :hints (("Goal" :in-theory (enable write))))
@@ -163,7 +158,27 @@
 (defthm rsp-of-write-bytes (equal (rsp (write-bytes base-addr vals x86)) (rsp x86)) :hints (("Goal" :in-theory (enable write-bytes))))
 (defthm rbp-of-write-bytes (equal (rbp (write-bytes base-addr vals x86)) (rbp x86)) :hints (("Goal" :in-theory (enable write-bytes))))
 
+;;(defthm rip-of-!rflags (equal (rip (!rflags flags x86)) (rip x86)) :hints (("Goal" :in-theory (enable rip)))) ; not needed?
+(defthm rax-of-!rflags (equal (rax (!rflags flags x86)) (rax x86)) :hints (("Goal" :in-theory (enable rax))))
+(defthm rbx-of-!rflags (equal (rbx (!rflags flags x86)) (rbx x86)) :hints (("Goal" :in-theory (enable rbx))))
+(defthm rcx-of-!rflags (equal (rcx (!rflags flags x86)) (rcx x86)) :hints (("Goal" :in-theory (enable rcx))))
+(defthm rdx-of-!rflags (equal (rdx (!rflags flags x86)) (rdx x86)) :hints (("Goal" :in-theory (enable rdx))))
+(defthm rsi-of-!rflags (equal (rsi (!rflags flags x86)) (rsi x86)) :hints (("Goal" :in-theory (enable rsi))))
+(defthm rdi-of-!rflags (equal (rdi (!rflags flags x86)) (rdi x86)) :hints (("Goal" :in-theory (enable rdi))))
+(defthm r8-of-!rflags (equal (r8 (!rflags flags x86)) (r8 x86)) :hints (("Goal" :in-theory (enable r8))))
+(defthm r9-of-!rflags (equal (r9 (!rflags flags x86)) (r9 x86)) :hints (("Goal" :in-theory (enable r9))))
+(defthm r10-of-!rflags (equal (r10 (!rflags flags x86)) (r10 x86)) :hints (("Goal" :in-theory (enable r10))))
+(defthm r11-of-!rflags (equal (r11 (!rflags flags x86)) (r11 x86)) :hints (("Goal" :in-theory (enable r11))))
+(defthm r12-of-!rflags (equal (r12 (!rflags flags x86)) (r12 x86)) :hints (("Goal" :in-theory (enable r12))))
+(defthm r13-of-!rflags (equal (r13 (!rflags flags x86)) (r13 x86)) :hints (("Goal" :in-theory (enable r13))))
+(defthm r14-of-!rflags (equal (r14 (!rflags flags x86)) (r14 x86)) :hints (("Goal" :in-theory (enable r14))))
+(defthm r15-of-!rflags (equal (r15 (!rflags flags x86)) (r15 x86)) :hints (("Goal" :in-theory (enable r15))))
+(defthm rsp-of-!rflags (equal (rsp (!rflags flags x86)) (rsp x86)) :hints (("Goal" :in-theory (enable rsp))))
+(defthm rbp-of-!rflags (equal (rbp (!rflags flags x86)) (rbp x86)) :hints (("Goal" :in-theory (enable rbp))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; This section contains rules for various readers applied to the 17 register writers (including SET-RIP)
 
 (defthm read-of-set-rip (equal (read n addr (set-rip rip x86)) (read n addr x86)) :hints (("Goal" :in-theory (enable set-rip))))
 (defthm read-of-set-rax (equal (read n addr (set-rax val x86)) (read n addr x86)) :hints (("Goal" :in-theory (enable set-rax))))
@@ -182,10 +197,12 @@
 (defthm read-of-set-r15 (equal (read n addr (set-r15 val x86)) (read n addr x86)) :hints (("Goal" :in-theory (enable set-r15))))
 (defthm read-of-set-rsp (equal (read n addr (set-rsp val x86)) (read n addr x86)) :hints (("Goal" :in-theory (enable set-rsp))))
 (defthm read-of-set-rbp (equal (read n addr (set-rbp val x86)) (read n addr x86)) :hints (("Goal" :in-theory (enable set-rbp))))
+
+;; todo: are we considering READ to be a 64-bit notion, or should this be moved?
 (defthm read-of-set-undef (equal (read n addr (set-undef val x86)) (read n addr x86)) :hints (("Goal" :in-theory (enable set-undef))))
 (defthm read-of-set-mxcsr (equal (read n addr (set-mxcsr val x86)) (read n addr x86)) :hints (("Goal" :in-theory (enable set-mxcsr))))
-(defthm read-of-set-ms (equal (read n addr (set-ms val x86)) (read n addr x86)) :hints (("Goal" :in-theory (enable set-ms))))
-(defthm read-of-set-fault (equal (read n addr (set-fault val x86)) (read n addr x86)) :hints (("Goal" :in-theory (enable set-fault))))
+;(defthm read-of-set-ms (equal (read n addr (set-ms val x86)) (read n addr x86)) :hints (("Goal" :in-theory (enable set-ms))))
+;(defthm read-of-set-fault (equal (read n addr (set-fault val x86)) (read n addr x86)) :hints (("Goal" :in-theory (enable set-fault))))
 (defthm read-of-!rflags (equal (read n addr (!rflags v x86)) (read n addr x86)) :hints (("Goal" :in-theory (enable read))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -209,8 +226,8 @@
 (defthm read-byte-of-set-rbp (equal (read-byte addr (set-rbp val x86)) (read-byte addr x86)) :hints (("Goal" :in-theory (enable set-rbp))))
 (defthm read-byte-of-set-undef (equal (read-byte addr (set-undef val x86)) (read-byte addr x86)) :hints (("Goal" :in-theory (enable set-undef))))
 (defthm read-byte-of-set-mxcsr (equal (read-byte addr (set-mxcsr val x86)) (read-byte addr x86)) :hints (("Goal" :in-theory (enable set-mxcsr))))
-(defthm read-byte-of-set-ms (equal (read-byte addr (set-ms val x86)) (read-byte addr x86)) :hints (("Goal" :in-theory (enable set-ms))))
-(defthm read-byte-of-set-fault (equal (read-byte addr (set-fault val x86)) (read-byte addr x86)) :hints (("Goal" :in-theory (enable set-fault))))
+;(defthm read-byte-of-set-ms (equal (read-byte addr (set-ms val x86)) (read-byte addr x86)) :hints (("Goal" :in-theory (enable set-ms))))
+;(defthm read-byte-of-set-fault (equal (read-byte addr (set-fault val x86)) (read-byte addr x86)) :hints (("Goal" :in-theory (enable set-fault))))
 (defthm read-byte-of-!rflags (equal (read-byte addr (!rflags v x86)) (read-byte addr x86)) :hints (("Goal" :in-theory (enable read))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -328,9 +345,6 @@
 (defthm x86p-of-set-r15 (implies (x86p x86) (x86p (set-r15 r15 x86))) :hints (("Goal" :in-theory (enable set-r15))))
 (defthm x86p-of-set-rsp (implies (x86p x86) (x86p (set-rsp rsp x86))) :hints (("Goal" :in-theory (enable set-rsp))))
 (defthm x86p-of-set-rbp (implies (x86p x86) (x86p (set-rbp rbp x86))) :hints (("Goal" :in-theory (enable set-rbp))))
-(defthm x86p-of-set-undef (implies (x86p x86) (x86p (set-undef undef x86))) :hints (("Goal" :in-theory (enable set-undef))))
-(defthm x86p-of-set-mxcsr (implies (x86p x86) (x86p (set-mxcsr mxcsr x86))) :hints (("Goal" :in-theory (enable set-mxcsr))))
-(defthm x86p-of-set-ms (implies (x86p x86) (x86p (set-ms ms x86))) :hints (("Goal" :in-theory (enable set-ms))))
 
 (defthm x86p-of-write-byte (implies (x86p x86) (x86p (write-byte base-addr byte x86))) :hints (("Goal" :in-theory (enable write-byte))))
 (defthm x86p-of-write (implies (x86p x86) (x86p (write n base-addr val x86))) :hints (("Goal" :in-theory (enable write))))
@@ -930,25 +944,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm rax-of-!rflags (equal (rax (!rflags flags x86)) (rax x86)) :hints (("Goal" :in-theory (enable rax))))
-(defthm rbx-of-!rflags (equal (rbx (!rflags flags x86)) (rbx x86)) :hints (("Goal" :in-theory (enable rbx))))
-(defthm rcx-of-!rflags (equal (rcx (!rflags flags x86)) (rcx x86)) :hints (("Goal" :in-theory (enable rcx))))
-(defthm rdx-of-!rflags (equal (rdx (!rflags flags x86)) (rdx x86)) :hints (("Goal" :in-theory (enable rdx))))
-(defthm rsi-of-!rflags (equal (rsi (!rflags flags x86)) (rsi x86)) :hints (("Goal" :in-theory (enable rsi))))
-(defthm rdi-of-!rflags (equal (rdi (!rflags flags x86)) (rdi x86)) :hints (("Goal" :in-theory (enable rdi))))
-(defthm r8-of-!rflags (equal (r8 (!rflags flags x86)) (r8 x86)) :hints (("Goal" :in-theory (enable r8))))
-(defthm r9-of-!rflags (equal (r9 (!rflags flags x86)) (r9 x86)) :hints (("Goal" :in-theory (enable r9))))
-(defthm r10-of-!rflags (equal (r10 (!rflags flags x86)) (r10 x86)) :hints (("Goal" :in-theory (enable r10))))
-(defthm r11-of-!rflags (equal (r11 (!rflags flags x86)) (r11 x86)) :hints (("Goal" :in-theory (enable r11))))
-(defthm r12-of-!rflags (equal (r12 (!rflags flags x86)) (r12 x86)) :hints (("Goal" :in-theory (enable r12))))
-(defthm r13-of-!rflags (equal (r13 (!rflags flags x86)) (r13 x86)) :hints (("Goal" :in-theory (enable r13))))
-(defthm r14-of-!rflags (equal (r14 (!rflags flags x86)) (r14 x86)) :hints (("Goal" :in-theory (enable r14))))
-(defthm r15-of-!rflags (equal (r15 (!rflags flags x86)) (r15 x86)) :hints (("Goal" :in-theory (enable r15))))
-(defthm rsp-of-!rflags (equal (rsp (!rflags flags x86)) (rsp x86)) :hints (("Goal" :in-theory (enable rsp))))
-(defthm rbp-of-!rflags (equal (rbp (!rflags flags x86)) (rbp x86)) :hints (("Goal" :in-theory (enable rbp))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ;; todo: finish this:
 
 (defthm mv-nth-0-of-rml-size-when-app-view
@@ -1008,7 +1003,7 @@
   (defthm mv-nth-0-of-rme-size-of-set-rbp (implies (app-view x86) (equal (mv-nth 0 (rme-size p n e s r c (set-rbp val x86))) (mv-nth 0 (rme-size p n e s r c x86)))) :hints (("Goal" :in-theory (enable set-rbp))))
   (defthm mv-nth-0-of-rme-size-of-set-undef (implies (app-view x86) (equal (mv-nth 0 (rme-size p n e s r c (set-undef val x86))) (mv-nth 0 (rme-size p n e s r c x86)))) :hints (("Goal" :in-theory (enable set-undef))))
   (defthm mv-nth-0-of-rme-size-of-set-mxcsr (implies (app-view x86) (equal (mv-nth 0 (rme-size p n e s r c (set-mxcsr val x86))) (mv-nth 0 (rme-size p n e s r c x86)))) :hints (("Goal" :in-theory (enable set-mxcsr))))
-  (defthm mv-nth-0-of-rme-size-of-set-ms (implies (app-view x86) (equal (mv-nth 0 (rme-size p n e s r c (set-ms val x86))) (mv-nth 0 (rme-size p n e s r c x86)))) :hints (("Goal" :in-theory (enable set-ms))))
+;;  (defthm mv-nth-0-of-rme-size-of-set-ms (implies (app-view x86) (equal (mv-nth 0 (rme-size p n e s r c (set-ms val x86))) (mv-nth 0 (rme-size p n e s r c x86)))) :hints (("Goal" :in-theory (enable set-ms))))
 
   (defthm mv-nth-1-of-rme-size-of-set-rip (implies (app-view x86) (equal (mv-nth 1 (rme-size p n e s r c (set-rip rip x86))) (mv-nth 1 (rme-size p n e s r c x86)))) :hints (("Goal" :in-theory (enable set-rip))))
   (defthm mv-nth-1-of-rme-size-of-set-rax (implies (app-view x86) (equal (mv-nth 1 (rme-size p n e s r c (set-rax val x86))) (mv-nth 1 (rme-size p n e s r c x86)))) :hints (("Goal" :in-theory (enable set-rax))))
@@ -1029,7 +1024,7 @@
   (defthm mv-nth-1-of-rme-size-of-set-rbp (implies (app-view x86) (equal (mv-nth 1 (rme-size p n e s r c (set-rbp val x86))) (mv-nth 1 (rme-size p n e s r c x86)))) :hints (("Goal" :in-theory (enable set-rbp))))
   (defthm mv-nth-1-of-rme-size-of-set-undef (implies (app-view x86) (equal (mv-nth 1 (rme-size p n e s r c (set-undef val x86))) (mv-nth 1 (rme-size p n e s r c x86)))) :hints (("Goal" :in-theory (enable set-undef))))
   (defthm mv-nth-1-of-rme-size-of-set-mxcsr (implies (app-view x86) (equal (mv-nth 1 (rme-size p n e s r c (set-mxcsr val x86))) (mv-nth 1 (rme-size p n e s r c x86)))) :hints (("Goal" :in-theory (enable set-mxcsr))))
-  (defthm mv-nth-1-of-rme-size-of-set-ms (implies (app-view x86) (equal (mv-nth 1 (rme-size p n e s r c (set-ms val x86))) (mv-nth 1 (rme-size p n e s r c x86)))) :hints (("Goal" :in-theory (enable set-ms))))
+;;  (defthm mv-nth-1-of-rme-size-of-set-ms (implies (app-view x86) (equal (mv-nth 1 (rme-size p n e s r c (set-ms val x86))) (mv-nth 1 (rme-size p n e s r c x86)))) :hints (("Goal" :in-theory (enable set-ms))))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
