@@ -13,6 +13,7 @@
 
 (include-book "bvand")
 (include-book "getbit")
+(local (include-book "logand-b"))
 
 (defund bitand (x y)
   (declare (type integer x)
@@ -222,4 +223,10 @@
                           (equal 0 (getbit 0 y)))
                       nil)))))
 
-
+(defthm getbit-of-bitand-all-cases
+  (implies (natp n)
+           (equal (getbit n (bitand x y))
+                  (if (equal n 0)
+                      (bitand x y)
+                    0)))
+  :hints (("Goal" :in-theory (enable bitand bvand))))
