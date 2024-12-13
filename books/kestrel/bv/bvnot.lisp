@@ -207,3 +207,10 @@
            (equal (bvnot size (* (expt 2 size) x))
                   (+ -1 (expt 2 size))))
   :hints (("Goal" :in-theory (enable bvnot lognot BVCHOP-OF-SUM-CASES))))
+
+;disable outside bv library?
+(defthm bvchop-of-lognot-all-ones
+  (implies (natp n)
+           (equal (bvchop n (lognot (+ -1 (expt 2 n))))
+                  0))
+  :hints (("Goal" :in-theory (enable lognot))))
