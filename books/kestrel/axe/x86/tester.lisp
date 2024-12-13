@@ -356,8 +356,7 @@
                   (extra-tester-lifting-rules))
           ;; remove-rules:
           (append
-           '(x86isa::x86-cwd/cdq/cqo ; todo: push back to def-unrolled..
-             acl2::bvchop-of-bvashr)
+           '(acl2::bvchop-of-bvashr) ; todo: push back
            remove-rules
            remove-lift-rules)
           ;; extra-assumption-rules:
