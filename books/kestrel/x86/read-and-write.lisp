@@ -1595,7 +1595,7 @@
          (get-flag flg x86))
   :hints (("Goal" :in-theory (enable write wb))))
 
-;; These just make the terms nicer
+;; These just make the terms nicer (todo: use a general scheme?)
 (defthm read-of-write-of-set-flag
   (equal (read n addr (write n1 addr1 val1 (set-flag flag val x86)))
          (read n addr (write n1 addr1 val1 x86)))

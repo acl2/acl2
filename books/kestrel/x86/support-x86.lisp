@@ -1147,6 +1147,7 @@
   (equal (ctri i (if test x86 x86_2))
          (if test (ctri i x86) (ctri i x86_2))))
 
+;move?
 (defthm alignment-checking-enabled-p-of-if
   (equal (alignment-checking-enabled-p (if test x86 x86_2))
          (if test (alignment-checking-enabled-p x86) (alignment-checking-enabled-p x86_2))))
