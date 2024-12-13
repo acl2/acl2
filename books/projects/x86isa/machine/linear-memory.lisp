@@ -42,7 +42,7 @@
 ; Alessandro Coglio (www.alessandrocoglio.info)
 
 (in-package "X86ISA")
-(include-book "paging" :ttags (:undef-flg :include-raw))
+(include-book "paging" :ttags (:undef-flg))
 (include-book "centaur/bitops/merge" :dir :system)
 
 ;; ======================================================================
