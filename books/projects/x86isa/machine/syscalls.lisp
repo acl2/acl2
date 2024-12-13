@@ -41,7 +41,7 @@
 (in-package "X86ISA")
 
 (include-book "syscall-numbers")
-(include-book "environment" :ttags (:include-raw :undef-flg))
+(include-book "environment" :ttags (:undef-flg))
 
 (local (include-book "std/lists/nthcdr" :dir :system))
 

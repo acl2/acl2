@@ -21,7 +21,7 @@
                 (<= 0 n)
                 (< n (len lst)))
            (signed-byte-p size (nth n lst)))
-  :hints (("Goal" :in-theory (e/d (all-signed-byte-p nth) ()))))
+  :hints (("Goal" :in-theory (enable all-signed-byte-p nth))))
 
 ;add to forall
 (defthm all-signed-byte-p-of-nil

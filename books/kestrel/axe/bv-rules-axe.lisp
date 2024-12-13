@@ -1040,7 +1040,7 @@
            (equal (bvlt size x k)
                   (not (bvlt size (+ -1 k) x))))
   :hints (("Goal" :cases ((Natp size))
-           :in-theory (e/d (bvlt bvchop-of-sum-cases) ()))))
+           :in-theory (enable bvlt bvchop-of-sum-cases))))
 
 ;ex: strengthen 10<x to 11<=x
 (defthmd bvlt-of-constant-arg2
@@ -1050,7 +1050,7 @@
                 (integerp k))
            (equal (bvlt size k x)
                   (not (bvlt size x (+ 1 k)))))
-  :hints (("Goal" :in-theory (e/d (bvlt bvchop-of-sum-cases) ()))))
+  :hints (("Goal" :in-theory (enable bvlt bvchop-of-sum-cases))))
 
 (defthmd bvlt-of-max-arg3-constant-version-axe
   (implies (and (axe-rewrite-objective 't)
@@ -1310,7 +1310,7 @@
 ;;                 (natp size))
 ;;            (equal (slice high low x)
 ;;                   (slice high low (bvchop + 1 high) x)))
-;;   :hints (("Goal" :in-theory (e/d (bvplus BVCHOP-WHEN-I-IS-NOT-AN-INTEGER) ()))))
+;;   :hints (("Goal" :in-theory (enable bvplus BVCHOP-WHEN-I-IS-NOT-AN-INTEGER))))
 
 (defthmd bvif-with-small-arg1
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
@@ -1562,8 +1562,7 @@
 ;;                            (r 2)
 ;;                            (i XSIZE)
 ;;                            (j ysize))
-;;            :in-theory (e/d (bvplus BVCHOP-OF-SUM-CASES UNSIGNED-BYTE-P)
-;;                            ()))))
+;;            :in-theory (enable bvplus BVCHOP-OF-SUM-CASES UNSIGNED-BYTE-P))))
 
 ;;    :hints (("Goal" :use (:instance bvplus-tighten-axe)
 ;;             :in-theory (disable bvplus-tighten-axe
@@ -2291,3 +2290,10 @@
                       nil))))
   :hints (("Goal" :use equal-of-bitor-and-constant
            :in-theory (disable equal-of-bitor-and-constant))))
+
+;; Reorders the args to EQUAL in the LHS
+;; Only needed for Axe.
+(defthmd logext-does-nothing-rewrite-alt
+  (implies (posp size)
+           (equal (equal (logext size x) x)
+                  (signed-byte-p size x))))

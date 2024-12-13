@@ -34,15 +34,6 @@
         (car lst)
       (max (car lst) (maxelem (cdr lst))))))
 
-(defthmd maxelem-of-append-helper
-  (implies (and (consp x)
-                (consp y))
-           (equal (maxelem (append x y))
-                  (max (maxelem x)
-                       (maxelem y))))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (enable maxelem append))))
-
 (defthm maxelem-of-true-list-fix
   (equal (maxelem (true-list-fix x))
          (maxelem x))
@@ -62,6 +53,15 @@
 ;;   :hints (("Goal" :expand (hide (maxelem x))
 ;;            :in-theory (enable maxelem (hide)))))
 
+(local
+  (defthmd maxelem-of-append-helper
+    (implies (and (consp x)
+                  (consp y))
+             (equal (maxelem (append x y))
+                    (max (maxelem x)
+                         (maxelem y))))
+    :hints (("Goal" :in-theory (enable maxelem append)))))
+
 (defthm maxelem-of-append
   (implies (true-listp y) ;drop?
            (equal (maxelem (append x y))
@@ -72,7 +72,7 @@
                       (max (maxelem x)
                            (maxelem y))))))
   :hints (("Goal" :in-theory (disable (:e maxelem))
-           :use (:instance maxelem-of-append-helper))))
+           :use maxelem-of-append-helper)))
 
 (defthm maxelem-singleton
   (equal (maxelem (cons a nil))

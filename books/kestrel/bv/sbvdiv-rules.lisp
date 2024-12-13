@@ -25,6 +25,7 @@
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
+(local (include-book "logapp"))
 (local (include-book "bvcat"))
 (local (include-book "slice-rules"))
 (local (include-book "getbit-rules"))

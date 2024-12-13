@@ -67,6 +67,7 @@
 (local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
 (local (include-book "kestrel/arithmetic-light/ceiling" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
+(local (include-book "kestrel/arithmetic-light/floor2" :dir :system))
 (local (include-book "kestrel/library-wrappers/ihs-quotient-remainder-lemmas" :dir :system)) ;drop
 (local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system)) ;drop
 
@@ -256,8 +257,6 @@
 
 ;(local (in-theory (disable <-of-constant-and-*-of-constant))) ;investigate this
 
-(include-book "kestrel/arithmetic-light/floor2" :dir :system) ;move up or drop?
-
 (defthmd floor-of-sum-no-split
   (implies (and (rationalp j)
                 (< 0 j)
@@ -288,8 +287,6 @@
                                          ;mod-recollapse-lemma2
                                          mod-of-expt-of-2-constant-version
                                          )))))
-
-(in-theory (disable MOD-OF-FLOOR-EQUAL-REWRITE))
 
 (in-theory (disable  ;TRIM-TO-N-BITS-META-RULE
                     ))
@@ -1581,7 +1578,7 @@
 ;;   (equal (unsigned-byte-p 3 x)
 ;;          (or (equal x 0)(equal x 1)(equal x 2)(equal x 3)(equal x 4)(equal x 5)(equal x 6)(equal x 7))))
 
-(in-theory (enable floor-when-multiple)) ;drop?
+;(in-theory (enable floor-when-multiple)) ;drop?
 
 (defthmd bvchop-extend-by-1
   (implies (posp size)
@@ -3719,8 +3716,7 @@
 ;;  (implies (equal (getbit 31 x) 1)
 ;;           (equal (bvlt 32 x 2147483644)
 ;;                  nil))
-;;  :hints (("Goal" :in-theory (e/d (getbit-of-bvplus-split bvcat logapp bvlt)
-;;                                  ())
+;;  :hints (("Goal" :in-theory (enable getbit-of-bvplus-split bvcat logapp bvlt)
 ;;           :use (:instance split-with-bvcat (x x) (hs 1) (ls 31)))))
 
 

@@ -8,4 +8,4 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; cert-flags: ? T :SKIP-PROOFS-OKP NIL :TTAGS :ALL
+; cert-flags: ? T :TTAGS :ALL

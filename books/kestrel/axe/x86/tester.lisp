@@ -25,6 +25,7 @@
 (include-book "kestrel/strings-light/strings-starting-with" :dir :system)
 (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system) ; for +-OF-+-OF---SAME
 (include-book "kestrel/arithmetic-light/types" :dir :system) ; for rationalp-when-integerp
+(include-book "kestrel/arithmetic-light/floor" :dir :system)
 (include-book "unroll-x86-code")
 (include-book "tester-rules-bv")
 (include-book "tester-rules")
@@ -356,8 +357,7 @@
                   (extra-tester-lifting-rules))
           ;; remove-rules:
           (append
-           '(x86isa::x86-cwd/cdq/cqo ; todo: push back to def-unrolled..
-             acl2::bvchop-of-bvashr)
+           '(acl2::bvchop-of-bvashr) ; todo: push back
            remove-rules
            remove-lift-rules)
           ;; extra-assumption-rules:
