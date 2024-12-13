@@ -18,6 +18,7 @@
 (include-book "sbvlt-rules") ; for sbvlt-rewrite
 (include-book "bvcat") ; for BVCHOP-WHEN-TOP-BIT-1
 (include-book "slice-rules")
+(local (include-book "logapp"))
 (local (include-book "logext"))
 (local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
 (local (include-book "kestrel/arithmetic-light/rem" :dir :system))

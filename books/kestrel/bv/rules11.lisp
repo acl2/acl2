@@ -15,6 +15,7 @@
 (include-book "bvcat")
 (include-book "bvplus")
 (local (include-book "unsigned-byte-p"))
+(local (include-book "logapp"))
 
 (defthmd plus-of-bvcat-fits-in-low-bits-core-helper
   (implies (and (<= 0 (+ k1 k2))
