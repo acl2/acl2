@@ -42,63 +42,63 @@
 ;; ======================================================================
 
 (include-book "arith-and-logic"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:syscall-exec :other-non-det :undef-flg))
 (include-book "bit"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:syscall-exec :other-non-det :undef-flg))
 (include-book "conditional"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:syscall-exec :other-non-det :undef-flg))
 (include-book "divide"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:syscall-exec :other-non-det :undef-flg))
 (include-book "endbranch"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:syscall-exec :other-non-det :undef-flg))
 (include-book "exchange"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:syscall-exec :other-non-det :undef-flg))
 (include-book "jump-and-loop"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:syscall-exec :other-non-det :undef-flg))
 (include-book "move"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:syscall-exec :other-non-det :undef-flg))
 (include-book "multiply"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:syscall-exec :other-non-det :undef-flg))
 (include-book "padd"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:syscall-exec :other-non-det :undef-flg))
 (include-book "psub"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:syscall-exec :other-non-det :undef-flg))
 (include-book "push-and-pop"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:syscall-exec :other-non-det :undef-flg))
 (include-book "rotate-and-shift"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:syscall-exec :other-non-det :undef-flg))
 (include-book "segmentation"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:syscall-exec :other-non-det :undef-flg))
 (include-book "signextend"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:syscall-exec :other-non-det :undef-flg))
 (include-book "string"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:syscall-exec :other-non-det :undef-flg))
 (include-book "syscall"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:syscall-exec :other-non-det :undef-flg))
 (include-book "subroutine"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:syscall-exec :other-non-det :undef-flg))
 (include-book "fp/top"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:syscall-exec :other-non-det :undef-flg))
 (include-book "interrupts"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:syscall-exec :other-non-det :undef-flg))
 (include-book "cpuid"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:syscall-exec :other-non-det :undef-flg))
 (include-book "msrs"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:syscall-exec :other-non-det :undef-flg))
 (include-book "x87"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:syscall-exec :other-non-det :undef-flg))
 (include-book "time"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:syscall-exec :other-non-det :undef-flg))
 (include-book "pio"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:syscall-exec :other-non-det :undef-flg))
 (include-book "cache"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:syscall-exec :other-non-det :undef-flg))
 (include-book "punpck"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:syscall-exec :other-non-det :undef-flg))
 (include-book "pcmp"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:syscall-exec :other-non-det :undef-flg))
 (include-book "pshuf"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:syscall-exec :other-non-det :undef-flg))
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 
@@ -353,7 +353,7 @@ writes the final value of the instruction pointer into RIP.</p>")
 ;; ======================================================================
 
 (include-book "../other-non-det"
-              :ttags (:include-raw :undef-flg :syscall-exec :other-non-det))
+              :ttags (:undef-flg :syscall-exec :other-non-det))
 
 (def-inst x86-rdrand
 

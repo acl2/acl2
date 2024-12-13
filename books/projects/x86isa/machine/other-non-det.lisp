@@ -39,7 +39,7 @@
 (in-package "X86ISA")
 
 (include-book "syscalls"
-              :ttags (:include-raw :undef-flg :syscall-exec))
+              :ttags (:undef-flg :syscall-exec))
 
 ;; ======================================================================
 

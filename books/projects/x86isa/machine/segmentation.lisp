@@ -45,7 +45,7 @@
 
 (in-package "X86ISA")
 (include-book "segmentation-structures" :dir :utils)
-(include-book "linear-memory" :ttags (:undef-flg :include-raw))
+(include-book "linear-memory" :ttags (:undef-flg))
 
 ;; ======================================================================
 

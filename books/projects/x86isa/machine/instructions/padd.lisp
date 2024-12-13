@@ -41,7 +41,7 @@
 (in-package "X86ISA")
 
 (include-book "../decoding-and-spec-utils"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:syscall-exec :other-non-det :undef-flg))
 
 (local (include-book "arithmetic-3/top" :dir :system))
 (local (include-book "ihs/logops-lemmas" :dir :system))
