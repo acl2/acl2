@@ -82,6 +82,20 @@
               (find-insts-named names (cdr inst-list)))))
     (find-insts-named names (cdr inst-list))))
 
+(define find-insts-named-str ((names string-listp)
+                              (inst-list inst-list-p))
+  :returns (unimp-insts inst-list-p)
+  (b* (((when (atom inst-list))
+        nil)
+       ((inst inst) (car inst-list))
+       ((when (member-equal (if (stringp inst.mnemonic)
+                                inst.mnemonic
+                              (symbol-name inst.mnemonic))
+                            names))
+        (cons (inst-fix inst)
+              (find-insts-named-str names (cdr inst-list)))))
+    (find-insts-named-str names (cdr inst-list))))
+
 (define keep-implemented-insts ((inst-list inst-list-p))
   :returns (impl-insts inst-list-p)
   (if (atom inst-list)
@@ -203,6 +217,28 @@
             :expand ((sdm-instruction-table-fix x))))
     :rule-classes :linear))
 
+
+
+(define sdm-instruction-table-implemented-instructions ((x sdm-instruction-table-p))
+  :measure (sdm-instruction-table-count x)
+  :returns (impl inst-list-p)
+  (b* ((x (sdm-instruction-table-fix x))
+       ((when (atom x)) nil)
+       ((sdm-instruction-table-entry entry) (cdar x))
+       (sub-impl (sdm-instruction-table-implemented-instructions entry.subsecs)))
+    (append entry.implemented sub-impl
+            (sdm-instruction-table-implemented-instructions (cdr x)))))
+
+(define sdm-instruction-table-unimplemented-instructions ((x sdm-instruction-table-p))
+  :measure (sdm-instruction-table-count x)
+  :returns (unimpl inst-list-p)
+  (b* ((x (sdm-instruction-table-fix x))
+       ((when (atom x)) nil)
+       ((sdm-instruction-table-entry entry) (cdar x))
+       (sub-unimpl (sdm-instruction-table-unimplemented-instructions entry.subsecs)))
+    (append entry.unimplemented sub-unimpl
+            (sdm-instruction-table-unimplemented-instructions (cdr x)))))
+
 (defconst *def-sdm-instruction-section-verbose* nil)
 
 (define symbol-list->names ((x symbol-listp))
@@ -269,16 +305,110 @@
 
 
 
+(define sdm-instruction-pair-p (x)
+  (and (consp x)
+       (nat-listp (car x))
+       (sdm-instruction-table-entry-p (cdr x)))
+  ///
+  (defthm sdm-instruction-pair-p-when-reqs
+    (implies (and (nat-listp (car x))
+                  (sdm-instruction-table-entry-p (cdr x)))
+             (sdm-instruction-pair-p x))))
+
+(define sdm-instruction-pair-< ((x sdm-instruction-pair-p)
+                                (y sdm-instruction-pair-p))
+  :prepwork ((local (in-theory (enable sdm-instruction-pair-p))))
+  (section-number-< (car X) (car y)))
+
+(encapsulate nil
+  (local (in-theory (enable sdm-instruction-pair-<
+                            sdm-instruction-pair-p
+                            section-number-<)))
+
+  (local (defthm section-number-<-transitive
+           (implies (and (section-number-< x y)
+                         (section-number-< y z))
+                    (section-number-< x z))))
+
+  (local (defthm section-number->=-transitive
+           (implies (and (not (section-number-< x y))
+                         (not (section-number-< y z)))
+                    (not (section-number-< x z)))))
+
+  (local (defthm section-number-<-irreflexive
+           (not (section-number-< x x))))
+
+  (local (in-theory (disable section-number-<)))
+
+  (acl2::defsort sdm-instruction-table-sort
+    :prefix sdm-instruction-table
+    ;; :comparable-listp sdm-instruction-table-p
+    :compare< sdm-instruction-pair-<
+    :comparablep sdm-instruction-pair-p
+    :true-listp t)
+
+  (defthm sdm-instruction-table-list-p-is-sdm-instruction-table-p
+    (equal (sdm-instruction-table-list-p x)
+           (sdm-instruction-table-p x))
+    :hints(("Goal" :in-theory (enable sdm-instruction-table-p
+                                      sdm-instruction-table-list-p))))
+
+  (defthm sdm-instruction-table-p-of-insertsort
+    (implies (sdm-instruction-table-p x)
+             (sdm-instruction-table-p (sdm-instruction-table-insertsort x)))
+    :hints (("goal" :use sdm-instruction-table-insertsort-creates-comparable-listp
+             :in-theory (disable sdm-instruction-table-insertsort-creates-comparable-listp)))))
+
+
+
+(define sdm-instruction-table-gather-subtopics ((prefix nat-listp)
+                                        (x sdm-instruction-table-p))
+  :returns (mv (prefixed-x sdm-instruction-table-p)
+               (rest-x sdm-instruction-table-p))
+  :measure (len x)
+  :verify-guards nil
+  (b* (((when (atom x)) (mv nil nil))
+       ((unless (mbt (and (consp (car x))
+                          (nat-listp (caar x)))))
+        (sdm-instruction-table-gather-subtopics prefix (cdr x)))
+       (x1-section (caar x))
+       ((unless (acl2::prefixp (acl2::nat-list-fix prefix) x1-section))
+        (mv nil (sdm-instruction-table-fix x)))
+       ;; first element is still prefixed by the input prefix, continue with the rest
+       ;; first gather all the elements that are prefixed by section:
+       ((mv x1-subsecs rest-x) (sdm-instruction-table-gather-subtopics x1-section (cdr x)))
+       ((sdm-instruction-table-entry entry) (cdar x))
+       (new-x1 (cons x1-section (change-sdm-instruction-table-entry entry :subsecs (append entry.subsecs x1-subsecs))))
+       ((unless (mbt (< (len rest-x) (len x))))
+        (mv (list new-x1) rest-x))
+       ((mv rest rest-x) (sdm-instruction-table-gather-subtopics prefix rest-x)))
+    (mv (cons new-x1 rest) rest-x))
+  ///
+  (defret <fn>-rest-x-length
+    (<= (len rest-x) (len x))
+    :rule-classes :linear)
+
+  (verify-guards sdm-instruction-table-gather-subtopics))
+
+(define sdm-instruction-table-organize ((x sdm-instruction-table-p))
+  ;; top level: sort, then gather subtopics
+  :returns (organized sdm-instruction-table-p)
+  (b* ((sorted (sdm-instruction-table-sort x))
+       ((mv gathered &) (sdm-instruction-table-gather-subtopics nil sorted)))
+    gathered))
+
+
 
 
 (define def-sdm-instruction-section-fn ((header stringp)
                                         &key
                                         ((mnemonics symbol-listp) 'nil)
+                                        ((instructions inst-list-p) 'nil)
                                         (features 't)
                                         (suppress-not-found 'nil)
                                         ((doc stringp) '""))
   (b* (((mv secnum title) (parse-section-heading header))
-       (insts (find-insts-named mnemonics (all-opcode-maps)))
+       (insts (append instructions (find-insts-named mnemonics (all-opcode-maps))))
        (insts (if (eq features t)
                   insts
                 (keep-insts-satisfying-feature features insts)))
@@ -315,7 +445,7 @@
 
 
 
-(def-sdm-instruction-section "5.1 GENERAL-PURPOSE INSTRUCTIONS")
+(def-sdm-instruction-section "5.1 General-Purpose Instructions")
 (def-sdm-instruction-section "5.1.1 Data Transfer Instructions"
   :mnemonics
   '(MOV
@@ -324,20 +454,21 @@
     CMOVP/PE
     CMOVNP/PO 
     CMOVO CMOVNO CMOVS CMOVNS  XCHG
-    BSWAP XADD CMPXCHG CMPXCHG8B PUSH POP PUSHA/PUSHAD POPA/POPAD CWD/CDQ/CQO
-    CBW/CWDE/CDQE MOVSX MOVZX)
+    BSWAP XADD CMPXCHG CMPXCHG8B PUSH |PUSH CS| |PUSH DS| |PUSH ES| |PUSH FS| |PUSH GS| |PUSH SS|
+    POP |POP DS| |POP ES| |POP SS| PUSHA/PUSHAD POPA/POPAD CWD/CDQ/CQO
+    CBW/CWDE/CDQE MOVSX MOVZX
+    ;; not listed but seems to belong here?
+    MOVSXD)
   :doc "<p>Unimplemented instructions are:</p>
 <ul>
 <li>POP variants that write to segment registers: these have side effects,
 perhaps similar to those of MOV to a segment register</li>
 <li>CMPEXCHG8B</li>
-<li>BSWAP, several variants which just correspond to the same instruction on
-different registers encoded in the low 3 bits of the opcode -- seems straightforward?</li>
 </ul>")
 
 (def-sdm-instruction-section "5.1.2 Binary Arithmetic Instructions"
   :mnemonics
-  '(ADCX ADOX ADD ADC SUB SBB IMUL MUL IDIV DIV INC DEC NEG)
+  '(ADCX ADOX ADD ADC SUB SBB IMUL MUL IDIV DIV INC DEC NEG CMP)
   :doc "<p>The only unimplemented instructions are ADCX and ADOX, which set
   CF and OF flags differently from the more typical ADD/ADC operations.</p>")
 
@@ -367,8 +498,8 @@ different registers encoded in the low 3 bits of the opcode -- seems straightfor
 (def-sdm-instruction-section "5.1.7 Control Transfer Instructions"
   :mnemonics '(JMP JB/NAE/C JNB/AE/NC JZ/E JNZ/NE JBE/NA JNBE/A JP/PE JNP/PO JL/NGE
                    JNL/GE JLE/NG JNLE/G |JrCXZ|
-                   LOOPNE/LOOPNZ LOOPE/LOOPZ IRET/D/Q
-                   JO JNO JS JNS LOOP RET INT INTO BOUND ENTER LEAVE)
+                   LOOPNE/LOOPNZ LOOPE/LOOPZ CALL IRET/D/Q
+                   JO JNO JS JNS LOOP RET INT INT1 INT3 INTO BOUND ENTER LEAVE)
   :doc "<p>Unimplemented instructions are:</p>
 <ul>
 <li>BOUND -- not valid in 64 bit mode</li>
@@ -475,7 +606,7 @@ different registers encoded in the low 3 bits of the opcode -- seems straightfor
 
 ;; (def-sdm-instruction-section "5.1.16.1 Detection of VEX-Encoded GPR Instructions, LZCNT, TZCNT, and PREFETCHW")
 
-(def-sdm-instruction-section "5.2 X87 FPU INSTRUCTIONS")
+(def-sdm-instruction-section "5.2 X87 FPU Instructions")
 ;;   :mnemonics '(FLD FST FSTP FILD FIST FISTP1 FBLD FBSTP FXCH FCMOVE FCMOVNE
 ;;                    FCMOVB FCMOVBE FCMOVNB FCMOVNBE FCMOVU FCMOVNU)
 ;;   )
@@ -498,16 +629,20 @@ one byte opcode map)</p>")
   :doc "<p>Decoding isn't implemented for X87 instructions (D8-DF escapes from
 one byte opcode map).</p>
 
-<p>Note also a few of X86 control instructions can be encoded using 0x9B as a
-prefix -- currently this is decoded as a one-byte no-op (FWAIT/WAIT), which I
-think must be wrong.</p>")
+<p>Note also a few of X86 control instructions are listed in the SDM as being
+encoded using 0x9B as a prefix. This is a bit weird since 9B is also an opcode
+on its own, FWAIT/WAIT. It seems as though the behavior of these 9B-prefixed
+instructions is basically to wait for exceptions and then (if no exception) do
+what the instruction. Not sure why they are listed that way.</p>")
 
-(def-sdm-instruction-section "5.3 X87 FPU AND SIMD STATE MANAGEMENT INSTRUCTIONS"
-  :mnemonics '(FXSAVE FXRSTOR))
+(def-sdm-instruction-section "5.3 X87 FPU and SIMD State Management Instructions"
+  :mnemonics '(FXSAVE FXRSTOR
+                      ;; added -- not present in SDM listing
+                      FWAIT/WAIT))
 
-(def-sdm-instruction-section "5.4 MMX INSTRUCTIONS")
+(def-sdm-instruction-section "5.4 MMX Instructions")
 (def-sdm-instruction-section "5.4.1 MMX Data Transfer Instructions"
-  :mnemonics '(MOVD/Q)
+  :mnemonics '(MOVD/Q MOVQ)
   :features :mmx
   :doc "<p>MMX versions of these instructions are not implemented</p>")
 
@@ -521,10 +656,7 @@ think must be wrong.</p>")
                      PSUBD PSUBSB PSUBSW PSUBUSB PSUBUSW PMULHW PMULLW PMADDWD)
   :features '(or :mmx (and :sse "PMULHW"))
   :doc "<p>MMX versions are all unimplemented. A few have SSE versions
-  implemented.</p>
-
-<p>Possible bug: Two-byte opcode PMULHW (0x0FE5) is listed with feature :SSE
-but manual lists feature MMX</p>")
+  implemented.</p>")
 
 (def-sdm-instruction-section "5.4.4 MMX Comparison Instructions"
   :mnemonics '(PCMPEQB PCMPEQW PCMPEQD PCMPGTB PCMPGTW PCMPGTD)
@@ -539,23 +671,22 @@ but manual lists feature MMX</p>")
   :mnemonics '(PSLLW PSLLD PSLLQ PSRLW PSRLD PSRLQ PSRAW PSRAD)
   :features :mmx
   :doc "<p>MMX versions are all unimplemented.</p>")
+
 (def-sdm-instruction-section "5.4.7 MMX State Management Instructions"
   :mnemonics '(EMMS)
   :doc "<p>Unimplemented</p>")
 
-(def-sdm-instruction-section "5.5 INTEL(R) SSE INSTRUCTIONS")
+(def-sdm-instruction-section "5.5 Intel(R) SSE Instructions")
 (def-sdm-instruction-section "5.5.1 Intel(R) SSE SIMD Single Precision Floating-Point Instructions")
 (def-sdm-instruction-section "5.5.1.1 Intel(R) SSE Data Transfer Instructions"
   :mnemonics '(MOVAPS MOVUPS MOVHPS MOVHLPS MOVLPS MOVLHPS MOVMSKPS MOVSS)
   ;; :features :sse
   :doc "<p>Unimplemented:</p>
 <ul>
-<li>MOVHLPS</li>
 <li>MOVLHPS</li>
 <li>MOVMSKPS</li>
 </ul>
-<p>Note: We have versions of MOVLPS, MOVHPS, MOVHLPS, MOVLHPS that do not
-have :SSE among the features -- may be a bug</p>")
+")
 
 (def-sdm-instruction-section "5.5.1.2 Intel(R) SSE Packed Arithmetic Instructions"
   :mnemonics '(ADDPS ADDSS SUBPS SUBSS MULPS MULSS DIVPS DIVSS RCPPS RCPSS
@@ -577,24 +708,17 @@ have :SSE among the features -- may be a bug</p>")
 
 (def-sdm-instruction-section "5.5.1.6 Intel(R) SSE Conversion Instructions"
   :mnemonics '(CVTPI2PS CVTSI2SS CVTPS2PI CVTTPS2PI CVTSS2SI CVTTSS2SI)
-  ;; :features :sse
-  :doc "<p>Seems strange that CVTPI2PS, CVTPS2PI, CVTTPS2PI don't require SSE
-  feature, but they don't list that requirement in the SDM either</p>")
+  :features :sse)
 
 (def-sdm-instruction-section "5.5.2 Intel(R) SSE MXCSR State Management Instructions"
   :mnemonics '(LDMXCSR STMXCSR)
   ;; :features :sse
-  :doc "<p>Possible bug: these don't require the SSE feature</p>")
+  )
 
 (def-sdm-instruction-section "5.5.3 Intel(R) SSE 64-Bit SIMD Integer Instructions"
   :mnemonics '(PAVGB PAVGW PEXTRW PINSRW PMAXUB PMAXSW PMINUB PMINSW PMOVMSKB PMULHUW PSADBW PSHUFW)
-  :features '(not (or :sse2 (and (not "PSHUFW") :mmx) :avx))
-  :doc "<p>None of these are implemented.</p>
-<p>Possible bugs:</p>
-<ul>
-<li>PINSRW and some PEXTRW instructions don't list SSE/SSE2 features</li>
-<li>PSHUFW lists MMX as feature, but it's not listed in SDM and is part of SSE extensions even though it operates on an MM register</li>
-</ul>")
+  :features :sse
+  :doc "<p>None of these are implemented.</p>")
 
 (def-sdm-instruction-section "5.5.4 Intel(R) SSE Cacheability Control, Prefetch, and Instruction Ordering Instructions"
   :mnemonics '(;; PREFETCHIT0 PREFETCHIT1
@@ -603,19 +727,17 @@ have :SSE among the features -- may be a bug</p>")
 <p>Implemented instructions (PREFETCHNTA, PREFETCHT0, PREFETCHT1, PREFETCHT2) are no-ops.</p>
 <p>Possible bugs:</p>
 <ul>
-<li>PREFETCHIT1 and PREFETCHIT2 are missing.</li>
-<li>MOVNTQ and MASKMOVQ list MMX features, but don't list them in the SDM (and these are part of the SSE extension even though they operate on MM registers).</li>
 <li>SFENCE lists SSE feature which (perhaps oddly) isn't present in SDM</li>
 </ul>")
 
-(def-sdm-instruction-section "5.6 INTEL(R) SSE2 INSTRUCTIONS")
+(def-sdm-instruction-section "5.6 Intel(R) SSE2 Instructions")
 (def-sdm-instruction-section "5.6.1 Intel(R) SSE2 Packed and Scalar Double Precision Floating-Point Instructions")
 (def-sdm-instruction-section "5.6.1.1 Intel(R) SSE2 Data Movement Instructions"
-  :mnemonics '(MOVAPD MOVUPD MOVHPD MOVLPD MOVMSKPD)
+  :mnemonics '(MOVAPD MOVUPD MOVHPD MOVLPD MOVMSKPD MOVSD)
   :features :sse2
   :doc "<p>Unimplemented: MOVMSKPD</p>")
 (def-sdm-instruction-section "5.6.1.2 Intel(R) SSE2 Packed Arithmetic Instructions"
-  :mnemonics '(ADDPD ADDSD SUBPD SUBSD MULPD MULSD DIVPD DIVSD SQRTPD SQRTSD MAXPD MINPD MINSD)
+  :mnemonics '(ADDPD ADDSD SUBPD SUBSD MULPD MULSD DIVPD DIVSD SQRTPD SQRTSD MAXPD MAXSD MINPD MINSD)
   :features :sse2)
 
 (def-sdm-instruction-section "5.6.1.3 Intel(R) SSE2 Logical Instructions"
@@ -636,8 +758,7 @@ have :SSE among the features -- may be a bug</p>")
   :features '(or :sse2 (and (or "CVTPI2PD" "CVTTPD2PI" "CVTPD2PI") :mmx))
   :doc "<p>Unimplemented: CVT(T)PD2PI, CVT(T)PD2DQ, CVTPI2PD, CVTDQ2PD, i.e., the
 packed integer-float and float-integer converts. Scalar integer-float and
-float-integer are implemented as are scalar and packed float-float.</p>
-<p>Possible bugs: CVTPI2PD, CVTTPD2PI, CVTPD2PI list :MMX feature rather than :SSE2.</p>")
+float-integer are implemented as are scalar and packed float-float.</p>")
 
 (def-sdm-instruction-section "5.6.2 Intel(R) SSE2 Packed Single Precision Floating-Point Instructions"
   :mnemonics '(CVTDQ2PS CVTPS2DQ CVTTPS2DQ)
@@ -647,23 +768,12 @@ float-integer are implemented as are scalar and packed float-float.</p>
 (def-sdm-instruction-section "5.6.3 Intel(R) SSE2 128-Bit SIMD Integer Instructions"
   :mnemonics '(MOVDQA MOVDQU MOVQ2DQ MOVDQ2Q PMULUDQ PADDQ PSUBQ
                       PSHUFLW PSHUFHW PSHUFD PSLLDQ PSRLDQ PUNPCKHQDQ PUNPCKLQDQ)
-  :features '(or :sse2 "PSLLDQ" "PSRLDQ" "PSUBQ" "PMULUDQ" "PADDQ")
+  :features '(or :sse2 "PSUBQ" "PMULUDQ" "PADDQ")
   :doc "<p>Unimplemented:</p>
 <ul>
-<li>PUNPCKLQDQ, PUNPCKHQDQ</li>
-<li>PSHUFD, PSHUFHW PSHUFLW</li>
 <li>MOVDQ2DQ, MOVDQ2Q</li>
 <li>PADDQ, PSUBQ (MM register versions)</li>
 <li>PMULUDQ</li>
-</ul>
-
-<p>Possible bugs</p>
-<ul>
-<li>PSLLDQ, PSRLDQ missing SSE2 feature</li>
-<li>PSUBQ and PMULUDQ (mm register versions) lists MMX feature rather than SSE2
-as in SDM -- unlike PADDQ which has an MMX version in SDM, but isn't listed
-among the MMX arithmetic instructions (@(see |5.4.3 MMX Packed Arithmetic Instructions|)).
- (Is SDM correct on these?)</li>
 </ul>")
 
 (def-sdm-instruction-section "5.6.4 Intel(R) SSE2 Cacheability Control and Ordering Instructions"
@@ -676,7 +786,32 @@ among the MMX arithmetic instructions (@(see |5.4.3 MMX Packed Arithmetic Instru
 <li>PAUSE is not present in opcode maps</li>
 </ul>")
 
-(def-sdm-instruction-section "5.7 INTEL(R) SSE3 INSTRUCTIONS")
+(def-sdm-instruction-section "5.6.10 Intel(R) SSE2 Instructions Promoted from Previous Extensions (and not listed previously)"
+  :instructions
+  (b* ((table (table-alist 'sdm-instruction-sect (w state)))
+       (table (b* ((self (assoc-equal '(5 6 10) table)))
+                (if self (remove-equal self table) table)))
+       (table (sdm-instruction-table-organize table))
+       (mmx-table (list (assoc-equal '(5 4) table))) ;; 5.4 -- MMX
+       (sse2-table (list (assoc-equal '(5 6) table))) ;; 5.6 -- SSE2
+       (sse-table (list (assoc-equal '(5 5) table))) ;; 5.5 -- SSE
+       (all-sse2 (keep-insts-satisfying-feature :sse2 *all-opcode-maps*))
+       (missing-sse2 (set::difference (set::mergesort all-sse2)
+                                      (set::mergesort
+                                       (append (sdm-instruction-table-implemented-instructions sse2-table)
+                                               (sdm-instruction-table-unimplemented-instructions sse2-table)))))
+       (mmx-sse-mnemonics (append (inst-list->mnemonics (sdm-instruction-table-implemented-instructions mmx-table))
+                                  (inst-list->mnemonics (sdm-instruction-table-unimplemented-instructions mmx-table))
+                                  (inst-list->mnemonics (sdm-instruction-table-implemented-instructions sse-table))
+                                  (inst-list->mnemonics (sdm-instruction-table-unimplemented-instructions sse-table))))
+       (missing-sse2-with-prev-mnemonics (find-insts-named-str (keep-strings mmx-sse-mnemonics) missing-sse2)))
+    missing-sse2-with-prev-mnemonics))
+
+
+
+
+
+(def-sdm-instruction-section "5.7 Intel(R) SSE3 Instructions")
 (def-sdm-instruction-section "5.7.1 Intel(R) SSE3 x87-FP Integer Conversion Instruction"
   :doc "<p>Like other x87 instructions, FISTTP is not listed in opcode maps</p>")
 
@@ -701,11 +836,10 @@ among the MMX arithmetic instructions (@(see |5.4.3 MMX Packed Arithmetic Instru
 (def-sdm-instruction-section "5.7.6 Intel(R) SSE3 Agent Synchronization Instructions"
   :mnemonics '(MONITOR MWAIT))
 
-(def-sdm-instruction-section "5.8 SUPPLEMENTAL STREAMING SIMD EXTENSIONS 3 (SSSE3) INSTRUCTIONS")
+(def-sdm-instruction-section "5.8 Supplemental Streaming Simd Extensions 3 (SSSE3) Instructions")
 (def-sdm-instruction-section "5.8.1 Horizontal Addition/Subtraction"
   :mnemonics '(PHADDW PHADDSW PHADDD PHSUBW PHSUBSW PHSUBD)
-  :features '(or :ssse3 "PHADDW")
-  :doc "<p>Possible bug: one version of PHADDW has SSE3 feature instead of SSSE3</p>")
+  :features :ssse3)
 
 (def-sdm-instruction-section "5.8.2 Packed Absolute Values"
   :mnemonics '(PABSB PABSW PABSD)
@@ -727,8 +861,8 @@ among the MMX arithmetic instructions (@(see |5.4.3 MMX Packed Arithmetic Instru
   :mnemonics '(PALIGNR)
   :features :ssse3)
 
-(def-sdm-instruction-section "5.9 INTEL(R) SSE4 INSTRUCTIONS")
-(def-sdm-instruction-section "5.10 INTEL(R) SSE4.1 INSTRUCTIONS")
+;; (def-sdm-instruction-section "5.9 Intel(R) SSE4 Instructions")
+(def-sdm-instruction-section "5.10 Intel(R) SSE4.1 Instructions")
 (def-sdm-instruction-section "5.10.1 Dword Multiply Instructions"
   :mnemonics '(PMULLD PMULDQ)
   :features :sse4.1)
@@ -743,21 +877,18 @@ among the MMX arithmetic instructions (@(see |5.4.3 MMX Packed Arithmetic Instru
   :features :sse4.1)
 (def-sdm-instruction-section "5.10.5 Packed Integer MIN/MAX Instructions"
   :mnemonics '(PMINUW PMINUD PMINSB PMINSD PMAXUW PMAXUD PMAXSB PMAXSD)
-  :features '(or :sse4.1 "PMINUW")
-  :doc "<p>Possible bug: PMINUW listed with SSE2 rather than SSE4.1 feature</p>")
+  :features :sse4.1)
 (def-sdm-instruction-section "5.10.6 Floating-Point Round Instructions with Selectable Rounding Mode"
   :mnemonics '(ROUNDPS ROUNDPD ROUNDSS ROUNDSD)
   :features :sse4.1)
 (def-sdm-instruction-section "5.10.7 Insertion and Extractions from XMM Registers"
   :mnemonics '(EXTRACTPS INSERTPS PINSRB PINSRD/Q PEXTRB PEXTRW PEXTRD/Q)
-  ;; :features :sse4.1
-  :doc "<p>Possible bugs: PEXTRB and PEXTRW (0x66_0F_3A_15) missing SSE4.1 feature</p>")
+  :features :sse4.1)
 
 (def-sdm-instruction-section "5.10.8 Packed Integer Format Conversions"
   :mnemonics '(PMOVSXBW PMOVZXBW PMOVSXBD PMOVZXBD PMOVSXWD PMOVZXWD
                         PMOVSXBQ PMOVZXBQ PMOVSXWQ PMOVZXWQ PMOVSXDQ PMOVZXDQ)
-  ;; :features '(not :avx2)
-  :doc "<p>Features are missing for these</p>")
+  :features :sse4.1)
 
 (def-sdm-instruction-section "5.10.9 Improved Sums of Absolute Differences (SAD) for 4-Byte Blocks"
   :mnemonics '(MPSADBW)
@@ -777,18 +908,18 @@ among the MMX arithmetic instructions (@(see |5.4.3 MMX Packed Arithmetic Instru
   :mnemonics '(PACKUSDW)
   :features :sse4.1)
 
-(def-sdm-instruction-section "5.11 INTEL(R) SSE4.2 INSTRUCTION SET")
+(def-sdm-instruction-section "5.11 Intel(R) SSE4.2 Instruction Set")
 (def-sdm-instruction-section "5.11.1 String and Text Processing Instructions"
   :mnemonics '(PCMPESTRI PCMPESTRM PCMPISTRI PCMPISTRM)
   :features :sse4.2)
 (def-sdm-instruction-section "5.11.2 Packed Comparison SIMD Integer Instruction"
   :mnemonics '(PCMPGTQ)
   :features :sse4.2)
-(def-sdm-instruction-section "5.12 INTEL(R) AES-NI AND PCLMULQDQ"
+(def-sdm-instruction-section "5.12 Intel(R) AES-NI And PCLMULQDQ"
   :mnemonics '(AESDEC AESDECLAST AESENC AESENCAST AESIMC AESKEYGENASSIST PCLMULQDQ)
   :doc "<p>AESENCLAST is misspelled AESENCAST</p>")
 
-(def-sdm-instruction-section "5.13 INTEL(R) ADVANCED VECTOR EXTENSIONS (INTEL(R) AVX)"
+(def-sdm-instruction-section "5.13 Intel(R) Advanced Vector Extensions (Intel(R) AVX)"
   :doc "<p>The SDM doesn't have separate Chapter 5 sections for AVX instructions, but
 rather lists them in tables 14-2 through 14-7. We create fake sections for
 these, e.g., the ones listed in 14-2 are instead in fake section @(see
@@ -861,14 +992,10 @@ these, e.g., the ones listed in 14-2 are instead in fake section @(see
                VPCLMULQDQ
                VAESDEC VAESDECLAST
                VAESENC VAESENCLAST
-               VAESIMC AESKEYGENASSIST
+               VAESIMC VAESKEYGENASSIST
                )
   :features '(and (or :avx "VPMOVZXDQ") :vex)
-  :doc "<p>Possible bugs:</p>
-<ul>
-<li>VEX version of AESKEYGENASSIST should be called VAESKEYGENASSIST</li>
-<li>AVX/VEX.128 version of VPMOVZXDQ is missing from opcode map (but we have AVX2/VEX.256 version)</li>
-</ul>
+  :doc "
 <p>SDM says POPCNT is promoted as a VEX.128 encoding but this seems inaccurate</p>")
 
 (def-sdm-instruction-section "5.13.14.6 128-Bit Intel(R) AVX Instruction Enhancement"
@@ -899,17 +1026,16 @@ these, e.g., the ones listed in 14-2 are instead in fake section @(see
                VPBLENDVB VPBLENDW
                VPEXTRW VPEXTRB VPEXTRD VPEXTRQ
                VPINSRB VPINSRD VPINSRQ
-               ;;BOZO
-               movsd)
-  :features '(and :avx :vex)
-  :doc "<p>Probable bug: VMOVSD (opcode VEX.LIG.F2.0F.WIG 10) is listed with mnemonic MOVSD</p>")
+               ;; not listed:
+               VPSLLDQ VPSRLDQ)
+  :features '(and :avx :vex))
 
 
-(def-sdm-instruction-section "5.14 16-BIT FLOATING-POINT CONVERSION"
+(def-sdm-instruction-section "5.14 16-Bit Floating-Point Conversion"
   :mnemonics '(VCVTPH2PS VCVTPS2PH)
   :features :vex)
 
-(def-sdm-instruction-section "5.15 FUSED-MULTIPLY-ADD (FMA)"
+(def-sdm-instruction-section "5.15 Fused-Multiply-Add (FMA)"
   :mnemonics '(VFMADD132PD VFMADD213PD VFMADD231PD
                VFMADD132PS VFMADD213PS VFMADD231PS
                VFMADD132SD VFMADD213SD VFMADD231SD
@@ -932,7 +1058,7 @@ these, e.g., the ones listed in 14-2 are instead in fake section @(see
                VFNMSUB132SS VFNMSUB213SS VFNMSUB231SS)
   :features :vex)
 
-(def-sdm-instruction-section "5.16 INTEL(R) ADVANCED VECTOR EXTENSIONS 2 (INTEL(R) AVX2)"
+(def-sdm-instruction-section "5.16 Intel(R) Advanced Vector Extensions 2 (Intel(R) AVX2)"
   :doc "<p>The SDM doesn't have separate Chapter 5 sections for AVX2 instructions, but
 rather lists them in tables 14-18 and 14-19. We create fake sections for
 these.</p>")
@@ -943,7 +1069,7 @@ these.</p>")
  VPUNPCKHQDQ VPSHUFD VPSHUFHW VPSHUFLW VPCMPEQB VPCMPEQW VPCMPEQD VPSRLW VPSRLD
  VPSRLQ VPADDQ VPMULLW VPMOVMSKB VPSUBUSB VPSUBUSW VPMINUB VPAND VPADDUSB
  VPADDUSW VPMAXUB VPANDN VPAVGB VPSRAW VPSRAD VPAVGW VPMULHUW VPMULHW VPSUBSB
- VPSUBSW VPMINSW VPOR VPADDSB VPADDSW VPMAXSW VPXOR VPSLLW VPSLLD VPSLLQ
+ VPSUBSW VPMINSW VPOR VPADDSB VPADDSW VPMAXSW VPXOR VPSLLW VPSLLD VPSLLQ 
  VPMULUDQ VPMADDWD VPSADBW VPSUBB VPSUBW VPSUBD VPSUBQ VPADDB VPADDW VPADDD
  VPHADDW VPHADDSW VPHADDD VPHSUBW VPHSUBSW VPHSUBD VPMADDUBSW VPALIGNR VPSHUFB
  VPMULHRSW VPSIGNB VPSIGNW VPSIGND VPABSB VPABSW VPABSD VMOVNTDQA VMPSADBW
@@ -951,19 +1077,22 @@ these.</p>")
  VPMINSD VPMINUD VPMINUW
  VPMOVSXBW VPMOVZXBW VPMOVSXBD VPMOVZXBD VPMOVSXWD VPMOVZXWD
  VPMOVSXBQ VPMOVZXBQ VPMOVSXWQ VPMOVZXWQ VPMOVSXDQ VPMOVZXDQ
- VPMULDQ VPMULLD VPCMPGTQ)
-  :features '(and :vex-256 (or :avx2 "VPMINUB" "VPMAXUB" "VPMINSW"))
-  :doc "<p>Possible bugs: VPMINUB, VPMAXUB, VPMINSW (vex-256 versions) have feature AVX rather than AVX2</p>")
+ VPMULDQ VPMULLD VPCMPGTQ
+ ;; not listed:
+ VPSLLDQ VPSRLDQ)
+  :features '(and :vex-256 (or :avx2 "VPMINUB" "VPMAXUB" "VPMINSW")))
 
-(def-sdm-instruction-section "5.16.14.19 Promoted Vector Integer SIMD Instructions in Intel(R) AVX2"
+(def-sdm-instruction-section "5.16.14.19 VEX-Only SIMD Instructions in Intel(R) AVX2"
   :mnemonics '(VBROADCASTI128 VBROADCASTSD VBROADCASTSS VEXTRACTI128
- VINSERTI128 VPMASKMOVD VPMASKMOVQ VPERM2I128 VPERMD VPERMPS VPERMQ VPERMPD
- VPBLENDD VPSLLVD VPSLLVQ VPSRAVD VPSRLVD VPSRLVQ VGATHERDPD VGATHERQPD
- VGATHERDPS VGATHERQPS VPGATHERDD VPGATHERQD VPGATHERDQ VPGATHERQQ)
+                              VINSERTI128 VPMASKMOVD VPMASKMOVQ VPERM2I128 VPERMD VPERMPS VPERMQ VPERMPD
+                              VPBLENDD VPSLLVD VPSLLVQ VPSRAVD VPSRLVD VPSRLVQ VGATHERDPD VGATHERQPD
+                              VGATHERDPS VGATHERQPS VPGATHERDD VPGATHERQD VPGATHERDQ VPGATHERQQ
+                              ;; not listed in SDM section
+                              VPBROADCASTB VPBROADCASTW VPBROADCASTD VPBROADCASTQ)
   :features :avx2)
 
 
-(def-sdm-instruction-section "5.17 INTEL(R) TRANSACTIONAL SYNCHRONIZATION EXTENSIONS (INTEL(R) TSX)"
+(def-sdm-instruction-section "5.17 Intel(R) Transactional Synchronization Extensions (Intel(R) Tsx)"
   :mnemonics '(XABORT
                ;; XACQUIRE
                ;; XRELEASE
@@ -975,10 +1104,10 @@ these.</p>")
                )
   :doc "<p>Missing opcode map entries: XAQUIRE, XRELEASE, XRESLDTRK, XSUSLDTRK</p>")
 
-(def-sdm-instruction-section "5.18 INTEL(R) SHA EXTENSIONS"
+(def-sdm-instruction-section "5.18 Intel(R) SHA Extensions"
   :mnemonics '(SHA1MSG1 SHA1MSG2 SHA1NEXTE SHA1RNDS4 SHA256MSG1 SHA256MSG2 SHA256RNDS2))
 
-(def-sdm-instruction-section "5.19 INTEL(R) ADVANCED VECTOR EXTENSIONS 512 (INTEL(R) AVX-512)"
+(def-sdm-instruction-section "5.19 Intel(R) Advanced Vector Extensions 512 (Intel(R) AVX-512)"
   :doc "<p>This section's instruction list is divided into several subheadings; we add
 subsections for them even though they aren't formally listed as subsections in
 the SDM.</p>")
@@ -990,27 +1119,28 @@ the SDM.</p>")
                VCOMPRESSPD VCOMPRESSPS
                VCVTTPD2UDQ VCVTPD2UDQ
                VCVTTPS2UDQ VCVTPS2UDQ
-               VCVTQQ2PD VCVTQQ2PS
+               ;; VCVTQQ2PD VCVTQQ2PS ;; actually avx512dq
                VCVTTSD2USI VCVTSD2USI
                VCVTTSS2USI VCVTSS2USI
                VCVTUDQ2PD VCVTUDQ2PS
                VCVTUSI2SD VCVTUSI2SS
                VEXPANDPD VEXPANDPS
-               VEXTRACTF32X4 ;; VEXTRACTF64X4
-               VEXTRACTI32X4 ;; VEXTRACTI64X4
+               VEXTRACTF32X4 VEXTRACTF64X4
+               VEXTRACTI32X4 VEXTRACTI64X4
                VFIXUPIMMPD VFIXUPIMMPS
                VFIXUPIMMSD VFIXUPIMMSS
                VGETEXPPD VGETEXPPS
                VGETEXPSD VGETEXPSS
                VGETMANTPD VGETMANTPS
                VGETMANTSD VGETMANTSS
-               VINSERTF32X4 ;; VINSERTF64X4
+               VINSERTF32X4 VINSERTF64X4
+               VINSERTI32X4 VINSERTI64X4
                VMOVDQA32 VMOVDQA64
                VMOVDQU32 VMOVDQU64
                VPBLENDMD VPBLENDMQ
-               VPBROADCASTD VPBROADCASTQ
-               VPCMPD ;; VPCMPUD
-               VPCMPQ ;; VPCMPUQ
+               VPBROADCASTD VPBROADCASTQ ;; but these do seem to be AVX2 promotions?
+               VPCMPD VPCMPUD
+               VPCMPQ VPCMPUQ
                VPCOMPRESSQ VPCOMPRESSD
                VPERMI2D VPERMI2Q
                VPERMI2PD VPERMI2PS
@@ -1021,14 +1151,14 @@ the SDM.</p>")
                VPMAXUD VPMAXUQ
                VPMINSQ
                VPMINUD VPMINUQ
-               VPMOVSQB VPMOVUSQB
-               VPMOVSQW VPMOVUSQW
-               VPMOVSQD VPMOVUSQD
-               VPMOVSDB VPMOVUSDB
-               VPMOVSDW VPMOVUSDW
-               VPROLD ;; VPROLQ
+               VPMOVSQB VPMOVUSQB VPMOVQB
+               VPMOVSQW VPMOVUSQW VPMOVQW
+               VPMOVSQD VPMOVUSQD VPMOVQD
+               VPMOVSDB VPMOVUSDB VPMOVDB
+               VPMOVSDW VPMOVUSDW VPMOVDW
+               VPROLD VPROLQ
                VPROLVD VPROLVQ
-               VPRORD ;; VPRORQ
+               VPRORD VPRORQ
                VPRORVD VPRORVQ
                VPSCATTERDD VPSCATTERDQ
                VPSCATTERQD VPSCATTERQQ
@@ -1045,44 +1175,142 @@ the SDM.</p>")
                VRSQRT14SD VRSQRT14SS
                VSCALEFPD VSCALEFPS
                VSCALEFSD VSCALEFSS
-               VPSCATTERDD VPSCATTERDQ
-               VPSCATTERQD VPSCATTERQQ
+               VSCATTERDPS VSCATTERDPD
+               VSCATTERQPS VSCATTERQPD
                VSHUFF32X4 VSHUFF64X2
                VSHUFI32X4 VSHUFI64X2
-               )
-  :doc "<p>Possible bugs:</p>
-<ul>
-<li>VEXTRACTF32x8 and VEXTRACTF64x4 (both 0x0F_3A_1B) are listed with mnemonics VEXTRACTF32x4 and VEXTRACTF64x2</li>
-<li>similar for VEXTRACTI*, VINSERTF*</li>
-<li>VPCMPUD and VPCMPUQ (both 0x0F_3A_1E) are listed with mnemonics VPCMPD and VPCMPQ</li>
-<li>VPROLQ (0x0F72 evex.W1) is listed with mnemonic VPROLD</li>
-</ul>"
-  )
+               ;; added:
+               VPABSQ)
+  :features :avx512f)
 
-(def-sdm-instruction-section "5.19.2 AVX-512BW instructions that are not Intel AVX or AVX2 promotions"
+(local (define get-sub-table ((section nat-listp)
+                              (table sdm-instruction-table-p))
+         :returns (subtable sdm-instruction-table-p)
+         :prepwork ((local (defthm assoc-equal-of-sdm-instruction-table-is-hons-assoc-equal
+                             (implies (sdm-instruction-table-p x)
+                                      (equal (assoc-equal key x)
+                                             (hons-assoc-equal key x))))))
+         (b* ((look (assoc-equal section (sdm-instruction-table-fix table))))
+           (and look (list look)))))
+
+(local (define get-promoted-avx512-insts ((section nat-listp)
+                                          (feature symbolp)
+                                          (table sdm-instruction-table-p))
+         (b* ((table (b* ((self (assoc-equal section table)))
+                       (if self (remove-equal self table) table)))
+              (table (sdm-instruction-table-organize table))
+              (avx-tables (append (get-sub-table '(5 13) table) ;; 5.13 -- AVX
+                                  (get-sub-table '(5 15) table) ;; 5.15 -- FMA
+                                  (get-sub-table '(5 16) table))) ;; 5.16 -- AVX2
+              (avx512-table (get-sub-table '(5 19) table)) ;; 5.19 -- avx512
+              (all-feature (keep-insts-satisfying-feature feature (all-opcode-maps)))
+              (feature-missing
+               (set::difference (set::mergesort all-feature)
+                                (set::mergesort
+                                 (append (sdm-instruction-table-implemented-instructions avx512-table)
+                                         (sdm-instruction-table-unimplemented-instructions avx512-table)))))
+              (avx-mnemonics (append (inst-list->mnemonics (sdm-instruction-table-implemented-instructions avx-tables))
+                                     (inst-list->mnemonics (sdm-instruction-table-unimplemented-instructions avx-tables))))
+              (missing-with-prev-mnemonics (find-insts-named-str (keep-strings avx-mnemonics) feature-missing)))
+           missing-with-prev-mnemonics)))
+         
+(def-sdm-instruction-section "5.19.2 AVX-512F instructions that are Intel AVX or AVX2 promotions"
+  :instructions (get-promoted-avx512-insts '(5 19 2) :avx512f (table-alist 'sdm-instruction-sect (w state)))
+  :mnemonics '(VBROADCASTF32X4
+               VBROADCASTF64X4
+               VBROADCASTI32X4
+               VBROADCASTI64X4
+               VPANDD VPANDQ VPANDND VPANDNQ VPORD VPORQ VPXORD VPXORQ)
+  :features :avx512f)
+
+
+(def-sdm-instruction-section "5.19.3 AVX-512DQ instructions that are not Intel AVX or AVX2 promotions"
+  :mnemonics '(
+               VCVTPD2QQ
+               VCVTTPD2QQ
+               VCVTPD2UQQ
+               VCVTTPD2UQQ
+               VCVTPS2QQ
+               VCVTTPS2QQ
+               VCVTPS2UQQ
+               VCVTTPS2UQQ
+               VCVTUQQ2PD
+               VCVTUQQ2PS
+               VEXTRACTF64X2
+               VEXTRACTI64X2
+               VEXTRACTF32X8
+               VEXTRACTI32X8
+               VFPCLASSPD
+               VFPCLASSPS
+               VFPCLASSSD
+               VFPCLASSSS
+               VINSERTF64X2
+               VINSERTI64X2
+               VINSERTF32X8
+               VINSERTI32X8
+               VPMOVM2D
+               VPMOVM2Q
+               ;; VPMOVB2M ;; actually avx512bw
+               VPMOVQ2M
+               VPMULLQ
+               VRANGEPD
+               VRANGEPS
+               VRANGESD
+               VRANGESS
+               VREDUCEPD
+               VREDUCEPS
+               VREDUCESD
+               VREDUCESS
+               ;; incorrectly listed in SDM under avx512f
+               VCVTQQ2PD VCVTQQ2PS
+               ;; not present in SDM listing
+               VPMOVD2M VPMOVQ2M)
+  :features :avx512dq)
+
+(def-sdm-instruction-section "5.19.4 AVX-512DQ instructions that are Intel AVX or AVX2 promotions"
+  :instructions (get-promoted-avx512-insts '(5 19 4) :avx512dq (table-alist 'sdm-instruction-sect (w state)))
+  :mnemonics '(VBROADCASTF32X2
+               VBROADCASTF64X2
+               VBROADCASTF32X8
+               |VBROADCASTI32x2|
+               VBROADCASTI64X2
+               VBROADCASTI32X8)
+  :features :avx512dq)
+
+
+(def-sdm-instruction-section "5.19.5 AVX-512BW instructions that are not Intel AVX or AVX2 promotions"
   :mnemonics '(VDBPSADBW
                VMOVDQU8 VMOVDQU16
                VPBLENDMB
                VPBLENDMW
                VPBROADCASTB VPBROADCASTW
-               VPCMPB ;;VPCMPUB
-               VPCMPW ;;VPCMPUW
+               VPCMPB VPCMPUB
+               VPCMPW VPCMPUW
                VPERMW
-               VPERMI2B VPERMI2W
+               ;; VPERMI2B ;; actually avx512_vbmi
+               VPERMI2W
                VPMOVM2B VPMOVM2W
                VPMOVB2M VPMOVW2M
-               VPMOVSWB VPMOVUSWB
+               VPMOVSWB VPMOVUSWB VPMOVWB
                VPSLLVW VPSRAVW VPSRLVW
                VPTESTNMB VPTESTNMW
-               VPTESTMB VPTESTMW)
-  :doc "<p>Possible bugs: VPCMPUB and VPCMPUW (both 0x0F_3A_3E) are listed with mnemonics VPCMPB and VPCMPW</p>")
+               VPTESTMB VPTESTMW
+               ;; not listed in SDM section
+               VPERMT2W)
+  :features :avx512bw)
 
-(def-sdm-instruction-section "5.19.3  AVX-512CD instructions that are not Intel AVX or AVX2 promotions"
+(def-sdm-instruction-section "5.19.6 AVX-512BW instructions that are Intel AVX or AVX2 promotions"
+  :instructions (get-promoted-avx512-insts '(5 19 6) :avx512bw (table-alist 'sdm-instruction-sect (w state))))
+
+(def-sdm-instruction-section "5.19.7 AVX-512CD instructions that are not Intel AVX or AVX2 promotions"
   :mnemonics '(VPBROADCASTMB2Q VPBROADCASTMW2D
                VPCONFLICTD VPCONFLICTQ
                VPLZCNTD VPLZCNTQ))
 
-(def-sdm-instruction-section "5.19.4 Opmask instructions"
+(def-sdm-instruction-section "5.19.8 AVX-512CD instructions that are Intel AVX or AVX2 promotions"
+  :instructions (get-promoted-avx512-insts '(5 19 8) :avx512cd (table-alist 'sdm-instruction-sect (w state))))
+
+(def-sdm-instruction-section "5.19.9 Opmask instructions"
   :mnemonics '(
                KADDB
                KADDW
@@ -1136,7 +1364,7 @@ the SDM.</p>")
                KXORD
                KXORQ))
 
-(def-sdm-instruction-section "5.19.5 AVX-512ER instructions"
+(def-sdm-instruction-section "5.19.10 AVX-512ER instructions"
   :mnemonics '(
                VEXP2PD
                VEXP2PS
@@ -1154,13 +1382,13 @@ the SDM.</p>")
 <p>Apparently VEXP2SD/VEXP2SS don't exist, even though they are listed in the
 table in the SDM -- they are not mentioned elsewhere</p>")
 
-(def-sdm-instruction-section "5.19.6 AVX-512PF instructions"
+(def-sdm-instruction-section "5.19.11 AVX-512PF instructions"
   :mnemonics '(VGATHERPF0DPD VGATHERPF0DPS VGATHERPF0QPD VGATHERPF0QPS
                              VGATHERPF1DPD VGATHERPF1DPS VGATHERPF1QPD VGATHERPF1QPS VSCATTERPF0DPD
                              VSCATTERPF0DPS VSCATTERPF0QPD VSCATTERPF0QPS VSCATTERPF1DPD VSCATTERPF1DPS
                              VSCATTERPF1QPD VSCATTERPF1QPS))
 
-(def-sdm-instruction-section "5.19.7 AVX512-FP16 instructions"
+(def-sdm-instruction-section "5.19.12 AVX512-FP16 instructions"
   :mnemonics '(VCVTPH2PS VCVTPS2PH
  ;;               VADDPH VADDSH VCMPPH VCMPSH VCOMISH VCVTDQ2PH VCVTPD2PH
  ;; VCVTPH2DQ VCVTPH2QQ VCVTPH2PD VCVTPH2PSX VCVTPH2QQ VCVTPH2UDQ
@@ -1183,9 +1411,38 @@ table in the SDM -- they are not mentioned elsewhere</p>")
 think we basically need two new opcode maps for these.</p>")
 
 
-(def-sdm-instruction-section "5.20 SYSTEM INSTRUCTIONS"
+(def-sdm-instruction-section "5.19.13 Other AVX512 Features Not Listed in SDM Ch. 5"
+  :doc "<p>Organized by feature for now.</p>")
+
+(def-sdm-instruction-section "5.19.13.1 AVX512-VBMI instructions"
+  :mnemonics '(VPERMB VPERMI2B VPERMT2B
+                      VPMULTISHIFTQB
+                      )
+  :features :avx512_vbmi)
+
+(def-sdm-instruction-section "5.19.13.2 AVX512-VBMI2 instructions"
+  ;; :mnemonics '(VPCOMPRESSB VPCOMPRESSW VPEXPANDB VPEXPANDW)
+  :features :avx512_vbmi2
+  :doc " <p>Missing from opcode maps</p>")
+
+(def-sdm-instruction-section "5.19.13.3 AVX512-IFMA instructions"
+  :instructions (all-opcode-maps)
+  :features :avx512_ifma)
+
+(def-sdm-instruction-section "5.19.13.4 AVX512-4FMAPS instructions"
+  :instructions (all-opcode-maps)
+  :features :avx512_4fmaps)
+
+(def-sdm-instruction-section "5.19.13.5 AVX512-4VNNIW instructions"
+  :instructions (all-opcode-maps)
+  :features :avx512_4vnniw)
+
+
+
+
+(def-sdm-instruction-section "5.20 System Instructions"
   :mnemonics '(CLAC STAC LGDT SGDT LLDT SLDT LTR STR LIDT SIDT ;; MOV
-                    LMSW CLTS ARPL LAR LSL VERR VERW           ;; MOV
+                    LMSW SMSW CLTS ARPL LAR LSL VERR VERW           ;; MOV
                     INVD WBINVD INVLPG INVPCID ;; LOCK -- a prefix
                     HLT RSM RDMSR WRMSR RDPMC RDTSC RDTSCP SYSENTER SYSEXIT XSAVE ;; XSAVEC
                     XSAVEOPT ;; XSAVES
@@ -1199,7 +1456,7 @@ think we basically need two new opcode maps for these.</p>")
 </ul>")
 
 
-(def-sdm-instruction-section "5.21 64-BIT MODE INSTRUCTIONS"
+(def-sdm-instruction-section "5.21 64-Bit Mode Instructions"
   :mnemonics '(CBW/CWDE/CDQE CMPS/W/D CMPXCHG16B LODS/W/D/Q MOVS/W/D/Q MOVZX
                              STOS/W/D/Q SWAPGS SYSCALL SYSRET)
   :doc "
@@ -1207,7 +1464,7 @@ think we basically need two new opcode maps for these.</p>")
 <li>Perhaps CMPS/W/D should be called CMPS/W/D/Q</li>
 </ul>")
 
-(def-sdm-instruction-section "5.22 VIRTUAL-MACHINE EXTENSIONS"
+(def-sdm-instruction-section "5.22 Virtual-Machine Extensions"
   :mnemonics '(
 VMPTRLD
 ;; VMPTRST
@@ -1227,130 +1484,69 @@ VMFUNC
 <li>VMREAD and VMWRITE (0x0F_78 and 0x0F_79) are listed with mnemonics MREAD and MWRITE</li>
 </ul>")
 
-(def-sdm-instruction-section "5.23 SAFER MODE EXTENSIONS"
+(def-sdm-instruction-section "5.23 Safer Mode Extensions"
   :mnemonics '(GETSEC))
-(def-sdm-instruction-section "5.24 INTEL(R) MEMORY PROTECTION EXTENSIONS"
+(def-sdm-instruction-section "5.24 Intel(R) Memory Protection Extensions"
   :mnemonics '(BNDMK BNDCL BNDCU BNDCN BNDMOV BNDMOV BNDLDX BNDSTX))
 
-(def-sdm-instruction-section "5.25 INTEL(R) SOFTWARE GUARD EXTENSIONS"
+(def-sdm-instruction-section "5.25 Intel(R) Software Guard Extensions"
   :mnemonics '(ENCLS ENCLU))
-(def-sdm-instruction-section "5.26 SHADOW STACK MANAGEMENT INSTRUCTIONS"
+(def-sdm-instruction-section "5.26 Shadow Stack Management Instructions"
   :mnemonics nil 
   ;; '(CLRSSBSY INCSSP RDSSP RSTORSSP SAVEPREVSSP SETSSBSY WRSS WRUSS)
   :doc "<p>Not yet included in opcode maps</p>")
 
-(def-sdm-instruction-section "5.27 CONTROL TRANSFER TERMINATING INSTRUCTIONS"
-  :mnemonics nil  ;; '(ENDBR32 ENDBR64 )
-  :doc "<p>Not yet included in opcode maps</p>")
-(def-sdm-instruction-section "5.28 INTEL(R) AMX INSTRUCTIONS"
+(def-sdm-instruction-section "5.27 Control Transfer Terminating Instructions"
+  :mnemonics '(ENDBR32/ENDBR64))
+
+(def-sdm-instruction-section "5.28 Intel(R) AMX Instructions"
   :mnemonics nil
   ;; '(LDTILECFG STTILECFG TDPBF16PS TDPBSSD TDPBSUD TDPBUSD TDPBUUD
   ;;                        TILELOADD TILELOADDT1 TILERELEASE TILESTORED TILEZERO)
   :doc "<p>Not yet included in opcode maps</p>")
-(def-sdm-instruction-section "5.29 USER INTERRUPT INSTRUCTIONS"
+(def-sdm-instruction-section "5.29 User Interrupt Instructions"
   :mnemonics nil
   ;; '(CLUI SENDUIPI STUI TESTUI UIRET)
   :doc "<p>Not yet included in opcode maps</p>")
-(def-sdm-instruction-section "5.30 ENQUEUE STORE INSTRUCTIONS"
+(def-sdm-instruction-section "5.30 Enqueue Store Instructions"
   :mnemonics nil
   ;; '(ENQCMD ENQCMDS)
   :doc "<p>Not yet included in opcode maps</p>")
-(def-sdm-instruction-section "5.31 INTEL(R) ADVANCED VECTOR EXTENSIONS 10 VERSION 1 INSTRUCTIONS")
+
+
+
+(def-sdm-instruction-section "5.31 Intel(R) Advanced Vector Extensions 10 Version 1 Instructions")
+
+(def-sdm-instruction-section "5.40 Other ISA Extensions"
+  :mnemonics '(RDPID))
+
+
+(define keep-string-mnemonic-insts ((x inst-list-p))
+  :returns (insts inst-list-p)
+  (if (atom x)
+      nil
+    (if (stringp (inst->mnemonic (car x)))
+        (cons (inst-fix (car x))
+              (keep-string-mnemonic-insts (cdr x)))
+      (keep-string-mnemonic-insts (cdr x)))))
+
+
+(def-sdm-instruction-section "5.50 Uncategorized \"Instructions\""
+  :instructions
+  (b* ((section '(5 50))
+       (table (table-alist 'sdm-instruction-sect (w state)))
+       (self (assoc-equal section table))
+       (table (if self (remove-equal self table) table))
+       (table (sdm-instruction-table-organize table))
+       (all-catalogued (append (sdm-instruction-table-unimplemented-instructions table)
+                                (sdm-instruction-table-implemented-instructions table)))
+       (uncatalogued (set::difference (set::mergesort (all-opcode-maps))
+                                      (set::mergesort all-catalogued))))
+    uncatalogued))
 
 
 
 
-(define sdm-instruction-pair-p (x)
-  (and (consp x)
-       (nat-listp (car x))
-       (sdm-instruction-table-entry-p (cdr x)))
-  ///
-  (defthm sdm-instruction-pair-p-when-reqs
-    (implies (and (nat-listp (car x))
-                  (sdm-instruction-table-entry-p (cdr x)))
-             (sdm-instruction-pair-p x))))
-
-(define sdm-instruction-pair-< ((x sdm-instruction-pair-p)
-                                (y sdm-instruction-pair-p))
-  :prepwork ((local (in-theory (enable sdm-instruction-pair-p))))
-  (section-number-< (car X) (car y)))
-
-(encapsulate nil
-  (local (in-theory (enable sdm-instruction-pair-<
-                            sdm-instruction-pair-p
-                            section-number-<)))
-
-  (local (defthm section-number-<-transitive
-           (implies (and (section-number-< x y)
-                         (section-number-< y z))
-                    (section-number-< x z))))
-
-  (local (defthm section-number->=-transitive
-           (implies (and (not (section-number-< x y))
-                         (not (section-number-< y z)))
-                    (not (section-number-< x z)))))
-
-  (local (defthm section-number-<-irreflexive
-           (not (section-number-< x x))))
-
-  (local (in-theory (disable section-number-<)))
-
-  (acl2::defsort sdm-instruction-table-sort
-    :prefix sdm-instruction-table
-    ;; :comparable-listp sdm-instruction-table-p
-    :compare< sdm-instruction-pair-<
-    :comparablep sdm-instruction-pair-p
-    :true-listp t)
-
-  (defthm sdm-instruction-table-list-p-is-sdm-instruction-table-p
-    (equal (sdm-instruction-table-list-p x)
-           (sdm-instruction-table-p x))
-    :hints(("Goal" :in-theory (enable sdm-instruction-table-p
-                                      sdm-instruction-table-list-p))))
-
-  (defthm sdm-instruction-table-p-of-insertsort
-    (implies (sdm-instruction-table-p x)
-             (sdm-instruction-table-p (sdm-instruction-table-insertsort x)))
-    :hints (("goal" :use sdm-instruction-table-insertsort-creates-comparable-listp
-             :in-theory (disable sdm-instruction-table-insertsort-creates-comparable-listp)))))
-
-
-
-(define sdm-instruction-table-gather-subtopics ((prefix nat-listp)
-                                        (x sdm-instruction-table-p))
-  :returns (mv (prefixed-x sdm-instruction-table-p)
-               (rest-x sdm-instruction-table-p))
-  :measure (len x)
-  :verify-guards nil
-  (b* (((when (atom x)) (mv nil nil))
-       ((unless (mbt (and (consp (car x))
-                          (nat-listp (caar x)))))
-        (sdm-instruction-table-gather-subtopics prefix (cdr x)))
-       (x1-section (caar x))
-       ((unless (acl2::prefixp (acl2::nat-list-fix prefix) x1-section))
-        (mv nil (sdm-instruction-table-fix x)))
-       ;; first element is still prefixed by the input prefix, continue with the rest
-       ;; first gather all the elements that are prefixed by section:
-       ((mv x1-subsecs rest-x) (sdm-instruction-table-gather-subtopics x1-section (cdr x)))
-       ((sdm-instruction-table-entry entry) (cdar x))
-       (new-x1 (cons x1-section (change-sdm-instruction-table-entry entry :subsecs (append entry.subsecs x1-subsecs))))
-       ((unless (mbt (< (len rest-x) (len x))))
-        (mv (list new-x1) rest-x))
-       ((mv rest rest-x) (sdm-instruction-table-gather-subtopics prefix rest-x)))
-    (mv (cons new-x1 rest) rest-x))
-  ///
-  (defret <fn>-rest-x-length
-    (<= (len rest-x) (len x))
-    :rule-classes :linear)
-
-  (verify-guards sdm-instruction-table-gather-subtopics))
-
-(define sdm-instruction-table-organize ((x sdm-instruction-table-p))
-  ;; top level: sort, then gather subtopics
-  :returns (organized sdm-instruction-table-p)
-  (b* ((sorted (sdm-instruction-table-sort x))
-       ((mv gathered &) (sdm-instruction-table-gather-subtopics nil sorted)))
-    gathered))
 
 (defines sdm-instruction-table-elide
   ;; this is just so we can look at the hierarchy of topics without seeing everything
@@ -1443,13 +1639,13 @@ VMFUNC
         :long ,(str::cat x.doc acl2::*newline-string*
                          (if x.unimplemented
                              (str::cat "<h3>Unimplemented Instructions</h3>" acl2::*newline-string*
-                                       (create-insts-doc x.unimplemented :full-opcode? t)
+                                       (create-insts-doc x.unimplemented :full-opcode? t :arg-ok? t)
                                        acl2::*newline-string*)
                            "")
                          (if x.implemented
                              (str::cat
                               "<h3>Implemented Instructions</h3>" acl2::*newline-string*
-                              (create-insts-doc x.implemented :full-opcode? t)
+                              (create-insts-doc x.implemented :full-opcode? t :arg-ok? t)
                               acl2::*newline-string*)
                            "")
                          (if x.subsecs
@@ -1510,8 +1706,29 @@ well.</p>"
                    'sdm-instruction-set-summary)))))
 
 #|
-(include-book
-"xdoc/save" :dir :system)
+(include-book "xdoc/save"
+:dir :system)
 
 (xdoc::save "catalogue-manual" :redef-okp t)
 |#
+
+
+
+
+
+(defconsts *all-uncatalogued-instructions*
+  (b* ((section '(5 50))
+       (table (table-alist 'sdm-instruction-sect (w state)))
+       (self (assoc-equal section table))
+       (table (if self (remove-equal self table) table))
+       (table (sdm-instruction-table-organize table))
+       (all-catalogued (append (sdm-instruction-table-unimplemented-instructions table)
+                                (sdm-instruction-table-implemented-instructions table)))
+       (uncatalogued (set::difference (set::mergesort (all-opcode-maps))
+                                      (set::mergesort all-catalogued))))
+    uncatalogued))
+
+
+(assert-event (equal (set::mergesort (keep-strings (inst-list->mnemonics *all-uncatalogued-instructions*)))
+                     '("#UD" "JMPE" "RESERVEDNOP" "far CALL"
+                       "far JMP" "near CALL" "near JMP")))
