@@ -12,6 +12,7 @@
 (in-package "ACL2")
 
 (include-book "bvxor")
+(local (include-book "logxor-b"))
 
 (defund bitxor (x y)
   (declare (type integer x)
@@ -335,3 +336,82 @@
 
 (in-theory (disable bitxor-commutative-2))
 (theory-invariant (incompatible (:rewrite bitxor-commutative-2) (:rewrite bitxor-commutative-2-alt)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm slice-of-bitxor-too-high
+  (implies (and (<= 1 low)
+                (integerp low))
+           (equal (slice high low (bitxor x y))
+                  0))
+  :hints (("Goal" :in-theory (e/d (bitxor slice-too-high-is-0)
+                                  (bvxor-1-becomes-bitxor)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;don't need if we have polarity?
+(defthm bitxor-subst-arg2-one-version
+  (implies (and (not (equal (getbit 0 x) free)) ;we expect free to be 0
+                (syntaxp (equal free ''0))
+                (equal 0 free))
+           (equal (bitxor y x)
+                  (bitxor y 1)))
+  :hints (("Goal" :in-theory (enable bitxor-split))))
+
+;don't need if we have polarity?
+(defthm bitxor-subst-arg1-one-version
+  (implies (and (not (equal (getbit 0 x) free)) ;we expect free to be 0
+                (syntaxp (equal free ''0))
+                (equal 0 free))
+           (equal (bitxor x y)
+                  (bitxor 1 y)))
+  :hints (("Goal" :use bitxor-subst-arg2-one-version)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm not-equal-of-getbit-of-0-and-bitxor-of-1
+  (not (equal (getbit 0 x) (bitxor 1 x)))
+  :hints (("Goal" :cases ((equal 0 (getbit 0 x))))))
+
+(defthm not-equal-of-getbit-of-0-and-bitxor-of-1-alt
+  (not (equal (bitxor 1 x) (getbit 0 x)))
+  :hints (("Goal" :use not-equal-of-getbit-of-0-and-bitxor-of-1
+           :in-theory (disable not-equal-of-getbit-of-0-and-bitxor-of-1))))
+
+(defthm equal-of-getbit-and-bitxor-same
+  (equal (equal (getbit 0 x) (bitxor x y))
+         (equal 0 (getbit 0 y)))
+  :hints (("Goal"
+           :use BITXOR-OF-GETBIT-ARG2 ;do we have the complete set of these?
+           :in-theory (e/d (;bitxor bvxor
+                            )
+                           (;bvxor-1-becomes-bitxor logxor-bvchop-bvchop
+                            bitxor-of-getbit-arg2)))))
+
+(defthm equal-of-getbit-and-bitxor-same-alt2
+  (equal (equal (getbit 0 x) (bitxor y x)) ;x might appear in other positions as well...
+         (equal 0 (getbit 0 y)))
+  :hints (("Goal"
+           :use BITXOR-OF-GETBIT-ARG2 ;do we have the complete set of these?
+           :in-theory (e/d (;bitxor bvxor
+                            )
+                           (;bvxor-1-becomes-bitxor logxor-bvchop-bvchop
+                            bitxor-of-getbit-arg2)))))
+
+(defthm equal-of-getbit-and-bitxor-same-alt
+  (equal (equal (bitxor x y) (getbit 0 x))
+         (equal 0 (getbit 0 y)))
+  :hints (("Goal" :use equal-of-getbit-and-bitxor-same
+           :in-theory (disable equal-of-getbit-and-bitxor-same))))
+
+(defthm equal-of-getbit-and-bitxor-same-alt3
+  (equal (equal (bitxor y x) (getbit 0 x))
+         (equal 0 (getbit 0 y)))
+  :hints (("Goal" :use equal-of-getbit-and-bitxor-same
+           :in-theory (disable equal-of-getbit-and-bitxor-same))))
+
+(defthm getbit-0-of-logxor
+  (equal (getbit 0 (logxor x y))
+         (bitxor x y))
+  :hints (("Goal" ;:cases ()
+           :in-theory (e/d (bitxor bvxor getbit) (BVXOR-1-BECOMES-BITXOR logxor)))))

@@ -103,7 +103,30 @@
     x86isa::*r14*
     x86isa::*r15*
 
+    ;; See books/projects/x86isa/utils/basic-structs.lisp
     x86isa::2bits-fix
+    x86isa::3bits-fix
+    x86isa::4bits-fix
+    x86isa::5bits-fix
+    x86isa::6bits-fix
+    x86isa::7bits-fix
+    x86isa::8bits-fix
+    x86isa::10bits-fix
+    x86isa::11bits-fix
+    x86isa::12bits-fix
+    x86isa::13bits-fix
+    x86isa::16bits-fix
+    x86isa::17bits-fix
+    x86isa::19bits-fix
+    x86isa::22bits-fix
+    x86isa::24bits-fix
+    x86isa::31bits-fix
+    x86isa::32bits-fix
+    x86isa::36bits-fix
+    x86isa::40bits-fix
+    x86isa::45bits-fix
+    x86isa::54bits-fix
+    x86isa::64bits-fix
 
     ;; flags:
     x86isa::*flg-names*
@@ -658,8 +681,6 @@
     x86isa::rr32$inline
     x86isa::reg-index$inline
 
-    acl2::__function__
-
     x86isa::x86-general-protection
     x86isa::x86-device-not-available
     x86isa::x86-syscall-both-views
@@ -736,15 +757,16 @@
     leftrotate32
     rightrotate32
 
-    acl2::binary-logand
-    acl2::binary-logxor
-    acl2::binary-logior
+    binary-logand
+    binary-logxor
+    binary-logior
 
     unsigned-byte-p-forced
 
     ceiling-of-lg
     lg
     log2
+    power-of-2p
 
     farg1
     farg2
@@ -764,6 +786,7 @@
     ffn-symb
 
     define
+    __function__
 
     defp
 
@@ -869,6 +892,7 @@
     subset-eq
     submit-event
     must-be-redundant
+    must-fail
 
     ;; x86 stuff (move to x package?):
     elf-info
@@ -884,8 +908,8 @@
   '(bitops::part-install-width-low$inline
     bitops::part-select-width-low$inline
     b-xor ; from ihs, via bitops
-    acl2::logbit$inline ; really from ihs
-    acl2::b-xor$inline
+    logbit$inline ; really from ihs
+    b-xor$inline ; really from ihs
     ))
 
 ;; Ideally, these would all be rewritten away

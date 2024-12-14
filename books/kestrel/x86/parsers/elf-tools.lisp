@@ -65,17 +65,30 @@
         (er hard? 'get-elf-code-address "No .text section.") ;; todo: instead, return :none
       addr)))
 
-(defun get-elf-symbol-address (name symbol-table)
+;; Throws an error if the symbol has multiple matches
+(defun get-elf-symbol-address-aux (name symbol-table)
   (declare (xargs :guard (and (stringp name)
                               (elf-symbol-tablep symbol-table))
                   :guard-hints (("Goal" :in-theory (enable elf-symbol-tablep)))))
   (if (endp symbol-table)
-      (er hard? 'get-elf-symbol-address "Can't find ~s0 in symbol table." name)
+      nil ; not found
     (let* ((entry (first symbol-table))
            (this-name (lookup-eq-safe :name entry)))
       (if (equal this-name name)
-          (lookup-eq-safe :value entry) ; assumes it is not a relocatable file
-        (get-elf-symbol-address name (rest symbol-table))))))
+          (if (get-elf-symbol-address-aux name (rest symbol-table))
+              (er hard? 'get-elf-symbol-address-aux "Multiple matches in symbol table for ~s0." name)
+            (lookup-eq-safe :value entry) ; assumes it is not a relocatable file
+            )
+        (get-elf-symbol-address-aux name (rest symbol-table))))))
+
+;; Throws an error if the symbol is not found or has multiple matches
+(defun get-elf-symbol-address (name symbol-table)
+  (declare (xargs :guard (and (stringp name)
+                              (elf-symbol-tablep symbol-table))))
+  (let ((result (get-elf-symbol-address-aux name symbol-table)))
+    (if (not result)
+        (er hard? 'get-elf-symbol-address "Can't find ~s0 in symbol table." name)
+      result)))
 
 (defun get-names-from-elf-symbol-table (symbol-table acc)
   (declare (xargs :guard (and (elf-symbol-tablep symbol-table)
@@ -90,6 +103,7 @@
                                            (cons name acc)
                                          acc)))))
 
+(defopeners get-elf-symbol-address-aux)
 (defopeners get-elf-symbol-address)
 
 (defund parsed-elf-symbol-table (parsed-elf)

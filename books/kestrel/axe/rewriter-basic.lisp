@@ -47,11 +47,11 @@
   (declare (xargs :guard (and (pseudo-term-listp conjuncts)
                               (pseudo-term-listp done-conjuncts)
                               (rule-alistp rule-alist)
+                              (symbol-listp known-booleans)
                               (symbol-listp monitored-symbols)
                               (booleanp memoizep)
                               (booleanp warn-missingp)
-                              (booleanp againp)
-                              (symbol-listp known-booleans))
+                              (booleanp againp))
                   :measure (len conjuncts)))
   (if (endp conjuncts)
       (mv (erp-nil) (reverse done-conjuncts) againp)
@@ -62,10 +62,9 @@
                            (append (rest conjuncts) done-conjuncts) ; the assumptions; note that we don't use the term to simplify itself!
                            rule-alist
                            nil ; interpreted-function-alist
-                           monitored-symbols
-                           nil
+                           known-booleans nil nil
                            memoizep
-                           nil nil nil known-booleans nil))
+                           nil nil monitored-symbols nil))
          ((when erp) (mv erp nil nil))
          )
       (if (equal result-term term) ;; no change: ; todo: flatten, as we do below?

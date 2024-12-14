@@ -201,12 +201,12 @@
 ;arises in array indexing
 ;perhaps more direct than other rules
 ;make a bv version?
-(defthm canonical-address-p-of-+-of-bvmult-64-of-4
-  (implies (and (syntaxp (quotep k))
-                (canonical-address-p k)
-                (< (* 4 (bvchop 62 index)) (- 140737488355328 k)))
-           (canonical-address-p (+ k (bvmult 64 4 index))))
-  :hints (("Goal" :in-theory (enable bvmult canonical-address-p signed-byte-p))))
+;; (defthm canonical-address-p-of-+-of-bvmult-64-of-4
+;;   (implies (and (syntaxp (quotep k))
+;;                 (canonical-address-p k)
+;;                 (< (* 4 (bvchop 62 index)) (- 140737488355328 k)))
+;;            (canonical-address-p (+ k (bvmult 64 4 index))))
+;;   :hints (("Goal" :in-theory (enable bvmult canonical-address-p signed-byte-p))))
 
 ;; (thm
 ;;  (implies (and (canonical-address-p$inline (binary-+ '211 text-offset))
@@ -306,7 +306,6 @@
 ;;                         (* 8 (bvminus 48 offset2 offset1) ;(- offset2 offset1) ;(- (bvchop 48 offset2) (bvchop 48 offset1))
 ;;                            )
 ;;                         val)))
-;;  :otf-flg t
 ;;  :hints (("Goal" :expand ((write 4 (+ addr offset1) val x86)
 ;;                           (write 3 (+ 1 addr offset1)
 ;;                                  (logtail 8 val)

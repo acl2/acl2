@@ -45,18 +45,20 @@
 ;; ----------------------------------------------------------------------
 
 (include-book "instructions/top"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:syscall-exec :other-non-det :undef-flg))
 (include-book "two-byte-opcodes-dispatch"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:syscall-exec :other-non-det :undef-flg))
 (include-book "three-byte-opcodes-dispatch"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:syscall-exec :other-non-det :undef-flg))
 (include-book "vex-opcodes-dispatch"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:syscall-exec :other-non-det :undef-flg))
 (include-book "evex-opcodes-dispatch"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:syscall-exec :other-non-det :undef-flg))
 (include-book "cpuid")
 (include-book "dispatch-macros")
 (include-book "interrupt-servicing")
+(include-book "catalogue"
+              :ttags (:syscall-exec :other-non-det :undef-flg)) ;; for xdoc
 (include-book "std/strings/hexify" :dir :system)
 
 (local (include-book "dispatch-creator"))

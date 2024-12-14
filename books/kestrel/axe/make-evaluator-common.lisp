@@ -40,7 +40,7 @@
 ;;   :hints (("Goal" :expand ((pseudo-termp form))
 ;;            :in-theory (enable pseudo-termp pseudo-lambdap))))
 
-;; Generates a list of cases suitable for use woith CASE.
+;; Generates a list of cases suitable for use with CASE.
 ;; Each case returns (mv hitp val) or (mv hitp val trace) depending on tracingp.
 ; ;the alist should have no duplicates
 ;rename

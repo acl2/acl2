@@ -235,6 +235,19 @@
                   :stobjs state))
   (magic-ev-fncall 'untranslate (list term nil wrld) state nil nil))
 
+;; ;; Returns (mv erp result).
+;; ;move
+;; ; TODO: Errors about program-only code
+;; (defund acl2::translate-terms-logic (terms ctx wrld state)
+;;   (declare (xargs :guard (and (true-listp terms) ; untranslated
+;;                                     (plist-worldp wrld))
+;;                   :stobjs state))
+;;   (mv-let (v1 v2)
+;;       (magic-ev-fncall 'translate-terms (list terms ctx wrld) state nil nil)
+;;     (if v1
+;;         (mv (or v2 :error) nil)
+;;         (mv nil v2))))
+
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 
 (local (in-theory (disable set-print-base-radix
@@ -264,17 +277,19 @@
 ;; STEP-INCREMENT steps at a time, until the run finishes, STEPS-LEFT is
 ;; reduced to 0, or a loop or an unsupported instruction is detected.
 ;; Returns (mv erp result-dag-or-quotep state).
-(defun repeatedly-run (steps-left step-increment dag rule-alist assumptions rules-to-monitor use-internal-contextsp prune print print-base untranslatep memoizep total-steps state)
+(defun repeatedly-run (steps-left step-increment dag rule-alist pruning-rule-alist assumptions rules-to-monitor use-internal-contextsp prune count-hits print print-base untranslatep memoizep total-steps state)
   (declare (xargs :guard (and (natp steps-left)
                               (acl2::step-incrementp step-increment)
                               (acl2::pseudo-dagp dag)
                               (acl2::rule-alistp rule-alist)
+                              (acl2::rule-alistp pruning-rule-alist)
                               (pseudo-term-listp assumptions)
                               (symbol-listp rules-to-monitor)
                               (booleanp use-internal-contextsp)
                               (or (eq nil prune)
                                   (eq t prune)
                                   (natp prune))
+                              (acl2::count-hits-argp count-hits)
                               (acl2::print-levelp print)
                               (member print-base '(10 16))
                               (booleanp untranslatep)
@@ -320,13 +335,14 @@
                                       rule-alist
                                       nil ; interpreted-function-alist
                                       (acl2::known-booleans (w state))
+                                      t             ; normalize-xors
                                       limits
-                                      t ; count-hints ; todo: think about this
+                                      memoizep
+                                      count-hits
                                       print
                                       rules-to-monitor
                                       '(program-at) ; fns-to-elide
-                                      t             ; normalize-xors
-                                      memoizep)
+                                      )
               (mv erp result state))
             ;)
             )
@@ -362,7 +378,7 @@
                                            ;; rewriter duing lifting (TODO: What about assumptions only usable by STP?)
                                            nil ; assumptions
                                            :none
-                                           rule-alist
+                                           pruning-rule-alist
                                            nil ; interpreted-fns
                                            rules-to-monitor
                                            t ;call-stp
@@ -412,13 +428,14 @@
                                             rule-alist
                                             nil ; interpreted-function-alist
                                             (acl2::known-booleans (w state))
+                                            t ; normalize-xors
                                             limits
-                                            t ; count-hints ; todo: think about this
+                                            memoizep
+                                            count-hits
                                             print
                                             rules-to-monitor
                                             '(program-at code-segment-assumptions32-for-code) ; fns-to-elide
-                                            t ; normalize-xors
-                                            memoizep)
+                                            )
                     (mv erp result state))
                   ;)
                   )
@@ -458,7 +475,7 @@
                    state)))
           (repeatedly-run (- steps-left steps-for-this-iteration)
                           step-increment
-                          dag rule-alist assumptions rules-to-monitor use-internal-contextsp prune print print-base untranslatep memoizep
+                          dag rule-alist pruning-rule-alist assumptions rules-to-monitor use-internal-contextsp prune count-hits print print-base untranslatep memoizep
                           total-steps
                           state))))))
 
@@ -531,6 +548,7 @@
                              step-increment
                              memoizep
                              monitor
+                             count-hits
                              print
                              print-base
                              untranslatep
@@ -556,13 +574,14 @@
                               (booleanp memoizep)
                               (or (symbol-listp monitor)
                                   (eq :debug monitor))
+                              (acl2::count-hits-argp count-hits)
                               (acl2::print-levelp print)
                               (member print-base '(10 16))
                               (booleanp untranslatep))
                   :stobjs state
-                  :mode :program ; todo: need a magic wrapper for translate-terms
+                  :mode :program ; todo: need a magic wrapper for translate-terms (must translate at least the user-supplied assumptions)
                   ))
-  (b* ((- (cw "(Lifting ~s0.~%" target)) ;todo: print the executable name
+  (b* ((- (cw "(Lifting ~s0.~%" target)) ;todo: print the executable name, also handle non-string targets better
        ((mv start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
        (state (acl2::widen-margins state))
        ;; Get and check the executable-type:
@@ -590,15 +609,10 @@
         (er hard? 'unroll-x86-code-core "Non-position-independent lifting is currently only supported for ELF64 and MACHO64 files.")
         (mv :bad-options nil nil nil nil state))
        (- (if position-independentp (cw "Using position-independent lifting.~%") (cw "Using non-position-independent lifting.~%")))
-       ;;todo: finish adding support for :entry-point!
-       ((when (and (eq :entry-point target)
-                   (not (eq :pe-32 executable-type))))
-        (er hard? 'unroll-x86-code-core "Starting from the :entry-point is currently only supported for PE-32 files.")
-        (mv :bad-entry-point nil nil nil nil state))
-       ((when (and (natp target)
-                   (not (eq :pe-32 executable-type))))
-        (er hard? 'unroll-x86-code-core "Starting from a numeric offset is currently only supported for PE-32 files.")
-        (mv :bad-entry-point nil nil nil nil state))
+       (new-style-elf-assumptionsp (and (eq :elf-64 executable-type)
+                                        ;; todo: remove this, but we have odd, unlinked ELFs that put both the text and data segments at address 0 !
+                                        (acl2::parsed-elf-program-header-table parsed-executable) ; there are segments present (todo: improve the "new" behavior to use sections when there are no segments)
+                                        ))
        (- (and (stringp target)
                ;; Throws an error if the target doesn't exist:
                (acl2::ensure-target-exists-in-executable target parsed-executable)))
@@ -609,10 +623,7 @@
        ((mv erp assumptions untranslated-assumptions
             assumption-rules ; drop? todo: includes rules that were not used, but we return these as an RV named assumption-rules-used
             state)
-        (if (and (eq :elf-64 executable-type)
-                 ;; todo: remove this, but we have odd, unlinked ELFs that put both the text and data segments at address 0 !
-                 (acl2::parsed-elf-program-header-table parsed-executable) ; there are segments present (todo: improve the "new" behavior to use sections when there are no segments)
-                 )
+        (if new-style-elf-assumptionsp
             ;; New assumption generation behavior, only for ELF64 (for now):
             (b* ((- (cw "Using new-style assumptions.~%"))
                  (code-address (acl2::get-elf-code-address parsed-executable))
@@ -662,7 +673,16 @@
                   untranslated-assumptions ; seems ok to use the original, unrewritten assumptions here
                   assumption-rules state))
           ;; legacy case (generate some assumptions and then simplify them):
-          (b* ((text-offset
+          (b* (;;todo: finish adding support for :entry-point!
+               ((when (and (eq :entry-point target)
+                           (not (eq :pe-32 executable-type))))
+                (er hard? 'unroll-x86-code-core "Starting from the :entry-point is currently only supported for PE32 files and certain ELF64 files.")
+                (mv :bad-entry-point nil nil nil state))
+               ((when (and (natp target)
+                           (not (eq :pe-32 executable-type))))
+                (er hard? 'unroll-x86-code-core "Starting from a numeric offset is currently only supported for PE32 files and certain ELF64 files.")
+                (mv :bad-entry-point nil nil nil state))
+               (text-offset
                  (and 64-bitp ; todo
                       (if (eq :mach-o-64 executable-type)
                           (if position-independentp 'text-offset `,(acl2::get-mach-o-code-address parsed-executable))
@@ -775,7 +795,10 @@
        ;; Choose the lifter rules to use:
        (lifter-rules (if 64-bitp (lifter-rules64-all) (lifter-rules32-all)))
        ;; Add any extra-rules:
-       (lifter-rules (append extra-rules lifter-rules)) ; todo: use union?
+       (- (let ((intersection (intersection-eq extra-rules lifter-rules))) ; todo: optimize (sort and then compare, and also use sorted lists below...)
+            (and intersection
+                 (cw "Warning: The extra-rules include these rules that are already present: ~X01.~%" intersection nil))))
+       (lifter-rules (append extra-rules lifter-rules)) ; todo: use union?  sort by symbol first and merge (may break things)?
        ;; Remove any remove-rules:
        (- (let ((non-existent-remove-rules (set-difference-eq remove-rules lifter-rules)))
             (and non-existent-remove-rules
@@ -784,9 +807,14 @@
        ((mv erp lifter-rule-alist)
         (acl2::make-rule-alist lifter-rules (w state))) ; todo: allow passing in the rule-alist (and don't recompute for each lifted function)
        ((when erp) (mv erp nil nil nil nil state))
+       ;; Now make a rule-alist for pruning (must exclude rules that require the x86 rewriter):
+       (pruning-rules (set-difference-eq lifter-rules (x86-rewriter-rules))) ; optimize?  should we pre-sort rule-lists?
+       ((mv erp pruning-rule-alist)
+        (acl2::make-rule-alist pruning-rules (w state)))
+       ((when erp) (mv erp nil nil nil nil state))
        ;; Do the symbolic execution:
        ((mv erp result-dag-or-quotep state)
-        (repeatedly-run step-limit step-increment dag-to-simulate lifter-rule-alist assumptions rules-to-monitor use-internal-contextsp prune print print-base untranslatep memoizep 0 state))
+        (repeatedly-run step-limit step-increment dag-to-simulate lifter-rule-alist pruning-rule-alist assumptions rules-to-monitor use-internal-contextsp prune count-hits print print-base untranslatep memoizep 0 state))
        ((when erp) (mv erp nil nil nil nil state))
        (state (acl2::unwiden-margins state))
        ((mv elapsed state) (acl2::real-time-since start-real-time state))
@@ -822,6 +850,7 @@
                         step-increment
                         memoizep
                         monitor
+                        count-hits
                         print
                         print-base
                         untranslatep
@@ -854,6 +883,7 @@
                               (booleanp memoizep)
                               (or (symbol-listp monitor)
                                   (eq :debug monitor))
+                              (acl2::count-hits-argp count-hits)
                               (acl2::print-levelp print)
                               (member print-base '(10 16))
                               (booleanp untranslatep)
@@ -885,7 +915,7 @@
         (unroll-x86-code-core target parsed-executable
           extra-assumptions suppress-assumptions inputs-disjoint-from stack-slots position-independent
           inputs output use-internal-contextsp prune extra-rules remove-rules extra-assumption-rules
-          step-limit step-increment memoizep monitor print print-base untranslatep state))
+          step-limit step-increment memoizep monitor count-hits print print-base untranslatep state))
        ((when erp) (mv erp nil state))
        ;; TODO: Fully handle a quotep result here:
        (result-dag-size (acl2::dag-or-quotep-size result-dag))
@@ -995,8 +1025,7 @@
                                             `(("Goal" :in-theory '(,lifted-name ;,@runes ;without the runes here, this won't work
                                                                    )))
                                           `(("Goal" :in-theory (enable ,@lifter-rules-used
-                                                                       ,@assumption-rules-used))))
-                                :otf-flg t))
+                                                                       ,@assumption-rules-used))))))
                      (defthm (if prove-theorem
                                  defthm
                                `(skip-proofs ,defthm))))
@@ -1037,6 +1066,7 @@
                                   (step-increment '100)
                                   (memoizep 't)
                                   (monitor 'nil)
+                                  (count-hits 'nil)
                                   (print ':brief)             ;how much to print
                                   (print-base '10)
                                   (untranslatep 't)
@@ -1067,6 +1097,7 @@
       ',step-increment
       ',memoizep
       ,monitor ; gets evaluated since not quoted
+      ',count-hits
       ',print
       ',print-base
       ',untranslatep
@@ -1100,6 +1131,7 @@
          (step-increment "Number of model steps to allow before pausing to simplify the DAG and remove unused nodes.")
          (memoizep "Whether to memoize during rewriting (when not using contextual information -- as doing both would be unsound).")
          (monitor "Rule names (symbols) to be monitored when rewriting.") ; during assumptions too?
+         (count-hits "Whether to count rule hits during rewriting (t means count hits for every rule, :total means just count the total number of hits, nil means don't count hits)")
          (print "Verbosity level.") ; todo: values
          (print-base "Base to use when printing during lifting.  Must be either 10 or 16.")
          (untranslatep "Whether to untranslate term when printing.")

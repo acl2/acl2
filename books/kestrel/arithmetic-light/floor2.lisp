@@ -276,7 +276,7 @@
 (encapsulate ()
 ; (local (include-book "ihs/ihs-lemmas" :dir :system)) ;todo
  ;(local (in-theory (disable /R-WHEN-ABS-NUMERATOR=1)))
- (defthm mod-of-floor-equal-rewrite
+ (defthmd mod-of-floor-equal-rewrite
    (implies (and (posp n)
                  (posp j)
 ;               (equal j 100)
@@ -466,4 +466,4 @@
                 (posp n))
            (equal (mod (floor n i) j)
                   0))
-  :hints (("Goal" :in-theory (enable equal-of-0-and-mod))))
+  :hints (("Goal" :in-theory (enable equal-of-0-and-mod mod-of-floor-equal-rewrite))))

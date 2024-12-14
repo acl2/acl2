@@ -148,7 +148,7 @@
 		          (* (root1 -1 p) (cdr (nth k (cart-square (sqrt-list p))))))
 		       p))))
 
-;; (diff-list p) is a sublist of the list (nats p) of the first p natural nunbers:
+;; (diff-list p) is a sublist of the list (nats p) of the first p natural numbers:
 
 (defun nats (p)
   (if (zp p)

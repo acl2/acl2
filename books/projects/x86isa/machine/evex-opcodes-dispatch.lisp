@@ -39,7 +39,7 @@
 (in-package "X86ISA")
 
 (include-book "instructions/top"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:syscall-exec :other-non-det :undef-flg))
 (include-book "prefix-modrm-sib-decoding")
 (include-book "dispatch-macros")
 (include-book "cpuid")

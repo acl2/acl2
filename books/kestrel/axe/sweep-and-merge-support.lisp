@@ -34,8 +34,7 @@
 
 (in-theory (disable mv-nth))
 
-(local (in-theory (e/d (true-listp-when-nat-listp-rewrite)
-                       ())))
+(local (in-theory (enable true-listp-when-nat-listp-rewrite)))
 
 ;term must include at least one variable, so that returning nil can only mean failure
 (defund unify-term-with-any (term patterns)

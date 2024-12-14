@@ -484,7 +484,7 @@
                                      get-stack-height-and-pc-from-make-state
                                      get-pc-from-frame))))
 
-(verify-guards get-stack-height-and-pc-to-step-from-myif-nest-helper :otf-flg t
+(verify-guards get-stack-height-and-pc-to-step-from-myif-nest-helper
   :hints (("Goal" :in-theory (enable car-becomes-nth-of-0 natp ACL2-NUMBERP-when-natp))))
 
 ;; ;bozo combine this walk of the nest with the main one?

@@ -335,12 +335,27 @@
 
        t)
 
+(defun clearable-memoize-table-entry (x)
+  (let ((alist (cdr x)))
+    (not (or (cdr (assoc-eq :TOTAL alist))
+             (cdr (assoc-eq :INVOKE alist))))))
+
+(defun keep-clearable-memoize-table-entries (tbl acc)
+  (cond ((endp tbl) (reverse acc))
+        (t (keep-clearable-memoize-table-entries
+            (cdr tbl)
+            (if (clearable-memoize-table-entry (car tbl))
+                (cons (car tbl) acc)
+              acc)))))
+
 (defmacro save-memo-table ()
   '(with-output
     :off (summary event)
     (table saved-memoize-table
            nil
-           (table-alist 'memoize-table world)
+           (keep-clearable-memoize-table-entries
+            (table-alist 'memoize-table world)
+            nil)
            :clear)))
 
 (defun clear-memo-table-events (alist acc)
@@ -348,8 +363,10 @@
   (cond ((endp alist) acc)
         (t (clear-memo-table-events
             (cdr alist)
-            (cons `(table memoize-table ',(caar alist) nil)
-                  acc)))))
+            (if (clearable-memoize-table-entry (car alist))
+                (cons `(table memoize-table ',(caar alist) nil)
+                      acc)
+              acc)))))
 
 (defmacro clear-memo-table ()
   `(with-output

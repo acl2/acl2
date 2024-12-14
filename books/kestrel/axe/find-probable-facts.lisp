@@ -161,7 +161,7 @@
                 (<= dag-len (alen1 test-case-array-name test-case-array))
                 )
            (alistp (mv-nth 2 (initial-probable-facts dag-len test-case-array-name test-case-array))))
-  :hints (("Goal" :in-theory (e/d (initial-probable-facts) ())))))
+  :hints (("Goal" :in-theory (enable initial-probable-facts)))))
 
 (local
  (defthm all-<-of-strip-cars-of-mv-nth-2-of-initial-probable-facts
@@ -172,7 +172,7 @@
                  )
             (all-< (strip-cars (mv-nth 2 (initial-probable-facts dag-len test-case-array-name test-case-array)))
                    bound))
-   :hints (("Goal" :in-theory (e/d (initial-probable-facts) ())))))
+   :hints (("Goal" :in-theory (enable initial-probable-facts)))))
 
 (local
  (defthm nat-listp-of-strip-cars-of-mv-nth-2-of-initial-probable-facts
@@ -181,7 +181,7 @@
                 (<= dag-len (alen1 test-case-array-name test-case-array))
                 )
            (nat-listp (strip-cars (mv-nth 2 (initial-probable-facts dag-len test-case-array-name test-case-array)))))
-  :hints (("Goal" :in-theory (e/d (initial-probable-facts) ())))))
+  :hints (("Goal" :in-theory (enable initial-probable-facts)))))
 
 (local
  (defthm nat-listp-of-mv-nth-3-of-initial-probable-facts
@@ -190,7 +190,7 @@
                 (<= dag-len (alen1 test-case-array-name test-case-array))
                 )
            (nat-listp (mv-nth 3 (initial-probable-facts dag-len test-case-array-name test-case-array))))
-  :hints (("Goal" :in-theory (e/d (initial-probable-facts) ())))))
+  :hints (("Goal" :in-theory (enable initial-probable-facts)))))
 
 (local
  (defthm all-<-of-mv-nth-3-of-initial-probable-facts
@@ -200,7 +200,7 @@
                  (<= dag-len (alen1 test-case-array-name test-case-array))
                  )
             (all-< (mv-nth 3 (initial-probable-facts dag-len test-case-array-name test-case-array)) bound))
-   :hints (("Goal" :in-theory (e/d (initial-probable-facts) ())))))
+   :hints (("Goal" :in-theory (enable initial-probable-facts)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

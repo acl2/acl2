@@ -1,7 +1,7 @@
 ; Functions to map packbv and unpack BV over lists
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -63,9 +63,8 @@
 ;;                       n) (+ -1 count) ;size
 ;;                       (cdr bvs))))
 
-
-;fixme defmap should do this
-(defthm equal-of-nil-and-map-packbv
+;todo: defmap could do this, or perhaps only Axe needs this
+(defthmd equal-of-nil-and-map-packbv
   (equal (equal nil (map-packbv a b c))
          (equal 0 (len c)))
   :hints (("Goal" :in-theory (enable map-packbv))))

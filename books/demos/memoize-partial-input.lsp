@@ -1028,10 +1028,58 @@ with FIB2-NEW.  See :DOC memoize-partial.
                             :stable fib2-clock-stable0-new
                             :condition '(eql (mod n 4) 0)))
                  :condition t)
+
+(f-put-global 'old-world-length (length (w state)) state)
+
+; Check redundancy (though this won't be shown as redundant):
+(memoize-partial ((fib2-new fib2-clock
+                            :change fib2-clock-change0-new
+                            :stable fib2-clock-stable0-new
+                            :condition '(eql (mod n 4) 0)))
+                 :condition t)
+
+; Redundancy check:
+(assert-event (equal (length (w state)) (@ old-world-length)))
+
 ; Test that we get the expected value:
 (assert-event (equal (fib2-new 30)
                      (fib2-clock 30 50)))
 ; Test memoization:
+(assert-event (equal (fib2-new 80) ; 100 can get us into bignums; slow!
+                     37889062373143906))
+
+; Test that (partial) memoization is properly restored, and then run the two
+; tests again that are just above.  Also make sure that ordinary memoization is
+; handled properly by save and restore.
+
+(defun plain-fib (n)
+  (declare (xargs :guard (natp n)))
+  (if (zp n)
+      0
+    (if (eql n 1) 1
+      (+ (plain-fib (- n 1)) (plain-fib (- n 2))))))
+
+(memoize 'plain-fib)
+
+(plain-fib 100)
+
+(save-and-clear-memoization-settings)
+
+(er-progn (comp 'plain-fib) ; for other than sbcl and ccl
+          (value nil)) ; avoid different values for comp in different lisps
+
+(plain-fib 40) ; takes 0.63 seconds on 2019 MacBook Pro
+
+(assert-event (equal (fib2-new 30)
+                     (fib2-clock 30 50)))
+
+(assert-event (equal (fib2-new 80) ; 100 can get us into bignums; slow!
+                     37889062373143906))
+
+(restore-memoization-settings)
+
+(plain-fib 100)
+
 (assert-event (equal (fib2-new 80) ; 100 can get us into bignums; slow!
                      37889062373143906))
 

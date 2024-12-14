@@ -563,13 +563,13 @@
                                                           rule-alist
                                                           nil ; interpreted-function-alist
                                                           (acl2::known-booleans (w state))
+                                                          nil ; normalize-xors
                                                           nil ; limits
+                                                          nil ; memoize
                                                           nil ; count-hits
                                                           nil ; print
                                                           nil ; monitored-symbols
                                                           nil ; fns-to-elide
-                                                          nil ; normalize-xors
-                                                          nil ; memoize
                                                           ))
        ((when erp) (mv erp nil state))
        ((mv elapsed state) (real-time-since start-real-time state))

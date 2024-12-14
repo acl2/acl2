@@ -1204,9 +1204,10 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
     (when *gcl-large-maxpages*
       (setq si::*code-block-reserve*
 
-; 50M was suggested just below by Camm Maguire.
+; Camm Maguire suggestion (he notes that a certification failed when using
+; 50000000 here):
 
-            (make-array 50000000 :element-type 'character :static t)))
+            (make-array 60000000 :element-type 'character :static t)))
     (chmod-executable sysout-name)
     (si::save-system (concatenate 'string sysout-name "." ext))))
 
@@ -1527,8 +1528,8 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
         (when (boundp 'si::*tmp-dir*)
           (format t "Temporary directory for compiler files set to ~a~%"
                   si::*tmp-dir*)))
-; Growing the sbits array just before si::save-system doesn't seem to avoid
-; triggering a call of hl-hspace-grow-sbits when the first static hons is
+; Growing the sbits structure just before si::save-system hasn't seemed to
+; avoid triggering a call of hl-hspace-grow-sbits when the first static hons is
 ; created.  So we do the grow here, i.e., after starting ACL2.
       #+static-hons
       (hl-hspace-grow-sbits (hl-staticp (cons nil nil)) *default-hs*))
