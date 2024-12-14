@@ -10,14 +10,14 @@
 
 (in-package "C$")
 
-(include-book "abstract-syntax")
-(include-book "abstract-syntax-operations")
 (include-book "concrete-syntax")
+(include-book "abstract-syntax")
 (include-book "abstraction-mapping")
+(include-book "abstract-syntax-operations")
+(include-book "unambiguity")
 (include-book "preprocess-file")
 (include-book "parser")
 (include-book "disambiguator")
-(include-book "unambiguity")
 (include-book "validator")
 (include-book "printer")
 (include-book "input-files")
@@ -135,8 +135,10 @@
      where the @('$') conveys the idea of `syntax'.
      This package naming pattern could be used for
      ACL2 libraries (and sub-libraries) for other programming languages."))
-  :order-subtopics (abstract-syntax
-                    concrete-syntax
+  :order-subtopics (concrete-syntax
+                    abstract-syntax
+                    abstraction-mapping
+                    abstract-syntax-operations
                     preprocessing
                     parser
                     disambiguator
