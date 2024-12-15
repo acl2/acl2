@@ -32,7 +32,7 @@
     "The committee of validators that run the protocol is dynamic:
      validators are bonded and unbonded via transactions;
      see @(tsee transaction).
-     There is a genesis committees, i.e. an initial set of validators,
+     There is a genesis committee, i.e. an initial set of validators,
      and then the committee may change, potentially at every block.
      Validators who unbond simply leave,
      while validators that bond after genesis
