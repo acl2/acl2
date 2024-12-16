@@ -23818,7 +23818,7 @@
                                 protect-default congruent-to non-executable
                                 attachable missing-only ctx state event-form
                                 discriminator
-                                raw-init-form-new
+                                creator-name-orig
                                 absstobj-tuples-new)
 
 ; When this function is called at the top level, i.e., by defabsstobj-fn1,
@@ -24118,10 +24118,9 @@
                                          :non-executable
                                          non-executable))))
                                 (raw-init-form-new
-                                 (or raw-init-form-new
-                                     (defabsstobj-raw-init
-                                       creator-name
-                                       methods)))
+                                 (defabsstobj-raw-init
+                                   (or creator-name-orig creator-name)
+                                   methods))
                                 (wrld4 (if att-name
 
 ; This special case, where att-name is non-nil, is simply an optimization.  It
@@ -24172,7 +24171,7 @@
                                     non-executable ; use the generic's
                                     nil nil
                                     ctx state event-form discriminator1
-                                    raw-init-form-new
+                                    creator-name
                                     absstobj-tuples))))
                               (t
                                (install-event st-name-new
