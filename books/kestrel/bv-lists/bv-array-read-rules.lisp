@@ -17,6 +17,7 @@
 (include-book "kestrel/bv/bvmult" :dir :system)
 (include-book "kestrel/bv/bvplus" :dir :system)
 (include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system)
+(local (include-book "kestrel/bv/slice" :dir :system))
 
 (defthm unsigned-byte-p-forced-of-bv-array-read
   (implies (and (<= element-size n)

@@ -15,6 +15,7 @@
 
 (include-book "bvchop")
 (include-book "bvuminus")
+(local (include-book "slice"))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 
 ;; Compute the (modular) difference of X and Y.

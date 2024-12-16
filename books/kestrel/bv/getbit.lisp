@@ -15,8 +15,8 @@
 ;; vector.  Bits are numbered starting at 0 for the least significant bit.
 ;; Getbit is perhaps similar to the function bitn from books/rtl.
 
-(include-book "slice")
 (include-book "getbit-def")
+(local (include-book "slice"))
 (local (include-book "../arithmetic-light/expt2"))
 (local (include-book "../arithmetic-light/mod"))
 (local (include-book "../arithmetic-light/floor")) ;for FLOOR-DIVIDE-BY-same

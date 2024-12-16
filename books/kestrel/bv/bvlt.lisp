@@ -15,10 +15,9 @@
 (include-book "unsigned-byte-p")
 (include-book "bvplus") ;drop!
 (include-book "bvminus") ;drop! but is used below
+(local (include-book "slice"))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
-
-
 
 ;rename
 (defthm bvlt-of-0-arg3
