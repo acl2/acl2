@@ -32,7 +32,7 @@
     "The committee of validators that run the protocol is dynamic:
      validators are bonded and unbonded via transactions;
      see @(tsee transaction).
-     There is a genesis committees, i.e. an initial set of validators,
+     There is a genesis committee, i.e. an initial set of validators,
      and then the committee may change, potentially at every block.
      Validators who unbond simply leave,
      while validators that bond after genesis
@@ -83,12 +83,7 @@
      at syncing time.")
    (xdoc::p
     "Eventually, we will want to model syncing more explicitly.
-     However, we believe that the current model is already a good one,
-     at least as a first cut at handling dynamic committees.
-     Finding a problem in this model would almost certaintly reveal a problem
-     in the full AleoBFT with syncing;
-     conversely, successful proofs of properties in this model
-     will at least ensure the absence of certain flaws.")
+     However, we believe that the current model is already a good one.")
    (xdoc::p
     "Besides the validators,
      we also model the state of the network that connects the validators,
