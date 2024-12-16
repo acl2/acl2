@@ -356,10 +356,8 @@
                   extra-lift-rules
                   (extra-tester-lifting-rules))
           ;; remove-rules:
-          (append
-           '(acl2::bvchop-of-bvashr) ; todo: push back
-           remove-rules
-           remove-lift-rules)
+          (append remove-rules
+                  remove-lift-rules)
           ;; extra-assumption-rules:
           (append ;; (lifter-rules64-new)
                   ;; todo: build these in deeper
@@ -429,8 +427,7 @@
                                                ;; todo: why is boolor bad?
                                                '(acl2::boolif-x-x-y-becomes-boolor ;drop?
                                                  acl2::boolif-when-quotep-arg2
-                                                 acl2::boolif-when-quotep-arg3
-                                                 acl2::bvchop-of-bvashr))))
+                                                 acl2::boolif-when-quotep-arg3))))
        ((mv result info-acc
             & ; actual-dag
             & ; assumptions-given

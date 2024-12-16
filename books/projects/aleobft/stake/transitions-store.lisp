@@ -41,15 +41,11 @@
    (xdoc::p
     "But in order for this event to happen,
      the signers of the certificate must form a quorum
-     in the active committee of the certificate's round,
-     and all the authors referenced for the previous certificates
-     form a quorum in the active committee of the previous round
-     (unless the certificate's round is 1).
-     These checks are needed because
+     in the active committee of the certificate's round.
+     Thid checks is needed because
      an equivocal certificate could be signed by faulty validators
      and broadcast on the network, and make it to a validator's buffer.
-     The checks above on signers and predecessors
-     are critical to prevent equivocation in DAGs
+     The check on signers is critical to prevent equivocation in DAGs
      (equivocal certificates may be in the network and buffers,
      but not in DAGs).")
    (xdoc::p

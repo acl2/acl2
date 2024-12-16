@@ -51,9 +51,6 @@
      are in use in the wild.")
    (xdoc::p
     "At this time we do not model the security checks that should be done
-     on any new instantiation before using it in production.")))
-
-; Explictly order the subtopics.
-(xdoc::order-subtopics poseidon
-  (poseidon-main-definition
-   poseidon-instantiations))
+     on any new instantiation before using it in production."))
+  :order-subtopics (poseidon-main-definition
+                    poseidon-instantiations))

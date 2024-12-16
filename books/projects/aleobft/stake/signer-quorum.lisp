@@ -40,7 +40,7 @@
      A @('create') event is only possible if
      the signers form a quorum in the committee calculated by the author,
      which therefore maintains the invariant.
-     The other way in which a DAG is extended is whe
+     The other way in which a DAG is extended is when
      a validator moves it to the DAG from the buffer;
      in this case, a @('store') event is possible
      only if the validator can calculate

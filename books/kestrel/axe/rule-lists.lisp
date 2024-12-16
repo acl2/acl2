@@ -801,7 +801,7 @@
 
      bvplus-of-bvchop-and-bvshl ;new
      bvchop-of-bvshr-becomes-slice-safe ;newish: remove?? with bvshr we can split into cases easily.
-     bvchop-of-bvashr ; introduces slice
+     bvchop-of-bvashr-safe ; introduces slice
      bvchop-of-bvif
 
      ;; TODO: More like this:
@@ -829,6 +829,8 @@
      bvlt-transitive-4-b
      bvlt-transitive-5-a
      bvlt-transitive-5-b
+     not-bvlt-when-not-bvlt-narrower
+     not-bvlt-when-not-bvlt-narrower2
 
      not-bvlt-of-max-arg2-constant-version
      bvlt-of-max-when-bvlt-constant-version
@@ -1077,7 +1079,10 @@
 
      ;; for now, we open these to expose bvcat:
      putbyte
-     putbits)))
+     putbits
+
+     unsigned-byte-p-of-bvmult-of-expt2-constant-version
+     unsigned-byte-p-of-bvchop-becomes-bvlt)))
 
 ;todo combine this with core-rules-bv
 ;todo: some of these are not bv rules?
