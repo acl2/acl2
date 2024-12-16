@@ -4,7 +4,7 @@
 
 (include-book "std/util/defaggregate" :dir :system)
 (include-book "../decoding-and-spec-utils"
-	      :ttags (:syscall-exec :undef-flg))
+              :ttags (:syscall-exec :undef-flg))
 
 ;; ======================================================================
 
@@ -27,7 +27,7 @@
                (edx (unsigned-byte-p 32 edx))))
 
 (defconst *cpuid-basic-info* (list (make-cpuid-info
-                                     ;; Model and version info 
+                                     ;; Model and version info
                                      :eax 0
                                      ;; Brand index, CLFLUSH line size, Max addressable IDs for logical processors,
                                      ;; initial APIC ID
@@ -96,7 +96,7 @@
                ;; and lets us use this value to index into the separate lists
                (info-idx (loghead 31 requested-info))
                (info (if (or (not relevant-info)
-                             (equal info-idx 0)) 
+                             (equal info-idx 0))
                        ;; Handle the case when the index is 0 separately
                        (make-cpuid-info :eax (+ (len relevant-info)
                                                 (if basic-info?
