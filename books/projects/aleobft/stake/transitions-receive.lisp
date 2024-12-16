@@ -68,7 +68,7 @@
      All the other events involve just one validator.
      As explained in @(see transitions-create),
      certificate creation involves multiple validators;
-     in constract, certificate receipt involve just one validator."))
+     in constract, certificate receipt involves just one validator."))
   :order-subtopics t
   :default-parent t)
 

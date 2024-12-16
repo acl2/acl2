@@ -9,7 +9,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ALEOBFT-STAKE")
+(in-package "ALEOBFT-STAKE2")
 
 (include-book "dag-committees")
 
@@ -41,8 +41,8 @@
      the signers form a quorum in the committee calculated by the author,
      which therefore maintains the invariant.
      The other way in which a DAG is extended is when
-     a validator moves it to the DAG from the buffer;
-     in this case, a @('store') event is possible
+     a validator moves it to the DAG from the network;
+     in this case, an @('accept') event is possible
      only if the validator can calculate
      the committee for the certificate round
      and the signers of the certificate form a quorum in that committee;
@@ -125,7 +125,7 @@
   (xdoc::topstring
    (xdoc::p
     "The only two kinds of events that may change the DAG
-     are @('create') and @('store').")
+     are @('create') and @('accept').")
    (xdoc::p
     "For @('create'),
      there are two cases to consider.
@@ -142,15 +142,15 @@
      But @(tsee create-possiblep)
      explicitly checks the signer quorum condition.")
    (xdoc::p
-    "For @('store'), we have a similar split,
+    "For @('accept'), we have a similar split,
      considering a certificate already in the DAG (i.e. old),
-     and the newly stored certificate, moved from the buffer.
+     and the newly stored certificate, moved from the network.
      The case of an old certificate is similar to @('create');
      again, we use the fact that the blockchain
-     does not change under a @('receive') event.
-     In the case of the newly stored certificate,
-     it comes from the buffer,
-     but @(tsee store-possiblep)
+     does not change under an @('accept') event.
+     In the case of the newly accepted certificate,
+     it comes from the network,
+     but @(tsee accept-possiblep)
      explicitly checks the quorum properties,
      thus establishing the property for the new certificate.")
    (xdoc::p
@@ -159,7 +159,7 @@
      For each kind of event,
      we prove a lemma about @(tsee validator-signer-quorum-p)
      and then a theorem about @(tsee signer-quorum-p).
-     For @('receive'), @('advance'), and @('timeout')
+     For @('advance'),
      there is no change to the blockchain, so the proof is fairly easy.
      For @('commit'), the blockchain changes,
      but we use the fact that extending the blockchain
@@ -209,56 +209,36 @@
              validator-signer-quorum-p-of-create-next-old
              validator-signer-quorum-p-of-create-next-new))
 
-  ;; receive:
+  ;; accept:
 
-  (defruled validator-signer-quorum-p-of-receive-next
+  (defruled validator-signer-quorum-p-of-accept-next-old
     (implies (and (validator-signer-quorum-p
-                   cert1
-                   (get-validator-state val1 systate))
-                  (receive-possiblep msg systate))
-             (validator-signer-quorum-p
-              cert1
-              (get-validator-state val1 (receive-next msg systate))))
-    :enable validator-signer-quorum-p)
-
-  (defruled signer-quorum-p-of-receive-next
-    (implies (and (signer-quorum-p systate)
-                  (receive-possiblep msg systate))
-             (signer-quorum-p (receive-next msg systate)))
-    :enable (signer-quorum-p
-             signer-quorum-p-necc
-             validator-signer-quorum-p-of-receive-next))
-
-  ;; store:
-
-  (defruled validator-signer-quorum-p-of-store-next-old
-    (implies (and (validator-signer-quorum-p
-                   cert1
-                   (get-validator-state val1 systate))
-                  (store-possiblep val cert systate))
-             (validator-signer-quorum-p
-              cert1
-              (get-validator-state val1 (store-next val cert systate))))
-    :enable validator-signer-quorum-p)
-
-  (defruled validator-signer-quorum-p-of-store-next-new
-    (implies (store-possiblep val cert systate)
+                   cert
+                   (get-validator-state val systate))
+                  (accept-possiblep msg systate))
              (validator-signer-quorum-p
               cert
-              (get-validator-state val (store-next val cert systate))))
-    :enable (validator-signer-quorum-p
-             store-possiblep))
+              (get-validator-state val (accept-next msg systate))))
+    :enable validator-signer-quorum-p)
 
-  (defruled signer-quorum-p-of-store-next
+  (defruled validator-signer-quorum-p-of-accept-next-new
+    (implies (accept-possiblep msg systate)
+             (validator-signer-quorum-p
+              (message->certificate msg)
+              (get-validator-state (message->destination msg)
+                                   (accept-next msg systate))))
+    :enable (validator-signer-quorum-p
+             accept-possiblep))
+
+  (defruled signer-quorum-p-of-accept-next
     (implies (and (signer-quorum-p systate)
-                  (store-possiblep val cert systate)
-                  (addressp val))
-             (signer-quorum-p (store-next val cert systate)))
+                  (accept-possiblep msg systate))
+             (signer-quorum-p (accept-next msg systate)))
     :enable (signer-quorum-p
              signer-quorum-p-necc
-             validator-state->dag-of-store-next
-             validator-signer-quorum-p-of-store-next-old
-             validator-signer-quorum-p-of-store-next-new))
+             validator-state->dag-of-accept-next
+             validator-signer-quorum-p-of-accept-next-old
+             validator-signer-quorum-p-of-accept-next-new))
 
   ;; advance:
 
@@ -324,26 +304,6 @@
     :enable (signer-quorum-p
              signer-quorum-p-necc
              validator-signer-quorum-p-of-commit-next))
-
-  ;; timeout:
-
-  (defruled validator-signer-quorum-p-of-timeout-next
-    (implies (and (validator-signer-quorum-p
-                   cert
-                   (get-validator-state val1 systate))
-                  (timeout-possiblep val systate))
-             (validator-signer-quorum-p
-              cert
-              (get-validator-state val1 (timeout-next val systate))))
-    :enable validator-signer-quorum-p)
-
-  (defruled signer-quorum-p-of-timeout-next
-    (implies (and (signer-quorum-p systate)
-                  (timeout-possiblep val systate))
-             (signer-quorum-p (timeout-next val systate)))
-    :enable (signer-quorum-p
-             signer-quorum-p-necc
-             validator-signer-quorum-p-of-timeout-next))
 
   ;; all events:
 

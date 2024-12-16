@@ -9,7 +9,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ALEOBFT-STAKE")
+(in-package "ALEOBFT-STAKE2")
 
 (include-book "validator-states")
 (include-book "messages")
