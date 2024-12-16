@@ -71,7 +71,7 @@
     "The above argument has to be spelled out more precisely for ACL2.
      The only two kinds of events that may extend DAGs
      (and could therefore potentially break non-equivocation)
-     are @('create') and @('store').")
+     are @('create') and @('accept').")
    (xdoc::p
     "A @('create') event concerns the (correct) author of the certificate,
      which checks that the signers, including itself, of the new certificate
@@ -109,7 +109,7 @@
   (xdoc::topstring
    (xdoc::p
     "The only two kinds of events that change the certificates in DAGs
-     are @('create') and @('store').
+     are @('create') and @('accept').
      The former adds a certificate to the author's DAG;
      the latter adds a certificate to the storer's DAG.")
    (xdoc::p

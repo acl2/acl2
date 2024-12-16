@@ -246,12 +246,12 @@
      The key theorem in that proof is @('dag-omni-paths-p-holds'),
      whose hypotheses are all fairly direct to relieve,
      but note that we need to use
-     @('stake-of-successors-to-tally-leader-stake-votes')
+     @('stake-of-successors-to-leader-stake-votes')
      as a bridge between the greater than @($f$) hypothesis
      of @('dag-omni-paths-p-holds'),
      which is in terms of @(tsee successors),
      and the greater than @($f$) check performed by @(tsee commit-possiblep),
-     which is in terms of @(tsee tally-leader-stake-votes).
+     which is in terms of @(tsee leader-stake-votes).
      Back to the lemma @('case-other-ahead'),
      we use the just proved @('dag-omni-paths-p-when-commit-possiblep')
      to relieve the hypothesis about omni-paths of

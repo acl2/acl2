@@ -86,12 +86,12 @@
   (xdoc::topstring
    (xdoc::p
     "The only two kinds of events that extend DAGs are
-     @('create') and @('store').
+     @('create') and @('accept').
      For these two kinds of events,
      first we prove theorems saying that the added certificate
      has all the predecessors in the DAG,
      which is ensured by
-     @(tsee create-possiblep) and @(tsee store-possiblep).
+     @(tsee create-possiblep) and @(tsee accept-possiblep).
      Then we prove the main theorems,
      using rule @('dag-closedp-of-insert')
      to handle the addition of the certificate.")

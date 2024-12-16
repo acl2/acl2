@@ -49,8 +49,7 @@
      The only kind of event that changes the set is @('create'),
      but as already discussed the certificate is added
      to every validator's set of associated certificates.
-     Other events only move certificates
-     (from network to buffer, or from buffer to DAG),
+     Other events only move certificates (from network to DAG),
      or do not touch them at all."))
   :order-subtopics t
   :default-parent t)
@@ -82,7 +81,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is easy to prove,
-     because DAGs, buffer, and network are initially empty.
+     because DAGs and network are initially empty.
      The set of associated certificates of every validator is the empty set.")
    (xdoc::p
     "Since we already proved in @(tsee associated-certs-when-init)

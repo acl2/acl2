@@ -152,7 +152,7 @@
      never generates self-addresses.
      From this, the theorem for @('create') follows easily.")
    (xdoc::p
-    "A @('receive') event removes one message from the network,
+    "An @('accept') event removes one message from the network,
      so it preserves the invariant, which holds for all messages
      before and after the deletion.")
    (xdoc::p

@@ -257,10 +257,10 @@
    (xdoc::p
     "For @('accept'), we have a similar split,
      considering a certificate already in the DAG (i.e. old),
-     and the newly stored certificate, moved from the buffer.
+     and the newly stored certificate, moved from the network.
      The case of an old certificate is similar to @('create');
      again, we use the fact that the blockchain
-     does not change under a @('receive') event.
+     does not change under an @('accept') event.
      The case of the newly stored certificate is more complicated.
      The conditions in @(tsee accept-possiblep) include the fact that
      the certificate is signed by a quorum,
@@ -280,12 +280,12 @@
      Fault tolerance and the other invariants used in the proof
      propagate to the theorem about @(tsee event-next).")
    (xdoc::p
-    "DAGs do not change for the other four kinds of events,
+    "DAGs do not change for the other kinds of events,
      so the proofs for them always rely on the preservaton of the properties.
      For each kind of event,
      we prove a lemma about @(tsee validator-previous-quorum-p)
      and then a theorem about @(tsee previous-quorum-p).
-     For @('receive'), @('advance'), and @('timeout')
+     For @('advance'),
      there is no change to the blockchain, so the proof is fairly easy.
      For @('commit'), the blockchain changes,
      but we use the fact that extending the blockchain

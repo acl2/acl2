@@ -125,7 +125,7 @@
   (xdoc::topstring
    (xdoc::p
     "The only two kinds of events that may change the DAG
-     are @('create') and @('store').")
+     are @('create') and @('accept').")
    (xdoc::p
     "For @('create'),
      there are two cases to consider.
@@ -147,9 +147,9 @@
      and the newly stored certificate, moved from the network.
      The case of an old certificate is similar to @('create');
      again, we use the fact that the blockchain
-     does not change under a @('receive') event.
-     In the case of the newly stored certificate,
-     it comes from the buffer,
+     does not change under an @('accept') event.
+     In the case of the newly accepted certificate,
+     it comes from the network,
      but @(tsee accept-possiblep)
      explicitly checks the quorum properties,
      thus establishing the property for the new certificate.")
