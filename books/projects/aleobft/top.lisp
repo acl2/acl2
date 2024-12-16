@@ -15,6 +15,7 @@
 (include-book "static/top")
 (include-book "dynamic/top")
 (include-book "stake/top")
+(include-book "stake2/top")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -94,7 +95,27 @@
       to move certain checks
       from certificate receiving events
       to certificate storing events,
-      which makes certain aspects of the definitions and proofs simpler."))
+      which makes certain aspects of the definitions and proofs simpler.")
+    (xdoc::p
+     "The subdirectory @('stake2') contains a version that is
+      a slightly simplified variant of the version in @('stake').
+      It omits buffers from validator states,
+      and combines certificate receiving and storing events
+      into single certificate accepting events;
+      this makes the model simpler
+      without really affecting its expressiveness.
+      Another simplification in this version is that
+      the round advancement logic is much simpler,
+      and there are no timeout events and no timers in validator states:
+      there is just an event to advance a validator's round by one,
+      which may nondeterministically take place any time, like the other events.
+      While this does not affect the expressiveness of the model
+      for the purpose of proving properties like blockchain nonforking
+      (because the simplification makes more execution possible
+      than in a model with more detailed and restrictive
+      round advancement logic),
+      it could affect the ability to prove certain other properties,
+      e.g. because the system may deadlock more easily in this model."))
    (xdoc::p
     "We plan to add other subdirectories
      for versions that cover additional aspects of AleoBFT,
@@ -133,4 +154,5 @@
   :order-subtopics (library-extensions
                     aleobft-static::aleobft-static
                     aleobft-dynamic::aleobft-dynamic
-                    aleobft-stake::aleobft-stake))
+                    aleobft-stake::aleobft-stake
+                    aleobft-stake2::aleobft-stake2))
