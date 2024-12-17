@@ -44,11 +44,11 @@
 ;; ======================================================================
 
 (include-book "shifts-spec"
-              :ttags (:syscall-exec :undef-flg))
+              :ttags (:undef-flg))
 (include-book "rotates-spec"
-              :ttags (:syscall-exec :undef-flg))
+              :ttags (:undef-flg))
 (include-book "../decoding-and-spec-utils"
-              :ttags (:syscall-exec :undef-flg))
+              :ttags (:undef-flg))
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 
 ;; ======================================================================

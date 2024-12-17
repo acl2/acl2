@@ -42,7 +42,7 @@
 (in-package "X86ISA")
 
 (include-book "../rflags-spec"
-              :ttags (:syscall-exec :undef-flg))
+              :ttags (:undef-flg))
 
 (include-book "centaur/bitops/fast-rotate" :dir :system)
 
