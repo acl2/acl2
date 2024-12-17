@@ -42,7 +42,7 @@
 (in-package "X86ISA")
 
 (include-book "../rflags-spec"
-              :ttags (:syscall-exec :undef-flg))
+              :ttags (:undef-flg))
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 
