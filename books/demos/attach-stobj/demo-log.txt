@@ -1,0 +1,176 @@
+(UNSET-WATERFALL-PARALLELISM)
+(ASSIGN SCRIPT-MODE T)
+ T
+(SET-LD-PROMPT T STATE)
+ T
+ACL2 !>>(SET-INHIBITED-SUMMARY-TYPES '(TIME STEPS))
+ (TIME STEPS)
+ACL2 !>>(SET-INHIBIT-OUTPUT-LST '(PROOF-TREE))
+ (PROOF-TREE)
+ACL2 !>>(IN-PACKAGE "ACL2")
+ "ACL2"
+ACL2 !>>(DEFTTAG :ATTACH-STOBJ-DEMO)
+ :ATTACH-STOBJ-DEMO
+ACL2 !>>(PROGN! (SET-RAW-MODE T)
+                (DEFUN COMMENT-WINDOW-CO NIL
+                  (STANDARD-CO *THE-LIVE-STATE*)))
+
+Summary
+Form:  ( PROGN! (SET-RAW-MODE T) ...)
+Rules: NIL
+ NIL
+ACL2 !>>(DEFTTAG NIL)
+ NIL
+ACL2 !>>(DEFLABEL START)
+
+Summary
+Form:  ( DEFLABEL START ...)
+Rules: NIL
+ START
+ACL2 !>>(INCLUDE-BOOK "mem")
+
+Summary
+Form:  ( INCLUDE-BOOK "mem" ...)
+Rules: NIL
+ (:SYSTEM . "demos/attach-stobj/mem.lisp")
+ACL2 !>>(SET-ENFORCE-REDUNDANCY T)
+ T
+ACL2 !>>(DEFTHM LOOKUP-UPDATE
+          (IMPLIES (AND (MEM-INDEXP I) (MEM-INDEXP J))
+                   (EQUAL (LOOKUP I (UPDATE J V MEM))
+                          (IF (EQUAL I J) V (LOOKUP I MEM)))))
+
+The event ( DEFTHM LOOKUP-UPDATE ...) is redundant.  See :DOC redundant-
+events.
+
+Summary
+Form:  ( DEFTHM LOOKUP-UPDATE ...)
+Rules: NIL
+ :REDUNDANT
+ACL2 !>>(DEFTHM UPDATE-UPDATE-SAME
+          (IMPLIES (EQUAL I1 I2)
+                   (EQUAL (UPDATE I2 V2 (UPDATE I1 V1 MEM))
+                          (UPDATE I2 V2 MEM))))
+
+The event ( DEFTHM UPDATE-UPDATE-SAME ...) is redundant.  See :DOC
+redundant-events.
+
+Summary
+Form:  ( DEFTHM UPDATE-UPDATE-SAME ...)
+Rules: NIL
+ :REDUNDANT
+ACL2 !>>(DEFTHM UPDATE-UPDATE-DIFFERENT
+          (IMPLIES (AND (MEM-INDEXP I1)
+                        (MEM-INDEXP I2)
+                        (NOT (EQUAL I1 I2)))
+                   (EQUAL (UPDATE I2 V2 (UPDATE I1 V1 MEM))
+                          (UPDATE I1 V1 (UPDATE I2 V2 MEM)))))
+
+The event ( DEFTHM UPDATE-UPDATE-DIFFERENT ...) is redundant.  See
+:DOC redundant-events.
+
+Summary
+Form:  ( DEFTHM UPDATE-UPDATE-DIFFERENT ...)
+Rules: NIL
+ :REDUNDANT
+ACL2 !>>(SET-ENFORCE-REDUNDANCY NIL)
+ NIL
+ACL2 !>>(LOOKUP 2 MEM)
+@@ Calling: (MEM$C-ARI 2 MEM$C)
+NIL
+ACL2 !>>(UPDATE 2 'TWO MEM)
+@@ Calling: (UPDATE-MEM$C-ARI 2 TWO MEM$C)
+<mem>
+ACL2 !>>(LOOKUP 2 MEM)
+@@ Calling: (MEM$C-ARI 2 MEM$C)
+TWO
+ACL2 !>>(INCLUDE-BOOK "nested")
+
+Summary
+Form:  ( INCLUDE-BOOK "nested" ...)
+Rules: NIL
+ (:SYSTEM . "demos/attach-stobj/nested.lisp")
+ACL2 !>>(ST-LOOKUP 2 ST)
+@@ Calling: (MEM$C-ARI 2 MEM$C)
+NIL
+ACL2 !>>(ST-UPDATE 2 'TWO ST)
+@@ Calling: (UPDATE-MEM$C-ARI 2 TWO MEM$C)
+<st>
+ACL2 !>>(ST-LOOKUP 2 ST)
+@@ Calling: (MEM$C-ARI 2 MEM$C)
+TWO
+ACL2 !>>(UBT 'START)
+           3:x(DEFTTAG NIL)
+ACL2 !>>(INCLUDE-BOOK "mem-as-ht")
+
+Summary
+Form:  ( INCLUDE-BOOK "mem-as-ht" ...)
+Rules: NIL
+ (:SYSTEM . "demos/attach-stobj/mem-as-ht.lisp")
+ACL2 !>>(SET-ENFORCE-REDUNDANCY T)
+ T
+ACL2 !>>(DEFTHM LOOKUP-UPDATE
+          (IMPLIES (AND (MEM-INDEXP I) (MEM-INDEXP J))
+                   (EQUAL (LOOKUP I (UPDATE J V MEM))
+                          (IF (EQUAL I J) V (LOOKUP I MEM)))))
+
+The event ( DEFTHM LOOKUP-UPDATE ...) is redundant.  See :DOC redundant-
+events.
+
+Summary
+Form:  ( DEFTHM LOOKUP-UPDATE ...)
+Rules: NIL
+ :REDUNDANT
+ACL2 !>>(DEFTHM UPDATE-UPDATE-SAME
+          (IMPLIES (EQUAL I1 I2)
+                   (EQUAL (UPDATE I2 V2 (UPDATE I1 V1 MEM))
+                          (UPDATE I2 V2 MEM))))
+
+The event ( DEFTHM UPDATE-UPDATE-SAME ...) is redundant.  See :DOC
+redundant-events.
+
+Summary
+Form:  ( DEFTHM UPDATE-UPDATE-SAME ...)
+Rules: NIL
+ :REDUNDANT
+ACL2 !>>(DEFTHM UPDATE-UPDATE-DIFFERENT
+          (IMPLIES (AND (MEM-INDEXP I1)
+                        (MEM-INDEXP I2)
+                        (NOT (EQUAL I1 I2)))
+                   (EQUAL (UPDATE I2 V2 (UPDATE I1 V1 MEM))
+                          (UPDATE I1 V1 (UPDATE I2 V2 MEM)))))
+
+The event ( DEFTHM UPDATE-UPDATE-DIFFERENT ...) is redundant.  See
+:DOC redundant-events.
+
+Summary
+Form:  ( DEFTHM UPDATE-UPDATE-DIFFERENT ...)
+Rules: NIL
+ :REDUNDANT
+ACL2 !>>(SET-ENFORCE-REDUNDANCY NIL)
+ NIL
+ACL2 !>>(LOOKUP 2 MEM)
+@@ Calling: (MEM{HT}$C-HT-GET 2 MEM{HT}$C)
+NIL
+ACL2 !>>(UPDATE 2 'TWO MEM)
+@@ Calling: (MEM{HT}$C-HT-PUT 2 TWO MEM{HT}$C)
+<mem>
+ACL2 !>>(LOOKUP 2 MEM)
+@@ Calling: (MEM{HT}$C-HT-GET 2 MEM{HT}$C)
+TWO
+ACL2 !>>(INCLUDE-BOOK "nested")
+
+Summary
+Form:  ( INCLUDE-BOOK "nested" ...)
+Rules: NIL
+ (:SYSTEM . "demos/attach-stobj/nested.lisp")
+ACL2 !>>(ST-LOOKUP 2 ST)
+@@ Calling: (MEM{HT}$C-HT-GET 2 MEM{HT}$C)
+NIL
+ACL2 !>>(ST-UPDATE 2 'TWO ST)
+@@ Calling: (MEM{HT}$C-HT-PUT 2 TWO MEM{HT}$C)
+<st>
+ACL2 !>>(ST-LOOKUP 2 ST)
+@@ Calling: (MEM{HT}$C-HT-GET 2 MEM{HT}$C)
+TWO
+ACL2 !>>Bye.

@@ -183,6 +183,10 @@
      would fail when environment variable @('ACL2_CUSTOMIZATION') was set.
      That bug has been fixed.")
 
+   (xdoc::p
+    "New directory @('demos/attach-stobj/') illustrates the use of @(tsee
+     attach-stobj).  See file @('README.txt') in that directory.")
+
    ))
 
 (defxdoc note-8-6-books
