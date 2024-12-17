@@ -203,7 +203,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Read of a write of the same register
+;; Read-of-write of the same register:
 (defthm rax-of-set-rax (equal (rax (set-rax val x86)) (logext 64 val)) :hints (("Goal" :in-theory (enable rax set-rax))))
 (defthm rbx-of-set-rbx (equal (rbx (set-rbx val x86)) (logext 64 val)) :hints (("Goal" :in-theory (enable rbx set-rbx))))
 (defthm rcx-of-set-rcx (equal (rcx (set-rcx val x86)) (logext 64 val)) :hints (("Goal" :in-theory (enable rcx set-rcx))))

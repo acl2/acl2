@@ -17,6 +17,7 @@
 (include-book "kestrel/bv/bvplus" :dir :system)
 (include-book "kestrel/bv/bvcat" :dir :system)
 (include-book "kestrel/lists-light/every-nth" :dir :system)
+(local (include-book "kestrel/bv/logapp" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))

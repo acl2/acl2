@@ -39,7 +39,7 @@
 (in-package "X86ISA")
 
 (include-book "../decoding-and-spec-utils"
-              :ttags (:syscall-exec :other-non-det :undef-flg))
+              :ttags (:syscall-exec :undef-flg))
 
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 

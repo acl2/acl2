@@ -121,3 +121,12 @@
   (implies (and (syntaxp (quotep k))
                 (not (unsigned-byte-p 1 k)))
            (not (equal (bitnot x) k))))
+
+(defthm equal-of-getbit-of-0-and-bitnot
+  (not (equal (getbit 0 x) (bitnot x)))
+  :hints (("Goal" :in-theory (enable bitnot))))
+
+(defthm equal-of-getbit-of-0-and-bitnot-alt
+  (not (equal (bitnot x) (getbit 0 x)))
+  :hints (("Goal" :use equal-of-getbit-of-0-and-bitnot
+           :in-theory (disable equal-of-getbit-of-0-and-bitnot))))

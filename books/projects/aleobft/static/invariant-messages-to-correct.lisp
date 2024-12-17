@@ -85,22 +85,22 @@
     :enable (set::subset
              message-set-to-correct-p-element))
 
-  (defrule message-set-to-correct-of-delete
+  (defruled message-set-to-correct-of-delete
     (implies (message-set-to-correct-p msgs corrvals)
              (message-set-to-correct-p (set::delete msg msgs) corrvals))
     :enable message-set-to-correct-p-subset)
 
-  (defrule message-set-to-correct-p-of-nil
+  (defruled message-set-to-correct-p-of-nil
     (message-set-to-correct-p nil corrvals))
 
-  (defrule message-set-to-correct-p-of-insert
+  (defruled message-set-to-correct-p-of-insert
     (equal (message-set-to-correct-p (set::insert msg msgs) corrvals)
            (and (message-to-correct-p msg corrvals)
                 (message-set-to-correct-p msgs corrvals)))
     :induct (set::weak-insert-induction msg msgs)
     :enable message-set-to-correct-p-element)
 
-  (defrule message-set-to-correct-p-of-union
+  (defruled message-set-to-correct-p-of-union
     (equal (message-set-to-correct-p (set::union msgs1 msgs2) corrvals)
            (and (message-set-to-correct-p msgs1 corrvals)
                 (message-set-to-correct-p msgs2 corrvals)))
@@ -113,7 +113,8 @@
        :induct t
        :enable (set::union
                 message-set-to-correct-p-element
-                message-set-to-correct-p-subset))
+                message-set-to-correct-p-subset
+                message-set-to-correct-p-of-insert))
      (defruled only-if-direction
        (implies (message-set-to-correct-p (set::union msgs1 msgs2) corrvals)
                 (and (message-set-to-correct-p msgs1 corrvals)
@@ -136,7 +137,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule system-messages-to-correct-p-when-system-state-initp
+(defruled system-messages-to-correct-p-when-system-state-initp
   :short "Establishment of the invariant:
           the invariant holds on any initial system state."
   :long
@@ -153,7 +154,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule message-set-to-correct-p-of-messsages-for-certificate
+(defruled message-set-to-correct-p-of-messsages-for-certificate
   :short "Auxiliary property about message creation."
   :long
   (xdoc::topstring
@@ -163,17 +164,20 @@
      can be reduced to the simpler fact that
      its @('dests') input is a subset of the correct validator addresses."))
   (implies (address-setp dests)
-           (equal (message-set-to-correct-p (messages-for-certificate cert dests)
-                                            corrvals)
+           (equal (message-set-to-correct-p
+                   (messages-for-certificate cert dests)
+                   corrvals)
                   (set::subset dests corrvals)))
   :induct t
   :enable (messages-for-certificate
            message-to-correct-p
+           message-set-to-correct-p-of-nil
+           message-set-to-correct-p-of-insert
            set::subset))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule system-messages-to-correct-p-of-event-next
+(defruled system-messages-to-correct-p-of-event-next
   :short "Preservation of the invariant by every event."
   :long
   (xdoc::topstring
@@ -207,7 +211,10 @@
            commit-anchors-next
            timer-expires-possiblep
            timer-expires-next
-           system-messages-to-correct-p))
+           system-messages-to-correct-p
+           message-set-to-correct-of-delete
+           message-set-to-correct-p-of-union
+           message-set-to-correct-p-of-messsages-for-certificate))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -58,7 +58,7 @@
      but that nevertheless need to be made precise in the definition.
      Perhaps these latter aspects are disambiguated
      by the reference implementation of Poseidon
-     (which is also linked from the aforementioned web site),
+     (which is also linked from the web site linked in @(see poseidon)),
      but it stil makes mathematical sense to parameterize the definition
      over those aspects.
      These are all described in detail in @(tsee param).
@@ -106,6 +106,8 @@
      which can be performed externally to Poseidon proper as defined here."))
   :order-subtopics t
   :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod param
   :short "Fixtype of Poseidon parameters."

@@ -12,11 +12,11 @@
 (in-package "ACL2")
 
 (include-book "bvcat-def")
-(include-book "logapp")
 (include-book "slice")
 (include-book "getbit")
 (include-book "bvchop")
 (local (include-book "unsigned-byte-p"))
+(local (include-book "logapp"))
 (local (include-book "../arithmetic-light/denominator"))
 (local (include-book "../arithmetic-light/floor"))
 (local (include-book "../arithmetic-light/mod"))
