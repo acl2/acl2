@@ -41,7 +41,7 @@
 ;; ======================================================================
 
 (include-book "../decoding-and-spec-utils"
-	      :ttags (:syscall-exec :undef-flg))
+              :ttags (:syscall-exec :undef-flg))
 
 (def-inst x86-invlpg
 

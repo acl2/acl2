@@ -559,7 +559,7 @@
                   ;; If BTR/BTS/BTC, we need to clear/set/complement the tested bit
                   (x86-operand-to-reg/mem
                     proc-mode operand-size inst-ac? nil
-                    (install-bit bitOffset 
+                    (install-bit bitOffset
                                  (case reg
                                    (5 1)
                                    (6 0)

@@ -38,7 +38,7 @@
 (in-package "X86ISA")
 
 (include-book "../decoding-and-spec-utils"
-	      :ttags (:syscall-exec :undef-flg))
+              :ttags (:syscall-exec :undef-flg))
 
 ;; ======================================================================
 ;; INSTRUCTION: RDTSC

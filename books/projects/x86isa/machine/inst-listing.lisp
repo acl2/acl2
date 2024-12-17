@@ -2476,7 +2476,7 @@
                :OP3 '(W SD))
           '(X86-MOVSS/MOVSD-OP/EN-RM (SP/DP . #x1))
           '((:EX (CHK-EXC :TYPE-5 (:SSE2)))))
-    (INST "MOVSD"
+    (INST "VMOVSD"
           (OP :OP #xF10
               :VEX '(:0F :LIG :F2 :WIG)
               :FEAT '(:AVX))
@@ -2739,14 +2739,16 @@
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512F)))))
     (INST "MOVLPS"
-          (OP :OP #xF12 :MOD :MEM :PFX :NO-PREFIX)
+          (OP :OP #xF12 :MOD :MEM :PFX :NO-PREFIX
+              :FEAT '(:SSE))
           (ARG :OP1 '(V Q)
                :OP2 '(H Q)
                :OP3 '(M Q))
           '(X86-MOVLPS/MOVLPD-OP/EN-RM)
           '((:EX (CHK-EXC :TYPE-5 (:SSE)))))
     (INST "MOVHLPS"
-          (OP :OP #xF12 :MOD #x3 :PFX :NO-PREFIX)
+          (OP :OP #xF12 :MOD #x3 :PFX :NO-PREFIX
+              :FEAT '(:SSE))
           (ARG :OP1 '(V Q)
                :OP2 '(H Q)
                :OP3 '(U Q))
@@ -3093,14 +3095,16 @@
           (OP :OP #xF16
               :MOD :MEM
               :PFX :NO-PREFIX
-              :SUPERSCRIPTS '(:V1))
+              :SUPERSCRIPTS '(:V1)
+              :FEAT '(:SSE))
           (ARG :OP1 '(V DQ)
                :OP2 '(H Q)
                :OP3 '(M Q))
           '(X86-MOVHPS/MOVHPD-OP/EN-RM)
           '((:EX (CHK-EXC :TYPE-5 (:SSE)))))
     (INST "MOVLHPS"
-          (OP :OP #xF16 :MOD #x3 :PFX :NO-PREFIX)
+          (OP :OP #xF16 :MOD #x3 :PFX :NO-PREFIX
+              :FEAT '(:SSE))
           (ARG :OP1 '(V DQ)
                :OP2 '(H Q)
                :OP3 '(U Q))
@@ -3819,12 +3823,12 @@
     (INST "CVTPI2PS"
           (OP :OP #xF2A
               :PFX :NO-PREFIX
-              :FEAT '(:MMX))
+              :FEAT '(:SSE))
           (ARG :OP1 '(V PS) :OP2 '(Q PI))
           'NIL
           '((:EX (CHK-EXC :TYPE-22-5 (:MMX)))))
     (INST "CVTPI2PD"
-          (OP :OP #xF2A :PFX :66 :FEAT '(:MMX))
+          (OP :OP #xF2A :PFX :66 :FEAT '(:SSE2))
           (ARG :OP1 '(V PD) :OP2 '(Q PI))
           'NIL
           '((:EX (CHK-EXC :TYPE-22-6 (:MMX)))))
@@ -3979,12 +3983,12 @@
     (INST "CVTTPS2PI"
           (OP :OP #xF2C
               :PFX :NO-PREFIX
-              :FEAT '(:MMX))
+              :FEAT '(:SSE))
           (ARG :OP1 '(P PI) :OP2 '(W PS))
           'NIL
           '((:EX (CHK-EXC :TYPE-22-5 (:MMX)))))
     (INST "CVTTPD2PI"
-          (OP :OP #xF2C :PFX :66 :FEAT '(:MMX))
+          (OP :OP #xF2C :PFX :66 :FEAT '(:SSE2))
           (ARG :OP1 '(P PI) :OP2 '(W PD))
           'NIL
           '((:EX (CHK-EXC :TYPE-22-4 (:MMX)))))
@@ -4051,12 +4055,12 @@
     (INST "CVTPS2PI"
           (OP :OP #xF2D
               :PFX :NO-PREFIX
-              :FEAT '(:MMX))
+              :FEAT '(:SSE))
           (ARG :OP1 '(P PI) :OP2 '(W PS))
           'NIL
           '((:EX (CHK-EXC :TYPE-22-5 (:MMX)))))
     (INST "CVTPD2PI"
-          (OP :OP #xF2D :PFX :66 :FEAT '(:MMX))
+          (OP :OP #xF2D :PFX :66 :FEAT '(:SSE2))
           (ARG :OP1 '(Q PI) :OP2 '(W PD))
           'NIL
           '((:EX (CHK-EXC :TYPE-22-4 (:MMX)))))
@@ -5541,7 +5545,7 @@
     (INST "VCVTPS2PD"
           (OP :OP #xF5A
               :EVEX '(:0F :256 :W0)
-              :FEAT '(:AVX512VL))
+              :FEAT '(:AVX512VL :AVX512F))
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E3 (:AVX512VL)))))
     (INST "VCVTPS2PD"
@@ -7045,7 +7049,7 @@
     (INST "PSHUFW"
           (OP :OP #xF70
               :PFX :NO-PREFIX
-              :FEAT '(:MMX))
+              :FEAT '(:SSE))
           (ARG :OP1 '(P Q)
                :OP2 '(Q Q)
                :OP3 '(I B))
@@ -7180,7 +7184,8 @@
               :MOD #x3
               :PFX :NO-PREFIX
               :SUPERSCRIPTS '(:1A)
-              :GROUP '(:GROUP-12))
+              :GROUP '(:GROUP-12)
+              :FEAT '(:MMX))
           (ARG :OP1 '(N Q) :OP2 '(I B))
           'NIL
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
@@ -7190,7 +7195,8 @@
               :MOD #x3
               :PFX :66
               :SUPERSCRIPTS '(:1A)
-              :GROUP '(:GROUP-12))
+              :GROUP '(:GROUP-12)
+              :FEAT '(:SSE2))
           (ARG :OP1 '(H X)
                :OP2 '(U X)
                :OP3 '(I B))
@@ -7202,7 +7208,8 @@
               :MOD #x3
               :PFX :NO-PREFIX
               :SUPERSCRIPTS '(:1A)
-              :GROUP '(:GROUP-12))
+              :GROUP '(:GROUP-12)
+              :FEAT '(:MMX))
           (ARG :OP1 '(N Q) :OP2 '(I B))
           'NIL
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
@@ -7212,7 +7219,8 @@
               :MOD #x3
               :PFX :66
               :SUPERSCRIPTS '(:1A)
-              :GROUP '(:GROUP-12))
+              :GROUP '(:GROUP-12)
+              :FEAT '(:SSE2))
           (ARG :OP1 '(H X)
                :OP2 '(U X)
                :OP3 '(I B))
@@ -7224,7 +7232,8 @@
               :MOD #x3
               :PFX :NO-PREFIX
               :SUPERSCRIPTS '(:1A)
-              :GROUP '(:GROUP-12))
+              :GROUP '(:GROUP-12)
+              :FEAT '(:MMX))
           (ARG :OP1 '(N Q) :OP2 '(I B))
           'NIL
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
@@ -7234,65 +7243,66 @@
               :MOD #x3
               :PFX :66
               :SUPERSCRIPTS '(:1A)
-              :GROUP '(:GROUP-12))
+              :GROUP '(:GROUP-12)
+              :FEAT '(:SSE2))
           (ARG :OP1 '(H X)
                :OP2 '(U X)
                :OP3 '(I B))
           '(X86-PSLL-IMM-SSE)
           '((:EX (CHK-EXC :TYPE-7 (:SSE2)))))
-    (INST "VPSRLVW"
+    (INST "VPSRLW"
           (OP :OP #xF71
               :VEX '(:0F :NDD :128 :66 :WIG)
               :FEAT '(:AVX)
               :REG #x2)
           (ARG :OP1 '(V X)
                :OP2 '(H X)
-               :OP3 '(W X))
+               :OP3 '(I B))
           NIL '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
-    (INST "VPSRLVW"
+    (INST "VPSRLW"
           (OP :OP #xF71
               :VEX '(:0F :NDD :256 :66 :WIG)
               :FEAT '(:AVX2)
               :REG #x2)
           (ARG :OP1 '(V X)
                :OP2 '(H X)
-               :OP3 '(W X))
+               :OP3 '(I B))
           NIL '((:EX (CHK-EXC :TYPE-7 (:AVX2)))))
-    (INST "VPSRAVW"
+    (INST "VPSRAW"
           (OP :OP #xF71
               :VEX '(:0F :NDD :128 :66 :WIG)
               :FEAT '(:AVX)
               :REG #x4)
           (ARG :OP1 '(V X)
                :OP2 '(H X)
-               :OP3 '(W X))
+               :OP3 '(I B))
           NIL '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
-    (INST "VPSRAVW"
+    (INST "VPSRAW"
           (OP :OP #xF71
               :VEX '(:0F :NDD :256 :66 :WIG)
               :FEAT '(:AVX2)
               :REG #x4)
           (ARG :OP1 '(V X)
                :OP2 '(H X)
-               :OP3 '(W X))
+               :OP3 '(I B))
           NIL '((:EX (CHK-EXC :TYPE-7 (:AVX2)))))
-    (INST "VPSLLVW"
+    (INST "VPSLLW"
           (OP :OP #xF71
               :VEX '(:0F :NDD :128 :66 :WIG)
               :FEAT '(:AVX)
               :REG #x6)
           (ARG :OP1 '(V X)
                :OP2 '(H X)
-               :OP3 '(W X))
+               :OP3 '(I B))
           NIL '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
-    (INST "VPSLLVW"
+    (INST "VPSLLW"
           (OP :OP #xF71
               :VEX '(:0F :NDD :256 :66 :WIG)
               :FEAT '(:AVX2)
               :REG #x6)
           (ARG :OP1 '(V X)
                :OP2 '(H X)
-               :OP3 '(W X))
+               :OP3 '(I B))
           NIL '((:EX (CHK-EXC :TYPE-7 (:AVX2)))))
     (INST "VPSRLW"
           (OP :OP #xF71
@@ -7363,7 +7373,8 @@
               :MOD #x3
               :PFX :NO-PREFIX
               :SUPERSCRIPTS '(:1A)
-              :GROUP '(:GROUP-13))
+              :GROUP '(:GROUP-13)
+              :FEAT '(:MMX))
           (ARG :OP1 '(N Q) :OP2 '(I B))
           'NIL
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
@@ -7373,7 +7384,8 @@
               :MOD #x3
               :PFX :66
               :SUPERSCRIPTS '(:1A)
-              :GROUP '(:GROUP-13))
+              :GROUP '(:GROUP-13)
+              :FEAT '(:SSE2))
           (ARG :OP1 '(H X)
                :OP2 '(U X)
                :OP3 '(I B))
@@ -7385,7 +7397,8 @@
               :MOD #x3
               :PFX :NO-PREFIX
               :SUPERSCRIPTS '(:1A)
-              :GROUP '(:GROUP-13))
+              :GROUP '(:GROUP-13)
+              :FEAT '(:MMX))
           (ARG :OP1 '(N Q) :OP2 '(I B))
           'NIL
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
@@ -7395,7 +7408,8 @@
               :MOD #x3
               :PFX :66
               :SUPERSCRIPTS '(:1A)
-              :GROUP '(:GROUP-13))
+              :GROUP '(:GROUP-13)
+              :FEAT '(:SSE2))
           (ARG :OP1 '(H X)
                :OP2 '(U X)
                :OP3 '(I B))
@@ -7407,7 +7421,8 @@
               :MOD #x3
               :PFX :NO-PREFIX
               :SUPERSCRIPTS '(:1A)
-              :GROUP '(:GROUP-13))
+              :GROUP '(:GROUP-13)
+              :FEAT '(:MMX))
           (ARG :OP1 '(N Q) :OP2 '(I B))
           'NIL
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
@@ -7417,65 +7432,66 @@
               :MOD #x3
               :PFX :66
               :SUPERSCRIPTS '(:1A)
-              :GROUP '(:GROUP-13))
+              :GROUP '(:GROUP-13)
+              :FEAT '(:SSE2))
           (ARG :OP1 '(H X)
                :OP2 '(U X)
                :OP3 '(I B))
           '(X86-PSLL-IMM-SSE)
           '((:EX (CHK-EXC :TYPE-7 (:SSE2)))))
-    (INST "VPSLLVD"
+    (INST "VPSLLD"
           (OP :OP #xF72
               :VEX '(:0F :NDD :128 :66 :WIG)
               :FEAT '(:AVX)
               :REG #x2)
           (ARG :OP1 '(V X)
                :OP2 '(H X)
-               :OP3 '(W X))
+               :OP3 '(I B))
           NIL '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
-    (INST "VPSLLVD"
+    (INST "VPSLLD"
           (OP :OP #xF72
               :VEX '(:0F :NDD :256 :66 :WIG)
               :FEAT '(:AVX2)
               :REG #x2)
           (ARG :OP1 '(V X)
                :OP2 '(H X)
-               :OP3 '(W X))
+               :OP3 '(I B))
           NIL '((:EX (CHK-EXC :TYPE-7 (:AVX2)))))
-    (INST "VPSRAVW"
+    (INST "VPSRAW"
           (OP :OP #xF72
               :VEX '(:0F :NDD :128 :66 :WIG)
               :FEAT '(:AVX)
               :REG #x4)
           (ARG :OP1 '(V X)
                :OP2 '(H X)
-               :OP3 '(W X))
+               :OP3 '(I B))
           NIL '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
-    (INST "VPSRAVW"
+    (INST "VPSRAW"
           (OP :OP #xF72
               :VEX '(:0F :NDD :256 :66 :WIG)
               :FEAT '(:AVX2)
               :REG #x4)
           (ARG :OP1 '(V X)
                :OP2 '(H X)
-               :OP3 '(W X))
+               :OP3 '(I B))
           NIL '((:EX (CHK-EXC :TYPE-7 (:AVX2)))))
-    (INST "VPSLLVW"
+    (INST "VPSLLW"
           (OP :OP #xF72
               :VEX '(:0F :NDD :128 :66 :WIG)
               :FEAT '(:AVX)
               :REG #x6)
           (ARG :OP1 '(V X)
                :OP2 '(H X)
-               :OP3 '(W X))
+               :OP3 '(I B))
           NIL '((:EX (CHK-EXC :TYPE-7 (:AVX)))))
-    (INST "VPSLLVW"
+    (INST "VPSLLW"
           (OP :OP #xF72
               :VEX '(:0F :NDD :256 :66 :WIG)
               :FEAT '(:AVX2)
               :REG #x6)
           (ARG :OP1 '(V X)
                :OP2 '(H X)
-               :OP3 '(W X))
+               :OP3 '(I B))
           NIL '((:EX (CHK-EXC :TYPE-7 (:AVX2)))))
     (INST "VPRORD"
           (OP :OP #xF72
@@ -7484,7 +7500,7 @@
               :REG #x0)
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
-    (INST "VPRORD"
+    (INST "VPRORQ"
           (OP :OP #xF72
               :EVEX '(:0F :NDD :128 :66 :W1)
               :FEAT '(:AVX512VL :AVX512F)
@@ -7498,7 +7514,7 @@
               :REG #x0)
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
-    (INST "VPRORD"
+    (INST "VPRORQ"
           (OP :OP #xF72
               :EVEX '(:0F :NDD :256 :66 :W1)
               :FEAT '(:AVX512VL :AVX512F)
@@ -7512,7 +7528,7 @@
               :REG #x0)
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E4NF (:AVX512F)))))
-    (INST "VPRORD"
+    (INST "VPRORQ"
           (OP :OP #xF72
               :EVEX '(:0F :NDD :512 :66 :W1)
               :FEAT '(:AVX512F)
@@ -7526,7 +7542,7 @@
               :REG #x1)
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
-    (INST "VPROLD"
+    (INST "VPROLQ"
           (OP :OP #xF72
               :EVEX '(:0F :NDD :128 :66 :W1)
               :FEAT '(:AVX512VL :AVX512F)
@@ -7540,7 +7556,7 @@
               :REG #x1)
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
-    (INST "VPROLD"
+    (INST "VPROLQ"
           (OP :OP #xF72
               :EVEX '(:0F :NDD :256 :66 :W1)
               :FEAT '(:AVX512VL :AVX512F)
@@ -7554,7 +7570,7 @@
               :REG #x1)
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E4NF (:AVX512F)))))
-    (INST "VPROLD"
+    (INST "VPROLQ"
           (OP :OP #xF72
               :EVEX '(:0F :NDD :512 :66 :W1)
               :FEAT '(:AVX512F)
@@ -7589,7 +7605,7 @@
               :REG #x4)
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
-    (INST "VPSRAD"
+    (INST "VPSRAQ"
           (OP :OP #xF72
               :EVEX '(:0F :NDD :128 :66 :W1)
               :FEAT '(:AVX512VL :AVX512F)
@@ -7603,7 +7619,7 @@
               :REG #x4)
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
-    (INST "VPSRAD"
+    (INST "VPSRAQ"
           (OP :OP #xF72
               :EVEX '(:0F :NDD :256 :66 :W1)
               :FEAT '(:AVX512VL :AVX512F)
@@ -7617,7 +7633,7 @@
               :REG #x4)
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E4NF (:AVX512F)))))
-    (INST "VPSRAD"
+    (INST "VPSRAQ"
           (OP :OP #xF72
               :EVEX '(:0F :NDD :512 :66 :W1)
               :FEAT '(:AVX512F)
@@ -7651,7 +7667,8 @@
               :MOD #x3
               :PFX :NO-PREFIX
               :SUPERSCRIPTS '(:1A)
-              :GROUP '(:GROUP-14))
+              :GROUP '(:GROUP-14)
+              :FEAT '(:MMX))
           (ARG :OP1 '(N Q) :OP2 '(I B))
           'NIL
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
@@ -7661,7 +7678,8 @@
               :MOD #x3
               :PFX :66
               :SUPERSCRIPTS '(:1A)
-              :GROUP '(:GROUP-14))
+              :GROUP '(:GROUP-14)
+              :FEAT '(:SSE2))
           (ARG :OP1 '(H X)
                :OP2 '(U X)
                :OP3 '(I B))
@@ -7673,7 +7691,8 @@
               :MOD #x3
               :PFX :66
               :SUPERSCRIPTS '(:1A)
-              :GROUP '(:GROUP-14))
+              :GROUP '(:GROUP-14)
+              :FEAT '(:SSE2))
           (ARG :OP1 '(H X)
                :OP2 '(U X)
                :OP3 '(I B))
@@ -7685,7 +7704,8 @@
               :MOD #x3
               :PFX :NO-PREFIX
               :SUPERSCRIPTS '(:1A)
-              :GROUP '(:GROUP-14))
+              :GROUP '(:GROUP-14)
+              :FEAT '(:MMX))
           (ARG :OP1 '(N Q) :OP2 '(I B))
           'NIL
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
@@ -7695,7 +7715,8 @@
               :MOD #x3
               :PFX :66
               :SUPERSCRIPTS '(:1A)
-              :GROUP '(:GROUP-14))
+              :GROUP '(:GROUP-14)
+              :FEAT '(:SSE2))
           (ARG :OP1 '(H X)
                :OP2 '(U X)
                :OP3 '(I B))
@@ -7707,29 +7728,30 @@
               :MOD #x3
               :PFX :66
               :SUPERSCRIPTS '(:1A)
-              :GROUP '(:GROUP-14))
+              :GROUP '(:GROUP-14)
+              :FEAT '(:SSE2))
           (ARG :OP1 '(H X)
                :OP2 '(U X)
                :OP3 '(I B))
           '(X86-PSLLDQ/PSRLDQ)
           '((:EX (CHK-EXC :TYPE-7 (:SSE2)))))
-    (INST "VPSRLVQ"
+    (INST "VPSRLQ"
           (OP :OP #xF73
               :VEX '(:0F :NDD :128 :66 :WIG)
               :FEAT '(:AVX)
               :REG #x2)
           (ARG :OP1 '(V X)
                :OP2 '(H X)
-               :OP3 '(W X))
+               :OP3 '(I B))
           NIL '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
-    (INST "VPSRLVQ"
+    (INST "VPSRLQ"
           (OP :OP #xF73
               :VEX '(:0F :NDD :256 :66 :WIG)
               :FEAT '(:AVX2)
               :REG #x2)
           (ARG :OP1 '(V X)
                :OP2 '(H X)
-               :OP3 '(W X))
+               :OP3 '(I B))
           NIL '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
     (INST "VPSRLDQ"
           (OP :OP #xF73
@@ -9149,7 +9171,8 @@
               :MOD :MEM
               :PFX :NO-PREFIX
               :SUPERSCRIPTS '(:1A :1C)
-              :GROUP '(:GROUP-15))
+              :GROUP '(:GROUP-15)
+              :FEAT '(:SSE))
           NIL '(X86-LDMXCSR/STMXCSR-OP/EN-M)
           '((:EX (CHK-EXC :TYPE-5 (:SSE)))))
     (INST "WRFSBASE"
@@ -9171,7 +9194,8 @@
               :MOD :MEM
               :PFX :NO-PREFIX
               :SUPERSCRIPTS '(:1A :1C)
-              :GROUP '(:GROUP-15))
+              :GROUP '(:GROUP-15)
+              :FEAT '(:SSE))
           NIL '(X86-LDMXCSR/STMXCSR-OP/EN-M)
           '((:EX (CHK-EXC :TYPE-5 (:SSE)))))
     (INST "WRGSBASE"
@@ -9547,21 +9571,24 @@
           '((:UD (UD-LOCK-USED)
                  (UD-MODR/M.MOD-INDICATES-REGISTER))))
     (INST "PINSRW"
-          (OP :OP #xFC4 :MOD #x3 :PFX :NO-PREFIX)
+          (OP :OP #xFC4 :MOD #x3 :PFX :NO-PREFIX
+              :FEAT '(:SSE))
           (ARG :OP1 '(P Q)
                :OP2 '(R Y)
                :OP3 '(I B))
           'NIL
           '((:EX (CHK-EXC :TYPE-5 (:SSE)))))
     (INST "PINSRW"
-          (OP :OP #xFC4 :MOD :MEM :PFX :NO-PREFIX)
+          (OP :OP #xFC4 :MOD :MEM :PFX :NO-PREFIX
+              :FEAT '(:SSE))
           (ARG :OP1 '(P Q)
                :OP2 '(M W)
                :OP3 '(I B))
           'NIL
           '((:EX (CHK-EXC :TYPE-5 (:SSE)))))
     (INST "PINSRW"
-          (OP :OP #xFC4 :MOD #x3 :PFX :66)
+          (OP :OP #xFC4 :MOD #x3 :PFX :66
+              :FEAT '(:SSE2))
           (ARG :OP1 '(V DQ)
                :OP2 '(H DQ)
                :OP3 '(R Y)
@@ -9569,7 +9596,8 @@
           'NIL
           '((:EX (CHK-EXC :TYPE-5 (:SSE2)))))
     (INST "PINSRW"
-          (OP :OP #xFC4 :MOD :MEM :PFX :66)
+          (OP :OP #xFC4 :MOD :MEM :PFX :66
+              :FEAT '(:SSE2))
           (ARG :OP1 '(V DQ)
                :OP2 '(H DQ)
                :OP3 '(M W)
@@ -10340,7 +10368,7 @@
     (INST "VPMINUB"
           (OP :OP #xFDA
               :VEX '(:0F :NDS :256 :66)
-              :FEAT '(:AVX))
+              :FEAT '(:AVX2))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
@@ -10555,7 +10583,7 @@
     (INST "VPMAXUB"
           (OP :OP #xFDE
               :VEX '(:0F :NDS :256 :66)
-              :FEAT '(:AVX))
+              :FEAT '(:AVX2))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
@@ -10910,7 +10938,7 @@
     (INST "PMULHW"
           (OP :OP #xFE5
               :PFX :NO-PREFIX
-              :FEAT '(:SSE))
+              :FEAT '(:MMX))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
           'NIL
           '((:EX (CHK-EXC :TYPE-22-7 (:SSE)))))
@@ -11081,7 +11109,7 @@
     (INST "MOVNTQ"
           (OP :OP #xFE7
               :PFX :NO-PREFIX
-              :FEAT '(:MMX))
+              :FEAT '(:SSE))
           (ARG :OP1 '(M Q) :OP2 '(P Q))
           'NIL
           '((:EX (CHK-EXC :TYPE-22-8 (:MMX)))
@@ -11245,7 +11273,7 @@
     (INST "VPMINSW"
           (OP :OP #xFEA
               :VEX '(:0F :NDS :256 :66)
-              :FEAT '(:AVX))
+              :FEAT '(:AVX2))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
@@ -11724,7 +11752,7 @@
     (INST "PMULUDQ"
           (OP :OP #xFF4
               :PFX :NO-PREFIX
-              :FEAT '(:MMX))
+              :FEAT '(:SSE2))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
           'NIL
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
@@ -11868,7 +11896,7 @@
     (INST "MASKMOVQ"
           (OP :OP #xFF7
               :PFX :NO-PREFIX
-              :FEAT '(:MMX))
+              :FEAT '(:SSE))
           (ARG :OP1 '(P Q) :OP2 '(N Q))
           'NIL
           '((:EX (CHK-EXC :TYPE-22-8 (:MMX)))))
@@ -12036,7 +12064,7 @@
     (INST "PSUBQ"
           (OP :OP #xFFB
               :PFX :NO-PREFIX
-              :FEAT '(:MMX))
+              :FEAT '(:SSE2))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
           'NIL
           '((:EX (CHK-EXC :TYPE-22-7 (:MMX)))))
@@ -12289,7 +12317,7 @@
     (INST "PHADDW"
           (OP :OP #xF3801
               :PFX :NO-PREFIX
-              :FEAT '(:SSE3))
+              :FEAT '(:SSSE3))
           (ARG :OP1 '(P Q) :OP2 '(Q Q))
           'NIL
           '((:EX (CHK-EXC :TYPE-4 (:SSSE3)))))
@@ -13387,12 +13415,14 @@
           '((:EX (CHK-EXC :TYPE-E4 (:AVX512F)))))
     ;; BOZO Rob -- do the following have UD?
     (INST "PMOVSXBW"
-          (OP :OP #xF3820 :MOD :MEM :PFX :66)
+          (OP :OP #xF3820 :MOD :MEM :PFX :66
+              :FEAT '(:SSE4.1))
           (ARG :OP1 '(V X) :OP2 '(M Q))
           'NIL
           '((:EX (CHK-EXC :TYPE-5 (:AVX2)))))
     (INST "PMOVSXBW"
-          (OP :OP #xF3820 :MOD #x3 :PFX :66)
+          (OP :OP #xF3820 :MOD #x3 :PFX :66
+              :FEAT '(:SSE4.1))
           (ARG :OP1 '(V X) :OP2 '(U X))
           'NIL
           '((:EX (CHK-EXC :TYPE-5 (:AVX2)))))
@@ -13445,12 +13475,14 @@
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E5 (:AVX512BW)))))
     (INST "PMOVSXBD"
-          (OP :OP #xF3821 :MOD :MEM :PFX :66)
+          (OP :OP #xF3821 :MOD :MEM :PFX :66
+              :FEAT '(:SSE4.1))
           (ARG :OP1 '(V X) :OP2 '(M D))
           'NIL
           '((:EX (CHK-EXC :TYPE-5 (:AVX2)))))
     (INST "PMOVSXBD"
-          (OP :OP #xF3821 :MOD #x3 :PFX :66)
+          (OP :OP #xF3821 :MOD #x3 :PFX :66
+              :FEAT '(:SSE4.1))
           (ARG :OP1 '(V X) :OP2 '(U X))
           'NIL
           '((:EX (CHK-EXC :TYPE-5 (:AVX2)))))
@@ -13503,12 +13535,14 @@
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E5 (:AVX512F)))))
     (INST "PMOVSXBQ"
-          (OP :OP #xF3822 :MOD :MEM :PFX :66)
+          (OP :OP #xF3822 :MOD :MEM :PFX :66
+              :FEAT '(:SSE4.1))
           (ARG :OP1 '(V X) :OP2 '(M W))
           'NIL
           '((:EX (CHK-EXC :TYPE-5 (:AVX2)))))
     (INST "PMOVSXBQ"
-          (OP :OP #xF3822 :MOD #x3 :PFX :66)
+          (OP :OP #xF3822 :MOD #x3 :PFX :66
+              :FEAT '(:SSE4.1))
           (ARG :OP1 '(V X) :OP2 '(U X))
           'NIL
           '((:EX (CHK-EXC :TYPE-5 (:AVX2)))))
@@ -13561,12 +13595,14 @@
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E5 (:AVX512F)))))
     (INST "PMOVSXWD"
-          (OP :OP #xF3823 :MOD :MEM :PFX :66)
+          (OP :OP #xF3823 :MOD :MEM :PFX :66
+              :FEAT '(:SSE4.1))
           (ARG :OP1 '(V X) :OP2 '(M Q))
           'NIL
           '((:EX (CHK-EXC :TYPE-5 (:AVX2)))))
     (INST "PMOVSXWD"
-          (OP :OP #xF3823 :MOD #x3 :PFX :66)
+          (OP :OP #xF3823 :MOD #x3 :PFX :66
+              :FEAT '(:SSE4.1))
           (ARG :OP1 '(V X) :OP2 '(U X))
           'NIL
           '((:EX (CHK-EXC :TYPE-5 (:AVX2)))))
@@ -14262,12 +14298,14 @@
                :OP3 '(M X))
           NIL '((:EX (CHK-EXC :TYPE-6 (:AVX)))))
     (INST "PMOVZXBW"
-          (OP :OP #xF3830 :MOD :MEM :PFX :66)
+          (OP :OP #xF3830 :MOD :MEM :PFX :66
+              :FEAT '(:SSE4.1))
           (ARG :OP1 '(V X) :OP2 '(M Q))
           'NIL
           '((:EX (CHK-EXC :TYPE-5 (:AVX2)))))
     (INST "PMOVZXBW"
-          (OP :OP #xF3830 :MOD #x3 :PFX :66)
+          (OP :OP #xF3830 :MOD #x3 :PFX :66
+              :FEAT '(:SSE4.1))
           (ARG :OP1 '(V X) :OP2 '(U X))
           'NIL
           '((:EX (CHK-EXC :TYPE-5 (:AVX2)))))
@@ -14320,12 +14358,14 @@
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E5 (:AVX512VL :AVX512BW)))))
     (INST "PMOVZXBD"
-          (OP :OP #xF3831 :MOD :MEM :PFX :66)
+          (OP :OP #xF3831 :MOD :MEM :PFX :66
+              :FEAT '(:SSE4.1))
           (ARG :OP1 '(V X) :OP2 '(M D))
           'NIL
           '((:EX (CHK-EXC :TYPE-5 (:AVX2)))))
     (INST "PMOVZXBD"
-          (OP :OP #xF3831 :MOD #x3 :PFX :66)
+          (OP :OP #xF3831 :MOD #x3 :PFX :66
+              :FEAT '(:SSE4.1))
           (ARG :OP1 '(V X) :OP2 '(U X))
           'NIL
           '((:EX (CHK-EXC :TYPE-5 (:AVX2)))))
@@ -14378,12 +14418,14 @@
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E5 (:AVX512F)))))
     (INST "PMOVZXBQ"
-          (OP :OP #xF3832 :MOD :MEM :PFX :66)
+          (OP :OP #xF3832 :MOD :MEM :PFX :66
+              :FEAT '(:SSE4.1))
           (ARG :OP1 '(V X) :OP2 '(M W))
           'NIL
           '((:EX (CHK-EXC :TYPE-5 (:AVX2)))))
     (INST "PMOVZXBQ"
-          (OP :OP #xF3832 :MOD #x3 :PFX :66)
+          (OP :OP #xF3832 :MOD #x3 :PFX :66
+              :FEAT '(:SSE4.1))
           (ARG :OP1 '(V X) :OP2 '(U X))
           'NIL
           '((:EX (CHK-EXC :TYPE-5 (:AVX2)))))
@@ -14436,12 +14478,14 @@
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E5 (:AVX512F)))))
     (INST "PMOVZXWD"
-          (OP :OP #xF3833 :MOD :MEM :PFX :66)
+          (OP :OP #xF3833 :MOD :MEM :PFX :66
+              :FEAT '(:SSE4.1))
           (ARG :OP1 '(V X) :OP2 '(M Q))
           'NIL
           '((:EX (CHK-EXC :TYPE-5 (:AVX2)))))
     (INST "PMOVZXWD"
-          (OP :OP #xF3833 :MOD #x3 :PFX :66)
+          (OP :OP #xF3833 :MOD #x3 :PFX :66
+              :FEAT '(:SSE4.1))
           (ARG :OP1 '(V X) :OP2 '(U X))
           'NIL
           '((:EX (CHK-EXC :TYPE-5 (:AVX2)))))
@@ -14494,12 +14538,14 @@
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E5 (:AVX512F)))))
     (INST "PMOVZXWQ"
-          (OP :OP #xF3834 :MOD :MEM :PFX :66)
+          (OP :OP #xF3834 :MOD :MEM :PFX :66
+              :FEAT '(:SSE4.1))
           (ARG :OP1 '(V X) :OP2 '(M D))
           'NIL
           '((:EX (CHK-EXC :TYPE-5 (:AVX2)))))
     (INST "PMOVZXWQ"
-          (OP :OP #xF3834 :MOD #x3 :PFX :66)
+          (OP :OP #xF3834 :MOD #x3 :PFX :66
+              :FEAT '(:SSE4.1))
           (ARG :OP1 '(V X) :OP2 '(U X))
           'NIL
           '((:EX (CHK-EXC :TYPE-5 (:AVX2)))))
@@ -14552,15 +14598,23 @@
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E5 (:AVX512F)))))
     (INST "PMOVZXDQ"
-          (OP :OP #xF3835 :MOD :MEM :PFX :66)
+          (OP :OP #xF3835 :MOD :MEM :PFX :66
+              :FEAT '(:SSE4.1))
           (ARG :OP1 '(V X) :OP2 '(M Q))
           'NIL
           '((:EX (CHK-EXC :TYPE-5 (:AVX2)))))
     (INST "PMOVZXDQ"
-          (OP :OP #xF3835 :MOD #x3 :PFX :66)
+          (OP :OP #xF3835 :MOD #x3 :PFX :66
+              :FEAT '(:SSE4.1))
           (ARG :OP1 '(V X) :OP2 '(U X))
           'NIL
           '((:EX (CHK-EXC :TYPE-5 (:AVX2)))))
+    (INST "VPMOVZXDQ"
+          (OP :OP #xF3835
+              :VEX '(:0F38 :128 :66 :WIG)
+              :FEAT '(:AVX))
+          (ARG :OP1 '(V X) :OP2 '(U X))
+          NIL '((:EX (CHK-EXC :TYPE-5 (:AVX)))))
     (INST "VPMOVZXDQ"
           (OP :OP #xF3835
               :VEX '(:0F38 :256 :66 :WIG)
@@ -14857,7 +14911,7 @@
     (INST "PMINUW"
           (OP :OP #xF383A
               :PFX :66
-              :FEAT '(:SSE2))
+              :FEAT '(:SSE4.1))
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
@@ -19622,14 +19676,16 @@
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E4NF.NB (:AVX512BW)))))
     (INST "PEXTRB"
-          (OP :OP #xF3A14 :MOD :MEM :PFX :66)
+          (OP :OP #xF3A14 :MOD :MEM :PFX :66
+              :FEAT '(:SSE4.1))
           (ARG :OP1 '(M B)
                :OP2 '(V DQ)
                :OP3 '(I B))
           'NIL
           '((:EX (CHK-EXC :TYPE-5 (:AVX2)))))
     (INST "PEXTRB"
-          (OP :OP #xF3A14 :MOD #x3 :PFX :66)
+          (OP :OP #xF3A14 :MOD #x3 :PFX :66
+              :FEAT '(:SSE4.1))
           (ARG :OP1 '(R D)
                :OP2 '(V DQ)
                :OP3 '(I B))
@@ -19650,14 +19706,16 @@
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E9NF (:AVX512BW)))))
     (INST "PEXTRW"
-          (OP :OP #xF3A15 :MOD :MEM :PFX :66)
+          (OP :OP #xF3A15 :MOD :MEM :PFX :66
+              :FEAT '(:SSE4.1))
           (ARG :OP1 '(M W)
                :OP2 '(V DQ)
                :OP3 '(I B))
           'NIL
           '((:EX (CHK-EXC :TYPE-5 (:AVX2)))))
     (INST "PEXTRW"
-          (OP :OP #xF3A15 :MOD #x3 :PFX :66)
+          (OP :OP #xF3A15 :MOD #x3 :PFX :66
+              :FEAT '(:SSE4.1))
           (ARG :OP1 '(R D)
                :OP2 '(V DQ)
                :OP3 '(I B))
@@ -19790,7 +19848,7 @@
               :FEAT '(:AVX512VL :AVX512DQ))
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E6NF (:AVX512VL :AVX512DQ)))))
-    (INST "VEXTRACTF32x4"
+    (INST "VEXTRACTF32X4"
           (OP :OP #xF3A19
               :EVEX '(:0F3A :512 :66 :W0)
               :FEAT '(:AVX512F))
@@ -19802,25 +19860,25 @@
               :FEAT '(:AVX512DQ))
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E6NF (:AVX512DQ)))))
-    (INST "VINSERTF32X4"
+    (INST "VINSERTF32X8"
           (OP :OP #xF3A1A
               :EVEX '(:0F3A :NDS :512 :66 :W0)
               :FEAT '(:AVX512DQ))
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E6NF (:AVX512DQ)))))
-    (INST "VINSERTF64X2"
+    (INST "VINSERTF64X4"
           (OP :OP #xF3A1A
               :EVEX '(:0F3A :NDS :512 :66 :W1)
               :FEAT '(:AVX512F))
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E6NF (:AVX512F)))))
-    (INST "VEXTRACTF32x4"
+    (INST "VEXTRACTF32X8"
           (OP :OP #xF3A1B
               :EVEX '(:0F3A :512 :66 :W0)
               :FEAT '(:AVX512DQ))
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E6NF (:AVX512DQ)))))
-    (INST "VEXTRACTF64X2"
+    (INST "VEXTRACTF64X4"
           (OP :OP #xF3A1B
               :EVEX '(:0F3A :512 :66 :W1)
               :FEAT '(:AVX512F))
@@ -19862,37 +19920,37 @@
               :FEAT '(:AVX512F))
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E11 (:AVX512F)))))
-    (INST "VPCMPD"
+    (INST "VPCMPUD"
           (OP :OP #xF3A1E
               :EVEX '(:0F3A :NDS :128 :66 :W0)
               :FEAT '(:AVX512VL :AVX512F))
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
-    (INST "VPCMPD"
+    (INST "VPCMPUD"
           (OP :OP #xF3A1E
               :EVEX '(:0F3A :NDS :256 :66 :W0)
               :FEAT '(:AVX512VL :AVX512F))
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
-    (INST "VPCMPD"
+    (INST "VPCMPUD"
           (OP :OP #xF3A1E
               :EVEX '(:0F3A :NDS :512 :66 :W0)
               :FEAT '(:AVX512F))
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E4 (:AVX512F)))))
-    (INST "VPCMPQ"
+    (INST "VPCMPUQ"
           (OP :OP #xF3A1E
               :EVEX '(:0F3A :NDS :128 :66 :W1)
               :FEAT '(:AVX512VL :AVX512F))
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
-    (INST "VPCMPQ"
+    (INST "VPCMPUQ"
           (OP :OP #xF3A1E
               :EVEX '(:0F3A :NDS :256 :66 :W1)
               :FEAT '(:AVX512VL :AVX512F))
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E4 (:AVX512VL :AVX512F)))))
-    (INST "VPCMPQ"
+    (INST "VPCMPUQ"
           (OP :OP #xF3A1E
               :EVEX '(:0F3A :NDS :512 :66 :W1)
               :FEAT '(:AVX512F))
@@ -20073,13 +20131,13 @@
               :FEAT '(:AVX512VL :AVX512F))
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
-    (INST "VSHUFF32x4"
+    (INST "VSHUFF32X4"
           (OP :OP #xF3A23
               :EVEX '(:0F3A :NDS :512 :66 :W0)
               :FEAT '(:AVX512F))
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E4NF (:AVX512F)))))
-    (INST "VSHUFF64x2"
+    (INST "VSHUFF64X2"
           (OP :OP #xF3A23
               :EVEX '(:0F3A :NDS :512 :66 :W1)
               :FEAT '(:AVX512F))
@@ -20302,7 +20360,7 @@
               :FEAT '(:AVX512VL :AVX512DQ))
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E6NF (:AVX512VL :AVX512DQ)))))
-    (INST "VEXTRACTI32x4"
+    (INST "VEXTRACTI32X4"
           (OP :OP #xF3A39
               :EVEX '(:0F3A :512 :66 :W0)
               :FEAT '(:AVX512F))
@@ -20314,55 +20372,55 @@
               :FEAT '(:AVX512DQ))
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E6NF (:AVX512DQ)))))
-    (INST "VINSERTI32X4"
+    (INST "VINSERTI32X8"
           (OP :OP #xF3A3A
               :EVEX '(:0F3A :NDS :512 :66 :W0)
               :FEAT '(:AVX512DQ))
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E6NF (:AVX512DQ)))))
-    (INST "VINSERTI64X2"
+    (INST "VINSERTI64X4"
           (OP :OP #xF3A3A
               :EVEX '(:0F3A :NDS :512 :66 :W1)
               :FEAT '(:AVX512F))
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E6NF (:AVX512F)))))
-    (INST "VEXTRACTI32x4"
+    (INST "VEXTRACTI32X8"
           (OP :OP #xF3A3B
               :EVEX '(:0F3A :512 :66 :W0)
               :FEAT '(:AVX512DQ))
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E6NF (:AVX512DQ)))))
-    (INST "VEXTRACTI64X2"
+    (INST "VEXTRACTI64X4"
           (OP :OP #xF3A3B
               :EVEX '(:0F3A :512 :66 :W1)
               :FEAT '(:AVX512F))
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E6NF (:AVX512F)))))
-    (INST "VPCMPB"
+    (INST "VPCMPUB"
           (OP :OP #xF3A3E
               :EVEX '(:0F3A :NDS :128 :66 :W0)
               :FEAT '(:AVX512VL :AVX512BW))
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
-    (INST "VPCMPB"
+    (INST "VPCMPUB"
           (OP :OP #xF3A3E
               :EVEX '(:0F3A :NDS :256 :66 :W0)
               :FEAT '(:AVX512VL :AVX512BW))
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
-    (INST "VPCMPB"
+    (INST "VPCMPUB"
           (OP :OP #xF3A3E
               :EVEX '(:0F3A :NDS :512 :66 :W0)
               :FEAT '(:AVX512BW))
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512BW)))))
-    (INST "VPCMPW"
+    (INST "VPCMPUW"
           (OP :OP #xF3A3E
               :EVEX '(:0F3A :NDS :128 :66 :W1)
               :FEAT '(:AVX512VL :AVX512BW))
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E4.NB (:AVX512VL :AVX512BW)))))
-    (INST "VPCMPW"
+    (INST "VPCMPUW"
           (OP :OP #xF3A3E
               :EVEX '(:0F3A :NDS :256 :66 :W1)
               :FEAT '(:AVX512VL :AVX512BW))
@@ -20509,13 +20567,13 @@
               :FEAT '(:AVX512VL :AVX512F))
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E4NF (:AVX512VL :AVX512F)))))
-    (INST "VSHUFI32x4"
+    (INST "VSHUFI32X4"
           (OP :OP #xF3A43
               :EVEX '(:0F3A :NDS :512 :66 :W0)
               :FEAT '(:AVX512F))
           NIL NIL
           '((:EX (CHK-EXC :TYPE-E4NF (:AVX512F)))))
-    (INST "VSHUFI64x2"
+    (INST "VSHUFI64X2"
           (OP :OP #xF3A43
               :EVEX '(:0F3A :NDS :512 :66 :W1)
               :FEAT '(:AVX512F))
@@ -20880,7 +20938,7 @@
                :OP3 '(I B))
           'NIL
           '((:EX (CHK-EXC :TYPE-4 (:AES)))))
-    (INST "AESKEYGENASSIST"
+    (INST "VAESKEYGENASSIST"
           (OP :OP #xF3ADF
               :VEX '(:0F3A :128 :66 :WIG)
               :FEAT '(:AES :AVX))
@@ -20957,446 +21015,6 @@
        (inst-list-p *0F-38-three-byte-opcode-map*)
        (inst-list-p *0F-3A-three-byte-opcode-map*)))
 
-;; ----------------------------------------------------------------------
-
-;; Creating documentation for the implemented opcodes:
-
-(defconst *x86isa-printconfig*
-  (str::make-printconfig
-   :home-package (pkg-witness "X86ISA")
-   :print-base 16
-   :print-radix t
-   :print-lowercase t))
-
-(defconst *x86isa-printconfig-uppercase*
-  (str::make-printconfig
-   :home-package (pkg-witness "X86ISA")
-   :print-base 16
-   :print-radix t
-   :print-lowercase nil))
-
-(defconst *x86isa-printconfig-base-10*
-  (str::make-printconfig
-   :home-package (pkg-witness "X86ISA")
-   :print-base 10
-   :print-radix nil
-   :print-lowercase nil))
-
-(defconst *x86isa-printconfig-base-10-lowercase*
-  (str::make-printconfig
-   :home-package (pkg-witness "X86ISA")
-   :print-base 10
-   :print-radix nil
-   :print-lowercase t))
-
-
-(include-book "std/strings/printtree-fty" :dir :system)
-
-
-(define opcode-print-syms ((acc str::printtree-p)
-                           (syms symbol-listp))
-  :returns (new-acc str::printtree-p)
-  (cond ((atom syms)
-         (str::printtree-fix acc))
-        ((atom (cdr syms))
-         (str::pcat acc (symbol-name (car syms))))
-        (t (opcode-print-syms (str::pcat acc (symbol-name (car syms)) ".") (cdr syms)))))
-      
-
-;; examples: EVEX.512.66.0F.W0 6F /r
-;;           VEX.128.66.0F.WIG 7F /r
-;;           F3 0F 10 /r
-
-
-
-(define opcode-string-bytes ((acc str::printtree-p)
-                             (x natp))
-  :returns (new-acc str::printtree-p)
-  :verify-guards nil
-  :prepwork ((local (include-book "centaur/bitops/ihsext-basics" :dir :system))
-             (local (defthm logcdr-less-when-not-zp
-                      (and (implies (natp x)
-                                    (<= (logcdr x) x))
-                           (implies (posp x)
-                                    (< (logcdr x) x)))
-                      :hints (("goal" :use ((:instance acl2::logcar-logcdr-elim
-                                             (i x)))
-                               :in-theory (e/d (logcons)
-                                               (bitops::logcons-destruct))))
-                      :rule-classes :linear))
-
-             (local (defthm logtail-less-when-not-zp
-                      (and (implies (and (not (zp x))
-                                         (not (Zp n)))
-                                    (< (logtail n x) x))
-                           (implies (natp x)
-                                    (<= (logtail n x) x)))
-                      :hints(("Goal" :in-theory (enable* bitops::ihsext-inductions bitops::ihsext-recursive-redefs))))))
-  (b* (((when (zp x)) (str::printtree-fix acc))
-       (acc (opcode-string-bytes acc (logtail 8 x)))
-       (acc (if (eql 0 (logtail 8 x)) acc (str::pcat acc " ")))
-       (digits (str::nat-to-hex-string (loghead 8 x)))
-       (digits (cond ((eql (length digits) 0) "00")
-                     ((eql (length digits) 1) (str::pcat "0" digits))
-                     (t digits))))
-    (str::pcat acc digits))
-  ///
-  (verify-guards opcode-string-bytes))
-
-(define opcode-prefix-string ((acc str::printtree-p)
-                              (pfx op-pfx-p))
-  :returns (new-acc str::printtree-p)
-  :guard-hints ((and stable-under-simplificationp
-                     '(:in-theory (enable op-pfx-p))))
-  (cond (pfx (b* ((pfx (case pfx
-                         (:no-prefix :np)
-                         (t pfx))))
-               (str::pcat acc (symbol-name pfx) " ")))
-        (t (str::printtree-fix acc))))
-
-(defconst *evex-syms-for-opcode-string*
-  (set-difference-equal *evex-pfx-cases* *vvvv-pfx*))
-
-(defconst *vex-syms-for-opcode-string*
-  (set-difference-equal *vex-pfx-cases* *vvvv-pfx*))
-
-(define opcode-string ((x opcode-p))
-  ;; NOT complete!
-  :prepwork ((local (defthm symbol-listp-of-intersection-equal
-                      (implies (symbol-listp x)
-                               (symbol-listp (intersection-equal x y)))))
-             (local (in-theory (disable loghead)))
-             (local (in-theory (disable intersection-equal))))
-  (b* (((opcode x))
-       (acc nil)
-       (acc (opcode-prefix-string acc x.pfx))
-       (acc (cond (x.evex
-                   (b* ((acc (opcode-print-syms acc (cons 'evex (intersection-eq *evex-syms-for-opcode-string* x.evex)))))
-                     (str::pcat acc " ")))
-                  (x.vex
-                   (B* ((acc (opcode-print-syms acc (cons 'vex (intersection-eq *vex-syms-for-opcode-string* x.vex)))))
-                     (str::pcat acc " ")))
-                  (t acc)))
-       (opcode-bytes (if (or x.evex x.vex)
-                         (loghead 8 x.op)
-                       x.op))
-       (acc (opcode-string-bytes acc opcode-bytes)))
-    (str::printtree->str acc)))
-
-
-(define create-inst-doc ((inst inst-p)
-                         &key
-                         ((fn-ok? booleanp
-                                  "Include information about the semantic
-                          function in the documentation or not")
-                          't)
-                         ((arg-ok? booleanp
-                                   "Include information about the
-                          operands (@('inst.operands') field) in the
-                          documentation or not")
-                          'nil)
-                         ((full-opcode? booleanp
-                                        "Include a SDM-like representation of
-                         the full opcode, not just the low byte")
-                          'nil))
-
-  :guard-hints (("Goal" :in-theory (e/d () (subseq))))
-  :returns (inst-doc-string stringp)
-
-  :prepwork
-
-  ((define symbol-list-to-string ((lst symbol-listp))
-     :returns (newstr stringp :hyp :guard)
-     (if (atom lst)
-         ""
-       (if (eql (len lst) 1)
-           (str::cat ":" (symbol-name (car lst)))
-         (str::cat ":" (symbol-name (car lst)) " "
-                   (symbol-list-to-string (cdr lst))))))
-
-   (define create-extra-info-doc-string (info
-                                         (text stringp))
-     :returns (doc stringp :hyp :guard)
-
-     (if info
-         (let* ((info-string (cond ((symbolp info)
-                                    (str::cat ":" (symbol-name info)))
-                                   ((symbol-listp info)
-                                    (symbol-list-to-string info))
-                                   (t
-                                    (str::pretty
-                                     info
-                                     :config
-                                     *x86isa-printconfig-base-10*)))))
-           (str::cat "<tr><td> @('" text "') </td>"
-                     "<td> @('" info-string "') </td> </tr>"))
-       ""))
-
-   (define create-extra-info-doc ((opcode strict-opcode-p))
-     :returns (doc stringp :hyp :guard)
-
-     (b* (((opcode opcode))
-          (feat-doc  (create-extra-info-doc-string opcode.feat ":FEAT "))
-          (vex-doc   (create-extra-info-doc-string opcode.vex  ":VEX "))
-          (evex-doc  (create-extra-info-doc-string opcode.evex ":EVEX "))
-          (pfx-doc   (create-extra-info-doc-string opcode.pfx  ":PFX "))
-          (mode-doc  (create-extra-info-doc-string opcode.mode ":MODE "))
-          (reg-doc   (create-extra-info-doc-string opcode.reg  ":REG "))
-          (mod-doc   (create-extra-info-doc-string opcode.mod  ":MOD "))
-          (r/m-doc   (create-extra-info-doc-string opcode.r/m  ":R/M "))
-          (rex-doc   (create-extra-info-doc-string opcode.rex  ":REX "))
-          (extra-info (str::cat "<table>"
-                                mode-doc pfx-doc reg-doc
-                                mod-doc r/m-doc rex-doc
-                                vex-doc evex-doc feat-doc
-                                "</table>")))
-       extra-info))
-
-   (define gen-addressing-method-code-doc ((z-info alistp))
-     ;; (gen-addressing-method-code-doc *Z-addressing-method-info*)
-     :prepwork
-     ((define get-addressing-method-doc ((code addressing-method-code-p))
-        :returns (str stringp)
-        (b* ((alst (cdr (assoc-equal code *Z-addressing-method-info*)))
-             (doc (cdr (assoc-equal :doc alst)))
-             ((unless doc) ""))
-          doc)))
-     (if (endp z-info)
-         nil
-       (b* ((code (caar z-info))
-            ((unless (addressing-method-code-p code))
-             (er hard? __function__ "~% Bad code ~x0 encountered! ~%" code))
-            (codestr (str::pretty code :config *x86isa-printconfig-base-10*))
-            (docstr (str::cat "@(' " codestr "'): " (get-addressing-method-doc code)))
-            (topic-name (intern$ (str::cat codestr "-Z-ADDRESSING-METHOD") "X86ISA"))
-            (form `((defxdoc ,topic-name
-                      ;; We intentionally don't define a parent here.  We can
-                      ;; wrap the call of this function inside an appropriate
-                      ;; defsection if we want to generate addressing method
-                      ;; information.
-                      :long ,docstr)))
-            (rest (gen-addressing-method-code-doc (cdr z-info))))
-         (append form rest))))
-
-   (define gen-operand-type-code-doc ((info alistp))
-     ;; (gen-operand-type-code-doc *operand-type-code-info*)
-     :prepwork
-     ((define get-operand-type-code-doc ((code operand-type-code-p))
-        :returns (str stringp)
-        (b* ((alst (cdr (assoc-equal code *operand-type-code-info*)))
-             (doc (cdr (assoc-equal :doc alst)))
-             ((unless doc) ""))
-          doc)))
-     (if (endp info)
-         nil
-       (b* ((code (caar info))
-            ((unless (operand-type-code-p code))
-             (er hard? __function__ "~% Bad code ~x0 encountered! ~%" code))
-            (codestr (str::pretty code :config *x86isa-printconfig-base-10-lowercase*))
-            (docstr (str::cat "@(' " codestr "'): " (get-operand-type-code-doc code)))
-            (topic-name (intern$
-                         (str::upcase-string (str::cat codestr "-OPERAND-TYPE-CODE"))
-                         "X86ISA"))
-            (form `((defxdoc ,topic-name
-                      ;; We intentionally don't define a parent here.  We can
-                      ;; wrap the call of this function inside an appropriate
-                      ;; defsection if we want to generate operand code type
-                      ;; information.
-                      :long ,docstr)))
-            (rest (gen-operand-type-code-doc (cdr info))))
-         (append form rest))))
-
-   (define create-arg-doc ((x operand-type-p))
-     :returns (xstr stringp)
-     (cond
-      ((atom x) " ")
-      ((eql (len x) 1)
-       (b* ((possible-code (nth 0 x))
-            (codestr (str::pretty possible-code :config *x86isa-printconfig-base-10*))
-            (topic-name (str::cat codestr "-Z-ADDRESSING-METHOD")))
-         (if (addressing-method-code-p possible-code)
-             (str::cat "[<a href=\"index.html?topic=X86ISA____" topic-name "\">" codestr "</a>] ")
-           (str::cat "[@('" codestr "')] "))))
-      ((eql (len x) 2)
-       (b* ((addressing-mode (nth 0 x))
-            (addressing-mode-str ;; Addressing Method Code in Upper Case
-             (str::pretty addressing-mode :config *x86isa-printconfig-base-10*))
-            (addressing-mode-topic-name
-             (str::cat addressing-mode-str "-Z-ADDRESSING-METHOD"))
-            (operand-code (nth 1 x))
-            (operand-code-str ;; Operand Type Code in Lower Case
-             (str::pretty operand-code :config *x86isa-printconfig-base-10-lowercase*))
-            (operand-code-topic-name
-             (str::upcase-string (str::cat operand-code-str "-OPERAND-TYPE-CODE"))))
-         (str::cat
-          "[<a href=\"index.html?topic=X86ISA____" addressing-mode-topic-name "\">"
-          addressing-mode-str
-          "</a> - <a href=\"index.html?topic=X86ISA____" operand-code-topic-name "\">"
-          operand-code-str "</a>] ")))
-      (t " ")))
-
-   (define create-args-doc ((operands maybe-operands-p))
-     :prepwork ((local (in-theory (e/d (maybe-operands-p) ()))))
-     :returns (docstr stringp)
-     (b* (((unless operands)
-           ;; Instruction does not require any operands.
-           "<td> </td>")
-          ((operands operands))
-          (op1 (create-arg-doc operands.op1))
-          ((if (eql operands.op2 nil))
-           (str::cat "<td> " op1 " </td>"))
-          (op2 (create-arg-doc operands.op2))
-          ((if (eql operands.op3 nil))
-           (str::cat "<td> " op1 ", " op2 " </td>"))
-          (op3 (create-arg-doc operands.op3))
-          ((if (eql operands.op4 nil))
-           (str::cat "<td> " op1 ", " op2 ", " op3 " </td>"))
-          (op4 (create-arg-doc operands.op4)))
-       (str::cat "<td> " op1 ", " op2 ", " op3 ", " op4 " </td>")))
-
-   (defthm inst-p-implies-mnemonic-p
-     (implies (inst-p x)
-              (mnemonic-p (inst->mnemonic x)))
-     :hints (("Goal" :in-theory (e/d (inst-p) ())))
-     :rule-classes :forward-chaining)
-
-   (defthm inst-p-implies-mnemonic-p-alt
-     (implies (and (inst-p x)
-                   (not (stringp (inst->mnemonic x))))
-              ;; (keywordp (inst->mnemonic x))
-              (symbolp (inst->mnemonic x)))
-     :hints (("Goal"
-              :use ((:instance inst-p-implies-mnemonic-p))
-              :in-theory (e/d (mnemonic-p inst->mnemonic)
-                              (inst-p-implies-mnemonic-p)))))
-
-   (defthm inst-p-implies-consp-fn
-     (implies (and (inst-p x)
-                   (inst->fn x))
-              (consp (inst->fn x)))
-     :hints (("Goal" :in-theory (e/d (fn-desc-p inst->fn fn-desc-p) ())))))
-
-  (b* (((inst inst))
-       (opcode inst.opcode)
-       ((opcode opcode))
-       ;; We only add the low 8 bits of the opcode in the documentation for
-       ;; three reasons: (1) to save horizontal space in the table; (2) the
-       ;; table headings will list whether we're dealing with one-, two-, or
-       ;; three-byte map, and in the last two cases, will mention whether the
-       ;; opcode bytes begin with 0F_38 or 0F_3A; and (3) VEX- and EVEX-encoded
-       ;; opcodes don't really have two- or three-byte opcodes because the map
-       ;; is encoded in the VEX/EVEX prefixes, so it can be misleading to list
-       ;; their opcode as two or three bytes long.
-       (opcode-str (if full-opcode?
-                       (opcode-string opcode)
-                       (subseq (str::hexify-width (loghead 8 opcode.op) 2) 3 nil)))
-       (mnemonic (if (stringp inst.mnemonic)
-                     inst.mnemonic
-                   (symbol-name inst.mnemonic)))
-       (fn-info  (if (and fn-ok? inst.fn)
-                     (if (eql (car inst.fn) :NO-INSTRUCTION)
-                         "@('NO INSTRUCTION')"
-                       (concatenate
-                        'string
-                        "@(tsee "
-                        (str::pretty (car inst.fn) :config *x86isa-printconfig*)
-                        ") "
-                        (if (cdr inst.fn)
-                            (concatenate
-                             'string
-                             "-- <br/><tt>"
-                             (str::pretty (cdr inst.fn)
-                                          :config *x86isa-printconfig*)
-                             "</tt>")
-                          "")))
-                   ""))
-       (fn-info (if fn-ok?
-                    (concatenate
-                     'string
-                     " <td> " fn-info                 " </td> ")
-                  ""))
-       ;; --------------------------------------------------
-       ;; Constructing extra-info documentation:
-       (extra-info (create-extra-info-doc opcode))
-       ;; --------------------------------------------------
-       ;; Constructing operands' documentation, if necessary:
-       (arg-str (if arg-ok? (create-args-doc inst.operands) ""))
-       ;; --------------------------------------------------
-       (doc-string
-        (concatenate
-         'string
-         "<tr> "
-         " <td> " opcode-str " </td> "
-         " <td> " mnemonic                " </td> "
-         " <td> " extra-info              " </td> "
-                  arg-str
-                  fn-info
-         "</tr>")))
-    doc-string))
-
-(define create-insts-doc-aux ((inst-lst inst-list-p)
-                              &key
-                              ((fn-ok? booleanp
-                                       "Include information about the semantic
-                          function in the documentation or not")
-                               't)
-                              ((arg-ok? booleanp
-                                        "Include information about the
-                          operands (@('inst.operands') field) in the
-                          documentation or not")
-                               'nil)
-                         ((full-opcode? booleanp
-                                        "Include a SDM-like representation of
-                         the full opcode, not just the low byte")
-                          'nil))
-
-  :returns (insts-doc-string stringp)
-
-  (if (endp inst-lst)
-      ""
-    (concatenate
-     'string
-     (create-inst-doc (car inst-lst) :fn-ok? fn-ok? :arg-ok? arg-ok? :full-opcode? full-opcode?)
-     (create-insts-doc-aux (cdr inst-lst) :fn-ok? fn-ok? :arg-ok? arg-ok? :full-opcode? full-opcode?))))
-
-(define create-insts-doc ((inst-lst inst-list-p)
-                          &key
-                          ((fn-ok? booleanp
-                                   "Include information about the semantic
-                          function in the documentation or not")
-                           't)
-                          ((arg-ok? booleanp
-                                    "Include information about the
-                          operands (@('inst.operands') field) in the
-                          documentation or not")
-                           'nil)
-                         ((full-opcode? booleanp
-                                        "Include a SDM-like representation of
-                         the full opcode, not just the low byte")
-                          'nil))
-
-  :returns (insts-doc-string stringp)
-
-  (b* ((insts-doc-string (create-insts-doc-aux
-                          inst-lst :fn-ok? fn-ok? :arg-ok? arg-ok? :full-opcode? full-opcode?))
-       (table-header-1 "<th> Opcode </th>")
-       (table-header-2 "<th> Mnemonic </th>")
-       (table-header-3 "<th> Other Information </th>")
-       (table-header-4 (if fn-ok?
-                           "<th> Semantic Function </th>"
-                         ""))
-       (table-header-5 (if arg-ok?
-                           "<th> Operands </th>"
-                         ""))
-       (table-header (concatenate
-                      'string "<tr> "
-                      table-header-1 table-header-2
-                      table-header-3 table-header-4
-                      table-header-5
-                      " </tr>")))
-    (concatenate
-     'string
-     "<table> " table-header insts-doc-string " </table>")))
 
 (define select-opcode-map ((map-key keywordp))
   :parents (filtering-instructions)
@@ -21415,65 +21033,12 @@
     ((:0F-38-three-byte :vex-0F-38 :evex-0F-38) *0F-38-three-byte-opcode-map*)
     ((:0F-3A-three-byte :vex-0F-3A :evex-0F-3A) *0F-3A-three-byte-opcode-map*)))
 
-(make-event
- ;; To generate ALL the instructions, including the unimplemented ones, set
- ;; :fn? to nil in the following forms.
- (b* ((one (create-insts-doc
-            (select-insts *one-byte-opcode-map*
-                          :get/rem :get
-                          :fn? t)))
-      (two (create-insts-doc
-            (select-insts *two-byte-opcode-map*
-                          :get/rem :get
-                          :fn? t)))
-      (three-1 (create-insts-doc
-                (select-insts *0F-38-three-byte-opcode-map*
-                              :get/rem :get
-                              :fn? t)))
-      (three-2 (create-insts-doc
-                (select-insts *0F-3A-three-byte-opcode-map*
-                              :get/rem :get
-                              :fn? t))))
-   `(progn
-      (defsection one-byte-opcodes-map
-        :parents (implemented-opcodes)
-        :short "List of <b>implemented</b> instructions whose opcode is one byte long"
-        :long ,one)
-      (defsection two-byte-opcodes-map
-        :parents (implemented-opcodes)
-        :short "List of <b>implemented</b> instructions whose opcode is two bytes long,
-       beginning with @('0F'); includes VEX/EVEX instructions too"
-        :long ,two)
-      (defsection 0F-38-three-byte-opcodes-map
-        :parents (implemented-opcodes)
-        :short "List of <b>implemented</b> instructions whose opcode is three bytes
-       long, beginning with @('0F_38'); includes VEX/EVEX instructions too"
-        :long ,three-1)
-      (defsection 0F-3A-three-byte-opcodes-map
-        :parents (implemented-opcodes)
-        :short "List of <b>implemented</b> instructions whose opcode is three bytes
-       long, beginning with @('0F_3A'); includes VEX/EVEX instructions too"
-        :long ,three-2))))
-
-
-(defsection implemented-opcodes
-  :parents (x86isa instructions x86-decoder opcode-maps)
-  :short "Intel opcodes supported in @('x86isa')."
-  :long
-  "<p>We support decoding of all the x86 instructions in the one-, two-, and
- three-byte opcode maps, including the AVX/AVX2/AVX512 extensions.  However, a
- fraction of those are actually implemented in this model --- when we say
- <i>implemented</i> instructions, we mean instructions that have a semantic function
- that models its effects on the machine's state.</p>
-
- <p>For a listing of all such supported instructions, see @(see
- one-byte-opcodes-map), @(see two-byte-opcodes-map), @(see
- 0f-38-three-byte-opcodes-map), and @(see 0f-3a-three-byte-opcodes-map).</p>
-
- <p>For a readable version of all the opcode maps, see constants like
-  @('*pre-one-byte-opcode-map*') in the book @('inst-listing.lisp').  These are
-  the constants to edit in order to add new instructions, etc. in the future.
-  The dispatch, modr/m and prefixes computation, and generation of
-  documentation is done automatically from these constants.</p>")
-
-;; ----------------------------------------------------------------------
+(defthm inst-p-implies-mnemonic-p-alt
+  (implies (and (inst-p x)
+                (not (stringp (inst->mnemonic x))))
+           ;; (keywordp (inst->mnemonic x))
+           (symbolp (inst->mnemonic x)))
+  :hints (("Goal"
+           :use ((:instance mnemonic-p-of-inst->mnemonic))
+           :in-theory (e/d (mnemonic-p inst->mnemonic)
+                           (mnemonic-p-of-inst->mnemonic)))))
