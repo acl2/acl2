@@ -87,14 +87,14 @@
              address+pos-set-not-address-p
              address+pos-set-not-address-p-element))
 
-  (defrule address+pos-set-not-address-p-of-insert
+  (defruled address+pos-set-not-address-p-of-insert
     (equal (address+pos-set-not-address-p (set::insert pair pairs) addr)
            (and (address+pos-not-address-p pair addr)
                 (address+pos-set-not-address-p pairs addr)))
     :induct (set::weak-insert-induction pair pairs)
     :enable address+pos-set-not-address-p-element)
 
-  (defrule address+pos-set-not-address-p-of-delete
+  (defruled address+pos-set-not-address-p-of-delete
     (implies (address+pos-set-not-address-p pairs addr)
              (address+pos-set-not-address-p (set::delete pair pairs)
                                             addr))
@@ -133,7 +133,7 @@
     (validators-endorsed-not-self-p (omap::tail vstates)))
   ///
 
-  (defrule validator-endorsed-not-self-p-of-lookup
+  (defruled validator-endorsed-not-self-p-of-lookup
     (implies (and (validators-endorsed-not-self-p vstates)
                   (omap::assoc val vstates)
                   (omap::lookup val vstates))
@@ -141,7 +141,7 @@
     :induct t
     :enable omap::lookup)
 
-  (defrule validators-endorsed-not-self-p-of-update
+  (defruled validators-endorsed-not-self-p-of-update
     (implies (and (validators-endorsed-not-self-p vstates)
                   (validator-endorsed-not-self-p val vstate)
                   (addressp val))
@@ -170,12 +170,12 @@
   :hooks (:fix)
   ///
 
-  (defrule system-endorsed-not-self-p-of-update-network-state
+  (defruled system-endorsed-not-self-p-of-update-network-state
     (equal (system-endorsed-not-self-p (update-network-state network systate))
            (system-endorsed-not-self-p systate))
     :enable update-network-state)
 
-  (defrule system-endorsed-not-self-p-of-update-validator-state
+  (defruled system-endorsed-not-self-p-of-update-validator-state
     (implies (and (system-endorsed-not-self-p systate)
                   (validator-endorsed-not-self-p val vstate)
                   (addressp val)
@@ -184,7 +184,7 @@
               (update-validator-state val vstate systate)))
     :enable update-validator-state)
 
-  (defrule validator-endorsed-not-self-p-of-get-validator-state
+  (defruled validator-endorsed-not-self-p-of-get-validator-state
     (implies (and (system-endorsed-not-self-p systate)
                   (set::in val (correct-addresses systate)))
              (validator-endorsed-not-self-p val
@@ -192,11 +192,12 @@
     :enable (get-validator-state
              correct-addresses
              in-of-correct-addresses-loop
-             lookup-nonnil-of-correct-addresses)))
+             lookup-nonnil-of-correct-addresses
+             validator-endorsed-not-self-p-of-lookup)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule validator-endorsed-not-self-p-of-validator-init
+(defruled validator-endorsed-not-self-p-of-validator-init
   :short "Establishment of the invariant at the validator level:
           the invariant holds on the initial validator state."
   :long
@@ -210,7 +211,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule validators-endorsed-not-self-p-when-validators-state-initp
+(defruled validators-endorsed-not-self-p-when-validators-state-initp
   :short "Establishment of the invariant at the validator map level:
           the invariant holds on any initial validator map."
   :long
@@ -222,11 +223,12 @@
            (validators-endorsed-not-self-p vstates))
   :induct t
   :enable (validators-endorsed-not-self-p
-           validators-state-initp))
+           validators-state-initp
+           validator-endorsed-not-self-p-of-validator-init))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule system-endorsed-not-self-p-when-system-state-initp
+(defruled system-endorsed-not-self-p-when-system-state-initp
   :short "Establishment of the invariant at the system level:
           the invariant holds on any initial system state."
   :long
@@ -255,7 +257,7 @@
      The distinctness hypotheses are established
      in the proof of the theorem for @('create-certificate') events later."))
 
-  (defrule validator-endorsed-not-self-p-of-add-endorsed-val
+  (defruled validator-endorsed-not-self-p-of-add-endorsed-val
     (implies (and (validator-endorsed-not-self-p val vstate)
                   (not (equal author val))
                   (addressp author))
@@ -264,9 +266,10 @@
     :enable (add-endorsed-val
              validator-endorsed-not-self-p
              address+pos-not-address-p
+             address+pos-set-not-address-p-of-insert
              set::expensive-rules))
 
-  (defrule system-endorsed-not-self-p-of-add-endorsed
+  (defruled system-endorsed-not-self-p-of-add-endorsed
     (implies (and (system-endorsed-not-self-p systate)
                   (not (set::in author endorsers))
                   (addressp author)
@@ -278,6 +281,9 @@
     :enable (in-correct-validator-addresess-when-get-validator-state
              add-endorsed
              address+pos-not-address-p
+             system-endorsed-not-self-p-of-update-validator-state
+             validator-endorsed-not-self-p-of-get-validator-state
+             validator-endorsed-not-self-p-of-add-endorsed-val
              set::expensive-rules)
     :prep-lemmas
     ((defrule lemma
@@ -298,20 +304,25 @@
      thus establishing the hypothesis for
      the theorem about @(tsee add-endorsed)."))
 
-  (defrule validator-endorsed-not-self-p-of-create-certificate-next-val
+  (defruled validator-endorsed-not-self-p-of-create-certificate-next-val
     (implies (validator-endorsed-not-self-p val vstate)
              (validator-endorsed-not-self-p
               val (create-certificate-next-val cert vstate)))
     :enable (validator-endorsed-not-self-p
              create-certificate-next-val))
 
-  (defrule system-endorsed-not-self-p-of-create-certificate-next
+  (defruled system-endorsed-not-self-p-of-create-certificate-next
     (implies (and (system-endorsed-not-self-p systate)
                   (create-certificate-possiblep cert systate))
              (system-endorsed-not-self-p
               (create-certificate-next cert systate)))
     :enable (create-certificate-possiblep
-             create-certificate-next)))
+             create-certificate-next
+             system-endorsed-not-self-p-of-update-network-state
+             system-endorsed-not-self-p-of-update-validator-state
+             validator-endorsed-not-self-p-of-get-validator-state
+             system-endorsed-not-self-p-of-add-endorsed
+             validator-endorsed-not-self-p-of-create-certificate-next-val)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -324,20 +335,25 @@
      but it removes a pair from a set,
      so the proof is easy."))
 
-  (defrule validator-endorsed-not-self-p-of-receive-certificate-next-val
+  (defruled validator-endorsed-not-self-p-of-receive-certificate-next-val
     (implies (validator-endorsed-not-self-p val vstate)
              (validator-endorsed-not-self-p
               val (receive-certificate-next-val cert vstate)))
     :enable (validator-endorsed-not-self-p
-             receive-certificate-next-val))
+             receive-certificate-next-val
+             address+pos-set-not-address-p-of-delete))
 
-  (defrule system-endorsed-not-self-p-of-receive-certificate-next
+  (defruled system-endorsed-not-self-p-of-receive-certificate-next
     (implies (and (system-endorsed-not-self-p systate)
                   (receive-certificate-possiblep msg systate))
              (system-endorsed-not-self-p
               (receive-certificate-next msg systate)))
     :enable (receive-certificate-possiblep
-             receive-certificate-next)))
+             receive-certificate-next
+             system-endorsed-not-self-p-of-update-network-state
+             system-endorsed-not-self-p-of-update-validator-state
+             validator-endorsed-not-self-p-of-get-validator-state
+             validator-endorsed-not-self-p-of-receive-certificate-next-val)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -349,20 +365,23 @@
     "This is easy to prove,
      because that kind of events does not modify author-round pairs."))
 
-  (defrule validator-endorsed-not-self-p-of-store-certificate-next-val
+  (defruled validator-endorsed-not-self-p-of-store-certificate-next-val
     (implies (validator-endorsed-not-self-p val vstate)
              (validator-endorsed-not-self-p
               val (store-certificate-next-val cert vstate)))
     :enable (validator-endorsed-not-self-p
              store-certificate-next-val))
 
-  (defrule system-endorsed-not-self-p-of-store-certificate-next
+  (defruled system-endorsed-not-self-p-of-store-certificate-next
     (implies (and (system-endorsed-not-self-p systate)
                   (store-certificate-possiblep cert val systate))
              (system-endorsed-not-self-p
               (store-certificate-next cert val systate)))
     :enable (store-certificate-possiblep
-             store-certificate-next)))
+             store-certificate-next
+             system-endorsed-not-self-p-of-update-validator-state
+             validator-endorsed-not-self-p-of-get-validator-state
+             validator-endorsed-not-self-p-of-store-certificate-next-val)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -374,20 +393,23 @@
     "This is easy to prove,
      because that kind of events does not modify author-round pairs."))
 
-  (defrule validator-endorsed-not-self-p-of-advance-round-next-val
+  (defruled validator-endorsed-not-self-p-of-advance-round-next-val
     (implies (validator-endorsed-not-self-p val vstate)
              (validator-endorsed-not-self-p
               val (advance-round-next-val round vstate)))
     :enable (validator-endorsed-not-self-p
              advance-round-next-val))
 
-  (defrule system-endorsed-not-self-p-of-advance-round-next
+  (defruled system-endorsed-not-self-p-of-advance-round-next
     (implies (and (system-endorsed-not-self-p systate)
                   (advance-round-possiblep val systate))
              (system-endorsed-not-self-p
               (advance-round-next val systate)))
     :enable (advance-round-possiblep
-             advance-round-next)))
+             advance-round-next
+             system-endorsed-not-self-p-of-update-validator-state
+             validator-endorsed-not-self-p-of-get-validator-state
+             validator-endorsed-not-self-p-of-advance-round-next-val)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -399,20 +421,23 @@
     "This is easy to prove,
      because that kind of events does not modify author-round pairs."))
 
-  (defrule validator-endorsed-not-self-p-of-commit-anchors-next-val
+  (defruled validator-endorsed-not-self-p-of-commit-anchors-next-val
     (implies (validator-endorsed-not-self-p val vstate)
              (validator-endorsed-not-self-p
               val (commit-anchors-next-val vals vstate)))
     :enable (validator-endorsed-not-self-p
              commit-anchors-next-val))
 
-  (defrule system-endorsed-not-self-p-of-commit-anchors-next
+  (defruled system-endorsed-not-self-p-of-commit-anchors-next
     (implies (and (system-endorsed-not-self-p systate)
                   (commit-anchors-possiblep val systate))
              (system-endorsed-not-self-p
               (commit-anchors-next val systate)))
     :enable (commit-anchors-possiblep
-             commit-anchors-next)))
+             commit-anchors-next
+             system-endorsed-not-self-p-of-update-validator-state
+             validator-endorsed-not-self-p-of-get-validator-state
+             validator-endorsed-not-self-p-of-commit-anchors-next-val)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -424,23 +449,26 @@
     "This is easy to prove,
      because that kind of events does not modify author-round pairs."))
 
-  (defrule validator-endorsed-not-self-p-of-timer-expires-next-val
+  (defruled validator-endorsed-not-self-p-of-timer-expires-next-val
     (implies (validator-endorsed-not-self-p val vstate)
              (validator-endorsed-not-self-p
               val (timer-expires-next-val vstate)))
     :enable (validator-endorsed-not-self-p
              timer-expires-next-val))
 
-  (defrule system-endorsed-not-self-p-of-timer-expires-next
+  (defruled system-endorsed-not-self-p-of-timer-expires-next
     (implies (and (system-endorsed-not-self-p systate)
                   (timer-expires-possiblep val systate))
              (system-endorsed-not-self-p (timer-expires-next val systate)))
     :enable (timer-expires-possiblep
-             timer-expires-next)))
+             timer-expires-next
+             system-endorsed-not-self-p-of-update-validator-state
+             validator-endorsed-not-self-p-of-get-validator-state
+             validator-endorsed-not-self-p-of-timer-expires-next-val)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule system-endorsed-not-self-p-of-event-next
+(defruled system-endorsed-not-self-p-of-event-next
   :short "Preservation of the invariant by all events."
   :long
   (xdoc::topstring

@@ -98,7 +98,7 @@
     (symbol-name symbol-name-unguarded) ; primitive
     (symbol-package-name symbol-package-name-unguarded) ; primitive
     unsigned-byte-p ; unguarded
-    unsigned-byte-p-forced
+    unsigned-byte-p-forced ; unguarded
     signed-byte-p ; unguarded
     fix ; unguarded
     ifix ; unguarded
@@ -163,6 +163,11 @@
 
     (every-nth every-nth-unguarded)
     (all-equal$ all-equal$-unguarded)
+
+    ; Axe doesn't really support force and case-split, but including them here
+    ; means they will at least be evaluated on constants:
+    force ; unguarded
+    case-split ; unguarded
     ))
 
 ;; Makes the evaluator (also checks that each alias given is equivalent to its function):

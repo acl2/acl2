@@ -1174,14 +1174,6 @@
   :hints (("Goal" :use (:instance unsigned-byte-p-of-slice-gen (x x) (low 27) (high 31) (n 5))
            :in-theory (disable unsigned-byte-p-of-slice-gen unsigned-byte-p-of-slice))))
 
-(defthm slice-of-bitxor-too-high
-  (implies (and (<= 1 low)
-                (integerp low))
-           (equal (slice high low (bitxor x y))
-                  0))
-  :hints (("Goal" :in-theory (e/d (bitxor slice-too-high-is-0)
-                                  (bvxor-1-becomes-bitxor)))))
-
 ;bozo think about these...
 (defthm bvcat-bvxor-neighbors-hack
   (implies (and (equal n+1 (+ 1 n))
@@ -1280,11 +1272,8 @@
 ;;                 (natp n))
 ;;            (equal (signed-byte-p m (LOGAPP n a b))
 ;;                   (signed-byte-p (- m n) b)))
-;;   :otf-flg t
 ;;   :hints (("Goal" :in-theory (enable signed-byte-p logapp))))
 
-
-;;   :otf-flg t
 ;;   :hints (("Goal" :use ((:instance integer-squeeze-0-1 (x (* (/ (EXPT 2 N)) (BVCHOP N A))))
 ;;                          (:instance multiply-both-sides-hack (x (+ (BVCHOP N A) (* B (EXPT 2 N)))) (y (EXPT 2 (+ -1 M))) (z (/ (expt 2 n))))
 ;;                          (:instance multiply-both-sides-hack (x (+ (BVCHOP N A) (* B (EXPT 2 N)))) (y (- (EXPT 2 (+ -1 M)))) (z (/ (expt 2 n))))
@@ -1376,7 +1365,6 @@
 ;;                  (integerp highval))
 ;;             (equal (signed-byte-p n (logapp lowsize lowval highval))
 ;;                    (signed-byte-p (- n lowsize) highval)))
-;;    :otf-flg t
 ;;    :hints (("Goal" :in-theory (enable))))
 
 ;; (defthm bvxor-1-equal-0
@@ -1920,20 +1908,6 @@
   (implies (unsigned-byte-p 1 x) ; drop?
            (equal (bvnot 1 x)
                   (bitxor 1 x)))
-  :hints (("Goal" :cases ((equal 0 x))
-           :in-theory (enable bitnot))))
-
-(defthm bitor-x-bitxor-1-x
-  (implies (unsigned-byte-p 1 x)
-           (equal (bitor x (bitxor 1 x))
-                  1))
-  :hints (("Goal" :cases ((equal 0 x))
-           :in-theory (enable bitnot))))
-
-(defthm bitor-x-bitxor-1-x-alt
-  (implies (unsigned-byte-p 1 x)
-           (equal (bitor (bitxor 1 x) x)
-                  1))
   :hints (("Goal" :cases ((equal 0 x))
            :in-theory (enable bitnot))))
 
@@ -2617,54 +2591,14 @@
                          (+ -1 (integer-length k))
                          0))))
 
-;make a bvxor version
-;subsumes the versions for 0 and 1
-;the remaining 1 here isn't too bad, since 0 will be dropped and anything else will be trimmed
-(defthm equal-of-constant-and-bitxor-1
-  (implies (syntaxp (quotep k))
-           (equal (equal k (bitxor 1 x))
-                  (and (unsigned-byte-p 1 k)
-                       (equal (getbit 0 x) (bitnot k)))))
-  :hints (("Goal"
-           :cases ((equal 0 (GETBIT 0 X))
-                   (equal 1 (GETBIT 0 X)))
-           :in-theory (e/d (bitnot-becomes-bitxor-with-1)
-                           (BITXOR-OF-1-BECOMES-BITNOT-ARG1 bvxor-1-becomes-bitxor)))))
-
-;fixme use GETBIT-WHEN-NOT-0 instead of the cases rule?
-
-;don't need if we have polarity?
-(defthm bitxor-subst-arg2-one-version
-  (implies (and (not (equal (getbit 0 x) free)) ;we expect free to be 0
-                (syntaxp (equal free ''0))
-                (equal 0 free))
-           (equal (bitxor y x)
-                  (bitxor y 1)))
-  :hints (("Goal" :in-theory (enable bitxor-split))))
-
-;don't need if we have polarity?
-(defthm bitxor-subst-arg1-one-version
-  (implies (and (not (equal (getbit 0 x) free)) ;we expect free to be 0
-                (syntaxp (equal free ''0))
-                (equal 0 free))
-           (equal (bitxor x y)
-                  (bitxor 1 y)))
-  :hints (("Goal" :use bitxor-subst-arg2-one-version)))
-
-(defthm bvchop-of-lognot-all-ones
-  (implies (natp n)
-           (equal (bvchop n (lognot (+ -1 (expt 2 n))))
-                  0))
-  :hints (("Goal" :in-theory (enable lognot))))
-
-(defthmd expt-move-hack
-  (equal (equal (expt 2 y)
-                (* 2 x))
-         (equal (* 1/2 (expt 2 y))
-                x)))
+;; (defthmd expt-move-hack
+;;   (equal (equal (expt 2 y)
+;;                 (* 2 x))
+;;          (equal (* 1/2 (expt 2 y))
+;;                 x)))
 
 ;drop the y?
-(defthm collect-hack ;bozo gen
+(defthmd collect-hack ;bozo gen
   (equal (+ y (* 1/2 x) (* 1/2 x))
          (+ y x)))
 
@@ -3102,14 +3036,6 @@
                        )))
   :hints (("Goal" :in-theory (enable bit-blast-peel-off-low))))
 
-(defthm getbit-of-bitand-all-cases
-  (implies (natp n)
-           (equal (getbit n (bitand x y))
-                  (if (equal n 0)
-                      (bitand x y)
-                    0)))
-  :hints (("Goal" :in-theory (enable bitand))))
-
 ;trying disabled.
 (defthmd bvchop-of-minus-becomes-bvuminus
   (implies (and (natp n)
@@ -3227,61 +3153,11 @@
   :hints (("Goal" :use (:instance bvmult-of-expt2 (n (lg k)))
            :in-theory (disable bvmult-of-expt2))))
 
-(defthm equal-of-getbit-of-0-and-bitnot
-  (not (equal (getbit 0 x) (bitnot x)))
-  :hints (("Goal" :in-theory (enable bitnot))))
-
-(defthm equal-of-getbit-of-0-and-bitnot-alt
-  (not (equal (bitnot x) (getbit 0 x)))
-  :hints (("Goal" :use equal-of-getbit-of-0-and-bitnot
-           :in-theory (disable equal-of-getbit-of-0-and-bitnot))))
-
-(defthm equal-of-getbit-of-0-and-bitxor-of-1
-  (not (equal (getbit 0 x) (bitxor 1 x)))
-  :hints (("Goal" :in-theory (enable bitxor-of-1-becomes-bitnot-arg1))))
-
-(defthm equal-of-getbit-of-0-and-bitxor-of-1-alt
-  (not (equal (bitxor 1 x) (getbit 0 x)))
-  :hints (("Goal" :use equal-of-getbit-of-0-and-bitxor-of-1
-           :in-theory (disable equal-of-getbit-of-0-and-bitxor-of-1))))
-
-(defthm equal-of-getbit-and-bitxor-same
-  (equal (equal (getbit 0 x) (bitxor x y))
-         (equal 0 (getbit 0 y)))
-  :hints (("Goal"
-           :use BITXOR-OF-GETBIT-ARG2 ;do we have the complete set of these?
-           :in-theory (e/d (;bitxor bvxor
-                            )
-                           (;bvxor-1-becomes-bitxor logxor-bvchop-bvchop
-                            bitxor-of-getbit-arg2)))))
-
-
-(defthm equal-of-getbit-and-bitxor-same-alt2
-  (equal (equal (getbit 0 x) (bitxor y x)) ;x might appear in other positions as well...
-         (equal 0 (getbit 0 y)))
-  :hints (("Goal"
-           :use BITXOR-OF-GETBIT-ARG2 ;do we have the complete set of these?
-           :in-theory (e/d (;bitxor bvxor
-                            )
-                           (;bvxor-1-becomes-bitxor logxor-bvchop-bvchop
-                            bitxor-of-getbit-arg2)))))
-
-(defthm equal-of-getbit-and-bitxor-same-alt
-  (equal (equal (bitxor x y) (getbit 0 x))
-         (equal 0 (getbit 0 y)))
-  :hints (("Goal" :use equal-of-getbit-and-bitxor-same
-           :in-theory (disable equal-of-getbit-and-bitxor-same))))
-
-(defthm equal-of-getbit-and-bitxor-same-alt3
-  (equal (equal (bitxor y x) (getbit 0 x))
-         (equal 0 (getbit 0 y)))
-  :hints (("Goal" :use equal-of-getbit-and-bitxor-same
-           :in-theory (disable equal-of-getbit-and-bitxor-same))))
-
-(defun floor-2-sub-1-induct (i n)
-  (if (zp n)
-      (list i n)
-    (floor-2-sub-1-induct (floor i 2) (+ -1 n))))
+(local
+ (defun floor-2-sub-1-induct (i n)
+   (if (zp n)
+       (list i n)
+     (floor-2-sub-1-induct (floor i 2) (+ -1 n)))))
 
 ; a mask with mostly 1s but 0s in the low bits
 (defthm logand-of---of-expt
@@ -3315,8 +3191,6 @@
   (equal (bvxor size y (myif test a b))
          (bvxor size y (bvif size test a b)))
   :hints (("Goal" :in-theory (enable bvif myif))))
-
-
 
 (defthm bitxor-of-myif-arg1
   (equal (bitxor (myif test a b) y)
@@ -4597,11 +4471,6 @@
 
 (theory-invariant (incompatible (:definition bvplus) (:rewrite bvlt-of-plus-arg1)))
 (theory-invariant (incompatible (:definition bvplus) (:rewrite bvlt-of-plus-arg2)))
-
-(defthm equal-of-bitxor-and-bitor
-  (equal (equal (bitxor x y) (bitor x y))
-         (equal 0 (bitand x y)))
-  :hints (("Goal" :cases ((equal 1 (getbit 0 x))))))
 
 (defthm equal-of-bvplus-constant-and-constant
   (implies (and (syntaxp (quotep k1))
@@ -5995,14 +5864,6 @@
   :rule-classes ((:rewrite :backchain-limit-lst (nil nil 0 nil)))
   :hints (("Goal" :by bvlt-of-bvplus-of-minus1-arg2-when-not-bvlt)))
 
-(defthm getbit-0-of-logxor
-  (equal (getbit 0 (logxor x y))
-         (bitxor x y))
-  :hints (("Goal" :in-theory (e/d (bitxor bvxor getbit)
-                                  (BVXOR-1-BECOMES-BITXOR
-                                   )))))
-
-
 ;move
 (defthm equal-of-0-and-bvchop-of-logext
   (implies (integerp x)
@@ -6281,6 +6142,7 @@
                                   (x (bvchop free x)) (x-size free) (y (bvchop n x)) (y-size n)))))
 
 ;compare to UNSIGNED-BYTE-P-OF-BVCHOP-BIGGER
+;rename unsigned-byte-p-of-bvchop-becomes-equal-of-slice-and-0
 (defthm unsigned-byte-p-of-bvchop-bigger2
   (implies (and (< size1 size2)
                 (natp size1)
@@ -6291,7 +6153,40 @@
            :in-theory (enable bvcat logapp)
            :use (:instance split-bv (x (bvchop size2 x)) (n size2) (m size1)))))
 
-(defthm unsigned-byte-p-of-bvchop-bigger
+;; not sure if we want this
+(defthmd unsigned-byte-p-of-bvchop-becomes-bvlt
+  (implies (and (< size1 size2)
+                (natp size1)
+                (natp size2))
+           (equal (unsigned-byte-p size1 (bvchop size2 x))
+                  (bvlt size2 x (expt 2 size1))))
+  :hints (("Goal" :in-theory (e/d (bvlt) (unsigned-byte-p-of-bvchop-bigger2)))))
+
+;todo: drop
+(defthmd unsigned-byte-p-of-bvchop-bigger
   (equal (unsigned-byte-p '31 (bvchop '32 x))
          (bvlt 32 x 2147483648))
   :hints (("Goal" :in-theory (enable bvlt))))
+
+;improve?
+(defthm unsigned-byte-p-of-bvmult-of-expt2
+  (implies (and (unsigned-byte-p (- size2 i) x) ; we don't shift any bits out the top
+                (<= i size) ; gen?
+                (natp size)
+                (natp size2)
+                (natp i))
+           (equal (unsigned-byte-p size (bvmult size2 (expt 2 i) x))
+                  (unsigned-byte-p (- size i) x))))
+
+;improve?
+(defthm unsigned-byte-p-of-bvmult-of-expt2-constant-version
+  (implies (and (syntaxp (quotep k))
+                (acl2::power-of-2p k)
+                (unsigned-byte-p (- size2 (lg k)) x) ; we don't shift any bits out the top
+                (<= (lg k) size) ; gen?
+                (natp size)
+                (natp size2))
+           (equal (unsigned-byte-p size (bvmult size2 k x))
+                  (unsigned-byte-p (- size (lg k)) x)))
+  :hints (("Goal" :use (:instance unsigned-byte-p-of-bvmult-of-expt2 (i (lg k)))
+           :in-theory (e/d (acl2::power-of-2p lg) (unsigned-byte-p-of-bvmult-of-expt2)))))

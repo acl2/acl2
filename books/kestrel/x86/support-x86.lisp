@@ -459,10 +459,14 @@
   (("Goal"
     :in-theory (enable canonical-address-p signed-byte-p))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; General rule.  Hyps may often fail to be relieved (so monitoring this rule
+;; may cause many failures to be printed).
 (defthm canonical-address-p-between
-  (implies (and (canonical-address-p low) ; low and high are free vars
+  (implies (and (canonical-address-p low) ; low is a free var
                 (<= low ad)
-                (canonical-address-p high)
+                (canonical-address-p high) ; high is a free var
                 (<= ad high))
            (equal (canonical-address-p ad)
                   (integerp ad)))
@@ -512,23 +516,23 @@
            (canonical-address-p (+ offset x))))
 
 (defthm canonical-address-p-between-special5
-  (implies (and (canonical-address-p text-offset)
-                (canonical-address-p (+ k2 text-offset)) ; k2 is a free var
+  (implies (and (canonical-address-p offset)
+                (canonical-address-p (+ k2 offset)) ; k2 is a free var
                 (<= (+ k x) k2)
                 (natp k)
                 (natp x)
                 (natp k2))
-           ;; ex (+ 192 (+ text-offset (ash (bvchop 32 (rdi x86)) 2)))
-           (canonical-address-p (+ k text-offset x))))
+           ;; ex (+ 192 (+ offset (ash (bvchop 32 (rdi x86)) 2)))
+           (canonical-address-p (+ k offset x))))
 
 (defthm canonical-address-p-between-special5-alt
-  (implies (and (canonical-address-p text-offset)
-                (canonical-address-p (+ k2 text-offset)) ; k2 is a free var
+  (implies (and (canonical-address-p offset)
+                (canonical-address-p (+ k2 offset)) ; k2 is a free var
                 (<= (+ k x) k2)
                 (natp k)
                 (natp x)
                 (natp k2))
-           (canonical-address-p (+ k x text-offset))))
+           (canonical-address-p (+ k x offset))))
 
 (defthm canonical-address-p-between-special6
   (implies (and (canonical-address-p (+ k1 base))
@@ -657,8 +661,7 @@
                 ;(< k 0)
                 (integerp x)
                 (equal (acl2::getbit 63 x) 0))
-           (equal (< x -9223372036854775808
-                     ) ;gen
+           (equal (< x -9223372036854775808) ;gen
                   (< x 0)))
   :hints (("Goal" :in-theory (e/d (acl2::getbit acl2::slice acl2::logtail)
                                   (acl2::slice-becomes-getbit
@@ -668,11 +671,12 @@
 ;rewrite: (< (BVCHOP 64 Y) 9223372036854775808)
 ;rewrite: (<= (BVCHOP 64 Y) (BVCHOP 63 Y))
 
+;; each of the 2 branches in the RHS has a clear RIP
 (defthm xw-rip-of-if-arg3
-  (equal (XW :RIP NIL (IF test rip1 rip2) x86)
+  (equal (xw :rip nil (if test rip1 rip2) x86)
          (if test
-             (XW :RIP NIL rip1 x86)
-           (XW :RIP NIL rip2 x86))))
+             (xw :rip nil rip1 x86)
+           (xw :rip nil rip2 x86))))
 
 ; not strictly necessary since not-mv-nth-0-of-rme-size$inline should fire, but this can get rid of irrelevant stuff
 (defthm mv-nth-0-of-rme-size-of-xw-when-app-view
@@ -1143,6 +1147,7 @@
   (equal (ctri i (if test x86 x86_2))
          (if test (ctri i x86) (ctri i x86_2))))
 
+;move?
 (defthm alignment-checking-enabled-p-of-if
   (equal (alignment-checking-enabled-p (if test x86 x86_2))
          (if test (alignment-checking-enabled-p x86) (alignment-checking-enabled-p x86_2))))

@@ -139,7 +139,7 @@
    (xdoc::@[]
     "S(A \\cap B) = S(A) + S(B) - S(A \\cup B)")
    (xdoc::p
-    "If we use the quorum inequalities of @($A$ and @($B$) (see above),
+    "If we use the quorum inequalities of @($A$) and @($B$) (see above),
      we obtain")
    (xdoc::@[]
     "S(A \\cap B) \\geq 2n - 2f - S(A \\cup B)")

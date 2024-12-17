@@ -24,6 +24,7 @@
 (include-book "bvminus")
 (include-book "bvuminus")
 (include-book "bvif")
+(local (include-book "logapp"))
 (local (include-book "logand-b"))
 (local (include-book "logior-b"))
 (local (include-book "logxor-b"))

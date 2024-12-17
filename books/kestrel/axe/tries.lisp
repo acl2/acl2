@@ -1,4 +1,4 @@
-; A datatype for counting rewrite attempts.
+; A datatype for counting rewrite attempts (aka, "tries").
 ;
 ; Copyright (C) 2019-2024 Kestrel Institute
 ; Copyright (C) 2019-2020 Kestrel Technology, LLC

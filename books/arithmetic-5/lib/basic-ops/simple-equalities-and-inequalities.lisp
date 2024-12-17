@@ -888,6 +888,21 @@ The vars already bound are (C X).
   ;; pick the smaller and negate it.  You must check that c is not
   ;; 0, to prevent loops.
 
+  ;; Eric Smith changed this function to return nil when an additive
+  ;; contant of 0 is encountered.  This can help prevent loops, e.g.,
+  ;; when certain related rules are disabled (perhaps by the useless
+  ;; runes mechanism).  Example of a rewrite loop before the change:
+  ;;
+  ;; ;; Loops because REDUCE-ADDITIVE-CONSTANT-EQUAL adds -5 to both
+  ;; ;; sides (and then adds 5 to both sides, and so on):
+  ;; (thm (equal 5 (+ 0 m))
+  ;;      :hints (("Goal" :in-theory (disable default-plus-2))))
+  ;;
+  ;; ;; Another related loop:
+  ;; (thm (implies (acl2-numberp m) (equal 5 (+ 0 m)))
+  ;;      :hints (("Goal" :in-theory (disable |(+ 0 x)|))))
+  ;;
+
   (cond ((and (eq (fn-symb lhs) 'BINARY-+)
 	      (eq (fn-symb rhs) 'BINARY-+)
 	      (numeric-constant-p (arg1 lhs))
@@ -896,9 +911,9 @@ The vars already bound are (C X).
 	 (let ((c (unquote (arg1 lhs)))
 	       (d (unquote (arg1 rhs))))
 	   (cond ((eql c 0)
-		  `((c . ,(kwote (- d)))))
+		  nil)
 		 ((eql d 0)
-		  `((c . ,(kwote (- c)))))
+		  nil)
 		 ((< c d)
 		  `((c . ,(kwote (- c)))))
 		 (t
@@ -912,7 +927,7 @@ The vars already bound are (C X).
 	   (cond ((eql c 0)
 		  `((c . ,(kwote (- d)))))
 		 ((eql d 0)
-		  `((c . ,(kwote (- c)))))
+		  nil)
 		 ((< c d)
 		  `((c . ,(kwote (- c)))))
 		 (t
@@ -924,7 +939,7 @@ The vars already bound are (C X).
 	 (let ((c (unquote (arg1 lhs)))
 	       (d (unquote rhs)))
 	   (cond ((eql c 0)
-		  `((c . ,(kwote (- d)))))
+		  nil)
 		 ((eql d 0)
 		  `((c . ,(kwote (- c)))))
 		 ((< c d)

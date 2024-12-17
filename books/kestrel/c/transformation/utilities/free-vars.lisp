@@ -48,7 +48,7 @@
     :short "Get the identifier described by a declarator."
     :returns (ident? ident-optionp)
     (b* (((declor declor) declor))
-      (dirdeclor-get-ident declor.decl))
+      (dirdeclor-get-ident declor.direct))
     :measure (declor-count declor))
 
   (define dirdeclor-get-ident
@@ -175,7 +175,7 @@
             designations."
     :returns (free-vars ident-setp)
     (b* (((desiniter desiniter) desiniter))
-      (free-vars-initer desiniter.init bound-vars))
+      (free-vars-initer desiniter.initer bound-vars))
     :measure (desiniter-count desiniter))
 
   (define free-vars-desiniter-list

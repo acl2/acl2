@@ -18,6 +18,8 @@
 (include-book "associated-certificates")
 (include-book "same-associated-certificates")
 (include-book "signed-certificates")
+(include-book "signed-and-associated-cerificates")
+(include-book "signed-previous-quorum")
 (include-book "no-self-messages")
 (include-book "no-self-buffer")
 (include-book "no-self-endorsed")
@@ -30,7 +32,7 @@
 (include-book "nonforking-blockchains-def-and-init")
 (include-book "same-committees-def-and-implied")
 (include-book "unequivocal-dags-next")
-(include-book "previous-quorum")
+(include-book "previous-quorum-def-and-init-and-next")
 (include-book "dag-certificate-next")
 (include-book "last-anchor-def-and-init")
 (include-book "last-anchor-present")
@@ -47,6 +49,7 @@
 (include-book "nonforking-blockchains-next")
 (include-book "simultaneous-induction")
 (include-book "unequivocal-dags")
+(include-book "previous-quorum")
 (include-book "nonforking-blockchains")
 (include-book "same-committees")
 (include-book "last-anchor-voters")
@@ -73,6 +76,8 @@
                     associated-certificates
                     same-associated-certificates
                     signed-certificates
+                    signed-and-associated-cerificates
+                    signed-previous-quorum
                     no-self-messages
                     no-self-buffer
                     no-self-endorsed
@@ -85,7 +90,7 @@
                     nonforking-blockchains-def-and-init
                     same-committees-def-and-implied
                     unequivocal-dags-next
-                    previous-quorum
+                    previous-quorum-def-and-init-and-next
                     dag-certificate-next
                     last-anchor-def-and-init
                     last-anchor-present
@@ -102,6 +107,7 @@
                     nonforking-blockchains-next
                     simultaneous-induction
                     unequivocal-dags
+                    previous-quorum
                     nonforking-blockchains
                     same-committees
                     last-anchor-voters

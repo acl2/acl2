@@ -37,7 +37,7 @@
 ;(include-book "kestrel/bv-lists/bv-array-clear" :dir :system)
 (include-book "kestrel/utilities/bind-from-rules" :dir :system)
 ;(local (include-book "kestrel/lists-light/rules2" :dir :system)) ;todo
-(include-book "kestrel/arithmetic-light/floor" :dir :system)
+(local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 ;(local (include-book "arithmetic/equalities" :dir :system))
 (local (include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system))
@@ -67,6 +67,7 @@
 (local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
 (local (include-book "kestrel/arithmetic-light/ceiling" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
+(local (include-book "kestrel/arithmetic-light/floor2" :dir :system))
 (local (include-book "kestrel/library-wrappers/ihs-quotient-remainder-lemmas" :dir :system)) ;drop
 (local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system)) ;drop
 
@@ -132,13 +133,6 @@
              (integerp (+ x y)))
     :rule-classes :type-prescription)
   )
-
-;rename and move
-(defthm logtail-hack77
-  (implies (posp size)
-           (equal (logtail (+ -1 size) (- (expt 2 size)))
-                  -2))
-  :hints (("Goal" :in-theory (enable logtail))))
 
 ;drop?:
 (defconst *minus-1* 4294967295)
@@ -263,8 +257,6 @@
 
 ;(local (in-theory (disable <-of-constant-and-*-of-constant))) ;investigate this
 
-(include-book "kestrel/arithmetic-light/floor2" :dir :system) ;move up or drop?
-
 (defthmd floor-of-sum-no-split
   (implies (and (rationalp j)
                 (< 0 j)
@@ -295,8 +287,6 @@
                                          ;mod-recollapse-lemma2
                                          mod-of-expt-of-2-constant-version
                                          )))))
-
-(in-theory (disable MOD-OF-FLOOR-EQUAL-REWRITE))
 
 (in-theory (disable  ;TRIM-TO-N-BITS-META-RULE
                     ))
@@ -577,7 +567,6 @@
 ;;                (rationalp x)
 ;;                (rationalp y))
 ;;           (< (FLOOR (MOD X j) (MOD Y j)) j))
-;;  :otf-flg t
 ;;  :hints (("Goal" :use ((:instance FLOOR-BOUNDED-BY-/ (x (MOD X j)) (y (mod y j)))
 ;;                        (:instance bound-hack-quotient (x (MOD X J)) (k (MOD Y J)))
 ;;                        )
@@ -666,13 +655,6 @@
 
 (local (in-theory (disable MOD-OF-EXPT-OF-2-CONSTANT-VERSION MOD-OF-EXPT-OF-2)))
 
-;move
-(defthm expt-split-hack
-  (implies (posp size)
-           (equal (+ (- (EXPT 2 SIZE)) (EXPT 2 (+ -1 SIZE)))
-                  (- (EXPT 2 (+ -1 SIZE)))))
-  :hints (("Goal" :in-theory (enable expt-of-+))))
-
 ;gen
 (defthm sbvlt-0-bvuminus
   (equal (sbvlt 32 0 (bvuminus 32 x))
@@ -719,7 +701,6 @@
 ;;                (integerp k2))
 ;;           (equal (sbvlt 32 (bvplus 32 k1 x) k2)
 ;;                  (sbvlt 32 x (bvminus 32 k2 k1))))
-;;  :otf-flg t
 ;;  :hints (("Goal" :in-theory (e/d (sbvlt bvplus bvuminus bvminus bvcat logapp) (BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS)))))
 
 (defthm bvlt-of-bvplus-add-to-both-sides
@@ -890,9 +871,10 @@
            (equal (floor x 4)
                   (logtail 2 x)))
   :hints (("Goal" :in-theory (enable logtail))))
+(theory-invariant (incompatible (:definition logtail ) (:rewrite floor-of-4-becomes-logtail)))
 
 ;;strength reduction
-;rename
+;rename and gen
 (defthm bvdiv-of-4
   (equal (bvdiv 32 x 4)
          (slice 31 2 x))
@@ -1018,7 +1000,6 @@
 ;;                   (if (bvlt 31 z y)
 ;;                       (bvlt 31 (bvminus 31 x z) (bvminus 31 y z))
 ;;                     xx)))
-;;   :otf-flg t
 ;;   :hints (("Goal" :in-theory (e/d (bvlt bvchop-of-sum-cases bvplus bvuminus bvminus) (bvminus-becomes-bvplus-of-bvuminus
 ;;                                                                                                    PLUS-1-AND-BVCHOP-BECOMES-BVPLUS)))))
 
@@ -1029,10 +1010,7 @@
 ;;                 (integerp k2)
 ;;                 )
 ;;            (equal (bvlt 31 k1 (bvplus 31 k2 x))
-
-
 ;;            )
-;;   :otf-flg t
 ;;   :hints (("Goal" :in-theory (e/d (bvlt bvchop-of-sum-cases bvplus bvuminus bvminus) (bvminus-becomes-bvplus-of-bvuminus  )))))
 
 
@@ -1051,7 +1029,6 @@
 ;;                       (if (bvlt 31 k1 k2)
 ;;                           (< K1 (+ K2 (BVCHOP 31 X)))
 ;;                         (bvlt 31 (bvminus 31 k1 k2) x))))))
-;;   :otf-flg t
 ;;   :hints (("Goal" :in-theory (e/d (bvlt bvchop-of-sum-cases bvplus bvuminus bvminus) (bvminus-becomes-bvplus-of-bvuminus  )))))
 
 
@@ -1096,7 +1073,6 @@
 ;;                (natp x))
 ;;           (equal (bvlt 32 x 16)
 ;;                  nil))
-;;  :otf-flg t
 ;;  :hints (("Goal"
 ;;           :use (:instance BVCAT-SLICE-SAME (m 30) (k 31) (n 2) (x x))
 ;;           :in-theory (e/d (;slice
@@ -1602,7 +1578,7 @@
 ;;   (equal (unsigned-byte-p 3 x)
 ;;          (or (equal x 0)(equal x 1)(equal x 2)(equal x 3)(equal x 4)(equal x 5)(equal x 6)(equal x 7))))
 
-(in-theory (enable floor-when-multiple)) ;drop?
+;(in-theory (enable floor-when-multiple)) ;drop?
 
 (defthmd bvchop-extend-by-1
   (implies (posp size)
@@ -1803,7 +1779,6 @@
 ;;                  (if (equal 0 (bvchop 32 x))
 ;;                      0
 ;;                    (+ k (expt 2 32) (- (bvchop 32 x))))))
-;;  :otf-flg t
 ;;  :hints (("Goal" :use ((:instance split-with-bvcat (x x) (hs 30) (ls 2)))
 ;;           :in-theory (e/d (slice bvchop-of-sum-cases) (anti-slice
 ;;                                                         BVCAT-EQUAL-REWRITE-ALT BVCAT-EQUAL-REWRITE BVCAT-OF-GETBIT-AND-X-ADJACENT
@@ -1814,7 +1789,6 @@
 ;;  (implies (unsigned-byte-p 31 x) ;gen
 ;;           (equal (sbvdivdown 32 x 4294967292) ;this is -4
 ;;                  (sbvdivdown 32 (bvuminus 32 x) 4)))
-;;  :otf-flg t
 ;;  :hints (("Goal" :in-theory (e/d (bvplus sbvdivdown bvchop-of-sum-cases bvuminus bvminus)
 ;;                                  (bvminus-becomes-bvplus-of-bvuminus)))))
 
@@ -1829,8 +1803,6 @@
                   (< (bvchop 31 x) (bvmult 31 536870911 4))))
   :hints (("Goal" :in-theory (e/d (slice) (anti-slice)))))
 
-(theory-invariant (incompatible (:definition logtail ) (:rewrite FLOOR-OF-4-BECOMES-LOGTAIL)))
-
 ;gen
 (defthm logtail-is-max
   (implies (and (<= 2147483645 x)
@@ -1838,7 +1810,7 @@
                 (integerp x))
            (equal (logtail 2 x)
                   (+ -1 (expt 2 29))))
-  :hints (("Goal" :in-theory (e/d (logtail) (floor-of-4-becomes-logtail)))))
+  :hints (("Goal" :in-theory (e/d (logtail) ()))))
 
 (defthm slice-is-max
   (implies (and (<= 2147483645 (bvchop 31 x))
@@ -1924,7 +1896,6 @@
 ;;                (<= (- (expt 2 31) k) (LOGEXT 32 X)))
 ;;           (equal (sbvdivdown 32 (bvplus 32 k x) 4)
 ;;                  xx))
-;;  :otf-flg t
 ;;  :hints (("Goal" :in-theory (enable sbvdivdown bvplus))))
 
 (defthm slice-of-bvplus-trim
@@ -2094,8 +2065,6 @@
                   (< (bvchop (+ 1 high) x) (* k (expt 2 low)))))
   :hints (("Goal" :in-theory (e/d (slice bvmult) (anti-slice)))))
 
-(in-theory (disable FLOOR-OF-4-BECOMES-LOGTAIL))
-
 ;; (thm
 ;;  (implies (and (natp i)
 ;;                (Natp j))
@@ -2156,7 +2125,6 @@
 ;;             (equal (equal 0 (sbvdivdown 32 x 4294967292))
 ;;                    (or (bvle 32 -3 x)
 ;;                        (bvle 32 x 0))))
-;;    :otf-flg t
 ;;    :hints (("Goal" :in-theory (enable ;sbvdivdown
 ;;                                     bvlt)))))
 
@@ -2181,7 +2149,6 @@
 ;;                    (if (EQUAL (LOGEXT 32 X) -2147483648)
 ;;                        3758096385
 ;;                      (bvplus 32 1 (sbvdivdown 32 x 4294967292)))))
-;;    :otf-flg t
 ;;    :hints (("Goal" :in-theory (enable bvplus sbvdivdown bvchop-of-sum-cases)))))
 
 ;; ;this links sbvrem and sbvdiv
@@ -2196,7 +2163,6 @@
 ;;                  (integerp y)
 ;;                  )
 ;;             (equal (bvchop size x) (bvplus size (sbvrem size x y) (bvmult size (sbvdiv size x y) y))))
-;;    :otf-flg t
 ;;    :hints (("Goal" ;:in-theory (enable usb4-cases)
 ;;             :in-theory (e/d (bvchop-extend-by-1 sbvrem sbvdiv bvmult bvplus logext logapp mod
 ;;                                                  floor-of-sum
@@ -2299,14 +2265,12 @@
 ;;                            (- (slice 30 2 x))))
 ;;                     (bvchop 29 (+ 536870911 (- (slice 30 2 x)))) ;simplify?
 ;;                     )))
-;;   :otf-flg t
 ;;   :hints (("Goal" :in-theory (e/d (slice bvplus bvchop-of-sum-cases) (anti-slice   )))))
 
 ;; (defthm slice-of-bvuminus-28-2
 ;;   (implies (integerp x)
 ;;            (equal (slice '28 '2 (bvuminus 29 x))
 ;;                   xx))
-;;   :otf-flg t
 ;;   :hints (("Goal" :in-theory (e/d (bvuminus bvminus slice-of-sum-cases) (bvminus-becomes-bvplus-of-bvuminus)))))
 
 
@@ -3666,7 +3630,6 @@
 ;;                 (bvle size (- (expt 2 size) k) x))
 ;;            (equal (bvplus size k x)
 ;;                   (bvplus 5 (- (- (expt 2 size) k)) x)))
-;;   :otf-flg t
 ;;   :hints (("Goal" :use ((:instance split-with-bvcat (x k) (hs (+ -5 size)) (ls 5))
 ;;                         (:instance split-with-bvcat (x x) (hs (+ -5 size)) (ls 5)))
 ;; ;;            :use (:instance REWRITE-BV-EQUALITY-WHEN-SIZES-DONT-MATCH-2
@@ -3753,8 +3716,7 @@
 ;;  (implies (equal (getbit 31 x) 1)
 ;;           (equal (bvlt 32 x 2147483644)
 ;;                  nil))
-;;  :hints (("Goal" :in-theory (e/d (getbit-of-bvplus-split bvcat logapp bvlt)
-;;                                  ())
+;;  :hints (("Goal" :in-theory (enable getbit-of-bvplus-split bvcat logapp bvlt)
 ;;           :use (:instance split-with-bvcat (x x) (hs 1) (ls 31)))))
 
 
@@ -4724,7 +4686,6 @@
 ;;                 (natp x))
 ;;            (equal (SBVLT 32 (BVPLUS 32 '1 x) '0)
 ;;                   nil))
-;;   :otf-flg t
 ;;   :hints (("Goal" :in-theory (e/d (bvlt bvplus
 ;;                                         GETBIT-TOO-HIGH
 ;;                                         GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
@@ -7184,7 +7145,6 @@
 ;;            (equal (equal i (bvmult 31 4 (slice 30 2 j)))
 ;;                   (and (equal 0 (bvchop 2 i)) ;same as the bvmod fact?
 ;;                        (not (bvlt 31 j i)))))
-;;   :otf-flg t
 ;;   :hints (("Goal"
 ;;            :use (:instance same-remainder-when-close-lemma-bv (k 4)))))
 
@@ -9010,7 +8970,6 @@
 ;;                                                                     (slice (+ -1 bigsize) smallsize (bvplus bigsize k y))))
 ;;                                   (bvplus bigsize
 ;;                                           x y)))))
-;;   :otf-flg t
 ;;   :hints (("Goal" ;:use (:instance bvplus-commutative-2 (size bigsize) (z y) (y k))
 ;; ;;            :use (:instance bvchop-of-sum-cases (size 30)
 ;; ;;                            (i1 (SLICE 31 2 K))
@@ -9744,7 +9703,8 @@
             (and (equal 0 (GETBIT (DIFFERING-BIT (+ -1 size) 0 (BVAND size X Y)) y))
                  (equal 1 (GETBIT (DIFFERING-BIT (+ -1 size) 0 (BVAND size X Y)) X))
                  ))
-           :in-theory (e/d (BVOR-1-BECOMES-BITOR GETBIT-OF-BVXOR-CORE not-equal-bvxor-and-bvor) (GETBIT-OF-BVXOR))
+           :in-theory (e/d (BVOR-1-BECOMES-BITOR GETBIT-OF-BVXOR-CORE not-equal-bvxor-and-bvor)
+                           (GETBIT-OF-BVXOR equal-of-bitand-and-constant))
            :use ((:instance differing-bit-bad-guy-lemma (x (bvxor size x y)) (y (bvor size x y)) (n size))
                  (:instance differing-bit-bad-guy-lemma (x 0) (y (bvand size x y)) (n size))
                  ))))
@@ -10200,7 +10160,7 @@
   :hints (("Goal" :in-theory (e/d (bvlt slice bvchop-of-logtail)
                                   (logtail-lessp <-of-logtail-arg2 anti-slice)))))
 
-(in-theory (disable LOGTAIL-OF-ONE-MORE)) ;add syntaxp hyp
+(in-theory (disable LOGTAIL-OF-ONE-MORE))
 
 ;gen
 (defthm bound-gap-theorem
@@ -13699,7 +13659,6 @@
 ;;            (equal (bvplus 32 ;could also be 32
 ;;                           k (bvcat 25 x 6 4))
 ;;                   (bvcat 25 x 6 (- 4 (- (expt 2 32) k)))))
-;;   :otf-flg t
 ;;   :hints (("Goal" :in-theory (e/d (bvplus getbit bvcat logapp
 ;;                                           bvchop-of-sum-cases
 ;;                                           )
@@ -13715,7 +13674,6 @@
 ;;            (equal (bvplus 32 ;could also be 32
 ;;                           k (bvcat 25 x 6 4))
 ;;                   (bvcat 25 x 6 (- 4 (- (expt 2 32) k)))))
-;;   :otf-flg t
 ;;   :hints (("Goal" :in-theory (e/d (bvplus getbit bvcat logapp
 ;;                                           bvchop-of-sum-cases
 ;;                                           )
@@ -13731,7 +13689,6 @@
 ;;            (equal (bvplus 32 ;could also be 32
 ;;                           k (bvcat 25 x 6 4))
 ;;                   (bvcat 25 x 6 (- 4 (- (expt 2 32) k)))))
-;;   :otf-flg t
 ;;   :hints (("Goal" :in-theory (e/d (bvplus getbit bvcat logapp
 ;;                                           bvchop-of-sum-cases
 ;;                                           )
@@ -13747,7 +13704,6 @@
 ;;            (equal (bvplus 32 ;could also be 32
 ;;                           k (bvcat 25 x 6 4))
 ;;                   (bvcat 25 x 6 (- 4 (- (expt 2 32) k)))))
-;;   :otf-flg t
 ;;   :hints (("Goal" :in-theory (e/d (bvplus getbit bvcat logapp
 ;;                                           bvchop-of-sum-cases
 ;;                                           )
@@ -14438,7 +14394,6 @@
 ;;                     (if (sbvle size (expt 2 (+ -1 lowsize)) k) ; gets computed
 ;;                         t
 ;;                       (sbvlt lowsize x k)))))
-;;   :otf-flg t
 ;;   :hints (("Goal"
 ;;            :in-theory (e/d (bvsx-alt-def-2
 
@@ -14469,7 +14424,6 @@
 ;;                     (if (sbvle size (expt 2 (+ -1 lowsize)) k) ; gets computed
 ;;                         t
 ;;                       (sbvlt lowsize x k)))))
-;;   :otf-flg t
 ;;   :hints (("Goal" :use (:instance GETBIT-WHEN-<-OF-BVCHOP-AND-CONSTANT-HIGH
 ;;                                   (size size)
 ;;                                   (n (+ -1 lowsize))

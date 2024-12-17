@@ -40,7 +40,7 @@
      A @('create') event is only possible if
      the signers form a quorum in the committee calculated by the author,
      which therefore maintains the invariant.
-     The other way in which a DAG is extended is whe
+     The other way in which a DAG is extended is when
      a validator moves it to the DAG from the buffer;
      in this case, a @('store') event is possible
      only if the validator can calculate
@@ -129,19 +129,18 @@
    (xdoc::p
     "For @('create'),
      there are two cases to consider.
-     For an existing (i.e. old) accepted certificate,
-     we just need to show that the quorum signer property is preserved:
+     For an existing (i.e. old) certificate in the DAG,
+     we just need to show that the signer quorum property is preserved:
      this is easy, and relies on the fact that
      the blockchain, from which the committee is calculated,
      does not change for @('create').
      For a newly created certificate in @('create'),
      the only change to the DAG is for the author:
-     the other validator are sent the certificate in messages,
+     the other validators are sent the certificate in messages,
      but the messages are in the network, not in their DAGs.
      The certificate's author adds the certificate directly to the DAG.
      But @(tsee create-possiblep)
-     explicitly checks the quorum properties,
-     from which the property is established for the new certificate.")
+     explicitly checks the signer quorum condition.")
    (xdoc::p
     "For @('store'), we have a similar split,
      considering a certificate already in the DAG (i.e. old),

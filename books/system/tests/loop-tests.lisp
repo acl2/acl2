@@ -70,7 +70,7 @@
 
   (declare (xargs :guard (natp n)
                   :verify-guards nil))
-  (list
+  (list$
 ; SUM
 ; simple (in/on/from-to-by)
    (loop$ for x of-type integer

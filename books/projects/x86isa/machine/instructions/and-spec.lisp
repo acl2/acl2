@@ -42,7 +42,7 @@
 ;; and
 
 (include-book "../rflags-spec"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:syscall-exec :undef-flg))
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 

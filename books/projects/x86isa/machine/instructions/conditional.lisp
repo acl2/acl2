@@ -44,7 +44,7 @@
 ;; ======================================================================
 
 (include-book "../decoding-and-spec-utils"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:syscall-exec :undef-flg))
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 
 ;; ======================================================================
@@ -465,8 +465,8 @@
               (!rgfi-size operand-size
                           (reg-index reg rex-byte #.*r*)
                           (loghead 32 (rgfi-size operand-size
-						 (reg-index reg rex-byte #.*r*)
-						 rex-byte x86))
+                                                 (reg-index reg rex-byte #.*r*)
+                                                 rex-byte x86))
                           rex-byte
                           x86)
             x86)))

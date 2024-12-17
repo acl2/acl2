@@ -414,6 +414,10 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable read))))
 
+; just for axe
+(defthmd natp-of-read
+  (natp (read n addr x86)))
+
 (defthm unsigned-byte-p-of-read
   (implies (<= (* n 8) size)
            (equal (unsigned-byte-p size (read n addr x86))
@@ -515,7 +519,7 @@
                                    ))
            :do-not '(generalize eliminate-destructors))))
 
-;; Introduces read
+;; Introduces read, but see rb-becomes-read below.
 (defthm mv-nth-1-of-rb-becomes-read
   (implies (and (app-view x86)
                 (x86p x86)
@@ -1591,7 +1595,7 @@
          (get-flag flg x86))
   :hints (("Goal" :in-theory (enable write wb))))
 
-;; These just make the terms nicer
+;; These just make the terms nicer (todo: use a general scheme?)
 (defthm read-of-write-of-set-flag
   (equal (read n addr (write n1 addr1 val1 (set-flag flag val x86)))
          (read n addr (write n1 addr1 val1 x86)))
@@ -2717,6 +2721,11 @@
                   (read-byte (+ addr n1) x86)))
   :hints (("Goal" :induct (inc-dec-dec-induct addr n1 n2)
            :in-theory (enable read-bytes))))
+
+(defthm len-of-read-bytes
+  (equal (len (read-bytes addr n x86))
+         (nfix n))
+  :hints (("Goal" :in-theory (enable read-bytes))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -37,6 +37,20 @@
                          x)))
   :hints (("Goal" :in-theory (enable bvashr bvsx))))
 
+;; Avoids creating the call to slice if the indices won't be constants
+;; TODO: Make a safe version of bvchop-of-bvashr-both?
+(defthm bvchop-of-bvashr-safe
+  (implies (and (syntaxp (and (quotep shift-amount)
+                              (quotep n)))
+                (<= (+ n shift-amount) width)
+                (natp shift-amount)
+                (natp width)
+                (natp n))
+           (equal (bvchop n (bvashr width x shift-amount))
+                  (slice (+ -1 n shift-amount)
+                         shift-amount
+                         x))))
+
 ;todo: get rid of bvchop-of-bvashr?
 (defthm bvchop-of-bvashr-both
   (implies (and (integerp width)

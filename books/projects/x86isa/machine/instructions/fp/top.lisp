@@ -46,23 +46,23 @@
 ;; are unimplemented: MMX, AVX, AVX2, and AVX512.
 
 (include-book "bitscan"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:syscall-exec :undef-flg))
 (include-book "arithmetic"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:syscall-exec :undef-flg))
 (include-book "logical"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:syscall-exec :undef-flg))
 (include-book "shuffle-and-unpack"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:syscall-exec :undef-flg))
 (include-book "mxcsr"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:syscall-exec :undef-flg))
 (include-book "simd-integer"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:syscall-exec :undef-flg))
 (include-book "convert"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:syscall-exec :undef-flg))
 (include-book "mov"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:syscall-exec :undef-flg))
 (include-book "non-arith"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:syscall-exec :undef-flg))
 
 ;; Exception Types and Alignment Checking: A Quick Reference
 ;; (TO-DO: make this into a doc topic or a function later...)

@@ -46,8 +46,19 @@
 
 (progn!
  (set-raw-mode t)
+
+ (f-put-global 'logic-fns-with-raw-code
+               (cons 'unsound-normedp
+                     (@ logic-fns-with-raw-code))
+               state)
+
  (defun unsound-normedp (x)
    (hl-hspace-normedp x *default-hs*))
+
+ (f-put-global 'logic-fns-with-raw-code
+               (cons 'unsound-falp
+                     (@ logic-fns-with-raw-code))
+               state)
 
  (defun unsound-falp (x)
    (let* ((faltable (hl-hspace-faltable *default-hs*))

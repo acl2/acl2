@@ -801,7 +801,7 @@
 
      bvplus-of-bvchop-and-bvshl ;new
      bvchop-of-bvshr-becomes-slice-safe ;newish: remove?? with bvshr we can split into cases easily.
-     bvchop-of-bvashr ; introduces slice
+     bvchop-of-bvashr-safe ; introduces slice
      bvchop-of-bvif
 
      ;; TODO: More like this:
@@ -829,6 +829,8 @@
      bvlt-transitive-4-b
      bvlt-transitive-5-a
      bvlt-transitive-5-b
+     not-bvlt-when-not-bvlt-narrower
+     not-bvlt-when-not-bvlt-narrower2
 
      not-bvlt-of-max-arg2-constant-version
      bvlt-of-max-when-bvlt-constant-version
@@ -896,6 +898,7 @@
      <-of-bv-and-non-positive-constant ;Thu May 17 00:37:24 2012
 
      ;; We leave most commutativity rules out of core-rules-bv, because they can be expensive for large nests
+     ;; TODO: What about rules like bvplus-commute-constant2 ?
      bvplus-commute-constant
      bvmult-commute-constant
      bvand-commute-constant
@@ -1076,7 +1079,10 @@
 
      ;; for now, we open these to expose bvcat:
      putbyte
-     putbits)))
+     putbits
+
+     unsigned-byte-p-of-bvmult-of-expt2-constant-version
+     unsigned-byte-p-of-bvchop-becomes-bvlt)))
 
 ;todo combine this with core-rules-bv
 ;todo: some of these are not bv rules?
@@ -1870,7 +1876,9 @@
     array-reduction-1-0
     array-reduction-when-all-same-improved2
     bv-array-read-of-bvmult-discard-vals
-    bv-array-read-of-bvplus-of-bvmult-discard-vals))
+    bv-array-read-of-bvplus-of-bvmult-discard-vals
+    bv-array-read-of-+-of-constant-shorten ; for when we have + for the index (but we may prefer a bvplus) ; todo: make a bvplus version
+    ))
 
 (defun bvplus-rules ()
   (declare (xargs :guard t))

@@ -13,6 +13,7 @@
 (include-book "rtl/rel11/lib/defs" :dir :system)
 (include-book "getbit")
 (include-book "bvcat")
+(local (include-book "logapp"))
 (local (include-book "kestrel/arithmetic-light/floor-mod-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 

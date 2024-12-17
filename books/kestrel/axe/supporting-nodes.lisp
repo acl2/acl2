@@ -702,7 +702,7 @@
            (nat-listp (aref1-list 'translation-array
                                   (mv-nth 1 (build-reduced-dag-with-name n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc))
                                   nodenums)))
-  :hints (("Goal" :in-theory (e/d (aref1-list) ()))))
+  :hints (("Goal" :in-theory (enable aref1-list))))
 
 ;; (thm
 ;;  (implies (and (all-taggedp-with-name nodenums 'tag-array tag-array)

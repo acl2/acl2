@@ -43,7 +43,7 @@
 
 (in-package "X86ISA")
 (include-book "decoding-and-spec-utils"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:syscall-exec :undef-flg))
 (include-book "std/util/defenum" :dir :system)
 (include-book "inst-structs")
 

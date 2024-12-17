@@ -1,7 +1,7 @@
 ; A lightweight book about expt where the base is 2.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -332,4 +332,33 @@
   (implies (posp size)
            (equal (+ (- (expt 2 (+ -1 size))) (- (expt 2 (+ -1 size))))
                   (- (expt 2 size))))
+  :hints (("Goal" :in-theory (enable expt-of-+))))
+
+(defthmd *-of-expt-and-/-of-expt-collect
+  (implies (and (integerp i)
+                (integerp j))
+           (equal (* (expt 2 i) (/ (expt 2 j)) x)
+                  (* (expt 2 (- i j)) x)))
+  :hints (("Goal" :in-theory (enable expt-of-+))))
+
+;can loop
+(defthmd *-of-half-and-expt-of-one-more
+  (implies (integerp n)
+           (equal (* 1/2 (* m (expt 2 (+ 1 n))))
+                  (* m (expt 2 n))))
+  :hints (("Goal" :in-theory (e/d (expt) (expt-hack)))))
+
+;; add 2 to name or generalize to any base:
+(defthmd /-of-expt-of-diff
+  (implies (and (natp i)
+                (natp j))
+           (equal (/ (expt 2 (+ (- i) j)))
+                  (expt 2 (- i j))))
+  :hints (("Goal" :in-theory (enable expt-of-+))))
+
+;rename
+(defthm expt-split-hack
+  (implies (posp size)
+           (equal (+ (- (expt 2 size)) (expt 2 (+ -1 size)))
+                  (- (expt 2 (+ -1 size)))))
   :hints (("Goal" :in-theory (enable expt-of-+))))

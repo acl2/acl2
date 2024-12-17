@@ -598,8 +598,8 @@
 
 
 
-;fixme compare these to the transitive rules
-;fixme more like these?
+;todo: compare these to the transitive rules
+;todo: more like these?
 (defthm bvlt-when-bvlt-wider
   (implies (and (syntaxp (quotep k))
                 (bvlt bigsize x free)
@@ -607,8 +607,7 @@
                 (<= size bigsize)
                 (unsigned-byte-p size free)
                 (bvle size free k)
-                (natp bigsize)
-                (natp size))
+                (natp bigsize))
            (bvlt size x k))
   :hints (("Goal"
            :use (:instance <-of-bvchop-and-bvchop-same (s2 bigsize) (s1 size))
@@ -621,8 +620,7 @@
                 (<= size bigsize)
                 (unsigned-byte-p size k)
                 (bvle size k free)
-                (natp bigsize)
-                (natp size))
+                (natp bigsize))
            (not (bvlt bigsize x k)))
   :hints (("Goal" :use (:instance bvlt-when-bvlt-wider (k free) (free k))
            :in-theory (disable bvlt-when-bvlt-wider))))
@@ -635,8 +633,7 @@
                 (unsigned-byte-p size k)
                 (unsigned-byte-p size free)
                 (bvle size free k)
-                (natp bigsize)
-                (natp size))
+                (natp bigsize))
            (not (bvlt size k x)))
   :hints (("Goal"  :use (:instance <-of-bvchop-and-bvchop-same (s2 bigsize) (s1 size))
            :in-theory (e/d (bvlt) (<-of-bvchop-and-bvchop-same)))))

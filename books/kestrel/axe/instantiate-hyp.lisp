@@ -118,4 +118,4 @@
   :skip-others t
   :hints (("Goal" :in-theory (e/d (instantiate-hyp instantiate-hyp-lst) (myquotep)))))
 
-(verify-guards instantiate-hyp :otf-flg t :hints (("Goal" :in-theory (enable pseudo-termp))))
+(verify-guards instantiate-hyp :hints (("Goal" :in-theory (enable pseudo-termp))))
