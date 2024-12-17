@@ -465,8 +465,8 @@
               (!rgfi-size operand-size
                           (reg-index reg rex-byte #.*r*)
                           (loghead 32 (rgfi-size operand-size
-						 (reg-index reg rex-byte #.*r*)
-						 rex-byte x86))
+                                                 (reg-index reg rex-byte #.*r*)
+                                                 rex-byte x86))
                           rex-byte
                           x86)
             x86)))

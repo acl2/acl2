@@ -455,7 +455,7 @@
                        ((mv flg new-rsp)
                         (add-to-*sp proc-mode new-rsp operand-size x86))
                        ((when flg)
-                        (b* ((x86 (!!fault-fresh :ss 0 :pop flg))) 
+                        (b* ((x86 (!!fault-fresh :ss 0 :pop flg)))
                             (mv 0 x86))))
                       (mv new-rsp x86))
                   (mv new-rsp x86)))
