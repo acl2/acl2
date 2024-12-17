@@ -1958,7 +1958,7 @@
 
 ;; The main read-of-write rules start here
 
-(defthm read-byte-of-write-disjoint-gen
+(defthm read-byte-of-write-irrel-gen
   (implies (and (<= n (bvminus 48 addr1 addr2))
                 (integerp addr2)
                 (integerp addr1))
@@ -1974,7 +1974,8 @@
                             acl2::bvchop-identity)))))
 
 ;; This variant uses a hyp phrased using BV functions.
-(defthm read-byte-of-write-disjoint-bv
+;; not yet used
+(defthm read-byte-of-write-irrel-bv
   (implies (and (bvle 48 n (bvminus 48 addr1 addr2))
                 (unsigned-byte-p 48 n)
                 (integerp addr2)
@@ -1999,7 +2000,7 @@
                             )))))
 
 ;todo: improve
-(defthm read-of-write-disjoint
+(defthm read-of-write-irrel
   (implies (and (or (<= (+ n2 addr2) addr1)
                     (<= (+ n1 addr1) addr2))
                 (canonical-address-p addr1)
@@ -2024,7 +2025,7 @@
 
 
 ;todo: improve
-(defthm read-of-write-disjoint2
+(defthm read-of-write-irrel2
   (implies (and (separate :r n1 addr1 :r n2 addr2) ;we always turn the r-w-x params of separate into :r
                 (canonical-address-p addr1)
                 (implies (posp n1) (canonical-address-p (+ -1 n1 addr1)))
@@ -2036,8 +2037,8 @@
                 )
            (equal (read n1 addr1 (write n2 addr2 val x86))
                   (read n1 addr1 x86)))
-  :hints (("Goal" :use (:instance read-of-write-disjoint)
-           :in-theory (e/d (separate) (read-of-write-disjoint)))))
+  :hints (("Goal" :use (:instance read-of-write-irrel)
+           :in-theory (e/d (separate) (read-of-write-irrel)))))
 
 
 
@@ -2081,7 +2082,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; todo: gen the 1?
-;; todo: either use irrel or disjoint consistently
 (defthm read-1-of-write-irrel
   (implies (and (not (bvlt 48 (bvminus 48 addr1 addr2) n))
                 (integerp addr1)
@@ -2183,7 +2183,7 @@
                                       (LOGTAIL 16 VAL) x))))))
 
 ;; ;; todo: move up (not easy)
-;; (defthm read-byte-of-write-disjoint
+;; (defthm read-byte-of-write-irrel
 ;;   (implies (and (or (<= (+ n2 addr2) addr1)
 ;;                     (<= (+ 1 addr1) addr2))
 ;;                 (canonical-address-p addr1)
@@ -2194,9 +2194,9 @@
 ;;                 )
 ;;            (equal (read-byte addr1 (write n2 addr2 val x86))
 ;;                   (read-byte addr1 x86)))
-;;   :hints (("Goal" :use (:instance read-of-write-disjoint
+;;   :hints (("Goal" :use (:instance read-of-write-irrel
 ;;                                   (n1 1))
-;;            :in-theory (e/d (read) (read-of-write-disjoint write)))))
+;;            :in-theory (e/d (read) (read-of-write-irrel write)))))
 
 ;; todo: read should go to read-byte?
 ;; todo: gen
@@ -2209,9 +2209,7 @@
   :hints (("Goal" :expand (write 4 addr val x86)
            :in-theory (enable read write))))
 
-
-
-(defthm read-of-write-disjoint-gen
+(defthm read-of-write-irrel-gen
   (implies (and (<= n2 (bvminus 48 addr1 addr2)) ; use bvle instead of <= ?
                 (<= n1 (bvminus 48 addr2 addr1))
                 ;;(natp n1)
@@ -2260,7 +2258,7 @@
                              val)
                     (read-byte ad1 x86)))))
 
-(defthm read-of-write-byte-disjoint
+(defthm read-of-write-byte-irrel
   (implies (and (<= 1 (bvminus 48 addr1 addr2))
                 (<= n1 (bvminus 48 addr2 addr1))
                 ;(natp n1)
@@ -2834,7 +2832,7 @@
 ;                                                    ACL2::NTH-OF-CDR
                                                     )))))
 
-(defthm read-of-write-bytes-disjoint
+(defthm read-of-write-bytes-irrel
   (implies (and (<= (len vals) (bvminus 48 addr1 addr2))
                 (<= n1 (bvminus 48 addr2 addr1))
                 ;(natp n1)
@@ -3585,7 +3583,7 @@
 
 ;; Here we drop the inner write, because it is irrelevant, even though we don't
 ;; know anything about the outer write.
-(defthm read-of-write-of-write-byte-disjoint-inner
+(defthm read-of-write-of-write-byte-irrel-inner
   (implies (and (<= 1 (bvminus 48 addr1 addr2))
                 (<= n1 (bvminus 48 addr2 addr1))
                 (integerp addr2)
@@ -3598,7 +3596,7 @@
 ;; Here we drop the inner write, because it is irrelevant, even though we don't
 ;; know anything about the outer write.
 ;; Slow proof?
-(defthm read-of-write-of-write-disjoint-inner
+(defthm read-of-write-of-write-irrel-inner
   (implies (and (<= n2 (bvminus 48 addr1 addr2))
                 (<= n1 (bvminus 48 addr2 addr1))
                 (<= outer-n (expt 2 48)) ; todo: if hude, the inner write is also irrel
