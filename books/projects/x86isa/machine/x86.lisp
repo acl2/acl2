@@ -57,9 +57,9 @@
 (include-book "cpuid")
 (include-book "dispatch-macros")
 (include-book "interrupt-servicing")
-(include-book "catalogue"
-              :ttags (:syscall-exec :other-non-det :undef-flg)) ;; for xdoc
 (include-book "std/strings/hexify" :dir :system)
+(include-book "catalogue-doc")
+(include-book "inst-doc")
 
 (local (include-book "dispatch-creator"))
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))

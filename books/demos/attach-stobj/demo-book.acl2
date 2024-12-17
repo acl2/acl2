@@ -1,0 +1,11 @@
+(include-book "tools/run-script" :dir :system)
+(run-script "demo")
+
+; Help dependency scanner.
+#||
+(depends-on "demo-input.lsp")
+(depends-on "demo-log.txt")
+(include-book "mem-as-ht")
+||#
+
+; cert-flags: ? t :ttags (:attach-stobj-demo)
