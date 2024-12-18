@@ -46,23 +46,23 @@
 ;; are unimplemented: MMX, AVX, AVX2, and AVX512.
 
 (include-book "bitscan"
-              :ttags (:syscall-exec :undef-flg))
+              :ttags (:undef-flg))
 (include-book "arithmetic"
-              :ttags (:syscall-exec :undef-flg))
+              :ttags (:undef-flg))
 (include-book "logical"
-              :ttags (:syscall-exec :undef-flg))
+              :ttags (:undef-flg))
 (include-book "shuffle-and-unpack"
-              :ttags (:syscall-exec :undef-flg))
+              :ttags (:undef-flg))
 (include-book "mxcsr"
-              :ttags (:syscall-exec :undef-flg))
+              :ttags (:undef-flg))
 (include-book "simd-integer"
-              :ttags (:syscall-exec :undef-flg))
+              :ttags (:undef-flg))
 (include-book "convert"
-              :ttags (:syscall-exec :undef-flg))
+              :ttags (:undef-flg))
 (include-book "mov"
-              :ttags (:syscall-exec :undef-flg))
+              :ttags (:undef-flg))
 (include-book "non-arith"
-              :ttags (:syscall-exec :undef-flg))
+              :ttags (:undef-flg))
 
 ;; Exception Types and Alignment Checking: A Quick Reference
 ;; (TO-DO: make this into a doc topic or a function later...)
