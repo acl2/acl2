@@ -96,7 +96,7 @@ vistor provided (program/process/process/visitor.h).
 
 To create to new pass, you should look at visitor.h and astdumper.h/cpp. They
 should be enough to understand how to use it. You can also look at clang's
-documentation about their RecursiveASTVisitor wich was used as example to
+documentation about their RecursiveASTVisitor which was used as example to
 create visitor.h.
 
 Instead of returning `false` when you detected an error, you should use the
@@ -107,7 +107,7 @@ and program/parser/ast/astnodes.def. Be carefull to not add loops or multiple
 pass on the same nodes. Also, check if the leafs are still leafs, it changes
 the traversal.
 
-For now, those pass are applied (in this order):
+For now, these pass are applied (in this order):
 
 * TypingAction
 * (only in pedantic mode) RACConstraint
@@ -120,7 +120,7 @@ Utils
 To report errors in the parser or in a pass, you should use DiagnosticHandler,
 see program/parser/utils/diagnostics.h for more details.
 
-Also, program/parser/utils/utils.h contains some usefull functions. format()
+Also, program/parser/utils/utils.h contains some useful functions. format()
 should be replace the standard's one when switching to C++20. NEVER use List<>
 in any case, it is only their because all the code has not been refactore yet.
 
@@ -161,7 +161,7 @@ TODOs
 * switch bison parser to C++ mode
 * continue to refactore
 * lift for restriction
-* c++20 format
+* C++20 format
 * generate a list of type usable in Lisp
 * track location of types (deref typedef)
 * display "true" C++ type

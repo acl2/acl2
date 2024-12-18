@@ -1,4 +1,4 @@
-This is the RAC (Restricted Algorithmic C) parser which translate a
+This is the RAC (Restricted Algorithmic C) parser which translates a
 RAC program into a list of S-Expressions.
 
 Usage:

@@ -74,19 +74,23 @@ public:
   }
 
   void help() {
+
+    // clang-format off
+
     std::cout
-        << "This is the RAC (Restricted Algorithmic C) parser which translate "
-           "a\n"
-           "RAC program into a list of S-Expressions.\n\n"
-           "Usage:\n"
-           "  parse FILE [options]\n\n"
-           "Options:\n"
-           "  -rac           convert to RAC pseudocode and write to file.pc\n"
-           "  -acl2          write ACL2 translation to file.ast.lsp\n"
-           "  -pedantic      enable all possible warnings/errors.\n"
-           "  -version       display the version (the commit hash)\n"
-           "  -dump-ast      display the intermediate AST in dot format\n"
-           "  -trace-parser  enable bison tracing, used to debug the parser\n";
+      << "This is the RAC (Restricted Algorithmic C) parser which translates a\n"
+         "RAC program into a list of S-Expressions.\n\n"
+         "Usage:\n"
+         "  parse FILE [options]\n\n"
+         "Options:\n"
+         "  -rac           convert to RAC pseudocode and write to file.pc\n"
+         "  -acl2          write ACL2 translation to file.ast.lsp\n"
+         "  -pedantic      enable all possible warnings/errors.\n"
+         "  -version       display the version (the commit hash)\n"
+         "  -dump-ast      display the intermediate AST in dot format\n"
+         "  -trace-parser  enable bison tracing, used to debug the parser\n";
+
+    // clang-format on
   }
 
   void version() {

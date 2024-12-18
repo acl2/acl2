@@ -66,7 +66,6 @@ protected:
   std::string name_;
 };
 
-// For now, we does not support unsigned literal.
 class Integer final : public Constant {
 public:
   Integer(Location loc, const char *n);

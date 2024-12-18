@@ -28,7 +28,7 @@ constexpr NodesId idOf(const NodeType *) {
 #include "types.def"
 #undef APPLY
   else
-    assert(!"Uknown type");
+    assert(!"Unknown type");
 }
 
 #endif // NODES_ID_H

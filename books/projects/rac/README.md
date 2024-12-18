@@ -131,6 +131,22 @@ Parsing, pretty-printing, and translating RAC programs
   be extra carefull and check the translation as anything can happen,
   especially if it is a type related error.
 
+  Example:
+
+  `$ rac tests/yaml_test/control_flow/switch-invalid-label.cpp -a`
+
+  Fails with the following error and does not generate code.
+  ```
+  switch-invalid-label.cpp:7 (9-10): Case label must be an integer or an enum constant.
+  7 |     case b: break;
+    |          ^
+  ```
+
+  But if we defined RAC_BYPASS_ERROR, then code is generated (but in this
+  specific case, the switch is removed).
+
+  `$ RAC_BYPASS_ERROR=true rac tests/yaml_test/control_flow/switch-invalid-label.cpp -a`
+
   To enable extra checks (to avoid possible mistranslation and undefined
   behavior), define RAC_EXTRA_FLAGS=-pedantic. Note with this flags, "good
   enough" program can fails to compile.
@@ -143,23 +159,6 @@ Compiling RAC programs for simulation
 
     g++ -std=c++14 -I <this directory>/include prog.cpp
 
-
-Testing and debuging
---------------------
-
-  To know how to run the regression test, see tests/README.md. Even if thoose
-  tests should covered most parts of the parse, it a good idea to test the
-  translations on some real life models (like the ones in examples).
-
-  By default, the parser will be compile in release mode (with all
-  optimisation and without the debuging symbols), to debug use 'make debug'.
-
-  For more in depth debuging, the -dump-ast is really usefull to understand
-  what's happening. For now, it only display the name of the nodes and the
-  expression's types. Fell free to add more information if needed. Also, the
-  "diagnostics" can be really usefull to know which parts of the input code
-  cause a bug.
-
 TODOs and possible ameliorations
 -------------------------------
 
@@ -168,7 +167,7 @@ TODOs and possible ameliorations
     * generalize template
     * generate a list of type usable in Lisp to generate bvecthm for each
       extracted functions.
-    * continue to refactore and clean up the code, bison in C++ mode
+    * continue to refactor and clean up the code, bison in C++ mode
     * improve the display of location for typedef types.
 
 
