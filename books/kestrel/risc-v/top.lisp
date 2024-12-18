@@ -38,8 +38,9 @@
    (xdoc::ul
     (xdoc::li
      "The "
-     (xdoc::a :href "https://riscv.org/technical/specifications/"
-       "Volume 1, Unprivileged Spec v. 20191213")
+     (xdoc::ahref "https://riscv.org/technical/specifications/"
+                  "The RISC-V Insruction Set Manual Volume 1,
+                   Unprivileged Architecture v. 20240411")
      ", referenced as `[ISA]' in the documentation of this library.
       Chapters and sections are referenced
       by appending their designations separated by colon,
@@ -47,8 +48,9 @@
       `[ISA:2.2]' references Section 2.2 of [ISA].")
     (xdoc::li
      "The "
-     (xdoc::a :href "https://riscv.org/technical/specifications/"
-       "Volume 2, Privileged Spec v. 20211203")
+     (xdoc::ahref "https://riscv.org/technical/specifications/"
+                  "The RISC-V Insruction Set Manual Volume 2,
+                   Privileged Architecture v. 20240411")
      ", referenced as `[ISAP]' in the documentation of this library.
       Chapters and sections are referenced
       by appending their designations separated by colon,
