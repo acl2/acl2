@@ -1,0 +1,123 @@
+; x86isa assembly snippet testing framework
+;
+; X86ISA Library
+; Copyright (C) 2024 Kestrel Technology, LLC
+;
+; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
+;
+; Author: Sol Swords (sswords@gmail.com)
+
+
+SECTION .data			;
+flgstore: dw 0			;
+
+%macro backup_and_set_eflags 0
+	; Sets EFLAGS to contents of AX (modified to not set TF/IF)
+	; Backs up the current EFLAGS in R11W
+	; Backs up RSP to R10
+	; RSP is left pointing to FLGSTORE area
+	and ax, 0xfcff		; clear trap and interrupt flags (bits 8, 9)
+	mov r10, rsp		; save stack ptr
+	lea rsp, [rel flgstore]	; point stack to where we want it
+	pushfw                  ; get the current flags
+	pop r11w		; save them to r11
+	push ax                 ; push flags onto stack so we can pop them off
+	popfw			; set flags to input flags
+%endmacro	
+
+%macro get_and_restore_eflags 0
+	; Stores current eflags in AX via the stack
+	; Restores eflags that were stored in R11W
+	; Restores RSP to backup stored in R10
+	pushfw			; get the flags onto the stack
+	pop ax			; pop them back off into a reg
+	push r11w		; put the old flags back on the stack
+	popfw			; restore the old flags
+	mov rsp, r10		; restore stack pointer
+%endmacro	
+	
+
+	
+%macro read_dw_dw_eflags 0
+	; Reads two dwords and an eflags word from [RDI]
+	; Sets up the eflags using flagstore as a temp
+	; Puts the two dwords in r8d, r9d
+	; RSP is left pointing to flgstore
+	; R10 has the previous stack pointer
+	; R11W has the old flags
+	mov r8d, DWORD[rdi]	; first argument
+	mov r9d, DWORD[rdi+4]	; second argument
+	mov ax, WORD[rdi+8]     ; input flags
+	backup_and_set_eflags	;
+%endmacro
+
+%macro write_dw_eflags 0
+	; Writes a dword result and current eflags word to [RSI]
+	; R9D has dword result
+	; RSP points to temporary storage with space for flags
+	; R10 has the previous stack ptr which will be restored
+	; R11W has old eflags that will be restored
+	get_and_restore_eflags 	;
+	mov DWORD[rsi], r9d	; put result in bottom of outdata
+	mov WORD[rsi+4], ax	; put flags in top of outdata
+%endmacro	
+
+	
+%macro define_two_dw_input_one_dw_output_flags 2+
+global %1
+%1:
+	read_dw_dw_eflags	;
+	%2			;
+	write_dw_eflags
+	ret
+%endmacro
+
+%macro read_qw_qw_eflags 0
+	; Reads two qwords and an eflags word from [RDI]
+	; Sets up the eflags using flagstore as a temp
+	; Puts the two qwords in r8, r9
+	; RSP is left pointing to flgstore
+	; R10 has the previous stack pointer
+	; R11W has the old flags
+	mov r8, QWORD[rdi]	; first argument
+	mov r9, QWORD[rdi+8]	; second argument
+	mov ax, WORD[rdi+16]     ; input flags
+	backup_and_set_eflags	;
+%endmacro
+
+%macro write_qw_eflags 0
+	; Writes a qword result and current eflags word to [RSI]
+	; R9 has qword result
+	; RSP points to temporary storage with space for flags
+	; R10 has the previous stack ptr which will be restored
+	; R11W has old eflags that will be restored
+	get_and_restore_eflags 	;
+	mov QWORD[rsi], r9	; put result in bottom of outdata
+	mov WORD[rsi+8], ax	; put flags in top of outdata
+%endmacro	
+
+	
+%macro define_two_qw_input_one_qw_output_flags 2+
+global %1
+%1:
+	read_qw_qw_eflags	;
+	%2			;
+	write_qw_eflags
+	ret
+%endmacro
+
+
+	
+	
+SECTION .text			;
+
+define_two_dw_input_one_dw_output_flags blsi32, blsi r9d, r8d
+define_two_qw_input_one_qw_output_flags blsi64, blsi r9, r8
+
+	
+define_two_dw_input_one_dw_output_flags adox32, adox r9d, r8d
+define_two_qw_input_one_qw_output_flags adox64, adox r9, r8
+
+
+define_two_dw_input_one_dw_output_flags adcx32, adcx r9d, r8d
+define_two_qw_input_one_qw_output_flags adcx64, adcx r9, r8
