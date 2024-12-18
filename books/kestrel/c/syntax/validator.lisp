@@ -6489,7 +6489,7 @@
 (define valid-transunit ((tunit transunitp) (gcc booleanp) (ienv ienvp))
   :guard (transunit-unambp tunit)
   :returns (mv erp
-               (new-tunir transunitp)
+               (new-tunit transunitp)
                (table valid-tablep))
   :short "Validate a translation unit."
   :long
