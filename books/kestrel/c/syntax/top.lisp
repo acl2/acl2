@@ -10,14 +10,14 @@
 
 (in-package "C$")
 
-(include-book "abstract-syntax")
-(include-book "abstract-syntax-operations")
 (include-book "concrete-syntax")
+(include-book "abstract-syntax")
 (include-book "abstraction-mapping")
+(include-book "abstract-syntax-operations")
+(include-book "unambiguity")
 (include-book "preprocess-file")
 (include-book "parser")
 (include-book "disambiguator")
-(include-book "unambiguity")
 (include-book "validator")
 (include-book "printer")
 (include-book "input-files")
@@ -63,7 +63,7 @@
      needed for a practical tool.
      Ideally, eventually we should support all the GCC extensions,
      but we are adding them piece-wise, as needed.
-     Our documentation will always clearly distinguish
+     Our documentation always distinguishes
      between the C standard and the GCC extensions.")
    (xdoc::p
     "The idea of this tool-oriented abstract syntax is also discussed in
@@ -109,10 +109,10 @@
     "We also provide event macros to
      read, preprocess, parse, disambiguate, print, and write files.")
    (xdoc::p
-    "We also plan to add a checker on the abstract syntax
-     for the static constraints on C code (i.e. type checker etc.),
-     which may result in an elaboration of the abstract syntax,
-     e.g. to enhance the abstract syntax with types and other information
+    "We also provide a vaidator on the abstract syntax
+     that checks the static constraints on C code (i.e. type checker etc.),
+     which results in an elaboration of the abstract syntax,
+     e.g. enhancing the abstract syntax with types and other information
      after successful checking.")
    (xdoc::p
     "We also plan to prove theorems connecting this tool-oriented syntax
@@ -128,15 +128,17 @@
      in the directory @('[books]/kestrel/c/syntax').
      For this sub-library, we use a different package from @('C'),
      in particular to separate otherwise possibly homonymous types and functions
-     in this tool-oriented abstract syntax as opposed to
-     the abstract syntax used for the language formalization
+     in this tool-oriented abstract syntax
+     from the abstract syntax used for the language formalization
      under @('[books]/kestrel/c/language').
      We pick the name @('C$') for this sub-library,
      where the @('$') conveys the idea of `syntax'.
      This package naming pattern could be used for
      ACL2 libraries (and sub-libraries) for other programming languages."))
-  :order-subtopics (abstract-syntax
-                    concrete-syntax
+  :order-subtopics (concrete-syntax
+                    abstract-syntax
+                    abstraction-mapping
+                    abstract-syntax-operations
                     preprocessing
                     parser
                     disambiguator
