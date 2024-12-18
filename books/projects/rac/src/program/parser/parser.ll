@@ -96,6 +96,7 @@ static void lineba();
 
 
 [0-9]+(("u"|"U")?("ll"|"LL")?|("ll"|"LL")?("u"|"U")) |
+"0b"[0-1]+(("u"|"U")?("ll"|"LL")?|("ll"|"LL")?("u"|"U")) |
 "0x"[a-fA-F_0-9]+(("u"|"U")?("ll"|"LL")?|("ll"|"LL")?("u"|"U")) {yylval.s = tokstr(); return NAT;}
 
 ">>="            {yylval.s = tokstr(); return RSHFT_ASSIGN;}

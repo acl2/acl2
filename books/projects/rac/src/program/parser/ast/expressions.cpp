@@ -77,6 +77,9 @@ Integer::Integer(Location loc, const char *n)
   char *suffix;
   if (!strncmp(n, "0x", 2)) {
     abs_val = strtol(n, &suffix, 16);
+  } else if (!strncmp(n, "0b", 2)) {
+    // We skip the prefix.
+    abs_val = strtol(n + 2, &suffix, 2);
   } else {
     abs_val = strtol(n, &suffix, 10);
   }
@@ -113,7 +116,7 @@ Sexpression *Integer::ACL2Expr() {
     return new Plist({ &s_minus, result });
 
   } else {
-    return new Symbol(name_);
+    return new Symbol(to_string(val_));
   }
 }
 

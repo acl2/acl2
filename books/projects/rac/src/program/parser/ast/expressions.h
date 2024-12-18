@@ -84,13 +84,17 @@ public:
   static Integer *one_v(Location loc) { return new Integer(loc, "1"); }
   static Integer *two_v(Location loc) { return new Integer(loc, "2"); }
 
-  enum Format { Decimal, Hexadecimal };
+  enum Format { Binary, Decimal, Hexadecimal };
   Format format() const {
 
     if (!strncmp(getname(), "0x", 2)) {
       return Format::Hexadecimal;
     } else if (!strncmp(getname(), "-0x", 3)) {
       return Format::Hexadecimal;
+    } else if (!strncmp(getname(), "0b", 2)) {
+      return Format::Binary;
+    } else if (!strncmp(getname(), "-0b", 3)) {
+      return Format::Binary;
     } else {
       return Format::Decimal;
     }
