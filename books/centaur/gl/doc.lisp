@@ -354,7 +354,7 @@ abstractly, as a term-like symbolic object:</p>
     (:g-apply binary-*  1/3  (:g-integer ...))
 })
 
-<p>(assuming @('x') is represented as a @(':g-integer) object).  This sort of
+<p>(assuming @('x') is represented as a @(':g-integer') object).  This sort of
 abstraction can help to avoid creating potentially very-expensive symbolic
 objects, and is an important part of GL's @(see term-level-reasoning).</p>
 
