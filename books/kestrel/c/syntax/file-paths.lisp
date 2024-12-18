@@ -15,15 +15,16 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ file-paths
-  :parents (abstract-syntax concrete-syntax)
+  :parents (concrete-syntax)
   :short "A simple notion of file paths."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is used both for the concrete syntax notion of file sets
-     and for the abstract syntax notion of translation unit ensembles.
-     Both entities are finite maps whose keys are file paths,
-     so the notion of file path is common to the two."))
+    "This is factored into its own file and XDOC topic because,
+     besides its primary use in our model of @(see files),
+     it is also used in the abstract syntax,
+     which can therefore just include this
+     without including the model of files."))
   :order-subtopics t
   :default-parent t)
 

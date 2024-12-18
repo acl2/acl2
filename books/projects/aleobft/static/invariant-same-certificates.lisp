@@ -76,7 +76,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule same-certificates-p-when-system-state-initp
+(defruled same-certificates-p-when-system-state-initp
   :short "Establishment of the invariant:
           the invariant holds on any initial system state."
   :long
@@ -97,7 +97,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule same-certificates-p-of-create-certificate-next
+(defruled same-certificates-p-of-create-certificate-next
   :short "Preservation of the invariants by @('create-certificate') events."
   :long
   (xdoc::topstring
@@ -125,7 +125,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule same-certificates-p-of-receive-certificate-next
+(defruled same-certificates-p-of-receive-certificate-next
   :short "Preservation of the invariants by @('receive-certificate') events."
   :long
   (xdoc::topstring
@@ -152,7 +152,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule same-certificates-p-of-store-certificate-next
+(defruled same-certificates-p-of-store-certificate-next
   :short "Preservation of the invariants by @('store-certificate') events."
   :long
   (xdoc::topstring
@@ -179,7 +179,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule same-certificates-p-of-advance-round-next
+(defruled same-certificates-p-of-advance-round-next
   :short "Preservation of the invariants by @('advance-round') events."
   :long
   (xdoc::topstring
@@ -206,7 +206,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule same-certificates-p-of-commit-anchors-next
+(defruled same-certificates-p-of-commit-anchors-next
   :short "Preservation of the invariants by @('commit-anchors') events."
   :long
   (xdoc::topstring
@@ -233,7 +233,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule same-certificates-p-of-timer-expires-next
+(defruled same-certificates-p-of-timer-expires-next
   :short "Preservation of the invariants by @('timer-expires') events."
   :long
   (xdoc::topstring
@@ -260,7 +260,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule same-certificates-p-of-event-next
+(defruled same-certificates-p-of-event-next
   :short "Preservation of the invariant by all events."
   :long
   (xdoc::topstring

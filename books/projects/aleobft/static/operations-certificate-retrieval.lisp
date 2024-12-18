@@ -401,8 +401,7 @@
     :enable (certificate-set->author-set
              set::expensive-rules
              certificate-set->author-set-of-certificates-with-author
-             certificate-set->author-set-of-union
-             set::emptyp)))
+             certificate-set->author-set-of-union)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
