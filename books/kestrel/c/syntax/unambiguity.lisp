@@ -20,7 +20,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ unambiguity
-  :parents (abstract-syntax)
+  :parents (syntax-for-tools)
   :short "Unambiguity of the C abstract syntax for tools."
   :long
   (xdoc::topstring

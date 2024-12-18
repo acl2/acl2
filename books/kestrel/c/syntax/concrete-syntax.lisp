@@ -10,8 +10,9 @@
 
 (in-package "C$")
 
-(include-book "grammar")
+(include-book "file-paths")
 (include-book "files")
+(include-book "grammar")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -55,7 +56,10 @@
    (xdoc::p
     "We plan to add a parser and a pretty-printer."))
   :order-subtopics t
-  :default-parent t)
+  :default-parent (file-paths
+                   files
+                   grammar
+                   t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
