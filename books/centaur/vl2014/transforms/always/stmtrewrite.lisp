@@ -72,7 +72,7 @@ expressions.</li>
  <li>pure-null if/case stmts &rarr; null</li>
  <li>eliminate null stmts from blocks</li>
  <li>empty blocks &rarr; null</li>
- <li>collapse singleton blocks (i.e., @('begin stmt end --> stmt)</li>
+ <li>collapse singleton blocks (i.e., @('begin stmt end --> stmt'))</li>
  <li>flatten compatible sub-blocks</li>
  <li>@('@(...) null') &rarr; @('null') (top level only)</li>
  <li>merge nested ifs (without elses)</li>

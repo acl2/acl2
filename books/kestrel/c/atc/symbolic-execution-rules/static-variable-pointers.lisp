@@ -44,7 +44,7 @@
      which we resolve to @('t') via @('return-type-of-pointer-valid').")
    (xdoc::p
     "The type is extracted from the pointer,
-     via @('value-pointer->reftype-of-value-pointer),
+     via @('value-pointer->reftype-of-value-pointer'),
      which generates a term @('(type-fix ...)'),
      where @('...') is a term that constructs a type (e.g. @('(type-sint)')),
      so we use @('type-fix-when-typep'),
