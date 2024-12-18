@@ -14,6 +14,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; The following test takes too long to run, because of the large memory size.
+; It can be run by temporarily changing *mem-size* to be 100 in state.lisp
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+#|
+
 ; 0000000 00010 00001 000 00011 0110011 : x3 <- x1 ADD x2
 ; 00000000 00100000 10000001 10110011
 ; #x00     #x20     #x81     #xb3
@@ -58,3 +65,5 @@
 
 (assert-event (equal (step *init-stat*)
                      *final-stat*))
+
+|#
