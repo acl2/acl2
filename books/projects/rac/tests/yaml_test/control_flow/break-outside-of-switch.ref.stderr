@@ -1,0 +1,4 @@
+break-outside-of-switch.cpp:4 (2-7): break outside of switch
+  4 |   break;
+    |   ^^^^^
+note: RAC forbid break and continue inside loops

@@ -1,0 +1,3 @@
+empty-return.cpp:5 (2-8): Non-void function should return a value
+  5 |   return;
+    |   ^^^^^^
