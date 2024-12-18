@@ -44,7 +44,7 @@
 ;; ======================================================================
 
 (include-book "../decoding-and-spec-utils"
-              :ttags (:syscall-exec :undef-flg))
+              :ttags (:undef-flg))
 (local (include-book "../guard-helpers"))
 
 ;; No alignment check is done for these instructions because they are

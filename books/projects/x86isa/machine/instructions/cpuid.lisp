@@ -4,7 +4,7 @@
 
 (include-book "std/util/defaggregate" :dir :system)
 (include-book "../decoding-and-spec-utils"
-              :ttags (:syscall-exec :undef-flg))
+              :ttags (:undef-flg))
 
 ;; ======================================================================
 

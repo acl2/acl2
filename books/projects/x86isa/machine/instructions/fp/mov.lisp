@@ -44,9 +44,9 @@
 ;; ======================================================================
 
 (include-book "../../decoding-and-spec-utils"
-              :ttags (:syscall-exec :undef-flg))
+              :ttags (:undef-flg))
 (include-book "base"
-              :ttags (:syscall-exec :undef-flg))
+              :ttags (:undef-flg))
 (include-book "centaur/bitops/merge" :dir :system)
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
