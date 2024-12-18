@@ -44,7 +44,7 @@
 ;; ======================================================================
 
 (include-book "../decoding-and-spec-utils"
-              :ttags (:syscall-exec :undef-flg))
+              :ttags (:undef-flg))
 
 (local (include-book "../guard-helpers"))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
