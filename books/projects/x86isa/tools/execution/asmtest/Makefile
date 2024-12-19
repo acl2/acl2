@@ -10,8 +10,8 @@ asmtest:
 SNIPPET_OBJS := $(patsubst %.nasm,%.o,$(wildcard snippets/*.nasm))
 
 
-%.o : %.nasm
-	nasm -f elf64 $<
+snippets/%.o : snippets/%.nasm snippets/utils.mac
+	cd snippets; nasm -f elf64 $*.nasm
 
 %.o : %.c
 	gcc -g -c $<

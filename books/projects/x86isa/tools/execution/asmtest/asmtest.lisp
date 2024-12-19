@@ -16,10 +16,11 @@
 
 
 (defxdoc asmtest
+  :parents (x86isa)
   :short "A simple framework for testing execution of small programs against
   the @(see x86isa) model."
   :long "
-
+<h2>Overview</h2>
 <p>The asmtest framework is designed to allow us to test many small
   programs (\"snippets\"), each many times on different data, and compare the
   results obtained by the x86 model with those obtained by running the programs
@@ -39,7 +40,8 @@ then runs the snippet N times on each successive input memory block, writing
 out N output memory blocks to the output file.</p>
 
 <p>To run a snippet on the x86 model, we read that executable into the x86
-state and can then use the function @('test-snippet') to repeatedly run the
+state using <see topic=\"@(url binary-file-load-fn)\">binary-file-load</see>
+and can then use the function @('test-snippet') to repeatedly run the
 snippet on the model on the various inputs, comparing them to the outputs from
 the executable.</p>
 
@@ -51,6 +53,7 @@ executable. Once the executable is built, the same script can be used to build
 the file snippets.lsp, which tells ACL2 the input/output sizes and entry point
 addresses of each snippet.</p>
 
+<h2>Adding Snippets</p>
 <p>To add and test a new snippet:</p>
 <ul>
 <li>Add an entry to snippets.txt giving the name and input/output sizes.</li>
@@ -67,8 +70,7 @@ this on other kinds of machines.)</li>
 
 <li>Somehow generate a binary input file for your snippet. Its size should be
 an integer multiple of the input block size of the snippet. One way to generate
-basic random inputs is e.g. @('head -c nbytes /dev/urandom >
-my_inputs.bin').</li>
+basic random inputs is e.g. @('head -c nbytes /dev/urandom > my_inputs.bin').</li>
 
 <li>Execute your snippet on the input file, e.g. @('./asmtest -i my_inputs.bin
 -o my_outputs.bin my_snippet')</li>
@@ -78,8 +80,44 @@ steps).</li>
 
 <li>Test the outputs from the execution on the x86 model following the example
 in @('example.lsp').</li>
-
 </ul>
+
+<h2>Future Work</h2>
+<h3>Regression Tests</h3>
+
+<p>If this proves to be a successful framework for testing the x86 model, we'll
+want to set things up so that we can easily run a regression of the x86 model
+that includes snippet tests. This could either (a) be part of the ACL2 regression
+suite or else (b) a separate regression only used when working on the x86isa
+project.</p>
+
+<p>If (a) we include snippet tests as part of the ACL2 regression, we don't
+want to require an X86 machine and all the tools used to build and run the
+snippets for the regression to succeed. So we either need to (1) conditionalize
+the snippet testing on having an appropriate machine with all the necessarly
+tools, or (2) include in version control everything necessary to run the
+tests. (1) seems restrictive and likely prone to errors. (2) would require
+including the asmtest binary executable, all the input data files we want to
+regress (or a platform-independent way of recreating them), and output
+files (so that we don't require an x86 machine to run the asmtest
+executable). Perhaps instead of having a version-controlled monolithic asmtest
+executable, we should support multiple such executables based on a shared
+codebase but containing different sets of snippets. That way some executables could be
+checked into version control for inclusion in the ACL2 regression but some are
+source-only, and testing new snippets doesn't require modifying a
+version-controlled executable.</p>
+
+<p>If (b) we don't include the snippet test regression in the ACL2 regression,
+perhaps we only include source code in the repository and construct the
+regression test by creating books in a subdirectory excluded from the main
+ACL2 books makefile.</p>
+
+<h3>Test input generation</h3>
+
+<p>We'll need some tools to generate good inputs for testing various sorts of
+instructions. Should these tools should be written in ACL2 or another
+language?</p>
+
 ")
 
 ;; Fixtype for canonical-address
@@ -151,6 +189,7 @@ in @('example.lsp').</li>
                      '(:in-theory (enable canonical-address-p))))
   (b* ((proc-mode *64-bit-mode*)
        ((run-snippet-info snip-info))
+       (rsp (read-*sp proc-mode x86))
        (x86 (!rgfi *rdi* input-addr x86))
        (x86 (!rgfi *rsi* output-addr x86))
        (x86 (write-*ip proc-mode snip-info.snip-addr x86))
@@ -161,6 +200,8 @@ in @('example.lsp').</li>
        (fault (fault x86))
        (ms (ms x86))
        (rip (rip x86))
+       ;; restore the old RSP in case it got corrupted somehow
+       (x86 (write-*sp proc-mode rsp x86))
        (- (and (or fault
                    (not (case-match ms
                           ((('X86-FETCH-DECODE-EXECUTE-HALT ':RIP !snip-info.ret-addr))
@@ -170,28 +211,6 @@ in @('example.lsp').</li>
                (raise "error: ~x0" (list fault ms rip)))))
     x86))
 
-(define repeat-run-snippet ((n natp)
-                            (input-addr :type (signed-byte 64))
-                            (output-addr :type (signed-byte 64))
-                            (snip-info run-snippet-info-p)
-                            x86)
-  :guard (b* (((run-snippet-info snip-info)))
-           (and (canonical-address-p snip-info.snip-addr)
-                (canonical-address-p snip-info.ret-addr)
-                (unsigned-byte-p 59 snip-info.step-count)))
-  (b* (((when (zp n)) x86)
-       (x86 (run-snippet input-addr output-addr snip-info x86))
-       ((run-snippet-info snip-info))
-       (next-input-addr (+ snip-info.input-size input-addr))
-       (next-output-addr (+ snip-info.output-size output-addr))
-       ((unless (and (signed-byte-p 64 next-input-addr)
-                     (signed-byte-p 64 next-output-addr)))
-        (raise "address out of bounds")
-        x86))
-    (repeat-run-snippet (1- n) next-input-addr
-                             next-output-addr
-                             snip-info
-                             x86)))
 
 (local (in-theory (disable acl2::file-measure
                            read-byte$
@@ -272,6 +291,16 @@ in @('example.lsp').</li>
     (implies (byte-listp x)
              (my-byte-listp x))))
 
+(define byte-list-xor ((x byte-listp)
+                       (y byte-listp))
+  :returns (xor byte-listp)
+  (cond ((atom x) (byte-list-fix y))
+        ((atom y) (byte-list-fix x))
+        (t (cons (n08-fix (logxor (car x) (car y)))
+                 (byte-list-xor (cdr x) (cdr y))))))
+    
+  
+
 (defprod snippet-mismatch
   ((input-bytes my-byte-listp)
    (expected-bytes my-byte-listp)
@@ -320,8 +349,9 @@ in @('example.lsp').</li>
         (raise "error reading output bytes from memory: ~x0" err)
         (mv nil x86))
        ((when (equal result-bytes output-bytes)) (mv nil x86)))
-    (cw-print-base-radix 16 "Mismatch: input ~x0~%expected ~x1~%actual   ~x2~%"
-                         input-bytes output-bytes result-bytes)
+    (cw-print-base-radix 16 "Mismatch: input ~x0~%expected ~x1~%actual   ~x2~%xor      ~x3~%"
+                         input-bytes output-bytes result-bytes
+                         (byte-list-xor output-bytes result-bytes))
     (mv (make-snippet-mismatch :input-bytes input-bytes
                                :expected-bytes output-bytes
                                :actual-bytes result-bytes)
@@ -361,9 +391,11 @@ in @('example.lsp').</li>
         (read-n-file-bytes snip-info.output-size info.output-channel state))
        ((when (or in-eofp out-eofp))
         ;; Check some unexpected conditions
-        (and in-eofp input-bytes
-             (raise "Input file size wasn't divisible by input size -- extra ~
-                     ~x0 bytes" (len input-bytes)))
+        ;; Let's allow this one in case we want to share an input file between
+        ;; snippets with different sizes
+        ;; (and in-eofp input-bytes
+        ;;      (raise "Input file size wasn't divisible by input size -- extra ~
+        ;;              ~x0 bytes" (len input-bytes)))
         (and out-eofp output-bytes
              (raise "Output file size wasn't divisible by output size -- ~
                      extra ~x0 bytes" (len output-bytes)))
@@ -572,3 +604,9 @@ in @('example.lsp').</li>
                       :stop-on-mismatch stop-on-mismatch
                       :step-count step-count
                       :x86 x86)))
+
+(defmacro test-snippet-event (&rest args)
+  `(assert-event (b* (((mv mismatches x86 state)
+                       (test-snippet . ,args)))
+                   (mv (not mismatches) x86 state))
+                 :stobjs-out '(nil x86 state)))
