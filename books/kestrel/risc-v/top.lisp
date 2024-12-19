@@ -59,5 +59,9 @@
    (xdoc::p
     "These square-bracketed references may be used
      as nouns or parenthentically."))
-  :order-subtopics t
+  :order-subtopics (instructions
+                    decoding
+                    states
+                    semantics
+                    execution)
   :default-parent t)
