@@ -20,7 +20,45 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defxdoc+ instructions
+  :parents (riscv)
+  :short "Model of instructions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We introduce fixtypes that define essentially
+     an abstract syntax of RISC-V instructions.
+     This only exists in the model, not in the processor,
+     which represents instructions in binary.
+     These high-level instructions are the result of decoding the binary format;
+     they are close in spirit to assembly instructions.")
+   (xdoc::p
+    "We start with the unprivileged instructions
+     in RV32I [ISA:2] and RV64I [ISA:4],
+     which are the same for RV32E and RV64E [ISA:3],
+     except for @('FENCE'), @('ECALL'), @('EBREAK'), and @('HINT').
+     We plan to add privileged instructions,
+     as well as instructions for more extensions."))
+  :order-subtopics t
+  :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftagsum op-imm-funct
+  :short "Fixtype of
+          names of non-shift instructions with the @('OP-IMM') opcode
+          [ISA:2.4.1]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These instructions are encoded in the I-type format [ISA:2.4].
+     They are designated by the @('funct3') field,
+     which motivates the name of this fixtype.")
+   (xdoc::p
+    "The @('OP-IMM') opcode also includes shift instructions,
+     but those are in a slightly different format,
+     and thus their names are in a separate fixtype, @(tsee op-imms-funct),
+     to facilitate the definition of the fixtype of instructions."))
   (:addi ())
   (:slti ())
   (:sltiu ())
@@ -30,19 +68,52 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum op-imm-32-funct
-  (:addiw ()))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (fty::deftagsum op-imms-funct
+  :short "Fixtype of names of shift instructions with the @('OP-IMM') opcode
+          [ISA:2.4.1]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is similar to @(tsee op-imm-funct), but for the shift instructions,
+     which use a specialization of the I-type format;
+     see discussion in @(tsee op-imm-funct).
+     The instruction is designated not only by the @('funct3') field,
+     but also by the @('imm[11:5]') field,
+     which here acts like the @('funct7') field in other instructions.")
+   (xdoc::p
+    "The @('s') in the @('imms') of this fixtype name indicates `shift'."))
   (:slli ())
   (:srli ())
   (:srai ()))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum op-imm-32-funct
+  :short "Fixtype of
+          names of non-shift instructions with the @('OP-IMM-32') opcode
+          [ISA:4.2.1]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is analogous to @(tsee op-imm-funct),
+     but for the @('OP-IMM-32') opcode.")
+   (xdoc::p
+    "There is just one here,
+     but we introduce a singleton sum type for uniformity."))
+  (:addiw ()))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deftagsum op-imms-32-funct
+  :short "Fixtype of
+          names of shift instructions with the @('OP-IMM-32') opcode
+          [ISA:4.2.1]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is analogous to @(tsee op-imms-funct),
+     but for the @('OP-IMM-32') opcode.
+     See the documentation of @(tsee op-imms-funct)."))
   (:slliw ())
   (:srliw ())
   (:sraiw ()))
@@ -50,7 +121,15 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum op-funct
+  :short "Fixtype of names of instructions with the @('OP') opcode [ISA:2.4.2]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These instructions are encoded in the R-type format [ISA:2.4].
+     They are designated by the @('funct3') and @('funct7') fields,
+     which motivates the name of this fixtype."))
   (:add ())
+  (:sub ())
   (:slt ())
   (:sltu ())
   (:and ())
@@ -58,21 +137,34 @@
   (:xor ())
   (:sll ())
   (:srl ())
-  (:sra ())
-  (:sub ()))
+  (:sra ()))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum op-32-funct
+  :short "Fixtype of names of instructions with the @('OP-32') opcode
+          [ISA:4.2.2]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is analogous to @(tsee op-funct), but for the @('OP-32') opcode."))
   (:addw ())
+  (:subw ())
   (:sllw ())
   (:srlw ())
-  (:sraw ())
-  (:subw ()))
+  (:sraw ()))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum branch-funct
+  :short "Fixtype of names of instructions with the @('BRANCH') opcode
+          [ISA:2.5.2]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These instructions are encoded in the B-type format [ISA:2.4].
+     They are designated by the @('funct3') field,
+     which motivates the name of this fixtype."))
   (:beq ())
   (:bne ())
   (:blt ())
@@ -83,6 +175,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum load-funct
+  :short "Fixtype of names of instructions with the @('LOAD') opcode
+          [ISA:2.6] [ISA:4.3]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These instructions are encoded in the I-type format [ISA:2.4].
+     They are designated by the @('funct3') field,
+     which motivates the name of this fixtype."))
   (:lb ())
   (:lbu ())
   (:lh ())
@@ -94,26 +194,79 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum store-funct
+  :short "Fixtype of names of instructions with the @('STORE') opcode
+          [ISA:2.6] [ISA:4.3]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These instructions are encoded in the S-type format [ISA:4.2].
+     They are designated by the @('funct3') field,
+     which motivates the name of this fixtype."))
   (:sb ())
   (:sh ())
   (:sw ())
   (:sd ()))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum instr
+  :short "Fixtype of instructions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The tags of the summands of this fixtype correspond to opcodes.
+     The components of each summand correspond to the non-opcode fields.")
+   (xdoc::p
+    "The @('OP-IMM') opcode corresponds to
+     @(':op-imm') for non-shift instructions,
+     @(':op-imms32') for RV32I shift instructions, and
+     @(':op-imms64') for RV64I shift instructions.
+     They are distinct summands because the formats differ:
+     non-shift instructions use the I-type format;
+     shift instructions use a specialization of the I-type format,
+     but a slightly different one in RV32I vs. RV64I,
+     namely in the number of bits of the shift amount (5 vs. 6).")
+   (xdoc::p
+    "The @('OP-IMM-32') opcode corresponds to
+     @(':op-imm-32') for non-shift instructions, and
+     @(':op-imms-32') for shift instructions.
+     They are distinct summands because the formats differ:
+     non-shift instructions use the I-type format;
+     shift instructions use a specialization of the I-type format.")
+   (xdoc::p
+    "The @('LUI') opcode corresponds to @(':lui').")
+   (xdoc::p
+    "The @('AUIPC') opcode corresponds to @(':auipc').")
+   (xdoc::p
+    "The @('OP') opcode corresponds to @(':op').")
+   (xdoc::p
+    "The @('OP-32') opcode corresponds to @(':op-32').")
+   (xdoc::p
+    "The @('JAL') opcode corresponds to @(':jal').")
+   (xdoc::p
+    "The @('JALR') opcode corresponds to @(':jalr').")
+   (xdoc::p
+    "The @('BRANCH') opcode corresponds to @(':branch').")
+   (xdoc::p
+    "The @('LOAD') opcode corresponds to @(':load').")
+   (xdoc::p
+    "The @('STORE') opcode corresponds to @(':store')."))
   (:op-imm ((funct op-imm-funct)
             (rd ubyte5)
             (rs1 ubyte5)
             (imm ubyte12)))
+  (:op-imms32 ((funct op-imms-funct)
+               (rd ubyte5)
+               (rs1 ubyte5)
+               (imm ubyte5)))
+  (:op-imms64 ((funct op-imms-funct)
+               (rd ubyte5)
+               (rs1 ubyte5)
+               (imm ubyte6)))
   (:op-imm-32 ((funct op-imm-32-funct)
                (rd ubyte5)
                (rs1 ubyte5)
                (imm ubyte12)))
-  (:op-imms ((funct op-imms-funct)
-             (rd ubyte5)
-             (rs1 ubyte5)
-             (imm ubyte6)))
   (:op-imms-32 ((funct op-imms-32-funct)
                 (rd ubyte5)
                 (rs1 ubyte5)
@@ -153,4 +306,5 @@
 
 (fty::defoption instr-option
   instr
+  :short "Fixtype of optional instructions."
   :pred instr-optionp)
