@@ -20,7 +20,7 @@
   (b* (((when (errorp stat)) (state64i-fix stat))
        (pc (read-pc stat))
        (enc (read-mem-ubyte32-lendian pc stat))
-       (instr? (decode enc))
+       (instr? (decode enc t))
        ((unless instr?) (error stat)))
     (exec-instr instr? pc stat))
   :hooks (:fix))

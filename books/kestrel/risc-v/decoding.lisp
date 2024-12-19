@@ -33,12 +33,11 @@
      defined in @(see instructions).")
    (xdoc::p
     "Currently we only cover the decoding of
-     the instructions defined in @(see instructions).
-     Also, we only handle the normal encodings,
+     the instructions defined in @(see instructions);
+     this is for both RV32I and RV64I.
+     We only handle the normal encodings,
      i.e. not the compressed ones in the C extension [ISA:26];
-     thus, our decoder operates on 32-bit encodings.
-     We only cover RV64I, which has almost the same decoding as RV32I,
-     but not quite the same, as noted in @(tsee decode)."))
+     thus, our decoder operates on 32-bit encodings."))
   :order-subtopics t
   :default-parent t)
 
@@ -280,15 +279,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define decode ((enc ubyte32p))
+(define decode ((enc ubyte32p) (64p booleanp))
   :returns (instr? instr-optionp)
   :short "Decode an instruction."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The input is a 32-bit encoding of the instruction.
-     As noted in @(see decoding), currently we only cover normal encodings,
-     not compressed ones.
+    "The first input is a 32-bit encoding of the instruction;
+     the second input is a flag distinguishing between
+     RV64I (if @('t')) and RV32I (if @('nil')).
      If decoding is successful, we return the instruction.
      If decoding is unsuccessful, we return @('nil').")
    (xdoc::p
@@ -304,9 +303,11 @@
      shift instructions are encoded in a specialization of the I-type format,
      where the low 5 or 6 bits of the immediate are the shift amount,
      while the high 7 or 6 bits need to have specific values.
-     For now we only cover RV64I,
-     so the shift amount is 6 bits,
-     and there are 6 high bits with specific values.")
+     Whether the immediate is split into 5 low bits and 7 high bits,
+     or into 6 low bits and 6 high bits,
+     depends on whether we are in RV32I or RV64I mode,
+     so we use the flag passed as input to this function.
+     We generate slightly different shift instructions, in the two cases.")
    (xdoc::p
     "With the @('OP-IMM-32') opcode,
      shift instructions are encoded in a specialization of the I-type format,
@@ -337,17 +338,28 @@
                    (#b101 nil) ; could be SRLI or SRAI, handled below
                    (#b110 (op-imm-funct-ori))
                    (#b111 (op-imm-funct-andi))))
-          ((when funct) (instr-op-imm funct rd rs1 imm))
-          (loimm (part-select imm :low 0 :high 5))
-          (hiimm (part-select imm :low 6 :high 11))
-          ((when (= funct3 #b001))
-           (if (= hiimm #b000000)
-               (instr-op-imms64 (op-imms-funct-slli) rd rs1 loimm)
-             nil)))
-       (case hiimm
-         (#b000000 (instr-op-imms64 (op-imms-funct-srli) rd rs1 loimm))
-         (#b010000 (instr-op-imms64 (op-imms-funct-srai) rd rs1 loimm))
-         (t nil))))
+          ((when funct) (instr-op-imm funct rd rs1 imm)))
+       (if 64p
+           (b* ((loimm (part-select imm :low 0 :high 5))
+                (hiimm (part-select imm :low 6 :high 11))
+                ((when (= funct3 #b001))
+                 (if (= hiimm #b000000)
+                     (instr-op-imms64 (op-imms-funct-slli) rd rs1 loimm)
+                   nil)))
+             (case hiimm
+               (#b000000 (instr-op-imms64 (op-imms-funct-srli) rd rs1 loimm))
+               (#b010000 (instr-op-imms64 (op-imms-funct-srai) rd rs1 loimm))
+               (t nil)))
+         (b* ((loimm (part-select imm :low 0 :high 4))
+              (hiimm (part-select imm :low 5 :high 11))
+              ((when (= funct3 #b001))
+               (if (= hiimm #b000000)
+                   (instr-op-imms32 (op-imms-funct-slli) rd rs1 loimm)
+                 nil)))
+           (case hiimm
+             (#b000000 (instr-op-imms32 (op-imms-funct-srli) rd rs1 loimm))
+             (#b010000 (instr-op-imms32 (op-imms-funct-srai) rd rs1 loimm))
+             (t nil))))))
     (#b0010111 ; AUIPC [ISA:2.4.1]
      (b* (((mv rd imm) (decode-utype enc)))
        (instr-auipc rd imm)))
