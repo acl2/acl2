@@ -12,7 +12,7 @@
 
 (include-book "library-extensions")
 (include-book "instructions")
-(include-book "state")
+(include-book "states")
 
 (include-book "kestrel/fty/ubyte4" :dir :system)
 

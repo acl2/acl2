@@ -11,9 +11,9 @@
 (in-package "RISCV")
 
 (include-book "instructions")
-(include-book "state")
-(include-book "semantics")
 (include-book "decoding")
+(include-book "states")
+(include-book "semantics")
 (include-book "execution")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
