@@ -822,3 +822,85 @@
     x86))
 
 ;; ======================================================================
+
+
+(local (in-theory (disable bitops::ash-1-removal
+                           signed-byte-p
+                           unsigned-byte-p)))
+
+(define blsi ((operand-size posp)
+              (src-val natp))
+  (b* ((bitwidth (ash operand-size 3))
+       (tzcnt (tzcnt bitwidth 0 src-val)))
+    (loghead bitwidth (ash 1 tzcnt)))
+  ///
+  (defthm unsigned-byte-p-of-blsi
+    (implies (and (integerp w)
+                  (posp operand-size)
+                  (<= (* 8 operand-size) w))
+             (unsigned-byte-p w (blsi operand-size src-val)))
+    :hints(("Goal" :in-theory (enable bitops::ash-is-expt-*-x)))))
+       
+
+(def-inst x86-blsi
+  ;; VEX.LZ.0F38.W0 F3 /3:  BLSI r32, r/m32
+  ;; VEX.LZ.0F38.W1 F3 /3:  BLSI r64, r/m64
+  :parents (three-byte-opcodes)
+
+  :returns (x86 x86p :hyp (x86p x86))
+  :guard (vex-prefixes-byte0-p vex-prefixes)
+
+  :modr/m t
+  :vex t
+  :guard-debug t
+  :body
+  ;; placeholder
+  (b* ((operand-size (if (eql (vex->w vex-prefixes) 1) 8 4))
+
+       ((the (unsigned-byte 4) src1-index)
+        (vex-vvvv-reg-index (vex->vvvv vex-prefixes)))
+
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?))
+
+       
+       (p2 (prefixes->seg prefixes))
+       (p4? (equal #.*addr-size-override*
+                   (prefixes->adr prefixes)))
+
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+       (rex-byte (rex-byte-from-vex-prefixes vex-prefixes))
+       
+       (inst-ac? t)
+       ((mv flg0
+            src2-val
+            (the (unsigned-byte 3) increment-RIP-by)
+            (the (signed-byte 64) addr)
+            x86)
+        (x86-operand-from-modr/m-and-sib-bytes
+         proc-mode #.*gpr-access* operand-size inst-ac?
+         nil ;; Not a memory pointer operand
+         seg-reg p4? temp-rip rex-byte r/m mod sib
+         0 ;; No immediate data
+         x86))
+       ((when flg0)
+        (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
+
+       (res (blsi operand-size src2-val))
+       ((the (unsigned-byte 32) input-rflags) (rflags x86))
+       (output-rflags (!rflagsBits->cf
+                       (b-not (bool->bit (eql src2-val 0)))
+                       (!rflagsBits->sf
+                        (logbit (1- (* 8 operand-size)) res)
+                        (!rflagsBits->zf
+                         (bool->bit (eql res 0))
+                         (!rflagsBits->of 0 input-rflags)))))
+       ;; SDM says AF and PF are undefined. Are they really undefined or just preserved?
+       (undefined-flags (!rflagsbits->pf 1 (!rflagsbits->af 1 0)))
+       
+       (x86 (!rgfi-size operand-size src1-index res 1 ;; fake rex-byte
+                        x86))
+       (x86 (write-user-rflags output-rflags undefined-flags x86))
+       (x86 (write-*ip proc-mode temp-rip x86)))
+    x86))

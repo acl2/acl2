@@ -2019,6 +2019,7 @@ reference made from privilege level 3.</blockquote>"
         (vex         'nil)
         (evex        'nil)
         (modr/m      'nil)
+        (additional-args 'nil)
         body parents short long
         inline enabled guard-debug guard
         guard-hints (verify-guards 't) prepwork thms
@@ -2026,7 +2027,8 @@ reference made from privilege level 3.</blockquote>"
 
   (if body
       `(define ,name
-         (,@(and operation `((operation :type (integer 0 38))))
+         (,@additional-args
+          ,@(and operation `((operation :type (integer 0 38))))
           ,@(and sp/dp     `((sp/dp     :type (integer 0 1))))
           ,@(and dp-to-sp  `((dp-to-sp  :type (integer 0 1))))
           ,@(and high/low  `((high/low  :type (integer 0 1))))
