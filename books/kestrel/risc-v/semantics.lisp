@@ -900,11 +900,12 @@
                                          instr.rs1
                                          instr.imm
                                          stat)
-              :op-imms (exec-op-imms instr.funct
-                                     instr.rd
-                                     instr.rs1
-                                     instr.imm
-                                     stat)
+              :op-imms32 (error stat)
+              :op-imms64 (exec-op-imms instr.funct
+                                       instr.rd
+                                       instr.rs1
+                                       instr.imm
+                                       stat)
               :op-imms-32 (exec-op-imms-32 instr.funct
                                            instr.rd
                                            instr.rs1
