@@ -66,6 +66,8 @@
                           ubyte128p
                           ubyte8-list
                           ubyte8-listp
+                          ubyte32-list
+                          ubyte32-listp
                           ubyte64-list
                           ubyte64-listp
                           bitops::part-select)))
