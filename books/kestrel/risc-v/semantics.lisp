@@ -10,6 +10,7 @@
 
 (in-package "RISCV")
 
+(include-book "semantics32")
 (include-book "semantics64")
 
 ; cert_param: (non-acl2r)
@@ -22,6 +23,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Currently we have semantics for RV64I.
-     We plan to add RV32I soon."))
-  :order-subtopics (semantics64))
+    "Currently we have two similar but slightly different semantics,
+     one for RV32I and one for RV64I.
+     We plan to consolidate them into one semantics for both."))
+  :order-subtopics (semantics32
+                    semantics64))
