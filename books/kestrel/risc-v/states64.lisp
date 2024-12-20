@@ -205,7 +205,8 @@
 
 (define write64-xreg-32 ((reg ubyte5p) (val integerp) (stat state64p))
   :returns (new-stat state64p)
-  :short "Write an integer to the low 32 bits of an @('x') register."
+  :short "Write an integer to the low 32 bits of an @('x') register,
+          sign-extending it to the high 32 bits of the register."
   :long
   (xdoc::topstring
    (xdoc::p
