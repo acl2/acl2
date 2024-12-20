@@ -12,13 +12,11 @@
 
 (include-book "library-extensions")
 (include-book "instructions")
-(include-book "states")
-
-(include-book "kestrel/fty/ubyte4" :dir :system)
+(include-book "states64")
 
 (include-book "kestrel/fty/sbyte32" :dir :system)
 (include-book "kestrel/fty/sbyte64" :dir :system)
-
+(include-book "kestrel/fty/ubyte4" :dir :system)
 (include-book "kestrel/utilities/digits-any-base/core" :dir :system)
 (include-book "kestrel/utilities/digits-any-base/pow2" :dir :system)
 
@@ -47,9 +45,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define eff-addr ((rs1 ubyte5p) (imm ubyte12p) (stat state64ip))
+(define eff-addr ((rs1 ubyte5p) (imm ubyte12p) (stat state64p))
   :returns (addr integerp)
-  (b* ((base (read-xreg-unsigned rs1 stat))
+  (b* ((base (read64-xreg-unsigned rs1 stat))
        (offset (signext-imm12 imm)))
     (+ base offset))
   :hooks (:fix))
@@ -59,12 +57,12 @@
 (define exec-addi ((rd ubyte5p)
                    (rs1 ubyte5p)
                    (imm ubyte12p)
-                   (stat state64ip))
-  :returns (new-stat state64ip)
-  (write-xreg rd
-              (+ (read-xreg-signed rs1 stat)
-                 (signext-imm12 imm))
-              (inc-pc stat))
+                   (stat state64p))
+  :returns (new-stat state64p)
+  (write64-xreg rd
+                (+ (read64-xreg-signed rs1 stat)
+                   (signext-imm12 imm))
+                (inc64-pc stat))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -72,14 +70,14 @@
 (define exec-slti ((rd ubyte5p)
                    (rs1 ubyte5p)
                    (imm ubyte12p)
-                   (stat state64ip))
-  :returns (new-stat state64ip)
-  (write-xreg rd
-              (if (< (read-xreg-signed rs1 stat)
-                     (signext-imm12 imm))
-                  1
-                0)
-              (inc-pc stat))
+                   (stat state64p))
+  :returns (new-stat state64p)
+  (write64-xreg rd
+                (if (< (read64-xreg-signed rs1 stat)
+                       (signext-imm12 imm))
+                    1
+                  0)
+                (inc64-pc stat))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -87,14 +85,14 @@
 (define exec-sltiu ((rd ubyte5p)
                     (rs1 ubyte5p)
                     (imm ubyte12p)
-                    (stat state64ip))
-  :returns (new-stat state64ip)
-  (write-xreg rd
-              (if (< (read-xreg-unsigned rs1 stat)
-                     (loghead 64 (signext-imm12 imm)))
-                  1
-                0)
-              (inc-pc stat))
+                    (stat state64p))
+  :returns (new-stat state64p)
+  (write64-xreg rd
+                (if (< (read64-xreg-unsigned rs1 stat)
+                       (loghead 64 (signext-imm12 imm)))
+                    1
+                  0)
+                (inc64-pc stat))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -102,12 +100,12 @@
 (define exec-andi ((rd ubyte5p)
                    (rs1 ubyte5p)
                    (imm ubyte12p)
-                   (stat state64ip))
-  :returns (new-stat state64ip)
-  (write-xreg rd
-              (logand (read-xreg-signed rs1 stat)
-                      (signext-imm12 imm))
-              (inc-pc stat))
+                   (stat state64p))
+  :returns (new-stat state64p)
+  (write64-xreg rd
+                (logand (read64-xreg-signed rs1 stat)
+                        (signext-imm12 imm))
+                (inc64-pc stat))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -115,12 +113,12 @@
 (define exec-ori ((rd ubyte5p)
                   (rs1 ubyte5p)
                   (imm ubyte12p)
-                  (stat state64ip))
-  :returns (new-stat state64ip)
-  (write-xreg rd
-              (logior (read-xreg-signed rs1 stat)
-                      (signext-imm12 imm))
-              (inc-pc stat))
+                  (stat state64p))
+  :returns (new-stat state64p)
+  (write64-xreg rd
+                (logior (read64-xreg-signed rs1 stat)
+                        (signext-imm12 imm))
+                (inc64-pc stat))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -128,12 +126,12 @@
 (define exec-xori ((rd ubyte5p)
                    (rs1 ubyte5p)
                    (imm ubyte12p)
-                   (stat state64ip))
-  :returns (new-stat state64ip)
-  (write-xreg rd
-              (logxor (read-xreg-signed rs1 stat)
-                      (signext-imm12 imm))
-              (inc-pc stat))
+                   (stat state64p))
+  :returns (new-stat state64p)
+  (write64-xreg rd
+                (logxor (read64-xreg-signed rs1 stat)
+                        (signext-imm12 imm))
+                (inc64-pc stat))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -142,8 +140,8 @@
                      (rd ubyte5p)
                      (rs1 ubyte5p)
                      (imm ubyte12p)
-                     (stat state64ip))
-  :returns (new-stat state64ip)
+                     (stat state64p))
+  :returns (new-stat state64p)
   (case (op-imm-funct-kind funct)
     (:addi (exec-addi rd rs1 imm stat))
     (:slti (exec-slti rd rs1 imm stat))
@@ -151,7 +149,7 @@
     (:andi (exec-andi rd rs1 imm stat))
     (:ori (exec-ori rd rs1 imm stat))
     (:xori (exec-xori rd rs1 imm stat))
-    (t (prog2$ (impossible) (state64i-fix stat))))
+    (t (prog2$ (impossible) (state64-fix stat))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -159,12 +157,12 @@
 (define exec-addiw ((rd ubyte5p)
                     (rs1 ubyte5p)
                     (imm ubyte12p)
-                    (stat state64ip))
-  :returns (new-stat state64ip)
-  (write-xreg-32 rd
-                 (+ (read-xreg-signed32 rs1 stat)
-                    (signext-imm12 imm))
-                 (inc-pc stat))
+                    (stat state64p))
+  :returns (new-stat state64p)
+  (write64-xreg-32 rd
+                   (+ (read64-xreg-signed32 rs1 stat)
+                      (signext-imm12 imm))
+                   (inc64-pc stat))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -173,11 +171,11 @@
                         (rd ubyte5p)
                         (rs1 ubyte5p)
                         (imm ubyte12p)
-                        (stat state64ip))
-  :returns (new-stat state64ip)
+                        (stat state64p))
+  :returns (new-stat state64p)
   (case (op-imm-32-funct-kind funct)
     (:addiw (exec-addiw rd rs1 imm stat))
-    (t (prog2$ (impossible) (state64i-fix stat))))
+    (t (prog2$ (impossible) (state64-fix stat))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -185,12 +183,12 @@
 (define exec-slli ((rd ubyte5p)
                    (rs1 ubyte5p)
                    (imm ubyte6p)
-                   (stat state64ip))
-  :returns (new-stat state64ip)
-  (write-xreg rd
-              (ash (read-xreg-unsigned rs1 stat)
-                   (ubyte6-fix imm))
-              (inc-pc stat))
+                   (stat state64p))
+  :returns (new-stat state64p)
+  (write64-xreg rd
+                (ash (read64-xreg-unsigned rs1 stat)
+                     (ubyte6-fix imm))
+                (inc64-pc stat))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -198,12 +196,12 @@
 (define exec-srli ((rd ubyte5p)
                    (rs1 ubyte5p)
                    (imm ubyte6p)
-                   (stat state64ip))
-  :returns (new-stat state64ip)
-  (write-xreg rd
-              (ash (read-xreg-unsigned rs1 stat)
-                   (- (ubyte6-fix imm)))
-              (inc-pc stat))
+                   (stat state64p))
+  :returns (new-stat state64p)
+  (write64-xreg rd
+                (ash (read64-xreg-unsigned rs1 stat)
+                     (- (ubyte6-fix imm)))
+                (inc64-pc stat))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -211,12 +209,12 @@
 (define exec-srai ((rd ubyte5p)
                    (rs1 ubyte5p)
                    (imm ubyte6p)
-                   (stat state64ip))
-  :returns (new-stat state64ip)
-  (write-xreg rd
-              (ash (read-xreg-signed rs1 stat)
-                   (- (ubyte6-fix imm)))
-              (inc-pc stat))
+                   (stat state64p))
+  :returns (new-stat state64p)
+  (write64-xreg rd
+                (ash (read64-xreg-signed rs1 stat)
+                     (- (ubyte6-fix imm)))
+                (inc64-pc stat))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -225,13 +223,13 @@
                       (rd ubyte5p)
                       (rs1 ubyte5p)
                       (imm ubyte6p)
-                      (stat state64ip))
-  :returns (new-stat state64ip)
+                      (stat state64p))
+  :returns (new-stat state64p)
   (case (op-imms-funct-kind funct)
     (:slli (exec-slli rd rs1 imm stat))
     (:srli (exec-srli rd rs1 imm stat))
     (:srai (exec-srai rd rs1 imm stat))
-    (t (prog2$ (impossible) (state64i-fix stat))))
+    (t (prog2$ (impossible) (state64-fix stat))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -239,12 +237,12 @@
 (define exec-slliw ((rd ubyte5p)
                     (rs1 ubyte5p)
                     (imm ubyte5p)
-                    (stat state64ip))
-  :returns (new-stat state64ip)
-  (write-xreg-32 rd
-                 (ash (read-xreg-unsigned32 rs1 stat)
-                      (ubyte5-fix imm))
-                 (inc-pc stat))
+                    (stat state64p))
+  :returns (new-stat state64p)
+  (write64-xreg-32 rd
+                   (ash (read64-xreg-unsigned32 rs1 stat)
+                        (ubyte5-fix imm))
+                   (inc64-pc stat))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -252,12 +250,12 @@
 (define exec-srliw ((rd ubyte5p)
                     (rs1 ubyte5p)
                     (imm ubyte5p)
-                    (stat state64ip))
-  :returns (new-stat state64ip)
-  (write-xreg-32 rd
-                 (ash (read-xreg-unsigned32 rs1 stat)
-                      (- (ubyte5-fix imm)))
-                 (inc-pc stat))
+                    (stat state64p))
+  :returns (new-stat state64p)
+  (write64-xreg-32 rd
+                   (ash (read64-xreg-unsigned32 rs1 stat)
+                        (- (ubyte5-fix imm)))
+                   (inc64-pc stat))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -265,12 +263,12 @@
 (define exec-sraiw ((rd ubyte5p)
                     (rs1 ubyte5p)
                     (imm ubyte5p)
-                    (stat state64ip))
-  :returns (new-stat state64ip)
-  (write-xreg-32 rd
-                 (ash (read-xreg-signed32 rs1 stat)
-                      (- (ubyte5-fix imm)))
-                 (inc-pc stat))
+                    (stat state64p))
+  :returns (new-stat state64p)
+  (write64-xreg-32 rd
+                   (ash (read64-xreg-signed32 rs1 stat)
+                        (- (ubyte5-fix imm)))
+                   (inc64-pc stat))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -279,24 +277,24 @@
                          (rd ubyte5p)
                          (rs1 ubyte5p)
                          (imm ubyte5p)
-                         (stat state64ip))
-  :returns (new-stat state64ip)
+                         (stat state64p))
+  :returns (new-stat state64p)
   (case (op-imms-32-funct-kind funct)
     (:slliw (exec-slliw rd rs1 imm stat))
     (:srliw (exec-srliw rd rs1 imm stat))
     (:sraiw (exec-sraiw rd rs1 imm stat))
-    (t (prog2$ (impossible) (state64i-fix stat))))
+    (t (prog2$ (impossible) (state64-fix stat))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec-lui ((rd ubyte5p)
                   (imm ubyte20p)
-                  (stat state64ip))
-  :returns (new-stat state64ip)
-  (write-xreg-32 rd
-                 (ash (ubyte20-fix imm) 12)
-                 (inc-pc stat))
+                  (stat state64p))
+  :returns (new-stat state64p)
+  (write64-xreg-32 rd
+                   (ash (ubyte20-fix imm) 12)
+                   (inc64-pc stat))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -304,12 +302,12 @@
 (define exec-auipc ((rd ubyte5p)
                     (imm ubyte20p)
                     (pc ubyte64p)
-                    (stat state64ip))
-  :returns (new-stat state64ip)
-  (write-xreg rd
-              (+ (ubyte64-fix pc)
-                 (ash (signext-imm20 imm) 12))
-              (inc-pc stat))
+                    (stat state64p))
+  :returns (new-stat state64p)
+  (write64-xreg rd
+                (+ (ubyte64-fix pc)
+                   (ash (signext-imm20 imm) 12))
+                (inc64-pc stat))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -317,12 +315,12 @@
 (define exec-add ((rd ubyte5p)
                   (rs1 ubyte5p)
                   (rs2 ubyte5p)
-                  (stat state64ip))
-  :returns (new-stat state64ip)
-  (write-xreg rd
-              (+ (read-xreg-signed rs1 stat)
-                 (read-xreg-signed rs2 stat))
-              (inc-pc stat))
+                  (stat state64p))
+  :returns (new-stat state64p)
+  (write64-xreg rd
+                (+ (read64-xreg-signed rs1 stat)
+                   (read64-xreg-signed rs2 stat))
+                (inc64-pc stat))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -330,14 +328,14 @@
 (define exec-slt ((rd ubyte5p)
                   (rs1 ubyte5p)
                   (rs2 ubyte5p)
-                  (stat state64ip))
-  :returns (new-stat state64ip)
-  (write-xreg rd
-              (if (< (read-xreg-signed rs1 stat)
-                     (read-xreg-signed rs2 stat))
-                  1
-                0)
-              (inc-pc stat))
+                  (stat state64p))
+  :returns (new-stat state64p)
+  (write64-xreg rd
+                (if (< (read64-xreg-signed rs1 stat)
+                       (read64-xreg-signed rs2 stat))
+                    1
+                  0)
+                (inc64-pc stat))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -345,14 +343,14 @@
 (define exec-sltu ((rd ubyte5p)
                    (rs1 ubyte5p)
                    (rs2 ubyte5p)
-                   (stat state64ip))
-  :returns (new-stat state64ip)
-  (write-xreg rd
-              (if (< (read-xreg-unsigned rs1 stat)
-                     (read-xreg-unsigned rs2 stat))
-                  1
-                0)
-              (inc-pc stat))
+                   (stat state64p))
+  :returns (new-stat state64p)
+  (write64-xreg rd
+                (if (< (read64-xreg-unsigned rs1 stat)
+                       (read64-xreg-unsigned rs2 stat))
+                    1
+                  0)
+                (inc64-pc stat))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -360,12 +358,12 @@
 (define exec-and ((rd ubyte5p)
                   (rs1 ubyte5p)
                   (rs2 ubyte5p)
-                  (stat state64ip))
-  :returns (new-stat state64ip)
-  (write-xreg rd
-              (logand (read-xreg-signed rs1 stat)
-                      (read-xreg-signed rs2 stat))
-              (inc-pc stat))
+                  (stat state64p))
+  :returns (new-stat state64p)
+  (write64-xreg rd
+                (logand (read64-xreg-signed rs1 stat)
+                        (read64-xreg-signed rs2 stat))
+                (inc64-pc stat))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -373,12 +371,12 @@
 (define exec-or ((rd ubyte5p)
                  (rs1 ubyte5p)
                  (rs2 ubyte5p)
-                 (stat state64ip))
-  :returns (new-stat state64ip)
-  (write-xreg rd
-              (logior (read-xreg-signed rs1 stat)
-                      (read-xreg-signed rs2 stat))
-              (inc-pc stat))
+                 (stat state64p))
+  :returns (new-stat state64p)
+  (write64-xreg rd
+                (logior (read64-xreg-signed rs1 stat)
+                        (read64-xreg-signed rs2 stat))
+                (inc64-pc stat))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -386,12 +384,12 @@
 (define exec-xor ((rd ubyte5p)
                   (rs1 ubyte5p)
                   (rs2 ubyte5p)
-                  (stat state64ip))
-  :returns (new-stat state64ip)
-  (write-xreg rd
-              (logxor (read-xreg-signed rs1 stat)
-                      (read-xreg-signed rs2 stat))
-              (inc-pc stat))
+                  (stat state64p))
+  :returns (new-stat state64p)
+  (write64-xreg rd
+                (logxor (read64-xreg-signed rs1 stat)
+                        (read64-xreg-signed rs2 stat))
+                (inc64-pc stat))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -399,12 +397,12 @@
 (define exec-sll ((rd ubyte5p)
                   (rs1 ubyte5p)
                   (rs2 ubyte5p)
-                  (stat state64ip))
-  :returns (new-stat state64ip)
-  (write-xreg rd
-              (ash (read-xreg-unsigned rs1 stat)
-                   (loghead 6 (read-xreg-unsigned rs2 stat)))
-              (inc-pc stat))
+                  (stat state64p))
+  :returns (new-stat state64p)
+  (write64-xreg rd
+                (ash (read64-xreg-unsigned rs1 stat)
+                     (loghead 6 (read64-xreg-unsigned rs2 stat)))
+                (inc64-pc stat))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -412,12 +410,12 @@
 (define exec-srl ((rd ubyte5p)
                   (rs1 ubyte5p)
                   (rs2 ubyte5p)
-                  (stat state64ip))
-  :returns (new-stat state64ip)
-  (write-xreg rd
-              (ash (read-xreg-unsigned rs1 stat)
-                   (- (loghead 6 (read-xreg-unsigned rs2 stat))))
-              (inc-pc stat))
+                  (stat state64p))
+  :returns (new-stat state64p)
+  (write64-xreg rd
+                (ash (read64-xreg-unsigned rs1 stat)
+                     (- (loghead 6 (read64-xreg-unsigned rs2 stat))))
+                (inc64-pc stat))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -425,12 +423,12 @@
 (define exec-sra ((rd ubyte5p)
                   (rs1 ubyte5p)
                   (rs2 ubyte5p)
-                  (stat state64ip))
-  :returns (new-stat state64ip)
-  (write-xreg rd
-              (ash (read-xreg-signed rs1 stat)
-                   (- (loghead 6 (read-xreg-unsigned rs2 stat))))
-              (inc-pc stat))
+                  (stat state64p))
+  :returns (new-stat state64p)
+  (write64-xreg rd
+                (ash (read64-xreg-signed rs1 stat)
+                     (- (loghead 6 (read64-xreg-unsigned rs2 stat))))
+                (inc64-pc stat))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -438,12 +436,12 @@
 (define exec-sub ((rd ubyte5p)
                   (rs1 ubyte5p)
                   (rs2 ubyte5p)
-                  (stat state64ip))
-  :returns (new-stat state64ip)
-  (write-xreg rd
-              (- (read-xreg-signed rs1 stat)
-                 (read-xreg-signed rs2 stat))
-              (inc-pc stat))
+                  (stat state64p))
+  :returns (new-stat state64p)
+  (write64-xreg rd
+                (- (read64-xreg-signed rs1 stat)
+                   (read64-xreg-signed rs2 stat))
+                (inc64-pc stat))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -452,8 +450,8 @@
                  (rd ubyte5p)
                  (rs1 ubyte5p)
                  (rs2 ubyte5p)
-                 (stat state64ip))
-  :returns (new-stat state64ip)
+                 (stat state64p))
+  :returns (new-stat state64p)
   (case (op-funct-kind funct)
     (:add (exec-add rd rs1 rs2 stat))
     (:slt (exec-slt rd rs1 rs2 stat))
@@ -465,7 +463,7 @@
     (:srl (exec-srl rd rs1 rs2 stat))
     (:sra (exec-sra rd rs1 rs2 stat))
     (:sub (exec-sub rd rs1 rs2 stat))
-    (t (prog2$ (impossible) (state64i-fix stat))))
+    (t (prog2$ (impossible) (state64-fix stat))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -473,12 +471,12 @@
 (define exec-addw ((rd ubyte5p)
                    (rs1 ubyte5p)
                    (rs2 ubyte5p)
-                   (stat state64ip))
-  :returns (new-stat state64ip)
-  (write-xreg-32 rd
-                 (+ (read-xreg-signed32 rs1 stat)
-                    (read-xreg-signed32 rs2 stat))
-                 (inc-pc stat))
+                   (stat state64p))
+  :returns (new-stat state64p)
+  (write64-xreg-32 rd
+                   (+ (read64-xreg-signed32 rs1 stat)
+                      (read64-xreg-signed32 rs2 stat))
+                   (inc64-pc stat))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -486,12 +484,12 @@
 (define exec-sllw ((rd ubyte5p)
                    (rs1 ubyte5p)
                    (rs2 ubyte5p)
-                   (stat state64ip))
-  :returns (new-stat state64ip)
-  (write-xreg-32 rd
-                 (ash (read-xreg-unsigned32 rs1 stat)
-                      (loghead 5 (read-xreg-unsigned32 rs2 stat)))
-                 (inc-pc stat))
+                   (stat state64p))
+  :returns (new-stat state64p)
+  (write64-xreg-32 rd
+                   (ash (read64-xreg-unsigned32 rs1 stat)
+                        (loghead 5 (read64-xreg-unsigned32 rs2 stat)))
+                   (inc64-pc stat))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -499,12 +497,12 @@
 (define exec-srlw ((rd ubyte5p)
                    (rs1 ubyte5p)
                    (rs2 ubyte5p)
-                   (stat state64ip))
-  :returns (new-stat state64ip)
-  (write-xreg-32 rd
-                 (ash (read-xreg-unsigned32 rs1 stat)
-                      (- (loghead 5 (read-xreg-unsigned32 rs2 stat))))
-                 (inc-pc stat))
+                   (stat state64p))
+  :returns (new-stat state64p)
+  (write64-xreg-32 rd
+                   (ash (read64-xreg-unsigned32 rs1 stat)
+                        (- (loghead 5 (read64-xreg-unsigned32 rs2 stat))))
+                   (inc64-pc stat))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -512,12 +510,12 @@
 (define exec-sraw ((rd ubyte5p)
                    (rs1 ubyte5p)
                    (rs2 ubyte5p)
-                   (stat state64ip))
-  :returns (new-stat state64ip)
-  (write-xreg-32 rd
-                 (ash (read-xreg-signed32 rs1 stat)
-                      (- (loghead 5 (read-xreg-unsigned32 rs2 stat))))
-                 (inc-pc stat))
+                   (stat state64p))
+  :returns (new-stat state64p)
+  (write64-xreg-32 rd
+                   (ash (read64-xreg-signed32 rs1 stat)
+                        (- (loghead 5 (read64-xreg-unsigned32 rs2 stat))))
+                   (inc64-pc stat))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -525,12 +523,12 @@
 (define exec-subw ((rd ubyte5p)
                    (rs1 ubyte5p)
                    (rs2 ubyte5p)
-                   (stat state64ip))
-  :returns (new-stat state64ip)
-  (write-xreg-32 rd
-                 (- (read-xreg-signed32 rs1 stat)
-                    (read-xreg-signed32 rs2 stat))
-                 (inc-pc stat))
+                   (stat state64p))
+  :returns (new-stat state64p)
+  (write64-xreg-32 rd
+                   (- (read64-xreg-signed32 rs1 stat)
+                      (read64-xreg-signed32 rs2 stat))
+                   (inc64-pc stat))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -539,15 +537,15 @@
                     (rd ubyte5p)
                     (rs1 ubyte5p)
                     (rs2 ubyte5p)
-                    (stat state64ip))
-  :returns (new-stat state64ip)
+                    (stat state64p))
+  :returns (new-stat state64p)
   (case (op-32-funct-kind funct)
     (:addw (exec-addw rd rs1 rs2 stat))
     (:sllw (exec-sllw rd rs1 rs2 stat))
     (:srlw (exec-srlw rd rs1 rs2 stat))
     (:sraw (exec-sraw rd rs1 rs2 stat))
     (:subw (exec-subw rd rs1 rs2 stat))
-    (t (prog2$ (impossible) (state64i-fix stat))))
+    (t (prog2$ (impossible) (state64-fix stat))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -555,14 +553,14 @@
 (define exec-jal ((rd ubyte5p)
                   (imm ubyte20p)
                   (pc ubyte64p)
-                  (stat state64ip))
-  :returns (new-stat state64ip)
+                  (stat state64p))
+  :returns (new-stat state64p)
   (b* ((offset (ash (signext-imm20 imm) 1))
        (pc (ubyte64-fix pc))
        (new-pc (+ pc offset))
        (pc+4 (+ pc 4))
-       (stat (write-xreg rd pc+4 stat))
-       (stat (write-pc new-pc stat)))
+       (stat (write64-xreg rd pc+4 stat))
+       (stat (write64-pc new-pc stat)))
     stat)
   :hooks (:fix))
 
@@ -572,15 +570,15 @@
                    (rs1 ubyte5p)
                    (imm ubyte12p)
                    (pc ubyte64p)
-                   (stat state64ip))
-  :returns (new-stat state64ip)
+                   (stat state64p))
+  :returns (new-stat state64p)
   (b* ((offset (signext-imm12 imm))
-       (base (read-xreg-unsigned rs1 stat))
+       (base (read64-xreg-unsigned rs1 stat))
        (base+offset (+ base offset))
        (new-pc (logandc1 1 base+offset))
        (pc+4 (+ (ubyte64-fix pc) 4))
-       (stat (write-xreg rd pc+4 stat))
-       (stat (write-pc new-pc stat)))
+       (stat (write64-xreg rd pc+4 stat))
+       (stat (write64-pc new-pc stat)))
     stat)
   :prepwork
   ((defrulel verify-guards-lemma
@@ -595,16 +593,16 @@
                   (rs2 ubyte5p)
                   (imm ubyte12p)
                   (pc ubyte64p)
-                  (stat state64ip))
-  :returns (new-stat state64ip)
-  (b* ((src1 (read-xreg-unsigned rs1 stat))
-       (src2 (read-xreg-unsigned rs2 stat))
+                  (stat state64p))
+  :returns (new-stat state64p)
+  (b* ((src1 (read64-xreg-unsigned rs1 stat))
+       (src2 (read64-xreg-unsigned rs2 stat))
        (offset (ash (signext-imm12 imm) 1))
        (pc (ubyte64-fix pc))
        (target (+ pc offset))
        (pc+4 (+ pc 4))
        (new-pc (if (= src1 src2) target pc+4)))
-    (write-pc new-pc stat))
+    (write64-pc new-pc stat))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -613,16 +611,16 @@
                   (rs2 ubyte5p)
                   (imm ubyte12p)
                   (pc ubyte64p)
-                  (stat state64ip))
-  :returns (new-stat state64ip)
-  (b* ((src1 (read-xreg-unsigned rs1 stat))
-       (src2 (read-xreg-unsigned rs2 stat))
+                  (stat state64p))
+  :returns (new-stat state64p)
+  (b* ((src1 (read64-xreg-unsigned rs1 stat))
+       (src2 (read64-xreg-unsigned rs2 stat))
        (offset (ash (signext-imm12 imm) 1))
        (pc (ubyte64-fix pc))
        (target (+ pc offset))
        (pc+4 (+ pc 4))
        (new-pc (if (/= src1 src2) target pc+4)))
-    (write-pc new-pc stat))
+    (write64-pc new-pc stat))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -631,16 +629,16 @@
                   (rs2 ubyte5p)
                   (imm ubyte12p)
                   (pc ubyte64p)
-                  (stat state64ip))
-  :returns (new-stat state64ip)
-  (b* ((src1 (read-xreg-signed rs1 stat))
-       (src2 (read-xreg-signed rs2 stat))
+                  (stat state64p))
+  :returns (new-stat state64p)
+  (b* ((src1 (read64-xreg-signed rs1 stat))
+       (src2 (read64-xreg-signed rs2 stat))
        (offset (ash (signext-imm12 imm) 1))
        (pc (ubyte64-fix pc))
        (target (+ pc offset))
        (pc+4 (+ pc 4))
        (new-pc (if (< src1 src2) target pc+4)))
-    (write-pc new-pc stat))
+    (write64-pc new-pc stat))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -649,16 +647,16 @@
                    (rs2 ubyte5p)
                    (imm ubyte12p)
                    (pc ubyte64p)
-                   (stat state64ip))
-  :returns (new-stat state64ip)
-  (b* ((src1 (read-xreg-unsigned rs1 stat))
-       (src2 (read-xreg-unsigned rs2 stat))
+                   (stat state64p))
+  :returns (new-stat state64p)
+  (b* ((src1 (read64-xreg-unsigned rs1 stat))
+       (src2 (read64-xreg-unsigned rs2 stat))
        (offset (ash (signext-imm12 imm) 1))
        (pc (ubyte64-fix pc))
        (target (+ pc offset))
        (pc+4 (+ pc 4))
        (new-pc (if (< src1 src2) target pc+4)))
-    (write-pc new-pc stat))
+    (write64-pc new-pc stat))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -667,16 +665,16 @@
                   (rs2 ubyte5p)
                   (imm ubyte12p)
                   (pc ubyte64p)
-                  (stat state64ip))
-  :returns (new-stat state64ip)
-  (b* ((src1 (read-xreg-signed rs1 stat))
-       (src2 (read-xreg-signed rs2 stat))
+                  (stat state64p))
+  :returns (new-stat state64p)
+  (b* ((src1 (read64-xreg-signed rs1 stat))
+       (src2 (read64-xreg-signed rs2 stat))
        (offset (ash (signext-imm12 imm) 1))
        (pc (ubyte64-fix pc))
        (target (+ pc offset))
        (pc+4 (+ pc 4))
        (new-pc (if (>= src1 src2) target pc+4)))
-    (write-pc new-pc stat))
+    (write64-pc new-pc stat))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -685,16 +683,16 @@
                    (rs2 ubyte5p)
                    (imm ubyte12p)
                    (pc ubyte64p)
-                   (stat state64ip))
-  :returns (new-stat state64ip)
-  (b* ((src1 (read-xreg-unsigned rs1 stat))
-       (src2 (read-xreg-unsigned rs2 stat))
+                   (stat state64p))
+  :returns (new-stat state64p)
+  (b* ((src1 (read64-xreg-unsigned rs1 stat))
+       (src2 (read64-xreg-unsigned rs2 stat))
        (offset (ash (signext-imm12 imm) 1))
        (pc (ubyte64-fix pc))
        (target (+ pc offset))
        (pc+4 (+ pc 4))
        (new-pc (if (>= src1 src2) target pc+4)))
-    (write-pc new-pc stat))
+    (write64-pc new-pc stat))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -704,8 +702,8 @@
                      (rs2 ubyte5p)
                      (imm ubyte12p)
                      (pc ubyte64p)
-                     (stat state64ip))
-  :returns (new-stat state64ip)
+                     (stat state64p))
+  :returns (new-stat state64p)
   (case (branch-funct-kind funct)
     (:beq (exec-beq rs1 rs2 imm pc stat))
     (:bne (exec-bne rs1 rs2 imm pc stat))
@@ -713,7 +711,7 @@
     (:bltu (exec-bltu rs1 rs2 imm pc stat))
     (:bge (exec-bge rs1 rs2 imm pc stat))
     (:bgeu (exec-bgeu rs1 rs2 imm pc stat))
-    (t (prog2$ (impossible) (state64i-fix stat))))
+    (t (prog2$ (impossible) (state64-fix stat))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -721,11 +719,11 @@
 (define exec-lb ((rd ubyte5p)
                  (rs1 ubyte5p)
                  (imm ubyte12p)
-                 (stat state64ip))
-  :returns (new-stat state64ip)
+                 (stat state64p))
+  :returns (new-stat state64p)
   (b* ((addr (eff-addr rs1 imm stat))
-       (val (logext 8 (read-mem-ubyte8 addr stat))))
-    (write-xreg rd val (inc-pc stat)))
+       (val (logext 8 (read64-mem-ubyte8 addr stat))))
+    (write64-xreg rd val (inc64-pc stat)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -733,11 +731,11 @@
 (define exec-lbu ((rd ubyte5p)
                   (rs1 ubyte5p)
                   (imm ubyte12p)
-                  (stat state64ip))
-  :returns (new-stat state64ip)
+                  (stat state64p))
+  :returns (new-stat state64p)
   (b* ((addr (eff-addr rs1 imm stat))
-       (val (read-mem-ubyte8 addr stat)))
-    (write-xreg rd val (inc-pc stat)))
+       (val (read64-mem-ubyte8 addr stat)))
+    (write64-xreg rd val (inc64-pc stat)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -745,11 +743,11 @@
 (define exec-lh ((rd ubyte5p)
                  (rs1 ubyte5p)
                  (imm ubyte12p)
-                 (stat state64ip))
-  :returns (new-stat state64ip)
+                 (stat state64p))
+  :returns (new-stat state64p)
   (b* ((addr (eff-addr rs1 imm stat))
-       (val (logext 16 (read-mem-ubyte16-lendian addr stat))))
-    (write-xreg rd val (inc-pc stat)))
+       (val (logext 16 (read64-mem-ubyte16-lendian addr stat))))
+    (write64-xreg rd val (inc64-pc stat)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -757,11 +755,11 @@
 (define exec-lhu ((rd ubyte5p)
                   (rs1 ubyte5p)
                   (imm ubyte12p)
-                  (stat state64ip))
-  :returns (new-stat state64ip)
+                  (stat state64p))
+  :returns (new-stat state64p)
   (b* ((addr (eff-addr rs1 imm stat))
-       (val (read-mem-ubyte16-lendian addr stat)))
-    (write-xreg rd val (inc-pc stat)))
+       (val (read64-mem-ubyte16-lendian addr stat)))
+    (write64-xreg rd val (inc64-pc stat)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -769,11 +767,11 @@
 (define exec-lw ((rd ubyte5p)
                  (rs1 ubyte5p)
                  (imm ubyte12p)
-                 (stat state64ip))
-  :returns (new-stat state64ip)
+                 (stat state64p))
+  :returns (new-stat state64p)
   (b* ((addr (eff-addr rs1 imm stat))
-       (val (logext 32 (read-mem-ubyte32-lendian addr stat))))
-    (write-xreg rd val (inc-pc stat)))
+       (val (logext 32 (read64-mem-ubyte32-lendian addr stat))))
+    (write64-xreg rd val (inc64-pc stat)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -781,11 +779,11 @@
 (define exec-lwu ((rd ubyte5p)
                   (rs1 ubyte5p)
                   (imm ubyte12p)
-                  (stat state64ip))
-  :returns (new-stat state64ip)
+                  (stat state64p))
+  :returns (new-stat state64p)
   (b* ((addr (eff-addr rs1 imm stat))
-       (val (read-mem-ubyte32-lendian addr stat)))
-    (write-xreg rd val (inc-pc stat)))
+       (val (read64-mem-ubyte32-lendian addr stat)))
+    (write64-xreg rd val (inc64-pc stat)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -793,11 +791,11 @@
 (define exec-ld ((rd ubyte5p)
                  (rs1 ubyte5p)
                  (imm ubyte12p)
-                 (stat state64ip))
-  :returns (new-stat state64ip)
+                 (stat state64p))
+  :returns (new-stat state64p)
   (b* ((addr (eff-addr rs1 imm stat))
-       (val (read-mem-ubyte64-lendian addr stat)))
-    (write-xreg rd val (inc-pc stat)))
+       (val (read64-mem-ubyte64-lendian addr stat)))
+    (write64-xreg rd val (inc64-pc stat)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -806,8 +804,8 @@
                    (rd ubyte5p)
                    (rs1 ubyte5p)
                    (imm ubyte12p)
-                   (stat state64ip))
-  :returns (new-stat state64ip)
+                   (stat state64p))
+  :returns (new-stat state64p)
   (case (load-funct-kind funct)
     (:lb (exec-lb rd rs1 imm stat))
     (:lbu (exec-lbu rd rs1 imm stat))
@@ -816,7 +814,7 @@
     (:lw (exec-lw rd rs1 imm stat))
     (:lwu (exec-lwu rd rs1 imm stat))
     (:ld (exec-ld rd rs1 imm stat))
-    (t (prog2$ (impossible) (state64i-fix stat))))
+    (t (prog2$ (impossible) (state64-fix stat))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -824,11 +822,11 @@
 (define exec-sb ((rs1 ubyte5p)
                  (rs2 ubyte5p)
                  (imm ubyte12p)
-                 (stat state64ip))
-  :returns (new-stat state64ip)
+                 (stat state64p))
+  :returns (new-stat state64p)
   (b* ((addr (eff-addr rs1 imm stat))
-       (val (loghead 8 (read-xreg-unsigned rs2 stat))))
-    (write-mem-ubyte8 addr val (inc-pc stat)))
+       (val (loghead 8 (read64-xreg-unsigned rs2 stat))))
+    (write64-mem-ubyte8 addr val (inc64-pc stat)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -836,11 +834,11 @@
 (define exec-sh ((rs1 ubyte5p)
                  (rs2 ubyte5p)
                  (imm ubyte12p)
-                 (stat state64ip))
-  :returns (new-stat state64ip)
+                 (stat state64p))
+  :returns (new-stat state64p)
   (b* ((addr (eff-addr rs1 imm stat))
-       (val (loghead 16 (read-xreg-unsigned rs2 stat))))
-    (write-mem-ubyte16-lendian addr val (inc-pc stat)))
+       (val (loghead 16 (read64-xreg-unsigned rs2 stat))))
+    (write64-mem-ubyte16-lendian addr val (inc64-pc stat)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -848,11 +846,11 @@
 (define exec-sw ((rs1 ubyte5p)
                  (rs2 ubyte5p)
                  (imm ubyte12p)
-                 (stat state64ip))
-  :returns (new-stat state64ip)
+                 (stat state64p))
+  :returns (new-stat state64p)
   (b* ((addr (eff-addr rs1 imm stat))
-       (val (loghead 32 (read-xreg-unsigned rs2 stat))))
-    (write-mem-ubyte32-lendian addr val (inc-pc stat)))
+       (val (loghead 32 (read64-xreg-unsigned rs2 stat))))
+    (write64-mem-ubyte32-lendian addr val (inc64-pc stat)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -860,11 +858,11 @@
 (define exec-sd ((rs1 ubyte5p)
                  (rs2 ubyte5p)
                  (imm ubyte12p)
-                 (stat state64ip))
-  :returns (new-stat state64ip)
+                 (stat state64p))
+  :returns (new-stat state64p)
   (b* ((addr (eff-addr rs1 imm stat))
-       (val (loghead 64 (read-xreg-unsigned rs2 stat))))
-    (write-mem-ubyte64-lendian addr val (inc-pc stat)))
+       (val (loghead 64 (read64-xreg-unsigned rs2 stat))))
+    (write64-mem-ubyte64-lendian addr val (inc64-pc stat)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -873,22 +871,22 @@
                     (rs1 ubyte5p)
                     (rs2 ubyte5p)
                     (imm ubyte12p)
-                    (stat state64ip))
-  :returns (new-stat state64ip)
+                    (stat state64p))
+  :returns (new-stat state64p)
   (case (store-funct-kind funct)
     (:sb (exec-sb rs1 rs2 imm stat))
     (:sh (exec-sh rs1 rs2 imm stat))
     (:sw (exec-sw rs1 rs2 imm stat))
     (:sd (exec-sd rs1 rs2 imm stat))
-    (t (prog2$ (impossible) (state64i-fix stat))))
+    (t (prog2$ (impossible) (state64-fix stat))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define exec-instr ((instr instrp)
                     (pc ubyte64p)
-                    (stat state64ip))
-  :returns (new-stat state64ip)
+                    (stat state64p))
+  :returns (new-stat state64p)
   (instr-case instr
               :op-imm (exec-op-imm instr.funct
                                    instr.rd
@@ -900,7 +898,7 @@
                                          instr.rs1
                                          instr.imm
                                          stat)
-              :op-imms32 (error stat)
+              :op-imms32 (error64 stat)
               :op-imms64 (exec-op-imms instr.funct
                                        instr.rd
                                        instr.rs1

@@ -15,21 +15,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define step ((stat state64ip))
-  :returns (new-stat state64ip)
-  (b* (((when (errorp stat)) (state64i-fix stat))
-       (pc (read-pc stat))
-       (enc (read-mem-ubyte32-lendian pc stat))
+(define step ((stat state64p))
+  :returns (new-stat state64p)
+  (b* (((when (error64p stat)) (state64-fix stat))
+       (pc (read64-pc stat))
+       (enc (read64-mem-ubyte32-lendian pc stat))
        (instr? (decode enc t))
-       ((unless instr?) (error stat)))
+       ((unless instr?) (error64 stat)))
     (exec-instr instr? pc stat))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define stepn ((n natp) (stat state64ip))
-  :returns (new-stat state64ip)
-  (cond ((zp n) (state64i-fix stat))
-        ((errorp stat) (state64i-fix stat))
+(define stepn ((n natp) (stat state64p))
+  :returns (new-stat state64p)
+  (cond ((zp n) (state64-fix stat))
+        ((error64p stat) (state64-fix stat))
         (t (stepn (1- n) (step stat))))
   :hooks (:fix))
