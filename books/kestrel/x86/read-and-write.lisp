@@ -1986,7 +1986,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; same n and address
+; same n and same address
 (defthm read-of-write-same
   (implies (and (<= n 281474976710656) ; 2^48
                 (integerp addr)
@@ -2039,8 +2039,6 @@
                   (read n1 addr1 x86)))
   :hints (("Goal" :use (:instance read-of-write-irrel)
            :in-theory (e/d (separate) (read-of-write-irrel)))))
-
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2145,7 +2143,7 @@
 
 ;gen! can we drop this now?
 ;rename
-(defthm read-1-of-write-4-same
+(defthmd read-1-of-write-4-same
   (implies (and (natp read-ad)
                 (< read-ad (bvplus 48 4 write-ad))
                 (<= write-ad read-ad)
@@ -2201,13 +2199,13 @@
 ;; todo: read should go to read-byte?
 ;; todo: gen
 ;drop?
-(defthm read-1-of-write-4
-  (implies (and (canonical-address-p addr)
-                (canonical-address-p (+ 3 addr)))
-           (equal (read 1 addr (write 4 addr val x86))
-                  (bvchop 8 val)))
-  :hints (("Goal" :expand (write 4 addr val x86)
-           :in-theory (enable read write))))
+;; (defthm read-1-of-write-4
+;;   (implies (and (canonical-address-p addr)
+;;                 (canonical-address-p (+ 3 addr)))
+;;            (equal (read 1 addr (write 4 addr val x86))
+;;                   (bvchop 8 val)))
+;;   :hints (("Goal" :expand (write 4 addr val x86)
+;;            :in-theory (enable read write))))
 
 (defthm read-of-write-irrel-gen
   (implies (and (<= n2 (bvminus 48 addr1 addr2)) ; use bvle instead of <= ?

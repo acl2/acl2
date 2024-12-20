@@ -4779,7 +4779,7 @@
             acl2::boolif-of-bvlt-strengthen-to-equal
             acl2::bvlt-reduce-when-not-equal-one-less
             acl2::bvchop-of-logand-becomes-bvand
-            read-1-of-write-4
+            ;read-1-of-write-4
             ;read-1-of-write-1-both ; can make things, like failure to resolve rip, hard to debug
             read-1-of-write-within-new
             not-equal-of-+-when-separate
