@@ -197,6 +197,7 @@
 
 (acl2::defabsstobj-events mem
 
+    :non-executable t
     :attachable t
     :foundation mem$c
 
