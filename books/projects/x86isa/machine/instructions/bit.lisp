@@ -855,7 +855,10 @@
   :guard-debug t
   :body
   ;; placeholder
-  (b* ((operand-size (if (eql (vex->w vex-prefixes) 1) 8 4))
+  (b* ((operand-size (if (and (eql proc-mode #.*64-bit-mode*)
+                              (eql (vex->w vex-prefixes) 1))
+                         8
+                       4))
 
        ((the (unsigned-byte 4) src1-index)
         (vex-vvvv-reg-index (vex->vvvv vex-prefixes)))

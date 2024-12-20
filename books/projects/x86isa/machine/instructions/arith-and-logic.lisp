@@ -301,8 +301,7 @@
 
   :parents (three-byte-opcodes)
 
-  :short "Operand Fetch and Execute for ADD, ADC, SUB, SBB, OR, AND,
-  XOR, CMP: Addressing Mode = \(G, E\)"
+  :short "Operand Fetch and Execute for ADCX/ADOX"
 
   :long "<h3>Op/En = RM: \[OP REG, R/M\] or \[OP G, E\]</h3>
 
@@ -312,15 +311,11 @@
   general-purpose register or memory operand specified by the
   @('ModRM.r/m') field.</p>
 
-  \[OP REG, R/M\]  Flags Affected<br/>
-  02, 03: ADD   c p a z s o<br/>
-  0A, 0B: OR      p   z s   \(o and c cleared, a undefined\) <br/>
-  12, 13: ADC   c p a z s o<br/>
-  1A, 1B: SBB   c p a z s o<br/>
-  22, 23: AND     p   z s   \(o and c cleared, a undefined\) <br/>
-  2A, 2B: SUB   c p a z s o<br/>
-  32, 33: XOR     p   z s   \(o and c cleared, a undefined\) <br/>
-  3A, 3B: CMP   c p a z s o <br/>"
+  <p>These instructions are essentially variations of ADC with different flag
+  behavior. ADCX sums the two operands and the CF flag (just like ADC), then
+  sets the CF flag according to unsigned overflow (just like ADC), but doesn't
+  modify any other flags. ADOX is the same as ADCX but uses/sets OF in place of
+  CF.</p>"
 
 
   :returns (x86 x86p :hyp (x86p x86)
