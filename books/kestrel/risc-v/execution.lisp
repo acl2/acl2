@@ -22,7 +22,7 @@
        (enc (read64-mem-ubyte32-lendian pc stat))
        (instr? (decode enc t))
        ((unless instr?) (error64 stat)))
-    (exec-instr instr? pc stat))
+    (exec64-instr instr? pc stat))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
