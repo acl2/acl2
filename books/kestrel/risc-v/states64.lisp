@@ -12,8 +12,6 @@
 
 (include-book "library-extensions")
 
-(include-book "kestrel/fty/ubyte16" :dir :system)
-(include-book "kestrel/fty/ubyte32" :dir :system)
 (include-book "kestrel/fty/ubyte8-list" :dir :system)
 (include-book "kestrel/fty/ubyte64-list" :dir :system)
 (include-book "kestrel/fty/deflist-of-len" :dir :system)

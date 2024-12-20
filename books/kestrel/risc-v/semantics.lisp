@@ -14,9 +14,6 @@
 (include-book "instructions")
 (include-book "states64")
 
-(include-book "kestrel/fty/sbyte32" :dir :system)
-(include-book "kestrel/fty/sbyte64" :dir :system)
-(include-book "kestrel/fty/ubyte4" :dir :system)
 (include-book "kestrel/utilities/digits-any-base/core" :dir :system)
 (include-book "kestrel/utilities/digits-any-base/pow2" :dir :system)
 
