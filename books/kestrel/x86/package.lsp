@@ -709,8 +709,12 @@
     getbit
     bvlt
     bvle
+    bvgt
+    bvge
     sbvlt
     sbvle
+    sbvgt
+    sbvge
     bvcat
     bvcat2
     bvplus
@@ -1013,6 +1017,8 @@
     lowval
     highval
     ;; low high ; can't include these as above we get them from the x86isa package
+    size
+    size1
     size2))
 
 (defpkg "X" (append *acl2-exports*
