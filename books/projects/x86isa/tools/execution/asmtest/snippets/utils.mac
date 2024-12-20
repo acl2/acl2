@@ -18,18 +18,23 @@ flgstore: dw 0			;
 	; Backs up RSP to R10
 	; RSP is left pointing to FLGSTORE area
 	; Uses r12w as a temp for computing the reserved flags to preserve in ax
-	mov r10, rsp		; save stack ptr
-	lea rsp, [rel flgstore]	; point stack to where we want it
+	; mov r10, rsp		; save stack ptr
+	; lea rsp, [rel flgstore]	; point stack to where we want it
 	pushfw                  ; get the current flags
 	pop r11w		; save them to r11
 	; now we want to set ax = resflags ? r11w : ax
 	;                       = (resflags & r11w) | (~resflags & ax)
 	and ax, (~resflags & 0xffff) ; (~resflags & ax)
+	push r12		     ; backup r12 since it is supposed
+				; to be preserved
 	mov r12w, r11w		;
 	and r12w, resflags	; (resflags & r11w)
 	or ax, r12w		; resflags ? r11w : ax
+	pop r12			; restore r12
 	push ax                 ; push flags onto stack so we can pop them off
 	popfw			; set flags to input flags
+	; mov rsp, r10 		; restore the stack
+
 %endmacro	
 
 %macro get_and_restore_eflags 0
@@ -40,7 +45,7 @@ flgstore: dw 0			;
 	pop ax			; pop them back off into a reg
 	push r11w		; put the old flags back on the stack
 	popfw			; restore the old flags
-	mov rsp, r10		; restore stack pointer
+	; mov rsp, r10		; restore stack pointer
 %endmacro	
 	
 
