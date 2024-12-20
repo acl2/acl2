@@ -16,8 +16,6 @@
 (include-book "kestrel/fty/ubyte64-list" :dir :system)
 (include-book "kestrel/fty/deflist-of-len" :dir :system)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (local (in-theory (disable ash ifix)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
