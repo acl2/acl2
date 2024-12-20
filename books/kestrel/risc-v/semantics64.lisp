@@ -1187,7 +1187,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define eff-addr ((rs1 ubyte5p) (imm ubyte12p) (stat state64p))
+(define eff64-addr ((rs1 ubyte5p) (imm ubyte12p) (stat state64p))
   :returns (addr integerp)
   :short "Effective address for a load or store instruction [ISA:2.6]."
   :long
@@ -1219,7 +1219,7 @@
      and sign-extend it to 64 bits.
      We write the result to @('rd').
      We increment the program counter."))
-  (b* ((addr (eff-addr rs1 imm stat))
+  (b* ((addr (eff64-addr rs1 imm stat))
        (result (loghead 64 (logext 8 (read64-mem-ubyte8 addr stat))))
        (stat (write64-xreg rd result stat))
        (stat (inc64-pc stat)))
@@ -1242,7 +1242,7 @@
      which is also implicitly zero-extended to 64 bits.
      We write the result to @('rd').
      We increment the program counter."))
-  (b* ((addr (eff-addr rs1 imm stat))
+  (b* ((addr (eff64-addr rs1 imm stat))
        (result (read64-mem-ubyte8 addr stat))
        (stat (write64-xreg rd result stat))
        (stat (inc64-pc stat)))
@@ -1267,7 +1267,7 @@
      and sign-extend it to 64 bits.
      We write the result to @('rd').
      We increment the program counter."))
-  (b* ((addr (eff-addr rs1 imm stat))
+  (b* ((addr (eff64-addr rs1 imm stat))
        (result (loghead 64 (logext 16 (read64-mem-ubyte16-lendian addr stat))))
        (stat (write64-xreg rd result stat))
        (stat (inc64-pc stat)))
@@ -1292,7 +1292,7 @@
      which is also implicitly zero-extended to 64 bits.
      We write the result to @('rd').
      We increment the program counter."))
-  (b* ((addr (eff-addr rs1 imm stat))
+  (b* ((addr (eff64-addr rs1 imm stat))
        (result (read64-mem-ubyte16-lendian addr stat))
        (stat (write64-xreg rd result stat))
        (stat (inc64-pc stat)))
@@ -1317,7 +1317,7 @@
      and sign-extend it to 64 bits.
      We write the result to @('rd').
      We increment the program counter."))
-  (b* ((addr (eff-addr rs1 imm stat))
+  (b* ((addr (eff64-addr rs1 imm stat))
        (result (loghead 64 (logext 32 (read64-mem-ubyte32-lendian addr stat))))
        (stat (write64-xreg rd result stat))
        (stat (inc64-pc stat)))
@@ -1342,7 +1342,7 @@
      which is also implicitly zero-extended to 64 bits.
      We write the result to @('rd').
      We increment the program counter."))
-  (b* ((addr (eff-addr rs1 imm stat))
+  (b* ((addr (eff64-addr rs1 imm stat))
        (result (read64-mem-ubyte32-lendian addr stat))
        (stat (write64-xreg rd result stat))
        (stat (inc64-pc stat)))
@@ -1366,7 +1366,7 @@
      We read an unsigned 64-bit integer from the effective address.
      We write the integer to @('rd').
      We increment the program counter."))
-  (b* ((addr (eff-addr rs1 imm stat))
+  (b* ((addr (eff64-addr rs1 imm stat))
        (result (read64-mem-ubyte64-lendian addr stat))
        (stat (write64-xreg rd result stat))
        (stat (inc64-pc stat)))
@@ -1408,7 +1408,7 @@
      We read the low 8 bits of @('rs2') as an unsigned 8-bit integer.
      We write the integer to the effective address.
      We increment the program counter."))
-  (b* ((addr (eff-addr rs1 imm stat))
+  (b* ((addr (eff64-addr rs1 imm stat))
        (val (loghead 8 (read64-xreg-unsigned rs2 stat)))
        (stat (write64-mem-ubyte8 addr val stat))
        (stat (inc64-pc stat)))
@@ -1432,7 +1432,7 @@
      We read the low 16 bits of @('rs2') as an unsigned 16-bit integer.
      We write the integer to the effective address.
      We increment the program counter."))
-  (b* ((addr (eff-addr rs1 imm stat))
+  (b* ((addr (eff64-addr rs1 imm stat))
        (val (loghead 16 (read64-xreg-unsigned rs2 stat)))
        (stat (write64-mem-ubyte16-lendian addr val stat))
        (stat (inc64-pc stat)))
@@ -1456,7 +1456,7 @@
      We read the low 32 bits of @('rs2') as an unsigned 21-bit integer.
      We write the integer to the effective address.
      We increment the program counter."))
-  (b* ((addr (eff-addr rs1 imm stat))
+  (b* ((addr (eff64-addr rs1 imm stat))
        (val (loghead 32 (read64-xreg-unsigned rs2 stat)))
        (stat (write64-mem-ubyte32-lendian addr val stat))
        (stat (inc64-pc stat)))
@@ -1480,7 +1480,7 @@
      We read an unsigned 64-bit integer from @('rs2').
      We write the integer to the effective address.
      We increment the program counter."))
-  (b* ((addr (eff-addr rs1 imm stat))
+  (b* ((addr (eff64-addr rs1 imm stat))
        (val (read64-xreg-unsigned rs2 stat))
        (stat (write64-mem-ubyte64-lendian addr val stat))
        (stat (inc64-pc stat)))
