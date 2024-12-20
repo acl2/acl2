@@ -7,7 +7,7 @@
 (in-package "ACL2")
 
 ; Introduce the implementation stobj, mem{ht}.
-(include-book "mem{ht}")
+(include-book "mem_ht")
 
 ; Prepare to attach mem{ht} to the stobj, mem, when mem is introduced as an
 ; attachable stobj.
