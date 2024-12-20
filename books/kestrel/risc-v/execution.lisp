@@ -10,26 +10,19 @@
 
 (in-package "RISCV")
 
-(include-book "decoding")
-(include-book "semantics")
+(include-book "execution32")
+(include-book "execution64")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define step ((stat state64p))
-  :returns (new-stat state64p)
-  (b* (((when (error64p stat)) (state64-fix stat))
-       (pc (read64-pc stat))
-       (enc (read64-mem-ubyte32-lendian pc stat))
-       (instr? (decode enc t))
-       ((unless instr?) (error64 stat)))
-    (exec64-instr instr? pc stat))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define stepn ((n natp) (stat state64p))
-  :returns (new-stat state64p)
-  (cond ((zp n) (state64-fix stat))
-        ((error64p stat) (state64-fix stat))
-        (t (stepn (1- n) (step stat))))
-  :hooks (:fix))
+(defxdoc+ execution
+  :parents (riscv)
+  :short "Model of execution."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Currently we have two similar but slightly different models,
+     one for RV32I and one for RV64I.
+     We plan to consolidate them into one model for both."))
+  :order-subtopics (execution32
+                    execution64))
