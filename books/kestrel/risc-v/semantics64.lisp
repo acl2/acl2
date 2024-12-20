@@ -1453,7 +1453,7 @@
     "Only little endian is supported for now.")
    (xdoc::p
     "We calculate the effective address.
-     We read the low 32 bits of @('rs2') as an unsigned 21-bit integer.
+     We read the low 32 bits of @('rs2') as an unsigned 32-bit integer.
      We write the integer to the effective address.
      We increment the program counter."))
   (b* ((addr (eff64-addr rs1 imm stat))
