@@ -1,7 +1,7 @@
 ; Utilities for querying the ACL2 logical world.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ; Copyright (C) 2015-2017, Regents of the University of Texas
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -51,6 +51,13 @@
           (er hard? 'fn-body  "Body of function ~x0 is not a pseudo-term !" name)
         body))))
 
+;Happens to be true even if FN is not defined, because hard-error returns nil, which is a pseudo-term
+(defthm pseudo-termp-of-fn-body
+  (pseudo-termp (fn-body fn throw-errorp wrld))
+  :hints (("Goal" :in-theory (enable fn-body))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defun all-fn-definedp (names wrld)
   (declare (xargs :guard (and (symbol-listp names)
                               (plist-worldp wrld))))
@@ -60,10 +67,7 @@
          (fn-definedp (first names) wrld)
          (all-fn-definedp (rest names) wrld))))
 
-;Happens to be true even if FN is not defined, because hard-error returns nil, which is a pseudo-term
-(defthm pseudo-termp-of-fn-body
-  (pseudo-termp (fn-body fn throw-errorp wrld))
-  :hints (("Goal" :in-theory (enable fn-body))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Get the formals of a function
 (defund fn-formals (name wrld)
@@ -91,6 +95,8 @@
   (legal-variable-listp (fn-formals fun wrld))
   :hints (("Goal" :in-theory (enable fn-formals))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;dup
 (local
  (defthm pseudo-term-listp-when-symbol-listp-cheap
@@ -111,11 +117,15 @@
 (defthm eqlable-listp-of-fn-formals
   (eqlable-listp (fn-formals fun wrld)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; TODO: Just call arity, but I guess this one can throw an error:
 (defun fn-arity (name wrld)
   (declare (xargs :guard (and (symbolp name)
                               (plist-worldp wrld))))
   (len (fn-formals name wrld)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns the (translated) guard of the given function (a result of t means
 ;; either no guard given or an explicit guard of t).  Works even on :program
@@ -140,6 +150,8 @@
   (pseudo-termp (fn-guard$ name world))
   :hints (("Goal" :in-theory (enable fn-guard$))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defund fn-has-measurep (name state)
 
 ; This function really just checks (as in a previous version) that there is a
@@ -149,6 +161,8 @@
   (declare (xargs :stobjs (state)
                   :guard (symbolp name)))
   (not (null (getpropc name 'justification))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Only call this on a recursive function.  TODO: Add a guard that checks that.
 ;; TODO: Improve this to use get-event to get an untranslated version of the
@@ -170,6 +184,8 @@
   (pseudo-termp (fn-measure fun state))
   :hints (("Goal" :in-theory (enable fn-measure))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Only call this on recursive functions.  TODO: Add a guard that checks that.
 (defun fn-measures (names state)
   (declare (xargs :stobjs (state)
@@ -178,6 +194,8 @@
       nil
     (cons (fn-measure (first names) state)
           (fn-measures (rest names) state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;Tests whether NAME is recursive or mutually-recursive, when
 ;;NAME is a :logic mode function symbol.
@@ -197,15 +215,21 @@
   (not (eq (getpropc name 'recursivep t)
            t)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defund fn-singly-recursivep (name state)
   (declare (xargs :stobjs (state)
                   :guard (symbolp name)))
   (eql 1 (len (getpropc name 'recursivep))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defund fn-mutually-recursivep (name state)
   (declare (xargs :stobjs (state)
                   :guard (symbolp name)))
   (< 1 (len (getpropc name 'recursivep))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Return a list of all recursive / mutually-recursive partners of NAME (including NAME itself).
 ;; If NAME is non-recursive, return nil.
@@ -222,6 +246,8 @@
 (defthm symbol-listp-of-fn-recursive-partners
   (symbol-listp (fn-recursive-partners fn wrld))
   :hints (("Goal" :in-theory (enable fn-recursive-partners))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;todo: just take wrld
 (mutual-recursion
@@ -273,6 +299,8 @@
 (defmacro check-arities (term)
   `(check-arities-fn ,term state))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns the (translated) body of DEFTHM-NAME, which must be the name of a
 ;; theorem in the world.
 (defund defthm-body (defthm-name wrld)
@@ -289,6 +317,8 @@
   (pseudo-termp (defthm-body name wrld))
   :hints (("Goal" :in-theory (enable defthm-body))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;;assumes defthm-name is the name of a theorem in the world. ;todo:
 ;;make a separate version that checks that
 ;todo: should we apply any checks to the body?
@@ -300,6 +330,8 @@
         ;; this message assumes every theorem has an 'untranslated-theorem property:
         (er hard? 'defthm-body-untranslated "~x0 does not appear to be a theorem in the current world !" defthm-name)
       untranslated-body)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun defthm-rule-classes (defthm-name wrld)
   (declare (xargs :guard (and (symbolp defthm-name)
@@ -315,6 +347,8 @@
   (true-listp (defthm-rule-classes name wrld))
   :rule-classes :type-prescription)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Check whether NAME is a defined defthm
 (defund defined-defthmp (name state)
   (declare (xargs :stobjs (state)
@@ -325,6 +359,8 @@
       (if (not (pseudo-termp body))
           (er hard? 'defined-defthmp "Theorem ~x0's body is not a pseudo-termp (it's ~x1).~%" name body)
         t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun filter-0ary-fns (fns state)
   (declare (xargs :stobjs state
@@ -364,6 +400,8 @@
          (runes (cons-onto-all :executable-counterpart (ENLIST-ALL fns)))
          )
     runes))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; throws a hard error if all the NAMES are not theorems or function names
 ;; (representing their definition rules) in WRLD
