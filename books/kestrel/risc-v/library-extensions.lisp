@@ -29,6 +29,12 @@
                 (integerp y))
            (integerp (+ x y))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled integerp-of-unary-minus
+  (implies (integerp x)
+           (integerp (- x))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defrule ubyte5p-of-loghead-of-5
