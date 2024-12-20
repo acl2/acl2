@@ -10,6 +10,7 @@
 
 (in-package "RISCV")
 
+(include-book "states32")
 (include-book "states64")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -20,6 +21,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Currently we model states for RV64I.
-     We plan to add states for RV32I soon."))
-  :order-subtopics (states64))
+    "Currently we have two similar but slightly different models,
+     one for RV32I and one for RV64I.
+     We plan to consolidate them into one model for both."))
+  :order-subtopics (states32
+                    states64))
