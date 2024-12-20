@@ -107,7 +107,7 @@
   (xdoc::topstring
    (xdoc::p
     "We read an unsigned 64-bit integer from @('rs1').
-     We sign-extend the 12-bit immediate to 64 bit,
+     We sign-extend the 12-bit immediate to 64 bits,
      obtaining an unsigned 64-bit integer.
      We compare the two unsigned integers:
      if the first one is less than the second,
@@ -1194,8 +1194,10 @@
   (xdoc::topstring
    (xdoc::p
     "We read an unsigned 64-bit integer from @('rs1'); this is the base.
-     We sign-extend the 12-bit immediate to 64-bits; this is the offset.
-     We return the sum of base and offset."))
+     We sign-extend the 12-bit immediate to 64 bits; this is the offset.
+     We return the sum of base and offset, as an integer;
+     the functions to read and write memory
+     use the low 64 bits of this integer."))
   (b* ((base (read64-xreg-unsigned rs1 stat))
        (offset (loghead 64 (logext 12 (ubyte12-fix imm)))))
     (+ base offset))
