@@ -10,19 +10,19 @@
 
 (in-package "RISCV")
 
-(include-book "execution32")
-(include-book "execution64")
+(include-book "states32")
+(include-book "states64")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ execution
+(defxdoc+ states
   :parents (riscv)
-  :short "Model of execution."
+  :short "Model of states."
   :long
   (xdoc::topstring
    (xdoc::p
     "Currently we have two similar but slightly different models,
      one for RV32I and one for RV64I.
      We plan to consolidate them into one model for both."))
-  :order-subtopics (execution32
-                    execution64))
+  :order-subtopics (states32
+                    states64))
