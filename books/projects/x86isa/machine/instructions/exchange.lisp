@@ -368,7 +368,7 @@
 
 (def-inst x86-cmpxchg8b/16b
 
-  ;; Op/En: MR
+  ;; Op/En: M
   ;; 0F C7 /1:       CMPXCHG8B m64
   ;; REX.W 0F C7 /1: CMPXCHG16B m128
 
