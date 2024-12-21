@@ -14,9 +14,10 @@ memory using an array.
   is attachable so that it can have different foundations and
   different executions for its exports.
 
-The book mem{ht}.lisp introduces the following two stobjs, in analogy
+The book mem_ht.lisp introduces the following two stobjs, in analogy
 to those above, but modeling memory using a hash table instead of an
-array.
+array.  (The book would be named mem{ht}.lisp, but curly braces in
+filenames can cause problems.)
 
 - Stobj mem{ht}$c is an ordinary (concrete) stobj with a single field,
   a hash table, that is intended to model a memory by assocating

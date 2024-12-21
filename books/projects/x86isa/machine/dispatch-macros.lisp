@@ -229,6 +229,8 @@
 
 (local (include-book "arithmetic-5/top" :dir :system))
 
+
+
 (define chk-exc-fn ((decode-context symbolp)
                     (type-id        symbolp)
                     (feature-flags  symbol-listp)
@@ -318,9 +320,11 @@
                       (eql proc-mode #.*compatibility-mode*)
                       (eql proc-mode #.*protected-mode*)))))
     :ud)
-   ((eq type-id :type-vex-gpr)
+   ((or (eq type-id :type-vex-gpr)
+        ;; BOZO Sol -- it seems like maybe this is a synonym?
+        (eq type-id :type-13))
     ;; from table 2.5.1 from volume 2.. we only need to additionally check
-    ;; the cpuid requirements:
+    ;; the cpuid requirements: (BOZO Sol -- maybe this is now table 2.6.1?)
     (cond ((equal (feature-flags feature-flags) 0) :ud)))
    ((equal (cr0Bits->ts (cr0)) 1)
     :nm)
