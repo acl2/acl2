@@ -1,0 +1,17 @@
+-
+
+(FUNCDEF INT64_FUNC (A)
+         (BLOCK (RETURN A)))
+
+(FUNCDEF UINT64_FUNC (A)
+         (BLOCK (RETURN A)))
+
+(FUNCDEF INT_FUNC (A)
+         (BLOCK (RETURN A)))
+
+(FUNCDEF UINT_FUNC (B)
+         (BLOCK (RETURN B)))
+
+(FUNCDEF BOOL_FUNC (C)
+         (BLOCK (RETURN C)))
+

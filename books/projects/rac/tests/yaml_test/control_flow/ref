@@ -1,0 +1,10 @@
+-
+
+(FUNCDEF FOO NIL
+         (BLOCK (DECLARE RES 0)
+                (FOR ((DECLARE I (INIT))
+                      (LOG< I 9)
+                      (BITS (+ I 1) 31 0))
+                     (BLOCK (ASSIGN RES (BITS (+ RES 1) 31 0))))
+                (RETURN RES)))
+

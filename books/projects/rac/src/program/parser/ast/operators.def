@@ -1,0 +1,42 @@
+// This file is used to generate code for each operator.
+// To use it define APPLY_BINARY_OP and APPLY_ASSIGN_OP macros (they must
+// always be defined, even if they produce nothing), where the first parameter
+// is the name of the operator and the second one is the operator. Then include
+// this file and undef the previously defined macros.
+
+APPLY_BINARY_OP( Plus, + )
+APPLY_BINARY_OP( Minus, - )
+APPLY_BINARY_OP( Times, * )
+APPLY_BINARY_OP( Divide, / )
+APPLY_BINARY_OP( Mod, % )
+APPLY_BINARY_OP( LShift, << )
+APPLY_BINARY_OP( RShift, >> )
+APPLY_BINARY_OP( BitAnd, & )
+APPLY_BINARY_OP( BitXor, ^ )
+APPLY_BINARY_OP( BitOr, | )
+APPLY_BINARY_OP( Less, < )
+APPLY_BINARY_OP( Greater, > )
+APPLY_BINARY_OP( LessEqual, <= )
+APPLY_BINARY_OP( GreaterEqual, >= )
+APPLY_BINARY_OP( Equal, == )
+APPLY_BINARY_OP( NotEqual, != )
+APPLY_BINARY_OP( And, && )
+APPLY_BINARY_OP( Or, || )
+
+APPLY_ASSIGN_OP( PlusAssign, += )
+APPLY_ASSIGN_OP( MinusAssign, -= )
+APPLY_ASSIGN_OP( TimesAssign, *= )
+APPLY_ASSIGN_OP( DivideAssign, /= )
+APPLY_ASSIGN_OP( ModAssign, %= )
+APPLY_ASSIGN_OP( LShiftAssign, <<= )
+APPLY_ASSIGN_OP( RShiftAssign, >>= )
+APPLY_ASSIGN_OP( BitAndAssign, &= )
+APPLY_ASSIGN_OP( BitXorAssign, ^= )
+APPLY_ASSIGN_OP( BitOrAssign, |= )
+APPLY_ASSIGN_OP( PlusPlus, ++ )
+APPLY_ASSIGN_OP( MinusMinus, -- )
+
+APPLY_UNARY_OP( UnaryPlus, + )
+APPLY_UNARY_OP( UnaryMinus, - )
+APPLY_UNARY_OP( BitNot, ~ )
+APPLY_UNARY_OP( Not, ! )

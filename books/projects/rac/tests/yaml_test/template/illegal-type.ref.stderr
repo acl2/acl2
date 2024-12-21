@@ -1,0 +1,3 @@
+illegal-type.cpp:7 (10-13): Illegal type `A`, only primitive type (like int or bool) value are allowed as template parameters.
+  7 | template <A a>
+    |           ^^^

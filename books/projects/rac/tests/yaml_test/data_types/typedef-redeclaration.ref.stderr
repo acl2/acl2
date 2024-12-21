@@ -1,1 +1,3 @@
-typedef-redeclaration.cpp:4: syntax error, unexpected TYPEID, expecting ID
+typedef-redeclaration.cpp:4 (12-18): syntax error, unexpected TYPEID, expecting ID
+  4 | typedef int MyType;
+    |             ^^^^^^
