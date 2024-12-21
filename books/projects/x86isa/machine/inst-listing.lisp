@@ -19060,7 +19060,7 @@
               :REG #x3
               :GROUP '(:GROUP-17))
           (ARG :OP1 '(B Y) :OP2 '(E Y))
-          NIL
+          '(x86-blsi)
           '((:EX (CHK-EXC :TYPE-13 (:BMI1 :AVX)))))
     (INST "BLSI"
           (OP :OP #xF38F3
@@ -19069,7 +19069,7 @@
               :REG #x3
               :GROUP '(:GROUP-17))
           (ARG :OP1 '(B Y) :OP2 '(E Y))
-          NIL
+          '(x86-blsi)
           '((:EX (CHK-EXC :TYPE-13 (:BMI1 :AVX)))))
     (INST "BZHI"
           (OP :OP #xF38F5
@@ -19130,14 +19130,14 @@
               :PFX :66
               :FEAT '(:ADX))
           (ARG :OP1 '(G Y) :OP2 '(E Y))
-          'NIL
+          '(X86-ADCX/ADOX (ADCX . T))
           '((:UD (UD-LOCK-USED))))
     (INST "ADOX"
           (OP :OP #xF38F6
               :PFX :F3
               :FEAT '(:ADX))
           (ARG :OP1 '(G Y) :OP2 '(E Y))
-          'NIL
+          '(X86-ADCX/ADOX (ADCX . NIL))
           '((:UD (UD-LOCK-USED))))
     (INST "MULX"
           (OP :OP #xF38F6

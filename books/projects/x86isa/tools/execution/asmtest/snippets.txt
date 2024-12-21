@@ -1,0 +1,29 @@
+# x86isa assembly snippet testing framework
+#
+# X86ISA Library
+# Copyright (C) 2024 Kestrel Technology, LLC
+#
+# License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
+#
+# Author: Sol Swords (sswords@gmail.com)
+
+# Snippet table for parsing by snippet_table.py
+
+# Name	  Input bytes	    Output bytes
+adox32	  10		    6
+adox64	  18		    10
+adcx32	  10		    6
+adcx64	  18		    10
+blsi32	  10		    6
+blsi64	  18		    10
+# blsr32	  10		    6
+# blsr64	  18		    10
+# blsmsk32  10		    6
+# blsmsk64  18		    10
+# bzhi32	  10		    6
+# bzhi64	  18		    10
+# pdep32	  10		    6
+# pdep64	  18		    10
+# pext32	  10		    6
+# pext64	  18		    10
+
