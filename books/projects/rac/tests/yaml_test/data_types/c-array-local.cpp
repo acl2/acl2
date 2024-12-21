@@ -1,8 +1,7 @@
 // RAC begin
 
-int foo()
-{
-  int a[5];
+int foo() {
+  int a[5] = {};
   a[2] = 3;
   return a[2];
 }

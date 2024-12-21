@@ -22264,6 +22264,7 @@
            (t (value nil))))))))))
 
 (defun attached-stobj (st wrld top)
+; Top is t for a top-level call, nil otherwise.
   (let ((st2 (cdr (assoc-eq st (table-alist 'attach-stobj-table wrld)))))
     (cond (st2 (attached-stobj st2 wrld nil))
           (top nil)

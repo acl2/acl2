@@ -1,0 +1,6 @@
+const-assign.cpp:5 (2-3): Assignment of read-only variable a
+  5 |   a = 3;
+    |   ^
+note: defined here
+  4 |   const int a = 1;
+    |             ^

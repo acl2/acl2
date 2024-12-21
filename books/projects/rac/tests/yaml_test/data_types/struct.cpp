@@ -1,24 +1,19 @@
 // RAC begin
 
-struct S
-{
+struct S {
   int a;
   int b;
 };
 
-int get(S ss)
-{
-  return ss.b;
-}
+int get(S ss) { return ss.b; }
 
-int set()
-{
-  S ss;
+int set() {
+  S ss = {};
   ss.a = 2;
   ss.b = 9;
 
+  S copied = ss;
 
   return ss.a + ss.b;
 }
 // RAC end
-

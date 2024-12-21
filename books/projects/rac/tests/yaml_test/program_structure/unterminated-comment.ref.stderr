@@ -1,2 +1,7 @@
-:12: unterminated comment
-:12: syntax error, unexpected $undefined
+unterminated-comment.cpp.i:7 (0-2): Unterminated comment
+  7 | /*
+    | ^^
+
+unterminated-comment.cpp.i:7 (0-2): syntax error, unexpected $undefined
+  7 | /*
+    | ^^
