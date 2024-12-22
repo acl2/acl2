@@ -53,12 +53,57 @@
 (add-macro-fn tl-fix acl2::true-list-fix)
 
 (definec bin-app (x :tl y :tl) :tl
-  (append x y))
+  (if (endp x)
+      y
+    (cons (car x) (bin-app (cdr x) y))))
 
 (make-n-ary-macro app bin-app nil t)
 
-(add-macro-fn app binary-append)
+;(add-macro-fn app binary-append)
 (add-macro-fn app bin-app)
+
+(defthm app-assoc
+  (implies (and (tlp x) (tlp y) (tlp z))
+           (equal (app (app x y) z)
+                  (app x (app y z)))))
+
+(defthm app-nil
+  (implies (tlp x)
+           (equal (app x nil) x)))
+
+(defthm app-of-cons
+  (implies (and (tlp x) (tlp y))
+           (equal (app (cons a x) y)
+                  (cons a (app x y)))))
+
+(defthm app-of-rcons
+  (implies (and (tlp x) (tlp y))
+           (equal (app (acl2::rcons a x) y)
+                  (app x (cons a y))))
+  :hints (("goal" :in-theory (enable acl2::rcons))))
+
+(defthm app-under-iff
+  (implies (and (tlp x) (tlp y))
+           (iff (app x y)
+                (or x y))))
+
+(defthm app-of-repeat-to-cons-of-same
+  (implies (tlp x)
+           (equal (app (repeat n a) (cons a x))
+                  (cons a (app (repeat n a) x))))
+  :hints (("goal" :in-theory (enable repeat))))
+
+(defthm app-when-prefixp
+  (implies (and (tlp x) (tlp y) (acl2::prefixp x y))
+           (equal (app x (nthcdr (len x) y))
+                  y))
+  :hints (("goal" :in-theory (enable acl2::prefixp))))
+
+(defthm app-of-take-and-nthcdr
+  (implies (and (tlp x)
+                (<= (nfix n) (len x)))
+           (equal (app (take n x) (nthcdr n x))
+                  x)))
 
 ; shorthand for equal
 (defmacro == (x y)
@@ -493,4 +538,14 @@ Useful for testing defunc/definec errors
 
 (definec lrev (x :tl) :tl
   (rev x))
+
+(defthm app-of-snoc
+  (implies (and (tlp x) (tlp y))
+           (equal (app (snoc x a) y)
+                  (app x (cons a y)))))
+
+(defthm len-of-app
+  (implies (and (tlp x) (tlp y))
+           (equal (len (app x y))
+                  (+ (len x) (len y)))))
 

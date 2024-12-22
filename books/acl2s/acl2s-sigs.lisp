@@ -18,6 +18,10 @@
 (sig append ((alistof :a :b) (alistof :a :b)) => (alistof :a :b)
      :suffix alistof)
 
+(sig app ((listof :a) (listof :a)) => (listof :a))
+(sig app ((alistof :a :b) (alistof :a :b)) => (alistof :a :b)
+     :suffix alistof)
+
 (sig acl2::rev ((listof :a)) => (listof :a))
 (sig acl2::rev ((alistof :a :b)) => (alistof :a :b)
      :suffix alistof)
