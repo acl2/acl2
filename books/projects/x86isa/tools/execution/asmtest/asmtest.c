@@ -84,7 +84,6 @@ int main (int argc, char* argv[]) {
   
   for (i=0; i<snippet_count; i++) {
     snip = &snippets[i];
-    printf("checking %s = %s\n", snip->name, arguments.snippet);
     if (!strcmp(snip->name, arguments.snippet))
       break;
   }
