@@ -189,7 +189,9 @@
        ((when flg1)
         (!!ms-fresh :rme-size-error flg1))
 
-       (countMask (if (logbitp #.*w* rex-byte)
+       ;; REX does not promote to 64-bits for byte-operand opcodes
+       (countMask (if (and (not byte-operand?)
+                           (logbitp #.*w* rex-byte))
                       #x3F
                     #x1F))
        (shift/rotate-by (logand countMask shift/rotate-by))
