@@ -16,6 +16,9 @@
 (include-book "kestrel/fty/ubyte32-list" :dir :system)
 (include-book "kestrel/fty/deflist-of-len" :dir :system)
 
+(local (include-book "arithmetic-5/top" :dir :system))
+(local (include-book "ihs/logops-lemmas" :dir :system))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (local (in-theory (disable ash ifix)))
@@ -237,7 +240,6 @@
      We return the byte at that memory address, directly."))
   (b* ((addr (loghead 32 addr)))
     (nth addr (state32->mem stat)))
-  :prepwork ((local (include-book "ihs/logops-lemmas" :dir :system)))
 
   ///
 
@@ -274,7 +276,6 @@
        (b1 (read32-mem-ubyte8 (1+ (ifix addr)) stat)))
     (+ b0
        (ash b1 8)))
-  :prepwork ((local (include-book "arithmetic-5/top" :dir :system)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -295,7 +296,6 @@
        (ash b1 8)
        (ash b2 16)
        (ash b3 24)))
-  :prepwork ((local (include-book "arithmetic-5/top" :dir :system)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -313,7 +313,6 @@
                                           (ubyte8-fix val)
                                           (state32->mem stat))))
   :guard-hints (("Goal" :in-theory (enable memory32p)))
-  :prepwork ((local (include-book "ihs/logops-lemmas" :dir :system)))
   ///
   (fty::deffixequiv write32-mem-ubyte8
     :hints (("Goal" :in-theory (enable loghead)))))
@@ -339,8 +338,6 @@
        (stat (write32-mem-ubyte8 (1+ (ifix addr)) b1 stat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable ubyte8p ubyte16p)))
-  :prepwork ((local (include-book "ihs/logops-lemmas" :dir :system))
-             (local (include-book "arithmetic-5/top" :dir :system)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -366,8 +363,6 @@
        (stat (write32-mem-ubyte8 (+ 3 (ifix addr)) b3 stat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable ubyte8p ubyte32p)))
-  :prepwork ((local (include-book "ihs/logops-lemmas" :dir :system))
-             (local (include-book "arithmetic-5/top" :dir :system)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

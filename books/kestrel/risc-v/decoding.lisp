@@ -18,6 +18,7 @@
 (include-book "kestrel/fty/ubyte7" :dir :system)
 (include-book "kestrel/fty/ubyte32" :dir :system)
 
+(local (include-book "arithmetic-5/top" :dir :system))
 (local (include-book "ihs/logops-lemmas" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -139,8 +140,7 @@
   (b* ((imm[4.0] (part-select enc :low 7 :high 11))
        (imm[11.5] (part-select enc :low 25 :high 31)))
     (+ imm[4.0]
-       (ash imm[11.5] 5)))
-  :prepwork ((local (include-book "arithmetic-5/top" :dir :system))))
+       (ash imm[11.5] 5))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -161,8 +161,7 @@
     (+ imm[4.1]
        (ash imm[10.5] 4)
        (ash imm[11] 10)
-       (ash imm[12] 11)))
-  :prepwork ((local (include-book "arithmetic-5/top" :dir :system))))
+       (ash imm[12] 11))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -197,8 +196,7 @@
     (+ imm[10.1]
        (ash imm[11] 10)
        (ash imm[19.12] 11)
-       (ash imm[20] 19)))
-  :prepwork ((local (include-book "arithmetic-5/top" :dir :system))))
+       (ash imm[20] 19))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
