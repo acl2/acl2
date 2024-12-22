@@ -253,8 +253,7 @@
           [ISA:4.2.1]."
   (op-imm-32-funct-case funct
                         :addiw (exec64-addiw rd rs1 imm stat))
-  :hooks (:fix)
-  :prepwork ((set-ignore-ok t))) ; temporary workaround for singleton sum type
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
