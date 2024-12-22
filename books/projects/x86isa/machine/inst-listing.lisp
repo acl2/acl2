@@ -9752,7 +9752,7 @@
               :GROUP '(:GROUP-9)
               :FEAT '(:CMPXCHG16B))
           (ARG :OP1 '(M DQ))
-          '(x86-cmpxchg8b/16b)
+          '(X86-CMPXCHG8B/16B)
           '((:UD (UD-MODR/M.MOD-INDICATES-REGISTER))))
     (INST "CMPXCHG8B"
           (OP :OP #xFC7
@@ -9765,7 +9765,7 @@
               :GROUP '(:GROUP-9)
               :FEAT '(:CMPXCHG16B))
           (ARG :OP1 '(M Q))
-          '(x86-cmpxchg8b/16b)
+          '(X86-CMPXCHG8B/16B)
           '((:UD (UD-MODR/M.MOD-INDICATES-REGISTER))))
     (INST "VMPTRLD"
           (OP :OP #xFC7
