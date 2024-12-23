@@ -4845,8 +4845,8 @@
           (ARG :OP1 '(V PD)
                :OP2 '(H PD)
                :OP3 '(W PD))
-          '(x86-vandp?/vandnp?/vorp?/vxorp?/vpand/vpandn/vpor/vpxor-vex
-            (operation . #x5))
+          '(X86-VANDP?/VANDNP?/VORP?/VXORP?/VPAND/VPANDN/VPOR/VPXOR-VEX
+            (OPERATION . #.*OP-AND*))
           '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
     (INST "VANDPD"
           (OP :OP #xF54
@@ -4855,8 +4855,8 @@
           (ARG :OP1 '(V PD)
                :OP2 '(H PD)
                :OP3 '(W PD))
-          '(x86-vandp?/vandnp?/vorp?/vxorp?/vpand/vpandn/vpor/vpxor-vex
-            (operation . #x5))
+          '(X86-VANDP?/VANDNP?/VORP?/VXORP?/VPAND/VPANDN/VPOR/VPXOR-VEX
+            (OPERATION . #.*OP-AND*))
           '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
     (INST "VANDPS"
           (OP :OP #xF54
@@ -4865,8 +4865,8 @@
           (ARG :OP1 '(V PS)
                :OP2 '(H PS)
                :OP3 '(W PS))
-          '(x86-vandp?/vandnp?/vorp?/vxorp?/vpand/vpandn/vpor/vpxor-vex
-            (operation . #x5))
+          '(X86-VANDP?/VANDNP?/VORP?/VXORP?/VPAND/VPANDN/VPOR/VPXOR-VEX
+            (OPERATION . #.*OP-AND*))
           '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
     (INST "VANDPS"
           (OP :OP #xF54
@@ -4939,8 +4939,8 @@
           (ARG :OP1 '(V PD)
                :OP2 '(H PD)
                :OP3 '(W PD))
-          '(x86-vandp?/vandnp?/vorp?/vxorp?/vpand/vpandn/vpor/vpxor-vex
-            (operation . #x5))
+          '(X86-VANDP?/VANDNP?/VORP?/VXORP?/VPAND/VPANDN/VPOR/VPXOR-VEX
+            (OPERATION . #.*OP-ANDN*))
           '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
     (INST "VANDNPD"
           (OP :OP #xF55
@@ -4949,8 +4949,8 @@
           (ARG :OP1 '(V PD)
                :OP2 '(H PD)
                :OP3 '(W PD))
-          '(x86-vandp?/vandnp?/vorp?/vxorp?/vpand/vpandn/vpor/vpxor-vex
-            (operation . #x5))
+          '(X86-VANDP?/VANDNP?/VORP?/VXORP?/VPAND/VPANDN/VPOR/VPXOR-VEX
+            (OPERATION . #.*OP-ANDN*))
           '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
     (INST "VANDNPS"
           (OP :OP #xF55
@@ -4959,8 +4959,8 @@
           (ARG :OP1 '(V PS)
                :OP2 '(H PS)
                :OP3 '(W PS))
-          '(x86-vandp?/vandnp?/vorp?/vxorp?/vpand/vpandn/vpor/vpxor-vex
-            (operation . #x5))
+          '(X86-VANDP?/VANDNP?/VORP?/VXORP?/VPAND/VPANDN/VPOR/VPXOR-VEX
+            (OPERATION . #.*OP-ANDN*))
           '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
     (INST "VANDNPS"
           (OP :OP #xF55
@@ -4969,8 +4969,8 @@
           (ARG :OP1 '(V PS)
                :OP2 '(H PS)
                :OP3 '(W PS))
-          '(x86-vandp?/vandnp?/vorp?/vxorp?/vpand/vpandn/vpor/vpxor-vex
-            (operation . #x5))
+          '(X86-VANDP?/VANDNP?/VORP?/VXORP?/VPAND/VPANDN/VPOR/VPXOR-VEX
+            (OPERATION . #.*OP-ANDN*))
           '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
     (INST "VANDNPD"
           (OP :OP #xF55
