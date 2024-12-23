@@ -14,6 +14,7 @@
 (include-book "kestrel/fty/ubyte6" :dir :system)
 (include-book "kestrel/fty/ubyte12" :dir :system)
 (include-book "kestrel/fty/ubyte20" :dir :system)
+(include-book "std/util/deffixer" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -85,7 +86,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum op-imm-32-funct
+(defsection op-imm-32-funct
   :short "Fixtype of
           names of non-shift instructions with the @('OP-IMM-32') opcode
           [ISA:4.2.1]."
@@ -95,9 +96,44 @@
     "This is analogous to @(tsee op-imm-funct),
      but for the @('OP-IMM-32') opcode.")
    (xdoc::p
-    "There is just one here,
-     but we introduce a singleton sum type for uniformity."))
-  (:addiw ()))
+    "Ideally we would like to use a @(tsee fty::deftagsum) here,
+     even though there is just one summand,
+     for uniformity with other fixtypes that have at least two summands.
+     However, doing so triggers a (broader) issue in XDOC.
+     Until that issue is resolved,
+     we ``manually'' define this fixtype."))
+
+  (define op-imm-32-funct-p (x)
+    :returns (yes/no booleanp)
+    (and (true-listp x)
+         (= (len x) 1)
+         (eq (car x) :addiw))
+    :parents nil)
+
+  (define op-imm-32-funct-addiw ()
+    :returns (x op-imm-32-funct-p)
+    '(:addiw)
+    :parents nil)
+
+  (std::deffixer op-imm-32-funct-fix
+    :pred op-imm-32-funct-p
+    :body-fix (op-imm-32-funct-addiw)
+    :parents nil)
+
+  (fty::deffixtype op-imm-32-funct
+    :pred op-imm-32-funct-p
+    :fix op-imm-32-funct-fix
+    :equiv op-imm-32-funct-equiv
+    :define t
+    :forward t)
+
+  (defmacro op-imm-32-funct-case (target keyword term)
+    (if (and (symbolp target)
+             (eq keyword :addiw))
+        `(let ((,target ,target))
+           (declare (ignore ,target))
+           ,term)
+      nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
