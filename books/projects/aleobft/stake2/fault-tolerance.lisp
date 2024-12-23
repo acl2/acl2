@@ -193,7 +193,7 @@
              committee-quorum-stake
              committee-total-stake
              committee-members-stake-of-difference
-             committee-members-stake-of-union-expand)))
+             committee-members-stake-of-union)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

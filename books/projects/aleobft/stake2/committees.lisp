@@ -278,7 +278,7 @@
        (cond ((set::emptyp x) nil)
              (t (ind (set::tail x) (set::delete (set::head x) y)))))))
 
-  (defruled committee-members-stake-of-union-expand
+  (defruled committee-members-stake-of-union
     (implies (and (address-setp members1)
                   (address-setp members2))
              (equal (committee-members-stake (set::union members1
@@ -295,7 +295,7 @@
              set::intersect
              fix))
 
-  (defruled committee-members-stake-of-intersect-expand
+  (defruled committee-members-stake-of-intersect
     (implies (and (address-setp members1)
                   (address-setp members2))
              (equal (committee-members-stake (set::intersect members1
@@ -306,12 +306,12 @@
                        (committee-members-stake (set::union members1
                                                             members2)
                                                 commtt))))
-    :enable committee-members-stake-of-union-expand
+    :enable committee-members-stake-of-union
     :disable committee-members-stake)
 
   (theory-invariant
-   (incompatible (:rewrite committee-members-stake-of-union-expand)
-                 (:rewrite committee-members-stake-of-intersect-expand)))
+   (incompatible (:rewrite committee-members-stake-of-union)
+                 (:rewrite committee-members-stake-of-intersect)))
 
   (defruled committee-members-stake-of-difference
     (implies (and (address-setp members1)
