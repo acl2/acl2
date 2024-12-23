@@ -16,6 +16,9 @@
 (include-book "kestrel/fty/ubyte64-list" :dir :system)
 (include-book "kestrel/fty/deflist-of-len" :dir :system)
 
+(local (include-book "arithmetic-5/top" :dir :system))
+(local (include-book "ihs/logops-lemmas" :dir :system))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (local (in-theory (disable ash ifix)))
@@ -291,7 +294,6 @@
      We return the byte at that memory address, directly."))
   (b* ((addr (loghead 64 addr)))
     (nth addr (state64->mem stat)))
-  :prepwork ((local (include-book "ihs/logops-lemmas" :dir :system)))
 
   ///
 
@@ -328,7 +330,6 @@
        (b1 (read64-mem-ubyte8 (1+ (ifix addr)) stat)))
     (+ b0
        (ash b1 8)))
-  :prepwork ((local (include-book "arithmetic-5/top" :dir :system)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -349,7 +350,6 @@
        (ash b1 8)
        (ash b2 16)
        (ash b3 24)))
-  :prepwork ((local (include-book "arithmetic-5/top" :dir :system)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -379,7 +379,6 @@
        (ash b5 40)
        (ash b6 48)
        (ash b7 56)))
-  :prepwork ((local (include-book "arithmetic-5/top" :dir :system)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -397,7 +396,6 @@
                                           (ubyte8-fix val)
                                           (state64->mem stat))))
   :guard-hints (("Goal" :in-theory (enable memory64p)))
-  :prepwork ((local (include-book "ihs/logops-lemmas" :dir :system)))
   ///
   (fty::deffixequiv write64-mem-ubyte8
     :hints (("Goal" :in-theory (enable loghead)))))
@@ -423,8 +421,6 @@
        (stat (write64-mem-ubyte8 (1+ (ifix addr)) b1 stat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable ubyte8p ubyte16p)))
-  :prepwork ((local (include-book "ihs/logops-lemmas" :dir :system))
-             (local (include-book "arithmetic-5/top" :dir :system)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -450,8 +446,6 @@
        (stat (write64-mem-ubyte8 (+ 3 (ifix addr)) b3 stat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable ubyte8p ubyte32p)))
-  :prepwork ((local (include-book "ihs/logops-lemmas" :dir :system))
-             (local (include-book "arithmetic-5/top" :dir :system)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -486,8 +480,6 @@
        (stat (write64-mem-ubyte8 (+ 7 (ifix addr)) b7 stat)))
     stat)
   :guard-hints (("Goal" :in-theory (enable ubyte8p ubyte64p)))
-  :prepwork ((local (include-book "ihs/logops-lemmas" :dir :system))
-             (local (include-book "arithmetic-5/top" :dir :system)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
