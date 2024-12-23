@@ -7074,7 +7074,7 @@
           (ARG :OP1 '(V X)
                :OP2 '(W X)
                :OP3 '(I B))
-          '(X86-PSHUFHW)
+          '(X86-PSHUFLW)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "VPSHUFD"
           (OP :OP #xF70
