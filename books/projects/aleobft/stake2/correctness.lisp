@@ -18,7 +18,6 @@
 (include-book "system-certificates")
 (include-book "signed-certificates")
 (include-book "signed-previous-quorum")
-(include-book "no-self-messages")
 (include-book "no-self-endorsed")
 (include-book "signer-records")
 (include-book "unequivocal-signed-certificates")
@@ -73,7 +72,6 @@
                     system-certificates
                     signed-certificates
                     signed-previous-quorum
-                    no-self-messages
                     no-self-endorsed
                     signer-records
                     unequivocal-signed-certificates
