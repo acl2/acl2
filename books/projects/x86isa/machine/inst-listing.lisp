@@ -2765,12 +2765,12 @@
     (INST "MOVSLDUP"
           (OP :OP #xF12 :PFX :F3 :FEAT '(:SSE3))
           (ARG :OP1 '(V X) :OP2 '(W X))
-          '(X86-MOVLPS/MOVLPD-OP/EN-RM)
+          'NIL
           '((:EX (CHK-EXC :TYPE-4 (:SSE3)))))
     (INST "MOVDDUP"
           (OP :OP #xF12 :PFX :F2 :FEAT '(:SSE3))
           (ARG :OP1 '(V X) :OP2 '(W X))
-          '(X86-MOVLPS/MOVLPD-OP/EN-RM)
+          'NIL
           '((:EX (CHK-EXC :TYPE-5 (:SSE3)))))
     (INST "VMOVDDUP"
           (OP :OP #xF12
