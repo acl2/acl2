@@ -146,7 +146,15 @@
                                 (certificate-fix cert))
                          (set::in (message->destination msg)
                                   dests))))
-    :induct t))
+    :induct t)
+
+  (defruled message-set->certificate-set-of-make-certificate-messages
+    (equal (message-set->certificate-set (make-certificate-messages cert dests))
+           (if (set::emptyp dests)
+               nil
+             (set::insert (certificate-fix cert) nil)))
+    :induct t
+    :enable message-set->certificate-set-of-insert))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
