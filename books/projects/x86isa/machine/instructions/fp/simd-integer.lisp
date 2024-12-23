@@ -421,11 +421,11 @@
             (operand-size 16)
 
             ;; The first source operand (Operand 1 in the Intel manual)
-            ;; is the XMM register specified in Reg.
+            ;; is the XMM register specified in r/m.
             ;; This is also the destination operand,
             ;; and thus we obtain the index for later use.
             ((the (unsigned-byte 4) src1/dst-index)
-             (reg-index reg rex-byte #.*r*))
+             (reg-index r/m rex-byte #.*b*))
             ((the (unsigned-byte 128) src1)
              (xmmi-size operand-size src1/dst-index x86))
 
