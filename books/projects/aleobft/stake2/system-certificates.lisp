@@ -54,7 +54,19 @@
                 (validators-certs (set::tail vals) systate)))
   :verify-guards :after-returns
   :guard-hints (("Goal" :in-theory (enable* set::expensive-rules)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defruled in-of-validators-certs-when-in-some-dag
+    (implies (and (address-setp vals)
+                  (set::subset vals (correct-addresses systate))
+                  (set::in val vals)
+                  (set::in cert (validator-state->dag
+                                 (get-validator-state val systate))))
+             (set::in cert (validators-certs vals systate)))
+    :induct t
+    :enable set::expensive-rules))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -68,7 +80,22 @@
      with the certificates in all the messages in the network."))
   (set::union (validators-certs (correct-addresses systate) systate)
               (message-set->certificate-set (get-network-state systate)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defruled in-system-certs-when-in-some-dag
+    (implies (and (set::in val (correct-addresses systate))
+                  (set::in cert (validator-state->dag
+                                 (get-validator-state val systate))))
+             (set::in cert (system-certs systate)))
+    :enable in-of-validators-certs-when-in-some-dag)
+
+  (defruled in-system-certs-when-in-network
+    (implies (set::in msg (get-network-state systate))
+             (set::in (message->certificate msg)
+                      (system-certs systate)))
+    :enable message->certificate-in-message-set->certificate-set))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

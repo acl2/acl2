@@ -16,10 +16,7 @@
 (include-book "last-blockchain-round")
 (include-book "ordered-even-blocks")
 (include-book "system-certificates")
-(include-book "associated-certificates")
-(include-book "same-associated-certificates")
 (include-book "signed-certificates")
-(include-book "signed-and-associated-cerificates")
 (include-book "signed-previous-quorum")
 (include-book "no-self-messages")
 (include-book "no-self-endorsed")
@@ -74,10 +71,7 @@
                     last-blockchain-round
                     ordered-even-blocks
                     system-certificates
-                    associated-certificates
-                    same-associated-certificates
                     signed-certificates
-                    signed-and-associated-cerificates
                     signed-previous-quorum
                     no-self-messages
                     no-self-endorsed

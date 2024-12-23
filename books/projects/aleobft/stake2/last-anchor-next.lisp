@@ -76,7 +76,6 @@
 
   (defrule last-anchor-of-create-next
     (implies (and (system-committees-fault-tolerant-p systate)
-                  (same-associated-certs-p systate)
                   (no-self-endorsed-p systate)
                   (signer-records-p systate)
                   (dag-committees-p systate)
@@ -95,7 +94,6 @@
 
   (defrule last-anchor-of-accept-next
     (implies (and (system-committees-fault-tolerant-p systate)
-                  (same-associated-certs-p systate)
                   (dag-committees-p systate)
                   (signer-quorum-p systate)
                   (unequivocal-signed-certs-p systate)
@@ -103,7 +101,8 @@
                   (same-committees-p systate)
                   (last-anchor-present-p systate)
                   (set::in val (correct-addresses systate))
-                  (accept-possiblep msg systate))
+                  (accept-possiblep msg systate)
+                  (messagep msg))
              (equal (last-anchor (get-validator-state
                                   val (accept-next msg systate)))
                     (last-anchor (get-validator-state val systate))))
