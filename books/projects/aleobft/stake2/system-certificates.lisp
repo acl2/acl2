@@ -104,6 +104,25 @@
 (defsection system-certs-of-next
   :short "How the certificates in the system
           change (or not) for each transition."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The only kind of event that changes the set of system certificates
+     is @('create'), by adding the created certificate to the set:
+     the certificate is added to the network,
+     and possibly to the author's DAG (if the author is correct).
+     However, if there are no correct validators at all,
+     there is actually no change to the set of system certificates;
+     this is an impractical case, which in particular does not satisfy
+     the normal fault tolerance assumptions.")
+   (xdoc::p
+    "An @('accept') event just moves a certificate,
+     from the network to a DAG.
+     The whole set is unaffected.")
+   (xdoc::p
+    "An @('advance') or @('commit') event does not change
+     any DAG or the network.
+     So the set remains the same."))
 
   ;; create:
 
