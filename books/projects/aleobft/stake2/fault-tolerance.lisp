@@ -170,11 +170,30 @@
    (xdoc::p
     "This is the case when
      the total stake of faulty members in the committee does not exceed
-     the maximum tolerated stake of faulty validators in the committee."))
+     the maximum tolerated stake of faulty validators in the committee.
+     Or, equivalently,
+     when the total stake of the correct members in the committee
+     is at least the quorum stake of the committee;
+     we prove this equivalent definition as a theorem."))
   (<= (committee-members-stake (committee-faulty-members commtt systate)
                                commtt)
       (committee-max-faulty-stake commtt))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defruled committee-fault-tolerant-p-alt-def
+    (equal (committee-fault-tolerant-p commtt systate)
+           (>= (committee-members-stake
+                (committee-correct-members commtt systate)
+                commtt)
+               (committee-quorum-stake commtt)))
+    :enable (committee-correct-members
+             committee-faulty-members
+             committee-quorum-stake
+             committee-total-stake
+             committee-members-stake-of-difference
+             committee-members-stake-of-union-expand)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
