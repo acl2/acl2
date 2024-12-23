@@ -563,7 +563,7 @@
   (b* (;; The index of the XMM register
        ;; is in the R/M portion of the ModR/M byte.
        ;; It can be extended by one bit via the REX byte.
-       (reg-index (reg-index r/m rex-byte #.*r*))
+       (reg-index (reg-index r/m rex-byte #.*b*))
 
        ;; Read the 128-bit (i.e. 16-byte) operand from the XMM register.
        (operand (xmmi-size 16 reg-index x86))
