@@ -109,7 +109,26 @@
                        (message-set->certificate-set (set::sfix msgs2))))
     :induct t
     :enable (set::union
-             message-set->certificate-set-of-insert)))
+             message-set->certificate-set-of-insert))
+
+  (defruled message-set->certificate-set-monotone
+    (implies (set::subset msgs1 msgs2)
+             (set::subset (message-set->certificate-set msgs1)
+                          (message-set->certificate-set msgs2)))
+    :induct t
+    :enable (set::subset
+             message->certificate-in-message-set->certificate-set))
+
+  (defruled in-of-message-set->certificate-set-of-delete
+    (implies (and (certificatep cert)
+                  (message-setp msgs)
+                  (set::in cert (message-set->certificate-set msgs))
+                  (not (equal (message->certificate msg) cert)))
+             (set::in cert (message-set->certificate-set
+                            (set::delete msg msgs))))
+    :induct t
+    :enable (message-set->certificate-set-of-insert
+             set::delete)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
