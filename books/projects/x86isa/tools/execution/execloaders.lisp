@@ -440,7 +440,7 @@
        (gdt-ptr (+ zero-page-ptr #x1000))
        (gdt-size #x20)
        (command-line-ptr (+ gdt-ptr gdt-size))
-       (disk-image-ptr #x100000)
+       (disk-image-ptr #x80000000)
 
        ;; Setup command line
        (command-line-c-str (string-to-c-str command-line))
