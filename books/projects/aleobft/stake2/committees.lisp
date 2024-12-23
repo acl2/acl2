@@ -311,7 +311,23 @@
 
   (theory-invariant
    (incompatible (:rewrite committee-members-stake-of-union-expand)
-                 (:rewrite committee-members-stake-of-intersect-expand))))
+                 (:rewrite committee-members-stake-of-intersect-expand)))
+
+  (defruled committee-members-stake-of-difference
+    (implies (and (address-setp members1)
+                  (address-setp members2))
+             (equal (committee-members-stake (set::difference members1
+                                                              members2)
+                                             commtt)
+                    (- (committee-members-stake (set::union members1
+                                                            members2)
+                                                commtt)
+                       (committee-members-stake members2
+                                                commtt))))
+    :induct t
+    :enable (set::difference
+             set::union
+             committee-members-stake-of-insert)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
