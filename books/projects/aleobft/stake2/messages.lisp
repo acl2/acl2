@@ -77,6 +77,40 @@
   :elementp-of-nil nil
   :pred message-setp)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(define message-set->certificate-set ((msgs message-setp))
+  :returns (certs certificate-setp)
+  :short "Lift @(tsee message->certificate) to sets."
+  (cond ((set::emptyp msgs) nil)
+        (t (set::insert (message->certificate (set::head msgs))
+                        (message-set->certificate-set (set::tail msgs)))))
+  :verify-guards :after-returns
+
+  ///
+
+  (defruled message->certificate-in-message-set->certificate-set
+    (implies (set::in msg msgs)
+             (set::in (message->certificate msg)
+                      (message-set->certificate-set msgs)))
+    :induct t)
+
+  (defruled message-set->certificate-set-of-insert
+    (equal (message-set->certificate-set (set::insert msg msgs))
+           (set::insert (message->certificate msg)
+                        (message-set->certificate-set msgs)))
+    :induct t
+    :enable (set::in
+             message->certificate-in-message-set->certificate-set))
+
+  (defruled message-set->certificate-set-of-union
+    (equal (message-set->certificate-set (set::union msgs1 msgs2))
+           (set::union (message-set->certificate-set msgs1)
+                       (message-set->certificate-set (set::sfix msgs2))))
+    :induct t
+    :enable (set::union
+             message-set->certificate-set-of-insert)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define make-certificate-messages ((cert certificatep)
