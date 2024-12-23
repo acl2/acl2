@@ -15,6 +15,7 @@
 (include-book "backward-closure")
 (include-book "last-blockchain-round")
 (include-book "ordered-even-blocks")
+(include-book "system-certificates")
 (include-book "associated-certificates")
 (include-book "same-associated-certificates")
 (include-book "signed-certificates")
@@ -72,6 +73,7 @@
                     backward-closure
                     last-blockchain-round
                     ordered-even-blocks
+                    system-certificates
                     associated-certificates
                     same-associated-certificates
                     signed-certificates
