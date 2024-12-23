@@ -666,12 +666,12 @@ positive value and 1 indicates a negative value.)</p>"
            (mbe :logic (part-select src   :low 0 :width 4)
                 :exec  (logand #xF src)))
 
-          (sbb
-           (- (the (unsigned-byte 4) dst-3-0)
-              (+ (the (unsigned-byte 4) src-3-0)
-                 (the (unsigned-byte 4) cf))))
+          ((the (unsigned-byte 6) sbb)
+           (logand #x3F (- (the (unsigned-byte 4) dst-3-0)
+                           (+ (the (unsigned-byte 4) src-3-0)
+                              (the (unsigned-byte 4) cf)))))
 
-          (af (the (unsigned-byte 1) (bool->bit (< sbb 0)))))
+          (af (the (unsigned-byte 1) (bool->bit (> sbb #xF)))))
 
          af)
 
