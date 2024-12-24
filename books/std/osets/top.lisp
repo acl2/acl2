@@ -902,10 +902,10 @@ from the accompanying talk.</p>")
   (equal (intersect X (sfix Y)) (intersect X Y)))
 
 (defthm intersect-emptyp-X
-  (implies (emptyp X) (emptyp (intersect X Y))))
+  (implies (emptyp X) (equal (intersect X Y) nil)))
 
 (defthm intersect-emptyp-Y
-  (implies (emptyp Y) (emptyp (intersect X Y))))
+  (implies (emptyp Y) (equal (intersect X Y) nil)))
 
 (defthm intersect-in
   (equal (in a (intersect X Y))
