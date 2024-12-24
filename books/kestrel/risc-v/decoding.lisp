@@ -390,34 +390,42 @@
                    (t nil)))
           ((unless funct) nil))
        (instr-store funct rs1 rs2 imm)))
-    (#b0110011 ; OP [ISA:2.4.2]
+    (#b0110011 ; OP [ISA:2.4.2] [ISA:13.1] [ISA:13.2]
      (b* (((mv funct3 funct7 rd rs1 rs2) (decode-rtype enc))
           (funct (case funct3
                    (#b000 (case funct7
                             (#b0000000 (op-funct-add))
+                            (#b0000001 (op-funct-mul))
                             (#b0100000 (op-funct-sub))
                             (t nil)))
                    (#b001 (case funct7
                             (#b0000000 (op-funct-sll))
+                            (#b0000001 (op-funct-mulh))
                             (t nil)))
                    (#b010 (case funct7
                             (#b0000000 (op-funct-slt))
+                            (#b0000001 (op-funct-mulhsu))
                             (t nil)))
                    (#b011 (case funct7
                             (#b0000000 (op-funct-sltu))
+                            (#b0000001 (op-funct-mulhu))
                             (t nil)))
                    (#b100 (case funct7
                             (#b0000000 (op-funct-xor))
+                            (#b0000001 (op-funct-div))
                             (t nil)))
                    (#b101 (case funct7
                             (#b0000000 (op-funct-srl))
+                            (#b0000001 (op-funct-divu))
                             (#b0100000 (op-funct-sra))
                             (t nil)))
                    (#b110 (case funct7
                             (#b0000000 (op-funct-or))
+                            (#b0000001 (op-funct-rem))
                             (t nil)))
                    (#b111 (case funct7
                             (#b0000000 (op-funct-and))
+                            (#b0000001 (op-funct-remu))
                             (t nil)))))
           ((unless funct) nil))
        (instr-op funct rd rs1 rs2)))
@@ -429,6 +437,7 @@
           (funct (case funct3
                    (#b000 (case funct7
                             (#b0000000 (op-32-funct-addw))
+                            (#b0000001 (op-32-funct-mulw))
                             (#b0100000 (op-32-funct-subw))
                             (t nil)))
                    (#b001 (case funct7
@@ -436,13 +445,20 @@
                             (t nil)))
                    (#b010 nil)
                    (#b011 nil)
-                   (#b100 nil)
+                   (#b100 (case funct7
+                            (#b0000001 (op-32-funct-divw))
+                            (t nil)))
                    (#b101 (case funct7
                             (#b0000000 (op-32-funct-srlw))
+                            (#b0000001 (op-32-funct-divuw))
                             (#b0100000 (op-32-funct-sraw))
                             (t nil)))
-                   (#b110 nil)
-                   (#b111 nil)))
+                   (#b110 (case funct7
+                            (#b0000001 (op-32-funct-remw))
+                            (t nil)))
+                   (#b111 (case funct7
+                            (#b0000001 (op-32-funct-remuw))
+                            (t nil)))))
           ((unless funct) nil))
        (instr-op-32 funct rd rs1 rs2)))
     (#b1100011 ; BRANCH [ISA:2.5.2]

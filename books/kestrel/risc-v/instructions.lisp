@@ -35,6 +35,7 @@
      in RV32I [ISA:2] and RV64I [ISA:4],
      which are the same for RV32E and RV64E [ISA:3],
      except for @('FENCE'), @('ECALL'), @('EBREAK'), and @('HINT').
+     We also cover the instructions for the M extension [ISA:13].
      We plan to add privileged instructions,
      as well as instructions for more extensions."))
   :order-subtopics t
@@ -154,7 +155,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum op-funct
-  :short "Fixtype of names of instructions with the @('OP') opcode [ISA:2.4.2]."
+  :short "Fixtype of names of instructions with the @('OP') opcode
+          [ISA:2.4.2] [ISA:13.1] [ISA:13.2]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -170,13 +172,21 @@
   (:xor ())
   (:sll ())
   (:srl ())
-  (:sra ()))
+  (:sra ())
+  (:mul ())
+  (:mulh ())
+  (:mulhu ())
+  (:mulhsu ())
+  (:div ())
+  (:divu ())
+  (:rem ())
+  (:remu ()))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum op-32-funct
   :short "Fixtype of names of instructions with the @('OP-32') opcode
-          [ISA:4.2.2]."
+          [ISA:4.2.2] [ISA:13.1] [ISA:13.2]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -185,7 +195,12 @@
   (:subw ())
   (:sllw ())
   (:srlw ())
-  (:sraw ()))
+  (:sraw ())
+  (:mulw ())
+  (:divw ())
+  (:divuw ())
+  (:remw ())
+  (:remuw ()))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
