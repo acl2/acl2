@@ -1,0 +1,17 @@
+template-param-type.cpp:17 (13-14): Expected `int`, got `struct {int a;}`
+ 17 |   return foo<s, 0>();
+    |              ^
+note: Defined here: 
+ 10 | template <int a, A b>
+    | ^^^^^^^^^^^^^^^^^^^^^^
+ 11 | int foo() {
+    | ^^^^^^^^^
+
+template-param-type.cpp:17 (16-17): Expected `A`, got `int`
+ 17 |   return foo<s, 0>();
+    |                 ^
+note: Defined here: 
+ 10 | template <int a, A b>
+    | ^^^^^^^^^^^^^^^^^^^^^^
+ 11 | int foo() {
+    | ^^^^^^^^^

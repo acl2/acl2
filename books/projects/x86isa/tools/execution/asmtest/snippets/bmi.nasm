@@ -1,0 +1,15 @@
+; x86isa assembly snippet testing framework
+;
+; X86ISA Library
+; Copyright (C) 2024 Kestrel Technology, LLC
+;
+; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
+;
+; Author: Sol Swords (sswords@gmail.com)
+
+%include "utils.mac"
+	
+SECTION .text			;
+
+define_two_dw_input_one_dw_output_masked_flags blsi32, 0xb16, blsi r9d, r8d
+define_two_qw_input_one_qw_output_masked_flags blsi64, 0xb16, blsi r9, r8

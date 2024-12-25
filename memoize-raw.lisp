@@ -1090,10 +1090,12 @@
     (cond (temp (cdr temp))
           (t (let* ((fn (symbol-function sym))
                     (lam (and fn
-                              #+gcl ; accommodate early GCL 2.6.13
+                              #+(and gcl ; accommodate early GCL 2.6.13
+                                     (not gcl-2.7.0+))
                               (and (fboundp 'function-lambda-expression)
                                    (funcall 'function-lambda-expression fn))
-                              #-gcl
+                              #-(and gcl
+                                     (not gcl-2.7.0+))
                               (function-lambda-expression fn))))
                (cond (lam (assert (or (eq (car lam) 'lambda)
                                       #+sbcl

@@ -158,7 +158,6 @@
   (defruled validator-committed-redundant-p-of-create-next
     (implies (and (system-committees-fault-tolerant-p systate)
                   (backward-closed-p systate)
-                  (same-associated-certs-p systate)
                   (signer-records-p systate)
                   (no-self-endorsed-p systate)
                   (dag-committees-p systate)
@@ -195,7 +194,6 @@
     (implies (and (committed-redundant-p systate)
                   (system-committees-fault-tolerant-p systate)
                   (backward-closed-p systate)
-                  (same-associated-certs-p systate)
                   (signer-records-p systate)
                   (no-self-endorsed-p systate)
                   (dag-committees-p systate)
@@ -214,7 +212,6 @@
   (defruled validator-committed-redundant-p-of-accept-next
     (implies (and (system-committees-fault-tolerant-p systate)
                   (backward-closed-p systate)
-                  (same-associated-certs-p systate)
                   (dag-committees-p systate)
                   (signer-quorum-p systate)
                   (unequivocal-signed-certs-p systate)
@@ -224,7 +221,8 @@
                   (set::in val (correct-addresses systate))
                   (validator-committed-redundant-p
                    (get-validator-state val systate))
-                  (accept-possiblep msg systate))
+                  (accept-possiblep msg systate)
+                  (messagep msg))
              (validator-committed-redundant-p
               (get-validator-state val (accept-next msg systate))))
     :enable (validator-committed-redundant-p
@@ -251,14 +249,14 @@
     (implies (and (committed-redundant-p systate)
                   (system-committees-fault-tolerant-p systate)
                   (backward-closed-p systate)
-                  (same-associated-certs-p systate)
                   (dag-committees-p systate)
                   (signer-quorum-p systate)
                   (unequivocal-signed-certs-p systate)
                   (unequivocal-dags-p systate)
                   (same-committees-p systate)
                   (last-anchor-present-p systate)
-                  (accept-possiblep msg systate))
+                  (accept-possiblep msg systate)
+                  (messagep msg))
              (committed-redundant-p (accept-next msg systate)))
     :enable (committed-redundant-p
              committed-redundant-p-necc
@@ -403,7 +401,6 @@
                   (backward-closed-p systate)
                   (last-blockchain-round-p systate)
                   (ordered-even-p systate)
-                  (same-associated-certs-p systate)
                   (signer-records-p systate)
                   (no-self-endorsed-p systate)
                   (dag-committees-p systate)

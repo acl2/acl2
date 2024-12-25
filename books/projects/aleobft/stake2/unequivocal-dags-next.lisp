@@ -17,7 +17,6 @@
 (include-book "unequivocal-signed-certificates")
 (include-book "quorum-intersection")
 (include-book "signer-quorum")
-(include-book "signed-and-associated-cerificates")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -201,7 +200,6 @@
 
   (defruledl create-lemma
     (implies (and (system-committees-fault-tolerant-p systate)
-                  (same-associated-certs-p systate)
                   (no-self-endorsed-p systate)
                   (signer-records-p systate)
                   (dag-committees-p systate)
@@ -220,8 +218,8 @@
              dag-committees-p-necc
              validator-signer-quorum-p
              author-quorum-when-create-possiblep
-             associated-certs
-             in-signed-certs-when-in-associated-and-signer
+             in-system-certs-when-in-some-dag
+             in-signed-certs-when-in-system-and-signer
              same-committees-p-necc
              cert-with-author+round-element
              committee-nonemptyp-when-nonempty-subset)
@@ -289,7 +287,6 @@
   (defruled unequivocal-dags-p-of-create-next
     (implies (and (unequivocal-dags-p systate)
                   (system-committees-fault-tolerant-p systate)
-                  (same-associated-certs-p systate)
                   (no-self-endorsed-p systate)
                   (signer-records-p systate)
                   (dag-committees-p systate)
@@ -311,12 +308,12 @@
 
   (defruledl accept-lemma
     (implies (and (system-committees-fault-tolerant-p systate)
-                  (same-associated-certs-p systate)
                   (dag-committees-p systate)
                   (signer-quorum-p systate)
                   (unequivocal-signed-certs-p systate)
                   (same-committees-p systate)
                   (accept-possiblep msg systate)
+                  (messagep msg)
                   (set::in val (correct-addresses systate))
                   (not (set::in (message->certificate msg)
                                 (validator-state->dag
@@ -331,8 +328,9 @@
              validator-signer-quorum-p
              accept-possiblep
              unequivocal-signed-certs-p-necc
-             associated-certs
-             in-signed-certs-when-in-associated-and-signer
+             in-system-certs-when-in-some-dag
+             in-system-certs-when-in-network
+             in-signed-certs-when-in-system-and-signer
              in-of-message-certs-with-dest
              same-committees-p-necc
              committee-nonemptyp-when-nonempty-subset)
@@ -398,12 +396,12 @@
   (defruled unequivocal-dags-p-of-accept-next
     (implies (and (unequivocal-dags-p systate)
                   (system-committees-fault-tolerant-p systate)
-                  (same-associated-certs-p systate)
                   (dag-committees-p systate)
                   (signer-quorum-p systate)
                   (unequivocal-signed-certs-p systate)
                   (same-committees-p systate)
-                  (accept-possiblep msg systate))
+                  (accept-possiblep msg systate)
+                  (messagep msg))
              (unequivocal-dags-p (accept-next msg systate)))
     :enable (unequivocal-dags-p
              unequivocal-dags-p-necc
@@ -438,7 +436,6 @@
   (defruled unequivocal-dags-p-of-event-next
     (implies (and (unequivocal-dags-p systate)
                   (system-committees-fault-tolerant-p systate)
-                  (same-associated-certs-p systate)
                   (no-self-endorsed-p systate)
                   (signer-records-p systate)
                   (dag-committees-p systate)

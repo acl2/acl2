@@ -1,0 +1,6 @@
+switch-break-hide-statement.cpp:10 (4-9): Statement after break
+ 10 |     b = 2;
+    |     ^^^^^
+note: this statment is hidden by
+  9 |     break;
+    |     ^^^^^

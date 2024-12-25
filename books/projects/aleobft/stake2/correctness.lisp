@@ -15,12 +15,9 @@
 (include-book "backward-closure")
 (include-book "last-blockchain-round")
 (include-book "ordered-even-blocks")
-(include-book "associated-certificates")
-(include-book "same-associated-certificates")
+(include-book "system-certificates")
 (include-book "signed-certificates")
-(include-book "signed-and-associated-cerificates")
 (include-book "signed-previous-quorum")
-(include-book "no-self-messages")
 (include-book "no-self-endorsed")
 (include-book "signer-records")
 (include-book "unequivocal-signed-certificates")
@@ -72,12 +69,9 @@
                     backward-closure
                     last-blockchain-round
                     ordered-even-blocks
-                    associated-certificates
-                    same-associated-certificates
+                    system-certificates
                     signed-certificates
-                    signed-and-associated-cerificates
                     signed-previous-quorum
-                    no-self-messages
                     no-self-endorsed
                     signer-records
                     unequivocal-signed-certificates
