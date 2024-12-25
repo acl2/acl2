@@ -287,25 +287,22 @@ Here is the definition of a pseudo-termp and a pseudo-term-listp.
 
 ; wrong number of arguments in conjecture for in, which takes 2 arguments
 (must-fail
- (induction-proof-obligations '(=> (in b l) (in a b l)) '(in b l) state))
+  (induction-proof-obligations '(=> (in b l) (in a b l)) '(in b l) state))
 
-; bin-app is not recursive
-(must-fail
- (induction-proof-obligations '(=> (and (tlp x) (tlp y) (tlp z))
-                                   (== (app (app x y) z)
-                                       (app x (app y z))))
-                              '(bin-app x y)
-                              state)
- :expected :soft)
+(must-succeed
+  (induction-proof-obligations '(=> (and (tlp x) (tlp y) (tlp z))
+                                    (== (app (app x y) z)
+                                        (app x (app y z))))
+                               '(bin-app x y)
+                               state))
 
-; app is a macro alias for bin-app, which is not recursive
-(must-fail
- (induction-proof-obligations '(=> (and (tlp x) (tlp y) (tlp z))
-                                   (== (app (app x y) z)
-                                       (app x (app y z))))
-                              '(app x y)
-                              state)
- :expected :soft)
+; app is a macro alias for bin-app
+(must-succeed
+  (induction-proof-obligations '(=> (and (tlp x) (tlp y) (tlp z))
+                                    (== (app (app x y) z)
+                                        (app x (app y z))))
+                               '(app x y)
+                               state))
 
 (must-succeed
  (induction-proof-obligations '(=> (and (tlp x) (tlp y) (tlp z))

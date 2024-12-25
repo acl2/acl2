@@ -77,7 +77,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule system-signers-are-validators-p-when-system-state-initp
+(defruled system-signers-are-validators-p-when-system-state-initp
   :short "Establishment of the invariant:
           the invariant holds on any initial system state."
   :long
@@ -96,7 +96,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule system-signers-are-validators-p-of-create-certificate-next
+(defruled system-signers-are-validators-p-of-create-certificate-next
   :short "Preservation of the invariant by @('create-certificate') events."
   :long
   (xdoc::topstring
@@ -127,7 +127,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule system-signers-are-validators-p-of-receive-certificate-next
+(defruled system-signers-are-validators-p-of-receive-certificate-next
   :short "Preservation of the invariant by @('receive-certificate') events."
   :long
   (xdoc::topstring
@@ -154,7 +154,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule system-signers-are-validators-p-of-store-certificate-next
+(defruled system-signers-are-validators-p-of-store-certificate-next
   :short "Preservation of the invariant by @('store-certificate') events."
   :long
   (xdoc::topstring
@@ -181,7 +181,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule system-signers-are-validators-p-of-advance-round-next
+(defruled system-signers-are-validators-p-of-advance-round-next
   :short "Preservation of the invariant by @('advance-round') events."
   :long
   (xdoc::topstring
@@ -208,7 +208,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule system-signers-are-validators-p-of-commit-anchors-next
+(defruled system-signers-are-validators-p-of-commit-anchors-next
   :short "Preservation of the invariant by @('commit-anchors') events."
   :long
   (xdoc::topstring
@@ -235,7 +235,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule system-signers-are-validators-p-of-timer-expires-next
+(defruled system-signers-are-validators-p-of-timer-expires-next
   :short "Preservation of the invariant by @('timer-expires') events."
   :long
   (xdoc::topstring
@@ -262,7 +262,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule system-signers-are-validators-p-of-event-next
+(defruled system-signers-are-validators-p-of-event-next
   :short "Preservation of the invariant by all events."
   :long
   (xdoc::topstring
