@@ -27,7 +27,7 @@
 (include-book "nonforking-blockchains-def-and-init")
 (include-book "same-committees-def-and-implied")
 (include-book "unequivocal-dags-next")
-(include-book "previous-quorum-def-and-init-and-next")
+(include-book "dag-previous-quorum-def-and-init-and-next")
 (include-book "dag-certificate-next")
 (include-book "last-anchor-def-and-init")
 (include-book "last-anchor-present")
@@ -44,7 +44,7 @@
 (include-book "nonforking-blockchains-next")
 (include-book "simultaneous-induction")
 (include-book "unequivocal-dags")
-(include-book "previous-quorum")
+(include-book "dag-previous-quorum")
 (include-book "nonforking-blockchains")
 (include-book "same-committees")
 (include-book "last-anchor-voters")
@@ -80,7 +80,7 @@
                     nonforking-blockchains-def-and-init
                     same-committees-def-and-implied
                     unequivocal-dags-next
-                    previous-quorum-def-and-init-and-next
+                    dag-previous-quorum-def-and-init-and-next
                     dag-certificate-next
                     last-anchor-def-and-init
                     last-anchor-present
@@ -97,7 +97,7 @@
                     nonforking-blockchains-next
                     simultaneous-induction
                     unequivocal-dags
-                    previous-quorum
+                    dag-previous-quorum
                     nonforking-blockchains
                     same-committees
                     last-anchor-voters

@@ -487,7 +487,7 @@
                   (signer-quorum-p systate)
                   (unequivocal-dags-p systate)
                   (same-committees-p systate)
-                  (previous-quorum-p systate)
+                  (dag-previous-quorum-p systate)
                   (set::in val0 (correct-addresses systate))
                   (commit-possiblep val systate)
                   (addressp val))
@@ -511,7 +511,7 @@
              unequivocal-dags-p-necc-single
              dag-has-committees-p-when-signer-quorum-p
              dag-in-committees-p-when-signer-quorum-p
-             dag-predecessor-quorum-p-when-previous-quorum-p
+             dag-predecessor-quorum-p-when-dag-previous-quorum-p
              cert-with-author+round-element
              backward-closed-p-necc
              fix
@@ -547,7 +547,7 @@
                   (signer-quorum-p systate)
                   (unequivocal-dags-p systate)
                   (same-committees-p systate)
-                  (previous-quorum-p systate)
+                  (dag-previous-quorum-p systate)
                   (last-anchor-present-p systate)
                   (omni-paths-p systate)
                   (commit-possiblep val systate)
@@ -614,7 +614,7 @@
                   (signer-quorum-p systate)
                   (unequivocal-dags-p systate)
                   (same-committees-p systate)
-                  (previous-quorum-p systate)
+                  (dag-previous-quorum-p systate)
                   (last-anchor-present-p systate)
                   (omni-paths-p systate)
                   (commit-possiblep val systate)
@@ -642,7 +642,7 @@
                   (signer-quorum-p systate)
                   (unequivocal-dags-p systate)
                   (same-committees-p systate)
-                  (previous-quorum-p systate)
+                  (dag-previous-quorum-p systate)
                   (last-anchor-present-p systate)
                   (omni-paths-p systate)
                   (commit-possiblep val systate)
@@ -665,7 +665,7 @@
                   (signer-quorum-p systate)
                   (unequivocal-dags-p systate)
                   (same-committees-p systate)
-                  (previous-quorum-p systate)
+                  (dag-previous-quorum-p systate)
                   (last-anchor-present-p systate)
                   (omni-paths-p systate)
                   (event-possiblep event systate))
