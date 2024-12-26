@@ -56,6 +56,7 @@
 (local (include-book "kestrel/bv/floor-mod-expt" :dir :system))
 (local (include-book "kestrel/bv/trim-rules" :dir :system))
 (local (include-book "kestrel/bv/pick-a-bit" :dir :system))
+(local (include-book "kestrel/bv/slice" :dir :system))
 (local (include-book "kestrel/bv-lists/all-unsigned-byte-p2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
@@ -10704,11 +10705,21 @@
   :hints (("Goal" :in-theory (e/d (getbit slice BVCHOP-OF-LOGTAIL bvchop-of-bv-array-read)
                                   (anti-slice)))))
 
+;new, disable?
+(defthm slice-of-bv-array-read-tighten
+  (implies (and (< high (+ -1 width))
+                (natp high)
+                (natp width)
+                (natp low))
+           (equal (slice high low (bv-array-read width len index lst))
+                  (slice high low (bv-array-read (+ 1 high) len index lst))))
+  :hints (("Goal" :in-theory (enable slice bvchop-of-bv-array-read))))
+
 ;gen!
 (defthm bvcat-of-slice-of-bv-array-read-and-bvcat-of-getbit-of-bv-array-read
   (equal (bvcat '5 (slice '7 '3 (bv-array-read '8 len index lst)) '3 (bvcat '1 (getbit '2 (bv-array-read '3 len index lst)) '2 x))
          (bvcat '6 (slice '7 '2 (bv-array-read '8 len index lst)) '2 x))
-  :hints (("Goal" :in-theory (enable getbit-of-bv-array-read-trim bvchop-1-becomes-getbit))))
+  :hints (("Goal" :in-theory (enable getbit-of-bv-array-read-trim getbit))))
 
 ;kill
 ;; (defthm bvcat-of-slice-and-bvcat-of-getbit

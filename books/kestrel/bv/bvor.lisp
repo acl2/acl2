@@ -13,6 +13,7 @@
 
 ;(include-book "bvchop")
 (include-book "getbit")
+(local (include-book "slice"))
 (local (include-book "logior-b"))
 (local (include-book "unsigned-byte-p"))
 

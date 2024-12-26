@@ -18,6 +18,7 @@
 (local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "../bv/unsigned-byte-p"))
+(local (include-book "../bv/bvchop"))
 
 ;todo: adapt more theorems from packbv
 

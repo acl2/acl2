@@ -12,6 +12,7 @@
 (in-package "ACL2")
 
 (include-book "bvor")
+(local (include-book "slice"))
 
 (defund bitor (x y)
   (declare (type integer x)
