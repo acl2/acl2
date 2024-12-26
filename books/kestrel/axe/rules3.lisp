@@ -807,7 +807,7 @@
   (implies (unsigned-byte-p 31 z) ; drop?
            (equal (BVLT 32 (BVUMINUS 31 x) z)
                   (BVLT 31 (BVUMINUS 31 x) z)))
-  :hints (("Goal" :in-theory (enable bvlt))))
+  :hints (("Goal" :in-theory (enable bvlt bvlt-tighten-when-getbit-0))))
 
 ;gen
 (defthm bvlt-of-bvuminus-tighten-arg2
@@ -12181,8 +12181,6 @@
                 (UNSIGNED-BYTE-P-FORCED YSIZE Y))
            (BVLT 32 (BVPLUS 32 K Y) 1073741824))
   :hints (("Goal" :in-theory (enable bvlt bvplus bvchop-of-sum-cases UNSIGNED-BYTE-P-FORCED UNSIGNED-BYTE-P))))
-
-(in-theory (disable BVLT-TIGHTEN-WHEN-GETBIT-0))
 
 (defthm integerp-when-UNSIGNED-BYTE-P-FORCED-free
   (implies (UNSIGNED-BYTE-P-FORCED YSIZE Y)
