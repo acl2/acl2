@@ -17,6 +17,8 @@
 (include-book "kestrel/utilities/digits-any-base/core" :dir :system)
 (include-book "kestrel/utilities/digits-any-base/pow2" :dir :system)
 
+(local (include-book "arithmetic-5/top" :dir :system))
+
 ; cert_param: (non-acl2r)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -595,6 +597,214 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define exec32-mul ((rd ubyte5p)
+                    (rs1 ubyte5p)
+                    (rs2 ubyte5p)
+                    (stat state32p))
+  :returns (new-stat state32p)
+  :short "Semanics of the @('MUL') instruction [ISA:13.1]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We read two unsigned 32-bit integers from @('rs1') and @('rs2').
+     We add them, and write the result to @('rd').
+     We increment the program counter."))
+  (b* ((rs1-operand (read32-xreg-unsigned rs1 stat))
+       (rs2-operand (read32-xreg-unsigned rs2 stat))
+       (result (* rs1-operand rs2-operand))
+       (stat (write32-xreg rd result stat))
+       (stat (inc32-pc stat)))
+    stat)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec32-mulh ((rd ubyte5p)
+                     (rs1 ubyte5p)
+                     (rs2 ubyte5p)
+                     (stat state32p))
+  :returns (new-stat state32p)
+  :short "Semanics of the @('MULH') instruction [ISA:13.1]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We read two signed 32-bit integers from @('rs1') and @('rs2').
+     We multiply them,
+     we shift the product right by 32 bits,
+     and we write the result to @('rd').
+     We increment the program counter."))
+  (b* ((rs1-operand (read32-xreg-signed rs1 stat))
+       (rs2-operand (read32-xreg-signed rs2 stat))
+       (product (* rs1-operand rs2-operand))
+       (result (ash product 32))
+       (stat (write32-xreg rd result stat))
+       (stat (inc32-pc stat)))
+    stat)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec32-mulhu ((rd ubyte5p)
+                      (rs1 ubyte5p)
+                      (rs2 ubyte5p)
+                      (stat state32p))
+  :returns (new-stat state32p)
+  :short "Semanics of the @('MULHU') instruction [ISA:13.1]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We read two unsigned 32-bit integers from @('rs1') and @('rs2').
+     We multiply them,
+     we shift the product right by 32 bits,
+     and we write the result to @('rd').
+     We increment the program counter."))
+  (b* ((rs1-operand (read32-xreg-unsigned rs1 stat))
+       (rs2-operand (read32-xreg-unsigned rs2 stat))
+       (product (* rs1-operand rs2-operand))
+       (result (ash product 32))
+       (stat (write32-xreg rd result stat))
+       (stat (inc32-pc stat)))
+    stat)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec32-mulhsu ((rd ubyte5p)
+                       (rs1 ubyte5p)
+                       (rs2 ubyte5p)
+                       (stat state32p))
+  :returns (new-stat state32p)
+  :short "Semanics of the @('MULHSU') instruction [ISA:13.1]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We read a signed 32-bit integer from @('rs1')
+     and an unsigned 32-bit integer from @('rs2').
+     We multiply them,
+     we shift the product right by 32 bits,
+     and we write the result to @('rd').
+     We increment the program counter."))
+  (b* ((rs1-operand (read32-xreg-signed rs1 stat))
+       (rs2-operand (read32-xreg-unsigned rs2 stat))
+       (product (* rs1-operand rs2-operand))
+       (result (ash product 32))
+       (stat (write32-xreg rd result stat))
+       (stat (inc32-pc stat)))
+    stat)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec32-div ((rd ubyte5p)
+                    (rs1 ubyte5p)
+                    (rs2 ubyte5p)
+                    (stat state32p))
+  :returns (new-stat state32p)
+  :short "Semanics of the @('DIV') instruction [ISA:13.2]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We read two signed 32-bit integers from @('rs1') and @('rs2').
+     We divide the first by the second, rounding towards 0;
+     if the divisor is 0, the result is -1
+     (see Table 11 in [ISA:13.2]).
+     We write the result to @('rd').
+     We increment the program counter."))
+  (b* ((rs1-operand (read32-xreg-signed rs1 stat))
+       (rs2-operand (read32-xreg-signed rs2 stat))
+       (result (if (= rs2-operand 0)
+                   -1
+                 (truncate rs1-operand rs2-operand)))
+       (stat (write32-xreg rd result stat))
+       (stat (inc32-pc stat)))
+    stat)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec32-divu ((rd ubyte5p)
+                     (rs1 ubyte5p)
+                     (rs2 ubyte5p)
+                     (stat state32p))
+  :returns (new-stat state32p)
+  :short "Semanics of the @('DIVU') instruction [ISA:13.2]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We read two unsigned 32-bit integers from @('rs1') and @('rs2').
+     We divide the first by the second, rounding towards 0;
+     if the divisor is 0, the result is @($2^{32}-1$)
+     (see Table 11 in [ISA:13.2]).
+     We write the result to @('rd').
+     We increment the program counter."))
+  (b* ((rs1-operand (read32-xreg-unsigned rs1 stat))
+       (rs2-operand (read32-xreg-unsigned rs2 stat))
+       (result (if (= rs2-operand 0)
+                   (1- (expt 2 32))
+                 (truncate rs1-operand rs2-operand)))
+       (stat (write32-xreg rd result stat))
+       (stat (inc32-pc stat)))
+    stat)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec32-rem ((rd ubyte5p)
+                    (rs1 ubyte5p)
+                    (rs2 ubyte5p)
+                    (stat state32p))
+  :returns (new-stat state32p)
+  :short "Semanics of the @('REM') instruction [ISA:13.2]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We read two signed 32-bit integers from @('rs1') and @('rs2').
+     We calculate the remainder of the first by the second,
+     based on division towards 0;
+     if the divisor is 0, the result is the dividend
+     (see Table 11 in [ISA:13.2]).
+     We write the result to @('rd').
+     We increment the program counter."))
+  (b* ((rs1-operand (read32-xreg-signed rs1 stat))
+       (rs2-operand (read32-xreg-signed rs2 stat))
+       (result (if (= rs2-operand 0)
+                   rs1-operand
+                 (rem rs1-operand rs2-operand)))
+       (stat (write32-xreg rd result stat))
+       (stat (inc32-pc stat)))
+    stat)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec32-remu ((rd ubyte5p)
+                     (rs1 ubyte5p)
+                     (rs2 ubyte5p)
+                     (stat state32p))
+  :returns (new-stat state32p)
+  :short "Semanics of the @('REMU') instruction [ISA:13.2]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We read two unsigned 32-bit integers from @('rs1') and @('rs2').
+     We calculate the remainder of the first by the second,
+     based on division towards 0;
+     if the divisor is 0, the result is the dividend
+     (see Table 11 in [ISA:13.2]).
+     We write the result to @('rd').
+     We increment the program counter."))
+  (b* ((rs1-operand (read32-xreg-unsigned rs1 stat))
+       (rs2-operand (read32-xreg-unsigned rs2 stat))
+       (result (if (= rs2-operand 0)
+                   rs1-operand
+                 (rem rs1-operand rs2-operand)))
+       (stat (write32-xreg rd result stat))
+       (stat (inc32-pc stat)))
+    stat)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define exec32-op ((funct op-funct-p)
                    (rd ubyte5p)
                    (rs1 ubyte5p)
@@ -602,7 +812,7 @@
                    (stat state32p))
   :returns (new-stat state32p)
   :short "Semantics of the instructions with the @('OP') opcode
-          [ISA:2.4.2] [ISA:4.2.2]."
+          [ISA:2.4.2] [ISA:4.2.2] [ISA:13.1] [ISA:13.2]."
   (op-funct-case funct
                  :add (exec32-add rd rs1 rs2 stat)
                  :sub (exec32-sub rd rs1 rs2 stat)
@@ -613,7 +823,15 @@
                  :xor (exec32-xor rd rs1 rs2 stat)
                  :sll (exec32-sll rd rs1 rs2 stat)
                  :srl (exec32-srl rd rs1 rs2 stat)
-                 :sra (exec32-sra rd rs1 rs2 stat))
+                 :sra (exec32-sra rd rs1 rs2 stat)
+                 :mul (exec32-mul rd rs1 rs2 stat)
+                 :mulh (exec32-mulh rd rs1 rs2 stat)
+                 :mulhu (exec32-mulhu rd rs1 rs2 stat)
+                 :mulhsu (exec32-mulhsu rd rs1 rs2 stat)
+                 :div (exec32-div rd rs1 rs2 stat)
+                 :divu (exec32-divu rd rs1 rs2 stat)
+                 :rem (exec32-rem rd rs1 rs2 stat)
+                 :remu (exec32-remu rd rs1 rs2 stat))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

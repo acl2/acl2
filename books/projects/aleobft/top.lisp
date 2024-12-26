@@ -115,7 +115,10 @@
       than in a model with more detailed and restrictive
       round advancement logic),
       it could affect the ability to prove certain other properties,
-      e.g. because the system may deadlock more easily in this model."))
+      e.g. because the system may deadlock more easily in this model.
+      In addition to the simplifications just described,
+      this version also eliminates some invariants
+      that are not needed to prove blockchain nonforking."))
    (xdoc::p
     "We plan to add other subdirectories
      for versions that cover additional aspects of AleoBFT,

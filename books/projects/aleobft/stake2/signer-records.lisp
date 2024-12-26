@@ -50,18 +50,6 @@
      in the DAG (the whole certificate),
      or in the set of endorsed pairs (just author and round).")
    (xdoc::p
-    "Note the difference between this notion and that of "
-    (xdoc::seetopic "associated-certificates" "associated certificates")
-    ": the latter consist of
-     the certificates in the validator state
-     or in transit in the network;
-     these are all whole certificates,
-     and apply to all validators.
-     In contrast, certificate records are all in the validator state,
-     but are not necessarily whole certificates
-     (it could be just authors and rounds),
-     and they only apply to the signers of the certificate.")
-   (xdoc::p
     "It may be tempting to formalize the notion of
      `a signer having a record of a certificate'
      as the disjunction of

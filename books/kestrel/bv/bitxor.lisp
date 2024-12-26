@@ -12,6 +12,7 @@
 (in-package "ACL2")
 
 (include-book "bvxor")
+(local (include-book "slice"))
 (local (include-book "logxor-b"))
 
 (defund bitxor (x y)

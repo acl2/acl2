@@ -1139,6 +1139,6 @@
          (produce-theorem "Whether to try to produce a theorem (possibly skip-proofed) about the result of the lifting.")
          (prove-theorem "Whether to try to prove the theorem with ACL2 (rarely works, since Axe's Rewriter is different and more scalable than ACL2's rewriter).")
          (restrict-theory "To be deprecated..."))
-  :description ("Given an ax86 binary function, extract an equivalent term in DAG form, by symbolic execution including inlining all functions and unrolling all loops."
+  :description ("Given an x86 binary function, extract an equivalent term in DAG form, by symbolic execution including inlining all functions and unrolling all loops."
                 "This event creates a @(see defconst) whose name is derived from the @('lifted-name') argument."
                 "To inspect the resulting DAG, you can simply enter its name at the prompt to print it."))

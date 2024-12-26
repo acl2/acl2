@@ -68,7 +68,6 @@
 
   (defruled cert-with-author+round-of-create-next
     (implies (and (system-committees-fault-tolerant-p systate)
-                  (same-associated-certs-p systate)
                   (no-self-endorsed-p systate)
                   (signer-records-p systate)
                   (dag-committees-p systate)
@@ -109,7 +108,6 @@
 
   (defruled cert-with-author+round-of-accept-next
     (implies (and (system-committees-fault-tolerant-p systate)
-                  (same-associated-certs-p systate)
                   (dag-committees-p systate)
                   (signer-quorum-p systate)
                   (unequivocal-signed-certs-p systate)
@@ -117,6 +115,7 @@
                   (same-committees-p systate)
                   (set::in val (correct-addresses systate))
                   (accept-possiblep msg systate)
+                  (messagep msg)
                   (cert-with-author+round
                    author
                    round
@@ -177,7 +176,6 @@
 
   (defruled cert-with-author+round-of-event-next
     (implies (and (system-committees-fault-tolerant-p systate)
-                  (same-associated-certs-p systate)
                   (no-self-endorsed-p systate)
                   (signer-records-p systate)
                   (unequivocal-signed-certs-p systate)

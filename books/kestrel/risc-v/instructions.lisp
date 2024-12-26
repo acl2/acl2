@@ -14,6 +14,7 @@
 (include-book "kestrel/fty/ubyte6" :dir :system)
 (include-book "kestrel/fty/ubyte12" :dir :system)
 (include-book "kestrel/fty/ubyte20" :dir :system)
+(include-book "std/util/deffixer" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -34,6 +35,7 @@
      in RV32I [ISA:2] and RV64I [ISA:4],
      which are the same for RV32E and RV64E [ISA:3],
      except for @('FENCE'), @('ECALL'), @('EBREAK'), and @('HINT').
+     We also cover the instructions for the M extension [ISA:13].
      We plan to add privileged instructions,
      as well as instructions for more extensions."))
   :order-subtopics t
@@ -85,7 +87,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum op-imm-32-funct
+(defsection op-imm-32-funct
   :short "Fixtype of
           names of non-shift instructions with the @('OP-IMM-32') opcode
           [ISA:4.2.1]."
@@ -95,9 +97,44 @@
     "This is analogous to @(tsee op-imm-funct),
      but for the @('OP-IMM-32') opcode.")
    (xdoc::p
-    "There is just one here,
-     but we introduce a singleton sum type for uniformity."))
-  (:addiw ()))
+    "Ideally we would like to use a @(tsee fty::deftagsum) here,
+     even though there is just one summand,
+     for uniformity with other fixtypes that have at least two summands.
+     However, doing so triggers a (broader) issue in XDOC.
+     Until that issue is resolved,
+     we ``manually'' define this fixtype."))
+
+  (define op-imm-32-funct-p (x)
+    :returns (yes/no booleanp)
+    (and (true-listp x)
+         (= (len x) 1)
+         (eq (car x) :addiw))
+    :parents nil)
+
+  (define op-imm-32-funct-addiw ()
+    :returns (x op-imm-32-funct-p)
+    '(:addiw)
+    :parents nil)
+
+  (std::deffixer op-imm-32-funct-fix
+    :pred op-imm-32-funct-p
+    :body-fix (op-imm-32-funct-addiw)
+    :parents nil)
+
+  (fty::deffixtype op-imm-32-funct
+    :pred op-imm-32-funct-p
+    :fix op-imm-32-funct-fix
+    :equiv op-imm-32-funct-equiv
+    :define t
+    :forward t)
+
+  (defmacro op-imm-32-funct-case (target keyword term)
+    (if (and (symbolp target)
+             (eq keyword :addiw))
+        `(let ((,target ,target))
+           (declare (ignore ,target))
+           ,term)
+      nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -118,7 +155,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum op-funct
-  :short "Fixtype of names of instructions with the @('OP') opcode [ISA:2.4.2]."
+  :short "Fixtype of names of instructions with the @('OP') opcode
+          [ISA:2.4.2] [ISA:13.1] [ISA:13.2]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -134,13 +172,21 @@
   (:xor ())
   (:sll ())
   (:srl ())
-  (:sra ()))
+  (:sra ())
+  (:mul ())
+  (:mulh ())
+  (:mulhu ())
+  (:mulhsu ())
+  (:div ())
+  (:divu ())
+  (:rem ())
+  (:remu ()))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum op-32-funct
   :short "Fixtype of names of instructions with the @('OP-32') opcode
-          [ISA:4.2.2]."
+          [ISA:4.2.2] [ISA:13.1] [ISA:13.2]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -149,7 +195,12 @@
   (:subw ())
   (:sllw ())
   (:srlw ())
-  (:sraw ()))
+  (:sraw ())
+  (:mulw ())
+  (:divw ())
+  (:divuw ())
+  (:remw ())
+  (:remuw ()))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

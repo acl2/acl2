@@ -191,7 +191,8 @@
     (level1 :type (array l1 (,*num-level-entries*))
 	    :resizable nil)
     :inline t
-    :non-memoizable t))
+    :non-memoizable t
+    :non-executable t))
 
 ;; ----------------------------------------------------------------------
 

@@ -97,7 +97,7 @@
                     (- n f)))
            (not (set::emptyp (set::intersect successor-vals
                                              predecessor-vals))))
-  :enable committee-members-stake-of-intersect-expand
+  :enable committee-members-stake-of-intersect
   :use (:instance committee-members-stake-0-to-emptyp-members
                   (members (set::intersect successor-vals predecessor-vals))))
 

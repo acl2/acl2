@@ -16,7 +16,6 @@
 (include-book "signed-previous-quorum")
 (include-book "same-committees-def-and-implied")
 (include-book "fault-tolerance")
-(include-book "signed-and-associated-cerificates")
 
 (local (include-book "arithmetic-3/top" :dir :system))
 
@@ -351,10 +350,10 @@
 
   (defruled validator-previous-quorum-p-of-accept-next-new
     (implies (and (system-committees-fault-tolerant-p systate)
-                  (same-associated-certs-p systate)
                   (signed-previous-quorum-p systate)
                   (same-committees-p systate)
-                  (accept-possiblep msg systate))
+                  (accept-possiblep msg systate)
+                  (messagep msg))
              (validator-previous-quorum-p
               (message->certificate msg)
               (get-validator-state (message->destination msg)
@@ -363,9 +362,10 @@
              accept-possiblep
              pick-correct-validator-is-correct
              pick-correct-validator-in-set
-             in-signed-certs-when-in-associated-and-signer
+             in-signed-certs-when-in-system-and-signer
              in-of-message-certs-with-dest
-             associated-certs
+             in-system-certs-when-in-some-dag
+             in-system-certs-when-in-network
              validator-signed-previous-quorum-p
              same-committees-p-necc
              active-committee-at-previous-round-when-at-round
@@ -402,10 +402,10 @@
   (defruled previous-quorum-p-of-accept-next
     (implies (and (previous-quorum-p systate)
                   (system-committees-fault-tolerant-p systate)
-                  (same-associated-certs-p systate)
                   (signed-previous-quorum-p systate)
                   (same-committees-p systate)
-                  (accept-possiblep msg systate))
+                  (accept-possiblep msg systate)
+                  (messagep msg))
              (previous-quorum-p (accept-next msg systate)))
     :enable (previous-quorum-p
              previous-quorum-p-necc
@@ -486,7 +486,6 @@
                   (system-committees-fault-tolerant-p systate)
                   (last-blockchain-round-p systate)
                   (ordered-even-p systate)
-                  (same-associated-certs-p systate)
                   (signed-previous-quorum-p systate)
                   (dag-committees-p systate)
                   (same-committees-p systate)

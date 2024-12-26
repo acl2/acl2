@@ -30,9 +30,13 @@
      RISC-V is modular, with base instruction sets and optional extensions.")
    (xdoc::p
     "This ACL2 library includes
-     a preliminary formalization of part of the the RISC-V ISA.
-     It is expected that this library will be extended with more
-     RISC-V formalizations and tools.")
+     a preliminary formalization of part of the the RISC-V ISA:
+     unprivileged RV32IM and RV64IM
+     (except for
+     the @('FENCE'), @('HINT'), @('ECALL') and @('EBREAK') instructions),
+     little endian memory access,
+     no alignment checks.
+     We plan to extend and improve this library.")
    (xdoc::p
     "This library is based on the following sources:")
    (xdoc::ul

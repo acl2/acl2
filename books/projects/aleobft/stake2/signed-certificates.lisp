@@ -11,7 +11,7 @@
 
 (in-package "ALEOBFT-STAKE2")
 
-(include-book "associated-certificates")
+(include-book "system-certificates")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -25,13 +25,6 @@
   :short "Certificates signed by validators."
   :long
   (xdoc::topstring
-   (xdoc::p
-    "All the certificates in the system are associated to some validator,
-     as formalized in @(see associated-certificates).
-     As proved in @(see same-associated-certificates),
-     all the validators have the same associated certificates,
-     so all the certificates in the system can be obtained as
-     the certificates associated to any validator in the system.")
    (xdoc::p
     "We define an operation to return
      all the certificates in the system signed by a given validator.
@@ -50,19 +43,21 @@
   (xdoc::topstring
    (xdoc::p
     "These are all the certificates in the system signed by the validator.
-     As proved in @(see same-associated-certificates),
-     validators have the same associated certificates,
-     so any such set of associated certificates is
-     the set of all the certificates in the system.
-     We pick the set of the signer,
-     and we select the ones whose signers include the signer.")
-   (xdoc::p
-    "We define this notion only for correct validators (signers).
+     We define this notion only for correct validators (signers).
      We could also define it for faulty validators,
      since they can be signers,
      but we only need this notion for correct validators."))
-  (certs-with-signer val (associated-certs val systate))
-  :hooks (:fix))
+  (certs-with-signer val (system-certs systate))
+  :hooks (:fix)
+
+  ///
+
+  (defruled in-signed-certs-when-in-system-and-signer
+    (implies (and (set::in cert (system-certs systate))
+                  (set::in signer (certificate->signers cert))
+                  (set::in signer (correct-addresses systate)))
+             (set::in cert (signed-certs signer systate)))
+    :enable in-of-certs-with-signer))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -73,7 +68,7 @@
            (equal (signed-certs val systate)
                   nil))
   :enable (signed-certs
-           associated-certs-when-init))
+           system-certs-when-init))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -86,8 +81,8 @@
     "The only kind of event that may change
      the certificates signed by a validator
      is @('create'),
-     because all the others do not change the set of associated certificates,
-     as proved in @(see associated-certs-of-next),
+     because all the others do not change the set of system certificates,
+     as proved in @(see system-certs-of-next),
      which are a superset of the signed certificates.
      Whether the set of signed certificates actually changes
      depends on whether the validator
@@ -105,7 +100,7 @@
                                      (signed-certs val systate))
                       (signed-certs val systate))))
     :enable (signed-certs
-             associated-certs-of-create-next
+             system-certs-of-create-next
              certs-with-signer-of-insert))
 
   (defruled signed-certs-of-accept-next
@@ -114,7 +109,7 @@
              (equal (signed-certs val (accept-next msg systate))
                     (signed-certs val systate)))
     :enable (signed-certs
-             associated-certs-of-accept-next))
+             system-certs-of-accept-next))
 
   (defruled signed-certs-of-advance-next
     (implies (and (set::in val (correct-addresses systate))
@@ -122,7 +117,7 @@
              (equal (signed-certs val (advance-next val1 systate))
                     (signed-certs val systate)))
     :enable (signed-certs
-             associated-certs-of-advance-next))
+             system-certs-of-advance-next))
 
   (defruled signed-certs-of-commit-next
     (implies (and (set::in val (correct-addresses systate))
@@ -130,4 +125,4 @@
              (equal (signed-certs val (commit-next val1 systate))
                     (signed-certs val systate)))
     :enable (signed-certs
-             associated-certs-of-commit-next)))
+             system-certs-of-commit-next)))

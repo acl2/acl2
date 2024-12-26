@@ -17,6 +17,8 @@
 (include-book "kestrel/utilities/digits-any-base/core" :dir :system)
 (include-book "kestrel/utilities/digits-any-base/pow2" :dir :system)
 
+(local (include-book "arithmetic-5/top" :dir :system))
+
 ; cert_param: (non-acl2r)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -253,8 +255,7 @@
           [ISA:4.2.1]."
   (op-imm-32-funct-case funct
                         :addiw (exec64-addiw rd rs1 imm stat))
-  :hooks (:fix)
-  :prepwork ((set-ignore-ok t))) ; temporary workaround for singleton sum type
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -727,6 +728,214 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define exec64-mul ((rd ubyte5p)
+                    (rs1 ubyte5p)
+                    (rs2 ubyte5p)
+                    (stat state64p))
+  :returns (new-stat state64p)
+  :short "Semanics of the @('MUL') instruction [ISA:13.1]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We read two unsigned 64-bit integers from @('rs1') and @('rs2').
+     We add them, and write the result to @('rd').
+     We increment the program counter."))
+  (b* ((rs1-operand (read64-xreg-unsigned rs1 stat))
+       (rs2-operand (read64-xreg-unsigned rs2 stat))
+       (result (* rs1-operand rs2-operand))
+       (stat (write64-xreg rd result stat))
+       (stat (inc64-pc stat)))
+    stat)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec64-mulh ((rd ubyte5p)
+                     (rs1 ubyte5p)
+                     (rs2 ubyte5p)
+                     (stat state64p))
+  :returns (new-stat state64p)
+  :short "Semanics of the @('MULH') instruction [ISA:13.1]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We read two signed 64-bit integers from @('rs1') and @('rs2').
+     We multiply them,
+     we shift the product right by 64 bits,
+     and we write the result to @('rd').
+     We increment the program counter."))
+  (b* ((rs1-operand (read64-xreg-signed rs1 stat))
+       (rs2-operand (read64-xreg-signed rs2 stat))
+       (product (* rs1-operand rs2-operand))
+       (result (ash product 64))
+       (stat (write64-xreg rd result stat))
+       (stat (inc64-pc stat)))
+    stat)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec64-mulhu ((rd ubyte5p)
+                      (rs1 ubyte5p)
+                      (rs2 ubyte5p)
+                      (stat state64p))
+  :returns (new-stat state64p)
+  :short "Semanics of the @('MULHU') instruction [ISA:13.1]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We read two unsigned 64-bit integers from @('rs1') and @('rs2').
+     We multiply them,
+     we shift the product right by 64 bits,
+     and we write the result to @('rd').
+     We increment the program counter."))
+  (b* ((rs1-operand (read64-xreg-unsigned rs1 stat))
+       (rs2-operand (read64-xreg-unsigned rs2 stat))
+       (product (* rs1-operand rs2-operand))
+       (result (ash product 64))
+       (stat (write64-xreg rd result stat))
+       (stat (inc64-pc stat)))
+    stat)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec64-mulhsu ((rd ubyte5p)
+                       (rs1 ubyte5p)
+                       (rs2 ubyte5p)
+                       (stat state64p))
+  :returns (new-stat state64p)
+  :short "Semanics of the @('MULHSU') instruction [ISA:13.1]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We read a signed 64-bit integer from @('rs1')
+     and an unsigned 64-bit integer from @('rs2').
+     We multiply them,
+     we shift the product right by 64 bits,
+     and we write the result to @('rd').
+     We increment the program counter."))
+  (b* ((rs1-operand (read64-xreg-signed rs1 stat))
+       (rs2-operand (read64-xreg-unsigned rs2 stat))
+       (product (* rs1-operand rs2-operand))
+       (result (ash product 64))
+       (stat (write64-xreg rd result stat))
+       (stat (inc64-pc stat)))
+    stat)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec64-div ((rd ubyte5p)
+                    (rs1 ubyte5p)
+                    (rs2 ubyte5p)
+                    (stat state64p))
+  :returns (new-stat state64p)
+  :short "Semanics of the @('DIV') instruction [ISA:13.2]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We read two signed 64-bit integers from @('rs1') and @('rs2').
+     We divide the first by the second, rounding towards 0;
+     if the divisor is 0, the result is -1
+     (see Table 11 in [ISA:13.2]).
+     We write the result to @('rd').
+     We increment the program counter."))
+  (b* ((rs1-operand (read64-xreg-signed rs1 stat))
+       (rs2-operand (read64-xreg-signed rs2 stat))
+       (result (if (= rs2-operand 0)
+                   -1
+                 (truncate rs1-operand rs2-operand)))
+       (stat (write64-xreg rd result stat))
+       (stat (inc64-pc stat)))
+    stat)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec64-divu ((rd ubyte5p)
+                     (rs1 ubyte5p)
+                     (rs2 ubyte5p)
+                     (stat state64p))
+  :returns (new-stat state64p)
+  :short "Semanics of the @('DIVU') instruction [ISA:13.2]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We read two unsigned 64-bit integers from @('rs1') and @('rs2').
+     We divide the first by the second, rounding towards 0;
+     if the divisor is 0, the result is @($2^{64}-1$)
+     (see Table 11 in [ISA:13.2]).
+     We write the result to @('rd').
+     We increment the program counter."))
+  (b* ((rs1-operand (read64-xreg-unsigned rs1 stat))
+       (rs2-operand (read64-xreg-unsigned rs2 stat))
+       (result (if (= rs2-operand 0)
+                   (1- (expt 2 64))
+                 (truncate rs1-operand rs2-operand)))
+       (stat (write64-xreg rd result stat))
+       (stat (inc64-pc stat)))
+    stat)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec64-rem ((rd ubyte5p)
+                    (rs1 ubyte5p)
+                    (rs2 ubyte5p)
+                    (stat state64p))
+  :returns (new-stat state64p)
+  :short "Semanics of the @('REM') instruction [ISA:13.2]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We read two signed 64-bit integers from @('rs1') and @('rs2').
+     We calculate the remainder of the first by the second,
+     based on division towards 0;
+     if the divisor is 0, the result is the dividend
+     (see Table 11 in [ISA:13.2]).
+     We write the result to @('rd').
+     We increment the program counter."))
+  (b* ((rs1-operand (read64-xreg-signed rs1 stat))
+       (rs2-operand (read64-xreg-signed rs2 stat))
+       (result (if (= rs2-operand 0)
+                   rs1-operand
+                 (rem rs1-operand rs2-operand)))
+       (stat (write64-xreg rd result stat))
+       (stat (inc64-pc stat)))
+    stat)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec64-remu ((rd ubyte5p)
+                     (rs1 ubyte5p)
+                     (rs2 ubyte5p)
+                     (stat state64p))
+  :returns (new-stat state64p)
+  :short "Semanics of the @('REMU') instruction [ISA:13.2]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We read two unsigned 64-bit integers from @('rs1') and @('rs2').
+     We calculate the remainder of the first by the second,
+     based on division towards 0;
+     if the divisor is 0, the result is the dividend
+     (see Table 11 in [ISA:13.2]).
+     We write the result to @('rd').
+     We increment the program counter."))
+  (b* ((rs1-operand (read64-xreg-unsigned rs1 stat))
+       (rs2-operand (read64-xreg-unsigned rs2 stat))
+       (result (if (= rs2-operand 0)
+                   rs1-operand
+                 (rem rs1-operand rs2-operand)))
+       (stat (write64-xreg rd result stat))
+       (stat (inc64-pc stat)))
+    stat)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define exec64-op ((funct op-funct-p)
                    (rd ubyte5p)
                    (rs1 ubyte5p)
@@ -734,7 +943,7 @@
                    (stat state64p))
   :returns (new-stat state64p)
   :short "Semantics of the instructions with the @('OP') opcode
-          [ISA:2.4.2] [ISA:4.2.2]."
+          [ISA:2.4.2] [ISA:4.2.2] [ISA:13.1] [ISA:13.2]."
   (op-funct-case funct
                  :add (exec64-add rd rs1 rs2 stat)
                  :sub (exec64-sub rd rs1 rs2 stat)
@@ -745,7 +954,15 @@
                  :xor (exec64-xor rd rs1 rs2 stat)
                  :sll (exec64-sll rd rs1 rs2 stat)
                  :srl (exec64-srl rd rs1 rs2 stat)
-                 :sra (exec64-sra rd rs1 rs2 stat))
+                 :sra (exec64-sra rd rs1 rs2 stat)
+                 :mul (exec64-mul rd rs1 rs2 stat)
+                 :mulh (exec64-mulh rd rs1 rs2 stat)
+                 :mulhu (exec64-mulhu rd rs1 rs2 stat)
+                 :mulhsu (exec64-mulhsu rd rs1 rs2 stat)
+                 :div (exec64-div rd rs1 rs2 stat)
+                 :divu (exec64-divu rd rs1 rs2 stat)
+                 :rem (exec64-rem rd rs1 rs2 stat)
+                 :remu (exec64-remu rd rs1 rs2 stat))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -875,19 +1092,158 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define exec64-mulw ((rd ubyte5p)
+                     (rs1 ubyte5p)
+                     (rs2 ubyte5p)
+                     (stat state64p))
+  :returns (new-stat state64p)
+  :short "Semantics of the @('MULW') instruction [ISA:13.1]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We read two unsigned 32-bit integers from @('rs1') and @('rs2').
+     We multiply the two unsigned 32-bit integers.
+     We write the result to @('rd') as a signed 32-bit integer.
+     We increment the program counter."))
+  (b* ((rs1-operand (read64-xreg-unsigned32 rs1 stat))
+       (rs2-operand (read64-xreg-unsigned32 rs2 stat))
+       (result (* rs1-operand rs2-operand))
+       (stat (write64-xreg-32 rd result stat))
+       (stat (inc64-pc stat)))
+    stat)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec64-divw ((rd ubyte5p)
+                     (rs1 ubyte5p)
+                     (rs2 ubyte5p)
+                     (stat state64p))
+  :returns (new-stat state64p)
+  :short "Semantics of the @('DIVW') instruction [ISA:13.2]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We read two signed 32-bit integers from @('rs1') and @('rs2').
+     We divide the first by the second, rounding towards 0;
+     if the divisor is 0, the result is -1
+     (see Table 11 in [ISA:13.2]).
+     We write the result to @('rd') as a signed 32-bit integer.
+     We increment the program counter."))
+  (b* ((rs1-operand (read64-xreg-signed32 rs1 stat))
+       (rs2-operand (read64-xreg-signed32 rs2 stat))
+       (result (if (= rs2-operand 0)
+                   -1
+                 (truncate rs1-operand rs2-operand)))
+       (stat (write64-xreg-32 rd result stat))
+       (stat (inc64-pc stat)))
+    stat)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec64-divuw ((rd ubyte5p)
+                      (rs1 ubyte5p)
+                      (rs2 ubyte5p)
+                      (stat state64p))
+  :returns (new-stat state64p)
+  :short "Semantics of the @('DIVUW') instruction [ISA:13.2]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We read two unsigned 32-bit integers from @('rs1') and @('rs2').
+     We divide the first by the second, rounding towards 0;
+     if the divisor is 0, the result is @($2^{32}-1$)
+     (see Table 11 in [ISA:13.2]).
+     We write the result to @('rd') as a signed 32-bit integer.
+     We increment the program counter."))
+  (b* ((rs1-operand (read64-xreg-unsigned32 rs1 stat))
+       (rs2-operand (read64-xreg-unsigned32 rs2 stat))
+       (result (if (= rs2-operand 0)
+                   (1- (expt 2 32))
+                 (truncate rs1-operand rs2-operand)))
+       (stat (write64-xreg-32 rd result stat))
+       (stat (inc64-pc stat)))
+    stat)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec64-remw ((rd ubyte5p)
+                     (rs1 ubyte5p)
+                     (rs2 ubyte5p)
+                     (stat state64p))
+  :returns (new-stat state64p)
+  :short "Semantics of the @('REMW') instruction [ISA:13.2]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We read two signed 32-bit integers from @('rs1') and @('rs2').
+     We calculate the remainder of the first by the second,
+     based on division towards 0;
+     if the divisor is 0, the result is the dividend
+     (see Table 11 in [ISA:13.2]).
+     We write the result to @('rd') as a signed 32-bit integer.
+     We increment the program counter."))
+  (b* ((rs1-operand (read64-xreg-signed32 rs1 stat))
+       (rs2-operand (read64-xreg-signed32 rs2 stat))
+       (result (if (= rs2-operand 0)
+                   rs1-operand
+                 (rem rs1-operand rs2-operand)))
+       (stat (write64-xreg-32 rd result stat))
+       (stat (inc64-pc stat)))
+    stat)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define exec64-remuw ((rd ubyte5p)
+                      (rs1 ubyte5p)
+                      (rs2 ubyte5p)
+                      (stat state64p))
+  :returns (new-stat state64p)
+  :short "Semantics of the @('REMUW') instruction [ISA:13.2]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We read two unsigned 32-bit integers from @('rs1') and @('rs2').
+     We calculate the remainder of the first by the second,
+     based on division towards 0;
+     if the divisor is 0, the result is the dividend
+     (see Table 11 in [ISA:13.2]).
+     We write the result to @('rd') as a signed 32-bit integer.
+     We increment the program counter."))
+  (b* ((rs1-operand (read64-xreg-unsigned32 rs1 stat))
+       (rs2-operand (read64-xreg-unsigned32 rs2 stat))
+       (result (if (= rs2-operand 0)
+                   rs1-operand
+                 (rem rs1-operand rs2-operand)))
+       (stat (write64-xreg-32 rd result stat))
+       (stat (inc64-pc stat)))
+    stat)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define exec64-op-32 ((funct op-32-funct-p)
                       (rd ubyte5p)
                       (rs1 ubyte5p)
                       (rs2 ubyte5p)
                       (stat state64p))
   :returns (new-stat state64p)
-  :short "Semantics of the instructions with the @('OP-32') opcode [ISA:4.2.2]."
+  :short "Semantics of the instructions with the @('OP-32') opcode
+          [ISA:4.2.2] [ISA:13.1] [ISA:13.2]."
   (op-32-funct-case funct
                     :addw (exec64-addw rd rs1 rs2 stat)
                     :subw (exec64-subw rd rs1 rs2 stat)
                     :sllw (exec64-sllw rd rs1 rs2 stat)
                     :srlw (exec64-srlw rd rs1 rs2 stat)
-                    :sraw (exec64-sraw rd rs1 rs2 stat))
+                    :sraw (exec64-sraw rd rs1 rs2 stat)
+                    :mulw (exec64-mulw rd rs1 rs2 stat)
+                    :divw (exec64-divw rd rs1 rs2 stat)
+                    :divuw (exec64-divuw rd rs1 rs2 stat)
+                    :remw (exec64-remw rd rs1 rs2 stat)
+                    :remuw (exec64-remuw rd rs1 rs2 stat))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
