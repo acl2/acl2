@@ -164,7 +164,6 @@
                   (backward-closed-p systate)
                   (no-self-endorsed-p systate)
                   (signer-records-p systate)
-                  (dag-committees-p systate)
                   (signer-quorum-p systate)
                   (unequivocal-dags-p systate)
                   (same-committees-p systate)
@@ -204,7 +203,6 @@
   (defrule committed-anchors-of-accept-next
     (implies (and (system-committees-fault-tolerant-p systate)
                   (backward-closed-p systate)
-                  (dag-committees-p systate)
                   (signer-quorum-p systate)
                   (unequivocal-signed-certs-p systate)
                   (unequivocal-dags-p systate)
@@ -259,7 +257,7 @@
   (defruled committed-anchors-of-commit-next-last-not-0
     (implies (and (last-blockchain-round-p systate)
                   (ordered-even-p systate)
-                  (dag-committees-p systate)
+                  (signer-quorum-p systate)
                   (unequivocal-dags-p systate)
                   (last-anchor-present-p systate)
                   (omni-paths-p systate)
@@ -302,7 +300,8 @@
              ordered-even-p-necc
              collect-anchors-above-last-committed-round
              last-blockchain-round-p-necc
-             dag-committees-p-necc
+             dag-has-committees-p-when-signer-quorum-p
+             dag-in-committees-p-when-signer-quorum-p
              last-anchor-present-p-necc
              last-anchor-in-dag
              certificate->round-of-last-anchor
@@ -332,7 +331,7 @@
   (defruled committed-anchors-of-commit-next-last-0
     (implies (and (last-blockchain-round-p systate)
                   (ordered-even-p systate)
-                  (dag-committees-p systate)
+                  (signer-quorum-p systate)
                   (unequivocal-dags-p systate)
                   (last-anchor-present-p systate)
                   (omni-paths-p systate)
@@ -380,7 +379,7 @@
   (defruled committed-anchors-of-commit-next-other-val
     (implies (and (last-blockchain-round-p systate)
                   (ordered-even-p systate)
-                  (dag-committees-p systate)
+                  (signer-quorum-p systate)
                   (unequivocal-dags-p systate)
                   (last-anchor-present-p systate)
                   (omni-paths-p systate)
@@ -400,7 +399,7 @@
   (defruled committed-anchors-of-commit-next
     (implies (and (last-blockchain-round-p systate)
                   (ordered-even-p systate)
-                  (dag-committees-p systate)
+                  (signer-quorum-p systate)
                   (unequivocal-dags-p systate)
                   (last-anchor-present-p systate)
                   (omni-paths-p systate)
@@ -463,7 +462,7 @@
      and thus of the anchor sequence."))
   (implies (and (last-blockchain-round-p systate)
                 (ordered-even-p systate)
-                (dag-committees-p systate)
+                (signer-quorum-p systate)
                 (unequivocal-dags-p systate)
                 (last-anchor-present-p systate)
                 (omni-paths-p systate)

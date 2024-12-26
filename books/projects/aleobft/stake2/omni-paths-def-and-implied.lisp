@@ -77,7 +77,7 @@
     "The key theorem that we use is @(tsee dag-omni-paths-p-holds).
      We use already proved invariant to establish its hypotheses."))
   (implies (and (backward-closed-p systate)
-                (dag-committees-p systate)
+                (signer-quorum-p systate)
                 (unequivocal-dags-p systate)
                 (same-committees-p systate)
                 (previous-quorum-p systate)
@@ -114,5 +114,6 @@
            last-not-0-when-last-anchor
            certificate->round-of-last-anchor
            same-committees-p-necc
-           dag-committees-p-necc
+           dag-has-committees-p-when-signer-quorum-p
+           dag-in-committees-p-when-signer-quorum-p
            last-anchor-in-dag))

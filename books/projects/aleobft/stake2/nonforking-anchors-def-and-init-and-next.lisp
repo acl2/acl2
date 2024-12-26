@@ -285,7 +285,6 @@
                   (backward-closed-p systate)
                   (no-self-endorsed-p systate)
                   (signer-records-p systate)
-                  (dag-committees-p systate)
                   (signer-quorum-p systate)
                   (unequivocal-dags-p systate)
                   (same-committees-p systate)
@@ -301,7 +300,6 @@
     (implies (and (nonforking-anchors-p systate)
                   (system-committees-fault-tolerant-p systate)
                   (backward-closed-p systate)
-                  (dag-committees-p systate)
                   (signer-quorum-p systate)
                   (unequivocal-signed-certs-p systate)
                   (unequivocal-dags-p systate)
@@ -328,7 +326,7 @@
     (implies (and (nonforking-anchors-p systate)
                   (last-blockchain-round-p systate)
                   (ordered-even-p systate)
-                  (dag-committees-p systate)
+                  (signer-quorum-p systate)
                   (unequivocal-dags-p systate)
                   (last-anchor-present-p systate)
                   (omni-paths-p systate)
@@ -350,7 +348,7 @@
     (implies (and (backward-closed-p systate)
                   (last-blockchain-round-p systate)
                   (ordered-even-p systate)
-                  (dag-committees-p systate)
+                  (signer-quorum-p systate)
                   (unequivocal-dags-p systate)
                   (same-committees-p systate)
                   (last-anchor-present-p systate)
@@ -377,7 +375,8 @@
              unequivocal-dags-p-necc
              unequivocal-dags-p-necc-single
              backward-closed-p-necc
-             dag-committees-p-necc
+             dag-has-committees-p-when-signer-quorum-p
+             dag-in-committees-p-when-signer-quorum-p
              cert-with-author+round-element)
     :expand (committed-anchors (get-validator-state val0 systate))
     :use ((:instance last-anchor-present-p-necc (val val0))
@@ -421,7 +420,7 @@
     (implies (and (backward-closed-p systate)
                   (last-blockchain-round-p systate)
                   (ordered-even-p systate)
-                  (dag-committees-p systate)
+                  (signer-quorum-p systate)
                   (unequivocal-dags-p systate)
                   (same-committees-p systate)
                   (last-anchor-present-p systate)
@@ -444,7 +443,8 @@
              commit-possiblep
              unequivocal-dags-p-necc
              unequivocal-dags-p-necc-single
-             dag-committees-p-necc
+             dag-has-committees-p-when-signer-quorum-p
+             dag-in-committees-p-when-signer-quorum-p
              backward-closed-p-necc
              cert-with-author+round-element
              omni-paths-p-necc
@@ -484,7 +484,6 @@
 
   (defruled dag-omni-paths-p-when-commit-possiblep
     (implies (and (backward-closed-p systate)
-                  (dag-committees-p systate)
                   (signer-quorum-p systate)
                   (unequivocal-dags-p systate)
                   (same-committees-p systate)
@@ -510,7 +509,8 @@
     :enable (commit-possiblep
              unequivocal-dags-p-necc
              unequivocal-dags-p-necc-single
-             dag-committees-p-necc
+             dag-has-committees-p-when-signer-quorum-p
+             dag-in-committees-p-when-signer-quorum-p
              dag-predecessor-quorum-p-when-previous-quorum-p
              cert-with-author+round-element
              backward-closed-p-necc
@@ -544,7 +544,6 @@
     (implies (and (backward-closed-p systate)
                   (last-blockchain-round-p systate)
                   (ordered-even-p systate)
-                  (dag-committees-p systate)
                   (signer-quorum-p systate)
                   (unequivocal-dags-p systate)
                   (same-committees-p systate)
@@ -569,7 +568,8 @@
              commit-possiblep
              unequivocal-dags-p-necc
              unequivocal-dags-p-necc-single
-             dag-committees-p-necc
+             dag-has-committees-p-when-signer-quorum-p
+             dag-in-committees-p-when-signer-quorum-p
              backward-closed-p-necc
              last-anchor-present-p-necc
              last-anchor-in-dag
@@ -611,7 +611,6 @@
                   (backward-closed-p systate)
                   (last-blockchain-round-p systate)
                   (ordered-even-p systate)
-                  (dag-committees-p systate)
                   (signer-quorum-p systate)
                   (unequivocal-dags-p systate)
                   (same-committees-p systate)
@@ -640,7 +639,6 @@
                   (backward-closed-p systate)
                   (last-blockchain-round-p systate)
                   (ordered-even-p systate)
-                  (dag-committees-p systate)
                   (signer-quorum-p systate)
                   (unequivocal-dags-p systate)
                   (same-committees-p systate)
@@ -664,7 +662,6 @@
                   (no-self-endorsed-p systate)
                   (signer-records-p systate)
                   (unequivocal-signed-certs-p systate)
-                  (dag-committees-p systate)
                   (signer-quorum-p systate)
                   (unequivocal-dags-p systate)
                   (same-committees-p systate)

@@ -12,7 +12,7 @@
 (in-package "ALEOBFT-STAKE2")
 
 (include-book "backward-closure")
-(include-book "dag-committees")
+(include-book "signer-quorum")
 (include-book "signed-previous-quorum")
 (include-book "same-committees-def-and-implied")
 (include-book "fault-tolerance")
@@ -160,7 +160,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define-sk previous-quorum-p ((systate system-statep))
-  :guard (dag-committees-p systate)
+  :guard (signer-quorum-p systate)
   :returns (yes/no booleanp)
   :short "Definition of the invariant:
           for each certificate in the DAG of each validator,
@@ -189,7 +189,7 @@
                     (get-validator-state val systate))))
   :guard-hints
   (("Goal"
-    :in-theory (enable dag-committees-p-necc
+    :in-theory (enable dag-has-committees-p-when-signer-quorum-p
                        dag-has-committees-p-necc-bind-dag
                        active-committee-at-previous-round-when-at-round )))
 
@@ -438,7 +438,7 @@
   (defruled validator-previous-quorum-p-of-commit-next
     (implies (and (last-blockchain-round-p systate)
                   (ordered-even-p systate)
-                  (dag-committees-p systate)
+                  (signer-quorum-p systate)
                   (set::in val1 (correct-addresses systate))
                   (set::in cert
                            (validator-state->dag
@@ -451,7 +451,7 @@
              (validator-previous-quorum-p
               cert
               (get-validator-state val1 (commit-next val systate))))
-    :enable (dag-committees-p-necc
+    :enable (dag-has-committees-p-when-signer-quorum-p
              dag-has-committees-p-necc-bind-dag
              validator-previous-quorum-p
              validator-state->blockchain-of-commit-next
@@ -471,7 +471,7 @@
     (implies (and (previous-quorum-p systate)
                   (last-blockchain-round-p systate)
                   (ordered-even-p systate)
-                  (dag-committees-p systate)
+                  (signer-quorum-p systate)
                   (commit-possiblep val systate)
                   (addressp val))
              (previous-quorum-p (commit-next val systate)))
@@ -487,7 +487,7 @@
                   (last-blockchain-round-p systate)
                   (ordered-even-p systate)
                   (signed-previous-quorum-p systate)
-                  (dag-committees-p systate)
+                  (signer-quorum-p systate)
                   (same-committees-p systate)
                   (event-possiblep event systate))
              (previous-quorum-p (event-next event systate)))

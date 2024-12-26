@@ -12,7 +12,6 @@
 (in-package "ALEOBFT-STAKE2")
 
 (include-book "last-anchor-next")
-(include-book "dag-committees")
 
 (local (include-book "arithmetic-3/top" :dir :system))
 
@@ -127,7 +126,7 @@
 
 (define-sk last-anchor-voters-p ((systate system-statep))
   :guard (and (last-anchor-present-p systate)
-              (dag-committees-p systate))
+              (signer-quorum-p systate))
   :returns (yes/no booleanp)
   :short "Definition of the invariant:
           for each correct validator,
@@ -140,8 +139,10 @@
           (implies (set::in val (correct-addresses systate))
                    (validator-last-anchor-voters-p
                     (get-validator-state val systate))))
-  :guard-hints (("Goal" :in-theory (enable last-anchor-present-p-necc
-                                           dag-committees-p-necc)))
+  :guard-hints
+  (("Goal" :in-theory (enable last-anchor-present-p-necc
+                              dag-has-committees-p-when-signer-quorum-p
+                              dag-in-committees-p-when-signer-quorum-p)))
   ///
   (fty::deffixequiv-sk last-anchor-voters-p
     :args ((systate system-statep))))
@@ -203,7 +204,6 @@
     (implies (and (system-committees-fault-tolerant-p systate)
                   (no-self-endorsed-p systate)
                   (signer-records-p systate)
-                  (dag-committees-p systate)
                   (signer-quorum-p systate)
                   (unequivocal-dags-p systate)
                   (same-committees-p systate)
@@ -249,7 +249,6 @@
                   (system-committees-fault-tolerant-p systate)
                   (no-self-endorsed-p systate)
                   (signer-records-p systate)
-                  (dag-committees-p systate)
                   (signer-quorum-p systate)
                   (unequivocal-dags-p systate)
                   (same-committees-p systate)
@@ -264,7 +263,6 @@
 
   (defruled validator-last-anchor-voters-p-of-accept-next
     (implies (and (system-committees-fault-tolerant-p systate)
-                  (dag-committees-p systate)
                   (signer-quorum-p systate)
                   (unequivocal-signed-certs-p systate)
                   (unequivocal-dags-p systate)
@@ -306,7 +304,6 @@
   (defruled last-anchor-voters-p-of-accept-next
     (implies (and (last-anchor-voters-p systate)
                   (system-committees-fault-tolerant-p systate)
-                  (dag-committees-p systate)
                   (signer-quorum-p systate)
                   (unequivocal-signed-certs-p systate)
                   (unequivocal-dags-p systate)
@@ -432,7 +429,6 @@
                   (ordered-even-p systate)
                   (no-self-endorsed-p systate)
                   (signer-records-p systate)
-                  (dag-committees-p systate)
                   (signer-quorum-p systate)
                   (unequivocal-signed-certs-p systate)
                   (unequivocal-dags-p systate)
