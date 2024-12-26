@@ -260,7 +260,7 @@
                 )
            (equal (bv-array-read element-width 256 index data)
                   (bv-array-read element-width 256 (trim 8 index) data)))
-  :hints (("Goal" :in-theory (e/d (trim) nil))))
+  :hints (("Goal" :in-theory (enable trim))))
 
 (defthmd bv-array-read-trim-index-axe-gen
   (implies (and (syntaxp (quotep len))
@@ -271,7 +271,7 @@
                 )
            (equal (bv-array-read element-width len index data)
                   (bv-array-read element-width len (trim (ceiling-of-lg len) index) data)))
-               :hints (("Goal" :in-theory (e/d (trim) nil))))
+               :hints (("Goal" :in-theory (enable trim))))
 
 ;move
 (defthmd myif-becomes-bv-array-if-axe
