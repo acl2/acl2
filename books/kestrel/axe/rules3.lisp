@@ -1137,8 +1137,6 @@
                                REWRITE-BV-EQUALITY-WHEN-SIZES-DONT-MATCH-1
                                GETBIT-WHEN-SLICE-IS-KNOWN-CONSTANT))))
 
-(in-theory (disable BVCHOP-REDUCE-WHEN-TOP-BIT-KNOWN))
-
 (defthm bvlt-when-slice-0-hack
   (implies (and (equal (slice 31 2 x) 0) ;slow?
                 (unsigned-byte-p 32 x))
