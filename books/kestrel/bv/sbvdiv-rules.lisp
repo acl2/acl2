@@ -41,7 +41,9 @@
          (bvchop 1 x))
   :hints (("Goal" :in-theory (enable bvuminus bvminus))))
 
-(defthm slice-of-bvuminus
+;move
+;can cause a case split
+(defthmd slice-of-bvuminus
   (implies (and (< high size)
                 (<= low high)
                 (integerp x)
@@ -51,16 +53,19 @@
            (equal (slice high low (bvuminus size x))
                   (if (equal (bvchop low x) 0)
                       (bvuminus (+ 1 high (- low)) (slice high low x))
-                    (bvminus (+ 1 high (- low)) (+ -1 (expt 2 (+ 1 high (- low)))) (slice high low x)))))
+                    (bvminus (+ 1 high (- low))
+                             (+ -1 (expt 2 (+ 1 high (- low)))) ; often gets computed
+                             (slice high low x)))))
   :hints (("Goal" :in-theory (e/d (bvuminus bvminus slice-of-sum-cases
-                                            bvchop-of-sum-cases
-                                            ) (
-;BVMULT-OF-2-GEN ;why?
-;EQUAL-OF-BVMULT-AND-*-ALT
-;EQUAL-OF-BVMULT-AND-*
-;bvminus-becomes-bvplus-of-bvuminus
-                                               )))))
+                                            bvchop-of-sum-cases)
+                                  (;;BVMULT-OF-2-GEN ;why?
+                                   ;;EQUAL-OF-BVMULT-AND-*-ALT
+                                   ;;EQUAL-OF-BVMULT-AND-*
+                                   ;;bvminus-becomes-bvplus-of-bvuminus
+                                   )))))
 
+;move
+;can cause a case split
 (defthm getbit-of-bvuminus
   (implies (and (< low size)
                 (integerp x)
@@ -71,7 +76,8 @@
                       (getbit low x)
                     (bitnot (getbit low x)))))
   :hints (("Goal" :use (:instance slice-of-bvuminus (high low))
-           :in-theory (e/d (slice-becomes-getbit) (slice-of-bvuminus)))))
+           :in-theory (e/d (slice-becomes-getbit) (;slice-of-bvuminus
+                                                   )))))
 
 (defthm equal-of-bvchop-and-bvchop-same-diff-sizes
   (implies (natp size)
