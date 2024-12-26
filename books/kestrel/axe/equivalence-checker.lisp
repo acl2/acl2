@@ -19144,7 +19144,7 @@
 ;; we failed to reduce the miter to T.
 (defun prove-miter-fn (dag-or-quotep
                        test-case-count ;the total number of tests to generate?  some may not be used
-                       var-type-alist  ;compute this from the hyps?
+                       var-type-alist  ;compute this from the hyps? todo: think about var-type-alist vs test-case-type-alist -- convert from on to the other (when possible), or pass both?
                        print
                        debug-nodes ;do we use this?
                        interpreted-function-alist
@@ -19175,7 +19175,8 @@
   (declare (xargs :guard (and (or (quotep dag-or-quotep)
                                   (weak-dagp dag-or-quotep))
                               (natp test-case-count)
-                              (no-duplicatesp (strip-cars var-type-alist)) ;could check that the cdrs are valid types..
+                              (test-case-type-alistp var-type-alist)
+                              (no-duplicatesp (strip-cars var-type-alist))
                               (not (assoc-eq nil var-type-alist)) ;consider relaxing this?
                               (not (assoc-eq t var-type-alist)) ;consider relaxing this?
                               (if (extra-stuff-okayp extra-stuff)
