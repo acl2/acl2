@@ -362,7 +362,7 @@
                 (integerp free))
            (equal (bvxor n x y)
                   (bvxor n k y)))
-  :hints (("Goal" :in-theory (e/d (bvxor) nil))))
+  :hints (("Goal" :in-theory (enable bvxor))))
 
 (defthm bvxor-subst-arg3
   (implies (and (syntaxp (not (quotep y)))
@@ -372,7 +372,7 @@
                 (integerp free))
            (equal (bvxor n x y)
                   (bvxor n x k)))
-  :hints (("Goal" :in-theory (e/d (bvxor) nil))))
+  :hints (("Goal" :in-theory (enable bvxor))))
 
 (defthm equal-of-0-and-bvxor
   (equal (equal 0 (bvxor size x y))
