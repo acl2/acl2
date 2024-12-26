@@ -425,7 +425,7 @@
   (prog2$ (and print (cw " (For ~x0:)~%" event))
           (mv nil state)))
 
-;; ;; Test whether the given book is incldued in the wrld.  FILENAME should include the .lisp extension.
+;; ;; Test whether the given book is included in the wrld.  FILENAME should include the .lisp extension.
 ;; (defun book-includedp (dir filename state)
 ;;   (declare (xargs :guard (and (or (keywordp dir)
 ;;                                   (stringp dir))

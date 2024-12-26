@@ -15801,9 +15801,10 @@
          'stobj-live-var)
         (quietp nil)
         (t (er hard? 'logical-name-type
-               "Implementation error: ~x0 was called on the name ~x0, which ~
+               "Implementation error: ~x0 was called on the name ~x1, which ~
                 suggests that this name is expected to be a logical name; yet ~
                 its type cannot be determined."
+               'logical-name-type
                name))))
 
 (defun chk-all-but-new-name-cmp (name ctx new-type w)
@@ -28122,9 +28123,10 @@
   (cond ((or (eq x t) (symbol-listp x))
          (f-put-global 'temp-touchable-fns x state))
         (t (prog2$ (er hard 'set-temp-touchable-fns
-                       "The first argument to ~x0 may must be either ~x0 or a ~
-                        true list of symbols, unlike:~| ~x1"
-                       'temp-touchable-fns
+                       "The first argument to ~x0 may must be either ~x1 or a ~
+                        true list of symbols, unlike:~| ~x2"
+                       'set-temp-touchable-fns
+                       t
                        x)
                    state))))
 
@@ -28139,9 +28141,10 @@
   (cond ((or (eq x t) (symbol-listp x))
          (f-put-global 'temp-touchable-vars x state))
         (t (prog2$ (er hard 'set-temp-touchable-vars
-                       "The first argument to ~x0 may must be either ~x0 or a ~
-                        true list of symbols, unlike:~| ~x1"
-                       'temp-touchable-vars
+                       "The first argument to ~x0 may must be either ~x1 or a ~
+                        true list of symbols, unlike:~| ~x2"
+                       'set-temp-touchable-vars
+                       t
                        x)
                    state))))
 
