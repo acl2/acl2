@@ -17,6 +17,7 @@
 (include-book "bvmult")
 (include-book "bitxor")
 (include-book "bitand")
+(local (include-book "slice"))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))

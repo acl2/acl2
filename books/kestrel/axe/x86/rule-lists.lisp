@@ -1610,7 +1610,7 @@
     x86isa::separate-when-separate
     x86isa::separate-when-separate-alt
     ;; these may be expensive but seem necessary in some cases
-    ;; todo: led to a loop involving BECOMES-BVLT-DAG-ALT-GEN-BETTER2.
+    ;; todo: led to loops (involving <-BECOMES-BVLT-DAG-ALT-GEN-BETTER2?)
     ;;x86isa::not-equal-when-separate
     ;;x86isa::not-equal-when-separate-alt
     x86isa::not-equal-constant-when-separate-of-constants ; these are needed when we agressively turn address claims into BV claims
@@ -4653,7 +4653,7 @@
 ;; beyond what def-unrolled uses
 (defun extra-tester-lifting-rules ()
   (declare (xargs :guard t))
-  (append (lifter-rules64-new) ; todo: drop?  but that caused failures! why?
+  (append (lifter-rules64-new) ; todo: drop?  but that caused failures! why?  seemed to involve equality of addresses and separation hyps
           (extra-tester-rules)
           '(<-of-fp-to-rat ; do we want this?
 

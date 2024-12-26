@@ -16,6 +16,7 @@
 (include-book "kestrel/bv/bvchop-def" :dir :system)
 (local (include-book "kestrel/bv/bvchop" :dir :system))
 (local (include-book "kestrel/bv/logext" :dir :system))
+(local (include-book "kestrel/bv/slice" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 
 (defthm bvchop-of-zf-spec

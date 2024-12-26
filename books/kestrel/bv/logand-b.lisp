@@ -21,6 +21,7 @@
 (include-book "getbit-def")
 (local (include-book "bvchop"))
 (local (include-book "getbit"))
+(local (include-book "slice"))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))

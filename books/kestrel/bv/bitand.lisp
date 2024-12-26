@@ -13,6 +13,7 @@
 
 (include-book "bvand")
 (include-book "getbit")
+(local (include-book "slice"))
 (local (include-book "logand-b"))
 
 (defund bitand (x y)
