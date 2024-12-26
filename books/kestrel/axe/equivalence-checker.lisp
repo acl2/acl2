@@ -3190,7 +3190,7 @@
                 ;;perhaps use prefixp and suffixp? now we use prefixp instead of firstn.  make an analogous change for nthdcr?  would need rules about suffixp..
 
                 ;; we shouldn't get all 0's here, because we checked above for target=candidate
-                (let* ((dummy nil) ;(cw "len of target-traces: ~x0. len of candidate-traces: ~x0~%" (len target-traces) (len candidate-traces))
+                (let* ((dummy nil) ;(cw "len of target-traces: ~x0. len of candidate-traces: ~x1~%" (len target-traces) (len candidate-traces))
                        (nth-traces-for-nthcdr (make-nth-list-for-nthcdr-list target-traces candidate-traces)))
                   (declare (ignore dummy))
                   (if nth-traces-for-nthcdr
