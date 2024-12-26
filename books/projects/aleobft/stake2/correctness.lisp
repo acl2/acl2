@@ -15,13 +15,13 @@
 (include-book "last-blockchain-round")
 (include-book "ordered-even-blocks")
 (include-book "backward-closure")
+(include-book "signer-quorum")
 (include-book "system-certificates")
 (include-book "signed-certificates")
 (include-book "signed-previous-quorum")
 (include-book "no-self-endorsed")
 (include-book "signer-records")
 (include-book "unequivocal-signed-certificates")
-(include-book "signer-quorum")
 (include-book "quorum-intersection")
 (include-book "unequivocal-dags-def-and-init")
 (include-book "nonforking-blockchains-def-and-init")
@@ -68,13 +68,13 @@
                     last-blockchain-round
                     ordered-even-blocks
                     backward-closure
+                    signer-quorum
                     system-certificates
                     signed-certificates
                     signed-previous-quorum
                     no-self-endorsed
                     signer-records
                     unequivocal-signed-certificates
-                    signer-quorum
                     quorum-intersection
                     unequivocal-dags-def-and-init
                     nonforking-blockchains-def-and-init
