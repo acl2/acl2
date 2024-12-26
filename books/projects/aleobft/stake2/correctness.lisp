@@ -12,9 +12,9 @@
 (in-package "ALEOBFT-STAKE2")
 
 (include-book "fault-tolerance")
-(include-book "backward-closure")
 (include-book "last-blockchain-round")
 (include-book "ordered-even-blocks")
+(include-book "backward-closure")
 (include-book "system-certificates")
 (include-book "signed-certificates")
 (include-book "signed-previous-quorum")
@@ -66,9 +66,9 @@
      culminating in the main property that we are interested in,
      namely the non-forking of blockchains."))
   :order-subtopics (fault-tolerance
-                    backward-closure
                     last-blockchain-round
                     ordered-even-blocks
+                    backward-closure
                     system-certificates
                     signed-certificates
                     signed-previous-quorum
