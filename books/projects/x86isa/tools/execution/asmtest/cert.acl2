@@ -9,6 +9,6 @@
 
 (add-include-book-dir :utils "../../../utils")
 (include-book "../../../portcullis/sharp-dot-constants")
-;; cert-flags: ? t :ttags ( :other-non-det :undef-flg :instrument)
+;; cert-flags: ? t :ttags (:syscall-exec :other-non-det :undef-flg :instrument)
 
 ;; ======================================================================
