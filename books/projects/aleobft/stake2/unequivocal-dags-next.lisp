@@ -12,7 +12,6 @@
 (in-package "ALEOBFT-STAKE2")
 
 (include-book "unequivocal-dags-def-and-init")
-(include-book "nonforking-blockchains-def-and-init")
 (include-book "same-committees-def-and-implied")
 (include-book "unequivocal-signed-certificates")
 (include-book "quorum-intersection")
