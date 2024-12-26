@@ -12,6 +12,7 @@
 (in-package "ALEOBFT-STAKE2")
 
 (include-book "last-anchor-next")
+(include-book "dag-committees")
 
 (local (include-book "arithmetic-3/top" :dir :system))
 

@@ -11,7 +11,7 @@
 
 (in-package "ALEOBFT-STAKE2")
 
-(include-book "dag-committees")
+(include-book "ordered-even-blocks")
 
 (local (include-book "arithmetic-3/top" :dir :system))
 
@@ -30,8 +30,8 @@
   (xdoc::topstring
    (xdoc::p
     "For each such certificate in the DAG of a validator,
-     the signers form a quorum in the committee for the certificate round
-     (which the validator can calculate, as proved in @(see dag-committees));
+     the signers form a quorum in the committee for the certificate round,
+     which the validator can calculate;
      we prove this invariant here.")
    (xdoc::p
     "There are two possible ways in which a validator's DAG is extended.
@@ -54,13 +54,11 @@
 
 (define validator-signer-quorum-p ((cert certificatep)
                                    (vstate validator-statep))
-  :guard (active-committee-at-round (certificate->round cert)
-                                    (validator-state->blockchain vstate))
   :returns (yes/no booleanp)
   :short "Check if the signers of a certificate
           are a subset of the committee for a certificate's round
           and form a quorum in that committee,
-          where the committee is calculated by a validator
+          where the committee can be calculated by a validator
           (represented by its state)."
   :long
   (xdoc::topstring
@@ -70,7 +68,8 @@
   (b* (((validator-state vstate) vstate)
        ((certificate cert) cert)
        (commtt (active-committee-at-round cert.round vstate.blockchain)))
-    (and (set::subset (certificate->signers cert)
+    (and commtt
+         (set::subset (certificate->signers cert)
                       (committee-members commtt))
          (>= (committee-members-stake (certificate->signers cert) commtt)
              (committee-quorum-stake commtt))))
@@ -79,21 +78,18 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define-sk signer-quorum-p ((systate system-statep))
-  :guard (dag-committees-p systate)
   :returns (yes/no booleanp)
   :short "Definition of the invariant:
           the signers of every certificate
           in the DAG of every correct validator
           form a quorum in the committee for the certificate's round,
-          calculated by the validator from its own blockchain."
+          which the validator can calculate from its own blockchain."
   (forall (val cert)
           (implies (and (set::in val (correct-addresses systate))
                         (set::in cert (validator-state->dag
                                        (get-validator-state val systate))))
                    (validator-signer-quorum-p
                     cert (get-validator-state val systate))))
-  :guard-hints (("Goal" :in-theory (enable dag-committees-p-necc
-                                           dag-has-committees-p-necc-bind-dag)))
   ///
   (fty::deffixequiv-sk signer-quorum-p
     :args ((systate system-statep))))
@@ -265,7 +261,6 @@
   (defruled validator-signer-quorum-p-of-commit-next
     (implies (and (last-blockchain-round-p systate)
                   (ordered-even-p systate)
-                  (dag-committees-p systate)
                   (set::in val1 (correct-addresses systate))
                   (set::in cert
                            (validator-state->dag
@@ -278,9 +273,7 @@
              (validator-signer-quorum-p
               cert
               (get-validator-state val1 (commit-next val systate))))
-    :enable (dag-committees-p-necc
-             dag-has-committees-p-necc-bind-dag
-             validator-signer-quorum-p
+    :enable (validator-signer-quorum-p
              validator-state->blockchain-of-commit-next
              active-committee-at-round-of-extend-blockchain-no-change
              blocks-ordered-even-p-of-extend-blockchain
@@ -297,7 +290,6 @@
     (implies (and (signer-quorum-p systate)
                   (last-blockchain-round-p systate)
                   (ordered-even-p systate)
-                  (dag-committees-p systate)
                   (commit-possiblep val systate)
                   (addressp val))
              (signer-quorum-p (commit-next val systate)))
@@ -311,7 +303,6 @@
     (implies (and (signer-quorum-p systate)
                   (last-blockchain-round-p systate)
                   (ordered-even-p systate)
-                  (dag-committees-p systate)
                   (event-possiblep event systate))
              (signer-quorum-p (event-next event systate)))
     :enable (event-possiblep
@@ -327,12 +318,10 @@
     (implies (and (signer-quorum-p systate)
                   (last-blockchain-round-p systate)
                   (ordered-even-p systate)
-                  (dag-committees-p systate)
                   (events-possiblep events systate))
              (and (signer-quorum-p (events-next events systate))
                   (last-blockchain-round-p (events-next events systate))
-                  (ordered-even-p (events-next events systate))
-                  (dag-committees-p (events-next events systate))))
+                  (ordered-even-p (events-next events systate))))
     :induct t
     :enable (events-possiblep
              events-next))
