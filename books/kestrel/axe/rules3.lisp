@@ -3668,7 +3668,6 @@
 ;; can cause case splits:
 (in-theory (disable ;BVPLUS-OF-BVPLUS-CONSTANTS-SIZE-DIFFERS-BETTER
 ;                    BVPLUS-OF-BVUMINUS-TIGHTEN-GEN
-                    SLICE-OF-BVUMINUS
                     GETBIT-OF-BVPLUS-SPLIT))
 
 
@@ -3951,7 +3950,6 @@
                                    ))))
 
 (in-theory (enable bvplus-of-bvplus-constants-size-differs-better
-                   slice-of-bvuminus
                    bvlt-tighten-strong-arg2
                    bvlt-tighten-strong-arg3))
 
@@ -4218,7 +4216,6 @@
 ;these can cause case splits:
 ;enable them when stable?
 (in-theory (disable BVPLUS-OF-BVPLUS-CONSTANTS-SIZE-DIFFERS-BETTER
-                    SLICE-OF-BVUMINUS
                     BVLT-TIGHTEN-STRONG-ARG2
                     BVLT-TIGHTEN-STRONG-ARG3
                     BVLT-OF-SLICE-TOP-GEN))
