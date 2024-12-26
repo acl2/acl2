@@ -90,9 +90,48 @@
                                        (get-validator-state val systate))))
                    (validator-signer-quorum-p
                     cert (get-validator-state val systate))))
+
   ///
+
   (fty::deffixequiv-sk signer-quorum-p
-    :args ((systate system-statep))))
+    :args ((systate system-statep)))
+
+  (defruled dag-has-committees-p-when-signer-quorum-p
+    (implies (and (signer-quorum-p systate)
+                  (set::in val (correct-addresses systate)))
+             (dag-has-committees-p (validator-state->dag
+                                    (get-validator-state val systate))
+                                   (validator-state->blockchain
+                                    (get-validator-state val systate))))
+    :use (:instance signer-quorum-p-necc
+                    (cert (dag-has-committees-p-witness
+                           (validator-state->dag
+                            (get-validator-state val systate))
+                           (validator-state->blockchain
+                            (get-validator-state val systate)))))
+    :enable (dag-has-committees-p
+             validator-signer-quorum-p)
+    :disable (signer-quorum-p
+              signer-quorum-p-necc))
+
+  (defruled dag-in-committees-p-when-signer-quorum-p
+    (implies (and (signer-quorum-p systate)
+                  (set::in val (correct-addresses systate)))
+             (dag-in-committees-p (validator-state->dag
+                                   (get-validator-state val systate))
+                                  (validator-state->blockchain
+                                   (get-validator-state val systate))))
+    :use (:instance signer-quorum-p-necc
+                    (cert (dag-in-committees-p-witness
+                           (validator-state->dag
+                            (get-validator-state val systate))
+                           (validator-state->blockchain
+                            (get-validator-state val systate)))))
+    :enable (dag-in-committees-p
+             validator-signer-quorum-p
+             certificate->signers)
+    :disable (signer-quorum-p
+              signer-quorum-p-necc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
