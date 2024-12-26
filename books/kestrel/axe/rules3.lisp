@@ -55,6 +55,7 @@
 (local (include-book "kestrel/arithmetic-light/floor-and-expt" :dir :system))
 (local (include-book "kestrel/bv/floor-mod-expt" :dir :system))
 (local (include-book "kestrel/bv/trim-rules" :dir :system))
+(local (include-book "kestrel/bv/pick-a-bit" :dir :system))
 (local (include-book "kestrel/bv/slice" :dir :system))
 (local (include-book "kestrel/bv-lists/all-unsigned-byte-p2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length2" :dir :system))
@@ -806,7 +807,7 @@
   (implies (unsigned-byte-p 31 z) ; drop?
            (equal (BVLT 32 (BVUMINUS 31 x) z)
                   (BVLT 31 (BVUMINUS 31 x) z)))
-  :hints (("Goal" :in-theory (enable bvlt))))
+  :hints (("Goal" :in-theory (enable bvlt bvlt-tighten-when-getbit-0))))
 
 ;gen
 (defthm bvlt-of-bvuminus-tighten-arg2
@@ -1135,8 +1136,6 @@
                                BVCAT-TRIM-ARG4
                                REWRITE-BV-EQUALITY-WHEN-SIZES-DONT-MATCH-1
                                GETBIT-WHEN-SLICE-IS-KNOWN-CONSTANT))))
-
-(in-theory (disable BVCHOP-REDUCE-WHEN-TOP-BIT-KNOWN))
 
 (defthm bvlt-when-slice-0-hack
   (implies (and (equal (slice 31 2 x) 0) ;slow?
@@ -3667,7 +3666,6 @@
 ;; can cause case splits:
 (in-theory (disable ;BVPLUS-OF-BVPLUS-CONSTANTS-SIZE-DIFFERS-BETTER
 ;                    BVPLUS-OF-BVUMINUS-TIGHTEN-GEN
-                    SLICE-OF-BVUMINUS
                     GETBIT-OF-BVPLUS-SPLIT))
 
 
@@ -3950,7 +3948,6 @@
                                    ))))
 
 (in-theory (enable bvplus-of-bvplus-constants-size-differs-better
-                   slice-of-bvuminus
                    bvlt-tighten-strong-arg2
                    bvlt-tighten-strong-arg3))
 
@@ -4217,7 +4214,6 @@
 ;these can cause case splits:
 ;enable them when stable?
 (in-theory (disable BVPLUS-OF-BVPLUS-CONSTANTS-SIZE-DIFFERS-BETTER
-                    SLICE-OF-BVUMINUS
                     BVLT-TIGHTEN-STRONG-ARG2
                     BVLT-TIGHTEN-STRONG-ARG3
                     BVLT-OF-SLICE-TOP-GEN))
@@ -9586,65 +9582,6 @@
   :hints (("Goal" :in-theory (e/d (slice logtail UNSIGNED-BYTE-P natp)
                                   (anti-slice)))))
 
-;;
-;; PICK-A-BIT proofs
-;;
-
-;returns a bit where x and y differ (if any)
-(defund differing-bit (n x y)
-  (declare (xargs :measure (nfix (+ 1 n))))
-  (if (not (natp n))
-      -1
-    (if (not (equal (getbit n x) (getbit n y)))
-        n
-      (differing-bit (+ -1 n) x y))))
-
-(defthm differing-bit-bad-guy-lemma-helper
-  (implies (and (equal (getbit (differing-bit m x y) x)
-                       (getbit (differing-bit m x y) y))
-                (< m n)
-                (natp m)
-                (natp n))
-           (equal (slice m 0 x)
-                  (slice m 0 y)))
-  :rule-classes nil
-  :hints (("Goal" :in-theory (enable differing-bit slice-becomes-getbit bvchop-1-becomes-getbit))))
-
-;; (defthm natp-of-differing-bit
-;;   (natp (differing-bit n x y)))
-
-(defthm <-of-differing-bit
-  (implies (natp n)
-           (not (< n (differing-bit n x y))))
-  :hints (("Goal" :expand ((DIFFERING-BIT 0 X Y))
-           :in-theory (enable differing-bit))))
-
-(defthm <-of-differing-bit2
-  (implies (and (natp n)
-                (integerp k)
-                (<= (+ 1 n) k))
-           (< (differing-bit n x y) k))
-  :hints (("Goal" :expand ((DIFFERING-BIT 0 X Y))
-           :in-theory (enable differing-bit))))
-
-(defthm differing-bit-bad-guy-lemma
-  (implies (and (equal (getbit (differing-bit (+ -1 n) x y) x)
-                       (getbit (differing-bit (+ -1 n) x y) y))
-                (unsigned-byte-p n x)
-                (unsigned-byte-p n y)
-                (natp n))
-           (equal x y))
-  :rule-classes nil
-  :hints (("Goal" :use (:instance differing-bit-bad-guy-lemma-helper (m (+ -1 n)))))
-  )
-
-(defthm <-of-differing-bit-and-0
-  (implies (natp n)
-           (equal (< (differing-bit n x y) 0)
-                  (equal (bvchop (+ 1 n) x)
-                         (bvchop (+ 1 n) y))))
-  :hints (("Goal" :in-theory (enable differing-bit slice-becomes-getbit bvchop-1-becomes-getbit))))
-
 ;;(local (in-theory (enable BVOR-1-BECOMES-BITOR)))         ;Thu Mar 31 16:45:29 2011
 
 ;; (thm
@@ -12244,8 +12181,6 @@
                 (UNSIGNED-BYTE-P-FORCED YSIZE Y))
            (BVLT 32 (BVPLUS 32 K Y) 1073741824))
   :hints (("Goal" :in-theory (enable bvlt bvplus bvchop-of-sum-cases UNSIGNED-BYTE-P-FORCED UNSIGNED-BYTE-P))))
-
-(in-theory (disable BVLT-TIGHTEN-WHEN-GETBIT-0))
 
 (defthm integerp-when-UNSIGNED-BYTE-P-FORCED-free
   (implies (UNSIGNED-BYTE-P-FORCED YSIZE Y)
