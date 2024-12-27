@@ -282,7 +282,7 @@
     "DAGs do not change for the other kinds of events,
      so the proofs for them always rely on the preservaton of the properties.
      For each kind of event,
-     we prove a lemma about @(tsee validator-previous-quorum-p)
+     we prove a lemma about @(tsee validator-dag-previous-quorum-p)
      and then a theorem about @(tsee dag-previous-quorum-p).
      For @('advance'),
      there is no change to the blockchain, so the proof is fairly easy.
