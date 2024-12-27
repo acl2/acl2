@@ -252,26 +252,22 @@
                                                   ;;UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN
                                                   )))))
 
-;gen!  may need a new syntax function
-;drop?
-(defthmd bv-array-read-trim-index-dag-256
-  (implies (and (axe-syntaxp (term-should-be-trimmed-axe '8 index 'non-arithmetic dag-array))
-                ;(natp size)
-                )
-           (equal (bv-array-read element-width 256 index data)
-                  (bv-array-read element-width 256 (trim 8 index) data)))
-  :hints (("Goal" :in-theory (e/d (trim) nil))))
-
-(defthmd bv-array-read-trim-index-axe-gen
+(defthmd bv-array-read-trim-index-axe
   (implies (and (syntaxp (quotep len))
-                (axe-bind-free (bind-bv-size-axe index 'indexsize dag-array) '(indexsize))
-                (< (ceiling-of-lg len) indexsize)
-                (axe-syntaxp (term-should-be-trimmed-axe '8 index 'non-arithmetic dag-array))
-                ;(natp size)
-                )
+                (axe-binding-hyp (equal desired-size (ceiling-of-lg len))) ; binding hyp, desired-size should be a quoted constant
+                (axe-syntaxp (term-should-be-trimmed-axe desired-size index 'non-arithmetic dag-array)))
            (equal (bv-array-read element-width len index data)
-                  (bv-array-read element-width len (trim (ceiling-of-lg len) index) data)))
-               :hints (("Goal" :in-theory (e/d (trim) nil))))
+                  (bv-array-read element-width len (trim desired-size index) data)))
+  :hints (("Goal" :in-theory (enable trim))))
+
+(defthmd bv-array-read-trim-index-axe-all
+  (implies (and (syntaxp (quotep len))
+                (axe-binding-hyp (equal desired-size (ceiling-of-lg len))) ; desired-size should be a quoted constant
+                (axe-syntaxp (term-should-be-trimmed-axe desired-size index 'all dag-array)))
+           (equal (bv-array-read element-width len index data)
+                  (bv-array-read element-width len (trim desired-size index) data)))
+  :hints (("Goal" :use bv-array-read-trim-index-axe
+           :in-theory (disable bv-array-read-trim-index-axe))))
 
 ;move
 (defthmd myif-becomes-bv-array-if-axe

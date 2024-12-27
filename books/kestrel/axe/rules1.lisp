@@ -881,17 +881,16 @@
 ;;   :hints (("Goal" :in-theory (enable getbit-list logext-list))))
 
 ;use a trim rule!
-(DEFthm BV-ARRAY-WRITE-of-bvcat-reduce
+(defthmd bv-array-write-of-bvcat-reduce
   (implies (and (<= element-size lowsize)
                 (natp element-size)
                 (natp highsize)
                 (natp lowsize)
                 (equal len (len lst))
-                (< key len)
-                (natp key)
-                )
-           (equal (BV-ARRAY-WRITE ELEMENT-SIZE LEN KEY (bvcat highsize highval lowsize lowval) LST)
-                  (BV-ARRAY-WRITE ELEMENT-SIZE LEN KEY lowval LST)))
+                (< index len)
+                (natp index))
+           (equal (bv-array-write element-size len index (bvcat highsize highval lowsize lowval) lst)
+                  (bv-array-write element-size len index lowval lst)))
   :hints (("Goal" :in-theory (enable update-nth2 bv-array-write))))
 
 (defthm bv-array-read-of-getbit-list
