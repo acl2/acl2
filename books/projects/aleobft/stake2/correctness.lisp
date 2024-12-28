@@ -12,23 +12,22 @@
 (in-package "ALEOBFT-STAKE2")
 
 (include-book "fault-tolerance")
-(include-book "backward-closure")
 (include-book "last-blockchain-round")
 (include-book "ordered-even-blocks")
+(include-book "backward-closure")
+(include-book "signer-quorum")
 (include-book "system-certificates")
 (include-book "signed-certificates")
 (include-book "signed-previous-quorum")
 (include-book "no-self-endorsed")
 (include-book "signer-records")
 (include-book "unequivocal-signed-certificates")
-(include-book "dag-committees")
-(include-book "signer-quorum")
 (include-book "quorum-intersection")
 (include-book "unequivocal-dags-def-and-init")
 (include-book "nonforking-blockchains-def-and-init")
 (include-book "same-committees-def-and-implied")
 (include-book "unequivocal-dags-next")
-(include-book "previous-quorum-def-and-init-and-next")
+(include-book "dag-previous-quorum-def-and-init-and-next")
 (include-book "dag-certificate-next")
 (include-book "last-anchor-def-and-init")
 (include-book "last-anchor-present")
@@ -45,7 +44,7 @@
 (include-book "nonforking-blockchains-next")
 (include-book "simultaneous-induction")
 (include-book "unequivocal-dags")
-(include-book "previous-quorum")
+(include-book "dag-previous-quorum")
 (include-book "nonforking-blockchains")
 (include-book "same-committees")
 (include-book "last-anchor-voters")
@@ -66,23 +65,22 @@
      culminating in the main property that we are interested in,
      namely the non-forking of blockchains."))
   :order-subtopics (fault-tolerance
-                    backward-closure
                     last-blockchain-round
                     ordered-even-blocks
+                    backward-closure
+                    signer-quorum
                     system-certificates
                     signed-certificates
                     signed-previous-quorum
                     no-self-endorsed
                     signer-records
                     unequivocal-signed-certificates
-                    dag-committees
-                    signer-quorum
                     quorum-intersection
                     unequivocal-dags-def-and-init
                     nonforking-blockchains-def-and-init
                     same-committees-def-and-implied
                     unequivocal-dags-next
-                    previous-quorum-def-and-init-and-next
+                    dag-previous-quorum-def-and-init-and-next
                     dag-certificate-next
                     last-anchor-def-and-init
                     last-anchor-present
@@ -99,7 +97,7 @@
                     nonforking-blockchains-next
                     simultaneous-induction
                     unequivocal-dags
-                    previous-quorum
+                    dag-previous-quorum
                     nonforking-blockchains
                     same-committees
                     last-anchor-voters

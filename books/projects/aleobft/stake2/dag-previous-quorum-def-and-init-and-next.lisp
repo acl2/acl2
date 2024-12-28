@@ -12,7 +12,7 @@
 (in-package "ALEOBFT-STAKE2")
 
 (include-book "backward-closure")
-(include-book "dag-committees")
+(include-book "signer-quorum")
 (include-book "signed-previous-quorum")
 (include-book "same-committees-def-and-implied")
 (include-book "fault-tolerance")
@@ -26,7 +26,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ previous-quorum-def-and-init-and-next
+(defxdoc+ dag-previous-quorum-def-and-init-and-next
   :parents (correctness)
   :short "Invariant that each certificate in a DAG
           has references to previous certificates
@@ -78,7 +78,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define validator-previous-quorum-p ((cert certificatep)
+(define validator-dag-previous-quorum-p ((cert certificatep)
                                      (vstate validator-statep))
   :guard (or (equal (certificate->round cert) 1)
              (active-committee-at-round (1- (certificate->round cert))
@@ -95,7 +95,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is used by @(tsee previous-quorum-p) to define our invariant.
+    "This is used by @(tsee dag-previous-quorum-p) to define our invariant.
      The validator whose state is @('vstate') is
      the one that has the certificate in the DAG.
      The guard ensures that the validator can calculate the committee.")
@@ -105,7 +105,7 @@
    (xdoc::p
     "We prove a theorem about the predecessors of @('cert'),
      which we use to prove @(tsee dag-predecessor-quorum-p)
-     from @(tsee previous-quorum-p) later.
+     from @(tsee dag-previous-quorum-p) later.
      The theorem says that, under the invariant, for certificates after round 1,
      the stake of the authors of the predecessor certificates
      is at least the quorum stake for the committee at the previous round.
@@ -135,8 +135,8 @@
 
   ///
 
-  (defruled predecessor-quorum-when-validator-previous-quorum-p
-    (implies (and (validator-previous-quorum-p cert vstate)
+  (defruled predecessor-quorum-when-validator-dag-previous-quorum-p
+    (implies (and (validator-dag-previous-quorum-p cert vstate)
                   (certificate-previous-in-dag-p
                    cert (validator-state->dag vstate))
                   (not (equal (certificate->round cert) 1)))
@@ -159,8 +159,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define-sk previous-quorum-p ((systate system-statep))
-  :guard (dag-committees-p systate)
+(define-sk dag-previous-quorum-p ((systate system-statep))
+  :guard (signer-quorum-p systate)
   :returns (yes/no booleanp)
   :short "Definition of the invariant:
           for each certificate in the DAG of each validator,
@@ -176,43 +176,43 @@
     "This invariant, along with backward closure and non-equivocation,
      guarantees that @(tsee dag-predecessor-quorum-p) holds, as we prove here.
      The key lemma is
-     @('predecessor-quorum-when-validator-previous-quorum-p')
-     proved in @(tsee validator-previous-quorum-p).
+     @('predecessor-quorum-when-validator-dag-previous-quorum-p')
+     proved in @(tsee validator-dag-previous-quorum-p).
      Here we just need to enable some rules
      to establish the hypotheses of that lemma."))
   (forall (val cert)
           (implies (and (set::in val (correct-addresses systate))
                         (set::in cert (validator-state->dag
                                        (get-validator-state val systate))))
-                   (validator-previous-quorum-p
+                   (validator-dag-previous-quorum-p
                     cert
                     (get-validator-state val systate))))
   :guard-hints
   (("Goal"
-    :in-theory (enable dag-committees-p-necc
+    :in-theory (enable dag-has-committees-p-when-signer-quorum-p
                        dag-has-committees-p-necc-bind-dag
                        active-committee-at-previous-round-when-at-round )))
 
   ///
 
-  (fty::deffixequiv-sk previous-quorum-p
+  (fty::deffixequiv-sk dag-previous-quorum-p
     :args ((systate system-statep)))
 
-  (defruled dag-predecessor-quorum-p-when-previous-quorum-p
-    (implies (and (previous-quorum-p systate)
+  (defruled dag-predecessor-quorum-p-when-dag-previous-quorum-p
+    (implies (and (dag-previous-quorum-p systate)
                   (backward-closed-p systate)
                   (set::in val (correct-addresses systate)))
              (dag-predecessor-quorum-p
               (validator-state->dag (get-validator-state val systate))
               (validator-state->blockchain (get-validator-state val systate))))
-    :enable (predecessor-quorum-when-validator-previous-quorum-p
+    :enable (predecessor-quorum-when-validator-dag-previous-quorum-p
              dag-predecessor-quorum-p
              backward-closed-p-necc
              dag-closedp-necc)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled previous-quorum-p-when-init
+(defruled dag-previous-quorum-p-when-init
   :short "Establishment of the invariant:
           the invariant holds in any initial system state."
   :long
@@ -221,15 +221,15 @@
     "Initially all the DAGs are empty,
      so the universal quantification is trivially true."))
   (implies (system-initp systate)
-           (previous-quorum-p systate))
-  :enable (previous-quorum-p
+           (dag-previous-quorum-p systate))
+  :enable (dag-previous-quorum-p
            system-initp
            system-validators-initp-necc
            validator-init))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection previous-quorum-p-of-next
+(defsection dag-previous-quorum-p-of-next
   :short "Preservation of the invariant:
           if the invariant holds in a system state,
           it also holds in the next system state."
@@ -282,8 +282,8 @@
     "DAGs do not change for the other kinds of events,
      so the proofs for them always rely on the preservaton of the properties.
      For each kind of event,
-     we prove a lemma about @(tsee validator-previous-quorum-p)
-     and then a theorem about @(tsee previous-quorum-p).
+     we prove a lemma about @(tsee validator-dag-previous-quorum-p)
+     and then a theorem about @(tsee dag-previous-quorum-p).
      For @('advance'),
      there is no change to the blockchain, so the proof is fairly easy.
      For @('commit'), the blockchain changes,
@@ -301,64 +301,64 @@
 
   ;; create:
 
-  (defruled validator-previous-quorum-p-of-create-next-old
-    (implies (validator-previous-quorum-p
+  (defruled validator-dag-previous-quorum-p-of-create-next-old
+    (implies (validator-dag-previous-quorum-p
               cert1
               (get-validator-state val systate))
-             (validator-previous-quorum-p
+             (validator-dag-previous-quorum-p
               cert1
               (get-validator-state val (create-next cert systate))))
-    :enable (validator-previous-quorum-p
+    :enable (validator-dag-previous-quorum-p
              validator-state->blockchain-of-create-next
              certificate->author-of-path-to-author+round))
 
-  (defruled validator-previous-quorum-p-of-create-next-new
+  (defruled validator-dag-previous-quorum-p-of-create-next-new
     (implies (and (create-possiblep cert systate)
                   (set::in (certificate->author cert)
                            (correct-addresses systate)))
-             (validator-previous-quorum-p
+             (validator-dag-previous-quorum-p
               cert
               (get-validator-state (certificate->author cert)
                                    (create-next cert systate))))
-    :enable (validator-previous-quorum-p
+    :enable (validator-dag-previous-quorum-p
              create-possiblep
              create-author-possiblep
              create-signer-possiblep
              certificate->signers))
 
-  (defruled previous-quorum-p-of-create-next
-    (implies (and (previous-quorum-p systate)
+  (defruled dag-previous-quorum-p-of-create-next
+    (implies (and (dag-previous-quorum-p systate)
                   (create-possiblep cert systate))
-             (previous-quorum-p (create-next cert systate)))
-    :enable (previous-quorum-p
-             previous-quorum-p-necc
+             (dag-previous-quorum-p (create-next cert systate)))
+    :enable (dag-previous-quorum-p
+             dag-previous-quorum-p-necc
              validator-state->dag-of-create-next
-             validator-previous-quorum-p-of-create-next-old
-             validator-previous-quorum-p-of-create-next-new))
+             validator-dag-previous-quorum-p-of-create-next-old
+             validator-dag-previous-quorum-p-of-create-next-new))
 
   ;; accept:
 
-  (defruled validator-previous-quorum-p-of-accept-next-old
-    (implies (and (validator-previous-quorum-p
+  (defruled validator-dag-previous-quorum-p-of-accept-next-old
+    (implies (and (validator-dag-previous-quorum-p
                    cert
                    (get-validator-state val systate))
                   (accept-possiblep msg systate))
-             (validator-previous-quorum-p
+             (validator-dag-previous-quorum-p
               cert
               (get-validator-state val (accept-next msg systate))))
-    :enable (validator-previous-quorum-p))
+    :enable (validator-dag-previous-quorum-p))
 
-  (defruled validator-previous-quorum-p-of-accept-next-new
+  (defruled validator-dag-previous-quorum-p-of-accept-next-new
     (implies (and (system-committees-fault-tolerant-p systate)
                   (signed-previous-quorum-p systate)
                   (same-committees-p systate)
                   (accept-possiblep msg systate)
                   (messagep msg))
-             (validator-previous-quorum-p
+             (validator-dag-previous-quorum-p
               (message->certificate msg)
               (get-validator-state (message->destination msg)
                                    (accept-next msg systate))))
-    :enable (validator-previous-quorum-p
+    :enable (validator-dag-previous-quorum-p
              accept-possiblep
              pick-correct-validator-is-correct
              pick-correct-validator-in-set
@@ -399,61 +399,61 @@
                                  systate)
                                 systate))))))
 
-  (defruled previous-quorum-p-of-accept-next
-    (implies (and (previous-quorum-p systate)
+  (defruled dag-previous-quorum-p-of-accept-next
+    (implies (and (dag-previous-quorum-p systate)
                   (system-committees-fault-tolerant-p systate)
                   (signed-previous-quorum-p systate)
                   (same-committees-p systate)
                   (accept-possiblep msg systate)
                   (messagep msg))
-             (previous-quorum-p (accept-next msg systate)))
-    :enable (previous-quorum-p
-             previous-quorum-p-necc
+             (dag-previous-quorum-p (accept-next msg systate)))
+    :enable (dag-previous-quorum-p
+             dag-previous-quorum-p-necc
              validator-state->dag-of-accept-next
-             validator-previous-quorum-p-of-accept-next-old
-             validator-previous-quorum-p-of-accept-next-new))
+             validator-dag-previous-quorum-p-of-accept-next-old
+             validator-dag-previous-quorum-p-of-accept-next-new))
 
   ;; advance:
 
-  (defruled validator-previous-quorum-p-of-advance-next
-    (implies (and (validator-previous-quorum-p
+  (defruled validator-dag-previous-quorum-p-of-advance-next
+    (implies (and (validator-dag-previous-quorum-p
                    cert
                    (get-validator-state val1 systate))
                   (advance-possiblep val systate))
-             (validator-previous-quorum-p
+             (validator-dag-previous-quorum-p
               cert
               (get-validator-state val1 (advance-next val systate))))
-    :enable validator-previous-quorum-p)
+    :enable validator-dag-previous-quorum-p)
 
-  (defruled previous-quorum-p-of-advance-next
-    (implies (and (previous-quorum-p systate)
+  (defruled dag-previous-quorum-p-of-advance-next
+    (implies (and (dag-previous-quorum-p systate)
                   (advance-possiblep val systate))
-             (previous-quorum-p (advance-next val systate)))
-    :enable (previous-quorum-p
-             previous-quorum-p-necc
-             validator-previous-quorum-p-of-advance-next))
+             (dag-previous-quorum-p (advance-next val systate)))
+    :enable (dag-previous-quorum-p
+             dag-previous-quorum-p-necc
+             validator-dag-previous-quorum-p-of-advance-next))
 
   ;; commit:
 
-  (defruled validator-previous-quorum-p-of-commit-next
+  (defruled validator-dag-previous-quorum-p-of-commit-next
     (implies (and (last-blockchain-round-p systate)
                   (ordered-even-p systate)
-                  (dag-committees-p systate)
+                  (signer-quorum-p systate)
                   (set::in val1 (correct-addresses systate))
                   (set::in cert
                            (validator-state->dag
                             (get-validator-state val1 systate)))
-                  (validator-previous-quorum-p
+                  (validator-dag-previous-quorum-p
                    cert
                    (get-validator-state val1 systate))
                   (commit-possiblep val systate)
                   (addressp val))
-             (validator-previous-quorum-p
+             (validator-dag-previous-quorum-p
               cert
               (get-validator-state val1 (commit-next val systate))))
-    :enable (dag-committees-p-necc
+    :enable (dag-has-committees-p-when-signer-quorum-p
              dag-has-committees-p-necc-bind-dag
-             validator-previous-quorum-p
+             validator-dag-previous-quorum-p
              validator-state->blockchain-of-commit-next
              active-committee-at-round-of-extend-blockchain-no-change
              active-committee-at-previous-round-when-at-round
@@ -467,29 +467,29 @@
              pos-fix
              evenp))
 
-  (defruled previous-quorum-p-of-commit-next
-    (implies (and (previous-quorum-p systate)
+  (defruled dag-previous-quorum-p-of-commit-next
+    (implies (and (dag-previous-quorum-p systate)
                   (last-blockchain-round-p systate)
                   (ordered-even-p systate)
-                  (dag-committees-p systate)
+                  (signer-quorum-p systate)
                   (commit-possiblep val systate)
                   (addressp val))
-             (previous-quorum-p (commit-next val systate)))
-    :enable (previous-quorum-p
-             previous-quorum-p-necc
-             validator-previous-quorum-p-of-commit-next))
+             (dag-previous-quorum-p (commit-next val systate)))
+    :enable (dag-previous-quorum-p
+             dag-previous-quorum-p-necc
+             validator-dag-previous-quorum-p-of-commit-next))
 
   ;; all events:
 
-  (defruled previous-quorum-p-of-event-next
-    (implies (and (previous-quorum-p systate)
+  (defruled dag-previous-quorum-p-of-event-next
+    (implies (and (dag-previous-quorum-p systate)
                   (system-committees-fault-tolerant-p systate)
                   (last-blockchain-round-p systate)
                   (ordered-even-p systate)
                   (signed-previous-quorum-p systate)
-                  (dag-committees-p systate)
+                  (signer-quorum-p systate)
                   (same-committees-p systate)
                   (event-possiblep event systate))
-             (previous-quorum-p (event-next event systate)))
+             (dag-previous-quorum-p (event-next event systate)))
     :enable (event-possiblep
              event-next)))

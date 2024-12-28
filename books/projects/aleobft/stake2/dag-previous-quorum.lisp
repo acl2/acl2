@@ -22,7 +22,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ previous-quorum
+(defxdoc+ dag-previous-quorum
   :parents (correctness)
   :short "Invariant that each certificate in a DAG
           has references to previous certificates
@@ -33,19 +33,19 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This completes @(see previous-quorum-def-and-init-and-next)
+    "This completes @(see dag-previous-quorum-def-and-init-and-next)
      by showing that the invariant holds in every reachable state."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection previous-quorum-p-always
+(defsection dag-previous-quorum-p-always
   :short "The invariant holds in every state
           reachable from an initial state via a sequence of events."
 
-  (defruled previous-quorum-p-when-reachable
+  (defruled dag-previous-quorum-p-when-reachable
     (implies (and (system-initp systate)
                   (events-possiblep events systate)
                   (all-system-committees-fault-tolerant-p systate events))
-             (previous-quorum-p (events-next events systate)))))
+             (dag-previous-quorum-p (events-next events systate)))))

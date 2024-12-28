@@ -78,7 +78,6 @@
     (implies (and (system-committees-fault-tolerant-p systate)
                   (no-self-endorsed-p systate)
                   (signer-records-p systate)
-                  (dag-committees-p systate)
                   (signer-quorum-p systate)
                   (unequivocal-dags-p systate)
                   (same-committees-p systate)
@@ -94,7 +93,6 @@
 
   (defrule last-anchor-of-accept-next
     (implies (and (system-committees-fault-tolerant-p systate)
-                  (dag-committees-p systate)
                   (signer-quorum-p systate)
                   (unequivocal-signed-certs-p systate)
                   (unequivocal-dags-p systate)
@@ -121,7 +119,6 @@
   (defruled last-anchor-of-commit-next
     (implies (and (last-blockchain-round-p systate)
                   (ordered-even-p systate)
-                  (dag-committees-p systate)
                   (set::in val (correct-addresses systate))
                   (commit-possiblep val1 systate)
                   (addressp val1))

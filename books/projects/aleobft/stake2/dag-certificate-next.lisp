@@ -70,7 +70,6 @@
     (implies (and (system-committees-fault-tolerant-p systate)
                   (no-self-endorsed-p systate)
                   (signer-records-p systate)
-                  (dag-committees-p systate)
                   (signer-quorum-p systate)
                   (unequivocal-dags-p systate)
                   (same-committees-p systate)
@@ -108,7 +107,6 @@
 
   (defruled cert-with-author+round-of-accept-next
     (implies (and (system-committees-fault-tolerant-p systate)
-                  (dag-committees-p systate)
                   (signer-quorum-p systate)
                   (unequivocal-signed-certs-p systate)
                   (unequivocal-dags-p systate)
@@ -179,7 +177,6 @@
                   (no-self-endorsed-p systate)
                   (signer-records-p systate)
                   (unequivocal-signed-certs-p systate)
-                  (dag-committees-p systate)
                   (signer-quorum-p systate)
                   (unequivocal-dags-p systate)
                   (same-committees-p systate)

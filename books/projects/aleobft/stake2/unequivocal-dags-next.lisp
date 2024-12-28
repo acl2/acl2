@@ -12,7 +12,6 @@
 (in-package "ALEOBFT-STAKE2")
 
 (include-book "unequivocal-dags-def-and-init")
-(include-book "nonforking-blockchains-def-and-init")
 (include-book "same-committees-def-and-implied")
 (include-book "unequivocal-signed-certificates")
 (include-book "quorum-intersection")
@@ -202,7 +201,6 @@
     (implies (and (system-committees-fault-tolerant-p systate)
                   (no-self-endorsed-p systate)
                   (signer-records-p systate)
-                  (dag-committees-p systate)
                   (signer-quorum-p systate)
                   (same-committees-p systate)
                   (create-possiblep cert systate)
@@ -215,7 +213,6 @@
                    (validator-state->dag (get-validator-state val systate)))))
     :enable (system-committees-fault-tolerant-p-necc
              validator-committees-fault-tolerant-p-necc
-             dag-committees-p-necc
              validator-signer-quorum-p
              author-quorum-when-create-possiblep
              in-system-certs-when-in-some-dag
@@ -289,7 +286,6 @@
                   (system-committees-fault-tolerant-p systate)
                   (no-self-endorsed-p systate)
                   (signer-records-p systate)
-                  (dag-committees-p systate)
                   (signer-quorum-p systate)
                   (same-committees-p systate)
                   (create-possiblep cert systate))
@@ -308,7 +304,6 @@
 
   (defruledl accept-lemma
     (implies (and (system-committees-fault-tolerant-p systate)
-                  (dag-committees-p systate)
                   (signer-quorum-p systate)
                   (unequivocal-signed-certs-p systate)
                   (same-committees-p systate)
@@ -324,7 +319,6 @@
                    (validator-state->dag (get-validator-state val systate)))))
     :enable (system-committees-fault-tolerant-p-necc
              validator-committees-fault-tolerant-p-necc
-             dag-committees-p-necc
              validator-signer-quorum-p
              accept-possiblep
              unequivocal-signed-certs-p-necc
@@ -396,7 +390,6 @@
   (defruled unequivocal-dags-p-of-accept-next
     (implies (and (unequivocal-dags-p systate)
                   (system-committees-fault-tolerant-p systate)
-                  (dag-committees-p systate)
                   (signer-quorum-p systate)
                   (unequivocal-signed-certs-p systate)
                   (same-committees-p systate)
@@ -438,7 +431,6 @@
                   (system-committees-fault-tolerant-p systate)
                   (no-self-endorsed-p systate)
                   (signer-records-p systate)
-                  (dag-committees-p systate)
                   (signer-quorum-p systate)
                   (unequivocal-signed-certs-p systate)
                   (same-committees-p systate)
