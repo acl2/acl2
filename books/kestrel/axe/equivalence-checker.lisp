@@ -3190,7 +3190,7 @@
                 ;;perhaps use prefixp and suffixp? now we use prefixp instead of firstn.  make an analogous change for nthdcr?  would need rules about suffixp..
 
                 ;; we shouldn't get all 0's here, because we checked above for target=candidate
-                (let* ((dummy nil) ;(cw "len of target-traces: ~x0. len of candidate-traces: ~x0~%" (len target-traces) (len candidate-traces))
+                (let* ((dummy nil) ;(cw "len of target-traces: ~x0. len of candidate-traces: ~x1~%" (len target-traces) (len candidate-traces))
                        (nth-traces-for-nthcdr (make-nth-list-for-nthcdr-list target-traces candidate-traces)))
                   (declare (ignore dummy))
                   (if nth-traces-for-nthcdr
@@ -19064,15 +19064,20 @@
            (sorted-dag-vars (merge-sort-symbol< dag-vars))
            (vars-given-types (strip-cars var-type-alist))
            (sorted-vars-given-types (merge-sort-symbol< vars-given-types))
-           (- (and (not (subsetp-eq sorted-dag-vars sorted-vars-given-types)) ;stricter check? or warning if extra vars given?
+           (- (and (not (subsetp-eq sorted-dag-vars sorted-vars-given-types))
                    ;; (hard-error 'prove-miter-core
                    ;;               "The DAG variables, ~\x0, don't match the variables given types in the alist, ~x1.  Vars not given types: ~x2.~%"
                    ;;               (acons #\0 sorted-dag-vars
                    ;;                      (acons #\1 sorted-vars-given-types
                    ;;                             (acons #\2 (set-difference-eq sorted-dag-vars sorted-vars-given-types)
                    ;;                                    nil))))
+                   ;; todo: mention the tactics that won't work:
                    (cw "WARNING: The DAG variables, ~x0, don't match the variables given types in the alist, ~x1.  Vars not given types: ~x2.~%"
                        sorted-dag-vars sorted-vars-given-types (set-difference-eq sorted-dag-vars sorted-vars-given-types))))
+           ((when (not (subsetp-eq sorted-vars-given-types sorted-dag-vars)))
+            (er hard? 'prove-miter-core
+                "The following variables are given types in the alist but do not appear in the DAG: ~X01.~%" (set-difference-eq sorted-vars-given-types sorted-dag-vars) nil)
+            (mv :input-error nil state rand result-array-stobj))
            ;;(prog2$ (mv nil state rand result-array-stobj))
            ;; Specialize the fns (make use of constant arguments, when possible) ;do we still need this, if we have the dropping stuff?  maybe this works for head recfns too?
            ;;(how well does this work?): redo it to preserve lambdas (just substitute in them?)
@@ -19144,7 +19149,7 @@
 ;; we failed to reduce the miter to T.
 (defun prove-miter-fn (dag-or-quotep
                        test-case-count ;the total number of tests to generate?  some may not be used
-                       var-type-alist  ;compute this from the hyps?
+                       var-type-alist  ;compute this from the hyps? todo: think about var-type-alist vs test-case-type-alist -- convert from on to the other (when possible), or pass both?
                        print
                        debug-nodes ;do we use this?
                        interpreted-function-alist
@@ -19175,7 +19180,8 @@
   (declare (xargs :guard (and (or (quotep dag-or-quotep)
                                   (weak-dagp dag-or-quotep))
                               (natp test-case-count)
-                              (no-duplicatesp (strip-cars var-type-alist)) ;could check that the cdrs are valid types..
+                              (test-case-type-alistp var-type-alist)
+                              (no-duplicatesp (strip-cars var-type-alist))
                               (not (assoc-eq nil var-type-alist)) ;consider relaxing this?
                               (not (assoc-eq t var-type-alist)) ;consider relaxing this?
                               (if (extra-stuff-okayp extra-stuff)

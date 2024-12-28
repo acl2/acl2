@@ -83,7 +83,7 @@
                 (<= free n))
            (equal (unsigned-byte-p n x)
                   (natp n)))
-  :hints (("Goal" :in-theory (e/d (unsigned-byte-p) nil))))
+  :hints (("Goal" :in-theory (enable unsigned-byte-p))))
 
 ;should be cheap since FREE is a free var
 (defthm integerp-from-unsigned-byte-p-size-param
