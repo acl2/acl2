@@ -138,13 +138,13 @@
 (defthm bitor-of-getbit-arg1
   (equal (bitor (getbit 0 x) y)
          (bitor x y))
-  :hints (("Goal" :in-theory (e/d (bitor) nil))))
+  :hints (("Goal" :in-theory (enable bitor))))
 
 ;todo: rename to have 0 in the name
 (defthm bitor-of-getbit-arg2
   (equal (bitor y (getbit 0 x))
          (bitor y x))
-  :hints (("Goal" :in-theory (e/d (bitor) nil))))
+  :hints (("Goal" :in-theory (enable bitor))))
 
 (defthm bitor-subst-arg1
   (implies (and (equal (getbit 0 x) free)

@@ -40,8 +40,7 @@
   (implies (and (member-equal key (strip-cars alist))
                 (or key (alistp alist)))
            (assoc-equal key alist))
-  :hints
-  (("Goal" :in-theory (e/d (member-equal assoc-equal strip-cars alistp) nil))))
+  :hints (("Goal" :in-theory (enable member-equal assoc-equal strip-cars alistp))))
 
 (defthm not-<-of-+-1-and-maxelem
   (implies (and (all-< items bound)

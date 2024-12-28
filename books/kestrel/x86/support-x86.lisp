@@ -70,13 +70,13 @@
            (unsigned-byte-p 32 (xr :rflags i x86)))
   :rule-classes ((:rewrite :corollary (implies (x86p x86)
                                                (unsigned-byte-p 32 (xr :rflags i x86)))
-                           :hints (("GOAL" :in-theory (e/d (rflags x86p) nil))))
+                           :hints (("GOAL" :in-theory (enable rflags x86p))))
                  (:type-prescription :corollary (implies (x86p x86)
                                                          (natp (xr :rflags i x86)))
-                                     :hints (("GOAL" :in-theory (e/d (rflags x86p) nil))))
+                                     :hints (("GOAL" :in-theory (enable rflags x86p))))
                  (:linear :corollary (implies (x86p x86)
                                               (< (xr :rflags i x86) 4294967296))
-                          :hints (("GOAL" :in-theory (e/d (rflags x86p) nil))))))
+                          :hints (("GOAL" :in-theory (enable rflags x86p))))))
 
 ;(in-theory (disable rflags-is-n32p)) ;disable the forced version
 
