@@ -36,7 +36,7 @@ function argument.</p>
 have been built.  This executable chooses a snippet to run, input file to read,
 and output file to write based on its command line arguments.  The input file
 is read into memory and interpreted as N input memory blocks; the execution
-then runs the snippet N times on each successive input memory block, writing
+then runs the snippet on each input memory block, writing
 out N output memory blocks to the output file.</p>
 
 <p>To run a snippet on the x86 model, we read that executable into the x86
