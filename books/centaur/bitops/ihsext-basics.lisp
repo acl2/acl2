@@ -3014,8 +3014,8 @@ off looking at the source code.</p>")
 
   (defthm signed-byte-p-incr
     (implies (and (signed-byte-p a x)
-                  (natp b)
-                  (<= a b))
+                  (<= a b)
+                  (integerp b))
              (signed-byte-p b x)))
 
   (defthmd signed-byte-p-logcons
