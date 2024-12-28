@@ -175,7 +175,7 @@
                                                      list-typep)))))
   (or (myquotep type) ; a quoted constant (type is a singleton set containing that value)
       (symbolp type) ; look up a previous val -- todo: tag this?
-      ;; todo: (boolean-typep type)
+      (boolean-typep type)
       (bv-typep type)
       (bv-array-typep type)
       (and (list-typep type)
@@ -199,6 +199,10 @@
            (true-listp (cdr type)) ; or make the elements the cadr?
            (consp (cdr type)) ; must be at least one element
            )))
+
+;; (defthm test-case-typep-of-boolean-type
+;;   (test-case-typep (boolean-type))
+;;   :hints (("Goal" :in-theory (enable test-case-typep boolean-type))))
 
 (defthm test-case-typep-of-make-bv-type
   (implies (natp width)
@@ -255,7 +259,7 @@
                                              bv-array-type-element-width)
                                             (natp))))
                    :guard-hints (("Goal"
-                                  :in-theory (e/d (list-typep BV-TYPEP bv-array-typep test-case-typep bv-array-type-element-width)
+                                  :in-theory (e/d (list-typep boolean-typep BV-TYPEP bv-array-typep test-case-typep bv-array-type-element-width)
                                                   (natp))))))
    (cond ((quotep type) ;; a quoted constant represents a singleton type (just unquote the constant):
           (mv (erp-nil) (unquote type) rand))
@@ -263,6 +267,10 @@
           (mv (erp-nil)
               (lookup-eq-safe type var-value-alist) ; todo
               rand))
+         ((boolean-typep type)
+          ;; Generates a random bit and converts it to a boolean:
+          (b* (((mv value rand) (gen-random-bv 1 rand)))
+            (mv (erp-nil) (if (= value 0) nil t) rand)))
          ((bv-typep type) ;a bit-vector of the indicated width - should we allow this width to be random?
           ;; if it's a bit-vector
           ;; look up the variable's width and generate a random value of that width
