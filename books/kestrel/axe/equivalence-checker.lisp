@@ -19064,15 +19064,20 @@
            (sorted-dag-vars (merge-sort-symbol< dag-vars))
            (vars-given-types (strip-cars var-type-alist))
            (sorted-vars-given-types (merge-sort-symbol< vars-given-types))
-           (- (and (not (subsetp-eq sorted-dag-vars sorted-vars-given-types)) ;stricter check? or warning if extra vars given?
+           (- (and (not (subsetp-eq sorted-dag-vars sorted-vars-given-types))
                    ;; (hard-error 'prove-miter-core
                    ;;               "The DAG variables, ~\x0, don't match the variables given types in the alist, ~x1.  Vars not given types: ~x2.~%"
                    ;;               (acons #\0 sorted-dag-vars
                    ;;                      (acons #\1 sorted-vars-given-types
                    ;;                             (acons #\2 (set-difference-eq sorted-dag-vars sorted-vars-given-types)
                    ;;                                    nil))))
+                   ;; todo: mention the tactics that won't work:
                    (cw "WARNING: The DAG variables, ~x0, don't match the variables given types in the alist, ~x1.  Vars not given types: ~x2.~%"
                        sorted-dag-vars sorted-vars-given-types (set-difference-eq sorted-dag-vars sorted-vars-given-types))))
+           ((when (not (subsetp-eq sorted-vars-given-types sorted-dag-vars)))
+            (er hard? 'prove-miter-core
+                "The following variables are given types in the alist but do not appear in the DAG: ~X01.~%" (set-difference-eq sorted-vars-given-types sorted-dag-vars) nil)
+            (mv :input-error nil state rand result-array-stobj))
            ;;(prog2$ (mv nil state rand result-array-stobj))
            ;; Specialize the fns (make use of constant arguments, when possible) ;do we still need this, if we have the dropping stuff?  maybe this works for head recfns too?
            ;;(how well does this work?): redo it to preserve lambdas (just substitute in them?)
