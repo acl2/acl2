@@ -359,6 +359,7 @@
 ;; TODO: Compare to speed-up-defrule.  Keep in sync, or merge them.
 ;; todo: refactor to generate list of hints, with descriptions, to try.
 ;; Does not change the world.
+;; TODO: What about corollaries?
 (defun speed-up-defthm (event min-time-savings min-event-time print print-headerp state)
   (declare (xargs :guard (and (print-levelp print) ; todo: caller doesn't allow t?
                               (booleanp print-headerp))
@@ -367,7 +368,7 @@
   (prog2$
    (and print print-headerp (cw "~%For ~s0" (first (rest event)))) ; speedups are indented below this, and start with newlines
    (let* ( ;;(defthm-variant (first event))
-          (defthm-args (rest event))
+          (defthm-args (rest event)) ; (defthm <name> <body> ...)
           (name (first defthm-args))
           (body (second defthm-args))
           (keyword-value-list (rest (rest defthm-args)))
@@ -463,7 +464,7 @@
 
  ;; Submits the event, after printing suggestions for improving it.
  ;; Returns (mv erp state).
- ;; TODO: Handle more kinds of events, like defun!  And make-event!
+ ;; TODO: Handle more kinds of events, like defun!  And make-event!  Also verify-termination and verify-guards.
  ;; todo: expand macros, evaluate make-events (revert the world?),
  (defun speed-up-and-submit-event (event synonym-alist min-time-savings min-event-time print throw-errorp state)
    (declare (xargs :guard (and (print-levelp print) ; todo: finish threading this through
