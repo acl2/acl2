@@ -1,6 +1,6 @@
 ; Checking for package conflicts
 
-; Copyright (C) 2022-2023 Kestrel Institute
+; Copyright (C) 2022-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -117,6 +117,7 @@
 (include-book "projects/irv/portcullis" :dir :system)
 ;; (include-book "projects/legacy-defrstobj/portcullis" :dir :system) ; conflict on RSTOBJ package
 ;; (include-book "projects/milawa/ACL2/portcullis" :dir :system) ; error
+;; (include-book "projects/paco/portcullis" :dir :system) ; doesn't exist: see packages.acl2
 (include-book "projects/pfcs/portcullis" :dir :system)
 (include-book "projects/regex/portcullis" :dir :system)
 ;; (include-book "projects/rp-rewriter/meta/portcullis" :dir :system)  ; has an include book but brings in no new packages
