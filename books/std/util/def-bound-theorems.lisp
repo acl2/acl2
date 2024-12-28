@@ -70,6 +70,7 @@
        :hyp <hypotheses>
        :concl <conclusion>
        :hints <usual ACL2 hints for the main theorem>)
+       :gen-rewrite <t or nil> ;; Make main theorem a :rewrite rule
        :gen-type <t or nil>    ;; Generate :type-prescription corollary
        :gen-linear <t or nil>  ;; Generate :linear corollary
        :hyp-t <hypotheses for the :type-prescription corollary>
@@ -79,8 +80,9 @@
        :otf-flg <t or nil>)
      })
    <p>
-   The above form produces a theorem of the form
-   (if both @(':gen-type') and @(':gen-linear') are @('t')):
+   The above form produces a theorem of the following form
+   (if both @(':gen-type') and @(':gen-linear') are @('t') and @(':gen-rewrite')
+   is @('t') or unsupplied):
    </p>
    @({
      (defthm <theorem-name>
@@ -118,6 +120,7 @@
 (defmacro defthm-natp (name &key
                             (hyp 't)
                             concl
+                            (gen-rewrite 't)
                             gen-type
                             gen-linear
                             hints
@@ -141,7 +144,7 @@
            ,@(and hints `(:hints ,hints))
            ,@(and otf-flg `(:otf-flg t))
            :rule-classes
-           (:rewrite
+           (,@(if gen-rewrite '(:rewrite) nil)
             ,@(and gen-type
                    `((:type-prescription
                       :corollary
@@ -193,6 +196,7 @@
        :bound <n>
        :concl <conclusion>
        :hints <usual ACL2 hints for the main theorem>
+       :gen-rewrite <t or nil> ;; Make main theorem a :rewrite rule
        :gen-type <t or nil>    ;; Generate :type-prescription corollary
        :gen-linear <t or nil>  ;; Generate :linear corollary
        :hyp-t <hypotheses for the :type-prescription corollary>
@@ -203,7 +207,8 @@
      })
    <p>
    The above form produces a theorem of the following form
-   (if both @(':gen-type') and @(':gen-linear') are @('t')):
+   (if both @(':gen-type') and @(':gen-linear') are @('t') and @(':gen-rewrite')
+   is @('t') or unsupplied):
    </p>
    @({
      (defthm <theorem-name>
@@ -243,6 +248,7 @@
                                        (hyp 't)
                                        bound
                                        concl
+                                       (gen-rewrite 't)
                                        gen-type
                                        gen-linear
                                        hyp-t
@@ -289,7 +295,7 @@
            ,@(and hints `(:hints ,hints))
            ,@(and otf-flg `(:otf-flg t))
            :rule-classes
-           (:rewrite
+           (,@(if gen-rewrite '(:rewrite) nil)
             ,@(and gen-type
                    `((:type-prescription
                       :corollary
@@ -338,6 +344,7 @@
        :bound <n>
        :concl <conclusion>
        :hints <usual ACL2 hints for the main theorem>
+       :gen-rewrite <t or nil> ;; Make main theorem a :rewrite rule
        :gen-type <t or nil>    ;; Generate :type-prescription corollary
        :gen-linear <t or nil>  ;; Generate :linear corollary
        :hyp-t <hypotheses for the :type-prescription corollary>
@@ -347,8 +354,9 @@
        :otf-flg <t or nil>)
      })
    <p>
-   The above form produces a theorem of the form
-   (if both @(':gen-type') and @(':gen-linear') are @('t')):
+   The above form produces a theorem of the following form
+   (if both @(':gen-type') and @(':gen-linear') are @('t') and @(':gen-rewrite')
+   is @('t') or unsupplied):
    </p>
    @({
      (defthm <theorem-name>
@@ -388,6 +396,7 @@
                                      (hyp 't)
                                      bound
                                      concl
+                                     (gen-rewrite 't)
                                      gen-type
                                      gen-linear
                                      hyp-t
@@ -436,7 +445,7 @@
            ,@(and hints `(:hints ,hints))
            ,@(and otf-flg `(:otf-flg t))
            :rule-classes
-           (:rewrite
+           (,@(if gen-rewrite '(:rewrite) nil)
             ,@(and gen-type
                    `((:type-prescription
                       :corollary
