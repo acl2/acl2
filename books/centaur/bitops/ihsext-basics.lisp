@@ -3758,13 +3758,6 @@ off looking at the source code.</p>")
                                            (signed-byte-p logmask))
                    :induct (logmask width)))))
 
-  (defthm signed-byte-p-monotonicity
-    (implies (and (signed-byte-p a x)
-                  (<= a b)
-                  (integerp b))
-             (signed-byte-p b x))
-    :hints(("Goal" :in-theory (enable signed-byte-p**))))
-
   (defthm signed-byte-p-of-logmask
     (implies (and (posp width2)
                   (<= (+ 1 (nfix width)) width2))

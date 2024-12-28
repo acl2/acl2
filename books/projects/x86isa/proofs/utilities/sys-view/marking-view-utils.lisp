@@ -2482,7 +2482,7 @@
                       (:rewrite disjoint-p-all-xlation-governing-entries-paddrs-subset-p)
                       (:rewrite r-x-is-irrelevant-for-mv-nth-1-ia32e-la-to-pa-when-no-errors)
                       (:rewrite canonical-address-p-limits-thm-3)
-                      (:rewrite bitops::signed-byte-p-monotonicity)
+                      (:rewrite bitops::signed-byte-p-incr)
                       (:type-prescription len)
                       (:definition binary-append)
                       (:rewrite signed-byte-p-limits-thm)
