@@ -88,8 +88,9 @@
      (xdoc::ul
       (xdoc::li
        "A pair @('(<type> <term>)'),
-        where @('<type>') is a @(tsee fty::defprod) of the abstract syntax
-        (e.g. @(tsee tyname)),
+        where @('<type>') is a @(tsee fty::defprod) or @(tsee fty::deftagsum)
+        of the abstract syntax
+        (e.g. @(tsee tyname) or @(tsee expr)),
         and @('<term>') is an (untranslated) term
         whose only free variable is @('<type>').")
       (xdoc::li
@@ -113,7 +114,9 @@
        @(tsee exprs/decls/stmts).")
      (xdoc::li
       "The types
+       @(tsee type-spec-list),
        @(tsee fundef),
+       @9tsee fundef-option),
        @(tsee extdecl),
        @(tsee extdecl-list),
        @(tsee transunit),
@@ -143,30 +146,36 @@
           It is always the case that at least one field
           has a type for which a predicate is generated.")))
       (xdoc::li
-       "If @('<type>') is a @(tsee fty::deftagsum),
-        the predicate is defined via @('<type>-case'),
-        and the case for each keyword @('<kind>') is as follows:"
+       "If @('<type>') is a @(tsee fty::deftagsum):"
        (xdoc::ul
         (xdoc::li
          "If the @(':override') input includes
-          an element @('(<type> <kind> <term>')),
-          the case is defined to return @('<term>').")
+          an element @('(<type> <term>')),
+          the predicate is defined to return @('<term>').")
         (xdoc::li
-         "If the @(':override') input does not include
-          any element of the form @('(<type> <kind> <term>')):"
+         "Otherwise, the predicate is defined via @('<type>-case'),
+          and the case for each keyword @('<kind>') is as follows:"
          (xdoc::ul
           (xdoc::li
-           "If the summand corresponding to @('<kind>')
-            has no fields of a type for which a predicate is generated,
-            the case is defined to return
-            the boolean specified by the @(':default') input.")
+           "If the @(':override') input includes
+            an element @('(<type> <kind> <term>')),
+            the case is defined to return @('<term>').")
           (xdoc::li
-           "If the summand corresponding to @('<kind>')
-            has at least one field of a type for which a predicate is generated,
-            the case is defined to return
-            the conjuntion of
-            the predicates generated for the fields' types
-            applied to the respective fields of the summand.")))))
+           "If the @(':override') input does not include
+            any element of the form @('(<type> <kind> <term>')):"
+           (xdoc::ul
+            (xdoc::li
+             "If the summand corresponding to @('<kind>')
+              has no fields of a type for which a predicate is generated,
+              the case is defined to return
+              the boolean specified by the @(':default') input.")
+            (xdoc::li
+             "If the summand corresponding to @('<kind>')
+              has at least one field of a type for which a predicate is generated,
+              the case is defined to return
+              the conjuntion of
+              the predicates generated for the fields' types
+              applied to the respective fields of the summand.")))))))
       (xdoc::li
        "If @('<type>') is a @(tsee fty::deflist),
         the predicate is defined recursively,
