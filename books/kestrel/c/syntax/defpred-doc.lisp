@@ -79,7 +79,7 @@
     (xdoc::desc
      "@(':override') &mdash; default @('nil')"
      (xdoc::p
-      "Specifies which boilerplate results should be overriden.
+      "Specifies which boilerplate results should be overridden.
        It is used as described in the Section `Generated Events' below.")
      (xdoc::p
       "This must be a parenthesized list @('(ovrd1 ... ovrd<n>)'),
