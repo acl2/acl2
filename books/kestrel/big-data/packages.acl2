@@ -64,6 +64,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; From books/workshops/2000/ruiz/multiset/examples/newman/local-confluence.acl2:
+;; TODO: Some of this is also in books/workshops/2000/ruiz/multiset/examples/newman/newman.acl2:
 
 (defconst *abstract-proofs-exports*
   '(last-elt r-step direct operator elt1 elt2 r-step-p make-r-step
