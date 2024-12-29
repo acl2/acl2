@@ -712,6 +712,8 @@
 
   :hints (("Goal" :in-theory (enable o< o-finp)))
 
+  :flag-local nil
+
   ///
 
   (fty::deffixequiv-mutual exprs/decls/stmts-unambp)
