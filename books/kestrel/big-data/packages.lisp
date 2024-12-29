@@ -16,8 +16,6 @@
 
 ;; These came from running 'find ../../.. -name portcullis.lisp':
 
-;; TODO: Why does including this book bring in rev?  Maybe because of ./acl2/books/projects/async/package.lsp?
-
 ;; TODO: Bring in M5 package once modernized
 
 (include-book "acl2s/portcullis" :dir :system)
