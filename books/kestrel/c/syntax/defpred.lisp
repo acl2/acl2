@@ -355,7 +355,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
 (define defpred-type-names-in-cliques-with-names ((cliques symbol-listp)
                                                   (fty-table alistp))
   :returns (types symbol-listp)
