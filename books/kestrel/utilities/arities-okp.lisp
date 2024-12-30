@@ -12,13 +12,6 @@
 
 (in-theory (disable arities-okp))
 
-(defthm arities-okp-when-arities-okp-and-subsetp-equal
-  (implies (and (arities-okp arities+ w)
-                (subsetp-equal arities arities+))
-           (arities-okp arities w))
-  :hints (("Goal" :in-theory (enable arities-okp
-                                     subsetp-equal))))
-
 (defthm arities-okp-of-append
   (equal (arities-okp (append x y) w)
          (and (arities-okp x w)
@@ -42,3 +35,10 @@
            (equal (arity fn w)
                   (cdr (assoc-eq fn alist))))
   :hints (("Goal" :in-theory (enable arities-okp))))
+
+(defthm arities-okp-when-arities-okp-and-subsetp-equal
+  (implies (and (arities-okp arities+ w)
+                (subsetp-equal arities arities+))
+           (arities-okp arities w))
+  :hints (("Goal" :in-theory (enable arities-okp
+                                     subsetp-equal))))
