@@ -19,6 +19,8 @@
 (local (include-book "kestrel/lists-light/member-equal" :dir :system))
 ;(local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
 
+;; TODO: Add support for unary-fns being :all.
+
 (local (in-theory (disable alistp disjoin disjoin2
                            symbol-listp
                            member-equal
@@ -27,7 +29,7 @@
 
 (local (in-theory (enable symbolp-when-member-equal-and-symbol-listp)))
 
-;move or make local
+;todo: move or make local
 (defthm assoc-equal-of-pairlis$-of-repeat
   (implies (member-equal key keys)
            (equal (assoc-equal key (pairlis$ keys (repeat (len keys) val)))
@@ -53,8 +55,7 @@
                 (logicp unary-fn w)
                 (symbolp unary-fn)
                 (not (equal 'quote unary-fn))
-                (arities-okp (acons unary-fn 1
-                                    '((if . 3)))
+                (arities-okp (acons unary-fn 1 nil)
                              w))
            (logic-termp (apply-unary-fn-to-if-branches unary-fn term) w))
   :hints (("Goal" :in-theory (enable apply-unary-fn-to-if-branches))))
@@ -93,7 +94,8 @@
             `(if ,(push-unary-functions-in-term (farg1 term) unary-fns)
                  ,(push-unary-functions-in-term (farg2 term) unary-fns)
                ,(push-unary-functions-in-term (farg3 term) unary-fns))
-          (if (and (member-eq fn unary-fns)
+          (if (and (symbolp fn)
+                   (member-eq fn unary-fns)
                    (= 1 (len (fargs term))))
               (apply-unary-fn-to-if-branches fn (farg1 term))
             ;; todo: do more here?  we currently only handle unary calls in top-level ifs
@@ -102,17 +104,13 @@
 ;; Supports the :well-formedness-guarantee.
 (defthm logic-termp-of-push-unary-functions-in-term
   (implies (and (logic-termp term w)
-                (symbol-listp unary-fns)
-                (arities-okp (append (pairlis$ unary-fns
-                                               (repeat (len unary-fns) 1))
-                                     '((if . 3)))
+                (arities-okp '((if . 3))
                              w))
            (logic-termp (push-unary-functions-in-term term unary-fns) w))
   :hints (("Goal" :in-theory (enable push-unary-functions-in-term))))
 
 (defthm pseudo-termp-of-push-unary-functions-in-term
-  (implies (and (pseudo-termp term)
-                (symbol-listp unary-fns))
+  (implies (pseudo-termp term)
            (pseudo-termp (push-unary-functions-in-term term unary-fns)))
   :hints (("Goal" :expand (PSEUDO-TERMP TERM)
            :in-theory (enable push-unary-functions-in-term))))
@@ -121,7 +119,7 @@
 (defthm if-eval-of-push-unary-functions-in-term
   (implies (and (alistp a)
                 (pseudo-termp term)
-                (symbol-listp unary-fns))
+                )
            (equal (if-eval (push-unary-functions-in-term term unary-fns) a)
                   (if-eval term a)))
   :hints (("Goal" :in-theory (enable push-unary-functions-in-term))))
@@ -138,27 +136,21 @@
 
 ;; Supports the :well-formedness-guarantee.
 (defthm logic-term-listp-of-push-unary-functions-in-literals
-  (implies (and (symbol-listp unary-fns)
-                (logic-term-listp clause w)
-                (arities-okp
-                 (append (pairlis$ unary-fns (repeat (len unary-fns) 1))
-                         '((if . 3)))
-                 w))
+  (implies (and (logic-term-listp clause w)
+                (arities-okp '((if . 3)) w))
            (logic-term-listp (push-unary-functions-in-literals clause unary-fns)
                              w))
   :hints (("Goal" :in-theory (enable push-unary-functions-in-literals))))
 
 (defthm pseudo-term-list-listp-of-push-unary-functions-in-literals
-  (implies (and (pseudo-term-listp clause)
-                (symbol-listp unary-fns))
+  (implies (pseudo-term-listp clause)
            (pseudo-term-listp (push-unary-functions-in-literals clause unary-fns)))
   :hints (("Goal" :in-theory (enable push-unary-functions-in-literals))))
 
 ;; Correctness theorem
 ;strengthen to equal?
 (defthm if-eval-of-disjoin-of-push-unary-functions-in-literals
-  (implies (and (symbol-listp unary-fns)
-                (alistp a)
+  (implies (and (alistp a)
                 (pseudo-term-listp clause))
            (iff (if-eval (disjoin (push-unary-functions-in-literals clause unary-fns)) a)
                 (if-eval (disjoin clause) a)))
@@ -170,7 +162,7 @@
 
 ;; Return a list of one clause (like the one we started with but with the unary
 ;; function O-P pushed).
-;; TODO: Generalize the use of O-P here.  Or move this stuff to a different book?
+;; TODO: Deprecate in favor of the more general push-unary-fns-clause-processor.
 (defund push-o-p-clause-processor (clause)
   (declare (xargs :guard (pseudo-term-listp clause)))
   (progn$ ;(cw "Len of clause is ~x0.~%" (len clause))
@@ -200,3 +192,38 @@
   :rule-classes ((:clause-processor
                   :well-formedness-guarantee logic-term-list-listp-of-push-o-p-clause-processor))
   :hints (("Goal" :in-theory (enable push-o-p-clause-processor))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Return a list of one clause (which is like the clause we started with but with the unary
+;; supplied functions pushed).
+(defund push-unary-fns-clause-processor (clause unary-fns)
+  (declare (xargs :guard (pseudo-term-listp clause)))
+  (progn$ ;(cw "Len of clause is ~x0.~%" (len clause))
+          ;(cw "Literals are ~x0.~%" clause)
+   (if (not (symbol-listp unary-fns))
+       (prog2$ (er hard? 'push-unary-fns-clause-processor "The unary-fns are not symbols: ~x0." unary-fns)
+               (list clause))
+     (list (push-unary-functions-in-literals clause unary-fns)))))
+
+;; Supports the :well-formedness-guarantee.
+(defthm logic-term-list-listp-of-push-unary-fns-clause-processor
+  (implies (and (logic-term-listp clause w)
+                (arities-okp '((if . 3)) w))
+           (logic-term-list-listp (push-unary-fns-clause-processor clause unary-fns) w))
+  :hints (("Goal" :in-theory (enable push-unary-fns-clause-processor))))
+
+(defthm pseudo-term-list-listp-of-push-unary-fns-clause-processor
+  (implies (pseudo-term-listp clause)
+           (pseudo-term-list-listp (push-unary-fns-clause-processor clause unary-fns)))
+  :hints (("Goal" :in-theory (enable push-unary-fns-clause-processor))))
+
+;; Main theorem
+(defthm push-unary-fns-clause-processor-correct
+  (implies (and (pseudo-term-listp clause)
+                (alistp a)
+                (if-eval (conjoin-clauses (push-unary-fns-clause-processor clause unary-fns)) a))
+           (if-eval (disjoin clause) a))
+  :rule-classes ((:clause-processor
+                  :well-formedness-guarantee logic-term-list-listp-of-push-unary-fns-clause-processor))
+  :hints (("Goal" :in-theory (enable push-unary-fns-clause-processor))))
