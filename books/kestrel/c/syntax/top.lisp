@@ -15,6 +15,8 @@
 (include-book "abstraction-mapping")
 (include-book "abstract-syntax-operations")
 (include-book "unambiguity")
+(include-book "defpred")
+(include-book "defpred-doc")
 (include-book "preprocess-file")
 (include-book "parser")
 (include-book "disambiguator")
@@ -130,7 +132,7 @@
     "We plan to prove theorems connecting this tool-oriented syntax
      with the formal language definition in @(see c::language).
      We already provide a "
-    (xdoc::seetopic "mapping-to-language-definitino" "(partial) mapping")
+    (xdoc::seetopic "mapping-to-language-definition" "(partial) mapping")
     " from the tool-oriented abstract syntax
      to the abstract syntax of the formal language definition.
      We also provide "
