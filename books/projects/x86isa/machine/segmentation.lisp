@@ -73,27 +73,6 @@
 
 ;; ======================================================================
 
-(defthm-unsigned-byte-p n64p-xr-seg-hidden-base
-  :hyp t
-  :bound 64
-  :concl (xr :seg-hidden-base i x86)
-  :gen-linear t
-  :gen-type t)
-
-(defthm-unsigned-byte-p n32p-xr-seg-hidden-limit
-  :hyp t
-  :bound 32
-  :concl (xr :seg-hidden-limit i x86)
-  :gen-linear t
-  :gen-type t)
-
-(defthm-unsigned-byte-p n16p-xr-seg-visible
-  :hyp t
-  :bound 16
-  :concl (xr :seg-visible i x86)
-  :gen-linear t
-  :gen-type t)
-
 (define segment-base-and-bounds
   ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
    (seg-reg   :type (integer 0 #.*segment-register-names-len-1*))
