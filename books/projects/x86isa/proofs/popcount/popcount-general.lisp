@@ -690,7 +690,7 @@
                    (:rewrite default-<-1)
                    (:rewrite acl2::consp-when-member-equal-of-atom-listp)
                    (:rewrite acl2::difference-unsigned-byte-p)
-                   (:rewrite bitops::signed-byte-p-monotonicity)
+                   (:rewrite bitops::signed-byte-p-incr)
                    (:rewrite default-+-2)
                    (:rewrite subset-p-cdr-y)
                    (:rewrite default-<-2)
