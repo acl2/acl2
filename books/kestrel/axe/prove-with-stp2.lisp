@@ -144,7 +144,7 @@
               ;; if it's a variable, we will cut (the variable generated in STP will be named NODEXXX, so we don't have to worry about the actual name of expr clashing with something) and add info about its type to cut-nodenum-type-alist:
               (b* ((type (lookup-eq-safe expr var-type-alist))
                    ((when (not (axe-typep type)))
-                    (cw "ERROR: Bad type for ~x0 in alist ~x0.~%" expr var-type-alist)
+                    (cw "ERROR: Bad type for ~x0 in alist ~x1.~%" expr var-type-alist)
                     (mv :type-error nil nil extra-asserts)))
                 (gather-nodes-to-translate-for-aggressively-cut-proof (+ -1 n) dag-array-name dag-array dag-len needed-for-node1-tag-array needed-for-node2-tag-array
                                                                       nodenums-to-translate ;not adding n

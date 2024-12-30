@@ -4620,7 +4620,8 @@
 
 (local (in-theory (disable LOGTAIL-LESSP))) ;todo
 
-(defthm bvlt-tighten-when-getbit-0
+;rename
+(defthmd bvlt-tighten-when-getbit-0
   (implies (and (equal (getbit 31 x) 0)
                 (unsigned-byte-p 31 z))
            (equal (bvlt 32 z x)
@@ -4628,7 +4629,8 @@
   :hints (("Goal" :in-theory (e/d (bvlt) (;; bvchop-extend-hack-gen
                                           )))))
 
-(defthm bvlt-tighten-when-getbit-0-alt
+;rename
+(defthmd bvlt-tighten-when-getbit-0-alt
   (implies (and (equal (getbit 31 x) 0)
                 (unsigned-byte-p 31 z))
            (equal (bvlt 32 x z)

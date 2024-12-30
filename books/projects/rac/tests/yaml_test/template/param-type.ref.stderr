@@ -1,0 +1,8 @@
+param-type.cpp:17 (16-17): Expected `A`, got `int`
+ 17 |   return foo<0>(0);
+    |                 ^
+note: Defined here: 
+ 10 | template <int a>
+    | ^^^^^^^^^^^^^^^^^
+ 11 | int foo(A b) {
+    | ^^^^^^^^^^^^

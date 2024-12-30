@@ -47,7 +47,7 @@
    (include-book "lists-light/doc")
    (include-book "number-theory/top")
    (include-book "prime-fields/doc")
-   ;; (include-book "risc-v/top")
+   (include-book "risc-v/top")
    (include-book "simpl-imp/top")
    (include-book "soft/top")
    (include-book "solidity/top")

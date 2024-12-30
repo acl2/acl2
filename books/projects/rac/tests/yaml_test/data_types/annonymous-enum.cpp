@@ -1,16 +1,12 @@
 // RAC begin
 
-struct S
-{
+struct S {
   enum { a = 1 } x;
 };
 
-
-int foo()
-{
-  S s;
+int foo() {
+  S s = {};
   return s.x;
 }
-
 
 // RAC end

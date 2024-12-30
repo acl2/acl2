@@ -184,8 +184,14 @@
      That bug has been fixed.")
 
    (xdoc::p
-    "New directory @('demos/attach-stobj/') illustrates the use of @(tsee
+    "The new directory @('demos/attach-stobj/') illustrates the use of @(tsee
      attach-stobj).  See file @('README.txt') in that directory.")
+
+   (xdoc::p
+    "The new book @('demos/fp.lisp') (with associated files @('fp.acl2') and
+     @('fp-raw.lsp') in the same directory) illustrates the power of @(tsee
+     partial-encapsulate), showing how it is used in the implementation of
+     floating-point operations in ACL2.")
 
    ))
 

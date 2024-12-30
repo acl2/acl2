@@ -126,7 +126,7 @@
 
 (define-sk last-anchor-voters-p ((systate system-statep))
   :guard (and (last-anchor-present-p systate)
-              (dag-committees-p systate))
+              (signer-quorum-p systate))
   :returns (yes/no booleanp)
   :short "Definition of the invariant:
           for each correct validator,
@@ -139,8 +139,10 @@
           (implies (set::in val (correct-addresses systate))
                    (validator-last-anchor-voters-p
                     (get-validator-state val systate))))
-  :guard-hints (("Goal" :in-theory (enable last-anchor-present-p-necc
-                                           dag-committees-p-necc)))
+  :guard-hints
+  (("Goal" :in-theory (enable last-anchor-present-p-necc
+                              dag-has-committees-p-when-signer-quorum-p
+                              dag-in-committees-p-when-signer-quorum-p)))
   ///
   (fty::deffixequiv-sk last-anchor-voters-p
     :args ((systate system-statep))))
@@ -200,10 +202,8 @@
 
   (defruled validator-last-anchor-voters-p-of-create-next
     (implies (and (system-committees-fault-tolerant-p systate)
-                  (same-associated-certs-p systate)
                   (no-self-endorsed-p systate)
                   (signer-records-p systate)
-                  (dag-committees-p systate)
                   (signer-quorum-p systate)
                   (unequivocal-dags-p systate)
                   (same-committees-p systate)
@@ -247,10 +247,8 @@
   (defruled last-anchor-voters-p-of-create-next
     (implies (and (last-anchor-voters-p systate)
                   (system-committees-fault-tolerant-p systate)
-                  (same-associated-certs-p systate)
                   (no-self-endorsed-p systate)
                   (signer-records-p systate)
-                  (dag-committees-p systate)
                   (signer-quorum-p systate)
                   (unequivocal-dags-p systate)
                   (same-committees-p systate)
@@ -265,14 +263,13 @@
 
   (defruled validator-last-anchor-voters-p-of-accept-next
     (implies (and (system-committees-fault-tolerant-p systate)
-                  (same-associated-certs-p systate)
-                  (dag-committees-p systate)
                   (signer-quorum-p systate)
                   (unequivocal-signed-certs-p systate)
                   (unequivocal-dags-p systate)
                   (same-committees-p systate)
                   (last-anchor-present-p systate)
                   (accept-possiblep msg systate)
+                  (messagep msg)
                   (set::in val (correct-addresses systate))
                   (validator-last-anchor-voters-p
                    (get-validator-state val systate)))
@@ -307,14 +304,13 @@
   (defruled last-anchor-voters-p-of-accept-next
     (implies (and (last-anchor-voters-p systate)
                   (system-committees-fault-tolerant-p systate)
-                  (same-associated-certs-p systate)
-                  (dag-committees-p systate)
                   (signer-quorum-p systate)
                   (unequivocal-signed-certs-p systate)
                   (unequivocal-dags-p systate)
                   (same-committees-p systate)
                   (last-anchor-present-p systate)
-                  (accept-possiblep msg systate))
+                  (accept-possiblep msg systate)
+                  (messagep msg))
              (last-anchor-voters-p (accept-next msg systate)))
     :enable (last-anchor-voters-p
              last-anchor-voters-p-necc
@@ -431,10 +427,8 @@
                   (system-committees-fault-tolerant-p systate)
                   (last-blockchain-round-p systate)
                   (ordered-even-p systate)
-                  (same-associated-certs-p systate)
                   (no-self-endorsed-p systate)
                   (signer-records-p systate)
-                  (dag-committees-p systate)
                   (signer-quorum-p systate)
                   (unequivocal-signed-certs-p systate)
                   (unequivocal-dags-p systate)

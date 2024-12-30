@@ -1,0 +1,6 @@
+# rdx:rax, rcx:rbx, memory operand, flags
+; 16, 16, 16, 2
+0, 1, 2, 0
+0, 1, 0, 0
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb, cccccccccccccccccccccccccccccccc, 0
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb, aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, 0

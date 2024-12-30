@@ -11,16 +11,14 @@
 (in-package "RISCV")
 
 (include-book "ihs/basic-definitions" :dir :system)
-
+(include-book "kestrel/fty/sbyte32" :dir :system)
+(include-book "kestrel/fty/sbyte64" :dir :system)
 (include-book "kestrel/fty/ubyte5" :dir :system)
 (include-book "kestrel/fty/ubyte6" :dir :system)
 (include-book "kestrel/fty/ubyte8" :dir :system)
 (include-book "kestrel/fty/ubyte16" :dir :system)
 (include-book "kestrel/fty/ubyte32" :dir :system)
 (include-book "kestrel/fty/ubyte64" :dir :system)
-
-(include-book "kestrel/fty/sbyte32" :dir :system)
-(include-book "kestrel/fty/sbyte64" :dir :system)
 
 (local (include-book "arithmetic-5/top" :dir :system))
 
@@ -30,6 +28,19 @@
   (implies (and (integerp x)
                 (integerp y))
            (integerp (+ x y))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled integerp-of-*
+  (implies (and (integerp x)
+                (integerp y))
+           (integerp (* x y))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled integerp-of-unary-minus
+  (implies (integerp x)
+           (integerp (- x))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

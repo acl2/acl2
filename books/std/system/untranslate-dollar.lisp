@@ -33,7 +33,7 @@
      user-defined-functions-table): neither the
      untranslate-preprocess capability nor wholesale
      replacement of untranslate.  (Technical Note:
-     @('Untranslate$) calls @('untranslate1') instead of
+     @('Untranslate$') calls @('untranslate1') instead of
      @(tsee untranslate), using a @('preprocess-fn')
      argument of @('nil') to avoid certain hard errors.)")
    (xdoc::p

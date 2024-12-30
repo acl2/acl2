@@ -1,7 +1,7 @@
 ; Fix every element of a list to be a signed byte
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,6 +13,7 @@
 
 (include-book "kestrel/bv/logext" :dir :system)
 (local (include-book "kestrel/lists-light/len" :dir :system))
+(local (include-book "kestrel/bv/bvchop" :dir :system))
 
 ;; note that this fixes the items to be *signed* bytes
 ;bozo use logext-list?  maybe rename to sbyte-fix-list?

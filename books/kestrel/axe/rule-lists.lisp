@@ -1609,6 +1609,8 @@
      consp-of-bv-array-write ;moved here
      equal-of-bv-array-write-of-1-constant-version
 
+     bv-array-read-trim-index-axe
+
      bv-array-read-of-bvchop
      bv-array-read-of-logext-64-32 ;bozo
      bv-array-read-of-cons-base
@@ -3807,7 +3809,6 @@
 ;             bvxor-associative ;i can't believe this was missing!
 ;             bvxor-commutative-axe
 ;           bvxor-commutative-2-axe
-             bv-array-read-trim-index
              bvlt-transitive-free2-back-constants
              bvlt-of-bvplus-constant-and-constant
              bvlt-of-bvplus-same-alt

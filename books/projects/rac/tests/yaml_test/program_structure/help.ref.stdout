@@ -1,6 +1,13 @@
+This is the RAC (Restricted Algorithmic C) parser which translates a
+RAC program into a list of S-Expressions.
+
 Usage:
-  parse file           check that file.cpp is well formed
-  parse file -rac      convert to RAC pseudocode and write to file.pc
+  parse FILE [options]
 
-  parse file -acl2     write ACL2 translation to output.lisp
-
+Options:
+  -rac           convert to RAC pseudocode and write to file.pc
+  -acl2          write ACL2 translation to file.ast.lsp
+  -pedantic      enable all possible warnings/errors.
+  -version       display the version (the commit hash)
+  -dump-ast      display the intermediate AST in dot format
+  -trace-parser  enable bison tracing, used to debug the parser

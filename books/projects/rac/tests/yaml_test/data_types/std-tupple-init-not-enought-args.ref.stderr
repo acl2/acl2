@@ -1,0 +1,3 @@
+std-tupple-init-not-enought-args.cpp:10 (9-27): Expected 2 argument(s) (from its type: `<int, int>`), got `1`.
+ 10 |   return tuple<int, int>(a);
+    |          ^^^^^^^^^^^^^^^^^^

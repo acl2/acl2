@@ -30,7 +30,7 @@ v27
 ; ---------------------------------------------------------------------------
 ; To change the "PACO" package definition
 
-; Edit the defpkg in utilities.acl2.
+; Edit the defpkg in package.lsp.
 
 ; ---------------------------------------------------------------------------
 ; To play

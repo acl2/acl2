@@ -66,3 +66,5 @@
 (include-book "unguarded-built-ins")
 
 (include-book "doc")
+
+;; (include-book "cancel-addends") ; A :meta rule is probably better

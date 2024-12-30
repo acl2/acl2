@@ -1017,7 +1017,7 @@ next call of @('ipasir-add-lit') or @('ipasir-assume') the solver can be queried
 with @('ipasir-failed') to determine whether a given assumption literal was in
 the unsatisfiable core subset of the assumption.  Requires that the solver not
 be in state @(':undef'), and puts the solver in state @(':sat'), @(':unsat'),
-or (when failed) @(':input).</li>
+or (when failed) @(':input').</li>
 
 <li>@('(ipasir-val ipasir lit)') determines the value of lit under the current
 satisfying assignment, returning 1 if true, 0 if false, or @('nil')

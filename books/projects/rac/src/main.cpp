@@ -1,82 +1,53 @@
 #include <fstream>
 #include <iostream>
-#include <stdio.h>
+#include <string.h>
 #include <string>
 
-#include "parser.h"
+#include "argparse.h"
 
-int
-main (int argc, char **argv)
-{
-  ++argv, --argc; /* skip over program name */
+#include "program/parser/parser.h"
+#include "program/program.h"
 
-  if (argc == 0)
-    {
-      std::cout
-          << "Usage:\n"
-             "  parse file           check that file.cpp is well formed\n"
-             "  parse file -rac      convert to RAC pseudocode and write to "
-             "file.pc\n\n"
-             "  parse file -acl2     write ACL2 translation to "
-             "output.lisp\n\n";
-      return 0;
-    }
+int main(int argc, char **argv) {
 
-  std::string buf (argv[0]);
-  buf += ".i";
-  yyin = fopen (buf.c_str (), "r");
-  if (yyin == nullptr)
-    {
-      std::cerr << "Failed to open file " << buf << ": " << strerror (errno)
+  CommandLine cl;
+  auto args = cl.parse(argc, argv);
+  if (!args) {
+    return 1;
+  }
+
+  if (!args->file) {
+    return 0;
+  }
+
+  auto parsed_ast = parse(*args->file + ".i", args->trace_parser);
+  if (!parsed_ast) {
+    return 1;
+  }
+
+  auto processed_ast
+      = Program::process(std::move(*parsed_ast), args->all_warnings);
+  if (!processed_ast) {
+    return 1;
+  }
+
+  if (args->dump_ast) {
+    processed_ast->dumpAsDot();
+  }
+
+  if (args->mode) {
+    const std::string ext = *args->mode == DispMode::acl2 ? ".ast.lsp" : ".pc";
+    const std::string out = *args->file + ext;
+
+    std::fstream fout;
+    fout.open(out, std::fstream::out);
+    if (!fout.is_open()) {
+      std::cerr << "Failed to open file " << out << ": " << strerror(errno)
                 << '\n';
-      ;
-      return 1;
     }
 
-  yylineno = 1;
-  if (yyparse ())
-    {
-      return 1;
-    }
+    processed_ast->display(fout, *args->mode);
+  }
 
-  fclose (yyin);
-
-  // Restore basename
-  buf.pop_back ();
-  buf.pop_back ();
-
-  if (prog.isEmpty ())
-    puts ("Warning: no function definitions found,"
-          " maybe you forgot the `// RAC begin` guard");
-
-  std::fstream fout;
-
-  if (argc > 1)
-    {
-      DispMode type;
-      if (!strcmp (argv[1], "-acl2"))
-        {
-          buf += ".ast.lsp";
-          type = DispMode::acl2;
-        }
-      else if (!strcmp (argv[1], "-rac"))
-        {
-          buf += ".pc";
-          type = DispMode::rac;
-        }
-      else
-        {
-          std::cerr << "Unknown option `" << argv[1]
-                    << "`, for a list of available options, type `parse`";
-          return 1;
-        }
-
-      fout.open (buf, fstream::out);
-      if (!fout.is_open ())
-        std::cerr << "Failed to open file " << buf << ": " << strerror (errno)
-                  << '\n';
-      ;
-
-      prog.display (fout, type);
-    }
+  return 0;
 }

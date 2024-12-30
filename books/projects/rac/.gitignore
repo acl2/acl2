@@ -1,6 +1,10 @@
 # Created by https://www.toptal.com/developers/gitignore/api/python,c++,vim,linux
 # Edit at https://www.toptal.com/developers/gitignore?templates=python,c++,vim,linux
 
+## Generated at build ##
+
+src/version.h
+
 ### C++ ###
 # Prerequisites
 *.d
@@ -246,7 +250,14 @@ tags
 # Tests
 tests/env/
 *.ast.lsp
+!*.ref.ast.lsp
 *.cpp.i
+
+# Yacc/Bison generated files
+src/program/parser/lex.yy.cpp
+src/program/parser/parser.tab.hpp
+src/program/parser/parser.tab.cpp
+src/program/parser/parser.output
 
 # Gnererated tools
 bin/*

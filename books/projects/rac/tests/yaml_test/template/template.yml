@@ -8,3 +8,28 @@
   disabled-checks:
     - generated_code
   bug: true
+
+- name: template-ac-int
+- name: template-ac-int-set
+
+- name: template-nan-demo
+
+- name: template-ac-int-sign
+
+- name: arity
+  should_report_error: true
+
+- name: template-param-type
+  should_report_error: true
+
+- name: call-template-as-function
+  should_report_error: true
+
+- name: param-type
+  should_report_error: true
+
+- name: illegal-type
+  should_report_error: true
+
+- name: template_keyword_hint
+  should_report_error: true

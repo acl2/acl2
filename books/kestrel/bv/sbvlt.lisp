@@ -348,7 +348,7 @@
                 (posp size))
            (equal (sbvlt size x k)
                   (sbvlt size x (bvchop size k))))
-  :hints (("Goal" :in-theory (e/d (sbvlt) nil)
+  :hints (("Goal" :in-theory (enable sbvlt)
            :cases ((natp size)))))
 
 ;rename
@@ -358,7 +358,7 @@
                 (posp size))
            (equal (sbvlt size k x)
                   (sbvlt size (bvchop size k) x)))
-  :hints (("Goal" :in-theory (e/d (sbvlt) nil)
+  :hints (("Goal" :in-theory (enable sbvlt)
            :cases ((natp size)))))
 
 (defthm sbvlt-transitive-free
@@ -392,7 +392,7 @@
                 (equal k (- (expt 2 (- size 1)) 1))
                 (posp size))
            (not (sbvlt size k x)))
-  :hints (("Goal" :in-theory (e/d (sbvlt) nil))))
+  :hints (("Goal" :in-theory (enable sbvlt))))
 
 ;loops with defn sbvlt?
 (defthmd <=-of-logext-and--1

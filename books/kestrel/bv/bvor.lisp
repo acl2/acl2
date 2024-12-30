@@ -13,6 +13,7 @@
 
 ;(include-book "bvchop")
 (include-book "getbit")
+(local (include-book "slice"))
 (local (include-book "logior-b"))
 (local (include-book "unsigned-byte-p"))
 
@@ -76,7 +77,7 @@
 (defthm bvor-when-size-is-not-integerp
   (implies (not (integerp size))
            (equal (bvor size x y) 0))
-  :hints (("Goal" :in-theory (e/d (bvor) nil))))
+  :hints (("Goal" :in-theory (enable bvor))))
 
 (defthm bvor-when-size-is-0
   (equal (bvor 0 x y)

@@ -14,6 +14,7 @@
 (include-book "getbit")
 (include-book "lognot")
 (include-book "unsigned-byte-p")
+(local (include-book "slice"))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
@@ -51,7 +52,7 @@
   (implies (not (natp size))
            (equal (bvnot size x)
                   0))
-  :hints (("Goal" :in-theory (e/d (bvnot) nil))))
+  :hints (("Goal" :in-theory (enable bvnot))))
 
 (defthm bvnot-when-size-is-not-integerp
   (implies (not (integerp size))

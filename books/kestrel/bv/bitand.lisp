@@ -13,6 +13,7 @@
 
 (include-book "bvand")
 (include-book "getbit")
+(local (include-book "slice"))
 (local (include-book "logand-b"))
 
 (defund bitand (x y)
@@ -156,13 +157,13 @@
 (defthm bitand-of-getbit-arg1
   (equal (bitand (getbit 0 x) y)
          (bitand x y))
-  :hints (("Goal" :in-theory (e/d (bitand) nil))))
+  :hints (("Goal" :in-theory (enable bitand))))
 
 ;todo: rename to have 0 in the name
 (defthm bitand-of-getbit-arg2
   (equal (bitand y (getbit 0 x))
          (bitand y x))
-  :hints (("Goal" :in-theory (e/d (bitand) nil))))
+  :hints (("Goal" :in-theory (enable bitand))))
 
 (defthm bitand-of-bvchop-arg1
   (implies (posp size)
@@ -195,7 +196,7 @@
 (defthm unsigned-byte-p-of-bitand
   (implies (posp size)
            (unsigned-byte-p size (bitand x y)))
-  :hints (("Goal" :in-theory (e/d (bitand) nil))))
+  :hints (("Goal" :in-theory (enable bitand))))
 
 (defthm bvchop-of-bitand
   (implies (and (< 0 n)

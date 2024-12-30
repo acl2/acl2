@@ -4,20 +4,19 @@
 - name: set-elem
 
 - name: set-invalid-width
-  description: Segfault instead of detecting the invalid width
+  description: Should detect the invalid width
   bug: true
   disabled-checks:
     - stderr
-    - exit_code
-    - has_failed
+    - should_report_error
     - generated_code
 
 - name: get-slice-hex
 
-- name: fixed-point-shift
-
 - name: dowcast-funcall
-  description: Invalid code generated when there is a cast when calling a
-               function. Using the following code, foo(4) will output 0 in C++
-               and 4 in Lisp.
-  bug: true
+
+- name: fixed-deprecated
+  should_report_error: true
+
+- name: signed
+- name: signed_ternary

@@ -14,7 +14,7 @@
 (include-book "dag-omni-paths")
 (include-book "last-anchor-voters-def-and-init-and-next")
 (include-book "backward-closure")
-(include-book "previous-quorum-def-and-init-and-next")
+(include-book "dag-previous-quorum-def-and-init-and-next")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -77,10 +77,10 @@
     "The key theorem that we use is @(tsee dag-omni-paths-p-holds).
      We use already proved invariant to establish its hypotheses."))
   (implies (and (backward-closed-p systate)
-                (dag-committees-p systate)
+                (signer-quorum-p systate)
                 (unequivocal-dags-p systate)
                 (same-committees-p systate)
-                (previous-quorum-p systate)
+                (dag-previous-quorum-p systate)
                 (last-anchor-voters-p systate))
            (omni-paths-p systate))
   :use ((:instance dag-omni-paths-p-holds
@@ -109,10 +109,11 @@
            unequivocal-dags-p-necc
            unequivocal-dags-p-necc-single
            backward-closed-p-necc
-           dag-predecessor-quorum-p-when-previous-quorum-p
+           dag-predecessor-quorum-p-when-dag-previous-quorum-p
            validator-last-anchor-voters-p
            last-not-0-when-last-anchor
            certificate->round-of-last-anchor
            same-committees-p-necc
-           dag-committees-p-necc
+           dag-has-committees-p-when-signer-quorum-p
+           dag-in-committees-p-when-signer-quorum-p
            last-anchor-in-dag))

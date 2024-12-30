@@ -1,6 +1,6 @@
 ; Checking for package conflicts
 
-; Copyright (C) 2022-2023 Kestrel Institute
+; Copyright (C) 2022-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,8 +15,6 @@
 ;; files are brought in via packages.acl2 instead, so see that file as well.
 
 ;; These came from running 'find ../../.. -name portcullis.lisp':
-
-;; TODO: Why does including this book bring in rev?  Maybe because of ./acl2/books/projects/async/package.lsp?
 
 ;; TODO: Bring in M5 package once modernized
 
@@ -51,7 +49,7 @@
 ;(include-book "centaur/svl/portcullis" :dir :system) ; todo: this includes an include-book !
 (include-book "centaur/sv/portcullis" :dir :system)
 (include-book "centaur/truth/portcullis" :dir :system)
-;(include-book "centaur/vl2014/portcullis" :dir :system) ; todo: brings in extra stuff
+;(include-book "centaur/vl2014/portcullis" :dir :system) ; brings in extra stuff, see packages.acl2
 (include-book "centaur/vl/portcullis" :dir :system)
 (include-book "coi/adviser/portcullis" :dir :system)
 (include-book "coi/alists/portcullis" :dir :system)
@@ -117,6 +115,7 @@
 (include-book "projects/irv/portcullis" :dir :system)
 ;; (include-book "projects/legacy-defrstobj/portcullis" :dir :system) ; conflict on RSTOBJ package
 ;; (include-book "projects/milawa/ACL2/portcullis" :dir :system) ; error
+;; (include-book "projects/paco/portcullis" :dir :system) ; doesn't exist: see packages.acl2
 (include-book "projects/pfcs/portcullis" :dir :system)
 (include-book "projects/regex/portcullis" :dir :system)
 ;; (include-book "projects/rp-rewriter/meta/portcullis" :dir :system)  ; has an include book but brings in no new packages

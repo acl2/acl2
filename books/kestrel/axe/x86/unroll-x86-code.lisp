@@ -85,6 +85,7 @@
 (include-book "kestrel/utilities/progn" :dir :system)
 (include-book "kestrel/arithmetic-light/truncate" :dir :system)
 (include-book "kestrel/utilities/real-time-since" :dir :system)
+(include-book "std/system/untranslate-dollar" :dir :system)
 (local (include-book "kestrel/utilities/get-real-time" :dir :system))
 (local (include-book "kestrel/utilities/doublet-listp" :dir :system))
 (local (include-book "kestrel/utilities/greater-than-or-equal-len" :dir :system))
@@ -230,10 +231,11 @@
     ))
 
 ;move
-(defund untranslate-logic (term wrld state)
-  (declare (xargs :guard (plist-worldp wrld)
-                  :stobjs state))
-  (magic-ev-fncall 'untranslate (list term nil wrld) state nil nil))
+;; ; TODO: Errors about program-only code
+;; (defund untranslate-logic (term wrld state)
+;;   (declare (xargs :guard (plist-worldp wrld)
+;;                   :stobjs state))
+;;   (magic-ev-fncall 'untranslate (list term nil wrld) state nil nil))
 
 ;; ;; Returns (mv erp result).
 ;; ;move
@@ -451,11 +453,8 @@
                               (state (if (not (eql 10 print-base)) ; make-event always sets the print-base to 10
                                          (set-print-base-radix print-base state)
                                        state))
-                              ((mv erp term)
-                               (let ((term (dag-to-term dag)))
-                                 (if untranslatep
-                                     (untranslate-logic term (w state) state)
-                                   (mv nil term))))
+                              (term (dag-to-term dag))
+                              (term (if untranslatep (acl2::untranslate$ term nil state) term))
                               ((when erp)
                                (er hard? 'repeatedly-run "Error untranslating.")
                                state)
@@ -1140,6 +1139,6 @@
          (produce-theorem "Whether to try to produce a theorem (possibly skip-proofed) about the result of the lifting.")
          (prove-theorem "Whether to try to prove the theorem with ACL2 (rarely works, since Axe's Rewriter is different and more scalable than ACL2's rewriter).")
          (restrict-theory "To be deprecated..."))
-  :description ("Given an ax86 binary function, extract an equivalent term in DAG form, by symbolic execution including inlining all functions and unrolling all loops."
+  :description ("Given an x86 binary function, extract an equivalent term in DAG form, by symbolic execution including inlining all functions and unrolling all loops."
                 "This event creates a @(see defconst) whose name is derived from the @('lifted-name') argument."
                 "To inspect the resulting DAG, you can simply enter its name at the prompt to print it."))

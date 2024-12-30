@@ -1,0 +1,23 @@
+-
+
+(FUNCDEF ADD (A B)
+         (BLOCK (RETURN (+ A B))))
+
+(FUNCDEF SUB (A B)
+         (BLOCK (RETURN (- A B))))
+
+(FUNCDEF MINUS (A)
+         (BLOCK (RETURN (- A))))
+
+(FUNCDEF MULT (A B)
+         (BLOCK (RETURN (* A B))))
+
+(FUNCDEF DIV (A B)
+         (BLOCK (RETURN (FL (/ A B)))))
+
+(FUNCDEF MOD (A B)
+         (BLOCK (RETURN (REM A B))))
+
+(FUNCDEF PARENTHESIS (A)
+         (BLOCK (RETURN A)))
+

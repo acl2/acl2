@@ -59,6 +59,7 @@
 
 ;; ----------------------------------------------------------------------
 
+
 (make-event
  (b* ((dispatch
        (create-dispatch-for-opcodes
@@ -95,7 +96,7 @@
                      (e/d
                       ()
                       (unsigned-byte-p signed-byte-p))))
-
+      :guard (rip-guard-okp proc-mode temp-rip)
       (case opcode ,@dispatch)
 
       ///
@@ -137,6 +138,7 @@
       :long "<p>@('second-three-byte-opcode-execute') is the doorway to the second
      three-byte opcode map, i.e., to all three-byte opcodes whose second two
      opcode bytes are @('0F 3A').</p>"
+      :guard (rip-guard-okp proc-mode temp-rip)
       :guard-hints (("Goal"
                      :do-not '(preprocess)
                      :in-theory (e/d () (unsigned-byte-p signed-byte-p))))
@@ -150,6 +152,17 @@
                  (x86p (second-three-byte-opcode-execute
                         proc-mode start-rip temp-rip prefixes
                         mandatory-prefix rex-byte opcode modr/m sib x86)))))))
+
+
+(local (defthm unsigned-byte-p-when-lte-loghead
+         (implies (and (natp x)
+                       (natp n)
+                       (<= x (loghead n y)))
+                  (unsigned-byte-p n x))
+         :hints(("Goal" :in-theory (enable unsigned-byte-p)
+                 :use ((:instance acl2::unsigned-byte-p-loghead
+                        (size n) (size1 n) (i y)))))))
+
 
 (define three-byte-opcode-decode-and-execute
   ((proc-mode          :type (integer 0 #.*num-proc-modes-1*))
@@ -237,12 +250,12 @@
     (case second-escape-byte
       (#x38
        (first-three-byte-opcode-execute
-        proc-mode start-rip temp-rip prefixes rex-byte
-        mandatory-prefix opcode modr/m sib x86))
+        proc-mode start-rip temp-rip prefixes mandatory-prefix
+        rex-byte opcode modr/m sib x86))
       (#x3A
        (second-three-byte-opcode-execute
-        proc-mode start-rip temp-rip prefixes rex-byte
-        mandatory-prefix opcode modr/m sib x86))
+        proc-mode start-rip temp-rip prefixes mandatory-prefix
+        rex-byte opcode modr/m sib x86))
       (otherwise
        ;; Unreachable.
        (!!ms-fresh :illegal-value-of-second-escape-byte second-escape-byte))))
