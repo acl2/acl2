@@ -1,6 +1,6 @@
 ; A book about the built-in function arities-okp
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -30,6 +30,10 @@
          (and (equal (arity (car pair) w) (cdr pair))
               (logicp (car pair) w)
               (arities-okp alist w)))
+  :hints (("Goal" :in-theory (enable arities-okp))))
+
+(defthm arities-okp-of-nil
+  (arities-okp nil w)
   :hints (("Goal" :in-theory (enable arities-okp))))
 
 (defthm arity-when-arities-okp
