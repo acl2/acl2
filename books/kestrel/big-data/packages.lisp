@@ -16,8 +16,6 @@
 
 ;; These came from running 'find ../../.. -name portcullis.lisp':
 
-;; TODO: Why does including this book bring in rev?  Maybe because of ./acl2/books/projects/async/package.lsp?
-
 ;; TODO: Bring in M5 package once modernized
 
 (include-book "acl2s/portcullis" :dir :system)
@@ -51,7 +49,7 @@
 ;(include-book "centaur/svl/portcullis" :dir :system) ; todo: this includes an include-book !
 (include-book "centaur/sv/portcullis" :dir :system)
 (include-book "centaur/truth/portcullis" :dir :system)
-;(include-book "centaur/vl2014/portcullis" :dir :system) ; todo: brings in extra stuff
+;(include-book "centaur/vl2014/portcullis" :dir :system) ; brings in extra stuff, see packages.acl2
 (include-book "centaur/vl/portcullis" :dir :system)
 (include-book "coi/adviser/portcullis" :dir :system)
 (include-book "coi/alists/portcullis" :dir :system)
