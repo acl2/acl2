@@ -3717,7 +3717,7 @@
   :prepwork
   ((define print-fileset-loop ((tunitmap filepath-transunit-mapp)
                                (options prioptp))
-     :guard (transunit-ensemble-unambp-loop tunitmap)
+     :guard (filepath-transunit-map-unambp tunitmap)
      :returns (filemap filepath-filedata-mapp)
      :parents nil
      (b* (((when (omap::emptyp tunitmap)) nil)

@@ -115,6 +115,9 @@
      (xdoc::li
       "The types
        @(tsee type-spec-list),
+       @(tsee expr/tyname),
+       @(tsee declor/absdeclor),
+       @(tsee decl/stmt),
        @(tsee fundef),
        @9tsee fundef-option),
        @(tsee extdecl),
