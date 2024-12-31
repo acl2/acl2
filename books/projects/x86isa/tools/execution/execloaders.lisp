@@ -45,6 +45,7 @@
 (include-book "init-page-tables" :ttags :all)
 (include-book "projects/execloader/elf-reader" :dir :system)
 (include-book "projects/execloader/mach-o-reader" :dir :system)
+(include-book "../../machine/environment")
 
 (local (xdoc::set-default-parents program-execution))
 
