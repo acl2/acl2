@@ -269,15 +269,23 @@
            (xdoc::get-event* name (scan-to-event (cdr wrld1))))
           (t ev))))
 
-(defun get-event-aux (name context world table)
+(defun get-event-aux (name world table)
   ;; A general purpose event lookup as in :pe
   ;; Table must be either something produced by make-get-event*-table (on the current world) or 0.
-  (b* ((props (acl2::getprops name 'current-acl2-world world))
-       (evt   (and props (if (eql table 0)
-                             (get-event* name world)
-                           (cdr (hons-get name table)))))
-       ((when evt)
-        evt))
+  (b* ((props (acl2::getprops name 'current-acl2-world world)))
+    (and props (if (eql table 0)
+                   (get-event* name world)
+                 (cdr (hons-get name table))))))
+
+(defun get-event-fn (name context state errorp)
+  (b* ((event (get-event-aux name
+                             (w state)
+                             (if (boundp-global 'xdoc-get-event-table state)
+                                 (f-get-global 'xdoc-get-event-table state)
+                               0)))
+       ((when event)
+        (clean-up-event name event))
+       ((unless errorp) nil))
     (and (xdoc-verbose-p)
          (xdoc-error "get-event failed for ~x1." context name))
     (str::cat "Error getting event for "
@@ -285,13 +293,8 @@
               "::"
               (symbol-name name))))
 
-(defun get-event (name context state)
-  (declare (xargs :stobjs state))
-  (clean-up-event name (get-event-aux name context
-                                      (w state)
-                                      (if (boundp-global 'xdoc-get-event-table state)
-                                          (f-get-global 'xdoc-get-event-table state)
-                                        0))))
+(defmacro get-event (name context state &key (errorp 't))
+  `(get-event-fn ,name ,context ,state ,errorp))
 
 (defun start-event (event acc)
   (b* ((acc (str::printtree-rconcat "<b>" acc))
@@ -310,13 +313,13 @@
 
 #||
 
-(get-event-aux 'append 'test (w state) 0)
+(get-event-aux 'append (w state) 0)
 (get-event 'append 'test state)
 
-(get-event-aux 'binary-append 'test (w state) 0)
+(get-event-aux 'binary-append (w state) 0)
 (get-event 'binary-append 'test state)
 
-(get-event-aux 'write-byte$ 'test (w state) 0)
+(get-event-aux 'write-byte$ (w state) 0)
 (get-event 'write-byte$ 'test state)
 
 (defun UGLY (X)
@@ -326,7 +329,7 @@
           :VERIFY-GUARDS NIL))
   (IF (CONSP X) (UGLY (CDR X)) 0))
 
-(get-event-aux 'ugly 'test (w state) 0)
+(get-event-aux 'ugly (w state) 0)
 (get-event 'ugly 'test state)
 
 (xml-ppr-obj (get-event 'ugly 'test state)
@@ -790,16 +793,38 @@
        (body (get-body arg preproc-data.context (w state))))
     (process-obj-to-code body preproc-data state acc)))
 
-(defun process-def-directive (arg preproc-data state acc) ;; ===> ACC
-  ;; @(def foo) -- look up the definition for foo, pretty-print it in a <code>
-  ;; block, along with a source-code link.
-  (b* (((preproc-data preproc-data))
-       (def (get-event arg preproc-data.context state))
-       (acc (str::printtree-rconcat "<p>" acc))
+(defun print-def-directive (arg def preproc-data state acc)
+  (b* ((acc (str::printtree-rconcat "<p>" acc))
        (acc (start-event def acc))
        (acc (process-srclink-directive arg acc))
        (acc (str::printtree-rconcat "</p>" acc)))
     (process-obj-to-code def preproc-data state acc)))
+  
+
+(defun process-def-directive (arg preproc-data state acc) ;; ===> ACC
+  ;; @(def foo) -- look up the definition for foo, pretty-print it in a <code>
+  ;; block, along with a source-code link.
+  (b* (((preproc-data preproc-data))
+       (def (get-event arg preproc-data.context state)))
+    (print-def-directive arg def preproc-data state acc)))
+
+(defun process-def?-directive (arg arg-raw preproc-data state acc) ;; ===> ACC
+  ;; @(def foo) -- look up the definition for foo, pretty-print it in a <code>
+  ;; block, along with a source-code link.
+  (b* (((preproc-data preproc-data))
+       (def (get-event arg preproc-data.context state :errorp nil))
+       ((unless def)
+        ;; If the event doesn't exist, then if archiving, leave the original @(def? ...) form,
+        ;; otherwise don't insert anything
+        (if preproc-data.archive-p
+            ;; preserve in case event is in another package
+            (b* ((acc (str::printtree-rconcat "@(def? " acc))
+                 (acc (str::printtree-rconcat arg-raw acc))
+                 (acc (str::printtree-rconcat ")" acc)))
+              acc)
+          ;; don't insert anything
+          acc)))
+    (print-def-directive arg def preproc-data state acc)))
 
 (defun process-gdef-directive (arg preproc-data state acc) ;; ===> ACC
   ;; @(gdef foo) -- Look up the definition for foo, pretty-print it as in @def,
@@ -880,6 +905,8 @@
    ;; do.  Acc is the accumulator for our output characters.
    (case command
      (def       (mv (process-def-directive arg preproc-data state acc)
+                    state))
+     (def?      (mv (process-def?-directive arg arg-raw preproc-data state acc)
                     state))
      (thm       (mv (process-thm-directive arg preproc-data state acc)
                     state))
