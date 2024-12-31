@@ -216,13 +216,6 @@
                                acl2::ihsext-inductions)
                               ()))))
 
-(defthm-unsigned-byte-p n64p-xr-ctr
-  :hyp t
-  :bound 64
-  :concl (xr :ctr i x86)
-  :gen-linear t
-  :gen-type t)
-
 (define good-lin-addr-p (lin-addr x86)
 
   :parents (ia32e-paging)

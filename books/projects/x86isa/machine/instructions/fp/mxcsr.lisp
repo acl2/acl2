@@ -53,13 +53,6 @@
 ; INSTRUCTION: MXCSR State Management Instructions
 ; =============================================================================
 
-(defthm-unsigned-byte-p n32p-xr-mxcsr
-  :hyp t
-  :bound 32
-  :concl (xr :mxcsr i x86)
-  :gen-linear t
-  :gen-type t)
-
 (def-inst x86-ldmxcsr/stmxcsr-Op/En-M
 
   :parents (two-byte-opcodes fp-opcodes)

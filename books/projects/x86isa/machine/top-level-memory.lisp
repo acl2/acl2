@@ -125,13 +125,6 @@
 
 ;; Memory Read Functions:
 
-(defthm-unsigned-byte-p n16p-xr-seg-hidden-attr
-  :hyp t
-  :bound 16
-  :concl (xr :seg-hidden-attr i x86)
-  :gen-linear t
-  :gen-type t)
-
 (define gen-read-function (&key
                            (size natp)
                            (signed? booleanp)
