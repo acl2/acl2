@@ -1636,8 +1636,11 @@ ACL2 from scratch.")
 
 ; We include allegro below to avoid "unreachable" warnings from the compiler,
 ; as would otherwise appear when compiling function FROM-TO-BY-AC during the
-; build.
-  #+(or lispworks allegro)
+; build.  We have found the need to suppress style-warnings for an early
+; version of GCL 2.7.0, but since feature :gcl-2.7.0+ isn't yet defined (that
+; happens when loading acl2-fns.lisp below), we suppress them for gcl in
+; general, which seems harmless.
+  #+(or lispworks allegro gcl)
   `(with-redefinition-suppressed
     (handler-bind
      ((style-warning (lambda (c)
@@ -1645,7 +1648,7 @@ ACL2 from scratch.")
                        (invoke-restart 'muffle-warning))))
      ,@forms))
 
-  #-(or sbcl cmu lispworks allegro)
+  #-(or sbcl cmu lispworks allegro gcl)
   `(with-redefinition-suppressed ,@forms))
 
 (defmacro with-more-warnings-suppressed (&rest forms)

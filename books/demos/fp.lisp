@@ -132,6 +132,8 @@
                    (< diff (expt 10 -10))))) ; 10^(-10) is somewhat arbitrary
 (assert-thm (equal (to-fp 1/3)
                    (to-fp (to-fp 1/3))))
+; Fails in GCL 2.6.14:
+#+(or (not gcl) gcl-2.7.0+)
 (assert-thm (not (fpp 1/3)))
 
 ; Rounding the exact square root of 4 is rounding 2, which is 2.

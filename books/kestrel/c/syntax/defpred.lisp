@@ -958,7 +958,12 @@
      we generate a clique of mutually recursive predicates,
      with a @(tsee fty::deffixequiv-mutual) at the end;
      the name of the clique of predicates is derived from
-     the name of the clique of types."))
+     the name of the clique of types.")
+   (xdoc::p
+    "We also generate a @(':flag-local nil') to export
+     the flag macro @('defthm-<name>-flag'),
+     where @('<name>') is the name of the @(tsee defines) clique.
+     This facilitates proving theorems by induction on the predicates."))
   (b* ((members (fty::flextypes->types clique))
        ((unless (true-listp members))
         (raise "Internal error: malformed members of type clique ~x0." clique)
@@ -979,6 +984,7 @@
     `(defines ,clique-name-suffix
        ,@events
        :hints (("Goal" :in-theory (enable o< o-finp)))
+       :flag-local nil
        ///
        (fty::deffixequiv-mutual ,clique-name-suffix))))
 
@@ -1016,6 +1022,9 @@
     "This is as stated in @(tsee defpred)."))
   '(exprs/decls/stmts
     type-spec-list
+    expr/tyname
+    declor/absdeclor
+    decl/stmt
     fundef
     fundef-option
     extdecl
