@@ -26,7 +26,6 @@
    (expr :cast/and-ambig nil)
    (type-spec :typeof-ambig nil)
    (align-spec :alignas-ambig nil)
-   (typequal/attribspec t)
    (dirabsdeclor :dummy-base nil)
    (attrib t)
    (attrib-spec t)
