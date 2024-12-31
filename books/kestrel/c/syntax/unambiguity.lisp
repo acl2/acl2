@@ -35,8 +35,7 @@
    (xdoc::p
     "Here we define predicates over the abstract syntax
      that say whether the constructs are unambiguous,
-     i.e. there are no ambiguous constructs.
-     The definition is simple, just structural.")
+     i.e. whether there are no ambiguous constructs.")
    (xdoc::p
     "For now we do not make any checks on GCC extensions,
      even though they may contain expressions.
