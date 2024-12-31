@@ -3970,7 +3970,7 @@
                               (:type-prescription natp)
                               (:rewrite bitops::signed-byte-p-when-unsigned-byte-p-smaller)
                               (:rewrite bitops::signed-byte-p-when-signed-byte-p-smaller)
-                              (:rewrite bitops::signed-byte-p-monotonicity)
+                              (:rewrite bitops::signed-byte-p-incr)
                               (:type-prescription member-equal)
                               (:linear acl2::expt-is-increasing-for-base>1)
                               (:definition member-equal)
