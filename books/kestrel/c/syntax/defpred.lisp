@@ -1022,6 +1022,9 @@
     "This is as stated in @(tsee defpred)."))
   '(exprs/decls/stmts
     type-spec-list
+    expr/tyname
+    declor/absdeclor
+    decl/stmt
     fundef
     fundef-option
     extdecl
