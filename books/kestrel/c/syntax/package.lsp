@@ -50,12 +50,14 @@
                 nat-list-fix
                 nat-optionp
                 nats=>string
+                packn-pos
                 pos
                 pseudo-event-formp
                 pseudo-event-form-listp
                 reterr
                 retok
                 string-optionp
+                table-alist+
                 unsigned-byte-listp
                 std::defret-mutual
                 str::dec-digit-char

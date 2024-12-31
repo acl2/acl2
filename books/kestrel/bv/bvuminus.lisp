@@ -14,6 +14,7 @@
 (include-book "bvplus")
 (include-book "bvchop")
 (include-book "kestrel/utilities/smaller-termp" :dir :system)
+(local (include-book "slice"))
 (local (include-book "unsigned-byte-p"))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))

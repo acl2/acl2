@@ -1206,7 +1206,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define simpadd0-filepath-transunit-map ((map filepath-transunit-mapp))
-  :guard (transunit-ensemble-unambp-loop map)
+  :guard (filepath-transunit-map-unambp map)
   :returns (new-map filepath-transunit-mapp
                     :hyp (filepath-transunit-mapp map))
   :short "Transform a map from file paths to translation units."
@@ -1224,8 +1224,9 @@
 
   ///
 
-  (defret transunit-ensemble-unambp-loop-of-simpadd-filepath-transunit-map
-    (transunit-ensemble-unambp-loop new-map)
+  (defret filepath-transunit-map-unambp-of-simpadd-filepath-transunit-map
+    (filepath-transunit-map-unambp new-map)
+    :hyp (filepath-transunit-mapp map)
     :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

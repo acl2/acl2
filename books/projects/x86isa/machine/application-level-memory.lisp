@@ -147,12 +147,6 @@ memory.</p>" )
 
 ;; Memory Read Functions:
 
-(defthm-unsigned-byte-p n08p-xr-mem
-                        :hyp t
-                        :bound 8
-                        :concl (xr :mem i x86)
-                        :gen-linear t
-                        :gen-type t)
 
 (define rvm08
   ((addr :type (signed-byte #.*max-linear-address-size*))

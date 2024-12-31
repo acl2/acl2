@@ -13,6 +13,8 @@
 
 ;; See also build-book-for-pe-file.lisp.
 
+;; See https://learn.microsoft.com/en-us/windows/win32/debug/pe-format
+
 ;; TDOO: Avoid throwing hard errors, now that this can return erps.
 ;; TODO: Collect any warnings / errors and include them in the parsed output somehow?
 
@@ -131,16 +133,22 @@
        ((mv & sig &) (parse-u32 bytes)))
     sig))
 
+;See https://learn.microsoft.com/en-us/windows/win32/debug/pe-format
 (defconst *machine-types*
   '((#x0 . :IMAGE_FILE_MACHINE_UNKNOWN)
+    (#x184 . :IMAGE_FILE_MACHINE_ALPHA)
+    (#x284 . :IMAGE_FILE_MACHINE_ALPHA64)
     (#x1d3 . :IMAGE_FILE_MACHINE_AM33)
     (#x8664 . :IMAGE_FILE_MACHINE_AMD64)
     (#x1c0 . :IMAGE_FILE_MACHINE_ARM)
     (#xaa64 . :IMAGE_FILE_MACHINE_ARM64)
     (#x1c4 . :IMAGE_FILE_MACHINE_ARMNT)
+    ;; (#x284 . :IMAGE_FILE_MACHINE_AXP64) ; commented out this clashing value; the microsoft site says "AXP 64 (Same as Alpha 64)"
     (#xebc . :IMAGE_FILE_MACHINE_EBC)
     (#x14c . :IMAGE_FILE_MACHINE_I386)
     (#x200 . :IMAGE_FILE_MACHINE_IA64)
+    (#x6232 . :IMAGE_FILE_MACHINE_LOONGARCH32)
+    (#x6264 . :IMAGE_FILE_MACHINE_LOONGARCH64)
     (#x9041 . :IMAGE_FILE_MACHINE_M32R)
     (#x266 . :IMAGE_FILE_MACHINE_MIPS16)
     (#x366 . :IMAGE_FILE_MACHINE_MIPSFPU)

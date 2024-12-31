@@ -45,17 +45,6 @@
     :enable (set::cardinality)
     :disable set::expand-cardinality-of-union)
 
-  (defrule set::intersect-of-nil-left
-    (equal (set::intersect nil set)
-           nil)
-    :enable set::intersect)
-
-  (defrule set::intersect-of-nil-right
-    (equal (set::intersect set nil)
-           nil)
-    :induct t
-    :enable set::intersect)
-
   (defruled set::intersect-of-insert-left
     (equal (set::intersect (set::insert a x) y)
            (if (set::in a y)

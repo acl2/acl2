@@ -3,16 +3,15 @@ using namespace std;
 
 // RAC begin
 //
-struct A
-{
-  struct { int a; int b; } w;
+struct A {
+  struct {
+    int a;
+    int b;
+  } w;
 };
 
-
-
-int foo()
-{
-  A a;
+int foo() {
+  A a = {};
   a.w.a = 3;
   a.w.b = 4;
 

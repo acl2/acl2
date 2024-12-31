@@ -177,7 +177,7 @@ the atomic UBDDs @('t') and @('nil'), which represent the constant functions
   :short "The \"false branch\" of a UBDD."
   :long "<p>@(call qcdr) returns the false branch of the UBDD @('x').</p>
 
-<p>For a compound UBDD, i.e., @('a . b)'), we simply return @('b').  But for
+<p>For a compound UBDD, i.e., @('(a . b)'), we simply return @('b').  But for
 the atomic UBDDs @('t') and @('nil'), which represent the constant functions
 @('t') and @('nil'), this is the identity function.</p>"
 

@@ -13,6 +13,7 @@
 
 (include-book "bvchop")
 (include-book "getbit")
+(local (include-book "slice"))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 
 ;;this should probably nfix its arguments (at least ifix them) or chop them

@@ -3105,7 +3105,7 @@ parameter to get all the input variables that are not bound.  If not @(':all'),
 additional input variables can be specified in @(':more-input-vars'); the two
 sets of input variables are appended.</li>
 
-<li>@(':input-var-bindings') (appended with @(':more-input-var-bindings) is a
+<li>@(':input-var-bindings') (appended with @(':more-input-var-bindings') is a
 list of @('let')-like bindings of input variables to expressions.</li>
 
 <li>@(':override-vars') (appended with @(':more-override-vars'))
@@ -3114,7 +3114,7 @@ overridden in the FGL lemma but not overridden in the generalized theorem.
 Each such variable must have a corresponding output sampling the same signal at
 the same time so as to support eliminating the override.</li>
 
-<li>@(':override-var-masks) 
+<li>@(':override-var-masks') 
 is an alist of override-value variables bind to a mask value, which will be
 used to override only a portion of the designated variable. Example call:
 @(':override-var-masks ((mul-sum . (logmask 16))

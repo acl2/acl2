@@ -14,6 +14,7 @@
 (include-book "bvminus")
 (include-book "getbit")
 (include-book "bitnot")
+(local (include-book "slice"))
 
 (defthm bvminus-of-1-and-getbit-of-0-arg2
   (equal (bvminus 1 (getbit 0 x) y)

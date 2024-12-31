@@ -4600,7 +4600,7 @@
       If there is none, we have the punctuator @('.').
       If the following character is a digit,
       this must start a decimal floating constant.
-      If the following character is another @('.),
+      If the following character is another @('.'),
       and there is a further @('.') after it,
       we have the punctuator @('...').
       In all other cases, we just have the punctuator @('.'),

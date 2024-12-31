@@ -44,7 +44,7 @@
 ;; ======================================================================
 
 (include-book "../decoding-and-spec-utils"
-              :ttags (:syscall-exec :other-non-det :undef-flg))
+              :ttags (:undef-flg))
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 
 ; The Intel and AMD documentation is ambiguous about the determination of the
@@ -540,16 +540,16 @@
        (x86 (write-*sp proc-mode new-rsp x86))
 
        ((mv flg1
-	    (the (signed-byte 64) addr)
-	    (the (unsigned-byte 3) increment-RIP-by)
-	    x86)
-	(if (equal mod #b11)
-	    (mv nil 0 0 x86)
-	  (x86-effective-addr proc-mode p4? temp-rip rex-byte r/m mod sib
-			      0 ;; No immediate operand
-			      x86)))
+            (the (signed-byte 64) addr)
+            (the (unsigned-byte 3) increment-RIP-by)
+            x86)
+        (if (equal mod #b11)
+            (mv nil 0 0 x86)
+          (x86-effective-addr proc-mode p4? temp-rip rex-byte r/m mod sib
+                              0 ;; No immediate operand
+                              x86)))
        ((when flg1) ;; #SS exception?
-	(!!ms-fresh :x86-effective-addr-error flg1))
+        (!!ms-fresh :x86-effective-addr-error flg1))
 
        ((mv flg temp-rip) (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
        ((when flg) (!!fault-fresh :gp 0 :increment-ip-error flg)) ;; #GP(0)
@@ -693,13 +693,6 @@
 ;; ======================================================================
 ;; INSTRUCTION: PUSHF/PUSHFQ
 ;; ======================================================================
-
-(defthm-unsigned-byte-p n32p-xr-rflags
-  :hyp t
-  :bound 32
-  :concl (xr :rflags i x86)
-  :gen-linear t
-  :gen-type t)
 
 (def-inst x86-pushf
 

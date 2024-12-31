@@ -341,8 +341,8 @@
     ;read-1-of-write-1-both-alt ; trying
     read-of-write-same
     ;; read-of-write-within-same-address  ;todo: uncomment but first simplify the assumptions we give about RSP
-    read-of-write-disjoint
-    read-of-write-disjoint2
+    read-of-write-irrel
+    read-of-write-irrel2
     ;; todo: more variants of these:
     ;; todo: uncomment:
     ;;read-of-write-of-set-flag ; these just make terms nicer (todo: these break proofs -- why?)
@@ -1359,7 +1359,16 @@
 (set-axe-rule-priority x86isa::get-prefixes-base-1 1) ; try late (unusual case)
 
 ;todo: separate out the 64-bit rules
-(defun segment-base-and-bounds-rules ()
+(defun segment-base-and-bounds-rules-general ()
+  (declare (xargs :guard t))
+  '(x86isa::segment-base-and-bounds-of-xw ; needed?
+    segment-base-and-bounds-of-set-flag
+    segment-base-and-bounds-of-set-undef
+    segment-base-and-bounds-of-set-mxcsr
+    ;; segment-base-and-bounds-of-set-ms
+    ))
+
+(defun segment-base-and-bounds-rules-64 ()
   (declare (xargs :guard t))
   '(segment-base-and-bounds-of-set-rip
     segment-base-and-bounds-of-set-rsp
@@ -1371,12 +1380,21 @@
     segment-base-and-bounds-of-set-rsi
     segment-base-and-bounds-of-set-rdi
     segment-base-and-bounds-of-set-flag
-    segment-base-and-bounds-of-set-undef
-    segment-base-and-bounds-of-set-mxcsr
-    ;; segment-base-and-bounds-of-set-ms
     segment-base-and-bounds-of-write-byte
     segment-base-and-bounds-of-write
     ))
+
+(defun segment-base-and-bounds-rules-32 ()
+  (declare (xargs :guard t))
+  '(segment-base-and-bounds-of-set-eip
+    segment-base-and-bounds-of-set-eax
+    segment-base-and-bounds-of-set-ebx
+    segment-base-and-bounds-of-set-ecx
+    segment-base-and-bounds-of-set-edx
+    segment-base-and-bounds-of-set-esp
+    segment-base-and-bounds-of-set-ebp
+    segment-base-and-bounds-of-write-to-segment
+    segment-base-and-bounds-of-write-byte-to-segment))
 
 ;; are these only for making failures clearer?
 (defun get-prefixes-rules64 ()
@@ -1592,7 +1610,7 @@
     x86isa::separate-when-separate
     x86isa::separate-when-separate-alt
     ;; these may be expensive but seem necessary in some cases
-    ;; todo: led to a loop involving BECOMES-BVLT-DAG-ALT-GEN-BETTER2.
+    ;; todo: led to loops (involving <-BECOMES-BVLT-DAG-ALT-GEN-BETTER2?)
     ;;x86isa::not-equal-when-separate
     ;;x86isa::not-equal-when-separate-alt
     x86isa::not-equal-constant-when-separate-of-constants ; these are needed when we agressively turn address claims into BV claims
@@ -1639,7 +1657,7 @@
           (if-lifting-rules)
           (acl2::convert-to-bv-rules)
           '(acl2::boolor-of-non-nil)
-          (segment-base-and-bounds-rules) ; i've seen these needed for 64-bit code
+          (segment-base-and-bounds-rules-general)
           (float-rules)
           (acl2::core-rules-bv)
           (acl2::bvif-rules)
@@ -2397,7 +2415,8 @@
   (declare (xargs :guard t))
   (set-difference-equal
    (append (lifter-rules-common)
-          (read-over-write-rules32)
+           (read-over-write-rules32)
+           (segment-base-and-bounds-rules-32)
           '(x86isa::x86-fetch-decode-execute-base-new ; todo: make a faster version, like we do for 64 bit
             x86isa::rip ; todo: think about this
             x86isa::rip$a ; todo: think about this
@@ -2460,18 +2479,6 @@
 
             seg-visible-not-equal-0-when-well-formed-32-bit-segmentp
 
-            segment-base-and-bounds-of-set-eip
-            segment-base-and-bounds-of-set-eax
-            segment-base-and-bounds-of-set-ebx
-            segment-base-and-bounds-of-set-ecx
-            segment-base-and-bounds-of-set-edx
-            segment-base-and-bounds-of-set-esp
-            segment-base-and-bounds-of-set-ebp
-
-            segment-base-and-bounds-of-write-to-segment
-            segment-base-and-bounds-of-write-byte-to-segment
-            x86isa::segment-base-and-bounds-of-xw
-            segment-base-and-bounds-of-set-flag
             esp-of-write-to-segment
 
             ;; These are not strictly necessary but can help make failures more
@@ -3199,6 +3206,7 @@
           (read-rules)
           (write-rules)
           (read-and-write-rules)
+          (segment-base-and-bounds-rules-64)
           '(read-byte-becomes-read) ; (read-byte-rules) ; read-byte can come from read-bytes
           '(len-of-read-bytes nth-of-read-bytes) ; read-bytes can come from an output-extractor
           (acl2::list-to-bv-array-rules) ; for simplifying output-extractors
@@ -4350,7 +4358,7 @@
           (lifter-rules64-new)))
 
 ;; Try this rule first
-(set-axe-rule-priority read-of-write-disjoint -1)
+(set-axe-rule-priority read-of-write-irrel -1) ; todo: also below
 
 ;; Wait to try these rules until the read is cleaned up by removing irrelevant inner writes/sets
 (set-axe-rule-priority read-when-program-at 1)
@@ -4463,8 +4471,8 @@
 ;; ;;             ;;read-when-equal-of-read
 ;; ;;             ;;read-when-equal-of-read-alt
 ;; ;;             ;read-when-program-at
-;; ;;             ;read-of-write-disjoint2
-;; ;;             ;read-of-write-disjoint
+;; ;;             ;read-of-write-irrel2
+;; ;;             ;read-of-write-irrel
 ;; ;; ;acl2::<-becomes-bvlt-axe-bind-free-and-bind-free
 ;; ;; ;            read-byte-from-segment-when-code-segment-assumptions32
 ;; ;;  ;           mv-nth-1-of-add-to-*sp
@@ -4508,7 +4516,7 @@
           '(x86isa::wme-size-when-64-bit-modep-and-not-fs/gs-strong
             x86isa::rme-size-when-64-bit-modep-and-not-fs/gs-strong
             ;; could consider things like these:
-            ;; READ-OF-WRITE-DISJOINT2
+            ;; READ-OF-WRITE-IRREL2
             x86-fetch-decode-execute-opener-safe-64
             )))
 
@@ -4645,7 +4653,7 @@
 ;; beyond what def-unrolled uses
 (defun extra-tester-lifting-rules ()
   (declare (xargs :guard t))
-  (append (lifter-rules64-new) ; todo: drop?  but that caused failures! why?
+  (append (lifter-rules64-new) ; todo: drop?  but that caused failures! why?  seemed to involve equality of addresses and separation hyps
           (extra-tester-rules)
           '(<-of-fp-to-rat ; do we want this?
 
@@ -4771,7 +4779,7 @@
             acl2::boolif-of-bvlt-strengthen-to-equal
             acl2::bvlt-reduce-when-not-equal-one-less
             acl2::bvchop-of-logand-becomes-bvand
-            read-1-of-write-4
+            ;read-1-of-write-4
             ;read-1-of-write-1-both ; can make things, like failure to resolve rip, hard to debug
             read-1-of-write-within-new
             not-equal-of-+-when-separate
@@ -4873,7 +4881,7 @@
      mv-nth-1-of-wb-becomes-write
      read-of-xw-irrel
      read-of-set-flag
-     read-of-write-disjoint2
+     read-of-write-irrel2
      write-of-write-same
      read-when-program-at-1-byte ; this is for resolving reads of the program.
      read-when-program-at-4-bytes ; this is for resolving reads of the program.
@@ -4911,7 +4919,7 @@
   (declare (xargs :guard t))
   (append (extra-loop-lifter-rules)
           '(mv-nth-1-of-rb-becomes-read
-            read-of-write-disjoint
+            read-of-write-irrel
             read-of-write-same
             )))
 
@@ -5023,7 +5031,7 @@
 (set-axe-rule-priority read-of-set-rax -2)
 (set-axe-rule-priority read-of-set-rsp -2)
 (set-axe-rule-priority read-of-write-same -1)
-(set-axe-rule-priority read-of-write-disjoint -1)
+(set-axe-rule-priority read-of-write-irrel -1)
 
 ;; Based on how commonly these rules were used in an example:
 (set-axe-rule-priority ms-of-write -4)

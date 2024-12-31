@@ -42,7 +42,7 @@
 ;; add  adc
 
 (include-book "../rflags-spec"
-              :ttags (:syscall-exec :other-non-det :undef-flg))
+              :ttags (:undef-flg))
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 
@@ -387,5 +387,100 @@
 (make-event (gpr-adc-spec-gen-fn 2))
 (make-event (gpr-adc-spec-gen-fn 4))
 (make-event (gpr-adc-spec-gen-fn 8))
+
+;; ======================================================================
+;; SPECIFICATION: ADCX/ADOX
+;; ======================================================================
+
+;; ADCX: Similar to ADC but sets only CF, preserves other flags
+;; ADOX: Similar to ADCX but uses/sets OF instead of CF.
+(define gpr-adcx/adox-spec-gen-fn ((operand-size :type (member 1 2 4 8)))
+  :verify-guards nil
+
+  (b* ((fn-name (mk-name "GPR-ADCX/ADOX-SPEC-" operand-size))
+       (result-nbits (ash operand-size 3))
+       (str-nbits (if (eql result-nbits 8) "08" result-nbits))
+       (cf-spec-fn (mk-name "CF-SPEC" result-nbits)))
+
+
+      `(define ,fn-name
+         ((adcx booleanp)
+          (dst           :type (unsigned-byte ,result-nbits))
+          (src           :type (unsigned-byte ,result-nbits))
+          (input-rflags  :type (unsigned-byte 32)))
+
+         :parents (,(mk-name "GPR-ARITH/LOGIC-SPEC-" operand-size))
+         :guard-hints (("Goal" :in-theory (e/d* (rflag-RoWs-enables)
+                                              ((tau-system)))))
+         :inline t
+         :no-function t
+
+         (b* ((dst (mbe :logic (n-size ,result-nbits dst)
+                        :exec dst))
+              (src (mbe :logic (n-size ,result-nbits src)
+                        :exec src))
+              (input-rflags (mbe :logic (n32 input-rflags)
+                                 :exec input-rflags))
+              (input-cf (the (unsigned-byte 1)
+                             (if adcx
+                                 (rflagsBits->cf input-rflags)
+                               (rflagsBits->of input-rflags))))
+
+              (raw-result (the (unsigned-byte ,(1+ result-nbits))
+                            (+
+                             (the (unsigned-byte ,result-nbits) dst)
+                             (the (unsigned-byte ,result-nbits) src)
+                             (the (unsigned-byte 1) input-cf))))
+
+              (result (the (unsigned-byte ,result-nbits)
+                        (n-size ,result-nbits raw-result)))
+
+              (cf (the (unsigned-byte 1) (,cf-spec-fn raw-result)))
+
+              (output-rflags (if adcx
+                                 (mbe :logic
+                                      (change-rflagsBits
+                                       input-rflags
+                                       :cf cf)
+                                      :exec
+                                      (the (unsigned-byte 32)
+                                           (!rflagsBits->cf cf input-rflags)))
+                               (mbe :logic
+                                    (change-rflagsBits
+                                     input-rflags
+                                     :of cf)
+                                    :exec
+                                    (the (unsigned-byte 32)
+                                         (!rflagsBits->of cf input-rflags)))))
+
+              (output-rflags (mbe :logic (n32 output-rflags)
+                                  :exec output-rflags))
+
+              (undefined-flags 0))
+
+             (mv result output-rflags undefined-flags))
+
+         ///
+         (local (in-theory (disable unsigned-byte-p)))
+         (defthm-unsigned-byte-p ,(mk-name "N" str-nbits "-MV-NTH-0-" fn-name)
+           :bound ,result-nbits
+           :concl (mv-nth 0 (,fn-name adcx dst src input-rflags))
+           :gen-type t
+           :gen-linear t)
+
+         (defthm-unsigned-byte-p ,(mk-name "MV-NTH-1-" fn-name)
+           :bound 32
+           :concl (mv-nth 1 (,fn-name adcx dst src input-rflags))
+           :gen-type t
+           :gen-linear t)
+
+         (defthm-unsigned-byte-p ,(mk-name "MV-NTH-2-" fn-name)
+           :bound 32
+           :concl (mv-nth 2 (,fn-name adcx dst src input-rflags))
+           :gen-type t
+           :gen-linear t))))
+
+(make-event (gpr-adcx/adox-spec-gen-fn 4))
+(make-event (gpr-adcx/adox-spec-gen-fn 8))
 
 ;; ======================================================================

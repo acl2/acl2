@@ -53,7 +53,7 @@
   (implies (<= size 0)
            (equal (bvdiv size x y)
                   0))
-  :hints (("Goal" :in-theory (e/d (bvdiv) nil))))
+  :hints (("Goal" :in-theory (enable bvdiv))))
 
 (defthm bvdiv-when-not-integerp-arg2
   (implies (not (integerp x))

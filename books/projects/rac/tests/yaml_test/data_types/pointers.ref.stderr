@@ -1,1 +1,3 @@
-pointers.cpp:3: syntax error, unexpected '*', expecting ID
+pointers.cpp:3 (12-13): syntax error, unexpected '*', expecting ID
+  3 | int foo(int *ptr)
+    |             ^

@@ -801,7 +801,7 @@
 
      bvplus-of-bvchop-and-bvshl ;new
      bvchop-of-bvshr-becomes-slice-safe ;newish: remove?? with bvshr we can split into cases easily.
-     bvchop-of-bvashr ; introduces slice
+     bvchop-of-bvashr-safe ; introduces slice
      bvchop-of-bvif
 
      ;; TODO: More like this:
@@ -829,6 +829,8 @@
      bvlt-transitive-4-b
      bvlt-transitive-5-a
      bvlt-transitive-5-b
+     not-bvlt-when-not-bvlt-narrower
+     not-bvlt-when-not-bvlt-narrower2
 
      not-bvlt-of-max-arg2-constant-version
      bvlt-of-max-when-bvlt-constant-version
@@ -1077,7 +1079,10 @@
 
      ;; for now, we open these to expose bvcat:
      putbyte
-     putbits)))
+     putbits
+
+     unsigned-byte-p-of-bvmult-of-expt2-constant-version
+     unsigned-byte-p-of-bvchop-becomes-bvlt)))
 
 ;todo combine this with core-rules-bv
 ;todo: some of these are not bv rules?
@@ -1603,6 +1608,8 @@
      bv-array-clear-of-bv-array-clear-same
      consp-of-bv-array-write ;moved here
      equal-of-bv-array-write-of-1-constant-version
+
+     bv-array-read-trim-index-axe
 
      bv-array-read-of-bvchop
      bv-array-read-of-logext-64-32 ;bozo
@@ -3802,7 +3809,6 @@
 ;             bvxor-associative ;i can't believe this was missing!
 ;             bvxor-commutative-axe
 ;           bvxor-commutative-2-axe
-             bv-array-read-trim-index
              bvlt-transitive-free2-back-constants
              bvlt-of-bvplus-constant-and-constant
              bvlt-of-bvplus-same-alt

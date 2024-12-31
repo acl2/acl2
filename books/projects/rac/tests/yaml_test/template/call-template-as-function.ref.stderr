@@ -1,0 +1,4 @@
+call-template-as-function.cpp:8 (19-24): Template function (foo) called as regular functiom
+  8 | int bar() { return foo(); }
+    |                    ^^^^^
+note: Try instead: foo<...>(...)

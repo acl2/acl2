@@ -5,42 +5,47 @@
 - name: if-else-return
 
 - name: if-return
-  has_failed: true
-  exit_code: 1
+  should_report_error: true
 
 - name: if-else-return-not-complete-1
-  has_failed: true
-  exit_code: 1
+  should_report_error: true
 
 - name: if-else-return-not-complete-2
-  has_failed: true
-  exit_code: 1
- 
+  should_report_error: true
+
 - name: switch
 - name: switch-enum
+
 - name: switch-fall-through
-  bug: true
+  should_report_error: true
 
 - name: switch-no-default
+
+- name: switch-2-labels
+
+- name: switch-2-default
+  should_report_error: true
+
+- name : switch-break-hide-statement
+  should_report_error: true
+
 - name: switch-return
   description: Not implemented yet !
-  has_failed: true
-  exit_code: 1
+  should_report_error: true
   disabled-checks:
     - stderr
 
 - name: switch-invalid-label
-  has_failed: true
-  exit_code: 1
-  disabled-checks:
-    - generated_code
-  
+  should_report_error: true
+
 - name: for-loop
+- name: for-loop-uint
+- name: for-loop-long
 - name: for-loop-init-from-const
 - name: for-loop-invalid
-  bug: true
-  description: This loop is invalid since init does not define an int/uint but
-               this does not generate any errors or warning. For now the parser
-               expect that init is either a assignement or a variable
-               declaration without checking the type of init. I think the cond
-               and increment may have the same issue.
+  should_report_error: true
+
+- name: break-outside-of-switch
+  should_report_error: true
+
+- name: ternary-enum

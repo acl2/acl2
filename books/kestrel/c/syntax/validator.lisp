@@ -6489,7 +6489,7 @@
 (define valid-transunit ((tunit transunitp) (gcc booleanp) (ienv ienvp))
   :guard (transunit-unambp tunit)
   :returns (mv erp
-               (new-tunir transunitp)
+               (new-tunit transunitp)
                (table valid-tablep))
   :short "Validate a translation unit."
   :long
@@ -6732,7 +6732,7 @@
   ((define valid-transunit-ensemble-loop ((map filepath-transunit-mapp)
                                           (gcc booleanp)
                                           (ienv ienvp))
-     :guard (transunit-ensemble-unambp-loop map)
+     :guard (filepath-transunit-map-unambp map)
      :returns (mv erp
                   (new-map filepath-transunit-mapp
                            :hyp (filepath-transunit-mapp map)))

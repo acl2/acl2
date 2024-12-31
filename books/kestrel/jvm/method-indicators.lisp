@@ -1,6 +1,6 @@
 ; Indicators for methods that can be elaborated into method-designator-strings
 ;
-; Copyright (C) 2022-2023 Kestrel Institute
+; Copyright (C) 2022-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -44,7 +44,7 @@
             (er hard? 'elaborate-method-indicator "Ill-formed class: ~x0." class-name)
           (let ((methods-matching-name (methods-matching-name class-name method-name (class-decl-methods class-info))))
             (if (endp methods-matching-name)
-                (er hard? 'elaborate-method-indicator "No methods in ~x0 named ~x1: ~x0." class-name method-name)
+                (er hard? 'elaborate-method-indicator "No methods in ~x0 named ~x1." class-name method-name)
               (if (consp (cdr methods-matching-name))
                   (er hard? 'elaborate-method-indicator "More than 1 method in ~x0 named ~x1: ~x0.  Matching methods: ~x2.  Disambiguate by adding a descriptor." class-name method-name methods-matching-name)
                 ;; exactly 1 matching method:

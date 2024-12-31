@@ -2365,7 +2365,7 @@ notation causes an error and (b) the use of ,. is not permitted."
 ; issue with GCL 2.6.12.  We use the progn wrapper to avoid breaking the reader
 ; in other Lisps.
 
-#+gcl
+#+(and gcl (not gcl-2.7.0+))
 (when (or (< si::*gcl-major-version* 2)
           (and (= si::*gcl-major-version* 2)
                (or (< si::*gcl-minor-version* 6)

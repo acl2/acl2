@@ -11,7 +11,7 @@
 
 (in-package "X")
 
-;; This book focues on things that are not specific to 32-bit or 64-bit mode.
+;; This book focuses on things that are not specific to 32-bit or 64-bit mode.
 
 (include-book "readers-and-writers")
 (include-book "flags")

@@ -44,7 +44,7 @@
 ;; ======================================================================
 
 (include-book "../decoding-and-spec-utils"
-              :ttags (:syscall-exec :other-non-det :undef-flg))
+              :ttags (:undef-flg))
 (include-book "../syscalls")
 
 ;; ======================================================================
@@ -204,14 +204,6 @@
 
        (x86 (!rip temp-rip x86))) ;; SYSRET
     x86))
-
-(local
- (defthm-unsigned-byte-p n32p-xr-rflags
-   :hyp t
-   :bound 32
-   :concl (xr :rflags i x86)
-   :gen-linear t
-   :gen-type t))
 
 (local (include-book "centaur/bitops/width-find-rule" :dir :system))
 (local (in-theory (e/d (bitops::unsigned-byte-p-by-find-rule) ())))

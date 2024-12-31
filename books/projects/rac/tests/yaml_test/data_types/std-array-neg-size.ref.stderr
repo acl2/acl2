@@ -1,1 +1,3 @@
-std-array-neg-size.cpp:6: Non-constant array dimension
+std-array-neg-size.cpp:6 (14-17): Non-constant array dimension
+  6 | typedef array<int, -4> invalid_array;
+    |               ^^^

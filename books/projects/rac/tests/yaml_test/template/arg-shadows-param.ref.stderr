@@ -1,0 +1,6 @@
+arg-shadows-param.cpp:4 (10-11): Duplicate identifier declaration (could be an enum, a variable template parameter or function) `i`
+  4 | int f(int i) {
+    |           ^
+note: first defined here
+  3 | template <int i>
+    |           ^^^^^

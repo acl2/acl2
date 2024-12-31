@@ -1,1 +1,3 @@
-switch-invalid-label.cpp:7: case label must be an integer or an enum constant
+switch-invalid-label.cpp:7 (9-10): Case label must be an integer or an enum constant.
+  7 |     case b: break;
+    |          ^

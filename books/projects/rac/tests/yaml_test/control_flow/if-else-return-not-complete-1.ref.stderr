@@ -1,1 +1,3 @@
-if-else-return-not-complete-1.cpp:8: syntax error, unexpected ID, expecting IF or RETURN or '{'
+if-else-return-not-complete-1.cpp:8 (4-5): syntax error, unexpected ID, expecting IF or RETURN or '{'
+  8 |     a = 2;
+    |     ^

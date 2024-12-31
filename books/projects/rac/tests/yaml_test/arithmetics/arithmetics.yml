@@ -1,13 +1,16 @@
 - name: int-arith
+
+- name: int-arith-invalid
+  env: {RAC_BYPASS_ERROR: 'true'}
+  disabled-checks:
+    - generated_code
+
 - name: int-arith-assign
 
 - name: priority
 - name: commutativity-add
 
 - name: div-assign
-  has_failed: true
-  exit_code: 1
-  description: Not implemented yet !
 
 - name: int-bitwise
 - name: int-bitwise-assign
@@ -20,3 +23,10 @@
 - name: ternary
 
 - name: const-eval
+
+- name: integer-division-neg
+  description: In C++, the integer division trucate but in the lisp version, we
+               use floor. This is wrong for negative value (for example, 10/-7
+               will return -1 in C++ but -2 in lisp)
+
+- name: literal

@@ -2765,12 +2765,12 @@
     (INST "MOVSLDUP"
           (OP :OP #xF12 :PFX :F3 :FEAT '(:SSE3))
           (ARG :OP1 '(V X) :OP2 '(W X))
-          '(X86-MOVLPS/MOVLPD-OP/EN-RM)
+          'NIL
           '((:EX (CHK-EXC :TYPE-4 (:SSE3)))))
     (INST "MOVDDUP"
           (OP :OP #xF12 :PFX :F2 :FEAT '(:SSE3))
           (ARG :OP1 '(V X) :OP2 '(W X))
-          '(X86-MOVLPS/MOVLPD-OP/EN-RM)
+          'NIL
           '((:EX (CHK-EXC :TYPE-5 (:SSE3)))))
     (INST "VMOVDDUP"
           (OP :OP #xF12
@@ -4845,8 +4845,8 @@
           (ARG :OP1 '(V PD)
                :OP2 '(H PD)
                :OP3 '(W PD))
-          '(x86-vandp?/vandnp?/vorp?/vxorp?/vpand/vpandn/vpor/vpxor-vex
-            (operation . #x5))
+          '(X86-VANDP?/VANDNP?/VORP?/VXORP?/VPAND/VPANDN/VPOR/VPXOR-VEX
+            (OPERATION . #.*OP-AND*))
           '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
     (INST "VANDPD"
           (OP :OP #xF54
@@ -4855,8 +4855,8 @@
           (ARG :OP1 '(V PD)
                :OP2 '(H PD)
                :OP3 '(W PD))
-          '(x86-vandp?/vandnp?/vorp?/vxorp?/vpand/vpandn/vpor/vpxor-vex
-            (operation . #x5))
+          '(X86-VANDP?/VANDNP?/VORP?/VXORP?/VPAND/VPANDN/VPOR/VPXOR-VEX
+            (OPERATION . #.*OP-AND*))
           '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
     (INST "VANDPS"
           (OP :OP #xF54
@@ -4865,8 +4865,8 @@
           (ARG :OP1 '(V PS)
                :OP2 '(H PS)
                :OP3 '(W PS))
-          '(x86-vandp?/vandnp?/vorp?/vxorp?/vpand/vpandn/vpor/vpxor-vex
-            (operation . #x5))
+          '(X86-VANDP?/VANDNP?/VORP?/VXORP?/VPAND/VPANDN/VPOR/VPXOR-VEX
+            (OPERATION . #.*OP-AND*))
           '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
     (INST "VANDPS"
           (OP :OP #xF54
@@ -4939,8 +4939,8 @@
           (ARG :OP1 '(V PD)
                :OP2 '(H PD)
                :OP3 '(W PD))
-          '(x86-vandp?/vandnp?/vorp?/vxorp?/vpand/vpandn/vpor/vpxor-vex
-            (operation . #x5))
+          '(X86-VANDP?/VANDNP?/VORP?/VXORP?/VPAND/VPANDN/VPOR/VPXOR-VEX
+            (OPERATION . #.*OP-ANDN*))
           '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
     (INST "VANDNPD"
           (OP :OP #xF55
@@ -4949,8 +4949,8 @@
           (ARG :OP1 '(V PD)
                :OP2 '(H PD)
                :OP3 '(W PD))
-          '(x86-vandp?/vandnp?/vorp?/vxorp?/vpand/vpandn/vpor/vpxor-vex
-            (operation . #x5))
+          '(X86-VANDP?/VANDNP?/VORP?/VXORP?/VPAND/VPANDN/VPOR/VPXOR-VEX
+            (OPERATION . #.*OP-ANDN*))
           '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
     (INST "VANDNPS"
           (OP :OP #xF55
@@ -4959,8 +4959,8 @@
           (ARG :OP1 '(V PS)
                :OP2 '(H PS)
                :OP3 '(W PS))
-          '(x86-vandp?/vandnp?/vorp?/vxorp?/vpand/vpandn/vpor/vpxor-vex
-            (operation . #x5))
+          '(X86-VANDP?/VANDNP?/VORP?/VXORP?/VPAND/VPANDN/VPOR/VPXOR-VEX
+            (OPERATION . #.*OP-ANDN*))
           '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
     (INST "VANDNPS"
           (OP :OP #xF55
@@ -4969,8 +4969,8 @@
           (ARG :OP1 '(V PS)
                :OP2 '(H PS)
                :OP3 '(W PS))
-          '(x86-vandp?/vandnp?/vorp?/vxorp?/vpand/vpandn/vpor/vpxor-vex
-            (operation . #x5))
+          '(X86-VANDP?/VANDNP?/VORP?/VXORP?/VPAND/VPANDN/VPOR/VPXOR-VEX
+            (OPERATION . #.*OP-ANDN*))
           '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
     (INST "VANDNPD"
           (OP :OP #xF55
@@ -5033,8 +5033,8 @@
           (ARG :OP1 '(V PD)
                :OP2 '(H PD)
                :OP3 '(W PD))
-          '(x86-vandp?/vandnp?/vorp?/vxorp?/vpand/vpandn/vpor/vpxor-vex
-            (operation . #x5))
+          '(X86-VANDP?/VANDNP?/VORP?/VXORP?/VPAND/VPANDN/VPOR/VPXOR-VEX
+            (OPERATION . #.*OP-OR*))
           '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
     (INST "VORPD"
           (OP :OP #xF56
@@ -5043,8 +5043,8 @@
           (ARG :OP1 '(V PD)
                :OP2 '(H PD)
                :OP3 '(W PD))
-          '(x86-vandp?/vandnp?/vorp?/vxorp?/vpand/vpandn/vpor/vpxor-vex
-            (operation . #x5))
+          '(X86-VANDP?/VANDNP?/VORP?/VXORP?/VPAND/VPANDN/VPOR/VPXOR-VEX
+            (OPERATION . #.*OP-OR*))
           '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
     (INST "VORPS"
           (OP :OP #xF56
@@ -5053,8 +5053,8 @@
           (ARG :OP1 '(V PS)
                :OP2 '(H PS)
                :OP3 '(W PS))
-          '(x86-vandp?/vandnp?/vorp?/vxorp?/vpand/vpandn/vpor/vpxor-vex
-            (operation . #x5))
+          '(X86-VANDP?/VANDNP?/VORP?/VXORP?/VPAND/VPANDN/VPOR/VPXOR-VEX
+            (OPERATION . #.*OP-OR*))
           '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
     (INST "VORPS"
           (OP :OP #xF56
@@ -5063,8 +5063,8 @@
           (ARG :OP1 '(V PS)
                :OP2 '(H PS)
                :OP3 '(W PS))
-          '(x86-vandp?/vandnp?/vorp?/vxorp?/vpand/vpandn/vpor/vpxor-vex
-            (operation . #x5))
+          '(X86-VANDP?/VANDNP?/VORP?/VXORP?/VPAND/VPANDN/VPOR/VPXOR-VEX
+            (OPERATION . #.*OP-OR*))
           '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
     (INST "VORPD"
           (OP :OP #xF56
@@ -6407,7 +6407,7 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          'NIL
+          '(X86-PCMPGT-SSE)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "VPCMPGTB"
           (OP :OP #xF64
@@ -6455,7 +6455,7 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          'NIL
+          '(X86-PCMPGT-SSE)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "VPCMPGTW"
           (OP :OP #xF65
@@ -6503,7 +6503,7 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          'NIL
+          '(X86-PCMPGT-SSE)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "VPCMPGTD"
           (OP :OP #xF66
@@ -7074,7 +7074,7 @@
           (ARG :OP1 '(V X)
                :OP2 '(W X)
                :OP3 '(I B))
-          '(X86-PSHUFHW)
+          '(X86-PSHUFLW)
           '((:EX (CHK-EXC :TYPE-4 (:SSE2)))))
     (INST "VPSHUFD"
           (OP :OP #xF70
@@ -9752,7 +9752,7 @@
               :GROUP '(:GROUP-9)
               :FEAT '(:CMPXCHG16B))
           (ARG :OP1 '(M DQ))
-          'NIL
+          '(X86-CMPXCHG8B/16B)
           '((:UD (UD-MODR/M.MOD-INDICATES-REGISTER))))
     (INST "CMPXCHG8B"
           (OP :OP #xFC7
@@ -9765,7 +9765,7 @@
               :GROUP '(:GROUP-9)
               :FEAT '(:CMPXCHG16B))
           (ARG :OP1 '(M Q))
-          'NIL
+          '(X86-CMPXCHG8B/16B)
           '((:UD (UD-MODR/M.MOD-INDICATES-REGISTER))))
     (INST "VMPTRLD"
           (OP :OP #xFC7
@@ -10413,8 +10413,8 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          '(x86-vandp?/vandnp?/vorp?/vxorp?/vpand/vpandn/vpor/vpxor-vex
-            (operation . #x5))
+          '(X86-VANDP?/VANDNP?/VORP?/VXORP?/VPAND/VPANDN/VPOR/VPXOR-VEX
+            (OPERATION . #.*OP-AND*))
           '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
     (INST "VPAND"
           (OP :OP #xFDB
@@ -10423,8 +10423,8 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          '(x86-vandp?/vandnp?/vorp?/vxorp?/vpand/vpandn/vpor/vpxor-vex
-            (operation . #x5))
+          '(X86-VANDP?/VANDNP?/VORP?/VXORP?/VPAND/VPANDN/VPOR/VPXOR-VEX
+            (OPERATION . #.*OP-AND*))
           '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
     (INST "VPANDD"
           (OP :OP #xFDB
@@ -10628,8 +10628,8 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          '(x86-vandp?/vandnp?/vorp?/vxorp?/vpand/vpandn/vpor/vpxor-vex
-            (operation . #x5))
+          '(X86-VANDP?/VANDNP?/VORP?/VXORP?/VPAND/VPANDN/VPOR/VPXOR-VEX
+            (OPERATION . #.*OP-ANDN*))
           '((:EX (CHK-EXC :TYPE-4 (:AVX)))))
     (INST "VPANDN"
           (OP :OP #xFDF
@@ -10638,8 +10638,8 @@
           (ARG :OP1 '(V X)
                :OP2 '(H X)
                :OP3 '(W X))
-          '(x86-vandp?/vandnp?/vorp?/vxorp?/vpand/vpandn/vpor/vpxor-vex
-            (operation . #x5))
+          '(X86-VANDP?/VANDNP?/VORP?/VXORP?/VPAND/VPANDN/VPOR/VPXOR-VEX
+            (OPERATION . #.*OP-ANDN*))
           '((:EX (CHK-EXC :TYPE-4 (:AVX2)))))
     (INST "VPANDND"
           (OP :OP #xFDF
@@ -19060,7 +19060,7 @@
               :REG #x3
               :GROUP '(:GROUP-17))
           (ARG :OP1 '(B Y) :OP2 '(E Y))
-          NIL
+          '(x86-blsi)
           '((:EX (CHK-EXC :TYPE-13 (:BMI1 :AVX)))))
     (INST "BLSI"
           (OP :OP #xF38F3
@@ -19069,7 +19069,7 @@
               :REG #x3
               :GROUP '(:GROUP-17))
           (ARG :OP1 '(B Y) :OP2 '(E Y))
-          NIL
+          '(x86-blsi)
           '((:EX (CHK-EXC :TYPE-13 (:BMI1 :AVX)))))
     (INST "BZHI"
           (OP :OP #xF38F5
@@ -19130,14 +19130,14 @@
               :PFX :66
               :FEAT '(:ADX))
           (ARG :OP1 '(G Y) :OP2 '(E Y))
-          'NIL
+          '(X86-ADCX/ADOX (ADCX . T))
           '((:UD (UD-LOCK-USED))))
     (INST "ADOX"
           (OP :OP #xF38F6
               :PFX :F3
               :FEAT '(:ADX))
           (ARG :OP1 '(G Y) :OP2 '(E Y))
-          'NIL
+          '(X86-ADCX/ADOX (ADCX . NIL))
           '((:UD (UD-LOCK-USED))))
     (INST "MULX"
           (OP :OP #xF38F6

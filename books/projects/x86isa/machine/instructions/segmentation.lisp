@@ -44,7 +44,7 @@
 ;; ======================================================================
 
 (include-book "../decoding-and-spec-utils"
-              :ttags (:syscall-exec :other-non-det :undef-flg))
+              :ttags (:undef-flg))
 (local (include-book "../guard-helpers"))
 
 ;; No alignment check is done for these instructions because they are
@@ -596,13 +596,13 @@ a non-canonical form, raise the SS exception.</p>"
                 (b* (
                     ;; Now that we know the segment selector is valid, we check if
                     ;; the segment descriptor is valid.
- 
+
                     (descriptor-addr
                      ;; The index is scaled by 8.
                      (+ gdtr-base (the (unsigned-byte 16) (ash sel-index 3))))
                     ((when (not (canonical-address-p descriptor-addr)))
                      (!!ms-fresh :descriptor-addr-virtual-memory-error descriptor-addr))
- 
+
                     ;; The descriptor is 16 bytes in 64-bit mode, 8 bytes in 32-bit mode.
                     (descriptor-size (if (eql proc-mode *64-bit-mode*) 16 8))
                     ((mv flg (the (unsigned-byte 128) descriptor) x86)
@@ -610,14 +610,14 @@ a non-canonical form, raise the SS exception.</p>"
                      (rml-size descriptor-size descriptor-addr :x x86))
                     ((when flg)
                      (!!ms-fresh :rml-size-error flg))
- 
+
                     ((mv descriptor-valid? reason)
                      ;; This predicate is also adequate to check the validity of 8-byte
                      ;; descriptors in 32-bit mode, because their high 8 bytes are all 0.
                      (ia32e-valid-ldt-segment-descriptor-p descriptor))
                     ((when (not descriptor-valid?))
                      (!!ms-fresh :invalid-segment-descriptor reason))
- 
+
                     ;; LDTR Base (note the high 32 bits are 0 in 32-bit mode):
                     (ldtr-base15-0  (system-segment-descriptorBits->base15-0  descriptor))
                     (ldtr-base23-16 (system-segment-descriptorBits->base23-16 descriptor))
@@ -633,7 +633,7 @@ a non-canonical form, raise the SS exception.</p>"
                     ((the (unsigned-byte 64) ldtr-base)
                      (part-install ldtr-base23-0 (ash ldtr-base63-24 24)
                                    :low 0 :width 24))
- 
+
                     ;; LDTR Limit:
                     (ldtr-limit15-0  (system-segment-descriptorBits->limit15-0
                                       descriptor))
@@ -643,7 +643,7 @@ a non-canonical form, raise the SS exception.</p>"
                      (part-install ldtr-limit15-0
                                    (ash ldtr-limit19-16 16)
                                    :low 0 :width 16))
- 
+
                     ;; LDTR Attributes:
                     (ldtr-attr (the (unsigned-byte 16)
                                  (make-system-segment-attr-field descriptor)))

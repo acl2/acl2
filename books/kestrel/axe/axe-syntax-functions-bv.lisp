@@ -160,6 +160,7 @@
     ;; term must be a nodenum, so look it up
     (let ((expr (aref1 'dag-array dag-array term)))
       (and (consp expr)
+           ;; The operator is one that we can trim:
            (or (member-eq (ffn-symb expr) (if (eq 'all operators) ;TODO: Use :all instead?
                                               *trimmable-operators*
                                             *trimmable-non-arithmetic-operators*))
@@ -171,12 +172,16 @@
                ;;                    (and (eq 'bv-array-read (ffn-symb expr))
                ;;                         (quotep (darg4 expr)))
                )
+           ;; The width of the term is greater than the desired width:
            (let ((type (maybe-get-type-of-bv-function-call (ffn-symb expr) (dargs expr))))
              (and type
                   (< width (bv-type-width type))))))))
 
+;; Decides whether TERM can be trimmed down (by wrapping it with a call of
+;; trim) to be a bit-vector of the given WIDTH.
 ;OPERATORS should be 'all or 'non-arithmetic
 ;maybe we should add the option to not trim logical ops?  but that's not as dangerous as trimming arithmetic ops...
+;; todo: warn if quoted-width is not a quoted natural
 (defund term-should-be-trimmed-axe (quoted-width term operators dag-array)
   (declare (xargs :guard (and (or (myquotep quoted-width)
                                   (and (natp quoted-width)
@@ -186,60 +191,47 @@
                                        (pseudo-dag-arrayp 'dag-array dag-array (+ 1 term))))
                               ;; (member-equal operators '('all 'non-arithmetic)) ;todo: why are these quoted?
                               )))
-  (and (if (or (equal operators ''all) ;; todo: can we avoid this?  use one as the default?
-               (equal operators ''non-arithmetic))
-           t
-         (progn$
-          ;; (cw "Warning: In term-should-be-trimmed-axe: Unexpected operators: ~x0.)~%" operators)
-          nil))
-       (if (and (consp quoted-width)          ; test for quotep
-                (natp (unquote quoted-width)) ;check natp or posp?
-                )
-           t
-         (progn$ ;; When variable shifts are involved, we may indeed see BV sizes that are not constants:
-          ;; (cw "Warning: In term-should-be-trimmed-axe: Unexpected width: ~x0.)~%"
-          ;;     (if (consp quoted-width) ; check for quotep
-          ;;         quoted-width
-          ;;       ;; simplify this?:
-          ;;       (if (and (not (myquotep term))
-          ;;                (natp quoted-width)
-          ;;                (< quoted-width (alen1 'dag-array dag-array)))
-          ;;           (aref1 'dag-array dag-array quoted-width)
-          ;;         :unknown)))
-          nil))
-       (let ((width (unquote quoted-width)))
-         (term-should-be-trimmed-axe-helper width term (unquote operators) dag-array))))
+  (b* (((when (not (member-equal operators '('all 'non-arithmetic)))) ;; todo: can we avoid this?  use one as the default? use keywords?
+        (er hard? 'term-should-be-trimmed-axe "Unexpected operators argument: ~x0.)~%" operators))
+       ((when (not (and (consp quoted-width) ; check for quotep
+                        (natp (unquote quoted-width)))))
+        ;; this case may be quite common (see rules like bvcat-trim-arg2-axe-all, which we saw used with highsize = '-256 !)
+        nil
+        ;;(er hard? 'term-should-be-trimmed-axe "Unexpected desired width, ~x0, for ~x1.)~%" quoted-width term)
+        )
+       ;; When variable shifts are involved, we may indeed see BV sizes that are not constants:
+       ;; (cw "Warning: In term-should-be-trimmed-axe: Unexpected width: ~x0.)~%"
+       ;;     (if (consp quoted-width) ; check for quotep
+       ;;         quoted-width
+       ;;       ;; simplify this?:
+       ;;       (if (and (not (myquotep term))
+       ;;                (natp quoted-width)
+       ;;                (< quoted-width (alen1 'dag-array dag-array)))
+       ;;           (aref1 'dag-array dag-array quoted-width)
+       ;;         :unknown)))
+       )
+    (term-should-be-trimmed-axe-helper (unquote quoted-width) term (unquote operators) dag-array)))
 
 ;adds 1 to QUOTED-WIDTH;
 ;for (slice 7 0 x) the relevant width to consider is 8, not 7.  likewise for (getbit 7 x).
+;todo: quoted-width is really the high bit.  rename this function and that param
 (defund term-should-be-trimmed-axe-plus-one (quoted-width term operators dag-array)
-  (declare (xargs :guard (and (or (myquotep term)
+  (declare (xargs :guard (and (or (myquotep quoted-width)
+                                  (and (natp quoted-width)
+                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 quoted-width))))
+                              (or (myquotep term)
                                   (and (natp term)
                                        (pseudo-dag-arrayp 'dag-array dag-array (+ 1 term))))
                               ;; (member-equal operators '('all 'non-arithmetic)) ;todo: why are these quoted?
                               )))
-  (and (if (or (equal operators ''all) ;; todo: can we avoid this?  use one as the default?
-               (equal operators ''non-arithmetic))
-           t
-         (progn$
-          ;; (cw "Warning: In term-should-be-trimmed-axe-plus-one: Unexpected operators: ~x0.)~%" operators)
-          nil))
-       (if (and (myquotep quoted-width)
-                (natp (unquote quoted-width)))
-           t
-         (progn$ ;; When variable shifts are involved, we may indeed see BV sizes that are not constants:
-          ;; (cw "Warning: In term-should-be-trimmed-axe-plus-one: Unexpected width: ~x0.)~%"
-          ;;     (if (quotep quoted-width)
-          ;;         quoted-width
-          ;;       ;; simplify this?:
-          ;;       (if (and (not (myquotep term))
-          ;;                (natp quoted-width)
-          ;;                (< quoted-width (alen1 'dag-array dag-array)))
-          ;;           (aref1 'dag-array dag-array quoted-width)
-          ;;         :unknown)))
-          nil))
-       (let ((width (+ 1 (unquote quoted-width)))) ;the plus one is for this version
-         (term-should-be-trimmed-axe-helper width term (unquote operators) dag-array))))
+  (b* (((when (not (member-equal operators '('all 'non-arithmetic)))) ;; todo: can we avoid this?  use one as the default? use keywords?
+        (er hard? 'term-should-be-trimmed-axe "Unexpected operators argument: ~x0.)~%" operators))
+       ((when (not (and (consp quoted-width) ; check for quotep
+                        (natp (unquote quoted-width)))))
+        ;; may happen; see comment in term-should-be-trimmed-axe:
+        nil)
+       (width (+ 1 (unquote quoted-width)))) ;the plus one is for this version
+    (term-should-be-trimmed-axe-helper width term (unquote operators) dag-array)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -44,9 +44,9 @@
 ;; ======================================================================
 
 (include-book "arith-and-logic-spec"
-              :ttags (:syscall-exec :other-non-det :undef-flg))
+              :ttags (:undef-flg))
 (include-book "../decoding-and-spec-utils"
-              :ttags (:syscall-exec :other-non-det :undef-flg))
+              :ttags (:undef-flg))
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
@@ -294,6 +294,102 @@
        (x86 (write-*ip proc-mode temp-rip x86)))
 
     x86))
+
+
+
+(def-inst x86-adcx/adox
+
+  :parents (three-byte-opcodes)
+
+  :short "Operand Fetch and Execute for ADCX/ADOX"
+
+  :long "<h3>Op/En = RM: \[OP REG, R/M\] or \[OP G, E\]</h3>
+
+  <p>where @('G') is the destination operand and @('E') is the source
+  operand.  Note that @('G') stands for a general-purpose register
+  specified by the @('ModRM.reg') field, and @('E') stands for a
+  general-purpose register or memory operand specified by the
+  @('ModRM.r/m') field.</p>
+
+  <p>These instructions are essentially variations of ADC with different flag
+  behavior. ADCX sums the two operands and the CF flag (just like ADC), then
+  sets the CF flag according to unsigned overflow (just like ADC), but doesn't
+  modify any other flags. ADOX is the same as ADCX but uses/sets OF in place of
+  CF.</p>"
+
+
+  :returns (x86 x86p :hyp (x86p x86)
+                :hints (("Goal" :in-theory (e/d* ()
+                                                 (unsigned-byte-p
+                                                  signed-byte-p)))))
+
+  :modr/m t
+
+  :additional-args ((adcx booleanp))
+  
+  :body
+
+  (b* ((p2 (prefixes->seg prefixes))
+       (p4? (eql #.*addr-size-override* (prefixes->adr prefixes)))
+       (operand-size (if (logbitp *w* rex-byte) 8 4)) 
+
+       (G (rgfi-size operand-size
+                     (the (unsigned-byte 4)
+                       (reg-index reg rex-byte #.*r*))
+                     rex-byte x86))
+
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+
+       (inst-ac? t)
+       ((mv flg0
+            E
+            (the (unsigned-byte 3) increment-RIP-by)
+            (the (signed-byte 64) E-addr)
+            x86)
+        (x86-operand-from-modr/m-and-sib-bytes proc-mode #.*gpr-access*
+                                                operand-size
+                                                inst-ac?
+                                                nil ;; Not a memory pointer operand
+                                                seg-reg
+                                                p4?
+                                                temp-rip
+                                                rex-byte
+                                                r/m
+                                                mod
+                                                sib
+                                                0 ;; No immediate operand
+                                                x86))
+       ((when flg0)
+        (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
+
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error flg))
+
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+
+       ;; Computing the flags and the result:
+       ((the (unsigned-byte 32) input-rflags) (rflags x86))
+       ((mv result
+            (the (unsigned-byte 32) output-rflags)
+            (the (unsigned-byte 32) undefined-flags))
+        (case operand-size
+          (8 (gpr-adcx/adox-spec-8 adcx G E input-rflags))
+          (t (gpr-adcx/adox-spec-4 adcx G E input-rflags))))
+
+       ;; Updating the x86 state with the result and eflags.
+       (x86
+        (!rgfi-size operand-size (reg-index reg rex-byte #.*r*) result
+                    rex-byte x86))
+
+       (x86 (write-user-rflags output-rflags undefined-flags x86))
+       (x86 (write-*ip proc-mode temp-rip x86)))
+
+    x86))
+
 
 (def-inst x86-add/adc/sub/sbb/or/and/xor/cmp-G-E
 
@@ -642,7 +738,9 @@
        ((the (integer 1 8) operand-size)
         (select-operand-size
          proc-mode byte-operand? rex-byte t prefixes nil nil nil x86))
-       (rAX-size (if (logbitp #.*w* rex-byte)
+       ;; rex does not promote byte opcodes to 64-bit
+       (rAX-size (if (and (not byte-operand?)
+                          (logbitp #.*w* rex-byte))
                      8
                    operand-size))
 

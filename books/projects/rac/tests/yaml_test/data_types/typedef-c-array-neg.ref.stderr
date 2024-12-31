@@ -1,1 +1,3 @@
-typedef-c-array-neg.cpp:3: Array dimension not a positive integer constant
+typedef-c-array-neg.cpp:3 (27-29): Array dimension not a positive integer constant
+  3 | typedef int fixed_size_arr[-4];
+    |                            ^^
