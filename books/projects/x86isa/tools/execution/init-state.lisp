@@ -38,8 +38,7 @@
 
 (in-package "X86ISA")
 
-(include-book "../../machine/x86"
-              :ttags (:syscall-exec :other-non-det :undef-flg))
+(include-book "../../machine/linear-memory" :ttags (:undef-flg))
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 
