@@ -1026,7 +1026,6 @@
 
 (verify-guards
   abs-fs-fix
-  :guard-debug t
   :hints (("goal" :expand (abs-file-alist-p x)
            :in-theory (enable abs-file-p))))
 
@@ -1391,7 +1390,6 @@
   :hints (("goal" :in-theory (enable ctx-app))))
 
 (verify-guards ctx-app
-  :guard-debug t
   :hints (("Goal" :in-theory (enable abs-file-alist-p)) ))
 
 (defthm ctx-app-of-fat32-filename-list-fix
@@ -2031,8 +2029,7 @@
   (declare (xargs :guard (and (abs-file-alist-p fs)
                               (fat32-filename-list-p path)
                               (natp index))
-                  :measure (len path)
-                  :guard-debug t))
+                  :measure (len path)))
   (b*
       (;; This is an error condition.
        ((when (atom path)) (mv fs nil nil *empty-fat32-name*))
@@ -2349,8 +2346,7 @@
 (defund
   stat-abs-lookup (frame path)
   (declare (xargs :guard (and (frame-p frame)
-                              (fat32-filename-list-p path))
-                  :guard-debug t))
+                              (fat32-filename-list-p path))))
   (b*
       (((when (atom frame)) nil)
        (head-frame-val (cdr (car frame)))
@@ -3575,8 +3571,7 @@
     :guard-hints
     (("goal''"
       :expand ((abs-file-alist-p abs-file-alist1)
-               (abs-file-p (cdr (car abs-file-alist1))))))
-    :guard-debug t))
+               (abs-file-p (cdr (car abs-file-alist1))))))))
   (b* (((when (atom abs-file-alist1)) t)
        ((unless (and (consp (car abs-file-alist1))
                      (stringp (car (car abs-file-alist1)))))

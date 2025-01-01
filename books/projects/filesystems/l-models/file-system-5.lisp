@@ -247,8 +247,7 @@
                               (stringp text)
                               (block-listp disk)
                               (boolean-listp alv)
-                              (equal (len alv) (len disk)))
-                  :guard-debug t))
+                              (equal (len alv) (len disk)))))
   (if (atom hns)
       (mv fs disk alv) ;; error - showed up at fs with no name  - so leave fs unchanged
     (if (atom fs)

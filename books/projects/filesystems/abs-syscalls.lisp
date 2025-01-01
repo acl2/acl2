@@ -695,7 +695,6 @@
    (xargs
     :guard (and (fat32-filename-list-p path)
                 (frame-p frame))
-    :guard-debug t
     :guard-hints
     (("goal"
       :in-theory (e/d (abs-file-p-alt)
@@ -850,7 +849,6 @@
                               (consp (assoc-equal 0 frame))
                               (fat32-filename-list-p path)
                               (no-duplicatesp-equal (strip-cars frame)))
-                  :guard-debug t
                   :guard-hints
                   (("goal"
                     :in-theory (enable abs-find-file-helper abs-fs-p)))))
@@ -3796,7 +3794,6 @@
                               (consp (assoc-equal 0 frame))
                               (fat32-filename-list-p path)
                               (no-duplicatesp-equal (strip-cars frame)))
-                  :guard-debug t
                   :guard-hints
                   (("goal"
                     :in-theory (enable abs-find-file-helper abs-fs-p)))))
@@ -3985,7 +3982,6 @@
                 (frame-p frame)
                 (consp (assoc-equal 0 frame))
                 (dir-stream-table-p dir-stream-table))
-    :guard-debug t
     :guard-hints
     (("Goal"
       :use

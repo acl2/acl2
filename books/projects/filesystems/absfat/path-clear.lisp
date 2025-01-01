@@ -9,8 +9,7 @@
 (defund
   path-clear (path frame)
   (declare (xargs :guard (and (fat32-filename-list-p path)
-                              (frame-p frame))
-                  :guard-debug t))
+                              (frame-p frame))))
   (b*
       (((when (atom frame)) t)
        ((unless
@@ -154,8 +153,7 @@
  (defund
    path-clear-alt (path frame indices)
    (declare (xargs :guard (and (fat32-filename-list-p path)
-                               (frame-p frame))
-                   :guard-debug t))
+                               (frame-p frame))))
    (b*
        (((when (atom indices)) t)
         ((unless (path-clear-alt path frame (cdr indices)))
