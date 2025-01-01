@@ -442,6 +442,11 @@ world and insert them into your documentation, you can use:</p>
           (also works for theorems, macros, ...)</td>
 </tr>
 
+<tr>  <td>@('@(def? fn)')</td>
+      <td>Same as @('@(def fn)') but doesn't
+          produce an error if the definition isn't found</td>
+</tr>
+
 <tr> <td>@('@(body fn)')</td>
      <td>just the body of <i>fn</i></td> </tr>
 
