@@ -633,7 +633,7 @@
     (:type-prescription rm-low-64-logand-logior-helper-1)
     (:type-prescription n64p$inline)
     (:definition strip-cars)
-    (:rewrite bitops::signed-byte-p-monotonicity)
+    (:rewrite bitops::signed-byte-p-incr)
     (:linear mv-nth-1-gpr-sbb-spec-8)
     (:linear mv-nth-1-gpr-add-spec-8)
     (:linear mv-nth-1-gpr-adc-spec-8)

@@ -2414,7 +2414,7 @@
                (:definition n64p$inline)
                (:rewrite bitops::signed-byte-p-when-unsigned-byte-p-smaller)
                (:rewrite bitops::signed-byte-p-when-signed-byte-p-smaller)
-               (:rewrite bitops::signed-byte-p-monotonicity)
+               (:rewrite bitops::signed-byte-p-incr)
                (:rewrite default-unary-minus)
                (:rewrite loghead-ash-0)
                (:rewrite acl2::expt-with-violated-guards)

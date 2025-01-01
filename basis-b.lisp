@@ -4815,7 +4815,7 @@
                               (symbolp (cadr x)))))
   `(nqthm-to-acl2-fn ,x state))
 
-#+(and gcl (not acl2-loop-only))
+#+(and gcl (not gcl-2.7.0+) (not acl2-loop-only))
 (progn
   (defvar *current-allocated-fixnum-lo* 0)
   (defvar *current-allocated-fixnum-hi* 0))
@@ -4834,7 +4834,7 @@
 
   (let ((tmp (- fixnum-hi fixnum-lo)))
     (declare (ignore tmp))
-    #+(and gcl (not acl2-loop-only))
+    #+(and (not acl2-loop-only) (and gcl (not gcl-2.7.0+)))
     (cond ((or (> fixnum-hi *current-allocated-fixnum-hi*)
                (< fixnum-lo *current-allocated-fixnum-lo*))
            (fms "NOTE:  Allocating bigger fixnum table in GCL.~|"
@@ -4848,10 +4848,11 @@
                  encompasses desired allocation.~|"
                 nil (standard-co *the-live-state*) *the-live-state*
                 nil)))
-    #+(and (not gcl) (not acl2-loop-only))
-    (fms "Fixnum allocation is only performed in GCL.~|"
-         nil (standard-co *the-live-state*) *the-live-state*
-         nil)
+    #+(and (not acl2-loop-only) (not (and gcl (not gcl-2.7.0+))))
+    (fms
+     "Fixnum allocation is only performed in GCL, versions preceding 2.7.~|"
+     nil (standard-co *the-live-state*) *the-live-state*
+     nil)
     nil))
 
 ; It has been found useful to allocate new space very gradually in Allegro CL
