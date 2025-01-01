@@ -12,7 +12,6 @@
 
 (include-book "kestrel/evaluators/if-eval" :dir :system) ; because we are going to process a whole clause
 (include-book "kestrel/utilities/forms" :dir :system)
-(include-book "kestrel/lists-light/repeat" :dir :system)
 (include-book "kestrel/terms-light/free-vars-in-term" :dir :system)
 (local (include-book "kestrel/terms-light/logic-termp" :dir :system))
 (local (include-book "kestrel/terms-light/termp" :dir :system))
@@ -26,24 +25,12 @@
                            symbol-listp
                            member-equal
                            pairlis$
-                           repeat
                            all-vars
                            len)))
 
 (local (in-theory (enable symbolp-when-member-equal-and-symbol-listp)))
 
-(local
-  ;; for when all the keys are bound to the same value
-  (defthm assoc-equal-of-pairlis$-of-repeat-of-len
-    (implies (member-equal key keys)
-             (equal (assoc-equal key (pairlis$ keys (repeat (len keys) val)))
-                    (cons key val)))
-    :hints (("Goal" :in-theory (enable assoc-equal pairlis$ len)))))
-
-;todo: move
-(defthm arities-okp-of-nil
-  (arities-okp nil w)
-  :hints (("Goal" :in-theory (enable arities-okp))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Wrap UNARY-FN around TERM but if TERM is a lambda, push UNARY-FN into the lambda body.
 (defund push-unary-fn-into-lambda-bodies (unary-fn term)
@@ -56,11 +43,12 @@
             `((lambda ,(lambda-formals fn) ,(push-unary-fn-into-lambda-bodies unary-fn (lambda-body fn))) ,@(fargs term))
             `(,unary-fn ,term)))))
 
-(defthm free-vars-in-term-of-push-unary-fn-into-lambda-bodies
-    (implies (not (equal unary-fn 'quote))
-             (equal (free-vars-in-term (push-unary-fn-into-lambda-bodies unary-fn term))
-                    (free-vars-in-term term)))
-  :hints (("Goal" :in-theory (enable push-unary-fn-into-lambda-bodies))))
+(local
+ (defthm free-vars-in-term-of-push-unary-fn-into-lambda-bodies
+   (implies (not (equal unary-fn 'quote))
+            (equal (free-vars-in-term (push-unary-fn-into-lambda-bodies unary-fn term))
+                   (free-vars-in-term term)))
+   :hints (("Goal" :in-theory (enable push-unary-fn-into-lambda-bodies)))))
 
 (local
   (defthm logic-fnsp-of-push-unary-fn-into-lambda-bodies
@@ -83,26 +71,25 @@
              (termp (push-unary-fn-into-lambda-bodies unary-fn term) w))
     :hints (("Goal" :in-theory (enable push-unary-fn-into-lambda-bodies len logic-termp)))))
 
-
 ;todo: prove from the 2 pieces
 ;; Supports the :well-formedness-guarantee.
-(defthm logic-termp-of-push-unary-fn-into-lambda-bodies
-  (implies (and (logic-termp term w)
-                (logicp unary-fn w)
-                (symbolp unary-fn)
-                (not (equal 'quote unary-fn))
-                (arities-okp (acons unary-fn 1 nil)
-                             w))
-           (logic-termp (push-unary-fn-into-lambda-bodies unary-fn term) w))
-  :hints (("Goal" :in-theory (enable push-unary-fn-into-lambda-bodies len))))
+(local
+ (defthm logic-termp-of-push-unary-fn-into-lambda-bodies
+   (implies (and (logic-termp term w)
+                 (logicp unary-fn w)
+                 (symbolp unary-fn)
+                 (not (equal 'quote unary-fn))
+                 (arities-okp (acons unary-fn 1 nil)
+                              w))
+            (logic-termp (push-unary-fn-into-lambda-bodies unary-fn term) w))
+   :hints (("Goal" :in-theory (enable push-unary-fn-into-lambda-bodies len)))))
 
-(defthm pseudo-termp-of-push-unary-fn-into-lambda-bodies
-  (implies (and (pseudo-termp term)
-                (symbolp unary-fn)
-                ;; (not (equal 'quote unary-fn))
-                )
-           (pseudo-termp (push-unary-fn-into-lambda-bodies unary-fn term)))
-  :hints (("Goal" :in-theory (enable push-unary-fn-into-lambda-bodies len))))
+(local
+ (defthm pseudo-termp-of-push-unary-fn-into-lambda-bodies
+   (implies (and (pseudo-termp term)
+                 (symbolp unary-fn))
+            (pseudo-termp (push-unary-fn-into-lambda-bodies unary-fn term)))
+   :hints (("Goal" :in-theory (enable push-unary-fn-into-lambda-bodies len)))))
 
 ;; The point here is to recur on a different alist for lambdas.
 (local
@@ -120,16 +107,17 @@
              `(,unary-fn ,term))))))
 
 ;; Correctness of push-unary-fn-into-lambda-bodies
-(defthm if-eval-of-push-unary-fn-into-lambda-bodies
-  (implies (not (equal 'quote unary-fn))
-           (equal (if-eval (push-unary-fn-into-lambda-bodies unary-fn term) a)
-                  (if-eval `(,unary-fn ,term) a)))
-  :hints (("Goal"
-           :induct (push-unary-fn-into-lambda-bodies-induct unary-fn term a)
-           :in-theory (e/d (push-unary-fn-into-lambda-bodies-induct
-                            push-unary-fn-into-lambda-bodies
-                            if-eval-of-fncall-args)
-                           (if-eval-of-fncall-args-back)))))
+(local
+ (defthm if-eval-of-push-unary-fn-into-lambda-bodies
+   (implies (not (equal 'quote unary-fn))
+            (equal (if-eval (push-unary-fn-into-lambda-bodies unary-fn term) a)
+                   (if-eval `(,unary-fn ,term) a)))
+   :hints (("Goal"
+            :induct (push-unary-fn-into-lambda-bodies-induct unary-fn term a)
+            :in-theory (e/d (push-unary-fn-into-lambda-bodies-induct
+                             push-unary-fn-into-lambda-bodies
+                             if-eval-of-fncall-args)
+                            (if-eval-of-fncall-args-back))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -216,6 +204,7 @@
                               ))))
 
 ;; can help when we know the length
+;; todo: have defevaluator+ generate this
 (local
   (defthm if-eval-list-when-not-empty
     (implies (< 0 (len terms)) ; since we have info about len
@@ -231,7 +220,7 @@
     :hints (("Goal" :expand (LEN (CDR TERMS))
              :in-theory (enable len)))))
 
-;; Supports the :well-formedness-guarantee.
+;; Correctness theorem
 (defthm-flag-push-unary-fns-into-lambdas-in-term
   (defthm if-eval-of-push-unary-fns-into-lambdas-in-term
     (implies (alistp a)
@@ -255,6 +244,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Applies to a whole clause
 (defund push-unary-fns-into-lambdas-in-literals (clause unary-fns)
   (declare (xargs :guard (and (pseudo-term-listp clause)
                               (or (symbol-listp unary-fns) (eq :all unary-fns)))))
@@ -285,7 +275,6 @@
   :hints (("Goal" :in-theory (enable push-unary-fns-into-lambdas-in-literals))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 
 ;; Return a list of one clause (like the one we started with but with the unary
 ;; functions pushed).

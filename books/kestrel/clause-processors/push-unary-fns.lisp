@@ -1,6 +1,6 @@
 ; A clause-processor to push unary function calls into lambda bodies and ifs
 ;
-; Copyright (C) 2021-2024 Kestrel Institute
+; Copyright (C) 2021-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,7 +13,6 @@
 (include-book "kestrel/evaluators/if-eval" :dir :system) ; because we are going to process a whole clause
 (include-book "kestrel/utilities/forms" :dir :system)
 (include-book "kestrel/terms-light/free-vars-in-term" :dir :system)
-(local (include-book "kestrel/lists-light/repeat" :dir :system))
 (local (include-book "kestrel/terms-light/logic-termp" :dir :system))
 (local (include-book "kestrel/terms-light/termp" :dir :system))
 (local (include-book "kestrel/utilities/arities-okp" :dir :system))
@@ -30,20 +29,10 @@
                            symbol-listp
                            member-equal
                            pairlis$
-                           repeat
                            all-vars
                            len)))
 
 (local (in-theory (enable symbolp-when-member-equal-and-symbol-listp)))
-
-;drop?
-(local
-  ;; for when all the keys are bound to the same value
-  (defthm assoc-equal-of-pairlis$-of-repeat-of-len
-    (implies (member-equal key keys)
-             (equal (assoc-equal key (pairlis$ keys (repeat (len keys) val)))
-                    (cons key val)))
-    :hints (("Goal" :in-theory (enable assoc-equal pairlis$)))))
 
 (mutual-recursion
   ;; Wrap ther WRAPPER-FN around term but push it inward through IFs and LAMBDAs.  Also, push unary fns in subterms.
@@ -105,7 +94,7 @@
          (len terms))
   :hints (("Goal" :in-theory (enable push-unary-fns-in-terms (:i len)))))
 
-(make-flag push-unary-fns-and-wrap)
+(local (make-flag push-unary-fns-and-wrap))
 
 (defthm-flag-push-unary-fns-and-wrap
   (defthm free-vars-in-term-of-push-unary-fns-and-wrap
@@ -135,8 +124,7 @@
     (implies (and (logic-termp term w)
                   (symbolp wrapper-fn)
                   (not (equal wrapper-fn 'quote))
-                  (arities-okp (acons wrapper-fn 1 nil) w)
-                  )
+                  (arities-okp (acons wrapper-fn 1 nil) w))
              (logic-termp (push-unary-fns-and-wrap term wrapper-fn unary-fns) w))
     :flag push-unary-fns-and-wrap)
   (defthm logic-termp-of-push-unary-fns-in-term
@@ -222,6 +210,7 @@
 
 (local (make-flag induct-push-unary-fns-and-wrap))
 
+;; Correctness theorem
 (defthm-flag-induct-push-unary-fns-and-wrap
   (defthm if-eval-of-push-unary-fns-and-wrap
     (implies (and (alistp alist)
