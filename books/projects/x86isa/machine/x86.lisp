@@ -1384,6 +1384,26 @@
   (defrule x86p-x86-fetch-decode-execute
            (implies (x86p x86)
                     (x86p (x86-fetch-decode-execute x86)))
+           ;; for speed:
+           :disable (xw-xw-inter-field-arrange-writes
+                     mv-nth-0-of-add-to-*ip-when-64-bit-modep
+                     mv-nth-1-of-add-to-*ip-when-64-bit-modep
+                     bitops::part-select-width-low$inline
+                     bitops::part-select-low-high$inline
+                     mv-nth
+                     i48p-xr-rip
+                     right-shift-to-logtail
+                     acl2::logtail-identity
+                     get-prefixes-opener-lemma-no-legacy-prefix-but-rex-prefix
+                     get-prefixes-opener-lemma-group-2-prefix
+                     get-prefixes-opener-lemma-group-1-prefix
+                     get-prefixes-opener-lemma-group-4-prefix
+                     get-prefixes-opener-lemma-group-3-prefix
+                     get-prefixes-opener-lemma-zero-cnt
+                     get-prefixes-opener-lemma-no-prefix-byte
+                     get-prefixes-opener-lemma-no-legacy-prefix-but-rex-prefix
+                     get-prefixes-does-not-modify-x86-state-in-app-view
+                     num-prefixes-get-prefixes-bound)
            :enable add-to-*ip-is-i48p-rewrite-rule)
 
   (defthmd ms-fault-and-x86-fetch-decode-and-execute
