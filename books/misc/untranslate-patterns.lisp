@@ -305,7 +305,7 @@ whose second argument is exactly the variable $path.</p>")
 be either a quoted constant (which must be fully expanded, it does not get
 evaluated), or an unquoted function call.</p>
 
-<p>The first example above changed proof output so that the constant '(1 2 3)
+<p>The first example above changes proof output so that the constant '(1 2 3)
 is instead printed as *myconst*.  The second example changes proof output so
 that for all @('x,y'), @('(f$ x y mystobj)') is printed as @('(f x y)').  Note
 that the printing of @('(f$ x y yourstobj)') will not be altered.</p>"

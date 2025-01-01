@@ -16,6 +16,7 @@
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
 (local (include-book "kestrel/lists-light/no-duplicatesp-equal" :dir :system))
 (local (include-book "kestrel/lists-light/remove-duplicates-equal" :dir :system))
+(local (include-book "kestrel/lists-light/set-difference-equal" :dir :system))
 
 ;; This utility is similiar to all-vars but simpler.
 
@@ -228,3 +229,13 @@
   (implies (member-equal term terms)
            (subsetp-equal (free-vars-in-term term)
                           (free-vars-in-terms terms))))
+
+;; This rephrases the claim about all-vars to a claim about free-vars-in-term.
+;; Such a claim appears in termp.
+(defthm set-difference-equal-of-all-vars-arg1-iff
+  (iff (set-difference-equal (all-vars term) x)
+       (set-difference-equal (free-vars-in-term term) x)))
+
+(defthm set-difference-equal-of-all-vars-arg2-iff
+  (iff (set-difference-equal x (all-vars term))
+       (set-difference-equal x (free-vars-in-term term))))

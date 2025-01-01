@@ -20,14 +20,14 @@
 (local (in-theory (disable disjoin)))
 
 ;; changes the evaluator
-(defthm my-make-flag-eval-of-disjoin-of-push-unary-functions-in-literals
+(defthm my-make-flag-eval-of-disjoin-of-push-unary-fns-into-ifs-in-literals
   (implies (and (symbol-listp unary-fns)
                 (alistp a)
                 (pseudo-term-listp clause))
-           (iff (my-make-flag-eval (disjoin (push-unary-functions-in-literals clause unary-fns)) a)
+           (iff (my-make-flag-eval (disjoin (push-unary-fns-into-ifs-in-literals clause unary-fns)) a)
                 (my-make-flag-eval (disjoin clause) a)))
   :hints (("Goal" :use (:functional-instance
-                        if-eval-of-disjoin-of-push-unary-functions-in-literals
+                        if-eval-of-disjoin-of-push-unary-fns-into-ifs-in-literals
                         (if-eval my-make-flag-eval)
                         (if-eval-list my-make-flag-eval-list)))))
 
