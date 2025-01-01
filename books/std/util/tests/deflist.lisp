@@ -274,7 +274,7 @@
 (assert!
  ;; make sure it got included in the docs...
  (b* ((topic (xdoc::find-topic 'ratlist (xdoc::get-xdoc-table (w state)))))
-   (str::isubstrp "@(def |STD|::|RATLIST-IS-RATIONAL-LISTP|)"
+   (str::isubstrp "@(def? |STD|::|RATLIST-IS-RATIONAL-LISTP|)"
                   (cdr (assoc :long topic)))))
 
 (deflist ratlist2 (x)
