@@ -2660,7 +2660,7 @@
                   (car leaf-cst-list))
             (leaf-cst-list-to-alist (cdr leaf-cst-list))))))
 
-#+(and gcl (not acl2-loop-only))
+#+(and gcl (not gcl-2.7.0+) (not acl2-loop-only))
 (defvar *request-bigger-fixnum-table*
   (fboundp 'system::allocate-bigger-fixnum-range))
 
@@ -2727,7 +2727,7 @@
                           nil (standard-co *the-live-state*)
                           *the-live-state* nil)
                      (funcall 'si::sgc-on nil)))
-              #+(and gcl (not acl2-loop-only))
+              #+(and gcl (not gcl-2.7.0+) (not acl2-loop-only))
               (cond (*request-bigger-fixnum-table*
                      (allocate-fixnum-range 0 (hash-size))
                      (setq *request-bigger-fixnum-table* nil)))

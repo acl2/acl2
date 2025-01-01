@@ -49,13 +49,13 @@
 ; things, though; see GNUmakefile.
 
   (if (probe-file "acl2r.lisp") (load "acl2r.lisp"))
-  #+sbcl ; keep this in sync with with-warnings-suppressed
+  #+(or sbcl gcl) ; keep this in sync with with-warnings-suppressed
   (handler-bind
    ((style-warning (lambda (c)
                      (declare (ignore c))
                      (invoke-restart 'muffle-warning))))
    (load "acl2-init.lisp"))
-  #-sbcl
+  #-(or sbcl gcl)
   (load "acl2-init.lisp"))
 
 ; We may need a bigger stack than the default, as evidenced by the failure of
