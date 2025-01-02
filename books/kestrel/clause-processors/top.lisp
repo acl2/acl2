@@ -19,7 +19,7 @@
 (include-book "handle-constant-literals")
 (include-book "flatten-literals")
 (include-book "simple-subsumption")
-(include-book "push-unary-functions") ; todo: rename to push-unary-fns-into-ifs.lisp
+(include-book "push-unary-fns-into-ifs")
 (include-book "push-unary-fns")
 (include-book "push-unary-fns-into-lambdas")
 (include-book "simplify-after-using-conjunction")

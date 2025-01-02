@@ -141,7 +141,6 @@
 
 ;; Not sure whether we need more rules about set-ms, as it generally causes the execution to stop.
 
-
 ;; (defund set-error (error x86)
 ;;   (declare (xargs :stobjs x86))
 ;;   (x86isa::!ms error x86))
@@ -150,10 +149,6 @@
 ;;   (equal (xw :ms nil error x86)
 ;;          (set-error error x86))
 ;;   :hints (("Goal" :in-theory (enable set-error))))
-
-;; (defund set-error (ms x86)
-;;   (declare (xargs :stobjs x86))
-;;   (x86isa::!ms ms x86))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

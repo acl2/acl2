@@ -682,6 +682,7 @@
 
 ;todo: are there more flags to clear.
 ;to be left enabled, for now
+;only used in one example
 (defun clear-all-flags (x86)
   (declare (xargs :stobjs x86))
   (let* ((x86 (set-flag :af 0 x86))
