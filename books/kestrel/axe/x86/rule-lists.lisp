@@ -1,7 +1,7 @@
 ; Rule Lists used by the x86 Axe tools
 ;
 ; Copyright (C) 2016-2022 Kestrel Technology, LLC
-; Copyright (C) 2020-2024 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -286,12 +286,12 @@
     <-of-read-and-non-positive
     read-of-xw-irrel
     read-of-set-flag
-    read-when-program-at ; trying just this on
+    read-when-program-at ; trying just this one
     ;; since read-when-program-at can introduce bv-array-read-chunk-little
     acl2::bv-array-read-chunk-little-constant-opener
     acl2::bv-array-read-chunk-little-base ; todo: try to do better than these in some cases (try the other rules first)
     acl2::bv-array-read-chunk-little-unroll
-    ;; read-when-program-at-1-byte-simple ; todo: use a more general rule?
+    ;; read-when-program-at-1-byte-simple
     ;; read-when-program-at-2-bytes
     ;; read-when-program-at-4-bytes
     ;; read-when-program-at-8-bytes
@@ -4362,16 +4362,13 @@
 
 ;; Wait to try these rules until the read is cleaned up by removing irrelevant inner writes/sets
 (set-axe-rule-priority read-when-program-at 1)
-;;todo: these are no longer used:
-(set-axe-rule-priority read-when-program-at-1-byte 1)
-(set-axe-rule-priority read-when-program-at-2-bytes 2) ; try these after the 1-byte one just above
-(set-axe-rule-priority read-when-program-at-4-bytes 2)
-(set-axe-rule-priority read-when-program-at-8-bytes 2)
-
-(set-axe-rule-priority read-when-program-at-1-byte-simple 1)
+;; these are no longer used:
+;; (set-axe-rule-priority read-when-program-at-1-byte-simple 1)
+;; (set-axe-rule-priority read-when-program-at-1-byte 1)
 ;; (set-axe-rule-priority read-when-program-at-2-bytes 2) ; try these after the 1-byte one just above
 ;; (set-axe-rule-priority read-when-program-at-4-bytes 2)
 ;; (set-axe-rule-priority read-when-program-at-8-bytes 2)
+
 
 ;; These rules expand operations on effective addresses, exposing the
 ;; underlying operations on linear addresses.
@@ -4883,10 +4880,10 @@
      read-of-set-flag
      read-of-write-irrel2
      write-of-write-same
-     read-when-program-at-1-byte ; this is for resolving reads of the program.
-     read-when-program-at-4-bytes ; this is for resolving reads of the program.
-     read-when-program-at-2-bytes ; this is for resolving reads of the program.
-     read-when-program-at-8-bytes ; this is for resolving reads of the program.
+     ;; read-when-program-at-1-byte ; this is for resolving reads of the program.
+     ;; read-when-program-at-4-bytes ; this is for resolving reads of the program.
+     ;; read-when-program-at-2-bytes ; this is for resolving reads of the program.
+     ;; read-when-program-at-8-bytes ; this is for resolving reads of the program.
      acl2::equal-of-same-cancel-4
      acl2::equal-of-same-cancel-3
      acl2::equal-of-bvplus-constant-and-constant
