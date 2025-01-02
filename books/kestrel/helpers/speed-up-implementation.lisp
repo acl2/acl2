@@ -541,12 +541,13 @@
          (make-event
            (let ((event (farg1 event)))
              (mv-let (erp result state)
-               ;; todo: use revert-world-on-error (see comment in protected-eval)?
-               (protected-eval event
-                               'speed-up-and-submit-event
-                               'speed-up-and-submit-event
-                               state
-                               t)
+               ;; todo: or use revert-world-on-error? (see comment in protected-eval)
+               (revert-world
+                 (protected-eval event
+                                 'speed-up-and-submit-event
+                                 'speed-up-and-submit-event
+                                 state
+                                 t))
                (if erp
                    (mv :error-in-make-event state)
                  (let ((result-event (car result))) ; todo: do anything with new-kpa and new-ttags-seen?
