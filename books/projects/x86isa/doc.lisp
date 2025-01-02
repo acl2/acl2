@@ -450,9 +450,6 @@
  <li>Check the segmentation specification and test the far @('jmp')
  instruction.</li>
 
- <li>Verify guards of functions in
- @('tools/execution/exec-loaders/elf/').</li>
-
  <li>Add support for handling more exceptions. In the past, no exception
  handling was supported. In the effort to boot Linux, we added support for page
  faults, but most other exceptions are still unhandled.</li>
