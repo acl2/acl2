@@ -348,7 +348,7 @@
     ;;read-of-write-of-set-flag ; these just make terms nicer (todo: these break proofs -- why?)
     ;;read-of-write-of-write-of-set-flag
     ;;read-of-write-of-write-of-write-of-set-flag
-    ))
+    read-1-of-write-within-new))
 
 (defund reader-and-writer-intro-rules ()
   (declare (xargs :guard t))
@@ -4600,7 +4600,7 @@
             not-equal-of-+-of-+-and-+-when-separate
             not-equal-of-+-of-+-and-+-when-separate-gen
             acl2::<-of-negative-constant-and-bv
-            read-1-of-write-1-both
+            ;;read-1-of-write-1-both
             acl2::bvlt-of-constant-when-usb-dag ; rename
             ;; separate-of-1-and-1 ; do we ever need this?
             acl2::equal-of-bvshl-and-constant ; move to core-rules-bv?
@@ -4781,7 +4781,7 @@
             acl2::bvchop-of-logand-becomes-bvand
             ;read-1-of-write-4
             ;read-1-of-write-1-both ; can make things, like failure to resolve rip, hard to debug
-            read-1-of-write-within-new
+            ;read-1-of-write-within-new
             not-equal-of-+-when-separate
             not-equal-of-+-when-separate-alt
             x86isa::canonical-address-p-of-sum-when-unsigned-byte-p-32
