@@ -435,9 +435,10 @@
   :parents (x86isa)
   :short "Known issues, planned activities, wishlists, etc."
 
-  :long "<p>If anyone is interested in carrying out the tasks or
-  activities below, please feel free to contact Shilpi
-  \(@('shigoel@cs.utexas.edu')\).</p>
+  :long "<p>As of 2025, the X86ISA model is being maintained and extended by
+  the ACL2 community. If anyone is interested in carrying out the tasks or
+  activities below, please feel free to contact us at
+  @('acl2-books@googlegroups.com').</p>
 
  <h3>TO-DO</h3>
 
