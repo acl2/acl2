@@ -1,6 +1,6 @@
 ; A clause-processor that helps after :use-ing a conjunction
 ;
-; Copyright (C) 2021-2023 Kestrel Institute
+; Copyright (C) 2021-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,7 +13,7 @@
 ;(include-book "subst-flag")
 (include-book "flatten-literals") ; for flatten-disjuncts
 (include-book "simple-subsumption")
-;(include-book "push-unary-functions")
+;(include-book "push-unary-fns-into-ifs")
 (include-book "simplify-assumptions")
 ;(include-book "kestrel/booleans/booland" :dir :system) ; why?
 ;(include-book "kestrel/booleans/boolor" :dir :system) ; why?

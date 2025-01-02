@@ -1,6 +1,6 @@
 ; A variant of make-flag that may be more robust
 ;
-; Copyright (C) 2015-2023, Kestrel Institute
+; Copyright (C) 2015-2025, Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,7 +14,7 @@
 (include-book "misc/install-not-normalized" :dir :system)
 (include-book "kestrel/clause-processors/simplify-after-using-conjunction" :dir :system)
 (include-book "kestrel/clause-processors/subst-flag" :dir :system)
-(include-book "kestrel/clause-processors/push-unary-functions" :dir :system)
+(include-book "kestrel/clause-processors/push-unary-fns-into-ifs" :dir :system)
 (local (include-book "kestrel/typed-lists-light/pseudo-term-list-listp" :dir :system))
 
 (local (in-theory (disable disjoin)))
