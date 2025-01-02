@@ -288,7 +288,7 @@
         ((and (consp (car entries))
               (symbolp (caar entries)))
          ;; theorems, definitions, defchooses
-         (let* ((acc (list* #\Space #\f #\e #\d #\( #\@ acc)) ;; "@(def "
+         (let* ((acc (list* #\Space #\? #\f #\e #\d #\( #\@ acc)) ;; "@(def? "
                 (acc (revappend-full-escape-symbol (caar entries) acc))
                 (acc (list* #\Newline #\) acc)))
            (formula-info-to-defs1 (cdr entries) acc)))
@@ -307,6 +307,13 @@
                 acc))
          (before-entries acc)
          (acc (formula-info-to-defs1 entries acc)))
+    ;; Bozo (Sol): The above may generate some @(def? ...) directives. If
+    ;; there aren't any, then we'll avoid printing "Definitions and Theorems".
+    ;; But some or all of these may turn out not to print anything
+    ;; (e.g. because the events they referred to were local, in the case of
+    ;; defsection-progn). We'll still print "Definitions and Theorems" in the
+    ;; case where there it turned out that no definitions were printed.  This
+    ;; isn't easy to solve so for now I'll leave it.
     (if (equal acc before-entries)
         ;; Avoid adding empty "Definitions and Theorems" sections.
         original

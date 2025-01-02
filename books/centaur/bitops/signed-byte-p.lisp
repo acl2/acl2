@@ -806,13 +806,6 @@ declarations.")
                   (equal (logtail n x) 0))
          :hints(("Goal" :in-theory (enable logtail**)))))
 
-(local (defthm signed-byte-p-monotonicity
-         (implies (and (signed-byte-p a x)
-                       (<= a b)
-                       (integerp b))
-                  (signed-byte-p b x))
-         :hints(("Goal" :in-theory (enable signed-byte-p**)))))
-
 ;; (defsection signed-byte-p-of-logcdr
 ;;   :short "Case-splitting, unconditional."
 
@@ -1577,4 +1570,3 @@ declarations.")
                   (signed-byte-p n b))
              (signed-byte-p n (rem a b)))
     :short "Rem of N-bit signed by N-bit signed creates an N-bit signed."))
-

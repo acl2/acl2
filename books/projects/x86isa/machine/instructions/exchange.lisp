@@ -245,7 +245,7 @@
        ((mv result
             (the (unsigned-byte 32) output-rflags)
             (the (unsigned-byte 32) undefined-flags))
-        (gpr-arith/logic-spec reg/mem-size #.*OP-CMP* reg/mem rAX input-rflags))
+        (gpr-arith/logic-spec reg/mem-size #.*OP-CMP* rAX reg/mem input-rflags))
 
        ;; Update the x86 state:
        (x86 (write-user-rflags output-rflags undefined-flags x86))

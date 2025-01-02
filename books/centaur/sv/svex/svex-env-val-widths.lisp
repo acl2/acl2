@@ -94,9 +94,9 @@
                   (< n m))
               (signed-byte-p m x))
     :hints(("Goal" :use (signed-byte-p-when-unsigned-byte-p-1
-                         (:instance bitops::signed-byte-p-monotonicity
+                         (:instance bitops::signed-byte-p-incr
                           (a (+ 1 n)) (b m)))
-            :in-theory (disable bitops::signed-byte-p-monotonicity)
+            :in-theory (disable bitops::signed-byte-p-incr)
             :do-not-induct t))))
                  
 

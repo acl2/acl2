@@ -738,7 +738,9 @@
        ((the (integer 1 8) operand-size)
         (select-operand-size
          proc-mode byte-operand? rex-byte t prefixes nil nil nil x86))
-       (rAX-size (if (logbitp #.*w* rex-byte)
+       ;; rex does not promote byte opcodes to 64-bit
+       (rAX-size (if (and (not byte-operand?)
+                          (logbitp #.*w* rex-byte))
                      8
                    operand-size))
 

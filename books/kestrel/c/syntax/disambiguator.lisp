@@ -3543,9 +3543,10 @@
      (fty::deffixequiv dimb-transunit-ensemble-loop
        :args ((gcc booleanp)))
 
-     (defret transunit-ensemble-unambp-loop-of-dimb-transunit-ensemble-loop
+     (defret filepath-transunit-map-unambp-of-dimb-transunit-ensemble-loop
        (implies (not erp)
-                (transunit-ensemble-unambp-loop new-tumap))
+                (filepath-transunit-map-unambp new-tumap))
+       :hyp (filepath-transunit-mapp tumap)
        :hints (("Goal" :induct t)))))
 
   ///

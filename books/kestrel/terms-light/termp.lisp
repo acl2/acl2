@@ -35,3 +35,22 @@
                    (eql (length (cadr a))
                         (length x))))))
   :hints (("Goal" :in-theory (enable termp))))
+
+;; for the first argument
+;; Includes the lambda case
+(defthm termp-of-cadr-when-termp
+  (implies (and (termp term w)
+                (consp term)
+                (not (eq 'quote (car term)))
+                ;; if the arity is 0, there could be no args, and (cadr term) would then be nil,
+                ;; which is not a termp:
+                (< 0 (arity (car term) w)))
+           (termp (cadr term) w))
+  :hints (("Goal" :in-theory (enable arity termp))))
+
+(defthm len-of-lambda-formals-of-car-when-termp
+  (implies (and (termp term w)
+                (not (symbolp (car term))) ; must be a lambda
+                )
+           (equal (len (lambda-formals (car term)))
+                  (len (cdr term)))))

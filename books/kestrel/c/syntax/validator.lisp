@@ -6732,7 +6732,7 @@
   ((define valid-transunit-ensemble-loop ((map filepath-transunit-mapp)
                                           (gcc booleanp)
                                           (ienv ienvp))
-     :guard (transunit-ensemble-unambp-loop map)
+     :guard (filepath-transunit-map-unambp map)
      :returns (mv erp
                   (new-map filepath-transunit-mapp
                            :hyp (filepath-transunit-mapp map)))

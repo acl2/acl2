@@ -481,7 +481,7 @@
     extdecl-unambp
     extdecl-list-unambp
     transunit-unambp
-    transunit-ensemble-unambp-loop
+    filepath-transunit-map-unambp
     transunit-ensemble-unambp
 
    ))
