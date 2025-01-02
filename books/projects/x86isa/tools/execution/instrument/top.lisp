@@ -38,6 +38,8 @@
 
 (in-package "X86ISA")
 (include-book "../init-page-tables" :ttags :all)
+(include-book "../../../machine/x86"
+              :ttags (:syscall-exec :other-non-det :undef-flg))
 (include-book "std/strings/hex" :dir :system)
 (include-book "std/strings/decimal" :dir :system)
 
