@@ -9351,7 +9351,7 @@
                        :PFX :F3
                        :FEAT '(:POPCNT))
           (ARG :OP1 '(G V) :OP2 '(E V))
-          'NIL
+          '(x86-popcnt)
           '((:UD (UD-LOCK-USED))))
     (INST "UD1"
           (OP :OP #xFB9
