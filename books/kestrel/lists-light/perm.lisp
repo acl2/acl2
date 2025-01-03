@@ -1,7 +1,7 @@
 ; Theorems about perm
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -227,7 +227,7 @@
 (defcong perm iff (intersection-equal x y) 1
   :hints (("Goal" ;:expand (INTERSECTION-EQUAL X-EQUIV Y)
            :in-theory (e/d (intersection-equal perm)
-                           (intersection-equal-symmetric-iff)))))
+                           (intersection-equal-commutative-iff)))))
 
 (defcong perm iff (intersection-equal x y) 2
   :hints (("Goal" ;:expand (INTERSECTION-EQUAL X-EQUIV Y)
