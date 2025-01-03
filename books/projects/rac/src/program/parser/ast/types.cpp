@@ -137,6 +137,10 @@ Sexpression *PrimType::cast(Expression *rval) const {
   bool src_fit_inside_dst = false;
 
   if (are_static) {
+    // Always true (implied by `are_static`) but makes gcc and clang happy by
+    // removing a -Wmaybe-uninitialized error.
+    assert(s_src_val);
+    assert(w_src_val);
     if (*s_src_val == signed_ && w_dst >= *w_src_val) {
       src_fit_inside_dst = true;
     }

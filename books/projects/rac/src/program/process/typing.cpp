@@ -350,27 +350,40 @@ bool TypingAction::VisitCastExpr(CastExpr *e) {
 
   bool source_depends_on_template_parameter = false;
 
-  if (auto i = dynamic_cast<IntType *>(e->get_type())) {
+  if (auto i = dynamic_cast<IntType *>(e->expr->get_type())) {
     TraverseExpression(i->width());
     TraverseExpression(i->isSigned());
     source_depends_on_template_parameter
-        = !i->width()->isStaticallyEvaluable();
+        = !i->width()->isStaticallyEvaluable()
+          || !i->isSigned()->isStaticallyEvaluable();
   }
 
   e->set_type(t);
   if (!e->expr->get_type()->canBeImplicitlyCastTo(t)) {
 
-    diag_
-        .new_error(e->loc(),
-                   format("Incompatible types: %s cannot be cast to %s",
-                          e->expr->get_type()->to_string().c_str(),
-                          t->to_string().c_str()))
-        .note("To convert types depending on template parameters to "
-              "primitive types, you should add an explicit conversion (like "
-              "this ac_int<32, true>(...) to convert to int)")
-        .report();
+    if (source_depends_on_template_parameter) {
+      diag_
+          .new_error(e->loc(),
+                     format("Incompatible types: %s cannot be cast to %s",
+                            e->expr->get_type()->to_string().c_str(),
+                            t->to_string().c_str()))
+          .note("To convert types depending on template parameters to "
+                "primitive types, you should add an explicit conversion "
+                "(like "
+                "this ac_int<32, true>(...) to convert to int)")
+          .report();
+    } else {
+      diag_
+          .new_error(e->loc(),
+                     format("Incompatible types: %s cannot be cast to %s",
+                            e->expr->get_type()->to_string().c_str(),
+                            t->to_string().c_str()))
+          .report();
+    }
+
     return error();
   }
+
   return true;
 }
 
@@ -837,9 +850,8 @@ bool TypingAction::check_assignement(const Location &where, const Type *left,
         diag_
             .new_error(
                 where,
-                format(
-                    "Too many arguments, %s, expected %d argument(s) got %d",
-                    array_size, t->size()))
+                format("Too many arguments, expected %d argument(s) got %d",
+                       array_size, t->size()))
             .report();
         return error();
       }
@@ -903,9 +915,8 @@ bool TypingAction::check_assignement(const Location &where, const Type *left,
         diag_
             .new_error(
                 where,
-                format(
-                    "Too many arguments, %s, expected %d argument(s) got %d",
-                    mv->size(), t->size()))
+                format("Too many arguments, expected %d argument(s) got %d",
+                       mv->size(), t->size()))
             .report();
         return error();
       }
