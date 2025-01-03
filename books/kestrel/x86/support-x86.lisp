@@ -61,8 +61,8 @@
   (implies (x86p x86)
            (x86p (xw x86isa::fld x86isa::index value x86))))
 
-(in-theory (disable x86isa::x86p-xw ;does forcing, which causes problems in various places
-                    x86isa::x86p-!rip-when-val-is-canonical-address-p ;todo: remove this rule altogether since it is subsumed by x86p-xw
+(in-theory (disable x86isa::x86p-xw
+                    ;x86isa::x86p-!rip-when-val-is-canonical-address-p ;todo: remove this rule altogether since it is subsumed by x86p-xw  ;does forcing, which causes problems in various places
                     ))
 
 (defthm rflags-is-n32p-unforced
