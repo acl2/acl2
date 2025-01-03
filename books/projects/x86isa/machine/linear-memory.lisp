@@ -482,8 +482,7 @@
       :bound m
       :concl (mv-nth 1 (rb-1 n addr r-x x86))
       :hints (("Goal" :in-theory (e/d* (rvm08) (unsigned-byte-p signed-byte-p))))
-      :gen-linear t
-      :hints-l (("Goal" :in-theory (e/d* () (rb-1))))))
+      :gen-linear t))
 
   (define las-to-pas
     ((n         natp "Number of bytes to be read")
@@ -745,16 +744,14 @@
                             :hints (("Goal"
                                      :do-not-induct t
                                      :in-theory (e/d* () (unsigned-byte-p))))
-                            :gen-linear t
-                            :hints-l (("Goal" :in-theory (e/d* () (rb)))))
+                            :gen-linear t)
 
     (defthm-unsigned-byte-p size-of-rb-in-app-view
                             ;; No need to know whether the addresses are canonical or not...
                             :hyp (and (app-view x86) (natp n))
                             :bound (ash n 3)
                             :concl (mv-nth 1 (rb n addr r-x x86))
-                            :gen-linear t
-                            :hints-l (("Goal" :in-theory (e/d* () (rb)))))
+                            :gen-linear t)
 
     (defthm rb-values-and-xw-rflags-in-sys-view
             (implies (and (equal (rflagsBits->ac (double-rewrite value))
@@ -1367,7 +1364,6 @@
                           :concl (mv-nth 1 (rml08 lin-addr r-x x86))
                           :hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
                           :gen-linear t
-                          :hints-l (("Goal" :in-theory (e/d (unsigned-byte-p) ())))
                           :gen-type t)
 
   (defthm x86p-rml08
@@ -1493,7 +1489,6 @@
                         :concl (mv-nth 1 (riml08 lin-addr r-x x86))
                         :hints (("Goal" :in-theory (e/d () (signed-byte-p))))
                         :gen-linear t
-                        :hints-l (("Goal" :in-theory (e/d (signed-byte-p) ())))
                         :gen-type t)
 
   (defthm x86p-riml08
@@ -1679,7 +1674,6 @@
                           :concl (mv-nth 1 (rml16 lin-addr r-x x86))
                           :hints (("Goal" :in-theory (e/d () (signed-byte-p))))
                           :gen-linear t
-                          :hints-l (("Goal" :in-theory (e/d (signed-byte-p) ())))
                           :gen-type t)
 
   (defthm x86p-rml16
@@ -1785,7 +1779,6 @@
                         :concl (mv-nth 1 (riml16 lin-addr r-x x86))
                         :hints (("Goal" :in-theory (e/d () (signed-byte-p))))
                         :gen-linear t
-                        :hints-l (("Goal" :in-theory (e/d (signed-byte-p) ())))
                         :gen-type t)
 
   (defthm x86p-riml16
@@ -1977,7 +1970,6 @@
                           :concl (mv-nth 1 (rml32 lin-addr r-x x86))
                           :hints (("Goal" :in-theory (e/d () (signed-byte-p))))
                           :gen-linear t
-                          :hints-l (("Goal" :in-theory (e/d (signed-byte-p) (force (force)))))
                           :gen-type t)
 
   (defthm x86p-rml32
@@ -2083,7 +2075,6 @@
                         :concl (mv-nth 1 (riml32 lin-addr r-x x86))
                         :hints (("Goal" :in-theory (e/d () (signed-byte-p))))
                         :gen-linear t
-                        :hints-l (("Goal" :in-theory (e/d (signed-byte-p) ())))
                         :gen-type t)
 
   (defthm x86p-riml32
@@ -2357,7 +2348,6 @@
                           :hints (("Goal" :in-theory (e/d () (signed-byte-p))))
                           :otf-flg t
                           :gen-linear t
-                          :hints-l (("Goal" :in-theory (e/d (signed-byte-p) (rb))))
                           :gen-type t)
 
   (defthm x86p-rml48
@@ -2762,7 +2752,6 @@
                           :hints (("Goal" :in-theory (e/d () (signed-byte-p))))
                           :otf-flg t
                           :gen-linear t
-                          :hints-l (("Goal" :in-theory (e/d (signed-byte-p) (rb))))
                           :gen-type t)
 
   (defthm x86p-rml64
@@ -2868,7 +2857,6 @@
                         :concl (mv-nth 1 (riml64 lin-addr r-x x86))
                         :hints (("Goal" :in-theory (e/d () (signed-byte-p))))
                         :gen-linear t
-                        :hints-l (("Goal" :in-theory (e/d (signed-byte-p) ())))
                         :gen-type t)
 
   (defthm x86p-riml64
@@ -3200,7 +3188,6 @@
                           :hints (("Goal" :in-theory (e/d (rb) (signed-byte-p))))
                           :otf-flg t
                           :gen-linear t
-                          :hints-l (("Goal" :in-theory (e/d (signed-byte-p) (rb))))
                           :gen-type t)
 
   (defthm x86p-rml80
@@ -3542,10 +3529,6 @@
                            :bound 128
                            :concl (bitops::merge-16-u8s h7 h6 h5 h4 h3 h2 h1 h0 l7 l6 l5 l4 l3 l2 l1 l0)
                            :hints (("Goal" :in-theory (e/d* () (unsigned-byte-p))))
-                           :hints-l (("Goal"
-                                      :in-theory
-                                      (e/d* (unsigned-byte-p) (bitops::unsigned-byte-p-128-of-merge-16-u8s))
-                                      :use ((:instance bitops::unsigned-byte-p-128-of-merge-16-u8s))))
                            :gen-linear t))
 
 
@@ -3683,7 +3666,6 @@
                           :concl (mv-nth 1 (rml128 lin-addr r-x x86))
                           :hints (("Goal" :in-theory (e/d () (force (force) signed-byte-p))))
                           :gen-linear t
-                          :hints-l (("Goal" :in-theory (e/d (signed-byte-p) (rb))))
                           :gen-type t)
 
   (defthm x86p-rml128
@@ -4081,10 +4063,6 @@
      :concl (bitops::merge-32-u8s h15 h14 h13 h12 h11 h10 h9 h8 h7 h6 h5 h4 h3 h2 h1 h0
                                   l15 l14 l13 l12 l11 l10 l9 l8 l7 l6 l5 l4 l3 l2 l1 l0)
      :hints (("Goal" :in-theory (e/d* () (unsigned-byte-p))))
-     :hints-l (("Goal"
-                :in-theory
-                (e/d* (unsigned-byte-p) (bitops::unsigned-byte-p-256-of-merge-32-u8s))
-                :use ((:instance bitops::unsigned-byte-p-256-of-merge-32-u8s))))
      :gen-linear t))
 
 
@@ -4323,7 +4301,6 @@
     :concl (mv-nth 1 (rml256 lin-addr r-x x86))
     :hints (("Goal" :in-theory (e/d () (force (force) signed-byte-p))))
     :gen-linear t
-    :hints-l (("Goal" :in-theory (e/d (signed-byte-p) (rb))))
     :gen-type t)
 
   (defthm x86p-rml256
@@ -4908,10 +4885,6 @@
                                   l31 l30 l29 l28 l27 l26 l25 l24 l23 l22 l21 l20 l19 l18 l17 l16
                                   l15 l14 l13 l12 l11 l10 l9 l8 l7 l6 l5 l4 l3 l2 l1 l0)
      :hints (("Goal" :in-theory (e/d* () (unsigned-byte-p))))
-     :hints-l (("Goal"
-                :in-theory
-                (e/d* (unsigned-byte-p) (bitops::unsigned-byte-p-512-of-merge-64-u8s))
-                :use ((:instance bitops::unsigned-byte-p-512-of-merge-64-u8s))))
      :gen-linear t))
 
 
@@ -5352,7 +5325,6 @@
     :concl (mv-nth 1 (rml512 lin-addr r-x x86))
     :hints (("Goal" :in-theory (e/d () (force (force) signed-byte-p))))
     :gen-linear t
-    :hints-l (("Goal" :in-theory (e/d (signed-byte-p) (rb))))
     :gen-type t)
 
   (defthm x86p-rml512
