@@ -1,7 +1,7 @@
 ; Utilities for expanding lambdas
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -131,31 +131,3 @@
            ;; :expand (expand-lambdas-in-term term)
            :in-theory (e/d (lambda-free-termp)
                            (lambda-free-termp-of-expand-lambdas-in-term)))))
-
-;; Expanding lambdas doesn't introduce new free vars (assuming lambdas are
-;; closed).  Note that expanding lambdas can remove free vars, since some
-;; lambda formals may not appear in the lambda body (so their actuals are
-;; effectively dropped).
-(defthm-flag-expand-lambdas-in-term
-  (defthm subsetp-equal-of-free-vars-in-term-of-expand-lambdas-in-term-and-free-vars-in-term
-    (implies (and (pseudo-termp term)
-                  (lambdas-closed-in-termp term))
-             (subsetp-equal (free-vars-in-term (expand-lambdas-in-term term))
-                            (free-vars-in-term term)))
-    :flag expand-lambdas-in-term)
-  (defthm subsetp-equal-of-free-vars-in-terms-of-expand-lambdas-in-terms-and-free-vars-in-terms
-    (implies (and (pseudo-term-listp terms)
-                  (lambdas-closed-in-termsp terms))
-             (subsetp-equal (free-vars-in-terms (expand-lambdas-in-terms terms))
-                            (free-vars-in-terms terms)))
-    :flag expand-lambdas-in-terms)
-  :hints (("subgoal *1/2" :use (:instance subsetp-equal-of-free-vars-in-term-of-sublis-var-simple-and-free-vars-in-terms-of-strip-cdrs
-                                          (term (expand-lambdas-in-term (caddr (car term))))
-                                          (alist (pairlis$ (cadr (car term))
-                                                           (expand-lambdas-in-terms (cdr term))))))
-          ("Goal" :in-theory (e/d (free-vars-in-term
-                                   expand-lambdas-in-term
-                                   expand-lambdas-in-terms
-                                   lambdas-closed-in-termp)
-                                  (subsetp-equal-of-free-vars-in-term-of-sublis-var-simple-and-free-vars-in-terms-of-strip-cdrs
-                                   strip-cdrs-of-pairlis$)))))
