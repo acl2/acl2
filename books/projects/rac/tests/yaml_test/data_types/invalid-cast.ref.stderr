@@ -1,4 +1,3 @@
 invalid-cast.cpp:6 (34-40): Incompatible types: int[3] cannot be cast to int
   6 | int foo(array<int, 3> a) { return (int)a; }
     |                                   ^^^^^^
-note: To convert types depending on template parameters to primitive types, you should add an explicit conversion (like this ac_int<32, true>(...) to convert to int)

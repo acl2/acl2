@@ -99,3 +99,5 @@
 
 - name: const-assign
   should_report_error: true
+
+- name: typedef-in-composite-types

@@ -1,6 +1,6 @@
 ; A utility that suggests ways to speed up events and books
 ;
-; Copyright (C) 2023-2024 Kestrel Institute
+; Copyright (C) 2023-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -460,6 +460,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defttag remove-untouchable)
+(remove-untouchable protected-eval t)
+
 (mutual-recursion
 
  ;; Submits the event, after printing suggestions for improving it.
@@ -535,6 +538,20 @@
          (progn
            (let ((events (fargs event)))
              (speed-up-and-submit-events events synonym-alist min-time-savings min-event-time print throw-errorp state)))
+         (make-event
+           (let ((event (farg1 event)))
+             (mv-let (erp result state)
+               ;; todo: or use revert-world-on-error? (see comment in protected-eval)
+               (revert-world
+                 (protected-eval event
+                                 'speed-up-and-submit-event
+                                 'speed-up-and-submit-event
+                                 state
+                                 t))
+               (if erp
+                   (mv :error-in-make-event state)
+                 (let ((result-event (car result))) ; todo: do anything with new-kpa and new-ttags-seen?
+                   (speed-up-and-submit-event result-event synonym-alist min-time-savings min-event-time print throw-errorp state))))))
          (otherwise
           (if (macro-namep fn (w state))
               (progn$ ;; (cw "Macroexpanding ~x0.~%" event)

@@ -129,7 +129,7 @@ def run_tests(bin_path, category, file, timeout, quiet, show_bugs):
             print(err)
             print('--------------------------------------------------------------------------------')
 
-        except OSError as err:
+        except Exception as err:
             print(f"[{colored('KO', 'yellow')}]", testcase["name"], f"(from {category})")
             if not quiet:
                 print(f"{colored('Test description:', 'yellow')} ", descr)

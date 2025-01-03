@@ -1,7 +1,7 @@
 ; Simpler functions for reading and writing memory
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2024 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -17,7 +17,7 @@
 (include-book "support-x86") ;for things like rb-in-terms-of-nth-and-pos-eric and canonical-address-p-between
 ;(include-book "projects/x86isa/machine/application-level-memory" :dir :system) ;for canonical-address-p
 (include-book "flags")
-(include-book "projects/x86isa/proofs/utilities/app-view/top" :dir :system) ;reduce?
+;(include-book "projects/x86isa/proofs/utilities/app-view/top" :dir :system) ;reduce?
 (include-book "kestrel/bv/rules3" :dir :system) ;reduce?
 (include-book "kestrel/bv/slice" :dir :system)
 (include-book "kestrel/utilities/def-constant-opener" :dir :system)
@@ -1032,26 +1032,6 @@
                                      acl2::bvchop-of-+-becomes-bvplus))))
 
 
-;; ;todo: gen the 1
-;; ;todo: the hyps of read-when-program-at-1-byte seem better than this
-;; (defthm read-when-program-at-alt
-;;   (implies (and (program-at addr2 bytes x86)
-;;                 (syntaxp (quotep bytes))
-;;                 (< 0 (len bytes))
-;;                 (byte-listp bytes)
-;;                 (canonical-address-p$inline addr2)
-;;                 (canonical-address-p$inline (+ -1 addr2 (len bytes)))
-;;                 (<= addr2 addr)
-;;                 (< (+ addr (- addr2)) (len bytes)) ; note this!
-;;                 (integerp addr)
-;;                 (integerp addr2)
-;;                 (app-view x86)
-;;                 (x86p x86))
-;;            (equal (read 1 addr x86)
-;;                   (nth (- addr addr2) bytes)))
-;;   :hints (("Goal" :in-theory (e/d (program-at read-when-equal-of-read-gen)
-;;                                   (distributivity)))))
-
 ;; or do we want bvplus?
 (defthm read-of-bvplus
   (implies (and (integerp x)
@@ -1686,7 +1666,7 @@
                   (xr :mem addr1 x86)))
   :hints (("Goal" :in-theory (enable write write-byte))))
 
-; use bvt?
+; use bvle?
 (defthm xr-of-write-irrel
   (implies (and (<= n (bvchop 48 (- addr1 addr2))) ; todo: use bvminus
                 (integerp addr1)

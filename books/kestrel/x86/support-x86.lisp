@@ -14,8 +14,13 @@
 ;; Supporting material about the x86 model.  Some of this could be moved to the
 ;; model itself.
 
-(include-book "projects/x86isa/proofs/utilities/app-view/top" :dir :system) ;reduce? needed for the big enable below
+;(include-book "projects/x86isa/proofs/utilities/app-view/top" :dir :system) ;reduce? needed for the big enable below
+(include-book "projects/x86isa/proofs/utilities/general-memory-utils" :dir :system) ; so we can disable questionable rule X86ISA::X86P-!RIP-WHEN-VAL-IS-CANONICAL-ADDRESS-P
+(include-book "projects/x86isa/proofs/utilities/row-wow-thms" :dir :system) ; for X86ISA::WRITE-USER-RFLAGS-AND-XW
+(include-book "projects/x86isa/proofs/utilities/app-view/user-level-memory-utils" :dir :system) ; for rb-rb-subset
 (include-book "projects/x86isa/machine/state" :dir :system)
+;(include-book "projects/x86isa/machine/x86" :dir :system)
+(include-book "projects/x86isa/machine/get-prefixes" :dir :system)
 ;(include-book "projects/x86isa/machine/state-field-thms" :dir :system)
 (include-book "projects/x86isa/machine/application-level-memory" :dir :system) ;for canonical-address-p
 (include-book "kestrel/utilities/defopeners" :dir :system)
@@ -61,8 +66,8 @@
   (implies (x86p x86)
            (x86p (xw x86isa::fld x86isa::index value x86))))
 
-(in-theory (disable x86isa::x86p-xw ;does forcing, which causes problems in various places
-                    x86isa::x86p-!rip-when-val-is-canonical-address-p ;todo: remove this rule altogether since it is subsumed by x86p-xw
+(in-theory (disable x86isa::x86p-xw
+                    ;x86isa::x86p-!rip-when-val-is-canonical-address-p ;todo: remove this rule altogether since it is subsumed by x86p-xw  ;does forcing, which causes problems in various places
                     ))
 
 (defthm rflags-is-n32p-unforced
