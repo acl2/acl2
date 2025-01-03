@@ -252,7 +252,7 @@ bool TypingAction::VisitArrayRef(ArrayRef *e) {
 
 bool TypingAction::VisitStructRef(StructRef *e) {
   const StructType *t = always_cast<const StructType *>(e->base->get_type());
-  e->set_type(t->getField(e->field)->type);
+  e->set_type(deref(t->getField(e->field)->type));
   return true;
 }
 
@@ -844,9 +844,11 @@ bool TypingAction::check_assignement(const Location &where, const Type *left,
         return error();
       }
 
+      Type *arrayBaseType = deref(array->baseType);
+
       auto is_correct = std::all_of(
           t->types().begin(), t->types().end(), [&](const Type *t) {
-            if (!t->canBeImplicitlyCastTo(array->baseType)) {
+            if (!t->canBeImplicitlyCastTo(arrayBaseType)) {
               diag_
                   .new_error(
                       where,
@@ -879,7 +881,7 @@ bool TypingAction::check_assignement(const Location &where, const Type *left,
       auto is_correct = std::all_of(
           t->types().begin(), t->types().end(), [&](const Type *t) {
             Type *field_type = struct_->fields()[i]->type;
-            if (!t->canBeImplicitlyCastTo(field_type)) {
+            if (!t->canBeImplicitlyCastTo(deref(field_type))) {
               diag_
                   .new_error(
                       where,
@@ -911,7 +913,7 @@ bool TypingAction::check_assignement(const Location &where, const Type *left,
       unsigned i = 0;
       auto is_correct = std::all_of(
           t->types().begin(), t->types().end(), [&](const Type *t) {
-            if (!t->canBeImplicitlyCastTo(mv->get(i))) {
+            if (!t->canBeImplicitlyCastTo(deref(mv->get(i)))) {
               diag_
                   .new_error(
                       where,
@@ -947,6 +949,16 @@ bool TypingAction::check_assignement(const Location &where, const Type *left,
 }
 
 Type *TypingAction::deref(Type *t) {
+
+  if (const DefinedType *dt = dynamic_cast<const DefinedType *>(t)) {
+    assert(dt->derefType());
+    return dt->derefType();
+  } else {
+    return t;
+  }
+}
+
+const Type *TypingAction::deref(const Type *t) {
 
   if (const DefinedType *dt = dynamic_cast<const DefinedType *>(t)) {
     assert(dt->derefType());
