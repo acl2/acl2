@@ -1,0 +1,4 @@
+invalid-cast.cpp:8 (9-15): Incompatible types: ac_int<N, false> cannot be cast to int
+  8 |   return (int)x;
+    |          ^^^^^^
+note: To convert types depending on template parameters to primitive types, you should add an explicit conversion (like this ac_int<32, true>(...) to convert to int)
