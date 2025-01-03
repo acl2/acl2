@@ -38,7 +38,8 @@
 
 (in-package "X86ISA")
 
-(include-book "app-view/user-level-memory-utils" :dir :proof-utils :ttags :all)
+;; Tweaked by Eric Smith to include official top-level book for app-view proofs:
+(include-book "app-view/top" :dir :proof-utils :ttags :all)
 
 (include-book "centaur/bitops/ihs-extensions" :dir :system)
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
