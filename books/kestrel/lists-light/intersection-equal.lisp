@@ -47,6 +47,7 @@
             (member-equal a y)))
   :hints (("Goal" :in-theory (enable member-equal intersection-equal))))
 
+;move?
 (defthm intersection-equal-of-union-equal
   (equal (intersection-equal (union-equal x y) z)
          (union-equal (intersection-equal x z)
