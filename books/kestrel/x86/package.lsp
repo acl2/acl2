@@ -23,9 +23,14 @@
 ;; TODO: Add a bunch of x86 ISA stuff here
 (defconst *symbols-from-x86isa*
   '(x86isa::x86 ;the stobj name
-    x86isa::memi$inline
+    x86isa::x86p
+    x86isa::x86$ap
+
     x86isa::memi
     x86isa::!memi
+    x86isa::memi$a
+    x86isa::!memi$a
+
     x86isa::n48$inline
     x86isa::n48
     x86isa::app-view$inline
@@ -39,8 +44,6 @@
     x86isa::rb-1
     x86isa::wb-1
 
-    x86isa::x86p
-    x86isa::x86$ap
 
     x86isa::rvm08 ;todo more like this
     x86isa::wvm08
@@ -50,9 +53,6 @@
     x86isa::separate
     x86isa::program-at
     x86isa::byte-listp ;todo: compare with unsigned-byte-p-list
-    x86isa::memi*
-    x86isa::gz
-    x86isa::sz
     x86isa::alignment-checking-enabled-p
     x86isa::get-prefixes
     x86isa::!ms
