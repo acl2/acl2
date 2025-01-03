@@ -50,6 +50,8 @@
   (let* ((vars (all-vars term))
          (new-vars (make-var-names 'x (len vars)))
          (alist (pairlis$ vars new-vars)))
+    ;; Can't use sublis-var here as it does too much!
+    ;; Example: (sublis-var nil '(< '0 '0)) = 'NIL
     (sublis-var-simple alist term)))
 
 (defun names-and-bodies (names wrld acc)
