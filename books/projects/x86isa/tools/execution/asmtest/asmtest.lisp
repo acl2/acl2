@@ -11,6 +11,7 @@
 
 (include-book "../../../machine/x86")
 (include-book "std/io/file-measure" :dir :system)
+(include-book "std/io/read-file-lines" :dir :system)
 (local (include-book "std/io/open-channels" :dir :system))
 (local (include-book "std/io/base" :dir :system))
 
@@ -36,14 +37,16 @@ function argument.</p>
 have been built.  This executable chooses a snippet to run, input file to read,
 and output file to write based on its command line arguments.  The input file
 is read into memory and interpreted as N input memory blocks; the execution
-then runs the snippet on each input memory block, writing
-out N output memory blocks to the output file.</p>
+then runs the snippet on each input memory block, writing out N output memory
+blocks to the output file. The executable can also optionally output a \"conf\"
+file that describes the test (listing the snippet name, input file, and output
+file).</p>
 
 <p>To run a snippet on the x86 model, we read that executable into the x86
 state using <see topic=\"@(url binary-file-load-fn)\">binary-file-load</see>
-and can then use the function @('test-snippet') to repeatedly run the
-snippet on the model on the various inputs, comparing them to the outputs from
-the executable.</p>
+and can then use the @('test-snippet') or @('test-snippetconf') utilities to
+repeatedly run the snippet on the model on the various inputs, comparing them
+to the outputs from the executable.</p>
 
 <p>Snippets are listed (along with their input and output block sizes) in
 snippets.txt (under the asmtest directory,
@@ -53,7 +56,7 @@ executable. Once the executable is built, the same script can be used to build
 the file snippets.lsp, which tells ACL2 the input/output sizes and entry point
 addresses of each snippet.</p>
 
-<h2>Adding Snippets</p>
+<h2>Adding Snippets</h2>
 <p>To add and test a new snippet:</p>
 <ul>
 <li>Add an entry to snippets.txt giving the name and input/output sizes.</li>
@@ -72,15 +75,22 @@ this on other kinds of machines.)</li>
 an integer multiple of the input block size of the snippet. One way to generate
 basic random inputs is e.g. @('head -c nbytes /dev/urandom > my_inputs.bin').</li>
 
-<li>Execute your snippet on the input file, e.g. @('./asmtest -i my_inputs.bin
--o my_outputs.bin my_snippet')</li>
+<li>Execute your snippet on the input file, e.g.
+ @('./asmtest -i my_inputs.bin -n my_testname my_snippet')</li>
 
 <li>Ensure that @('asmtest.lisp') is certified (this doesn't depend on previous
 steps).</li>
 
-<li>Test the outputs from the execution on the x86 model following the example
-in @('example.lsp').</li>
+<li>Test the outputs from the execution on the x86 model following the examples
+in @('example.lsp'), e.g. @('(test-snippetconf-event \"my_testname.conf\")').</li>
 </ul>
+
+<h2>Generating Tests</h2>
+
+<p>A Python script \"text_to_binary.py\" is provided to help generate test
+input files. Mainly it helps write a bunch of numbers into a binary file. See
+the usage message for that script for details. Currently it only supports
+either explicitly specified or randomly generated inputs.</p>
 
 <h2>Future Work</h2>
 <h3>Regression Tests</h3>
@@ -559,18 +569,24 @@ language?</p>
            (snippet-info-p (assoc-equal name x))))
 
 
-(defmacro def-snippet-data (name)
+(defmacro def-snippet-data (name &key (fname '"snippets.lsp"))
   (let ((namestar (intern-in-package-of-symbol
                    (concatenate 'string "*" (symbol-name name) "*")
                    name)))
     `(progn
        (defconsts (& ,namestar state)
-         (acl2::read-file "snippets.lsp" state))
+         (acl2::read-file ,fname state))
 
        (define ,name ()
          ,namestar
          ///
          (defattach snippet-data ,name)))))
+
+
+
+
+
+
 
 
 
@@ -608,5 +624,87 @@ language?</p>
 (defmacro test-snippet-event (&rest args)
   `(assert-event (b* (((mv mismatches x86 state)
                        (test-snippet . ,args)))
+                   (mv (not mismatches) x86 state))
+                 :stobjs-out '(nil x86 state)))
+
+
+
+;; Keep in sync with format of conf written by asmtest.c
+(define parse-asmtest-conf-line ((name stringp)
+                                (line stringp))
+  :returns (val (or (stringp val) (not val)) :rule-classes :type-prescription)
+  (b* ((prefix (str::cat name ": "))
+       (line (mbe :logic (acl2::str-fix line)
+                  :exec line))
+       (len (length line))
+       (pfx-len (length prefix))
+       ((unless (and (str::strprefixp prefix line)
+                     (< pfx-len len)
+                     (eql (char line (1- len)) #\Newline)))
+        nil))
+    (subseq line pfx-len (1- len))))
+
+
+(define read-asmtest-conf ((fname stringp) state)
+  :returns (mv (snippet-name stringp :rule-classes :type-prescription)
+               (infile stringp :rule-classes :type-prescription)
+               (outfile stringp :rule-classes :type-prescription)
+               new-state)
+  (b* (((mv lines state) (acl2::read-file-lines fname state))
+       ((when (stringp lines))
+        (raise "error reading conf file: ~s0" fname)
+        (mv "" "" "" state))
+       ((when (not (eql (len lines) 4)))
+        (raise "wrong number of lines in conf file")
+        (mv "" "" "" state))
+       (snippet (parse-asmtest-conf-line "snippet" (first lines)))
+       (input (parse-asmtest-conf-line "input" (second lines)))
+       (output (parse-asmtest-conf-line "output" (third lines)))
+       ((unless (and snippet input output))
+        (raise "unexpected format of conf file")
+        (mv "" "" "" state)))
+    (mv snippet input output state))
+  :prepwork
+  ((local (defthm stringp-of-car-when-string-listp
+            (implies (and (string-listp x)
+                          (consp x))
+                     (stringp (car x)))))
+   (local (defthm string-listp-of-cdr-when-string-listp
+            (implies (string-listp x)
+                     (string-listp (cdr x)))))
+   (local (defthm equal-consolidate-const
+            (implies (syntaxp (and (quotep a) (quotep b)))
+                     (equal (equal (+ a x) b)
+                            (and (acl2-numberp b)
+                                 (equal (fix x) (- b (fix a))))))))))
+
+
+
+(define test-snippetconf ((conf stringp)
+                          &key
+                          ((input-addr canonical-address-p) '#x10000000000)
+                          ((output-addr canonical-address-p) '#x18000000000)
+                          ((ret-addr canonical-address-p) '#x-DEADEADBEEF)
+                          (stop-on-mismatch 'nil)
+                          ((step-count natp) '10000)
+                          (x86 'x86)
+                          (state 'state))
+  :returns (mv (mismatches snippet-mismatch-list-p)
+               new-x86 new-state)
+  (b* (((mv snippet input output state)
+        (read-asmtest-conf conf state)))
+    (test-snippet snippet
+                  :input-file input
+                  :output-file output
+                  :input-addr input-addr
+                  :output-addr output-addr
+                  :ret-addr ret-addr
+                  :stop-on-mismatch stop-on-mismatch
+                  :step-count step-count
+                  :x86 x86)))
+
+(defmacro test-snippetconf-event (&rest args)
+  `(assert-event (b* (((mv mismatches x86 state)
+                       (test-snippetconf . ,args)))
                    (mv (not mismatches) x86 state))
                  :stobjs-out '(nil x86 state)))

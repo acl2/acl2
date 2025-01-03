@@ -1,0 +1,8 @@
+; 8,8,2
+R, 0, 0
+*4: R, 0, R
+R, 1, R
+R, ffff, R
+R, ffffffff, R
+R, ffffffffffffffff, R
+*32: R, R, R
