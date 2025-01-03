@@ -17,7 +17,7 @@
 (include-book "support-x86") ;for things like rb-in-terms-of-nth-and-pos-eric and canonical-address-p-between
 ;(include-book "projects/x86isa/machine/application-level-memory" :dir :system) ;for canonical-address-p
 (include-book "flags")
-(include-book "projects/x86isa/proofs/utilities/app-view/top" :dir :system) ;reduce?
+;(include-book "projects/x86isa/proofs/utilities/app-view/top" :dir :system) ;reduce?
 (include-book "kestrel/bv/rules3" :dir :system) ;reduce?
 (include-book "kestrel/bv/slice" :dir :system)
 (include-book "kestrel/utilities/def-constant-opener" :dir :system)
