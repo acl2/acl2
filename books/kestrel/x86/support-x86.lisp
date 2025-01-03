@@ -19,7 +19,8 @@
 (include-book "projects/x86isa/proofs/utilities/row-wow-thms" :dir :system) ; for X86ISA::WRITE-USER-RFLAGS-AND-XW
 (include-book "projects/x86isa/proofs/utilities/app-view/user-level-memory-utils" :dir :system) ; for rb-rb-subset
 (include-book "projects/x86isa/machine/state" :dir :system)
-(include-book "projects/x86isa/machine/x86" :dir :system) ; for get-prefixes-xxx
+;(include-book "projects/x86isa/machine/x86" :dir :system)
+(include-book "projects/x86isa/machine/get-prefixes" :dir :system)
 ;(include-book "projects/x86isa/machine/state-field-thms" :dir :system)
 (include-book "projects/x86isa/machine/application-level-memory" :dir :system) ;for canonical-address-p
 (include-book "kestrel/utilities/defopeners" :dir :system)
