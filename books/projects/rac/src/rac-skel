@@ -104,7 +104,7 @@ cppopts="-D__RAC__ -C -std=c++14 -x c++"
 # Preprocess basename.cpp: first we rename assert into __RAC_ASSERT to avoid
 # its expansion (it is a macro) and then we run g++. The echo/cat is there to
 # add the file name otherwise g++ would report error in <STDIN>.
-echo "# 0 \"$basename.cpp\"" | cat - $basename.cpp | sed "s/assert/__RAC_ASSERT/g" - | g++ $cppopts $incdirs - -E -o $basename.i;
+echo "# 0 \"$basename.cpp\"" | cat - $basename.cpp | sed "s/assert/__RAC_ASSERT/g" | g++ $cppopts $incdirs - -E -o $basename.i;
 
 if [[ -z "$acl2" && -z "$rac" ]]
 then
