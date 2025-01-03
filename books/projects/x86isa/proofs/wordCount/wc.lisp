@@ -41,8 +41,8 @@
 
 (in-package "X86ISA")
 
-(include-book "app-view/user-level-memory-utils" :dir :proof-utils :ttags :all)
-(include-book "app-view/environment-utils" :dir :proof-utils :ttags :all)
+;; Tweaked by Eric Smith to include official top-level book for app-view proofs:
+(include-book "app-view/top" :dir :proof-utils :ttags :all)
 (include-book "centaur/gl/gl" :dir :system)
 ;; Including the WC program binary and other misc. stuff:
 (include-book "wc-addr-byte")
