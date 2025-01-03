@@ -94,10 +94,6 @@
 
 ;; And there are similar rules we can use to normalize things into ZP, ZIP, etc.
 
-(defthm nfix-gt-0
-  (equal (< 0 (nfix x))
-         (not (zp x))))
-
 (defthm ifix-equal-to-0
   (equal (equal (ifix x) 0)
          (zip x)))
