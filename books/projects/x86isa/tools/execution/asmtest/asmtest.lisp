@@ -76,13 +76,13 @@ an integer multiple of the input block size of the snippet. One way to generate
 basic random inputs is e.g. @('head -c nbytes /dev/urandom > my_inputs.bin').</li>
 
 <li>Execute your snippet on the input file, e.g.
- @('./asmtest -i my_inputs.bin -n my_testname my_snippet')</li>
+ @('asmtest -i my_inputs.bin -n my_testname my_snippet')</li>
 
 <li>Ensure that @('asmtest.lisp') is certified (this doesn't depend on previous
 steps).</li>
 
 <li>Test the outputs from the execution on the x86 model following the examples
-in @('example.lsp'), e.g. @('(test-snippetconf-event \"my_testname.conf\")').</li>
+in @('tests/example.lsp'), e.g. @('(test-snippetconf-event \"my_testname.conf\")').</li>
 </ul>
 
 <h2>Generating Tests</h2>
