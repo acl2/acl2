@@ -1,6 +1,6 @@
 ; Top book for helpers/ directory
 ;
-; Copyright (C) 2022-2024 Kestrel Institute
+; Copyright (C) 2022-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -32,6 +32,7 @@
 (include-book "repair-book")
 (include-book "eval-models")
 (include-book "linter")
+(include-book "duplicate-rules")
 
 ;; Intentionally omitting test books from this top.lisp file:
 ;; (include-book "replay-book-tests")
