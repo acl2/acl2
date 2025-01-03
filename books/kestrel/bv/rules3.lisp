@@ -943,8 +943,6 @@
   :hints (("Goal" :use bvor-of-bvshl-and-bvshr
            :in-theory (disable bvor-of-bvshl-and-bvshr))))
 
-
-;fixme: reorder lhs to match name
 (defthm bvor-of-bvshr-and-bvshl-alt
   (implies (and (unsigned-byte-p (+ amt1 amt2) x)
                 (<= size (+ amt1 amt2))
@@ -952,7 +950,7 @@
                 (posp amt1)
                 (posp amt2)
                 (natp size))
-           (equal (bvor size (bvshl 32 x amt1) (bvshr 32 x amt2))
+           (equal (bvor size (bvshr 32 x amt2) (bvshl 32 x amt1))
                   (bvchop size (leftrotate (+ amt1 amt2) amt1 x))))
   :hints (("Goal" :in-theory (disable bvor-of-bvshl-and-bvshr-alt)
            :use bvor-of-bvshl-and-bvshr-alt)))
@@ -1024,7 +1022,7 @@
                 (posp amt1)
                 (posp amt2)
                 (natp size))
-           (equal (bvor size (bvshl 32 x amt1) (bvashr 32 x amt2))
+           (equal (bvor size (bvashr 32 x amt2) (bvshl 32 x amt1))
                   (bvchop size (leftrotate (+ amt1 amt2) amt1 x))))
   :hints (("Goal" :in-theory (disable bvor-of-bvshl-and-bvashr-alt)
            :use bvor-of-bvshl-and-bvashr-alt)))
