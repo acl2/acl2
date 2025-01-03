@@ -282,7 +282,7 @@
 
   (fty::deffixequiv-mutual tarjan-sccs)
 
-  (local (in-theory (disable NFIX-POSITIVE-TO-NON-ZP NFIX-GT-0 DEFAULT-<-1)))
+  (local (in-theory (disable NFIX-POSITIVE-TO-NON-ZP DEFAULT-<-1)))
 
   (local (defthm subsetp-when-suffix
            (implies (suffixp a b)
