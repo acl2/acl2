@@ -40,6 +40,7 @@
 
 (in-package "X86ISA")
 (include-book "row-wow-thms" :ttags :all :dir :proof-utils)
+(include-book "../../../machine/syscalls")
 
 ;; ======================================================================
 

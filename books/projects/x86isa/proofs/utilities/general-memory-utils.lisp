@@ -38,8 +38,10 @@
 
 (in-package "X86ISA")
 
-(include-book "basics" :ttags :all :dir :proof-utils)
+(include-book "../../portcullis/utils")
 (include-book "disjoint" :dir :proof-utils)
+(include-book "../../machine/linear-memory")
+(include-book "../../machine/decoding-and-spec-utils")
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
