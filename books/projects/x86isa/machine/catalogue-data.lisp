@@ -175,38 +175,47 @@ perhaps similar to those of MOV to a segment register</li>
 ;; (def-sdm-instruction-section "5.1.16.1 Detection of VEX-Encoded GPR Instructions, LZCNT, TZCNT, and PREFETCHW")
 
 (def-sdm-instruction-section "5.2 X87 FPU Instructions")
-;;   :mnemonics '(FLD FST FSTP FILD FIST FISTP1 FBLD FBSTP FXCH FCMOVE FCMOVNE
-;;                    FCMOVB FCMOVBE FCMOVNB FCMOVNBE FCMOVU FCMOVNU)
-;;   )
-(def-sdm-instruction-section "5.2.1 X87 FPU Data Transfer Instructions"
-  :doc "<p>Decoding isn't implemented for X87 instructions (D8-DF escapes from
-one byte opcode map)</p>")
-(def-sdm-instruction-section "5.2.2 X87 FPU Basic Arithmetic Instructions"
-  :doc "<p>Decoding isn't implemented for X87 instructions (D8-DF escapes from
-one byte opcode map)</p>")
-(def-sdm-instruction-section "5.2.3 X87 FPU Comparison Instructions"
-  :doc "<p>Decoding isn't implemented for X87 instructions (D8-DF escapes from
-one byte opcode map)</p>")
-(def-sdm-instruction-section "5.2.4 X87 FPU Transcendental Instructions"
-  :doc "<p>Decoding isn't implemented for X87 instructions (D8-DF escapes from
-one byte opcode map)</p>")
-(def-sdm-instruction-section "5.2.5 X87 FPU Load Constants Instructions"
-  :doc "<p>Decoding isn't implemented for X87 instructions (D8-DF escapes from
-one byte opcode map)</p>")
-(def-sdm-instruction-section "5.2.6 X87 FPU Control Instructions"
-  :doc "<p>Decoding isn't implemented for X87 instructions (D8-DF escapes from
-one byte opcode map).</p>
 
-<p>Note also a few of X86 control instructions are listed in the SDM as being
+(def-sdm-instruction-section "5.2.1 X87 FPU Data Transfer Instructions"
+  :mnemonics '(FLD FST FSTP FILD FIST FISTP FBLD FBSTP FXCH FCMOVE FCMOVNE
+                   FCMOVB FCMOVBE FCMOVNB FCMOVNBE FCMOVU FCMOVNU))
+(def-sdm-instruction-section "5.2.2 X87 FPU Basic Arithmetic Instructions"
+  :mnemonics
+  '(FADD FADDP FIADD FSUB FSUBP FISUB FSUBR FSUBRP FISUBR FMUL FMULP FIMUL FDIV
+ FDIVP FIDIV FDIVR FDIVRP FIDIVR FPREM FPREM1 FABS FCHS FRNDINT FSCALE FSQRT
+ FXTRACT))
+
+(def-sdm-instruction-section "5.2.3 X87 FPU Comparison Instructions"
+  :mnemonics
+  '(FCOM FCOMP FCOMPP FUCOM FUCOMP FUCOMPP FICOM FICOMP FCOMI FUCOMI FCOMIP
+ FUCOMIP FTST FXAM))
+
+(def-sdm-instruction-section "5.2.4 X87 FPU Transcendental Instructions"
+  :mnemonics
+  '(FSIN FCOS FSINCOS FPTAN FPATAN F2XM1 FYL2X FYL2XP1))
+
+(def-sdm-instruction-section "5.2.5 X87 FPU Load Constants Instructions"
+  :mnemonics
+  '(FLD1 FLDZ FLDPI FLDL2E FLDLN2 FLDL2T FLDLG2))
+
+(def-sdm-instruction-section "5.2.6 X87 FPU Control Instructions"
+  :mnemonics
+  '(FINCSTP FDECSTP FFREE ;; FINIT
+            FNINIT        ;; FCLEX
+            FNCLEX        ;; FSTCW
+            FNSTCW FLDCW  ;; FSTENV
+            FNSTENV FLDENV ;; FSAVE
+            FNSAVE FRSTOR  ;; FSTSW
+            FNSTSW FWAIT/WAIT FNOP)
+  :doc "
+<p>Note a few of X86 control instructions are listed in the SDM as being
 encoded using 0x9B as a prefix. This is a bit weird since 9B is also an opcode
 on its own, FWAIT/WAIT. It seems as though the behavior of these 9B-prefixed
 instructions is basically to wait for exceptions and then (if no exception) do
 what the instruction. Not sure why they are listed that way.</p>")
 
 (def-sdm-instruction-section "5.3 X87 FPU and SIMD State Management Instructions"
-  :mnemonics '(FXSAVE FXRSTOR
-                      ;; added -- not present in SDM listing
-                      FWAIT/WAIT))
+  :mnemonics '(FXSAVE FXRSTOR))
 
 (def-sdm-instruction-section "5.4 MMX Instructions")
 (def-sdm-instruction-section "5.4.1 MMX Data Transfer Instructions"
@@ -381,7 +390,7 @@ float-integer are implemented as are scalar and packed float-float.</p>")
 
 (def-sdm-instruction-section "5.7 Intel(R) SSE3 Instructions")
 (def-sdm-instruction-section "5.7.1 Intel(R) SSE3 x87-FP Integer Conversion Instruction"
-  :doc "<p>Like other x87 instructions, FISTTP is not listed in opcode maps</p>")
+  :mnemonics '(FISTTP))
 
 (def-sdm-instruction-section "5.7.2 Intel(R) SSE3 Specialized 128-Bit Unaligned Data Load Instruction"
   :mnemonics '(LDDQU)
