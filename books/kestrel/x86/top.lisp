@@ -22,6 +22,7 @@
 (include-book "conditions")
 
 (include-book "support-bv")
+(include-book "canonical")
 (include-book "support-x86")
 (include-book "support32")
 (include-book "read-over-write-rules")

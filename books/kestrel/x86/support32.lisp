@@ -15,6 +15,7 @@
 (include-book "projects/x86isa/machine/decoding-and-spec-utils" :dir :system) ; for x86isa::read-*ip
 (include-book "support-x86") ; drop? for unsigned-byte-p-of-xr-of-mem
 (include-book "linear-memory")
+(include-book "state")
 (include-book "flags")
 (include-book "readers-and-writers")
 (include-book "register-readers-and-writers32")
@@ -4692,38 +4693,38 @@
   (implies (app-view x86)
            (equal (mv-nth 1 (x86isa::rme-size$inline proc-mode nbytes eff-addr seg-reg r-x check-alignment? (set-esp esp x86) mem-ptr?))
                   (mv-nth 1 (x86isa::rme-size$inline proc-mode nbytes eff-addr seg-reg r-x check-alignment? x86 mem-ptr?))))
-  :hints (("Goal" :in-theory (e/d (x86isa::rme-size) (ea-to-la set-esp)))))
+  :hints (("Goal" :in-theory (e/d (x86isa::rme-size) (ea-to-la)))))
 
 ;not strictly necessary but helps keep terms small
 (defthm mv-nth-1-of-rme-size-of-set-ebp-when-app-view
   (implies (app-view x86)
            (equal (mv-nth 1 (x86isa::rme-size$inline proc-mode nbytes eff-addr seg-reg r-x check-alignment? (set-ebp ebp x86) mem-ptr?))
                   (mv-nth 1 (x86isa::rme-size$inline proc-mode nbytes eff-addr seg-reg r-x check-alignment? x86 mem-ptr?))))
-  :hints (("Goal" :in-theory (e/d (x86isa::rme-size) (ea-to-la set-ebp)))))
+  :hints (("Goal" :in-theory (e/d (x86isa::rme-size) (ea-to-la)))))
 
 (defthm mv-nth-1-of-rme-size-of-set-eax-when-app-view
   (implies (app-view x86)
            (equal (mv-nth 1 (x86isa::rme-size$inline proc-mode nbytes eff-addr seg-reg r-x check-alignment? (set-eax eax x86) mem-ptr?))
                   (mv-nth 1 (x86isa::rme-size$inline proc-mode nbytes eff-addr seg-reg r-x check-alignment? x86 mem-ptr?))))
-  :hints (("Goal" :in-theory (e/d (x86isa::rme-size) (ea-to-la set-eax)))))
+  :hints (("Goal" :in-theory (e/d (x86isa::rme-size) (ea-to-la)))))
 
 (defthm mv-nth-1-of-rme-size-of-set-ebx-when-app-view
   (implies (app-view x86)
            (equal (mv-nth 1 (x86isa::rme-size$inline proc-mode nbytes eff-addr seg-reg r-x check-alignment? (set-ebx ebx x86) mem-ptr?))
                   (mv-nth 1 (x86isa::rme-size$inline proc-mode nbytes eff-addr seg-reg r-x check-alignment? x86 mem-ptr?))))
-  :hints (("Goal" :in-theory (e/d (x86isa::rme-size) (ea-to-la set-ebx)))))
+  :hints (("Goal" :in-theory (e/d (x86isa::rme-size) (ea-to-la)))))
 
 (defthm mv-nth-1-of-rme-size-of-set-ecx-when-app-view
   (implies (app-view x86)
            (equal (mv-nth 1 (x86isa::rme-size$inline proc-mode nbytes eff-addr seg-reg r-x check-alignment? (set-ecx ecx x86) mem-ptr?))
                   (mv-nth 1 (x86isa::rme-size$inline proc-mode nbytes eff-addr seg-reg r-x check-alignment? x86 mem-ptr?))))
-  :hints (("Goal" :in-theory (e/d (x86isa::rme-size) (ea-to-la set-ecx)))))
+  :hints (("Goal" :in-theory (e/d (x86isa::rme-size) (ea-to-la)))))
 
 (defthm mv-nth-1-of-rme-size-of-set-edx-when-app-view
   (implies (app-view x86)
            (equal (mv-nth 1 (x86isa::rme-size$inline proc-mode nbytes eff-addr seg-reg r-x check-alignment? (set-edx edx x86) mem-ptr?))
                   (mv-nth 1 (x86isa::rme-size$inline proc-mode nbytes eff-addr seg-reg r-x check-alignment? x86 mem-ptr?))))
-  :hints (("Goal" :in-theory (e/d (x86isa::rme-size) (ea-to-la set-edx)))))
+  :hints (("Goal" :in-theory (e/d (x86isa::rme-size) (ea-to-la)))))
 
 (in-theory (disable set-eip)) ;move up
 

@@ -1,7 +1,7 @@
 ; Supporting material for x86 code proofs
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2024 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -33,6 +33,8 @@
 (include-book "kestrel/bv/defs" :dir :system) ;for sbvdiv
 (include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system)
 (include-book "linear-memory") ;drop? but need mv-nth-0-of-rml-size-of-xw-when-app-view
+(include-book "canonical")
+(include-book "state")
 (local (include-book "support-bv"))
 (local (include-book "kestrel/bv/rules10" :dir :system))
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
@@ -115,13 +117,6 @@
 ;why?
 ;(acl2::defopeners x86p :hyps ((syntaxp (quotep x86))))
 
-;tighten?
-(defthm x86isa::signed-byte-p-64-when-canonical-address-p-cheap
-  (implies (canonical-address-p x)
-           (signed-byte-p 64 x))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :in-theory (enable signed-byte-p canonical-address-p))))
-
 ;; (defthm RGFI*-of-xw-diff
 ;;   (implies (and (equal :ms fld) ;drop!
 ;;                 (not (equal :rgf fld)))
@@ -191,12 +186,6 @@
 (in-theory (disable x86isa::create-canonical-address-list
                     (:e x86isa::create-canonical-address-list)))
 
-(defthm x86isa::canonical-address-p-foward-to-signed-byte-p
-  (implies (canonical-address-p lin-addr)
-           (signed-byte-p 48 lin-addr))
-  :rule-classes ((:forward-chaining))
-  :hints (("Goal" :in-theory (enable canonical-address-p))))
-
 ;; gets rid of the effect of saving and restoring rbp
 ;; (defthm x86isa::xw-xr-same
 ;;   (implies (and (equal (xr fld i x86) (xr fld i x86-2))
@@ -222,61 +211,10 @@
 ;;            (canonical-address-p (+ k load-offset)))
 ;;   :hints (("Goal" :in-theory (enable canonical-address-p signed-byte-p))))
 
-;; k is between klow and khigh
-;; one way to know that something (here, (+ klow load-offset)) is canonical is to know that it's equal to the RIP
-;; we could forward-chain from equal rip to canonical (does forward-chaining happen during symsim?)
-(defthm canonical-address-p-of-+-when-canonical-address-p-of-+-special
-  (implies (and (equal (xr :rip nil x86) (+ klow load-offset)) ;klow is a free var
-                (canonical-address-p (+ khigh load-offset))
-                (x86p x86) ;implies that the RIP is canonical
-                (<= klow k)
-                (<= k khigh)
-                (natp k)
-                (natp klow)
-                (natp khigh)
-                (integerp load-offset))
-           (canonical-address-p (+ k load-offset)))
-  :hints (("Goal" :in-theory (enable canonical-address-p signed-byte-p))))
-
-
-;pretty specific...
-;think about possible loops here
-(defthm canonical-address-p-of-plus-of-rip
-  (implies (and (syntaxp (quotep k))
-                (equal (xr :rip nil x86) (+ freek load-offset)) ;freek and load-offset are free vars
-                (syntaxp (quotep freek))
-                (canonical-address-p (+ (+ k freek) ;gets evaluated
-                                        load-offset)))
-           (canonical-address-p (+ k (xr :rip nil x86)))))
-
 (defthm x86isa::subset-p-of-singleton-arg1
   (equal (x86isa::subset-p (cons a nil) x)
          (x86isa::member-p a x))
   :hints (("Goal" :in-theory (enable x86isa::subset-p))))
-
-(defthm x86isa::xr-of-if
-  (equal (XR fld index (IF test state1 state2))
-         (if test
-             (XR fld index state1)
-           (XR fld index state2))))
-
-(defthm x86isa::xr-of-if-special-case-for-ms
-  (equal (XR :ms nil (IF test state1 state2))
-         (if test
-             (XR :ms nil state1)
-           (XR :ms nil state2))))
-
-(defthm x86isa::xr-of-if-special-case-for-fault
-  (equal (xr :fault nil (if test state1 state2))
-         (if test
-             (xr :fault nil state1)
-           (xr :fault nil state2))))
-
-(defthm canonical-address-p-of-if
-  (equal (canonical-address-p (if test a1 a2))
-         (if test
-             (canonical-address-p a1)
-           (canonical-address-p a2))))
 
 ;; splits the simulation!
 (defthm x86-fetch-decode-execute-of-set-rip-split
@@ -362,46 +300,6 @@
 (defthm canonical-address-listp-of-nil
   (x86isa::canonical-address-listp nil))
 
-
-;see xr-xw-inter-field but that has a case-split
-(defthm xr-of-xw-diff
-  (implies (not (equal fld1 fld2))
-           (equal (xr fld2 i2 (xw fld1 i1 v x86))
-                  (xr fld2 i2 x86))))
-
-;for axe
-(defthmd canonical-address-p-becomes-signed-byte-p-when-constant
-  (implies (syntaxp (quotep ad))
-           (equal (canonical-address-p ad)
-                  (signed-byte-p 48 ad)))
-  :hints (("Goal" :in-theory (enable canonical-address-p))))
-
-(defthm unsigned-byte-p-of-xr-of-mem
-  (implies (and (<= 8 size)
-                (x86p x86))
-           (equal (unsigned-byte-p size (xr :mem i x86))
-                  (natp size))))
-
-(defthm integerp-of-xr-mem
-  (implies (x86p x86)
-           (integerp (xr :mem acl2::i x86)))
-  :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :use (:instance x86isa::unsigned-byte-p-of-xr-of-mem (size 8))
-           :in-theory (disable x86isa::unsigned-byte-p-of-xr-of-mem))))
-
-(defthm unsigned-byte-p-of-memi
-  (implies (and (<= 8 size)
-                (x86p x86))
-           (equal (unsigned-byte-p size (memi i x86))
-                  (natp size)))
-  :hints (("Goal" :in-theory (enable memi))))
-
-(defthm integerp-of-memi
-  (implies (x86p x86)
-           (integerp (memi i x86)))
-  :hints (("Goal" :in-theory (enable memi))))
-
-
 ;; resolve a call to rb on a singleton list when we know the program
 ;; this rule seems simpler than rb-in-terms-of-nth-and-pos (which is now gone) since it has no extended bind-free hyp.
 ;; todo: try :match-free :all
@@ -452,131 +350,7 @@
                             )
                            (slice-of-combine-bytes)))))
 
-;can this loop?  do we have any rules that backchain from < to signed-byte-p?
-(defthm signed-byte-p-when-between-canonical-addresses
-  (implies (and (signed-byte-p 48 low)
-                (signed-byte-p 48 high)
-                (<= low ad)
-                (<= ad high))
-           (equal (signed-byte-p 48 ad)
-                  (integerp ad)))
-  :hints
-  (("Goal"
-    :in-theory (enable canonical-address-p signed-byte-p))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; General rule.  Hyps may often fail to be relieved (so monitoring this rule
-;; may cause many failures to be printed).
-(defthm canonical-address-p-between
-  (implies (and (canonical-address-p low) ; low is a free var
-                (<= low ad)
-                (canonical-address-p high) ; high is a free var
-                (<= ad high))
-           (equal (canonical-address-p ad)
-                  (integerp ad)))
-  :hints (("Goal" :in-theory (enable canonical-address-p SIGNED-BYTE-P))))
-
-;; These are for showing that x plus an offset is canonical:
-
-(defthm canonical-address-p-between-special1
-  (implies (and (canonical-address-p (+ low-offset x))
-                (<= low-offset offset)
-                (canonical-address-p (+ high-offset x))
-                (<= offset high-offset)
-                (integerp low-offset)
-                (integerp high-offset)
-                (integerp offset))
-           (canonical-address-p (+ offset x))))
-
-;case when offset = 0
-(defthm canonical-address-p-between-special2
-  (implies (and (canonical-address-p (+ low-offset x))
-                (<= low-offset 0)
-                (canonical-address-p (+ high-offset x))
-                (<= 0 high-offset)
-                (integerp low-offset)
-                (integerp high-offset))
-           (equal (canonical-address-p x)
-                  (integerp x))))
-
-;case when low-offset = 0
-(defthm canonical-address-p-between-special3
-  (implies (and (canonical-address-p (+ high-offset x))
-                (<= offset high-offset)
-                (canonical-address-p x)
-                (<= 0 offset)
-                (integerp high-offset)
-                (integerp offset))
-           (canonical-address-p (+ offset x))))
-
-;case when high-offset = 0
-(defthm canonical-address-p-between-special4
-  (implies (and (canonical-address-p (+ low-offset x))
-                (<= low-offset offset)
-                (canonical-address-p x)
-                (<= offset 0)
-                (integerp low-offset)
-                (integerp offset))
-           (canonical-address-p (+ offset x))))
-
-(defthm canonical-address-p-between-special5
-  (implies (and (canonical-address-p offset)
-                (canonical-address-p (+ k2 offset)) ; k2 is a free var
-                (<= (+ k x) k2)
-                (natp k)
-                (natp x)
-                (natp k2))
-           ;; ex (+ 192 (+ offset (ash (bvchop 32 (rdi x86)) 2)))
-           (canonical-address-p (+ k offset x))))
-
-(defthm canonical-address-p-between-special5-alt
-  (implies (and (canonical-address-p offset)
-                (canonical-address-p (+ k2 offset)) ; k2 is a free var
-                (<= (+ k x) k2)
-                (natp k)
-                (natp x)
-                (natp k2))
-           (canonical-address-p (+ k x offset))))
-
-(defthm canonical-address-p-between-special6
-  (implies (and (canonical-address-p (+ k1 base))
-                (syntaxp (quotep k1))
-                (canonical-address-p (+ k2 base))
-                (syntaxp (quotep k2))
-                (< k1 k2) ; break symmetry
-                (<= k1 (+ x1 x2))
-                (<= (+ x1 x2) k2)
-                (integerp k1)
-                (integerp x1)
-                (integerp x2)
-                (integerp k2))
-           (canonical-address-p (+ x1 x2 base))))
-
-(defthm canonical-address-p-between-special7
-  (implies (and (canonical-address-p (+ k1 base)) ; k1 is a free var
-                (syntaxp (quotep k1))
-                (<= k1 (+ x1 x2))
-                (canonical-address-p (+ k2 base)) ; k2 is a free var
-                (syntaxp (quotep k2))
-                (< k1 k2) ; break symmetry (fail fast)
-                (<= (+ x1 x2) k2)
-                (integerp k1)
-                (integerp x1)
-                (integerp x2)
-                (integerp k2))
-           (canonical-address-p (+ x1 base x2))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defthm integerp-of-xr-of-rsp
-  (implies (x86p x86)
-           (integerp (xr :rgf *rsp* x86))))
-
-(defthm app-view-of-xw
-  (implies (not (equal fld :app-view))
-           (equal (app-view (xw fld index value x86))
-                  (app-view x86))))
 
 (local (include-book "kestrel/bv/rules3" :dir :system)) ;drop?
 
@@ -636,11 +410,6 @@
            (equal (memi i (xw fld index val x86))
                   (memi i x86)))
   :hints (("Goal" :in-theory (enable memi))))
-
-(defthm x86isa::logext-48-does-nothing-when-canonical-address-p
-  (implies (canonical-address-p x)
-           (equal (logext 48 x)
-                  x)))
 
 (defthm unsigned-byte-p-of-bfix
   (implies (posp n)
