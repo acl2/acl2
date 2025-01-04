@@ -170,8 +170,7 @@
                       nbytes op mxcsr trunc exp-width frac-width))
     :hints (("Goal" :in-theory (e/d* () (unsigned-byte-p))))
     :gen-type t
-    :gen-linear t
-    :hints-l (("Goal" :in-theory (e/d* (unsigned-byte-p) ())))))
+    :gen-linear t))
 
 ;; ======================================================================
 
@@ -218,8 +217,7 @@
     :concl (mv-nth 2 (sse-cvt-int-to-fp op mxcsr exp-width frac-width))
     :hints (("Goal" :in-theory (e/d* () (unsigned-byte-p))))
     :gen-type t
-    :gen-linear t
-    :hints-l (("Goal" :in-theory (e/d* (unsigned-byte-p) ())))))
+    :gen-linear t))
 
 ;; ======================================================================
 
@@ -410,9 +408,7 @@
                                     bitops::logbitp-of-loghead-in-bounds
                                     bitops::loghead-of-logior))))
   :gen-type t
-  :gen-linear t
-  :hints-l (("Goal" :in-theory (e/d (unsigned-byte-p)
-                                    (sse-cvt-fp1-to-fp2)))))
+  :gen-linear t)
 
 (in-theory (e/d () (sse-cvt-fp1-to-fp2)))
 
@@ -492,8 +488,7 @@
     :concl (mv-nth 2 (sse-cvt-sp-to-dp op mxcsr))
     :hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
     :gen-type t
-    :gen-linear t
-    :hints-l (("Goal" :in-theory (e/d (unsigned-byte-p) ())))))
+    :gen-linear t))
 
 ;; Double-Precision Operations:
 
