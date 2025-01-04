@@ -304,11 +304,6 @@
            (integerp (xr :rip index x86)))
   :rule-classes :type-prescription)
 
-(defthm x86p-!rip-when-val-is-canonical-address-p
-  (implies (forced-and (x86p x86)
-                       (canonical-address-p v))
-           (x86p (xw :rip index v x86))))
-
 (defthm canonical-address-p-to-integerp-thm
   (implies (canonical-address-p x)
            (integerp x))
