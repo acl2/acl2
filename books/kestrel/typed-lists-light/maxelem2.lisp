@@ -99,8 +99,3 @@
                   (maxelem lst)))
   :hints (("Goal" :in-theory (enable reverse-list maxelem))))
 
-(defthmd maxelem-of-strip-cars-bound-2
-  (implies (consp dag)
-           (<= (car (car dag)) (maxelem (strip-cars dag))))
-  :rule-classes ((:linear :trigger-terms ((car (car dag)))))
-  :hints (("Goal" :expand (strip-cars dag))))
