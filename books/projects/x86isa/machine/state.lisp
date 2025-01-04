@@ -691,6 +691,7 @@ before including the x86 books:</p>
   :hyp t
   :bound 64
   :concl (xr :rgf i x86)
+  :gen-rewrite nil ; already done by defrstobj
   :gen-linear t
   :gen-type t)
 
@@ -698,6 +699,7 @@ before including the x86 books:</p>
   :hyp t
   :bound 32
   :concl (xr :rflags i x86)
+  :gen-rewrite nil ; already done by defrstobj
   :gen-linear t
   :gen-type t)
 
@@ -705,6 +707,7 @@ before including the x86 books:</p>
   :hyp t
   :bound 16
   :concl (xr :seg-visible i x86)
+  :gen-rewrite nil ; already done by defrstobj
   :gen-linear t
   :gen-type t)
 
@@ -712,6 +715,7 @@ before including the x86 books:</p>
   :hyp t
   :bound 64
   :concl (xr :seg-hidden-base i x86)
+  :gen-rewrite nil ; already done by defrstobj
   :gen-linear t
   :gen-type t)
 
@@ -719,6 +723,7 @@ before including the x86 books:</p>
   :hyp t
   :bound 32
   :concl (xr :seg-hidden-limit i x86)
+  :gen-rewrite nil ; already done by defrstobj
   :gen-linear t
   :gen-type t)
 
@@ -726,6 +731,7 @@ before including the x86 books:</p>
   :hyp t
   :bound 16
   :concl (xr :seg-hidden-attr i x86)
+  :gen-rewrite nil ; already done by defrstobj
   :gen-linear t
   :gen-type t)
 
@@ -733,6 +739,7 @@ before including the x86 books:</p>
   :hyp t
   :bound 64
   :concl (xr :ssr-hidden-base i x86)
+  :gen-rewrite nil ; already done by defrstobj
   :gen-linear t
   :gen-type t)
 
@@ -740,6 +747,7 @@ before including the x86 books:</p>
   :hyp t
   :bound 32
   :concl (xr :ssr-hidden-limit i x86)
+  :gen-rewrite nil ; already done by defrstobj
   :gen-linear t
   :gen-type t)
 
@@ -747,6 +755,7 @@ before including the x86 books:</p>
   :hyp t
   :bound 64
   :concl (xr :ctr i x86)
+  :gen-rewrite nil ; already done by defrstobj
   :gen-linear t
   :gen-type t)
 
@@ -754,6 +763,7 @@ before including the x86 books:</p>
   :hyp t
   :bound 80
   :concl (xr :fp-data i x86)
+  :gen-rewrite nil ; already done by defrstobj
   :gen-linear t
   :gen-type t)
 
@@ -761,6 +771,7 @@ before including the x86 books:</p>
   :hyp t
   :bound 32
   :concl (xr :mxcsr i x86)
+  :gen-rewrite nil ; already done by defrstobj
   :gen-linear t
   :gen-type t)
 
@@ -768,6 +779,7 @@ before including the x86 books:</p>
   :hyp t
   :bound 512
   :concl (xr :zmm i x86)
+  :gen-rewrite nil ; already done by defrstobj
   :gen-linear t
   :gen-type t)
 
@@ -775,6 +787,7 @@ before including the x86 books:</p>
   :hyp t
   :bound 8
   :concl (xr :mem i x86)
+  :gen-rewrite nil ; already done by defrstobj
   :gen-linear t
   :gen-type t)
 
