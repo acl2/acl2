@@ -47,10 +47,6 @@
 ;(in-theory (disable bitxor-of-1-becomes-bitnot-arg1)) ;which way should we go on this?
 (theory-invariant (incompatible (:rewrite bitnot-becomes-bitxor-with-1) (:rewrite bitxor-of-1-becomes-bitnot-arg1)))
 
-(defthm not-equal-of-bitnot-and-getbit-0-same
-  (not (equal (bitnot x) (getbit 0 x)))
-  :hints (("Goal" :in-theory (enable bitnot))))
-
 ;rename
 (defthm bit-equal-bitxor-rewrite
   (equal (equal (bitnot y) (bitxor x y))
