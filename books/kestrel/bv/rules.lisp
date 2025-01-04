@@ -4098,7 +4098,7 @@
                 (natp size)
                 )
            (not (equal k (bvchop size x))))
-  :hints (("Goal" :in-theory (enable BVCHOP-WHEN-SIZE-IS-NOT-NATP natp))))
+  :hints (("Goal" :in-theory (enable natp))))
 
 ;move
 (defthm bvchop-of-sum-minus-expt-alt2
