@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function true-list-fix.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -19,7 +19,7 @@
                   x))
   :hints (("Goal" :in-theory (enable true-list-fix))))
 
-(defthm true-list-fix-when-not-cons-cheap
+(defthm true-list-fix-when-not-consp-cheap
   (implies (not (consp x))
            (equal (true-list-fix x)
                   nil))

@@ -1,6 +1,6 @@
 ; Substituting lambda vars that only appear once
 ;
-; Copyright (C) 2024 Kestrel Institute
+; Copyright (C) 2024-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -36,7 +36,7 @@
 (local (in-theory (disable strip-cdrs
                            strip-cars
                            symbol-alistp
-                           intersection-equal-symmetric-iff)))
+                           intersection-equal-commutative-iff)))
 
 (local (in-theory (enable pseudo-term-listp-when-symbol-listp)))
 
@@ -199,7 +199,7 @@
                 (subsetp-equal formals-to-keep (strip-cars formal-arg-alist)))
            (not (intersection-equal (free-vars-in-terms (map-lookup-equal (mv-nth 0 (classify-lambda-formals formals-to-maybe-subst formal-arg-alist formals-to-keep)) formal-arg-alist))
                                     (mv-nth 1 (classify-lambda-formals formals-to-maybe-subst formal-arg-alist formals-to-keep)))))
-  :hints (("Goal" :in-theory (e/d (classify-lambda-formals) (intersection-equal-symmetric-iff)))))
+  :hints (("Goal" :in-theory (e/d (classify-lambda-formals) ()))))
 
 ;sanity check
 ;needed?
@@ -253,7 +253,7 @@
                                                   (mv-nth 0 (classify-lambda-formals formals-to-maybe-subst formal-arg-alist formals-to-keep)))
                             (mv-nth 1 (classify-lambda-formals formals-to-maybe-subst formal-arg-alist formals-to-keep))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (classify-lambda-formals) (intersection-equal-symmetric-iff)))))
+           :in-theory (e/d (classify-lambda-formals) ()))))
 
 (defthm call-of-classify-lambda-formals-ok
   (implies (and (subsetp-equal try-vars non-trivial-formals)

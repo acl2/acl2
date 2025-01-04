@@ -1,6 +1,6 @@
 ; Prime fields library: additional rules
 ;
-; Copyright (C) 2019-2024 Kestrel Institute
+; Copyright (C) 2019-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -405,11 +405,6 @@
   :hints (("Goal" :in-theory (enable neg sub add mul
                                      acl2::mod-sum-cases))))
 
-(defthm add-of-neg-same-arg2-gen
-  (equal (add x (neg x p) p)
-         0)
-  :hints (("Goal" :in-theory (enable add sub neg))))
-
 (defthmd equal-of-<-and-fep
   (implies (natp x)
            (equal (equal (< x p) (fep x p))
@@ -554,7 +549,7 @@
   :hints (("Goal" :in-theory (enable mul neg sub acl2::mod-sum-cases))))
 
 ;; p-1 represents -1.
-;subsumed by mul-of-+-same-arg2
+;subsumed by mul-of-+-same-arg1-arg2
 (defthmd mul-of--1-becomes-neg-alt-other
   (implies (posp p)
            (equal (mul (+ -1 p) x p)
@@ -659,13 +654,6 @@
            (equal (add x p p)
                   (mod (ifix x) p)))
   :hints (("Goal" :in-theory (enable add))))
-
-(defthm equal-of-0-and-add-of-neg
-  (implies (and (fep x p)
-                (fep y p)
-                (integerp p))
-           (equal (equal 0 (add (neg x p) y p))
-                  (equal x y))))
 
 ;; Not sure which form is better
 (defthmd add-of-neg-and-neg
@@ -872,11 +860,6 @@
   (equal (add k (- k) p)
          0)
   :hints (("Goal" :in-theory (enable add))))
-
-(defthm mul-of-+-same-arg2
-  (equal (mul (+ x p) y p)
-         (mul x y p))
-  :hints (("Goal" :in-theory (enable mul))))
 
 ;distributivity
 ;but often sub will be enabled
