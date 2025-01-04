@@ -252,7 +252,7 @@ bool TypingAction::VisitArrayRef(ArrayRef *e) {
 
 bool TypingAction::VisitStructRef(StructRef *e) {
   const StructType *t = always_cast<const StructType *>(e->base->get_type());
-  e->set_type(t->getField(e->field)->type);
+  e->set_type(deref(t->getField(e->field)->type));
   return true;
 }
 
@@ -350,27 +350,40 @@ bool TypingAction::VisitCastExpr(CastExpr *e) {
 
   bool source_depends_on_template_parameter = false;
 
-  if (auto i = dynamic_cast<IntType *>(e->get_type())) {
+  if (auto i = dynamic_cast<IntType *>(e->expr->get_type())) {
     TraverseExpression(i->width());
     TraverseExpression(i->isSigned());
     source_depends_on_template_parameter
-        = !i->width()->isStaticallyEvaluable();
+        = !i->width()->isStaticallyEvaluable()
+          || !i->isSigned()->isStaticallyEvaluable();
   }
 
   e->set_type(t);
   if (!e->expr->get_type()->canBeImplicitlyCastTo(t)) {
 
-    diag_
-        .new_error(e->loc(),
-                   format("Incompatible types: %s cannot be cast to %s",
-                          e->expr->get_type()->to_string().c_str(),
-                          t->to_string().c_str()))
-        .note("To convert types depending on template parameters to "
-              "primitive types, you should add an explicit conversion (like "
-              "this ac_int<32, true>(...) to convert to int)")
-        .report();
+    if (source_depends_on_template_parameter) {
+      diag_
+          .new_error(e->loc(),
+                     format("Incompatible types: %s cannot be cast to %s",
+                            e->expr->get_type()->to_string().c_str(),
+                            t->to_string().c_str()))
+          .note("To convert types depending on template parameters to "
+                "primitive types, you should add an explicit conversion "
+                "(like "
+                "this ac_int<32, true>(...) to convert to int)")
+          .report();
+    } else {
+      diag_
+          .new_error(e->loc(),
+                     format("Incompatible types: %s cannot be cast to %s",
+                            e->expr->get_type()->to_string().c_str(),
+                            t->to_string().c_str()))
+          .report();
+    }
+
     return error();
   }
+
   return true;
 }
 
@@ -837,16 +850,17 @@ bool TypingAction::check_assignement(const Location &where, const Type *left,
         diag_
             .new_error(
                 where,
-                format(
-                    "Too many arguments, %s, expected %d argument(s) got %d",
-                    array_size, t->size()))
+                format("Too many arguments, expected %d argument(s) got %d",
+                       array_size, t->size()))
             .report();
         return error();
       }
 
+      Type *arrayBaseType = deref(array->baseType);
+
       auto is_correct = std::all_of(
           t->types().begin(), t->types().end(), [&](const Type *t) {
-            if (!t->canBeImplicitlyCastTo(array->baseType)) {
+            if (!t->canBeImplicitlyCastTo(arrayBaseType)) {
               diag_
                   .new_error(
                       where,
@@ -879,7 +893,7 @@ bool TypingAction::check_assignement(const Location &where, const Type *left,
       auto is_correct = std::all_of(
           t->types().begin(), t->types().end(), [&](const Type *t) {
             Type *field_type = struct_->fields()[i]->type;
-            if (!t->canBeImplicitlyCastTo(field_type)) {
+            if (!t->canBeImplicitlyCastTo(deref(field_type))) {
               diag_
                   .new_error(
                       where,
@@ -901,9 +915,8 @@ bool TypingAction::check_assignement(const Location &where, const Type *left,
         diag_
             .new_error(
                 where,
-                format(
-                    "Too many arguments, %s, expected %d argument(s) got %d",
-                    mv->size(), t->size()))
+                format("Too many arguments, expected %d argument(s) got %d",
+                       mv->size(), t->size()))
             .report();
         return error();
       }
@@ -911,7 +924,7 @@ bool TypingAction::check_assignement(const Location &where, const Type *left,
       unsigned i = 0;
       auto is_correct = std::all_of(
           t->types().begin(), t->types().end(), [&](const Type *t) {
-            if (!t->canBeImplicitlyCastTo(mv->get(i))) {
+            if (!t->canBeImplicitlyCastTo(deref(mv->get(i)))) {
               diag_
                   .new_error(
                       where,
@@ -947,6 +960,16 @@ bool TypingAction::check_assignement(const Location &where, const Type *left,
 }
 
 Type *TypingAction::deref(Type *t) {
+
+  if (const DefinedType *dt = dynamic_cast<const DefinedType *>(t)) {
+    assert(dt->derefType());
+    return dt->derefType();
+  } else {
+    return t;
+  }
+}
+
+const Type *TypingAction::deref(const Type *t) {
 
   if (const DefinedType *dt = dynamic_cast<const DefinedType *>(t)) {
     assert(dt->derefType());
