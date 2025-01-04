@@ -307,9 +307,7 @@
       :hints (("Goal" :in-theory (e/d* (bitops::ihsext-recursive-redefs
                                         bitops::ihsext-inductions)
                                        (unsigned-byte-p))))
-      :gen-linear t
-      :hints-l (("Goal" :in-theory (e/d* ()
-                                         (unsigned-byte-p-of-logtail)))))))
+      :gen-linear t)))
 
   :modr/m t
 
@@ -429,9 +427,7 @@
       :hints (("Goal" :in-theory (e/d* (bitops::ihsext-recursive-redefs
                                         bitops::ihsext-inductions)
                                        (unsigned-byte-p))))
-      :gen-linear t
-      :hints-l (("Goal" :in-theory (e/d* ()
-                                         (unsigned-byte-p-of-logtail)))))))
+      :gen-linear t)))
 
   :modr/m t
 
