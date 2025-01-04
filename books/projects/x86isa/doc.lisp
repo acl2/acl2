@@ -48,7 +48,8 @@
 (include-book "tools/execution/top" :ttags :all)
 ;; Examples of concrete simulations
 (include-book "tools/execution/examples/top" :ttags :all)
-
+;; Asmtest framework
+(include-book "tools/execution/asmtest/asmtest" :ttags :all)
 
 ;; General-purpose code libraries: note that we don't include
 ;; proofs/top here --- the proofs of correctness of various programs
