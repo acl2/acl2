@@ -40,14 +40,25 @@
 (defthmd natp-of-bvchop
   (natp (bvchop n x)))
 
+;rename
 (defthm bvchop-with-n-not-an-integer
-  (implies (not (integerp n))
-           (equal (bvchop n x) 0))
+  (implies (not (integerp size))
+           (equal (bvchop size x)
+                  0))
   :hints (("Goal" :in-theory (enable bvchop))))
 
+;; may help if natp is disabled?
 (defthm bvchop-when-not-natp-arg1-cheap
-  (implies (not (natp n))
-           (equal (bvchop n x)
+  (implies (not (natp size))
+           (equal (bvchop size x)
+                  0))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable bvchop))))
+
+;add -cheap to name
+(defthm bvchop-when-size-is-not-posp
+  (implies (not (posp size))
+           (equal (bvchop size i)
                   0))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable bvchop))))
@@ -153,15 +164,6 @@
            (equal (bvchop size (+ i (bvchop size j)))
                   (bvchop size (+ i j))))
   :hints (("Goal" :in-theory (enable bvchop))))
-
-;might help if natp is not enabled
-(defthm bvchop-when-size-is-not-natp
-  (implies (not (natp size))
-           (equal (bvchop size i)
-                  0))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :in-theory (e/d (bvchop) (;FLOOR-MINUS-ERIC-BETTER ;drop the disable once this is fixed
-                                            )))))
 
 (defthm <=-of-bvchop-same-linear
   (implies (<= 0 x)
@@ -298,19 +300,13 @@
            (- (expt 2 size) (bvchop size x))))
   :hints (("Goal" :in-theory (e/d (bvchop) (mod-cancel)))))
 
-(defthm bvchop-when-size-is-not-posp
-  (implies (not (posp size))
-           (equal (bvchop size i) 0))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :in-theory (enable bvchop))))
-
 (defthm bvchop-of-minus
   (equal (bvchop size (- x))
          (if (or (not (natp size))
                  (equal 0 (bvchop size x)))
              0
            (- (expt 2 size) (bvchop size x))))
-  :hints (("Goal" :use ((:instance bvchop-when-size-is-not-natp (i (- x)))
+  :hints (("Goal" :use ((:instance bvchop-when-not-natp-arg1-cheap (x (- x)))
                         bvchop-of-minus-helper)
            :in-theory (disable bvchop-when-size-is-not-posp
                                bvchop-when-size-is-not-posp

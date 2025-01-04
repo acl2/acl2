@@ -17,8 +17,10 @@
 (include-book "kestrel/world-light/defs-in-world" :dir :system)
 (include-book "kestrel/utilities/defmergesort" :dir :system)
 (include-book "kestrel/utilities/world" :dir :system) ; reduce
+(include-book "kestrel/utilities/make-event-quiet" :dir :system)
 (include-book "kestrel/utilities/make-var-names" :dir :system) ; reduce?
 (include-book "kestrel/terms-light/sublis-var-simple" :dir :system)
+(include-book "kestrel/typed-lists-light/map-strip-cars" :dir :system)
 (local (include-book "kestrel/terms-light/all-vars1" :dir :system))
 (local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
@@ -121,12 +123,63 @@
           (cons list (non-singletons (rest lists)))
         (non-singletons (rest lists))))))
 
+(defun show-rules (names wrld)
+  (declare (xargs :guard (and (symbol-listp names)
+                              (plist-worldp wrld))
+                  :mode :program ;todo
+                  ))
+  (if (endp names)
+      nil
+    (prog2$ (let* ((form (get-event (first names) wrld))
+                   (defthm-variant (car form)) ; todo: is it always plain defthm? might be defaxiom?
+                   (name (cadr form))
+                   (body (caddr form))
+                   (keyword-alist (cdddr form))
+                   ;; Strip out the :hints and :otf-flg :
+                   (keyword-alist (remove-keyword :hints keyword-alist))
+                   (keyword-alist (remove-keyword :otf-flg keyword-alist))
+                   (form `(,defthm-variant ,name ,body ,@keyword-alist))
+                   ;; Find the book that introduced it:
+                   (ev-wrld (decode-logical-name name wrld))
+                   (book-path (global-val 'include-book-path ev-wrld))
+                   (book (first book-path))
+                   (file (if (null book)
+                             "Built-in:"
+                           (book-name-to-filename-1 book (project-dir-alist wrld) 'show-rules))))
+              (prog2$ (cw "~s0:~%" file)
+                      (cw "~Y01~%" form nil)))
+            (show-rules (rest names) wrld))))
+                              
+(defun show-rule-group (names wrld)
+  (declare (xargs :guard (and (symbol-listp names)
+                              (plist-worldp wrld))
+                  :mode :program))
+  (prog2$ (cw "======================================================================~%")
+          (show-rules names wrld)))
+               
+(defun show-rule-groups (groups-of-names wrld)
+  (declare (xargs :guard (and (symbol-list-listp groups-of-names)
+                              (plist-worldp wrld))
+                  :mode :program))
+  (if (endp groups-of-names)
+      nil
+    (prog2$ (show-rule-group (first groups-of-names) wrld)
+            (show-rule-groups (rest groups-of-names) wrld))))
+
 ;; Prints groups of rules with the same body.  Warning: May have different rule-classes!
-(defun duplicate-rules (wrld)
-;  (declare (xargs :guard (plist-worldp wrld))) ; todo
-  (let* ((defthm-and-defaxiom-names (defthms-in-world wrld))
+(defun duplicate-rules-fn (wrld)
+  (declare (xargs :guard (plist-worldp wrld)
+                  :mode :program  ; todo
+                  ))
+  (let* ((defthm-and-defaxiom-names (defthms-in-world wrld)) 
          (names-and-bodies (names-and-bodies defthm-and-defaxiom-names wrld nil))
          (sorted-names-and-bodies (merge-sort-names-and-bodies names-and-bodies))
-         (grouped-names-and-bodies (group-same-body sorted-names-and-bodies nil)))
-    (non-singletons grouped-names-and-bodies)))
+         (grouped-names-and-bodies (group-same-body sorted-names-and-bodies nil))
+         (groups-of-names-and-bodies (non-singletons grouped-names-and-bodies))
+         (groups-of-names (map-strip-cars groups-of-names-and-bodies)))
+    (progn$ (cw "Showing (approximate) duplicate rules:~%")
+            (show-rule-groups groups-of-names wrld)
+            '(value-triple :invisible))))
 
+(defmacro duplicate-rules ()
+  '(make-event-quiet (duplicate-rules-fn (w state))))
