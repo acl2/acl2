@@ -2562,6 +2562,14 @@
 (defun row-rank (a)
   (num-nonzero-rows (row-reduce a)))
 
+(defthmd row-rank-row-reduce
+  (implies (and (posp m) (posp n) (fmatp a m n))
+           (equal (row-rank (row-reduce a))
+		  (row-rank a)))
+  :hints (("Goal" :in-theory (enable row-rank)
+	   :use (row-echelon-p-row-reduce fmatp-row-reduce
+					  (:instance row-reduce-row-echelon-p (a (row-reduce a)))))))
+
 ;; Obviously, the number of nonzero rows of an mxn matrix cannot exceed m:
 
 (defthmd row-rank<=m
@@ -3754,12 +3762,12 @@
 	       (implies (and (natp j) (<= q j) (< j m))
 	                (= (entry j 0 br) (f0)))))))
 
-(defun solvablep (a b m)
+(defun solvablep (a b)
   (null (find-nonzero (fmat* (row-reduce-mat a) (col-mat b))
                       (row-rank a)
-		      m)))
+		      (len a))))
 
-;; Suppose first that (find-nonzero br q m) = k <> nil, so that (solvablep a b m) = nil.  Then 
+;; Suppose first that (find-nonzero br q m) = k <> nil, so that (solvablep a b) = nil.  Then 
 ;; (row k ar) = (flistn0 n) and (entry k 0 br) <> (f0).  It follows that
 
 ;;   (entry k 0 (fmat* ar xc)) = (fdot (row k ar) (col 0 xc)) = (f0) <> (nth k 0 br),
@@ -3805,7 +3813,7 @@
 
 (defthmd linear-equations-unsolvable-case
   (implies (and (fmatp a m n) (posp m) (posp n) (flistnp b m) (flistnp x n)
-                (not (solvablep a b m)))
+                (not (solvablep a b)))
 	   (not (solutionp x a b)))
   :hints (("Goal" :in-theory (enable solutionp)
                   :use (reduce-linear-equations fmatp-row-reduce-mat row-echelon-p-row-reduce row-ops-mat-row-reduce
@@ -4045,7 +4053,7 @@
 
 (local-defthmd linear-equations-unique-solution-case-1
   (implies (and (fmatp a m n) (posp m) (posp n) (flistnp b m) (flistnp x n)
-                (solvablep a b m)
+                (solvablep a b)
 	        (= (row-rank a) n))
 	   (iff (solutionp x a b)
 	        (equal (col-mat x) (first-rows n (fmat* (row-reduce-mat a) (col-mat b))))))
@@ -4086,8 +4094,8 @@
   (let* ((br (fmat* (row-reduce-mat a) (col-mat b)))
          (bq (first-rows n br)))
     (implies (and (fmatp a m n) (posp m) (posp n) (flistnp b m) (flistnp x n)
-                  (solvablep a b m)
-	          (invertiblep a n))
+                  (solvablep a b)
+	          (= (row-rank a) n)) ;(invertiblep a n))
 	     (iff (solutionp x a b)
 	          (equal x (col 0 bq)))))
   :hints (("Goal" :in-theory (enable row-ops-mat-row-reduce fmatp-row-reduce-mat solutionp
@@ -4099,7 +4107,7 @@
 			(:instance num-nonzero-rows<=m (a (row-reduce a)))
 			(:instance fmatp-first-rows (q n) (n 1) (a (fmat* (row-reduce-mat a) (col-mat b))))))))
 
-;; In the remainder of this section, we treat the general case (solvablep a b m) = t with arbitrary
+;; In the remainder of this section, we treat the general case (solvablep a b) = t with arbitrary
 ;; row-rank q <= n.  The equation (fmat* aq xc) = bq holds iff for 0 <= i < q,
 
 ;;   (nth i (fmat* aq xc)) = (nth i bq)
@@ -4143,6 +4151,40 @@
 
 (defund free-inds (a n)
   (set-difference-equal (ninit n) (lead-inds a)))
+
+(local-defthmd consp-set-difference
+  (implies (not (sublistp l m))
+           (consp (set-difference-equal l m))))
+
+(local-defthmd member-set-difference
+  (iff (member x (set-difference-equal l m))
+       (and (member x l) (not (member x m)))))
+
+(local-defthmd dlistp-set-difference
+  (implies (dlistp l)
+           (dlistp (set-difference-equal l m)))
+  :hints (("Subgoal *1/5" :use ((:instance member-set-difference (x (car l)) (l (cdr l)))))))
+
+(defthmd dlistp-free-inds
+  (implies (and (fmatp a m n) (posp m) (posp n) (row-echelon-p a))
+           (dlistp (free-inds a n)))
+  :hints (("Goal" :in-theory (enable free-inds))))
+
+(defthmd member-free-inds
+  (implies (and (fmatp a m n) (posp m) (posp n) (row-echelon-p a))
+           (iff (member x (free-inds a n))
+	        (and (member x (ninit n))
+		     (not (member x (lead-inds a))))))
+  :hints (("Goal" :in-theory (enable free-inds)
+                  :use ((:instance member-set-difference (l (ninit n)) (m (lead-inds a)))))))
+
+(defthmd consp-free-inds
+  (implies (and (fmatp a m n) (posp m) (posp n) (row-echelon-p a) (< m n))
+           (consp (free-inds a n)))
+  :hints (("Goal" :in-theory (enable free-inds permp)
+                  :use (len-lead-inds-bound sublistp-lead-inds-ninit dlistp-lead-inds
+		        (:instance consp-set-difference (l (ninit n)) (m (lead-inds a)))
+                        (:instance eq-len-permp (l (ninit n)) (m (lead-inds a)))))))
 
 ;; Note that if q = n, then (free-inds aq n) = nil.  In general, given a sublist of (ninit n), a dot
 ;;  product of 2 flists of length n may be split into 2 sums as follows:
@@ -4224,11 +4266,6 @@
 	   (equal (fdot-select (ninit n) x y)
 	          (fdot x y)))
   :hints (("Goal" :use ((:instance fdot-select-nthcdr (k 0))))))
-
-(local-defthmd member-set-difference
-  (implies (and (dlistp l) (member-equal x l))
-           (iff (member-equal x (set-difference-equal l m))
-	        (not (member-equal x m)))))
 
 (local-defthmd sublistp-set-difference
   (sublistp (set-difference-equal l m) l))
@@ -4510,7 +4547,7 @@
 	 (l (lead-inds aq))
 	 (f (free-inds aq n)))
     (implies (and (fmatp a m n) (posp m) (posp n) (flistnp b m) (flistnp x n)
-                  (solvablep a b m))
+                  (solvablep a b))
              (iff (solutionp x a b)
                   (solution-test x aq bq l f q))))
   :hints (("Goal" :in-theory (e/d (fmatp-first-rows fmatp-row-reduce-mat row-echelon-p-row-reduce fmatp-row-reduce)
@@ -4549,4 +4586,60 @@
 ;; vector space of solutions of a homogeneous system of equations.
 
 
+;;--------------------------------------------------------------------------------------------------
 
+;; A couple of results that we need in our treatment of linear dependent vectors.
+;; I should have proved them earlier:
+
+(defthmd lead-inds-first-nonzero-rows
+  (implies (and (fmatp a m n) (posp m) (posp n))
+           (equal (lead-inds (first-rows (num-nonzero-rows a) a))
+	          (lead-inds a)))
+  :hints (("Goal" :in-theory (enable fmatp))))
+
+(local-defthmd nth-col-lead-inds-1
+  (implies (and (fmatp a m n) (posp m) (posp n) (row-echelon-p a)
+                (natp i) (< i (num-nonzero-rows a)) (member j (lead-inds a)))
+	   (equal (nth j (row i a))
+	          (if (= j (nth i (lead-inds a)))
+		      (f1) (f0))))
+  :hints (("Goal" :use (len-lead-inds-bound len-lead-inds-num-nonzero-rows lead-inds-first-nonzero-rows
+                        (:instance first-rows-rank (ar a))
+                        (:instance nth-row-lead-ins (aq (first-rows (num-nonzero-rows a) a))
+				                    (q (num-nonzero-rows a)))
+			(:instance nth-first-rows (q (num-nonzero-rows a)))))))			
+
+(local-defthmd nth-col-lead-inds-2
+  (implies (and (fmatp a m n) (row-echelon-p a) (posp m) (posp n)
+		(natp i) (< i (num-nonzero-rows a)) (natp k) (< k m))
+	   (equal (nth k (col (nth i (lead-inds a)) a))
+		  (fdelta i k)))
+  :hints (("Goal" :in-theory (disable member-sublist nth-flistn0)
+                  :use (len-lead-inds-num-nonzero-rows sublistp-lead-inds-ninit
+                        (:instance nth-col (i k) (j (nth i (lead-inds a))))
+			(:instance num-nonzero-rows-nonzero (i k))
+			(:instance flist0p-flistn0-len (x (nth k a)))
+			(:instance nth-flistn0 (i (nth i (lead-inds a))))
+			(:instance member-ninit (x (nth i (lead-inds a))))
+			(:instance member-sublist (x (nth i (lead-inds a))) (l (lead-inds a)) (m (ninit n)))
+                        (:instance nth-col-lead-inds-1 (i k) (j (nth i (lead-inds a))))))))
+
+(defthmd nth-col-lead-inds
+  (implies (and (fmatp a m n) (row-echelon-p a) (posp m) (posp n)
+		(natp i) (< i (row-rank a)) (natp k) (< k m))
+	   (equal (nth k (col (nth i (lead-inds a)) a))
+		  (fdelta i k)))
+  :hints (("Goal" :in-theory (enable row-reduce-row-echelon-p row-rank)
+                  :use (nth-col-lead-inds-2))))
+
+(defthmd nth-lead-inds-bound
+  (implies (and (fmatp a m n) (posp m) (posp n) (row-echelon-p a)
+                (natp k) (< k (len (lead-inds a))))
+           (and (natp (nth k (lead-inds a)))
+	        (< (nth k (lead-inds a)) n)))
+  :hints (("Goal" :in-theory (enable len-lead-inds-num-nonzero-rows)
+                  :use (nth-lead-inds num-nonzero-rows<=m
+		        (:instance num-nonzero-rows-nonzero (i k))
+			(:instance first-nonzero-nonzero (x (nth k a)))
+			(:instance flistnp-row (i k))
+			(:instance not-flist0p-row (i k))))))

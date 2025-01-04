@@ -154,7 +154,7 @@
   (implies (flistp l)
            (fp (flist-prod l))))
 
-;; List of ring elements of length n:
+;; List of field elements of length n:
 
 (defun flistnp (x n)
   (if (zp n)

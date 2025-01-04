@@ -382,23 +382,23 @@
 ;;   (append (invs-pres p r n) (pres-invs p r n)) 
 ;; which will allow us to conclude that the 2 lists have the same length:
 
-(local-defun f1 (pair p)
+(defun ff (pair p)
   (if (< (nth (car pair) p) (nth (cdr pair) p))
       (cons (nth (car pair) p) (nth (cdr pair) p))
     (cons (nth (cdr pair) p) (nth (car pair) p))))
 
 ;; The inverse of f:
 
-(local-defun g1 (pair p)
+(defun gg (pair p)
   (if (< (index (car pair) p) (index (cdr pair) p))
       (cons (index (car pair) p) (index (cdr pair) p))
     (cons (index (cdr pair) p) (index (car pair) p))))
 
-(local-defthm g1-f1-1
+(local-defthm gg-ff-1
   (implies (and (posp n) (in p (sym n)) (in r (sym n)) (member-equal x (invs (comp-perm r p n) n))
                 (< (nth (car x) p) (nth (cdr x) p)))
-	   (and (member-equal (f1 x p) (pres-invs p r n))
-	        (equal (g1 (f1 x p) p) x)))
+	   (and (member-equal (ff x p) (pres-invs p r n))
+	        (equal (gg (ff x p) p) x)))
   :hints (("Goal" :in-theory (enable len-perm pres-invs)
                   :use ((:instance member-invs (p (comp-perm r p n)))
 			(:instance member-invs (p r) (x (cons (nth (car x) p) (nth (cdr x) p))))
@@ -408,11 +408,11 @@
 			(:instance nth-perm-ninit (k (nth (car x) p)) (x r))
 			(:instance nth-perm-ninit (k (nth (cdr x) p)) (x r))))))
 
-(local-defthm g1-f1-2
+(local-defthm gg-ff-2
   (implies (and (posp n) (in p (sym n)) (in r (sym n)) (member-equal x (invs (comp-perm r p n) n))
                 (> (nth (car x) p) (nth (cdr x) p)))
-	   (and (member-equal (f1 x p) (invs-pres p r n))
-	        (equal (g1 (f1 x p) p) x)))
+	   (and (member-equal (ff x p) (invs-pres p r n))
+	        (equal (gg (ff x p) p) x)))
   :hints (("Goal" :in-theory (enable len-perm invs-pres)
                   :use ((:instance member-invs (p (comp-perm r p n)))
 			(:instance member-pres (p r) (x (cons (nth (cdr x) p) (nth (car x) p))))
@@ -422,7 +422,7 @@
 			(:instance nth-perm-ninit (k (nth (car x) p)) (x r))
 			(:instance nth-perm-ninit (k (nth (cdr x) p)) (x r))))))
 
-(local-defthmd g1-f1-3
+(local-defthmd gg-ff-3
   (implies (and (posp n) (in p (sym n)) (in r (sym n)) (member-equal x (invs (comp-perm r p n) n)))
            (or (> (nth (car x) p) (nth (cdr x) p))
 	       (< (nth (car x) p) (nth (cdr x) p))))
@@ -432,31 +432,31 @@
 			(:instance nth-perm-ninit (k (car x)) (x p))
 			(:instance nth-perm-ninit (k (cdr x)) (x p))))))
 
-(local-defthmd g1-f1-id
+(local-defthmd gg-ff-id
   (implies (and (posp n) (in p (sym n)) (in r (sym n)) (member-equal x (invs (comp-perm r p n) n)))
-           (and (member-equal (f1 x p) (append (invs-pres p r n) (pres-invs p r n)))
-	        (equal (g1 (f1 x p) p) x)))
-  :hints (("Goal" :use (g1-f1-1 g1-f1-2 g1-f1-3))))
+           (and (member-equal (ff x p) (append (invs-pres p r n) (pres-invs p r n)))
+	        (equal (gg (ff x p) p) x)))
+  :hints (("Goal" :use (gg-ff-1 gg-ff-2 gg-ff-3))))
 
-(local-defthmd f1-g1-1
+(local-defthmd ff-gg-1
   (implies (and (posp n) (in p (sym n)) (in r (sym n)) (member-equal x (invs-pres p r n)))
-           (equal (f1 (g1 x p) p) x))
+           (equal (ff (gg x p) p) x))
   :hints (("Goal" :in-theory (enable len-perm invs-pres)
                   :use ((:instance member-invs (p (inv-perm p n)))
 			(:instance member-perm (k (car x)) (x p))
 			(:instance member-perm (k (cdr x)) (x p))))))
 
-(local-defthmd f1-g1-2
+(local-defthmd ff-gg-2
   (implies (and (posp n) (in p (sym n)) (in r (sym n)) (member-equal x (pres-invs p r n)))
-           (equal (f1 (g1 x p) p) x))
+           (equal (ff (gg x p) p) x))
   :hints (("Goal" :in-theory (enable len-perm pres-invs)
                   :use ((:instance member-pres (p (inv-perm p n)))
 			(:instance member-perm (k (car x)) (x p))
 			(:instance member-perm (k (cdr x)) (x p))))))
 
-(local-defthmd f1-g1-3
+(local-defthmd ff-gg-3
   (implies (and (posp n) (in p (sym n)) (in r (sym n)) (member-equal x (invs-pres p r n)))
-           (and (equal (g1 x p) (cons (index (cdr x) p) (index (car x) p)))
+           (and (equal (gg x p) (cons (index (cdr x) p) (index (car x) p)))
 	        (natp (index (cdr x) p)) (natp (index (car x) p))
 	        (< (index (cdr x) p) n) (< (index (car x) p) n)
 		(< (index (cdr x) p) (index (car x) p))
@@ -469,16 +469,16 @@
 			(:instance member-perm (k (car x)) (x p))
 			(:instance member-perm (k (cdr x)) (x p))))))
 
-(local-defthmd f1-g1-4
+(local-defthmd ff-gg-4
   (implies (and (posp n) (in p (sym n)) (in r (sym n)) (member-equal x (invs-pres p r n)))
-           (member (g1 x p) (invs (comp-perm r p n) n)))
+           (member (gg x p) (invs (comp-perm r p n) n)))
   :hints (("Goal" :in-theory (e/d (len-perm invs-pres) (ind<len))
-                  :use (f1-g1-3
+                  :use (ff-gg-3
 			(:instance member-invs (p (comp-perm r p n)) (x (cons (index (cdr x) p) (index (car x) p))))))))
 
-(local-defthmd f1-g1-5
+(local-defthmd ff-gg-5
   (implies (and (posp n) (in p (sym n)) (in r (sym n)) (member-equal x (pres-invs p r n)))
-           (and (equal (g1 x p) (cons (index (car x) p) (index (cdr x) p)))
+           (and (equal (gg x p) (cons (index (car x) p) (index (cdr x) p)))
 	        (natp (index (cdr x) p)) (natp (index (car x) p))
 	        (< (index (cdr x) p) n) (< (index (car x) p) n)
 		(< (index (car x) p) (index (cdr x) p))
@@ -491,20 +491,20 @@
 			(:instance member-perm (k (car x)) (x p))
 			(:instance member-perm (k (cdr x)) (x p))))))
 
-(local-defthmd f1-g1-6
+(local-defthmd ff-gg-6
   (implies (and (posp n) (in p (sym n)) (in r (sym n)) (member-equal x (pres-invs p r n)))
-           (member (g1 x p) (invs (comp-perm r p n) n)))
+           (member (gg x p) (invs (comp-perm r p n) n)))
   :hints (("Goal" :in-theory (e/d (len-perm invs-pres) (ind<len))
-                  :use (f1-g1-5
+                  :use (ff-gg-5
 			(:instance member-invs (p (comp-perm r p n)) (x (cons (index (car x) p) (index (cdr x) p))))))))
 
-(local-defthmd f1-g1-id
+(local-defthmd ff-gg-id
   (implies (and (posp n) (in p (sym n)) (in r (sym n)) (member-equal x (append (invs-pres p r n) (pres-invs p r n))))
-           (and (member-equal (g1 x p) (invs (comp-perm r p n) n))
-	        (equal (f1 (g1 x p) p) x)))
-  :hints (("Goal" :use (f1-g1-1 f1-g1-2 f1-g1-4 f1-g1-6))))
+           (and (member-equal (gg x p) (invs (comp-perm r p n) n))
+	        (equal (ff (gg x p) p) x)))
+  :hints (("Goal" :use (ff-gg-1 ff-gg-2 ff-gg-4 ff-gg-6))))
 
-(local-in-theory (disable f1 g1))
+(local-in-theory (disable ff gg))
 
 (defthmd len-invs-comp-perm-append
   (implies (and (posp n) (in p (sym n)) (in r (sym n)))
@@ -513,11 +513,11 @@
   :hints (("Goal" :use ((:functional-instance len-1-1-equal
                          (x (lambda () (if (and (posp n) (in p (sym n)) (in r (sym n))) (invs (comp-perm r p n) n) (x))))
                          (y (lambda () (if (and (posp n) (in p (sym n)) (in r (sym n))) (append (invs-pres p r n) (pres-invs p r n)) (y))))
-			 (xy (lambda (x) (if (and (posp n) (in p (sym n)) (in r (sym n))) (f1 x p) (xy x))))
-			 (yx (lambda (x) (if (and (posp n) (in p (sym n)) (in r (sym n))) (g1 x p) (yx x)))))))
+			 (xy (lambda (x) (if (and (posp n) (in p (sym n)) (in r (sym n))) (ff x p) (xy x))))
+			 (yx (lambda (x) (if (and (posp n) (in p (sym n)) (in r (sym n))) (gg x p) (yx x)))))))
 	 ("Subgoal 1" :use (dlistp-append-invs-pres-pres-invs))
-	 ("Subgoal 2" :use ((:instance g1-f1-id (x a))))
-	 ("Subgoal 3" :use ((:instance f1-g1-id (x a))))))
+	 ("Subgoal 2" :use ((:instance gg-ff-id (x a))))
+	 ("Subgoal 3" :use ((:instance ff-gg-id (x a))))))
 )
                          
 (defthmd len-invs-comp-perm
