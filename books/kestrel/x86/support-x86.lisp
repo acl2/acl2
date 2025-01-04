@@ -1,7 +1,7 @@
 ; Supporting material for x86 code proofs
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2024 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -34,6 +34,7 @@
 (include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system)
 (include-book "linear-memory") ;drop? but need mv-nth-0-of-rml-size-of-xw-when-app-view
 (include-book "canonical")
+(include-book "state")
 (local (include-book "support-bv"))
 (local (include-book "kestrel/bv/rules10" :dir :system))
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
@@ -215,24 +216,6 @@
          (x86isa::member-p a x))
   :hints (("Goal" :in-theory (enable x86isa::subset-p))))
 
-(defthm x86isa::xr-of-if
-  (equal (XR fld index (IF test state1 state2))
-         (if test
-             (XR fld index state1)
-           (XR fld index state2))))
-
-(defthm x86isa::xr-of-if-special-case-for-ms
-  (equal (XR :ms nil (IF test state1 state2))
-         (if test
-             (XR :ms nil state1)
-           (XR :ms nil state2))))
-
-(defthm x86isa::xr-of-if-special-case-for-fault
-  (equal (xr :fault nil (if test state1 state2))
-         (if test
-             (xr :fault nil state1)
-           (xr :fault nil state2))))
-
 ;; splits the simulation!
 (defthm x86-fetch-decode-execute-of-set-rip-split
   (equal (x86-fetch-decode-execute (xw :rip nil (if test rip1 rip2) x86))
@@ -317,39 +300,6 @@
 (defthm canonical-address-listp-of-nil
   (x86isa::canonical-address-listp nil))
 
-
-;see xr-xw-inter-field but that has a case-split
-(defthm xr-of-xw-diff
-  (implies (not (equal fld1 fld2))
-           (equal (xr fld2 i2 (xw fld1 i1 v x86))
-                  (xr fld2 i2 x86))))
-
-(defthm unsigned-byte-p-of-xr-of-mem
-  (implies (and (<= 8 size)
-                (x86p x86))
-           (equal (unsigned-byte-p size (xr :mem i x86))
-                  (natp size))))
-
-(defthm integerp-of-xr-mem
-  (implies (x86p x86)
-           (integerp (xr :mem acl2::i x86)))
-  :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :use (:instance x86isa::unsigned-byte-p-of-xr-of-mem (size 8))
-           :in-theory (disable x86isa::unsigned-byte-p-of-xr-of-mem))))
-
-(defthm unsigned-byte-p-of-memi
-  (implies (and (<= 8 size)
-                (x86p x86))
-           (equal (unsigned-byte-p size (memi i x86))
-                  (natp size)))
-  :hints (("Goal" :in-theory (enable memi))))
-
-(defthm integerp-of-memi
-  (implies (x86p x86)
-           (integerp (memi i x86)))
-  :hints (("Goal" :in-theory (enable memi))))
-
-
 ;; resolve a call to rb on a singleton list when we know the program
 ;; this rule seems simpler than rb-in-terms-of-nth-and-pos (which is now gone) since it has no extended bind-free hyp.
 ;; todo: try :match-free :all
@@ -401,15 +351,6 @@
                            (slice-of-combine-bytes)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defthm integerp-of-xr-of-rsp
-  (implies (x86p x86)
-           (integerp (xr :rgf *rsp* x86))))
-
-(defthm app-view-of-xw
-  (implies (not (equal fld :app-view))
-           (equal (app-view (xw fld index value x86))
-                  (app-view x86))))
 
 (local (include-book "kestrel/bv/rules3" :dir :system)) ;drop?
 

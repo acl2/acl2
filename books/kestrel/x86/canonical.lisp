@@ -12,12 +12,20 @@
 (in-package "X86ISA") ;; unlike most books, this one is in the X86ISA package
 
 (include-book "projects/x86isa/machine/application-level-memory" :dir :system) ; for canonical-address-p
-(include-book "projects/x86isa/machine/decoding-and-spec-utils" :dir :system) ; for I48P-XR-RIP, reduce? todo: ttag!
+;(include-book "projects/x86isa/machine/decoding-and-spec-utils" :dir :system) ; for I48P-XR-RIP, reduce? todo: ttag!
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
+
+;; in projects/x86isa/machine/decoding-and-spec-utils but misplaced?
+(defthm-signed-byte-p i48p-xr-rip
+    :hyp t
+    :bound 48
+    :concl (xr :rip i x86)
+    :gen-linear t
+    :gen-type t)
 
 ;tighten?
 (defthm x86isa::signed-byte-p-64-when-canonical-address-p-cheap
