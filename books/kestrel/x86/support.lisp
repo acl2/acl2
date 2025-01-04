@@ -72,16 +72,6 @@
            :in-theory (enable canonical-address-p acl2::bvlt signed-byte-p
                               acl2::bvchop-when-negative-lemma))))
 
-;; Seems needed because the model adds 7 to rsp-8 and tests whether
-;; the result is canonical.  I guess it's testing the highest address
-;; of the 8 byte block.
-(defthm canonical-address-p-of-minus-1
-  (implies (equal 0 (mod x 8))
-           (equal (canonical-address-p (+ -1 x))
-                  (canonical-address-p (+ -8 x))))
-  :hints (("Goal" :in-theory (enable canonical-address-p signed-byte-p ;acl2::mod-=-0
-                                     ))))
-
 ;; ;; Just a wrapper that is in the x86isa package instead of the ACL2 package.
 ;; (defmacro defconst-computed (name form)
 ;;   `(acl2::defconst-computed ,name ,form))
@@ -424,17 +414,6 @@
                                   (acl2::not-equal-bvchop-when-not-equal-bvchop
                                    acl2::rewrite-bv-equality-when-sizes-dont-match-2)))))
 
-;can loop with CANONICAL-ADDRESS-P-BETWEEN
-(defthmd integerp-when-canonical-address-p
-  (implies (canonical-address-p x)
-           (integerp x)))
-
-(defthmd integerp-when-canonical-address-p-cheap
-  (implies (and (canonical-address-p free) ; poor man's backchain limit
-                ;; todo: could require syntactic equality here:
-                (equal free x))
-           (integerp x)))
-
 (defthm 64-bit-mode-one-byte-opcode-modr/m-p-rewrite-quotep
   (implies (and (syntaxp (quotep byte))
                 (unsigned-byte-p 8 byte))
@@ -451,11 +430,6 @@
            (equal (mv-nth n x)
                   (nth n x)))
   :hints (("Goal" :in-theory (enable acl2::mv-nth-becomes-nth))))
-
-(defthm canonical-address-p-of-logext-64
-  (implies (canonical-address-p x)
-           (canonical-address-p (logext 64 x)))
-  :hints (("Goal" :in-theory (enable canonical-address-p)))) ;when can we drop the logext completely?
 
 (acl2::defopeners get-prefixes)
 
@@ -761,21 +735,6 @@
                            (m 63)
                            (x (acl2::bvchop 64 k))))))
 
-
-;add one for the upper bound as well?
-;looped with the between lemma?
-(defthmd not-<-when-canonical-address-p
-  (implies (and (syntaxp (quotep k))
-                (< k (- (expt 2 47)))
-                (canonical-address-p x))
-           (not (< x k))))
-
-;;todo #1
-;; (CANONICAL-ADDRESS-P$INLINE (LOGEXT '64
-;;                                           (ACL2::BVPLUS '64
-;;                                                         '18446744073709551604
-;;                                                         (XR ':RGF '4 X86))))
-
 (defthm disjoint-of-CREATE-CANONICAL-ADDRESS-LIST-and-CREATE-CANONICAL-ADDRESS-LIST-stack-and-text
   (implies (and (syntaxp (and (quotep stack-slots)
                               (quotep neg-stack-offset)))
@@ -902,37 +861,6 @@
                            (n 64)
                            (m 63)
                            (x k)))))
-
-;todo: fix this rule
-;; (defthm signed-byte-p-of-+-between
-;;   (implies (and (canonical-address-p (+ big-neg-offset x))
-;;                 (<= big-neg-offset small-neg-offset)
-;;                 (canonical-address-p x)
-;;                 ;(integerp x)
-;;                 (integerp small-neg-offset)
-;;                 (integerp big-neg-offset)
-;;                 (<= 0 small-neg-offset) ;gen? ;TODO: This doesn't make sense
-;;                 (signed-byte-p 16 small-neg-offset) ;gen
-;;                 )
-;;            (signed-byte-p '64 (+ small-neg-offset x)))
-;;   :hints (("Goal" :in-theory (enable ;canonical-address-p signed-byte-p
-;;                               ))))
-
-; Maybe this is the loop: CANONICAL-ADDRESS-P-BETWEEN backchains from CANONICAL-ADDRESS-P to
-; some < claims, but several rules (such as <-WHEN-CANONICAL-ADDRESS-P)
-; backchain from < claims to CANONICAL-ADDRESS-P claims.
-
-;; (DEFTHM CANONICAL-ADDRESS-P-OF-+-WHEN-CANONICAL-ADDRESS-P-OF-+-alt
-;;   (IMPLIES (AND (CANONICAL-ADDRESS-P (+ K2 LOAD-OFFSET))
-;;                 (<= K K2)
-;;                 (NATP K)
-;;                 (NATP K2)
-;;                 (CANONICAL-ADDRESS-P LOAD-OFFSET))
-;;            (CANONICAL-ADDRESS-P (+ K LOAD-OFFSET)))
-;;   :HINTS
-;;   (("Goal"
-;;     :IN-THEORY (ENABLE CANONICAL-ADDRESS-P SIGNED-BYTE-P))))
-
 
 ;todo:
 
@@ -1368,14 +1296,6 @@
                   (natp size)))
   :hints (("Goal" :in-theory (enable rvm08 MEMI))))
 
-(defthm canonical-address-p-of-one-more-when-between
-  (implies (and (canonical-address-p base-addr)
-                (canonical-address-p (+ -1 base-addr n))
-                (< 1 n)
-                (integerp n))
-           (canonical-address-p (+ 1 base-addr)))
-  :hints (("Goal" :in-theory (enable canonical-address-p signed-byte-p))))
-
 ;; (defthm n08p-of-g-when-memp-aux
 ;;   (implies (and (x86isa::memp-aux x)
 ;;                 (natp i)
@@ -1414,11 +1334,7 @@
 ;;            (integerp (gz addr (nth 31 x86))))
 ;;   :hints (("Goal" :in-theory (enable x86p x86isa::memp))))
 
-;move
-(defthm logext-64-does-nothing-when-canonical-address-p
-  (implies (canonical-address-p x)
-           (equal (logext 64 x)
-                  x)))
+
 
 ;move
 (defthm xw-of-rip-and-if
@@ -1435,19 +1351,6 @@
   :hints (("Goal" :in-theory (enable acl2::myif))))
 
 (in-theory (disable x86isa::rme08))
-
-;; We'll try keeping i48 disabled for now (the x86 books may do the opposite):
-(in-theory (disable x86isa::i48$inline))
-
-(defthm canonical-address-p-of-i48
-  (canonical-address-p (x86isa::i48 x))
-  :hints (("Goal" :in-theory (enable x86isa::i48 canonical-address-p))))
-
-(defthm i48-when-canonical-address-p
-  (implies (canonical-address-p x)
-           (equal (x86isa::i48 x)
-                  x))
-  :hints (("Goal" :in-theory (enable x86isa::i48 canonical-address-p))))
 
 ;; ;; simplified hyps should work better with axe
 ;; (DEFTHM GET-PREFIXES-OPENER-LEMMA-GROUP-1-PREFIX-simple-32
@@ -1593,24 +1496,6 @@
 
 (in-theory (disable acl2::posp-redefinition)) ;yuck
 (in-theory (enable posp))
-
-(defthm canonical-address-p-when-unsigned-byte-p
-  (implies (unsigned-byte-p 47 ad)
-           (canonical-address-p ad))
-  :hints (("Goal" :in-theory (enable canonical-address-p))))
-
-(defthm canonical-address-p-of-sum-when-unsigned-byte-p-32
-  (implies (and (unsigned-byte-p 32 ad)
-                (unsigned-byte-p 32 k) ;gen
-                )
-           (canonical-address-p (+ k ad))))
-
-(defthm canonical-address-p-of-+-of-constant-when-natp
-  (implies (and (syntaxp (quotep k))
-                (natp k)
-                (natp x))
-           (equal (canonical-address-p (+ k x))
-                  (< x (- (expt 2 47) k)))))
 
 ;; (defthm +-of-bvplus-of-x-and-minus-x
 ;;   (implies (unsigned-byte-p 32 x)
