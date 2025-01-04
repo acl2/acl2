@@ -29,11 +29,6 @@
            (alistp (car lst)))
   :hints (("Goal" :in-theory (enable alist-listp))))
 
-(defthm alist-listp-of-cdr-when-alist-listp
-  (implies (alist-listp lst)
-           (alist-listp (cdr lst)))
-  :hints (("Goal" :in-theory (enable alist-listp))))
-
 (defthm alistp-of-nth
   (implies (alist-listp alists)
            (alistp (nth n alists)))
