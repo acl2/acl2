@@ -1454,10 +1454,7 @@ the @('fault') field instead.</li>
    :bound 80
    :concl (logior n16 (ash n64 16))
    :gen-type t
-   :gen-linear t
-   :hints-l (("Goal"
-              :do-not '(preprocess)
-              :in-theory (e/d () (unsigned-byte-p))))))
+   :gen-linear t))
 
 (local
  (defthm-unsigned-byte-p usb-48-of-16-and-32
@@ -1466,10 +1463,7 @@ the @('fault') field instead.</li>
    :bound 48
    :concl (logior n16 (ash n32 16))
    :gen-type t
-   :gen-linear t
-   :hints-l (("Goal"
-              :do-not '(preprocess)
-              :in-theory (e/d () (unsigned-byte-p))))))
+   :gen-linear t))
 
 (defsection read-operands-and-write-results
 

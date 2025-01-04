@@ -239,8 +239,7 @@
     :concl (mv-nth 2 (sse-cmp operation op1 op2 mxcsr exp-width frac-width))
     :hints (("Goal" :in-theory (e/d* () (unsigned-byte-p))))
     :gen-type t
-    :gen-linear t
-    :hints-l (("Goal" :in-theory (e/d* (unsigned-byte-p) ())))))
+    :gen-linear t))
 
 ;; ======================================================================
 

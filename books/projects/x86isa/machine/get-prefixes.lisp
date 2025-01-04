@@ -544,8 +544,7 @@
                               ;; bitops::basic-signed-byte-p-of-+
                               default-<-1
                               force (force)))))
-    :gen-linear t
-    :hints-l (("Goal" :in-theory (e/d () (get-prefixes)))))
+    :gen-linear t)
 
   (defthm-unsigned-byte-p byte-p-of-get-prefixes.new-rex-byte
     ;; [Shilpi] I tried to use defret here instead of defthm-unsigned-byte-p, but I got
@@ -579,8 +578,7 @@
                               ;; bitops::basic-signed-byte-p-of-+
                               default-<-1
                               force (force)))))
-    :gen-linear t
-    :hints-l (("Goal" :in-theory (e/d () (get-prefixes)))))
+    :gen-linear t)
 
   (defret get-prefixes-does-not-modify-x86-state-in-app-view
     (implies (app-view x86)
