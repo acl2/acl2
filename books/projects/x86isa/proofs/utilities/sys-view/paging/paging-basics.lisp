@@ -91,7 +91,6 @@
               (equal m (- (1+ n))))
     :bound 64
     :concl (logior n (logand m x))
-    :hints-l (("Goal" :in-theory (e/d () (unsigned-byte-p force (force)))))
     :gen-type t
     :gen-linear t))
 
