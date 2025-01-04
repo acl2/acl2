@@ -655,13 +655,6 @@
                   (mod (ifix x) p)))
   :hints (("Goal" :in-theory (enable add))))
 
-(defthm equal-of-0-and-add-of-neg
-  (implies (and (fep x p)
-                (fep y p)
-                (integerp p))
-           (equal (equal 0 (add (neg x p) y p))
-                  (equal x y))))
-
 ;; Not sure which form is better
 (defthmd add-of-neg-and-neg
   (equal (add (neg x p) (neg y p) p)
