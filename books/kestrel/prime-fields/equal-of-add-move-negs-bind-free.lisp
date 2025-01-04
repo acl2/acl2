@@ -206,7 +206,7 @@
 ;; Rules to complete the job, by combining the addend (still wrapped in a call
 ;; of bind-free-id) with its negated version;
 
-(defthm add-of-neg-same-arg2-gen-with-bind-free-id
+(defthm add-of-neg-same-arg2-with-bind-free-id
   (equal (add (bind-free-id x) (neg x p) p)
          0)
   :hints (("Goal" :in-theory (enable bind-free-id))))
