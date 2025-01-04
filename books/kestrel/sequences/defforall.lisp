@@ -1,7 +1,7 @@
 ; Generate a function to check if all items in a list satisfy a predicate
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -262,12 +262,11 @@
   :hints (("Goal" :expand (generic-forall-p (true-list-fix x))
 :in-theory (enable generic-forall union-equal))))
 
-;; non-standard name!
-(defthm generic-predicate-p-of-car
-  (implies (and (generic-forall-p x)
-                (consp (double-rewrite x))) ;can move to conclusion (details depend on whether the generic-predicate holds on nil)
-           (generic-predicate (car x)))
-  :hints (("Goal" :in-theory (enable generic-forall))))
+;; (defthm generic-predicate-of-car
+;;   (implies (and (generic-forall-p x)
+;;                 (consp (double-rewrite x))) ;can move to conclusion (details depend on whether the generic-predicate holds on nil)
+;;            (generic-predicate (car x)))
+;;   :hints (("Goal" :in-theory (enable generic-forall))))
 
 ;; Different from the version in the non-true-list case:
 (defthm generic-forall-p-of-append

@@ -1,6 +1,6 @@
 ; A lightwright library about lists whose elements have particular types
 ;
-; Copyright (C) 2021-2023 Kestrel Institute
+; Copyright (C) 2021-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -71,4 +71,4 @@
 (include-book "map-strip-cars")
 (include-book "map-strip-cdrs")
 
-(include-book "doc")
+;; (include-book "doc")
