@@ -1,6 +1,6 @@
 ; A tool to substitute lambda formals when we can do so without causing clashes
 ;
-; Copyright (C) 2024 Kestrel Institute
+; Copyright (C) 2024-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -676,11 +676,11 @@
                              (set (non-trivial-formals formals args))
                              (diff formals-to-subst)
                              )
-             :in-theory (disable intersection-equal-symmetric-iff
+             :in-theory (disable intersection-equal-commutative-iff
                                  not-member-equal-of-bad-guy-for-alists-equiv-on-when-not-intersection-equal-alt-gen
                                  )))))
 
-(local (in-theory (disable intersection-equal-symmetric-iff))) ; or drop this by rephrasing hyps above
+(local (in-theory (disable intersection-equal-commutative-iff))) ; or drop this by rephrasing hyps above
 
 ;; Correctness theorem for subst-formal-in-lambda-application.  Shows that it
 ;; doesn't change the meaning of terms.

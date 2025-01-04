@@ -1,7 +1,7 @@
 ; More theorems about maxelem
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -99,14 +99,3 @@
                   (maxelem lst)))
   :hints (("Goal" :in-theory (enable reverse-list maxelem))))
 
-(defthm maxelem-of-strip-cars-bound
-  (implies (consp dag)
-           (<= (car (car dag)) (maxelem (strip-cars dag))))
-  :rule-classes ((:linear :trigger-terms ((maxelem (strip-cars dag)))))
-  :hints (("Goal" :expand (strip-cars dag))))
-
-(defthmd maxelem-of-strip-cars-bound-2
-  (implies (consp dag)
-           (<= (car (car dag)) (maxelem (strip-cars dag))))
-  :rule-classes ((:linear :trigger-terms ((car (car dag)))))
-  :hints (("Goal" :expand (strip-cars dag))))

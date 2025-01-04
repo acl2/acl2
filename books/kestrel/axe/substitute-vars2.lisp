@@ -1,7 +1,7 @@
 ; New tools for substituting equated vars in DAGS
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -935,7 +935,7 @@
            :induct (disjointp-assuming-sortedp-<= x y)
            :do-not '(generalize eliminate-destructors)
            :in-theory (e/d (disjointp-assuming-sortedp-<= intersection-equal sortedp-<= member-equal)
-                           (intersection-equal-symmetric-iff)))))
+                           (intersection-equal-commutative-iff)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

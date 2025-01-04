@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function intersection-equal.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -47,6 +47,7 @@
             (member-equal a y)))
   :hints (("Goal" :in-theory (enable member-equal intersection-equal))))
 
+;move?
 (defthm intersection-equal-of-union-equal
   (equal (intersection-equal (union-equal x y) z)
          (union-equal (intersection-equal x z)
@@ -142,8 +143,7 @@
                   (intersection-equal x y)))
   :hints (("Goal" :in-theory (enable intersection-equal remove-equal))))
 
-;enable?
-(defthmd intersection-equal-commutative-iff
+(defthm intersection-equal-commutative-iff
   (iff (intersection-equal x y)
        (intersection-equal y x))
   :hints (("Goal" :in-theory (enable intersection-equal))))
@@ -161,13 +161,6 @@
        (and (member-equal (first x) y)
             (intersection-equal-induct (rest x)
                                        (remove1-equal (first x) y))))))
-
-(defthm intersection-equal-symmetric-iff
-  (iff (intersection-equal x y)
-       (intersection-equal y x))
-  :hints (("Goal" :induct (intersection-equal-induct x y)
-           :expand (intersection-equal y x)
-           :in-theory (enable intersection-equal intersection-equal-induct))))
 
 ;; The corresponding rule for y is not true.  Consider (intersection-equal '(1 1) '(1)) = '(1 1).
 (defthm <=-of-len-of-intersection-equal-linear

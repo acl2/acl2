@@ -243,7 +243,8 @@
                             (n32p-lower-16-val-logior-loghead-ash
                              combining-logior-of-loghead-and-ash-loghead-logtail
                              combining-logior-of-loghead-and-ash-logtail
-                             putting-logior-loghead-ash-logtail-together))
+                             ;; putting-logior-loghead-ash-logtail-together
+                             ))
             :use ((:instance n32p-lower-16-val-logior-loghead-ash))))))
 
 
@@ -335,7 +336,7 @@
                              (force)
                              member-p-cons
                              acl2::commutativity-of-logior
-                             mv-nth-2-rcl-spec-16
+                             ;; mv-nth-2-rcl-spec-16
                              write-to-physical-memory-xw-mem-member-p
                              (:linear bitops::logior-<-0-linear-2)
                              (:type-prescription bitops::logior-natp-type)

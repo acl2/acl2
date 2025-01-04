@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function merge-sort-symbol<
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -99,7 +99,7 @@
   :hints (("Goal" :in-theory (e/d (merge-sort-symbol<
                                    intersection-equal-when-intersection-equal-of-evens
                                    intersection-equal-when-intersection-equal-of-odds)
-                                  (intersection-equal-symmetric-iff)))))
+                                  (intersection-equal-commutative-iff)))))
 
 (defthm intersection-equal-of-merge-sort-symbol<-arg2-iff
   (iff (intersection-equal l2 (merge-sort-symbol< l1))

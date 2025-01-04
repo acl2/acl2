@@ -39,7 +39,7 @@
 ;; ===================================================================
 
 (in-package "X86ISA")
-(include-book "x86" :ttags :all :dir :machine)
+(include-book "ihs/basic-definitions" :dir :system)
 (include-book "../../portcullis/utils")
 (include-book "tools/mv-nth" :dir :system)
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
