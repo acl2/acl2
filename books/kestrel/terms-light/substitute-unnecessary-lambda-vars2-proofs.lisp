@@ -1,6 +1,6 @@
 ; Proofs about substitute-unnecessary-lambda-vars-in-term2
 ;
-; Copyright (C) 2024 Kestrel Institute
+; Copyright (C) 2024-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -22,7 +22,7 @@
 (local (in-theory (disable strip-cdrs
                            strip-cars
                            symbol-alistp
-                           intersection-equal-symmetric-iff
+                           intersection-equal-commutative-iff
                            )))
 
 ;(local (in-theory (enable pseudo-term-listp-when-symbol-listp)))
