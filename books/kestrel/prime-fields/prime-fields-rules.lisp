@@ -1,6 +1,6 @@
 ; Prime fields library: additional rules
 ;
-; Copyright (C) 2019-2024 Kestrel Institute
+; Copyright (C) 2019-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -404,11 +404,6 @@
                   (add (neg (mul (+ -1 k) x p) p) y p)))
   :hints (("Goal" :in-theory (enable neg sub add mul
                                      acl2::mod-sum-cases))))
-
-(defthm add-of-neg-same-arg2-gen
-  (equal (add x (neg x p) p)
-         0)
-  :hints (("Goal" :in-theory (enable add sub neg))))
 
 (defthmd equal-of-<-and-fep
   (implies (natp x)
