@@ -1169,7 +1169,12 @@
     bvif-1-equal-1-y-x-bitxor-1-x
     bvif-1-equal-1-y-bitxor-1-x-x
 
-    bvif-equal-0-usb1-2
+    ;; move to bv-rules?:
+    bvif-equal-0-0-1
+    bvif-equal-0-0-1-alt
+    bvif-equal-1-usb1
+    bvif-equal-1-usb1-alt
+
     bvif-equal-0-usb1
 
     myif-of-bvif-becomes-bvif-arg2
