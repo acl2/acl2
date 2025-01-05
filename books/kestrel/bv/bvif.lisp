@@ -140,8 +140,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; todo: dups here:
-
 (defthm bvif-equal-0-0-1
   (implies (unsigned-byte-p 1 bit)
            (equal (bvif 1 (equal bit 0) 0 1)
@@ -154,16 +152,18 @@
                   bit))
   :hints (("Goal" :in-theory (enable bvif myif))))
 
-(defthm bvif-equal-0-usb1-2
-  (implies (unsigned-byte-p 1 x)
-           (equal (bvif 1 (equal 0 x) 0 1)
-                  x))
+;rename
+(defthm bvif-equal-1-usb1
+  (implies (unsigned-byte-p 1 bit)
+           (equal (bvif 1 (equal 1 bit) 1 0)
+                  bit))
   :hints (("Goal" :in-theory (enable bvif myif))))
 
-(defthm bvif-equal-1-usb1
-  (implies (unsigned-byte-p 1 x)
-           (equal (bvif 1 (equal 1 x) 1 0)
-                  x))
+;rename
+(defthm bvif-equal-1-usb1-alt
+  (implies (unsigned-byte-p 1 bit)
+           (equal (bvif 1 (equal bit 1) 1 0)
+                  bit))
   :hints (("Goal" :in-theory (enable bvif myif))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
