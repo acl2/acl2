@@ -419,7 +419,7 @@
                                                  integer-range-p)))))
              (hints-l (or hints-l
                           ;; If :HINTS-L is not supplied, the following hints,
-                          ;; given the definitions of UNSIGNED-BYTE-P and
+                          ;; given the definitions of SIGNED-BYTE-P and
                           ;; INTEGER-RANGE-P, should suffice to prove the
                           ;; corollary from the main theorem, assuming that
                           ;; :HYP-L is a superset of :HYP, or perhaps has some

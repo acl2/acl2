@@ -125,11 +125,7 @@
          :concl (mv-nth 0 (,fn-name dst src input-rflags))
          :hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
          :gen-type t
-         :gen-linear t
-         :hints-l (("Goal"
-                    :in-theory
-                    (e/d (unsigned-byte-p)
-                         (acl2::unsigned-byte-p-of-logxor)))))
+         :gen-linear t)
 
        (defthm-unsigned-byte-p ,(mk-name "MV-NTH-1-" fn-name)
          :bound 32
