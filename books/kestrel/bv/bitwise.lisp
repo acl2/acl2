@@ -20,6 +20,7 @@
 (include-book "bitnot")
 (include-book "bitor")
 (include-book "bvcat")
+(include-book "bvif")
 (local (include-book "logand-b"))
 (local (include-book "logior-b"))
 (local (include-book "logxor-b"))
@@ -705,3 +706,19 @@
                                 (slice (+ -1 size) 8 x))
                          8 0)))
   :hints (("Goal" :in-theory (enable bvcat-equal-rewrite))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;todo: alt versions with the equality reordered:
+
+(defthm bvif-equal-0-usb1
+  (implies (unsigned-byte-p 1 x)
+           (equal (bvif 1 (equal 0 x) 1 0)
+                  (bvnot 1 x)))
+  :hints (("Goal" :in-theory (enable bvif myif))))
+
+(defthm bvif-equal-1-usb1-2
+  (implies (unsigned-byte-p 1 x)
+           (equal (bvif 1 (equal 1 x) 0 1)
+                  (bvnot 1 x)))
+  :hints (("Goal" :in-theory (enable bvif myif))))

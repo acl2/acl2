@@ -765,30 +765,6 @@
            (equal (slice 31 24 (+ (BVCHOP 32 y) x))
                   (slice 31 24 (+ y x)))))
 
-(defthm bvif-equal-0-usb1
-  (implies (unsigned-byte-p 1 x)
-           (equal (bvif 1 (equal 0 x) 1 0)
-                  (bvnot 1 x)))
-  :hints (("Goal" :in-theory (enable bvif myif))))
-
-(defthm bvif-equal-0-usb1-2
-  (implies (unsigned-byte-p 1 x)
-           (equal (bvif 1 (equal 0 x) 0 1)
-                  x))
-  :hints (("Goal" :in-theory (enable bvif myif))))
-
-(defthm bvif-equal-1-usb1
-  (implies (unsigned-byte-p 1 x)
-           (equal (bvif 1 (equal 1 x) 1 0)
-                  (getbit 0 x)))
-  :hints (("Goal" :in-theory (enable bvif myif))))
-
-(defthm bvif-equal-1-usb1-2
-  (implies (unsigned-byte-p 1 x)
-           (equal (bvif 1 (equal 1 x) 0 1)
-                  (bvnot 1 x)))
-  :hints (("Goal" :in-theory (enable bvif myif))))
-
 (defthm integerp-when-unsigned-byte-p-free
   (implies (unsigned-byte-p free x) ;FREE is a free var., so this rule should be cheap
            (integerp x)))

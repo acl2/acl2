@@ -138,6 +138,10 @@
          (bvif size test x y))
   :hints (("Goal" :in-theory (enable bvif))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; todo: dups here:
+
 (defthm bvif-equal-0-0-1
   (implies (unsigned-byte-p 1 bit)
            (equal (bvif 1 (equal bit 0) 0 1)
@@ -149,6 +153,20 @@
            (equal (bvif 1 (equal 0 bit) 0 1)
                   bit))
   :hints (("Goal" :in-theory (enable bvif myif))))
+
+(defthm bvif-equal-0-usb1-2
+  (implies (unsigned-byte-p 1 x)
+           (equal (bvif 1 (equal 0 x) 0 1)
+                  x))
+  :hints (("Goal" :in-theory (enable bvif myif))))
+
+(defthm bvif-equal-1-usb1
+  (implies (unsigned-byte-p 1 x)
+           (equal (bvif 1 (equal 1 x) 1 0)
+                  x))
+  :hints (("Goal" :in-theory (enable bvif myif))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm myif-0-1-becomes-bvif
   (equal (myif test 0 1)
