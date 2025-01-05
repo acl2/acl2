@@ -1,6 +1,6 @@
 ; A clause processor to flatten literals
 ;
-; Copyright (C) 2021-2024 Kestrel Institute
+; Copyright (C) 2021-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,8 +10,8 @@
 
 (in-package "ACL2")
 
-(include-book "kestrel/utilities/conjuncts-and-disjuncts2" :dir :system) ; todo: include something simpler!!
-(include-book "kestrel/utilities/conjuncts-and-disjuncts2-proof" :dir :system) ; todo: make local?
+(include-book "kestrel/utilities/conjuncts-and-disjuncts2" :dir :system) ; todo: include something simpler!!  use a version that doesn't know about booland, etc.
+(include-book "kestrel/utilities/conjuncts-and-disjuncts2-proof" :dir :system) ; todo: make local? but gives us ALL-EVAL-TO-FALSE-WITH-CON-AND-DIS-EVAL
 (include-book "kestrel/terms-light/negate-terms" :dir :system)
 (local (include-book "kestrel/terms-light/logic-termp" :dir :system))
 (local (include-book "kestrel/utilities/arities-okp" :dir :system))
@@ -29,6 +29,8 @@
 ;; ((not x) (not y) (not z) w)
 ;; both print as:
 ;; (implies (and x y z) w).
+
+;; TODO: Move some of this stuff:
 
 (defthm all-eval-to-false-with-con-and-dis-eval-of-union-equal
   (iff (all-eval-to-false-with-con-and-dis-eval (union-equal x y) a)
@@ -51,6 +53,24 @@
   (iff (all-eval-to-false-with-con-and-dis-eval (negate-terms terms) a)
        (all-eval-to-true-with-con-and-dis-eval terms a))
   :hints (("Goal" :in-theory (enable negate-terms))))
+
+(defthm all-eval-to-false-with-con-and-dis-eval-when-equal-of-disjoin-and-false
+  (implies (equal (disjoin clause) ''nil)
+           (all-eval-to-false-with-con-and-dis-eval clause a))
+  :hints (("Goal" :in-theory (enable disjoin all-eval-to-false-with-con-and-dis-eval))))
+
+(defthm-flag-get-conjuncts-of-term2
+  (defthm all-eval-to-true-with-con-and-dis-eval-of-get-conjuncts-of-term2
+    (iff (all-eval-to-true-with-con-and-dis-eval (get-conjuncts-of-term2 term) a)
+         (con-and-dis-eval term a))
+    :flag get-conjuncts-of-term2)
+  (defthm all-eval-to-false-with-con-and-dis-eval-of-get-disjuncts-of-term2
+    (iff (all-eval-to-false-with-con-and-dis-eval (get-disjuncts-of-term2 term) a)
+         (not (con-and-dis-eval term a)))
+    :flag get-disjuncts-of-term2)
+  :hints (("Goal" :in-theory (enable get-disjuncts-of-term2 get-conjuncts-of-term2 myif))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund flatten-disjuncts (clause)
   (declare (xargs :guard (pseudo-term-listp clause)
@@ -93,26 +113,12 @@
                              w))
   :hints (("Goal" :in-theory (enable flatten-disjuncts))))
 
-(defthm all-eval-to-false-with-con-and-dis-eval-when-equal-of-disjoin-and-false
-  (implies (equal (disjoin clause) ''nil)
-           (all-eval-to-false-with-con-and-dis-eval clause a))
-  :hints (("Goal" :in-theory (enable disjoin all-eval-to-false-with-con-and-dis-eval))))
-
-(defthm-flag-get-conjuncts-of-term2
-  (defthm all-eval-to-true-with-con-and-dis-eval-of-get-conjuncts-of-term2
-    (iff (all-eval-to-true-with-con-and-dis-eval (get-conjuncts-of-term2 term) a)
-         (con-and-dis-eval term a))
-    :flag get-conjuncts-of-term2)
-  (defthm all-eval-to-false-with-con-and-dis-eval-of-get-disjuncts-of-term2
-    (iff (all-eval-to-false-with-con-and-dis-eval (get-disjuncts-of-term2 term) a)
-         (not (con-and-dis-eval term a)))
-    :flag get-disjuncts-of-term2)
-  :hints (("Goal" :in-theory (enable get-disjuncts-of-term2 get-conjuncts-of-term2 myif))))
-
 (defthm con-and-dis-eval-of-disjoin-of-flatten-disjuncts
   (iff (con-and-dis-eval (disjoin (flatten-disjuncts clause)) a)
        (con-and-dis-eval (disjoin clause) a))
   :hints (("Goal" :in-theory (enable flatten-disjuncts))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund flatten-literals-clause-processor (clause)
   (declare (xargs :guard (pseudo-term-listp clause)))
@@ -135,7 +141,6 @@
            (pseudo-term-list-listp (flatten-literals-clause-processor clause)))
   :hints (("Goal" :in-theory (enable flatten-literals-clause-processor))))
 
-;todo: add :well-formedness proof
 (defthm flatten-literals-clause-processor-correct
   (implies (and (pseudo-term-listp clause)
                 (alistp a)
