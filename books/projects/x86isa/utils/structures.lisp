@@ -46,6 +46,10 @@
 
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
 
+;; We do these once, here, to avoid each defbitstruct below doing them locally:
+(local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))
+(local (include-book "arithmetic/top-with-meta" :dir :system))
+
 (std::make-define-config
  :no-function t
  :inline t)
