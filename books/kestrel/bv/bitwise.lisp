@@ -398,16 +398,17 @@
          (bvxor 1 (bvnot 1 x) y))
   :hints (("Goal" :in-theory (enable bitxor-split))))
 
-(defthm bvnot-of-bvxor-1-back
+;gen the size?
+(defthm bvxor-of-bvnot-1
    (equal (bvxor 1 (bvnot 1 x) y)
           (bvnot 1 (bvxor 1 x y)))
    :hints (("Goal" :use bvnot-of-bvxor-1)))
 
-(defthm bvnot-of-bvxor-1-back-alt
+(defthm bvxor-of-bvnot-2
   (equal (bvxor 1 y (bvnot 1 x))
          (bvnot 1 (bvxor 1 y x)))
-  :hints (("Goal" :use bvnot-of-bvxor-1-back
-           :in-theory (disable bvnot-of-bvxor-1-back))))
+  :hints (("Goal" :use bvxor-of-bvnot-1
+           :in-theory (disable bvxor-of-bvnot-1))))
 
 ;(local (in-theory (enable BITXOR-COMMUTATIVE BITXOR-COMMUTATIVE-2))) ;hope these don't loop
 
@@ -429,13 +430,7 @@
   (equal (bvxor 1 (bvnot 1 x) (bvxor 1 x y))
          (bvnot 1 y)))
 
-(defthm bvxor-of-bvnot-1
-  (equal (bvxor 1 (bvnot 1 x) y)
-         (bvnot 1 (bvxor 1 x y))))
 
-(defthm bvxor-of-bvnot-2
-  (equal (bvxor 1 y (bvnot 1 x))
-         (bvnot 1 (bvxor 1 y x))))
 
 (defthm bvxor-of-bvxor-tighten
   (implies (and (< size1 size2)
