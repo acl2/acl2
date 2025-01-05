@@ -1,6 +1,6 @@
 ; Recognizing lists of alists
 ;
-; Copyright (C) 2023-2024 Kestrel Institute
+; Copyright (C) 2023-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -27,11 +27,6 @@
 (defthm alistp-of-car-when-alist-listp
   (implies (alist-listp lst)
            (alistp (car lst)))
-  :hints (("Goal" :in-theory (enable alist-listp))))
-
-(defthm alistp-of-cdr-when-alist-listp
-  (implies (alist-listp lst)
-           (alist-listp (cdr lst)))
   :hints (("Goal" :in-theory (enable alist-listp))))
 
 (defthm alistp-of-nth
