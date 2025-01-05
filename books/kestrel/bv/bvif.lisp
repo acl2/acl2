@@ -1,7 +1,7 @@
 ; An if-then-else function over bit-vectors
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -138,14 +138,12 @@
          (bvif size test x y))
   :hints (("Goal" :in-theory (enable bvif))))
 
-;move to bvif
 (defthm bvif-equal-0-0-1
   (implies (unsigned-byte-p 1 bit)
            (equal (bvif 1 (equal bit 0) 0 1)
                   bit))
   :hints (("Goal" :in-theory (enable bvif myif))))
 
-;move to bvif
 (defthm bvif-equal-0-0-1-alt
   (implies (unsigned-byte-p 1 bit)
            (equal (bvif 1 (equal 0 bit) 0 1)
