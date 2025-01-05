@@ -923,3 +923,19 @@
                       (+ x (expt 2 size))
                     x)))
   :hints (("Goal" :in-theory (enable signed-byte-p bvchop))))
+
+;dup
+(defthm bvchop-of-+-of-expt-same-arg3
+  (implies (and (natp size)
+                (integerp x)
+                (integerp y))
+           (equal (bvchop size (+ x y (expt 2 size)))
+                  (bvchop size (+ x y)))))
+
+;dup
+(defthm bvchop-of-+-of-expt-arg3
+  (implies (and (natp size)
+                (integerp x)
+                (integerp y))
+           (equal (bvchop size (+ x y (expt 2 size)))
+                  (bvchop size (+ x y)))))
