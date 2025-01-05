@@ -61,7 +61,7 @@
                   0))
   :hints (("Goal" :in-theory (enable bvuminus))))
 
-(defthm bvuminus-equal-constant
+(defthm equal-of-constant-and-bvuminus
   (implies (and (syntaxp (and (quotep k)
                               (quotep size)))
                 (natp size))
@@ -70,12 +70,24 @@
                        (equal (bvuminus size k) (bvchop size x)))))
   :hints (("Goal" :in-theory (enable unsigned-byte-p bvchop-of-sum-cases bvuminus))))
 
+;; Flipped LHS.  Only needed by Axe?
+(defthmd equal-of-bvuminus-and-constant
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep size)))
+                (natp size))
+           (equal (equal (bvuminus size x) k)
+                  (and (unsigned-byte-p size k)
+                       (equal (bvuminus size k) (bvchop size x)))))
+  :hints (("Goal" :use equal-of-constant-and-bvuminus
+           :in-theory (disable equal-of-constant-and-bvuminus))))
+
 ;0 is special, because its negation is always the same number (0 itself)
+;no syntaxp hyp for size
 (defthm equal-of-0-and-bvuminus
   (equal (equal 0 (bvuminus size x))
          (equal 0 (bvchop size x)))
   :hints (("Goal" :in-theory (enable bvuminus)
-           :use (:instance bvuminus-equal-constant (k 0)))))
+           :use (:instance equal-of-bvuminus-and-constant (k 0)))))
 
 (defthm bvuminus-of-bvuminus
   (equal (bvuminus size (bvuminus size x))
@@ -200,26 +212,7 @@
                   (- (expt 2 width) 1)))
   :hints (("Goal" :in-theory (enable bvuminus))))
 
-;subsumes the one for 0
-(defthm equal-of-constant-and-bvuminus
-  (implies (and (syntaxp (and (quotep k)
-                              (quotep size)))
-                (natp size))
-           (equal (equal k (bvuminus size x))
-                  (and (unsigned-byte-p size k)
-                       (equal (bvuminus size k) (bvchop size x)))))
-  :hints (("Goal" :in-theory (enable bvuminus bvchop-of-minus))))
 
-;; Only needed by Axe?
-(defthmd equal-of-bvuminus-and-constant
-  (implies (and (syntaxp (and (quotep k)
-                              (quotep size)))
-                (natp size))
-           (equal (equal (bvuminus size x) k)
-                  (and (unsigned-byte-p size k)
-                       (equal (bvuminus size k) (bvchop size x)))))
-  :hints (("Goal" :use equal-of-constant-and-bvuminus
-           :in-theory (disable equal-of-constant-and-bvuminus))))
 
 (defthmd bvuminus-subst-smaller-term
   (implies (and (equal (bvchop size x)
