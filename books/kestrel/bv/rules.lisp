@@ -1,7 +1,7 @@
 ; Mixed theorems about bit-vector operations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -3291,11 +3291,6 @@
                   (logtail (+ pos (lg k)) x)))
   :hints (("Goal" :use (:instance logtail-of-floor-of-expt (n (lg k)))
            :in-theory (disable logtail-of-floor-of-expt))))
-
-(defthm integerp-when-unsigned-byte-p-size-arg
-  (implies (unsigned-byte-p x free)
-           (integerp x))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p))))
 
 (defthm boolor-of-bvlt-of-constant-and-bvlt-of-constant
   (implies (syntaxp (and (quotep k1)
