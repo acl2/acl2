@@ -3737,8 +3737,8 @@
                          (xw fld index value (mv-nth 2 (rml128 lin-addr r-x x86))))))
            :enable (rml128)
            :disable (rb unsigned-byte-p signed-byte-p force (force)
-                        signed-byte-p-48-to-<-rule ; for speed
-                        ))
+                        ;; for speed:
+                        signed-byte-p-48-to-<-rule))
 
   (defrule rml128-xw-sys-view-rflags-not-ac
            (implies
@@ -3754,8 +3754,8 @@
                              (mv-nth 2 (rml128 lin-addr r-x x86))))))
            :enable (rml128)
            :disable (rb unsigned-byte-p signed-byte-p member-equal
-                        signed-byte-p-48-to-<-rule ; for speed
-                        )))
+                        ;; for speed:
+                        signed-byte-p-48-to-<-rule)))
 
 ;; TODO: Prove wml128 equivalent to rb in the system-level view (again).
 (define wml128 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
