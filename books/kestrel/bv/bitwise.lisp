@@ -508,12 +508,6 @@
           1)
    :hints (("Goal" :in-theory (enable bitnot))))
 
-;bozo gen the 1 and eventually the bvnot
-(defthm getbit-of-bvnot-too-high
-  (equal (getbit 1 (bvnot 1 x))
-         0)
-  :hints (("Goal" :in-theory (enable bitnot))))
-
 (defthm slice-of-bitand-too-high
   (implies (and (<= 1 low)
                 (natp low))
