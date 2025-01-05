@@ -9,6 +9,7 @@
 # Author: Sol Swords (sswords@gmail.com)
 
 import sys
+import random
 
 usage = """Usage:
    text_to_binary.py infile.txt outfile.bin
@@ -17,12 +18,19 @@ usage = """Usage:
 # Begin sample input file:
 
 # If first character is #, line is a comment
-# If first character is ;, line is a format specifier (number of bytes for each entry)
+# If first character is ;, line is a format specifier (number of bytes for each entry -- decimal)
 ; 4, 4, 2
 # A format specifier must come before any regular lines like the following:
 abcde, 12345, ba34
 0, 0, 0
 1, a, b
+# "R" may be used instead of a hex number for a random number of the
+# given size:
+R, c, R
+# A line beginning with * is a regular line but repeated N times:
+*10: R, abc, 123
+# (this produces 10 blocks each with a random first entry and the same second/third entries as above).
+
 
 # Blank lines are ignored
 
@@ -55,6 +63,36 @@ outname = sys.argv[2]
 
 
 fmt = None
+
+def check_fmt ():
+    if (fmt is None):
+        print("Format line beginning in semicolon must come before regular data lines", file=sys.stderr)
+        print(usage, file=sys.stderr)
+        exit(1)
+    
+
+def process_regular_line (line, reps=1):
+    # Split, then output according to format
+    entries = line.split(",")
+    if (len(entries) != len(fmt)):
+        print("Data lines must have the same number of entries as the preceding format line", file=sys.stderr)
+        print(usage, file=sys.stderr)
+        exit(1)
+
+    for rep in range(reps):
+        for entry, size in zip(entries, fmt):
+            entry = entry.strip()
+            if (entry == "R"):
+                val = random.randrange(2**(size*8))
+            else:
+                val = int(entry, 16)
+            if (val >= 2**(size*8) or val < -(2**((size*8)-1))):
+                print("Entry %s out of range of formatted size %d" % (entry, size), file=sys.stderr)
+                exit(1)
+            val_bytes = val.to_bytes(size, byteorder='little', signed=val<0)
+            outfile.write(val_bytes)
+    
+
 with open(inname, "r", encoding="utf-8") as infile:
     with open(outname, "wb") as outfile:
         for line in infile:
@@ -75,30 +113,23 @@ with open(inname, "r", encoding="utf-8") as infile:
                     fmt.append(val)
                 continue
 
-            # Regular line: split, then output according to format
-            if (fmt is None):
-                print("Format line beginning in semicolon must come before regular data lines", file=sys.stderr)
-                print(usage, file=sys.stderr)
-                exit(1)
+            # Regular line: check the format exists
+            check_fmt()
 
-            entries = line.split(",")
-            if (len(entries) != len(fmt)):
-                print("Data lines must have the same number of entries as the preceding format line", file=sys.stderr)
-                print(usage, file=sys.stderr)
-                exit(1)
-
-            for entry, size in zip(entries, fmt):
-                entry = entry.strip()
-                val = int(entry, 16)
-                if (val >= 2**(size*8) or val < -(2**((size*8)-1))):
-                    print("Entry %s out of range of formatted size %d" % (entry, size), file=sys.stderr)
+            if (line[0] == "*"):
+                orig = line
+                line = line[1:]
+                # Should have a decimal number, colon, then a regular line
+                reps_line = line.split(":")
+                if (len(reps_line) != 2):
+                    print("Bad syntax: %s" % (orig), file=sys.stderr)
                     exit(1)
-                val_bytes = val.to_bytes(size, byteorder='little', signed=val<0)
-                outfile.write(val_bytes)
+                reps = int(reps_line[0].strip())
+                process_regular_line(reps_line[1], reps=reps)
+                continue
 
-                
-                
-                      
+            process_regular_line(line)
+
 
 
             
