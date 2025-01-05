@@ -3736,7 +3736,9 @@
                   (equal (mv-nth 2 (rml128 lin-addr r-x (xw fld index value x86)))
                          (xw fld index value (mv-nth 2 (rml128 lin-addr r-x x86))))))
            :enable (rml128)
-           :disable (rb unsigned-byte-p signed-byte-p force (force)))
+           :disable (rb unsigned-byte-p signed-byte-p force (force)
+                        ;; for speed:
+                        signed-byte-p-48-to-<-rule))
 
   (defrule rml128-xw-sys-view-rflags-not-ac
            (implies
@@ -3751,7 +3753,9 @@
                          (xw :rflags nil value
                              (mv-nth 2 (rml128 lin-addr r-x x86))))))
            :enable (rml128)
-           :disable (rb unsigned-byte-p signed-byte-p member-equal)))
+           :disable (rb unsigned-byte-p signed-byte-p member-equal
+                        ;; for speed:
+                        signed-byte-p-48-to-<-rule)))
 
 ;; TODO: Prove wml128 equivalent to rb in the system-level view (again).
 (define wml128 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
@@ -4299,14 +4303,19 @@
     :hyp t
     :bound 256
     :concl (mv-nth 1 (rml256 lin-addr r-x x86))
-    :hints (("Goal" :in-theory (e/d () (force (force) signed-byte-p))))
+    :hints (("Goal" :in-theory (e/d () (force (force) signed-byte-p
+                                              ;; for speed:
+                                              x86isa::signed-byte-p-48-to-<-rule
+                                              x86isa::la-to-pa$inline))))
     :gen-linear t
     :gen-type t)
 
   (defthm x86p-rml256
     (implies (force (x86p x86))
              (x86p (mv-nth 2 (rml256 lin-addr r-x x86))))
-    :hints (("Goal" :in-theory (e/d () ((force) unsigned-byte-p signed-byte-p))))
+    :hints (("Goal" :in-theory (e/d () ((force) unsigned-byte-p signed-byte-p
+                                        ;; for speed:
+                                        x86isa::signed-byte-p-48-to-<-rule))))
     :rule-classes (:rewrite :type-prescription))
 
   (defthm rml256-value-when-error
@@ -4314,7 +4323,11 @@
              (equal (mv-nth 1 (rml256 lin-addr r-x x86))
                     0))
     :hints (("Goal" :in-theory (e/d (rml256)
-                                    (force (force))))))
+                                    (force
+                                     (force)
+                                     ;; for speed:
+                                     x86isa::signed-byte-p-48-to-<-rule
+                                     x86isa::la-to-pa$inline)))))
 
   (defthm rml256-x86-unmodified-in-app-view
     (implies (app-view x86)
@@ -4334,7 +4347,10 @@
              (equal (xr fld index (mv-nth 2 (rml256 lin-addr r-x x86)))
                     (xr fld index x86)))
     :hints (("Goal" :in-theory (e/d (rml256)
-                                    (force (force))))))
+                                    (force
+                                     (force)
+                                     ;; for speed:
+                                     x86isa::signed-byte-p-48-to-<-rule)))))
 
   (defrule rml256-xw-app-view
     (implies (and (app-view x86)
@@ -4371,7 +4387,9 @@
           (equal (mv-nth 2 (rml256 lin-addr r-x (xw fld index value x86)))
                  (xw fld index value (mv-nth 2 (rml256 lin-addr r-x x86))))))
     :enable (rml256)
-    :disable (rb unsigned-byte-p signed-byte-p force (force)))
+    :disable (rb unsigned-byte-p signed-byte-p force (force)
+                 ;; for speed:
+                 signed-byte-p-48-to-<-rule))
 
   (defrule rml256-xw-sys-view-rflags-not-ac
     (implies
@@ -4386,7 +4404,9 @@
                  (xw :rflags nil value
                      (mv-nth 2 (rml256 lin-addr r-x x86))))))
     :enable (rml256)
-    :disable (rb unsigned-byte-p signed-byte-p member-equal)))
+    :disable (rb unsigned-byte-p signed-byte-p member-equal
+                 ;; for speed:
+                 signed-byte-p-48-to-<-rule)))
 
 ;; TODO: Prove wml256 equivalent to rb in the system-level view (again).
 (define wml256 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
@@ -4734,7 +4754,9 @@
   (defthm x86p-wml256
     (implies (force (x86p x86))
              (x86p (mv-nth 1 (wml256 lin-addr val x86))))
-    :hints (("Goal" :in-theory (e/d () (rb x86p force (force) unsigned-byte-p signed-byte-p))))
+    :hints (("Goal" :in-theory (e/d () (rb x86p force (force) unsigned-byte-p signed-byte-p
+                                           ;; for speed:
+                                           x86isa::signed-byte-p-48-to-<-rule))))
     :rule-classes (:rewrite :type-prescription)))
 
 ; The following two functions, for 512 bits, are commented out because they
