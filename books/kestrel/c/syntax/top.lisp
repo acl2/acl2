@@ -155,9 +155,9 @@
   :order-subtopics (concrete-syntax
                     abstract-syntax
                     abstraction-mapping
+                    defpred
                     abstract-syntax-operations
                     unambiguity
-                    defpred
                     preprocessing
                     parser
                     disambiguator
