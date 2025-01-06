@@ -14,15 +14,16 @@
 ;todo: move this material to libraries
 
 (include-book "portcullis")
-(include-book "projects/x86isa/proofs/utilities/app-view/top" :dir :system)
+(include-book "projects/x86isa/machine/get-prefixes" :dir :system)
 (include-book "flags")
 ;(include-book "support-x86") ;todo reduce
 ;(include-book "read-and-write") ; drop?
 (include-book "kestrel/utilities/defopeners" :dir :system)
 (include-book "kestrel/bv-lists/packbv" :dir :system)
 (include-book "kestrel/bv/bvshr" :dir :system)
-(include-book "kestrel/lists-light/finalcdr" :dir :system)
-(include-book "kestrel/lists-light/reverse-list" :dir :system)
+;(include-book "kestrel/lists-light/finalcdr" :dir :system)
+;(include-book "kestrel/lists-light/reverse-list" :dir :system)
+(include-book "centaur/bitops/fast-rotate" :dir :system)
 (local (include-book "linear-memory"))
 (local (include-book "kestrel/bv/rules10" :dir :system)) ; todo, for floor-of-/-arg2
 (local (include-book "kestrel/bv/rules3" :dir :system)) ; todo, for logtail-of-one-more
@@ -240,7 +241,7 @@
                                         ))))))))))))
                 (x86p x86))
            (x86p (xw x86isa::fld x86isa::index value x86)))
-  :hints (("Goal" :in-theory (disable X86ISA::ENV-READ-LOGIC
+  :hints (("Goal" :in-theory (disable ;X86ISA::ENV-READ-LOGIC
                                       ;;X86ISA::ENV$INLINE
                                       ))))
 
