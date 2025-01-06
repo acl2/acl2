@@ -1,0 +1,6 @@
+*.o
+*.d
+deps
+testgen
+compile_commands.json
+.cache
