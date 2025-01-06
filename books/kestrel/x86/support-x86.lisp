@@ -68,22 +68,6 @@
                     ;x86isa::x86p-!rip-when-val-is-canonical-address-p ;todo: remove this rule altogether since it is subsumed by x86p-xw  ;does forcing, which causes problems in various places
                     ))
 
-(defthm rflags-is-n32p-unforced
-  (implies (x86p x86)
-           (unsigned-byte-p 32 (xr :rflags i x86)))
-  :rule-classes ((:rewrite :corollary (implies (x86p x86)
-                                               (unsigned-byte-p 32 (xr :rflags i x86)))
-                           :hints (("GOAL" :in-theory (enable rflags x86p))))
-                 (:type-prescription :corollary (implies (x86p x86)
-                                                         (natp (xr :rflags i x86)))
-                                     :hints (("GOAL" :in-theory (enable rflags x86p))))
-                 (:linear :corollary (implies (x86p x86)
-                                              (< (xr :rflags i x86) 4294967296))
-                          :hints (("GOAL" :in-theory (enable rflags x86p))))))
-
-;(in-theory (disable rflags-is-n32p)) ;disable the forced version
-
-
 ;why needed?
 ;(acl2::defopeners LOAD-PROGRAM-INTO-MEMORY)
 
