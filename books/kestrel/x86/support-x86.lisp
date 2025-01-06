@@ -452,22 +452,6 @@
              (xw :rip nil rip1 x86)
            (xw :rip nil rip2 x86))))
 
-; not strictly necessary since not-mv-nth-0-of-rme-size$inline should fire, but this can get rid of irrelevant stuff
-(defthm mv-nth-0-of-rme-size-of-xw-when-app-view
-  (implies (and (not (equal fld :mem))
-                (not (equal fld :app-view))
-                (not (equal fld :seg-hidden-attr))
-                (not (equal fld :seg-hidden-base))
-                (not (equal fld :seg-hidden-limit))
-                (not (equal fld :seg-visible))
-                (not (equal fld :msr))
-                (app-view x86))
-           (equal (mv-nth 0 (x86isa::rme-size$inline proc-mode nbytes eff-addr seg-reg r-x check-alignment? (xw fld index val x86) mem-ptr?))
-                  (mv-nth 0 (x86isa::rme-size$inline proc-mode nbytes eff-addr seg-reg r-x check-alignment? x86 mem-ptr?))))
-  :hints (("Goal" :in-theory (e/d (x86isa::rme-size) (ea-to-la$inline
-                                                      x86isa::rml-size$inline
-                                                      x86isa::ea-to-la-is-i48p-when-no-error)))))
-
 ;; TODO: The original rule should be replaced by this one
 (DEFTHM X86ISA::PROGRAM-AT-XW-IN-APP-VIEW-better
   (IMPLIES (AND (NOT (EQUAL X86ISA::FLD :MEM))
