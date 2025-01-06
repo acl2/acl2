@@ -1,7 +1,7 @@
 ; Rules about arithmetic
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -57,11 +57,11 @@
   :hints (("Goal" :in-theory (enable expt))))
 
 ;dup
-(DEFTHM FUNCTIONAL-COMMUTATIVITY-OF-MINUS-*-RIGHT
-  (EQUAL (* X (- Y)) (- (* X Y)))
-  :HINTS
-  (("Goal"
-    :USE FUNCTIONAL-COMMUTATIVITY-OF-MINUS-*-RIGHT-LEMMA)))
+;; (DEFTHM FUNCTIONAL-COMMUTATIVITY-OF-MINUS-*-RIGHT
+;;   (EQUAL (* X (- Y)) (- (* X Y)))
+;;   :HINTS
+;;   (("Goal"
+;;     :USE FUNCTIONAL-COMMUTATIVITY-OF-MINUS-*-RIGHT-LEMMA)))
 
 ;dup
 ;todo: bad rule.  matches (* '-1/2 LOW)

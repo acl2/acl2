@@ -271,14 +271,6 @@
                            (y (* (expt 2 lowsize) x))
                            (x k)))))
 
-(defthm bvchop-of-+-of-expt-arg3
-  (implies (and (natp size)
-                (integerp x)
-                (integerp y))
-           (equal (bvchop size (+ x y (expt 2 size)))
-                  (bvchop size (+ x y)))))
-
-
 ;this is a mask of all 1's (do we prefer repeatbit or 2^n-1 to represent such a thing?)
 (defthm bvuminus-of-1-arg2-alt
   (equal (bvuminus size 1)

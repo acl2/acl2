@@ -454,17 +454,15 @@
                   (bvchop 2 i)))
   :hints (("Goal" :in-theory (enable bvchop))))
 
-(defthm bvchop-+-cancel-better
-  (implies (and (integerp i)
-                (integerp j)
-                (integerp k))
-           (equal (equal (bvchop size (+ i j))
-                         (bvchop size (+ i k)))
-                  (equal (bvchop size j)
-                         (bvchop size k))))
-  :hints (("Goal" :in-theory (enable bvchop))))
-
 ;(in-theory (disable BVCHOP-+-CANCEL))
+
+(defthm bvchop-of-+-cancel-1-1
+  (implies (and (integerp x)
+                (integerp y)
+                (integerp z))
+           (equal (equal (bvchop size (+ x y)) (bvchop size (+ x z)))
+                  (equal (bvchop size y) (bvchop size z))))
+  :hints (("Goal" :in-theory (enable bvchop))))
 
 (defthm bvchop-of-+-cancel-1-2
   (implies (and (integerp x)
@@ -481,13 +479,6 @@
                 (integerp z2))
            (equal (equal (bvchop size (+ y x z)) (bvchop size (+ z2 x)))
                   (equal (bvchop size (+ y z)) (bvchop size z2)))))
-
-(defthm bvchop-of-+-cancel-1-1
-  (implies (and (integerp x)
-                (integerp y)
-                (integerp z))
-           (equal (equal (bvchop size (+ x y)) (bvchop size (+ x z)))
-                  (equal (bvchop size y) (bvchop size z)))))
 
 (defthmd bvchop-plus-minus-1-split-gen
   (implies (and (syntaxp (quotep k))
@@ -667,8 +658,8 @@
            (equal (equal (bvchop size (+ i j))
                          (bvchop size i))
                   (equal (bvchop size j) 0)))
-  :hints (("Goal" :use (:instance bvchop-+-cancel-better (k 0))
-           :in-theory (disable bvchop-+-cancel-better))))
+  :hints (("Goal" :use (:instance bvchop-of-+-cancel-1-1 (x i) (y j) (z 0))
+           :in-theory (disable bvchop-of-+-cancel-1-1))))
 
 (defthm bvchop-+-cancel-0-alt
   (implies (and (force (integerp j))
@@ -678,8 +669,8 @@
            (equal (equal (bvchop size (+ j i))
                          (bvchop size i))
                   (equal (bvchop size j) 0)))
-  :hints (("Goal" :use (:instance bvchop-+-cancel-better (k 0))
-           :in-theory (disable bvchop-+-cancel-better))))
+  :hints (("Goal" :use (:instance bvchop-of-+-cancel-1-1 (x i) (y j) (z 0))
+           :in-theory (disable bvchop-of-+-cancel-1-1))))
 
 (defthmd mod-of-expt-of-2
   (implies (and (integerp x)
@@ -818,6 +809,7 @@
                   0))
   :hints (("Goal" :in-theory (enable bvchop))))
 
+;rename
 (defthm bvchop-of-+-of-expt-arg2-arg3
   (implies (and (<= size size2)
                 (integerp x)
@@ -932,3 +924,10 @@
                       (+ x (expt 2 size))
                     x)))
   :hints (("Goal" :in-theory (enable signed-byte-p bvchop))))
+
+(defthm bvchop-of-+-of-expt-same-arg3
+  (implies (and (natp size)
+                (integerp x)
+                (integerp y))
+           (equal (bvchop size (+ x y (expt 2 size)))
+                  (bvchop size (+ x y)))))

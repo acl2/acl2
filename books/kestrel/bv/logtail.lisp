@@ -1,7 +1,7 @@
 ; BV Library: theorems about logtail
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -96,11 +96,6 @@
            (equal (floor (logtail m x) (expt 2 n))
                   (floor x (expt 2 (+ m n)))))
   :hints (("Goal" :in-theory (enable logtail expt-of-+))))
-
-(defthm logtail-0-i-better
-  (equal (logtail 0 i)
-         (ifix i))
-  :hints (("Goal" :in-theory (enable logtail))))
 
 (defthm logtail-of-minus-one
   (implies (natp n)
