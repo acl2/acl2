@@ -125,7 +125,7 @@
                              ;LOGTAIL-BVCHOP
                              BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
 
-;rename and gen
+;rename and gen the 1 and eventually the bvnot
 (defthm getbit-1-of-bvnot-1
   (equal (getbit 1 (bvnot 1 x))
          0)

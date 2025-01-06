@@ -183,8 +183,7 @@
 
 ;fixme improve BVCHOP-+-CANCEL-0
 
-;todo: rename
-(defthm bvplus-cancel
+(defthm equal-of-bvplus-and-bvplus-cancel-arg1-arg1
   (equal (equal (bvplus size x y) (bvplus size x z))
          (equal (bvchop size y) (bvchop size z)))
   :hints (("Goal" :cases ((natp size))
@@ -194,7 +193,8 @@
 (defthm bvplus-cancel-arg3-arg3
   (equal (equal (bvplus size k1 (bvplus size x a)) (bvplus size k2 (bvplus size y a)))
          (equal (bvplus size k1 x) (bvplus size k2 y)))
-  :hints (("Goal" :use (:instance bvplus-cancel (x a)
+  :hints (("Goal" :use (:instance equal-of-bvplus-and-bvplus-cancel-arg1-arg1
+                                  (x a)
                                   (y (bvplus size k1 x))
                                   (z (bvplus size k2 y))))))
 
@@ -247,20 +247,13 @@
   :hints (("Goal" :use equal-of-bvplus-cancel-arg2
            :in-theory (disable equal-of-bvplus-cancel-arg2))))
 
-;fixme same as bvplus-cancel
-(defthm equal-of-bvplus-and-bvplus-cancel-arg1-arg1
-  (equal (equal (bvplus size x y) (bvplus size x z))
-         (equal (bvchop size y) (bvchop size z)))
-  :hints (("Goal" :use equal-of-bvplus-and-bvplus-cancel-arg2-arg2
-           :in-theory (disable equal-of-bvplus-and-bvplus-cancel-arg2-arg2))))
-
 (defthm equal-of-bvplus-and-bvplus-cancel-arg2-and-arg3
   (implies (natp size)
            (equal (equal (bvplus size y x) (bvplus size z (bvplus size w x)))
                   (equal (bvchop size y) (bvplus size z w))))
   :hints (("Goal" :use (:instance equal-of-bvplus-and-bvplus-cancel-arg1-arg1
                                   (z (bvplus size z w)))
-           :in-theory (disable equal-of-bvplus-and-bvplus-cancel-arg1-arg1 bvplus-cancel))))
+           :in-theory (disable equal-of-bvplus-and-bvplus-cancel-arg1-arg1))))
 
 (defthm equal-of-bvplus-and-bvplus-cancel-arg3-and-arg3
   (implies (natp size)
@@ -269,7 +262,7 @@
   :hints (("Goal" :use (:instance equal-of-bvplus-and-bvplus-cancel-arg1-arg1
                                   (y (bvplus size v y))
                                   (z (bvplus size z w)))
-           :in-theory (disable equal-of-bvplus-and-bvplus-cancel-arg1-arg1 bvplus-cancel))))
+           :in-theory (disable equal-of-bvplus-and-bvplus-cancel-arg1-arg1))))
 
 ;other versions? alt and commuted!
 (defthm equal-of-bvplus-and-bvplus-cancel-gen
