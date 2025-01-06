@@ -1,7 +1,7 @@
 ; Rules about list operations that treat lists like sets
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -26,11 +26,18 @@
   :hints (("Goal" :in-theory (enable intersection-equal-commutative-iff
                                      set-difference-equal))))
 
-(defthm intersection-equal-of-union-equal-iff
+;; see intersection-equal-of-union-equal
+;; (defthm intersection-equal-of-union-equal-arg1-iff
+;;   (iff (intersection-equal (union-equal y z) x)
+;;        (or (intersection-equal y x)
+;;            (intersection-equal z x)))
+;;   :hints (("Goal" :in-theory (enable union-equal))))
+
+(defthm intersection-equal-of-union-equal-arg2-iff
   (iff (intersection-equal x (union-equal y z))
        (or (intersection-equal x y)
            (intersection-equal x z)))
-  :hints (("Goal" :in-theory (enable union-equal))))
+  :hints (("Goal" :in-theory (enable union-equal intersection-equal))))
 
 (defthm set-difference-equal-of-intersection-equal-and-intersection-equal-swapped
   (equal (set-difference-equal (intersection-equal x y)
@@ -87,12 +94,6 @@
                 (subsetp-equal b d))
            (not (intersection-equal a b)))
   :hints (("Goal" :in-theory (enable intersection-equal subsetp-equal))))
-
-(defthm intersection-equal-of-union-equal-arg2-iff
-  (iff (intersection-equal x (union-equal y z))
-       (or (intersection-equal x y)
-           (intersection-equal x z)))
-  :hints (("Goal" :in-theory (enable union-equal intersection-equal))))
 
 ;; enabling this caused problems in ../axe
 (defthmd intersection-equal-of-set-difference-equal-arg2

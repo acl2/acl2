@@ -41,6 +41,9 @@
 ; Yahya Sohail        <yahya.sohail@intel.com>
 
 (in-package "X86ISA")
+
+(include-book "x86" :ttags :all :dir :machine)
+(include-book "../basics" :ttags :all)
 (include-book "marking-view-utils")
 
 (local (include-book "gl-lemmas"))

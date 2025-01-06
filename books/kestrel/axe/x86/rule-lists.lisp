@@ -1,7 +1,7 @@
 ; Rule Lists used by the x86 Axe tools
 ;
 ; Copyright (C) 2016-2022 Kestrel Technology, LLC
-; Copyright (C) 2020-2024 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -286,12 +286,12 @@
     <-of-read-and-non-positive
     read-of-xw-irrel
     read-of-set-flag
-    read-when-program-at ; trying just this on
+    read-when-program-at ; trying just this one
     ;; since read-when-program-at can introduce bv-array-read-chunk-little
     acl2::bv-array-read-chunk-little-constant-opener
     acl2::bv-array-read-chunk-little-base ; todo: try to do better than these in some cases (try the other rules first)
     acl2::bv-array-read-chunk-little-unroll
-    ;; read-when-program-at-1-byte-simple ; todo: use a more general rule?
+    ;; read-when-program-at-1-byte-simple
     ;; read-when-program-at-2-bytes
     ;; read-when-program-at-4-bytes
     ;; read-when-program-at-8-bytes
@@ -348,7 +348,7 @@
     ;;read-of-write-of-set-flag ; these just make terms nicer (todo: these break proofs -- why?)
     ;;read-of-write-of-write-of-set-flag
     ;;read-of-write-of-write-of-write-of-set-flag
-    ))
+    read-1-of-write-within-new))
 
 (defund reader-and-writer-intro-rules ()
   (declare (xargs :guard t))
@@ -4362,16 +4362,13 @@
 
 ;; Wait to try these rules until the read is cleaned up by removing irrelevant inner writes/sets
 (set-axe-rule-priority read-when-program-at 1)
-;;todo: these are no longer used:
-(set-axe-rule-priority read-when-program-at-1-byte 1)
-(set-axe-rule-priority read-when-program-at-2-bytes 2) ; try these after the 1-byte one just above
-(set-axe-rule-priority read-when-program-at-4-bytes 2)
-(set-axe-rule-priority read-when-program-at-8-bytes 2)
-
-(set-axe-rule-priority read-when-program-at-1-byte-simple 1)
+;; these are no longer used:
+;; (set-axe-rule-priority read-when-program-at-1-byte-simple 1)
+;; (set-axe-rule-priority read-when-program-at-1-byte 1)
 ;; (set-axe-rule-priority read-when-program-at-2-bytes 2) ; try these after the 1-byte one just above
 ;; (set-axe-rule-priority read-when-program-at-4-bytes 2)
 ;; (set-axe-rule-priority read-when-program-at-8-bytes 2)
+
 
 ;; These rules expand operations on effective addresses, exposing the
 ;; underlying operations on linear addresses.
@@ -4600,7 +4597,7 @@
             not-equal-of-+-of-+-and-+-when-separate
             not-equal-of-+-of-+-and-+-when-separate-gen
             acl2::<-of-negative-constant-and-bv
-            read-1-of-write-1-both
+            ;;read-1-of-write-1-both
             acl2::bvlt-of-constant-when-usb-dag ; rename
             ;; separate-of-1-and-1 ; do we ever need this?
             acl2::equal-of-bvshl-and-constant ; move to core-rules-bv?
@@ -4781,7 +4778,7 @@
             acl2::bvchop-of-logand-becomes-bvand
             ;read-1-of-write-4
             ;read-1-of-write-1-both ; can make things, like failure to resolve rip, hard to debug
-            read-1-of-write-within-new
+            ;read-1-of-write-within-new
             not-equal-of-+-when-separate
             not-equal-of-+-when-separate-alt
             x86isa::canonical-address-p-of-sum-when-unsigned-byte-p-32
@@ -4883,10 +4880,10 @@
      read-of-set-flag
      read-of-write-irrel2
      write-of-write-same
-     read-when-program-at-1-byte ; this is for resolving reads of the program.
-     read-when-program-at-4-bytes ; this is for resolving reads of the program.
-     read-when-program-at-2-bytes ; this is for resolving reads of the program.
-     read-when-program-at-8-bytes ; this is for resolving reads of the program.
+     ;; read-when-program-at-1-byte ; this is for resolving reads of the program.
+     ;; read-when-program-at-4-bytes ; this is for resolving reads of the program.
+     ;; read-when-program-at-2-bytes ; this is for resolving reads of the program.
+     ;; read-when-program-at-8-bytes ; this is for resolving reads of the program.
      acl2::equal-of-same-cancel-4
      acl2::equal-of-same-cancel-3
      acl2::equal-of-bvplus-constant-and-constant

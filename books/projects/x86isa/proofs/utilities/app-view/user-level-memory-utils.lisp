@@ -38,6 +38,7 @@
 
 (in-package "X86ISA")
 
+(include-book "basics" :ttags :all :dir :proof-utils)
 (include-book "row-wow-thms" :ttags :all :dir :proof-utils)
 (include-book "general-memory-utils" :ttags :all :dir :proof-utils)
 (include-book "clause-processors/find-subterms" :dir :system)

@@ -1,6 +1,6 @@
 ; Proof of correctness of expand-lambdas-in-term
 ;
-; Copyright (C) 2021-2023 Kestrel Institute
+; Copyright (C) 2021-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -77,15 +77,18 @@
       (cons (expand-lambdas-in-term-induct (first terms) a)
             (expand-lambdas-in-terms-induct (rest terms) a))))))
 
-;; Expanding lambdas does not introduce any new free vars.
+;; Expanding lambdas doesn't introduce new free vars (assuming lambdas are
+;; closed).  Note that expanding lambdas can remove free vars, since some
+;; lambda formals may not appear in the lambda body (so their actuals are
+;; effectively dropped).
 (defthm-flag-expand-lambdas-in-term
-  (defthm subsetp-equal-of-free-vars-in-term-of-expand-lambdas-in-term
+  (defthm subsetp-equal-of-free-vars-in-term-of-expand-lambdas-in-term-and-free-vars-in-term
     (implies (and (pseudo-termp term)
                   (lambdas-closed-in-termp term))
              (subsetp-equal (free-vars-in-term (expand-lambdas-in-term term))
                             (free-vars-in-term term)))
     :flag expand-lambdas-in-term)
-  (defthm subsetp-equal-of-free-vars-in-terms-of-expand-lambdas-in-terms
+  (defthm subsetp-equal-of-free-vars-in-terms-of-expand-lambdas-in-terms-and-free-vars-in-terms
     (implies (and (pseudo-term-listp terms)
                   (lambdas-closed-in-termsp terms))
              (subsetp-equal (free-vars-in-terms (expand-lambdas-in-terms terms))

@@ -778,7 +778,6 @@
     :hyp (unsigned-byte-p 64 descriptor)
     :bound 16
     :concl (make-code-segment-attr-field descriptor)
-    :hints-l (("Goal" :in-theory (e/d* () (make-code-segment-attr-field))))
     :gen-type t
     :gen-linear t))
 
@@ -833,7 +832,6 @@
     :hyp (unsigned-byte-p 64 descriptor)
     :bound 16
     :concl (make-data-segment-attr-field descriptor)
-    :hints-l (("Goal" :in-theory (e/d* () (make-data-segment-attr-field))))
     :gen-type t
     :gen-linear t))
 
@@ -874,7 +872,6 @@
     :hyp (unsigned-byte-p 128 descriptor)
     :bound 16
     :concl (make-system-segment-attr-field descriptor)
-    :hints-l (("Goal" :in-theory (e/d* () (make-system-segment-attr-field))))
     :gen-type t
     :gen-linear t))
 

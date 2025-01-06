@@ -1,6 +1,6 @@
 ; Use with-supporters to just get the code of speed-up
 ;
-; Copyright (C) 2022-2024 Kestrel Institute
+; Copyright (C) 2022-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -17,6 +17,8 @@
 ;; effect of the speed-up tool itself on the books being improved.
 
 (defttag speed-up) ; because books-in-subtree and books-in-dir call sys-call+
+
+(remove-untouchable protected-eval t)
 
 (with-supporters
   (local (include-book "speed-up-implementation"))

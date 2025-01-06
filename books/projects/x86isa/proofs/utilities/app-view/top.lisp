@@ -41,6 +41,8 @@
 ;; This is the top-level book to include when reasoning about code in
 ;; the application-level view.
 
+(include-book "x86" :ttags :all :dir :machine)
+(include-book "../basics" :ttags :all)
 (include-book "environment-utils" :ttags :all)
 (include-book "user-level-memory-utils" :ttags :all)
 

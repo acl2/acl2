@@ -1,7 +1,7 @@
 ; Mixed rules about lists
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -522,12 +522,6 @@
            (MEMBERP (nth m lst) (TAKE n lst)))
   :hints (("Goal" :in-theory (enable take nth))))
 
-
-
-(defthm subsetp-equal-nthcdr
-  (SUBSETP-EQUAL (NTHCDR n lst) lst)
-  :hints (("Goal" :in-theory (enable nthcdr))))
-
 ;; (defthm subsetp-equal-of-take-and-take
 ;;   (implies (and (<= m n)
 ;;                 (integerp n)
@@ -544,12 +538,10 @@
                 )
            (subsetp-equal (SUBRANGE m n2 lst) (TAKE n lst)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :use (:instance subsetp-equal-nthcdr (n m) (lst (TAKE (+ 1 N2) LST)))
            :in-theory (e/d (subrange ;take
                             TAKE-OF-NTHCDR
                             )
-                           (subsetp-equal-nthcdr
-                            NTHCDR-OF-TAKE)))))
+                           (NTHCDR-OF-TAKE)))))
 
 ;; (thm
 ;;  (IMPLIES (AND (NATP N)

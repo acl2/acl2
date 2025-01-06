@@ -467,12 +467,6 @@
            (equal (car (firstn n x))
                   (car x))))
 
-(defthm true-list-fix-when-not-consp-cheap
-  (implies (not (consp x))
-           (equal (true-list-fix x)
-                  nil))
-  :rule-classes ((:rewrite :backchain-limit-lst (0))))
-
 ;; or go from (NTHCDR (LEN X) X) to finalcdr
 (defthm append-of-nthcdr-of-len-same
   (equal (APPEND (NTHCDR (LEN X) X) Y)

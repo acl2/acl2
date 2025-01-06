@@ -1469,7 +1469,7 @@
 ;; We shall require a generalization of rdetn-transpose-rows to arbitrary permutations.
 ;; First note that rdetn-permute-transpose may be restated as follows:
 
-(local-defthmd rdetn-permute-transp
+(defthmd rdetn-permute-transp
   (implies (and (rmatp a (n) (n))
                 (transp p (n)))
 	   (equal (rdetn (permute a p))
@@ -1485,7 +1485,9 @@
       (list (rdetn-permute-trans-list-p-induct (permute a (car l)) (cdr l)))
     (list a l)))
 
-(local-defthmd rdetn-permute-trans-list-p
+(;; This may be generalized to the composition of a list of transpositions by induction:
+
+defthmd rdetn-permute-trans-list-p
   (implies (and (rmatp a (n) (n))
                 (trans-list-p l (n)))
 	   (equal (rdetn (permute a (comp-perm-list l (n))))
@@ -1496,6 +1498,8 @@
           ("Subgoal *1/1" :use ((:instance permp-transp (n (n)) (p (car l)))
                                 (:instance permp-trans-list (n (n)) (l (cdr l)))
 				(:instance rdetn-permute-transp (p (car l)))))))
+
+;; Since any permutation p may be factored as a list of transpositions, this yields the following:
 
 (defthmd rdetn-permute-rows
   (implies (and (rmatp a (n) (n))
@@ -3262,7 +3266,7 @@
            (equal (delete-nth k (rlist-add (rlist-scalar-mul c x) y))
 	          (rlist-add (rlist-scalar-mul c (delete-nth k x)) (delete-nth k y)))))
 
-(local-defthmd rdet-minor-n-linear
+(defthmd rdet-minor-n-linear
   (implies (and (rmatp a n n) (natp n) (> n 1) (natp i) (< i n) (natp j) (< j n)
                 (natp k) (< k n) (not (= k i)) (rlistnp x n) (rlistnp y n) (rp c))
 	   (equal (rdet (minor i j (replace-row a k (rlist-add (rlist-scalar-mul c x) y))) (+ -1 n))
@@ -3279,7 +3283,7 @@
 						 (x (delete-nth j x))
 						 (y (delete-nth j y)))))))
 
-(local-defthmd rdet-cofactor-n-linear
+(defthmd rdet-cofactor-n-linear
   (implies (and (rmatp a n n) (natp n) (> n 1) (natp i) (< i n) (natp j) (< j n)
                 (natp k) (< k n) (not (= k i)) (rlistnp x n) (rlistnp y n) (rp c))
 	   (equal (rdet-cofactor i j (replace-row a k (rlist-add (rlist-scalar-mul c x) y)) n)

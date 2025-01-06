@@ -1,7 +1,7 @@
 ; Mixed theorems about bit-vector operations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -764,30 +764,6 @@
                 (integerp y))
            (equal (slice 31 24 (+ (BVCHOP 32 y) x))
                   (slice 31 24 (+ y x)))))
-
-(defthm bvif-equal-0-usb1
-  (implies (unsigned-byte-p 1 x)
-           (equal (bvif 1 (equal 0 x) 1 0)
-                  (bvnot 1 x)))
-  :hints (("Goal" :in-theory (enable bvif myif))))
-
-(defthm bvif-equal-0-usb1-2
-  (implies (unsigned-byte-p 1 x)
-           (equal (bvif 1 (equal 0 x) 0 1)
-                  x))
-  :hints (("Goal" :in-theory (enable bvif myif))))
-
-(defthm bvif-equal-1-usb1
-  (implies (unsigned-byte-p 1 x)
-           (equal (bvif 1 (equal 1 x) 1 0)
-                  (getbit 0 x)))
-  :hints (("Goal" :in-theory (enable bvif myif))))
-
-(defthm bvif-equal-1-usb1-2
-  (implies (unsigned-byte-p 1 x)
-           (equal (bvif 1 (equal 1 x) 0 1)
-                  (bvnot 1 x)))
-  :hints (("Goal" :in-theory (enable bvif myif))))
 
 (defthm integerp-when-unsigned-byte-p-free
   (implies (unsigned-byte-p free x) ;FREE is a free var., so this rule should be cheap
@@ -3292,11 +3268,6 @@
   :hints (("Goal" :use (:instance logtail-of-floor-of-expt (n (lg k)))
            :in-theory (disable logtail-of-floor-of-expt))))
 
-(defthm integerp-when-unsigned-byte-p-size-arg
-  (implies (unsigned-byte-p x free)
-           (integerp x))
-  :hints (("Goal" :in-theory (enable unsigned-byte-p))))
-
 (defthm boolor-of-bvlt-of-constant-and-bvlt-of-constant
   (implies (syntaxp (and (quotep k1)
                          (quotep k2)
@@ -4098,7 +4069,7 @@
                 (natp size)
                 )
            (not (equal k (bvchop size x))))
-  :hints (("Goal" :in-theory (enable BVCHOP-WHEN-SIZE-IS-NOT-NATP natp))))
+  :hints (("Goal" :in-theory (enable natp))))
 
 ;move
 (defthm bvchop-of-sum-minus-expt-alt2

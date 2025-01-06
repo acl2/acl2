@@ -8,4 +8,5 @@
   (union-eq *acl2-exports*
             *common-lisp-symbols-from-main-lisp-package*))
 
-(certify-book "flat" ? t)
+;; Legacy certify-book command commented out by Eric Smith:
+;; (certify-book "flat" ? t)

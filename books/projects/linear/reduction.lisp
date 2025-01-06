@@ -60,7 +60,7 @@
 		                   (first-nonzero (nth j a)))))))))
 
 ;; Let a be a matrix with m rows.  Check that the jth entry of row k of a is (f1) and that
-;;  the jth entry of every other row of a is (f0):
+;; the jth entry of every other row of a is (f0):
 
 (defun column-clear-p (a k j m)
   (if (zp m)
@@ -198,7 +198,7 @@
 		(= (nth j (nth k a)) (f1)))
 	   (column-clear-p (clear-column a k j m) k j m)))
 
-;; Assume (row-echelon-p-aux a m k), where k < m and that i = (row-with-nonzero-at-least-index a m k)
+;; Assume (row-echelon-p-aux a m k), where k < m, and that i = (row-with-nonzero-at-least-index a m k)
 ;; is non-NIL.  Let j = (first-nonzero (nth i a).  The following function performs the next step
 ;; of the reduction, producing a matrix a' satisfying (row-echelon-p-aux a' m (1+ k)):
 
@@ -255,6 +255,11 @@
 (defun row-rank (a)
   (num-nonzero-rows (row-reduce a)))
 
+(defthmd row-rank-row-reduce
+  (implies (and (posp m) (posp n) (fmatp a m n))
+           (equal (row-rank (row-reduce a))
+		  (row-rank a))))
+	   
 ;; Obviously, the row-rank of an mxn matrix cannot exceed m:
 
 (defthmd num-nonzero-rows<=m
@@ -290,6 +295,18 @@
   (implies (and (natp k) (< k (len (lead-inds a))))
            (equal (nth k (lead-inds a))
 	          (first-nonzero (nth k a)))))
+
+(defthmd nth-lead-inds-bound
+  (implies (and (fmatp a m n) (posp m) (posp n) (row-echelon-p a)
+                (natp k) (< k (len (lead-inds a))))
+           (and (natp (nth k (lead-inds a)))
+	        (< (nth k (lead-inds a)) n))))
+
+(defthmd nth-col-lead-inds
+  (implies (and (fmatp a m n) (row-echelon-p a) (posp m) (posp n)
+		(natp i) (< i (row-rank a)) (natp k) (< k m))
+	   (equal (nth k (col (nth i (lead-inds a)) a))
+		  (fdelta i k))))
 
 ;; (lead-inds a) is an increasing list:
 
@@ -336,7 +353,7 @@
 ;; Row Reduction as Matrix Multiplication
 ;;----------------------------------------------------------------------------------------
 
-;; a row operation on a matrix of m rows is encoded as a list, the first member of which
+;; A row operation on a matrix of m rows is encoded as a list, the first member of which
 ;; indicates the operation type:
 
 (defund row-op-p (op m)
@@ -474,7 +491,7 @@
 	   (equal (apply-row-ops (row-reduce-ops a) a)
 		  (row-reduce a))))
 
-;; The nxn elementary matrix corresponding to a row operation:
+;; The mxm elementary matrix corresponding to a row operation:
 
 (defund elem-mat (op m)
   (apply-row-op op (id-fmat m)))
@@ -512,6 +529,10 @@
 (defund row-reduce-mat (a)
   (row-ops-mat (row-reduce-ops a) (len a)))
 
+(defthmd fmatp-row-reduce-mat
+  (implies (and (fmatp a m n) (posp m) (posp n))
+           (fmatp (row-reduce-mat a) m m)))
+
 (defthmd row-ops-mat-row-reduce
   (implies (and (fmatp a m n) (posp m) (posp n))
 	   (equal (fmat* (row-reduce-mat a) a)
@@ -534,6 +555,7 @@
 ;;     = b,
 
 ;; and if (fmat* a c) = (id-fmat n), then
+
 ;;   c = (fmat* (id-fmat n) c)
 ;;     = (fmat* (fmat* b a) c)
 ;;     = (fmat* b (fmat* a c))
@@ -591,12 +613,12 @@
 
 (defthmd invert-row-ops-mat
   (implies (and (row-ops-p ops n) (posp n))
-                (and (equal (fmat* (row-ops-mat (invert-row-ops ops) n)
-	                           (row-ops-mat ops n))
-		            (id-fmat n))
-                     (equal (fmat* (row-ops-mat ops n)
-			           (row-ops-mat (invert-row-ops ops) n))			      
-		            (id-fmat n)))))
+           (and (equal (fmat* (row-ops-mat (invert-row-ops ops) n)
+	                      (row-ops-mat ops n))
+		       (id-fmat n))
+                (equal (fmat* (row-ops-mat ops n)
+			      (row-ops-mat (invert-row-ops ops) n))			      
+		       (id-fmat n)))))
 
 ;; We shall show that a has an inverse iff (row-rank a) = n and that in this case,
 ;; the inverse of a is (row-reduce-mat a).  Thus, we define
@@ -640,8 +662,8 @@
 		  (equal (fmat* a p) (id-fmat n))
 		  (equal (fmat* p a) (id-fmat n))))))
 
-;; To prove the necessity of (invertiblep a n), suppose  and let (fmatp b n n).
-;; If (fmat* a b) 0 (id-nat n), then
+;; To prove the necessity of (invertiblep a n), suppose (fmat* a b) = (id-nat n), where (fmatp b n n).
+;; Then
 
 ;;   (fmat* r (fmat* b q)) = (fmat* (fmt* p a) (fmat* b q))
 ;;                         = (fmat* p (fmat* (fmat* a b) q))
@@ -680,6 +702,10 @@
 	   (and (invertiblep (row-ops-mat ops n) n)
 		(equal (inverse-mat (row-ops-mat ops n))
 		       (row-ops-mat (invert-row-ops ops) n)))))
+
+(defthm invertiblep-row-reduce-mat
+  (implies (and (fmatp a m n) (posp m) (posp n))
+	   (invertiblep (row-reduce-mat a) m)))
 
 (defthmd row-reduce-mat-invertiblep
   (implies (invertiblep a n)
@@ -746,7 +772,7 @@
 ;;    ...
 ;;   a(m-1)0*x0 + ... + a(m-1)(n-1)*x{n-1) = b(m-1)
 
-;; In order to express this as a matrix equation, we define the column matrix formed by an flist:
+;; In order to express this as a matrix equation, we define the column matrix corresponding to an flist:
 
 (defund row-mat (x)
   (list x))
@@ -776,7 +802,7 @@
 ;; respectively.  Thus, we seek solutions of the equation (fmat* a xc) = bc, where bc and xc are 
 ;; mx1 and nx1 column matrices, respectively.
 
-;; Let p = (row-reduce-mat a), ra = (fmat* p a), and br = (fmat* p b).  Left-multiplying the above
+;; Let p = (row-reduce-mat a), ar = (fmat* p a), and br = (fmat* p bc).  Left-multiplying the above
 ;; equation by p yields the equivalent equation
 
 ;;   (fmat* ar xc) = br.
@@ -794,9 +820,9 @@
 ;; Thus, our objective is to solve the equation (fmat* ar xc) br), where ar is a row-echelon mxn
 ;; matrix, xc is an nx1 column matrix, and br is an mx1 column matrix.
 
-;; Let q = (num-nonzero-rows ar) = (row-rank a).  The existence of a solution of this equation is
-;; determined by whether the last m - q entries of the mx1 matrix br are all (f0).  This is indicated 
-;; by the value of the following function:
+;; Let q = (num-nonzero-rows ar) = (row-rank a).  We shall show that the existence of a solution of
+;; this equation is determined by whether the last m - q entries of the mx1 matrix br are all (f0),
+;; as indicated by the value of the function solvablep, defined below:
 
 (defun find-nonzero (br q m)
   (if (and (natp q) (natp m) (< q m))
@@ -814,14 +840,14 @@
 	       (implies (and (natp j) (<= q j) (< j m))
 	                (= (entry j 0 br) (f0)))))))
 
-(defun solvablep (a b m)
+(defun solvablep (a b)
   (null (find-nonzero (fmat* (row-reduce-mat a) (col-mat b))
                       (row-rank a)
-		      m)))
+		      (len a))))
 
 ;;---------------------------------------------
 
-;; Suppose first that (find-nonzero br q m) = k <> nil, so that (solvablep a b m) = nil.  Then 
+;; Suppose first that (find-nonzero br q m) = k <> nil, so that (solvablep a b) = nil.  Then 
 ;; (row k ar) = (flistn0 n) and (entry k 0 br) <> (f0).  It follows that
 
 ;;   (entry k 0 (fmat* ar xc)) = (fdot (row k ar) (col 0 xc)) = (f0) <> (nth k 0 br),
@@ -839,12 +865,12 @@
 
 (defthmd linear-equations-unsolvable-case
   (implies (and (fmatp a m n) (posp m) (posp n) (flistnp b m) (flistnp x n)
-                (not (solvablep a b m)))
+                (not (solvablep a b)))
 	   (not (solutionp x a b))))
 
 ;;---------------------------------------------
 
-;; Now suppose (find-nonzero br q m) = nil, i.e., (solvable a b m) = t.  Consider the matrices 
+;; Now suppose (find-nonzero br q m) = nil, i.e., (solvable a b) = t.  Consider the matrices 
 ;; aq and bq consisting of the first q rows of ar and br, respectively, computed by the following:
 
 (defun first-rows (q a)
@@ -883,6 +909,11 @@
 	           (row-echelon-p aq)
 	           (equal (num-nonzero-rows aq) q)))))
 
+(defthmd lead-inds-first-nonzero-rows
+  (implies (and (fmatp a m n) (posp m) (posp n))
+           (equal (lead-inds (first-rows (num-nonzero-rows a) a))
+	          (lead-inds a))))
+
 ;; According to the following result, (first-rows q (fmat* ar xc)) = (fmat* aq xc):
 
 (defthmd first-rows-fmat*
@@ -894,7 +925,7 @@
 ;; For q <= k < m, since (flist0p (row k ar)), (entry k 0 (fmat* ar xc)) = (f0).
 ;; Thus (first-nonzero (fmat* ar xc) q m) = nil, which implies
 
-;;   ((fmat* ar xc) = br <=> (fmat* aq xc) = bq:
+;;   (fmat* ar xc) = br <=> (fmat* aq xc) = bq:
 
 (defthmd null-first-nonzero-fmat*
   (implies (and (fmatp ar m n) (posp m) (posp n) (row-echelon-p ar) (fmatp xc n 1))
@@ -939,14 +970,14 @@
   (let* ((br (fmat* (row-reduce-mat a) (col-mat b)))
          (bq (first-rows n br)))
     (implies (and (fmatp a m n) (posp m) (posp n) (flistnp b m) (flistnp x n)
-                  (solvablep a b m)
-	          (invertiblep a n))
+                  (solvablep a b)
+	          (= (row-rank a) n))
 	     (iff (solutionp x a b)
 	          (equal x (col 0 bq))))))
 
-;; Our results on cofactor expansion lead to an alternative method of solving a system of linear 
-;; equations in the case of a unique solution, known as Cramer's rule.  Let a be an invertible nxn
-;; matrix, where n > 1, let (flistnp b n), (flistnp x n), and assume that x is  the unique solution of
+;; Our results on cofactor expansion lead to an alternative method of solving a system of n linear 
+;; equations in n unknowns in the case of a unique solution, known as Cramer's rule.  Let a be an invertible 
+;; nxn matrix, where n > 1, let (flistnp b n) and (flistnp x n), and assume that x is  the unique solution of
 
 ;;     (fmat* a (col-mat x)) = (col-mat b).
 ;; 
@@ -1005,8 +1036,8 @@
 	
 ;;---------------------------------------------
 
-;; In the remainder of this section, we treat the general case (solvablep a b m) = t with arbitrary
-;; row-rank q <= n.  The equation (fmat* aq xc) = bq holds iff for 0 <= i < q,
+;; In the remainder of this section, we treat the general case (solvablep a b) = t with arbitrary
+;; (row-rank a) = q <= n.  The equation (fmat* aq xc) = bq holds iff for 0 <= i < q,
 
 ;;   (nth i (fmat* aq xc)) = (nth i bq)
 
@@ -1027,8 +1058,18 @@
 (defund free-inds (a n)
   (set-difference-equal (ninit n) (lead-inds a)))
 
+(defthmd dlistp-free-inds
+  (implies (and (fmatp a m n) (posp m) (posp n) (row-echelon-p a))
+           (dlistp (free-inds a n))))
+
+(defthmd member-free-inds
+  (implies (and (fmatp a m n) (posp m) (posp n) (row-echelon-p a))
+           (iff (member x (free-inds a n))
+	        (and (member x (ninit n))
+		     (not (member x (lead-inds a)))))))
+
 ;; Note that if q = n, then (free-inds aq n) = nil.  In general, given a sublist of (ninit n), a dot
-;;  product of 2 flists of length n may be split into 2 sums as follows:
+;; product of 2 flists of length n may be split into 2 sums as follows:
 
 (defun fdot-select (inds r x)
   (if (consp inds)
@@ -1145,7 +1186,7 @@
 	 (l (lead-inds aq))
 	 (f (free-inds aq n)))
     (implies (and (fmatp a m n) (posp m) (posp n) (flistnp b m) (flistnp x n)
-                  (solvablep a b m))
+                  (solvablep a b))
              (iff (solutionp x a b)
                   (solution-test x aq bq l f q)))))                        
 
@@ -1163,5 +1204,5 @@
 ;; Otherwise, the entries of x corresponding to the indices in (lead-inds aq) are determined
 ;; by the entries corresponding to (free-inds aq n).  Thus, there is a unique solution
 ;; corresponding to every assignment of values to the latter set of entries, and hence an
-;; infinite number of solutions.  We shall revisit this result later in tconnection with the
+;; infinite number of solutions.  We shall revisit this result later in connection with the
 ;; vector space of solutions of a homogeneous system of equations.
