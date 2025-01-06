@@ -52,34 +52,35 @@
                            ;ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS
                            )))
 
+;; ;todo: it's an error to call this in app-view?
+;; (defthm mv-nth-0-of-ia32e-la-to-pa-of-set-flag
+;;   (implies (and ;(not (equal :ac flag))
+;;             (app-view x86))
+;;            (equal (mv-nth 0 (x86isa::ia32e-la-to-pa lin-addr r-w-x (set-flag flag val x86)))
+;;                   (mv-nth 0 (x86isa::ia32e-la-to-pa lin-addr r-w-x x86))))
+;;   :hints (("Goal" :in-theory (enable x86isa::ia32e-la-to-pa
+;;                                      set-flag
+;;                                      x86isa::rflagsbits->ac
+;;                                      ))))
 
-(defthm mv-nth-0-of-ia32e-la-to-pa-of-set-flag
-  (implies (and ;(not (equal :ac flag))
-            (app-view x86))
-           (equal (mv-nth 0 (x86isa::ia32e-la-to-pa lin-addr r-w-x (set-flag flag val x86)))
-                  (mv-nth 0 (x86isa::ia32e-la-to-pa lin-addr r-w-x x86))))
-  :hints (("Goal" :in-theory (enable x86isa::ia32e-la-to-pa
-                                     set-flag
-                                     x86isa::rflagsbits->ac
-                                     ))))
+;; ;todo: it's an error to call this in app-view?
+;; (defthm mv-nth-2-of-ia32e-la-to-pa-of-set-flag
+;;   (implies (and ;(not (equal :ac flag))
+;;             (app-view x86)
+;;             (not (mv-nth 0 (x86isa::ia32e-la-to-pa lin-addr r-w-x (set-flag flag val x86)))))
+;;            (equal (mv-nth 2 (x86isa::ia32e-la-to-pa lin-addr r-w-x (set-flag flag val x86)))
+;;                   (set-flag flag val (mv-nth 2 (x86isa::ia32e-la-to-pa lin-addr r-w-x x86)))))
+;;   :hints (("Goal" :in-theory (enable x86isa::ia32e-la-to-pa
+;;                                      set-flag
+;;                                      x86isa::rflagsbits->ac
+;;                                      ))))
 
-(defthm mv-nth-2-of-ia32e-la-to-pa-of-set-flag
-  (implies (and ;(not (equal :ac flag))
-            (app-view x86)
-            (not (mv-nth 0 (x86isa::ia32e-la-to-pa lin-addr r-w-x (set-flag flag val x86)))))
-           (equal (mv-nth 2 (x86isa::ia32e-la-to-pa lin-addr r-w-x (set-flag flag val x86)))
-                  (set-flag flag val (mv-nth 0 (x86isa::ia32e-la-to-pa lin-addr r-w-x x86)))))
-  :hints (("Goal" :in-theory (enable x86isa::ia32e-la-to-pa
-                                     set-flag
-                                     x86isa::rflagsbits->ac
-                                     ))))
+;; it's an error to call this in app-view?
+;; (defthm app-view-of-mv-nth-2-of-ia32e-la-to-pa
+;;   (implies (app-view x86)
+;;            (app-view (mv-nth 2 (x86isa::ia32e-la-to-pa lin-addr r-w-x x86))))
+;;   :hints (("Goal" :in-theory (enable x86isa::ia32e-la-to-pa))))
 
-(defthm app-view-of-mv-nth-2-of-ia32e-la-to-pa
-  (implies (app-view x86)
-           (app-view (mv-nth 2 (x86isa::ia32e-la-to-pa lin-addr r-w-x x86))))
-  :hints (("Goal" :in-theory (enable x86isa::ia32e-la-to-pa))))
-
-;; zz
 ;; (defthm mv-nth-0-of-las-to-pas-of-set-flag
 ;;   (implies (and (app-view x86)
 ;; ;                (not (mv-nth 0 (x86isa::las-to-pas n lin-addr r-w-x x86)))
@@ -333,12 +334,12 @@
 ;; Now it's reading from #x405A00, which is after the end of the UPX1 section but before UPX2. Add assumption (equal 0 (read #x600 #x405a00 x86)).
 ;; Now it's reading from #x406200, which is after the UPX2 section.  Should we try assuming those bytes are 0 as well?
 
-
-(defthm mv-nth-0-of-las-to-pas-of-set-flag
-  (implies (app-view x86)
-           (equal (mv-nth 0 (x86isa::las-to-pas n lin-addr r-w-x (set-flag flag val x86)))
-                  (mv-nth 0 (x86isa::las-to-pas n lin-addr r-w-x x86))))
-  :hints (("Goal" :in-theory (enable x86isa::las-to-pas x86isa::ia32e-la-to-pa))))
+;; it's an error to call this in app-view?
+;; (defthm mv-nth-0-of-las-to-pas-of-set-flag
+;;   (implies (app-view x86)
+;;            (equal (mv-nth 0 (x86isa::las-to-pas n lin-addr r-w-x (set-flag flag val x86)))
+;;                   (mv-nth 0 (x86isa::las-to-pas n lin-addr r-w-x x86))))
+;;   :hints (("Goal" :in-theory (enable x86isa::las-to-pas x86isa::ia32e-la-to-pa))))
 
 ;; could move some of this stuff to linear-memory.lisp:
 

@@ -529,6 +529,7 @@
                   (read n addr x86)))
   :hints (("Goal" :in-theory (enable rb))))
 
+;shouldn't need this for app-view, but it support rb-when-zp below
 (defthm x86isa::las-to-pas-when-zp
   (implies (zp n)
            (equal (x86isa::las-to-pas n lin-addr x86isa::r-w-x x86)
