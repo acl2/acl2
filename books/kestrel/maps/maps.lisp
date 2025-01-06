@@ -65,10 +65,11 @@
 (in-theory (disable rkeys))
 
 ;; stuff that should be in the records book:
-(defthm s-hack-1
-  (equal (s a nil nil)
-         nil)
-  :hints (("Goal" :in-theory (enable s))))
+;; this is now in coi/records/records
+;; (defthm s-hack-1
+;;   (equal (s a nil nil)
+;;          nil)
+;;   :hints (("Goal" :in-theory (enable s))))
 
 (in-theory (enable g-of-s-redux))
 
