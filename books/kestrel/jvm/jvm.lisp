@@ -2390,11 +2390,6 @@
 
 ;(in-theory (disable CLASS-DECL-NON-STATIC-FIELDS CLASS-DECL-STATIC-FIELDS))
 
-;keep disabled
-(defthmd alist-when-field-info-alistp
-  (implies (field-info-alistp alist)
-           (alistp alist)))
-
 (acl2::make-flag lookup-field)
 
 ;; (thm
@@ -2532,7 +2527,7 @@
                               (class-namep c) ;todo: use this instead: (class-or-interface-namep c) ;can this every be an array class?
                               (class-namep d) ;can this be an interface?
                               (bound-in-class-tablep c class-table))
-                  :guard-hints (("Goal" :in-theory (enable alist-when-field-info-alistp)))))
+                  :guard-hints (("Goal" :in-theory (enable alistp-when-field-info-alistp)))))
   (let ((erp (resolve-non-array-class c class-table)))
     (if erp
         (mv erp nil)
