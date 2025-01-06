@@ -64,11 +64,7 @@
 
 (in-theory (disable GET-PREFIXES-OPENER-LEMMA-ZERO-CNT)) ;for speed
 
-(defthm x86isa::x86p-xw-unforced
-  (implies (x86p x86)
-           (x86p (xw x86isa::fld x86isa::index value x86))))
-
-(in-theory (disable x86isa::x86p-xw
+(in-theory (disable 
                     ;x86isa::x86p-!rip-when-val-is-canonical-address-p ;todo: remove this rule altogether since it is subsumed by x86p-xw  ;does forcing, which causes problems in various places
                     ))
 
