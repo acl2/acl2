@@ -78,7 +78,7 @@
                     "operations on the abstract syntax")
     ", and a collection of predicates that characterize "
     (xdoc::seetopic "unambiguity" "unambiguous abstract syntax")
-    ". We provide macro @(tsee defpred)
+    ". We provide a macro @(tsee defpred)
      to concisely define predicates over the abstract syntax.")
    (xdoc::p
     "Accompanying our abstract syntax,
