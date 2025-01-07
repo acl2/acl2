@@ -18,7 +18,8 @@
 
   :parents (syntax-for-tools)
 
-  :short "Generate predicates over the C abstract syntax for tools."
+  :short "Generate predicates over the C abstract syntax for tools,
+          along with theorems about the predicates."
 
   :long
 
@@ -32,8 +33,8 @@
      "The "
      (xdoc::seetopic "abstract-syntax" "C abstract syntax for tools")
      " consists of a large collection of (fix)types.
-      This macro automates the creation of
-      unary predicates over those types.
+      This macro automates the creation of unary predicates over those types;
+      it also generates theorems about the theorems.
       The user provides information that is specific to the desired predicates,
       and the macro integrates it into generated boilerplate."))
 
@@ -195,4 +196,14 @@
         the predicate is defined recursively,
         as the conjunction of the predicate generated for the value type
         applied to each value of the map;
-        the conjunction is @('t') if the map is empty."))))))
+        the conjunction is @('t') if the map is empty.")))
+
+    (xdoc::desc
+     "List theorems."
+     (xdoc::p
+      "For each list type for which we generate a predicate,
+       we also generate a @(tsee std::deflist) event for the predicate
+       that generates theorems relating the predicate to list operations;
+       the @(tsee std::deflist) event sees that
+       the predicate is already defined at the place of the event,
+       and thus its effect is just to geenerate the theorems.")))))
