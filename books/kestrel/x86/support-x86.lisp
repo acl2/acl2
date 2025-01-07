@@ -381,11 +381,6 @@
                                                              ;; X86ISA::SEG-HIDDEN-ATTRI-IS-N16P
                                                              )))))
 
-(defthm memi-of-xw
-  (implies (not (equal :mem fld))
-           (equal (memi i (xw fld index val x86))
-                  (memi i x86)))
-  :hints (("Goal" :in-theory (enable memi))))
 
 (defthm unsigned-byte-p-of-bfix
   (implies (posp n)
@@ -399,7 +394,7 @@
                 (natp n)
                 (< n 16)
                 (x86p x86-2))
-           (equal (xw ':rgf n (xr :rgf n x86) x86-2)
+           (equal (xw :rgf n (xr :rgf n x86) x86-2)
                   x86-2))
   :hints (("Goal" :in-theory (enable ;x86isa::xw-xr-rgf
                               ))))
@@ -421,13 +416,6 @@
 ;rewrite: (< (BVCHOP 64 Y) 9223372036854775808)
 ;rewrite: (<= (BVCHOP 64 Y) (BVCHOP 63 Y))
 
-;; each of the 2 branches in the RHS has a clear RIP
-(defthm xw-rip-of-if-arg3
-  (equal (xw :rip nil (if test rip1 rip2) x86)
-         (if test
-             (xw :rip nil rip1 x86)
-           (xw :rip nil rip2 x86))))
-
 ;; TODO: The original rule should be replaced by this one
 (DEFTHM X86ISA::PROGRAM-AT-XW-IN-APP-VIEW-better
   (IMPLIES (AND (NOT (EQUAL X86ISA::FLD :MEM))
@@ -439,29 +427,6 @@
   :HINTS (("Goal" :IN-THEORY (ACL2::E/D* NIL (RB)))))
 
 (in-theory (disable X86ISA::PROGRAM-AT-XW-IN-APP-VIEW))
-
-(defthm memi-of-!memi-diff
-  (implies (and (unsigned-byte-p 48 addr)
-                (unsigned-byte-p 48 addr2)
-                (not (equal addr addr2)))
-           (equal (memi addr (!memi addr2 val x86))
-                  (memi addr x86)))
-  :hints (("Goal" :in-theory (enable memi))))
-
-(defthm memi-of-!memi-both
-  (implies (and (unsigned-byte-p 48 addr)
-                (unsigned-byte-p 48 addr2))
-           (equal (memi addr (!memi addr2 val x86))
-                  (if (equal addr addr2)
-                      (acl2::bvchop 8 val)
-                    (memi addr x86))))
-  :hints (("Goal" :in-theory (enable memi))))
-
-(defthm memi-of-xw-same
-  (implies (unsigned-byte-p 48 addr)
-           (equal (memi addr (xw :mem addr val x86))
-                  (acl2::bvchop 8 val)))
-  :hints (("Goal" :in-theory (enable memi))))
 
 ;gen
 (local
@@ -796,45 +761,6 @@
 
 (in-theory (disable zf-spec)) ; move?
 
-;gen?
-(defthm integerp-of-xr-rgf-4
-  (implies (x86p x86)
-           (integerp (xr ':rgf '4 x86))))
-
-;gen?
-(defthm fix-of-xr-rgf-4
-  (equal (fix (xr ':rgf '4 x86))
-         (xr ':rgf '4 x86)))
-
-;gen
-(defthm xr-app-view-of-!memi
-  (equal (xr :app-view nil (!memi addr val x86))
-         (xr :app-view nil x86))
-  :hints (("Goal" :in-theory (enable !memi))))
-
-(defthm app-view-of-!memi
-  (equal (app-view (!memi addr val x86))
-         (app-view x86))
-  :hints (("Goal" :in-theory (enable !memi))))
-
-(defthm x86p-of-!memi
-  (implies (and (x86p x86)
-                (INTEGERP ADDR)
-                (UNSIGNED-BYTE-P 8 VAL))
-           (x86p (!memi addr val x86)))
-  :hints (("Goal" :in-theory (enable !memi))))
-
-;rename
-(defthm memi-of-!memi
-  (implies (unsigned-byte-p 48 addr)
-           (equal (memi addr (!memi addr val x86))
-                  (acl2::bvchop 8 val)))
-  :hints (("Goal" :in-theory (enable memi))))
-
-(defthm !memi-of-!memi-same
-  (equal (!memi addr val (!memi addr val2 x86))
-         (!memi addr val x86)))
-
 (defthm xw-of-xw-both
   (implies (syntaxp (acl2::smaller-termp addr2 addr))
            (equal (xw :mem addr val (xw :mem addr2 val2 x86))
@@ -849,14 +775,6 @@
            (equal (xw :mem addr val (xw :mem addr2 val2 x86))
                   (xw :mem addr2 val2 (xw :mem addr val x86))))
   :hints (("Goal" :in-theory (enable xw))))
-
-(defthm memi-of-xw-irrel
-  (implies (not (equal fld :mem))
-           (equal (memi addr (xw fld index val x86))
-                  (memi addr x86)))
-  :hints (("Goal" :in-theory (e/d (memi)
-                                  (;x86isa::memi-is-n08p ;does forcing
-                                   )))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
