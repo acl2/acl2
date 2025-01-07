@@ -41,7 +41,7 @@
 	   (equal (len (nth i a))
 		  n)))
 
-;; jth column or a:
+;; jth column of a:
 
 (defun col (j a)
   (if (consp a)
@@ -113,7 +113,7 @@
 	   (equal (replace-row (replace-row a i x) j y)
 	          (replace-row (replace-row a j y) i x))))
 
-;; To show that 2 matrices of the same dimensions are equal, it surrices to show that
+;; To show that 2 matrices of the same dimensions are equal, it suffices to show that
 ;; corresponding entries are equal.  That is, if 2 mxn matrices are not equal, then some
 ;; pair of corresponding entries are not equal:
 
@@ -326,7 +326,7 @@
 			  (rmat-sum (strip-mat a)))))))
 
 ;; Since (row 0 a) = (col 0 (transpose-mat a)) and (col 0 a) = (row 0 (transpose-mat a)), we have
-;; the rollowing:
+;; the following:
 
 (defthmd sum-rmat-strip-mat-equal
   (implies (and (posp m) (posp n) (rmatp a m n)
@@ -366,7 +366,7 @@
 ;; Matrix Multiplication
 ;;----------------------------------------------------------------------------------------
 
-;; Dot product of 2 lists of rield elements of the same length:
+;; Dot product of 2 rlists of the same length:
 
 (defun rdot (x y)
   (if (consp x)
@@ -402,7 +402,7 @@
 	   (equal (rdot (rlist-scalar-mul c x) y)
 		  (r* c (rdot x y)))))
 
-;; List of dot products of an rlist x with the elements of a list of rlists l:
+;; List of dot products of an rlist x with the members of a list of rlists l:
 
 (defun rdot-list (x l)
   (if (consp l)
@@ -428,7 +428,7 @@
     ()))
 
 (defthm rmatp-rmat*
-  (implies (and (rmatp a m n) (rmatp b n p) (posp m) (posp n) (posp p) )
+  (implies (and (rmatp a m n) (rmatp b n p) (posp m) (posp n) (posp p))
            (rmatp (rmat* a b) m p)))
 
 (defthmd nth-rmat*
@@ -560,11 +560,11 @@
 ;; Let a, b, and c be matrices of dimensions mxn, nxp, and pxq, respectively.  Then
 ;; (rmat* a (rmat* b c)) and (rmat* (rmat* a b) c)) are both mxp matrices.  Our
 ;; objective is to prove that they are equal.  Let 0 <= i < m and 0 <= j < q.  It will
-;; surrice to show that
+;; suffice to show that
 
 ;;    (entry i j (rmat* a (rmat* b c))) = (entry i j (rmat* (rmat* a b) c)).
 
-;; Applying rmat*-entry and expanding rdot, we rind that both sides of this equation
+;; Applying rmat*-entry and expanding rdot, we find that both sides of this equation
 ;; are sums of n*p 3-way products.
 
 ;; We shall construct an nxp matrix of 3-way products, (rmat12 a b c i j), such that

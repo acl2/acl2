@@ -1,0 +1,61 @@
+// http://opensource.org/licenses/BSD-3-Clause
+
+// Copyright (C) 2025, Yahya Sohail
+
+// All rights reserved.
+
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+
+// o Redistributions of source code must retain the above copyright
+//   notice, this list of conditions and the following disclaimer.
+
+// o Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the distribution.
+
+// o Neither the name of the copyright holders nor the names of its
+//   contributors may be used to endorse or promote products derived
+//   from this software without specific prior written permission.
+
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+// Original Author(s):
+// Yahya Sohail        <yahya@yahyasohail.com>
+
+// This file defines what instructions are unsupported
+
+UNSUPPORTED_ATTRIBUTE(XED_ATTRIBUTE_RING0);
+UNSUPPORTED_ATTRIBUTE(XED_ATTRIBUTE_PROTECTED_MODE);
+UNSUPPORTED_ATTRIBUTE(XED_ATTRIBUTE_AMDONLY);
+
+UNSUPPORTED_ISA_SET(XED_ISA_SET_VTX);
+UNSUPPORTED_ISA_SET(XED_ISA_SET_RTM);
+UNSUPPORTED_ISA_SET(XED_ISA_SET_TDX);
+UNSUPPORTED_ISA_SET(XED_ISA_SET_UINTR);
+UNSUPPORTED_ISA_SET(XED_ISA_SET_MSRLIST);
+UNSUPPORTED_ISA_SET(XED_ISA_SET_SGX_ENCLV);
+
+UNSUPPORTED_ISA_SET_RANGE(XED_ISA_SET_APX_F, XED_ISA_SET_APX_F_VMX);
+
+UNSUPPORTED_ICLASS(XED_ICLASS_CLI);
+UNSUPPORTED_ICLASS(XED_ICLASS_STI);
+UNSUPPORTED_ICLASS(XED_ICLASS_MCOMMIT);
+UNSUPPORTED_ICLASS(XED_ICLASS_RDRAND);
+UNSUPPORTED_ICLASS(XED_ICLASS_RDSEED);
+UNSUPPORTED_ICLASS(XED_ICLASS_CPUID);
+UNSUPPORTED_ICLASS(XED_ICLASS_PCONFIG);
+
+UNSUPPORTED_CATEGORY(XED_CATEGORY_PTWRITE);
+UNSUPPORTED_CATEGORY(XED_CATEGORY_PBNDKB);

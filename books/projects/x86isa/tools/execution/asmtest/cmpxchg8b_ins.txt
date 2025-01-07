@@ -1,6 +1,0 @@
-# edx:eax, ecx:ebx, memory operand, flags
-; 8, 8, 8, 2
-0, 1, 2, 0
-0, 1, 0, 0
-aaaaaaaaaaaaaaaa, bbbbbbbbbbbbbbbb, cccccccccccccccc, 0
-aaaaaaaaaaaaaaaa, bbbbbbbbbbbbbbbb, aaaaaaaaaaaaaaaa, 0

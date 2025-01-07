@@ -15,6 +15,7 @@
 (include-book "abstraction-mapping")
 (include-book "abstract-syntax-operations")
 (include-book "unambiguity")
+(include-book "annotation")
 (include-book "defpred")
 (include-book "defpred-doc")
 (include-book "preprocess-file")
@@ -73,13 +74,12 @@
      @(see c::abstract-syntax) and @(see c::atc-abstract-syntax).
      We plan to have ATC use this new tool-oriented abstract syntax.")
    (xdoc::p
-    "We provide some "
-    (xdoc::seetopic "abstract-syntax-operations"
-                    "operations on the abstract syntax")
-    ", and a collection of predicates that characterize "
-    (xdoc::seetopic "unambiguity" "unambiguous abstract syntax")
-    ". We provide macro @(tsee defpred)
-     to concisely define predicates over the abstract syntax.")
+    "We provide a macro tool @(tsee defpred)
+     to concisely define predicates over the abstract syntax.
+     This should be fairly easy to generalize to
+     a more general tool for "
+    (xdoc::seetopic "fty::fty" "fixtypes")
+    ".")
    (xdoc::p
     "Accompanying our abstract syntax,
      we provide a concrete syntax, based on an ABNF grammar.
@@ -92,8 +92,15 @@
      with preprocessing being a distinguished translation phase
      [C:5.1.1.2].")
    (xdoc::p
-    "We provide a @(see parser)
-     from the concrete syntax to the abstract syntax,
+    "We have started defining an "
+    (xdoc::seetopic "abstraction-mapping" "abstraction mapping")
+    " from the concrete to the abstract syntax.
+     This is still very much work in progress,
+     but its main purpose is for specification and verification,
+     and is not needed to run the tools described below
+     (parser, printer, etc.).")
+   (xdoc::p
+    "We provide a @(see parser) that produces abstract syntax,
      which covers all of the C constructs after preprocessing.
      The syntax of C is notoriously ambiguous,
      requiring some semantic analysis to disambiguate it.
@@ -114,7 +121,7 @@
      that checks the static constraints on C code (i.e. type checking etc.),
      which results in an elaboration of the abstract syntax,
      e.g. enhancing the abstract syntax with types and other information
-     after successful checking.")
+     after successful validation.")
    (xdoc::p
     "We provide a (pretty-)@(see printer)
      that turns our abstract syntax
@@ -124,7 +131,22 @@
      This printer is an initial version;
      we plan to improve it in various respects,
      in particular by supporting printing options
-     (e.g. for right margin).")
+     (e.g. for the right margin position).")
+   (xdoc::p
+    "We provide a collection of predicates that characterize "
+    (xdoc::seetopic "unambiguity" "unambiguous abstract syntax")
+    ", i.e. abstract syntax without ambiguous constructs,
+     as resulting after disambiguation.")
+   (xdoc::p
+    "We provide a collection of predicates that characterize "
+    (xdoc::seetopic "annotation" "annotated abstract syntax")
+    ", i.e. abstract syntax enhanced with
+     the information added by the validator.")
+   (xdoc::p
+    "We provide various "
+    (xdoc::seetopic "abstract-syntax-operations"
+                    "operations on the abstract syntax")
+    ".")
    (xdoc::p
     "We provide event macros @(tsee input-files) and @(tsee output-files)
      to read, preprocess, parse, disambiguate, print, and write files.")
@@ -155,9 +177,10 @@
   :order-subtopics (concrete-syntax
                     abstract-syntax
                     abstraction-mapping
+                    defpred
                     abstract-syntax-operations
                     unambiguity
-                    defpred
+                    annotation
                     preprocessing
                     parser
                     disambiguator

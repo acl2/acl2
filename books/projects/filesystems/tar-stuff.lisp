@@ -137,8 +137,7 @@
                               (fat32-filename-list-p path)
                               (state-p state)
                               (open-output-channel-p *standard-co* :character
-                                                     state))
-                  :guard-debug t))
+                                                     state))))
   (b*
       (((mv fd-table file-table fd &)
         (lofat-open path fd-table file-table))
@@ -350,7 +349,6 @@
   (defund hifat-tar-reg-file-string (fs path)
     (declare (xargs :guard (and (stringp path) (m1-file-alist-p fs)
                                 (hifat-no-dups-p fs) (<= (length path) 100))
-                    :guard-debug t
                     :guard-hints (("Goal" :in-theory (e/d
                                                       (string-listp ceiling)
                                                       (make-list-ac-removal))))))

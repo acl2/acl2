@@ -18,6 +18,9 @@ blsi32	    10		    6
 blsi64	    18		    10
 cmpxchg8b   26              26
 cmpxchg16b  50		    50
+popcnt16    6               4
+popcnt32    10		    6
+popcnt64    18		    10
 
 # blsr32	  10		    6
 # blsr64	  18		    10
