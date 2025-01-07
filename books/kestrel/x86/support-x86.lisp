@@ -15,7 +15,7 @@
 ;; model itself.
 
 ;(include-book "projects/x86isa/proofs/utilities/app-view/top" :dir :system) ;reduce? needed for the big enable below
-(include-book "projects/x86isa/proofs/utilities/general-memory-utils" :dir :system) ; so we can disable questionable rule X86ISA::X86P-!RIP-WHEN-VAL-IS-CANONICAL-ADDRESS-P
+(include-book "projects/x86isa/proofs/utilities/general-memory-utils" :dir :system) ; drop?
 (include-book "projects/x86isa/proofs/utilities/row-wow-thms" :dir :system) ; for X86ISA::WRITE-USER-RFLAGS-AND-XW
 (include-book "projects/x86isa/proofs/utilities/app-view/user-level-memory-utils" :dir :system) ; for rb-rb-subset
 (include-book "projects/x86isa/machine/state" :dir :system)
@@ -63,10 +63,6 @@
   :hints (("Goal" :in-theory (enable byte-listp))))
 
 (in-theory (disable GET-PREFIXES-OPENER-LEMMA-ZERO-CNT)) ;for speed
-
-(in-theory (disable 
-                    ;x86isa::x86p-!rip-when-val-is-canonical-address-p ;todo: remove this rule altogether since it is subsumed by x86p-xw  ;does forcing, which causes problems in various places
-                    ))
 
 ;why needed?
 ;(acl2::defopeners LOAD-PROGRAM-INTO-MEMORY)
@@ -892,6 +888,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Most uses of rme-XXX are for 32-bit mode, but this is for 64-bit mode.
 ;; This version has (canonical-address-p eff-addr) in the conclusion
 (defthm x86isa::rme-size-when-64-bit-modep-and-not-fs/gs-strong
   (implies (and (not (equal seg-reg 4))
@@ -903,6 +900,7 @@
                       (rml-size nbytes eff-addr x86isa::r-x x86)
                     (list (list :non-canonical-address eff-addr) 0 x86)))))
 
+;; Most uses of rme-XXX are for 32-bit mode, but this is for 64-bit mode.
 ;; This version has (canonical-address-p eff-addr) in the conclusion
 (defthm x86isa::wme-size-when-64-bit-modep-and-not-fs/gs-strong
   (implies (and (not (equal seg-reg 4))
