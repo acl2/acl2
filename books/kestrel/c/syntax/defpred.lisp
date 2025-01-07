@@ -1021,7 +1021,11 @@
     "We also generate a @(':flag-local nil') to export
      the flag macro @('defthm-<name>-flag'),
      where @('<name>') is the name of the @(tsee defines) clique.
-     This facilitates proving theorems by induction on the predicates."))
+     This facilitates proving theorems by induction on the predicates.")
+   (xdoc::p
+    "We also generate a form to allow bogus mutual recursion,
+     since we have no control on how the user overrides the boilerplate.
+     Note that this form is automatically local to the @(tsee defines)."))
   (b* ((members (fty::flextypes->types clique))
        ((unless (true-listp members))
         (raise "Internal error: malformed members of type clique ~x0." clique)
@@ -1046,6 +1050,7 @@
        ,@events
        :hints (("Goal" :in-theory (enable o< o-finp)))
        :flag-local nil
+       :prepwork ((set-bogus-mutual-recursion-ok t))
        ///
        (fty::deffixequiv-mutual ,clique-name-suffix)
        ,@deferred-events)))
@@ -1131,7 +1136,6 @@
     `(encapsulate
        ()
        ,xdoc-event
-       (set-bogus-mutual-recursion-ok t)
        ,@pred-events)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
