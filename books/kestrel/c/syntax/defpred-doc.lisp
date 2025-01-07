@@ -46,6 +46,9 @@
      "(defpred suffix"
      "         :default  ...  ; no default"
      "         :override ...  ; default nil"
+     "         :parents  ...  ; no default"
+     "         :short    ...  ; no default"
+     "         :long     ...  ; no default"
      "  )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -100,11 +103,33 @@
         (e.g. @(tsee expr)),
         @('<kind>') is a keyword identifying one of the summands of the type,
         and @('<term>') is an (untranslated) term
-        whose only free variable is @('<type>')."))))
+        whose only free variable is @('<type>').")))
+
+    (xdoc::desc
+     (list
+      "@(':parents')"
+      "@(':short')"
+      "@(':long')")
+     (xdoc::p
+      "These, if present, are added to the generated XDOC topic
+       described in the Section `Generated Events' below.")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::evmac-section-generated
+
+    (xdoc::desc
+     "@('abstract-syntax-<suffix>')"
+     (xdoc::p
+      "An XDOC topic whose name is obtained by adding
+       at the end of the symbol @('abstract-syntax-'),
+       the symbol specified in the @('suffix') input.
+       If any of the @(':parents'), @(':short'), or @(':long') inputs
+       are provided, they are added to this XDOC topic.
+       This XDOC topic is generated with @(tsee defxdoc+),
+       with @(':order-topics t') and @(':default-parent t'),
+       so that the other generated events (described below)
+       are subtopics listed in order."))
 
     (xdoc::p
      "A predicate is generated for
@@ -126,6 +151,8 @@
        @(tsee transunit),
        @(tsee filepath-transunit-map), and
        @(tsee transunit-ensemble)."))
+    (xdoc::p
+     "The details of the predicates are given next.")
 
     (xdoc::desc
      "@('<type>-<suffix>')"

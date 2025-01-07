@@ -482,7 +482,10 @@
 (defval *defpred-allowed-options*
   :short "Keyword options accepted by @(tsee defpred)."
   '(:default
-    :override))
+    :override
+    :parents
+    :short
+    :long))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -490,9 +493,15 @@
   :returns (mv erp
                (suffix symbolp)
                (default booleanp)
-               (overrides alistp))
+               (overrides alistp)
+               (parents-presentp booleanp)
+               parents
+               (short-presentp booleanp)
+               short
+               (long-presentp booleanp)
+               long)
   :short "Process all the inputs."
-  (b* (((reterr) nil nil nil)
+  (b* (((reterr) nil nil nil nil nil nil nil nil nil)
        ((mv erp suffix options)
         (partition-rest-and-keyword-args args *defpred-allowed-options*))
        ((when (or erp
@@ -518,8 +527,25 @@
        (override (if override-option
                      (cdr override-option)
                    nil))
-       ((erp overrides) (defpred-process-override override fty-table)))
-    (retok suffix default overrides))
+       ((erp overrides) (defpred-process-override override fty-table))
+       (parents-option (assoc-eq :parents options))
+       (parents-presentp (consp parents-option))
+       (parents (cdr parents-option))
+       (short-option (assoc-eq :short options))
+       (short-presentp (consp short-option))
+       (short (cdr short-option))
+       (long-option (assoc-eq :long options))
+       (long-presentp (consp long-option))
+       (long (cdr long-option)))
+    (retok suffix
+           default
+           overrides
+           parents-presentp
+           parents
+           short-presentp
+           short
+           long-presentp
+           long))
   :guard-hints (("Goal" :in-theory (enable acl2::alistp-when-symbol-alistp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1074,6 +1100,12 @@
 (define defpred-gen-everything ((suffix symbolp)
                                 (default booleanp)
                                 (overrides alistp)
+                                (parents-presentp booleanp)
+                                parents
+                                (short-presentp booleanp)
+                                short
+                                (long-presentp booleanp)
+                                long
                                 (fty-table alistp))
   :returns (event pseudo-event-formp)
   :short "Generate all the events."
@@ -1085,11 +1117,22 @@
      which we put into one event."))
   (b* ((types
         (defpred-type-names-in-cliques-with-names *defpred-cliques* fty-table))
-       (events (defpred-gen-cliques-preds
-                 *defpred-cliques* types suffix default overrides fty-table)))
-    `(progn
+       (pred-events
+        (defpred-gen-cliques-preds
+          *defpred-cliques* types suffix default overrides fty-table))
+       (xdoc-name (defpred-gen-name 'abstract-syntax suffix))
+       (xdoc-event
+        `(defxdoc+ ,xdoc-name
+           ,@(and parents-presentp `((:parents ,parents)))
+           ,@(and short-presentp `((:short ,short)))
+           ,@(and long-presentp `((:long ,long)))
+           :order-subtopics t
+           :default-parent t)))
+    `(encapsulate
+       ()
+       ,xdoc-event
        (set-bogus-mutual-recursion-ok t)
-       ,@events)))
+       ,@pred-events)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1100,9 +1143,27 @@
   :short "Process the inputs and generate the events."
   (b* (((reterr) '(_))
        (fty-table (table-alist+ 'fty::flextypes-table wrld))
-       ((erp suffix default overrides)
+       ((erp suffix
+             default
+             overrides
+             parents-presentp
+             parents
+             short-presentp
+             short
+             long-presentp
+             long)
         (defpred-process-inputs args fty-table)))
-    (retok (defpred-gen-everything suffix default overrides fty-table))))
+    (retok (defpred-gen-everything
+             suffix
+             default
+             overrides
+             parents-presentp
+             parents
+             short-presentp
+             short
+             long-presentp
+             long
+             fty-table))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
