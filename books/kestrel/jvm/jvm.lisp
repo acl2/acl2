@@ -1,7 +1,7 @@
 ; A formal model of the JVM
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -316,7 +316,8 @@
 (defthm monitor-tablep-of-clear
   (implies (monitor-tablep monitor-table)
            (monitor-tablep (s key nil monitor-table)))
-  :hints (("Goal" :in-theory (e/d (monitor-tablep) (ACL2::S-NIL-BECOMES-CLR)))))
+  :hints (("Goal" :in-theory (e/d (monitor-tablep) (;ACL2::S-NIL-BECOMES-CLR
+                                                    )))))
 
 ;; Check whether thread th owns the lock on objectref.
 ;could have this check that the mcount is positive, but that is part of monitor-tablep...
@@ -353,7 +354,8 @@
                 (mcountp (cdr (g objectref monitor-table)))
                 (monitor-tablep monitor-table))
            (monitor-tablep (decrement-mcount objectref monitor-table)))
-  :hints (("Goal" :in-theory (e/d (monitor-tablep decrement-mcount mcountp) (ACL2::S-NIL-BECOMES-CLR)))))
+  :hints (("Goal" :in-theory (e/d (monitor-tablep decrement-mcount mcountp) (;ACL2::S-NIL-BECOMES-CLR
+                                                                             )))))
 
 ;;
 ;; The static-field-map
@@ -757,7 +759,8 @@
 (defthm monitor-tablep-of-mv-nth-1-of-attempt-to-exit-monitor
   (implies (monitor-tablep monitor-table)
            (monitor-tablep (mv-nth 1 (attempt-to-exit-monitor th objectref monitor-table))))
-  :hints (("Goal" :in-theory (e/d (attempt-to-exit-monitor monitor-tablep decrement-mcount) (ACL2::S-NIL-BECOMES-CLR)))))
+  :hints (("Goal" :in-theory (e/d (attempt-to-exit-monitor monitor-tablep decrement-mcount) (;ACL2::S-NIL-BECOMES-CLR
+                                                                                             )))))
 
 ; The modify macro
 
@@ -2448,15 +2451,16 @@
  :hints (("Goal" :in-theory (enable lookup-field lookup-field-lst BOUND-IN-CLASS-TABLEP)
           :do-not '(generalize eliminate-destructors))))
 
+;move to alists-light
 (defthm assoc-EQUAL-of-car-of-car
  (equal (assoc-EQUAL (CAR (CAR alist)) alist)
         (car alist))
  :hints (("Goal" :in-theory (enable assoc-EQUAL))))
 
-(defthm lookup-EQUAL-of-car-of-car
- (equal (ACL2::LOOKUP-EQUAL (CAR (CAR alist)) alist)
-        (cdr (car alist)))
- :hints (("Goal" :in-theory (enable ACL2::LOOKUP-EQUAL))))
+;; (defthm lookup-EQUAL-of-car-of-car
+;;  (equal (ACL2::LOOKUP-EQUAL (CAR (CAR alist)) alist)
+;;         (cdr (car alist)))
+;;  :hints (("Goal" :in-theory (enable ACL2::LOOKUP-EQUAL))))
 
 ;; (thm
 ;;  (implies (field-info-alistp field-info-alist)
