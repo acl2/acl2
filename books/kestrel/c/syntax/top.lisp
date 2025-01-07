@@ -78,7 +78,7 @@
      to concisely define predicates over the abstract syntax.
      This should be fairly easy to generalize to
      a more general tool for "
-    (xdoc::seetopic "fty" "fixtypes")
+    (xdoc::seetopic "fty::fty" "fixtypes")
     ".")
    (xdoc::p
     "Accompanying our abstract syntax,
