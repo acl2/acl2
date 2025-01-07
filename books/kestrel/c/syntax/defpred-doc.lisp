@@ -119,7 +119,7 @@
        @(tsee declor/absdeclor),
        @(tsee decl/stmt),
        @(tsee fundef),
-       @9tsee fundef-option),
+       @(tsee fundef-option),
        @(tsee extdecl),
        @(tsee extdecl-list),
        @(tsee transunit),

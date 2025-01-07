@@ -10,5 +10,5 @@ Source files (not including doc.lisp):
   293738 lines,  12905350 characters
 ------------------------------------
 Documentation (file books/system/doc/acl2-doc.lisp):
-  172026 lines,   7570391 characters
+  172026 lines,   7570423 characters
 ------------------------------------

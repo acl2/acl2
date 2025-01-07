@@ -715,6 +715,7 @@
           ;; F3 0F BC/r: TZCNT r32. r/m32
           ;; F3 REX.W 0F BC/r: TZCNT r64. r/m64
 
+          ;; Note: see also POPCNT (largely a copy of this definition)
           :parents (two-byte-opcodes)
 
           :returns (x86 x86p :hyp (x86p x86))
@@ -907,3 +908,94 @@
        (x86 (write-user-rflags output-rflags undefined-flags x86))
        (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
+
+
+;; ======================================================================
+
+
+(local (defthm logcount-bound-when-unsigned-byte-p
+         (implies (unsigned-byte-p n x)
+                  (<= (logcount x) n))
+         :hints (("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                             bitops::ihsext-recursive-redefs)))
+         :rule-classes nil))
+
+(local (defthm logcount-width-16
+         (implies (unsigned-byte-p 16 x)
+                  (unsigned-byte-p 16 (logcount x)))
+         :hints (("goal" :use ((:instance logcount-bound-when-unsigned-byte-p (n 16)))
+                  :in-theory (enable unsigned-byte-p)))))
+
+(local (defthm logcount-width-32
+         (implies (unsigned-byte-p 32 x)
+                  (unsigned-byte-p 32 (logcount x)))
+         :hints (("goal" :use ((:instance logcount-bound-when-unsigned-byte-p (n 32)))
+                  :in-theory (enable unsigned-byte-p)))))
+
+(local (defthm logcount-width-64
+         (implies (unsigned-byte-p 64 x)
+                  (unsigned-byte-p 64 (logcount x)))
+         :hints (("goal" :use ((:instance logcount-bound-when-unsigned-byte-p (n 64)))
+                  :in-theory (enable unsigned-byte-p)))))
+
+(def-inst x86-popcnt
+  ;; F3 0F B8 /r       POPCNT r16, r/m16 
+  ;; F3 0F B8 /r       POPCNT r32, r/m32
+  ;; F3 REX.W 0F B8 /r POPCNT r64, r/m64 
+
+  ;; Note: largely copied from TZCNT 
+  :parents (two-byte-opcodes)
+
+  :returns (x86 x86p :hyp (x86p x86))
+
+  :guard-hints (("Goal" :in-theory (e/d () ())))
+
+  :modr/m t
+
+  :body
+
+  (b* (((the (integer 2 8) operand-size)
+        (select-operand-size
+         proc-mode nil rex-byte nil prefixes nil nil nil x86))
+
+       (p2 (prefixes->seg prefixes))
+       (p4? (equal #.*addr-size-override*
+                   (prefixes->adr prefixes)))
+
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+
+       (inst-ac? t)
+       ((mv flg0
+            source
+            (the (unsigned-byte 3) increment-RIP-by)
+            (the (signed-byte 64) addr)
+            x86)
+        (x86-operand-from-modr/m-and-sib-bytes
+         proc-mode #.*gpr-access* operand-size inst-ac?
+         nil ;; Not a memory pointer operand
+         seg-reg p4? temp-rip rex-byte r/m mod sib
+         0 ;; No immediate data
+         x86))
+       ((when flg0)
+        (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
+
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
+
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+       (result (logcount source))
+
+       ;; Update the x86 state:
+       (x86 (!rgfi-size operand-size (reg-index reg rex-byte *r*)
+                        result rex-byte x86))
+       ;; flags (from SDM): OF, SF, ZF [sic], AF, CF, PF are all cleared. ZF is set if SRC = 0,
+       ;; otherwise ZF is cleared.
+       (output-rflags (!rflagsBits->zf (bool->bit (equal source 0)) 0))
+       (x86 (write-user-rflags output-rflags 0 x86))
+       (x86 (write-*ip proc-mode temp-rip x86)))
+    x86))
+

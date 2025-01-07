@@ -40,7 +40,6 @@
   (declare (xargs :guard (and (lofat-fs-p fat32$c)
                               (stringp path))
                   :stobjs fat32$c
-                  :guard-debug t
                   :guard-hints (("Goal" :in-theory (disable MAKE-LIST-AC-REMOVAL)) )
                   :verify-guards nil))
   (b*
@@ -76,7 +75,6 @@
                 (useful-d-e-list-p d-e-list)
                 (stringp path))
     :stobjs fat32$c
-    :guard-debug t
     :guard-hints
     (("goal"
       :in-theory (e/d (lofat-to-hifat-helper

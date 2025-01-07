@@ -1736,46 +1736,991 @@
     (INST "XLAT/XLATB" (OP :OP #xD7)
           NIL 'NIL
           '((:UD (UD-LOCK-USED))))
-    (INST :ESC (OP :OP #xD8)
-          'NIL
-          'NIL
-          '((:NM (NM-CR0-TS-IS-1)
+
+    
+    ;; X87 instruction entries (#xD8 through #xDF) generated from xed datafiles using:
+    ;; xedscan.py ~/work/xed/datafiles/xed-isa.txt xed-x87.txt
+
+    ;; See comments in xedscan.py for notes on how to extend to more instructions
+    
+    (INST "FADD"
+          (OP :OP #xd8 :REG 0 :MOD :MEM :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
                  (NM-CR0-EM-IS-1))))
-    (INST :ESC (OP :OP #xD9)
-          'NIL
-          'NIL
-          '((:NM (NM-CR0-TS-IS-1)
+    (INST "FMUL"
+          (OP :OP #xd8 :REG 1 :MOD :MEM :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
                  (NM-CR0-EM-IS-1))))
-    (INST :ESC (OP :OP #xDA)
-          'NIL
-          'NIL
-          '((:NM (NM-CR0-TS-IS-1)
+    (INST "FCOMP"
+          (OP :OP #xd8 :REG 3 :MOD :MEM :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
                  (NM-CR0-EM-IS-1))))
-    (INST :ESC (OP :OP #xDB)
-          'NIL
-          'NIL
-          '((:NM (NM-CR0-TS-IS-1)
+    (INST "FSUB"
+          (OP :OP #xd8 :REG 4 :MOD :MEM :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
                  (NM-CR0-EM-IS-1))))
-    (INST :ESC (OP :OP #xDC)
-          'NIL
-          'NIL
-          '((:NM (NM-CR0-TS-IS-1)
+    (INST "FSUBR"
+          (OP :OP #xd8 :REG 5 :MOD :MEM :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
                  (NM-CR0-EM-IS-1))))
-    (INST :ESC (OP :OP #xDD)
-          'NIL
-          'NIL
-          '((:NM (NM-CR0-TS-IS-1)
+    (INST "FDIV"
+          (OP :OP #xd8 :REG 6 :MOD :MEM :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
                  (NM-CR0-EM-IS-1))))
-    (INST :ESC (OP :OP #xDE)
-          'NIL
-          'NIL
-          '((:NM (NM-CR0-TS-IS-1)
+    (INST "FDIVR"
+          (OP :OP #xd8 :REG 7 :MOD :MEM :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
                  (NM-CR0-EM-IS-1))))
-    (INST :ESC (OP :OP #xDF)
-          'NIL
-          'NIL
-          '((:NM (NM-CR0-TS-IS-1)
+    (INST "FADD"
+          (OP :OP #xd8 :REG 0 :MOD 3 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
                  (NM-CR0-EM-IS-1))))
+    (INST "FMUL"
+          (OP :OP #xd8 :REG 1 :MOD 3 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FCOM"
+          (OP :OP #xdc :REG 2 :MOD :MEM :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FCOM"
+          (OP :OP #xd8 :REG 2 :MOD 3 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+;; Undocumented (from xed-isa.txt):
+;;     (INST "FCOM"
+;;           (OP :OP #xdc :REG 2 :MOD 3 :FEAT '(:FPU))
+;;           (ARG) ;; bozo x87 conventions
+;;           nil
+;;           '((:UD (UD-LOCK-USED))
+;;             (:NM (NM-CR0-TS-IS-1)
+;;                  (NM-CR0-EM-IS-1))))
+    (INST "FCOMP"
+          (OP :OP #xd8 :REG 3 :MOD 3 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+;; Undocumented (from xed-isa.txt):
+;;     (INST "FCOMP"
+;;           (OP :OP #xde :REG 2 :MOD 3 :FEAT '(:FPU))
+;;           (ARG) ;; bozo x87 conventions
+;;           nil
+;;           '((:UD (UD-LOCK-USED))
+;;             (:NM (NM-CR0-TS-IS-1)
+;;                  (NM-CR0-EM-IS-1))))
+    (INST "FSUB"
+          (OP :OP #xd8 :REG 4 :MOD 3 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FSUBR"
+          (OP :OP #xd8 :REG 5 :MOD 3 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FDIV"
+          (OP :OP #xd8 :REG 6 :MOD 3 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FDIVR"
+          (OP :OP #xd8 :REG 7 :MOD 3 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FLD"
+          (OP :OP #xd9 :REG 0 :MOD :MEM :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FST"
+          (OP :OP #xd9 :REG 2 :MOD :MEM :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FSTP"
+          (OP :OP #xdd :REG 3 :MOD :MEM :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FSTP"
+          (OP :OP #xdd :REG 3 :MOD 3 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+;; Undocumented (from xed-isa.txt):
+;;     (INST "FSTP"
+;;           (OP :OP #xdf :REG 3 :MOD 3 :FEAT '(:FPU))
+;;           (ARG) ;; bozo x87 conventions
+;;           nil
+;;           '((:UD (UD-LOCK-USED))
+;;             (:NM (NM-CR0-TS-IS-1)
+;;                  (NM-CR0-EM-IS-1))))
+;; Undocumented (from xed-isa.txt):
+;;     (INST "FSTPNCE"
+;;           (OP :OP #xd9 :REG 3 :MOD 3 :FEAT '(:FPU))
+;;           (ARG) ;; bozo x87 conventions
+;;           nil
+;;           '((:UD (UD-LOCK-USED))
+;;             (:NM (NM-CR0-TS-IS-1)
+;;                  (NM-CR0-EM-IS-1))))
+    (INST "FLDENV"
+          (OP :OP #xd9 :REG 4 :MOD :MEM :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FLDCW"
+          (OP :OP #xd9 :REG 5 :MOD :MEM :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FNSTENV"
+          (OP :OP #xd9 :REG 6 :MOD :MEM :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FNSTCW"
+          (OP :OP #xd9 :REG 7 :MOD :MEM :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FLD"
+          (OP :OP #xd9 :REG 0 :MOD 3 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FXCH"
+          (OP :OP #xd9 :REG 1 :MOD 3 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+;; Undocumented (from xed-isa.txt):
+;;     (INST "FXCH"
+;;           (OP :OP #xdd :REG 1 :MOD 3 :FEAT '(:FPU))
+;;           (ARG) ;; bozo x87 conventions
+;;           nil
+;;           '((:UD (UD-LOCK-USED))
+;;             (:NM (NM-CR0-TS-IS-1)
+;;                  (NM-CR0-EM-IS-1))))
+    (INST "FNOP"
+          (OP :OP #xd9 :REG 2 :MOD 3 :R/M 0 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FCHS"
+          (OP :OP #xd9 :REG 4 :MOD 3 :R/M 0 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FABS"
+          (OP :OP #xd9 :REG 4 :MOD 3 :R/M 1 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FTST"
+          (OP :OP #xd9 :REG 4 :MOD 3 :R/M 4 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FXAM"
+          (OP :OP #xd9 :REG 4 :MOD 3 :R/M 5 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FLD1"
+          (OP :OP #xd9 :REG 5 :MOD 3 :R/M 0 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FLDL2T"
+          (OP :OP #xd9 :REG 5 :MOD 3 :R/M 1 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FLDL2E"
+          (OP :OP #xd9 :REG 5 :MOD 3 :R/M 2 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FLDPI"
+          (OP :OP #xd9 :REG 5 :MOD 3 :R/M 3 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FLDLG2"
+          (OP :OP #xd9 :REG 5 :MOD 3 :R/M 4 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FLDLN2"
+          (OP :OP #xd9 :REG 5 :MOD 3 :R/M 5 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FLDZ"
+          (OP :OP #xd9 :REG 5 :MOD 3 :R/M 6 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "F2XM1"
+          (OP :OP #xd9 :REG 6 :MOD 3 :R/M 0 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FYL2X"
+          (OP :OP #xd9 :REG 6 :MOD 3 :R/M 1 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FPTAN"
+          (OP :OP #xd9 :REG 6 :MOD 3 :R/M 2 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FPATAN"
+          (OP :OP #xd9 :REG 6 :MOD 3 :R/M 3 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FXTRACT"
+          (OP :OP #xd9 :REG 6 :MOD 3 :R/M 4 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FPREM1"
+          (OP :OP #xd9 :REG 6 :MOD 3 :R/M 5 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FDECSTP"
+          (OP :OP #xd9 :REG 6 :MOD 3 :R/M 6 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FINCSTP"
+          (OP :OP #xd9 :REG 6 :MOD 3 :R/M 7 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FPREM"
+          (OP :OP #xd9 :REG 7 :MOD 3 :R/M 0 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FYL2XP1"
+          (OP :OP #xd9 :REG 7 :MOD 3 :R/M 1 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FSQRT"
+          (OP :OP #xd9 :REG 7 :MOD 3 :R/M 2 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FSINCOS"
+          (OP :OP #xd9 :REG 7 :MOD 3 :R/M 3 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FRNDINT"
+          (OP :OP #xd9 :REG 7 :MOD 3 :R/M 4 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FSCALE"
+          (OP :OP #xd9 :REG 7 :MOD 3 :R/M 5 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FSIN"
+          (OP :OP #xd9 :REG 7 :MOD 3 :R/M 6 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FCOS"
+          (OP :OP #xd9 :REG 7 :MOD 3 :R/M 7 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FIADD"
+          (OP :OP #xda :REG 0 :MOD :MEM :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FIMUL"
+          (OP :OP #xda :REG 1 :MOD :MEM :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FICOM"
+          (OP :OP #xda :REG 2 :MOD :MEM :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FICOMP"
+          (OP :OP #xda :REG 3 :MOD :MEM :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FISUB"
+          (OP :OP #xda :REG 4 :MOD :MEM :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FISUBR"
+          (OP :OP #xda :REG 5 :MOD :MEM :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FIDIV"
+          (OP :OP #xda :REG 6 :MOD :MEM :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FIDIVR"
+          (OP :OP #xda :REG 7 :MOD :MEM :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FCMOVB"
+          (OP :OP #xda :REG 0 :MOD 3 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FCMOVE"
+          (OP :OP #xda :REG 1 :MOD 3 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FCMOVBE"
+          (OP :OP #xda :REG 2 :MOD 3 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FCMOVU"
+          (OP :OP #xda :REG 3 :MOD 3 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FUCOMPP"
+          (OP :OP #xda :REG 5 :MOD 3 :R/M 1 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FILD"
+          (OP :OP #xdb :REG 0 :MOD :MEM :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FISTTP"
+          (OP :OP #xdb :REG 1 :MOD :MEM)
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FIST"
+          (OP :OP #xdb :REG 2 :MOD :MEM :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FISTP"
+          (OP :OP #xdb :REG 3 :MOD :MEM :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FLD"
+          (OP :OP #xdb :REG 5 :MOD :MEM :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FCMOVNB"
+          (OP :OP #xdb :REG 0 :MOD 3 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FCMOVNE"
+          (OP :OP #xdb :REG 1 :MOD 3 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FCMOVNBE"
+          (OP :OP #xdb :REG 2 :MOD 3 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FCMOVNU"
+          (OP :OP #xdb :REG 3 :MOD 3 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FNCLEX"
+          (OP :OP #xdb :REG 4 :MOD 3 :R/M 2 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FNINIT"
+          (OP :OP #xdb :REG 4 :MOD 3 :R/M 3 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+;; Undocumented (from xed-isa.txt):
+;;     (INST "FSETPM287_NOP"
+;;           (OP :OP #xdb :REG 4 :MOD 3 :R/M 4 :FEAT '(:FPU))
+;;           (ARG) ;; bozo x87 conventions
+;;           nil
+;;           '((:UD (UD-LOCK-USED))
+;;             (:NM (NM-CR0-TS-IS-1)
+;;                  (NM-CR0-EM-IS-1))))
+;; Undocumented (from xed-isa.txt):
+;;     (INST "FENI8087_NOP"
+;;           (OP :OP #xdb :REG 4 :MOD 3 :R/M 0 :FEAT '(:FPU))
+;;           (ARG) ;; bozo x87 conventions
+;;           nil
+;;           '((:UD (UD-LOCK-USED))
+;;             (:NM (NM-CR0-TS-IS-1)
+;;                  (NM-CR0-EM-IS-1))))
+;; Undocumented (from xed-isa.txt):
+;;     (INST "FDISI8087_NOP"
+;;           (OP :OP #xdb :REG 4 :MOD 3 :R/M 1 :FEAT '(:FPU))
+;;           (ARG) ;; bozo x87 conventions
+;;           nil
+;;           '((:UD (UD-LOCK-USED))
+;;             (:NM (NM-CR0-TS-IS-1)
+;;                  (NM-CR0-EM-IS-1))))
+    (INST "FUCOMI"
+          (OP :OP #xdb :REG 5 :MOD 3 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FCOMI"
+          (OP :OP #xdb :REG 6 :MOD 3 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FADD"
+          (OP :OP #xdc :REG 0 :MOD :MEM :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FMUL"
+          (OP :OP #xdc :REG 1 :MOD :MEM :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FCOMP"
+          (OP :OP #xdc :REG 3 :MOD :MEM :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FSUB"
+          (OP :OP #xdc :REG 4 :MOD :MEM :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FSUBR"
+          (OP :OP #xdc :REG 5 :MOD :MEM :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FDIV"
+          (OP :OP #xdc :REG 6 :MOD :MEM :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FDIVR"
+          (OP :OP #xdc :REG 7 :MOD :MEM :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FADD"
+          (OP :OP #xdc :REG 0 :MOD 3 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FMUL"
+          (OP :OP #xdc :REG 1 :MOD 3 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FSUBR"
+          (OP :OP #xdc :REG 4 :MOD 3 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FSUB"
+          (OP :OP #xdc :REG 5 :MOD 3 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FDIVR"
+          (OP :OP #xdc :REG 6 :MOD 3 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FDIV"
+          (OP :OP #xdc :REG 7 :MOD 3 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FLD"
+          (OP :OP #xdd :REG 0 :MOD :MEM :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FISTTP"
+          (OP :OP #xdd :REG 1 :MOD :MEM)
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FST"
+          (OP :OP #xdd :REG 2 :MOD :MEM :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FRSTOR"
+          (OP :OP #xdd :REG 4 :MOD :MEM :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FNSAVE"
+          (OP :OP #xdd :REG 6 :MOD :MEM :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FNSTSW"
+          (OP :OP #xdd :REG 7 :MOD :MEM :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FFREE"
+          (OP :OP #xdd :REG 0 :MOD 3 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FST"
+          (OP :OP #xdd :REG 2 :MOD 3 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FUCOM"
+          (OP :OP #xdd :REG 4 :MOD 3 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FUCOMP"
+          (OP :OP #xdd :REG 5 :MOD 3 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FIADD"
+          (OP :OP #xde :REG 0 :MOD :MEM :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FIMUL"
+          (OP :OP #xde :REG 1 :MOD :MEM :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FICOM"
+          (OP :OP #xde :REG 2 :MOD :MEM :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FICOMP"
+          (OP :OP #xde :REG 3 :MOD :MEM :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FISUB"
+          (OP :OP #xde :REG 4 :MOD :MEM :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FISUBR"
+          (OP :OP #xde :REG 5 :MOD :MEM :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FIDIV"
+          (OP :OP #xde :REG 6 :MOD :MEM :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FIDIVR"
+          (OP :OP #xde :REG 7 :MOD :MEM :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FADDP"
+          (OP :OP #xde :REG 0 :MOD 3 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FMULP"
+          (OP :OP #xde :REG 1 :MOD 3 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FCOMPP"
+          (OP :OP #xde :REG 3 :MOD 3 :R/M 1 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FSUBRP"
+          (OP :OP #xde :REG 4 :MOD 3 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FSUBP"
+          (OP :OP #xde :REG 5 :MOD 3 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FDIVRP"
+          (OP :OP #xde :REG 6 :MOD 3 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FDIVP"
+          (OP :OP #xde :REG 7 :MOD 3 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FILD"
+          (OP :OP #xdf :REG 0 :MOD :MEM :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FISTTP"
+          (OP :OP #xdf :REG 1 :MOD :MEM)
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FIST"
+          (OP :OP #xdf :REG 2 :MOD :MEM :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FISTP"
+          (OP :OP #xdf :REG 3 :MOD :MEM :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FBLD"
+          (OP :OP #xdf :REG 4 :MOD :MEM :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FILD"
+          (OP :OP #xdf :REG 5 :MOD :MEM :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FBSTP"
+          (OP :OP #xdf :REG 6 :MOD :MEM :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FISTP"
+          (OP :OP #xdf :REG 7 :MOD :MEM :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+;; Undocumented (from xed-isa.txt):
+;;     (INST "FFREEP"
+;;           (OP :OP #xdf :REG 0 :MOD 3 :FEAT '(:FPU))
+;;           (ARG) ;; bozo x87 conventions
+;;           nil
+;;           '((:UD (UD-LOCK-USED))
+;;             (:NM (NM-CR0-TS-IS-1)
+;;                  (NM-CR0-EM-IS-1))))
+    (INST "FNSTSW"
+          (OP :OP #xdf :REG 4 :MOD 3 :R/M 0 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FUCOMIP"
+          (OP :OP #xdf :REG 5 :MOD 3 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+    (INST "FCOMIP"
+          (OP :OP #xdf :REG 6 :MOD 3 :FEAT '(:FPU))
+          (ARG) ;; bozo x87 conventions
+          nil
+          '((:UD (UD-LOCK-USED))
+            (:NM (NM-CR0-TS-IS-1)
+                 (NM-CR0-EM-IS-1))))
+
+;; end x87 instructions generated by xedscan.py
+    
     (INST "LOOPNE/LOOPNZ"
           (OP :OP #xE0 :SUPERSCRIPTS '(:F64))
           (ARG :OP1 '(J B))
@@ -9351,7 +10296,7 @@
                        :PFX :F3
                        :FEAT '(:POPCNT))
           (ARG :OP1 '(G V) :OP2 '(E V))
-          'NIL
+          '(x86-popcnt)
           '((:UD (UD-LOCK-USED))))
     (INST "UD1"
           (OP :OP #xFB9

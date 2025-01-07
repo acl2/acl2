@@ -30,9 +30,9 @@ write_lsp = sys.argv[1] == "lsp"
     
 
     
-# Parse the snippets.txt file into snips, a list of triples [name, inbytes, outbytes]
+# Parse the snippets-combined.txt file into snips, a list of triples [name, inbytes, outbytes]
 snips = []
-with open("snippets.txt", "r", encoding="utf-8") as infile:
+with open("snippets-combined.txt", "r", encoding="utf-8") as infile:
     for line in infile:
         line = line.strip()
         if (len(line) == 0):

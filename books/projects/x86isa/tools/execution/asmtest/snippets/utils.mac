@@ -47,7 +47,60 @@ flgstore: dw 0			;
 	popfw			; restore the old flags
 	; mov rsp, r10		; restore stack pointer
 %endmacro	
+
+
+
+%macro read_w_w_eflags 0
+	; Reads two words and an eflags word from [RDI]
+	; Sets up the eflags using flagstore as a temp
+	; Puts the two words in r8d, r9d
+	; RSP is left pointing to flgstore
+	; R10 has the previous stack pointer
+	; R11W has the old flags
+	mov r8w, WORD[rdi]	; first argument
+	mov r9w, WORD[rdi+2]	; second argument
+	mov ax, WORD[rdi+4]     ; input flags
+	backup_and_set_eflags	;
+%endmacro
+
+%macro write_w_eflags 1
+	; Writes a word result and current (masked) eflags word to [RSI]
+	; R9D has word result
+	; RSP points to temporary storage with space for flags
+	; R10 has the previous stack ptr which will be restored
+	; R11W has old eflags that will be restored
+	get_and_restore_eflags  ;
+	and ax, ~%1		;
+	mov WORD[rsi], r9w	; put result in bottom of outdata
+	mov WORD[rsi+2], ax	; put flags in top of outdata
+%endmacro	
+
 	
+%macro define_two_w_input_one_w_output_flags 2+
+	; name, operation
+global %1
+%1:
+	read_w_w_eflags	;
+	%2			;
+	write_w_eflags 0	;
+	ret
+%endmacro
+
+%macro define_two_w_input_one_w_output_masked_flags 3+
+	; name, undef flag mask, operation
+global %1
+%1:
+	read_w_w_eflags	;
+	%3			;
+	write_w_eflags %2	;
+	ret
+%endmacro
+
+
+
+
+
+
 
 	
 %macro read_dw_dw_eflags 0

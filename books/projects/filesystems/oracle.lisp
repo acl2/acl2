@@ -863,7 +863,6 @@
                               (fat-st-p st)
                               (consp (assoc-equal 0 frame))
                               (no-duplicatesp-equal (strip-cars frame)))
-                  :guard-debug t
                   :verify-guards nil))
   (b*
       (((when (atom syscall-sym-list)) (mv frame st))

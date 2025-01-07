@@ -505,7 +505,6 @@
                       (or (lofat-regular-file-p file)
                           (equal (lofat-file->contents file)
                                  nil)))
-          :guard-debug t
           :guard-hints (("goal" :in-theory (disable nfix)))))
   (b*
       (((mv root-d-e-cc-contents &)

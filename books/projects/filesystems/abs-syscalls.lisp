@@ -74,6 +74,7 @@
     (:rewrite
      abs-find-file-correctness-1-lemma-40)
     (:rewrite consp-of-last)
+    (:rewrite abs-find-file-correctness-lemma-14)
     (:rewrite fat32-filename-list-p-of-last)
     (:rewrite
      abs-separate-of-frame->frame-of-collapse-this-lemma-8
@@ -96,6 +97,7 @@
     (:rewrite take-when-atom)
     (:rewrite absfat-subsetp-transitivity-lemma-2)
     (:definition set-difference-equal)
+    (:rewrite abs-find-file-correctness-lemma-24)
     (:rewrite abs-find-file-correctness-lemma-37)
     (:definition character-listp)
     (:rewrite valid-seqp-after-collapse-this-lemma-25)
@@ -695,7 +697,6 @@
    (xargs
     :guard (and (fat32-filename-list-p path)
                 (frame-p frame))
-    :guard-debug t
     :guard-hints
     (("goal"
       :in-theory (e/d (abs-file-p-alt)
@@ -850,7 +851,6 @@
                               (consp (assoc-equal 0 frame))
                               (fat32-filename-list-p path)
                               (no-duplicatesp-equal (strip-cars frame)))
-                  :guard-debug t
                   :guard-hints
                   (("goal"
                     :in-theory (enable abs-find-file-helper abs-fs-p)))))
@@ -3078,6 +3078,7 @@
            abs-separate-of-frame->frame-of-collapse-this-lemma-7)
           (:rewrite nth-when-prefixp)
           (:rewrite member-of-abs-top-addrs)
+          (:rewrite abs-find-file-correctness-lemma-12)
           (:linear position-when-member)
           (:linear position-equal-ac-when-member)
           (:rewrite prefixp-one-way-or-another . 1)
@@ -3129,6 +3130,7 @@
           (:rewrite subsetp-car-member)
           (:rewrite m1-file-alist-p-of-cons)
           (:rewrite abs-mkdir-correctness-lemma-102)
+          (:rewrite abs-find-file-correctness-lemma-14)
           (:rewrite subsetp-trans)
           prefixp-when-not-consp-right
           1st-complete-of-put-assoc-2
@@ -3796,7 +3798,6 @@
                               (consp (assoc-equal 0 frame))
                               (fat32-filename-list-p path)
                               (no-duplicatesp-equal (strip-cars frame)))
-                  :guard-debug t
                   :guard-hints
                   (("goal"
                     :in-theory (enable abs-find-file-helper abs-fs-p)))))
@@ -3985,7 +3986,6 @@
                 (frame-p frame)
                 (consp (assoc-equal 0 frame))
                 (dir-stream-table-p dir-stream-table))
-    :guard-debug t
     :guard-hints
     (("Goal"
       :use
@@ -9256,6 +9256,7 @@
           (:rewrite abs-find-file-helper-of-collapse-1 . 2)
           (:linear len-when-prefixp)
           (:rewrite partial-collapse-when-path-clear-of-prefix)
+          (:rewrite abs-find-file-correctness-lemma-12)
           (:rewrite path-clear-partial-collapse-when-zp-src-lemma-3)
           d-e-fix-under-d-e-equiv
           (:rewrite abs-pwrite-correctness-lemma-33)

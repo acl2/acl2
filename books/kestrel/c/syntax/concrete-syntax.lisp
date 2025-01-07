@@ -13,6 +13,7 @@
 (include-book "file-paths")
 (include-book "files")
 (include-book "grammar")
+(include-book "keywords")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -59,6 +60,7 @@
   :default-parent (file-paths
                    files
                    grammar
+                   keywords
                    t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

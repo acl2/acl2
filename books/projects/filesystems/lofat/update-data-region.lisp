@@ -81,8 +81,7 @@
   (declare
    (xargs :stobjs fat32$c
           :guard (and (fat32$c-p fat32$c)
-                      (>= (bpb_secperclus fat32$c) 1))
-          :guard-debug t))
+                      (>= (bpb_secperclus fat32$c) 1))))
   (floor (- (bpb_totsec32 fat32$c)
             (+ (bpb_rsvdseccnt fat32$c)
                (* (bpb_numfats fat32$c)

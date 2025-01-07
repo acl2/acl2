@@ -1499,7 +1499,6 @@
                   :guard (and (lofat-fs-p fat32$c)
                               (dir-stream-table-p dir-stream-table)
                               (fat32-filename-list-p path))
-                  :guard-debug t
                   :guard-hints
                   (("Goal"
                     :in-theory (enable alistp-when-m1-file-alist-p-rewrite)))))

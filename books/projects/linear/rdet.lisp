@@ -4,7 +4,7 @@
 (include-book "projects/groups/symmetric" :dir :system)
 (local (include-book "support/rdet"))
 
-;; The determinant of an nxn matrix a is (rdet a n).  The definitrion is based on the symmetric group,
+;; The determinant of an nxn matrix a is (rdet a n).  The definition is based on the symmetric group,
 ;; (sym n), defined in "books/projects/groups/symmetric".
 
 ;; The term contributed by a permutation p in (sym n) to the determinant of an nxn
@@ -60,18 +60,15 @@
 
 ;; To compute (rdet (id-rmat n) n), note that if p is any permutation other than (ninit n), we can find
 ;; i < n such that (nth i p) <> i, and hence (entry i (nth i p) (id-rmat n)) = (r0), which implies
-;; (rdet-term (id-rmat p n)) = (r0).  On the other hand, (nth i (ninit n)) = i for all i, which implies
-;; (rdet-term (id-rmat (ninit n) n)) = (r1).   Thus,
+;; (rdet-term (id-rmat n) p n) = (r0).  On the other hand, (nth i (ninit n)) = i for all i, which implies
+;; (rdet-term (id-rmat n) (ninit n) n) = (r1).   Thus,
 
 (defthm rdet-id-rmat
   (implies (posp n)
            (equal (rdet (id-rmat n) n)
-	          (r1)))
-  :hints (("Goal" :in-theory (enable rdet)
-                  :use ((:instance rdet-sum-id-rmat (l (slist n)))))))
+	          (r1))))
 
-
-;; rdet is invariant under transpose-mat.  This follows from the observation that the term contributed
+;; rdet is invariant under transpose-rmat.  This follows from the observation that the term contributed
 ;; to the determinant of the transpose of a by a permutation p is the same as the term contributed to
 ;; the determinant of a by the inverse of p:
   
@@ -89,7 +86,7 @@
 
 ;; rdet is alternating, i.e., if 2 rows of a are equal, then its determinant is (r0).
 ;; To prove this, suppose rows i and j of a are equal, where i <> j.  Given a permutation p, let
-;; p' = (comp-perm p (transpose i j n) n).  Then the factors of (rdet-prod a p' n) are the same as
+;; p' = (comp-perm p (transpose-mat i j n) n).  Then the factors of (rdet-prod a p' n) are the same as
 ;; those of (rdet-prod a p n):
 
 (defthmd rdet-prod-comp-perm
@@ -121,7 +118,7 @@
 ;; rdet is n-linear, i.e, linear as a function of each row.  This property is
 ;; specified in terms of the basic operation of replacing a row of a with a given list.
 ;; For a given row i and permutation p, the term contributed by p to the determinant of
-;; (replace-row a i x) by each permutation is a linear function of x:
+;; (replace-row a i x) is a linear function of x:
 
 (defthm rdet-term-replace-row
   (implies (and (rmatp a n n) (posp n)
@@ -244,7 +241,7 @@
 	   (rmatp (permute a p) m n)))
 
 ;; Next we show that rdetn-permute-adjacent-transpose applies to a transposition of any
-;; 2 rows.  First note that for 0 <= i and i - 1 < j < n, (transpose i j (n)) is the
+;; 2 rows.  First note that for 0 <= i and i + 1 < j < (n), (transpose i j (n)) is the
 ;; result of conjugating (transpose i (1- j) (n)) by (transpose (1- j) j (n)):
 
 (defthmd conj-adjacent-transpose-rmat
@@ -257,7 +254,11 @@
 		             (n))
 		  (transpose i j (n)))))
 
-;; The claim follows by induction:
+;; It follows from rdetn-permute-adjacent-transpose and permute-comp-perm that
+
+;;   (rdetn (permute a (transpose i j (n)))) = (rdetn (permute a (transpose i (1- j) (n))))
+
+;; and the claim follows by induction:
 
 (defthmd rdetn-permute-transpose
   (implies (and (rmatp a (n) (n))
@@ -288,6 +289,24 @@
 
 ;; We shall require a generalization of rdetn-transpose-rows to arbitrary permutations.
 ;; First note that rdetn-permute-transpose may be restated as follows:
+
+(defthmd rdetn-permute-transp
+  (implies (and (rmatp a (n) (n))
+                (transp p (n)))
+	   (equal (rdetn (permute a p))
+	          (r- (rdetn a)))))
+
+;; This may be generalized to the composition of a list of transpositions by induction:
+
+(defthmd rdetn-permute-trans-list-p
+  (implies (and (rmatp a (n) (n))
+                (trans-list-p l (n)))
+	   (equal (rdetn (permute a (comp-perm-list l (n))))
+	          (if (evenp (len l))
+		      (rdetn a)
+		    (r- (rdetn a))))))
+
+;; Since any permutation p may be factored as a list of transpositions, this yields the following:
 
 (defthmd rdetn-permute-rows
   (implies (and (rmatp a (n) (n))
@@ -492,7 +511,7 @@
 	   (equal (rsum-tuples (all-tuples k) k a)
 	          (rsum-tuples (all-tuples (1- k)) (1- k) a))))
 
-;; By induction, (rsum-tuples (all-tuples (n)) (n) a) = (rdetn a):
+;; By induction, (rsum-tuples (all-tuples (n)) (n) a) = (rsum-tuples (all-tuples 0) 0 a) = (rdetn a):
 
 (defthmd rsum-tuples-rdetn
   (implies (rmatp a (n) (n))
@@ -524,15 +543,15 @@
 ;; For p in (slist (n)),
 
 ;;   (reval-tuple p (n) a) = (r* (rlist-prod (extract-entries p a))
-;;                              (rdetn (runits p))),
+;;                               (rdetn (runits p))),
 				
 ;; where (rlist-prod (extract-entries p a)) = (rdet-prod a p (n)).
 
 ;; But
 
 ;;   (rdetn (runits p)) = (rdetn (permute (id-rmat (n)) p))
-;;                     = (r* (if (even-perm-p p (n)) (r1) (r- (r1)))
-;;                           (rdetn (id-rmat (n)))).
+;;                      = (r* (if (even-perm-p p (n)) (r1) (r- (r1)))
+;;                            (rdetn (id-rmat (n)))).
 
 (defthmd runits-permute-id-mat
   (implies (member p (slist (n)))
@@ -546,14 +565,6 @@
 	          (r* (rdet-prod a p (n))
 		      (rdetn (runits p))))))
 
-(defthmd rdetn-permute-rows
-  (implies (and (rmatp a (n) (n))
-                (in p (sym (n))))
-	   (equal (rdetn (permute a p))
-	          (if (even-perm-p p (n))
-		      (rdetn a)
-		    (r- (rdetn a))))))
-		    
 ;; Thus, we have
 
 (defthmd reval-tuple-perm
@@ -756,7 +767,7 @@
            (equal (expand-rdet-row (transpose-mat a) i n)
 	          (expand-rdet-col a i n))))
 
-;; We shall prove, by functional instantiation of rdet-unique,  that the result of cofactor
+;; We shall prove, by functional instantiation of rdet-unique, that the result of cofactor
 ;; expansion by a column has the same value as the determinant, and it will follow that the
 ;; same is true for expansion by a row.  The requires proving analogs of the constraints on
 ;; rdetn.
@@ -764,35 +775,28 @@
 (defthm rp-rdet-cofactor
   (implies (and (rmatp a n n) (natp n) (> n 1)
                 (natp i) (natp j) (< i n) (< j n))
-           (rp (rdet-cofactor i j a n)))
-  :hints (("Goal" :in-theory (enable rdet-cofactor)
-                  :use (rmatp-minor rp-entry))))
+           (rp (rdet-cofactor i j a n))))
 
 (defthm rp-expand-rdet-col
   (implies (and (rmatp a n n) (> n 1) (natp j) (< j n))
            (rp (expand-rdet-col a j n))))
 
-;; The effect on (minor i j a) of replacing a row of a other than row i:
-
-(defthmd minor-replace-rmat-row
-  (implies (and (rmatp a n n) (natp n) (> n 1) (natp i) (< i n) (natp j) (< j n)
-                (natp k) (< k n) (not (= k i)) (rlistnp x n))
-	   (equal (minor i j (replace-row a k x))
-	          (replace-row (minor i j a) (if (< k i) k (1- k)) (delete-nth j x)))))
-
-;; Replacing row i of a does not alter (minor i j a):
-
-(defthmd minor-replace-rmat-row-i
-  (implies (and (rmatp a n n) (natp n) (> n 1) (natp i) (< i n) (natp j) (< j n)
-                (rlistnp x n))
-	   (equal (minor i j (replace-row a i x))
-	          (minor i j a))))
+;; Replacing row i of a does not alter (rdet-cofactor i j a n):
 
 (defthmd cofactor-replace-rmat-row
   (implies (and (rmatp a n n) (natp n) (> n 1) (natp i) (< i n) (natp j) (< j n)
                 (rlistnp x n))
 	   (equal (rdet-cofactor i j (replace-row a i x) n)
 	          (rdet-cofactor i j a n))))
+
+;; For k <> i, (rdet-cofactor i j a n) is linear in (row k a):
+
+(defthmd rdet-cofactor-n-linear
+  (implies (and (rmatp a n n) (natp n) (> n 1) (natp i) (< i n) (natp j) (< j n)
+                (natp k) (< k n) (not (= k i)) (rlistnp x n) (rlistnp y n) (rp c))
+	   (equal (rdet-cofactor i j (replace-row a k (rlist-add (rlist-scalar-mul c x) y)) n)
+	          (r+ (r* c (rdet-cofactor i j (replace-row a k x) n))
+		      (rdet-cofactor i j (replace-row a k y) n)))))
 
 ;; It follows that cofactor expansion by column j is n-linear:
 
@@ -831,7 +835,7 @@
 	   (equal (nth r (minor i j (id-rmat n)))
 	          (delete-nth j (runit (if (< r i) r (1+ r)) n)))))
 
-;; The following is a consequence of the definirtions of runit and delete-nth:
+;; The following is a consequence of the definitions of runit and delete-nth:
 
 (defthmd delete-nth-runit
   (implies (and (posp n) (natp j) (< j n) (natp k) (< k n))
@@ -1028,7 +1032,7 @@
            (equal (cofactor-rmat (transpose-mat a) n)
 	          (adjoint-rmat a n))))
 
-;; Note that the the dot product of (row i a) and (cofactor-rmat-row i a n) is a rearrangemnt of
+;; Note that the the dot product of (row i a) and (cofactor-rmat-row i a n) is a rearrangement of
 ;; the sum (expand-rdet-row a i n):
 
 (defthmd rdot-cofactor-rmat-row-expand-rdet-row
