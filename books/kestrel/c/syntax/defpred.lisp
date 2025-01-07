@@ -1128,9 +1128,9 @@
        (xdoc-name (defpred-gen-name 'abstract-syntax suffix))
        (xdoc-event
         `(defxdoc+ ,xdoc-name
-           ,@(and parents-presentp `((:parents ,parents)))
-           ,@(and short-presentp `((:short ,short)))
-           ,@(and long-presentp `((:long ,long)))
+           ,@(and parents-presentp `(:parents ,parents))
+           ,@(and short-presentp `(:short ,short))
+           ,@(and long-presentp `(:long ,long))
            :order-subtopics t
            :default-parent t)))
     `(encapsulate
