@@ -14,6 +14,7 @@
                                    # the content of stderr, only check is
                                    # somethings was written.
   bug:                             # default value: false
+  env:                             # Set all the variable given in the environement
 
   # By default all checks are enabled.
   disabled-checks:
@@ -144,3 +145,11 @@
 
 - name: function-params-type
   should_report_error: true
+
+- name: disable-opt-disabled
+  description: In this test the optimizations are kept (default).
+  input: "disable_opt.cpp"
+
+- name: disable-opt-enable
+  input: "disable_opt.cpp"
+  env: {RAC_DISABLE_OPTIMIZATIONS: 'true'}
