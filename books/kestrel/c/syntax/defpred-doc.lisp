@@ -225,12 +225,7 @@
         applied to each value of the map;
         the conjunction is @('t') if the map is empty.")))
 
-    (xdoc::desc
-     "List theorems."
-     (xdoc::p
-      "For each list type for which we generate a predicate,
-       we also generate a @(tsee std::deflist) event for the predicate
-       that generates theorems relating the predicate to list operations;
-       the @(tsee std::deflist) event sees that
-       the predicate is already defined at the place of the event,
-       and thus its effect is just to geenerate the theorems.")))))
+    (xdoc::p
+     "The theorems that accompany the predicates
+      are generated as part of the @(tsee define) and @(tsee defines)
+      that define the predicates, after the @('///')."))))
