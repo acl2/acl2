@@ -15,7 +15,6 @@
 ;; RB-1, RML-size, and RML-<xx> where <xx> is 08/16/32/48/64/80/128.
 
 (include-book "projects/x86isa/machine/linear-memory" :dir :system)
-(include-book "projects/x86isa/machine/top-level-memory" :dir :system) ; for rme-size
 (include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system) ; todo: use byte-listp instead below?
 (include-book "kestrel/bv/bvcat" :dir :system)
 (local (include-book "support-bv"))
@@ -250,13 +249,6 @@
                                    BYTE-LISTP)
                                   (;acl2::nth-of-cdr
                                    )))))
-
-;; where should this go?
-(defthm mv-nth-2-of-rme-size-when-app-view
-  (implies (app-view x86)
-           (equal (mv-nth 2 (rme-size p n e s r c x86))
-                  x86))
-  :hints (("Goal" :in-theory (enable rme-size))))
 
 ;; generalize to multi-byte read
 ;; See also x86isa::rb-returns-no-error-app-view

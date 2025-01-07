@@ -4884,3 +4884,10 @@
                   (+ (- (- (expt 2 32) k)) ;gets computed
                      (esp x86))))
   :hints (("Goal" :use (:instance acl2::bvplus-of-constant-when-overflow (x (esp x86))))))
+
+;; where should this go?
+(defthm x86isa::mv-nth-2-of-rme-size-when-app-view
+  (implies (app-view x86)
+           (equal (mv-nth 2 (rme-size p n e s r c x86))
+                  x86))
+  :hints (("Goal" :in-theory (enable rme-size))))
