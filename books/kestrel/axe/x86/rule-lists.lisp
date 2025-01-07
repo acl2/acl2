@@ -242,7 +242,7 @@
 
 (defun read-introduction-rules ()
   (declare (xargs :guard t))
-  '(rb-becomes-read ; no need to target mv-nth-1-of-rv, etc. since this rewrites the entire rb
+  '(rb-becomes-read ; no need to target mv-nth-1-of-rb, etc. since this rewrites the entire rb
     ;;mv-nth-1-of-rb-becomes-read
     ;; These just clarify failures to turn RB into READ: ; TODO: Only use when debugging?
     mv-nth-1-of-rb-of-set-rip
