@@ -55,8 +55,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection unambiguity-predicate-definitions
-  :short "Definition of the unambiguity predicates."
+(defpred unambp
+  :short "Definition of the unambiguity predicates,
+          with accompanying theorems."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -77,29 +78,27 @@
    (xdoc::p
     "We override the boilerplate to return @('t') on
      GCC attributes, attribute specifiers, and assembler constructs."))
-
-  (defpred unambp
-    :default t
-    :override
-    ((expr :sizeof-ambig nil)
-     (expr :cast/call-ambig nil)
-     (expr :cast/mul-ambig nil)
-     (expr :cast/add-ambig nil)
-     (expr :cast/sub-ambig nil)
-     (expr :cast/and-ambig nil)
-     (type-spec :typeof-ambig nil)
-     (align-spec :alignas-ambig nil)
-     (dirabsdeclor :dummy-base nil)
-     (attrib t)
-     (attrib-spec t)
-     (asm-output t)
-     (asm-input t)
-     (asm-stmt t)
-     (stmt :for-ambig nil)
-     (block-item :ambig nil)
-     (amb-expr/tyname nil)
-     (amb-declor/absdeclor nil)
-     (amb-decl/stmt nil))))
+  :default t
+  :override
+  ((expr :sizeof-ambig nil)
+   (expr :cast/call-ambig nil)
+   (expr :cast/mul-ambig nil)
+   (expr :cast/add-ambig nil)
+   (expr :cast/sub-ambig nil)
+   (expr :cast/and-ambig nil)
+   (type-spec :typeof-ambig nil)
+   (align-spec :alignas-ambig nil)
+   (dirabsdeclor :dummy-base nil)
+   (attrib t)
+   (attrib-spec t)
+   (asm-output t)
+   (asm-input t)
+   (asm-stmt t)
+   (stmt :for-ambig nil)
+   (block-item :ambig nil)
+   (amb-expr/tyname nil)
+   (amb-declor/absdeclor nil)
+   (amb-decl/stmt nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
