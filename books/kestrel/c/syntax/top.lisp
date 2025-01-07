@@ -15,6 +15,7 @@
 (include-book "abstraction-mapping")
 (include-book "abstract-syntax-operations")
 (include-book "unambiguity")
+(include-book "annotation")
 (include-book "defpred")
 (include-book "defpred-doc")
 (include-book "preprocess-file")
@@ -116,6 +117,11 @@
      e.g. enhancing the abstract syntax with types and other information
      after successful checking.")
    (xdoc::p
+    "We provide a collection of predicates that characterize "
+    (xdoc::seetopic "annotation" "annotated abstract syntax")
+    ", i.e. abstract syntax enhanced with
+     the information added by the validator.")
+   (xdoc::p
     "We provide a (pretty-)@(see printer)
      that turns our abstract syntax
      into concrete syntax that is valid C code.
@@ -158,6 +164,7 @@
                     defpred
                     abstract-syntax-operations
                     unambiguity
+                    annotation
                     preprocessing
                     parser
                     disambiguator
