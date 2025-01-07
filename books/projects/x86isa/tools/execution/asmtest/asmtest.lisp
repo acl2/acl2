@@ -48,6 +48,14 @@ and can then use the @('test-snippet') or @('test-snippetconf') utilities to
 repeatedly run the snippet on the model on the various inputs, comparing them
 to the outputs from the executable.</p>
 
+<p>We provide scripts to automate this process for randomly generated inputs.
+You can run @('make test') in the @('asmtest') directory to run all the
+snippets on random input. This will create a @('results') directory with a file
+for each test that contains the ACL2 output for that test. Generally,
+successful tests have little output while unsuccessful tests have large output,
+so sorting the contents of the directory by size makes it easy to find failing
+tests.</p>
+
 <p>Snippets are listed (along with their input and output block sizes) in
 snippets.txt (under the asmtest directory,
 books/projects/x86isa/tools/execution/asmtest).  This file is parsed by a
@@ -86,6 +94,11 @@ in @('tests/example.lsp'), e.g. @('(test-snippetconf-event \"my_testname.conf\")
 </ul>
 
 <h2>Generating Tests</h2>
+<p>Some snippets are generated with @('testgen'), which uses Intel's XED to
+iterate over instructions and generate tests for them. This is automatically
+done when you build @('asmtest') with the provided @('Makefile'). @('testgen')
+generated tests are named @('testgen_<idx>') where @('<idx>') is the index of
+the instruction in the XED database.</p>
 
 <p>A Python script \"text_to_binary.py\" is provided to help generate test
 input files. Mainly it helps write a bunch of numbers into a binary file. See
