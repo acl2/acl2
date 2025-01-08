@@ -261,40 +261,40 @@
                                        otf-flg)
   (if (and concl bound)
       (let* ((hyp-t (or hyp-t hyp))
-            (hyp-l (or hyp-l hyp))
-            ;; Could check for '1 here, but we follow the
-            ;; precedent below of not handling a quoted bound when
-            ;; setting 2^bound:
-            (bitp (equal 1 bound))
-            (hints-t (or hints-t
-                         ;; If :HINTS-T is not supplied, the following hints,
-                         ;; given the definitions of UNSIGNED-BYTE-P,
-                         ;; INTEGER-RANGE-P, and NATP, should suffice to prove
-                         ;; the corollary from the main theorem, assuming that
-                         ;; :HYP-T is a superset of :HYP, or perhaps has some
-                         ;; extra calls to FORCE.
-                         `(("Goal" :in-theory '(unsigned-byte-p
-                                                integer-range-p
-                                                natp
-                                                ,@(and bitp '(bitp
-                                                              (:e expt))))))))
-            (hints-l (or hints-l
-                         ;; If :HINTS-L is not supplied, the following hints,
-                         ;; given the definitions of UNSIGNED-BYTE-P and
-                         ;; INTEGER-RANGE-P, should suffice to prove the
-                         ;; corollary from the main theorem, assuming that
-                         ;; :HYP-L is a superset of :HYP, or perhaps has some
-                         ;; extra calls to FORCE. The (:E EXPT) is motivated by
-                         ;; the fact that, if :BOUND is a number, the generated
-                         ;; linear rule involves not a call of EXPT but
-                         ;; directly the value of such a call (see 2^BOUND
-                         ;; below).
-                         '(("Goal" :in-theory '(unsigned-byte-p
-                                                integer-range-p
-                                                (:e expt))))))
-            (2^bound (if (natp bound)
-                         (expt 2 bound)
-                       `(expt 2 ,bound))))
+             (hyp-l (or hyp-l hyp))
+             ;; Could check for '1 here, but we follow the
+             ;; precedent below of not handling a quoted bound when
+             ;; setting 2^bound:
+             (bitp (equal 1 bound))
+             (hints-t (or hints-t
+                          ;; If :HINTS-T is not supplied, the following hints,
+                          ;; given the definitions of UNSIGNED-BYTE-P,
+                          ;; INTEGER-RANGE-P, and NATP, should suffice to prove
+                          ;; the corollary from the main theorem, assuming that
+                          ;; :HYP-T is a superset of :HYP, or perhaps has some
+                          ;; extra calls to FORCE.
+                          `(("Goal" :in-theory '(unsigned-byte-p
+                                                 integer-range-p
+                                                 natp
+                                                 ,@(and bitp '(bitp
+                                                               (:e expt))))))))
+             (hints-l (or hints-l
+                          ;; If :HINTS-L is not supplied, the following hints,
+                          ;; given the definitions of UNSIGNED-BYTE-P and
+                          ;; INTEGER-RANGE-P, should suffice to prove the
+                          ;; corollary from the main theorem, assuming that
+                          ;; :HYP-L is a superset of :HYP, or perhaps has some
+                          ;; extra calls to FORCE. The (:E EXPT) is motivated by
+                          ;; the fact that, if :BOUND is a number, the generated
+                          ;; linear rule involves not a call of EXPT but
+                          ;; directly the value of such a call (see 2^BOUND
+                          ;; below).
+                          '(("Goal" :in-theory '(unsigned-byte-p
+                                                 integer-range-p
+                                                 (:e expt))))))
+             (2^bound (if (natp bound)
+                          (expt 2 bound)
+                        `(expt 2 ,bound))))
         `(defthm ,name
            ,(if (eq hyp t)
                 `(unsigned-byte-p ,bound ,concl)
