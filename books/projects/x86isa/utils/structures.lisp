@@ -41,7 +41,6 @@
 
 (in-package "X86ISA")
 
-(include-book "utilities")
 (include-book "basic-structs")
 
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))

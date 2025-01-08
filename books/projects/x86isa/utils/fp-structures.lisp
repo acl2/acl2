@@ -38,7 +38,6 @@
 
 (in-package "X86ISA")
 
-(include-book "utilities")
 (include-book "basic-structs")
 
 ;; We do these once, here, to avoid each defbitstruct below doing them locally:
