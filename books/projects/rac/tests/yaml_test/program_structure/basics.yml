@@ -118,6 +118,12 @@
 - name: hello
   input: ../../../examples/hello.cpp
 
+- name: imul-lsp
+  args: ['../../../examples/imul/imul.cpp', '-acl2']
+  preprocess: '../../../examples/imul/imul.cpp'
+  out_generated: ../../../examples/imul/imul.cpp.ast.lsp
+  ref_generated: imul-pc.cpp.ref.ast.lsp
+
 - name: imul-pc
   args: ['../../../examples/imul/imul.cpp', '-rac']
   preprocess: '../../../examples/imul/imul.cpp'
