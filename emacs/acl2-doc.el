@@ -204,7 +204,9 @@
 
 ;;; Since Emacs Lisp doesn't seem to use |..| for escaping, we simply
 ;;; remove those vertical bars that seem to have been placed by Common
-;;; Lisp.
+;;; Lisp.  NOTE: If this doesn't do the trick, consider modifying the
+;;; definition of function rendered-name-acl2-doc in file
+;;; books/system/doc/render-doc-base.lisp.
 
   (let* ((name (symbol-name sym))
          (pos (my-cl-position ?| name)))
