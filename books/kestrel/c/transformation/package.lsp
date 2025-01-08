@@ -26,9 +26,11 @@
                                   '())
                c$::*abstract-syntax-symbols*
                '(defxdoc+
+                 er-soft+
                  erp
                  impossible
                  index-of
+                 pseudo-event-formp
                  reterr
                  retok
                  std::defret-mutual)))
