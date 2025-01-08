@@ -55,8 +55,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection unambiguity-predicate-definitions
-  :short "Definition of the unambiguity predicates."
+(defpred unambp
+  :short "Definition of the unambiguity predicates,
+          with accompanying theorems."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -77,29 +78,27 @@
    (xdoc::p
     "We override the boilerplate to return @('t') on
      GCC attributes, attribute specifiers, and assembler constructs."))
-
-  (defpred unambp
-    :default t
-    :override
-    ((expr :sizeof-ambig nil)
-     (expr :cast/call-ambig nil)
-     (expr :cast/mul-ambig nil)
-     (expr :cast/add-ambig nil)
-     (expr :cast/sub-ambig nil)
-     (expr :cast/and-ambig nil)
-     (type-spec :typeof-ambig nil)
-     (align-spec :alignas-ambig nil)
-     (dirabsdeclor :dummy-base nil)
-     (attrib t)
-     (attrib-spec t)
-     (asm-output t)
-     (asm-input t)
-     (asm-stmt t)
-     (stmt :for-ambig nil)
-     (block-item :ambig nil)
-     (amb-expr/tyname nil)
-     (amb-declor/absdeclor nil)
-     (amb-decl/stmt nil))))
+  :default t
+  :override
+  ((expr :sizeof-ambig nil)
+   (expr :cast/call-ambig nil)
+   (expr :cast/mul-ambig nil)
+   (expr :cast/add-ambig nil)
+   (expr :cast/sub-ambig nil)
+   (expr :cast/and-ambig nil)
+   (type-spec :typeof-ambig nil)
+   (align-spec :alignas-ambig nil)
+   (dirabsdeclor :dummy-base nil)
+   (attrib t)
+   (attrib-spec t)
+   (asm-output t)
+   (asm-input t)
+   (asm-stmt t)
+   (stmt :for-ambig nil)
+   (block-item :ambig nil)
+   (amb-expr/tyname nil)
+   (amb-declor/absdeclor nil)
+   (amb-decl/stmt nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -111,83 +110,6 @@
     "These are mentioned in @(see unambiguity):
      they support guard and return proofs.
      We plan to extend @(tsee defpred) to generate at least some of these."))
-
-  ;; Theorems for list types:
-
-  (std::deflist expr-list-unambp (x)
-    :guard (expr-listp x)
-    :parents nil
-    (expr-unambp x))
-
-  (std::deflist genassoc-list-unambp (x)
-    :guard (genassoc-listp x)
-    :parents nil
-    (genassoc-unambp x))
-
-  (std::deflist spec/qual-list-unambp (x)
-    :guard (spec/qual-listp x)
-    :parents nil
-    (spec/qual-unambp x))
-
-  (std::deflist decl-spec-list-unambp (x)
-    :guard (decl-spec-listp x)
-    :parents nil
-    (decl-spec-unambp x))
-
-  (std::deflist desiniter-list-unambp (x)
-    :guard (desiniter-listp x)
-    :parents nil
-    (desiniter-unambp x))
-
-  (std::deflist designor-list-unambp (x)
-    :guard (designor-listp x)
-    :parents nil
-    (designor-unambp x))
-
-  (std::deflist paramdecl-list-unambp (x)
-    :guard (paramdecl-listp x)
-    :parents nil
-    (paramdecl-unambp x))
-
-  (std::deflist structdecl-list-unambp (x)
-    :guard (structdecl-listp x)
-    :parents nil
-    (structdecl-unambp x))
-
-  (std::deflist structdeclor-list-unambp (x)
-    :guard (structdeclor-listp x)
-    :parents nil
-    (structdeclor-unambp x))
-
-  (std::deflist enumer-list-unambp (x)
-    :guard (enumer-listp x)
-    :parents nil
-    (enumer-unambp x))
-
-  (std::deflist initdeclor-list-unambp (x)
-    :guard (initdeclor-listp x)
-    :parents nil
-    (initdeclor-unambp x))
-
-  (std::deflist decl-list-unambp (x)
-    :guard (decl-listp x)
-    :parents nil
-    (decl-unambp x))
-
-  (std::deflist block-item-list-unambp (x)
-    :guard (block-item-listp x)
-    :parents nil
-    (block-item-unambp x))
-
-  (std::deflist type-spec-list-unambp (x)
-    :guard (type-spec-listp x)
-    :parents nil
-    (type-spec-unambp x))
-
-  (std::deflist extdecl-list-unambp (x)
-    :guard (extdecl-listp x)
-    :parents nil
-    (extdecl-unambp x))
 
   ;; Theorems for map types:
 

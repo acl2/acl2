@@ -19,7 +19,9 @@
 (include-book "system/pseudo-event-form-listp" :dir :system)
 
 (local (include-book "std/alists/top" :dir :system))
+(local (include-book "std/lists/true-listp" :dir :system))
 (local (include-book "std/system/partition-rest-and-keyword-args" :dir :system))
+(local (include-book "std/system/pseudo-event-form-listp" :dir :system))
 (local (include-book "std/system/w" :dir :system))
 (local (include-book "std/typed-lists/atom-listp" :dir :system))
 (local (include-book "std/typed-alists/symbol-alistp" :dir :system))
@@ -480,7 +482,10 @@
 (defval *defpred-allowed-options*
   :short "Keyword options accepted by @(tsee defpred)."
   '(:default
-    :override))
+    :override
+    :parents
+    :short
+    :long))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -488,9 +493,15 @@
   :returns (mv erp
                (suffix symbolp)
                (default booleanp)
-               (overrides alistp))
+               (overrides alistp)
+               (parents-presentp booleanp)
+               parents
+               (short-presentp booleanp)
+               short
+               (long-presentp booleanp)
+               long)
   :short "Process all the inputs."
-  (b* (((reterr) nil nil nil)
+  (b* (((reterr) nil nil nil nil nil nil nil nil nil)
        ((mv erp suffix options)
         (partition-rest-and-keyword-args args *defpred-allowed-options*))
        ((when (or erp
@@ -516,8 +527,25 @@
        (override (if override-option
                      (cdr override-option)
                    nil))
-       ((erp overrides) (defpred-process-override override fty-table)))
-    (retok suffix default overrides))
+       ((erp overrides) (defpred-process-override override fty-table))
+       (parents-option (assoc-eq :parents options))
+       (parents-presentp (consp parents-option))
+       (parents (cdr parents-option))
+       (short-option (assoc-eq :short options))
+       (short-presentp (consp short-option))
+       (short (cdr short-option))
+       (long-option (assoc-eq :long options))
+       (long-presentp (consp long-option))
+       (long (cdr long-option)))
+    (retok suffix
+           default
+           overrides
+           parents-presentp
+           parents
+           short-presentp
+           short
+           long-presentp
+           long))
   :guard-hints (("Goal" :in-theory (enable acl2::alistp-when-symbol-alistp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -688,6 +716,7 @@
     `(define ,type-suffix ((,type ,recog))
        ,@(and ignorable `((declare (ignorable ,type))))
        :returns (yes/no booleanp)
+       :parents (,(defpred-gen-name 'abstract-syntax suffix))
        ,body
        ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
        ,@(and (not mutrecp) '(:hooks (:fix))))))
@@ -744,6 +773,7 @@
     `(define ,type-suffix ((,type ,recog))
        ,@(and ignorable `((declare (ignorable ,type))))
        :returns (yes/no booleanp)
+       :parents (,(defpred-gen-name 'abstract-syntax suffix))
        ,body
        ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
        ,@(and (not mutrecp) '(:hooks (:fix))))))
@@ -784,6 +814,7 @@
                           :none t)))
     `(define ,type-suffix ((,type ,recog))
        :returns (yes/no booleanp)
+       :parents (,(defpred-gen-name 'abstract-syntax suffix))
        ,body
        ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
        ,@(and (not mutrecp) '(:hooks (:fix))))))
@@ -822,41 +853,62 @@
                                (mutrecp booleanp)
                                (suffix symbolp)
                                (fty-table alistp))
-  :returns (event pseudo-event-formp)
-  :short "Generate a predicate for a list type."
+  :returns (mv (event pseudo-event-formp)
+               (deferred-events pseudo-event-form-listp))
+  :short "Generate a predicate for a list type, with accompanying theorems."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is as described in @(tsee defpred).")
    (xdoc::p
     "The @('mutrec') flag says whether
-     this product type is part of a mutually recursive clique."))
+     this product type is part of a mutually recursive clique.")
+   (xdoc::p
+    "The accompanying theorems are generated as a @(tsee std::deflist) event,
+     which generates the actual theorems.")
+   (xdoc::p
+    "If the predicate is not part of a mutually recursive clique,
+     the additional theorems are generated
+     as part of the @(tsee define) event, after @('///').
+     Otherwise, the theorem events are ``deferred'',
+     and returned as a separate result by this function."))
   (b* ((type (fty::flexlist->name list))
        ((unless (symbolp type))
         (raise "Internal error: malformed type name ~x0." type)
-        '(_))
+        (mv '(_) nil))
        (type-suffix (defpred-gen-name type suffix))
        (type-count (fty::flexlist->count list))
        (recog (fty::flexlist->pred list))
        (elt-recog (fty::flexlist->elt-type list))
        ((unless (symbolp elt-recog))
         (raise "Internal error: malformed recognizer ~x0." elt-recog)
-        '(_))
+        (mv '(_) nil))
        (elt-info (defpred-type-with-recognizer elt-recog fty-table))
        (elt-type (defpred-flex->name elt-info))
        (recp (fty::flexlist->recp list))
        ((unless (symbolp elt-type))
         (raise "Internal error: malformed type name ~x0." elt-type)
-        '(_))
+        (mv '(_) nil))
        (elt-type-suffix (defpred-gen-name elt-type suffix))
        (body `(or (endp ,type)
                   (and (,elt-type-suffix (car ,type))
-                       (,type-suffix (cdr ,type))))))
-    `(define ,type-suffix ((,type ,recog))
-       :returns (yes/no booleanp)
-       ,body
-       ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
-       ,@(and (not mutrecp) '(:hooks (:fix))))))
+                       (,type-suffix (cdr ,type)))))
+       (deflist-event
+         `(std::deflist ,type-suffix (x)
+            :guard (,recog x)
+            (,elt-type-suffix x)
+            :true-listp nil))
+       (thm-events (list deflist-event))
+       (event
+        `(define ,type-suffix ((,type ,recog))
+           :returns (yes/no booleanp)
+           :parents (,(defpred-gen-name 'abstract-syntax suffix))
+           ,body
+           ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
+           ,@(and (not mutrecp) '(:hooks (:fix)))
+           ,@(and (not mutrecp) `(/// ,@thm-events))))
+       (deferred-events (and mutrecp thm-events)))
+    (mv event deferred-events)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -894,6 +946,7 @@
                        (,type-suffix (omap::tail ,type))))))
     `(define ,type-suffix ((,type ,recog))
        :returns (yes/no booleanp)
+       :parents (,(defpred-gen-name 'abstract-syntax suffix))
        ,body
        ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
        ,@(and (not mutrecp) '(:hooks (:fix))))))
@@ -907,16 +960,20 @@
                                (default booleanp)
                                (overrides alistp)
                                (fty-table alistp))
-  :returns (event pseudo-event-formp)
-  :short "Generate a predicate for a type."
+  :returns (mv (event pseudo-event-formp)
+               (deferred-events pseudo-event-form-listp))
+  :short "Generate a predicate for a type, with accompanying theorems."
   (cond ((fty::flexsum-p flex)
-         (defpred-gen-prod/sum/option-pred
-           flex mutrecp types suffix default overrides fty-table))
+         (mv (defpred-gen-prod/sum/option-pred
+               flex mutrecp types suffix default overrides fty-table)
+             nil))
         ((fty::flexlist-p flex)
          (defpred-gen-list-pred flex mutrecp suffix fty-table))
         ((fty::flexomap-p flex)
-         (defpred-gen-omap-pred flex mutrecp suffix fty-table))
-        (t (prog2$ (raise "Internal error: unsupported type ~x0." flex) '(_)))))
+         (mv (defpred-gen-omap-pred flex mutrecp suffix fty-table)
+             nil))
+        (t (prog2$ (raise "Internal error: unsupported type ~x0." flex)
+                   (mv '(_) nil)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -927,14 +984,19 @@
                                  (default booleanp)
                                  (overrides alistp)
                                  (fty-table alistp))
-  :returns (events pseudo-event-form-listp)
-  :short "Generate a list of predicates for a list of types."
-  (cond ((endp flexs) nil)
-        (t (cons
-            (defpred-gen-type-pred
-              (car flexs) mutrecp types suffix default overrides fty-table)
-            (defpred-gen-types-preds
-              (cdr flexs) mutrecp types suffix default overrides fty-table)))))
+  :returns (mv (events pseudo-event-form-listp)
+               (deferred-events pseudo-event-form-listp))
+  :short "Generate a list of predicates for a list of types,
+          with accompanying theorems."
+  (b* (((when (endp flexs)) (mv nil nil))
+       ((mv event deferred-events)
+        (defpred-gen-type-pred
+          (car flexs) mutrecp types suffix default overrides fty-table))
+       ((mv more-events more-deferred-events)
+        (defpred-gen-types-preds
+          (cdr flexs) mutrecp types suffix default overrides fty-table)))
+    (mv (cons event more-events)
+        (append deferred-events more-deferred-events))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -956,14 +1018,19 @@
      based on the flag we read from the information about the type.
      If the clique consists of two or more types,
      we generate a clique of mutually recursive predicates,
-     with a @(tsee fty::deffixequiv-mutual) at the end;
+     with a @(tsee fty::deffixequiv-mutual) after the @('///'),
+     and with the deferred events after that;
      the name of the clique of predicates is derived from
      the name of the clique of types.")
    (xdoc::p
     "We also generate a @(':flag-local nil') to export
      the flag macro @('defthm-<name>-flag'),
      where @('<name>') is the name of the @(tsee defines) clique.
-     This facilitates proving theorems by induction on the predicates."))
+     This facilitates proving theorems by induction on the predicates.")
+   (xdoc::p
+    "We also generate a form to allow bogus mutual recursion,
+     since we have no control on how the user overrides the boilerplate.
+     Note that this form is automatically local to the @(tsee defines)."))
   (b* ((members (fty::flextypes->types clique))
        ((unless (true-listp members))
         (raise "Internal error: malformed members of type clique ~x0." clique)
@@ -972,21 +1039,27 @@
         (raise "Internal error: empty type clique ~x0." clique)
         '(_))
        ((when (endp (cdr members)))
-        (defpred-gen-type-pred
-          (car members) nil types suffix default overrides fty-table))
+        (b* (((mv event &)
+              (defpred-gen-type-pred
+                (car members) nil types suffix default overrides fty-table)))
+          event))
        (clique-name (fty::flextypes->name clique))
        ((unless (symbolp clique-name))
         (raise "Internal error: malformed clique name ~x0." clique-name)
         '(_))
        (clique-name-suffix (defpred-gen-name clique-name suffix))
-       (events (defpred-gen-types-preds
-                 members t types suffix default overrides fty-table)))
+       ((mv events deferred-events)
+        (defpred-gen-types-preds
+          members t types suffix default overrides fty-table)))
     `(defines ,clique-name-suffix
+       :parents (,(defpred-gen-name 'abstract-syntax suffix))
        ,@events
        :hints (("Goal" :in-theory (enable o< o-finp)))
        :flag-local nil
+       :prepwork ((set-bogus-mutual-recursion-ok t))
        ///
-       (fty::deffixequiv-mutual ,clique-name-suffix))))
+       (fty::deffixequiv-mutual ,clique-name-suffix)
+       ,@deferred-events)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1038,6 +1111,12 @@
 (define defpred-gen-everything ((suffix symbolp)
                                 (default booleanp)
                                 (overrides alistp)
+                                (parents-presentp booleanp)
+                                parents
+                                (short-presentp booleanp)
+                                short
+                                (long-presentp booleanp)
+                                long
                                 (fty-table alistp))
   :returns (event pseudo-event-formp)
   :short "Generate all the events."
@@ -1049,11 +1128,20 @@
      which we put into one event."))
   (b* ((types
         (defpred-type-names-in-cliques-with-names *defpred-cliques* fty-table))
-       (events (defpred-gen-cliques-preds
-                 *defpred-cliques* types suffix default overrides fty-table)))
-    `(progn
-       (set-bogus-mutual-recursion-ok t)
-       ,@events)))
+       (pred-events
+        (defpred-gen-cliques-preds
+          *defpred-cliques* types suffix default overrides fty-table))
+       (xdoc-name (defpred-gen-name 'abstract-syntax suffix))
+       (xdoc-event
+        `(defxdoc+ ,xdoc-name
+           ,@(and parents-presentp `(:parents ,parents))
+           ,@(and short-presentp `(:short ,short))
+           ,@(and long-presentp `(:long ,long))
+           :order-subtopics t)))
+    `(encapsulate
+       ()
+       ,xdoc-event
+       ,@pred-events)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1064,9 +1152,27 @@
   :short "Process the inputs and generate the events."
   (b* (((reterr) '(_))
        (fty-table (table-alist+ 'fty::flextypes-table wrld))
-       ((erp suffix default overrides)
+       ((erp suffix
+             default
+             overrides
+             parents-presentp
+             parents
+             short-presentp
+             short
+             long-presentp
+             long)
         (defpred-process-inputs args fty-table)))
-    (retok (defpred-gen-everything suffix default overrides fty-table))))
+    (retok (defpred-gen-everything
+             suffix
+             default
+             overrides
+             parents-presentp
+             parents
+             short-presentp
+             short
+             long-presentp
+             long
+             fty-table))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
