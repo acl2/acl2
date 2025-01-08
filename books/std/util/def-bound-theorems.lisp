@@ -40,6 +40,7 @@
 ; Matt Kaufmann       <kaufmann@cs.utexas.edu>
 ; Contributing Author(s):
 ; Alessandro Coglio   <coglio@kestrel.edu>
+; Eric Smith <eric.smith@kestrel.edu>
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -182,7 +183,7 @@
    a @('rewrite') rule saying that
    some term yields an @('unsigned-byte-p'),
    a @('type-prescription') corollary saying that
-   the term yields a @('natp'),
+   the term yields a @('natp') (or, if @('bound') is 1, a @('bitp')),
    and a @('linear') corollary saying that
    the term yields a value greater than or equal to 0
    and less than <tt>(expt 2 bound)</tt>.
@@ -206,9 +207,10 @@
        :otf-flg <t or nil>)
      })
    <p>
-   The above form produces a theorem of the following form
-   (if both @(':gen-type') and @(':gen-linear') are @('t') and @(':gen-rewrite')
-   is @('t') or unsupplied):
+   In the most common case (both @(':gen-type') and @(':gen-linear') are @('t'),
+   @(':gen-rewrite') is @('t') or unsupplied, and @('bound') is not the special
+   value 1 which would cause a tighter @(':type-prescription') rule), the
+   theorem produced is of the following form:
    </p>
    @({
      (defthm <theorem-name>
@@ -258,8 +260,12 @@
                                        hints-l
                                        otf-flg)
   (if (and concl bound)
-      (let ((hyp-t (or hyp-t hyp))
+      (let* ((hyp-t (or hyp-t hyp))
             (hyp-l (or hyp-l hyp))
+            ;; Could check for '1 here, but we follow the
+            ;; precedent below of not handling a quoted bound when
+            ;; setting 2^bound:
+            (bitp (equal 1 bound))
             (hints-t (or hints-t
                          ;; If :HINTS-T is not supplied, the following hints,
                          ;; given the definitions of UNSIGNED-BYTE-P,
@@ -267,9 +273,11 @@
                          ;; the corollary from the main theorem, assuming that
                          ;; :HYP-T is a superset of :HYP, or perhaps has some
                          ;; extra calls to FORCE.
-                         '(("Goal" :in-theory '(unsigned-byte-p
+                         `(("Goal" :in-theory '(unsigned-byte-p
                                                 integer-range-p
-                                                natp)))))
+                                                natp
+                                                ,@(and bitp '(bitp
+                                                              (:e expt))))))))
             (hints-l (or hints-l
                          ;; If :HINTS-L is not supplied, the following hints,
                          ;; given the definitions of UNSIGNED-BYTE-P and
@@ -299,10 +307,14 @@
             ,@(and gen-type
                    `((:type-prescription
                       :corollary
-                      ,(if (eq hyp-t t)
-                           `(natp ,concl)
-                         `(implies ,hyp-t
-                                   (natp ,concl)))
+                      ,(let ((conclusion
+                               (if bitp
+                                   `(bitp ,concl)
+                                 `(natp ,concl))))
+                         (if (eq hyp-t t)
+                             conclusion
+                           `(implies ,hyp-t
+                                     ,conclusion)))
                       :hints ,hints-t)))
             ,@(and gen-linear
                    `((:linear
