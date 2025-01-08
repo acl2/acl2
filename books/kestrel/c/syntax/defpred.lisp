@@ -148,6 +148,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ defpred-library-extensions
+  :parents (defpred-implementation)
   :short "Some FTY library extensions for @(tsee defpred)."
   :long
   (xdoc::topstring
