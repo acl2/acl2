@@ -15,7 +15,7 @@
 ;; model itself.
 
 ;(include-book "projects/x86isa/proofs/utilities/app-view/top" :dir :system) ;reduce? needed for the big enable below
-(include-book "projects/x86isa/proofs/utilities/general-memory-utils" :dir :system) ; so we can disable questionable rule X86ISA::X86P-!RIP-WHEN-VAL-IS-CANONICAL-ADDRESS-P
+(include-book "projects/x86isa/proofs/utilities/general-memory-utils" :dir :system) ; drop?
 (include-book "projects/x86isa/proofs/utilities/row-wow-thms" :dir :system) ; for X86ISA::WRITE-USER-RFLAGS-AND-XW
 (include-book "projects/x86isa/proofs/utilities/app-view/user-level-memory-utils" :dir :system) ; for rb-rb-subset
 (include-book "projects/x86isa/machine/state" :dir :system)
@@ -63,30 +63,6 @@
   :hints (("Goal" :in-theory (enable byte-listp))))
 
 (in-theory (disable GET-PREFIXES-OPENER-LEMMA-ZERO-CNT)) ;for speed
-
-(defthm x86isa::x86p-xw-unforced
-  (implies (x86p x86)
-           (x86p (xw x86isa::fld x86isa::index value x86))))
-
-(in-theory (disable x86isa::x86p-xw
-                    ;x86isa::x86p-!rip-when-val-is-canonical-address-p ;todo: remove this rule altogether since it is subsumed by x86p-xw  ;does forcing, which causes problems in various places
-                    ))
-
-(defthm rflags-is-n32p-unforced
-  (implies (x86p x86)
-           (unsigned-byte-p 32 (xr :rflags i x86)))
-  :rule-classes ((:rewrite :corollary (implies (x86p x86)
-                                               (unsigned-byte-p 32 (xr :rflags i x86)))
-                           :hints (("GOAL" :in-theory (enable rflags x86p))))
-                 (:type-prescription :corollary (implies (x86p x86)
-                                                         (natp (xr :rflags i x86)))
-                                     :hints (("GOAL" :in-theory (enable rflags x86p))))
-                 (:linear :corollary (implies (x86p x86)
-                                              (< (xr :rflags i x86) 4294967296))
-                          :hints (("GOAL" :in-theory (enable rflags x86p))))))
-
-;(in-theory (disable rflags-is-n32p)) ;disable the forced version
-
 
 ;why needed?
 ;(acl2::defopeners LOAD-PROGRAM-INTO-MEMORY)
@@ -405,11 +381,6 @@
                                                              ;; X86ISA::SEG-HIDDEN-ATTRI-IS-N16P
                                                              )))))
 
-(defthm memi-of-xw
-  (implies (not (equal :mem fld))
-           (equal (memi i (xw fld index val x86))
-                  (memi i x86)))
-  :hints (("Goal" :in-theory (enable memi))))
 
 (defthm unsigned-byte-p-of-bfix
   (implies (posp n)
@@ -423,7 +394,7 @@
                 (natp n)
                 (< n 16)
                 (x86p x86-2))
-           (equal (xw ':rgf n (xr :rgf n x86) x86-2)
+           (equal (xw :rgf n (xr :rgf n x86) x86-2)
                   x86-2))
   :hints (("Goal" :in-theory (enable ;x86isa::xw-xr-rgf
                               ))))
@@ -445,29 +416,6 @@
 ;rewrite: (< (BVCHOP 64 Y) 9223372036854775808)
 ;rewrite: (<= (BVCHOP 64 Y) (BVCHOP 63 Y))
 
-;; each of the 2 branches in the RHS has a clear RIP
-(defthm xw-rip-of-if-arg3
-  (equal (xw :rip nil (if test rip1 rip2) x86)
-         (if test
-             (xw :rip nil rip1 x86)
-           (xw :rip nil rip2 x86))))
-
-; not strictly necessary since not-mv-nth-0-of-rme-size$inline should fire, but this can get rid of irrelevant stuff
-(defthm mv-nth-0-of-rme-size-of-xw-when-app-view
-  (implies (and (not (equal fld :mem))
-                (not (equal fld :app-view))
-                (not (equal fld :seg-hidden-attr))
-                (not (equal fld :seg-hidden-base))
-                (not (equal fld :seg-hidden-limit))
-                (not (equal fld :seg-visible))
-                (not (equal fld :msr))
-                (app-view x86))
-           (equal (mv-nth 0 (x86isa::rme-size$inline proc-mode nbytes eff-addr seg-reg r-x check-alignment? (xw fld index val x86) mem-ptr?))
-                  (mv-nth 0 (x86isa::rme-size$inline proc-mode nbytes eff-addr seg-reg r-x check-alignment? x86 mem-ptr?))))
-  :hints (("Goal" :in-theory (e/d (x86isa::rme-size) (ea-to-la$inline
-                                                      x86isa::rml-size$inline
-                                                      x86isa::ea-to-la-is-i48p-when-no-error)))))
-
 ;; TODO: The original rule should be replaced by this one
 (DEFTHM X86ISA::PROGRAM-AT-XW-IN-APP-VIEW-better
   (IMPLIES (AND (NOT (EQUAL X86ISA::FLD :MEM))
@@ -479,29 +427,6 @@
   :HINTS (("Goal" :IN-THEORY (ACL2::E/D* NIL (RB)))))
 
 (in-theory (disable X86ISA::PROGRAM-AT-XW-IN-APP-VIEW))
-
-(defthm memi-of-!memi-diff
-  (implies (and (unsigned-byte-p 48 addr)
-                (unsigned-byte-p 48 addr2)
-                (not (equal addr addr2)))
-           (equal (memi addr (!memi addr2 val x86))
-                  (memi addr x86)))
-  :hints (("Goal" :in-theory (enable memi))))
-
-(defthm memi-of-!memi-both
-  (implies (and (unsigned-byte-p 48 addr)
-                (unsigned-byte-p 48 addr2))
-           (equal (memi addr (!memi addr2 val x86))
-                  (if (equal addr addr2)
-                      (acl2::bvchop 8 val)
-                    (memi addr x86))))
-  :hints (("Goal" :in-theory (enable memi))))
-
-(defthm memi-of-xw-same
-  (implies (unsigned-byte-p 48 addr)
-           (equal (memi addr (xw :mem addr val x86))
-                  (acl2::bvchop 8 val)))
-  :hints (("Goal" :in-theory (enable memi))))
 
 ;gen
 (local
@@ -836,45 +761,6 @@
 
 (in-theory (disable zf-spec)) ; move?
 
-;gen?
-(defthm integerp-of-xr-rgf-4
-  (implies (x86p x86)
-           (integerp (xr ':rgf '4 x86))))
-
-;gen?
-(defthm fix-of-xr-rgf-4
-  (equal (fix (xr ':rgf '4 x86))
-         (xr ':rgf '4 x86)))
-
-;gen
-(defthm xr-app-view-of-!memi
-  (equal (xr :app-view nil (!memi addr val x86))
-         (xr :app-view nil x86))
-  :hints (("Goal" :in-theory (enable !memi))))
-
-(defthm app-view-of-!memi
-  (equal (app-view (!memi addr val x86))
-         (app-view x86))
-  :hints (("Goal" :in-theory (enable !memi))))
-
-(defthm x86p-of-!memi
-  (implies (and (x86p x86)
-                (INTEGERP ADDR)
-                (UNSIGNED-BYTE-P 8 VAL))
-           (x86p (!memi addr val x86)))
-  :hints (("Goal" :in-theory (enable !memi))))
-
-;rename
-(defthm memi-of-!memi
-  (implies (unsigned-byte-p 48 addr)
-           (equal (memi addr (!memi addr val x86))
-                  (acl2::bvchop 8 val)))
-  :hints (("Goal" :in-theory (enable memi))))
-
-(defthm !memi-of-!memi-same
-  (equal (!memi addr val (!memi addr val2 x86))
-         (!memi addr val x86)))
-
 (defthm xw-of-xw-both
   (implies (syntaxp (acl2::smaller-termp addr2 addr))
            (equal (xw :mem addr val (xw :mem addr2 val2 x86))
@@ -889,14 +775,6 @@
            (equal (xw :mem addr val (xw :mem addr2 val2 x86))
                   (xw :mem addr2 val2 (xw :mem addr val x86))))
   :hints (("Goal" :in-theory (enable xw))))
-
-(defthm memi-of-xw-irrel
-  (implies (not (equal fld :mem))
-           (equal (memi addr (xw fld index val x86))
-                  (memi addr x86)))
-  :hints (("Goal" :in-theory (e/d (memi)
-                                  (;x86isa::memi-is-n08p ;does forcing
-                                   )))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -928,6 +806,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Most uses of rme-XXX are for 32-bit mode, but this is for 64-bit mode.
 ;; This version has (canonical-address-p eff-addr) in the conclusion
 (defthm x86isa::rme-size-when-64-bit-modep-and-not-fs/gs-strong
   (implies (and (not (equal seg-reg 4))
@@ -939,6 +818,7 @@
                       (rml-size nbytes eff-addr x86isa::r-x x86)
                     (list (list :non-canonical-address eff-addr) 0 x86)))))
 
+;; Most uses of rme-XXX are for 32-bit mode, but this is for 64-bit mode.
 ;; This version has (canonical-address-p eff-addr) in the conclusion
 (defthm x86isa::wme-size-when-64-bit-modep-and-not-fs/gs-strong
   (implies (and (not (equal seg-reg 4))
