@@ -716,6 +716,7 @@
     `(define ,type-suffix ((,type ,recog))
        ,@(and ignorable `((declare (ignorable ,type))))
        :returns (yes/no booleanp)
+       :parents (,(defpred-gen-name 'abstract-syntax suffix))
        ,body
        ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
        ,@(and (not mutrecp) '(:hooks (:fix))))))
@@ -772,6 +773,7 @@
     `(define ,type-suffix ((,type ,recog))
        ,@(and ignorable `((declare (ignorable ,type))))
        :returns (yes/no booleanp)
+       :parents (,(defpred-gen-name 'abstract-syntax suffix))
        ,body
        ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
        ,@(and (not mutrecp) '(:hooks (:fix))))))
@@ -812,6 +814,7 @@
                           :none t)))
     `(define ,type-suffix ((,type ,recog))
        :returns (yes/no booleanp)
+       :parents (,(defpred-gen-name 'abstract-syntax suffix))
        ,body
        ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
        ,@(and (not mutrecp) '(:hooks (:fix))))))
@@ -899,6 +902,7 @@
        (event
         `(define ,type-suffix ((,type ,recog))
            :returns (yes/no booleanp)
+           :parents (,(defpred-gen-name 'abstract-syntax suffix))
            ,body
            ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
            ,@(and (not mutrecp) '(:hooks (:fix)))
@@ -942,6 +946,7 @@
                        (,type-suffix (omap::tail ,type))))))
     `(define ,type-suffix ((,type ,recog))
        :returns (yes/no booleanp)
+       :parents (,(defpred-gen-name 'abstract-syntax suffix))
        ,body
        ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
        ,@(and (not mutrecp) '(:hooks (:fix))))))
@@ -1047,6 +1052,7 @@
         (defpred-gen-types-preds
           members t types suffix default overrides fty-table)))
     `(defines ,clique-name-suffix
+       :parents (,(defpred-gen-name 'abstract-syntax suffix))
        ,@events
        :hints (("Goal" :in-theory (enable o< o-finp)))
        :flag-local nil
@@ -1131,8 +1137,7 @@
            ,@(and parents-presentp `(:parents ,parents))
            ,@(and short-presentp `(:short ,short))
            ,@(and long-presentp `(:long ,long))
-           :order-subtopics t
-           :default-parent t)))
+           :order-subtopics t)))
     `(encapsulate
        ()
        ,xdoc-event

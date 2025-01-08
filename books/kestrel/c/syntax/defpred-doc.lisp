@@ -127,9 +127,10 @@
        If any of the @(':parents'), @(':short'), or @(':long') inputs
        are provided, they are added to this XDOC topic.
        This XDOC topic is generated with @(tsee defxdoc+),
-       with @(':order-topics t') and @(':default-parent t'),
-       so that the other generated events (described below)
-       are subtopics listed in order."))
+       with @(':order-topics t'),
+       so that the other generated events (described below),
+       which all have this XDOC topic as parent,
+       are listed in order as subtopics."))
 
     (xdoc::p
      "A predicate is generated for
