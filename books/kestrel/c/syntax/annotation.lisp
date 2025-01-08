@@ -37,7 +37,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection annotation-predicate-definitions
+(defpred annop
   :short "Definition of the annotation predicates."
   :long
   (xdoc::topstring
@@ -67,43 +67,41 @@
      for the cases in which the unambiguity predicates do not hold;
      note that @(tsee raise) is logically @('nil'),
      so the annotation predicates are false on ambiguous constructs."))
-
-  (defpred annop
-    :default t
-    :override
-    ((expr :ident (typep expr.info))
-     (expr :sizeof-ambig (raise "Internal error: ambiguous ~x0."
+  :default t
+  :override
+  ((expr :ident (typep expr.info))
+   (expr :sizeof-ambig (raise "Internal error: ambiguous ~x0."
+                              (expr-fix expr)))
+   (expr :cast/call-ambig (raise "Internal error: ambiguous ~x0."
+                                 (expr-fix expr)))
+   (expr :cast/mul-ambig (raise "Internal error: ambiguous ~x0."
                                 (expr-fix expr)))
-     (expr :cast/call-ambig (raise "Internal error: ambiguous ~x0."
-                                   (expr-fix expr)))
-     (expr :cast/mul-ambig (raise "Internal error: ambiguous ~x0."
-                                  (expr-fix expr)))
-     (expr :cast/add-ambig (raise "Internal error: ambiguous ~x0."
-                                  (expr-fix expr)))
-     (expr :cast/sub-ambig (raise "Internal error: ambiguous ~x0."
-                                  (expr-fix expr)))
-     (expr :cast/and-ambig (raise "Internal error: ambiguous ~x0."
-                                  (expr-fix expr)))
-     (type-spec :typeof-ambig (raise "Internal error: ambiguous ~x0."
-                                     (type-spec-fix type-spec)))
-     (align-spec :alignas-ambig (raise "Internal error: ambiguous ~x0."
-                                       (align-spec-fix align-spec)))
-     (dirabsdeclor :dummy-base (raise "Internal error: ~
+   (expr :cast/add-ambig (raise "Internal error: ambiguous ~x0."
+                                (expr-fix expr)))
+   (expr :cast/sub-ambig (raise "Internal error: ambiguous ~x0."
+                                (expr-fix expr)))
+   (expr :cast/and-ambig (raise "Internal error: ambiguous ~x0."
+                                (expr-fix expr)))
+   (type-spec :typeof-ambig (raise "Internal error: ambiguous ~x0."
+                                   (type-spec-fix type-spec)))
+   (align-spec :alignas-ambig (raise "Internal error: ambiguous ~x0."
+                                     (align-spec-fix align-spec)))
+   (dirabsdeclor :dummy-base (raise "Internal error: ~
                                        dummy base case of ~
                                        direct abstract declarator."))
-     (attrib t)
-     (attrib-spec t)
-     (asm-output t)
-     (asm-input t)
-     (asm-stmt t)
-     (stmt :for-ambig (raise "Internal error: ambiguous ~x0."
-                             (stmt-fix stmt)))
-     (block-item :ambig (raise "Internal error: ambiguous ~x0."
-                               (block-item-fix block-item)))
-     (amb-expr/tyname (raise "Internal error: ambiguous ~x0."
-                             (amb-expr/tyname-fix amb-expr/tyname)))
-     (amb-declor/absdeclor (raise "Internal error: ambiguous ~x0."
-                                  (amb-declor/absdeclor-fix
-                                   amb-declor/absdeclor)))
-     (amb-decl/stmt (raise "Internal error: ambiguous ~x0."
-                           (amb-decl/stmt-fix amb-decl/stmt))))))
+   (attrib t)
+   (attrib-spec t)
+   (asm-output t)
+   (asm-input t)
+   (asm-stmt t)
+   (stmt :for-ambig (raise "Internal error: ambiguous ~x0."
+                           (stmt-fix stmt)))
+   (block-item :ambig (raise "Internal error: ambiguous ~x0."
+                             (block-item-fix block-item)))
+   (amb-expr/tyname (raise "Internal error: ambiguous ~x0."
+                           (amb-expr/tyname-fix amb-expr/tyname)))
+   (amb-declor/absdeclor (raise "Internal error: ambiguous ~x0."
+                                (amb-declor/absdeclor-fix
+                                 amb-declor/absdeclor)))
+   (amb-decl/stmt (raise "Internal error: ambiguous ~x0."
+                         (amb-decl/stmt-fix amb-decl/stmt)))))

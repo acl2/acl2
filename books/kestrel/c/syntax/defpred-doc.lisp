@@ -18,7 +18,8 @@
 
   :parents (syntax-for-tools)
 
-  :short "Generate predicates over the C abstract syntax for tools."
+  :short "Generate predicates over the C abstract syntax for tools,
+          along with theorems about the predicates."
 
   :long
 
@@ -32,8 +33,8 @@
      "The "
      (xdoc::seetopic "abstract-syntax" "C abstract syntax for tools")
      " consists of a large collection of (fix)types.
-      This macro automates the creation of
-      unary predicates over those types.
+      This macro automates the creation of unary predicates over those types;
+      it also generates theorems about the theorems.
       The user provides information that is specific to the desired predicates,
       and the macro integrates it into generated boilerplate."))
 
@@ -45,6 +46,9 @@
      "(defpred suffix"
      "         :default  ...  ; no default"
      "         :override ...  ; default nil"
+     "         :parents  ...  ; no default"
+     "         :short    ...  ; no default"
+     "         :long     ...  ; no default"
      "  )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -99,11 +103,34 @@
         (e.g. @(tsee expr)),
         @('<kind>') is a keyword identifying one of the summands of the type,
         and @('<term>') is an (untranslated) term
-        whose only free variable is @('<type>')."))))
+        whose only free variable is @('<type>').")))
+
+    (xdoc::desc
+     (list
+      "@(':parents')"
+      "@(':short')"
+      "@(':long')")
+     (xdoc::p
+      "These, if present, are added to the generated XDOC topic
+       described in the Section `Generated Events' below.")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::evmac-section-generated
+
+    (xdoc::desc
+     "@('abstract-syntax-<suffix>')"
+     (xdoc::p
+      "An XDOC topic whose name is obtained by adding
+       at the end of the symbol @('abstract-syntax-'),
+       the symbol specified in the @('suffix') input.
+       If any of the @(':parents'), @(':short'), or @(':long') inputs
+       are provided, they are added to this XDOC topic.
+       This XDOC topic is generated with @(tsee defxdoc+),
+       with @(':order-topics t'),
+       so that the other generated events (described below),
+       which all have this XDOC topic as parent,
+       are listed in order as subtopics."))
 
     (xdoc::p
      "A predicate is generated for
@@ -125,6 +152,8 @@
        @(tsee transunit),
        @(tsee filepath-transunit-map), and
        @(tsee transunit-ensemble)."))
+    (xdoc::p
+     "The details of the predicates are given next.")
 
     (xdoc::desc
      "@('<type>-<suffix>')"
@@ -195,4 +224,9 @@
         the predicate is defined recursively,
         as the conjunction of the predicate generated for the value type
         applied to each value of the map;
-        the conjunction is @('t') if the map is empty."))))))
+        the conjunction is @('t') if the map is empty.")))
+
+    (xdoc::p
+     "The theorems that accompany the predicates
+      are generated as part of the @(tsee define) and @(tsee defines)
+      that define the predicates, after the @('///')."))))
