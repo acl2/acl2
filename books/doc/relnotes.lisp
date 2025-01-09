@@ -136,6 +136,27 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "c::c" "C Library"))
+
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5 (xdoc::seetopic "c$::syntax-for-tools" "Tool-Oriented C Syntax"))
+
+   (xdoc::p
+    "We have extended this library
+
+
+     A new sub-library has been added,
+     which contains an abstract syntax,
+     and accompanying concrete syntax formulation,
+     intended for use by tools like code generators and transformers.
+     This sub-library also includes
+     a parser from the concrete to the abstract syntax,
+     a printer from the abstract syntax to the concrete syntax,
+     and other tools to operate on this syntax.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "std::std/util" "Standard Utilities Library"))
 
    (xdoc::p
