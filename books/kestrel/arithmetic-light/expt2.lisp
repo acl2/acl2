@@ -204,7 +204,7 @@
                 (integerp free)
                 (integerp size))
            (<= (expt 2 size) (expt 2 (+ -1 free))))
-  :rule-classes ((:linear))
+  :rule-classes :linear
   :hints (("Goal" :in-theory (disable expt-of-+))))
 
 (defthm unsigned-byte-p-of-+-of--1-and-expt

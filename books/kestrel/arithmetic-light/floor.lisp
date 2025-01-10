@@ -1436,7 +1436,7 @@
                 (rationalp i)
                 (rationalp j))
            (< (floor i j) i))
-  :rule-classes (:linear))
+  :rule-classes :linear)
 
 ;strengthen?
 (defthm floor-bound-strict
