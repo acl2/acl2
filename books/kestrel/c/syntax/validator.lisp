@@ -998,7 +998,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define valid-var ((var identp) (table valid-tablep))
-  :returns (mv erp (type typep))
+  :returns (mv erp (type typep) (linkage linkagep))
   :short "Validate a variable."
   :long
   (xdoc::topstring
@@ -1014,8 +1014,8 @@
      it is found in the validation table,
      recorded as denoting an object or function
      [C:6.5.1/2].
-     The type is obtained from the table."))
-  (b* (((reterr) (irr-type))
+     The type and the linkage are obtained from the table."))
+  (b* (((reterr) (irr-type) (irr-linkage))
        ((mv info &) (valid-lookup-ord var table))
        ((unless info)
         (reterr (msg "The variable ~x0 is not in scope." (ident-fix var))))
@@ -1024,7 +1024,8 @@
                       is in scope, but does not denote ~
                       an object or function."
                      (ident-fix var)))))
-    (retok (valid-ord-info-objfun->type info)))
+    (retok (valid-ord-info-objfun->type info)
+           (valid-ord-info-objfun->linkage info)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2179,7 +2180,7 @@
     (b* (((reterr) (irr-expr) (irr-type) nil (irr-valid-table)))
       (expr-case
        expr
-       :ident (b* (((erp type) (valid-var expr.ident table))
+       :ident (b* (((erp type &) (valid-var expr.ident table))
                    (info (make-var-info :type type)))
                 (retok (make-expr-ident :ident expr.ident
                                         :info info)
