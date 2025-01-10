@@ -16,7 +16,6 @@
 (include-book "abstract-syntax-operations")
 (include-book "unambiguity")
 (include-book "validation-information")
-(include-book "annotation")
 (include-book "defpred")
 (include-book "defpred-doc")
 (include-book "preprocess-file")
@@ -140,13 +139,13 @@
      as resulting after disambiguation.")
    (xdoc::p
     "We provide a collection of predicates that characterize "
-    (xdoc::seetopic "annotation" "annotated abstract syntax")
+    (xdoc::seetopic "validation-information" "annotated abstract syntax")
     ", i.e. abstract syntax enhanced with
      the information added by the validator.")
    (xdoc::p
     "We provide various "
     (xdoc::seetopic "abstract-syntax-operations"
-                    "operations on the abstract syntax")
+                    "other operations on the abstract syntax")
     ".")
    (xdoc::p
     "We provide event macros @(tsee input-files) and @(tsee output-files)
@@ -182,7 +181,6 @@
                     abstract-syntax-operations
                     unambiguity
                     validation-information
-                    annotation
                     preprocessing
                     parser
                     disambiguator
