@@ -42,6 +42,7 @@
 ; Yahya Sohail        <yahya.sohail@intel.com>
 
 (in-package "X86ISA")
+(include-book "application-level-memory")
 (include-book "paging-structures" :dir :utils)
 (include-book "physical-memory" :ttags (:undef-flg))
 (include-book "clause-processors/find-matching" :dir :system)
