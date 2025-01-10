@@ -787,6 +787,29 @@
    (linkage linkage))
   :pred var-infop)
 
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-var-info
+  :short "An irrelevant validator information for variables."
+  :type var-infop
+  :body (make-var-info :type (irr-type)
+                       :linkage (irr-linkage)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define coerce-var-info (x)
+  :returns (info var-infop)
+  :short "Coerce a value to @(tsee var-info)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This must be used when the value is expected to have that type.
+     We raise a hard error if that is not the case."))
+  (if (var-infop x)
+      x
+    (prog2$ (raise "Internal error: ~x0 does not satisfy VAR-INFOP." x)
+            (irr-var-info))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defpred annop
