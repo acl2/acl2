@@ -1,7 +1,7 @@
 ; Theorems about functions like cf-spec32
 ;
 ; Copyright (C) 2022 Kestrel Technology, LLC
-; Copyright (C) 2024 Kestrel Institute
+; Copyright (C) 2024-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -18,37 +18,37 @@
 
 ;; There is no af-spec8, etc.
 
-(defthm unsigned-byte-p-of-cf-spec8 (implies (posp n) (unsigned-byte-p n (cf-spec8 result))) :hints (("Goal" :in-theory (enable cf-spec8))))
-(defthm unsigned-byte-p-of-cf-spec16 (implies (posp n) (unsigned-byte-p n (cf-spec16 result))) :hints (("Goal" :in-theory (enable cf-spec16))))
-(defthm unsigned-byte-p-of-cf-spec32 (implies (posp n) (unsigned-byte-p n (cf-spec32 result))) :hints (("Goal" :in-theory (enable cf-spec32))))
-(defthm unsigned-byte-p-of-cf-spec64 (implies (posp n) (unsigned-byte-p n (cf-spec64 result))) :hints (("Goal" :in-theory (enable cf-spec64))))
+(defthm unsigned-byte-p-of-cf-spec8 (implies (posp n) (unsigned-byte-p n (cf-spec8 result))))
+(defthm unsigned-byte-p-of-cf-spec16 (implies (posp n) (unsigned-byte-p n (cf-spec16 result))))
+(defthm unsigned-byte-p-of-cf-spec32 (implies (posp n) (unsigned-byte-p n (cf-spec32 result))))
+(defthm unsigned-byte-p-of-cf-spec64 (implies (posp n) (unsigned-byte-p n (cf-spec64 result))))
 (defthm bitp-of-cf-spec8 (bitp (cf-spec8 x)))
 (defthm bitp-of-cf-spec16 (bitp (cf-spec16 x)))
 (defthm bitp-of-cf-spec32 (bitp (cf-spec32 x)))
 (defthm bitp-of-cf-spec64 (bitp (cf-spec64 x)))
 
-(defthm unsigned-byte-p-of-of-spec8 (implies (posp n) (unsigned-byte-p n (of-spec8 result))) :hints (("Goal" :in-theory (enable of-spec8))))
-(defthm unsigned-byte-p-of-of-spec16 (implies (posp n) (unsigned-byte-p n (of-spec16 result))) :hints (("Goal" :in-theory (enable of-spec16))))
-(defthm unsigned-byte-p-of-of-spec32 (implies (posp n) (unsigned-byte-p n (of-spec32 result))) :hints (("Goal" :in-theory (enable of-spec32))))
-(defthm unsigned-byte-p-of-of-spec64 (implies (posp n) (unsigned-byte-p n (of-spec64 result))) :hints (("Goal" :in-theory (enable of-spec64))))
+(defthm unsigned-byte-p-of-of-spec8 (implies (posp n) (unsigned-byte-p n (of-spec8 result))))
+(defthm unsigned-byte-p-of-of-spec16 (implies (posp n) (unsigned-byte-p n (of-spec16 result))))
+(defthm unsigned-byte-p-of-of-spec32 (implies (posp n) (unsigned-byte-p n (of-spec32 result))))
+(defthm unsigned-byte-p-of-of-spec64 (implies (posp n) (unsigned-byte-p n (of-spec64 result))))
 (defthm bitp-of-of-spec8 (bitp (of-spec8 x)))
 (defthm bitp-of-of-spec16 (bitp (of-spec16 x)))
 (defthm bitp-of-of-spec32 (bitp (of-spec32 x)))
 (defthm bitp-of-of-spec64 (bitp (of-spec64 x)))
 
-(defthm unsigned-byte-p-of-pf-spec8 (implies (posp n) (unsigned-byte-p n (pf-spec8 result))) :hints (("Goal" :in-theory (enable pf-spec8))))
-(defthm unsigned-byte-p-of-pf-spec16 (implies (posp n) (unsigned-byte-p n (pf-spec16 result))) :hints (("Goal" :in-theory (enable pf-spec16))))
-(defthm unsigned-byte-p-of-pf-spec32 (implies (posp n) (unsigned-byte-p n (pf-spec32 result))) :hints (("Goal" :in-theory (enable pf-spec32))))
-(defthm unsigned-byte-p-of-sf-spec64 (implies (posp n) (unsigned-byte-p n (sf-spec64 result))) :hints (("Goal" :in-theory (enable sf-spec64))))
+(defthm unsigned-byte-p-of-pf-spec8 (implies (posp n) (unsigned-byte-p n (pf-spec8 result))))
+(defthm unsigned-byte-p-of-pf-spec16 (implies (posp n) (unsigned-byte-p n (pf-spec16 result))))
+(defthm unsigned-byte-p-of-pf-spec32 (implies (posp n) (unsigned-byte-p n (pf-spec32 result))))
+(defthm unsigned-byte-p-of-pf-spec64 (implies (posp n) (unsigned-byte-p n (pf-spec64 result))))
 (defthm bitp-of-pf-spec8 (bitp (pf-spec8 x)))
 (defthm bitp-of-pf-spec16 (bitp (pf-spec16 x)))
 (defthm bitp-of-pf-spec32 (bitp (pf-spec32 x)))
 (defthm bitp-of-pf-spec64 (bitp (pf-spec64 x)))
 
-(defthm unsigned-byte-p-of-sf-spec8 (implies (posp n) (unsigned-byte-p n (sf-spec8 result))) :hints (("Goal" :in-theory (enable sf-spec8))))
-(defthm unsigned-byte-p-of-sf-spec16 (implies (posp n) (unsigned-byte-p n (sf-spec16 result))) :hints (("Goal" :in-theory (enable sf-spec16))))
-(defthm unsigned-byte-p-of-sf-spec32 (implies (posp n) (unsigned-byte-p n (sf-spec32 result))) :hints (("Goal" :in-theory (enable sf-spec32))))
-(defthm unsigned-byte-p-of-pf-spec64 (implies (posp n) (unsigned-byte-p n (pf-spec64 result))) :hints (("Goal" :in-theory (enable pf-spec64))))
+(defthm unsigned-byte-p-of-sf-spec8 (implies (posp n) (unsigned-byte-p n (sf-spec8 result))))
+(defthm unsigned-byte-p-of-sf-spec16 (implies (posp n) (unsigned-byte-p n (sf-spec16 result))))
+(defthm unsigned-byte-p-of-sf-spec32 (implies (posp n) (unsigned-byte-p n (sf-spec32 result))))
+(defthm unsigned-byte-p-of-sf-spec64 (implies (posp n) (unsigned-byte-p n (sf-spec64 result))))
 (defthm bitp-of-sf-spec8 (bitp (sf-spec8 x)))
 (defthm bitp-of-sf-spec16 (bitp (sf-spec16 x)))
 (defthm bitp-of-sf-spec32 (bitp (sf-spec32 x)))
