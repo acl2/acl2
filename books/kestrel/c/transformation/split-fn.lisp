@@ -107,7 +107,7 @@
   (b* (((paramdecl paramdecl) paramdecl))
     (paramdeclor-case
       paramdecl.decl
-      :declor (omap::update (declor-get-ident paramdecl.decl.unwrap)
+      :declor (omap::update (declor->ident paramdecl.decl.unwrap)
                             (paramdecl-fix paramdecl)
                             nil)
       :otherwise nil)))
@@ -160,14 +160,12 @@
      (b* (((when (endp initdeclors))
            nil)
           ((initdeclor initdeclor) (first initdeclors))
-          (ident? (declor-get-ident initdeclor.declor)))
-       (if ident?
-           (omap::update
-             ident?
-             (make-paramdecl
-               :spec declspecs
-               :decl (paramdeclor-declor initdeclor.declor))
-             (decl-to-ident-paramdecl-map0 declspecs (rest initdeclors)))
+          (ident (declor->ident initdeclor.declor)))
+       (omap::update
+         ident
+         (make-paramdecl
+           :spec declspecs
+           :decl (paramdeclor-declor initdeclor.declor))
          (decl-to-ident-paramdecl-map0 declspecs (rest initdeclors))))
      :verify-guards :after-returns)))
 
@@ -329,7 +327,7 @@
       (dirdeclor-case
         fundef.declor.direct
         :function-params
-        (b* (((unless (equal target-fn (dirdeclor-get-ident fundef.declor.direct.decl)))
+        (b* (((unless (equal target-fn (c$::dirdeclor->ident fundef.declor.direct.decl)))
               (retok (fundef-fix fundef) nil))
              ((erp new-fn truncated-items)
               (split-fn-block-item-list

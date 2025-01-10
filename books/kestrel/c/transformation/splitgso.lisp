@@ -57,20 +57,20 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Find the object and its type
-;; TODO: make into utility
 
-(define initdeclor-get-ident
+;; TODO: move to abstract-syntax-operations
+(define initdeclor->ident
   ((initdeclor initdeclorp))
   :returns (ident? ident-optionp)
   (b* (((initdeclor initdeclor) initdeclor))
-    (declor-get-ident initdeclor.declor)))
+    (declor->ident initdeclor.declor)))
 
 (define initdeclor-list-get-idents
   ((initdeclors initdeclor-listp))
   :returns (idents ident-listp)
   (b* (((when (endp initdeclors))
         nil)
-       (ident? (initdeclor-get-ident (first initdeclors))))
+       (ident? (initdeclor->ident (first initdeclors))))
     (if ident?
         (cons ident?
               (initdeclor-list-get-idents (rest initdeclors)))
@@ -204,7 +204,7 @@
        ((structdeclor structdeclor) (first structdeclors))
        ((unless structdeclor.declor?)
         (structdeclor-list-get-ident (rest structdeclors)))
-       (ident? (declor-get-ident structdeclor.declor?)))
+       (ident? (declor->ident structdeclor.declor?)))
     (or ident?
         (structdeclor-list-get-ident (rest structdeclors)))))
 
@@ -382,7 +382,7 @@
   (declare (ignore split-members))
   (b* (((initdeclor initdeclor) initdeclor)
        ;; TODO: check initdeclor.declor.pointers is nil?
-       (ident? (declor-get-ident initdeclor.declor))
+       (ident? (declor->ident initdeclor.declor))
        ((unless (equal ident? target))
         (mv nil nil nil))
        ((when initdeclor.init?)
