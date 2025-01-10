@@ -130,6 +130,8 @@
     make-type-spec-typeof-type
     irr-type-spec
 
+    type-spec-optionp
+
     spec/qual-p
     spec/qual-fix
     spec/qual-count

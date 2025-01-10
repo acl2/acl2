@@ -3085,6 +3085,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defoption type-spec-option
+  type-spec
+  :short "Fixtype of optional type specifiers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Type specifiers are defined in @(tsee type-spec)."))
+  :pred type-spec-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deflist type-spec-list
   :parents (abstract-syntax)
   :short "Fixtype of lists of type specifiers."
