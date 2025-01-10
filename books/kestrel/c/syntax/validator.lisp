@@ -2037,7 +2037,7 @@
              (not (equal (linkage-kind linkage)
                          :none))))
 
-  (defret ext/int-linkage-of-valid-stor-spec-when-file-object
+  (defret ext/int-linkage-of-valid-stor-spec-list-when-file-object
     (implies (and (not erp)
                   (not typedefp)
                   (not (type-case type :function))
