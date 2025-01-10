@@ -38,7 +38,8 @@
 
 (in-package "X86ISA")
 
-(include-book "application-level-memory")
+(include-book "std/util/def-bound-theorems" :dir :system)
+(include-book "../utils/utilities")
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 
 ;; ----------------------------------------------------------------------
