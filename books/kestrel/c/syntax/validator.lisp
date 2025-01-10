@@ -1886,7 +1886,9 @@
      We prove that if a function is being declared,
      then the linkage is always external or internal,
      and that the only possible sequences of storage class specifiers
-     are @('extern'), @('static'), and nothing.")
+     are @('extern'), @('static'), and nothing.
+     We prove that if an object is declared in the file scope,
+     then the linkage is always external or internal.")
    (xdoc::p
     "The @('fundefp') input is @('t') when this function is called on
      the storage class specifiers of a function definition.
@@ -2031,6 +2033,14 @@
     (implies (and (not erp)
                   (not typedefp)
                   (type-case type :function))
+             (not (equal (linkage-kind linkage)
+                         :none))))
+
+  (defret ext/int-linkage-of-valid-stor-spec-when-file-object
+    (implies (and (not erp)
+                  (not typedefp)
+                  (not (type-case type :function))
+                  (equal (valid-table-num-scopes table) 1))
              (not (equal (linkage-kind linkage)
                          :none))))
 
