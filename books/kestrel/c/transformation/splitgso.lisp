@@ -371,6 +371,54 @@
 ;; replace global `struct S s` with `struct S1 s1; struct S2 s2`;
 ;; TODO: handle declarations with initializer
 
+(define match-designors
+  ((split-members ident-listp)
+   (designors designor-listp))
+  (declare (xargs :type-prescription (booleanp (match-designors split-members designors))))
+  ;; TODO: right now this only handles single-designation initializers. Needs
+  ;;   to be expanded to separate multi-designation initializers.
+  ;;   - Also, what about non-dot initializers?
+  (b* (((when (or (endp designors)
+                  (not (endp (rest designors)))))
+        nil)
+       (designor (first designors)))
+    (designor-case
+      designor
+      :sub nil
+      :dot (and (member-equal designor.name split-members) t))))
+
+(define split-desiniter-list
+  ((split-members ident-listp)
+   (desiniters desiniter-listp))
+  :returns (mv (desiniter-list1 desiniter-listp)
+               (desiniter-list2 desiniter-listp))
+  (b* (((when (endp desiniters))
+        (mv nil nil))
+       ((mv desiniters1 desiniters2)
+        (split-desiniter-list split-members (rest desiniters)))
+       ((desiniter desiniter) (desiniter-fix (first desiniters))))
+    (if (match-designors split-members desiniter.designors)
+        (mv desiniters1 (cons desiniter desiniters2))
+      (mv (cons desiniter desiniters1) desiniters2))))
+
+(define split-struct-initer
+  ((split-members ident-listp)
+   (initer initerp))
+  :returns (mv (initer-option1 initer-optionp)
+               (initer-option2 initer-optionp))
+  (initer-case
+   initer
+   ;; TODO
+   :single (mv nil nil)
+   :list (b* (((mv elems1 elems2)
+               (split-desiniter-list split-members initer.elems)))
+           (mv (c$::make-initer-list
+                 :elems elems1
+                 :final-comma initer.final-comma)
+               (c$::make-initer-list
+                 :elems elems2
+                 :final-comma initer.final-comma)))))
+
 (define split-struct-initdeclor
   ((target identp)
    (split-members ident-listp)
@@ -379,19 +427,16 @@
                       :rule-classes :type-prescription)
                (initer-option1 initer-optionp)
                (initer-option2 initer-optionp))
-  (declare (ignore split-members))
   (b* (((initdeclor initdeclor) initdeclor)
        ;; TODO: check initdeclor.declor.pointers is nil?
-       (ident? (declor->ident initdeclor.declor))
-       ((unless (equal ident? target))
+       (ident (declor->ident initdeclor.declor))
+       ((unless (equal ident target))
         (mv nil nil nil))
-       ((when initdeclor.init?)
-        ;; TODO: add support
-        (raise "Initializers not yet supported.")
-        (mv nil nil nil)))
-    (mv t
-        nil
-        nil)))
+       ((unless initdeclor.init?)
+        (mv t nil nil))
+       ((mv initer-option1 initer-option2)
+        (split-struct-initer split-members initdeclor.init?)))
+    (mv t initer-option1 initer-option2)))
 
 (define split-struct-initdeclors
   ((target identp)
