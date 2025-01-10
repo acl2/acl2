@@ -41,6 +41,7 @@
 ;; This book contains the specification of the following instructions:
 ;; or
 
+(include-book "structures" :dir :utils)
 (include-book "../rflags-spec"
               :ttags (:undef-flg))
 

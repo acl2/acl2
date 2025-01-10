@@ -41,6 +41,7 @@
 
 (in-package "X86ISA")
 
+(include-book "structures" :dir :utils)
 (include-book "../rflags-spec"
               :ttags (:undef-flg))
 
