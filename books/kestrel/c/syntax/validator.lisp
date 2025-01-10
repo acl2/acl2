@@ -1765,7 +1765,7 @@
      of a list of declaration specifiers,
      after determining the identifier being declared and its type,
      which are both passed as input to this function,
-     along with the current validation table..")
+     along with the current validation table.")
    (xdoc::p
     "Only a few sequences of storage class specifiers are allowed [C:6.7.1/2],
      also depending on whether the declaration is in a block or file scope
