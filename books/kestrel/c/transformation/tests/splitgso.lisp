@@ -69,7 +69,16 @@ int main(void) {
   (omap::lookup *filepath-splitgso*
                 (fileset->unwrap *fileset-splitgso1*)))
 
-#|
-(acl2::nats=>string
-  (filedata->unwrap *filedata-splitgso1*))
-|#
+(assert-event
+ (equal
+   (acl2::nats=>string
+     (filedata->unwrap *filedata-splitgso1*))
+  "struct myStruct { int foo; string bar; unsigned long int baz; };
+struct s1 { int foo; unsigned long int baz; };
+struct s2 { string bar; };
+struct s1 my1;
+struct s2 my2;
+int main(void) {
+  return my1.foo + *(my2.bar);
+}
+"))

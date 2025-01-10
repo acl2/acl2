@@ -250,10 +250,10 @@
   (decl-case
    decl
    :decl
-   (b* (;; TODO: also check that decl.init is "empty"
-        (type-spec? (type-spec-from-dec-specs decl.specs))
+   (b* ((type-spec? (type-spec-from-dec-specs decl.specs))
         ((mv type-match remanining-struct-decls split-struct-decls)
-         (if type-spec?
+         (if (and type-spec?
+                  (endp decl.init))
              (type-spec-case
                type-spec?
                :struct (b* (((strunispec strunispec) type-spec?.spec)
@@ -342,7 +342,7 @@
         (split-global-struct-type-extdecl-list
           original
           new1
-          new1
+          new2
           split-members
           (rest extdecls))))
     (retok (append new-extdecls1 new-extdecls2))))
@@ -368,10 +368,175 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; TODO
-
 ;; replace global `struct S s` with `struct S1 s1; struct S2 s2`;
-;; (needs to handle global initializer)
+;; TODO: handle declarations with initializer
+
+(define split-struct-initdeclor
+  ((target identp)
+   (split-members ident-listp)
+   (initdeclor initdeclorp))
+  :returns (mv (match booleanp
+                      :rule-classes :type-prescription)
+               (initer-option1 initer-optionp)
+               (initer-option2 initer-optionp))
+  (declare (ignore split-members))
+  (b* (((initdeclor initdeclor) initdeclor)
+       ;; TODO: check initdeclor.declor.pointers is nil?
+       (ident? (declor-get-ident initdeclor.declor))
+       ((unless (equal ident? target))
+        (mv nil nil nil))
+       ((when initdeclor.init?)
+        ;; TODO: add support
+        (raise "Initializers not yet supported.")
+        (mv nil nil nil)))
+    (mv t
+        nil
+        nil)))
+
+(define split-struct-initdeclors
+  ((target identp)
+   (split-members ident-listp)
+   (initdeclors initdeclor-listp))
+  :returns (mv (match booleanp
+                      :rule-classes :type-prescription)
+               (initer-option1 initer-optionp)
+               (initer-option2 initer-optionp))
+  ;; Only accepts singletons for now
+  (if (or (endp initdeclors)
+          (not (endp (rest initdeclors))))
+      (mv nil nil nil)
+    (split-struct-initdeclor target
+                             split-members
+                             (first initdeclors))))
+
+(define split-global-struct-obj-decl
+  ((original identp)
+   (new1 identp)
+   (new2 identp)
+   (new1-type identp)
+   (new2-type identp)
+   (split-members ident-listp)
+   (decl declp))
+  :returns (mv found
+               (decls decl-listp))
+  (decl-case
+   decl
+   :decl (b* ((type-spec? (type-spec-from-dec-specs decl.specs))
+              ((unless type-spec?)
+               (mv nil (list (decl-fix decl))))
+              ((mv match initer-option1 initer-option2)
+               (type-spec-case
+                 type-spec?
+                 :struct (split-struct-initdeclors original split-members decl.init)
+                 :otherwise (mv nil nil nil)))
+              ((unless match)
+               (mv nil (list (decl-fix decl)))))
+           (mv t
+               (list (c$::make-decl-decl
+                       :specs (list (c$::decl-spec-typespec
+                                      (c$::type-spec-struct
+                                        (c$::make-strunispec
+                                          :name new1-type))))
+                       :init (list (c$::make-initdeclor
+                                     :declor (c$::make-declor
+                                               :direct (c$::dirdeclor-ident new1))
+                                     :init? initer-option1)))
+                     (c$::make-decl-decl
+                       :specs (list (c$::decl-spec-typespec
+                                      (c$::type-spec-struct
+                                        (c$::make-strunispec
+                                          :name new2-type))))
+                       :init (list (c$::make-initdeclor
+                                     :declor (c$::make-declor
+                                               :direct (c$::dirdeclor-ident new2))
+                                     :init? initer-option2))))))
+   :statassert (mv nil (list (decl-fix decl)))))
+
+(define split-global-struct-obj-extdecl
+  ((original identp)
+   (new1 identp)
+   (new2 identp)
+   (new1-type identp)
+   (new2-type identp)
+   (split-members ident-listp)
+   (extdecl extdeclp))
+  :returns (mv found
+               (extdecls extdecl-listp))
+  (extdecl-case
+   extdecl
+   :fundef (mv nil (list (extdecl-fix extdecl)))
+   :decl (b* (((mv found decls)
+               (split-global-struct-obj-decl
+                 original
+                 new1
+                 new2
+                 new1-type
+                 new2-type
+                 split-members
+                 extdecl.unwrap)))
+           (mv found
+               (decl-list-to-extdecl-list decls)))
+   :empty (mv nil (list (extdecl-fix extdecl)))
+   :asm (mv nil (list (extdecl-fix extdecl)))))
+
+(define split-global-struct-obj-extdecl-list
+  ((original identp)
+   (new1 identp)
+   (new2 identp)
+   (new1-type identp)
+   (new2-type identp)
+   (split-members ident-listp)
+   (extdecls extdecl-listp))
+  :returns (mv er
+               (extdecls extdecl-listp))
+  (b* (((reterr) nil)
+       ((when (endp extdecls))
+        (retok nil))
+       ((mv found new-extdecls1)
+        (split-global-struct-obj-extdecl
+          original
+          new1
+          new2
+          new1-type
+          new2-type
+          split-members
+          (first extdecls)))
+       ((when found)
+        (retok (append new-extdecls1
+                       (extdecl-list-fix (rest extdecls)))))
+       ((erp new-extdecls2)
+        (split-global-struct-obj-extdecl-list
+          original
+          new1
+          new2
+          new1-type
+          new2-type
+          split-members
+          (rest extdecls))))
+    (retok (append new-extdecls1 new-extdecls2))))
+
+(define split-global-struct-obj-transunit
+  ((original identp)
+   (new1 identp)
+   (new2 identp)
+   (new1-type identp)
+   (new2-type identp)
+   (split-members ident-listp)
+   (tunit transunitp))
+  :returns (mv er
+               (new-tunit transunitp))
+  (b* (((reterr) (c$::irr-transunit))
+       ((transunit tunit) tunit)
+       ((erp extdecls)
+        (split-global-struct-obj-extdecl-list
+          original
+          new1
+          new2
+          new1-type
+          new2-type
+          split-members
+          tunit.decls)))
+    (retok (transunit extdecls))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -648,6 +813,15 @@
        ((erp tunit)
         (split-global-struct-type-transunit
           struct-name
+          new-struct-type1
+          new-struct-type2
+          split-members
+          tunit))
+       ((erp tunit)
+        (split-global-struct-obj-transunit
+          orig-struct
+          new-struct1
+          new-struct2
           new-struct-type1
           new-struct-type2
           split-members
