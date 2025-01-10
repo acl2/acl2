@@ -212,6 +212,14 @@
        a @(tsee std::delist) for the predicates,
        which automatically generates theorems."))
 
+    (xdoc::desc
+     "@('abstract-syntax-<suffix>-rules')"
+     (xdoc::p
+      "A "
+      (xdoc::seetopic "acl2::rulesets" "ruleset")
+      " with the theorems that accompany the predicates,
+       except for the ones that accompany the list type predicates."))
+
     (xdoc::p
      "The theorems that accompany the predicates
       are generated as part of the @(tsee define) and @(tsee defines)

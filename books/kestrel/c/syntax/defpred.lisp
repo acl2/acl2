@@ -1126,7 +1126,10 @@
    (xdoc::p
     "We obtain all the names of the types to generate predicates for,
      and then we call the code to generate the predicates,
-     which we put into one event."))
+     which we put into one event.")
+   (xdoc::p
+    "For now the generated ruleset is empty,
+     but we will populate it when we generate more theorems."))
   (b* ((types
         (defpred-type-names-in-cliques-with-names *defpred-cliques* fty-table))
        (pred-events
@@ -1138,11 +1141,16 @@
            ,@(and parents-presentp `(:parents ,parents))
            ,@(and short-presentp `(:short ,short))
            ,@(and long-presentp `(:long ,long))
-           :order-subtopics t)))
+           :order-subtopics t))
+       (ruleset-event
+        `(def-ruleset! ,(packn-pos (list 'abstract-syntax- suffix '-rules)
+                                   suffix)
+           nil)))
     `(encapsulate
        ()
        ,xdoc-event
-       ,@pred-events)))
+       ,@pred-events
+       ,ruleset-event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
