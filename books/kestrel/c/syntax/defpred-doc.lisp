@@ -132,34 +132,12 @@
        which all have this XDOC topic as parent,
        are listed in order as subtopics."))
 
-    (xdoc::p
-     "A predicate is generated for
-      the following types of the abstract syntax:")
-    (xdoc::ul
-     (xdoc::li
-      "All the types in the mutually recursive clique
-       @(tsee exprs/decls/stmts).")
-     (xdoc::li
-      "The types
-       @(tsee type-spec-list),
-       @(tsee expr/tyname),
-       @(tsee declor/absdeclor),
-       @(tsee decl/stmt),
-       @(tsee fundef),
-       @(tsee fundef-option),
-       @(tsee extdecl),
-       @(tsee extdecl-list),
-       @(tsee transunit),
-       @(tsee filepath-transunit-map), and
-       @(tsee transunit-ensemble)."))
-    (xdoc::p
-     "The details of the predicates are given next.")
-
     (xdoc::desc
      "@('<type>-<suffix>')"
      (xdoc::p
-      "For each type @('<type>') designated above,
-      a predicate over the type, defined as follows:")
+      "For each type @('<type>') designated in
+       the `Types for Which Predicates Are Generated' below,
+       a predicate over the type, defined as follows:")
      (xdoc::ul
       (xdoc::li
        "If @('<type>') is a @(tsee fty::defprod):"
@@ -226,7 +204,39 @@
         applied to each value of the map;
         the conjunction is @('t') if the map is empty.")))
 
+    (xdoc::desc
+     "Accompanying list type theorems."
+     (xdoc::p
+      "For each list type designated in
+       the `Types for Which Predicates Are Generated' below,
+       a @(tsee std::delist) for the predicates,
+       which automatically generates theorems."))
+
     (xdoc::p
      "The theorems that accompany the predicates
       are generated as part of the @(tsee define) and @(tsee defines)
-      that define the predicates, after the @('///')."))))
+      that define the predicates, after the @('///').")
+
+    (xdoc::subsection
+     "Types for Which Predicates Are Generated"
+
+     (xdoc::p
+      "A predicate is generated for
+       the following types of the abstract syntax:")
+     (xdoc::ul
+      (xdoc::li
+       "All the types in the mutually recursive clique
+        @(tsee exprs/decls/stmts).")
+      (xdoc::li
+       "The types
+        @(tsee type-spec-list),
+        @(tsee expr/tyname),
+        @(tsee declor/absdeclor),
+        @(tsee decl/stmt),
+        @(tsee fundef),
+        @(tsee fundef-option),
+        @(tsee extdecl),
+        @(tsee extdecl-list),
+        @(tsee transunit),
+        @(tsee filepath-transunit-map), and
+        @(tsee transunit-ensemble)."))))))
