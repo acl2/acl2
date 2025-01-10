@@ -15,6 +15,7 @@
 (include-book "abstraction-mapping")
 (include-book "abstract-syntax-operations")
 (include-book "unambiguity")
+(include-book "validation-information")
 (include-book "annotation")
 (include-book "defpred")
 (include-book "defpred-doc")
@@ -180,6 +181,7 @@
                     defpred
                     abstract-syntax-operations
                     unambiguity
+                    validation-information
                     annotation
                     preprocessing
                     parser
