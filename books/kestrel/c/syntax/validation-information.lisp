@@ -773,6 +773,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod var-info
+  :short "Fixtype of validator information for variables."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the type of the annotations that the validator adds to variables,
+     i.e. identifiers used as expressions,
+     i.e. the @(':ident') case of @(tsee expr).
+     For now this only consists of a type,
+     but it may be extended in the future."))
+  ((type type))
+  :pred var-infop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defpred annop
   :short "Definition of the predicates that check whether
           the abstract syntax is annotated with validation information."
@@ -806,7 +821,7 @@
      so the annotation predicates are false on ambiguous constructs."))
   :default t
   :override
-  ((expr :ident (typep expr.info))
+  ((expr :ident (var-infop expr.info))
    (expr :sizeof-ambig (raise "Internal error: ambiguous ~x0."
                               (expr-fix expr)))
    (expr :cast/call-ambig (raise "Internal error: ambiguous ~x0."

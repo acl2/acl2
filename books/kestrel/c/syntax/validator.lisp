@@ -2169,9 +2169,10 @@
     (b* (((reterr) (irr-expr) (irr-type) nil (irr-valid-table)))
       (expr-case
        expr
-       :ident (b* (((erp type) (valid-var expr.ident table)))
+       :ident (b* (((erp type) (valid-var expr.ident table))
+                   (info (make-var-info :type type)))
                 (retok (make-expr-ident :ident expr.ident
-                                        :info type)
+                                        :info info)
                        type
                        nil
                        (valid-table-fix table)))
