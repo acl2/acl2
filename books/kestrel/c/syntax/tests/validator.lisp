@@ -133,7 +133,8 @@
             (expr-x (expr-paren->inner expr-xp)))
          (and (expr-case expr-x :ident)
               (equal (expr-ident->info expr-x)
-                     (make-var-info :type (type-sint))))))
+                     (make-var-info :type (type-sint)
+                                    :linkage (linkage-external))))))
 
 (test-valid
  "typedef char x;

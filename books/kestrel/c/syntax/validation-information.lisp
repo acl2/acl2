@@ -781,9 +781,10 @@
     "This is the type of the annotations that the validator adds to variables,
      i.e. identifiers used as expressions,
      i.e. the @(':ident') case of @(tsee expr).
-     For now this only consists of a type,
-     but it may be extended in the future."))
-  ((type type))
+     The information for a variable consists of
+     the type and linkage of the object denoted by the variable."))
+  ((type type)
+   (linkage linkage))
   :pred var-infop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
