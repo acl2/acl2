@@ -40,6 +40,7 @@
 ; Alessandro Coglio (www.alessandrocoglio.info)
 
 (in-package "X86ISA")
+(include-book "state")
 (include-book "rflags-spec")
 (include-book "fp-structures" :dir :utils)
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))

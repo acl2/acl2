@@ -18,7 +18,6 @@
 
 (include-book "../syntax/abstract-syntax-operations")
 (include-book "deftrans")
-(include-book "utilities/free-vars")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -192,7 +191,7 @@
       fundef.declor.direct
       :function-params
       (if (equal target-fn
-                 (dirdeclor-get-ident fundef.declor.direct.decl))
+                 (c$::dirdeclor->ident fundef.declor.direct.decl))
           ;; Return
           (make-fundef
             :extension fundef.extension
