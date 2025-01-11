@@ -188,3 +188,21 @@
                         (t nil)))
           ((when foundp) type-entry))
        (type-with-recognizer-loop recog (cdr type-entries))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-clique-with-name ((clique symbolp) (fty-table alistp))
+  :returns (info? (implies info? (flextypes-p info?)))
+  :short "Find, in the FTY table,
+          the information for a type clique with a given name."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Each type clique has a unique name,
+     we we stop as soon as we find a match.
+     We return @('nil') if there is no match."))
+  (b* ((info? (cdr (assoc-eq clique fty-table)))
+       ((unless (or (flextypes-p info?)
+                    (eq info? nil)))
+        (raise "Internal error: malformed type clique ~x0." info?)))
+    info?))
