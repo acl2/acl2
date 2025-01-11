@@ -83,6 +83,7 @@
   (verify-termination fty::flexomap->name$inline)
   (verify-termination fty::flexomap->pred$inline)
   (verify-termination fty::flexomap->count$inline)
+  (verify-termination fty::flexomap->key-type$inline)
   (verify-termination fty::flexomap->val-type$inline)
   (verify-termination fty::flexomap->recp$inline))
 
@@ -941,6 +942,12 @@
        (type-count (fty::flexomap->count omap))
        (recog (fty::flexomap->pred omap))
        (recp (fty::flexomap->recp omap))
+       (key-recog (fty::flexomap->key-type omap))
+       ((unless (symbolp key-recog))
+        (raise "Internal error: malformed recognizer ~x0." key-recog)
+        '(_))
+       (key-info (defpred-type-with-recognizer key-recog fty-table))
+       (key-type (defpred-flex->name key-info))
        (val-recog (fty::flexomap->val-type omap))
        ((unless (symbolp val-recog))
         (raise "Internal error: malformed recognizer ~x0." val-recog)
@@ -954,14 +961,30 @@
                        (,type-suffix (omap::tail ,type)))))
        (type-suffix-when-emptyp
         (packn-pos (list type-suffix '-when-emptyp) suffix))
+       (type-suffix-of-update
+        (packn-pos (list type-suffix '-of-update) suffix))
        (thm-events
         `((defruled ,type-suffix-when-emptyp
             (implies (omap::emptyp ,type)
                      (,type-suffix ,type))
-            :enable ,type-suffix)))
+            :enable ,type-suffix)
+          (defruled ,type-suffix-of-update
+            (implies (and (,recog ,type)
+                          (,val-type-suffix ,val-type)
+                          (,type-suffix ,type))
+                     (,type-suffix (omap::update ,key-type ,val-type ,type)))
+            :induct t
+            :enable (,recog
+                     omap::update
+                     omap::emptyp
+                     omap::mfix
+                     omap::mapp
+                     omap::head
+                     omap::tail))))
        (ruleset-event
         `(add-to-ruleset ,(defpred-gen-ruleset-name suffix)
-                         '(,type-suffix-when-emptyp))))
+                         '(,type-suffix-when-emptyp
+                           ,type-suffix-of-update))))
     `(define ,type-suffix ((,type ,recog))
        :returns (yes/no booleanp)
        :parents (,(defpred-gen-topic-name suffix))
