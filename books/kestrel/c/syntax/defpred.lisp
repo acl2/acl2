@@ -569,6 +569,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define defpred-gen-ruleset-name ((suffix symbolp))
+  :returns (name symbolp)
+  :short "Generate the name of the ruleset."
+  (packn-pos (list 'abstract-syntax- suffix '-rules) suffix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define defpred-gen-prod-conjuncts ((type symbolp)
                                     (fields fty::flexprod-field-listp)
                                     (types symbol-listp)
@@ -953,8 +960,7 @@
                      (,type-suffix ,type))
             :enable ,type-suffix)))
        (ruleset-event
-        `(add-to-ruleset ,(packn-pos (list 'abstract-syntax- suffix '-rules)
-                                     suffix)
+        `(add-to-ruleset ,(defpred-gen-ruleset-name suffix)
                          '(,type-suffix-when-emptyp))))
     `(define ,type-suffix ((,type ,recog))
        :returns (yes/no booleanp)
@@ -1132,10 +1138,7 @@
    (xdoc::p
     "We obtain all the names of the types to generate predicates for,
      and then we call the code to generate the predicates,
-     which we put into one event.")
-   (xdoc::p
-    "For now the generated ruleset is empty,
-     but we will populate it when we generate more theorems."))
+     which we put into one event."))
   (b* ((types
         (defpred-type-names-in-cliques-with-names *defpred-cliques* fty-table))
        (pred-events
@@ -1149,9 +1152,7 @@
            ,@(and long-presentp `(:long ,long))
            :order-subtopics t))
        (ruleset-event
-        `(def-ruleset! ,(packn-pos (list 'abstract-syntax- suffix '-rules)
-                                   suffix)
-           nil)))
+        `(def-ruleset! ,(defpred-gen-ruleset-name suffix) nil)))
     `(encapsulate
        ()
        ,xdoc-event
