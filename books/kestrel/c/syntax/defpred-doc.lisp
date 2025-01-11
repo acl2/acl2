@@ -215,6 +215,28 @@
        currently @('defpred') does not modify that for any of those theorems."))
 
     (xdoc::desc
+     "Accompanying omap type theorems."
+     (xdoc::p
+      "For each omap type @('<type>') designated in
+       the `Types for Which Predicates Are Generated' below,
+       whose value type @('<valtype>') is also designated there,
+       but whose key type @('<keytype>') is not,
+       we generate the following theorems,
+       whose exact form can be inspected with @(tsee pe) or similar command:")
+     (xdoc::ul
+      (xdoc::li
+       "@('<type>-<suffix>-when-emptyp')")
+      (xdoc::li
+       "@('<type>-<suffix>-of-update')")
+      (xdoc::li
+       "@('<valtype>-<suffix>-of-head-when-<type>-<suffix>').")
+      (xdoc::li
+       "@('<type>-<suffix>-of-tail')"))
+     (xdoc::p
+      "These theorems are all disabled,
+       and added to the generated ruleset described below."))
+
+    (xdoc::desc
      "@('abstract-syntax-<suffix>-rules')"
      (xdoc::p
       "A "
