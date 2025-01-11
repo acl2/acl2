@@ -31,7 +31,6 @@
 (in-package "FTY")
 (include-book "std/util/da-base" :dir :system)
 (include-book "xdoc/str" :dir :system)
-(program)
 
 ; Type Database Structures ----------------------------------------------------
 
@@ -251,6 +250,7 @@
 (table flextypes-table)
 
 (defun get-flextypes (world)
+  (declare (xargs :mode :program))
   "Get the database of defined flextypes."
   (table-alist 'flextypes-table world))
 
@@ -263,24 +263,28 @@
 ; Basic Utilities -------------------------------------------------------------
 
 (defun flexprod-fields->names (fields)
+  (declare (xargs :mode :program))
   (if (atom fields)
       nil
     (cons (flexprod-field->name (car fields))
           (flexprod-fields->names (cdr fields)))))
 
 (defun flexprod-fields->defaults (fields)
+  (declare (xargs :mode :program))
   (if (atom fields)
       nil
     (cons (flexprod-field->default (car fields))
           (flexprod-fields->defaults (cdr fields)))))
 
 (defun flexprod-fields->acc-names (fields)
+  (declare (xargs :mode :program))
   (if (atom fields)
       nil
     (cons (flexprod-field->acc-name (car fields))
           (flexprod-fields->acc-names (cdr fields)))))
 
 (defun flexprods->kinds (prods)
+  (declare (xargs :mode :program))
   (if (atom prods)
       nil
     (cons (flexprod->kind (car prods))
@@ -291,6 +295,7 @@
 ; with-flextype-bindings ------------------------------------------------------
 
 (defun replace-*-in-symbol-with-str (x str)
+  (declare (xargs :mode :program))
   (b* ((name (symbol-name x))
        (idx (search "*" name))
        ((unless idx) x)
@@ -298,6 +303,7 @@
     (intern-in-package-of-symbol newname x)))
 
 (defun replace-*-in-symbols-with-str-rec (x str)
+  (declare (xargs :mode :program))
   (b* (((when (atom x))
         (if (symbolp x)
             (let* ((newx (replace-*-in-symbol-with-str x str)))
@@ -312,6 +318,7 @@
     (mv t (cons car cdr))))
 
 (defun has-vardot-syms (x vardot)
+  (declare (xargs :mode :program))
   (if (atom x)
       (and (symbolp x)
            (eql (search vardot (symbol-name x)) 0))
@@ -319,10 +326,12 @@
         (has-vardot-syms (cdr x) vardot))))
 
 (defun replace-*-in-symbols-with-str (x str)
+  (declare (xargs :mode :program))
   (b* (((mv ?ch newx) (replace-*-in-symbols-with-str-rec x str)))
     newx))
 
 (defun with-flextype-bindings-fn (binding body default)
+  (declare (xargs :mode :program))
   (b* ((var (if (consp binding) (car binding) binding))
        (add-binds (has-vardot-syms body (cat (symbol-name var) ".")))
        (sumbody      (replace-*-in-symbols-with-str body "SUM"))
@@ -351,30 +360,35 @@
 ; Generic Utilities for Top-Level Types ---------------------------------------
 
 (defun flextypelist-recp (x)
+  (declare (xargs :mode :program))
   (if (atom x)
       nil
     (or (with-flextype-bindings (x (car x)) x.recp)
         (flextypelist-recp (cdr x)))))
 
 (defun flextypelist-names (types)
+  (declare (xargs :mode :program))
   (if (atom types)
       nil
     (cons (with-flextype-bindings (x (car types)) x.name)
           (flextypelist-names (cdr types)))))
 
 (defun flextypelist-fixes (types)
+  (declare (xargs :mode :program))
   (if (atom types)
       nil
     (cons (with-flextype-bindings (x (car types)) x.fix)
           (flextypelist-fixes (cdr types)))))
 
 (defun flextypelist-equivs (types)
+  (declare (xargs :mode :program))
   (if (atom types)
       nil
     (cons (with-flextype-bindings (x (car types)) x.equiv)
           (flextypelist-equivs (cdr types)))))
 
 (defun flextypelist-predicates (types)
+  (declare (xargs :mode :program))
   (if (atom types)
       nil
     (cons (with-flextype-bindings (x (car types)) x.pred)
@@ -383,6 +397,7 @@
 
 
 (defun flextypes-find-count-for-pred (pred types)
+  (declare (xargs :mode :program))
   (if (atom types)
       nil
     (or (with-flextype-bindings (x (car types))
@@ -390,6 +405,7 @@
         (flextypes-find-count-for-pred pred (cdr types)))))
 
 (defun search-deftypes-types (type-name types)
+  (declare (xargs :mode :program))
   (if (atom types)
       nil
     (or (with-flextype-bindings (x (car types))
@@ -401,6 +417,7 @@
   ;;  - type-obj describes either a sum, list, or alist type,
   ;;  - flextypes-obj is the superior type, whose .types contains the type-obj,
   ;;    and perhaps other types created in the mutual recursion.
+  (declare (xargs :mode :program))
   (if (atom table)
       (mv nil nil)
     (let ((type (search-deftypes-types type-name (flextypes->types (cdar table)))))
