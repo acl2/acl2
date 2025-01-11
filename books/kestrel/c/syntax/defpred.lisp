@@ -12,6 +12,7 @@
 
 (include-book "abstract-syntax")
 
+(include-book "kestrel/fty/database" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "std/system/table-alist-plus" :dir :system)
 (include-book "std/util/defval" :dir :system)
@@ -31,26 +32,6 @@
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
 (set-induction-depth-limit 0)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(std::deflist fty::flexprod-field-listp (acl2::x)
-  (fty::flexprod-field-p acl2::x)
-  :true-listp t
-  :elementp-of-nil nil)
-
-(std::deflist fty::flexprod-listp (acl2::x)
-  (fty::flexprod-p acl2::x)
-  :true-listp t
-  :elementp-of-nil nil)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define fty::flexprod-list->kind-list ((prods fty::flexprod-listp))
-  :returns (kinds true-listp)
-  (cond ((endp prods) nil)
-        (t (cons (fty::flexprod->kind (car prods))
-                 (fty::flexprod-list->kind-list (cdr prods))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
