@@ -240,13 +240,14 @@
                                    ))))
 
        (defrule ,(mk-name "XR-" fn "-STATE-SYS-VIEW")
-                (implies (and (not (app-view x86))
+                (implies (and ;; (not (app-view x86))
                               (not (equal fld :mem))
                               (not (equal fld :fault))
                               (not (equal fld :tlb))
-                              ,@(if (< size 10)
-                                  nil
-                                  `((member-equal fld *x86-field-names-as-keywords*))))
+                              ;; ,@(if (< size 10)
+                              ;;     nil
+                              ;;     `((member-equal fld *x86-field-names-as-keywords*)))
+                              )
                          (equal (xr fld index (mv-nth 2 ,fn-call))
                                 (xr fld index x86)))
                 :enable (,@(and signed?

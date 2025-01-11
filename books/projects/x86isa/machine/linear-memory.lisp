@@ -537,15 +537,14 @@
                  (equal (mv-nth 1 (las-to-pas 0 lin-addr r-w-x x86)) nil)
                  (equal (mv-nth 2 (las-to-pas 0 lin-addr r-w-x x86)) x86)))
 
-    (local
-      (defthm xr-las-to-pas
+    (defthm xr-las-to-pas
               (implies
                 (and (not (equal fld :tlb))
                      (not (equal fld :mem))
                      (not (equal fld :fault)))
                 (equal (xr fld index (mv-nth 2 (las-to-pas n lin-addr r-w-x x86)))
                        (xr fld index x86)))
-              :hints (("Goal" :in-theory (e/d* () (force (force)))))))
+              :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
     (make-event
       (generate-xr-over-write-thms
@@ -1408,7 +1407,7 @@
           :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
   (defthm xr-rml08-state-in-sys-view
-          (implies (and (not (app-view x86))
+          (implies (and ;; (not (app-view x86))
                         (not (equal fld :mem))
                         (not (equal fld :fault))
                         (not (equal fld :tlb)))
@@ -1699,15 +1698,16 @@
                                           (force (force))))))
 
   (defthm xr-rml16-state-sys-view
-          (implies (and (not (app-view x86))
+          (implies (and ;; (not (app-view x86))
                         (not (equal fld :mem))
                         (not (equal fld :fault))
                         (not (equal fld :tlb))
-                        (member-equal fld *x86-field-names-as-keywords*))
+                        ;; (member-equal fld *x86-field-names-as-keywords*)
+                        )
                    (equal (xr fld index (mv-nth 2 (rml16 lin-addr r-x x86)))
                           (xr fld index x86)))
           :hints (("Goal" :in-theory (e/d (rml16 member-equal)
-                                          (rb force (force))))))
+                                          (force (force))))))
 
   (defrule rml16-xw-app-view
            (implies (and (app-view x86)
@@ -1995,11 +1995,12 @@
                                           (force (force))))))
 
   (defthm xr-rml32-state-sys-view
-          (implies (and (not (app-view x86))
+          (implies (and ;; (not (app-view x86))
                         (not (equal fld :mem))
                         (not (equal fld :fault))
                         (not (equal fld :tlb))
-                        (member-equal fld *x86-field-names-as-keywords*))
+                        ;; (member-equal fld *x86-field-names-as-keywords*)
+                        )
                    (equal (xr fld index (mv-nth 2 (rml32 lin-addr r-x x86)))
                           (xr fld index x86)))
           :hints (("Goal" :in-theory (e/d (rml32 member-equal)
@@ -2373,11 +2374,12 @@
                                           (force (force))))))
 
   (defthm xr-rml48-state-sys-view
-          (implies (and (not (app-view x86))
+          (implies (and ;; (not (app-view x86))
                         (not (equal fld :mem))
                         (not (equal fld :fault))
                         (not (equal fld :tlb))
-                        (member-equal fld *x86-field-names-as-keywords*))
+                        ;; (member-equal fld *x86-field-names-as-keywords*)
+                        )
                    (equal (xr fld index (mv-nth 2 (rml48 lin-addr r-x x86)))
                           (xr fld index x86)))
           :hints (("Goal" :in-theory (e/d (rml48 member-equal)
@@ -2777,11 +2779,12 @@
                                           (force (force))))))
 
   (defthm xr-rml64-state-sys-view
-          (implies (and (not (app-view x86))
+          (implies (and ;; (not (app-view x86))
                         (not (equal fld :mem))
                         (not (equal fld :fault))
                         (not (equal fld :tlb))
-                        (member-equal fld *x86-field-names-as-keywords*))
+                        ;; (member-equal fld *x86-field-names-as-keywords*)
+                        )
                    (equal (xr fld index (mv-nth 2 (rml64 lin-addr r-x x86)))
                           (xr fld index x86)))
           :hints (("Goal" :in-theory (e/d (rml64 member-equal)
@@ -3213,11 +3216,12 @@
                                           (force (force))))))
 
   (defthm xr-rml80-state-sys-view
-          (implies (and (not (app-view x86))
+          (implies (and ;; (not (app-view x86))
                         (not (equal fld :mem))
                         (not (equal fld :fault))
                         (not (equal fld :tlb))
-                        (member-equal fld *x86-field-names-as-keywords*))
+                        ;; (member-equal fld *x86-field-names-as-keywords*)
+                        )
                    (equal (xr fld index (mv-nth 2 (rml80 lin-addr r-x x86)))
                           (xr fld index x86)))
           :hints (("Goal" :in-theory (e/d (rml80 member-equal)
@@ -3691,11 +3695,12 @@
                                           (force (force))))))
 
   (defthm xr-rml128-state-sys-view
-          (implies (and (not (app-view x86))
+          (implies (and ;; (not (app-view x86))
                         (not (equal fld :mem))
                         (not (equal fld :fault))
                         (not (equal fld :tlb))
-                        (member-equal fld *x86-field-names-as-keywords*))
+                        ;; (member-equal fld *x86-field-names-as-keywords*)
+                        )
                    (equal (xr fld index (mv-nth 2 (rml128 lin-addr r-x x86)))
                           (xr fld index x86)))
           :hints (("Goal" :in-theory (e/d (rml128)
@@ -4339,11 +4344,12 @@
                                     (force (force))))))
 
   (defthm xr-rml256-state-sys-view
-    (implies (and (not (app-view x86))
+    (implies (and ;; (not (app-view x86))
                   (not (equal fld :mem))
                   (not (equal fld :fault))
                   (not (equal fld :tlb))
-                  (member-equal fld *x86-field-names-as-keywords*))
+                  ;; (member-equal fld *x86-field-names-as-keywords*)
+                  )
              (equal (xr fld index (mv-nth 2 (rml256 lin-addr r-x x86)))
                     (xr fld index x86)))
     :hints (("Goal" :in-theory (e/d (rml256)
@@ -5382,10 +5388,11 @@
                                     (force (force))))))
 
   (defthm xr-rml512-state-sys-view
-    (implies (and (not (app-view x86))
+    (implies (and ;; (not (app-view x86))
                   (not (equal fld :mem))
                   (not (equal fld :fault))
-                  (member-equal fld *x86-field-names-as-keywords*))
+                  ;; (member-equal fld *x86-field-names-as-keywords*)
+                  )
              (equal (xr fld index (mv-nth 2 (rml512 lin-addr r-x x86)))
                     (xr fld index x86)))
     :hints (("Goal" :in-theory (e/d (rml512)
