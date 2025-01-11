@@ -83,53 +83,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define defpred-type-with-name ((type symbolp) (fty-table alistp))
-  :returns info?
-  :short "Find, in the FTY table,
-          the information for a type with a given name."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Each type has a unique name, so we stop as soon as we find a match.
-     We return @('nil') if there is no match.")
-   (xdoc::p
-    "Based on the format as described in @(see defpred-implementation),
-     we do an outer loop on the entries of the table,
-     and for each element an inner loop on
-     the elements of the mutually recursive clique
-     (which may be a singleton)."))
-  (b* (((when (endp fty-table)) nil)
-       ((cons & info) (car fty-table))
-       ((unless (fty::flextypes-p info))
-        (raise "Internal error: malformed type clique ~x0." info))
-       (type-entries (fty::flextypes->types info))
-       (info? (defpred-type-with-name-loop type type-entries)))
-    (or info?
-        (defpred-type-with-name type (cdr fty-table))))
-  :prepwork
-  ((define defpred-type-with-name-loop ((type symbolp) type-entries)
-     :returns info?
-     :parents nil
-     (b* (((when (atom type-entries)) nil)
-          (type-entry (car type-entries))
-          (foundp (cond ((fty::flexsum-p type-entry)
-                         (eq type (fty::flexsum->name type-entry)))
-                        ((fty::flexlist-p type-entry)
-                         (eq type (fty::flexlist->name type-entry)))
-                        ((fty::flexalist-p type-entry)
-                         (eq type (fty::flexalist->name type-entry)))
-                        ((fty::flextranssum-p type-entry)
-                         (eq type (fty::flextranssum->name type-entry)))
-                        ((fty::flexset-p type-entry)
-                         (eq type (fty::flexset->name type-entry)))
-                        ((fty::flexomap-p type-entry)
-                         (eq type (fty::flexomap->name type-entry)))
-                        (t nil)))
-          ((when foundp) type-entry))
-       (defpred-type-with-name-loop type (cdr type-entries))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define defpred-type-with-recognizer ((recog symbolp) (fty-table alistp))
   :returns info?
   :short "Look up, in the FTY table,
@@ -141,7 +94,7 @@
      so we stop as soon as we find a match.
      We return @('nil') if there is no match.")
    (xdoc::p
-    "This is similar to @(tsee defpred-type-with-name),
+    "This is similar to @(tsee fty::type-with-name),
      but we check the recognizer instead of the name."))
   (b* (((when (endp fty-table)) nil)
        ((cons & info) (car fty-table))
@@ -192,7 +145,7 @@
      We find the product for the @(':some') summand.
      We obtain the field recognizer and accessor.
      We use the recognizer to look up the base type."))
-  (b* ((info (defpred-type-with-name option-type fty-table))
+  (b* ((info (fty::type-with-name option-type fty-table))
        ((unless info) (mv nil nil))
        ((unless (fty::flexsum-p info)) (mv nil nil))
        ((unless (eq (fty::flexsum->typemacro info) 'fty::defoption))
@@ -325,7 +278,7 @@
                          must be a symbol, ~
                          but ~x0 is not."
                         type)))
-          (info (defpred-type-with-name type fty-table))
+          (info (fty::type-with-name type fty-table))
           ((unless info)
            (reterr (msg "The first element of ~
                          every element of the :OVERRIDE list ~
