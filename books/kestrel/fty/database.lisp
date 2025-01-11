@@ -206,3 +206,26 @@
                     (eq info? nil)))
         (raise "Internal error: malformed type clique ~x0." info?)))
     info?))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-names-in-cliques-with-names ((cliques symbol-listp)
+                                          (fty-table alistp))
+  :returns (types symbol-listp)
+  :short "Collect, from the FTY table,
+          all the type names from the named cliques."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If any named clique is not found in the table, it is skipped."))
+  (b* (((when (endp cliques)) nil)
+       (clique (car cliques))
+       (info (type-clique-with-name clique fty-table))
+       ((unless info)
+        (type-names-in-cliques-with-names (cdr cliques) fty-table))
+       (infos (flextypes->types info))
+       ((unless (true-listp infos))
+        (raise "Internal error: malformed clique members ~x0." infos))
+       (types (flex-list->name-list infos))
+       (more-types (type-names-in-cliques-with-names (cdr cliques) fty-table)))
+    (append types more-types)))
