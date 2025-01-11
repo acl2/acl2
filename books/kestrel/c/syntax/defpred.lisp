@@ -83,51 +83,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define defpred-type-with-recognizer ((recog symbolp) (fty-table alistp))
-  :returns info?
-  :short "Look up, in the FTY table,
-          the information for a type with a given recognizer."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Each type should have a unique recognizer,
-     so we stop as soon as we find a match.
-     We return @('nil') if there is no match.")
-   (xdoc::p
-    "This is similar to @(tsee fty::type-with-name),
-     but we check the recognizer instead of the name."))
-  (b* (((when (endp fty-table)) nil)
-       ((cons & info) (car fty-table))
-       ((unless (fty::flextypes-p info))
-        (raise "Internal error: malformed type clique ~x0." info))
-       (type-entries (fty::flextypes->types info))
-       (info? (defpred-type-with-recognizer-loop recog type-entries)))
-    (or info?
-        (defpred-type-with-recognizer recog (cdr fty-table))))
-  :prepwork
-  ((define defpred-type-with-recognizer-loop ((recog symbolp) type-entries)
-     :returns info?
-     :parents nil
-     (b* (((when (atom type-entries)) nil)
-          (type-entry (car type-entries))
-          (foundp (cond ((fty::flexsum-p type-entry)
-                         (eq recog (fty::flexsum->pred type-entry)))
-                        ((fty::flexlist-p type-entry)
-                         (eq recog (fty::flexlist->pred type-entry)))
-                        ((fty::flexalist-p type-entry)
-                         (eq recog (fty::flexalist->pred type-entry)))
-                        ((fty::flextranssum-p type-entry)
-                         (eq recog (fty::flextranssum->pred type-entry)))
-                        ((fty::flexset-p type-entry)
-                         (eq recog (fty::flexset->pred type-entry)))
-                        ((fty::flexomap-p type-entry)
-                         (eq recog (fty::flexomap->pred type-entry)))
-                        (t nil)))
-          ((when foundp) type-entry))
-       (defpred-type-with-recognizer-loop recog (cdr type-entries))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define defpred-option-type->components ((option-type symbolp)
                                          (fty-table alistp))
   :returns (mv (base-type symbolp)
@@ -176,7 +131,7 @@
         (raise "Internal error: malformed :SOME field recognizer ~x0."
                base-recog)
         (mv nil nil))
-       (base-info (defpred-type-with-recognizer base-recog fty-table))
+       (base-info (fty::type-with-recognizer base-recog fty-table))
        (base-type (fty::flex->name base-info))
        ((unless (symbolp base-type))
         (raise "Internal error: malformed type name ~x0." base-type)
@@ -446,7 +401,7 @@
        (recog (fty::flexprod-field->type field))
        ((unless (symbolp recog))
         (raise "Internal error: malformed field recognizer ~x0." recog))
-       (info (defpred-type-with-recognizer recog fty-table))
+       (info (fty::type-with-recognizer recog fty-table))
        (field-type (and info
                         (fty::flex->name info)))
        ((unless (and field-type
@@ -733,7 +688,7 @@
        ((unless (symbolp elt-recog))
         (raise "Internal error: malformed recognizer ~x0." elt-recog)
         (mv '(_) nil))
-       (elt-info (defpred-type-with-recognizer elt-recog fty-table))
+       (elt-info (fty::type-with-recognizer elt-recog fty-table))
        (elt-type (fty::flex->name elt-info))
        (recp (fty::flexlist->recp list))
        ((unless (symbolp elt-type))
@@ -787,7 +742,7 @@
        ((unless (symbolp val-recog))
         (raise "Internal error: malformed recognizer ~x0." val-recog)
         '(_))
-       (val-info (defpred-type-with-recognizer val-recog fty-table))
+       (val-info (fty::type-with-recognizer val-recog fty-table))
        (val-type (fty::flex->name val-info))
        (val-type-suffix (defpred-gen-name val-type suffix))
        (body `(or (not (mbt (,recog ,type)))
