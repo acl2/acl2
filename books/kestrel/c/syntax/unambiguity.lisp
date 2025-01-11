@@ -113,13 +113,6 @@
 
   ;; Theorems for map types:
 
-  (defrule transunit-unambp-of-head-when-filepath-transunit-map-unambp
-    (implies (and (filepath-transunit-mapp tumap)
-                  (filepath-transunit-map-unambp tumap)
-                  (not (omap::emptyp tumap)))
-             (transunit-unambp (mv-nth 1 (omap::head tumap))))
-    :enable filepath-transunit-map-unambp)
-
   (defrule filepath-transunit-map-unambp-of-tail
     (implies (and (filepath-transunit-mapp tumap)
                   (filepath-transunit-map-unambp tumap))
