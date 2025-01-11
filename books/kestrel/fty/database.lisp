@@ -143,3 +143,48 @@
                         (t nil)))
           ((when foundp) type-entry))
        (type-with-name-loop type (cdr type-entries))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-with-recognizer ((recog symbolp) (fty-table alistp))
+  :returns info?
+  :short "Look up, in the FTY table,
+          the information for a type with a given recognizer."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Each type should have a unique recognizer,
+     so we stop as soon as we find a match.
+     We return @('nil') if there is no match.")
+   (xdoc::p
+    "This is similar to @(tsee type-with-name),
+     but we check the recognizer instead of the name."))
+  (b* (((when (endp fty-table)) nil)
+       ((cons & info) (car fty-table))
+       ((unless (flextypes-p info))
+        (raise "Internal error: malformed type clique ~x0." info))
+       (type-entries (flextypes->types info))
+       (info? (type-with-recognizer-loop recog type-entries)))
+    (or info?
+        (type-with-recognizer recog (cdr fty-table))))
+  :prepwork
+  ((define type-with-recognizer-loop ((recog symbolp) type-entries)
+     :returns info?
+     :parents nil
+     (b* (((when (atom type-entries)) nil)
+          (type-entry (car type-entries))
+          (foundp (cond ((flexsum-p type-entry)
+                         (eq recog (flexsum->pred type-entry)))
+                        ((flexlist-p type-entry)
+                         (eq recog (flexlist->pred type-entry)))
+                        ((flexalist-p type-entry)
+                         (eq recog (flexalist->pred type-entry)))
+                        ((flextranssum-p type-entry)
+                         (eq recog (flextranssum->pred type-entry)))
+                        ((flexset-p type-entry)
+                         (eq recog (flexset->pred type-entry)))
+                        ((flexomap-p type-entry)
+                         (eq recog (flexomap->pred type-entry)))
+                        (t nil)))
+          ((when foundp) type-entry))
+       (type-with-recognizer-loop recog (cdr type-entries))))))
