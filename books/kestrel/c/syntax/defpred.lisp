@@ -555,9 +555,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define defpred-gen-topic-name ((suffix symbolp))
+  :returns (name symbolp)
+  :short "Generate the name of the XDOC topic."
+  (packn-pos (list 'abstract-syntax- suffix) suffix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define defpred-gen-pred-name ((type symbolp) (suffix symbolp))
   :returns (name symbolp)
-  :short "Generate the name of a predicate."
+  :short "Generate the name of a predicate for a type."
   (packn-pos (list type '- suffix) suffix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -717,7 +724,7 @@
     `(define ,type-suffix ((,type ,recog))
        ,@(and ignorable `((declare (ignorable ,type))))
        :returns (yes/no booleanp)
-       :parents (,(defpred-gen-pred-name 'abstract-syntax suffix))
+       :parents (,(defpred-gen-topic-name suffix))
        ,body
        ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
        ,@(and (not mutrecp) '(:hooks (:fix))))))
@@ -774,7 +781,7 @@
     `(define ,type-suffix ((,type ,recog))
        ,@(and ignorable `((declare (ignorable ,type))))
        :returns (yes/no booleanp)
-       :parents (,(defpred-gen-pred-name 'abstract-syntax suffix))
+       :parents (,(defpred-gen-topic-name suffix))
        ,body
        ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
        ,@(and (not mutrecp) '(:hooks (:fix))))))
@@ -815,7 +822,7 @@
                           :none t)))
     `(define ,type-suffix ((,type ,recog))
        :returns (yes/no booleanp)
-       :parents (,(defpred-gen-pred-name 'abstract-syntax suffix))
+       :parents (,(defpred-gen-topic-name suffix))
        ,body
        ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
        ,@(and (not mutrecp) '(:hooks (:fix))))))
@@ -896,7 +903,7 @@
        (event
         `(define ,type-suffix ((,type ,recog))
            :returns (yes/no booleanp)
-           :parents (,(defpred-gen-pred-name 'abstract-syntax suffix))
+           :parents (,(defpred-gen-topic-name suffix))
            ,body
            ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
            ,@(and (not mutrecp) '(:hooks (:fix)))
@@ -951,7 +958,7 @@
                          '(,type-suffix-when-emptyp))))
     `(define ,type-suffix ((,type ,recog))
        :returns (yes/no booleanp)
-       :parents (,(defpred-gen-pred-name 'abstract-syntax suffix))
+       :parents (,(defpred-gen-topic-name suffix))
        ,body
        ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
        ,@(and (not mutrecp) '(:hooks (:fix)))
@@ -1053,7 +1060,7 @@
         (defpred-gen-types-preds
           members t types suffix default overrides fty-table)))
     `(defines ,clique-name-suffix
-       :parents (,(defpred-gen-pred-name 'abstract-syntax suffix))
+       :parents (,(defpred-gen-topic-name suffix))
        ,@events
        :hints (("Goal" :in-theory (enable o< o-finp)))
        :flag-local nil
@@ -1134,7 +1141,7 @@
        (pred-events
         (defpred-gen-cliques-preds
           *defpred-cliques* types suffix default overrides fty-table))
-       (xdoc-name (defpred-gen-pred-name 'abstract-syntax suffix))
+       (xdoc-name (defpred-gen-topic-name suffix))
        (xdoc-event
         `(defxdoc+ ,xdoc-name
            ,@(and parents-presentp `(:parents ,parents))
