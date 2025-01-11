@@ -113,21 +113,6 @@
 
   ;; Theorems for map types:
 
-  (defrule filepath-transunit-map-unambp-of-update
-    (implies (and (transunit-unambp tunit)
-                  (filepath-transunit-mapp tumap)
-                  (filepath-transunit-map-unambp tumap))
-             (filepath-transunit-map-unambp (omap::update path tunit tumap)))
-    :induct t
-    :enable (filepath-transunit-map-unambp
-             filepath-transunit-mapp
-             omap::update
-             omap::emptyp
-             omap::mfix
-             omap::mapp
-             omap::head
-             omap::tail))
-
   (defrule transunit-unambp-of-head-when-filepath-transunit-map-unambp
     (implies (and (filepath-transunit-mapp tumap)
                   (filepath-transunit-map-unambp tumap)
