@@ -34,65 +34,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(progn
-  (verify-termination fty::flexprod-field-p)
-  (verify-termination fty::flexprod-field->acc-name$inline)
-  (verify-termination fty::flexprod-field->type$inline))
-
-(progn
-  (verify-termination fty::flexprod-p)
-  (verify-termination fty::flexprod->kind$inline)
-  (verify-termination fty::flexprod->fields$inline)
-  (verify-termination fty::flexprod->type-name$inline))
-
-(progn
-  (verify-termination fty::flexsum-p)
-  (verify-termination fty::flexsum->name$inline)
-  (verify-termination fty::flexsum->pred$inline)
-  (verify-termination fty::flexsum->count$inline)
-  (verify-termination fty::flexsum->case$inline)
-  (verify-termination fty::flexsum->prods$inline)
-  (verify-termination fty::flexsum->recp$inline)
-  (verify-termination fty::flexsum->typemacro$inline))
-
-(progn
-  (verify-termination fty::flexlist-p)
-  (verify-termination fty::flexlist->name$inline)
-  (verify-termination fty::flexlist->pred$inline)
-  (verify-termination fty::flexlist->count$inline)
-  (verify-termination fty::flexlist->elt-type$inline)
-  (verify-termination fty::flexlist->recp$inline))
-
-(progn
-  (verify-termination fty::flexalist-p)
-  (verify-termination fty::flexalist->name$inline)
-  (verify-termination fty::flexalist->pred$inline))
-
-(progn
-  (verify-termination fty::flextranssum-p)
-  (verify-termination fty::flextranssum->name$inline)
-  (verify-termination fty::flextranssum->pred$inline))
-
-(progn
-  (verify-termination fty::flexset-p)
-  (verify-termination fty::flexset->name$inline)
-  (verify-termination fty::flexset->pred$inline))
-
-(progn
-  (verify-termination fty::flexomap-p)
-  (verify-termination fty::flexomap->name$inline)
-  (verify-termination fty::flexomap->pred$inline)
-  (verify-termination fty::flexomap->count$inline)
-  (verify-termination fty::flexomap->val-type$inline)
-  (verify-termination fty::flexomap->recp$inline))
-
-(progn
-  (verify-termination fty::flextypes-p)
-  (verify-termination fty::flextypes->name$inline)
-  (verify-termination fty::flextypes->types$inline))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (std::deflist fty::flexprod-field-listp (acl2::x)
   (fty::flexprod-field-p acl2::x)
   :true-listp t
