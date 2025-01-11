@@ -648,6 +648,8 @@
         (packn-pos (list type-suffix '-when-emptyp) suffix))
        (type-suffix-of-update
         (packn-pos (list type-suffix '-of-update) suffix))
+       (val-type-suffix-of-head-when-type-suffix
+        (packn-pos (list val-type '-of-head-when- type-suffix) suffix))
        (thm-events
         `((defruled ,type-suffix-when-emptyp
             (implies (omap::emptyp ,type)
@@ -665,11 +667,17 @@
                      omap::mfix
                      omap::mapp
                      omap::head
-                     omap::tail))))
+                     omap::tail))
+          (defruled ,val-type-suffix-of-head-when-type-suffix
+            (implies (and (,recog ,type)
+                          (,type-suffix ,type)
+                          (not (omap::emptyp ,type)))
+                     (,val-type-suffix (mv-nth 1 (omap::head ,type)))))))
        (ruleset-event
         `(add-to-ruleset ,(defpred-gen-ruleset-name suffix)
                          '(,type-suffix-when-emptyp
-                           ,type-suffix-of-update))))
+                           ,type-suffix-of-update
+                           ,val-type-suffix-of-head-when-type-suffix))))
     `(define ,type-suffix ((,type ,recog))
        :returns (yes/no booleanp)
        :parents (,(defpred-gen-topic-name suffix))
