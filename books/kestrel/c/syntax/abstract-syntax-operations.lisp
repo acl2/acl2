@@ -880,6 +880,15 @@
 
   :hints (("Goal" :in-theory (enable o< o-finp))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define initdeclor->ident
+  ((initdeclor initdeclorp))
+  :short "Identifier of an initializer declarator."
+  :returns (ident? identp)
+  (b* (((initdeclor initdeclor) initdeclor))
+    (declor->ident initdeclor.declor)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define dirabsdeclor-decl?-nil-p ((dirabsdeclor dirabsdeclorp))

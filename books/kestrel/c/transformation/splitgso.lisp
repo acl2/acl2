@@ -28,10 +28,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; This file is not complete. It is a partially filled template, to be completed.
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defxdoc+ splitgso
   :parents (transformation-tools)
   :short "A transformation to split a global struct object."
@@ -47,7 +43,19 @@
      References to (members of) the original object
      are replaced with references to one or the other object.")
    (xdoc::p
-    "Currently this transformation operates on a single translation unit."))
+    "Currently this transformation operates on a single translation unit.")
+   (xdoc::section
+    "Status"
+    (xdoc::p
+     "This transformation is a work in progress. It makes a number of
+      simplifying assumptions, some of which are still not checked. In
+      particular, it assumes:")
+    (xdoc::ul
+     (xdoc::li "members of the struct type are each declared independently.")
+     (xdoc::li "each element of a struct initializer list features just one designation.")
+     (xdoc::li "the file-scope struct variable is not shadowed."))
+    (xdoc::p
+     "Other assumptions are noted in inline comments within the source.")))
   :order-subtopics t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -58,19 +66,12 @@
 
 ;; Find the object and its type
 
-;; TODO: move to abstract-syntax-operations
-(define initdeclor->ident
-  ((initdeclor initdeclorp))
-  :returns (ident? ident-optionp)
-  (b* (((initdeclor initdeclor) initdeclor))
-    (declor->ident initdeclor.declor)))
-
 (define initdeclor-list-get-idents
   ((initdeclors initdeclor-listp))
   :returns (idents ident-listp)
   (b* (((when (endp initdeclors))
         nil)
-       (ident? (initdeclor->ident (first initdeclors))))
+       (ident? (c$::initdeclor->ident (first initdeclors))))
     (if ident?
         (cons ident?
               (initdeclor-list-get-idents (rest initdeclors)))
@@ -368,8 +369,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; replace global `struct S s` with `struct S1 s1; struct S2 s2`;
-;; TODO: handle declarations with initializer
+;; split global struct object
+
+;; TODO: qualifiers are dropped from split global struct object
+;; e.g.
+;;   static struct S s =;
+;; becomes
+;;   struct S1 s1;
+;;   struct S2 s2;
 
 (define match-designors
   ((split-members ident-listp)
@@ -447,6 +454,7 @@
                (initer-option1 initer-optionp)
                (initer-option2 initer-optionp))
   ;; Only accepts singletons for now
+  ;; TODO: broaden this
   (if (or (endp initdeclors)
           (not (endp (rest initdeclors))))
       (mv nil nil nil)
@@ -587,7 +595,8 @@
 
 ;; replace all instances of `s.field` with `s1.field` or `s2.field`.
 
-;; TODO: detect if global object is shadowed
+;; TODO: detect if global object is shadowed (via linkage information)
+;;   - also, check replacement identifiers for the same
 (deftrans replace-field-access
   ;; Need the
   :extra-args
@@ -599,6 +608,7 @@
   (lambda (expr original new1 new2 split-members)
     (expr-case
       expr
+      ;; TODO: if it matches original, flag as unhandled
       :ident (expr-fix expr)
       :const (expr-fix expr)
       :string (expr-fix expr)
@@ -1000,8 +1010,6 @@
 ; a single translation unit with the given filepath.
 ; That single translation unit is the result of transforming tunit-old
 ; according to the design of the transformation.
-
-; A call of deftrans would go here somethere.
 
 (define splitgso-gen-everything ((filepath filepathp)
                                  (tunit transunitp)
