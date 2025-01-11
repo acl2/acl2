@@ -143,14 +143,7 @@
   "@('types') is a list (in no particular order)
    of all the type names for which predicates are generated."
 
-  "@('type') is an element of @('types') explained above."
-
-  "@('deferred-events') is a list of events,
-   returned by functions that generate predicates,
-   when the predicate is part of a mutual recursion:
-   those events are generated as part of the @(tsee defines) after @('///'),
-   instead of as part of the @(tsee define) of the predicate after @('///');
-   that is, they are deferred."))
+  "@('type') is an element of @('types') explained above."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -861,8 +854,7 @@
                                (mutrecp booleanp)
                                (suffix symbolp)
                                (fty-table alistp))
-  :returns (mv (event pseudo-event-formp)
-               (deferred-events pseudo-event-form-listp))
+  :returns (event pseudo-event-formp)
   :short "Generate a predicate for a list type, with accompanying theorems."
   :long
   (xdoc::topstring
@@ -877,20 +869,20 @@
   (b* ((type (fty::flexlist->name list))
        ((unless (symbolp type))
         (raise "Internal error: malformed type name ~x0." type)
-        (mv '(_) nil))
+        '(_))
        (type-suffix (defpred-gen-name type suffix))
        (type-count (fty::flexlist->count list))
        (recog (fty::flexlist->pred list))
        (elt-recog (fty::flexlist->elt-type list))
        ((unless (symbolp elt-recog))
         (raise "Internal error: malformed recognizer ~x0." elt-recog)
-        (mv '(_) nil))
+        '(_))
        (elt-info (defpred-type-with-recognizer elt-recog fty-table))
        (elt-type (defpred-flex->name elt-info))
        (recp (fty::flexlist->recp list))
        ((unless (symbolp elt-type))
         (raise "Internal error: malformed type name ~x0." elt-type)
-        (mv '(_) nil))
+        '(_))
        (elt-type-suffix (defpred-gen-name elt-type suffix))
        (body `(or (endp ,type)
                   (and (,elt-type-suffix (car ,type))
@@ -908,9 +900,9 @@
            ,body
            ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
            ,@(and (not mutrecp) '(:hooks (:fix)))
-           ,@(and (not mutrecp) `(/// ,@thm-events))))
-       (deferred-events (and mutrecp thm-events)))
-    (mv event deferred-events)))
+           ///
+           ,@thm-events)))
+    event))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -962,20 +954,17 @@
                                (default booleanp)
                                (overrides alistp)
                                (fty-table alistp))
-  :returns (mv (event pseudo-event-formp)
-               (deferred-events pseudo-event-form-listp))
+  :returns (event pseudo-event-formp)
   :short "Generate a predicate for a type, with accompanying theorems."
   (cond ((fty::flexsum-p flex)
-         (mv (defpred-gen-prod/sum/option-pred
-               flex mutrecp types suffix default overrides fty-table)
-             nil))
+         (defpred-gen-prod/sum/option-pred
+           flex mutrecp types suffix default overrides fty-table))
         ((fty::flexlist-p flex)
          (defpred-gen-list-pred flex mutrecp suffix fty-table))
         ((fty::flexomap-p flex)
-         (mv (defpred-gen-omap-pred flex mutrecp suffix fty-table)
-             nil))
+         (defpred-gen-omap-pred flex mutrecp suffix fty-table))
         (t (prog2$ (raise "Internal error: unsupported type ~x0." flex)
-                   (mv '(_) nil)))))
+                   '(_)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -986,19 +975,17 @@
                                  (default booleanp)
                                  (overrides alistp)
                                  (fty-table alistp))
-  :returns (mv (events pseudo-event-form-listp)
-               (deferred-events pseudo-event-form-listp))
+  :returns (events pseudo-event-form-listp)
   :short "Generate a list of predicates for a list of types,
           with accompanying theorems."
-  (b* (((when (endp flexs)) (mv nil nil))
-       ((mv event deferred-events)
+  (b* (((when (endp flexs)) nil)
+       (event
         (defpred-gen-type-pred
           (car flexs) mutrecp types suffix default overrides fty-table))
-       ((mv more-events more-deferred-events)
+       (more-events
         (defpred-gen-types-preds
           (cdr flexs) mutrecp types suffix default overrides fty-table)))
-    (mv (cons event more-events)
-        (append deferred-events more-deferred-events))))
+    (cons event more-events)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1041,16 +1028,14 @@
         (raise "Internal error: empty type clique ~x0." clique)
         '(_))
        ((when (endp (cdr members)))
-        (b* (((mv event &)
-              (defpred-gen-type-pred
-                (car members) nil types suffix default overrides fty-table)))
-          event))
+        (defpred-gen-type-pred
+          (car members) nil types suffix default overrides fty-table))
        (clique-name (fty::flextypes->name clique))
        ((unless (symbolp clique-name))
         (raise "Internal error: malformed clique name ~x0." clique-name)
         '(_))
        (clique-name-suffix (defpred-gen-name clique-name suffix))
-       ((mv events deferred-events)
+       (events
         (defpred-gen-types-preds
           members t types suffix default overrides fty-table)))
     `(defines ,clique-name-suffix
@@ -1060,8 +1045,7 @@
        :flag-local nil
        :prepwork ((set-bogus-mutual-recursion-ok t))
        ///
-       (fty::deffixequiv-mutual ,clique-name-suffix)
-       ,@deferred-events)))
+       (fty::deffixequiv-mutual ,clique-name-suffix))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
