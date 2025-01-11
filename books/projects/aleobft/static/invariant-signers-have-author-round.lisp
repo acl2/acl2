@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -85,7 +85,7 @@
 
   ///
 
-  (defrule signer-has-author+round-p-of-update-network-state
+  (defruled signer-has-author+round-p-of-update-network-state
     (equal (signer-has-author+round-p signer author round
                                       (update-network-state network systate))
            (signer-has-author+round-p signer author round systate))))
@@ -137,7 +137,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule system-signers-have-author+round-p-when-system-state-initp
+(defruled system-signers-have-author+round-p-when-system-state-initp
   :short "Establishment of the invariant:
           the invariant holds on any initial system state."
   :long
@@ -171,7 +171,7 @@
      so those certificates' signers still have
      the same record as they had before this event."))
 
-  (defrule signer-has-author+round-p-of-create-certificate-next
+  (defruled signer-has-author+round-p-of-create-certificate-next
     (implies (and (create-certificate-possiblep cert systate)
                   (certificatep cert)
                   (addressp author)
@@ -195,7 +195,7 @@
              validator-state->buffer-of-add-endorsed
              validator-state->endorsed-of-add-endorsed))
 
-  (defrule system-signers-have-author+round-p-of-create-certificate-next
+  (defruled system-signers-have-author+round-p-of-create-certificate-next
     (implies (and (system-signers-have-author+round-p systate)
                   (create-certificate-possiblep cert systate)
                   (certificatep cert))
@@ -204,7 +204,8 @@
     :expand (system-signers-have-author+round-p
              (create-certificate-next cert systate))
     :enable (system-signers-have-author+round-p-necc
-             certificates-for-validator-of-create-certificate-next)))
+             certificates-for-validator-of-create-certificate-next
+             signer-has-author+round-p-of-create-certificate-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -222,7 +223,7 @@
      in which case the certificate is simply added to the buffer,
      without modifying the recipient's endorsed pairs."))
 
-  (defrule signer-has-author+round-p-of-receive-certificate-next
+  (defruled signer-has-author+round-p-of-receive-certificate-next
     (implies (and (signer-has-author+round-p signer author round systate)
                   (receive-certificate-possiblep msg systate)
                   (addressp author)
@@ -236,7 +237,7 @@
              get-validator-state-of-update-validator-state
              certificate-with-author+round-of-insert-iff))
 
-  (defrule system-signers-have-author+round-p-of-receive-certificate-next
+  (defruled system-signers-have-author+round-p-of-receive-certificate-next
     (implies (and (system-signers-have-author+round-p systate)
                   (receive-certificate-possiblep msg systate))
              (system-signers-have-author+round-p
@@ -244,7 +245,8 @@
     :expand (system-signers-have-author+round-p
              (receive-certificate-next msg systate))
     :enable (system-signers-have-author+round-p-necc
-             certificates-for-validator-of-receive-certificate-next)))
+             certificates-for-validator-of-receive-certificate-next
+             signer-has-author+round-p-of-receive-certificate-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -267,7 +269,7 @@
      So the lemma just mentioned is what we can prove here;
      a stronger lemma would need the author-round uniqueness property."))
 
-  (defrule signer-has-author+round-p-of-store-certificate-next
+  (defruled signer-has-author+round-p-of-store-certificate-next
     (implies (and (signer-has-author+round-p signer author round systate)
                   (store-certificate-possiblep cert val systate)
                   (addressp author)
@@ -292,7 +294,7 @@
                 certificate-with-author+round-of-insert-iff
                 set::delete))))
 
-  (defrule system-signers-have-author+round-p-of-store-certificate-next
+  (defruled system-signers-have-author+round-p-of-store-certificate-next
     (implies (and (system-signers-have-author+round-p systate)
                   (store-certificate-possiblep cert val systate))
              (system-signers-have-author+round-p
@@ -300,7 +302,8 @@
     :expand (system-signers-have-author+round-p
              (store-certificate-next cert val systate))
     :enable (system-signers-have-author+round-p-necc
-             certificates-for-validator-of-store-certificate-next)))
+             certificates-for-validator-of-store-certificate-next
+             signer-has-author+round-p-of-store-certificate-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -312,7 +315,7 @@
     "This kind of event does not modify any
      DAG, buffer, and set of endorsed pairs."))
 
-  (defrule signer-has-author+round-p-of-advance-round-next
+  (defruled signer-has-author+round-p-of-advance-round-next
     (implies (and (signer-has-author+round-p signer author round systate)
                   (advance-round-possiblep val systate)
                   (addressp author)
@@ -325,7 +328,7 @@
              signer-has-author+round-p
              get-validator-state-of-update-validator-state))
 
-  (defrule system-signers-have-author+round-p-of-advance-round-next
+  (defruled system-signers-have-author+round-p-of-advance-round-next
     (implies (and (system-signers-have-author+round-p systate)
                   (advance-round-possiblep val systate))
              (system-signers-have-author+round-p
@@ -333,7 +336,8 @@
     :expand (system-signers-have-author+round-p
              (advance-round-next val systate))
     :enable (system-signers-have-author+round-p-necc
-             certificates-for-validator-of-advance-round-next)))
+             certificates-for-validator-of-advance-round-next
+             signer-has-author+round-p-of-advance-round-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -345,7 +349,7 @@
     "This kind of event does not modify any
      DAG, buffer, and set of endorsed pairs."))
 
-  (defrule signer-has-author+round-p-of-commit-anchors-next
+  (defruled signer-has-author+round-p-of-commit-anchors-next
     (implies (and (signer-has-author+round-p signer author round systate)
                   (commit-anchors-possiblep val systate)
                   (addressp author)
@@ -358,7 +362,7 @@
              signer-has-author+round-p
              get-validator-state-of-update-validator-state))
 
-  (defrule system-signers-have-author+round-p-of-commit-anchors-next
+  (defruled system-signers-have-author+round-p-of-commit-anchors-next
     (implies (and (system-signers-have-author+round-p systate)
                   (commit-anchors-possiblep val systate))
              (system-signers-have-author+round-p
@@ -366,7 +370,8 @@
     :expand (system-signers-have-author+round-p
              (commit-anchors-next val systate))
     :enable (system-signers-have-author+round-p-necc
-             certificates-for-validator-of-commit-anchors-next)))
+             certificates-for-validator-of-commit-anchors-next
+             signer-has-author+round-p-of-commit-anchors-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -378,7 +383,7 @@
     "This kind of event does not modify any
      DAG, buffer, and set of endorsed pairs."))
 
-  (defrule signer-has-author+round-p-of-timer-expires-next
+  (defruled signer-has-author+round-p-of-timer-expires-next
     (implies (and (signer-has-author+round-p signer author round systate)
                   (timer-expires-possiblep val systate)
                   (addressp author)
@@ -392,7 +397,7 @@
              get-validator-state-of-update-validator-state
              certificates-for-validator-of-timer-expires-next))
 
-  (defrule system-signers-have-author+round-p-of-timer-expires-next
+  (defruled system-signers-have-author+round-p-of-timer-expires-next
     (implies (and (system-signers-have-author+round-p systate)
                   (timer-expires-possiblep val systate))
              (system-signers-have-author+round-p
@@ -400,11 +405,12 @@
     :expand (system-signers-have-author+round-p
              (timer-expires-next val systate))
     :enable (system-signers-have-author+round-p-necc
-             certificates-for-validator-of-timer-expires-next)))
+             certificates-for-validator-of-timer-expires-next
+             signer-has-author+round-p-of-timer-expires-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule system-signers-have-author+round-p-of-event-next
+(defruled system-signers-have-author+round-p-of-event-next
   :short "Preservation of the invariant by all events."
   :long
   (xdoc::topstring
