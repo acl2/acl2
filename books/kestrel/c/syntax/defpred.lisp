@@ -81,67 +81,6 @@
   :order-subtopics t
   :default-parent t)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define defpred-option-type->components ((option-type symbolp)
-                                         (fty-table alistp))
-  :returns (mv (base-type symbolp)
-               (some-accessor symbolp))
-  :short "Components of an option type."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We return the name of the base type,
-     and the name of the accessor for the @(':some') case.
-     These are both @('nil') if
-     the given option type name does not resolve to an actual option type.")
-   (xdoc::p
-    "We look up the information for the option type.
-     We find the product for the @(':some') summand.
-     We obtain the field recognizer and accessor.
-     We use the recognizer to look up the base type."))
-  (b* ((info (fty::type-with-name option-type fty-table))
-       ((unless info) (mv nil nil))
-       ((unless (fty::flexsum-p info)) (mv nil nil))
-       ((unless (eq (fty::flexsum->typemacro info) 'fty::defoption))
-        (mv nil nil))
-       (prods (fty::flexsum->prods info))
-       ((unless (and (fty::flexprod-listp prods)
-                     (consp prods)
-                     (consp (cdr prods))
-                     (endp (cddr prods))))
-        (raise "Internal error: malformed option products ~x0." prods)
-        (mv nil nil))
-       (prod1 (first prods))
-       (prod2 (second prods))
-       (prod (cond ((eq (fty::flexprod->kind prod1) :some) prod1)
-                   ((eq (fty::flexprod->kind prod2) :some) prod2)
-                   (t (prog2$
-                       (raise "Internal error: no :SOME product in ~x0."
-                              prods)
-                       prod1))))
-       (fields (fty::flexprod->fields prod))
-       ((unless (and (fty::flexprod-field-listp fields)
-                     (= (len fields) 1)))
-        (raise "Internal error: malformed option :SOME fields ~x0." fields)
-        (mv nil nil))
-       (field (car fields))
-       (base-recog (fty::flexprod-field->type field))
-       ((unless (symbolp base-recog))
-        (raise "Internal error: malformed :SOME field recognizer ~x0."
-               base-recog)
-        (mv nil nil))
-       (base-info (fty::type-with-recognizer base-recog fty-table))
-       (base-type (fty::flex->name base-info))
-       ((unless (symbolp base-type))
-        (raise "Internal error: malformed type name ~x0." base-type)
-        (mv nil nil))
-       (some-accessor (fty::flexprod-field->acc-name field))
-       ((unless (symbolp some-accessor))
-        (raise "Internal error: malformed accessor name ~x0." some-accessor)
-        (mv nil nil)))
-    (mv base-type some-accessor)))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (xdoc::evmac-topic-input-processing defpred)
@@ -569,8 +508,7 @@
        (recog (fty::flexsum->pred sum))
        (recp (fty::flexsum->recp sum))
        (type-case (fty::flexsum->case sum))
-       ((mv base-type accessor)
-        (defpred-option-type->components type fty-table))
+       ((mv base-type accessor) (fty::option-type->components type fty-table))
        (base-type-suffix (defpred-gen-name base-type suffix))
        (body `(,type-case ,type
                           :some (,base-type-suffix (,accessor ,type))
