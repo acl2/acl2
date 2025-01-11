@@ -555,7 +555,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define defpred-gen-name ((type symbolp) (suffix symbolp))
+(define defpred-gen-pred-name ((type symbolp) (suffix symbolp))
   :returns (name symbolp)
   :short "Generate the name of a predicate."
   (packn-pos (list type '- suffix) suffix))
@@ -604,7 +604,7 @@
                      (member-eq field-type types)))
         (defpred-gen-prod-conjuncts type (cdr fields) types suffix fty-table))
        (accessor (fty::flexprod-field->acc-name field))
-       (field-type-suffix (defpred-gen-name field-type suffix))
+       (field-type-suffix (defpred-gen-pred-name field-type suffix))
        (term `(,field-type-suffix (,accessor ,type)))
        (terms
         (defpred-gen-prod-conjuncts type (cdr fields) types suffix fty-table)))
@@ -691,7 +691,7 @@
        ((unless (symbolp type))
         (raise "Internal error: malformed type name ~x0." type)
         '(_))
-       (type-suffix (defpred-gen-name type suffix))
+       (type-suffix (defpred-gen-pred-name type suffix))
        (type-count (fty::flexsum->count sum))
        (recog (fty::flexsum->pred sum))
        (recp (fty::flexsum->recp sum))
@@ -717,7 +717,7 @@
     `(define ,type-suffix ((,type ,recog))
        ,@(and ignorable `((declare (ignorable ,type))))
        :returns (yes/no booleanp)
-       :parents (,(defpred-gen-name 'abstract-syntax suffix))
+       :parents (,(defpred-gen-pred-name 'abstract-syntax suffix))
        ,body
        ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
        ,@(and (not mutrecp) '(:hooks (:fix))))))
@@ -755,7 +755,7 @@
        ((unless (symbolp type))
         (raise "Internal error: malformed type name ~x0." type)
         '(_))
-       (type-suffix (defpred-gen-name type suffix))
+       (type-suffix (defpred-gen-pred-name type suffix))
        (type-count (fty::flexsum->count sum))
        (recog (fty::flexsum->pred sum))
        (recp (fty::flexsum->recp sum))
@@ -774,7 +774,7 @@
     `(define ,type-suffix ((,type ,recog))
        ,@(and ignorable `((declare (ignorable ,type))))
        :returns (yes/no booleanp)
-       :parents (,(defpred-gen-name 'abstract-syntax suffix))
+       :parents (,(defpred-gen-pred-name 'abstract-syntax suffix))
        ,body
        ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
        ,@(and (not mutrecp) '(:hooks (:fix))))))
@@ -802,20 +802,20 @@
        ((unless (symbolp type))
         (raise "Internal error: malformed type name ~x0." type)
         '(_))
-       (type-suffix (defpred-gen-name type suffix))
+       (type-suffix (defpred-gen-pred-name type suffix))
        (type-count (fty::flexsum->count sum))
        (recog (fty::flexsum->pred sum))
        (recp (fty::flexsum->recp sum))
        (type-case (fty::flexsum->case sum))
        ((mv base-type accessor)
         (defpred-option-type->components type fty-table))
-       (base-type-suffix (defpred-gen-name base-type suffix))
+       (base-type-suffix (defpred-gen-pred-name base-type suffix))
        (body `(,type-case ,type
                           :some (,base-type-suffix (,accessor ,type))
                           :none t)))
     `(define ,type-suffix ((,type ,recog))
        :returns (yes/no booleanp)
-       :parents (,(defpred-gen-name 'abstract-syntax suffix))
+       :parents (,(defpred-gen-pred-name 'abstract-syntax suffix))
        ,body
        ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
        ,@(and (not mutrecp) '(:hooks (:fix))))))
@@ -870,7 +870,7 @@
        ((unless (symbolp type))
         (raise "Internal error: malformed type name ~x0." type)
         '(_))
-       (type-suffix (defpred-gen-name type suffix))
+       (type-suffix (defpred-gen-pred-name type suffix))
        (type-count (fty::flexlist->count list))
        (recog (fty::flexlist->pred list))
        (elt-recog (fty::flexlist->elt-type list))
@@ -883,7 +883,7 @@
        ((unless (symbolp elt-type))
         (raise "Internal error: malformed type name ~x0." elt-type)
         '(_))
-       (elt-type-suffix (defpred-gen-name elt-type suffix))
+       (elt-type-suffix (defpred-gen-pred-name elt-type suffix))
        (body `(or (endp ,type)
                   (and (,elt-type-suffix (car ,type))
                        (,type-suffix (cdr ,type)))))
@@ -896,7 +896,7 @@
        (event
         `(define ,type-suffix ((,type ,recog))
            :returns (yes/no booleanp)
-           :parents (,(defpred-gen-name 'abstract-syntax suffix))
+           :parents (,(defpred-gen-pred-name 'abstract-syntax suffix))
            ,body
            ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
            ,@(and (not mutrecp) '(:hooks (:fix)))
@@ -923,7 +923,7 @@
        ((unless (symbolp type))
         (raise "Internal error: malformed type name ~x0." type)
         '(_))
-       (type-suffix (defpred-gen-name type suffix))
+       (type-suffix (defpred-gen-pred-name type suffix))
        (type-count (fty::flexomap->count omap))
        (recog (fty::flexomap->pred omap))
        (recp (fty::flexomap->recp omap))
@@ -933,7 +933,7 @@
         '(_))
        (val-info (defpred-type-with-recognizer val-recog fty-table))
        (val-type (defpred-flex->name val-info))
-       (val-type-suffix (defpred-gen-name val-type suffix))
+       (val-type-suffix (defpred-gen-pred-name val-type suffix))
        (body `(or (not (mbt (,recog ,type)))
                   (omap::emptyp ,type)
                   (and (,val-type-suffix (omap::head-val ,type))
@@ -951,7 +951,7 @@
                          '(,type-suffix-when-emptyp))))
     `(define ,type-suffix ((,type ,recog))
        :returns (yes/no booleanp)
-       :parents (,(defpred-gen-name 'abstract-syntax suffix))
+       :parents (,(defpred-gen-pred-name 'abstract-syntax suffix))
        ,body
        ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
        ,@(and (not mutrecp) '(:hooks (:fix)))
@@ -1048,12 +1048,12 @@
        ((unless (symbolp clique-name))
         (raise "Internal error: malformed clique name ~x0." clique-name)
         '(_))
-       (clique-name-suffix (defpred-gen-name clique-name suffix))
+       (clique-name-suffix (defpred-gen-pred-name clique-name suffix))
        (events
         (defpred-gen-types-preds
           members t types suffix default overrides fty-table)))
     `(defines ,clique-name-suffix
-       :parents (,(defpred-gen-name 'abstract-syntax suffix))
+       :parents (,(defpred-gen-pred-name 'abstract-syntax suffix))
        ,@events
        :hints (("Goal" :in-theory (enable o< o-finp)))
        :flag-local nil
@@ -1134,7 +1134,7 @@
        (pred-events
         (defpred-gen-cliques-preds
           *defpred-cliques* types suffix default overrides fty-table))
-       (xdoc-name (defpred-gen-name 'abstract-syntax suffix))
+       (xdoc-name (defpred-gen-pred-name 'abstract-syntax suffix))
        (xdoc-event
         `(defxdoc+ ,xdoc-name
            ,@(and parents-presentp `(:parents ,parents))
