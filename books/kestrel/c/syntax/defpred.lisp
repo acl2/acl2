@@ -69,20 +69,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ defpred-library-extensions
-  :parents (defpred-implementation)
-  :short "Some FTY library extensions for @(tsee defpred)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These should be moved to the FTY library eventually.
-     Perhaps there is already something like that there,
-     but it may be in program mode."))
-  :order-subtopics t
-  :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (xdoc::evmac-topic-input-processing defpred)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
