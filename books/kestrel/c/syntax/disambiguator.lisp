@@ -16,7 +16,7 @@
 
 (local (include-book "std/alists/top" :dir :system))
 
-(local (in-theory (acl2::enable* abstract-syntax-unambp-rules)))
+(local (in-theory (enable* abstract-syntax-unambp-rules)))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
