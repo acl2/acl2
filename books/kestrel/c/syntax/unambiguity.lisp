@@ -111,14 +111,6 @@
      they support guard and return proofs.
      We plan to extend @(tsee defpred) to generate at least some of these."))
 
-  ;; Theorems for map types:
-
-  (defrule filepath-transunit-map-unambp-of-tail
-    (implies (and (filepath-transunit-mapp tumap)
-                  (filepath-transunit-map-unambp tumap))
-             (filepath-transunit-map-unambp (omap::tail tumap)))
-    :enable filepath-transunit-map-unambp)
-
   ;; Theorems for option types (base implies option):
 
   (defrule expr-option-unambp-when-expr-unambp
