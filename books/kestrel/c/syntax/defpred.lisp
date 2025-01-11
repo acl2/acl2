@@ -143,7 +143,14 @@
   "@('types') is a list (in no particular order)
    of all the type names for which predicates are generated."
 
-  "@('type') is an element of @('types') explained above."))
+  "@('type') is an element of @('types') explained above."
+
+  "@('deferred-events') is a list of events,
+   returned by functions that generate predicates,
+   when the predicate is part of a mutual recursion:
+   those events are generated as part of the @(tsee defines) after @('///'),
+   instead of as part of the @(tsee define) of the predicate after @('///');
+   that is, they are deferred."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -866,13 +873,7 @@
      this product type is part of a mutually recursive clique.")
    (xdoc::p
     "The accompanying theorems are generated as a @(tsee std::deflist) event,
-     which generates the actual theorems.")
-   (xdoc::p
-    "If the predicate is not part of a mutually recursive clique,
-     the additional theorems are generated
-     as part of the @(tsee define) event, after @('///').
-     Otherwise, the theorem events are ``deferred'',
-     and returned as a separate result by this function."))
+     which generates the actual theorems."))
   (b* ((type (fty::flexlist->name list))
        ((unless (symbolp type))
         (raise "Internal error: malformed type name ~x0." type)
