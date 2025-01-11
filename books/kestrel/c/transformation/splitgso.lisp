@@ -125,17 +125,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defoption type-spec-option
-  c$::type-spec
-  :short "Fixtype of optional type specifiers."
-  :long
-  (xdoc::topstring
-    (xdoc::p
-      "Type specifiers are defined in @(tsee c$::type-spec)."))
-  :pred type-spec-optionp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define type-spec-from-dec-spec
   ((decl-spec decl-specp))
   :returns (type-spec? type-spec-optionp)
@@ -988,7 +977,7 @@
         (reterr (msg "~x0 must be a string" split-members)))
        (split-members (ident-map split-members))
        ((unless (symbolp const-new))
-        (reterr (msg "~x0 must be a symbol: ~x0" const-new))))
+        (reterr (msg "~x0 must be a symbol" const-new))))
     (retok filepath
            tunit
            object-ident
