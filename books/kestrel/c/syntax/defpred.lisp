@@ -175,32 +175,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define defpred-flex->name (info)
-  :returns (name symbolp)
-  :short "Name of a sum, list, alist, transparent sum, set, or omap type,
-          given the information associated to the type."
-  (b* ((name (cond ((fty::flexsum-p info) (fty::flexsum->name info))
-                   ((fty::flexlist-p info) (fty::flexlist->name info))
-                   ((fty::flexalist-p info) (fty::flexalist->name info))
-                   ((fty::flextranssum-p info) (fty::flextranssum->name info))
-                   ((fty::flexset-p info) (fty::flexset->name info))
-                   ((fty::flexomap-p info) (fty::flexomap->name info))
-                   (t (raise "Internal error: malformed type ~x0." info))))
-       ((unless (symbolp name))
-        (raise "Internal error: malformed type name ~x0." name)))
-    name))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define defpred-flex-list->name-list ((infos true-listp))
-  :returns (names symbol-listp)
-  :short "Lift @(tsee defpred-flex->name) to lists."
-  (cond ((endp infos) nil)
-        (t (cons (defpred-flex->name (car infos))
-                 (defpred-flex-list->name-list (cdr infos))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define defpred-option-type->components ((option-type symbolp)
                                          (fty-table alistp))
   :returns (mv (base-type symbolp)
@@ -250,7 +224,7 @@
                base-recog)
         (mv nil nil))
        (base-info (defpred-type-with-recognizer base-recog fty-table))
-       (base-type (defpred-flex->name base-info))
+       (base-type (fty::flex->name base-info))
        ((unless (symbolp base-type))
         (raise "Internal error: malformed type name ~x0." base-type)
         (mv nil nil))
@@ -297,7 +271,7 @@
        (infos (fty::flextypes->types info))
        ((unless (true-listp infos))
         (raise "Internal error: malformed clique members ~x0." infos))
-       (types (defpred-flex-list->name-list infos))
+       (types (fty::flex-list->name-list infos))
        (more-types (defpred-type-names-in-cliques-with-names
                      (cdr cliques) fty-table)))
     (append types more-types)))
@@ -521,7 +495,7 @@
         (raise "Internal error: malformed field recognizer ~x0." recog))
        (info (defpred-type-with-recognizer recog fty-table))
        (field-type (and info
-                        (defpred-flex->name info)))
+                        (fty::flex->name info)))
        ((unless (and field-type
                      (member-eq field-type types)))
         (defpred-gen-prod-conjuncts type (cdr fields) types suffix fty-table))
@@ -807,7 +781,7 @@
         (raise "Internal error: malformed recognizer ~x0." elt-recog)
         (mv '(_) nil))
        (elt-info (defpred-type-with-recognizer elt-recog fty-table))
-       (elt-type (defpred-flex->name elt-info))
+       (elt-type (fty::flex->name elt-info))
        (recp (fty::flexlist->recp list))
        ((unless (symbolp elt-type))
         (raise "Internal error: malformed type name ~x0." elt-type)
@@ -861,7 +835,7 @@
         (raise "Internal error: malformed recognizer ~x0." val-recog)
         '(_))
        (val-info (defpred-type-with-recognizer val-recog fty-table))
-       (val-type (defpred-flex->name val-info))
+       (val-type (fty::flex->name val-info))
        (val-type-suffix (defpred-gen-name val-type suffix))
        (body `(or (not (mbt (,recog ,type)))
                   (omap::emptyp ,type)
