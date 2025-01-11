@@ -14,6 +14,7 @@
 (include-book "std/util/deflist" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
 
+(local (include-book "std/alists/top" :dir :system))
 (local (include-book "std/typed-lists/symbol-listp" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
@@ -33,7 +34,15 @@
      that encode fixtype information in the fixtype table.
      Here we define some extensions of these aggregates,
      e.g. lists of some of those types,
-     and operations on those aggregates."))
+     and operations on those aggregates.")
+   (xdoc::p
+    "The FTY table is the table of all (fix)types
+     (except some built-in ones, such as @('nat')),
+     i.e. the table @('flextypes-table').
+     The format is defined in @('[books]/centaur/fty/database.lisp').
+     It has one entry for each mutually recursive clique of types,
+     with singly recursive or non-recursive types
+     being in singleton cliques."))
   :order-subtopics t
   :default-parent t)
 
@@ -89,3 +98,48 @@
                  (flex-list->name-list (cdr infos))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define type-with-name ((type symbolp) (fty-table alistp))
+  :returns info?
+  :short "Find, in the FTY table,
+          the information for a type with a given name."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Each type has a unique name, so we stop as soon as we find a match.
+     We return @('nil') if there is no match.")
+   (xdoc::p
+    "Based on the format as described in @(see database),
+     we do an outer loop on the entries of the table,
+     and for each element an inner loop on
+     the elements of the mutually recursive clique
+     (which may be a singleton)."))
+  (b* (((when (endp fty-table)) nil)
+       ((cons & info) (car fty-table))
+       ((unless (flextypes-p info))
+        (raise "Internal error: malformed type clique ~x0." info))
+       (type-entries (flextypes->types info))
+       (info? (type-with-name-loop type type-entries)))
+    (or info?
+        (type-with-name type (cdr fty-table))))
+  :prepwork
+  ((define type-with-name-loop ((type symbolp) type-entries)
+     :returns info?
+     :parents nil
+     (b* (((when (atom type-entries)) nil)
+          (type-entry (car type-entries))
+          (foundp (cond ((flexsum-p type-entry)
+                         (eq type (flexsum->name type-entry)))
+                        ((flexlist-p type-entry)
+                         (eq type (flexlist->name type-entry)))
+                        ((flexalist-p type-entry)
+                         (eq type (flexalist->name type-entry)))
+                        ((flextranssum-p type-entry)
+                         (eq type (flextranssum->name type-entry)))
+                        ((flexset-p type-entry)
+                         (eq type (flexset->name type-entry)))
+                        ((flexomap-p type-entry)
+                         (eq type (flexomap->name type-entry)))
+                        (t nil)))
+          ((when foundp) type-entry))
+       (type-with-name-loop type (cdr type-entries))))))
