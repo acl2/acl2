@@ -210,7 +210,9 @@
       "For each list type designated in
        the `Types for Which Predicates Are Generated' below,
        a @(tsee std::delist) for the predicates,
-       which automatically generates theorems."))
+       which automatically generates theorems.
+       The enablement of these theorems is determined by @(tsee std::deflist);
+       currently @('defpred') does not modify that for any of those theorems."))
 
     (xdoc::desc
      "@('abstract-syntax-<suffix>-rules')"
