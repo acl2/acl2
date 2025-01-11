@@ -250,15 +250,13 @@
 (table flextypes-table)
 
 (defun get-flextypes (world)
-  (declare (xargs :mode :program))
+  (declare (xargs :guard (plist-worldp world)))
   "Get the database of defined flextypes."
   (table-alist 'flextypes-table world))
 
 (defmacro add-flextype (x)
   (declare (xargs :guard (flextypes-p x)))
   `(table flextypes-table ',(flextypes->name x) ',x))
-
-
 
 ; Basic Utilities -------------------------------------------------------------
 
@@ -289,8 +287,6 @@
       nil
     (cons (flexprod->kind (car prods))
           (flexprods->kinds (cdr prods)))))
-
-
 
 ; with-flextype-bindings ------------------------------------------------------
 
@@ -356,7 +352,6 @@
 (defmacro with-flextype-bindings (binding body &key default)
   (with-flextype-bindings-fn binding body default))
 
-
 ; Generic Utilities for Top-Level Types ---------------------------------------
 
 (defun flextypelist-recp (x)
@@ -393,8 +388,6 @@
       nil
     (cons (with-flextype-bindings (x (car types)) x.pred)
           (flextypelist-predicates (cdr types)))))
-
-
 
 (defun flextypes-find-count-for-pred (pred types)
   (declare (xargs :mode :program))
