@@ -937,13 +937,27 @@
        (body `(or (not (mbt (,recog ,type)))
                   (omap::emptyp ,type)
                   (and (,val-type-suffix (omap::head-val ,type))
-                       (,type-suffix (omap::tail ,type))))))
+                       (,type-suffix (omap::tail ,type)))))
+       (type-suffix-when-emptyp
+        (packn-pos (list type-suffix '-when-emptyp) suffix))
+       (thm-events
+        `((defruled ,type-suffix-when-emptyp
+            (implies (omap::emptyp ,type)
+                     (,type-suffix ,type))
+            :enable ,type-suffix)))
+       (ruleset-event
+        `(add-to-ruleset ,(packn-pos (list 'abstract-syntax- suffix '-rules)
+                                     suffix)
+                         '(,type-suffix-when-emptyp))))
     `(define ,type-suffix ((,type ,recog))
        :returns (yes/no booleanp)
        :parents (,(defpred-gen-name 'abstract-syntax suffix))
        ,body
        ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
-       ,@(and (not mutrecp) '(:hooks (:fix))))))
+       ,@(and (not mutrecp) '(:hooks (:fix)))
+       ///
+       ,@thm-events
+       ,ruleset-event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1134,8 +1148,8 @@
     `(encapsulate
        ()
        ,xdoc-event
-       ,@pred-events
-       ,ruleset-event)))
+       ,ruleset-event
+       ,@pred-events)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
