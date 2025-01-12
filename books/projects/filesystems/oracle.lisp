@@ -44,7 +44,8 @@
                            (:rewrite
                             acl2-number-listp-of-cdr-when-acl2-number-listp)
                            (:rewrite
-                            fat32-masked-entry-list-p-when-not-consp))))
+                            fat32-masked-entry-list-p-when-not-consp)
+                           collapse-hifat-place-file-lemma-13)))
 
 (defund
   abs-pwrit1
