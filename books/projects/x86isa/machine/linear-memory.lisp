@@ -40,6 +40,7 @@
 ; Robert Krug         <rkrug@cs.utexas.edu>
 ; Contributing Author(s):
 ; Alessandro Coglio (www.alessandrocoglio.info)
+; Eric Smith (eric.smith@kestrel.edu)
 
 (in-package "X86ISA")
 (include-book "paging" :ttags (:undef-flg))
@@ -510,9 +511,9 @@
            ((mv flg p-addr x86)
             (ia32e-la-to-pa lin-addr r-w-x x86))
            ((when flg) (mv flg nil x86))
-           ((mv flgs p-addrs x86)
+           ((mv flg p-addrs x86)
             (las-to-pas (1- n) (1+ lin-addr) r-w-x x86)))
-        (mv flgs (if flgs nil (cons p-addr p-addrs)) x86)))
+        (mv flg (if flg nil (cons p-addr p-addrs)) x86)))
 
     ///
 
@@ -702,9 +703,9 @@
 
     (if (app-view x86)
       (rb-1 n addr r-x x86)
-      (b* (((mv flgs p-addrs x86)
+      (b* (((mv flg p-addrs x86)
             (las-to-pas n addr r-x x86))
-           ((when flgs) (mv flgs 0 x86))
+           ((when flg) (mv flg 0 x86))
            (val (read-from-physical-memory p-addrs x86)))
           (mv nil val x86)))
 
@@ -891,9 +892,9 @@
 
     (if (app-view x86)
       (wb-1 n addr w value x86)
-      (b* (((mv flgs p-addrs x86)
+      (b* (((mv flg p-addrs x86)
             (las-to-pas n addr :w x86))
-           ((when flgs) (mv flgs x86))
+           ((when flg) (mv flg x86))
            (x86 (write-to-physical-memory p-addrs value x86)))
           (mv nil x86)))
 
