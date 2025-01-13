@@ -38,6 +38,7 @@
                 defirrelevant
                 defmacro+
                 defxdoc+
+                enable*
                 er-soft+
                 erp
                 impossible

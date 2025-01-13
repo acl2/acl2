@@ -18,7 +18,6 @@
 
 (include-book "../syntax/abstract-syntax-operations")
 (include-book "deftrans")
-(include-book "utilities/free-vars")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -81,7 +80,7 @@
   (b* (((paramdecl paramdecl) paramdecl))
     (paramdeclor-case
       paramdecl.decl
-      :declor (declor-get-ident paramdecl.decl.unwrap)
+      :declor (declor->ident paramdecl.decl.unwrap)
       :otherwise nil)))
 
 (define paramdecl-to-decl
@@ -145,7 +144,7 @@
         fundef.declor.direct
         :function-params
         (b* (((unless (equal target-fn
-                             (dirdeclor-get-ident fundef.declor.direct.decl)))
+                             (c$::dirdeclor->ident fundef.declor.direct.decl)))
               (mv nil (fundef-fix fundef)))
              ((mv success new-params removed-param)
               (paramdecl-list-remove-param-by-ident fundef.declor.direct.params target-param))
