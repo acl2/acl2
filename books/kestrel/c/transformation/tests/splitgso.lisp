@@ -81,8 +81,8 @@ int main(void) {
   "struct myStruct { int foo; string bar; unsigned long int baz; };
 struct s1 { int foo; unsigned long int baz; };
 struct s2 { string bar; };
-struct s1 my1;
-struct s2 my2;
+static struct s1 my1;
+static struct s2 my2;
 int main(void) {
   return my1.foo + (-my2.bar);
 }
@@ -147,8 +147,8 @@ int main(void) {
   "struct myStruct { int foo; string bar; unsigned long int baz; };
 struct s1 { int foo; unsigned long int baz; };
 struct s2 { string bar; };
-struct s1 my1;
-struct s2 my2;
+static struct s1 my1;
+static struct s2 my2;
 int main(void) {
   int x = my1.foo + (-my2.bar);
   struct myStruct my;

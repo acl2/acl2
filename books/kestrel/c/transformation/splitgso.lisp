@@ -467,6 +467,7 @@
    :decl (b* ((type-spec? (type-spec-from-dec-specs decl.specs))
               ((unless type-spec?)
                (mv nil (list (decl-fix decl))))
+              ;; TODO: check that the object is indeed file-scope, as assumed
               ((mv match initer-option1 initer-option2)
                (type-spec-case
                  type-spec?
@@ -476,7 +477,9 @@
                (mv nil (list (decl-fix decl)))))
            (mv t
                (list (c$::make-decl-decl
-                       :specs (list (c$::decl-spec-typespec
+                       :specs (list (c$::decl-spec-stoclass
+                                      (c$::stor-spec-static))
+                                    (c$::decl-spec-typespec
                                       (c$::type-spec-struct
                                         (c$::make-strunispec
                                           :name new1-type))))
@@ -485,7 +488,9 @@
                                                :direct (c$::dirdeclor-ident new1))
                                      :init? initer-option1)))
                      (c$::make-decl-decl
-                       :specs (list (c$::decl-spec-typespec
+                       :specs (list (c$::decl-spec-stoclass
+                                      (c$::stor-spec-static))
+                                    (c$::decl-spec-typespec
                                       (c$::type-spec-struct
                                         (c$::make-strunispec
                                           :name new2-type))))
