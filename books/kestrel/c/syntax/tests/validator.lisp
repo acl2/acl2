@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -133,7 +133,8 @@
             (expr-x (expr-paren->inner expr-xp)))
          (and (expr-case expr-x :ident)
               (equal (expr-ident->info expr-x)
-                     (type-sint)))))
+                     (make-var-info :type (type-sint)
+                                    :linkage (linkage-external))))))
 
 (test-valid
  "typedef char x;

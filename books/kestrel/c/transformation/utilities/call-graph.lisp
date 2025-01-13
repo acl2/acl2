@@ -19,8 +19,7 @@
 (include-book "centaur/fty/deftypes" :dir :system)
 (include-book "std/basic/two-nats-measure" :dir :system)
 
-(include-book "../../syntax/abstract-syntax")
-(include-book "free-vars")
+(include-book "../../syntax/abstract-syntax-operations")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -399,9 +398,9 @@
        ((declor fundef.declor) fundef.declor))
     (dirdeclor-case
       fundef.declor.direct
-      :function-params (b* ((fn-name (dirdeclor-get-ident fundef.declor.direct.decl)))
+      :function-params (b* ((fn-name (c$::dirdeclor->ident fundef.declor.direct.decl)))
                          (call-graph-stmt fundef.body fn-name acc))
-      :function-names (b* ((fn-name (dirdeclor-get-ident fundef.declor.direct.decl)))
+      :function-names (b* ((fn-name (c$::dirdeclor->ident fundef.declor.direct.decl)))
                          (call-graph-stmt fundef.body fn-name acc))
       :otherwise (ident-ident-option-set-map-fix acc))))
 

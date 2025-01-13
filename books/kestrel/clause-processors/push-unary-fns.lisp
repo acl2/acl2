@@ -304,6 +304,7 @@
 ;; Apply the push-unary-fns clause-processor to all goals.
 ;; (The parity trick used here is from :doc Using-computed-hints-6.)
 ;; TODO: Should we just do it in the conclusion of each goal?
+;; Usage: Just (push-unary-fns-for-all-goals t) among your hints.  It's a computed hint.
 (defun push-unary-fns-for-all-goals (parity)
   (if parity
       ;; Apply the clause-processor and turn the parity to nil so that next time
