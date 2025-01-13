@@ -41,6 +41,9 @@
 ; Yahya Sohail        <yahya.sohail@intel.com>
 
 (in-package "X86ISA")
+
+(include-book "x86" :ttags :all :dir :machine)
+(include-book "../basics" :ttags :all)
 (include-book "marking-view-utils")
 
 (local (include-book "gl-lemmas"))
@@ -2414,7 +2417,7 @@
                (:definition n64p$inline)
                (:rewrite bitops::signed-byte-p-when-unsigned-byte-p-smaller)
                (:rewrite bitops::signed-byte-p-when-signed-byte-p-smaller)
-               (:rewrite bitops::signed-byte-p-monotonicity)
+               (:rewrite bitops::signed-byte-p-incr)
                (:rewrite default-unary-minus)
                (:rewrite loghead-ash-0)
                (:rewrite acl2::expt-with-violated-guards)

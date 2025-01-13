@@ -1,7 +1,7 @@
 ; BV Lists Library: bytes-to-bits
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2019 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -20,6 +20,7 @@
 (local (include-book "../lists-light/nth"))
 (local (include-book "../lists-light/len"))
 (local (include-book "../lists-light/take"))
+(local (include-book "../bv/bvchop"))
 
 ;; Convert a sequence of 8-bit bytes to a sequence of bits.  The bits from
 ;; earlier bytes come earlier in the result.  For a given byte, the most

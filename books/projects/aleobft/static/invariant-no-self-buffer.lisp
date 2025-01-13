@@ -77,7 +77,7 @@
     (validators-buffer-not-self-p (omap::tail vstates)))
   ///
 
-  (defrule validator-buffer-not-self-p-of-lookup
+  (defruled validator-buffer-not-self-p-of-lookup
     (implies (and (validators-buffer-not-self-p vstates)
                   (omap::assoc val vstates)
                   (omap::lookup val vstates))
@@ -85,7 +85,7 @@
     :induct t
     :enable omap::lookup)
 
-  (defrule validators-buffer-not-self-p-of-update
+  (defruled validators-buffer-not-self-p-of-update
     (implies (and (validators-buffer-not-self-p vstates)
                   (validator-buffer-not-self-p val vstate)
                   (addressp val))
@@ -114,12 +114,12 @@
   :hooks (:fix)
   ///
 
-  (defrule system-buffer-not-self-p-of-update-network-state
+  (defruled system-buffer-not-self-p-of-update-network-state
     (equal (system-buffer-not-self-p (update-network-state network systate))
            (system-buffer-not-self-p systate))
     :enable update-network-state)
 
-  (defrule system-buffer-not-self-p-of-update-validator-state
+  (defruled system-buffer-not-self-p-of-update-validator-state
     (implies (and (system-buffer-not-self-p systate)
                   (validator-buffer-not-self-p val vstate)
                   (addressp val)
@@ -128,7 +128,7 @@
               (update-validator-state val vstate systate)))
     :enable update-validator-state)
 
-  (defrule validator-buffer-not-self-p-of-get-validator-state
+  (defruled validator-buffer-not-self-p-of-get-validator-state
     (implies (and (system-buffer-not-self-p systate)
                   (set::in val (correct-addresses systate)))
              (validator-buffer-not-self-p val
@@ -136,11 +136,12 @@
     :enable (get-validator-state
              correct-addresses
              in-of-correct-addresses-loop
-             lookup-nonnil-of-correct-addresses)))
+             lookup-nonnil-of-correct-addresses
+             validator-buffer-not-self-p-of-lookup)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule validator-buffer-not-self-p-of-validator-init
+(defruled validator-buffer-not-self-p-of-validator-init
   :short "Establishment of the invariant at the validator level:
           the invariant holds on the initial validator state."
   :long
@@ -153,7 +154,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule validators-buffer-not-self-p-when-validators-state-initp
+(defruled validators-buffer-not-self-p-when-validators-state-initp
   :short "Establishment of the invariant at the validator map level:
           the invariant holds on any initial validator map."
   :long
@@ -165,11 +166,12 @@
            (validators-buffer-not-self-p vstates))
   :induct t
   :enable (validators-buffer-not-self-p
-           validators-state-initp))
+           validators-state-initp
+           validator-buffer-not-self-p-of-validator-init))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule system-buffer-not-self-p-when-system-state-initp
+(defruled system-buffer-not-self-p-when-system-state-initp
   :short "Establishment of the invariant at the system level:
           the invariant holds on any initial system state."
   :long
@@ -196,14 +198,14 @@
      but we need to have a theorem about that,
      which is proved here."))
 
-  (defrule validator-buffer-not-self-p-of-add-endorsed-val
+  (defruled validator-buffer-not-self-p-of-add-endorsed-val
     (implies (validator-buffer-not-self-p val vstate)
              (validator-buffer-not-self-p
               val (add-endorsed-val author round vstate)))
     :enable (validator-buffer-not-self-p
              add-endorsed-val))
 
-  (defrule system-buffer-not-self-p-of-add-endorsed
+  (defruled system-buffer-not-self-p-of-add-endorsed
     (implies (and (system-buffer-not-self-p systate)
                   (address-setp endorsers)
                   (set::subset endorsers (all-addresses systate)))
@@ -212,7 +214,10 @@
     :induct t
     :enable (in-correct-validator-addresess-when-get-validator-state
              add-endorsed
-             set::expensive-rules)))
+             set::expensive-rules
+             system-buffer-not-self-p-of-update-validator-state
+             validator-buffer-not-self-p-of-get-validator-state
+             validator-buffer-not-self-p-of-add-endorsed-val)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -225,20 +230,25 @@
      The proof makes use of the theorem about @(tsee add-endorsed),
      proved earlier."))
 
-  (defrule validator-buffer-not-self-p-of-create-certificate-next-val
+  (defruled validator-buffer-not-self-p-of-create-certificate-next-val
     (implies (validator-buffer-not-self-p val vstate)
              (validator-buffer-not-self-p
               val (create-certificate-next-val cert vstate)))
     :enable (validator-buffer-not-self-p
              create-certificate-next-val))
 
-  (defrule system-buffer-not-self-p-of-create-certificate-next
+  (defruled system-buffer-not-self-p-of-create-certificate-next
     (implies (and (system-buffer-not-self-p systate)
                   (create-certificate-possiblep cert systate))
              (system-buffer-not-self-p
               (create-certificate-next cert systate)))
     :enable (create-certificate-possiblep
-             create-certificate-next)))
+             create-certificate-next
+             system-buffer-not-self-p-of-update-network-state
+             system-buffer-not-self-p-of-update-validator-state
+             validator-buffer-not-self-p-of-get-validator-state
+             system-buffer-not-self-p-of-add-endorsed
+             validator-buffer-not-self-p-of-create-certificate-next-val)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -257,7 +267,7 @@
      So that invariant, which has been separately proved,
      is added as a hypothesis to this theorem."))
 
-  (defrule validator-buffer-not-self-p-of-receive-certificate-next-val
+  (defruled validator-buffer-not-self-p-of-receive-certificate-next-val
     (implies (and (validator-buffer-not-self-p val vstate)
                   (certificatep cert)
                   (addressp val)
@@ -268,7 +278,7 @@
              receive-certificate-next-val
              certificate-with-author-of-insert))
 
-  (defrule system-buffer-not-self-p-of-receive-certificate-next
+  (defruled system-buffer-not-self-p-of-receive-certificate-next
     (implies (and (system-buffer-not-self-p systate)
                   (system-messages-not-self-p systate)
                   (receive-certificate-possiblep msg systate))
@@ -278,7 +288,11 @@
              receive-certificate-next
              system-messages-not-self-p
              message-not-self-p
-             get-network-state)
+             get-network-state
+             system-buffer-not-self-p-of-update-network-state
+             system-buffer-not-self-p-of-update-validator-state
+             validator-buffer-not-self-p-of-get-validator-state
+             validator-buffer-not-self-p-of-receive-certificate-next-val)
     :use (:instance message-set-not-self-p-element
                     (msgs (system-state->network systate)))))
 
@@ -293,7 +307,7 @@
      but it removes a certificate from a buffer,
      so the proof is easy."))
 
-  (defrule validator-buffer-not-self-p-of-store-certificate-next-val
+  (defruled validator-buffer-not-self-p-of-store-certificate-next-val
     (implies (and (validator-buffer-not-self-p val vstate)
                   (addressp val))
              (validator-buffer-not-self-p
@@ -302,13 +316,16 @@
              store-certificate-next-val
              certificate-with-author-of-delete))
 
-  (defrule system-buffer-not-self-p-of-store-certificate-next
+  (defruled system-buffer-not-self-p-of-store-certificate-next
     (implies (and (system-buffer-not-self-p systate)
                   (store-certificate-possiblep cert val systate))
              (system-buffer-not-self-p
               (store-certificate-next cert val systate)))
     :enable (store-certificate-possiblep
-             store-certificate-next)))
+             store-certificate-next
+             system-buffer-not-self-p-of-update-validator-state
+             validator-buffer-not-self-p-of-get-validator-state
+             validator-buffer-not-self-p-of-store-certificate-next-val)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -320,20 +337,23 @@
     "This is easy to prove,
      because that kind of events does not modify buffers."))
 
-  (defrule validator-buffer-not-self-p-of-advance-round-next-val
+  (defruled validator-buffer-not-self-p-of-advance-round-next-val
     (implies (validator-buffer-not-self-p val vstate)
              (validator-buffer-not-self-p
               val (advance-round-next-val round vstate)))
     :enable (validator-buffer-not-self-p
              advance-round-next-val))
 
-  (defrule system-buffer-not-self-p-of-advance-round-next
+  (defruled system-buffer-not-self-p-of-advance-round-next
     (implies (and (system-buffer-not-self-p systate)
                   (advance-round-possiblep val systate))
              (system-buffer-not-self-p
               (advance-round-next val systate)))
     :enable (advance-round-possiblep
-             advance-round-next)))
+             advance-round-next
+             system-buffer-not-self-p-of-update-validator-state
+             validator-buffer-not-self-p-of-get-validator-state
+             validator-buffer-not-self-p-of-advance-round-next-val)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -345,20 +365,23 @@
     "This is easy to prove,
      because that kind of events does not modify buffers."))
 
-  (defrule validator-buffer-not-self-p-of-commit-anchors-next-val
+  (defruled validator-buffer-not-self-p-of-commit-anchors-next-val
     (implies (validator-buffer-not-self-p val vstate)
              (validator-buffer-not-self-p
               val (commit-anchors-next-val vals vstate)))
     :enable (validator-buffer-not-self-p
              commit-anchors-next-val))
 
-  (defrule system-buffer-not-self-p-of-commit-anchors-next
+  (defruled system-buffer-not-self-p-of-commit-anchors-next
     (implies (and (system-buffer-not-self-p systate)
                   (commit-anchors-possiblep val systate))
              (system-buffer-not-self-p
               (commit-anchors-next val systate)))
     :enable (commit-anchors-possiblep
-             commit-anchors-next)))
+             commit-anchors-next
+             system-buffer-not-self-p-of-update-validator-state
+             validator-buffer-not-self-p-of-get-validator-state
+             validator-buffer-not-self-p-of-commit-anchors-next-val)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -370,23 +393,26 @@
     "This is easy to prove,
      because that kind of events does not modify buffers."))
 
-  (defrule validator-buffer-not-self-p-of-timer-expires-next-val
+  (defruled validator-buffer-not-self-p-of-timer-expires-next-val
     (implies (validator-buffer-not-self-p val vstate)
              (validator-buffer-not-self-p
               val (timer-expires-next-val vstate)))
     :enable (validator-buffer-not-self-p
              timer-expires-next-val))
 
-  (defrule system-buffer-not-self-p-of-timer-expires-next
+  (defruled system-buffer-not-self-p-of-timer-expires-next
     (implies (and (system-buffer-not-self-p systate)
                   (timer-expires-possiblep val systate))
              (system-buffer-not-self-p (timer-expires-next val systate)))
     :enable (timer-expires-possiblep
-             timer-expires-next)))
+             timer-expires-next
+             system-buffer-not-self-p-of-update-validator-state
+             validator-buffer-not-self-p-of-get-validator-state
+             validator-buffer-not-self-p-of-timer-expires-next-val)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule system-buffer-not-self-p-of-event-next
+(defruled system-buffer-not-self-p-of-event-next
   :short "Preservation of the invariant by all events."
   :long
   (xdoc::topstring

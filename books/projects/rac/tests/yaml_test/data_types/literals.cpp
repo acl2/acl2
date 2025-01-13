@@ -1,7 +1,6 @@
 // RAC begin
 
-int foo()
-{
+int foo() {
   int a = 1;
   int b = -1;
   int b2 = +1;
@@ -9,6 +8,8 @@ int foo()
   int d = -0xFF;
   bool e = false;
   bool f = true;
+  int g = 0b10;
+  int h = -0b11;
 
   return 0;
 }

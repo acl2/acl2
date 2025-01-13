@@ -168,15 +168,15 @@
 (assert!
  (b* ((topic (find-topic 'double-extension-test (get-xdoc-table (w state))))
       (long  (cdr (assoc :long topic))))
-   (and (str::substrp "@(def |XDOC|::|DET-F1|)" long)
-        (str::substrp "@(def |XDOC|::|DET-F2|)" long)
-        (str::substrp "@(def |XDOC|::|DET-F3|)" long)
+   (and (str::substrp "@(def? |XDOC|::|DET-F1|)" long)
+        (str::substrp "@(def? |XDOC|::|DET-F2|)" long)
+        (str::substrp "@(def? |XDOC|::|DET-F3|)" long)
         (str::substrp "Blah1" long)
         (str::substrp "Blah2" long)
         (str::substrp "Blah3" long)
-        (not (str::substrp "@(def |XDOC|::|DET-F1-IDENTITY|)" long))
-        (not (str::substrp "@(def |XDOC|::|DET-F2-IDENTITY|)" long))
-        (not (str::substrp "@(def |XDOC|::|DET-F3-IDENTITY|)" long)))))
+        (not (str::substrp "@(def? |XDOC|::|DET-F1-IDENTITY|)" long))
+        (not (str::substrp "@(def? |XDOC|::|DET-F2-IDENTITY|)" long))
+        (not (str::substrp "@(def? |XDOC|::|DET-F3-IDENTITY|)" long)))))
 
 
 
@@ -209,15 +209,15 @@
 (assert!
  (b* ((topic (find-topic 'double-extension-test2 (get-xdoc-table (w state))))
       (long  (cdr (assoc :long topic))))
-   (and (str::substrp "@(def |XDOC|::|DET2-F1|)" long)
-        (str::substrp "@(def |XDOC|::|DET2-F2|)" long)
-        (str::substrp "@(def |XDOC|::|DET2-F3|)" long)
+   (and (str::substrp "@(def? |XDOC|::|DET2-F1|)" long)
+        (str::substrp "@(def? |XDOC|::|DET2-F2|)" long)
+        (str::substrp "@(def? |XDOC|::|DET2-F3|)" long)
         (str::substrp "Blooop1" long)
         (str::substrp "Blooop2" long)
         (str::substrp "Blooop3" long)
-        (not (str::substrp "@(def |XDOC|::|DET2-F1-IDENTITY|)" long))
-        (not (str::substrp "@(def |XDOC|::|DET2-F2-IDENTITY|)" long))
-        (not (str::substrp "@(def |XDOC|::|DET2-F3-IDENTITY|)" long)))))
+        (not (str::substrp "@(def? |XDOC|::|DET2-F1-IDENTITY|)" long))
+        (not (str::substrp "@(def? |XDOC|::|DET2-F2-IDENTITY|)" long))
+        (not (str::substrp "@(def? |XDOC|::|DET2-F3-IDENTITY|)" long)))))
 
 
 #||

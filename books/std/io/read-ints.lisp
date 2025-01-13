@@ -960,7 +960,8 @@ the table below.</p>
                                 (booleanp signed)
                                 (or (equal bytes 1)
                                     (equal bytes 2)
-                                    (equal bytes 4))
+                                    (equal bytes 4)
+                                    (equal bytes 8))
                                 (or (equal end :little)
                                     (equal end :big)))))
     (case end

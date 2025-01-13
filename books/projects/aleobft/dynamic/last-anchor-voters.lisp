@@ -40,8 +40,7 @@
           reachable from an initial state via a sequence of events."
 
   (defruled last-anchor-voters-p-when-reachable
-    (implies (and (system-statep systate)
-                  (system-initp systate)
+    (implies (and (system-initp systate)
                   (events-possiblep events systate)
                   (all-system-fault-tolerant-p events systate))
              (last-anchor-voters-p (events-next events systate)))

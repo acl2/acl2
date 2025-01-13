@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -38,6 +38,7 @@
                 defirrelevant
                 defmacro+
                 defxdoc+
+                enable*
                 er-soft+
                 erp
                 impossible
@@ -50,12 +51,14 @@
                 nat-list-fix
                 nat-optionp
                 nats=>string
+                packn-pos
                 pos
                 pseudo-event-formp
                 pseudo-event-form-listp
                 reterr
                 retok
                 string-optionp
+                table-alist+
                 unsigned-byte-listp
                 std::defret-mutual
                 str::dec-digit-char
@@ -69,4 +72,5 @@
                 str::oct-digit-char
                 str::oct-digit-char-p
                 str::oct-digit-char-list
-                str::oct-digit-char-listp)))
+                str::oct-digit-char-listp
+                c::*keywords*)))

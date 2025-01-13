@@ -13,7 +13,9 @@
 (in-package "ACL2")
 
 (include-book "bitnot")
+(include-book "bitand")
 (include-book "bitxor")
+(include-book "bitor")
 
 (defthm bitxor-of-bitnot-arg1
   (equal (bitxor (bitnot x) y)
@@ -45,10 +47,6 @@
 ;(in-theory (disable bitxor-of-1-becomes-bitnot-arg1)) ;which way should we go on this?
 (theory-invariant (incompatible (:rewrite bitnot-becomes-bitxor-with-1) (:rewrite bitxor-of-1-becomes-bitnot-arg1)))
 
-(defthm not-equal-of-bitnot-and-getbit-0-same
-  (not (equal (bitnot x) (getbit 0 x)))
-  :hints (("Goal" :in-theory (enable bitnot))))
-
 ;rename
 (defthm bit-equal-bitxor-rewrite
   (equal (equal (bitnot y) (bitxor x y))
@@ -61,3 +59,38 @@
 (defthm bitnot-of-bitxor-of-1
   (equal (bitnot (bitxor 1 x))
          (getbit 0 x)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm bitor-x-bitxor-1-x
+  (implies (unsigned-byte-p 1 x)
+           (equal (bitor x (bitxor 1 x))
+                  1))
+  :hints (("Goal" :cases ((equal 0 x))
+           :in-theory (enable bitnot))))
+
+(defthm bitor-x-bitxor-1-x-alt
+  (implies (unsigned-byte-p 1 x)
+           (equal (bitor (bitxor 1 x) x)
+                  1))
+  :hints (("Goal" :cases ((equal 0 x))
+           :in-theory (enable bitnot))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;make a bvxor version
+;subsumes the versions for 0 and 1
+;the remaining 1 here isn't too bad, since 0 will be dropped and anything else will be trimmed
+(defthm equal-of-constant-and-bitxor-1
+  (implies (syntaxp (quotep k))
+           (equal (equal k (bitxor 1 x))
+                  (and (unsigned-byte-p 1 k)
+                       (equal (getbit 0 x) (bitnot k)))))
+  :hints (("Goal" :cases ((equal 0 (getbit 0 x)))
+           :in-theory (e/d (bitnot-becomes-bitxor-with-1)
+                           (bitxor-of-1-becomes-bitnot-arg1 bvxor-1-becomes-bitxor)))))
+
+(defthm equal-of-bitxor-and-bitor
+  (equal (equal (bitxor x y) (bitor x y))
+         (equal 0 (bitand x y)))
+  :hints (("Goal" :cases ((equal 1 (getbit 0 x))))))

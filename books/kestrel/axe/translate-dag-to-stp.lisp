@@ -785,7 +785,7 @@
                                 desired-array-length
                                 dag-array-name dag-array dag-len
                                 cut-nodenum-type-alist
-                                calling-fn ;the function for which ARG is an argument (used for error reporting)
+                                calling-fn ;the function for which ARG is an argument (used for error reporting) ; todo: pass the caller's nodenum?
                                 widths-must-matchp
                                 constant-array-info)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
@@ -815,6 +815,8 @@
     ;; arg is a nodenum:
     (b* ((arg-type (get-type-of-arg-checked arg dag-array-name dag-array cut-nodenum-type-alist))
          ((when (not (bv-array-typep arg-type)))
+          ;; (- (cw "DAG for error:~%"))
+          ;; (print-dag-array-all arg dag-array-name dag-array) ; todo: would be good to print the caller too
           (er hard? 'translate-bv-array-arg "Tried to translate an argument, ~x0, of ~x1 that is not known to be an array." arg calling-fn)
           (mv nil constant-array-info 0))
          (arg-len (bv-array-type-len arg-type))

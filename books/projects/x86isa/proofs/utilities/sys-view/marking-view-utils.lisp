@@ -41,6 +41,7 @@
 ; Yahya Sohail        <yahya.sohail@intel.com>
 
 (in-package "X86ISA")
+(include-book "../../../machine/get-prefixes")
 (include-book "common-system-level-utils")
 (include-book "paging/top")
 (include-book "clause-processors/find-subterms" :dir :system)
@@ -1195,8 +1196,8 @@
       (in-theory (e/d ()
                       ((:definition member-equal)
                        (:definition rme08$inline)
-                       (:linear mv-nth-1-idiv-spec)
-                       (:linear mv-nth-1-div-spec)
+                       ; (:linear mv-nth-1-idiv-spec)
+                       ; (:linear mv-nth-1-div-spec)
                        (:rewrite ia32e-la-to-pa-in-app-view)
                        (:type-prescription 64-bit-modep)
                        (:rewrite xr-and-ia32e-la-to-pa-in-non-marking-view)
@@ -2456,8 +2457,8 @@
                        infer-disjointness-with-all-xlation-governing-entries-paddrs-from-gather-all-paging-structure-qword-addresses-1)
                       (:rewrite
                        infer-disjointness-with-all-xlation-governing-entries-paddrs-from-gather-all-paging-structure-qword-addresses-2)
-                      (:linear mv-nth-1-idiv-spec)
-                      (:linear mv-nth-1-div-spec)
+                      ; (:linear mv-nth-1-idiv-spec)
+                      ; (:linear mv-nth-1-div-spec)
                       (:definition len)
                       (:rewrite cdr-mv-nth-1-las-to-pas-no-error)
                       (:rewrite default-+-1)
@@ -2482,7 +2483,7 @@
                       (:rewrite disjoint-p-all-xlation-governing-entries-paddrs-subset-p)
                       (:rewrite r-x-is-irrelevant-for-mv-nth-1-ia32e-la-to-pa-when-no-errors)
                       (:rewrite canonical-address-p-limits-thm-3)
-                      (:rewrite bitops::signed-byte-p-monotonicity)
+                      (:rewrite bitops::signed-byte-p-incr)
                       (:type-prescription len)
                       (:definition binary-append)
                       (:rewrite signed-byte-p-limits-thm)

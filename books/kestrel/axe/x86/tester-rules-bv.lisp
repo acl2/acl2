@@ -59,12 +59,12 @@
 (defthm not-sbvlt-of-sbvdiv-and-minus-constant-32-64
   (implies (unsigned-byte-p 31 x)
            (not (sbvlt 64 (sbvdiv 64 x y) 18446744071562067968)))
-  :hints (("Goal" :in-theory (e/d (sbvdiv sbvlt) ()))))
+  :hints (("Goal" :in-theory (enable sbvdiv sbvlt))))
 
 (defthm not-sbvlt-of-constant-and-sbvdiv-32-64
   (implies (unsigned-byte-p 31 x)
            (not (sbvlt 64 2147483647 (sbvdiv 64 x y))))
-  :hints (("Goal" :in-theory (e/d (sbvdiv sbvlt) ()))))
+  :hints (("Goal" :in-theory (enable sbvdiv sbvlt))))
 
 (defthm not-bvlt-of-constant-and-bvdiv-64-128
   (implies (unsigned-byte-p 64 x)
@@ -317,8 +317,7 @@
                 (natp n))
            (equal (getbit n (* 1/2 x))
                   (getbit (+ 1 n) x)))
-  :hints (("Goal" :in-theory (e/d (getbit slice logtail expt-of-+ ifix bvchop)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable getbit slice logtail expt-of-+ ifix bvchop))))
 
 
 

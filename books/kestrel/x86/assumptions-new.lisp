@@ -48,6 +48,7 @@
     `(+ ',constant ,term)))
 
 ;; Returns (mv erp assumptions).
+;; Generates assumptions asserting that a chunk of data has been loaded into memory (e.g., a section or segment of the executable).
 (defund assumptions-for-memory-chunk (addr bytes relp state-var base-var stack-slots-needed)
   (declare (xargs :guard (and (natp addr)
                               (acl2::byte-listp bytes)
@@ -62,7 +63,7 @@
                (last-addr-term (symbolic-add-constant (+ 1 ; todo: why is this needed?  I have code that ends in RET and checks whether the address after the RET is canonical.  however, making this change elsewhere broke other proofs.
                                                                  (+ -1 addr numbytes)) base-var)) ; todo: use bvplus?
                )
-          (mv nil
+          (mv nil ; no error
               `((canonical-address-p ,first-addr-term)
                 (canonical-address-p ,last-addr-term)
                 ;; Assert that the chunk is loaded into memory:
@@ -70,7 +71,11 @@
                 (program-at ,first-addr-term ; todo: use something better that includes the length, for speed
                             ',bytes
                             ,state-var)
-                ;; Assert that the chunk is disjoint the part of the stack that will be written:
+                ;; Assert that the chunk is disjoint from the saved return address (so writing to the chunk doesn't change it)
+                ;; TODO: Do this only for writable chunks?
+                (separate ':r ',(len bytes) ,first-addr-term
+                          ':r '8 (rsp ,state-var))
+                ;; Assert that the chunk is disjoint from the part of the stack that will be written:
                 ,@(if (posp stack-slots-needed)
                       ;; todo: make a better version of separate that doesn't require the Ns to be positive (and that doesn't have the useless rwx params):
                       `((separate ':r ',(len bytes) ,first-addr-term
@@ -78,22 +83,26 @@
                     ;; Can't call separate here because (* 8 stack-slots-needed) = 0:
                     nil))))
       ;; Absolute addresses are just numbers:
-      (let ((first-addr addr)
-            (last-addr (+ -1 addr numbytes)) ; todo: use bvplus? ; don't need to add 1 here for that RET issue, because the number should be clearly canonical
-            )
-        (if (not (and (canonical-address-p first-addr)
+      (let* ((first-addr addr)
+             (last-addr (+ -1 addr numbytes)) ; todo: use bvplus? ; don't need to add 1 here for that RET issue, because the number should be clearly canonical
+             (first-addr-term `',first-addr))
+        (if (not (and (canonical-address-p first-addr) ; we can test these here instead of adding them as assumptions
                       (canonical-address-p last-addr)))
             (mv :bad-address nil)
-          (mv nil
+          (mv nil ; no error
               `(;; In the absolute case, the start and end addresses are just numbers, so we don't need canonical claims for them:
                 ;; Assert that the chunk is loaded into memory:
-                (program-at ',first-addr ; todo: use something better that includes the length, for speed
+                (program-at ,first-addr-term ; todo: use something better that includes the length, for speed
                             ',bytes
                             ,state-var)
+                ;; Assert that the chunk is disjoint from the saved return address (so writing to the chunk doesn't change it)
+                ;; TODO: Do this only for writable chunks?
+                (separate ':r ',(len bytes) ,first-addr-term
+                          ':r '8 (rsp ,state-var))
                 ;; Assert that the chunk is disjoint from the part of the stack that will be written:
                 ,@(if (posp stack-slots-needed)
                       ;; todo: make a better version of separate that doesn't require the Ns to be positive (and that doesn't have the useless rwx params):
-                      `((separate ':r ',(len bytes) ',first-addr
+                      `((separate ':r ',(len bytes) ,first-addr-term
                                   ':r ',(* 8 stack-slots-needed) (binary-+ ',(* '-8 stack-slots-needed) (rsp ,state-var))))
                     ;; Can't call separate here because (* 8 stack-slots-needed) = 0:
                     nil))))))))
@@ -245,23 +254,28 @@
                               relp ; rename position-independentp?
                               stack-slots-needed
                               state-var
+                              base-var ; only used if relp
                               inputs
+                              disjoint-chunk-addresses-and-lens
                               parsed-elf)
   (declare (xargs :guard (and (lifter-targetp target)
-                              (member-eq relp '(t nil :auto))
+                              (booleanp relp)
                               (natp stack-slots-needed)
                               (symbolp state-var) ; todo: too strict?
+                              (symbolp base-var)
                               (names-and-typesp inputs)
+                              (alistp disjoint-chunk-addresses-and-lens) ; cars are terms
+                              (nat-listp (strip-cdrs disjoint-chunk-addresses-and-lens))
                               (acl2::parsed-elfp parsed-elf))
                   :guard-hints (("Goal" :in-theory (enable acl2::parsed-elfp acl2::true-listp-when-pseudo-term-listp-2)))))
   (b* ((file-type (acl2::parsed-elf-type parsed-elf))
        ((when (not (member-eq file-type '(:rel :dyn :exec))))
         (mv (cons :unknown-file-type file-type) nil))
        ;; Decide whether to treat addresses as relative or absolute:
-       (relp (if (eq :auto relp)
-                 (if (member-eq file-type '(:rel :dyn)) t nil) ; :exec means absolute
-               ;; use the explicitly given relp:
-               relp))
+       ;; (relp (if (eq :auto relp)
+       ;;           (if (member-eq file-type '(:rel :dyn)) t nil) ; :exec means absolute
+       ;;         ;; use the explicitly given relp:
+       ;;         relp))
        ;; Decide where to start lifting:
        (target-address (if (eq :entry-point target)
                            (acl2::parsed-elf-entry-point parsed-elf)
@@ -269,7 +283,6 @@
                              target ; explicit address given (relative iff relp)
                            ;; target is the name of a function:
                            (acl2::subroutine-address-elf target parsed-elf))))
-       (base-var 'base-address) ; only used if relp
        (target-address-term (if relp
                                 `(binary-+ ',target-address ,base-var)
                               (acl2::enquote target-address)))
@@ -288,9 +301,10 @@
        (code-address (acl2::get-elf-code-address parsed-elf)) ; todo: what if there are segments but no sections?!
        ((when (not (natp code-address))) ; impossible
         (mv :bad-code-addres nil))
-       (text-offset (if relp
-                        (symbolic-add-constant code-address base-var) ; todo clean up base-var handling -- done?
-                      code-address)))
+       ;; (text-offset (if relp
+       ;;                  (symbolic-add-constant code-address base-var) ; todo clean up base-var handling -- done?
+       ;;                code-address))
+       )
     (mv nil
         (append ;; can't use this: not in normal form: (make-standard-state-assumptions-64-fn state-var) ; todo: put back, but these are untranslated!  should all the assumptions be generated untranslated (for presentation) and then translated?
           (make-standard-state-assumptions-fn state-var)
@@ -337,7 +351,7 @@
                                     ;; See the System V AMD64 ABI
                                     '((rdi x86) (rsi x86) (rdx x86) (rcx x86) (r8 x86) (r9 x86))
                                     stack-slots-needed
-                                    (acons text-offset (len (acl2::get-elf-code parsed-elf)) nil) ; todo: could there be extra zeros?
+                                    disjoint-chunk-addresses-and-lens ; (acons text-offset (len (acl2::get-elf-code parsed-elf)) nil) ; todo: could there be extra zeros?
                                     ))))))
 
 ;; not true due to make-standard-state-assumptions-64-fn
@@ -352,3 +366,67 @@
 ;;                                                               stack-slots-needed
 ;;                                                               state-var
 ;;                                                               parsed-elf)))))
+
+
+;; Returns (mv erp maybe-extended-bases-and-lens).
+(defun elf64-segment-address-and-len (program-header-table-entry relp base-var bytes-len acc)
+  (declare (xargs :guard (and (alistp program-header-table-entry)
+                              (booleanp relp)
+                              (symbolp base-var)
+                              (natp bytes-len)
+                              (true-listp acc))
+                  :guard-hints (("Goal" :in-theory (enable acl2::elf-program-header-tablep)))))
+  (b* ((type (lookup-eq :type program-header-table-entry))
+       ((when (not (eq type :pt_load)))
+        ;; We skip any segment that is not a LOAD segment:
+        (mv nil acc))
+       (offset (lookup-eq :offset program-header-table-entry))
+       (filesz (lookup-eq :filesz program-header-table-entry))
+       (vaddr (lookup-eq :vaddr program-header-table-entry)) ; we don't use the paddr for anything
+       (memsz (lookup-eq :memsz program-header-table-entry)) ; todo: do anything with flags or align?
+       ((when (not (and (natp offset)
+                        (natp filesz)
+                        (natp vaddr)
+                        (natp memsz))))
+        (mv :bad-program-header-table-entry-value nil))
+       (last-byte-num (+ -1 offset filesz)))
+    (if (not (< last-byte-num bytes-len))
+        (mv :not-enough-bytes nil)
+      (if (< memsz filesz)
+          (mv :too-many-bytes-in-file nil)
+        (b* ((address-term (if relp (symbolic-add-constant vaddr base-var) `,vaddr)))
+          (mv nil
+              (cons (cons address-term memsz)
+                    acc)))))))
+
+;; Returns (mv erp bases-and-lens).
+(defund elf64-segment-addresses-and-lens (program-header-table relp base-var bytes-len acc)
+  (declare (xargs :guard (and (acl2::elf-program-header-tablep program-header-table)
+                              (booleanp relp)
+                              (symbolp base-var)
+                              (natp bytes-len)
+                              (true-listp acc))
+                  :guard-hints (("Goal" :in-theory (enable acl2::elf-program-header-tablep
+                                                           acl2::true-listp-when-pseudo-term-listp-2)))))
+  (if (endp program-header-table)
+      (mv nil (reverse acc))
+    (b* ((program-header-table-entry (first program-header-table))
+         ((mv erp acc)
+          (elf64-segment-address-and-len program-header-table-entry relp base-var bytes-len acc))
+         ((when erp) (mv erp nil)))
+      (elf64-segment-addresses-and-lens (rest program-header-table) relp base-var bytes-len acc))))
+
+(local (include-book "kestrel/alists-light/alistp" :dir :system))
+
+;todo: nested induction
+(defthm elf64-segment-addresses-and-lens-type
+  (implies (and (alistp acc) ; cars are terms
+                (nat-listp (strip-cdrs acc)))
+           (mv-let (erp bases-and-lens)
+             (elf64-segment-addresses-and-lens program-header-table relp base-var bytes-len acc)
+             (declare (ignore erp))
+             (and (alistp bases-and-lens) ; cars are terms
+                  (nat-listp (strip-cdrs bases-and-lens)))))
+  :hints (("Goal" :in-theory (enable elf64-segment-addresses-and-lens elf64-segment-address-and-len))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

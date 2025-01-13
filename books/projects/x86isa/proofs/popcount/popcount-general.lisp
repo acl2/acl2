@@ -38,7 +38,8 @@
 
 (in-package "X86ISA")
 
-(include-book "app-view/user-level-memory-utils" :dir :proof-utils :ttags :all)
+;; Tweaked by Eric Smith to include official top-level book for app-view proofs:
+(include-book "app-view/top" :dir :proof-utils :ttags :all)
 
 (local (include-book "centaur/gl/gl" :dir :system))
 (local (include-book "centaur/bitops/ihsext-basics" :dir :system))
@@ -690,7 +691,7 @@
                    (:rewrite default-<-1)
                    (:rewrite acl2::consp-when-member-equal-of-atom-listp)
                    (:rewrite acl2::difference-unsigned-byte-p)
-                   (:rewrite bitops::signed-byte-p-monotonicity)
+                   (:rewrite bitops::signed-byte-p-incr)
                    (:rewrite default-+-2)
                    (:rewrite subset-p-cdr-y)
                    (:rewrite default-<-2)

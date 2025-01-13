@@ -46,9 +46,9 @@
 ;; ======================================================================
 
 (include-book "arith-and-logic-spec"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:undef-flg))
 (include-book "../decoding-and-spec-utils"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:undef-flg))
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 

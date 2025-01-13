@@ -41,8 +41,9 @@
 ;; This book contains the specification of the following instructions:
 ;; xor
 
+(include-book "structures" :dir :utils)
 (include-book "../rflags-spec"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:undef-flg))
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 
@@ -125,11 +126,7 @@
          :concl (mv-nth 0 (,fn-name dst src input-rflags))
          :hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
          :gen-type t
-         :gen-linear t
-         :hints-l (("Goal"
-                    :in-theory
-                    (e/d (unsigned-byte-p)
-                         (acl2::unsigned-byte-p-of-logxor)))))
+         :gen-linear t)
 
        (defthm-unsigned-byte-p ,(mk-name "MV-NTH-1-" fn-name)
          :bound 32

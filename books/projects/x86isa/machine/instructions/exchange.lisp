@@ -44,9 +44,9 @@
 ;; ======================================================================
 
 (include-book "arith-and-logic-spec"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:undef-flg))
 (include-book "../decoding-and-spec-utils"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:undef-flg))
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 
 ;; ======================================================================
@@ -245,7 +245,7 @@
        ((mv result
             (the (unsigned-byte 32) output-rflags)
             (the (unsigned-byte 32) undefined-flags))
-        (gpr-arith/logic-spec reg/mem-size #.*OP-CMP* reg/mem rAX input-rflags))
+        (gpr-arith/logic-spec reg/mem-size #.*OP-CMP* rAX reg/mem input-rflags))
 
        ;; Update the x86 state:
        (x86 (write-user-rflags output-rflags undefined-flags x86))
@@ -359,6 +359,101 @@
         (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
 
        ;; Update the x86 state:
+       (x86 (write-*ip proc-mode temp-rip x86)))
+    x86))
+
+;; ======================================================================
+;; INSTRUCTION: CMPXCHG8B/16B
+;; ======================================================================
+
+(def-inst x86-cmpxchg8b/16b
+
+  ;; Op/En: M
+  ;; 0F C7 /1:       CMPXCHG8B m64
+  ;; REX.W 0F C7 /1: CMPXCHG16B m128
+
+  :parents (two-byte-opcodes)
+
+  :guard-hints (("Goal" :in-theory (e/d (riml08 riml32) ())))
+
+  :returns (x86 x86p :hyp (x86p x86))
+
+  :modr/m t
+
+  :body
+
+  ;; Note: opcode is the second byte of the two-byte opcode.
+
+  (b* ((p2 (prefixes->seg prefixes))
+       (p4? (equal #.*addr-size-override*
+                   (prefixes->adr prefixes)))
+       
+       (rex-w? (logbitp #.*w* rex-byte))
+       (reg-operand-size (if rex-w? 8 4))
+       (mem-operand-size (* 2 reg-operand-size))
+       
+       (*AX (rgfi-size reg-operand-size *rax* rex-byte x86))
+       (*DX (rgfi-size reg-operand-size *rdx* rex-byte x86))
+       (dx-ax (logapp (* 8 reg-operand-size) *ax *dx))
+       
+       (*BX (rgfi-size reg-operand-size *rbx* rex-byte x86))
+       (*CX (rgfi-size reg-operand-size *rcx* rex-byte x86))
+       (cx-bx (logapp (* 8 reg-operand-size) *bx *cx))
+
+       ;; Fetch the memory operand
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+       ((mv flg0
+            mem-operand
+            (the (unsigned-byte 3) increment-RIP-by)
+            (the (signed-byte 64) addr)
+            x86)
+        (x86-operand-from-modr/m-and-sib-bytes
+         proc-mode
+         #.*xmm-access* ;; actually only accessing memory, this is so the guard is satisfied 
+         mem-operand-size
+         t ;; inst-ac?
+         nil ;; Not a memory pointer operand (but irrelevant since this operand size is not 4)
+         seg-reg p4? temp-rip rex-byte r/m mod sib
+         0 ;; No immediate operand
+         x86))
+
+       ((when flg0)
+        (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
+
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
+
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+       (compare (eql mem-operand dx-ax))
+
+       ((the (unsigned-byte 32) input-rflags) (rflags x86))
+       (output-rflags (!rflagsbits->zf (bool->bit compare) input-rflags))
+       (undefined-flags 0)
+       
+       (x86 (write-user-rflags output-rflags undefined-flags x86))
+       
+       ((mv flg1 x86)
+        (if compare
+            ;; cx-bx is stored in the destination operand.
+            (wme-size proc-mode mem-operand-size addr
+                      seg-reg cx-bx
+                      (alignment-checking-enabled-p x86)
+                      x86)
+          ;; memory operand is loaded into *dx:*ax.
+          (b* ((x86 (!rgfi-size reg-operand-size *rax*
+                                (loghead (* 8 reg-operand-size) mem-operand)
+                                rex-byte x86))
+               (x86 (!rgfi-size reg-operand-size *rdx*
+                                (logtail (* 8 reg-operand-size) mem-operand)
+                                rex-byte x86)))
+            (mv nil x86))))
+       ((when flg1)
+        (!!ms-fresh :wme-size flg1))
+
        (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
 

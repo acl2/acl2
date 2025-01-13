@@ -54,6 +54,16 @@
     ;; verify-guards-eagerness is already as desired, so do nothing:
     nil))
 
+;; Returns a (possibly-empty) list of events that ensure that the "double
+;; whammy property" (aka, dwp) is nil.
+(defun maybe-clear-dwp (wrld)
+  (declare (xargs :guard (and (plist-worldp wrld)
+                              (alistp (table-alist 'dwp-table wrld)))))
+  (if (get-dwp nil wrld)
+      `((set-dwp nil))
+    ;; dwp is already nil, so do nothing:
+    nil))
+
 ;; Returns a list of standard events for transforming FN.  These go at the
 ;; beginning of the encapsulate.  Everything in this is local to the
 ;; surrounding encapsulate.
@@ -61,7 +71,8 @@
   (declare (xargs :guard (and (symbolp fn)
                               (plist-worldp wrld)
                               (alistp (table-alist 'acl2-defaults-table wrld))
-                              (alistp (table-alist 'default-hints-table wrld)))))
+                              (alistp (table-alist 'default-hints-table wrld))
+                              (alistp (table-alist 'dwp-table wrld)))))
   (append (maybe-switch-to-logic-mode wrld)
           (maybe-set-verify-guards-eagerness 1 wrld)
           ;; todo: consider install-not-normalized-event:
@@ -69,5 +80,6 @@
           ;; TODO: We may not want to do this until after applicability conditions (if any) are proved:
           (maybe-clear-default-hints wrld)
           (maybe-clear-override-hints wrld)
+          (maybe-clear-dwp wrld)
           ;; todo: what else?
           ))

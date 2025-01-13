@@ -41,7 +41,8 @@
 (local (include-book "arithmetic-5/top" :dir :system))
 
 (include-book "../decoding-and-spec-utils"
-	      :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:undef-flg))
+
 (include-book "../top-level-memory")
 (include-book "fp/base")
 

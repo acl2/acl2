@@ -1725,7 +1725,6 @@ channel state))
                       (count-of-clusters fat32$c))
                    first-cluster)
                 (stringp dir-contents))
-    :guard-debug t
     :guard-hints
     (("goal"
       :expand (fat32-build-index-list
@@ -1965,8 +1964,7 @@ channel state))
 (defun
     delete-d-e (d-e-list filename)
   (declare (xargs :guard (and (fat32-filename-p filename)
-                              (d-e-list-p d-e-list))
-                  :guard-debug t))
+                              (d-e-list-p d-e-list))))
   (b*
       (((when (atom d-e-list)) nil)
        (d-e (car d-e-list))
@@ -2315,8 +2313,7 @@ channel state))
    (xargs :measure (len dir-contents)
           :guard (and (fat32-filename-p filename)
                       (unsigned-byte-listp 8 dir-contents))
-          :guard-hints (("goal" :in-theory (enable d-e-p)))
-          :guard-debug t))
+          :guard-hints (("goal" :in-theory (enable d-e-p)))))
   (b*
       (((when (< (len dir-contents)
                  *ms-d-e-length*))

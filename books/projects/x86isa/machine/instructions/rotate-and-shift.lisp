@@ -44,11 +44,11 @@
 ;; ======================================================================
 
 (include-book "shifts-spec"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:undef-flg))
 (include-book "rotates-spec"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:undef-flg))
 (include-book "../decoding-and-spec-utils"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:undef-flg))
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 
 ;; ======================================================================
@@ -189,7 +189,9 @@
        ((when flg1)
         (!!ms-fresh :rme-size-error flg1))
 
-       (countMask (if (logbitp #.*w* rex-byte)
+       ;; REX does not promote to 64-bits for byte-operand opcodes
+       (countMask (if (and (not byte-operand?)
+                           (logbitp #.*w* rex-byte))
                       #x3F
                     #x1F))
        (shift/rotate-by (logand countMask shift/rotate-by))
@@ -561,7 +563,7 @@
   (b* (;; The index of the XMM register
        ;; is in the R/M portion of the ModR/M byte.
        ;; It can be extended by one bit via the REX byte.
-       (reg-index (reg-index r/m rex-byte #.*r*))
+       (reg-index (reg-index r/m rex-byte #.*b*))
 
        ;; Read the 128-bit (i.e. 16-byte) operand from the XMM register.
        (operand (xmmi-size 16 reg-index x86))

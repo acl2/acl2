@@ -15,7 +15,7 @@
 ;; See also wf-dagp.
 
 ;; TODO: Add support for mutual-recursion
-;; TODO: Maybe split he corollaries into a different tool
+;; TODO: Maybe split the corollaries into a different tool
 
 (include-book "dag-parent-array")
 (include-book "wf-dagp")
@@ -184,6 +184,17 @@
                   :in-theory '(wf-dagp-forward))))
 
        ;; implied by wf-dagp (someday, when wf-dagp is never opened, we might not need this)
+       ;; It may often be possible to drop the first 2 hyps
+       (defthm ,(pack$ 'dag-dag-constant-alistp-of-mv-nth- dag-constant-alist-rv '-of- fn)
+         (implies (and (wf-dagp ,dag-array-name dag-array dag-len ,dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
+                       (not (mv-nth ,erp-rv ,call)) ;no error
+                       ,@hyps)
+                  (dag-constant-alistp (mv-nth ,dag-constant-alist-rv ,call)))
+         :hints (("Goal" :use ,(pack$ 'bounded-dag-dag-constant-alistp-of-mv-nth- dag-constant-alist-rv '-of- fn)
+                  :in-theory '(bounded-dag-constant-alistp-forward-to-dag-constant-alistp))))
+
+       ;; implied by wf-dagp (someday, when wf-dagp is never opened, we might not need this)
+       ;; We could also add a theorem that simplify shows dag-variable-alistp.
        (defthm ,(pack$ 'bounded-dag-dag-variable-alistp-of-mv-nth- dag-variable-alist-rv '-of- fn)
          (implies (and (wf-dagp ,dag-array-name dag-array dag-len ,dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
                        (not (mv-nth ,erp-rv ,call)) ;no error

@@ -902,10 +902,10 @@ from the accompanying talk.</p>")
   (equal (intersect X (sfix Y)) (intersect X Y)))
 
 (defthm intersect-emptyp-X
-  (implies (emptyp X) (emptyp (intersect X Y))))
+  (implies (emptyp X) (equal (intersect X Y) nil)))
 
 (defthm intersect-emptyp-Y
-  (implies (emptyp Y) (emptyp (intersect X Y))))
+  (implies (emptyp Y) (equal (intersect X Y) nil)))
 
 (defthm intersect-in
   (equal (in a (intersect X Y))
@@ -1075,6 +1075,11 @@ from the accompanying talk.</p>")
   (equal (cardinality (union X Y))
          (- (+ (cardinality X) (cardinality Y))
             (cardinality (intersect X Y)))))
+
+(defthmd expand-cardinality-of-intersect
+  (equal (cardinality (intersect x y))
+         (+ (cardinality x) (cardinality y)
+            (- (cardinality (union x y))))))
 
 (defthm expand-cardinality-of-difference
   (equal (cardinality (difference X Y))

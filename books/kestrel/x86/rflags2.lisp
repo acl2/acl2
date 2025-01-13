@@ -15,7 +15,9 @@
 (include-book "kestrel/x86/rflags-spec-sub" :dir :system)
 (include-book "kestrel/bv/bvchop-def" :dir :system)
 (local (include-book "kestrel/bv/bvchop" :dir :system))
+(local (include-book "kestrel/bv/bitops" :dir :system))
 (local (include-book "kestrel/bv/logext" :dir :system))
+(local (include-book "kestrel/bv/slice" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 
 (defthm bvchop-of-zf-spec
@@ -37,10 +39,12 @@
          0)
   :hints (("Goal" :in-theory (enable of-spec32))))
 
+;more like this?
 (defthm sf-spec64-of-bvchop-64
   (equal (sf-spec64 (bvchop 64 x))
          (sf-spec64 x))
-  :hints (("Goal" :in-theory (enable sf-spec64 acl2::logtail-of-bvchop))))
+  :hints (("Goal" :in-theory (e/d (sf-spec64)
+                                  (part-select-width-low$inline)))))
 
 (defthm of-spec64-of-logext-64
   (equal (of-spec64 (logext 64 x))

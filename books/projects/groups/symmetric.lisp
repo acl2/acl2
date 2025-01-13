@@ -217,7 +217,7 @@
 	   (equal (permute (permute l (inv x (sym (len l)))) x)
 	          l)))
 
-;; We shall prove by induction that (permute l p) is a permutation of p.  This requires finding the right generalization.
+;; We shall prove by induction that (permute l p) is a permutation of l.  This requires finding the right generalization.
 
 ;; (select p l) is the sublist of l constructed by extracting the memebrs of l at indices that are members of p:
 
@@ -536,7 +536,7 @@
   (implies (natp n)
            (dlistp (pairs n))))
 
-;; Given a permutation p, extract the list of pairs (i . j) with p(i) > p(j): 
+;; Given a permutation p, extract the list of all (i . j) in pairs with p(i) > p(j): 
 
 (defun invs-aux (p pairs)
   (if (consp pairs)
@@ -549,6 +549,18 @@
 
 (defund invs (p n)
   (invs-aux p (pairs n)))
+
+;; We also define the list of pairs whose ordering is preserved by p (the complement of the list of inversions):
+
+(defun pres-aux (p pairs)
+  (if (consp pairs)
+      (if (< (nth (caar pairs) p) (nth (cdar pairs) p))
+          (cons (car pairs) (pres-aux p (cdr pairs)))
+	(pres-aux p (cdr pairs)))
+    ()))
+
+(defund pres (p n)
+  (pres-aux p (pairs n)))
 
 ;; The parity of p:
 
@@ -572,22 +584,105 @@
 (defthm evenp-ninit
   (even-perm-p (ninit n) n))
   
-;; If p inverts i and j, then its (inv-perm p n) inverts (nth j p) and (nth i p).  It follows that
+;; If p inverts i and j, then its inverse (inv-perm p n) inverts (nth j p) and (nth i p).  It follows that
 ;; p and (inv-perm p n) have the same number of inversions and therefore the same parity:
+
+(defthmd len-invs-inv
+  (implies (and (posp n) (in p (sym n)))
+           (equal (len (invs (inv-perm p n) n))
+	          (len (invs p n)))))
 
 (defthmd parity-inv
   (implies (and (posp n) (in p (sym n)))
            (equal (parity (inv-perm p n) n)
 	          (parity p n))))
 
-;; Parity is a homomorphism from (sym n) into Z/2Z:
+;; We shall prove that parity is a homomorphism from (sym n) into Z/2Z:
+
+;; (defthmd parity-comp-perm
+;;   (implies (and (posp n)
+;;                 (in p (sym n))
+;; 	           (in r (sym n)))
+;; 	   (equal (parity (comp-perm r p n) n)
+;; 	          (mod (+ (parity p n) (parity r n)) 2))))
+
+;; Our proof of parity-comp-perm is based on the following 3 sublists of (pairs (ninit n)):
+
+(defund invs-pres (p r n)
+  (intersection-equal (invs (inv-perm p n) n) (pres r n)))
+
+(defund pres-invs (p r n)
+  (intersection-equal (pres (inv-perm p n) n) (invs r n)))
+
+(defund invs-invs (p r n)
+  (intersection-equal (invs (inv-perm p n) n) (invs r n)))
+
+;; The lengths of the lists of inversions of r and p may be computed as follows:
+
+(defthmd len-invs-r
+  (implies (and (posp n) (in p (sym n)) (in r (sym n)))
+           (equal (len (invs r n))
+	          (+ (len (pres-invs p r n)) (len (invs-invs p r n))))))
+
+(defthmd len-invs-p
+  (implies (and (posp n) (in p (sym n)) (in r (sym n)))
+           (equal (len (invs p n))
+	          (+ (len (invs-pres p r n)) (len (invs-invs p r n))))))
+		  
+;; We shall define a bijection ff from
+
+;;   (invs (comp-perm r p n) n)
+
+;; to
+
+;;   (append (invs-pres p r n) (pres-invs p r n)).
+
+;; Let (i . j) be a member of (invs (comp-perm r p n) n).  Let k = (nth i p) and l = (nth j p).
+;; Suppose k > l.  Then (l . k) is a member of (pairs n) that is inverted by (inv-perm p n), but since (i . j) is inverted by 
+;; (comp-perm r p n), (k . l) is not inverted by r.  Thus, (k . l) is a member of (intersection-equal (invs (inv-perm p n) n) (pres r n)).
+;; On the other hand, suppose k < l.  Then (k . l) is a member of (pairs n) that is not inverted by (inv-perm p n) and therefore is 
+;; inverted by r, and hence, (k . l) is a member of (intersection-equal (pres (inv-perm p n) n) (invs r n)).
+;; We define the function ff to map (i . j) to either (l . k) or (k . l) accordingly:
+
+(defund ff (pair p)
+  (if (< (nth (car pair) p) (nth (cdr pair) p))
+      (cons (nth (car pair) p) (nth (cdr pair) p))
+    (cons (nth (cdr pair) p) (nth (car pair) p))))
+
+;; We also define the inverse of ff, which maps (append (invs-pres p r n) (pres-invs p r n)) to (invs (comp-perm r p n) n):
+
+(defund gg (pair p)
+  (if (< (index (car pair) p) (index (cdr pair) p))
+      (cons (index (car pair) p) (index (cdr pair) p))
+    (cons (index (cdr pair) p) (index (car pair) p))))
+
+;; It is not difficult to show that ff and gg are inverse functions, and we conclude that the two lists have the same length:
+
+(defthmd len-invs-comp-perm
+  (implies (and (posp n) (in p (sym n)) (in r (sym n)))
+           (equal (len (invs (comp-perm r p n) n))
+	          (+ (len (invs-pres p r n)) (len (pres-invs p r n))))))
+
+;; Combine len-invs-comp-perm, len-invs-r. and len-invs-p:
+
+(local-defthmd len-invs-sum
+  (implies (and (posp n) (in p (sym n)) (in r (sym n)))
+           (equal (+ (len (invs r n)) (len (invs p n)))
+	          (+ (len (invs (comp-perm r p n) n))
+		     (* 2 (len (invs-invs p r n))))))
+  :hints (("Goal" :use (len-invs-comp-perm len-invs-r len-invs-p))))
+
+;; The desired result follows:
 
 (defthmd parity-comp-perm
   (implies (and (posp n)
                 (in p (sym n))
 	        (in r (sym n)))
 	   (equal (parity (comp-perm r p n) n)
-	          (mod (+ (parity p n) (parity r n)) 2))))
+	          (mod (+ (parity p n) (parity r n)) 2)))
+  :hints (("Goal" :in-theory (enable parity)
+                  :use (len-invs-sum
+		        (:instance rtl::mod-mult (m (len (invs (comp-perm r p n) n))) (a (len (invs-invs p r n))) (n 2))))))
 
 ;; It follows from parity-inv and parity-comp-perm that parity is preserved by conjugation:
 
@@ -639,42 +734,6 @@
   (implies (and (posp n) (in p (sym n)))
            (equal (parity p n)
 	          (mod (len (trans-list p n)) 2))))
-
-
-;;--------------------------------------------------------------------------------------------------------------
-;; Determinants
-;;--------------------------------------------------------------------------------------------------------------
-
-;; This is just an aside, but some day I plan to formalize basic linear algebra.
-
-;; An mxn matrix is a list of m rows (of rationals, let's say) of length n.
-;; The entry in row i and column j:
-
-(defun entry (i j mat)
-  (nth j (nth i mat)))
-
-;; The term contributed by a permutation p in (sym n) to the determinant of an nxn matrix:
-
-(defun det-term-aux (mat p l)
-  (if (consp l)
-      (* (entry (car l) (nth (car l) p) mat)
-	 (det-term-aux mat p (cdr l)))
-    1))
-
-(defun det-term (mat p n)
-  (* (expt -1 (parity p n))
-     (det-term-aux mat p (ninit n))))
-
-;; The determinant of an nxn matrix:
-
-(defun det-aux (mat l n)
-  (if (consp l)
-      (+ (det-term mat (car l) n)
-	 (det-aux mat (cdr l) n))
-    0))
-
-(defund det (mat n)
-  (det-aux mat (slist n) n))
 
 
 ;;--------------------------------------------------------------------------------------------------------------

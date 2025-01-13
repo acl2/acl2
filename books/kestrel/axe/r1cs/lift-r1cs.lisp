@@ -78,7 +78,7 @@
                      package
                      extra-rules remove-rules rules
                      monitor memoizep
-                     count-hits
+                     count-hits ; todo: generalize to allow :total
                      print
                      whole-form state)
   (declare (xargs :guard (and (symbolp name-of-defconst)

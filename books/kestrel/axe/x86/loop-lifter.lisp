@@ -200,13 +200,14 @@
                        assumptions
                        rule-alist
                        nil
-                       monitor
+                       (acl2::known-booleans wrld)
                        nil
+                       nil ; limits
                        t ; memoizep
                        nil
                        t ;:brief  ;nil
-                       nil
-                       (acl2::known-booleans wrld)))
+                       monitor
+                       nil))
 
 ;; Test whether the stack height of X86 is less than it was when the stack pointer was OLD-RSP.
 ;; Since the stack grows from high to low, the stack height is less when the RSP is greater.
@@ -380,10 +381,10 @@
                             nil
                             nil ; known-booleans
                             nil
-                            t ; count-hints
+                            nil
+                            nil
+                            t ; count-hits
                             nil ;print
-                            nil
-                            nil
                             nil
                             nil)))
 
@@ -409,10 +410,10 @@
                             nil
                             nil ; known-booleans
                             nil
-                            t   ; count-hints
+                            nil
+                            nil
+                            t   ; count-hits
                             nil ;print
-                            nil
-                            nil
                             nil
                             nil)))
 
@@ -438,6 +439,8 @@
                             nil
                             nil ; known-booleans
                             nil
+                            nil
+                            nil
                             nil ;count-hits
                             nil ;print
                             '(x86isa::logext-48-does-nothing-when-canonical-address-p
@@ -445,8 +448,6 @@
                               ;;acl2::integerp-of-+
                               ;;x86isa::integerp-when-canonical-address-p-cheap
                               )
-                            nil
-                            nil
                             nil)))
 
 (defun offsets-up-to (num)
@@ -538,11 +539,11 @@
             (acl2::simplify-dag-x86 dag-to-prove
                                     all-assumptions
                                     rule-alist
-                                    nil known-booleans nil nil nil
+                                    nil known-booleans nil nil nil nil nil
                                     (append '( ;xr-wb-in-app-view
                                               )
                                             rules-to-monitor)
-                                    nil nil nil)))
+                                    nil)))
          ((when erp) (mv erp nil nil)))
       (if (equal res *t*) ;todo: allow other non-nil constants?
           (prog2$ (cw "Success.)~%")
@@ -807,7 +808,7 @@
        (- (cw "(Proving that there is no overlap between ~x0 bytes starting at ~x1 and ~x2 bytes starting at ~x3.~%" (unquote num-bytes1) base-addr1 (unquote num-bytes2) base-addr2))
        (separation-term `(separate ':r ,num-bytes1 ,base-addr1 ':r ,num-bytes2 ,base-addr2))
        ((mv erp result)
-        (acl2::simplify-term-x86 separation-term assumptions rule-alist nil (acl2::known-booleans (w state)) nil nil nil nil nil nil))
+        (acl2::simplify-term-x86 separation-term assumptions rule-alist nil (acl2::known-booleans (w state)) nil nil nil nil nil nil nil))
        ((when erp) (mv erp nil state)))
     (if (equal result *t*)
         (progn$ (cw "Proved that there is not overlap.)~%")
@@ -881,7 +882,7 @@
           `(equal ,address-term ,(acl2::sublis-var-simple (acons state-var one-rep-term nil) address-term)))
          ((mv erp result)
           (acl2::simp-term-x86 address-unchanged-term nil ; assumptions
-                               rule-alist nil nil nil nil nil nil nil (acl2::known-booleans (w state))))
+                               rule-alist nil (acl2::known-booleans (w state)) nil nil nil nil nil nil nil))
          ((when erp) (mv erp nil state)))
       (if (equal result *t*)
           (prog2$ (cw "(Proved that address ~x0 is unchanged.)~%" address-term)
@@ -1123,9 +1124,10 @@
 
          ;; Try to prove the invariant by rewriting:
          ((mv erp simplified-invariant)
-          (acl2::simp-term-x86 term-to-prove assumptions rule-alist nil
+          (acl2::simp-term-x86 term-to-prove assumptions rule-alist nil (acl2::known-booleans (w state)) nil nil nil
+                               nil nil
                                '(x86isa::xr-of-xw-diff) ; rules-to-monitor
-                               nil nil nil nil nil (acl2::known-booleans (w state))))
+                               nil))
          ((when erp) (mv erp nil nil state)))
       (if (equal *t* simplified-invariant)
           (prog2$ (cw "Proved it!)~%")
@@ -1714,7 +1716,7 @@
          (acl2::simplify-term-x86 loop-function-call-term
                                   nil ; assumptions
                                   (acl2::make-rule-alist! (append (extra-loop-lifter-rules) lifter-rules) (w state))
-                                  nil (acl2::known-booleans (w state)) nil nil nil nil nil nil))
+                                  nil (acl2::known-booleans (w state)) nil nil nil nil nil nil nil))
         ((when erp) (mv erp nil nil nil state))
         ;; Write the values computed by the loop back into the state:
         ((mv erp new-state-dag) (acl2::wrap-term-around-dag updated-state-term :loop-function-result loop-function-call-dag))
@@ -1730,14 +1732,14 @@
          (acl2::simplify-dag-x86 new-state-dag
                                  nil
                                  (acl2::make-rule-alist! (append (extra-loop-lifter-rules) lifter-rules) (w state))
-                                 nil (acl2::known-booleans (w state)) nil nil nil
+                                 nil (acl2::known-booleans (w state)) nil nil nil nil nil
                                  ;; todo: respect the monitor arg?
                                  '(;;x86isa::set-flag-set-flag-same
                                    ;;x86isa::x86p-set-flag
                                    ;;x86p-of-write
                                    ;;x86isa::x86p-xw
                                    )
-                                 nil nil nil))
+                                 nil))
         ((when erp) (mv erp nil nil nil state))
         (- (cw "Done Splicing in the loop function)~%"))
         (generated-events (append generated-events
@@ -1954,12 +1956,12 @@
                                                                    extra-rules)
                                                            remove-rules)
                                                          (w state))
-                                 nil (acl2::known-booleans (w state)) nil nil print
+                                 nil (acl2::known-booleans (w state)) nil nil nil nil print
                                  (append '(;get-flag-of-set-flag
                                            x86-fetch-decode-execute-opener-safe-64
                                            )
                                          rules-to-monitor)
-                                 nil nil nil))
+                                 nil))
         ((when erp) (mv erp nil nil nil state))
         ;; Check for problems:
         ((when (member-eq 'run-until-exit-segment-or-hit-loop-header
@@ -2237,7 +2239,7 @@
                                                                   extra-rules)
                                                           remove-rules)
                                                         (w state))
-                                nil (acl2::known-booleans (w state)) nil nil print rules-to-monitor nil nil nil))
+                                nil (acl2::known-booleans (w state)) nil nil nil nil print rules-to-monitor nil))
        ((when erp) (mv erp nil state))
        (output-term (dag-to-term output-dag))
        ;; TODO: Generalize:

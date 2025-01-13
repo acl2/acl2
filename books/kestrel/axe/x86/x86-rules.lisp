@@ -26,6 +26,7 @@
 (include-book "../known-booleans")
 (include-book "../axe-syntax-functions-bv") ; for term-should-be-trimmed-axe
 (include-book "../axe-syntax-functions")
+(include-book "axe-syntax-functions-x86")
 (include-book "kestrel/bv-lists/bv-array-read-chunk-little" :dir :system)
 (local (include-book "kestrel/utilities/mv-nth" :dir :system))
 
@@ -210,8 +211,32 @@
 
 (def-constant-opener x86isa::!rflagsbits->af$inline)
 
-(def-constant-opener x86isa::10bits-fix)
-(def-constant-opener x86isa::2bits-fix)
+;; For now, I'm trying just always opening these:
+;; See books/projects/x86isa/utils/basic-structs.lisp
+;; (def-constant-opener x86isa::2bits-fix)
+;; (def-constant-opener x86isa::3bits-fix)
+;; (def-constant-opener x86isa::4bits-fix)
+;; (def-constant-opener x86isa::5bits-fix)
+;; (def-constant-opener x86isa::6bits-fix)
+;; (def-constant-opener x86isa::7bits-fix)
+;; (def-constant-opener x86isa::8bits-fix)
+;; (def-constant-opener x86isa::10bits-fix)
+;; (def-constant-opener x86isa::11bits-fix)
+;; (def-constant-opener x86isa::12bits-fix)
+;; (def-constant-opener x86isa::13bits-fix)
+;; (def-constant-opener x86isa::16bits-fix)
+;; (def-constant-opener x86isa::17bits-fix)
+;; (def-constant-opener x86isa::19bits-fix)
+;; (def-constant-opener x86isa::22bits-fix)
+;; (def-constant-opener x86isa::24bits-fix)
+;; (def-constant-opener x86isa::31bits-fix)
+;; (def-constant-opener x86isa::32bits-fix)
+;; (def-constant-opener x86isa::36bits-fix)
+;; (def-constant-opener x86isa::40bits-fix)
+;; (def-constant-opener x86isa::45bits-fix)
+;; (def-constant-opener x86isa::54bits-fix)
+;; (def-constant-opener x86isa::64bits-fix)
+
 (def-constant-opener acl2::expt2$inline)
 
 (def-constant-opener X86ISA::RFLAGSBITS-FIX$INLINE)
@@ -594,3 +619,67 @@
                                      x86-operation-mode))))
 
 (defopeners bv-array-read-chunk-little)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; An alias of clear
+(defund clear-extend (n addr x86)
+  (declare (xargs :guard (and (natp n)
+                              (integerp addr))
+                  :stobjs x86))
+  (write n addr 0 x86))
+
+;; An alias of clear
+(defund clear-retract (n addr x86)
+  (declare (xargs :guard (and (natp n)
+                              (integerp addr))
+                  :stobjs x86))
+  (write n addr 0 x86))
+
+;; Introduces the clear when there is a write in X86 to be cleared.
+;; For Axe only
+(defthmd write-becomes-write-of-clear-extend-axe
+  (implies (and (axe-syntaxp (write-with-addr-and-size-presentp-axe n ad x86 acl2::dag-array))
+               ; (integerp ad)
+                (unsigned-byte-p 48 n))
+           (equal (write n ad val x86)
+                  (write n ad val (clear-extend n ad x86))))
+  :hints (("Goal" :in-theory (enable clear-extend))))
+
+;; Copies the clear inside a write that is not its target
+;; For Axe only
+(defthmd clear-extend-of-write-continue-axe
+  (implies (and (axe-syntaxp (and (syntactic-call-of 'write x86 dag-array) ; avoid loops and undesired patterns
+                                  (not (and (acl2::dargs-equalp n1 n2 dag-array)
+                                            (acl2::dargs-equalp ad1 ad2 dag-array)))))
+                (integerp ad1)
+                (unsigned-byte-p 48 n1)
+                ;(integerp ad2)
+                (unsigned-byte-p 48 n2))
+           (equal (clear-extend n1 ad1 (write n2 ad2 val x86))
+                  (clear-extend n1 ad1 (write n2 ad2 val (clear-extend n1 ad1 x86)))))
+  :hints (("Goal" :in-theory (enable clear-extend))))
+
+;; We've found the write to be cleared
+(defthmd clear-extend-of-write-finish
+  (implies (and ;(integerp ad)
+                (unsigned-byte-p 48 n))
+           (equal (clear-extend n ad (write n ad val x86))
+                  (clear-retract n ad x86)))
+  :hints (("Goal" :in-theory (enable clear-extend clear-retract))))
+
+(defthmd clear-extend-of-write-of-clear-retract
+  (implies (and (integerp ad1)
+                (unsigned-byte-p 48 n1)
+                ;(integerp ad2)
+                (unsigned-byte-p 48 n2))
+           (equal (clear-extend n1 ad1 (write n2 ad2 val (clear-retract n1 ad1 x86)))
+                  (clear-retract n1 ad1 (write n2 ad2 val x86))))
+  :hints (("Goal" :in-theory (enable clear-retract clear-extend))))
+
+(defthmd write-of-clear-retract ; add -same to name
+  (implies (and ;(integerp ad)
+                (unsigned-byte-p 48 n))
+           (equal (write n ad val (clear-retract n ad x86))
+                  (write n ad val x86)))
+  :hints (("Goal" :in-theory (enable clear-retract))))

@@ -145,6 +145,9 @@
 
   ///
 
+  (fty::deffixequiv-sk unequivocal-accepted-certificates-p
+    :args ((systate system-statep)))
+
   (defruled unequivocal-accepted-certificates-p-necc-single
     (implies (and (unequivocal-accepted-certificates-p systate)
                   (set::in val (correct-addresses systate)))

@@ -89,7 +89,7 @@
   :returns (exprs expr-listp)
   (if (endp idents)
       nil
-    (cons (expr-ident (first idents))
+    (cons (make-expr-ident :ident (first idents) :info nil)
           (expr-ident-list (rest idents)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -107,7 +107,7 @@
   (b* (((paramdecl paramdecl) paramdecl))
     (paramdeclor-case
       paramdecl.decl
-      :declor (omap::update (declor-get-ident paramdecl.decl.unwrap)
+      :declor (omap::update (declor->ident paramdecl.decl.unwrap)
                             (paramdecl-fix paramdecl)
                             nil)
       :otherwise nil)))
@@ -160,14 +160,12 @@
      (b* (((when (endp initdeclors))
            nil)
           ((initdeclor initdeclor) (first initdeclors))
-          (ident? (declor-get-ident initdeclor.declor)))
-       (if ident?
-           (omap::update
-             ident?
-             (make-paramdecl
-               :spec declspecs
-               :decl (paramdeclor-declor initdeclor.declor))
-             (decl-to-ident-paramdecl-map0 declspecs (rest initdeclors)))
+          (ident (declor->ident initdeclor.declor)))
+       (omap::update
+         ident
+         (make-paramdecl
+           :spec declspecs
+           :decl (paramdeclor-declor initdeclor.declor))
          (decl-to-ident-paramdecl-map0 declspecs (rest initdeclors))))
      :verify-guards :after-returns)))
 
@@ -223,9 +221,9 @@
         :spec spec
         :declor (make-declor
                   :pointers pointers
-                  :decl (make-dirdeclor-function-params
-                          :decl (dirdeclor-ident new-fn-name)
-                          :params params))
+                  :direct (make-dirdeclor-function-params
+                            :decl (dirdeclor-ident new-fn-name)
+                            :params params))
         :body (stmt-compound items))))
   :prepwork
   ((define ident-paramdecls-map-filter
@@ -282,7 +280,7 @@
                    (block-item-stmt
                      (stmt-return
                        (make-expr-funcall
-                         :fun (expr-ident new-fn-name)
+                         :fun (make-expr-ident :ident new-fn-name :info nil)
                          :args (expr-ident-list idents))))))))
        ((when (endp items))
         (reterr (msg "Bad split point specifier")))
@@ -327,9 +325,9 @@
       fundef.body
       :compound
       (dirdeclor-case
-        fundef.declor.decl
+        fundef.declor.direct
         :function-params
-        (b* (((unless (equal target-fn (dirdeclor-get-ident fundef.declor.decl.decl)))
+        (b* (((unless (equal target-fn (c$::dirdeclor->ident fundef.declor.direct.decl)))
               (retok (fundef-fix fundef) nil))
              ((erp new-fn truncated-items)
               (split-fn-block-item-list
@@ -337,7 +335,7 @@
                 fundef.body.items
                 fundef.spec
                 fundef.declor.pointers
-                (paramdecl-list-to-ident-paramdecl-map fundef.declor.decl.params)
+                (paramdecl-list-to-ident-paramdecl-map fundef.declor.direct.params)
                 split-point)))
           (retok new-fn
                  (make-fundef

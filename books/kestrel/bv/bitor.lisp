@@ -12,6 +12,7 @@
 (in-package "ACL2")
 
 (include-book "bvor")
+(local (include-book "slice"))
 
 (defund bitor (x y)
   (declare (type integer x)
@@ -114,8 +115,8 @@
   :hints (("Goal" :in-theory (enable bitor))))
 
 (defthmd bitor-combine-constants
-  (implies (and (syntaxp (quotep y)) ;put this hyp first to fail faster
-                (syntaxp (quotep x)))
+  (implies (syntaxp (and (quotep y) ;put this hyp first to fail faster
+                         (quotep x)))
            (equal (bitor x (bitor y z))
                   (bitor (bitor x y) z))))
 
@@ -137,13 +138,13 @@
 (defthm bitor-of-getbit-arg1
   (equal (bitor (getbit 0 x) y)
          (bitor x y))
-  :hints (("Goal" :in-theory (e/d (bitor) nil))))
+  :hints (("Goal" :in-theory (enable bitor))))
 
 ;todo: rename to have 0 in the name
 (defthm bitor-of-getbit-arg2
   (equal (bitor y (getbit 0 x))
          (bitor y x))
-  :hints (("Goal" :in-theory (e/d (bitor) nil))))
+  :hints (("Goal" :in-theory (enable bitor))))
 
 (defthm bitor-subst-arg1
   (implies (and (equal (getbit 0 x) free)
@@ -185,3 +186,15 @@
            (equal (bitor y (bvchop size x))
                   (bitor y x)))
   :hints (("Goal" :in-theory (enable bitor))))
+
+(defthm equal-of-bitor-and-constant
+  (implies (syntaxp (quotep k))
+           (equal (equal (bitor x y) k)
+                  (if (equal 0 k)
+                      (and (equal 0 (getbit 0 x))
+                           (equal 0 (getbit 0 y)))
+                    (if (equal 1 k)
+                        (if (equal 1 (getbit 0 x))
+                            t
+                          (equal 1 (getbit 0 y)))
+                      nil)))))

@@ -1,0 +1,9 @@
+error-bypass.cpp:6 (41-47): Cannot apply `&&` to arguments of type int and int[3]
+  6 | int foo(int a, array<int, 3> b) { return a && b; }
+    |                                          ^^^^^^
+note: They should be both a primitive type (like an int or enum) or a register type.
+
+error-bypass.cpp:7 (41-47): Cannot apply `&&` to arguments of type int and int[3]
+  7 | int bar(int a, array<int, 3> b) { return a && b; }
+    |                                          ^^^^^^
+note: They should be both a primitive type (like an int or enum) or a register type.

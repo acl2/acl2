@@ -1,7 +1,7 @@
 ; Utilities in support of reasoning about / lifting 32-bit code.
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2024 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,8 +13,11 @@
 
 (include-book "projects/x86isa/machine/segmentation" :dir :system)
 (include-book "projects/x86isa/machine/decoding-and-spec-utils" :dir :system) ; for x86isa::read-*ip
-(include-book "support-x86") ; drop? for unsigned-byte-p-of-xr-of-mem
+(include-book "projects/x86isa/proofs/utilities/app-view/user-level-memory-utils" :dir :system) ; for rb-rb-subset
+;(include-book "support-x86") ; drop? for unsigned-byte-p-of-xr-of-mem
+(include-book "state")
 (include-book "linear-memory")
+(include-book "state")
 (include-book "flags")
 (include-book "readers-and-writers")
 (include-book "register-readers-and-writers32")
@@ -23,6 +26,7 @@
 (include-book "kestrel/lists-light/reverse-list-def" :dir :system)
 (include-book "kestrel/lists-light/firstn" :dir :system)
 (include-book "kestrel/bv/rules10" :dir :system) ; drop or make local
+(include-book "kestrel/utilities/defopeners" :dir :system)
 (local (include-book "support-bv"))
 (local (include-book "kestrel/bv/logior-b" :dir :system))
 (local (include-book "kestrel/bv-lists/packbv-theorems" :dir :system))
@@ -1465,8 +1469,8 @@
   (implies (and (stack-segment-assumptions32 10 x86)
                 (x86p x86) ;;drop?
                 )
-           (equal (BVCHOP '32 (BINARY-+ '-4 (ESP X86)))
-                  (BINARY-+ '-4 (ESP X86))))
+           (equal (BVCHOP 32 (+ -4 (ESP X86)))
+                  (+ -4 (ESP X86))))
   :hints (("Goal" :in-theory (enable esp acl2::bvchop-of-sum-cases))))
 
 (defthm read-byte-from-segment-of-xw
@@ -1765,7 +1769,7 @@
 ;; (defthm <-of-
 ;;  (implies (well-formed-32-bit-segmentp seg-reg x86)
 ;;           (NOT (< '4294967296
-;;                   (BINARY-+ (32-BIT-SEGMENT-SIZE seg-reg X86)
+;;                   (+ (32-BIT-SEGMENT-SIZE seg-reg X86)
 ;;                             (32-BIT-SEGMENT-START seg-reg X86))))))
 
 
@@ -1865,7 +1869,7 @@
                 (<= (+ -1 (* -4 stack-slots-needed)) k) ;not sure about the -1, but it seems harmless
                 (integerp k)
                 (x86p x86))
-           (natp (binary-+ k (esp x86))))
+           (natp (+ k (esp x86))))
   :hints (("Goal" :in-theory (enable esp))))
 
 (defthm not-<-of-32-bit-segment-size
@@ -1945,7 +1949,7 @@
                 (natp stack-slots-needed)
                 (<= 1 stack-slots-needed)
                 (x86p x86))
-           (eff-addrs-okp '4 (binary-+ '-4 (esp x86)) *ss* x86))
+           (eff-addrs-okp 4 (+ -4 (esp x86)) *ss* x86))
   :hints (("Goal" :use ( segment-max-eff-addr32-bound-when-stack-segment-assumptions32
                                   segment-min-eff-addr32-bound-when-stack-segment-assumptions32)
            :in-theory (disable segment-min-eff-addr32-bound-when-stack-segment-assumptions32
@@ -1962,7 +1966,7 @@
                 (<= n (- k))
                 (integerp n)
                 (x86p x86))
-           (eff-addrs-okp n (binary-+ k (esp x86)) *ss* x86))
+           (eff-addrs-okp n (+ k (esp x86)) *ss* x86))
   :hints (("Goal" :use ( segment-max-eff-addr32-bound-when-stack-segment-assumptions32
                                   segment-min-eff-addr32-bound-when-stack-segment-assumptions32)
            :in-theory (disable segment-min-eff-addr32-bound-when-stack-segment-assumptions32
@@ -2016,7 +2020,7 @@
                 (<= n (expt 2 32))
                 (unsigned-byte-p 32 (esp x86))
                 )
-           (signed-byte-p '64 (binary-+ n (esp x86))))
+           (signed-byte-p '64 (+ n (esp x86))))
   :hints (("Goal" :in-theory (enable esp SIGNED-BYTE-P))))
 
 (defthm x86isa::ea-to-la-of-write-byte-to-segment
@@ -2339,7 +2343,7 @@
                 (integerp off)
                 (<= (* -4 stack-slots-needed) off)
                 (x86p x86))
-           (eff-addr-okp (binary-+ off (esp x86)) *ss* x86-2))
+           (eff-addr-okp (+ off (esp x86)) *ss* x86-2))
   :hints (("Goal" :in-theory (enable esp segment-max-eff-addr32 segment-min-eff-addr32 SEGMENT-BASE-AND-BOUNDS))))
 
 (defthm eff-addr-okp-of-esp
@@ -2364,7 +2368,7 @@
                 (x86p x86)
 ;                (x86p x86-2)
                 )
-           (eff-addr-okp (binary-+ off (esp x86)) *ss* x86-2))
+           (eff-addr-okp (+ off (esp x86)) *ss* x86-2))
   :hints (("Goal" :in-theory (enable esp segment-max-eff-addr32 segment-min-eff-addr32 SEGMENT-BASE-AND-BOUNDS))))
 
 (defthm ea-to-la-of-set-flag
@@ -2772,8 +2776,8 @@
                 (integerp b0)
                 (integerp a)
                 (integerp c))
-           (equal (bvchop '32 (binary-+ a (binary-+ c (- b))))
-                  (bvchop '32 (binary-+ a (binary-+ c (- b0)))))))
+           (equal (bvchop '32 (+ a (+ c (- b))))
+                  (bvchop '32 (+ a (+ c (- b0)))))))
 
 ;dup
 (defun double-write-induct-two-addrs
@@ -3146,6 +3150,22 @@
            (segments-separate *cs* *ss* x86))
   :hints (("Goal" :in-theory (enable code-and-stack-segments-separate))))
 
+; not strictly necessary since not-mv-nth-0-of-rme-size$inline should fire, but this can get rid of irrelevant stuff
+(defthm x86isa::mv-nth-0-of-rme-size-of-xw-when-app-view
+  (implies (and (not (equal fld :mem))
+                (not (equal fld :app-view))
+                (not (equal fld :seg-hidden-attr))
+                (not (equal fld :seg-hidden-base))
+                (not (equal fld :seg-hidden-limit))
+                (not (equal fld :seg-visible))
+                (not (equal fld :msr))
+                (app-view x86))
+           (equal (mv-nth 0 (x86isa::rme-size$inline proc-mode nbytes eff-addr seg-reg r-x check-alignment? (xw fld index val x86) mem-ptr?))
+                  (mv-nth 0 (x86isa::rme-size$inline proc-mode nbytes eff-addr seg-reg r-x check-alignment? x86 mem-ptr?))))
+  :hints (("Goal" :in-theory (e/d (x86isa::rme-size) (ea-to-la$inline
+                                                      x86isa::rml-size$inline
+                                                      x86isa::ea-to-la-is-i48p-when-no-error)))))
+
 (defthm not-mv-nth-0-of-rme-size$inline
   (implies (and (eff-addrs-okp nbytes eff-addr seg-reg x86)
                 (<= nbytes (expt 2 32))
@@ -3213,7 +3233,7 @@
 (defthm canonical-address-p$inline-of-n-minus-2 ;gen
   (implies (and (natp n)
                 (< n (expt 2 32)))
-           (canonical-address-p$inline (binary-+ '-2 n)))
+           (canonical-address-p$inline (+ -2 n)))
   :hints (("Goal" :in-theory (enable canonical-address-p$inline signed-byte-p))))
 
 
@@ -4167,8 +4187,8 @@
                                    ifix
                                    ea-to-la
                                    acl2::bvchop-identity)
-                                  (
-                                   x86isa::xw-of-xw-both)))))
+                                  (;x86isa::xw-of-xw-both
+                                   )))))
 
 (defthm mv-nth-1-of-wml128-of-mv-nth-1-of-ea-to-la
   (implies (and (segment-is-32-bitsp seg-reg x86)
@@ -4203,8 +4223,8 @@
                                    ifix
                                    ea-to-la
                                    acl2::bvchop-identity)
-                                  (
-                                   x86isa::xw-of-xw-both)))))
+                                  (;x86isa::xw-of-xw-both
+                                   )))))
 
 (defthm mv-nth-1-of-wml256-of-mv-nth-1-of-ea-to-la
   (implies (and (segment-is-32-bitsp seg-reg x86)
@@ -4239,8 +4259,8 @@
                                    ifix
                                    ea-to-la
                                    acl2::bvchop-identity)
-                                  (
-                                   x86isa::xw-of-xw-both)))))
+                                  (;x86isa::xw-of-xw-both
+                                   )))))
 
 (defthm mv-nth-1-of-wb-of-mv-nth-1-of-ea-to-la
   (implies (and (segment-is-32-bitsp seg-reg x86)
@@ -4492,7 +4512,7 @@
                 (natp n)
                 (<= n (- off))
                 (x86p x86))
-           (eff-addrs-okp n (binary-+ off (esp x86)) *ss* x86-2))
+           (eff-addrs-okp n (+ off (esp x86)) *ss* x86-2))
   :hints (("Goal" :in-theory (e/d (esp segment-max-eff-addr32 segment-min-eff-addr32 segment-base-and-bounds
                                        bvuminus
                                        32-bit-segment-size
@@ -4692,38 +4712,38 @@
   (implies (app-view x86)
            (equal (mv-nth 1 (x86isa::rme-size$inline proc-mode nbytes eff-addr seg-reg r-x check-alignment? (set-esp esp x86) mem-ptr?))
                   (mv-nth 1 (x86isa::rme-size$inline proc-mode nbytes eff-addr seg-reg r-x check-alignment? x86 mem-ptr?))))
-  :hints (("Goal" :in-theory (e/d (x86isa::rme-size) (ea-to-la set-esp)))))
+  :hints (("Goal" :in-theory (e/d (x86isa::rme-size) (ea-to-la)))))
 
 ;not strictly necessary but helps keep terms small
 (defthm mv-nth-1-of-rme-size-of-set-ebp-when-app-view
   (implies (app-view x86)
            (equal (mv-nth 1 (x86isa::rme-size$inline proc-mode nbytes eff-addr seg-reg r-x check-alignment? (set-ebp ebp x86) mem-ptr?))
                   (mv-nth 1 (x86isa::rme-size$inline proc-mode nbytes eff-addr seg-reg r-x check-alignment? x86 mem-ptr?))))
-  :hints (("Goal" :in-theory (e/d (x86isa::rme-size) (ea-to-la set-ebp)))))
+  :hints (("Goal" :in-theory (e/d (x86isa::rme-size) (ea-to-la)))))
 
 (defthm mv-nth-1-of-rme-size-of-set-eax-when-app-view
   (implies (app-view x86)
            (equal (mv-nth 1 (x86isa::rme-size$inline proc-mode nbytes eff-addr seg-reg r-x check-alignment? (set-eax eax x86) mem-ptr?))
                   (mv-nth 1 (x86isa::rme-size$inline proc-mode nbytes eff-addr seg-reg r-x check-alignment? x86 mem-ptr?))))
-  :hints (("Goal" :in-theory (e/d (x86isa::rme-size) (ea-to-la set-eax)))))
+  :hints (("Goal" :in-theory (e/d (x86isa::rme-size) (ea-to-la)))))
 
 (defthm mv-nth-1-of-rme-size-of-set-ebx-when-app-view
   (implies (app-view x86)
            (equal (mv-nth 1 (x86isa::rme-size$inline proc-mode nbytes eff-addr seg-reg r-x check-alignment? (set-ebx ebx x86) mem-ptr?))
                   (mv-nth 1 (x86isa::rme-size$inline proc-mode nbytes eff-addr seg-reg r-x check-alignment? x86 mem-ptr?))))
-  :hints (("Goal" :in-theory (e/d (x86isa::rme-size) (ea-to-la set-ebx)))))
+  :hints (("Goal" :in-theory (e/d (x86isa::rme-size) (ea-to-la)))))
 
 (defthm mv-nth-1-of-rme-size-of-set-ecx-when-app-view
   (implies (app-view x86)
            (equal (mv-nth 1 (x86isa::rme-size$inline proc-mode nbytes eff-addr seg-reg r-x check-alignment? (set-ecx ecx x86) mem-ptr?))
                   (mv-nth 1 (x86isa::rme-size$inline proc-mode nbytes eff-addr seg-reg r-x check-alignment? x86 mem-ptr?))))
-  :hints (("Goal" :in-theory (e/d (x86isa::rme-size) (ea-to-la set-ecx)))))
+  :hints (("Goal" :in-theory (e/d (x86isa::rme-size) (ea-to-la)))))
 
 (defthm mv-nth-1-of-rme-size-of-set-edx-when-app-view
   (implies (app-view x86)
            (equal (mv-nth 1 (x86isa::rme-size$inline proc-mode nbytes eff-addr seg-reg r-x check-alignment? (set-edx edx x86) mem-ptr?))
                   (mv-nth 1 (x86isa::rme-size$inline proc-mode nbytes eff-addr seg-reg r-x check-alignment? x86 mem-ptr?))))
-  :hints (("Goal" :in-theory (e/d (x86isa::rme-size) (ea-to-la set-edx)))))
+  :hints (("Goal" :in-theory (e/d (x86isa::rme-size) (ea-to-la)))))
 
 (in-theory (disable set-eip)) ;move up
 
@@ -4864,3 +4884,10 @@
                   (+ (- (- (expt 2 32) k)) ;gets computed
                      (esp x86))))
   :hints (("Goal" :use (:instance acl2::bvplus-of-constant-when-overflow (x (esp x86))))))
+
+;; where should this go?
+(defthm x86isa::mv-nth-2-of-rme-size-when-app-view
+  (implies (app-view x86)
+           (equal (mv-nth 2 (rme-size p n e s r c x86))
+                  x86))
+  :hints (("Goal" :in-theory (enable rme-size))))

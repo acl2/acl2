@@ -1635,252 +1635,187 @@
 
 ;todo: rule for (ACL2::BVCHOP 8 (LOGEXT 7 x)) when top bit is 1
 
+;; Changes from the original:
+;; 1. Improve how RESULT is calculated.
+;; 2. Improve flag computation by preferring the :exec part (!rflagsbits-XXX) to the logic part (change-rflagsbits), since the translation of change-rflagsbits is unwieldy.
+;; 3. Get rid of unnecessary calls of THE (not needed for logical reasoning).
+;; 3. Get rid of unnecessary calls of n32.
 ;; todo: these have gross case splits for shift amounts that are too large
 (defthm SaR-SPEC-8-alt-def
   (equal (SaR-SPEC-8 dst src input-rflags)
-         (B*
-             ((DST (MBE :LOGIC (N-SIZE 8 DST) :EXEC DST))
-              (SRC (MBE :LOGIC (N-SIZE 6 SRC) :EXEC SRC))
-              (INPUT-RFLAGS (MBE :LOGIC (N32 INPUT-RFLAGS)
-                                 :EXEC INPUT-RFLAGS))
-              ;;              (NEG-SRC (THE (SIGNED-BYTE 9) (- SRC)))
-              ;; (RAW-RESULT-NOT-SIGN-EXTENDED
-              ;;  (THE (UNSIGNED-BYTE 8)
-              ;;       (ASH (THE (UNSIGNED-BYTE 8) DST)
-              ;;            (THE (SIGNED-BYTE 9) NEG-SRC))))
-              ;; (RAW-RESULT
-              ;;  (IF
-              ;;   (EQL
-              ;;    (MBE
-              ;;     :LOGIC (LOGBIT 7 DST)
-              ;;     :EXEC
-              ;;     (LOGAND 1
-              ;;             (THE (UNSIGNED-BYTE 1)
-              ;;                  (ASH (THE (UNSIGNED-BYTE 8) DST) -7))))
-              ;;    1)
-              ;;   (LOGHEAD 8
-              ;;            (ASH (MBE :LOGIC (LOGEXT 8 DST)
-              ;;                      :EXEC (FAST-LOGEXT 8 DST))
-              ;;                 NEG-SRC))
-              ;;   RAW-RESULT-NOT-SIGN-EXTENDED))
-              ;; (RESULT (MBE :LOGIC (N-SIZE 8 RAW-RESULT)
-              ;;              :EXEC RAW-RESULT))
+         (b* ((dst (mbe :logic (n-size 8 dst) :exec dst))
+              (src (mbe :logic (n-size 6 src) :exec src))
+              (input-rflags (mbe :logic (n32 input-rflags)
+                                 :exec input-rflags))
+              ;; (neg-src (the (signed-byte 9) (- src)))
+              ;; (raw-result-not-sign-extended (the (unsigned-byte 8)
+              ;;                                    (ash (the (unsigned-byte 8) dst)
+              ;;                                         (the (signed-byte 9) neg-src))))
+              ;; (raw-result (if (eql (mbe :logic (logbit 7 dst)
+              ;;                           :exec (the (unsigned-byte 1)
+              ;;                                      (ash (the (unsigned-byte 8) dst) -7)))
+              ;;                      1)
+              ;;                 (loghead 8
+              ;;                          (ash (mbe :logic (logext 8 dst)
+              ;;                                    :exec (fast-logext 8 dst))
+              ;;                               neg-src))
+              ;;               raw-result-not-sign-extended))
+              ;; (result (mbe :logic (n-size 8 raw-result)
+              ;;              :exec raw-result))
               (result (if (< (ACL2::BVCHOP 6 SRC) 8)
                           (acl2::bvashr 8 dst src)
                         (ACL2::REPEATBIT 8 (ACL2::GETBIT 7 DST))))
-              ((MV (THE (UNSIGNED-BYTE 32) OUTPUT-RFLAGS)
-                   (THE (UNSIGNED-BYTE 32)
-                        UNDEFINED-FLAGS))
-               (CASE
-                 SRC (0 (MV INPUT-RFLAGS 0))
-                 (1
-                  (B*
-                      ((CF
-                        (MBE
-                         :LOGIC (PART-SELECT DST :LOW 0 :WIDTH 1)
-                         :EXEC (THE (UNSIGNED-BYTE 1)
-                                    (LOGAND 1 (THE (UNSIGNED-BYTE 8) DST)))))
-                       (PF (GENERAL-PF-SPEC 8 RESULT))
-                       (ZF (ZF-SPEC RESULT))
-                       (SF (GENERAL-SF-SPEC 8 RESULT))
-                       (OF 0)
-                       (OUTPUT-RFLAGS
-                        (!RFLAGSBITS->CF
-                           CF
-                           (!RFLAGSBITS->PF
-                            PF
-                            (!RFLAGSBITS->ZF
-                             ZF
-                             (!RFLAGSBITS->SF
-                              SF
-                              (!RFLAGSBITS->OF OF INPUT-RFLAGS))))))
-                       (UNDEFINED-FLAGS (THE (UNSIGNED-BYTE 32)
-                                             (!RFLAGSBITS->AF 1 0))))
-                    (MV OUTPUT-RFLAGS UNDEFINED-FLAGS)))
-                 (OTHERWISE
-                  (IF
-                   (<= 8 SRC)
-                   (B*
-                       ((PF (GENERAL-PF-SPEC 8 RESULT))
-                        (ZF (ZF-SPEC RESULT))
-                        (SF (GENERAL-SF-SPEC 8 RESULT))
-                        (OUTPUT-RFLAGS
-                         (!RFLAGSBITS->PF
-                            PF
-                            (!RFLAGSBITS->ZF
-                             ZF
-                             (!RFLAGSBITS->SF SF INPUT-RFLAGS))))
-                        (UNDEFINED-FLAGS
-                         (!RFLAGSBITS->CF
-                            1
-                            (!RFLAGSBITS->AF 1 (!RFLAGSBITS->OF 1 0)))))
-                     (MV OUTPUT-RFLAGS UNDEFINED-FLAGS))
-                   (B*
-                       ((CF
-                         (MBE
-                          :LOGIC (PART-SELECT DST :LOW (1- SRC) :WIDTH 1)
-                          :EXEC
-                          (LET*
-                           ((SHFT (THE (SIGNED-BYTE 8)
-                                       (- 1 (THE (UNSIGNED-BYTE 8) SRC)))))
-                           (THE
-                            (UNSIGNED-BYTE 1)
-                            (LOGAND
-                             1
-                             (THE (UNSIGNED-BYTE 8)
-                                  (ASH (THE (UNSIGNED-BYTE 8) DST)
-                                       (THE (SIGNED-BYTE 8) SHFT))))))))
-                        (PF (GENERAL-PF-SPEC 8 RESULT))
-                        (ZF (ZF-SPEC RESULT))
-                        (SF (GENERAL-SF-SPEC 8 RESULT))
-                        (OUTPUT-RFLAGS
-                         (!RFLAGSBITS->CF
-                            CF
-                            (!RFLAGSBITS->PF
-                             PF
-                             (!RFLAGSBITS->ZF
-                              ZF
-                              (!RFLAGSBITS->SF SF INPUT-RFLAGS)))))
-                        (UNDEFINED-FLAGS
-                         (!RFLAGSBITS->AF 1 (!RFLAGSBITS->OF 1 0))))
-                     (MV OUTPUT-RFLAGS UNDEFINED-FLAGS))))))
-              ;; (OUTPUT-RFLAGS (MBE :LOGIC (N32 OUTPUT-RFLAGS)
-              ;;                     :EXEC OUTPUT-RFLAGS))
-              (UNDEFINED-FLAGS (MBE :LOGIC (N32 UNDEFINED-FLAGS)
-                                    :EXEC UNDEFINED-FLAGS)))
-           (MV RESULT OUTPUT-RFLAGS UNDEFINED-FLAGS)))
+              ((mv (the (unsigned-byte 32) output-rflags)
+                   (the (unsigned-byte 32)
+                     undefined-flags))
+               (case src
+                 (0 (mv input-rflags 0))
+                 (1 (b* ((cf (mbe :logic (part-select dst :low 0 :width 1)
+                                  :exec (the (unsigned-byte 1)
+                                          (logand 1 (the (unsigned-byte 8) dst)))))
+                         (pf (general-pf-spec 8 result))
+                         (zf (zf-spec result))
+                         (sf (general-sf-spec 8 result))
+                         (of 0)
+                         (output-rflags (!rflagsbits->cf cf
+                                                         (!rflagsbits->pf pf
+                                                                          (!rflagsbits->zf zf
+                                                                                           (!rflagsbits->sf sf
+                                                                                                            (!rflagsbits->of of input-rflags))))))
+                         (undefined-flags (the (unsigned-byte 32)
+                                            (!rflagsbits->af 1 0))))
+                      (mv output-rflags undefined-flags)))
+                 (otherwise (b* ((cf (if (<= 8 src)
+                                         (mbe :logic (part-select dst :low 7 :width 1)
+                                              :exec
+                                              (let* ((shft (the (signed-byte 8) -7)))
+                                                (the (unsigned-byte 1)
+                                                  (ash (the (unsigned-byte 8) dst)
+                                                       (the (signed-byte 8) shft)))))
+                                       (mbe :logic
+                                            (part-select dst :low (1- src) :width 1)
+                                            :exec
+                                            (let* ((shft (the (signed-byte 8)
+                                                           (- 1 (the (unsigned-byte 8) src)))))
+                                              (the (unsigned-byte 1)
+                                                (logand 1
+                                                        (the (unsigned-byte 8)
+                                                          (ash (the (unsigned-byte 8) dst)
+                                                               (the (signed-byte 8) shft)))))))))
+                                 (pf (general-pf-spec 8 result))
+                                 (zf (zf-spec result))
+                                 (sf (general-sf-spec 8 result))
+                                 (output-rflags (!rflagsbits->cf cf
+                                                                 (!rflagsbits->pf pf
+                                                                                  (!rflagsbits->zf zf
+                                                                                                   (!rflagsbits->sf sf input-rflags)))))
+                                 (undefined-flags (!rflagsbits->af 1 (!rflagsbits->of 1 0))))
+                              (mv output-rflags undefined-flags)))))
+              ;; (output-rflags (mbe :logic (n32 output-rflags)
+              ;;                     :exec output-rflags))
+              ;; (undefined-flags (mbe :logic (n32 undefined-flags)
+              ;;                       :exec undefined-flags))
+              )
+           (mv result output-rflags undefined-flags)))
   :hints (("Goal" :in-theory (e/d* (SaR-SPEC-8
-                                   ACL2::BVaSHR
-                                   ACL2::BVSX-REWRITE ;acl2::bvsx loops with ACL2::LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE
-                                   ACL2::BVSHR
-                                   acl2::bvcat
+                                    ACL2::BVaSHR
+                                    ACL2::BVSX-REWRITE ;acl2::bvsx loops with ACL2::LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE
+                                    ACL2::BVSHR
+                                    acl2::bvcat
 ;ACL2::LOGTAIL-OF-BVCHOP-BECOMES-SLICE
 ;ACL2::BVCHOP-OF-LOGTAIL-BECOMES-SLICE
-                                   acl2::slice ; loops with ACL2::LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE
+                                    acl2::slice ; loops with ACL2::LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE
 ;acl2::logext-cases ;bad
-                                   ACL2::BVCHOP-OF-LOGTAIL
-                                   ;RFLAGSBITS
-                                   zf-spec
+                                    ACL2::BVCHOP-OF-LOGTAIL
+;RFLAGSBITS
+                                    zf-spec
 ;PF-SPEC8
 
 ;logapp ; slow
-                                   logext
-                                   rflag-RoWs-enables)
-                                  (ACL2::LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE)))))
+                                    logext
+                                    rflag-RoWs-enables)
+                                   (ACL2::LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE)))))
 
+;; See comment on SaR-SPEC-8-alt-def.
 (defthm SaR-SPEC-16-alt-def
   (equal (SaR-SPEC-16 dst src input-rflags)
-         (B*
-             ((DST (MBE :LOGIC (N-SIZE 16 DST) :EXEC DST))
-              (SRC (MBE :LOGIC (N-SIZE 6 SRC) :EXEC SRC))
-              (INPUT-RFLAGS (MBE :LOGIC (N32 INPUT-RFLAGS)
-                                 :EXEC INPUT-RFLAGS))
-              ;; (NEG-SRC (THE (SIGNED-BYTE 17) (- SRC)))
-              ;; (RAW-RESULT-NOT-SIGN-EXTENDED
-              ;;      (THE (UNSIGNED-BYTE 16)
-              ;;           (ASH (THE (UNSIGNED-BYTE 16) DST)
-              ;;                (THE (SIGNED-BYTE 17) NEG-SRC))))
-              ;; (RAW-RESULT
-              ;;  (IF
-              ;;   (EQL
-              ;;    (MBE
-              ;;        :LOGIC (LOGBIT 15 DST)
-              ;;        :EXEC (LOGAND 1
-              ;;                      (THE (UNSIGNED-BYTE 1)
-              ;;                           (ASH (THE (UNSIGNED-BYTE 16) DST)
-              ;;                                -15))))
-              ;;    1)
-              ;;   (LOGHEAD 16
-              ;;            (ASH (MBE :LOGIC (LOGEXT 16 DST)
-              ;;                      :EXEC (FAST-LOGEXT 16 DST))
-              ;;                 NEG-SRC))
-              ;;   RAW-RESULT-NOT-SIGN-EXTENDED))
-              ;; (RESULT (MBE :LOGIC (N-SIZE 16 RAW-RESULT)
-              ;;              :EXEC RAW-RESULT))
+         (b* ((dst (mbe :logic (n-size 16 dst) :exec dst))
+              (src (mbe :logic (n-size 6 src) :exec src))
+              (input-rflags (mbe :logic (n32 input-rflags)
+                                 :exec input-rflags))
+              ;; (neg-src (the (signed-byte 17) (- src)))
+              ;; (raw-result-not-sign-extended (the (unsigned-byte 16)
+              ;;                                 (ash (the (unsigned-byte 16) dst)
+              ;;                                      (the (signed-byte 17) neg-src))))
+              ;; (raw-result (if (eql (mbe :logic (logbit 15 dst)
+              ;;                           :exec (the (unsigned-byte 1)
+              ;;                                   (ash (the (unsigned-byte 16) dst) -15)))
+              ;;                      1)
+              ;;                 (loghead 16
+              ;;                          (ash (mbe :logic (logext 16 dst)
+              ;;                                    :exec (fast-logext 16 dst))
+              ;;                               neg-src))
+              ;;               raw-result-not-sign-extended))
+              ;; (result (mbe :logic (n-size 16 raw-result)
+              ;;              :exec raw-result))
               (result (if (< (ACL2::BVCHOP 6 SRC) 16)
-                          (acl2::bvashr 16 dst src)
+                              (acl2::bvashr 16 dst src)
                         (ACL2::REPEATBIT 16 (ACL2::GETBIT 15 DST))))
-              ((MV (THE (UNSIGNED-BYTE 32) OUTPUT-RFLAGS)
-                   (THE (UNSIGNED-BYTE 32)
-                        UNDEFINED-FLAGS))
-               (CASE
-                 SRC (0 (MV INPUT-RFLAGS 0))
-                 (1
-                  (B*
-                      ((CF
-                        (MBE :LOGIC (PART-SELECT DST :LOW 0 :WIDTH 1)
-                             :EXEC
-                             (THE (UNSIGNED-BYTE 1)
-                                  (LOGAND 1 (THE (UNSIGNED-BYTE 16) DST)))))
-                       (PF (GENERAL-PF-SPEC 16 RESULT))
-                       (ZF (ZF-SPEC RESULT))
-                       (SF (GENERAL-SF-SPEC 16 RESULT))
-                       (OF 0)
-                       (OUTPUT-RFLAGS
-                        (!RFLAGSBITS->CF
-                           CF
-                           (!RFLAGSBITS->PF
-                            PF
-                            (!RFLAGSBITS->ZF
-                             ZF
-                             (!RFLAGSBITS->SF
-                              SF
-                              (!RFLAGSBITS->OF OF INPUT-RFLAGS))))))
-                       (UNDEFINED-FLAGS (THE (UNSIGNED-BYTE 32)
-                                             (!RFLAGSBITS->AF 1 0))))
-                    (MV OUTPUT-RFLAGS UNDEFINED-FLAGS)))
-                 (OTHERWISE
-                  (IF
-                   (<= 16 SRC)
-                   (B*
-                       ((PF (GENERAL-PF-SPEC 16 RESULT))
-                        (ZF (ZF-SPEC RESULT))
-                        (SF (GENERAL-SF-SPEC 16 RESULT))
-                        (OUTPUT-RFLAGS
-                         (!RFLAGSBITS->PF
-                            PF
-                            (!RFLAGSBITS->ZF
-                             ZF
-                             (!RFLAGSBITS->SF SF INPUT-RFLAGS))))
-                        (UNDEFINED-FLAGS
-                         (!RFLAGSBITS->CF
-                            1
-                            (!RFLAGSBITS->AF 1 (!RFLAGSBITS->OF 1 0)))))
-                     (MV OUTPUT-RFLAGS UNDEFINED-FLAGS))
-                   (B*
-                       ((CF
-                         (MBE
-                          :LOGIC (PART-SELECT DST :LOW (1- SRC) :WIDTH 1)
-                          :EXEC
-                          (LET*
-                           ((SHFT (THE (SIGNED-BYTE 16)
-                                       (- 1 (THE (UNSIGNED-BYTE 16) SRC)))))
-                           (THE
-                            (UNSIGNED-BYTE 1)
-                            (LOGAND
-                             1
-                             (THE (UNSIGNED-BYTE 16)
-                                  (ASH (THE (UNSIGNED-BYTE 16) DST)
-                                       (THE (SIGNED-BYTE 16) SHFT))))))))
-                        (PF (GENERAL-PF-SPEC 16 RESULT))
-                        (ZF (ZF-SPEC RESULT))
-                        (SF (GENERAL-SF-SPEC 16 RESULT))
-                        (OUTPUT-RFLAGS
-                         (!RFLAGSBITS->CF
-                            CF
-                            (!RFLAGSBITS->PF
-                             PF
-                             (!RFLAGSBITS->ZF
-                              ZF
-                              (!RFLAGSBITS->SF SF INPUT-RFLAGS)))))
-                        (UNDEFINED-FLAGS
-                         (!RFLAGSBITS->AF 1 (!RFLAGSBITS->OF 1 0))))
-                     (MV OUTPUT-RFLAGS UNDEFINED-FLAGS))))))
-              ;; (OUTPUT-RFLAGS (MBE :LOGIC (N32 OUTPUT-RFLAGS)
-              ;;                     :EXEC OUTPUT-RFLAGS))
-              (UNDEFINED-FLAGS (MBE :LOGIC (N32 UNDEFINED-FLAGS)
-                                    :EXEC UNDEFINED-FLAGS)))
-           (MV RESULT OUTPUT-RFLAGS UNDEFINED-FLAGS))
+              ((mv (the (unsigned-byte 32) output-rflags)
+                   (the (unsigned-byte 32)
+                     undefined-flags))
+               (case src
+                 (0 (mv input-rflags 0))
+                 (1 (b* ((cf (mbe :logic (part-select dst :low 0 :width 1)
+                                  :exec (the (unsigned-byte 1)
+                                          (logand 1 (the (unsigned-byte 16) dst)))))
+                         (pf (general-pf-spec 16 result))
+                         (zf (zf-spec result))
+                         (sf (general-sf-spec 16 result))
+                         (of 0)
+                         (output-rflags (!rflagsbits->cf cf
+                                                                      (!rflagsbits->pf pf
+                                                                                       (!rflagsbits->zf zf
+                                                                                                        (!rflagsbits->sf sf
+                                                                                                                         (!rflagsbits->of of input-rflags))))))
+                         (undefined-flags (the (unsigned-byte 32)
+                                            (!rflagsbits->af 1 0))))
+                      (mv output-rflags undefined-flags)))
+                 (otherwise (b* ((cf (if (<= 16 src)
+                                         (mbe :logic
+                                              (part-select dst :low 15 :width 1)
+                                              :exec
+                                              (let* ((shft (the (signed-byte 16) -15)))
+                                                (the (unsigned-byte 1)
+                                                  (ash (the (unsigned-byte 16) dst)
+                                                       (the (signed-byte 16) shft)))))
+                                       (mbe :logic
+                                            (part-select dst :low (1- src) :width 1)
+                                            :exec
+                                            (let* ((shft (the (signed-byte 16)
+                                                           (- 1 (the (unsigned-byte 16) src)))))
+                                              (the (unsigned-byte 1)
+                                                (logand 1
+                                                        (the (unsigned-byte 16)
+                                                          (ash (the (unsigned-byte 16) dst)
+                                                               (the (signed-byte 16) shft)))))))))
+                                 (pf (general-pf-spec 16 result))
+                                 (zf (zf-spec result))
+                                 (sf (general-sf-spec 16 result))
+                                 (output-rflags (!rflagsbits->cf cf
+                                                                              (!rflagsbits->pf pf
+                                                                                               (!rflagsbits->zf zf
+                                                                                                                (!rflagsbits->sf sf input-rflags)))))
+                                 (undefined-flags (!rflagsbits->af 1 (!rflagsbits->of 1 0))))
+                              (mv output-rflags undefined-flags)))))
+              ;; (output-rflags (mbe :logic (n32 output-rflags)
+              ;;                     :exec output-rflags))
+              ;; (undefined-flags (mbe :logic (n32 undefined-flags)
+              ;;                       :exec undefined-flags))
+              )
+           (mv result output-rflags undefined-flags))
+
+
          )
   :hints (("Goal" :in-theory (e/d* (SaR-SPEC-16
                                    ACL2::BVaSHR
@@ -1895,260 +1830,191 @@
                                    rflag-RoWs-enables)
                                   (ACL2::LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE)))))
 
+;; See comment on SaR-SPEC-8-alt-def.
 (defthm SaR-SPEC-32-alt-def
   (equal (SaR-SPEC-32 dst src input-rflags)
-         (B*
-                 ((DST (MBE :LOGIC (N-SIZE 32 DST) :EXEC DST))
-                  (SRC (MBE :LOGIC (N-SIZE 6 SRC) :EXEC SRC))
-                  (INPUT-RFLAGS (MBE :LOGIC (N32 INPUT-RFLAGS)
-                                     :EXEC INPUT-RFLAGS))
-                  ;; (NEG-SRC (THE (SIGNED-BYTE 33) (- SRC)))
-                  ;; (RAW-RESULT-NOT-SIGN-EXTENDED
-                  ;;      (THE (UNSIGNED-BYTE 32)
-                  ;;           (ASH (THE (UNSIGNED-BYTE 32) DST)
-                  ;;                (THE (SIGNED-BYTE 33) NEG-SRC))))
-                  ;; (RAW-RESULT
-                  ;;  (IF
-                  ;;   (EQL
-                  ;;    (MBE
-                  ;;        :LOGIC (LOGBIT 31 DST)
-                  ;;        :EXEC (LOGAND 1
-                  ;;                      (THE (UNSIGNED-BYTE 1)
-                  ;;                           (ASH (THE (UNSIGNED-BYTE 32) DST)
-                  ;;                                -31))))
-                  ;;    1)
-                  ;;   (LOGHEAD 32
-                  ;;            (ASH (MBE :LOGIC (LOGEXT 32 DST)
-                  ;;                      :EXEC (FAST-LOGEXT 32 DST))
-                  ;;                 NEG-SRC))
-                  ;;   RAW-RESULT-NOT-SIGN-EXTENDED))
-                  ;; (RESULT (MBE :LOGIC (N-SIZE 32 RAW-RESULT)
-                  ;;              :EXEC RAW-RESULT))
-                  (result (if (< (ACL2::BVCHOP 6 SRC) 32)
-                              (acl2::bvashr 32 dst src)
-                            (ACL2::REPEATBIT 32 (ACL2::GETBIT 31 DST))))
-                  ((MV (THE (UNSIGNED-BYTE 32) OUTPUT-RFLAGS)
-                       (THE (UNSIGNED-BYTE 32)
-                            UNDEFINED-FLAGS))
-                   (CASE
-                    SRC (0 (MV INPUT-RFLAGS 0))
-                    (1
-                     (B*
-                      ((CF
-                         (MBE :LOGIC (PART-SELECT DST :LOW 0 :WIDTH 1)
-                              :EXEC
-                              (THE (UNSIGNED-BYTE 1)
-                                   (LOGAND 1 (THE (UNSIGNED-BYTE 32) DST)))))
-                       (PF (GENERAL-PF-SPEC 32 RESULT))
-                       (ZF (ZF-SPEC RESULT))
-                       (SF (GENERAL-SF-SPEC 32 RESULT))
-                       (OF 0)
-                       (OUTPUT-RFLAGS
-                        (!RFLAGSBITS->CF
-                           CF
-                           (!RFLAGSBITS->PF
-                            PF
-                            (!RFLAGSBITS->ZF
-                                ZF
-                                (!RFLAGSBITS->SF
-                                     SF
-                                     (!RFLAGSBITS->OF OF INPUT-RFLAGS))))))
-                       (UNDEFINED-FLAGS (THE (UNSIGNED-BYTE 32)
-                                             (!RFLAGSBITS->AF 1 0))))
-                      (MV OUTPUT-RFLAGS UNDEFINED-FLAGS)))
-                    (OTHERWISE
-                     (IF
-                      (<= 32 SRC)
-                      (B*
-                       ((PF (GENERAL-PF-SPEC 32 RESULT))
-                        (ZF (ZF-SPEC RESULT))
-                        (SF (GENERAL-SF-SPEC 32 RESULT))
-                        (OUTPUT-RFLAGS
-                         (!RFLAGSBITS->PF
-                                  PF
-                                  (!RFLAGSBITS->ZF
-                                       ZF
-                                       (!RFLAGSBITS->SF SF INPUT-RFLAGS))))
-                        (UNDEFINED-FLAGS
-                         (!RFLAGSBITS->CF
-                               1
-                               (!RFLAGSBITS->AF 1 (!RFLAGSBITS->OF 1 0)))))
-                       (MV OUTPUT-RFLAGS UNDEFINED-FLAGS))
-                      (B*
-                       ((CF
-                         (MBE
-                          :LOGIC (PART-SELECT DST :LOW (1- SRC) :WIDTH 1)
-                          :EXEC
-                          (LET*
-                           ((SHFT (THE (SIGNED-BYTE 32)
-                                       (- 1 (THE (UNSIGNED-BYTE 32) SRC)))))
-                           (THE
-                            (UNSIGNED-BYTE 1)
-                            (LOGAND
-                                 1
-                                 (THE (UNSIGNED-BYTE 32)
-                                      (ASH (THE (UNSIGNED-BYTE 32) DST)
-                                           (THE (SIGNED-BYTE 32) SHFT))))))))
-                        (PF (GENERAL-PF-SPEC 32 RESULT))
-                        (ZF (ZF-SPEC RESULT))
-                        (SF (GENERAL-SF-SPEC 32 RESULT))
-                        (OUTPUT-RFLAGS
-                         (!RFLAGSBITS->CF
-                            CF
-                            (!RFLAGSBITS->PF
-                                 PF
-                                 (!RFLAGSBITS->ZF
-                                      ZF
-                                      (!RFLAGSBITS->SF SF INPUT-RFLAGS)))))
-                        (UNDEFINED-FLAGS
-                         (!RFLAGSBITS->AF 1 (!RFLAGSBITS->OF 1 0))))
-                       (MV OUTPUT-RFLAGS UNDEFINED-FLAGS))))))
-                  ;; (OUTPUT-RFLAGS (MBE :LOGIC (N32 OUTPUT-RFLAGS)
-                  ;;                     :EXEC OUTPUT-RFLAGS))
-                  (UNDEFINED-FLAGS (MBE :LOGIC (N32 UNDEFINED-FLAGS)
-                                        :EXEC UNDEFINED-FLAGS)))
-                 (MV RESULT OUTPUT-RFLAGS UNDEFINED-FLAGS))
-       )
-  :hints (("Goal" :in-theory (e/d* (SaR-SPEC-32
-                                   ACL2::BVaSHR
-                                   ACL2::BVSX-REWRITE
-                                   ACL2::BVSHR
-                                   acl2::bvcat
-                                   acl2::slice
-                                   ACL2::BVCHOP-OF-LOGTAIL
-                                   ;;RFLAGSBITS
-                                   zf-spec
-                                   logext
-                                   rflag-RoWs-enables)
-                                  (ACL2::LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE)))))
+         (b* ((dst (mbe :logic (n-size 32 dst) :exec dst))
+              (src (mbe :logic (n-size 6 src) :exec src))
+              (input-rflags (mbe :logic (n32 input-rflags)
+                                 :exec input-rflags))
+              ;; (neg-src (the (signed-byte 33) (- src)))
+              ;; (raw-result-not-sign-extended (the (unsigned-byte 32)
+              ;;                                    (ash (the (unsigned-byte 32) dst)
+              ;;                                         (the (signed-byte 33) neg-src))))
+              ;; (raw-result (if (eql (mbe :logic (logbit 31 dst)
+              ;;                           :exec (the (unsigned-byte 1)
+              ;;                                      (ash (the (unsigned-byte 32) dst) -31)))
+              ;;                      1)
+              ;;                 (loghead 32
+              ;;                          (ash (mbe :logic (logext 32 dst)
+              ;;                                    :exec (fast-logext 32 dst))
+              ;;                               neg-src))
+              ;;               raw-result-not-sign-extended))
+              ;; (result (mbe :logic (n-size 32 raw-result)
+              ;;              :exec raw-result))
+              (result (if (< (ACL2::BVCHOP 6 SRC) 32)
+                          (acl2::bvashr 32 dst src)
+                        (ACL2::REPEATBIT 32 (ACL2::GETBIT 31 DST))))
+              ((mv (the (unsigned-byte 32) output-rflags)
+                   (the (unsigned-byte 32)
+                     undefined-flags))
+               (case src
+                 (0 (mv input-rflags 0))
+                 (1 (b* ((cf (mbe :logic (part-select dst :low 0 :width 1)
+                                  :exec (the (unsigned-byte 1)
+                                          (logand 1 (the (unsigned-byte 32) dst)))))
+                         (pf (general-pf-spec 32 result))
+                         (zf (zf-spec result))
+                         (sf (general-sf-spec 32 result))
+                         (of 0)
+                         (output-rflags (!rflagsbits->cf cf
+                                                         (!rflagsbits->pf pf
+                                                                          (!rflagsbits->zf zf
+                                                                                           (!rflagsbits->sf sf
+                                                                                                            (!rflagsbits->of of input-rflags))))))
+                         (undefined-flags (the (unsigned-byte 32)
+                                            (!rflagsbits->af 1 0))))
+                      (mv output-rflags undefined-flags)))
+                 (otherwise (b* ((cf (if (<= 32 src)
+                                         (mbe :logic
+                                              (part-select dst :low 31 :width 1)
+                                              :exec
+                                              (let* ((shft (the (signed-byte 32) -31)))
+                                                (the (unsigned-byte 1)
+                                                  (ash (the (unsigned-byte 32) dst)
+                                                       (the (signed-byte 32) shft)))))
+                                       (mbe :logic
+                                            (part-select dst :low (1- src) :width 1)
+                                            :exec
+                                            (let* ((shft (the (signed-byte 32)
+                                                           (- 1 (the (unsigned-byte 32) src)))))
+                                              (the (unsigned-byte 1)
+                                                (logand 1
+                                                        (the (unsigned-byte 32)
+                                                          (ash (the (unsigned-byte 32) dst)
+                                                               (the (signed-byte 32) shft)))))))))
+                                 (pf (general-pf-spec 32 result))
+                                 (zf (zf-spec result))
+                                 (sf (general-sf-spec 32 result))
+                                 (output-rflags (!rflagsbits->cf cf
+                                                                 (!rflagsbits->pf pf
+                                                                                  (!rflagsbits->zf zf
+                                                                                                   (!rflagsbits->sf sf input-rflags)))))
+                                 (undefined-flags (!rflagsbits->af 1 (!rflagsbits->of 1 0))))
+                              (mv output-rflags undefined-flags)))))
+              ;; (output-rflags (mbe :logic (n32 output-rflags)
+              ;;                     :exec output-rflags))
+              ;; (undefined-flags (mbe :logic (n32 undefined-flags)
+              ;;                       :exec undefined-flags))
+              )
+           (mv result output-rflags undefined-flags))
 
+         )
+  :hints (("Goal" :in-theory (e/d* (SaR-SPEC-32
+                                    ACL2::BVaSHR
+                                    ACL2::BVSX-REWRITE
+                                    ACL2::BVSHR
+                                    acl2::bvcat
+                                    acl2::slice
+                                    ACL2::BVCHOP-OF-LOGTAIL
+                                    ;;RFLAGSBITS
+                                    zf-spec
+                                    logext
+                                    rflag-RoWs-enables)
+                                   (ACL2::LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE)))))
+
+;; See comment on SaR-SPEC-8-alt-def.
 (defthm SaR-SPEC-64-alt-def
   (equal (SaR-SPEC-64 dst src input-rflags)
-         (B*
-                 ((DST (MBE :LOGIC (N-SIZE 64 DST) :EXEC DST))
-                  (SRC (MBE :LOGIC (N-SIZE 6 SRC) :EXEC SRC))
-                  (INPUT-RFLAGS (MBE :LOGIC (N32 INPUT-RFLAGS)
-                                     :EXEC INPUT-RFLAGS))
-                  ;; (NEG-SRC (THE (SIGNED-BYTE 65) (- SRC)))
-                  ;; (RAW-RESULT-NOT-SIGN-EXTENDED
-                  ;;      (THE (UNSIGNED-BYTE 64)
-                  ;;           (ASH (THE (UNSIGNED-BYTE 64) DST)
-                  ;;                (THE (SIGNED-BYTE 65) NEG-SRC))))
-                  ;; (RAW-RESULT
-                  ;;  (IF
-                  ;;   (EQL
-                  ;;    (MBE
-                  ;;        :LOGIC (LOGBIT 63 DST)
-                  ;;        :EXEC (LOGAND 1
-                  ;;                      (THE (UNSIGNED-BYTE 1)
-                  ;;                           (ASH (THE (UNSIGNED-BYTE 64) DST)
-                  ;;                                -63))))
-                  ;;    1)
-                  ;;   (LOGHEAD 64
-                  ;;            (ASH (MBE :LOGIC (LOGEXT 64 DST)
-                  ;;                      :EXEC (FAST-LOGEXT 64 DST))
-                  ;;                 NEG-SRC))
-                  ;;   RAW-RESULT-NOT-SIGN-EXTENDED))
-                  ;; (RESULT (MBE :LOGIC (N-SIZE 64 RAW-RESULT)
-                  ;;              :EXEC RAW-RESULT))
-                  (result (if (< (ACL2::BVCHOP 6 SRC) 64)
+         (b* ((dst (mbe :logic (n-size 64 dst) :exec dst))
+              (src (mbe :logic (n-size 6 src) :exec src))
+              (input-rflags (mbe :logic (n32 input-rflags)
+                                 :exec input-rflags))
+              ;; (neg-src (the (signed-byte 65) (- src)))
+              ;; (raw-result-not-sign-extended (the (unsigned-byte 64)
+              ;;                                 (ash (the (unsigned-byte 64) dst)
+              ;;                                      (the (signed-byte 65) neg-src))))
+              ;; (raw-result (if (eql (mbe :logic (logbit 63 dst)
+              ;;                           :exec (the (unsigned-byte 1)
+              ;;                                   (ash (the (unsigned-byte 64) dst) -63)))
+              ;;                      1)
+              ;;                 (loghead 64
+              ;;                          (ash (mbe :logic (logext 64 dst)
+              ;;                                    :exec (fast-logext 64 dst))
+              ;;                               neg-src))
+              ;;               raw-result-not-sign-extended))
+              ;; (result (mbe :logic (n-size 64 raw-result)
+              ;;              :exec raw-result))
+              (result (if (< (ACL2::BVCHOP 6 SRC) 64)
                           (acl2::bvashr 64 dst src)
                         (ACL2::REPEATBIT 64 (ACL2::GETBIT 63 DST))))
-                  ((MV (THE (UNSIGNED-BYTE 32) OUTPUT-RFLAGS)
-                       (THE (UNSIGNED-BYTE 32)
-                            UNDEFINED-FLAGS))
-                   (CASE
-                    SRC (0 (MV INPUT-RFLAGS 0))
-                    (1
-                     (B*
-                      ((CF
-                         (MBE :LOGIC (PART-SELECT DST :LOW 0 :WIDTH 1)
-                              :EXEC
-                              (THE (UNSIGNED-BYTE 1)
-                                   (LOGAND 1 (THE (UNSIGNED-BYTE 64) DST)))))
-                       (PF (GENERAL-PF-SPEC 64 RESULT))
-                       (ZF (ZF-SPEC RESULT))
-                       (SF (GENERAL-SF-SPEC 64 RESULT))
-                       (OF 0)
-                       (OUTPUT-RFLAGS
-                        (!RFLAGSBITS->CF
-                           CF
-                           (!RFLAGSBITS->PF
-                            PF
-                            (!RFLAGSBITS->ZF
-                                ZF
-                                (!RFLAGSBITS->SF
-                                     SF
-                                     (!RFLAGSBITS->OF OF INPUT-RFLAGS))))))
-                       (UNDEFINED-FLAGS (THE (UNSIGNED-BYTE 32)
-                                             (!RFLAGSBITS->AF 1 0))))
-                      (MV OUTPUT-RFLAGS UNDEFINED-FLAGS)))
-                    (OTHERWISE
-                     (IF
-                      (<= 64 SRC)
-                      (B*
-                       ((PF (GENERAL-PF-SPEC 64 RESULT))
-                        (ZF (ZF-SPEC RESULT))
-                        (SF (GENERAL-SF-SPEC 64 RESULT))
-                        (OUTPUT-RFLAGS
-                         (!RFLAGSBITS->PF
-                                  PF
-                                  (!RFLAGSBITS->ZF
-                                       ZF
-                                       (!RFLAGSBITS->SF SF INPUT-RFLAGS))))
-                        (UNDEFINED-FLAGS
-                         (!RFLAGSBITS->CF
-                               1
-                               (!RFLAGSBITS->AF 1 (!RFLAGSBITS->OF 1 0)))))
-                       (MV OUTPUT-RFLAGS UNDEFINED-FLAGS))
-                      (B*
-                       ((CF
-                         (MBE
-                          :LOGIC (PART-SELECT DST :LOW (1- SRC) :WIDTH 1)
-                          :EXEC
-                          (LET*
-                           ((SHFT (THE (SIGNED-BYTE 64)
-                                       (- 1 (THE (UNSIGNED-BYTE 64) SRC)))))
-                           (THE
-                            (UNSIGNED-BYTE 1)
-                            (LOGAND
-                                 1
-                                 (THE (UNSIGNED-BYTE 64)
-                                      (ASH (THE (UNSIGNED-BYTE 64) DST)
-                                           (THE (SIGNED-BYTE 64) SHFT))))))))
-                        (PF (GENERAL-PF-SPEC 64 RESULT))
-                        (ZF (ZF-SPEC RESULT))
-                        (SF (GENERAL-SF-SPEC 64 RESULT))
-                        (OUTPUT-RFLAGS
-                         (!RFLAGSBITS->CF
-                            CF
-                            (!RFLAGSBITS->PF
-                                 PF
-                                 (!RFLAGSBITS->ZF
-                                      ZF
-                                      (!RFLAGSBITS->SF SF INPUT-RFLAGS)))))
-                        (UNDEFINED-FLAGS
-                         (!RFLAGSBITS->AF 1 (!RFLAGSBITS->OF 1 0))))
-                       (MV OUTPUT-RFLAGS UNDEFINED-FLAGS))))))
-                  ;; (OUTPUT-RFLAGS (MBE :LOGIC (N32 OUTPUT-RFLAGS)
-                  ;;                     :EXEC OUTPUT-RFLAGS))
-                  (UNDEFINED-FLAGS (MBE :LOGIC (N32 UNDEFINED-FLAGS)
-                                        :EXEC UNDEFINED-FLAGS)))
-                 (MV RESULT OUTPUT-RFLAGS UNDEFINED-FLAGS)))
+              ((mv (the (unsigned-byte 32) output-rflags)
+                   (the (unsigned-byte 32)
+                     undefined-flags))
+               (case src
+                 (0 (mv input-rflags 0))
+                 (1 (b* ((cf (mbe :logic (part-select dst :low 0 :width 1)
+                                  :exec (the (unsigned-byte 1)
+                                          (logand 1 (the (unsigned-byte 64) dst)))))
+                         (pf (general-pf-spec 64 result))
+                         (zf (zf-spec result))
+                         (sf (general-sf-spec 64 result))
+                         (of 0)
+                         (output-rflags (!rflagsbits->cf cf
+                                                                      (!rflagsbits->pf pf
+                                                                                       (!rflagsbits->zf zf
+                                                                                                        (!rflagsbits->sf sf
+                                                                                                                         (!rflagsbits->of of input-rflags))))))
+                         (undefined-flags (the (unsigned-byte 32)
+                                            (!rflagsbits->af 1 0))))
+                      (mv output-rflags undefined-flags)))
+                 (otherwise (b* ((cf (if (<= 64 src)
+                                         (mbe :logic
+                                              (part-select dst :low 63 :width 1)
+                                              :exec
+                                              (let* ((shft (the (signed-byte 64) -63)))
+                                                (the (unsigned-byte 1)
+                                                  (ash (the (unsigned-byte 64) dst)
+                                                       (the (signed-byte 64) shft)))))
+                                       (mbe :logic
+                                            (part-select dst :low (1- src) :width 1)
+                                            :exec
+                                            (let* ((shft (the (signed-byte 64)
+                                                           (- 1 (the (unsigned-byte 64) src)))))
+                                              (the (unsigned-byte 1)
+                                                (logand 1
+                                                        (the (unsigned-byte 64)
+                                                          (ash (the (unsigned-byte 64) dst)
+                                                               (the (signed-byte 64) shft)))))))))
+                                 (pf (general-pf-spec 64 result))
+                                 (zf (zf-spec result))
+                                 (sf (general-sf-spec 64 result))
+                                 (output-rflags (!rflagsbits->cf cf
+                                                                              (!rflagsbits->pf pf
+                                                                                               (!rflagsbits->zf zf
+                                                                                                                (!rflagsbits->sf sf input-rflags)))))
+                                 (undefined-flags (!rflagsbits->af 1 (!rflagsbits->of 1 0))))
+                              (mv output-rflags undefined-flags)))))
+              ;; (output-rflags (mbe :logic (n32 output-rflags)
+              ;;                     :exec output-rflags))
+              ;; (undefined-flags (mbe :logic (n32 undefined-flags)
+              ;;                       :exec undefined-flags))
+              )
+           (mv result output-rflags undefined-flags)))
   :hints (("Goal" :in-theory (e/d* (SaR-SPEC-64
-                                   ACL2::BVaSHR
-                                   ACL2::BVSX-REWRITE
-                                   ACL2::BVSHR
-                                   ;acl2::bvcat
-                                   acl2::slice
-                                   ACL2::BVCHOP-OF-LOGTAIL
-                                   ;;RFLAGSBITS
-                                   zf-spec
-                                   logext
-                                   ;ACL2::LOGAPP-BECOMES-BVCAT-WHEN-BV
-                                   rflag-RoWs-enables
-                                   )
-                                  (ACL2::LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE)))))
+                                    ACL2::BVaSHR
+                                    ACL2::BVSX-REWRITE
+                                    ACL2::BVSHR
+;acl2::bvcat
+                                    acl2::slice
+                                    ACL2::BVCHOP-OF-LOGTAIL
+                                    ;;RFLAGSBITS
+                                    zf-spec
+                                    logext
+;ACL2::LOGAPP-BECOMES-BVCAT-WHEN-BV
+                                    rflag-RoWs-enables
+                                    )
+                                   (ACL2::LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

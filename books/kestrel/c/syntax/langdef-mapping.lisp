@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,7 +10,6 @@
 
 (in-package "C$")
 
-(include-book "abstract-syntax-operations")
 (include-book "unambiguity")
 
 (include-book "../language/abstract-syntax")
@@ -427,7 +426,7 @@
      not a function declarator, for which we have a separate function."))
   (b* (((reterr) (c::obj-declor-ident (c::ident "irrelevant")))
        ((declor declor) declor)
-       ((erp declor1) (ldm-dirdeclor-obj declor.decl)))
+       ((erp declor1) (ldm-dirdeclor-obj declor.direct)))
     (ldm-declor-obj-loop declor1 declor.pointers))
   :hooks (:fix)
 
@@ -1021,7 +1020,7 @@
      not an object declarator, for which we have a separate function."))
   (b* (((reterr) (c::fun-declor-base (c::ident "irrelevant") nil))
        ((declor declor) declor)
-       ((erp declor1) (ldm-dirdeclor-fun declor.decl)))
+       ((erp declor1) (ldm-dirdeclor-fun declor.direct)))
     (ldm-declor-fun-loop declor1 declor.pointers))
   :hooks (:fix)
 
@@ -1113,11 +1112,11 @@
      and the nested initializer must be for a single expression."))
   (b* (((reterr) (c::expr-ident (c::ident "irrelevant")))
        ((desiniter desiniter) desiniter)
-       ((when desiniter.design)
-        (reterr (msg "Unsupported designators ~x0." desiniter.design)))
-       ((unless (initer-case desiniter.init :single))
-        (reterr (msg "Unsupported nested initializer ~x0." desiniter.init))))
-    (ldm-expr (initer-single->expr desiniter.init)))
+       ((when desiniter.designors)
+        (reterr (msg "Unsupported designators ~x0." desiniter.designors)))
+       ((unless (initer-case desiniter.initer :single))
+        (reterr (msg "Unsupported nested initializer ~x0." desiniter.initer))))
+    (ldm-expr (initer-single->expr desiniter.initer)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

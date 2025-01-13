@@ -66,7 +66,10 @@
                     (validator-state->blockchain
                      (get-validator-state val1 systate))
                     (validator-state->blockchain
-                     (get-validator-state val2 systate))))))
+                     (get-validator-state val2 systate)))))
+  ///
+  (fty::deffixequiv-sk nonforking-blockchains-p
+    :args ((systate system-statep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

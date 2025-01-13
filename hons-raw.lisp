@@ -51,14 +51,21 @@
 ; found below.  It might be helpful to read the Essay on Hons Spaces before
 ; proceeding.
 
-; Some changes made in HL-Hons, as opposed to the old Hons system, include:
+; Some changes made in HL-Hons, as opposed to the old Hons system, include the
+; following.
 ;
 ;   - We combine all of the special variables used by the Hons code into an
 ;     explicit Hons-space structure.
 ;
-;   - We no longer separately track the length of sbits.  This change appears
-;     to incur an overhead of 3.35 seconds in a 10-billion iteration loop, but
-;     gives us fewer invariants to maintain and makes Ctrl+C safety easier.
+;   - Until late 2024 we no longer separately tracked the length of sbits.
+;     This change appeared to incur an overhead of 3.35 seconds in a 10-billion
+;     iteration loop, but gave us fewer invariants to maintain and made Ctrl+C
+;     safety easier.  However, to avoid running up against
+;     array-dimension-limit (in GCL starting with version 2.7.0, but
+;     conceivably in future Lisps as well), we now use code provided by Camm
+;     Maguire based on implementing sbits as a struct that represents an array
+;     of "chunks", where each chunk is a bit array.  We believe that the
+;     performance of the new implementation stands up well.
 ;
 ;   - We have a new static honsing scheme where every normed object has an
 ;     address, and NIL-HT, CDR-HT, and CDR-HT-EQL aren't needed when static
@@ -237,7 +244,7 @@
 #+static-hons
 (defmacro hl-staticp (x)
 
-; This function always returns a fixnum.
+; This function always returns a fixnum or nil.
 
 ; CCL::%STATICP always returns a fixnum or nil, as per Gary Byers email June
 ; 16, 2014.  That email also confirmed that if the value is not nil after a
@@ -728,11 +735,11 @@
 ; conses were implemented by Gary Byers and references to ``Gary'' below are to
 ; him.
 ;
-; Here, only static conses can be considered normed, and SBITS is a bit-array
+; Here, only static conses can be considered normed, and SBITS is a structure
 ; that records which static conses are currently normed.  That is, suppose X is
 ; a static cons and let I be the index of X.  Then X is considered normed
-; exactly when the Ith bit of SBITS is 1.  This is a very fast way to determine
-; if a cons is normed!
+; exactly when the Ith bit stored in SBITS is 1.  This is a very fast way to
+; determine if a cons is normed!
 ;
 ;
 ; Addresses for Normed Objects.
@@ -802,9 +809,9 @@
 ; whether ADDR-HT includes an entry for this key.
 ;
 ; We maintain the invariant that SBITS and ADDR-HT must correspond as described
-; above.  That is, if (aref SBITS idx) = 1 then idx is the index of a static
-; cons that is a key of ADDR-HT; and if C is a key of ADDR-HT, then C is a
-; static cons such that (aref SBITS idx) = 1, where idx is the index of C.
+; above.  That is, if SBITS is 1 at index idx, then idx is the index of a
+; static cons that is a key of ADDR-HT; and if C is a key of ADDR-HT, then C is
+; a static cons such that SBITS is 1 at the index of C.
 
 ; Default Sizes.  The user can always call hl-hons-resize to get bigger tables,
 ; but we still want good defaults.  These sizes are used in the structures that
@@ -843,9 +850,10 @@
   ;; generated for static conses (see hl-staticp), at least for CCL.  But we
   ;; believe everything would work correctly even if this were a tiny value
   ;; like 100.  For example, in hl-hspace-truly-static-honsp we do an explicit
-  ;; bounds check before accessing sbits[i], and in hl-hspace-hons-normed we do
-  ;; an explicit bounds check and call hl-hspace-grow-sbits if there isn't
-  ;; enough room before setting sbits[i] = 1.
+  ;; bounds check before accessing the ith bit in sbits, and in
+  ;; hl-hspace-hons-normed we do an explicit bounds check and call
+  ;; hl-hspace-grow-sbits if there isn't enough room before setting the ith bit
+  ;; of sbits to 1.
   *hl-hspace-addr-ht-default-size*)
 
 (defparameter *hl-hspace-other-ht-default-size*
@@ -989,6 +997,97 @@
 (defun hl-faltable-init (&key (size *hl-hspace-fal-ht-default-size*))
   (hl-faltable-init-raw :table (hl-initialize-faltable-table size)))
 
+#+static-hons
+(progn ; sbits structure and operations
+
+; Essay on the Sbits Structure
+
+; This block provides the implementation of the sbits structure used when
+; #+static-hons is true.  We are grateful to Camm Maguire for contributing code
+; here, to replace an earlier implementation for which sbits was a single bit
+; array.  The change was provoked by the discovery of certification errors when
+; attempting to grow that array beyond the value of array-dimension-limit while
+; running ACL2 built on GCL 2.7.0, as that value is much smaller than the value
+; in CCL and previous versions of GCL.  Future Lisp implementations might have
+; an even smaller array-dimension-limit, as the Common Lisp HyperSpec only
+; requires array-dimension-limit to be at least 1024 (but GCL 2.7.0 might well
+; have the smallest array-dimension-limit as of late 2024, at 2^28).
+
+; So instead of a single bit array, the sbits structure is an array of
+; "chunks", each of which is a bit array of length 2^23.  When sbits was a
+; single bit array, its ith component was 1 when the corresponding memory
+; location (see hl-staticp) stored a static cons.  Now we have an array of
+; "chunks", where each chunk is a bit-array.
+
+; +sbits-chunk-size+ is the length of each chunk; see sbits-grow, which adds
+; one new chunk to the sbits-chunks of an sbits structure.  An index returned
+; by hl-staticp indicates whether the corresponding address holds a static
+; cons, as follows.  The low +sbits-chunk-width+ many bits (so, the low 23
+; bits) of that index are used to index into a chunk, after obtaining that
+; chunk by using the remaining high bits to index into the sbits-chunks of the
+; sbits structure.
+
+; The choice of 23 here is somewhat arbitrary.  Since each chunk (as described
+; above) is an array of 2^+sbits-chunk-width+, and since 2^28 =
+; array-dimension-limit in GCL 2.7.0, +sbits-chunk-width+ can presumably be up
+; to 27.  With that restriction, the array length of each chunk, namely
+; +sbits-chunk-size+ (which is 2^+sbits-chunk-width+, as defined below using
+; ash), is less than array-dimension-limit.  Of course, the total possible
+; number of chunks must also be less than array-dimension-limit.  That total is
+; roughly the maximum possible value of (hl-staticp x) divided by
+; +sbits-chunk-size+.  If the total memory is 128GB, i.e., (expt 2 37) bytes,
+; then in 64-bit GCL, hl-staticp is less than (expt 2 33), so the total number
+; of chunks is at most (/ (expt 2 33) (expt 2 23)) = 1024.  Camm Maguire points
+; out that there are about 24 bytes per element of sbits-chunks, which isn't
+; much relative to the total memory usage for the sbits structure.
+
+; End of Essay on the Sbits Structure
+
+(defconstant +sbits-chunk-width+ 23)
+
+(defconstant +sbits-chunk-size+ (ash 1 +sbits-chunk-width+))
+
+(deftype sbits-chunk nil `(simple-bit-vector ,+sbits-chunk-size+))
+
+(defstruct sbits
+  (length 0 :type (and fixnum (integer 0)))
+  (chunks (make-array 0 :adjustable t :fill-pointer 0)
+          :type (and (vector t) (not simple-vector))))
+
+(declaim (inline sbits-ref sbits-set))
+
+(defun sbits-grow (sbits nn &aux (n (ceiling nn +sbits-chunk-size+))
+			 (sbits (or sbits (make-sbits))))
+  (declare (type (and fixnum (integer 0)) nn))
+  (assert (<= (sbits-length sbits) nn))
+  (without-interrupts
+   (setf (sbits-length sbits) nn)
+   (dotimes (i (- n (length (sbits-chunks sbits))) sbits)
+     (vector-push-extend
+      (make-array +sbits-chunk-size+ :element-type 'bit)
+      (sbits-chunks sbits)))))
+
+(defun sbits-zero (sbits)
+  (dotimes (i (length (sbits-chunks sbits)))
+    (let ((x (aref (sbits-chunks sbits) i)))
+      (declare (type sbits-chunk x))
+      (bit-xor x x x))))
+
+(defun sbits-ref (sbits i)
+  (declare (type (and fixnum (integer 0)) i))
+  (sbit (the sbits-chunk (aref (sbits-chunks sbits)
+                               (ash i (- +sbits-chunk-width+))))
+	(logand i (1- +sbits-chunk-size+))))
+
+(defun sbits-set (sbits i vl)
+  (declare (type (and fixnum (integer 0)) i)
+           (type bit vl))
+  (setf (sbit (the sbits-chunk (aref (sbits-chunks sbits)
+                                     (ash i (- +sbits-chunk-width+))))
+	      (logand i (1- +sbits-chunk-size+)))
+	vl))
+) ; end of sbits structure and operations
+
 (defstruct (hl-hspace (:constructor hl-hspace-init-raw))
 
 ; HONS SPACE STRUCTURE.  See the above essays on hons spaces, classic honsing,
@@ -1010,13 +1109,12 @@
               :type hash-table)
 
   #+static-hons
-  (sbits      (make-array *hl-hspace-sbits-default-size*
+  (sbits
 
-; Note: GCL with #+static-hons grows this array in acl2-default-restart.  See
+; Note: GCL with #+static-hons grows this field in acl2-default-restart.  See
 ; the comment there.
 
-                          :element-type 'bit :initial-element 0)
-              :type (simple-array bit (*)))
+   (sbits-grow nil *hl-hspace-sbits-default-size*))
 
   #+static-hons
   (other-ht   (hl-mht :test #'eql :size *hl-hspace-other-ht-default-size*)
@@ -1076,9 +1174,7 @@
                                   addr-limit))
                        addr-limit)
    :other-ht         (hl-mht :test #'eql   :size (max 100 other-ht-size))
-   :sbits            (make-array (max 100 sbits-size)
-                                 :element-type 'bit
-                                 :initial-element 0)
+   :sbits            (sbits-grow nil (max 100 sbits-size))
    :norm-cache       (make-hl-cache)
    :faltable         (hl-faltable-init :size fal-ht-size)
    :persist-ht       (hl-mht :test #'eq :size (max 100 persist-ht-size))
@@ -1247,15 +1343,15 @@
 ; (HL-HSPACE-TRULY-STATIC-HONSP X HS) --> BOOL
 ;
 ; Static Honsing only.  X must be an ACL2 Cons and HS must be a Hons Space.  We
-; determine if X is a static cons whose bit is set in the SBITS array.  If so,
-; X is considered normed with respect to HS.
+; determine if X is a static cons whose bit is set in SBITS.  If so, X is
+; considered normed with respect to HS.
 
   (let* ((idx (hl-staticp x)))
     (and idx
          (let ((sbits (hl-hspace-sbits hs)))
-           (declare (type (simple-array bit (*)) sbits)) ; perhaps unnecessary
-           (and (< (the fixnum idx) (the fixnum (length sbits)))
-                (= 1 (the fixnum (aref sbits (the fixnum idx)))))))))
+           (and (< (the (and fixnum (integer 0)) idx)
+                   (sbits-length sbits))
+                (= 1 (sbits-ref sbits (the (and fixnum (integer 0)) idx))))))))
 
 #-static-hons
 (defmacro hl-hspace-find-flex-alist-for-cdr (b ctables)
@@ -1553,7 +1649,9 @@
             ;; Okay, safe to generate a new address.
             (let* ((new-addr-cons (hl-static-cons s nil))
                    (true-addr     (+ hl-dynamic-base-addr
-                                     (hl-staticp new-addr-cons))))
+                                     (the (and fixnum (integer 0))
+                                          (hl-staticp new-addr-cons)))))
+              (declare (type (and fixnum (integer 0)) true-addr))
               (rplacd (the cons new-addr-cons) true-addr)
               (setf (get (the symbol s) 'hl-static-address) new-addr-cons)
               true-addr)))))))
@@ -1603,7 +1701,9 @@
              ;; Else, we need to create an entry.
              (let* ((new-addr-cons (hl-static-cons x nil))
                     (true-addr     (+ hl-dynamic-base-addr
-                                      (hl-staticp new-addr-cons))))
+                                      (the (and fixnum (integer 0))
+                                           (hl-staticp new-addr-cons)))))
+               (declare (type (and fixnum (integer 0)) true-addr))
                (rplacd (the cons new-addr-cons) true-addr)
                (setf (gethash x other-ht) new-addr-cons)
                true-addr))))))
@@ -1627,7 +1727,10 @@
 
   `(let ((x ,x))
      (cond ((consp x)
-            (+ hl-dynamic-base-addr (hl-staticp x)))
+            (the (and fixnum (integer 0))
+                 (+ hl-dynamic-base-addr
+                    (the (and fixnum (integer 0))
+                         (hl-staticp x)))))
            ((eq x nil) 256)
            ((eq x t)   257)
            (t
@@ -1714,8 +1817,7 @@
 ; big enough to warrant doing anything drastic before the resize.  If it is big
 ; enough, we will do a CLEAR-MEMOIZE-TABLES and a HONS-WASH, which can throw
 ; away the hash table before growing it.  (But we will be able to restore the
-; ADDR-HT from the SBITS array using HL-STATIC-INVERSE-CONS; see
-; HL-REBUILD-ADDR-HT.)
+; ADDR-HT from SBITS using HL-STATIC-INVERSE-CONS; see HL-REBUILD-ADDR-HT.)
 ;
 ; A practical difficulty of implementing this scheme is that Common Lisp
 ; doesn't give us a pre-resize hook for a hash table.  Instead, we have to keep
@@ -1894,16 +1996,15 @@
 ;
 ; Static Honsing only.  IDX must be a natural number and HS must be a Hons
 ; Space.  We generally expect this function to be called when SBITS has become
-; too short to handle IDX, the static index of some static cons.  We copy SBITS
+; too short to handle IDX, the static index of some static cons.  We grow SBITS
 ; into a new, larger array and install it into the Hons Space.
 ;
-; Growing SBITS is slow because we need to (1) allocate a new, bigger array,
-; and (2) copy the old contents of SBITS into this new array.  Accordingly, we
-; want to add enough indices so that we can accommodate IDX and also any
-; additional static conses that are generated in the near future without having
-; to grow again.  But at the same time, we don't want to consume excessive
-; amounts of memory by needlessly growing SBITS beyond what will be needed.  We
-; try to balance these factors by increasing our capacity by 30% per growth.
+; Growing SBITS takes some time.  Accordingly, we want to add enough indices so
+; that we can accommodate IDX and also any additional static conses that are
+; generated in the near future without having to grow again.  But at the same
+; time, we don't want to consume excessive amounts of memory by needlessly
+; growing SBITS beyond what will be needed.  We try to balance these factors by
+; increasing our capacity by 30% per growth.
 ;
 ;    BOZO -- consider different growth factors?
 ;
@@ -1914,20 +2015,21 @@
 
   (declare (type hl-hspace hs))
   (let* ((sbits     (hl-hspace-sbits hs))
-         (curr-len  (length sbits))
-         (want-len  (floor (* 1.3 (max curr-len idx))))
-         (new-len   (min (1- array-dimension-limit) want-len)))
+         (curr-len  (sbits-length sbits))
+         (new-len   (floor (* 1.3 (max curr-len idx)))))
     (when (<= new-len curr-len)
       (error "Unable to grow static hons bit array."))
     ;; CHANGE -- added a growth message
     (time$-hons-note
-     (let ((new-sbits (make-array new-len
-                                  :element-type 'bit
-                                  :initial-element 0)))
-       (declare (type (simple-array bit (*)) new-sbits))
-       (loop for i fixnum below curr-len do
-             (setf (aref new-sbits i) (aref sbits i)))
-       (setf (hl-hspace-sbits hs) new-sbits))
+     (setf (hl-hspace-sbits hs)
+
+; This setf form could be replaced by just the sbits-grow call, if this
+; function is evaluated only for side-effect, because sbits-grow destructively
+; modifies sbits -- at least as of this writing.  But it is relatively very
+; cheap to do this setf, and it would be necessary if sbits-grow is changed to
+; use copying rather than destructive modification.
+
+           (sbits-grow sbits new-len))
      :msg "grew SBITS to ~x0; ~st seconds, ~sa bytes.~%"
      :args (list new-len))))
 
@@ -1960,7 +2062,9 @@
           (car entry)
         (let* ((new-addr-cons (hl-static-cons x nil))
                (true-addr     (+ hl-dynamic-base-addr
-                                 (hl-staticp new-addr-cons))))
+                                 (the (and fixnum (integer 0))
+                                      (hl-staticp new-addr-cons)))))
+          (declare (type (and fixnum (integer 0)) true-addr))
           (rplacd (the cons new-addr-cons) true-addr)
           (setf (gethash x str-ht) new-addr-cons)
           x))))
@@ -2027,15 +2131,16 @@
                                   (hl-static-cons a b)))
                       (idx      (or hint-idx (hl-staticp pair)))
                       (sbits    (hl-hspace-sbits hs)))
+                 (declare (type (and fixnum (integer 0)) idx))
                  ;; Make sure there are enough sbits.  Ctrl+C Safe.
                  (when (>= (the fixnum idx)
-                           (the fixnum (length sbits)))
+                           (sbits-length sbits))
                    (hl-hspace-grow-sbits idx hs)
                    (setq sbits (hl-hspace-sbits hs)))
                  (without-interrupts
                   ;; Since we must simultaneously update SBITS and ADDR-HT, the
                   ;; installation of PAIR must be protected by without-interrupts.
-                  (setf (aref sbits idx) 1)
+		  (sbits-set sbits idx 1)
                   (setf (gethash key addr-ht) pair))
                  pair)))))
 
@@ -3378,13 +3483,13 @@ To avoid the following break and get only the above warning:~%  ~s~%"
 ; to need resizing, and that the caller will fix up the (heuristic) ADDR-LIMIT
 ; after doing all of the necessary restoration.
 
-  (declare (type hash-table addr-ht)
-           (type (simple-array bit (*)) sbits))
+  (declare (type hash-table addr-ht))
   (if (atom x)
       ;; Nothing to do because we assume all atoms have already been installed.
       x
     (let ((index (hl-staticp x)))
-      (if (= (aref sbits index) 1)
+      (declare (type (and fixnum (integer 0)) index))
+      (if (= (sbits-ref sbits index) 1)
           ;; Nothing to do; we've already reinstalled X.
           x
         (let* ((a (hl-hspace-static-restore (car x) addr-ht sbits
@@ -3395,7 +3500,7 @@ To avoid the following break and get only the above warning:~%  ~s~%"
                (addr-b (hl-addr-of b str-ht other-ht))
                (key    (hl-addr-combine* addr-a addr-b)))
 ; See comment above about not being concerned with interrupts.
-          (setf (aref sbits index) 1)
+          (sbits-set sbits index 1)
           (setf (gethash key addr-ht) x)
           x)))))
 
@@ -3408,7 +3513,6 @@ To avoid the following break and get only the above warning:~%  ~s~%"
 
   (let* ((addr-ht         (hl-hspace-addr-ht hs))
          (sbits           (hl-hspace-sbits hs))
-         (sbits-len       (length sbits))
          (faltable        (hl-hspace-faltable hs))
          (persist-ht      (hl-hspace-persist-ht hs))
          (str-ht          (hl-hspace-str-ht hs))
@@ -3417,7 +3521,7 @@ To avoid the following break and get only the above warning:~%  ~s~%"
          (temp-faltable   (hl-faltable-init))
          (temp-persist-ht (hl-mht :test #'eq))
          (temp-addr-ht    (hl-mht :test #'eql))
-         (temp-sbits      (make-array 1 :element-type 'bit :initial-element 0))
+         (temp-sbits      (sbits-grow nil 1))
          (note-stream     (get-output-stream-from-channel *standard-co*)))
 
     ;; Very subtle.  We're about to violate invariants, so we need to clear out
@@ -3437,8 +3541,7 @@ To avoid the following break and get only the above warning:~%  ~s~%"
     (hons-note note-stream "clearing normed objects.~%")
 
     (clrhash addr-ht)
-    (loop for i fixnum below sbits-len do
-          (setf (aref sbits i) 0))
+    (sbits-zero sbits)
 
     (when gc
       (hl-system-gc))
@@ -3509,17 +3612,14 @@ To avoid the following break and get only the above warning:~%  ~s~%"
 ; need not take responsibility for maintaining a correspondence between SBITS
 ; and the sbits field of a hons space.
 
-  (declare (type (simple-array bit (*)) sbits))
-  (let ((num-survivors 0)
-        (max-index     (length sbits)))
-    (declare (fixnum max-index)
-             (fixnum num-survivors))
-    (loop for i fixnum below max-index do
-          (when (= (aref sbits i) 1)
+  (let ((num-survivors 0))
+    (declare (fixnum num-survivors))
+    (loop for i fixnum below (sbits-length sbits) do
+          (when (= (sbits-ref sbits i) 1)
             (let ((object (hl-static-inverse-cons i)))
               (if object
                   (incf num-survivors)
-                (setf (aref sbits i) 0)))))
+                (sbits-set sbits i 0)))))
     num-survivors))
 
 #+static-hons
@@ -3538,21 +3638,18 @@ To avoid the following break and get only the above warning:~%  ~s~%"
 ;
 ; The STR-HT and OTHER-HT are only needed for address computations.
 
-  (declare (type (simple-array bit (*)) sbits)
-           (type hash-table addr-ht))
-  (let ((max-index (length sbits))
-        (num-dead-survivors 0))
-    (declare (fixnum max-index)
-             (fixnum num-dead-survivors))
-    (loop for i fixnum below max-index do
-          (when (= (aref sbits i) 1)
+  (declare (type hash-table addr-ht))
+  (let ((num-dead-survivors 0))
+    (declare (fixnum num-dead-survivors))
+    (loop for i fixnum below (sbits-length sbits) do
+          (when (= (sbits-ref sbits i) 1)
             ;; This object was previously normed.
             (let ((object (hl-static-inverse-cons i)))
               (cond ((not object)
                      ;; SBITS contained an inconsistent entry, meaning that
                      ;; some static cons was freed after SBITS was fixed up.
                      ;; We amend SBITS on the fly to account for this.
-                     (setf (aref sbits i) 0)
+                     (sbits-set sbits i 1)
                      (incf num-dead-survivors))
                     (t
                      (let* ((a      (car object))
@@ -3695,7 +3792,7 @@ To avoid the following break and get only the above warning:~%  ~s~%"
 
          (temp-faltable   (hl-faltable-init))
          (temp-addr-ht    (hl-mht :test #'eql))
-         (temp-sbits      (make-array 1 :element-type 'bit :initial-element 0))
+         (temp-sbits      (sbits-grow nil 1))
          (temp-persist-ht (hl-mht :test #'eq))
          (note-stream     (get-output-stream-from-channel *standard-co*)))
 
@@ -3740,11 +3837,11 @@ To avoid the following break and get only the above warning:~%  ~s~%"
 
     (hl-system-gc)
 
-    ;; Now we fix up the SBITS array by zeroing out any conses that got GC'd,
-    ;; and in the process we count how many survivors there are.  This will let
-    ;; us make a good decision about resizing the ADDR-HT.  If it would still
-    ;; be more than 75% full (or, really, whatever the
-    ;; *hl-addr-ht-resize-cutoff* says), we'll make the new table bigger.
+    ;; Now we fix up SBITS by zeroing out any conses that got GC'd, and in the
+    ;; process we count how many survivors there are.  This will let us make a
+    ;; good decision about resizing the ADDR-HT.  If it would still be more
+    ;; than 75% full (or, really, whatever the *hl-addr-ht-resize-cutoff*
+    ;; says), we'll make the new table bigger.
     (let* ((num-survivors (hl-fix-sbits-after-gc sbits))
            (pct-full      (/ num-survivors addr-ht-size))
            (addr-ht       nil))
@@ -3853,18 +3950,10 @@ To avoid the following break and get only the above warning:~%  ~s~%"
     (when (natp sbits-size)
       ;; Tricky.  Need to be sure that all 1-valued sbits are preserved.
       ;; We won't try to support shrinking sbits.
-      (let* ((sbits    (hl-hspace-sbits hs))
-             (new-len  (min (1- array-dimension-limit) sbits-size))
-             (curr-len (length sbits)))
-        (when (> sbits-size curr-len)
+      (let ((sbits (hl-hspace-sbits hs)))
+        (when (> sbits-size (sbits-length sbits))
           ;; User wants to grow sbits, so that's okay.
-          (let ((new-sbits (make-array new-len
-                                       :element-type 'bit
-                                       :initial-element 0)))
-            (declare (type (simple-array bit (*)) new-sbits))
-            (loop for i fixnum below curr-len do
-                  (setf (aref new-sbits i) (aref sbits i)))
-            (setf (hl-hspace-sbits hs) new-sbits))))))
+          (setf (hl-hspace-sbits hs) (sbits-grow sbits sbits-size))))))
 
   #-static-hons
   (let ((ctables (hl-hspace-ctables hs)))
@@ -3951,7 +4040,7 @@ To avoid the following break and get only the above warning:~%  ~s~%"
         (sbits    (hl-hspace-sbits hs))
         (other-ht (hl-hspace-other-ht hs)))
     (format t " - SBITS array length:    ~15:D~%"
-            (length sbits))
+            (sbits-length sbits))
     (format t "   New static cons index: ~15:D~%~%"
             (hl-staticp (hl-static-cons nil nil)))
     (format t " - ADDR-HT:      ~15:D count, ~15:D size (~5,2f% full)~%"

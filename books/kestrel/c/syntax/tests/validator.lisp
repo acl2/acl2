@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -23,6 +23,7 @@
 ;; LONG-BYTES is the number of bytes of longs (default 8).
 ;; LLONG-BYTES is the number of bytes of long longs (default 8).
 ;; PLAIN-CHAR-SIGNEDP is T if plain chars are signed, else NIL (the default).
+;; Optional COND may be over variables AST.
 
 (defmacro test-valid (input &key
                             gcc
@@ -30,7 +31,8 @@
                             int-bytes
                             long-bytes
                             llong-bytes
-                            plain-char-signedp)
+                            plain-char-signedp
+                            cond)
   `(assert-event
     (b* ((short-bytes (or ,short-bytes 2))
          (int-bytes (or ,int-bytes 4))
@@ -45,11 +47,11 @@
                                     (acl2::string=>nats ,input)
                                     ,gcc))
          ((mv erp2 ast) (dimb-transunit ast ,gcc))
-         ((mv erp3 &) (valid-transunit ast ,gcc ienv)))
+         ((mv erp3 ?ast &) (valid-transunit ast ,gcc ienv)))
       (cond (erp1 (cw "~%PARSER ERROR: ~@0~%" erp1))
             (erp2 (cw "~%DISAMBIGUATOR ERROR: ~@0~%" erp2))
             (erp3 (cw "~%VALIDATOR ERROR: ~@0~%" erp3))
-            (t t)))))
+            (t ,(or cond t))))))
 
 (defmacro test-valid-fail (input &key
                                  gcc
@@ -72,7 +74,7 @@
                                     (acl2::string=>nats ,input)
                                     ,gcc))
          ((mv erp2 ast) (dimb-transunit ast ,gcc))
-         ((mv erp3 &) (valid-transunit ast ,gcc ienv)))
+         ((mv erp3 & &) (valid-transunit ast ,gcc ienv)))
       (cond (erp1 (not (cw "~%PARSER ERROR: ~@0~%" erp1)))
             (erp2 (not (cw "~%DISAMBIGUATOR ERROR: ~@0~%" erp2)))
             (erp3 (not (cw "~%VALIDATOR ERROR: ~@0~%" erp3)))
@@ -108,12 +110,31 @@
  "void f() {}
 ")
 
+
+
 (test-valid
  "int x;
   void f() {
   int y = sizeof(x);
   }
-")
+"
+ :cond (b* ((edecls (transunit->decls ast))
+            (edecl (cadr edecls))
+            (fundef (extdecl-fundef->unwrap edecl))
+            (stmt (fundef->body fundef))
+            (items (stmt-compound->items stmt))
+            (item (car items))
+            (decl (block-item-decl->unwrap item))
+            (ideclors (decl-decl->init decl))
+            (ideclor (car ideclors))
+            (initer (initdeclor->init? ideclor))
+            (expr-sizeof (initer-single->expr initer))
+            (expr-xp (expr-unary->arg expr-sizeof))
+            (expr-x (expr-paren->inner expr-xp)))
+         (and (expr-case expr-x :ident)
+              (equal (expr-ident->info expr-x)
+                     (make-var-info :type (type-sint)
+                                    :linkage (linkage-external))))))
 
 (test-valid
  "typedef char x;

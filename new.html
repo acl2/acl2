@@ -9,12 +9,37 @@
 
 <ul>
 
+<LI><A HREF="#bugfix">Bug Fix</A></LI>
 <LI><A HREF="#changelog">Changelogs</A></LI>
 <LI><A HREF="#git">ACL2 sources availability between releases</A></LI>
 <LI><A HREF="#vstte-12">VSTTE 2012 Competition</A></LI>
 <LI><A HREF="#acl2-books">ACL2 Books Repository</A></LI>
 
 </ul>
+
+<A NAME="bugfix"><H2>Bug Fix</H2></A>
+
+<p>There was a soundness bug in Version 8.6 and earlier.  That bug is
+  unlikely to affect anyone, as it has probably been present for 30
+  years without anyone mentioning it to the ACL2 developers.  If you
+  want to fix it, then replace the definition of
+  function <tt>cl-set-to-implications</tt> with the definition below,
+  either in source file <tt>proof-builder-a.lisp</tt> before building
+  your ACL2 executable, or loaded into raw Lisp (so, preceded
+  by <tt>:q</tt> and followed by <tt>(lp)</tt>, or loaded into ACL2
+  (so, preceded by <tt>:redef+</tt> and followed by <tt>:redef-</tt>).
+  The last of these three options will however make it impossible to
+  certify a book in that session.</p>
+
+<pre>
+(defun cl-set-to-implications (cl-set)
+  (declare (xargs :mode :program))
+  (if (null cl-set)
+      nil
+      (cons (make-implication (dumb-negate-lit-lst (butlast (car cl-set) 1))
+                              (car (last (car cl-set))))
+            (cl-set-to-implications (cdr cl-set)))))
+</pre>
 
 <A NAME="changelog"><H2>Changelogs</H2></A>
 

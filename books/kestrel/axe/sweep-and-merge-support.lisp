@@ -34,8 +34,7 @@
 
 (in-theory (disable mv-nth))
 
-(local (in-theory (e/d (true-listp-when-nat-listp-rewrite)
-                       ())))
+(local (in-theory (enable true-listp-when-nat-listp-rewrite)))
 
 ;term must include at least one variable, so that returning nil can only mean failure
 (defund unify-term-with-any (term patterns)
@@ -94,38 +93,43 @@
     :rule-classes (:rewrite :type-prescription)
     :hints (("Goal" :in-theory (enable strip-equal-t)))))
 
+;; todo: check consisency with existing entries in the alist
 (defund extend-var-type-alist-with-hyp (hyp all-hyps var-type-alist)
   (declare (xargs :guard (and (pseudo-termp hyp)
                               (pseudo-term-listp all-hyps)
                               (test-case-type-alistp var-type-alist) ;strengthen?  not all constructs can appear
                               )))
   (let ((hyp (strip-equal-t hyp)))
-    (if (and (call-of 'unsigned-byte-p hyp)
-             (= 2 (len (fargs hyp)))
-             (quotep (second hyp))
-             (natp (unquote (second hyp))) ;should we require > 0 ?
-             (symbolp (third hyp)))
-        (acons-fast (third hyp) (make-bv-type (unquote (second hyp))) var-type-alist)
+    (if (and (call-of 'booleanp hyp)
+             (= 1 (len (fargs hyp)))
+             (symbolp (farg1 hyp)))
+        (acons-fast (farg1 hyp) (boolean-type) var-type-alist)
+      (if (and (call-of 'unsigned-byte-p hyp)
+               (= 2 (len (fargs hyp)))
+               (quotep (second hyp))
+               (natp (unquote (second hyp))) ;should we require > 0 ?
+               (symbolp (third hyp)))
+          (acons-fast (third hyp) (make-bv-type (unquote (second hyp))) var-type-alist)
       ;; an array type comes in three pieces: all-unsigned-byte-p, len, and true-listp
-      (let* ((alist (unify-term-with-any hyp '((all-unsigned-byte-p size var)
+        (let* ((alist (unify-term-with-any hyp '((all-unsigned-byte-p size var)
                                                ;(all-unsigned-byte-p size var)
-                                               )))
-             (size (lookup-eq 'size alist))
-             (var (lookup-eq 'var alist)))
-        (if (and alist
-                 (quotep size)
-                 (posp (unquote size)) ; todo: consider a size of 0
-                 (symbolp var)
-                 (or (member-equal `(true-listp ,var) all-hyps)
-                     (member-equal `(equal (true-listp ,var) 't) all-hyps))) ;would be better to always choose just one form?
-            (let ((len (find-len-from-hyp all-hyps var)))
-              (if (and len
-                       (<= 2 len))
-                  (acons-fast var
-                         (make-bv-array-type (unquote size) len) ;fixme what if the size is 0? ffffixme make sure we handle array widths right;  we round up to 1 if all elems are 0
-                         var-type-alist)
-                var-type-alist))
-          var-type-alist)))))
+                                                 )))
+               (size (lookup-eq 'size alist))
+               (var (lookup-eq 'var alist)))
+          (if (and alist
+                   (quotep size)
+                   (posp (unquote size)) ; todo: consider a size of 0
+                   (symbolp var)
+                   (or (member-equal `(true-listp ,var) all-hyps)
+                       (member-equal `(equal (true-listp ,var) 't) all-hyps))) ;would be better to always choose just one form?
+              (let ((len (find-len-from-hyp all-hyps var)))
+                (if (and len
+                         (<= 2 len))
+                    (acons-fast var
+                                (make-bv-array-type (unquote size) len) ;fixme what if the size is 0? ffffixme make sure we handle array widths right;  we round up to 1 if all elems are 0
+                                var-type-alist)
+                  var-type-alist))
+            var-type-alist))))))
 
 (defthm test-case-type-alistp-of-extend-var-type-alist-with-hyp
   (implies (test-case-type-alistp var-type-alist)
@@ -150,6 +154,11 @@
   (implies (test-case-type-alistp var-type-alist)
            (test-case-type-alistp (make-var-type-alist-from-hyps-aux hyps all-hyps var-type-alist)))
   :hints (("Goal" :in-theory (enable make-var-type-alist-from-hyps-aux))))
+
+;; (defthm var-type-alistp-of-make-var-type-alist-from-hyps-aux
+;;   (implies (var-type-alistp var-type-alist)
+;;            (var-type-alistp (make-var-type-alist-from-hyps-aux hyps all-hyps var-type-alist)))
+;;   :hints (("Goal" :in-theory (enable make-var-type-alist-from-hyps-aux))))
 
 ;; use this more?!
 ;ffixme what about more complicated things, like bounds on (or low bits of) the length of an array?

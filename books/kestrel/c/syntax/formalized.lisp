@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,7 +10,6 @@
 
 (in-package "C$")
 
-(include-book "abstract-syntax-operations")
 (include-book "unambiguity")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
@@ -443,9 +442,9 @@
      have no designations
      and be a single supported pure expression."))
   (b* (((desiniter desiniter) desiniter))
-    (and (endp desiniter.design)
-         (initer-case desiniter.init :single)
-         (expr-pure-formalp (initer-single->expr desiniter.init))))
+    (and (endp desiniter.designors)
+         (initer-case desiniter.initer :single)
+         (expr-pure-formalp (initer-single->expr desiniter.initer))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -533,7 +532,7 @@
     "The direct declarator part must be supported,
      and we can have any number of supported pointers."))
   (and (pointers-formalp (declor->pointers declor))
-       (dirdeclor-block-formalp (declor->decl declor)))
+       (dirdeclor-block-formalp (declor->direct declor)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -721,7 +720,7 @@
      We support any number of pointers, but without type qualifiers."))
   (b* (((declor declor) declor))
     (and (pointers-formalp declor.pointers)
-         (dirdeclor-obj-formalp declor.decl)))
+         (dirdeclor-obj-formalp declor.direct)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -969,7 +968,7 @@
      And the direct declarator must be supported."))
   (b* (((declor declor) declor))
     (and (pointers-formalp declor.pointers)
-         (dirdeclor-fun-formalp declor.decl)))
+         (dirdeclor-fun-formalp declor.direct)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

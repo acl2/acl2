@@ -44,9 +44,9 @@
 ;; ======================================================================
 
 (include-book "../../decoding-and-spec-utils"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:undef-flg))
 (include-book "base"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:undef-flg))
 (include-book "centaur/bitops/merge" :dir :system)
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
@@ -317,6 +317,7 @@
        :modr/m t
 
        :returns (x86 x86p :hyp (x86p x86))
+       :guard (member opcode ',(strip-cdrs width-opcode-alist))
        :guard-hints (("Goal" :in-theory (disable unsigned-byte-p)))
 
        :body
@@ -379,16 +380,14 @@
                     (loghead 64 src2) ;; Memory operand
                     src2)) ;; Register operand
 
-            (result (case opcode
-                      (,(cdr (assoc 16 width-opcode-alist))
-                        (,name (* 8 operand-size) 16 src1 src2))
-                      (,(cdr (assoc 32 width-opcode-alist))
-                        (,name (* 8 operand-size) 32 src1 src2))
-                      ,@(if (assoc 64 width-opcode-alist)
-                          `((,(cdr (assoc 64 width-opcode-alist))
-                              (,name (* 8 operand-size) 64 src1 src2)))
-                          nil)
-                      (t 0))) ; unreachable
+            (el-width (car (rassoc opcode ',width-opcode-alist)))
+            ;; Clamp to el-width because src2 may be huge; it comes from an xmm
+            ;; reg, so it may be up to 128-bits long. This may cause the host
+            ;; lisp to throw an error
+            (src2 (if (> src2 el-width)
+                    el-width
+                    src2))
+            (result (,name (* 8 operand-size) el-width src1 src2))
 
             ;; Store the result into the destination register.
             (x86 (!xmmi-size operand-size src1/dst-index result x86))
@@ -412,6 +411,7 @@
        :modr/m t
 
        :returns (x86 x86p :hyp (x86p x86))
+       :guard (member opcode '(#x71 #x72 #x73))
        :guard-hints (("Goal" :in-theory (e/d (rme-size-of-1-to-rme08)
                                              (unsigned-byte-p))))
 
@@ -421,11 +421,11 @@
             (operand-size 16)
 
             ;; The first source operand (Operand 1 in the Intel manual)
-            ;; is the XMM register specified in Reg.
+            ;; is the XMM register specified in r/m.
             ;; This is also the destination operand,
             ;; and thus we obtain the index for later use.
             ((the (unsigned-byte 4) src1/dst-index)
-             (reg-index reg rex-byte #.*r*))
+             (reg-index r/m rex-byte #.*b*))
             ((the (unsigned-byte 128) src1)
              (xmmi-size operand-size src1/dst-index x86))
 
@@ -450,13 +450,11 @@
             ;; Calculate the result.
             ;; Note: these opcodes are always the same; the reg field specifies
             ;; which type of shift and that's handled at decode time
-            (result (case opcode
-                      (#x71 (,name (* 8 operand-size) 16 src1 imm))
-                      (#x72 (,name (* 8 operand-size) 32 src1 imm))
-                      ,@(if (assoc 64 width-opcode-alist)
-                          `((#x73 (,name (* 8 operand-size) 64 src1 imm)))
-                          nil)
-                      (t 0))) ; unreachable
+            (el-width (case opcode
+                        (#x71 16)
+                        (#x72 32)
+                        (#x73 64)))
+            (result (,name (* 8 operand-size) el-width src1 imm))
 
             ;; Store the result into the destination register.
             (x86 (!xmmi-size operand-size src1/dst-index result x86))

@@ -1,7 +1,7 @@
 ; BV Library: theorems about logtail
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -20,6 +20,7 @@
 (local (include-book "../arithmetic-light/divide"))
 (local (include-book "../arithmetic-light/times"))
 (local (include-book "../arithmetic-light/plus"))
+(local (include-book "../arithmetic-light/expt"))
 (local (include-book "../arithmetic-light/expt2"))
 (local (include-book "../arithmetic-light/mod"))
 (local (include-book "../arithmetic-light/floor-and-expt"))
@@ -95,11 +96,6 @@
            (equal (floor (logtail m x) (expt 2 n))
                   (floor x (expt 2 (+ m n)))))
   :hints (("Goal" :in-theory (enable logtail expt-of-+))))
-
-(defthm logtail-0-i-better
-  (equal (logtail 0 i)
-         (ifix i))
-  :hints (("Goal" :in-theory (enable logtail))))
 
 (defthm logtail-of-minus-one
   (implies (natp n)
@@ -379,3 +375,13 @@
            (equal (logtail pos (floor x (expt 2 n)))
                   (logtail (+ pos n) x)))
   :hints (("Goal" :in-theory (enable logtail expt-of-+))))
+
+;rename
+(defthm logtail-hack77
+  (implies (posp size)
+           (equal (logtail (+ -1 size) (- (expt 2 size)))
+                  -2))
+  :hints (("Goal" :in-theory (enable logtail
+                                     floor-when-integerp-of-quotient
+                                     *-of-expt-and-expt-of-1minus
+                                     expt-of-+))))

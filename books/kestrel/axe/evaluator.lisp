@@ -22,8 +22,6 @@
 
 ;try to include less (but we need the functions to eval them)
 (include-book "ihs/basic-definitions" :dir :system) ; for logmaskp
-(include-book "kestrel/world-light/function-symbolsp" :dir :system)
-(include-book "kestrel/world-light/fn-definedp" :dir :system)
 (include-book "kestrel/utilities/terms" :dir :system) ;for GET-FNS-IN-TERM
 (include-book "kestrel/arithmetic-light/ceiling-of-lg" :dir :system)
 (include-book "kestrel/booleans/booland" :dir :system)
@@ -62,7 +60,7 @@
 (include-book "unguarded-primitives")
 (include-book "unguarded-built-ins")
 (include-book "unguarded-defuns")
-(include-book "safe-unquote")
+(include-book "supporting-functions")
 (include-book "interpreted-function-alists") ; for make-interpreted-function-alist
 (include-book "print-constant") ; drop from the evaluator?
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
@@ -546,7 +544,6 @@
 ;ffffixme could lead to crashes?
 (skip-proofs
 (verify-guards apply-axe-evaluator
-  :otf-flg t
   :hints (("Goal" :in-theory (e/d (TRUE-LIST-FIX
                                    true-listp-of-cadr-of-assoc-equal-when-interpreted-function-alistp
                                    symbol-listp-of-cadr-of-assoc-equal-when-interpreted-function-alistp)
@@ -565,177 +562,8 @@
 ;; ;;BBOZO, yikes i think the guards might sometimes fail to be satisfied, since we sometimes evaluate both branches of an if...
 ;; ;so the skip-proofs can lead to bad things...
 
-;; ;fixme is this the complete list?
-;; ;fixme does this list exist somewhere else?
-;; (defconst *acl2-primitives*
-;;   '(;;these don't have guards:
-;;     equal stringp characterp acl2-numberp integerp rationalp complex-rationalp consp symbolp if cons
-;;           ;;these do have guards:
-;;           binary-+ binary-* < unary-- unary-/ car cdr realpart imagpart complex numerator denominator char-code code-char symbol-package-name symbol-name coerce bad-atom<= pkg-witness pkg-imports intern-in-package-of-symbol))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(mutual-recursion
- ;; This is dag-aware
- (defund get-called-fns-aux (term acc)
-   (declare (xargs :guard (and (pseudo-termp term)
-                               (symbol-listp acc))
-                   :verify-guards nil ;done below
-                   ))
-   (if (variablep term)
-       acc
-     (let* ((fn (ffn-symb term)))
-       (if (eq 'quote fn)
-           acc
-         (if (consp fn) ;tests for lambda
-             (get-called-fns-aux (third fn) (get-called-fns-aux-lst (fargs term) acc))
-           (if (and (eq 'dag-val-with-axe-evaluator fn)
-                    (quotep (third (fargs term))) ;think about this
-                    (symbol-alistp (unquote (third (fargs term)))))
-               ;check for consistent definitions!  ffixme
-               (union-equal (strip-cars (safe-unquote (third (fargs term)))) acc)
-             (get-called-fns-aux-lst (fargs term) (add-to-set-eq fn acc))))))))
-
- ;; This is dag-aware
- (defund get-called-fns-aux-lst (terms acc)
-   (declare (xargs :guard (and (pseudo-term-listp terms)
-                               (symbol-listp acc))))
-   (if (endp terms)
-       acc
-     (get-called-fns-aux (car terms) (get-called-fns-aux-lst (cdr terms) acc)))))
-
-(make-flag get-called-fns-aux)
-
-;todo: see GET-FNS-IN-TERM and all-fnnames
-(defthm-flag-get-called-fns-aux
-  (defthm symbol-listp-of-get-called-fns-aux
-    (implies (and (pseudo-termp term)
-                  (symbol-listp acc))
-             (symbol-listp (get-called-fns-aux term acc)))
-    :flag get-called-fns-aux)
-  (defthm symbol-listp-of-get-called-fns-aux-lst
-    (implies (and (pseudo-term-listp terms)
-                  (symbol-listp acc))
-             (symbol-listp (get-called-fns-aux-lst terms acc)))
-    :flag get-called-fns-aux-lst)
-  :hints (("Goal" :in-theory (enable get-called-fns-aux
-                                     get-called-fns-aux-lst))))
-
-(verify-guards get-called-fns-aux :hints (("Goal" :expand ((pseudo-termp term)))))
-
-(defund get-called-fns (term)
-  (declare (xargs :guard (pseudo-termp term)))
-  (get-called-fns-aux term nil))
-
-(defthm symbol-listp-of-get-called-fns
-  (implies (pseudo-termp term)
-           (symbol-listp (get-called-fns term)))
-  :hints (("Goal" :in-theory (enable get-called-fns))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;ffixme what about primitives and recursion and mutual recursion and constrained functions?
-;TODO Would be nice to track the call chain so we can report it in the error message.
-(defund get-immediate-supporting-fns (fn-name throw-errorp wrld)
-  (declare (xargs :guard (and (symbolp fn-name)
-                              (plist-worldp wrld)
-                              (function-symbolp fn-name wrld))))
-  (if (member-eq fn-name *acl2-primitives*)
-      (hard-error 'get-immediate-supporting-fns "Trying to get the body of the ACL2 primitive ~x0.  Consider adding it to the base evaluator.  Or investigate why a function that calls this function (transitively) is suddenly appearing."
-                  (acons #\0 fn-name nil))
-    (if (not (fn-definedp fn-name wrld))
-        ;; an undefined function has no supporters
-        (prog2$ (cw "(Note: Undefined function ~x0 is present in DAG.)~%" fn-name)
-                nil)
-      (let* ((body (fn-body fn-name throw-errorp wrld))
-             (called-fns (get-called-fns body)))
-        (if (not (function-symbolsp called-fns wrld))
-            (prog2$ (er hard? 'get-immediate-supporting-fns "Unknown function(s) among those returned by get-called-fns: ~x0." called-fns)
-                    nil)
-          called-fns)))))
-
-(defthm symbol-listp-of-get-immediate-supporting-fns
-  (symbol-listp (get-immediate-supporting-fns fn-name throw-errorp wrld))
-  :hints (("Goal" :in-theory (enable get-immediate-supporting-fns))))
-
-(defthm function-symbolsp-of-get-immediate-supporting-fns
-  (function-symbolsp (get-immediate-supporting-fns fn-name throw-errorp wrld) wrld)
-  :hints (("Goal" :in-theory (enable get-immediate-supporting-fns))))
-
-;this is a worklist algorithm
-(defund get-all-supporting-fns-aux (count ;for termination
-                                    fns   ;the worklist
-                                    done-list
-                                    throw-errorp acc wrld)
-  (declare (xargs :guard (and (natp count)
-                              (symbol-listp fns)
-                              (symbol-listp done-list)
-                              (plist-worldp wrld)
-                              (function-symbolsp fns wrld)
-                              (symbol-listp acc))))
-  (if (zp count)
-      (er hard? 'get-all-supporting-fns-aux "limit reached.")
-    (if (endp fns)
-        acc
-      (let* ((fn (first fns)))
-        (if (or (member-eq fn done-list)
-                (eq fn 'bad-atom<=) ;new: Perhaps this can never actually be executed (we could still add it to the evaluator...)
-                )
-            (get-all-supporting-fns-aux (+ -1 count) (rest fns) done-list throw-errorp acc wrld)
-          (get-all-supporting-fns-aux (+ -1 count)
-                                      (append (get-immediate-supporting-fns fn throw-errorp wrld) (rest fns))
-                                      (cons fn done-list)
-                                      throw-errorp
-                                      (add-to-set-eq fn acc)
-                                      wrld))))))
-
-(defthm symbol-listp-of-get-all-supporting-fns-aux
-  (implies (and (symbol-listp acc)
-                (symbol-listp fn-names))
-           (symbol-listp (get-all-supporting-fns-aux count fn-names fn-names-to-stop-at throw-errorp acc wrld)))
-  :hints (("Goal" :in-theory (enable get-all-supporting-fns-aux))))
-
-;; ;this includes the function itself
-;; (defun get-all-supporting-fns (fn-name wrld)
-;;   (get-all-supporting-fns-aux (list fn-name) nil nil wrld))
-
-;; (defun get-non-built-in-supporting-fns (fn-name wrld)
-;;   (set-difference-eq (get-all-supporting-fns fn-name wrld) *acl2-primitives*))
-
-;; (defun get-all-supporting-fns-list (fn-names wrld)
-;;   (get-all-supporting-fns-aux fn-names nil nil wrld))
-
-;; ;ffixme this will suck in stuff below the bv/array fns - redo the above code to stop when it hits such a fn!
-;; (defun get-non-built-in-supporting-fns-list (fn-names wrld)
-;;   (set-difference-eq (get-all-supporting-fns-list fn-names wrld) *acl2-primitives*))
-
-;will include fn-names themselves, if they are not built-ins.
-;now throws an error if any of the fns are supported by acl2 primitives not in *axe-evaluator-functions*
-;ffffixme what about embedded dags?!
-;todo: exclude the evaluator functions themselves?
-(defund get-non-built-in-supporting-fns-list (fn-names wrld)
-  (declare (xargs :guard (and (symbol-listp fn-names)
-                              (plist-worldp wrld)
-                              (function-symbolsp fn-names wrld))))
-  (get-all-supporting-fns-aux 1000000000
-                              fn-names
-                              *axe-evaluator-functions* ;(append *acl2-primitives* *axe-evaluator-functions*) ;stops when it hits one of these..
-                              t                           ;throw-errorp
-                              nil ;empty-acc
-                              wrld))
-
-(defthmd symbol-listp-of-get-non-built-in-supporting-fns-list
-  (implies (symbol-listp fn-names)
-           (symbol-listp (get-non-built-in-supporting-fns-list fn-names wrld)))
-  :hints (("Goal" :in-theory (enable get-non-built-in-supporting-fns-list))))
-
-;; (defun get-non-built-in-supporting-fns-list-tolerant (fn-names wrld)
-;;   (declare (xargs :stobjs state :verify-guards nil))
-;;   (get-all-supporting-fns-aux fn-names
-;;                               (append *acl2-primitives* *axe-evaluator-functions*) ;stops when it hits one of these..
-;;                               nil ;throw-errorp
-;;                               nil
-;;                               wrld))
 
 ;; ;hiding the bvplus should cause it to get sucked into the dag
 ;; (defthm hide-bvplus-constant-dag
@@ -859,7 +687,9 @@
           (dag-fns (dag-fns dag)))
       (if (not (function-symbolsp dag-fns wrld))
           (er hard? 'embed-dag-in-term "Some functions are not in the world: ~X01." dag-fns nil)
-        (let* ((supporting-fns (get-non-built-in-supporting-fns-list dag-fns wrld))
+        (let* ((supporting-fns (get-non-built-in-supporting-fns-list dag-fns
+                                                                     *axe-evaluator-functions* ;(append *acl2-primitives* *axe-evaluator-functions*) ;stops when it hits one of these..
+                                                                     wrld))
                (supporting-interpreted-function-alist (make-interpreted-function-alist supporting-fns wrld)))
           `(dag-val-with-axe-evaluator ',dag
                                        ,(make-acons-nest dag-vars)

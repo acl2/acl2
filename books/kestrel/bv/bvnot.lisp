@@ -14,6 +14,7 @@
 (include-book "getbit")
 (include-book "lognot")
 (include-book "unsigned-byte-p")
+(local (include-book "slice"))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
@@ -51,7 +52,7 @@
   (implies (not (natp size))
            (equal (bvnot size x)
                   0))
-  :hints (("Goal" :in-theory (e/d (bvnot) nil))))
+  :hints (("Goal" :in-theory (enable bvnot))))
 
 (defthm bvnot-when-size-is-not-integerp
   (implies (not (integerp size))
@@ -124,7 +125,7 @@
                              ;LOGTAIL-BVCHOP
                              BVCHOP-OF-LOGTAIL-BECOMES-SLICE)))))
 
-;rename and gen
+;rename and gen the 1 and eventually the bvnot
 (defthm getbit-1-of-bvnot-1
   (equal (getbit 1 (bvnot 1 x))
          0)
@@ -207,3 +208,10 @@
            (equal (bvnot size (* (expt 2 size) x))
                   (+ -1 (expt 2 size))))
   :hints (("Goal" :in-theory (enable bvnot lognot BVCHOP-OF-SUM-CASES))))
+
+;disable outside bv library?
+(defthm bvchop-of-lognot-all-ones
+  (implies (natp n)
+           (equal (bvchop n (lognot (+ -1 (expt 2 n))))
+                  0))
+  :hints (("Goal" :in-theory (enable lognot))))

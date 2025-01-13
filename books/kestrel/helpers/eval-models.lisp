@@ -1,6 +1,6 @@
 ; A tool to evaluate the proof-advice-generating models
 ;
-; Copyright (C) 2022-2023 Kestrel Institute
+; Copyright (C) 2022-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -289,7 +289,7 @@
 
 (local
  (defthm natp-of-mv-nth-0-of-union-model-results
-   (implies (and (mv-nth 0 (union-model-results model-results successful-rec-num num-recs-produced)) ; not nill
+   (implies (and (mv-nth 0 (union-model-results model-results successful-rec-num num-recs-produced)) ; not nil
                  (or (null successful-rec-num) (natp successful-rec-num))
                  (model-result-listp model-results))
             (natp (mv-nth 0 (union-model-results model-results successful-rec-num num-recs-produced))))

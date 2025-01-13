@@ -44,7 +44,8 @@
                            (:rewrite
                             acl2-number-listp-of-cdr-when-acl2-number-listp)
                            (:rewrite
-                            fat32-masked-entry-list-p-when-not-consp))))
+                            fat32-masked-entry-list-p-when-not-consp)
+                           collapse-hifat-place-file-lemma-13)))
 
 (defund
   abs-pwrit1
@@ -863,7 +864,6 @@
                               (fat-st-p st)
                               (consp (assoc-equal 0 frame))
                               (no-duplicatesp-equal (strip-cars frame)))
-                  :guard-debug t
                   :verify-guards nil))
   (b*
       (((when (atom syscall-sym-list)) (mv frame st))

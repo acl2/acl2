@@ -43,8 +43,12 @@
 
 (in-package "X86ISA")
 
-(include-book "other-non-det"
-              :ttags (:include-raw :undef-flg :syscall-exec :other-non-det))
+(include-book "std/util/def-bound-theorems" :dir :system)
+(include-book "state")
+(include-book "application-level-memory")
+(include-book "segmentation")
+(include-book "top-level-memory")
+(include-book "../utils/segmentation-structures")
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (in-theory (e/d () (mv-nth)))
@@ -1450,10 +1454,7 @@ the @('fault') field instead.</li>
    :bound 80
    :concl (logior n16 (ash n64 16))
    :gen-type t
-   :gen-linear t
-   :hints-l (("Goal"
-              :do-not '(preprocess)
-              :in-theory (e/d () (unsigned-byte-p))))))
+   :gen-linear t))
 
 (local
  (defthm-unsigned-byte-p usb-48-of-16-and-32
@@ -1462,10 +1463,7 @@ the @('fault') field instead.</li>
    :bound 48
    :concl (logior n16 (ash n32 16))
    :gen-type t
-   :gen-linear t
-   :hints-l (("Goal"
-              :do-not '(preprocess)
-              :in-theory (e/d () (unsigned-byte-p))))))
+   :gen-linear t))
 
 (defsection read-operands-and-write-results
 
@@ -2015,6 +2013,7 @@ reference made from privilege level 3.</blockquote>"
         (vex         'nil)
         (evex        'nil)
         (modr/m      'nil)
+        (additional-args 'nil)
         body parents short long
         inline enabled guard-debug guard
         guard-hints (verify-guards 't) prepwork thms
@@ -2022,7 +2021,8 @@ reference made from privilege level 3.</blockquote>"
 
   (if body
       `(define ,name
-         (,@(and operation `((operation :type (integer 0 38))))
+         (,@additional-args
+          ,@(and operation `((operation :type (integer 0 38))))
           ,@(and sp/dp     `((sp/dp     :type (integer 0 1))))
           ,@(and dp-to-sp  `((dp-to-sp  :type (integer 0 1))))
           ,@(and high/low  `((high/low  :type (integer 0 1))))

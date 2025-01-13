@@ -20,6 +20,7 @@
 (include-book "bitnot")
 (include-book "bitor")
 (include-book "bvcat")
+(include-book "bvif")
 (local (include-book "logand-b"))
 (local (include-book "logior-b"))
 (local (include-book "logxor-b"))
@@ -397,16 +398,17 @@
          (bvxor 1 (bvnot 1 x) y))
   :hints (("Goal" :in-theory (enable bitxor-split))))
 
-(defthm bvnot-of-bvxor-1-back
+;gen the size?
+(defthm bvxor-of-bvnot-1
    (equal (bvxor 1 (bvnot 1 x) y)
           (bvnot 1 (bvxor 1 x y)))
    :hints (("Goal" :use bvnot-of-bvxor-1)))
 
-(defthm bvnot-of-bvxor-1-back-alt
+(defthm bvxor-of-bvnot-2
   (equal (bvxor 1 y (bvnot 1 x))
          (bvnot 1 (bvxor 1 y x)))
-  :hints (("Goal" :use bvnot-of-bvxor-1-back
-           :in-theory (disable bvnot-of-bvxor-1-back))))
+  :hints (("Goal" :use bvxor-of-bvnot-1
+           :in-theory (disable bvxor-of-bvnot-1))))
 
 ;(local (in-theory (enable BITXOR-COMMUTATIVE BITXOR-COMMUTATIVE-2))) ;hope these don't loop
 
@@ -428,13 +430,7 @@
   (equal (bvxor 1 (bvnot 1 x) (bvxor 1 x y))
          (bvnot 1 y)))
 
-(defthm bvxor-of-bvnot-1
-  (equal (bvxor 1 (bvnot 1 x) y)
-         (bvnot 1 (bvxor 1 x y))))
 
-(defthm bvxor-of-bvnot-2
-  (equal (bvxor 1 y (bvnot 1 x))
-         (bvnot 1 (bvxor 1 y x))))
 
 (defthm bvxor-of-bvxor-tighten
   (implies (and (< size1 size2)
@@ -507,12 +503,6 @@
    (equal (bitxor (bvnot 1 x) x)
           1)
    :hints (("Goal" :in-theory (enable bitnot))))
-
-;bozo gen the 1 and eventually the bvnot
-(defthm getbit-of-bvnot-too-high
-  (equal (getbit 1 (bvnot 1 x))
-         0)
-  :hints (("Goal" :in-theory (enable bitnot))))
 
 (defthm slice-of-bitand-too-high
   (implies (and (<= 1 low)
@@ -711,3 +701,19 @@
                                 (slice (+ -1 size) 8 x))
                          8 0)))
   :hints (("Goal" :in-theory (enable bvcat-equal-rewrite))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;todo: alt versions with the equality reordered:
+
+(defthm bvif-equal-0-usb1
+  (implies (unsigned-byte-p 1 x)
+           (equal (bvif 1 (equal 0 x) 1 0)
+                  (bvnot 1 x)))
+  :hints (("Goal" :in-theory (enable bvif myif))))
+
+(defthm bvif-equal-1-usb1-2
+  (implies (unsigned-byte-p 1 x)
+           (equal (bvif 1 (equal 1 x) 0 1)
+                  (bvnot 1 x)))
+  :hints (("Goal" :in-theory (enable bvif myif))))

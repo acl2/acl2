@@ -38,8 +38,7 @@
 
 (in-package "X86ISA")
 
-(include-book "syscalls"
-              :ttags (:include-raw :undef-flg :syscall-exec))
+(include-book "register-readers-and-writers" :ttags (:undef-flg))
 
 ;; ======================================================================
 

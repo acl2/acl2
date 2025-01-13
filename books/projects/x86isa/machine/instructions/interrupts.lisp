@@ -41,7 +41,7 @@
 ;; ======================================================================
 
 (include-book "../decoding-and-spec-utils"
-	      :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:undef-flg))
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 
@@ -74,12 +74,12 @@
 
 (local
  (defthm integerp-of-xr-rflags
-     (implies (x86p x86)              
+     (implies (x86p x86)
               (integerp (xr :rflags i x86)))
    :hints (("Goal"
             :use ((:instance elem-p-of-xr-rflags (x86$a x86)))
             :in-theory (e/d () (elem-p-of-xr-rflags))))))
-               
+
 
 (def-inst x86-cli
 
@@ -144,7 +144,7 @@
                ((when flg) (!!ms-fresh :rime64 flg))
                ((mv flg new-ss x86) (rme16 proc-mode new-ss-addr #.*ss* :r check-alignment? x86))
                ((when flg) (!!ms-fresh :rme16 flg))
-               
+
                ((unless (canonical-address-p new-rip))
                 (!!fault-fresh :gp 0 :non-canonical-iret-rip new-rip)) ;; #GP(0)
                ((when (equal new-cs 0)) (!!fault-fresh :gp new-cs :null-iret-cs new-cs)) ;; #GP(new-cs)

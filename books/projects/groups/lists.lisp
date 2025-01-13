@@ -387,7 +387,7 @@
 	   (equal (len l) (len m))))
 
 ;; We shall derive an equivalent formulation of permutationp, based on the following function,
-;; which counts the numnber of occurrences of x in l:
+;; which counts the number of occurrences of x in l:
 
 (defun hits (x l)
   (if (consp l)

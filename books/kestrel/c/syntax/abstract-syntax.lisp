@@ -35,7 +35,7 @@
      For now we cover all the constructs after preprocessing,
      but we plan to add some preprocessing constructs.")
    (xdoc::p
-    "We also include fixtypes for certain GCC extensions,
+    "We also include certain GCC extensions,
      as mentioned in @(see syntax-for-tools).")
    (xdoc::p
     "According to the rationale explained in @(see syntax-for-tools),
@@ -44,7 +44,8 @@
      the @('0x') and @('0X') hexadecimal prefixes.")
    (xdoc::p
     "We try and pick short yet clear names for these fixtypes,
-     so that tools' code manipulating them can be a bit more more compact.
+     so that code that manipulates these fixtypes
+     can be a bit more more compact.
      While the grammar in [C]
      uses the `hexadecimal' and `binary' qualifications
      for certain hexadecimal and binary entities
@@ -113,9 +114,24 @@
     "Unlike some approaches suggested in the above resources,
      we prefer to defer the disambiguation of these constructs after parsing,
      so that parsing is purely syntactical,
-     without the need for any semantic analysis during parsing.
-     The exact characterization of these ambiguous constructs
-     is still work in progress; it is currently partial."))
+     without the need for any semantic analysis during parsing.")
+   (xdoc::p
+    "Our abstract syntax also includes some information
+     that is initially absent (after "
+    (xdoc::seetopic "parser" "parsing")
+    " and "
+    (xdoc::seetopic "disambiguator" "disambiguation")
+    ") and that is calculated by "
+    (xdoc::seetopic "validator" "validation")
+    ". This information is stored in the abstract syntax for easy access,
+     e.g. access by tools to transform the abstract syntax.")
+   (xdoc::p
+    "This additional information can be also used, in the future,
+     for other purposes than storing results from validation.
+     This information in our fixtypes is untyped,
+     which, in ACL2, can be regarded as analogous to
+     using polymorphic types for the abstract syntax,
+     parameterized over the type of the additional information."))
   :order-subtopics t
   :default-parent t)
 
@@ -1333,6 +1349,11 @@
        This means that our fixtypes are a bit more general,
        but we can use separate predicates to enforce restrictions.")
      (xdoc::p
+      "Identifiers may be accompanied by some additional information,
+       such as types calculated during validation.
+       This is an instance of the additional information
+       discussed in @(tsee abstract-syntax).")
+     (xdoc::p
       "In order to capture
        possibly redundant parenthesization from the concrete syntax,
        we include, in this fixtype, a case @(':paren')
@@ -1563,7 +1584,8 @@
       "As a GCC extesntion, we include
        expressions preceded by @('__extension__').
        See our ABNF grammar."))
-    (:ident ((ident ident)))
+    (:ident ((ident ident)
+             (info any)))
     (:const ((const const)))
     (:string ((strings stringlit-list)))
     (:paren ((inner expr)))
@@ -1949,7 +1971,7 @@
   (fty::deftagsum typequal/attribspec
     :parents (abstract-syntax exprs/decls/stmts)
     :short "Fixtype of type qualifiers and attribute specifiers."
-    (:tyqual ((unwrap type-qual)))
+    (:type ((unwrap type-qual)))
     (:attrib ((unwrap attrib-spec)))
     :pred typequal/attribspec-p
     :measure (two-nats-measure (acl2-count x) 0))
@@ -2035,8 +2057,8 @@
        where the empty list means that the designation is absent,
        while a non-empty list captures the designation,
        which has a non-empty list of designators."))
-    ((design designor-list)
-     (init initer))
+    ((designors designor-list)
+     (initer initer))
     :parents (abstract-syntax exprs/decls/stmts)
     :pred desiniterp
     :measure (two-nats-measure (acl2-count x) 2))
@@ -2107,7 +2129,7 @@
        the type qualifiers and attribute specifiers
        that immediately follow the star."))
     ((pointers typequal/attribspec-list-list)
-     (decl dirdeclor))
+     (direct dirdeclor))
     :pred declorp
     :measure (two-nats-measure (acl2-count x) 1))
 
@@ -3060,6 +3082,17 @@
   (in-theory (disable (:e label-default)
                       (:e stmt-continue)
                       (:e stmt-break))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption type-spec-option
+  type-spec
+  :short "Fixtype of optional type specifiers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Type specifiers are defined in @(tsee type-spec)."))
+  :pred type-spec-optionp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

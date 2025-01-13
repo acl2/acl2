@@ -23,9 +23,14 @@
 ;; TODO: Add a bunch of x86 ISA stuff here
 (defconst *symbols-from-x86isa*
   '(x86isa::x86 ;the stobj name
-    x86isa::memi$inline
+    x86isa::x86p
+    x86isa::x86$ap
+
     x86isa::memi
     x86isa::!memi
+    x86isa::memi$a
+    x86isa::!memi$a
+
     x86isa::n48$inline
     x86isa::n48
     x86isa::app-view$inline
@@ -39,8 +44,6 @@
     x86isa::rb-1
     x86isa::wb-1
 
-    x86isa::x86p
-    x86isa::x86$ap
 
     x86isa::rvm08 ;todo more like this
     x86isa::wvm08
@@ -50,9 +53,6 @@
     x86isa::separate
     x86isa::program-at
     x86isa::byte-listp ;todo: compare with unsigned-byte-p-list
-    x86isa::memi*
-    x86isa::gz
-    x86isa::sz
     x86isa::alignment-checking-enabled-p
     x86isa::get-prefixes
     x86isa::!ms
@@ -103,7 +103,30 @@
     x86isa::*r14*
     x86isa::*r15*
 
+    ;; See books/projects/x86isa/utils/basic-structs.lisp
     x86isa::2bits-fix
+    x86isa::3bits-fix
+    x86isa::4bits-fix
+    x86isa::5bits-fix
+    x86isa::6bits-fix
+    x86isa::7bits-fix
+    x86isa::8bits-fix
+    x86isa::10bits-fix
+    x86isa::11bits-fix
+    x86isa::12bits-fix
+    x86isa::13bits-fix
+    x86isa::16bits-fix
+    x86isa::17bits-fix
+    x86isa::19bits-fix
+    x86isa::22bits-fix
+    x86isa::24bits-fix
+    x86isa::31bits-fix
+    x86isa::32bits-fix
+    x86isa::36bits-fix
+    x86isa::40bits-fix
+    x86isa::45bits-fix
+    x86isa::54bits-fix
+    x86isa::64bits-fix
 
     ;; flags:
     x86isa::*flg-names*
@@ -634,12 +657,97 @@
     x86isa::modr/m->mod$inline
     x86isa::modr/m->r/m$inline
 
+    ;; this list is from (acl2::get-ruleset 'x86isa::nw-defs (w state)):
+    x86isa::n01
+    x86isa::n02
+    x86isa::n03
+    x86isa::n04
+    x86isa::n05
+    x86isa::n06
+    x86isa::n08
+    x86isa::n09
+    x86isa::n11
+    x86isa::n12
+    x86isa::n16
+    x86isa::n17
+    x86isa::n18
+    x86isa::n20
+    x86isa::n21
+    x86isa::n22
+    x86isa::n24
+    x86isa::n25
+    x86isa::n26
+    x86isa::n27
+    x86isa::n28
+    x86isa::n30
+    x86isa::n32
+    x86isa::n33
+    x86isa::n35
+    x86isa::n43
+    x86isa::n44
+    x86isa::n45
+    x86isa::n47
+    x86isa::n48
+    x86isa::n49
+    x86isa::n51
+    x86isa::n52
+    x86isa::n55
+    x86isa::n59
+    x86isa::n60
+    x86isa::n64
+    x86isa::n65
+    x86isa::n80
+    x86isa::n112
+    x86isa::n120
+    x86isa::n128
+    x86isa::n256
+    x86isa::n512
+
+    ;; same as above list but with $inline:
+    x86isa::n01$inline
+    x86isa::n02$inline
+    x86isa::n03$inline
+    x86isa::n04$inline
+    x86isa::n05$inline
+    x86isa::n06$inline
     x86isa::n08$inline
+    x86isa::n09$inline
+    x86isa::n11$inline
     x86isa::n12$inline
     x86isa::n16$inline
+    x86isa::n17$inline
+    x86isa::n18$inline
+    x86isa::n20$inline
+    x86isa::n21$inline
+    x86isa::n22$inline
+    x86isa::n24$inline
+    x86isa::n25$inline
+    x86isa::n26$inline
+    x86isa::n27$inline
+    x86isa::n28$inline
+    x86isa::n30$inline
     x86isa::n32$inline
+    x86isa::n33$inline
+    x86isa::n35$inline
+    x86isa::n43$inline
+    x86isa::n44$inline
+    x86isa::n45$inline
+    x86isa::n47$inline
+    x86isa::n48$inline
+    x86isa::n49$inline
+    x86isa::n51$inline
+    x86isa::n52$inline
+    x86isa::n55$inline
+    x86isa::n59$inline
+    x86isa::n60$inline
     x86isa::n64$inline
-
+    x86isa::n65$inline
+    x86isa::n80$inline
+    x86isa::n112$inline
+    x86isa::n120$inline
+    x86isa::n128$inline
+    x86isa::n256$inline
+    x86isa::n512$inline
 
     ;; more like this:
     x86isa::prefixes->lck$inline
@@ -658,8 +766,6 @@
     x86isa::rr32$inline
     x86isa::reg-index$inline
 
-    acl2::__function__
-
     x86isa::x86-general-protection
     x86isa::x86-device-not-available
     x86isa::x86-syscall-both-views
@@ -675,7 +781,14 @@
     x86isa::wiml16
     x86isa::wiml32
     x86isa::wiml64
-))
+
+    ;; not used much, since we use app-view:
+    x86isa::ia32e-la-to-pa
+    x86isa::la-to-pa
+    x86isa::las-to-pas
+
+    x86isa::add-to-*ip
+    ))
 
 (defconst *symbols-from-acl2-package*
   '(loghead
@@ -688,8 +801,12 @@
     getbit
     bvlt
     bvle
+    bvgt
+    bvge
     sbvlt
     sbvle
+    sbvgt
+    sbvge
     bvcat
     bvcat2
     bvplus
@@ -736,15 +853,16 @@
     leftrotate32
     rightrotate32
 
-    acl2::binary-logand
-    acl2::binary-logxor
-    acl2::binary-logior
+    binary-logand
+    binary-logxor
+    binary-logior
 
     unsigned-byte-p-forced
 
     ceiling-of-lg
     lg
     log2
+    power-of-2p
 
     farg1
     farg2
@@ -764,6 +882,7 @@
     ffn-symb
 
     define
+    __function__
 
     defp
 
@@ -777,6 +896,7 @@
     defconst-computed
     defconst-computed2 ;drop?
     defconst-computed3
+    def-simplified-dag-basic
 
     ;; Axe stuff (TODO: Maybe remove these since they are just functions we call):
     simp-dag
@@ -793,6 +913,7 @@
     ;; simplify-terms-using-each-other
     make-cons-nest
     dag-fns
+    dag-vars
     make-rule-alist
     make-rule-alist!
     dagify-term
@@ -867,6 +988,7 @@
     subset-eq
     submit-event
     must-be-redundant
+    must-fail
 
     ;; x86 stuff (move to x package?):
     elf-info
@@ -875,15 +997,19 @@
 
     ;; Testing utilities:
     assert-equal
-    deftest))
+    deftest
+
+    ruleset
+
+    defconst-computed-simple))
 
 ;; Ideally, these would all be rewritten to BV ops
 (defconst *symbols-from-bitops*
   '(bitops::part-install-width-low$inline
     bitops::part-select-width-low$inline
     b-xor ; from ihs, via bitops
-    acl2::logbit$inline ; really from ihs
-    acl2::b-xor$inline
+    logbit$inline ; really from ihs
+    b-xor$inline ; really from ihs
     ))
 
 ;; Ideally, these would all be rewritten away
@@ -972,6 +1098,8 @@
     x86isa::flg0
     x86isa::dword
     x86isa::addr
+
+    x86isa::x86$a
 ))
 
 ;; TODO: Think about this...
@@ -987,6 +1115,8 @@
     lowval
     highval
     ;; low high ; can't include these as above we get them from the x86isa package
+    size
+    size1
     size2))
 
 (defpkg "X" (append *acl2-exports*

@@ -148,8 +148,8 @@
    ;; addressing method for AVX512 instructions yet, so until they do, I am
    ;; going to use my own encoding for specifying opmask registers.
 
-   ;; Source: Section 2.6.3 (Opmask Register Encoding), specifically, Table
-   ;; 2-33 (Opmask Register Specifier Encoding), Intel Vol. 2
+   ;; Source: Section 2.7.3 (Opmask Register Encoding), specifically, Table
+   ;; 2-33 (Opmask Register Specifier Encoding), Intel Vol. 2 (Jun 2024)
 
    '(K-reg (:modr/m? . t) (:vex? . nil)
            (:doc .

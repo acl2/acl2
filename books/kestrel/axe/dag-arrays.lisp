@@ -1447,7 +1447,6 @@
 ;;                 )
 ;;            (< (cadr (cdddr (dargs (aref1 dag-array-name dag-array nodenum)))) nodenum))
 ;;   :rule-classes (:rewrite :linear)
-;;   :otf-flg t
 ;;   :hints (("Goal" :expand ((pseudo-dag-arrayp-aux dag-array-name dag-array nodenum))
 ;;            :in-theory (e/d (pseudo-dag-arrayp-aux car-becomes-nth-of-0
 ;;                                                   LIST::LEN-OF-CDR-BETTER)
@@ -1515,7 +1514,6 @@
 ;;                 )
 ;;            (< (cadr (cddddr (aref1 dag-array-name dag-array nodenum))) nodenum))
 ;;   :rule-classes (:rewrite :linear)
-;;   :otf-flg t
 ;;   :hints (("Goal" :expand ((pseudo-dag-arrayp-aux dag-array-name dag-array nodenum))
 ;;            :in-theory (e/d (pseudo-dag-arrayp-aux car-becomes-nth-of-0
 ;;                                                 LIST::LEN-OF-CDR-BETTER)
@@ -1530,7 +1528,6 @@
 ;;                 )
 ;;            (< (cadr (cdddr (aref1 dag-array-name dag-array nodenum))) nodenum))
 ;;   :rule-classes (:rewrite :linear)
-;;   :otf-flg t
 ;;   :hints (("Goal" :expand ((pseudo-dag-arrayp-aux dag-array-name dag-array nodenum))
 ;;            :in-theory (e/d (pseudo-dag-arrayp-aux car-becomes-nth-of-0
 ;;                                                 LIST::LEN-OF-CDR-BETTER)
@@ -1545,7 +1542,6 @@
 ;;                 )
 ;;            (< (cadr (cddr (aref1 dag-array-name dag-array nodenum))) nodenum))
 ;;   :rule-classes (:rewrite :linear)
-;;   :otf-flg t
 ;;   :hints (("Goal" :expand ((pseudo-dag-arrayp-aux dag-array-name dag-array nodenum))
 ;;            :in-theory (e/d (pseudo-dag-arrayp-aux car-becomes-nth-of-0
 ;;                                                 LIST::LEN-OF-CDR-BETTER)
@@ -1560,7 +1556,6 @@
 ;;                 )
 ;;            (< (cadr (dargs (aref1 dag-array-name dag-array nodenum))) nodenum))
 ;;   :rule-classes (:rewrite :linear)
-;;   :otf-flg t
 ;;   :hints (("Goal" :expand ((pseudo-dag-arrayp-aux dag-array-name dag-array nodenum))
 ;;            :in-theory (e/d (pseudo-dag-arrayp-aux car-becomes-nth-of-0
 ;;                                                 LIST::LEN-OF-CDR-BETTER)
@@ -1576,7 +1571,6 @@
 ;;                 )
 ;;            (< (nth n (dargs (aref1 dag-array-name dag-array nodenum))) nodenum))
 ;;   :rule-classes (:rewrite :linear)
-;;   :otf-flg t
 ;;   :hints (("Goal" :expand ((pseudo-dag-arrayp-aux dag-array-name dag-array nodenum))
 ;;            :in-theory (e/d (pseudo-dag-arrayp-aux car-becomes-nth-of-0
 ;;                                                 LIST::LEN-OF-CDR-BETTER)
@@ -1591,7 +1585,6 @@
 ;;                 )
 ;;            (< (cadr (aref1 dag-array-name dag-array nodenum)) nodenum))
 ;;   :rule-classes (:rewrite :linear)
-;;   :otf-flg t
 ;;   :hints (("Goal" :expand ((pseudo-dag-arrayp-aux dag-array-name dag-array nodenum))
 ;;            :in-theory (e/d (pseudo-dag-arrayp-aux car-becomes-nth-of-0
 ;;                                                 LIST::LEN-OF-CDR-BETTER)

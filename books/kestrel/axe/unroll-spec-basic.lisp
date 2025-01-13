@@ -134,7 +134,7 @@
                                   (interpreted-function-alistp interpreted-function-alist))
                               (symbol-listp monitor)
                               (booleanp memoizep)
-                              (booleanp count-hits)
+                              (count-hits-argp count-hits)
                               (booleanp normalize-xors)
                               (booleanp disable-function)
                               (member-eq function-type '(:term :lets :embedded-dag :auto))
@@ -243,12 +243,14 @@
                              rule-alist
                              interpreted-function-alist
                              (known-booleans (w state))
-                             monitor
-                             nil ; fns-to-elide
+                             normalize-xors
+                             nil
                              memoizep
                              count-hits
                              print
-                             normalize-xors))
+                             monitor
+                             nil ; fns-to-elide
+                             ))
        ((when erp) (mv erp nil state))
        ((when (quotep dag)) ;; TODO: Should we allow this?
         (er hard? 'unroll-spec-basic-fn "Spec unexpectedly rewrote to the constant ~x0." dag)
@@ -289,7 +291,7 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
                              (if (eq :embedded-dag function-type)
                                  `(dag-val-with-axe-evaluator ,defconst-name
                                                               ,(make-acons-nest dag-vars)
-                                                              ',(make-interpreted-function-alist (get-non-built-in-supporting-fns-list dag-fns (w state)) (w state))
+                                                              ',(make-interpreted-function-alist (get-non-built-in-supporting-fns-list dag-fns *axe-evaluator-functions* (w state)) (w state))
                                                               '0 ;array depth (not very important)
                                                               )
                                ;; function-type must be :lets:
@@ -402,7 +404,7 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
          (remove-rules "Rules to remove from the base set of rules.")
          (memoizep "Whether to memoize during rewriting.")
          (monitor "Rules to monitor, a list of symbols.")
-         (count-hits "Whether to count rule hits rewriting")
+         (count-hits "Whether to count rule hits during rewriting (t means count hits for every rule, :total means just count the total number of hits, nil means don't count hits)")
          (print "How much to print, a print-level")
          (normalize-xors "Whether to normalize nests of calls of @('bvxor') and @('bitxor').")
          (produce-function "Whether to produce a function (in addition to a defconst).")

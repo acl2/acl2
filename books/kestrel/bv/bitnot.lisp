@@ -1,7 +1,7 @@
 ; Logical negation of a bit
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,6 +12,7 @@
 (in-package "ACL2")
 
 (include-book "bvnot")
+(local (include-book "slice"))
 
 (defund bitnot (x)
   (declare (type integer x)
@@ -121,3 +122,13 @@
   (implies (and (syntaxp (quotep k))
                 (not (unsigned-byte-p 1 k)))
            (not (equal (bitnot x) k))))
+
+(defthm equal-of-getbit-of-0-and-bitnot
+  (not (equal (getbit 0 x) (bitnot x)))
+  :hints (("Goal" :in-theory (enable bitnot))))
+
+;rename
+(defthm equal-of-getbit-of-0-and-bitnot-alt
+  (not (equal (bitnot x) (getbit 0 x)))
+  :hints (("Goal" :use equal-of-getbit-of-0-and-bitnot
+           :in-theory (disable equal-of-getbit-of-0-and-bitnot))))

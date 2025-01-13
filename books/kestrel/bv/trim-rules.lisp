@@ -70,7 +70,7 @@
                 (natp size2))
            (equal (trim size1 (bvand size2 y z))
                   (bvand size1 y z)))
-  :hints (("Goal" :in-theory (e/d ( trim) nil))))
+  :hints (("Goal" :in-theory (enable trim))))
 
 (defthm trim-of-bvor
   (implies (and (<= size1 size2)
@@ -94,7 +94,7 @@
                 (natp size2))
            (equal (trim size1 (bvplus size2 x y))
                   (bvplus size1 x y)))
-  :hints (("Goal" :in-theory (e/d (trim) nil))))
+  :hints (("Goal" :in-theory (enable trim))))
 
 (defthm trim-of-bvminus
   (implies (and (<= size1 size2)
@@ -110,7 +110,7 @@
                 (natp size2))
            (equal (trim size1 (bvuminus size2 x))
                   (bvuminus size1 x)))
-  :hints (("Goal" :in-theory (e/d (trim) nil))))
+  :hints (("Goal" :in-theory (enable trim))))
 
 (defthm trim-of-bvmult
   (implies (and (<= size1 size2)
@@ -118,7 +118,7 @@
                 (natp size2))
            (equal (trim size1 (bvmult size2 y z))
                   (bvmult size1 y z)))
-  :hints (("Goal" :in-theory (e/d ( trim) nil))))
+  :hints (("Goal" :in-theory (enable trim))))
 
 (defthm trim-of-bvsx
   (implies (and (<= n new-size)
@@ -195,4 +195,4 @@
                 (natp size2))
            (equal (trim size1 (bvif size2 test x y))
                   (bvif size1 test x y)))
-  :hints (("Goal" :in-theory (e/d (trim) nil))))
+  :hints (("Goal" :in-theory (enable trim))))

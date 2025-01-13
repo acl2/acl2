@@ -52,11 +52,12 @@
     "A critical assumption is fault tolerance:
      all the committees that arise during the execution
      must be fault-tolerant."))
-  (implies (and (all-system-committees-fault-tolerant-p events systate)
+  (implies (and (all-system-committees-fault-tolerant-p systate events)
                 (backward-closed-p systate)
                 (last-blockchain-round-p systate)
                 (ordered-even-p systate)
                 (same-associated-certs-p systate)
+                (signed-previous-quorum-p systate)
                 (no-self-endorsed-p systate)
                 (signer-records-p systate)
                 (unequivocal-signed-certs-p systate)
@@ -77,6 +78,7 @@
                 (last-blockchain-round-p (events-next events systate))
                 (ordered-even-p (events-next events systate))
                 (same-associated-certs-p (events-next events systate))
+                (signed-previous-quorum-p (events-next events systate))
                 (no-self-endorsed-p (events-next events systate))
                 (signer-records-p (events-next events systate))
                 (unequivocal-signed-certs-p (events-next events systate))

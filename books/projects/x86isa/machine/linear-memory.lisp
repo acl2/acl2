@@ -40,9 +40,10 @@
 ; Robert Krug         <rkrug@cs.utexas.edu>
 ; Contributing Author(s):
 ; Alessandro Coglio (www.alessandrocoglio.info)
+; Eric Smith (eric.smith@kestrel.edu)
 
 (in-package "X86ISA")
-(include-book "paging" :ttags (:undef-flg :include-raw))
+(include-book "paging" :ttags (:undef-flg))
 (include-book "centaur/bitops/merge" :dir :system)
 
 ;; ======================================================================
@@ -482,8 +483,7 @@
       :bound m
       :concl (mv-nth 1 (rb-1 n addr r-x x86))
       :hints (("Goal" :in-theory (e/d* (rvm08) (unsigned-byte-p signed-byte-p))))
-      :gen-linear t
-      :hints-l (("Goal" :in-theory (e/d* () (rb-1))))))
+      :gen-linear t))
 
   (define las-to-pas
     ((n         natp "Number of bytes to be read")
@@ -511,9 +511,9 @@
            ((mv flg p-addr x86)
             (ia32e-la-to-pa lin-addr r-w-x x86))
            ((when flg) (mv flg nil x86))
-           ((mv flgs p-addrs x86)
+           ((mv flg p-addrs x86)
             (las-to-pas (1- n) (1+ lin-addr) r-w-x x86)))
-        (mv flgs (if flgs nil (cons p-addr p-addrs)) x86)))
+        (mv flg (if flg nil (cons p-addr p-addrs)) x86)))
 
     ///
 
@@ -538,15 +538,14 @@
                  (equal (mv-nth 1 (las-to-pas 0 lin-addr r-w-x x86)) nil)
                  (equal (mv-nth 2 (las-to-pas 0 lin-addr r-w-x x86)) x86)))
 
-    (local
-      (defthm xr-las-to-pas
+    (defthm xr-las-to-pas
               (implies
                 (and (not (equal fld :tlb))
                      (not (equal fld :mem))
                      (not (equal fld :fault)))
                 (equal (xr fld index (mv-nth 2 (las-to-pas n lin-addr r-w-x x86)))
                        (xr fld index x86)))
-              :hints (("Goal" :in-theory (e/d* () (force (force)))))))
+              :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
     (make-event
       (generate-xr-over-write-thms
@@ -704,9 +703,9 @@
 
     (if (app-view x86)
       (rb-1 n addr r-x x86)
-      (b* (((mv flgs p-addrs x86)
+      (b* (((mv flg p-addrs x86)
             (las-to-pas n addr r-x x86))
-           ((when flgs) (mv flgs 0 x86))
+           ((when flg) (mv flg 0 x86))
            (val (read-from-physical-memory p-addrs x86)))
           (mv nil val x86)))
 
@@ -745,16 +744,14 @@
                             :hints (("Goal"
                                      :do-not-induct t
                                      :in-theory (e/d* () (unsigned-byte-p))))
-                            :gen-linear t
-                            :hints-l (("Goal" :in-theory (e/d* () (rb)))))
+                            :gen-linear t)
 
     (defthm-unsigned-byte-p size-of-rb-in-app-view
                             ;; No need to know whether the addresses are canonical or not...
                             :hyp (and (app-view x86) (natp n))
                             :bound (ash n 3)
                             :concl (mv-nth 1 (rb n addr r-x x86))
-                            :gen-linear t
-                            :hints-l (("Goal" :in-theory (e/d* () (rb)))))
+                            :gen-linear t)
 
     (defthm rb-values-and-xw-rflags-in-sys-view
             (implies (and (equal (rflagsBits->ac (double-rewrite value))
@@ -895,9 +892,9 @@
 
     (if (app-view x86)
       (wb-1 n addr w value x86)
-      (b* (((mv flgs p-addrs x86)
+      (b* (((mv flg p-addrs x86)
             (las-to-pas n addr :w x86))
-           ((when flgs) (mv flgs x86))
+           ((when flg) (mv flg x86))
            (x86 (write-to-physical-memory p-addrs value x86)))
           (mv nil x86)))
 
@@ -1367,7 +1364,6 @@
                           :concl (mv-nth 1 (rml08 lin-addr r-x x86))
                           :hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
                           :gen-linear t
-                          :hints-l (("Goal" :in-theory (e/d (unsigned-byte-p) ())))
                           :gen-type t)
 
   (defthm x86p-rml08
@@ -1412,7 +1408,7 @@
           :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
   (defthm xr-rml08-state-in-sys-view
-          (implies (and (not (app-view x86))
+          (implies (and ;; (not (app-view x86))
                         (not (equal fld :mem))
                         (not (equal fld :fault))
                         (not (equal fld :tlb)))
@@ -1493,7 +1489,6 @@
                         :concl (mv-nth 1 (riml08 lin-addr r-x x86))
                         :hints (("Goal" :in-theory (e/d () (signed-byte-p))))
                         :gen-linear t
-                        :hints-l (("Goal" :in-theory (e/d (signed-byte-p) ())))
                         :gen-type t)
 
   (defthm x86p-riml08
@@ -1679,7 +1674,6 @@
                           :concl (mv-nth 1 (rml16 lin-addr r-x x86))
                           :hints (("Goal" :in-theory (e/d () (signed-byte-p))))
                           :gen-linear t
-                          :hints-l (("Goal" :in-theory (e/d (signed-byte-p) ())))
                           :gen-type t)
 
   (defthm x86p-rml16
@@ -1705,15 +1699,16 @@
                                           (force (force))))))
 
   (defthm xr-rml16-state-sys-view
-          (implies (and (not (app-view x86))
+          (implies (and ;; (not (app-view x86))
                         (not (equal fld :mem))
                         (not (equal fld :fault))
                         (not (equal fld :tlb))
-                        (member-equal fld *x86-field-names-as-keywords*))
+                        ;; (member-equal fld *x86-field-names-as-keywords*)
+                        )
                    (equal (xr fld index (mv-nth 2 (rml16 lin-addr r-x x86)))
                           (xr fld index x86)))
           :hints (("Goal" :in-theory (e/d (rml16 member-equal)
-                                          (rb force (force))))))
+                                          (force (force))))))
 
   (defrule rml16-xw-app-view
            (implies (and (app-view x86)
@@ -1785,7 +1780,6 @@
                         :concl (mv-nth 1 (riml16 lin-addr r-x x86))
                         :hints (("Goal" :in-theory (e/d () (signed-byte-p))))
                         :gen-linear t
-                        :hints-l (("Goal" :in-theory (e/d (signed-byte-p) ())))
                         :gen-type t)
 
   (defthm x86p-riml16
@@ -1977,7 +1971,6 @@
                           :concl (mv-nth 1 (rml32 lin-addr r-x x86))
                           :hints (("Goal" :in-theory (e/d () (signed-byte-p))))
                           :gen-linear t
-                          :hints-l (("Goal" :in-theory (e/d (signed-byte-p) (force (force)))))
                           :gen-type t)
 
   (defthm x86p-rml32
@@ -2003,11 +1996,12 @@
                                           (force (force))))))
 
   (defthm xr-rml32-state-sys-view
-          (implies (and (not (app-view x86))
+          (implies (and ;; (not (app-view x86))
                         (not (equal fld :mem))
                         (not (equal fld :fault))
                         (not (equal fld :tlb))
-                        (member-equal fld *x86-field-names-as-keywords*))
+                        ;; (member-equal fld *x86-field-names-as-keywords*)
+                        )
                    (equal (xr fld index (mv-nth 2 (rml32 lin-addr r-x x86)))
                           (xr fld index x86)))
           :hints (("Goal" :in-theory (e/d (rml32 member-equal)
@@ -2083,7 +2077,6 @@
                         :concl (mv-nth 1 (riml32 lin-addr r-x x86))
                         :hints (("Goal" :in-theory (e/d () (signed-byte-p))))
                         :gen-linear t
-                        :hints-l (("Goal" :in-theory (e/d (signed-byte-p) ())))
                         :gen-type t)
 
   (defthm x86p-riml32
@@ -2357,7 +2350,6 @@
                           :hints (("Goal" :in-theory (e/d () (signed-byte-p))))
                           :otf-flg t
                           :gen-linear t
-                          :hints-l (("Goal" :in-theory (e/d (signed-byte-p) (rb))))
                           :gen-type t)
 
   (defthm x86p-rml48
@@ -2383,11 +2375,12 @@
                                           (force (force))))))
 
   (defthm xr-rml48-state-sys-view
-          (implies (and (not (app-view x86))
+          (implies (and ;; (not (app-view x86))
                         (not (equal fld :mem))
                         (not (equal fld :fault))
                         (not (equal fld :tlb))
-                        (member-equal fld *x86-field-names-as-keywords*))
+                        ;; (member-equal fld *x86-field-names-as-keywords*)
+                        )
                    (equal (xr fld index (mv-nth 2 (rml48 lin-addr r-x x86)))
                           (xr fld index x86)))
           :hints (("Goal" :in-theory (e/d (rml48 member-equal)
@@ -2762,7 +2755,6 @@
                           :hints (("Goal" :in-theory (e/d () (signed-byte-p))))
                           :otf-flg t
                           :gen-linear t
-                          :hints-l (("Goal" :in-theory (e/d (signed-byte-p) (rb))))
                           :gen-type t)
 
   (defthm x86p-rml64
@@ -2788,11 +2780,12 @@
                                           (force (force))))))
 
   (defthm xr-rml64-state-sys-view
-          (implies (and (not (app-view x86))
+          (implies (and ;; (not (app-view x86))
                         (not (equal fld :mem))
                         (not (equal fld :fault))
                         (not (equal fld :tlb))
-                        (member-equal fld *x86-field-names-as-keywords*))
+                        ;; (member-equal fld *x86-field-names-as-keywords*)
+                        )
                    (equal (xr fld index (mv-nth 2 (rml64 lin-addr r-x x86)))
                           (xr fld index x86)))
           :hints (("Goal" :in-theory (e/d (rml64 member-equal)
@@ -2868,7 +2861,6 @@
                         :concl (mv-nth 1 (riml64 lin-addr r-x x86))
                         :hints (("Goal" :in-theory (e/d () (signed-byte-p))))
                         :gen-linear t
-                        :hints-l (("Goal" :in-theory (e/d (signed-byte-p) ())))
                         :gen-type t)
 
   (defthm x86p-riml64
@@ -3200,7 +3192,6 @@
                           :hints (("Goal" :in-theory (e/d (rb) (signed-byte-p))))
                           :otf-flg t
                           :gen-linear t
-                          :hints-l (("Goal" :in-theory (e/d (signed-byte-p) (rb))))
                           :gen-type t)
 
   (defthm x86p-rml80
@@ -3226,11 +3217,12 @@
                                           (force (force))))))
 
   (defthm xr-rml80-state-sys-view
-          (implies (and (not (app-view x86))
+          (implies (and ;; (not (app-view x86))
                         (not (equal fld :mem))
                         (not (equal fld :fault))
                         (not (equal fld :tlb))
-                        (member-equal fld *x86-field-names-as-keywords*))
+                        ;; (member-equal fld *x86-field-names-as-keywords*)
+                        )
                    (equal (xr fld index (mv-nth 2 (rml80 lin-addr r-x x86)))
                           (xr fld index x86)))
           :hints (("Goal" :in-theory (e/d (rml80 member-equal)
@@ -3542,10 +3534,6 @@
                            :bound 128
                            :concl (bitops::merge-16-u8s h7 h6 h5 h4 h3 h2 h1 h0 l7 l6 l5 l4 l3 l2 l1 l0)
                            :hints (("Goal" :in-theory (e/d* () (unsigned-byte-p))))
-                           :hints-l (("Goal"
-                                      :in-theory
-                                      (e/d* (unsigned-byte-p) (bitops::unsigned-byte-p-128-of-merge-16-u8s))
-                                      :use ((:instance bitops::unsigned-byte-p-128-of-merge-16-u8s))))
                            :gen-linear t))
 
 
@@ -3683,7 +3671,6 @@
                           :concl (mv-nth 1 (rml128 lin-addr r-x x86))
                           :hints (("Goal" :in-theory (e/d () (force (force) signed-byte-p))))
                           :gen-linear t
-                          :hints-l (("Goal" :in-theory (e/d (signed-byte-p) (rb))))
                           :gen-type t)
 
   (defthm x86p-rml128
@@ -3709,11 +3696,12 @@
                                           (force (force))))))
 
   (defthm xr-rml128-state-sys-view
-          (implies (and (not (app-view x86))
+          (implies (and ;; (not (app-view x86))
                         (not (equal fld :mem))
                         (not (equal fld :fault))
                         (not (equal fld :tlb))
-                        (member-equal fld *x86-field-names-as-keywords*))
+                        ;; (member-equal fld *x86-field-names-as-keywords*)
+                        )
                    (equal (xr fld index (mv-nth 2 (rml128 lin-addr r-x x86)))
                           (xr fld index x86)))
           :hints (("Goal" :in-theory (e/d (rml128)
@@ -3754,7 +3742,9 @@
                   (equal (mv-nth 2 (rml128 lin-addr r-x (xw fld index value x86)))
                          (xw fld index value (mv-nth 2 (rml128 lin-addr r-x x86))))))
            :enable (rml128)
-           :disable (rb unsigned-byte-p signed-byte-p force (force)))
+           :disable (rb unsigned-byte-p signed-byte-p force (force)
+                        ;; for speed:
+                        signed-byte-p-48-to-<-rule))
 
   (defrule rml128-xw-sys-view-rflags-not-ac
            (implies
@@ -3769,7 +3759,9 @@
                          (xw :rflags nil value
                              (mv-nth 2 (rml128 lin-addr r-x x86))))))
            :enable (rml128)
-           :disable (rb unsigned-byte-p signed-byte-p member-equal)))
+           :disable (rb unsigned-byte-p signed-byte-p member-equal
+                        ;; for speed:
+                        signed-byte-p-48-to-<-rule)))
 
 ;; TODO: Prove wml128 equivalent to rb in the system-level view (again).
 (define wml128 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
@@ -4081,10 +4073,6 @@
      :concl (bitops::merge-32-u8s h15 h14 h13 h12 h11 h10 h9 h8 h7 h6 h5 h4 h3 h2 h1 h0
                                   l15 l14 l13 l12 l11 l10 l9 l8 l7 l6 l5 l4 l3 l2 l1 l0)
      :hints (("Goal" :in-theory (e/d* () (unsigned-byte-p))))
-     :hints-l (("Goal"
-                :in-theory
-                (e/d* (unsigned-byte-p) (bitops::unsigned-byte-p-256-of-merge-32-u8s))
-                :use ((:instance bitops::unsigned-byte-p-256-of-merge-32-u8s))))
      :gen-linear t))
 
 
@@ -4321,15 +4309,19 @@
     :hyp t
     :bound 256
     :concl (mv-nth 1 (rml256 lin-addr r-x x86))
-    :hints (("Goal" :in-theory (e/d () (force (force) signed-byte-p))))
+    :hints (("Goal" :in-theory (e/d () (force (force) signed-byte-p
+                                              ;; for speed:
+                                              x86isa::signed-byte-p-48-to-<-rule
+                                              x86isa::la-to-pa$inline))))
     :gen-linear t
-    :hints-l (("Goal" :in-theory (e/d (signed-byte-p) (rb))))
     :gen-type t)
 
   (defthm x86p-rml256
     (implies (force (x86p x86))
              (x86p (mv-nth 2 (rml256 lin-addr r-x x86))))
-    :hints (("Goal" :in-theory (e/d () ((force) unsigned-byte-p signed-byte-p))))
+    :hints (("Goal" :in-theory (e/d () ((force) unsigned-byte-p signed-byte-p
+                                        ;; for speed:
+                                        x86isa::signed-byte-p-48-to-<-rule))))
     :rule-classes (:rewrite :type-prescription))
 
   (defthm rml256-value-when-error
@@ -4337,7 +4329,11 @@
              (equal (mv-nth 1 (rml256 lin-addr r-x x86))
                     0))
     :hints (("Goal" :in-theory (e/d (rml256)
-                                    (force (force))))))
+                                    (force
+                                     (force)
+                                     ;; for speed:
+                                     x86isa::signed-byte-p-48-to-<-rule
+                                     x86isa::la-to-pa$inline)))))
 
   (defthm rml256-x86-unmodified-in-app-view
     (implies (app-view x86)
@@ -4349,15 +4345,19 @@
                                     (force (force))))))
 
   (defthm xr-rml256-state-sys-view
-    (implies (and (not (app-view x86))
+    (implies (and ;; (not (app-view x86))
                   (not (equal fld :mem))
                   (not (equal fld :fault))
                   (not (equal fld :tlb))
-                  (member-equal fld *x86-field-names-as-keywords*))
+                  ;; (member-equal fld *x86-field-names-as-keywords*)
+                  )
              (equal (xr fld index (mv-nth 2 (rml256 lin-addr r-x x86)))
                     (xr fld index x86)))
     :hints (("Goal" :in-theory (e/d (rml256)
-                                    (force (force))))))
+                                    (force
+                                     (force)
+                                     ;; for speed:
+                                     x86isa::signed-byte-p-48-to-<-rule)))))
 
   (defrule rml256-xw-app-view
     (implies (and (app-view x86)
@@ -4394,7 +4394,9 @@
           (equal (mv-nth 2 (rml256 lin-addr r-x (xw fld index value x86)))
                  (xw fld index value (mv-nth 2 (rml256 lin-addr r-x x86))))))
     :enable (rml256)
-    :disable (rb unsigned-byte-p signed-byte-p force (force)))
+    :disable (rb unsigned-byte-p signed-byte-p force (force)
+                 ;; for speed:
+                 signed-byte-p-48-to-<-rule))
 
   (defrule rml256-xw-sys-view-rflags-not-ac
     (implies
@@ -4409,7 +4411,9 @@
                  (xw :rflags nil value
                      (mv-nth 2 (rml256 lin-addr r-x x86))))))
     :enable (rml256)
-    :disable (rb unsigned-byte-p signed-byte-p member-equal)))
+    :disable (rb unsigned-byte-p signed-byte-p member-equal
+                 ;; for speed:
+                 signed-byte-p-48-to-<-rule)))
 
 ;; TODO: Prove wml256 equivalent to rb in the system-level view (again).
 (define wml256 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
@@ -4757,7 +4761,9 @@
   (defthm x86p-wml256
     (implies (force (x86p x86))
              (x86p (mv-nth 1 (wml256 lin-addr val x86))))
-    :hints (("Goal" :in-theory (e/d () (rb x86p force (force) unsigned-byte-p signed-byte-p))))
+    :hints (("Goal" :in-theory (e/d () (rb x86p force (force) unsigned-byte-p signed-byte-p
+                                           ;; for speed:
+                                           x86isa::signed-byte-p-48-to-<-rule))))
     :rule-classes (:rewrite :type-prescription)))
 
 ; The following two functions, for 512 bits, are commented out because they
@@ -4908,10 +4914,6 @@
                                   l31 l30 l29 l28 l27 l26 l25 l24 l23 l22 l21 l20 l19 l18 l17 l16
                                   l15 l14 l13 l12 l11 l10 l9 l8 l7 l6 l5 l4 l3 l2 l1 l0)
      :hints (("Goal" :in-theory (e/d* () (unsigned-byte-p))))
-     :hints-l (("Goal"
-                :in-theory
-                (e/d* (unsigned-byte-p) (bitops::unsigned-byte-p-512-of-merge-64-u8s))
-                :use ((:instance bitops::unsigned-byte-p-512-of-merge-64-u8s))))
      :gen-linear t))
 
 
@@ -5352,7 +5354,6 @@
     :concl (mv-nth 1 (rml512 lin-addr r-x x86))
     :hints (("Goal" :in-theory (e/d () (force (force) signed-byte-p))))
     :gen-linear t
-    :hints-l (("Goal" :in-theory (e/d (signed-byte-p) (rb))))
     :gen-type t)
 
   (defthm x86p-rml512
@@ -5388,10 +5389,11 @@
                                     (force (force))))))
 
   (defthm xr-rml512-state-sys-view
-    (implies (and (not (app-view x86))
+    (implies (and ;; (not (app-view x86))
                   (not (equal fld :mem))
                   (not (equal fld :fault))
-                  (member-equal fld *x86-field-names-as-keywords*))
+                  ;; (member-equal fld *x86-field-names-as-keywords*)
+                  )
              (equal (xr fld index (mv-nth 2 (rml512 lin-addr r-x x86)))
                     (xr fld index x86)))
     :hints (("Goal" :in-theory (e/d (rml512)

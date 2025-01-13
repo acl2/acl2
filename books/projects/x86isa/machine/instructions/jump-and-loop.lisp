@@ -44,7 +44,7 @@
 ;; ======================================================================
 
 (include-book "../decoding-and-spec-utils"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:undef-flg))
 
 (local (include-book "../guard-helpers"))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
@@ -284,20 +284,6 @@
 (local
  (defthm unsigned-byte-p-96-of-xr-str
    (unsigned-byte-p 96 (xr :str i x86))))
-
-(defthm-unsigned-byte-p n32p-xr-ssr-hidden-limit
-  :hyp t
-  :bound 32
-  :concl (xr :ssr-hidden-limit i x86)
-  :gen-linear t
-  :gen-type t)
-
-(defthm-unsigned-byte-p n64p-xr-ssr-hidden-base
-  :hyp t
-  :bound 64
-  :concl (xr :ssr-hidden-base i x86)
-  :gen-linear t
-  :gen-type t)
 
 (local
  (defthm x86-far-jmp-op/en-d-helper-1

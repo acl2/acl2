@@ -41,7 +41,7 @@
 (in-package "X86ISA")
 
 (include-book "../decoding-and-spec-utils"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:undef-flg))
 
 (local (include-book "arithmetic-3/top" :dir :system))
 (local (include-book "ihs/logops-lemmas" :dir :system))
@@ -83,7 +83,7 @@
        ((unless (mbt (posp chunk-size))) 0)
        (x-lo (loghead chunk-size x))
        (y-lo (loghead chunk-size y))
-       (result-lo (loghead chunk-size (+ x-lo y-lo)))
+       (result-lo (loghead chunk-size (- x-lo y-lo)))
        (x-hi (logtail chunk-size x))
        (y-hi (logtail chunk-size y))
        (result-hi

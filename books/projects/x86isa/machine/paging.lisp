@@ -42,8 +42,9 @@
 ; Yahya Sohail        <yahya.sohail@intel.com>
 
 (in-package "X86ISA")
+(include-book "application-level-memory")
 (include-book "paging-structures" :dir :utils)
-(include-book "physical-memory" :ttags (:undef-flg :include-raw))
+(include-book "physical-memory" :ttags (:undef-flg))
 (include-book "clause-processors/find-matching" :dir :system)
 
 ;; [Shilpi]: For now, I've removed nested paging and all paging modes
@@ -215,13 +216,6 @@
                               (acl2::ihsext-recursive-redefs
                                acl2::ihsext-inductions)
                               ()))))
-
-(defthm-unsigned-byte-p n64p-xr-ctr
-  :hyp t
-  :bound 64
-  :concl (xr :ctr i x86)
-  :gen-linear t
-  :gen-type t)
 
 (define good-lin-addr-p (lin-addr x86)
 
@@ -662,8 +656,6 @@
                                        signed-byte-p
                                        member-equal
                                        not))))
-      :hints-l (("Goal" :in-theory (e/d ()
-                                        (page-table-entry-addr))))
       :gen-linear t)
 
     (defthm page-table-entry-addr-is-a-multiple-of-8
@@ -672,8 +664,6 @@
     (defthm-unsigned-byte-p adding-7-to-page-table-entry-addr
       :bound *physical-address-size*
       :concl (+ 7 (page-table-entry-addr lin-addr base-addr))
-      :hints-l (("Goal" :in-theory (e/d ()
-                                        (page-table-entry-addr))))
       :gen-linear t
       :gen-type t)
 
@@ -733,8 +723,6 @@
                                        signed-byte-p
                                        member-equal
                                        not))))
-      :hints-l (("Goal" :in-theory (e/d ()
-                                        (page-directory-entry-addr))))
       :gen-linear t)
 
     (defthm page-directory-entry-addr-is-a-multiple-of-8
@@ -744,8 +732,7 @@
       :bound *physical-address-size*
       :concl (+ 7 (page-directory-entry-addr lin-addr base-addr))
       :gen-linear t
-      :gen-type t
-      :hints-l (("Goal" :in-theory (e/d () (page-directory-entry-addr)))))
+      :gen-type t)
 
     (defthm page-directory-entry-addr-equal-if-same-page
             (implies (same-page lin-addr lin-addr-2)
@@ -799,8 +786,6 @@
                                        signed-byte-p
                                        member-equal
                                        not))))
-      :hints-l (("Goal" :in-theory (e/d ()
-                                        (page-dir-ptr-table-entry-addr))))
       :gen-linear t)
 
     (defthm page-dir-ptr-table-entry-addr-is-a-multiple-of-8
@@ -809,8 +794,6 @@
     (defthm-unsigned-byte-p adding-7-to-page-dir-ptr-table-entry-addr
       :bound *physical-address-size*
       :concl (+ 7 (page-dir-ptr-table-entry-addr lin-addr base-addr))
-      :hints-l (("Goal" :in-theory (e/d ()
-                                        (page-dir-ptr-table-entry-addr))))
       :gen-linear t
       :gen-type t)
 
@@ -867,8 +850,6 @@
                                        signed-byte-p
                                        member-equal
                                        not))))
-      :hints-l (("Goal" :in-theory (e/d ()
-                                        (pml4-table-entry-addr))))
       :gen-linear t)
 
     (defthm pml4-table-entry-addr-is-a-multiple-of-8
@@ -878,8 +859,7 @@
       :bound *physical-address-size*
       :concl (+ 7 (pml4-table-entry-addr lin-addr base-addr))
       :gen-linear t
-      :gen-type t
-      :hints-l (("Goal" :in-theory (e/d () (pml4-table-entry-addr))))))
+      :gen-type t))
 
     (defthm pml4-table-entry-addr-equal-if-same-page
               (implies (same-page lin-addr lin-addr-2)
@@ -1692,7 +1672,6 @@
 
                           :hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
                           :gen-linear t
-                          :hints-l (("Goal" :in-theory (e/d (unsigned-byte-p) ())))
                           :gen-type t)
 
   (defthm x86p-mv-nth-2-ia32e-la-to-pa-page-table
@@ -2052,9 +2031,7 @@
                           :hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
                           :otf-flg t
                           :gen-linear t
-                          :hints-l (("Goal" :in-theory (e/d (unsigned-byte-p) ())))
-                          :gen-type t
-                          :hints-t (("Goal" :in-theory (e/d (unsigned-byte-p) (not)))))
+                          :gen-type t)
 
   (defthm x86p-mv-nth-2-ia32e-la-to-pa-page-directory
           (implies (x86p x86)
@@ -2426,9 +2403,7 @@
                           :hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
                           :otf-flg t
                           :gen-linear t
-                          :hints-l (("Goal" :in-theory (e/d (unsigned-byte-p) ())))
-                          :gen-type t
-                          :hints-t (("Goal" :in-theory (e/d (unsigned-byte-p) (not)))))
+                          :gen-type t)
 
   (defthm x86p-mv-nth-2-ia32e-la-to-pa-page-dir-ptr-table
           (implies (x86p x86)
@@ -2722,9 +2697,7 @@
                           :hints (("Goal" :in-theory (e/d () (unsigned-byte-p))))
                           :otf-flg t
                           :gen-linear t
-                          :hints-l (("Goal" :in-theory (e/d (unsigned-byte-p) ())))
-                          :gen-type t
-                          :hints-t (("Goal" :in-theory (e/d (unsigned-byte-p) (not)))))
+                          :gen-type t)
 
   (defthm x86p-mv-nth-2-ia32e-la-to-pa-pml4-table
           (implies (x86p x86)
@@ -2957,10 +2930,7 @@
                           :hints (("Goal" :in-theory (e/d () (force (force) unsigned-byte-p))))
                           :otf-flg t
                           :gen-linear t
-                          :hints-l (("Goal" :in-theory (e/d (unsigned-byte-p) (force (force)))))
-                          :gen-type t
-                          :hints-t (("Goal" :in-theory (e/d (unsigned-byte-p)
-                                                            (force (force) not)))))
+                          :gen-type t)
 
   (defthm x86p-mv-nth-2-ia32e-la-to-pa-without-tlb-internal
           (implies (x86p x86)
@@ -3164,10 +3134,7 @@
                           :hints (("Goal" :in-theory (e/d () (force (force) unsigned-byte-p))))
                           :otf-flg t
                           :gen-linear t
-                          :hints-l (("Goal" :in-theory (e/d (unsigned-byte-p) (force (force)))))
-                          :gen-type t
-                          :hints-t (("Goal" :in-theory (e/d (unsigned-byte-p)
-                                                            (force (force) not)))))
+                          :gen-type t)
 
   (defthm x86p-mv-nth-2-ia32e-la-to-pa-without-tlb
           (implies (x86p x86)
@@ -3411,10 +3378,7 @@
                           :hints (("Goal" :in-theory (e/d () (force (force) unsigned-byte-p))))
                           :otf-flg t
                           :gen-linear t
-                          :hints-l (("Goal" :in-theory (e/d (unsigned-byte-p) (force (force)))))
-                          :gen-type t
-                          :hints-t (("Goal" :in-theory (e/d (unsigned-byte-p)
-                                                            (force (force) not)))))
+                          :gen-type t)
 
   (defthm x86p-mv-nth-2-ia32e-la-to-pa
           (implies (x86p x86)

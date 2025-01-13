@@ -1,7 +1,7 @@
 ; Rule Lists used by the x86 Axe tools
 ;
 ; Copyright (C) 2016-2022 Kestrel Technology, LLC
-; Copyright (C) 2020-2024 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -22,6 +22,29 @@
 ;todo: add a variant of get-ruleset that complains if the ruleset doesn't exist..
 (acl2::defconst-computed-simple *instruction-decoding-and-spec-rules*
   (acl2::get-ruleset 'x86isa::instruction-decoding-and-spec-rules (w state)))
+
+(defun map-add-suffix (syms str)
+  (declare (xargs :guard (and (symbol-listp syms)
+                              (stringp str))))
+  (if (endp syms)
+      nil
+    (cons (add-suffix (first syms) str)
+          (map-add-suffix (rest syms) str))))
+
+;; todo: some of these should be added to the X86 package:
+
+;; n08$inline and many more
+;; todo: go directly to bvchop?
+(acl2::defconst-computed-simple *unsigned-choppers* (map-add-suffix (acl2::get-ruleset 'x86isa::nw-defs (w state)) "$INLINE"))
+
+;; i08$inline and many more
+(acl2::defconst-computed-simple *signed-choppers* (map-add-suffix (acl2::get-ruleset 'x86isa::iw-defs (w state)) "$INLINE"))
+
+;; n08p$inline and many more
+(acl2::defconst-computed-simple *unsigned-recognizers* (map-add-suffix (acl2::get-ruleset 'x86isa::nwp-defs (w state)) "$INLINE"))
+
+;; i08p$inline and many more
+(acl2::defconst-computed-simple *signed-recognizers* (map-add-suffix (acl2::get-ruleset 'x86isa::iwp-defs (w state)) "$INLINE"))
 
 ;; Most of these are just names of functions to open
 (defun instruction-rules ()
@@ -242,8 +265,12 @@
 
 (defun read-introduction-rules ()
   (declare (xargs :guard t))
-  '(rb-becomes-read
-    ;mv-nth-1-of-rb-becomes-read
+  '(rb-becomes-read ; no need to target mv-nth-1-of-rb, etc. since this rewrites the entire rb
+    ;;mv-nth-1-of-rb-becomes-read
+    ;; These just clarify failures to turn RB into READ: ; TODO: Only use when debugging?
+    mv-nth-1-of-rb-of-set-rip
+    mv-nth-1-of-rb-of-set-rax ; could add more like this
+
     mv-nth-1-of-rb-1-becomes-read))
 
 (set-axe-rule-priority rb-becomes-read -1) ; get rid of RB immediately
@@ -264,28 +291,30 @@
     program-at-of-set-mxcsr
     ))
 
-(defun read-byte-rules ()
-  (declare (xargs :guard t))
-  '(read-byte-of-xw-irrel
-    ;;read-byte-when-program-at read-byte-when-program-at-gen
-    read-byte-of-set-flag
-    read-byte-of-write-byte
-    read-byte-of-logext
-    ))
+;; Now we just go to read
+;; (defun read-byte-rules ()
+;;   (declare (xargs :guard t))
+;;   '(read-byte-of-xw-irrel
+;;     ;;read-byte-when-program-at read-byte-when-program-at-gen
+;;     read-byte-of-set-flag
+;;     read-byte-of-write-byte
+;;     read-byte-of-logext
+;;     ))
 
 (defun read-rules ()
   (declare (xargs :guard t))
   '(unsigned-byte-p-of-read
     integerp-of-read
+    natp-of-read
     <-of-read-and-non-positive
     read-of-xw-irrel
     read-of-set-flag
-    read-when-program-at ; trying just this on
+    read-when-program-at ; trying just this one
     ;; since read-when-program-at can introduce bv-array-read-chunk-little
     acl2::bv-array-read-chunk-little-constant-opener
     acl2::bv-array-read-chunk-little-base ; todo: try to do better than these in some cases (try the other rules first)
     acl2::bv-array-read-chunk-little-unroll
-    ;; read-when-program-at-1-byte-simple ; todo: use a more general rule?
+    ;; read-when-program-at-1-byte-simple
     ;; read-when-program-at-2-bytes
     ;; read-when-program-at-4-bytes
     ;; read-when-program-at-8-bytes
@@ -335,14 +364,14 @@
     ;read-1-of-write-1-both-alt ; trying
     read-of-write-same
     ;; read-of-write-within-same-address  ;todo: uncomment but first simplify the assumptions we give about RSP
-    read-of-write-disjoint
-    read-of-write-disjoint2
+    read-of-write-irrel
+    read-of-write-irrel2
     ;; todo: more variants of these:
     ;; todo: uncomment:
     ;;read-of-write-of-set-flag ; these just make terms nicer (todo: these break proofs -- why?)
     ;;read-of-write-of-write-of-set-flag
     ;;read-of-write-of-write-of-write-of-set-flag
-    ))
+    read-1-of-write-within-new))
 
 (defund reader-and-writer-intro-rules ()
   (declare (xargs :guard t))
@@ -493,6 +522,21 @@
     mxcsr-of-write-byte-to-segment
     ))
 
+;; sophisticated scheme for removing inner, shadowed writes
+(defund shadowed-write-rules ()
+  (declare (xargs :guard t))
+  '(write-becomes-write-of-clear-extend-axe
+    clear-extend-of-write-continue-axe
+    clear-extend-of-write-finish
+    clear-extend-of-write-of-clear-retract
+    write-of-clear-retract))
+
+;; Rules that require the rewriter-x86, due to axe-syntaxp or axe-bind-free functions.
+;; To be excluded when pruning (with the non-x86 rewriter)
+(defund x86-rewriter-rules ()
+  (declare (xargs :guard t))
+  (shadowed-write-rules))
+
 ;; 'Read Over Write' and similar rules for state components. Our normal form
 ;; (at least for 64-bit code) includes 3 kinds of state changes, namely calls
 ;; to XW, WRITE, and SET-FLAG (todo: update this comment).
@@ -500,11 +544,10 @@
   (declare (xargs :guard t))
   '(
     ;x86isa::x86p-set-flag
-    force ;todo: think about this
-        x86isa::x86p-of-wb ;  wb-returns-x86p ;targets x86p-of-mv-nth-1-of-wb ;drop if WB will always be rewritten to WRITE
+    force ;todo: think about this, could only open force on a constant arg
+    x86isa::x86p-of-wb ;  wb-returns-x86p ;targets x86p-of-mv-nth-1-of-wb ;drop if WB will always be rewritten to WRITE
 
     ;; Flags:
-
     get-flag-of-xw
     xr-of-set-flag
     set-flag-of-xw
@@ -513,7 +556,8 @@
     set-flag-of-set-flag-same
     set-flag-of-get-flag-same
     x86isa::alignment-checking-enabled-p-of-set-flag
-    X86ISA::XW-RGF-OF-XR-RGF-SAME
+
+    x86isa::xw-rgf-of-xr-rgf-same
 
 ;;     ;; x86isa::get-flag-set-flag ;covers both cases, with a twist for a 2-bit flag
 ;;     ;; x86isa::set-flag-set-flag-same
@@ -529,8 +573,7 @@
 ;;     x86isa::rflagsbits->zf$inline
 
     x86isa::rflagsbits$inline-constant-opener
-    x86isa::10bits-fix-constant-opener
-    x86isa::2bits-fix-constant-opener
+
     acl2::expt2$inline-constant-opener
 
     x86isa::!rflagsbits->af$inline-constant-opener
@@ -725,8 +768,6 @@
 
     ;; Just for making terms in failures more readable:
     mv-nth-1-of-rb-1-of-set-rip
-    mv-nth-1-of-rb-of-set-rip
-    mv-nth-1-of-rb-of-set-rax ; could add more like this
     ))
 
 (defun decoding-and-dispatch-rules ()
@@ -828,8 +869,6 @@
     x86isa::sib->base$inline
     x86isa::sib->index$inline
     x86isa::sib-fix$inline
-    x86isa::4bits-fix
-    x86isa::8bits-fix
 
     x86isa::vex-opcode-modr/m-p$inline-constant-opener
     x86isa::vex-prefixes-map-p$inline-constant-opener
@@ -1026,7 +1065,14 @@
     acl2::integerp-of-logxor
     ))
 
-;; Theses are x86-specific since they know about READ:
+;; combine with the logops-to-bv-rules rules?
+(defund logops-rules ()
+  (declare (xargs :guard t))
+  '(acl2::logapp-constant-opener
+    common-lisp::lognot-constant-opener
+    common-lisp::logcount-constant-opener))
+
+;; These are x86-specific since they know about READ:
 (defund logops-to-bv-rules-x86 ()
   (declare (xargs :guard t))
   '(logtail-of-read-becomes-slice
@@ -1063,12 +1109,6 @@
     acl2::rotate-left-constant-opener
     acl2::rotate-right-constant-opener))
 
-(defund logops-rules ()
-  (declare (xargs :guard t))
-  '(acl2::logapp-constant-opener
-    common-lisp::lognot-constant-opener
-    common-lisp::logcount-constant-opener))
-
 ;todo: classify these
 (defun x86-bv-rules ()
   (declare (xargs :guard t))
@@ -1085,7 +1125,9 @@
     ;; this is needed to handle a divide:
     acl2::bvcat-of-if-becomes-bvsx-64-64
     acl2::bvlt-of-bvplus-1-cancel
-    acl2::bvlt-of-bvplus-1-cancel-alt))
+    acl2::bvlt-of-bvplus-1-cancel-alt
+    acl2::bvsx-when-unsigned-byte-p ; without this, we'd need rules like bvsx-of-read (when the read is small)
+    ))
 
 ;; ;not used?
 ;; (defun canonical-address-rules ()
@@ -1193,7 +1235,6 @@
 ;; ;; x86isa::xr-of-if-special-case-for-fault ; this was bad without x86isa::64-bit-modep-of-if.  why?  maybe lets us expand fetch-decode-execute when we shouldn't?  may also need rb-of-if and such to help get-prefixes.  maybe only open fetch-code-execute when we can resolve the get-prefixes.  but that might cause work to be redone, unless we add support for binding hyps
 ;; ;; ;x86isa::rb-of-if-arg2
 ;;   ;; x86isa::app-view-of-if x86isa::x86p-of-if read-of-if
-;;   ;;acl2::<-of-+-cancel-1+-1
 ;;   ;;acl2::<-minus-zero
 ;;   x86isa::64-bit-modep-of-if
 ;;   x86isa::app-view-of-if
@@ -1205,8 +1246,7 @@
 
 (defun simple-opener-rules ()
   (declare (xargs :guard t))
-  '(x86isa::n08p$inline ;just unsigned-byte-p
-    ; 64-bit-modep ; using rules about this instead, since this is no longer just true
+  '(; 64-bit-modep ; using rules about this instead, since this is no longer just true
     ))
 
 ;; These open the branch conditions, without trying to make the expressions nice.
@@ -1341,7 +1381,16 @@
 (set-axe-rule-priority x86isa::get-prefixes-base-1 1) ; try late (unusual case)
 
 ;todo: separate out the 64-bit rules
-(defun segment-base-and-bounds-rules ()
+(defun segment-base-and-bounds-rules-general ()
+  (declare (xargs :guard t))
+  '(x86isa::segment-base-and-bounds-of-xw ; needed?
+    segment-base-and-bounds-of-set-flag
+    segment-base-and-bounds-of-set-undef
+    segment-base-and-bounds-of-set-mxcsr
+    ;; segment-base-and-bounds-of-set-ms
+    ))
+
+(defun segment-base-and-bounds-rules-64 ()
   (declare (xargs :guard t))
   '(segment-base-and-bounds-of-set-rip
     segment-base-and-bounds-of-set-rsp
@@ -1353,12 +1402,21 @@
     segment-base-and-bounds-of-set-rsi
     segment-base-and-bounds-of-set-rdi
     segment-base-and-bounds-of-set-flag
-    segment-base-and-bounds-of-set-undef
-    segment-base-and-bounds-of-set-mxcsr
-    ;; segment-base-and-bounds-of-set-ms
     segment-base-and-bounds-of-write-byte
     segment-base-and-bounds-of-write
     ))
+
+(defun segment-base-and-bounds-rules-32 ()
+  (declare (xargs :guard t))
+  '(segment-base-and-bounds-of-set-eip
+    segment-base-and-bounds-of-set-eax
+    segment-base-and-bounds-of-set-ebx
+    segment-base-and-bounds-of-set-ecx
+    segment-base-and-bounds-of-set-edx
+    segment-base-and-bounds-of-set-esp
+    segment-base-and-bounds-of-set-ebp
+    segment-base-and-bounds-of-write-to-segment
+    segment-base-and-bounds-of-write-byte-to-segment))
 
 ;; are these only for making failures clearer?
 (defun get-prefixes-rules64 ()
@@ -1574,7 +1632,7 @@
     x86isa::separate-when-separate
     x86isa::separate-when-separate-alt
     ;; these may be expensive but seem necessary in some cases
-    ;; todo: led to a loop involving BECOMES-BVLT-DAG-ALT-GEN-BETTER2.
+    ;; todo: led to loops (involving <-BECOMES-BVLT-DAG-ALT-GEN-BETTER2?)
     ;;x86isa::not-equal-when-separate
     ;;x86isa::not-equal-when-separate-alt
     x86isa::not-equal-constant-when-separate-of-constants ; these are needed when we agressively turn address claims into BV claims
@@ -1591,6 +1649,7 @@
   (append (symbolic-execution-rules)
           (reader-and-writer-intro-rules)
           (read-over-write-rules)
+          (shadowed-write-rules) ; requires the x86 rewriter
           (acl2::base-rules)
           (acl2::type-rules)
           ;; (acl2::logext-rules) ;;caused problems ;;todo: there are also logext rules below
@@ -1610,23 +1669,26 @@
           (x86-type-rules)
           (logops-to-bv-rules)
           (logops-to-bv-rules-x86)
+          (logops-rules)
           (acl2::bv-of-logext-rules)
           (arith-to-bv-rules)
           (bitops-to-bv-rules)
           (x86-bv-rules)
           (acl2::reassemble-bv-rules) ; add to core-rules-bv?
           (acl2::array-reduction-rules)
-          (acl2::unsigned-byte-p-forced-rules)
           (if-lifting-rules)
           (acl2::convert-to-bv-rules)
           '(acl2::boolor-of-non-nil)
-          (segment-base-and-bounds-rules) ; i've seen these needed for 64-bit code
+          (segment-base-and-bounds-rules-general)
           (float-rules)
           (acl2::core-rules-bv)
           (acl2::bvif-rules)
           (bitops-rules)
-          (logops-rules)
           (acl2::if-becomes-bvif-rules)
+          *unsigned-choppers* ;; these are just logead, aka bvchop
+          *signed-choppers* ;; these are just logext
+          *unsigned-recognizers* ;; these are just unsigned-byte-p
+          *signed-recognizers* ;; these are just signed-byte-p
           '(;; It would be nice is all uses of !rflags could become calls to set-flag, but sometimes we seem to set all of the flags?
             ;; !rflags-becomes-xw ; todo: now get rid of rules about !rflags and rflags
             ;; rflags-becomes-xr
@@ -1663,28 +1725,7 @@
             ;; rgfi-becomes-rax
             ;; rgfi-becomes-rbx
 
-            ;; Chopping operators (these are just bvchop):
-            x86isa::n01$inline
-            x86isa::n03$inline
-            x86isa::n06$inline
-            x86isa::n08$inline
-            x86isa::n16$inline
-            x86isa::n32$inline
-            x86isa::n64-becomes-bvchop ;; x86isa::n64$inline
-            x86isa::n128$inline
-            x86isa::n256$inline
-            x86isa::n512$inline
-
-            ;; These are just logext:
-            x86isa::i08$inline
-            x86isa::i16$inline
-            x86isa::i32$inline
-            x86isa::i64$inline
-            x86isa::i128$inline
-            x86isa::i256$inline
-            x86isa::i512$inline
-
-            ;; These are just logext:
+            ;; These are just logext: ; todo: more!
             x86isa::n08-to-i08$inline
             x86isa::n16-to-i16$inline
             x86isa::n32-to-i32$inline
@@ -1767,21 +1808,31 @@
 
             x86isa::get-one-byte-prefix-array-code-rewrite-quotep ;;get-one-byte-prefix-array-code ;this is applied to a constant (the function is gross because it uses an array)
             x86isa::car-create-canonical-address-list
-            ;;canonical-address-p-between ;this is involved in loops (other rules backchain from < to canonical-address-p but this does the reverse)
+            x86isa::canonical-address-p-between ;this was involved in loops (other rules backchained from < to canonical-address-p but this does the reverse)
             ;;will axe try all free variable matches?
-            x86isa::canonical-address-p-between-special1
-            x86isa::canonical-address-p-between-special2
-            x86isa::canonical-address-p-between-special3
-            x86isa::canonical-address-p-between-special4
+            ;; x86isa::canonical-address-p-between-special1
+            ;; x86isa::canonical-address-p-between-special2
+            ;; x86isa::canonical-address-p-between-special3
+            ;; x86isa::canonical-address-p-between-special4
+            x86isa::canonical-address-p-of-+-of-constant-when-natp ; useful for non-PIE code
 
-            acl2::<-of-+-cancel-2-2
+            acl2::<-of-+-cancel-1-2
             acl2::<-of-+-cancel-2-1
+            acl2::<-of-+-cancel-2-2
+            acl2::<-of-+-cancel-second-of-more-and-only ; more? rename
+            acl2::<-of-+-cancel-1+-1+ ;; acl2::<-of-+-cancel-first-and-first
+            acl2::<-of-+-cancel-1+-1 ; todo: same as acl2::<-of-+-cancel.  kill that one
+            acl2::<-of-+-cancel-3-1
+
+            acl2::<-of-+-and-+-cancel-constants ; for array index calcs, and separateness ; todo: make these 3 names more similar?
+            acl2::<-of-+-combine-constants-1
+            acl2::<-of-+-combine-constants-2
+
             acl2::integerp-of-+-when-integerp-1-cheap
             acl2::fix-when-integerp
             x86isa::integerp-when-canonical-address-p-cheap ; requires acl2::equal-same
             x86isa::member-p-canonical-address-listp
             acl2::fold-consts-in-+
-            acl2::<-of-+-cancel-2-1
             acl2::ash-negative-becomes-slice-axe ; move?
 
             ;;one-byte-opcode-execute ;shilpi leaves this enabled, but it seems dangerous
@@ -1803,7 +1854,6 @@
             ;;x86isa::xr-xw-intra-array-field
             x86isa::xr-of-xw-intra-field
             x86isa::xr-of-xw-inter-field
-            acl2::<-of-+-cancel-1-2
             x86isa::program-at-xw-in-app-view
             x86isa::xr-app-view-mv-nth-1-wb ;has a hyp of t
             x86isa::program-at-wb-disjoint ;drop?
@@ -1926,7 +1976,7 @@
 
             x86isa::<-of-logext-and-+-of-constant
             x86isa::canonical-address-p-+-signed-byte-p-16-is-signed-byte-p-64 ;looped
-            x86isa::<-when-canonical-address-p-impossible
+            ;; x86isa::not-<-when-canonical-address-p ;looped with the between lemma?
 ;                    canonical-address-p-of-+-when-canonical-address-p-of-+ ;has a natp hyp that is problematic ;todo: drop?
 ;                    canonical-address-p-of-+-when-canonical-address-p-of-+-alt ;todo: drop?
             ;;signed-byte-p-of-+-between
@@ -1967,7 +2017,7 @@
             acl2::slice-of-bvchop-low
             x86isa::rflags x86isa::rflags$a ;exposes xr
 ;            x86isa::rflags-set-flag ;targets xr-of-set-flag ;drop?
-            x86isa::rflags-is-n32p-unforced
+            x86isa::elem-p-of-xr-rflags ; unsigned-byte-p-32-of-rflags
              ;targets unsigned-byte-p-of-rflags
 ;                    acl2::bvcat-trim-arg4-axe-all
  ;                   acl2::bvcat-trim-arg2-axe-all
@@ -2185,7 +2235,54 @@
             bvchop-of-sub-zf-spec32
             equal-of-sub-zf-spec32-and-1
             equal-of-1-and-sub-zf-spec32
-            )))
+
+            ;; See books/projects/x86isa/utils/basic-structs.lisp
+            ;; x86isa::2bits-fix-constant-opener
+            ;; x86isa::3bits-fix-constant-opener
+            ;; x86isa::4bits-fix-constant-opener
+            ;; x86isa::5bits-fix-constant-opener
+            ;; x86isa::6bits-fix-constant-opener
+            ;; x86isa::7bits-fix-constant-opener
+            ;; x86isa::8bits-fix-constant-opener
+            ;; x86isa::10bits-fix-constant-opener
+            ;; x86isa::11bits-fix-constant-opener
+            ;; x86isa::12bits-fix-constant-opener
+            ;; x86isa::13bits-fix-constant-opener
+            ;; x86isa::16bits-fix-constant-opener
+            ;; x86isa::17bits-fix-constant-opener
+            ;; x86isa::19bits-fix-constant-opener
+            ;; x86isa::22bits-fix-constant-opener
+            ;; x86isa::24bits-fix-constant-opener
+            ;; x86isa::31bits-fix-constant-opener
+            ;; x86isa::32bits-fix-constant-opener
+            ;; x86isa::36bits-fix-constant-opener
+            ;; x86isa::40bits-fix-constant-opener
+            ;; x86isa::45bits-fix-constant-opener
+            ;; x86isa::54bits-fix-constant-opener
+            ;; x86isa::64bits-fix-constant-opener
+            2bits-fix
+            3bits-fix
+            4bits-fix
+            5bits-fix
+            6bits-fix
+            7bits-fix
+            8bits-fix
+            10bits-fix
+            11bits-fix
+            12bits-fix
+            13bits-fix
+            16bits-fix
+            17bits-fix
+            19bits-fix
+            22bits-fix
+            24bits-fix
+            31bits-fix
+            32bits-fix
+            36bits-fix
+            40bits-fix
+            45bits-fix
+            54bits-fix
+            64bits-fix)))
 
 ;; This needs to fire before bvplus-convert-arg3-to-bv-axe-restricted to avoid loops on things like (bvplus 32 k (+ k (esp x86))).
 ;; Note that bvplus-of-constant-and-esp-when-overflow will turn a bvplus into a +.
@@ -2261,9 +2358,10 @@
      acl2::get-elf-section-header-base-1
      acl2::get-elf-section-header-base-2
      acl2::get-elf-section-header-unroll
-     acl2::get-elf-symbol-address-base-1
-     acl2::get-elf-symbol-address-base-2
-     acl2::get-elf-symbol-address-unroll
+     acl2::get-elf-symbol-address-base
+     acl2::get-elf-symbol-address-aux-base-1
+     acl2::get-elf-symbol-address-aux-base-2
+     acl2::get-elf-symbol-address-aux-unroll
 
      ;;     read64
 ;     read-becomes-mv-nth-1-of-rb
@@ -2322,7 +2420,8 @@
   (declare (xargs :guard t))
   (set-difference-equal
    (append (lifter-rules-common)
-          (read-over-write-rules32)
+           (read-over-write-rules32)
+           (segment-base-and-bounds-rules-32)
           '(x86isa::x86-fetch-decode-execute-base-new ; todo: make a faster version, like we do for 64 bit
             x86isa::rip ; todo: think about this
             x86isa::rip$a ; todo: think about this
@@ -2356,7 +2455,6 @@
             acl2::collect-constants-over-<
             acl2::bvlt-of-bvplus-constant-and-constant-safe2
             acl2::<-of-bvplus-same-gen
-            bvle
             acl2::+-of-bvplus-of-x-and-minus-x
             acl2::<-of-minus-and-constant
             acl2::equal-of-constant-when-bvlt-constant-1
@@ -2386,18 +2484,6 @@
 
             seg-visible-not-equal-0-when-well-formed-32-bit-segmentp
 
-            segment-base-and-bounds-of-set-eip
-            segment-base-and-bounds-of-set-eax
-            segment-base-and-bounds-of-set-ebx
-            segment-base-and-bounds-of-set-ecx
-            segment-base-and-bounds-of-set-edx
-            segment-base-and-bounds-of-set-esp
-            segment-base-and-bounds-of-set-ebp
-
-            segment-base-and-bounds-of-write-to-segment
-            segment-base-and-bounds-of-write-byte-to-segment
-            x86isa::segment-base-and-bounds-of-xw
-            segment-base-and-bounds-of-set-flag
             esp-of-write-to-segment
 
             ;; These are not strictly necessary but can help make failures more
@@ -3125,7 +3211,10 @@
           (read-rules)
           (write-rules)
           (read-and-write-rules)
-          (read-byte-rules)
+          (segment-base-and-bounds-rules-64)
+          '(read-byte-becomes-read) ; (read-byte-rules) ; read-byte can come from read-bytes
+          '(len-of-read-bytes nth-of-read-bytes) ; read-bytes can come from an output-extractor
+          (acl2::list-to-bv-array-rules) ; for simplifying output-extractors
           (linear-memory-rules)
           (get-prefixes-rules64)
           '(;x86isa::x86-fetch-decode-execute-base-new
@@ -4274,20 +4363,17 @@
           (lifter-rules64-new)))
 
 ;; Try this rule first
-(set-axe-rule-priority read-of-write-disjoint -1)
+(set-axe-rule-priority read-of-write-irrel -1) ; todo: also below
 
 ;; Wait to try these rules until the read is cleaned up by removing irrelevant inner writes/sets
 (set-axe-rule-priority read-when-program-at 1)
-;;todo: these are no longer used:
-(set-axe-rule-priority read-when-program-at-1-byte 1)
-(set-axe-rule-priority read-when-program-at-2-bytes 2) ; try these after the 1-byte one just above
-(set-axe-rule-priority read-when-program-at-4-bytes 2)
-(set-axe-rule-priority read-when-program-at-8-bytes 2)
-
-(set-axe-rule-priority read-when-program-at-1-byte-simple 1)
+;; these are no longer used:
+;; (set-axe-rule-priority read-when-program-at-1-byte-simple 1)
+;; (set-axe-rule-priority read-when-program-at-1-byte 1)
 ;; (set-axe-rule-priority read-when-program-at-2-bytes 2) ; try these after the 1-byte one just above
 ;; (set-axe-rule-priority read-when-program-at-4-bytes 2)
 ;; (set-axe-rule-priority read-when-program-at-8-bytes 2)
+
 
 ;; These rules expand operations on effective addresses, exposing the
 ;; underlying operations on linear addresses.
@@ -4387,8 +4473,8 @@
 ;; ;;             ;;read-when-equal-of-read
 ;; ;;             ;;read-when-equal-of-read-alt
 ;; ;;             ;read-when-program-at
-;; ;;             ;read-of-write-disjoint2
-;; ;;             ;read-of-write-disjoint
+;; ;;             ;read-of-write-irrel2
+;; ;;             ;read-of-write-irrel
 ;; ;; ;acl2::<-becomes-bvlt-axe-bind-free-and-bind-free
 ;; ;; ;            read-byte-from-segment-when-code-segment-assumptions32
 ;; ;;  ;           mv-nth-1-of-add-to-*sp
@@ -4432,7 +4518,7 @@
           '(x86isa::wme-size-when-64-bit-modep-and-not-fs/gs-strong
             x86isa::rme-size-when-64-bit-modep-and-not-fs/gs-strong
             ;; could consider things like these:
-            ;; READ-OF-WRITE-DISJOINT2
+            ;; READ-OF-WRITE-IRREL2
             x86-fetch-decode-execute-opener-safe-64
             )))
 
@@ -4445,13 +4531,12 @@
   (declare (xargs :guard t))
   (append '(acl2::integerp-of-expt
             acl2::integerp-of-*                 ; for array index calcs
-            acl2::<-of-+-and-+-cancel-constants ; for array index calcs
             acl2::my-integerp-<-non-integerp    ; for array index calcs
             acl2::bvsx-when-bvlt
-            x86isa::canonical-address-p-between-special5
-            x86isa::canonical-address-p-between-special5-alt
-            x86isa::canonical-address-p-between-special6
-            x86isa::canonical-address-p-between-special7
+            ;; x86isa::canonical-address-p-between-special5 ; todo: move these
+            ;; x86isa::canonical-address-p-between-special5-alt
+            ;; x86isa::canonical-address-p-between-special6
+            ;; x86isa::canonical-address-p-between-special7
             bitops::ash-is-expt-*-x
             acl2::natp-of-*
             acl2::<-of-constant-and-+-of-constant ; for address calcs
@@ -4460,13 +4545,10 @@
             acl2::not-bvlt-of-max-arg2
             acl2::<-of-*-when-constant-integers
             ;separate-when-separate-2 ; todo: drop? but that caused problems
-            acl2::<-of-+-cancel-second-of-more-and-only ; more?
-            acl2::<-of-+-cancel-1+-1+ ;; acl2::<-of-+-cancel-first-and-first
             acl2::collect-constants-over-<-2
             acl2::commutativity-of-*-when-constant
             acl2::<-of-*-of-constant-and-constant
             acl2::rationalp-when-integerp
-            acl2::<-of-+-cancel-1+-1 ; todo: same as acl2::<-of-+-cancel.  kill that one
             acl2::+-of-+-of---same
             acl2::<-of-minus-and-constant ; ensure needed
             acl2::fix-when-acl2-numberp
@@ -4520,15 +4602,13 @@
             not-equal-of-+-of-+-and-+-when-separate
             not-equal-of-+-of-+-and-+-when-separate-gen
             acl2::<-of-negative-constant-and-bv
-            read-1-of-write-1-both
+            ;;read-1-of-write-1-both
             acl2::bvlt-of-constant-when-usb-dag ; rename
             ;; separate-of-1-and-1 ; do we ever need this?
-            acl2::<-of-+-cancel-3-1
             acl2::equal-of-bvshl-and-constant ; move to core-rules-bv?
             ;; acl2::equal-of-myif-arg1-safe
             ;; acl2::equal-of-myif-arg2-safe
             acl2::bvminus-of-bvplus-and-bvplus-same-2-2
-            acl2::right-cancellation-for-+ ; todo: switch to an arithmetic-light rule
             acl2::bvplus-of-unary-minus
             acl2::bvplus-of-unary-minus-arg2
             acl2::if-becomes-bvif-1-axe
@@ -4542,11 +4622,12 @@
             acl2::getbit-of-lognot ; todo: handle all cases of logops inside bvops
             acl2::bvif-of-if-constants-nil-nonnil
             acl2::bvif-of-if-constants-nonnil-nil
-            acl2::equal-of-1-and-bitand
-            acl2::boolif-of-nil-and-t
+            acl2::equal-of-constant-and-bitand
+            acl2::equal-of-bitand-and-constant
+            ;acl2::boolif-of-nil-and-t
             ;; acl2::booleanp-of-myif ; or convert myif to boolif when needed
-            acl2::bitxor-of-1-becomes-bitnot-arg1
-            acl2::bitxor-of-1-becomes-bitnot-arg2
+            acl2::bitxor-of-1-becomes-bitnot-arg1 ; not in core-rules-bv since we have special handling of bitxor nests for crypto code
+            acl2::bitxor-of-1-becomes-bitnot-arg2 ; not in core-rules-bv since we have special handling of bitxor nests for crypto code
             ;; these next few did seem needed after lifting (todo: either add the rest like this or drop these):
             booleanp-of-jp-condition
             booleanp-of-jnp-condition
@@ -4574,7 +4655,7 @@
 ;; beyond what def-unrolled uses
 (defun extra-tester-lifting-rules ()
   (declare (xargs :guard t))
-  (append (lifter-rules64-new) ; todo: drop?  but that caused failures! why?
+  (append (lifter-rules64-new) ; todo: drop?  but that caused failures! why?  seemed to involve equality of addresses and separation hyps
           (extra-tester-rules)
           '(<-of-fp-to-rat ; do we want this?
 
@@ -4594,7 +4675,6 @@
             acl2::ifix-of-if
 
             ;; move all of these:
-            ;bvle
             ;acl2::integerp-of-bvplus ;todo: more
             ;acl2::integerp-of-bvchop
 
@@ -4630,7 +4710,6 @@
             acl2::bvchop-of-bvsx
             ;acl2::bvchop-of-bvchop
             ;acl2::bvplus-of-bvchop-arg2
-            ;sbvle ; expand to sbvlt
             ;acl2::sbvlt-of-bvchop-arg2
             ;acl2::bvuminus-of-bvuminus
             ;acl2::bvplus-of-bvuminus-same
@@ -4702,16 +4781,17 @@
             acl2::boolif-of-bvlt-strengthen-to-equal
             acl2::bvlt-reduce-when-not-equal-one-less
             acl2::bvchop-of-logand-becomes-bvand
-            read-1-of-write-4
+            ;read-1-of-write-4
             ;read-1-of-write-1-both ; can make things, like failure to resolve rip, hard to debug
-            read-1-of-write-within-new
+            ;read-1-of-write-within-new
             not-equal-of-+-when-separate
             not-equal-of-+-when-separate-alt
             x86isa::canonical-address-p-of-sum-when-unsigned-byte-p-32
             )
           (acl2::core-rules-bv) ; trying
           (acl2::unsigned-byte-p-rules)
-          (acl2::unsigned-byte-p-forced-rules)))
+          (acl2::unsigned-byte-p-forced-rules) ;remove?
+          ))
 
 (defun tester-proof-rules ()
   (declare (xargs :guard t))
@@ -4770,8 +4850,7 @@
           (acl2::base-rules)
           (acl2::core-rules-bv) ; trying
           (acl2::bv-of-logext-rules)
-          (acl2::unsigned-byte-p-rules)
-          (acl2::unsigned-byte-p-forced-rules)))
+          (acl2::unsigned-byte-p-rules)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -4786,7 +4865,6 @@
      acl2::memberp-of-nil
 ;     acl2::member-equal-of-cons
      acl2::equal-of-same-cancel-4
-     acl2::right-cancellation-for-+
      x86isa::logext-64-does-nothing-when-canonical-address-p
      x86isa::equal-of-if-constants
      x86isa::equal-of-if-constants-alt
@@ -4805,12 +4883,12 @@
      mv-nth-1-of-wb-becomes-write
      read-of-xw-irrel
      read-of-set-flag
-     read-of-write-disjoint2
+     read-of-write-irrel2
      write-of-write-same
-     read-when-program-at-1-byte ; this is for resolving reads of the program.
-     read-when-program-at-4-bytes ; this is for resolving reads of the program.
-     read-when-program-at-2-bytes ; this is for resolving reads of the program.
-     read-when-program-at-8-bytes ; this is for resolving reads of the program.
+     ;; read-when-program-at-1-byte ; this is for resolving reads of the program.
+     ;; read-when-program-at-4-bytes ; this is for resolving reads of the program.
+     ;; read-when-program-at-2-bytes ; this is for resolving reads of the program.
+     ;; read-when-program-at-8-bytes ; this is for resolving reads of the program.
      acl2::equal-of-same-cancel-4
      acl2::equal-of-same-cancel-3
      acl2::equal-of-bvplus-constant-and-constant
@@ -4843,7 +4921,7 @@
   (declare (xargs :guard t))
   (append (extra-loop-lifter-rules)
           '(mv-nth-1-of-rb-becomes-read
-            read-of-write-disjoint
+            read-of-write-irrel
             read-of-write-same
             )))
 
@@ -4955,7 +5033,7 @@
 (set-axe-rule-priority read-of-set-rax -2)
 (set-axe-rule-priority read-of-set-rsp -2)
 (set-axe-rule-priority read-of-write-same -1)
-(set-axe-rule-priority read-of-write-disjoint -1)
+(set-axe-rule-priority read-of-write-irrel -1)
 
 ;; Based on how commonly these rules were used in an example:
 (set-axe-rule-priority ms-of-write -4)

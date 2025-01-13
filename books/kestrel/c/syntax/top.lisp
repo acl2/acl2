@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,14 +10,17 @@
 
 (in-package "C$")
 
-(include-book "abstract-syntax")
-(include-book "abstract-syntax-operations")
 (include-book "concrete-syntax")
+(include-book "abstract-syntax")
 (include-book "abstraction-mapping")
+(include-book "abstract-syntax-operations")
+(include-book "unambiguity")
+(include-book "validation-information")
+(include-book "defpred")
+(include-book "defpred-doc")
 (include-book "preprocess-file")
 (include-book "parser")
 (include-book "disambiguator")
-(include-book "unambiguity")
 (include-book "validator")
 (include-book "printer")
 (include-book "input-files")
@@ -36,7 +39,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We introduce an abstract syntax of C
+    "We provide an abstract syntax of C
      for use by tools that manipulate C code, e.g. C code generators.
      This abstract syntax preserves (i.e. does not abstract away)
      much of the information in the concrete syntax,
@@ -49,7 +52,8 @@
      to afford even more control on the code produced by tools.
      Supporting all possible forms of preprocessing constructs and comments
      would be challenging in an abstract syntax,
-     but certain constructs are relatively simple
+     because preprocessing in C operates at the lexical level.
+     Nonetheless, certain constructs are relatively simple
      (such as @('#include') directives at the top level,
      or comments accompanying function definitions),
      and increasingly elaborate forms can be introduced incrementally.
@@ -63,15 +67,22 @@
      needed for a practical tool.
      Ideally, eventually we should support all the GCC extensions,
      but we are adding them piece-wise, as needed.
-     Our documentation will always clearly distinguish
+     Our documentation always distinguishes
      between the C standard and the GCC extensions.")
    (xdoc::p
     "The idea of this tool-oriented abstract syntax is also discussed in
      @(see c::abstract-syntax) and @(see c::atc-abstract-syntax).
      We plan to have ATC use this new tool-oriented abstract syntax.")
    (xdoc::p
-    "Accompanying this tool-oriented abstract syntax,
-     we also introduce a concrete syntax, based on an ABNF grammar.
+    "We provide a macro tool @(tsee defpred)
+     to concisely define predicates over the abstract syntax.
+     This should be fairly easy to generalize to
+     a more general tool for "
+    (xdoc::seetopic "fty::fty" "fixtypes")
+    ".")
+   (xdoc::p
+    "Accompanying our abstract syntax,
+     we provide a concrete syntax, based on an ABNF grammar.
      This is not a different syntax for C,
      but just a different formulation of the syntax of C,
      motivated by the fact that we want this tool-oriented syntax
@@ -81,62 +92,95 @@
      with preprocessing being a distinguished translation phase
      [C:5.1.1.2].")
    (xdoc::p
-    "We also provide a parser from the concrete syntax to the abstract syntax,
+    "We have started defining an "
+    (xdoc::seetopic "abstraction-mapping" "abstraction mapping")
+    " from the concrete to the abstract syntax.
+     This is still very much work in progress,
+     but its main purpose is for specification and verification,
+     and is not needed to run the tools described below
+     (parser, printer, etc.).")
+   (xdoc::p
+    "We provide a @(see parser) that produces abstract syntax,
      which covers all of the C constructs after preprocessing.
      The syntax of C is notoriously ambiguous,
      requiring some semantic analysis to disambiguate it.
      Instead of performing this semantic analysis during parsing,
      our parser captures ambiguous constructs as such,
-     and we provide a separate disambiguator
+     and we provide a separate @(see disambiguator)
      that transforms the abstract syntax, after parsing,
      by disambiguating it via the necessary semantic analysis.")
    (xdoc::p
     "In order to process typical C code,
-     we also provide an ACL2 tool to invoke a C preprocessor.
-     The tool can be run on headers and source files,
+     we provide an "
+    (xdoc::seetopic "preprocessing" "ACL2 tool to invoke a C preprocessor")
+    ". The tool can be run on headers and source files,
      to obtain preprocessed source files,
      which can be then parsed by our parser.")
    (xdoc::p
-    "We also provide a (pretty-)printer that turns our abstract syntax
+    "We provide a @(see validator) on the abstract syntax (after disambiguation)
+     that checks the static constraints on C code (i.e. type checking etc.),
+     which results in an elaboration of the abstract syntax,
+     e.g. enhancing the abstract syntax with types and other information
+     after successful validation.")
+   (xdoc::p
+    "We provide a (pretty-)@(see printer)
+     that turns our abstract syntax
      into concrete syntax that is valid C code.
      Like the parser and the abstract syntax,
      our printer covers all the C constructs after preprocessing.
      This printer is an initial version;
      we plan to improve it in various respects,
      in particular by supporting printing options
-     (e.g. for right margin).")
+     (e.g. for the right margin position).")
    (xdoc::p
-    "We also provide event macros to
-     read, preprocess, parse, disambiguate, print, and write files.")
+    "We provide a collection of predicates that characterize "
+    (xdoc::seetopic "unambiguity" "unambiguous abstract syntax")
+    ", i.e. abstract syntax without ambiguous constructs,
+     as resulting after disambiguation.")
    (xdoc::p
-    "We also plan to add a checker on the abstract syntax
-     for the static constraints on C code (i.e. type checker etc.),
-     which may result in an elaboration of the abstract syntax,
-     e.g. to enhance the abstract syntax with types and other information
-     after successful checking.")
+    "We provide a collection of predicates that characterize "
+    (xdoc::seetopic "validation-information" "annotated abstract syntax")
+    ", i.e. abstract syntax enhanced with
+     the information added by the validator.")
    (xdoc::p
-    "We also plan to prove theorems connecting this tool-oriented syntax
+    "We provide various "
+    (xdoc::seetopic "abstract-syntax-operations"
+                    "other operations on the abstract syntax")
+    ".")
+   (xdoc::p
+    "We provide event macros @(tsee input-files) and @(tsee output-files)
+     to read, preprocess, parse, disambiguate, print, and write files.")
+   (xdoc::p
+    "We plan to prove theorems connecting this tool-oriented syntax
      with the formal language definition in @(see c::language).
-     We already provide a (partial) mapping
-     from the tool-oriented abstract syntax
+     We already provide a "
+    (xdoc::seetopic "mapping-to-language-definition" "(partial) mapping")
+    " from the tool-oriented abstract syntax
      to the abstract syntax of the formal language definition.
-     We also provide predicates to identify which subset of the abstract syntax
+     We also provide "
+    (xdoc::seetopic "formalized-subset" "predicates")
+    " to identify which subset of the abstract syntax
      not only maps to the language definition's abstract syntax,
-     but also that is covered by the formal semantics we have so far.")
+     but is also covered by the formal semantics we have so far.")
    (xdoc::p
     "All the items described above form a sub-library of our ACL2 library for C,
      in the directory @('[books]/kestrel/c/syntax').
      For this sub-library, we use a different package from @('C'),
      in particular to separate otherwise possibly homonymous types and functions
-     in this tool-oriented abstract syntax as opposed to
-     the abstract syntax used for the language formalization
+     in this tool-oriented abstract syntax
+     from the abstract syntax used for the language formalization
      under @('[books]/kestrel/c/language').
      We pick the name @('C$') for this sub-library,
      where the @('$') conveys the idea of `syntax'.
      This package naming pattern could be used for
      ACL2 libraries (and sub-libraries) for other programming languages."))
-  :order-subtopics (abstract-syntax
-                    concrete-syntax
+  :order-subtopics (concrete-syntax
+                    abstract-syntax
+                    abstraction-mapping
+                    defpred
+                    abstract-syntax-operations
+                    unambiguity
+                    validation-information
                     preprocessing
                     parser
                     disambiguator

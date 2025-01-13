@@ -22264,6 +22264,7 @@
            (t (value nil))))))))))
 
 (defun attached-stobj (st wrld top)
+; Top is t for a top-level call, nil otherwise.
   (let ((st2 (cdr (assoc-eq st (table-alist 'attach-stobj-table wrld)))))
     (cond (st2 (attached-stobj st2 wrld nil))
           (top nil)
@@ -23818,7 +23819,7 @@
                                 protect-default congruent-to non-executable
                                 attachable missing-only ctx state event-form
                                 discriminator
-                                raw-init-form-new
+                                creator-name-orig
                                 absstobj-tuples-new)
 
 ; When this function is called at the top level, i.e., by defabsstobj-fn1,
@@ -24118,10 +24119,9 @@
                                          :non-executable
                                          non-executable))))
                                 (raw-init-form-new
-                                 (or raw-init-form-new
-                                     (defabsstobj-raw-init
-                                       creator-name
-                                       methods)))
+                                 (defabsstobj-raw-init
+                                   (or creator-name-orig creator-name)
+                                   methods))
                                 (wrld4 (if att-name
 
 ; This special case, where att-name is non-nil, is simply an optimization.  It
@@ -24172,7 +24172,7 @@
                                     non-executable ; use the generic's
                                     nil nil
                                     ctx state event-form discriminator1
-                                    raw-init-form-new
+                                    creator-name
                                     absstobj-tuples))))
                               (t
                                (install-event st-name-new
@@ -35051,7 +35051,12 @@
              (reverse defs)
              (let* ((val (reverse table-tuples))
                     (key (cadr (car val))))
-               `(table partial-functions-table ',key ',val))))
+               `(table partial-functions-table ',key
+                       (put-assoc-eq-alist
+                        (cdr (assoc-eq ',key
+                                       (table-alist 'partial-functions-table
+                                                    world)))
+                        ',val)))))
         (t (mv-let (msg1 defs1 table-tuple)
               (let ((tuple (car tuples)))
                 (memoize-partial-supporting-events-1
@@ -35217,61 +35222,81 @@
          (memoize-partial-translations-msg-bodies
           fns-limit fns-limit limit wrld)))))
 
-(defun partial-functions-table-guard-msg (key val wrld)
+(defun partial-functions-table-guard-msg (key new-tuples/old-tuples wrld)
 
 ; Key is a "limit" ("clocked", "total") function, such as fib-limit in
 ; community books books/system/tests/memoize-partial.lisp.  See also the Essay
 ; on Memoization with Partial Functions (Memoize-partial).
 
   (declare (xargs :guard t))
-  (cond
-   ((not (and (symbolp key)
-              (function-symbolp key wrld)))
-    (msg "The key is not a known function symbol."))
-   ((not (eq (symbol-class key wrld) :common-lisp-compliant))
-    (msg "The key is a function symbol but it is not guard-verified."))
-   ((null (cdr (formals key wrld)))
-    (msg "The key is a guard-verified function symbol but it needs at least ~
-          two formal parameters."))
-   ((not (memoize-partial-tuple-shape-p val))
-    (msg "The value is not a list of 5-tuples where each tuple consists of ~
-          four symbols followed by one more element."))
-   (t
-    (let ((fns-limit (strip-cadrs val))
-          (r (getpropc key 'recursivep nil wrld)))
-      (cond
-       ((not r)
-        (msg "The key is a non-recursive function symbol."))
-       ((not (equal fns-limit r))
-        (cond ((cdr r)
-               (msg "The strip-cadrs of the proposed value is not the list of ~
-                     function symbols, in order, defined by mutual-recursion ~
-                     with the key.  That expected list of functions is ~x0."
-                    r))
-              (t
-               (msg "The proposed value is not a one-element list containing ~
-                     the key."))))
+  (let* ((old-tuples (cdr (assoc-eq key (table-alist 'partial-functions-table
+                                                     wrld))))
+         (len-old-tuples (len old-tuples))
+         (len-new-tuples/old-tuples (len new-tuples/old-tuples))
+         (len-new (- len-new-tuples/old-tuples len-old-tuples))
+         (common-case (and (true-listp new-tuples/old-tuples)
+                           (< len-old-tuples len-new-tuples/old-tuples)
+                           (equal (nthcdr len-new new-tuples/old-tuples)
+                                  old-tuples))))
+    (cond
+     ((not (and (symbolp key)
+                (function-symbolp key wrld)))
+      (msg "The key is not a known function symbol."))
+     ((not (eq (symbol-class key wrld) :common-lisp-compliant))
+      (msg "The key is a function symbol but it is not guard-verified."))
+     ((null (cdr (formals key wrld)))
+      (msg "The key is a guard-verified function symbol but it needs at least ~
+            two formal parameters."))
+     ((not (or common-case
+               (subsetp-equal old-tuples
+                              new-tuples/old-tuples)))
+      (msg "The value is not an extension of the previous value."))
+     (t (let ((new-tuples (if common-case
+                              (take len-new new-tuples/old-tuples)
+                            (set-difference-equal new-tuples/old-tuples
+                                                  old-tuples))))
+          (cond
+           ((not (memoize-partial-tuple-shape-p new-tuples))
+            (msg "The extension of the old value is not a list of 5-tuples ~
+                  where each tuple consists of four symbols followed by one ~
+                  more element."))
+           (t
+            (let ((fns-limit (strip-cadrs new-tuples))
+                  (r (getpropc key 'recursivep nil wrld)))
+              (cond
+               ((not r)
+                (msg "The key is a non-recursive function symbol."))
+               ((not (equal fns-limit r))
+                (cond ((cdr r)
+                       (msg "The strip-cadrs of the proposed extension of the ~
+                             old value is not the list of function symbols, ~
+                             in order, defined by mutual-recursion with the ~
+                             key.  That expected list of functions is ~x0."
+                            r))
+                      (t
+                       (msg "The proposed extension of the old value is not a ~
+                             one-element list containing the key."))))
 
 ; At this point, we know that key is a guard-verified function symbol whose
 ; 'recursivep property agrees with the function symbols in the cadr positions
-; of val -- hence they are also guard-verified.
+; of the new-tuples -- hence they are also guard-verified.
 
-       (t
-        (mv-let (msg defs table-event)
-          (memoize-partial-supporting-events val wrld)
-          (declare (ignore table-event))
-          (or msg
-              (let ((bad-events (collect-non-redundant defs wrld)))
-                (cond
-                 (bad-events
-                  (msg "The following ~#0~[event is~/events are~] ~
-                        missing:~|~%~*1"
-                       bad-events
-                       (list "" "~X*2~|~%" "~X*2~|~%" "~X*2~|~%"
-                             bad-events
-                             (cons #\2 nil))))
-                 (t (memoize-partial-translations-msg fns-limit
-                                                      wrld))))))))))))
+               (t
+                (mv-let (msg defs table-event)
+                  (memoize-partial-supporting-events new-tuples wrld)
+                  (declare (ignore table-event))
+                  (or msg
+                      (let ((bad-events (collect-non-redundant defs wrld)))
+                        (cond
+                         (bad-events
+                          (msg "The following ~#0~[event is~/events are~] ~
+                                missing:~|~%~*1"
+                               bad-events
+                               (list "" "~X*2~|~%" "~X*2~|~%" "~X*2~|~%"
+                                     bad-events
+                                     (cons #\2 nil))))
+                         (t (memoize-partial-translations-msg
+                             fns-limit wrld))))))))))))))))
 
 (defun partial-functions-table-guard (fn val wrld)
   (let ((msg0 ; nil if fn/val is OK as a key/value pair, else a msg

@@ -388,7 +388,7 @@
     ))
 
 ;; Keep this in sync with unsigned-byte-p-rules above.
-(defun unsigned-byte-p-forced-rules ()
+(defund unsigned-byte-p-forced-rules ()
   (declare (xargs :guard t))
   '(unsigned-byte-p-forced-of-bvchop
     unsigned-byte-p-forced-of-bvcat
@@ -570,6 +570,7 @@
    (leftrotate-intro-rules) ; todo: remove, but this breaks proofs
    (safe-trim-rules) ;in case trimming is disabled
    (bv-function-of-bvchop-rules)
+   (unsigned-byte-p-forced-rules) ; needed for some rules below
    '(;; our normal form is to let these open up to calls to bvlt and sbvlt:
      bvle ;Thu Jan 19 16:35:59 2017
      bvge ;Thu Jan 19 16:35:59 2017
@@ -800,7 +801,7 @@
 
      bvplus-of-bvchop-and-bvshl ;new
      bvchop-of-bvshr-becomes-slice-safe ;newish: remove?? with bvshr we can split into cases easily.
-     bvchop-of-bvashr ; introduces slice
+     bvchop-of-bvashr-safe ; introduces slice
      bvchop-of-bvif
 
      ;; TODO: More like this:
@@ -828,6 +829,8 @@
      bvlt-transitive-4-b
      bvlt-transitive-5-a
      bvlt-transitive-5-b
+     not-bvlt-when-not-bvlt-narrower
+     not-bvlt-when-not-bvlt-narrower2
 
      not-bvlt-of-max-arg2-constant-version
      bvlt-of-max-when-bvlt-constant-version
@@ -886,12 +889,16 @@
 ;    bvchop-of-bvxor-does-nothing ;this one seems safe..
      bvchop-of-bvxor ; drop?
 
-     ;; these replace the numeric bound rules
+     ;; these replace the numeric bound rules, and require the unsigned-byte-p-forced rules
      <-lemma-for-known-operators-axe-alt
      <-lemma-for-known-operators-axe
+     <-lemma-for-known-operators-axe2
+     <-lemma-for-known-operators-axe3
+
      <-of-bv-and-non-positive-constant ;Thu May 17 00:37:24 2012
 
      ;; We leave most commutativity rules out of core-rules-bv, because they can be expensive for large nests
+     ;; TODO: What about rules like bvplus-commute-constant2 ?
      bvplus-commute-constant
      bvmult-commute-constant
      bvand-commute-constant
@@ -1072,7 +1079,10 @@
 
      ;; for now, we open these to expose bvcat:
      putbyte
-     putbits)))
+     putbits
+
+     unsigned-byte-p-of-bvmult-of-expt2-constant-version
+     unsigned-byte-p-of-bvchop-becomes-bvlt)))
 
 ;todo combine this with core-rules-bv
 ;todo: some of these are not bv rules?
@@ -1159,7 +1169,12 @@
     bvif-1-equal-1-y-x-bitxor-1-x
     bvif-1-equal-1-y-bitxor-1-x-x
 
-    bvif-equal-0-usb1-2
+    ;; move to bv-rules?:
+    bvif-equal-0-0-1
+    bvif-equal-0-0-1-alt
+    bvif-equal-1-usb1
+    bvif-equal-1-usb1-alt
+
     bvif-equal-0-usb1
 
     myif-of-bvif-becomes-bvif-arg2
@@ -1599,6 +1614,8 @@
      consp-of-bv-array-write ;moved here
      equal-of-bv-array-write-of-1-constant-version
 
+     bv-array-read-trim-index-axe
+
      bv-array-read-of-bvchop
      bv-array-read-of-logext-64-32 ;bozo
      bv-array-read-of-cons-base
@@ -1866,7 +1883,9 @@
     array-reduction-1-0
     array-reduction-when-all-same-improved2
     bv-array-read-of-bvmult-discard-vals
-    bv-array-read-of-bvplus-of-bvmult-discard-vals))
+    bv-array-read-of-bvplus-of-bvmult-discard-vals
+    bv-array-read-of-+-of-constant-shorten ; for when we have + for the index (but we may prefer a bvplus) ; todo: make a bvplus version
+    ))
 
 (defun bvplus-rules ()
   (declare (xargs :guard t))
@@ -1949,7 +1968,6 @@
 
             bvcat-trim-high-size-when-constant-1
             )
-          (unsigned-byte-p-forced-rules)
           (boolean-rules)
           (base-rules)
           (bv-array-rules) ;todo: drop?
@@ -3752,8 +3770,6 @@
              +-becomes-bvplus-axe
              bvmult-of-bvplus-hack
              bvmult-of-bvmult-hack
-             <-lemma-for-known-operators-axe2
-             <-lemma-for-known-operators-axe3
              nthcdr-of-nthcdr
 
              cdr-of-group2
@@ -3798,7 +3814,6 @@
 ;             bvxor-associative ;i can't believe this was missing!
 ;             bvxor-commutative-axe
 ;           bvxor-commutative-2-axe
-             bv-array-read-trim-index
              bvlt-transitive-free2-back-constants
              bvlt-of-bvplus-constant-and-constant
              bvlt-of-bvplus-same-alt

@@ -15,6 +15,7 @@
 (include-book "../axe-syntax-functions-boolean")
 (include-book "../axe-syntax-functions-bv")
 (include-book "../make-axe-syntaxp-evaluator")
+(include-book "axe-syntax-functions-x86")
 
 ;; todo: what order should these be in?
 (make-axe-syntaxp-evaluator 'x86 '(heavier-dag-term
@@ -33,4 +34,6 @@
                                    term-should-be-trimmed-axe-plus-one
                                    term-should-be-trimmed-axe
                                    should-commute-axe-argsp
-                                   should-commute-axe-args-increasingp))
+                                   should-commute-axe-args-increasingp
+                                   x::write-with-addr-and-size-presentp-axe
+                                   dargs-equalp))

@@ -4600,7 +4600,7 @@
       If there is none, we have the punctuator @('.').
       If the following character is a digit,
       this must start a decimal floating constant.
-      If the following character is another @('.),
+      If the following character is another @('.'),
       and there is a further @('.') after it,
       we have the punctuator @('...').
       In all other cases, we just have the punctuator @('.'),
@@ -9027,7 +9027,10 @@
          ((erp token span parstate) (read-token parstate)))
       (cond
        ((and token (token-case token :ident)) ; identifier
-        (retok (expr-ident (token-ident->unwrap token)) span parstate))
+        (retok (make-expr-ident :ident (token-ident->unwrap token)
+                                :info nil)
+               span
+               parstate))
        ((and token (token-case token :const)) ; constant
         (retok (expr-const (token-const->unwrap token)) span parstate))
        ((and token (token-case token :string)) ; stringlit
@@ -9642,14 +9645,14 @@
               (read-punctuator "=" parstate))
              ((erp initer last-span parstate) ; designators = initializer
               (parse-initializer parstate)))
-          (retok (make-desiniter :design designors :init initer)
+          (retok (make-desiniter :designors designors :initer initer)
                  (span-join span last-span)
                  parstate)))
        ((token-initializer-start-p token) ; initializer...
         (b* ((parstate (unread-token parstate))
              ((erp initer span parstate) ; initializer
               (parse-initializer parstate)))
-          (retok (make-desiniter :design nil :init initer)
+          (retok (make-desiniter :designors nil :initer initer)
                  span
                  parstate)))
        (t ; other
@@ -10564,7 +10567,7 @@
          ((erp token span parstate) (read-token parstate)))
       (cond
        ((token-type-qualifier-p token) ; tyqual
-        (retok (typequal/attribspec-tyqual (token-to-type-qualifier token))
+        (retok (typequal/attribspec-type (token-to-type-qualifier token))
                span
                parstate))
        ((or (token-keywordp token "__attribute") ; __attribute
@@ -11831,7 +11834,7 @@
              ((erp dirdeclor last-span parstate) ; pointer dirdeclor
               (parse-direct-declarator parstate)))
           (retok (make-declor :pointers tyqualss
-                              :decl dirdeclor)
+                              :direct dirdeclor)
                  (span-join span last-span)
                  parstate)))
        ;; If token is not a star, we must have a direct declarator.
@@ -11840,7 +11843,7 @@
              ((erp dirdeclor span parstate) ; dirdeclor
               (parse-direct-declarator parstate)))
           (retok (make-declor :pointers nil
-                              :decl dirdeclor)
+                              :direct dirdeclor)
                  span
                  parstate)))))
     :measure (two-nats-measure (parsize parstate) 1))

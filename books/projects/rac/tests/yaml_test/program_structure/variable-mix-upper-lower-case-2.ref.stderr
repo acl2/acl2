@@ -1,0 +1,6 @@
+variable-mix-upper-lower-case-2.cpp:5 (0-14): FOO is already used but with a different case (in ACL2, they will refer to the same thing)
+  5 | int FOO(int a) { return 3; }
+    | ^^^^^^^^^^^^^^
+note: first defined here
+  3 | int foo(int a) { return 2; }
+    | ^^^^^^^^^^^^^^

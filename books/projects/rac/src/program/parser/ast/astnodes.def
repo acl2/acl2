@@ -1,0 +1,55 @@
+// This file is used to generate code for each AST node except Expression and
+// Statement.
+// To use it, first define a macro APPLY(CLASS, PARENT) (or APPLY_EXPR or
+// APPLY_STMT for just the expressions or statements) where CLASS is the
+// current type and PARENT is the direct parent in the type hierarchy. For
+// example for the Integer expression, Constant is its parent and not
+// Expression (but the parent of Constant is Expression).
+// Then include this file and #undef the macro (for sanity).
+// For an example on how to use it, see visitor.h or visitor.cpp .
+
+#if !defined(APPLY_EXPR) && !defined(APPLY_STMT)
+#define APPLY_EXPR(CLASS, PARENT) APPLY(CLASS, PARENT)
+#define APPLY_STMT(CLASS, PARENT) APPLY(CLASS, PARENT)
+#endif
+
+APPLY_EXPR( Constant, Expression )
+APPLY_EXPR( Integer,  Constant )
+APPLY_EXPR( Boolean, Constant )
+APPLY_EXPR( Parenthesis, Expression )
+APPLY_EXPR( SymRef, Expression )
+APPLY_EXPR( FunCall, Expression )
+APPLY_EXPR( TempCall, FunCall )
+APPLY_EXPR( Initializer, Expression)
+APPLY_EXPR( ArrayRef, Expression )
+APPLY_EXPR( StructRef, Expression )
+APPLY_EXPR( Subrange, Expression )
+APPLY_EXPR( PrefixExpr, Expression)
+APPLY_EXPR( CastExpr, Expression )
+APPLY_EXPR( BinaryExpr, Expression )
+APPLY_EXPR( CondExpr, Expression )
+APPLY_EXPR( MultipleValue, Expression )
+
+APPLY_STMT( SimpleStatement, Statement )
+APPLY_STMT( SymDec, SimpleStatement )
+APPLY_STMT( EnumConstDec, SymDec )
+APPLY_STMT( VarDec, SymDec )
+APPLY_STMT( ConstDec, VarDec )
+APPLY_STMT( MulVarDec, SimpleStatement )
+APPLY_STMT( MulConstDec, SimpleStatement )
+APPLY_STMT( TempParamDec, SymDec )
+APPLY_STMT( BreakStmt, SimpleStatement )
+APPLY_STMT( ReturnStmt, SimpleStatement )
+APPLY_STMT( NullStmt, SimpleStatement )
+APPLY_STMT( Assertion, SimpleStatement )
+APPLY_STMT( Assignment, SimpleStatement )
+APPLY_STMT( MultipleAssignment, SimpleStatement )
+APPLY_STMT( Block, Statement )
+APPLY_STMT( IfStmt, Statement )
+APPLY_STMT( ForStmt, Statement )
+APPLY_STMT( Case, Statement)
+APPLY_STMT( SwitchStmt, Statement )
+
+APPLY_STMT( FunDef, Statement )
+APPLY_STMT( Builtin, FunDef )
+APPLY_STMT( Template, FunDef )

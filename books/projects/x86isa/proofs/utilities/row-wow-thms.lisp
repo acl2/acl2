@@ -38,7 +38,9 @@
 
 (in-package "X86ISA")
 
-(include-book "basics" :ttags (:include-raw :undef-flg :syscall-exec :other-non-det))
+(include-book "../../machine/state")
+(include-book "../../machine/environment")
+(include-book "../../machine/decoding-and-spec-utils")
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 
 ;; ===================================================================

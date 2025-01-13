@@ -74,8 +74,7 @@
      :rewrite)))
 
 (defund basename (path)
-  (declare (xargs :guard (fat32-filename-list-p path)
-                  :guard-debug t))
+  (declare (xargs :guard (fat32-filename-list-p path)))
   (mbe :logic (fat32-filename-fix (car (last path)))
        :exec (if (consp path)
                  (fat32-filename-fix (car (last path)))
@@ -971,7 +970,6 @@
                               (m1-file-alist-p fs)
                               (hifat-no-dups-p fs)
                               (fat32-filename-list-p path))
-                  :guard-debug t
                   :guard-hints
                   (("Goal"
                     :in-theory
@@ -1168,8 +1166,7 @@
 ;; to return nil to signal clearly that we have reached the end of the stream.
 (defund hifat-readdir (dirp dir-stream-table)
   (declare (xargs :guard (and (dir-stream-table-p dir-stream-table)
-                              (natp dirp))
-                  :guard-debug t))
+                              (natp dirp))))
   (b*
       ((dirp (mbe :exec dirp :logic (nfix dirp)))
        (dir-stream-table

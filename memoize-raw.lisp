@@ -1090,10 +1090,12 @@
     (cond (temp (cdr temp))
           (t (let* ((fn (symbol-function sym))
                     (lam (and fn
-                              #+gcl ; accommodate early GCL 2.6.13
+                              #+(and gcl ; accommodate early GCL 2.6.13
+                                     (not gcl-2.7.0+))
                               (and (fboundp 'function-lambda-expression)
                                    (funcall 'function-lambda-expression fn))
-                              #-gcl
+                              #-(and gcl
+                                     (not gcl-2.7.0+))
                               (function-lambda-expression fn))))
                (cond (lam (assert (or (eq (car lam) 'lambda)
                                       #+sbcl
@@ -3248,9 +3250,72 @@
   #+(or ccl sbcl)
   (compile (eval def)) ; probably the compile is unnecessary but harmless
   #-(or ccl sbcl)
-  (if (and old-fn (compiled-function-p old-fn))
-      (compile (eval def))
-    (eval def))
+  (cond ((and old-fn (compiled-function-p old-fn))
+         (compile (eval def))
+
+; In GCL 2.7.0 and presumably beyond, it can be necessary to recompile a
+; function after redefining one of its callees.  Memoize-partial introduces a
+; function, say, foo, that cannot be executed but then is then redefined (just
+; above) using the body of another, "total" function.  After that redefinition,
+; the *1* function for foo might thus need recompilation, since it calls foo.
+
+; If mutual-recursion is involved then additional recompilation may be needed,
+; as follows.  Suppose foo and bar are defined with mutual-recursion.  Then the
+; the bar may have been redefined by memoize-partial before the current
+; function, foo, is redefined, and the body of the new definition of bar might
+; look as follows (with declarations omitted here).
+
+;   (defun bar (x)
+;     (flet ((foo-limit (x bound) (foo x))
+;            (bar-limit (x bound) (bar x)))
+;       (let ((bound 0))
+;         (... (foo-limit (cdr x) bound) ...))))
+
+; So the current redefinition of foo may require recompilation of bar.
+
+; This, when foo is introduced by applying partial-memoize to a "total"
+; function foo-limit, then for every function bar in already introduced by
+; partial-memoize using a "total" function in the same mutual-recursion nest as
+; foo-limit, we recompile both bar and its *1* function.
+
+; This process could perhaps be optimized in such a mutual-recursion case by
+; waiting until all such functions are introduced for the given
+; partial-memoize.  But since we call si::needs-recompile before each
+; compilation below, it's not clear how much that would improve performance.
+
+         #+gcl-2.7.0+
+         (let* ((wrld (w *the-live-state*))
+                (name (cadr def))
+                (total-fn
+                 (cdr (assoc-eq :TOTAL
+                                (cdr (assoc-eq name
+                                               (table-alist 'memoize-table
+                                                            wrld)))))))
+           (when total-fn
+             (let* ((key
+                     (or (car (getpropc total-fn 'recursivep nil
+                                        wrld)) ; always non-nil?
+                         total-fn))
+                    (alist (cdr (assoc-eq key
+                                          (table-alist 'partial-functions-table
+                                                       wrld))))
+                    (flg t))
+               (loop while flg
+                     do
+                     (progn
+                       (setq flg nil)
+                       (when (assoc-eq name alist)
+                         (loop for pair in alist
+                               for fn = (car pair)
+                               for *1*fn = (*1*-symbol fn)
+                               do
+                               (progn (when (si::needs-recompile fn)
+                                        (setq flg t)
+                                        (compile fn))
+                                      (when (si::needs-recompile *1*fn)
+                                        (setq flg t)
+                                        (compile *1*fn)))))))))))
+        (t (eval def)))
   nil)
 
 (defun memoize-fn-formals (fn wrld inline
@@ -5079,8 +5144,8 @@
   #+static-hons
   (setq *print-array*
 
-; With *print-array* turned on, we end up sometimes seeing the SBITS array in
-; backtraces, etc, which can effectively kill your session (can't interrupt,
+; With *print-array* turned on, we end up sometimes seeing the SBITS structure
+; in backtraces, etc, which can effectively kill your session (can't interrupt,
 ; etc.).  This is only a problem with static-honsing since classic honsing
 ; doesn't have sbits anyway.
 

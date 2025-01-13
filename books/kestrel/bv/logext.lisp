@@ -303,7 +303,6 @@
   (implies (posp n)
            (equal (equal 0 (logext n x))
                   (equal 0 (bvchop n x))))
-  :otf-flg t
   :hints (("Goal" :in-theory (enable logext bvchop getbit slice logtail
                                      expt-of-+
                                      ;; mod-=-0

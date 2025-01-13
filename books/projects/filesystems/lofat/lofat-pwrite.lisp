@@ -16,7 +16,6 @@
                               (natp offset)
                               (fd-table-p fd-table)
                               (file-table-p file-table))
-                  :guard-debug t
                   :guard-hints (("Goal" :do-not-induct t
                                  :in-theory (enable len-of-insert-text)))))
   (b*

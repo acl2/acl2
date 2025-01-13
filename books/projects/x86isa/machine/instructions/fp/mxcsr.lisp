@@ -44,21 +44,14 @@
 ;; ======================================================================
 
 (include-book "../../decoding-and-spec-utils"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:undef-flg))
 (include-book "base"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:undef-flg))
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 
 ; =============================================================================
 ; INSTRUCTION: MXCSR State Management Instructions
 ; =============================================================================
-
-(defthm-unsigned-byte-p n32p-xr-mxcsr
-  :hyp t
-  :bound 32
-  :concl (xr :mxcsr i x86)
-  :gen-linear t
-  :gen-type t)
 
 (def-inst x86-ldmxcsr/stmxcsr-Op/En-M
 

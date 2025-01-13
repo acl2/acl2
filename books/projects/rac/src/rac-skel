@@ -99,27 +99,27 @@ fi
 set -e
 
 basename=${srcfile%.*}
-cppopts="-D__RAC__ -C -std=c++14"
+cppopts="-D__RAC__ -C -std=c++14 -x c++"
 
-g++ $cppopts $incdirs $basename.cpp -E -o $basename.i;
+# Preprocess basename.cpp: first we rename assert into __RAC_ASSERT to avoid
+# its expansion (it is a macro) and then we run g++. The echo/cat is there to
+# add the file name otherwise g++ would report error in <STDIN>.
+echo "# 0 \"$basename.cpp\"" | cat - $basename.cpp | sed "s/assert/__RAC_ASSERT/g" | g++ $cppopts $incdirs - -E -o $basename.i;
 
 if [[ -z "$acl2" && -z "$rac" ]]
 then
-    $parseBin $basename
+    $parseBin $basename $RAC_EXTRA_FLAGS
 fi
 
 if [[ "$rac" ]]
 then
-    $parseBin $basename -rac
+    $parseBin $basename -rac $RAC_EXTRA_FLAGS
 fi
 
 if [[ "$acl2" ]]
 then
 
-     # Use suffix ".ast.lsp" instead of ".ast.lisp" so that ACL2's
-     # cert.pl program won't try to certify it.
-
-    $parseBin $basename -acl2 $basename.ast.lsp
+    $parseBin $basename -acl2 $RAC_EXTRA_FLAGS
 
     # Disable the loading of acl2-customization.lsp which could break the
     # certification.

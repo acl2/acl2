@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,7 +10,6 @@
 
 (in-package "C$")
 
-(include-book "abstract-syntax-operations")
 (include-book "concrete-syntax")
 (include-book "unambiguity")
 
@@ -1432,11 +1431,12 @@
      (xdoc::codeblock
       "(expr-binary (binop-mul)"
       "             (expr-binary (binop-add)"
-      "                          (expr-ident (ident \"x\"))"
-      "                          (expr-ident (ident \"y\")))"
-      "             (expr-ident (ident \"z\")))")
+      "                          (expr-ident (ident \"x\") ...)"
+      "                          (expr-ident (ident \"y\") ...))"
+      "             (expr-ident (ident \"z\") ...))")
      (xdoc::p
-      "represents the expression @('(x + y) * z').
+      "(where @('...') is the additional information, irrelevant here)
+       represents the expression @('(x + y) * z').
        When this expression is written in concrete syntax as just done,
        parentheses must be added,
        because @('*') binds tighter (i.e. has a higher priority) than @('+').")
@@ -2094,7 +2094,7 @@
     :short "Print a type qualifier or attribute specifier."
     (typequal/attribspec-case
      tyqualattrib
-     :tyqual (print-type-qual tyqualattrib.unwrap pstate)
+     :type (print-type-qual tyqualattrib.unwrap pstate)
      :attrib (print-attrib-spec tyqualattrib.unwrap pstate))
     :measure (two-nats-measure (typequal/attribspec-count tyqualattrib) 0))
 
@@ -2207,12 +2207,13 @@
     :parents (printer print-exprs/decls/stmts)
     :short "Print an initializer with optional designations."
     (b* (((desiniter desiniter) desiniter)
-         (pstate (if desiniter.design
-                     (b* ((pstate (print-designor-list desiniter.design pstate))
+         (pstate (if desiniter.designors
+                     (b* ((pstate (print-designor-list desiniter.designors
+                                                       pstate))
                           (pstate (print-astring " = " pstate)))
                        pstate)
                    pstate))
-         (pstate (print-initer desiniter.init pstate)))
+         (pstate (print-initer desiniter.initer pstate)))
       pstate)
     :measure (two-nats-measure (desiniter-count desiniter) 0))
 
@@ -2282,7 +2283,7 @@
                      (print-typequal/attribspec-list-list declor.pointers
                                                           pstate)
                    pstate))
-         (pstate (print-dirdeclor declor.decl pstate)))
+         (pstate (print-dirdeclor declor.direct pstate)))
       pstate)
     :measure (two-nats-measure (declor-count declor) 0))
 
@@ -3715,7 +3716,7 @@
   :prepwork
   ((define print-fileset-loop ((tunitmap filepath-transunit-mapp)
                                (options prioptp))
-     :guard (transunit-ensemble-unambp-loop tunitmap)
+     :guard (filepath-transunit-map-unambp tunitmap)
      :returns (filemap filepath-filedata-mapp)
      :parents nil
      (b* (((when (omap::emptyp tunitmap)) nil)

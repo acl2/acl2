@@ -217,7 +217,7 @@
      the address in the @('advance') event;
      see @(tsee event).")
    (xdoc::p
-    "We increment the validator' round by one.
+    "We increment the validator's round by one.
      We also restart the timer, setting it to running
      (which is a no-op if the round has advanced not due to a timeout."))
   (b* (((validator-state vstate) (get-validator-state val systate))

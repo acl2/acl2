@@ -1,6 +1,6 @@
 ; A utility that suggests ways to speed up events and books
 ;
-; Copyright (C) 2023-2024 Kestrel Institute
+; Copyright (C) 2023-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -359,6 +359,7 @@
 ;; TODO: Compare to speed-up-defrule.  Keep in sync, or merge them.
 ;; todo: refactor to generate list of hints, with descriptions, to try.
 ;; Does not change the world.
+;; TODO: What about corollaries?
 (defun speed-up-defthm (event min-time-savings min-event-time print print-headerp state)
   (declare (xargs :guard (and (print-levelp print) ; todo: caller doesn't allow t?
                               (booleanp print-headerp))
@@ -367,7 +368,7 @@
   (prog2$
    (and print print-headerp (cw "~%For ~s0" (first (rest event)))) ; speedups are indented below this, and start with newlines
    (let* ( ;;(defthm-variant (first event))
-          (defthm-args (rest event))
+          (defthm-args (rest event)) ; (defthm <name> <body> ...)
           (name (first defthm-args))
           (body (second defthm-args))
           (keyword-value-list (rest (rest defthm-args)))
@@ -459,11 +460,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defttag remove-untouchable)
+(remove-untouchable protected-eval t)
+
 (mutual-recursion
 
  ;; Submits the event, after printing suggestions for improving it.
  ;; Returns (mv erp state).
- ;; TODO: Handle more kinds of events, like defun!  And make-event!
+ ;; TODO: Handle more kinds of events, like defun!  And make-event!  Also verify-termination and verify-guards.
  ;; todo: expand macros, evaluate make-events (revert the world?),
  (defun speed-up-and-submit-event (event synonym-alist min-time-savings min-event-time print throw-errorp state)
    (declare (xargs :guard (and (print-levelp print) ; todo: finish threading this through
@@ -534,6 +538,20 @@
          (progn
            (let ((events (fargs event)))
              (speed-up-and-submit-events events synonym-alist min-time-savings min-event-time print throw-errorp state)))
+         (make-event
+           (let ((event (farg1 event)))
+             (mv-let (erp result state)
+               ;; todo: or use revert-world-on-error? (see comment in protected-eval)
+               (revert-world
+                 (protected-eval event
+                                 'speed-up-and-submit-event
+                                 'speed-up-and-submit-event
+                                 state
+                                 t))
+               (if erp
+                   (mv :error-in-make-event state)
+                 (let ((result-event (car result))) ; todo: do anything with new-kpa and new-ttags-seen?
+                   (speed-up-and-submit-event result-event synonym-alist min-time-savings min-event-time print throw-errorp state))))))
          (otherwise
           (if (macro-namep fn (w state))
               (progn$ ;; (cw "Macroexpanding ~x0.~%" event)

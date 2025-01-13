@@ -807,10 +807,13 @@ unless ($acl2 || $quiet || $no_build) {
 
 $acl2_books = determine_acl2_dirs($acl2_books, $acl2_projects, $acl2, $startjob, $RealBin);
 
-unless ($acl2_books || $quiet || $no_build) {
+unless ($acl2_books || $quiet) {
     print(STDERR
 	  "ACL2 system books not found.  Please specify with --acl2-books
 	  command line flag or ACL2_SYSTEM_BOOKS environment variable.");
+    # Should we just die here? I guess things could still work if none
+    # of the targets/dependencies happen to use any :dir :system
+    # include-books.
 }
 
 
@@ -855,6 +858,21 @@ unless (@targets) {
     }
 }
 
+# Refuse to build targets in the ACL2 sources directory, since the .lisp files there aren't books.
+my @bad_targets = ();
+my $acl2_dir_canonical = canonical_path(dirname($acl2_books));
+foreach my $target(@targets) {
+    # Targets are (non-absolute) canonical, compare to canonical books dir
+    if (dirname($target) eq $acl2_dir_canonical) {
+	push(@bad_targets, $target);
+    }
+}
+if (@bad_targets) {
+    die("\nError: trying to build targets from the ACL2 sources directory:\n"
+	. join("\n", @bad_targets) . "\n");
+}
+
+# Recursively get the dependencies of all the targets
 foreach my $target (@targets) {
     (my $tcert = $target) =~ s/\.(acl2x|pcert(0|1))/\.cert/;
     add_deps($tcert, $depdb, 0);

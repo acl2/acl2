@@ -25,6 +25,7 @@
 (include-book "kestrel/strings-light/strings-starting-with" :dir :system)
 (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system) ; for +-OF-+-OF---SAME
 (include-book "kestrel/arithmetic-light/types" :dir :system) ; for rationalp-when-integerp
+(include-book "kestrel/arithmetic-light/floor" :dir :system)
 (include-book "unroll-x86-code")
 (include-book "tester-rules-bv")
 (include-book "tester-rules")
@@ -261,10 +262,11 @@
                            assumptions ; untranslated terms
                            extra-rules extra-lift-rules extra-proof-rules
                            remove-rules remove-lift-rules remove-proof-rules
-                           print monitor
+                           count-hits print monitor
                            step-limit step-increment
                            prune tactics
                            max-conflicts  ;a number of conflicts, or nil for no max
+                           inputs-disjoint-from
                            stack-slots
                            position-independentp
                            state)
@@ -279,12 +281,14 @@
                                   (symbol-listp monitor))
                               (natp step-limit)
                               (natp step-increment)
+                              (acl2::count-hits-argp count-hits)
                               (or (eq nil prune)
                                   (eq t prune)
                                   (natp prune))
                               (acl2::tacticsp tactics)
                               (or (null max-conflicts)
                                   (natp max-conflicts))
+                              (member-eq inputs-disjoint-from '(nil :code :all))
                               (or (natp stack-slots)
                                   (eq :auto stack-slots))
                               (booleanp position-independentp))
@@ -340,6 +344,7 @@
           parsed-executable
           assumptions
           nil ;suppress-assumptions
+          inputs-disjoint-from
           stack-slots
           position-independentp
           :skip ; no input assumptions -- todo
@@ -351,11 +356,8 @@
                   extra-lift-rules
                   (extra-tester-lifting-rules))
           ;; remove-rules:
-          (append
-           '(x86isa::x86-cwd/cdq/cqo ; todo: push back to def-unrolled..
-             acl2::bvchop-of-bvashr)
-           remove-rules
-           remove-lift-rules)
+          (append remove-rules
+                  remove-lift-rules)
           ;; extra-assumption-rules:
           (append ;; (lifter-rules64-new)
                   ;; todo: build these in deeper
@@ -379,6 +381,7 @@
           step-increment
           t ; memoizep (nil allows internal contexts)
           rules-to-monitor
+          count-hits
           print
           10 ; print-base (todo: consider 16)
           t ; untranslatep (todo: make this an option)
@@ -424,8 +427,7 @@
                                                ;; todo: why is boolor bad?
                                                '(acl2::boolif-x-x-y-becomes-boolor ;drop?
                                                  acl2::boolif-when-quotep-arg2
-                                                 acl2::boolif-when-quotep-arg3
-                                                 acl2::bvchop-of-bvashr))))
+                                                 acl2::boolif-when-quotep-arg3))))
        ((mv result info-acc
             & ; actual-dag
             & ; assumptions-given
@@ -485,10 +487,10 @@
                          assumptions
                          extra-rules extra-lift-rules extra-proof-rules
                          remove-rules remove-lift-rules remove-proof-rules
-                         print monitor
+                         count-hits print monitor
                          step-limit step-increment
                          prune tactics
-                         max-conflicts stack-slots
+                         max-conflicts inputs-disjoint-from stack-slots
                          position-independent
                          expected-result
                          state)
@@ -499,6 +501,7 @@
                               (symbol-listp remove-rules)
                               (symbol-listp remove-lift-rules)
                               (symbol-listp remove-proof-rules)
+                              (acl2::count-hits-argp count-hits)
                               (or (eq :debug monitor)
                                   (symbol-listp monitor))
                               (natp step-limit)
@@ -509,6 +512,7 @@
                               (acl2::tacticsp tactics)
                               (or (null max-conflicts)
                                   (natp max-conflicts))
+                              (member-eq inputs-disjoint-from '(nil :code :all))
                               (or (natp stack-slots)
                                   (eq :auto stack-slots))
                               (member-eq position-independent '(t nil :auto))
@@ -538,7 +542,7 @@
         (test-function-core function-name-string parsed-executable param-names assumptions
                             extra-rules extra-lift-rules extra-proof-rules
                             remove-rules remove-lift-rules remove-proof-rules
-                            print monitor step-limit step-increment prune tactics max-conflicts stack-slots position-independentp state))
+                            count-hits print monitor step-limit step-increment prune tactics max-conflicts inputs-disjoint-from stack-slots position-independentp state))
        ((when erp) (mv erp nil state))
        (- (cw "Time: ")
           (acl2::print-to-hundredths elapsed)
@@ -567,6 +571,7 @@
                          (remove-rules 'nil)
                          (remove-lift-rules 'nil)
                          (remove-proof-rules 'nil)
+                         (count-hits 'nil)
                          (print 'nil)
                          (monitor 'nil)
                          (step-limit '1000000)
@@ -574,6 +579,7 @@
                          (prune '10000)             ; t, nil, or a max size
                          (tactics '(:rewrite :stp)) ; todo: try something with :prune
                          (expected-result ':pass)
+                         (inputs-disjoint-from ':code)
                          (stack-slots ':auto)
                          (position-independent ':auto)
                          (max-conflicts '1000000))
@@ -587,9 +593,10 @@
                                              ,remove-rules ; gets evaluated
                                              ,remove-lift-rules ; gets evaluated
                                              ,remove-proof-rules ; gets evaluated
+                                             ',count-hits
                                              ',print
                                              ,monitor ; gets evaluated
-                                             ',step-limit ',step-increment ',prune ',tactics ',max-conflicts ',stack-slots ',position-independent ',expected-result state)))
+                                             ',step-limit ',step-increment ',prune ',tactics ',max-conflicts ',inputs-disjoint-from ',stack-slots ',position-independent ',expected-result state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -599,8 +606,10 @@
                               assumptions-alist
                               extra-rules extra-lift-rules extra-proof-rules
                               remove-rules remove-lift-rules remove-proof-rules
+                              count-hits
                               print monitor step-limit step-increment prune
                               tactics max-conflicts
+                              inputs-disjoint-from
                               stack-slots
                               position-independentp
                               expected-failures
@@ -616,6 +625,7 @@
                               (symbol-listp remove-rules)
                               (symbol-listp remove-lift-rules)
                               (symbol-listp remove-proof-rules)
+                              (acl2::count-hits-argp count-hits)
                               (or (eq :debug monitor)
                                   (symbol-listp monitor))
                               (natp step-limit)
@@ -626,6 +636,7 @@
                               (acl2::tacticsp tactics)
                               (or (null max-conflicts)
                                   (natp max-conflicts))
+                              (member-eq inputs-disjoint-from '(nil :code :all))
                               (or (natp stack-slots)
                                   (eq :auto stack-slots))
                               (booleanp position-independentp)
@@ -642,7 +653,7 @@
                               (acl2::lookup-equal function-name assumptions-alist)
                               extra-rules extra-lift-rules extra-proof-rules
                               remove-rules remove-lift-rules remove-proof-rules
-                              print monitor step-limit step-increment prune tactics max-conflicts stack-slots position-independentp state))
+                              count-hits print monitor step-limit step-increment prune tactics max-conflicts inputs-disjoint-from stack-slots position-independentp state))
          ((when erp) (mv erp nil state))
          (result (if passedp :pass :fail))
          (expected-result (if (member-equal function-name expected-failures)
@@ -653,8 +664,8 @@
       (test-functions-fn-aux (rest function-name-strings) parsed-executable assumptions-alist
                              extra-rules extra-lift-rules extra-proof-rules
                              remove-rules remove-lift-rules remove-proof-rules
-                             print monitor step-limit step-increment prune
-                             tactics max-conflicts stack-slots position-independentp
+                             count-hits print monitor step-limit step-increment prune
+                             tactics max-conflicts inputs-disjoint-from stack-slots position-independentp
                              expected-failures
                              (acons function-name (list result expected-result elapsed) result-alist)
                              state))))
@@ -667,8 +678,8 @@
                           assumptions
                           extra-rules extra-lift-rules extra-proof-rules
                           remove-rules remove-lift-rules remove-proof-rules
-                          print monitor step-limit step-increment prune
-                          tactics max-conflicts stack-slots position-independent
+                          count-hits print monitor step-limit step-increment prune
+                          tactics max-conflicts inputs-disjoint-from stack-slots position-independent
                           expected-failures
                           state)
   (declare (xargs :guard (and (stringp executable)
@@ -682,6 +693,7 @@
                           (symbol-listp remove-rules)
                           (symbol-listp remove-lift-rules)
                           (symbol-listp remove-proof-rules)
+                          (acl2::count-hits-argp count-hits)
                           (or (eq :debug monitor)
                               (symbol-listp monitor))
                           (natp step-limit)
@@ -692,6 +704,7 @@
                           (acl2::tacticsp tactics)
                           (or (null max-conflicts)
                               (natp max-conflicts))
+                          (member-eq inputs-disjoint-from '(nil :code :all))
                           (or (natp stack-slots)
                               (eq :auto stack-slots))
                           (member-eq position-independent '(t nil :auto))
@@ -766,8 +779,8 @@
                                assumption-alist
                                extra-rules extra-lift-rules extra-proof-rules
                                remove-rules remove-lift-rules remove-proof-rules
-                               print monitor step-limit step-increment prune
-                               tactics max-conflicts stack-slots position-independentp
+                               count-hits print monitor step-limit step-increment prune
+                               tactics max-conflicts inputs-disjoint-from stack-slots position-independentp
                                expected-failures
                                nil ; empty result-alist
                                state))
@@ -795,6 +808,7 @@
                           (remove-rules 'nil)
                           (remove-lift-rules 'nil)
                           (remove-proof-rules 'nil)
+                          (count-hits 'nil)
                           (print 'nil)
                           (monitor 'nil)
                           (step-limit '1000000)
@@ -802,6 +816,7 @@
                           (prune '10000)             ; t, nil, or a max size
                           (tactics '(:rewrite :stp)) ; todo: try something with :prune
                           (max-conflicts '1000000)
+                          (inputs-disjoint-from ':code)
                           (stack-slots ':auto)
                           (position-independent ':auto)
                           (expected-failures ':auto)
@@ -817,10 +832,11 @@
                                               ,remove-rules ; gets evaluated
                                               ,remove-lift-rules ; gets evaluated
                                               ,remove-proof-rules ; gets evaluated
+                                              ',count-hits
                                               ',print
                                               ,monitor ; gets evaluated
                                               ',step-limit ',step-increment ',prune
-                                              ',tactics ',max-conflicts ',stack-slots ',position-independent
+                                              ',tactics ',max-conflicts ',inputs-disjoint-from ',stack-slots ',position-independent
                                               ',expected-failures
                                               state)))
 
@@ -839,6 +855,7 @@
                      (remove-rules 'nil)
                      (remove-lift-rules 'nil)
                      (remove-proof-rules 'nil)
+                     (count-hits 'nil)
                      (print 'nil)
                      (monitor 'nil)
                      (step-limit '1000000)
@@ -846,6 +863,7 @@
                      (prune '10000)             ; t, nil, or a max size
                      (tactics '(:rewrite :stp)) ; todo: try something with :prune
                      (max-conflicts '1000000)
+                     (inputs-disjoint-from ':code)
                      (stack-slots ':auto)
                      (position-independent ':auto)
                      (expected-failures ':auto)
@@ -861,9 +879,9 @@
                                               ,remove-rules ; gets evaluated
                                               ,remove-lift-rules ; gets evaluated
                                               ,remove-proof-rules ; gets evaluated
-                                              ',print
+                                              ',count-hits ',print
                                               ,monitor ; gets evaluated
                                               ',step-limit ',step-increment ',prune
-                                              ',tactics ',max-conflicts ',stack-slots ',position-independent
+                                              ',tactics ',max-conflicts ',inputs-disjoint-from ',stack-slots ',position-independent
                                               ',expected-failures
                                               state)))

@@ -207,7 +207,7 @@
    (xdoc::@[]
     "|A \\cap B| = |A| + |B| - |A \\cup B|")
    (xdoc::p
-    "If we substitute the quorum cardinality of @($A$ and @($B$) (see above),
+    "If we substitute the quorum cardinality of @($A$) and @($B$) (see above),
      we obtain")
    (xdoc::@[]
     "|A \\cap B| = 2n - 2f - |A \\cup B|")

@@ -67,7 +67,7 @@
      we leave the details of third third kind open.")
    (xdoc::p
     "Stake is modeled as a positive integer,
-     which can be imagine to be Aleo micro-credits,
+     which can be imagined to be Aleo micro-credits,
      but the exact unit of stake is irrelevant to our model.
      A bonding transaction consists of
      the address of the validator and the stake bonded.

@@ -40,6 +40,7 @@
 ; Alessandro Coglio (www.alessandrocoglio.info)
 
 (in-package "X86ISA")
+(include-book "state")
 (include-book "rflags-spec")
 (include-book "fp-structures" :dir :utils)
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
@@ -163,13 +164,6 @@ prefix.</p>"
 ;; [Jared] these rules broke something below
 (local (in-theory (disable bitops::logext-of-logand
                            bitops::logext-of-logior)))
-
-(defthm-signed-byte-p i64p-xr-rgf
-  :hyp t
-  :bound 64
-  :concl (xr :rgf i x86)
-  :gen-linear t
-  :gen-type t)
 
 (defsection GPRs-Reads-and-Writes
 
@@ -652,13 +646,6 @@ are used to write natural numbers into the GPRs.</p>"
 
 ;; ----------------------------------------------------------------------
 
-(defthm-unsigned-byte-p n80p-xr-fp-data
-  :hyp t
-  :bound 80
-  :concl (xr :fp-data i x86)
-  :gen-linear t
-  :gen-type t)
-
 (defsection MMX-Registers-Reads-and-Writes
 
   :parents (register-readers-and-writers)
@@ -773,13 +760,6 @@ pointer, or opcode registers\).</em></p>"
                      (x86p (mmx-instruction-updates x86))))))
 
 ;; ----------------------------------------------------------------------
-
-(defthm-unsigned-byte-p n512p-xr-zmm
-  :hyp t
-  :bound 512
-  :concl (xr :zmm i x86)
-  :gen-linear t
-  :gen-type t)
 
 (defsection ZMMs-Reads-and-Writes
 

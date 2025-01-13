@@ -13,6 +13,7 @@
 
 (include-book "bvchop")
 (include-book "getbit")
+(local (include-book "slice"))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 
 ;;this should probably nfix its arguments (at least ifix them) or chop them
@@ -139,6 +140,12 @@
            (equal (bvmult size x y)
                   (bvmult size y x))))
 
+;; not needed if we are commuting more generally
+(defthmd bvmult-commute-constant2
+  (implies (syntaxp (and (quotep k)
+                         (not (quotep x))))
+           (equal (bvmult size x (bvmult size k y))
+                  (bvmult size k (bvmult size x y)))))
 
 (defthm bvmult-when-arg1-is-not-an-integer
   (implies (not (integerp x))

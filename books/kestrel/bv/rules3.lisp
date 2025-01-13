@@ -943,8 +943,6 @@
   :hints (("Goal" :use bvor-of-bvshl-and-bvshr
            :in-theory (disable bvor-of-bvshl-and-bvshr))))
 
-
-;fixme: reorder lhs to match name
 (defthm bvor-of-bvshr-and-bvshl-alt
   (implies (and (unsigned-byte-p (+ amt1 amt2) x)
                 (<= size (+ amt1 amt2))
@@ -952,7 +950,7 @@
                 (posp amt1)
                 (posp amt2)
                 (natp size))
-           (equal (bvor size (bvshl 32 x amt1) (bvshr 32 x amt2))
+           (equal (bvor size (bvshr 32 x amt2) (bvshl 32 x amt1))
                   (bvchop size (leftrotate (+ amt1 amt2) amt1 x))))
   :hints (("Goal" :in-theory (disable bvor-of-bvshl-and-bvshr-alt)
            :use bvor-of-bvshl-and-bvshr-alt)))
@@ -1024,7 +1022,7 @@
                 (posp amt1)
                 (posp amt2)
                 (natp size))
-           (equal (bvor size (bvshl 32 x amt1) (bvashr 32 x amt2))
+           (equal (bvor size (bvashr 32 x amt2) (bvshl 32 x amt1))
                   (bvchop size (leftrotate (+ amt1 amt2) amt1 x))))
   :hints (("Goal" :in-theory (disable bvor-of-bvshl-and-bvashr-alt)
            :use bvor-of-bvshl-and-bvashr-alt)))
@@ -1720,9 +1718,7 @@
 ;;            (equal (bvcat 5 x 1 1)
 ;;                   (+ 1 (* 2 x))))
 ;;   :hints (("Goal" :in-theory (e/d (bvcat logtail bvplus getbit)
-;;                                   (
-;;
-;;                                    bvplus-1-becomes-bitxor)))))
+;;                                   (bvplus-1-becomes-bitxor)))))
 
 ;; (defthm bvcat-hack22b
 ;;   (implies (and (< x 32)
@@ -1730,9 +1726,7 @@
 ;;            (equal (bvcat 5 x 1 0)
 ;;                   (* 2 x)))
 ;;   :hints (("Goal" :in-theory (e/d (bvcat logtail bvplus getbit)
-;;                                   (
-;;
-;;                                    bvplus-1-becomes-bitxor)))))
+;;                                   (bvplus-1-becomes-bitxor)))))
 
 
 (defthm bvcat-of-*-high
@@ -1917,9 +1911,10 @@
                               (+ -1 (expt 2 32))))))
   :hints (("Goal" :in-theory (enable bvplus bvchop-of-sum-cases BVCHOP-WHEN-I-IS-NOT-AN-INTEGER))))
 
+;move
 (defthm logtail-of-one-more
-  (implies (and (integerp x)
-;                (equal n 32)
+  (implies (and (syntaxp (not (quotep x)))
+                (integerp x)
                 (posp n))
            (equal (logtail n (+ 1 x))
                   (if (equal (+ -1 (expt 2 n)) (bvchop n x))
@@ -2174,7 +2169,6 @@
 ;;                  (unsigned-byte-p 1 carry))
 ;;             (equal (+ carry x y) ;(bvplus (+ 1 n) carry (bvplus (+ 1 n) x y))
 ;;                    (ripple-carry-adder n x y carry)))
-;;    :otf-flg t
 ;;    :hints (("Goal" :in-theory (enable ripple-carry-adder
 ;;                                       unsigned-byte-p-of-size-1
 ;;                                       ;GETBIT-OF-+ yuck

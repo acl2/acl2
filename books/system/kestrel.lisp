@@ -178,4 +178,3 @@
 
   (verify-termination aset1-lst) ; and guards
   )
-

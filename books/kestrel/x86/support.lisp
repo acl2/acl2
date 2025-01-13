@@ -13,6 +13,9 @@
 
 ;TODO: Organize this material.
 
+;; This book is for things that mix x86isa notions with our notions.  Pure x86
+;; theorems should go in support-x86.lisp.
+
 (include-book "support-x86") ;drop? for stuff about create-canonical-address-list
 (include-book "flags") ; reduce?
 (include-book "projects/x86isa/proofs/utilities/app-view/top" :dir :system)
@@ -68,16 +71,6 @@
   :hints (("Goal" :cases ((< x 0))
            :in-theory (enable canonical-address-p acl2::bvlt signed-byte-p
                               acl2::bvchop-when-negative-lemma))))
-
-;; Seems needed because the model adds 7 to rsp-8 and tests whether
-;; the result is canonical.  I guess it's testing the highest address
-;; of the 8 byte block.
-(defthm canonical-address-p-of-minus-1
-  (implies (equal 0 (mod x 8))
-           (equal (canonical-address-p (+ -1 x))
-                  (canonical-address-p (+ -8 x))))
-  :hints (("Goal" :in-theory (enable canonical-address-p signed-byte-p ;acl2::mod-=-0
-                                     ))))
 
 ;; ;; Just a wrapper that is in the x86isa package instead of the ACL2 package.
 ;; (defmacro defconst-computed (name form)
@@ -421,16 +414,6 @@
                                   (acl2::not-equal-bvchop-when-not-equal-bvchop
                                    acl2::rewrite-bv-equality-when-sizes-dont-match-2)))))
 
-;can loop with CANONICAL-ADDRESS-P-BETWEEN
-(defthmd integerp-when-canonical-address-p
-  (implies (canonical-address-p x)
-           (integerp x)))
-
-(defthmd integerp-when-canonical-address-p-cheap
-  (implies (and (canonical-address-p free)
-                (equal free x))
-           (integerp x)))
-
 (defthm 64-bit-mode-one-byte-opcode-modr/m-p-rewrite-quotep
   (implies (and (syntaxp (quotep byte))
                 (unsigned-byte-p 8 byte))
@@ -447,11 +430,6 @@
            (equal (mv-nth n x)
                   (nth n x)))
   :hints (("Goal" :in-theory (enable acl2::mv-nth-becomes-nth))))
-
-(defthm canonical-address-p-of-logext-64
-  (implies (canonical-address-p x)
-           (canonical-address-p (logext 64 x)))
-  :hints (("Goal" :in-theory (enable canonical-address-p)))) ;when can we drop the logext completely?
 
 (acl2::defopeners get-prefixes)
 
@@ -644,15 +622,15 @@
                 (<= neg-stack-offset (- stack-slots))
                 (integerp neg-stack-offset) ;should be negative
                 (disjoint-p (x86isa::create-canonical-address-list text-len text-offset)
-                            (x86isa::create-canonical-address-list total-stack-slots (binary-+ neg-total-stack-offset (xr ':rgf '4 x86))))
+                            (x86isa::create-canonical-address-list total-stack-slots (+ neg-total-stack-offset (xr ':rgf '4 x86))))
                 (syntaxp (and (quotep total-stack-slots)
                               (quotep neg-total-stack-offset)))
                 (equal neg-total-stack-offset (- total-stack-slots)) ;could gen but maybe no need to
                 ;(<= stack-slots total-stack-slots)
                 (<= neg-total-stack-offset neg-stack-offset)
                 (canonical-address-p$inline text-offset)
-                (canonical-address-p$inline (binary-+ (+ -1 text-len) text-offset))
-                (canonical-address-p$inline (binary-+ neg-total-stack-offset (xr ':rgf '4 x86)))
+                (canonical-address-p$inline (+ (+ -1 text-len) text-offset))
+                (canonical-address-p$inline (+ neg-total-stack-offset (xr ':rgf '4 x86)))
                 (canonical-address-p$inline (xr ':rgf '4 x86))
                 (natp n)
                 (< n text-len)
@@ -660,13 +638,13 @@
                 (natp stack-slots)
                 (posp total-stack-slots)
                 )
-           (not (x86isa::MEMBER-P (BINARY-+ n TEXT-OFFSET)
+           (not (x86isa::MEMBER-P (+ n TEXT-OFFSET)
                           ; we take some number of stack items (like 4), starting at some address below the stack pointer (like rsp-24)
-                          (CREATE-CANONICAL-ADDRESS-LIST stack-slots (BINARY-+ neg-stack-offset (XR ':RGF '4 X86))))))
+                          (CREATE-CANONICAL-ADDRESS-LIST stack-slots (+ neg-stack-offset (XR ':RGF '4 X86))))))
   :hints (("Goal" :use ((:instance x86isa::NOT-MEMBER-P-CANONICAL-ADDRESS-LISTP-WHEN-DISJOINT-P
-                                   (e (BINARY-+ n TEXT-OFFSET))
+                                   (e (+ n TEXT-OFFSET))
                                    (n total-stack-slots)
-                                   (PROG-ADDR (BINARY-+ neg-total-stack-offset (XR ':RGF '4 X86)))
+                                   (PROG-ADDR (+ neg-total-stack-offset (XR ':RGF '4 X86)))
                                    (m text-len)
                                    (addr text-offset))
                         (:instance x86isa::NOT-MEMBER-P-OF-SUPERSET-IS-NOT-MEMBER-P-OF-SUBSET
@@ -757,35 +735,20 @@
                            (m 63)
                            (x (acl2::bvchop 64 k))))))
 
-
-;add one for the upper bound as well?
-(defthmd <-when-canonical-address-p
-  (implies (and (syntaxp (quotep k))
-                (< k (- (expt 2 47)))
-                (canonical-address-p x))
-           (equal (< x k)
-                  nil)))
-
-;;todo #1
-;; (CANONICAL-ADDRESS-P$INLINE (LOGEXT '64
-;;                                           (ACL2::BVPLUS '64
-;;                                                         '18446744073709551604
-;;                                                         (XR ':RGF '4 X86))))
-
 (defthm disjoint-of-CREATE-CANONICAL-ADDRESS-LIST-and-CREATE-CANONICAL-ADDRESS-LIST-stack-and-text
   (implies (and (syntaxp (and (quotep stack-slots)
                               (quotep neg-stack-offset)))
                 (<= neg-stack-offset (- stack-slots))
                 (integerp neg-stack-offset) ;should be negative
                 (disjoint-p (create-canonical-address-list text-len text-offset)
-                            (create-canonical-address-list total-stack-slots (binary-+ neg-total-stack-offset (xr ':rgf '4 x86))))
+                            (create-canonical-address-list total-stack-slots (+ neg-total-stack-offset (xr ':rgf '4 x86))))
                 (syntaxp (and (quotep total-stack-slots)
                               (quotep neg-total-stack-offset)))
                 (equal neg-total-stack-offset (- total-stack-slots)) ;could gen but maybe no need to
                 (<= neg-total-stack-offset neg-stack-offset)
                 (canonical-address-p$inline text-offset)
-                (canonical-address-p$inline (binary-+ (+ -1 text-len) text-offset))
-                (canonical-address-p$inline (binary-+ neg-total-stack-offset (xr ':rgf '4 x86)))
+                (canonical-address-p$inline (+ (+ -1 text-len) text-offset))
+                (canonical-address-p$inline (+ neg-total-stack-offset (xr ':rgf '4 x86)))
                 (canonical-address-p$inline (xr ':rgf '4 x86))
                 (natp n)
                 (<= (+ n text-bytes) text-len)
@@ -794,9 +757,9 @@
                 (natp stack-slots)
                 (posp total-stack-slots)
                 )
-           (disjoint-p (CREATE-CANONICAL-ADDRESS-LIST text-bytes (BINARY-+ n TEXT-OFFSET))
+           (disjoint-p (CREATE-CANONICAL-ADDRESS-LIST text-bytes (+ n TEXT-OFFSET))
                        ;; we take some number of stack items (like 4), starting at some address below the stack pointer (like rsp-24)
-                       (CREATE-CANONICAL-ADDRESS-LIST stack-slots (BINARY-+ neg-stack-offset (XR ':RGF '4 X86)))))
+                       (CREATE-CANONICAL-ADDRESS-LIST stack-slots (+ neg-stack-offset (XR ':RGF '4 X86)))))
   :hints (("Goal" :use ()
            :in-theory (e/d (x86isa::DISJOINT-P-COMMUTATIVE
                             ;;NOT-MEMBER-P-OF-SUPERSET-IS-NOT-MEMBER-P-OF-SUBSET
@@ -811,14 +774,14 @@
                 (<= neg-stack-offset (- stack-slots))
                 (integerp neg-stack-offset) ;should be negative
                 (disjoint-p (create-canonical-address-list text-len text-offset)
-                            (create-canonical-address-list total-stack-slots (binary-+ neg-total-stack-offset (xr ':rgf '4 x86))))
+                            (create-canonical-address-list total-stack-slots (+ neg-total-stack-offset (xr ':rgf '4 x86))))
                 (syntaxp (and (quotep total-stack-slots)
                               (quotep neg-total-stack-offset)))
                 (equal neg-total-stack-offset (- total-stack-slots)) ;could gen but maybe no need to
                 (<= neg-total-stack-offset neg-stack-offset)
                 (canonical-address-p$inline text-offset)
-                (canonical-address-p$inline (binary-+ (+ -1 text-len) text-offset))
-                (canonical-address-p$inline (binary-+ neg-total-stack-offset (xr ':rgf '4 x86)))
+                (canonical-address-p$inline (+ (+ -1 text-len) text-offset))
+                (canonical-address-p$inline (+ neg-total-stack-offset (xr ':rgf '4 x86)))
                 (canonical-address-p$inline (xr ':rgf '4 x86))
 ;                (natp n)
                 (<= text-bytes text-len) ;(<= (+ n text-bytes) text-len)
@@ -829,7 +792,7 @@
                 )
            (disjoint-p (CREATE-CANONICAL-ADDRESS-LIST text-bytes TEXT-OFFSET)
                        ;; we take some number of stack items (like 4), starting at some address below the stack pointer (like rsp-24)
-                       (CREATE-CANONICAL-ADDRESS-LIST stack-slots (BINARY-+ neg-stack-offset (XR ':RGF '4 X86)))))
+                       (CREATE-CANONICAL-ADDRESS-LIST stack-slots (+ neg-stack-offset (XR ':RGF '4 X86)))))
   :hints (("Goal" :use ()
            :in-theory (e/d (x86isa::DISJOINT-P-COMMUTATIVE
                             ;;NOT-MEMBER-P-OF-SUPERSET-IS-NOT-MEMBER-P-OF-SUBSET
@@ -898,47 +861,6 @@
                            (n 64)
                            (m 63)
                            (x k)))))
-
-;todo: fix this rule
-;; (defthm signed-byte-p-of-+-between
-;;   (implies (and (canonical-address-p (binary-+ big-neg-offset x))
-;;                 (<= big-neg-offset small-neg-offset)
-;;                 (canonical-address-p x)
-;;                 ;(integerp x)
-;;                 (integerp small-neg-offset)
-;;                 (integerp big-neg-offset)
-;;                 (<= 0 small-neg-offset) ;gen? ;TODO: This doesn't make sense
-;;                 (signed-byte-p 16 small-neg-offset) ;gen
-;;                 )
-;;            (signed-byte-p '64 (binary-+ small-neg-offset x)))
-;;   :hints (("Goal" :in-theory (enable ;canonical-address-p signed-byte-p
-;;                               ))))
-
-;looped with the between lemma?
-(defthmd <-when-canonical-address-p-impossible
-  (implies (and (syntaxp (quotep k))
-                (< k (- (expt 2 47)))
-                (canonical-address-p x))
-           (equal (< x k)
-                  nil))
-  :hints (("Goal" :use (:instance <-when-canonical-address-p (x (xr ':rgf '4 x86)))
-           :in-theory (disable <-when-canonical-address-p))))
-
-; Maybe this is the loop: CANONICAL-ADDRESS-P-BETWEEN backchains from CANONICAL-ADDRESS-P to
-; some < claims, but several rules (such as <-WHEN-CANONICAL-ADDRESS-P)
-; backchain from < claims to CANONICAL-ADDRESS-P claims.
-
-;; (DEFTHM CANONICAL-ADDRESS-P-OF-+-WHEN-CANONICAL-ADDRESS-P-OF-+-alt
-;;   (IMPLIES (AND (CANONICAL-ADDRESS-P (+ K2 LOAD-OFFSET))
-;;                 (<= K K2)
-;;                 (NATP K)
-;;                 (NATP K2)
-;;                 (CANONICAL-ADDRESS-P LOAD-OFFSET))
-;;            (CANONICAL-ADDRESS-P (+ K LOAD-OFFSET)))
-;;   :HINTS
-;;   (("Goal"
-;;     :IN-THEORY (ENABLE CANONICAL-ADDRESS-P SIGNED-BYTE-P))))
-
 
 ;todo:
 
@@ -1105,19 +1027,19 @@
                 (integerp total-stack-slots)
                 (<= (+ stack-slots pos-stack-offset) total-stack-slots)
                 (canonical-address-p$inline text-offset)
-                (canonical-address-p$inline (binary-+ (+ -1 text-len) text-offset))
-                (canonical-address-p$inline (binary-+ (+ -1 total-stack-slots) (xr ':rgf '4 x86)))
+                (canonical-address-p$inline (+ (+ -1 text-len) text-offset))
+                (canonical-address-p$inline (+ (+ -1 total-stack-slots) (xr ':rgf '4 x86)))
                 (canonical-address-p$inline (xr ':rgf '4 x86))
                 (natp n)
                 (< n text-len)
                 (natp text-len))
-           (not (MEMBER-P (BINARY-+ n TEXT-OFFSET)
+           (not (MEMBER-P (+ n TEXT-OFFSET)
                           ;; we take some number of stack items (like 4), starting at some address above the stack pointer (like rsp+8)
-                          (CREATE-CANONICAL-ADDRESS-LIST stack-slots (BINARY-+ pos-stack-offset (XR ':RGF '4 X86))))))
+                          (CREATE-CANONICAL-ADDRESS-LIST stack-slots (+ pos-stack-offset (XR ':RGF '4 X86))))))
   :hints (("Goal" :use ((:instance x86isa::NOT-MEMBER-P-CANONICAL-ADDRESS-LISTP-WHEN-DISJOINT-P
-                                   (e (BINARY-+ n TEXT-OFFSET))
+                                   (e (+ n TEXT-OFFSET))
                                    (n stack-slots)
-                                   (PROG-ADDR (BINARY-+ pos-stack-offset (XR ':RGF '4 X86)))
+                                   (PROG-ADDR (+ pos-stack-offset (XR ':RGF '4 X86)))
                                    (m text-len)
                                    (addr text-offset))
                         (:instance x86isa::DISJOINT-P-SUBSET-P
@@ -1374,14 +1296,6 @@
                   (natp size)))
   :hints (("Goal" :in-theory (enable rvm08 MEMI))))
 
-(defthm canonical-address-p-of-one-more-when-between
-  (implies (and (canonical-address-p base-addr)
-                (canonical-address-p (+ -1 base-addr n))
-                (< 1 n)
-                (integerp n))
-           (canonical-address-p (+ 1 base-addr)))
-  :hints (("Goal" :in-theory (enable canonical-address-p signed-byte-p))))
-
 ;; (defthm n08p-of-g-when-memp-aux
 ;;   (implies (and (x86isa::memp-aux x)
 ;;                 (natp i)
@@ -1420,11 +1334,7 @@
 ;;            (integerp (gz addr (nth 31 x86))))
 ;;   :hints (("Goal" :in-theory (enable x86p x86isa::memp))))
 
-;move
-(defthm logext-64-does-nothing-when-canonical-address-p
-  (implies (canonical-address-p x)
-           (equal (logext 64 x)
-                  x)))
+
 
 ;move
 (defthm xw-of-rip-and-if
@@ -1441,19 +1351,6 @@
   :hints (("Goal" :in-theory (enable acl2::myif))))
 
 (in-theory (disable x86isa::rme08))
-
-;; We'll try keeping i48 disabled for now (the x86 books may do the opposite):
-(in-theory (disable x86isa::i48$inline))
-
-(defthm canonical-address-p-of-i48
-  (canonical-address-p (x86isa::i48 x))
-  :hints (("Goal" :in-theory (enable x86isa::i48 canonical-address-p))))
-
-(defthm i48-when-canonical-address-p
-  (implies (canonical-address-p x)
-           (equal (x86isa::i48 x)
-                  x))
-  :hints (("Goal" :in-theory (enable x86isa::i48 canonical-address-p))))
 
 ;; ;; simplified hyps should work better with axe
 ;; (DEFTHM GET-PREFIXES-OPENER-LEMMA-GROUP-1-PREFIX-simple-32
@@ -1599,17 +1496,6 @@
 
 (in-theory (disable acl2::posp-redefinition)) ;yuck
 (in-theory (enable posp))
-
-(defthm canonical-address-p-when-unsigned-byte-p
-  (implies (unsigned-byte-p 47 ad)
-           (canonical-address-p ad))
-  :hints (("Goal" :in-theory (enable canonical-address-p))))
-
-(defthm canonical-address-p-of-sum-when-unsigned-byte-p-32
-  (implies (and (unsigned-byte-p 32 ad)
-                (unsigned-byte-p 32 k) ;gen
-                )
-           (canonical-address-p (+ k ad))))
 
 ;; (defthm +-of-bvplus-of-x-and-minus-x
 ;;   (implies (unsigned-byte-p 32 x)

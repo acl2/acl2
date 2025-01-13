@@ -858,7 +858,13 @@
      via a recursion to find it, or even in a non-executable way,
      but instead we pick the definition with ceiling,
      and prove it equivalent to the other two possible definitions.
-     We also prove that @($n \\geq 3f + 1$).")
+     We also prove that @($n \\geq 3f + 1$) when @($n \\neq 0$),
+     that @($n \\geq f$) even if @($n = 0$),
+     that @($n > f$) when @($n \\neq 0$),
+     and that @($f < n - f$) when @($n \\neq 0$);
+     in the latter, the significance of @($n - f$) is that
+     it is the quorum, corresponding to @($f$),
+     necessary for fault tolerance conditions.")
    (xdoc::p
     "If @($n$) is 1 or 2 or 3, no failures are tolerated:
      @($f$), and hence @($f$), must be 0.
@@ -881,10 +887,10 @@
     :hints (("Goal" :in-theory (enable nfix))))
 
   (defruled max-faulty-for-total-alt-def
-    (equal (max-faulty-for-total n)
-           (if (zp n)
+    (equal (max-faulty-for-total total)
+           (if (zp total)
                0
-             (floor (1- n) 3))))
+             (floor (1- total) 3))))
 
   (theory-invariant (incompatible (:definition max-faulty-for-total)
                                   (:rewrite max-faulty-for-total-alt-def)))
@@ -921,6 +927,12 @@
     :rule-classes ((:linear :trigger-terms ((max-faulty-for-total total))))
     :hints (("Goal" :in-theory (enable posp))))
   (in-theory (disable max-faulty-for-total-lt-total))
+
+  (defret max-faulty-for-total-lt-quorum
+    (< max (- total max))
+    :hyp (posp total)
+    :rule-classes :linear)
+  (in-theory (disable max-faulty-for-total-lt-quorum))
 
   (assert-event (= (max-faulty-for-total 0) 0))
   (assert-event (= (max-faulty-for-total 1) 0))
@@ -1014,7 +1026,11 @@
      There is indeed no reason for making this assumption,
      which is unnecessarily restrictive,
      given that the more general quorum @($n - f$)
-     works for any value of @($n$)."))
+     works for any value of @($n$).")
+   (xdoc::p
+    "If the committee is not empty,
+     the maximum tolerated faulty stake
+     is less than the quorum stake."))
   (- (committee-total-stake commtt)
      (committee-max-faulty-stake commtt))
   :hooks (:fix)
@@ -1028,7 +1044,15 @@
            :hints
            (("Goal" :in-theory (enable posp
                                        committee-max-faulty-stake
-                                       max-faulty-for-total-lt-total))))))
+                                       max-faulty-for-total-lt-total)))))
+
+  (defruled committee-max-faulty-stake-lt-committee-quorum-stake
+    (implies (committee-nonemptyp commtt)
+             (< (committee-max-faulty-stake commtt)
+                (committee-quorum-stake commtt)))
+    :rule-classes :linear
+    :enable (committee-max-faulty-stake
+             max-faulty-for-total-lt-quorum)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

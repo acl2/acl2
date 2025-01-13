@@ -31,8 +31,9 @@
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable subrange))))
 
-;todo: only needed by axe?
-(defthm true-listp-of-subrange
+; only needed by axe, since we have the :type-prescription rule
+; todo: move
+(defthmd true-listp-of-subrange
   (true-listp (subrange start end vals)))
 
 (defthm subrange-out-of-order

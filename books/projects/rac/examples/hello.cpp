@@ -2,24 +2,23 @@
 
 // arbitrary C++
 
-#include <iostream>
 #include <ac_int.h>
+#include <iostream>
 #include <rac.h>
 using namespace std;
 
 // RAC begin
 // In this section, only RAC code is acceptable
 
-typedef ac_int<8,false> ui8;
-typedef ac_int<16,false> ui16;
-typedef ac_int<8,true> si8;
+typedef ac_int<8, false> ui8;
+typedef ac_int<16, false> ui16;
+typedef ac_int<8, true> si8;
 
-ui8 reverseByte(ui8 mumble)
-{
-  ui8 result;
+ui8 reverseByte(ui8 mumble) {
+  ui8 result = 0;
 
-  for(int i=0; i<4; i++) {
-    result.set_slc(2*i, mumble.slc<2>(6-2*i));
+  for (int i = 0; i < 4; i++) {
+    result.set_slc(2 * i, mumble.slc<2>(6 - 2 * i));
   }
 
   return result;
@@ -29,23 +28,22 @@ ui8 reverseByte(ui8 mumble)
 
 // arbitrary C++
 
-int main (int argc, char *argv[]) {
+int main(int argc, char *argv[]) {
 
   ui8 a_byte;
   ui8 another_byte;
   unsigned int in;
 
-  while (! cin.eof()) {
+  while (!cin.eof()) {
 
     cin >> hex >> in;
     a_byte = in;
 
-    another_byte = reverseByte (a_byte);
+    another_byte = reverseByte(a_byte);
 
-    cout << hex << a_byte.to_uint() << " --> " << another_byte.to_uint() << endl;
-
+    cout << hex << a_byte.to_uint() << " --> " << another_byte.to_uint()
+         << endl;
   }
 
   return 0;
 }
-

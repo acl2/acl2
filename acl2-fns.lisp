@@ -172,6 +172,23 @@
 (defun gcl-version->= (major minor extra)
   (gcl-version-> major minor extra t))
 
+#+gcl
+(when (gcl-version->= 2 7 0)
+
+; The following has been needed for building ACL2 with a development version of
+; GCL 2.7.0; otherwise we have seen the error message, "File axioms.o has been
+; compiled for a restricted address space, and can no longer be loaded in this
+; heap."
+
+  (setq si::*code-block-reserve*
+        (make-array 50000000 :element-type 'character :static t))
+
+; We introduce a feature here for remaining code that depends on GCL Version
+; 2.7.0 or later.
+
+  (pushnew :gcl-2.7.0+ *features*)
+  nil)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                            PROCLAIMING
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -256,6 +273,10 @@
 
 (defvar *do-proclaims*
 
+; As noted below, GCL 2.7.0 has a procedure for function type proclamations, so
+; we avoid ACL2's own attempt to make them.  This variable is thus non-nil only
+; for GCL versions preceding 2.7.0.
+
 ; We may want to experiment for proclaiming with other Lisps besides GCL.  But
 ; this might not be a good idea, in particular for Allegro CL and CCL (see
 ; above).
@@ -276,12 +297,19 @@
 ; 27272.420u 1401.555s 1:09:11.18 690.7%        0+0k 333088+1750384io 303pf+0w
 
   #+gcl
+  (if (gcl-version->= 2 7 0)
+
+; GCL 2.7.0 has a procedure for function type proclamations, so we avoid ACL2's
+; own attempt to make them.
+
+      nil
 
 ; The special value of :gcl says to use GCL's automatic mechanism during the
-; boot-strap (but use ACL2's during normal execution).  But it also should work
-; to use t instead.  Experiments may lead us to prefer one over the other.
+; boot-strap but to use ACL2's during normal execution.  But it also should
+; work to use t instead.  Experiments may lead us to prefer one over the other.
 
-  :gcl
+    :gcl)
+
   #-gcl nil)
 
 (defun macroexpand-till (form sym)
@@ -2337,7 +2365,7 @@ notation causes an error and (b) the use of ,. is not permitted."
 ; issue with GCL 2.6.12.  We use the progn wrapper to avoid breaking the reader
 ; in other Lisps.
 
-#+gcl
+#+(and gcl (not gcl-2.7.0+))
 (when (or (< si::*gcl-major-version* 2)
           (and (= si::*gcl-major-version* 2)
                (or (< si::*gcl-minor-version* 6)

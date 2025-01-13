@@ -55,7 +55,7 @@
     expr-fix
     expr-count
     expr-case
-    expr-ident
+    make-expr-ident
     expr-const
     expr-const->const
     expr-paren
@@ -130,6 +130,8 @@
     make-type-spec-typeof-type
     irr-type-spec
 
+    type-spec-optionp
+
     spec/qual-p
     spec/qual-fix
     spec/qual-count
@@ -200,7 +202,7 @@
     declor
     make-declor
     declor->ident
-    declor->decl
+    declor->direct
 
     declor-optionp
     declor-option-fix
@@ -481,7 +483,7 @@
     extdecl-unambp
     extdecl-list-unambp
     transunit-unambp
-    transunit-ensemble-unambp-loop
+    filepath-transunit-map-unambp
     transunit-ensemble-unambp
 
    ))

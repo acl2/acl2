@@ -11,7 +11,7 @@
 
 (in-package "X")
 
-;; This book focues on things that are not specific to 32-bit or 64-bit mode.
+;; This book focuses on things that are not specific to 32-bit or 64-bit mode.
 
 (include-book "projects/x86isa/machine/state" :dir :system) ;for xr
 ;(include-book "projects/x86isa/machine/register-readers-and-writers" :dir :system) ; has a ttag!
@@ -141,7 +141,6 @@
 
 ;; Not sure whether we need more rules about set-ms, as it generally causes the execution to stop.
 
-
 ;; (defund set-error (error x86)
 ;;   (declare (xargs :stobjs x86))
 ;;   (x86isa::!ms error x86))
@@ -150,10 +149,6 @@
 ;;   (equal (xw :ms nil error x86)
 ;;          (set-error error x86))
 ;;   :hints (("Goal" :in-theory (enable set-error))))
-
-;; (defund set-error (ms x86)
-;;   (declare (xargs :stobjs x86))
-;;   (x86isa::!ms ms x86))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -205,6 +200,8 @@
   :hints (("Goal" :in-theory (enable fault set-fault))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; MXCSR is already defined by the model.
 
 ;; Introduces mxcsr
 (defthmd xr-becomes-mxcsr

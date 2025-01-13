@@ -4,12 +4,11 @@
 
 typedef ac_int<8, false> u8;
 
-u8 adder(u8 a, u8 b)
-{
-  u8 res;
+int adder(u8 a, u8 b) {
+  int res = 0;
   for (res = b; a != 0; a--)
     res++;
- 
+
   return res;
 }
 

@@ -41,9 +41,9 @@
 ;; ======================================================================
 
 (include-book "../../decoding-and-spec-utils"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:undef-flg))
 (include-book "base"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:undef-flg))
 
 ; =============================================================================
 ; INSTRUCTION: AVX Non-Arithmetic Instructions

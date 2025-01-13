@@ -40,6 +40,7 @@
 ; Matt Kaufmann       <kaufmann@cs.utexas.edu>
 ; Contributing Author(s):
 ; Alessandro Coglio   <coglio@kestrel.edu>
+; Eric Smith <eric.smith@kestrel.edu>
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -70,6 +71,7 @@
        :hyp <hypotheses>
        :concl <conclusion>
        :hints <usual ACL2 hints for the main theorem>)
+       :gen-rewrite <t or nil> ;; Make main theorem a :rewrite rule
        :gen-type <t or nil>    ;; Generate :type-prescription corollary
        :gen-linear <t or nil>  ;; Generate :linear corollary
        :hyp-t <hypotheses for the :type-prescription corollary>
@@ -79,8 +81,9 @@
        :otf-flg <t or nil>)
      })
    <p>
-   The above form produces a theorem of the form
-   (if both @(':gen-type') and @(':gen-linear') are @('t')):
+   The above form produces a theorem of the following form
+   (if both @(':gen-type') and @(':gen-linear') are @('t') and @(':gen-rewrite')
+   is @('t') or unsupplied):
    </p>
    @({
      (defthm <theorem-name>
@@ -118,6 +121,7 @@
 (defmacro defthm-natp (name &key
                             (hyp 't)
                             concl
+                            (gen-rewrite 't)
                             gen-type
                             gen-linear
                             hints
@@ -141,7 +145,7 @@
            ,@(and hints `(:hints ,hints))
            ,@(and otf-flg `(:otf-flg t))
            :rule-classes
-           (:rewrite
+           (,@(if gen-rewrite '(:rewrite) nil)
             ,@(and gen-type
                    `((:type-prescription
                       :corollary
@@ -179,7 +183,7 @@
    a @('rewrite') rule saying that
    some term yields an @('unsigned-byte-p'),
    a @('type-prescription') corollary saying that
-   the term yields a @('natp'),
+   the term yields a @('natp') (or, if @('bound') is 1, a @('bitp')),
    and a @('linear') corollary saying that
    the term yields a value greater than or equal to 0
    and less than <tt>(expt 2 bound)</tt>.
@@ -193,6 +197,7 @@
        :bound <n>
        :concl <conclusion>
        :hints <usual ACL2 hints for the main theorem>
+       :gen-rewrite <t or nil> ;; Make main theorem a :rewrite rule
        :gen-type <t or nil>    ;; Generate :type-prescription corollary
        :gen-linear <t or nil>  ;; Generate :linear corollary
        :hyp-t <hypotheses for the :type-prescription corollary>
@@ -202,8 +207,10 @@
        :otf-flg <t or nil>)
      })
    <p>
-   The above form produces a theorem of the following form
-   (if both @(':gen-type') and @(':gen-linear') are @('t')):
+   In the most common case (both @(':gen-type') and @(':gen-linear') are @('t'),
+   @(':gen-rewrite') is @('t') or unsupplied, and @('bound') is not the special
+   value 1 which would cause a tighter @(':type-prescription') rule), the
+   theorem produced is of the following form:
    </p>
    @({
      (defthm <theorem-name>
@@ -243,6 +250,7 @@
                                        (hyp 't)
                                        bound
                                        concl
+                                       (gen-rewrite 't)
                                        gen-type
                                        gen-linear
                                        hyp-t
@@ -252,35 +260,41 @@
                                        hints-l
                                        otf-flg)
   (if (and concl bound)
-      (let ((hyp-t (or hyp-t hyp))
-            (hyp-l (or hyp-l hyp))
-            (hints-t (or hints-t
-                         ;; If :HINTS-T is not supplied, the following hints,
-                         ;; given the definitions of UNSIGNED-BYTE-P,
-                         ;; INTEGER-RANGE-P, and NATP, should suffice to prove
-                         ;; the corollary from the main theorem, assuming that
-                         ;; :HYP-T is a superset of :HYP, or perhaps has some
-                         ;; extra calls to FORCE.
-                         '(("Goal" :in-theory '(unsigned-byte-p
-                                                integer-range-p
-                                                natp)))))
-            (hints-l (or hints-l
-                         ;; If :HINTS-L is not supplied, the following hints,
-                         ;; given the definitions of UNSIGNED-BYTE-P and
-                         ;; INTEGER-RANGE-P, should suffice to prove the
-                         ;; corollary from the main theorem, assuming that
-                         ;; :HYP-L is a superset of :HYP, or perhaps has some
-                         ;; extra calls to FORCE. The (:E EXPT) is motivated by
-                         ;; the fact that, if :BOUND is a number, the generated
-                         ;; linear rule involves not a call of EXPT but
-                         ;; directly the value of such a call (see 2^BOUND
-                         ;; below).
-                         '(("Goal" :in-theory '(unsigned-byte-p
-                                                integer-range-p
-                                                (:e expt))))))
-            (2^bound (if (natp bound)
-                         (expt 2 bound)
-                       `(expt 2 ,bound))))
+      (let* ((hyp-t (or hyp-t hyp))
+             (hyp-l (or hyp-l hyp))
+             ;; Could check for '1 here, but we follow the
+             ;; precedent below of not handling a quoted bound when
+             ;; setting 2^bound:
+             (bitp (equal 1 bound))
+             (hints-t (or hints-t
+                          ;; If :HINTS-T is not supplied, the following hints,
+                          ;; given the definitions of UNSIGNED-BYTE-P,
+                          ;; INTEGER-RANGE-P, and NATP, should suffice to prove
+                          ;; the corollary from the main theorem, assuming that
+                          ;; :HYP-T is a superset of :HYP, or perhaps has some
+                          ;; extra calls to FORCE.
+                          `(("Goal" :in-theory '(unsigned-byte-p
+                                                 integer-range-p
+                                                 natp
+                                                 ,@(and bitp '(bitp
+                                                               (:e expt))))))))
+             (hints-l (or hints-l
+                          ;; If :HINTS-L is not supplied, the following hints,
+                          ;; given the definitions of UNSIGNED-BYTE-P and
+                          ;; INTEGER-RANGE-P, should suffice to prove the
+                          ;; corollary from the main theorem, assuming that
+                          ;; :HYP-L is a superset of :HYP, or perhaps has some
+                          ;; extra calls to FORCE. The (:E EXPT) is motivated by
+                          ;; the fact that, if :BOUND is a number, the generated
+                          ;; linear rule involves not a call of EXPT but
+                          ;; directly the value of such a call (see 2^BOUND
+                          ;; below).
+                          '(("Goal" :in-theory '(unsigned-byte-p
+                                                 integer-range-p
+                                                 (:e expt))))))
+             (2^bound (if (natp bound)
+                          (expt 2 bound)
+                        `(expt 2 ,bound))))
         `(defthm ,name
            ,(if (eq hyp t)
                 `(unsigned-byte-p ,bound ,concl)
@@ -289,14 +303,18 @@
            ,@(and hints `(:hints ,hints))
            ,@(and otf-flg `(:otf-flg t))
            :rule-classes
-           (:rewrite
+           (,@(if gen-rewrite '(:rewrite) nil)
             ,@(and gen-type
                    `((:type-prescription
                       :corollary
-                      ,(if (eq hyp-t t)
-                           `(natp ,concl)
-                         `(implies ,hyp-t
-                                   (natp ,concl)))
+                      ,(let ((conclusion
+                               (if bitp
+                                   `(bitp ,concl)
+                                 `(natp ,concl))))
+                         (if (eq hyp-t t)
+                             conclusion
+                           `(implies ,hyp-t
+                                     ,conclusion)))
                       :hints ,hints-t)))
             ,@(and gen-linear
                    `((:linear
@@ -338,6 +356,7 @@
        :bound <n>
        :concl <conclusion>
        :hints <usual ACL2 hints for the main theorem>
+       :gen-rewrite <t or nil> ;; Make main theorem a :rewrite rule
        :gen-type <t or nil>    ;; Generate :type-prescription corollary
        :gen-linear <t or nil>  ;; Generate :linear corollary
        :hyp-t <hypotheses for the :type-prescription corollary>
@@ -347,8 +366,9 @@
        :otf-flg <t or nil>)
      })
    <p>
-   The above form produces a theorem of the form
-   (if both @(':gen-type') and @(':gen-linear') are @('t')):
+   The above form produces a theorem of the following form
+   (if both @(':gen-type') and @(':gen-linear') are @('t') and @(':gen-rewrite')
+   is @('t') or unsupplied):
    </p>
    @({
      (defthm <theorem-name>
@@ -388,6 +408,7 @@
                                      (hyp 't)
                                      bound
                                      concl
+                                     (gen-rewrite 't)
                                      gen-type
                                      gen-linear
                                      hyp-t
@@ -410,7 +431,7 @@
                                                  integer-range-p)))))
              (hints-l (or hints-l
                           ;; If :HINTS-L is not supplied, the following hints,
-                          ;; given the definitions of UNSIGNED-BYTE-P and
+                          ;; given the definitions of SIGNED-BYTE-P and
                           ;; INTEGER-RANGE-P, should suffice to prove the
                           ;; corollary from the main theorem, assuming that
                           ;; :HYP-L is a superset of :HYP, or perhaps has some
@@ -436,7 +457,7 @@
            ,@(and hints `(:hints ,hints))
            ,@(and otf-flg `(:otf-flg t))
            :rule-classes
-           (:rewrite
+           (,@(if gen-rewrite '(:rewrite) nil)
             ,@(and gen-type
                    `((:type-prescription
                       :corollary

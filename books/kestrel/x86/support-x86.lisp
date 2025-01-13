@@ -1,7 +1,7 @@
 ; Supporting material for x86 code proofs
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2024 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,8 +14,13 @@
 ;; Supporting material about the x86 model.  Some of this could be moved to the
 ;; model itself.
 
-(include-book "projects/x86isa/proofs/utilities/app-view/top" :dir :system) ;reduce? needed for the big enable below
+;(include-book "projects/x86isa/proofs/utilities/app-view/top" :dir :system) ;reduce? needed for the big enable below
+(include-book "projects/x86isa/proofs/utilities/general-memory-utils" :dir :system) ; drop?
+(include-book "projects/x86isa/proofs/utilities/row-wow-thms" :dir :system) ; for X86ISA::WRITE-USER-RFLAGS-AND-XW
+(include-book "projects/x86isa/proofs/utilities/app-view/user-level-memory-utils" :dir :system) ; for rb-rb-subset
 (include-book "projects/x86isa/machine/state" :dir :system)
+(include-book "projects/x86isa/machine/x86" :dir :system) ; for ONE-BYTE-OPCODE-EXECUTE, etc.
+(include-book "projects/x86isa/machine/get-prefixes" :dir :system)
 ;(include-book "projects/x86isa/machine/state-field-thms" :dir :system)
 (include-book "projects/x86isa/machine/application-level-memory" :dir :system) ;for canonical-address-p
 (include-book "kestrel/utilities/defopeners" :dir :system)
@@ -28,6 +33,8 @@
 (include-book "kestrel/bv/defs" :dir :system) ;for sbvdiv
 (include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system)
 (include-book "linear-memory") ;drop? but need mv-nth-0-of-rml-size-of-xw-when-app-view
+(include-book "canonical")
+(include-book "state")
 (local (include-book "support-bv"))
 (local (include-book "kestrel/bv/rules10" :dir :system))
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
@@ -57,30 +64,6 @@
 
 (in-theory (disable GET-PREFIXES-OPENER-LEMMA-ZERO-CNT)) ;for speed
 
-(defthm x86isa::x86p-xw-unforced
-  (implies (x86p x86)
-           (x86p (xw x86isa::fld x86isa::index value x86))))
-
-(in-theory (disable x86isa::x86p-xw ;does forcing, which causes problems in various places
-                    x86isa::x86p-!rip-when-val-is-canonical-address-p ;todo: remove this rule altogether since it is subsumed by x86p-xw
-                    ))
-
-(defthm rflags-is-n32p-unforced
-  (implies (x86p x86)
-           (unsigned-byte-p 32 (xr :rflags i x86)))
-  :rule-classes ((:rewrite :corollary (implies (x86p x86)
-                                               (unsigned-byte-p 32 (xr :rflags i x86)))
-                           :hints (("GOAL" :in-theory (e/d (rflags x86p) nil))))
-                 (:type-prescription :corollary (implies (x86p x86)
-                                                         (natp (xr :rflags i x86)))
-                                     :hints (("GOAL" :in-theory (e/d (rflags x86p) nil))))
-                 (:linear :corollary (implies (x86p x86)
-                                              (< (xr :rflags i x86) 4294967296))
-                          :hints (("GOAL" :in-theory (e/d (rflags x86p) nil))))))
-
-;(in-theory (disable rflags-is-n32p)) ;disable the forced version
-
-
 ;why needed?
 ;(acl2::defopeners LOAD-PROGRAM-INTO-MEMORY)
 
@@ -109,13 +92,6 @@
                             (syntaxp (quotep X86ISA::X86$A))))
 ;why?
 ;(acl2::defopeners x86p :hyps ((syntaxp (quotep x86))))
-
-;tighten?
-(defthm x86isa::signed-byte-p-64-when-canonical-address-p-cheap
-  (implies (canonical-address-p x)
-           (signed-byte-p 64 x))
-  :rule-classes ((:rewrite :backchain-limit-lst (0)))
-  :hints (("Goal" :in-theory (enable signed-byte-p canonical-address-p))))
 
 ;; (defthm RGFI*-of-xw-diff
 ;;   (implies (and (equal :ms fld) ;drop!
@@ -186,12 +162,6 @@
 (in-theory (disable x86isa::create-canonical-address-list
                     (:e x86isa::create-canonical-address-list)))
 
-(defthm x86isa::canonical-address-p-foward-to-signed-byte-p
-  (implies (canonical-address-p lin-addr)
-           (signed-byte-p 48 lin-addr))
-  :rule-classes ((:forward-chaining))
-  :hints (("Goal" :in-theory (enable canonical-address-p))))
-
 ;; gets rid of the effect of saving and restoring rbp
 ;; (defthm x86isa::xw-xr-same
 ;;   (implies (and (equal (xr fld i x86) (xr fld i x86-2))
@@ -217,61 +187,10 @@
 ;;            (canonical-address-p (+ k load-offset)))
 ;;   :hints (("Goal" :in-theory (enable canonical-address-p signed-byte-p))))
 
-;; k is between klow and khigh
-;; one way to know that something (here, (+ klow load-offset)) is canonical is to know that it's equal to the RIP
-;; we could forward-chain from equal rip to canonical (does forward-chaining happen during symsim?)
-(defthm canonical-address-p-of-+-when-canonical-address-p-of-+-special
-  (implies (and (equal (xr :rip nil x86) (+ klow load-offset)) ;klow is a free var
-                (canonical-address-p (+ khigh load-offset))
-                (x86p x86) ;implies that the RIP is canonical
-                (<= klow k)
-                (<= k khigh)
-                (natp k)
-                (natp klow)
-                (natp khigh)
-                (integerp load-offset))
-           (canonical-address-p (+ k load-offset)))
-  :hints (("Goal" :in-theory (enable canonical-address-p signed-byte-p))))
-
-
-;pretty specific...
-;think about possible loops here
-(defthm canonical-address-p-of-plus-of-rip
-  (implies (and (syntaxp (quotep k))
-                (equal (xr :rip nil x86) (+ freek load-offset)) ;freek and load-offset are free vars
-                (syntaxp (quotep freek))
-                (canonical-address-p (+ (+ k freek) ;gets evaluated
-                                        load-offset)))
-           (canonical-address-p (+ k (xr :rip nil x86)))))
-
 (defthm x86isa::subset-p-of-singleton-arg1
   (equal (x86isa::subset-p (cons a nil) x)
          (x86isa::member-p a x))
   :hints (("Goal" :in-theory (enable x86isa::subset-p))))
-
-(defthm x86isa::xr-of-if
-  (equal (XR fld index (IF test state1 state2))
-         (if test
-             (XR fld index state1)
-           (XR fld index state2))))
-
-(defthm x86isa::xr-of-if-special-case-for-ms
-  (equal (XR :ms nil (IF test state1 state2))
-         (if test
-             (XR :ms nil state1)
-           (XR :ms nil state2))))
-
-(defthm x86isa::xr-of-if-special-case-for-fault
-  (equal (xr :fault nil (if test state1 state2))
-         (if test
-             (xr :fault nil state1)
-           (xr :fault nil state2))))
-
-(defthm canonical-address-p-of-if
-  (equal (canonical-address-p (if test a1 a2))
-         (if test
-             (canonical-address-p a1)
-           (canonical-address-p a2))))
 
 ;; splits the simulation!
 (defthm x86-fetch-decode-execute-of-set-rip-split
@@ -357,46 +276,6 @@
 (defthm canonical-address-listp-of-nil
   (x86isa::canonical-address-listp nil))
 
-
-;see xr-xw-inter-field but that has a case-split
-(defthm xr-of-xw-diff
-  (implies (not (equal fld1 fld2))
-           (equal (xr fld2 i2 (xw fld1 i1 v x86))
-                  (xr fld2 i2 x86))))
-
-;for axe
-(defthmd canonical-address-p-becomes-signed-byte-p-when-constant
-  (implies (syntaxp (quotep ad))
-           (equal (canonical-address-p ad)
-                  (signed-byte-p 48 ad)))
-  :hints (("Goal" :in-theory (enable canonical-address-p))))
-
-(defthm unsigned-byte-p-of-xr-of-mem
-  (implies (and (<= 8 size)
-                (x86p x86))
-           (equal (unsigned-byte-p size (xr :mem i x86))
-                  (natp size))))
-
-(defthm integerp-of-xr-mem
-  (implies (x86p x86)
-           (integerp (xr :mem acl2::i x86)))
-  :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :use (:instance x86isa::unsigned-byte-p-of-xr-of-mem (size 8))
-           :in-theory (disable x86isa::unsigned-byte-p-of-xr-of-mem))))
-
-(defthm unsigned-byte-p-of-memi
-  (implies (and (<= 8 size)
-                (x86p x86))
-           (equal (unsigned-byte-p size (memi i x86))
-                  (natp size)))
-  :hints (("Goal" :in-theory (enable memi))))
-
-(defthm integerp-of-memi
-  (implies (x86p x86)
-           (integerp (memi i x86)))
-  :hints (("Goal" :in-theory (enable memi))))
-
-
 ;; resolve a call to rb on a singleton list when we know the program
 ;; this rule seems simpler than rb-in-terms-of-nth-and-pos (which is now gone) since it has no extended bind-free hyp.
 ;; todo: try :match-free :all
@@ -447,127 +326,7 @@
                             )
                            (slice-of-combine-bytes)))))
 
-;can this loop?  do we have any rules that backchain from < to signed-byte-p?
-(defthm signed-byte-p-when-between-canonical-addresses
-  (implies (and (signed-byte-p 48 low)
-                (signed-byte-p 48 high)
-                (<= low ad)
-                (<= ad high))
-           (equal (signed-byte-p 48 ad)
-                  (integerp ad)))
-  :hints
-  (("Goal"
-    :in-theory (enable canonical-address-p signed-byte-p))))
-
-(defthm canonical-address-p-between
-  (implies (and (canonical-address-p low) ; low and high are free vars
-                (<= low ad)
-                (canonical-address-p high)
-                (<= ad high))
-           (equal (canonical-address-p ad)
-                  (integerp ad)))
-  :hints (("Goal" :in-theory (enable canonical-address-p SIGNED-BYTE-P))))
-
-;; These are for showing that x plus an offset is canonical:
-
-(defthm canonical-address-p-between-special1
-  (implies (and (canonical-address-p (+ low-offset x))
-                (<= low-offset offset)
-                (canonical-address-p (+ high-offset x))
-                (<= offset high-offset)
-                (integerp low-offset)
-                (integerp high-offset)
-                (integerp offset))
-           (canonical-address-p (+ offset x))))
-
-;case when offset = 0
-(defthm canonical-address-p-between-special2
-  (implies (and (canonical-address-p (+ low-offset x))
-                (<= low-offset 0)
-                (canonical-address-p (+ high-offset x))
-                (<= 0 high-offset)
-                (integerp low-offset)
-                (integerp high-offset))
-           (equal (canonical-address-p x)
-                  (integerp x))))
-
-;case when low-offset = 0
-(defthm canonical-address-p-between-special3
-  (implies (and (canonical-address-p (+ high-offset x))
-                (<= offset high-offset)
-                (canonical-address-p x)
-                (<= 0 offset)
-                (integerp high-offset)
-                (integerp offset))
-           (canonical-address-p (+ offset x))))
-
-;case when high-offset = 0
-(defthm canonical-address-p-between-special4
-  (implies (and (canonical-address-p (+ low-offset x))
-                (<= low-offset offset)
-                (canonical-address-p x)
-                (<= offset 0)
-                (integerp low-offset)
-                (integerp offset))
-           (canonical-address-p (+ offset x))))
-
-(defthm canonical-address-p-between-special5
-  (implies (and (canonical-address-p text-offset)
-                (canonical-address-p (+ k2 text-offset)) ; k2 is a free var
-                (<= (+ k x) k2)
-                (natp k)
-                (natp x)
-                (natp k2))
-           ;; ex (+ 192 (+ text-offset (ash (bvchop 32 (rdi x86)) 2)))
-           (canonical-address-p (+ k text-offset x))))
-
-(defthm canonical-address-p-between-special5-alt
-  (implies (and (canonical-address-p text-offset)
-                (canonical-address-p (+ k2 text-offset)) ; k2 is a free var
-                (<= (+ k x) k2)
-                (natp k)
-                (natp x)
-                (natp k2))
-           (canonical-address-p (+ k x text-offset))))
-
-(defthm canonical-address-p-between-special6
-  (implies (and (canonical-address-p (+ k1 base))
-                (syntaxp (quotep k1))
-                (canonical-address-p (+ k2 base))
-                (syntaxp (quotep k2))
-                (< k1 k2) ; break symmetry
-                (<= k1 (+ x1 x2))
-                (<= (+ x1 x2) k2)
-                (integerp k1)
-                (integerp x1)
-                (integerp x2)
-                (integerp k2))
-           (canonical-address-p (+ x1 x2 base))))
-
-(defthm canonical-address-p-between-special7
-  (implies (and (canonical-address-p (+ k1 base)) ; k1 is a free var
-                (syntaxp (quotep k1))
-                (<= k1 (+ x1 x2))
-                (canonical-address-p (+ k2 base)) ; k2 is a free var
-                (syntaxp (quotep k2))
-                (< k1 k2) ; break symmetry (fail fast)
-                (<= (+ x1 x2) k2)
-                (integerp k1)
-                (integerp x1)
-                (integerp x2)
-                (integerp k2))
-           (canonical-address-p (+ x1 base x2))))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defthm integerp-of-xr-of-rsp
-  (implies (x86p x86)
-           (integerp (xr :rgf *rsp* x86))))
-
-(defthm app-view-of-xw
-  (implies (not (equal fld :app-view))
-           (equal (app-view (xw fld index value x86))
-                  (app-view x86))))
 
 (local (include-book "kestrel/bv/rules3" :dir :system)) ;drop?
 
@@ -622,16 +381,6 @@
                                                              ;; X86ISA::SEG-HIDDEN-ATTRI-IS-N16P
                                                              )))))
 
-(defthm memi-of-xw
-  (implies (not (equal :mem fld))
-           (equal (memi i (xw fld index val x86))
-                  (memi i x86)))
-  :hints (("Goal" :in-theory (enable memi))))
-
-(defthm x86isa::logext-48-does-nothing-when-canonical-address-p
-  (implies (canonical-address-p x)
-           (equal (logext 48 x)
-                  x)))
 
 (defthm unsigned-byte-p-of-bfix
   (implies (posp n)
@@ -645,7 +394,7 @@
                 (natp n)
                 (< n 16)
                 (x86p x86-2))
-           (equal (xw ':rgf n (xr :rgf n x86) x86-2)
+           (equal (xw :rgf n (xr :rgf n x86) x86-2)
                   x86-2))
   :hints (("Goal" :in-theory (enable ;x86isa::xw-xr-rgf
                               ))))
@@ -657,8 +406,7 @@
                 ;(< k 0)
                 (integerp x)
                 (equal (acl2::getbit 63 x) 0))
-           (equal (< x -9223372036854775808
-                     ) ;gen
+           (equal (< x -9223372036854775808) ;gen
                   (< x 0)))
   :hints (("Goal" :in-theory (e/d (acl2::getbit acl2::slice acl2::logtail)
                                   (acl2::slice-becomes-getbit
@@ -667,28 +415,6 @@
 
 ;rewrite: (< (BVCHOP 64 Y) 9223372036854775808)
 ;rewrite: (<= (BVCHOP 64 Y) (BVCHOP 63 Y))
-
-(defthm xw-rip-of-if-arg3
-  (equal (XW :RIP NIL (IF test rip1 rip2) x86)
-         (if test
-             (XW :RIP NIL rip1 x86)
-           (XW :RIP NIL rip2 x86))))
-
-; not strictly necessary since not-mv-nth-0-of-rme-size$inline should fire, but this can get rid of irrelevant stuff
-(defthm mv-nth-0-of-rme-size-of-xw-when-app-view
-  (implies (and (not (equal fld :mem))
-                (not (equal fld :app-view))
-                (not (equal fld :seg-hidden-attr))
-                (not (equal fld :seg-hidden-base))
-                (not (equal fld :seg-hidden-limit))
-                (not (equal fld :seg-visible))
-                (not (equal fld :msr))
-                (app-view x86))
-           (equal (mv-nth 0 (x86isa::rme-size$inline proc-mode nbytes eff-addr seg-reg r-x check-alignment? (xw fld index val x86) mem-ptr?))
-                  (mv-nth 0 (x86isa::rme-size$inline proc-mode nbytes eff-addr seg-reg r-x check-alignment? x86 mem-ptr?))))
-  :hints (("Goal" :in-theory (e/d (x86isa::rme-size) (ea-to-la$inline
-                                                      x86isa::rml-size$inline
-                                                      x86isa::ea-to-la-is-i48p-when-no-error)))))
 
 ;; TODO: The original rule should be replaced by this one
 (DEFTHM X86ISA::PROGRAM-AT-XW-IN-APP-VIEW-better
@@ -701,29 +427,6 @@
   :HINTS (("Goal" :IN-THEORY (ACL2::E/D* NIL (RB)))))
 
 (in-theory (disable X86ISA::PROGRAM-AT-XW-IN-APP-VIEW))
-
-(defthm memi-of-!memi-diff
-  (implies (and (unsigned-byte-p 48 addr)
-                (unsigned-byte-p 48 addr2)
-                (not (equal addr addr2)))
-           (equal (memi addr (!memi addr2 val x86))
-                  (memi addr x86)))
-  :hints (("Goal" :in-theory (enable memi))))
-
-(defthm memi-of-!memi-both
-  (implies (and (unsigned-byte-p 48 addr)
-                (unsigned-byte-p 48 addr2))
-           (equal (memi addr (!memi addr2 val x86))
-                  (if (equal addr addr2)
-                      (acl2::bvchop 8 val)
-                    (memi addr x86))))
-  :hints (("Goal" :in-theory (enable memi))))
-
-(defthm memi-of-xw-same
-  (implies (unsigned-byte-p 48 addr)
-           (equal (memi addr (xw :mem addr val x86))
-                  (acl2::bvchop 8 val)))
-  :hints (("Goal" :in-theory (enable memi))))
 
 ;gen
 (local
@@ -1058,45 +761,6 @@
 
 (in-theory (disable zf-spec)) ; move?
 
-;gen?
-(defthm integerp-of-xr-rgf-4
-  (implies (x86p x86)
-           (integerp (xr ':rgf '4 x86))))
-
-;gen?
-(defthm fix-of-xr-rgf-4
-  (equal (fix (xr ':rgf '4 x86))
-         (xr ':rgf '4 x86)))
-
-;gen
-(defthm xr-app-view-of-!memi
-  (equal (xr :app-view nil (!memi addr val x86))
-         (xr :app-view nil x86))
-  :hints (("Goal" :in-theory (enable !memi))))
-
-(defthm app-view-of-!memi
-  (equal (app-view (!memi addr val x86))
-         (app-view x86))
-  :hints (("Goal" :in-theory (enable !memi))))
-
-(defthm x86p-of-!memi
-  (implies (and (x86p x86)
-                (INTEGERP ADDR)
-                (UNSIGNED-BYTE-P 8 VAL))
-           (x86p (!memi addr val x86)))
-  :hints (("Goal" :in-theory (enable !memi))))
-
-;rename
-(defthm memi-of-!memi
-  (implies (unsigned-byte-p 48 addr)
-           (equal (memi addr (!memi addr val x86))
-                  (acl2::bvchop 8 val)))
-  :hints (("Goal" :in-theory (enable memi))))
-
-(defthm !memi-of-!memi-same
-  (equal (!memi addr val (!memi addr val2 x86))
-         (!memi addr val x86)))
-
 (defthm xw-of-xw-both
   (implies (syntaxp (acl2::smaller-termp addr2 addr))
            (equal (xw :mem addr val (xw :mem addr2 val2 x86))
@@ -1111,14 +775,6 @@
            (equal (xw :mem addr val (xw :mem addr2 val2 x86))
                   (xw :mem addr2 val2 (xw :mem addr val x86))))
   :hints (("Goal" :in-theory (enable xw))))
-
-(defthm memi-of-xw-irrel
-  (implies (not (equal fld :mem))
-           (equal (memi addr (xw fld index val x86))
-                  (memi addr x86)))
-  :hints (("Goal" :in-theory (e/d (memi)
-                                  (;x86isa::memi-is-n08p ;does forcing
-                                   )))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1143,12 +799,14 @@
   (equal (ctri i (if test x86 x86_2))
          (if test (ctri i x86) (ctri i x86_2))))
 
+;move?
 (defthm alignment-checking-enabled-p-of-if
   (equal (alignment-checking-enabled-p (if test x86 x86_2))
          (if test (alignment-checking-enabled-p x86) (alignment-checking-enabled-p x86_2))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Most uses of rme-XXX are for 32-bit mode, but this is for 64-bit mode.
 ;; This version has (canonical-address-p eff-addr) in the conclusion
 (defthm x86isa::rme-size-when-64-bit-modep-and-not-fs/gs-strong
   (implies (and (not (equal seg-reg 4))
@@ -1160,6 +818,7 @@
                       (rml-size nbytes eff-addr x86isa::r-x x86)
                     (list (list :non-canonical-address eff-addr) 0 x86)))))
 
+;; Most uses of rme-XXX are for 32-bit mode, but this is for 64-bit mode.
 ;; This version has (canonical-address-p eff-addr) in the conclusion
 (defthm x86isa::wme-size-when-64-bit-modep-and-not-fs/gs-strong
   (implies (and (not (equal seg-reg 4))

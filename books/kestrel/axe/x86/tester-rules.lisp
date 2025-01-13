@@ -26,19 +26,19 @@
 ;(include-book "kestrel/x86/rflags-spec-sub" :dir :system)
 ;(include-book "kestrel/x86/read-and-write" :dir :system)
 (include-book "projects/x86isa/proofs/utilities/disjoint" :dir :system) ; for separate
-(include-book "projects/x86isa/machine/application-level-memory" :dir :system) ; for canonical-addressp
+;(include-book "projects/x86isa/machine/application-level-memory" :dir :system) ; for canonical-addressp
 (include-book "kestrel/x86/register-readers-and-writers64" :dir :system) ; for rsp
-(include-book "kestrel/bv/bvmult" :dir :system)
+;(include-book "kestrel/bv/bvmult" :dir :system)
 ;(include-book "kestrel/utilities/def-constant-opener" :dir :system)
 ;; todo: reduce:
-(local (include-book "kestrel/axe/axe-rules-mixed" :dir :system)) ; drop?
+;(local (include-book "kestrel/axe/axe-rules-mixed" :dir :system)) ; drop?
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 ;; (local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
 ;; (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 ;; (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 ;; (local (include-book "kestrel/arithmetic-light/mod2" :dir :system)) ; reduce?
 ;; (local (include-book "kestrel/arithmetic-light/divide" :dir :system))
-(local (include-book "kestrel/arithmetic-light/times" :dir :system))
+;(local (include-book "kestrel/arithmetic-light/times" :dir :system))
 ;; (local (include-book "kestrel/arithmetic-light/times-and-divide" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
@@ -201,12 +201,12 @@
 ;arises in array indexing
 ;perhaps more direct than other rules
 ;make a bv version?
-(defthm canonical-address-p-of-+-of-bvmult-64-of-4
-  (implies (and (syntaxp (quotep k))
-                (canonical-address-p k)
-                (< (* 4 (bvchop 62 index)) (- 140737488355328 k)))
-           (canonical-address-p (+ k (bvmult 64 4 index))))
-  :hints (("Goal" :in-theory (enable bvmult canonical-address-p signed-byte-p))))
+;; (defthm canonical-address-p-of-+-of-bvmult-64-of-4
+;;   (implies (and (syntaxp (quotep k))
+;;                 (canonical-address-p k)
+;;                 (< (* 4 (bvchop 62 index)) (- 140737488355328 k)))
+;;            (canonical-address-p (+ k (bvmult 64 4 index))))
+;;   :hints (("Goal" :in-theory (enable bvmult canonical-address-p signed-byte-p))))
 
 ;; (thm
 ;;  (implies (and (canonical-address-p$inline (binary-+ '211 text-offset))
@@ -223,7 +223,8 @@
 ;;  :hints (("Goal" :in-theory (enable GET-PREFIXES))))
 
 
-;gen the (rxp x86)?
+;gen the (rxp x86)? the move these
+;todo: won't k1 and k2 get combined if both are constants?
 (defthm not-equal-of-+-and-+-when-separate
   (implies (and (separate :r text-offset-k text-offset :r rsp-k (+ neg-rsp-k (rsp x86))) ; example: (separate :r 150 text-offset :r 80 (binary-+ -80 (rsp x86)))
                 (<= k1 text-offset-k)
@@ -306,7 +307,6 @@
 ;;                         (* 8 (bvminus 48 offset2 offset1) ;(- offset2 offset1) ;(- (bvchop 48 offset2) (bvchop 48 offset1))
 ;;                            )
 ;;                         val)))
-;;  :otf-flg t
 ;;  :hints (("Goal" :expand ((write 4 (+ addr offset1) val x86)
 ;;                           (write 3 (+ 1 addr offset1)
 ;;                                  (logtail 8 val)

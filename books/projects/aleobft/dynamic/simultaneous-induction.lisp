@@ -57,8 +57,7 @@
      all the committees that arise during the execution
      must be fault-tolerant."))
   (implies
-   (and (system-statep systate)
-        (set::subset (committee-members (genesis-committee))
+   (and (set::subset (committee-members (genesis-committee))
                      (all-addresses systate))
         (same-committees-p systate)
         (unequivocal-accepted-certificates-p systate)

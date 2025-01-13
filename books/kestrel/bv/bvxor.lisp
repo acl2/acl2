@@ -14,6 +14,7 @@
 ;(include-book "bvchop")
 (include-book "getbit")
 (include-book "kestrel/utilities/smaller-termp" :dir :system)
+(local (include-book "slice"))
 (local (include-book "logxor-b"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "unsigned-byte-p"))
@@ -55,6 +56,13 @@
                          (not (quotep x))))
            (equal (bvxor size x y)
                   (bvxor size y x))))
+
+;; not needed if we are commuting more generally
+(defthmd bvxor-commute-constant2
+  (implies (syntaxp (and (quotep k)
+                         (not (quotep x))))
+           (equal (bvxor size x (bvxor size k y))
+                  (bvxor size k (bvxor size x y)))))
 
 (defthm bvxor-same
   (equal (bvxor size x x)
@@ -354,7 +362,7 @@
                 (integerp free))
            (equal (bvxor n x y)
                   (bvxor n k y)))
-  :hints (("Goal" :in-theory (e/d (bvxor) nil))))
+  :hints (("Goal" :in-theory (enable bvxor))))
 
 (defthm bvxor-subst-arg3
   (implies (and (syntaxp (not (quotep y)))
@@ -364,7 +372,7 @@
                 (integerp free))
            (equal (bvxor n x y)
                   (bvxor n x k)))
-  :hints (("Goal" :in-theory (e/d (bvxor) nil))))
+  :hints (("Goal" :in-theory (enable bvxor))))
 
 (defthm equal-of-0-and-bvxor
   (equal (equal 0 (bvxor size x y))

@@ -48,7 +48,7 @@
 ;; ======================================================================
 
 (include-book "../decoding-and-spec-utils"
-          :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+          :ttags (:undef-flg))
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
 
@@ -559,7 +559,7 @@
                   ;; If BTR/BTS/BTC, we need to clear/set/complement the tested bit
                   (x86-operand-to-reg/mem
                     proc-mode operand-size inst-ac? nil
-                    (install-bit bitOffset 
+                    (install-bit bitOffset
                                  (case reg
                                    (5 1)
                                    (6 0)
@@ -715,6 +715,7 @@
           ;; F3 0F BC/r: TZCNT r32. r/m32
           ;; F3 REX.W 0F BC/r: TZCNT r64. r/m64
 
+          ;; Note: see also POPCNT (largely a copy of this definition)
           :parents (two-byte-opcodes)
 
           :returns (x86 x86p :hyp (x86p x86))
@@ -822,3 +823,179 @@
     x86))
 
 ;; ======================================================================
+
+
+(local (in-theory (disable bitops::ash-1-removal
+                           signed-byte-p
+                           unsigned-byte-p)))
+
+(define blsi ((operand-size posp)
+              (src-val natp))
+  (b* ((bitwidth (ash operand-size 3))
+       (tzcnt (tzcnt bitwidth 0 src-val)))
+    (loghead bitwidth (ash 1 tzcnt)))
+  ///
+  (defthm unsigned-byte-p-of-blsi
+    (implies (and (integerp w)
+                  (posp operand-size)
+                  (<= (* 8 operand-size) w))
+             (unsigned-byte-p w (blsi operand-size src-val)))
+    :hints(("Goal" :in-theory (enable bitops::ash-is-expt-*-x)))))
+       
+
+(def-inst x86-blsi
+  ;; VEX.LZ.0F38.W0 F3 /3:  BLSI r32, r/m32
+  ;; VEX.LZ.0F38.W1 F3 /3:  BLSI r64, r/m64
+  :parents (three-byte-opcodes)
+
+  :returns (x86 x86p :hyp (x86p x86))
+  :guard (vex-prefixes-byte0-p vex-prefixes)
+
+  :modr/m t
+  :vex t
+  :guard-debug t
+  :body
+  ;; placeholder
+  (b* ((operand-size (if (and (eql proc-mode #.*64-bit-mode*)
+                              (eql (vex->w vex-prefixes) 1))
+                         8
+                       4))
+
+       ((the (unsigned-byte 4) src1-index)
+        (vex-vvvv-reg-index (vex->vvvv vex-prefixes)))
+
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?))
+
+       
+       (p2 (prefixes->seg prefixes))
+       (p4? (equal #.*addr-size-override*
+                   (prefixes->adr prefixes)))
+
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+       (rex-byte (rex-byte-from-vex-prefixes vex-prefixes))
+       
+       (inst-ac? t)
+       ((mv flg0
+            src2-val
+            (the (unsigned-byte 3) increment-RIP-by)
+            (the (signed-byte 64) addr)
+            x86)
+        (x86-operand-from-modr/m-and-sib-bytes
+         proc-mode #.*gpr-access* operand-size inst-ac?
+         nil ;; Not a memory pointer operand
+         seg-reg p4? temp-rip rex-byte r/m mod sib
+         0 ;; No immediate data
+         x86))
+       ((when flg0)
+        (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
+
+       (res (blsi operand-size src2-val))
+       ((the (unsigned-byte 32) input-rflags) (rflags x86))
+       (output-rflags (!rflagsBits->cf
+                       (b-not (bool->bit (eql src2-val 0)))
+                       (!rflagsBits->sf
+                        (logbit (1- (* 8 operand-size)) res)
+                        (!rflagsBits->zf
+                         (bool->bit (eql res 0))
+                         (!rflagsBits->of 0 input-rflags)))))
+       ;; SDM says AF and PF are undefined. Are they really undefined or just preserved?
+       (undefined-flags (!rflagsbits->pf 1 (!rflagsbits->af 1 0)))
+       
+       (x86 (!rgfi-size operand-size src1-index res 1 ;; fake rex-byte
+                        x86))
+       (x86 (write-user-rflags output-rflags undefined-flags x86))
+       (x86 (write-*ip proc-mode temp-rip x86)))
+    x86))
+
+
+;; ======================================================================
+
+
+(local (defthm logcount-bound-when-unsigned-byte-p
+         (implies (unsigned-byte-p n x)
+                  (<= (logcount x) n))
+         :hints (("Goal" :in-theory (enable* bitops::ihsext-inductions
+                                             bitops::ihsext-recursive-redefs)))
+         :rule-classes nil))
+
+(local (defthm logcount-width-16
+         (implies (unsigned-byte-p 16 x)
+                  (unsigned-byte-p 16 (logcount x)))
+         :hints (("goal" :use ((:instance logcount-bound-when-unsigned-byte-p (n 16)))
+                  :in-theory (enable unsigned-byte-p)))))
+
+(local (defthm logcount-width-32
+         (implies (unsigned-byte-p 32 x)
+                  (unsigned-byte-p 32 (logcount x)))
+         :hints (("goal" :use ((:instance logcount-bound-when-unsigned-byte-p (n 32)))
+                  :in-theory (enable unsigned-byte-p)))))
+
+(local (defthm logcount-width-64
+         (implies (unsigned-byte-p 64 x)
+                  (unsigned-byte-p 64 (logcount x)))
+         :hints (("goal" :use ((:instance logcount-bound-when-unsigned-byte-p (n 64)))
+                  :in-theory (enable unsigned-byte-p)))))
+
+(def-inst x86-popcnt
+  ;; F3 0F B8 /r       POPCNT r16, r/m16 
+  ;; F3 0F B8 /r       POPCNT r32, r/m32
+  ;; F3 REX.W 0F B8 /r POPCNT r64, r/m64 
+
+  ;; Note: largely copied from TZCNT 
+  :parents (two-byte-opcodes)
+
+  :returns (x86 x86p :hyp (x86p x86))
+
+  :guard-hints (("Goal" :in-theory (e/d () ())))
+
+  :modr/m t
+
+  :body
+
+  (b* (((the (integer 2 8) operand-size)
+        (select-operand-size
+         proc-mode nil rex-byte nil prefixes nil nil nil x86))
+
+       (p2 (prefixes->seg prefixes))
+       (p4? (equal #.*addr-size-override*
+                   (prefixes->adr prefixes)))
+
+       (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
+
+       (inst-ac? t)
+       ((mv flg0
+            source
+            (the (unsigned-byte 3) increment-RIP-by)
+            (the (signed-byte 64) addr)
+            x86)
+        (x86-operand-from-modr/m-and-sib-bytes
+         proc-mode #.*gpr-access* operand-size inst-ac?
+         nil ;; Not a memory pointer operand
+         seg-reg p4? temp-rip rex-byte r/m mod sib
+         0 ;; No immediate data
+         x86))
+       ((when flg0)
+        (!!ms-fresh :x86-operand-from-modr/m-and-sib-bytes flg0))
+
+       ((mv flg (the (signed-byte #.*max-linear-address-size*) temp-rip))
+        (add-to-*ip proc-mode temp-rip increment-RIP-by x86))
+       ((when flg) (!!ms-fresh :rip-increment-error temp-rip))
+
+       (badlength? (check-instruction-length start-rip temp-rip 0))
+       ((when badlength?)
+        (!!fault-fresh :gp 0 :instruction-length badlength?)) ;; #GP(0)
+
+       (result (logcount source))
+
+       ;; Update the x86 state:
+       (x86 (!rgfi-size operand-size (reg-index reg rex-byte *r*)
+                        result rex-byte x86))
+       ;; flags (from SDM): OF, SF, ZF [sic], AF, CF, PF are all cleared. ZF is set if SRC = 0,
+       ;; otherwise ZF is cleared.
+       (output-rflags (!rflagsBits->zf (bool->bit (equal source 0)) 0))
+       (x86 (write-user-rflags output-rflags 0 x86))
+       (x86 (write-*ip proc-mode temp-rip x86)))
+    x86))
+

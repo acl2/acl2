@@ -44,6 +44,7 @@
 (include-book "kestrel/booleans/booland" :dir :system) ;since this book knows about booland
 (include-book "kestrel/booleans/boolxor" :dir :system) ;since this book knows about boolxor
 (include-book "dag-size-sparse")
+(include-book "hit-counts")
 (local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
@@ -1606,7 +1607,7 @@
                                           :count-hits
                                           ))
        (booleanp (lookup-equal :print-as-clausesp options))
-       (member-equal (lookup-equal :count-hits options) '(t nil :brief))
+       (count-hits-argp (lookup-equal :count-hits options))
        (symbol-listp (lookup-equal :no-print-fns options))))
 
 (defthm simple-prover-optionsp-forward-to-symbol-alistp
@@ -1621,9 +1622,15 @@
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable simple-prover-optionsp))))
 
-(defthm simple-prover-optionsp-forward-to-symbol-list-of-lookup-equal-of-no-print-fns
+(defthm simple-prover-optionsp-forward-to-symbol-listp-of-lookup-equal-of-no-print-fns
   (implies (simple-prover-optionsp options)
            (symbol-listp (lookup-equal :no-print-fns options)))
+  :rule-classes :forward-chaining
+  :hints (("Goal" :in-theory (enable simple-prover-optionsp))))
+
+(defthm simple-prover-optionsp-forward-to-count-hits-argp-of-lookup-equal-of-count-hits
+  (implies (simple-prover-optionsp options)
+           (count-hits-argp (lookup-equal :count-hits options)))
   :rule-classes :forward-chaining
   :hints (("Goal" :in-theory (enable simple-prover-optionsp))))
 
@@ -1636,7 +1643,7 @@
 (defthm simple-prover-optionsp-of-acons-of-count-hits
   (implies (simple-prover-optionsp options)
            (iff (simple-prover-optionsp (acons :count-hits count-hits options))
-                (member-equal count-hits '(t nil :brief))))
+                (count-hits-argp count-hits)))
   :hints (("Goal" :in-theory (enable simple-prover-optionsp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

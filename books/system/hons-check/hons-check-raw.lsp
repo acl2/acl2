@@ -290,41 +290,37 @@
          (cons-acc (hl-hspace-check-addr-ht hs cons-acc)))
     (format t "; Checking SBITS~%")
     (let* ((sbits     (hl-hspace-sbits hs))
-           (sbits-len (length sbits))
+           (sbits-len (sbits-length sbits))
            (atom-max  (hl-max-list atom-acc))
            ;; bit arrays to efficiently check for duplication and
            ;; agreement between consbits and sbits
-           (atombits  (make-array (max (+ 1 atom-max) sbits-len)
-                                  :element-type 'bit
-                                  :initial-element 0))
-           (consbits  (make-array sbits-len
-                                  :element-type 'bit
-                                  :initial-element 0)))
+           (atombits  (sbits-grow nil (max (+ 1 atom-max) sbits-len)))
+           (consbits  (sbits-grow nil sbits-len)))
 
       (loop for index in atom-acc do
             (unless (natp index)
               (error "Index ~a not natural" index))
             (when (and (< index sbits-len)
-                       (= (aref sbits index) 1))
+                       (= (sbits-ref sbits index) 1))
               (error "SBITS[~a] is set, but it's just an address cons!" index))
-            (unless (= (aref atombits index) 0)
+            (unless (= (sbits-ref atombits index) 0)
               (error "Index ~a used for multiple atoms" index))
-            (setf (aref atombits index) 1))
+	    (sbits-set atombits index 1))
 
       (loop for index in cons-acc do
             (unless (natp index)
               (error "Index ~a not natural" index))
             (unless (< index sbits-len)
               (error "Index ~a too big for sbits" index))
-            (unless (= (aref atombits index) 0)
+            (unless (= (sbits-ref atombits index) 0)
               (error "Index ~a used as a cons and atom.  ~a" index
                      (hl-static-inverse-cons index)))
-            (unless (= (aref consbits index) 0)
+            (unless (= (sbits-ref consbits index) 0)
               (error "Index ~a used for multiple conses" index))
-            (setf (aref consbits index) 1))
+            (sbits-set consbits index 1))
 
       (loop for index below sbits-len do
-            (unless (= (aref sbits index) (aref consbits index))
+            (unless (= (sbits-ref sbits index) (sbits-ref consbits index))
               (error "SBITS mismatch on index ~a" index))))))
 
 

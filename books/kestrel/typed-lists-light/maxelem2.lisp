@@ -1,7 +1,7 @@
 ; More theorems about maxelem
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -51,13 +51,12 @@
   (implies (and (subsetp-equal lst1 lst2)
                 (consp lst1) ;handle..
                 )
-           (equal (< (MAXELEM lst2) (MAXELEM lst1))
-                  nil))
-  :hints (("Subgoal *1/5.1" :use (:instance maxelem-of-remove1 (lst lst2) (a (car lst1)))
-           :in-theory (e/d (maxelem ;len-less-than-2-rewrite
-                            ) ( maxelem-of-remove1)))
-          ("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (maxelem (:definition maxelem)
+           (not (< (MAXELEM lst2) (MAXELEM lst1))))
+  :hints (;; ("Subgoal *1/5.1" :use (:instance maxelem-of-remove1 (lst lst2) (a (car lst1)))
+          ;;  :in-theory (e/d (maxelem ;len-less-than-2-rewrite
+          ;;                   ) ( maxelem-of-remove1)))
+          ("Goal" ;:do-not '(generalize eliminate-destructors)
+           :in-theory (e/d (maxelem
                             ;bag::subbagp
                                     ;;BAG::PERM-OF-REMOVE1-ONE
                             ;len-less-than-2-rewrite
@@ -80,9 +79,8 @@
                 (subsetp-equal lst free)
                 (consp lst))
            (not (< x (car lst))))
-  :hints (("Goal" :use ((:instance not-<-car-when->=maxelem)
+  :hints (("Goal" :use (not-<-car-when->=maxelem
                         (:instance maxelem-when-subbagp (lst1 lst) (lst2 free)))
-           :do-not '(generalize eliminate-destructors)
            :in-theory (disable not-<-car-when->=maxelem MAXELEM-WHEN-SUBBAGP))))
 
 (defthm not-less-than-maxelem-of-small-range-lemma
@@ -101,14 +99,3 @@
                   (maxelem lst)))
   :hints (("Goal" :in-theory (enable reverse-list maxelem))))
 
-(defthm maxelem-of-strip-cars-bound
-  (implies (consp dag)
-           (<= (car (car dag)) (maxelem (strip-cars dag))))
-  :rule-classes ((:linear :trigger-terms ((maxelem (strip-cars dag)))))
-  :hints (("Goal" :expand (strip-cars dag))))
-
-(defthmd maxelem-of-strip-cars-bound-2
-  (implies (consp dag)
-           (<= (car (car dag)) (maxelem (strip-cars dag))))
-  :rule-classes ((:linear :trigger-terms ((car (car dag)))))
-  :hints (("Goal" :expand (strip-cars dag))))

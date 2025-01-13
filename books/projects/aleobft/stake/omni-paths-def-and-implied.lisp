@@ -14,7 +14,7 @@
 (include-book "dag-omni-paths")
 (include-book "last-anchor-voters-def-and-init-and-next")
 (include-book "backward-closure")
-(include-book "previous-quorum")
+(include-book "previous-quorum-def-and-init-and-next")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))

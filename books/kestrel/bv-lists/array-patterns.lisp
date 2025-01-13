@@ -17,6 +17,7 @@
 (include-book "kestrel/bv/bvplus" :dir :system)
 (include-book "kestrel/bv/bvcat" :dir :system)
 (include-book "kestrel/lists-light/every-nth" :dir :system)
+(local (include-book "kestrel/bv/logapp" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
@@ -127,6 +128,19 @@
                               bvcat
                               expt-of-+
                               logapp unsigned-byte-p))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm bv-array-read-of-+-of-constant-shorten
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep vals)))
+                (< (+ k index) len) ; gen?
+                (natp k)
+                (natp len)
+                (natp index))
+           (equal (bv-array-read width len (+ k index) vals)
+                  (bv-array-read width (- len k) index (nthcdr k vals))))
+  :hints (("Goal" :in-theory (enable bv-array-read))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

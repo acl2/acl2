@@ -18,7 +18,6 @@
 
 (include-book "../syntax/abstract-syntax-operations")
 (include-book "deftrans")
-(include-book "utilities/free-vars")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -81,7 +80,7 @@
   (b* (((paramdecl paramdecl) paramdecl))
     (paramdeclor-case
       paramdecl.decl
-      :declor (declor-get-ident paramdecl.decl.unwrap)
+      :declor (declor->ident paramdecl.decl.unwrap)
       :otherwise nil)))
 
 (define paramdecl-to-decl
@@ -142,13 +141,13 @@
       fundef.body
       :compound
       (dirdeclor-case
-        fundef.declor.decl
+        fundef.declor.direct
         :function-params
         (b* (((unless (equal target-fn
-                             (dirdeclor-get-ident fundef.declor.decl.decl)))
+                             (c$::dirdeclor->ident fundef.declor.direct.decl)))
               (mv nil (fundef-fix fundef)))
              ((mv success new-params removed-param)
-              (paramdecl-list-remove-param-by-ident fundef.declor.decl.params target-param))
+              (paramdecl-list-remove-param-by-ident fundef.declor.direct.params target-param))
              ((unless success)
               (prog2$ (raise "Function ~x0 did not have a parameter ~x1"
                              target-fn
@@ -156,9 +155,9 @@
                       (mv nil (fundef-fix fundef))))
              (dirdeclor-params
                (make-dirdeclor-function-params
-                 :decl fundef.declor.decl.decl
+                 :decl fundef.declor.direct.decl
                  :params new-params
-                 :ellipsis fundef.declor.decl.ellipsis))
+                 :ellipsis fundef.declor.direct.ellipsis))
              ((mv - decl)
               (paramdecl-to-decl removed-param (initer-single const))))
           (mv t
@@ -167,7 +166,7 @@
                 :spec fundef.spec
                 :declor (make-declor
                           :pointers fundef.declor.pointers
-                          :decl dirdeclor-params)
+                          :direct dirdeclor-params)
                 :decls fundef.decls
                 :body (stmt-compound (cons (block-item-decl decl)
                                            fundef.body.items)))))

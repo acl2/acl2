@@ -15,8 +15,8 @@
 ;; vector.  Bits are numbered starting at 0 for the least significant bit.
 ;; Getbit is perhaps similar to the function bitn from books/rtl.
 
-(include-book "slice")
 (include-book "getbit-def")
+(local (include-book "slice"))
 (local (include-book "../arithmetic-light/expt2"))
 (local (include-book "../arithmetic-light/mod"))
 (local (include-book "../arithmetic-light/floor")) ;for FLOOR-DIVIDE-BY-same
@@ -339,7 +339,7 @@
   :hints (("Goal" :use (:instance usb1-cases (x (getbit n x)))))
   :rule-classes ((:rewrite :backchain-limit-lst (0))))
 
-(defthm getbit-when-not-0
+(defthmd getbit-when-not-0
   (implies (not (equal 0 (getbit n x)))
            (equal (getbit n x)
                   1))

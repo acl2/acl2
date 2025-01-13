@@ -38,6 +38,7 @@
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
 (local (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system))
 (local (include-book "kestrel/bv-lists/bit-listp-rules" :dir :system))
+(local (include-book "kestrel/bv/slice" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cars" :dir :system))
 (local (include-book "kestrel/alists-light/symbol-alistp" :dir :system))
@@ -2129,20 +2130,23 @@
            (iff (r1cs-constraints-holdp (make-range-check-a-constraints i avars pivars c pivar-renaming) valuation p)
                 (acl2::bit-listp (acl2::lookup-eq-lst (take (+ 1 i) avars) valuation))))
   ;todo: improve hints!
-  :hints (("[1]subgoal 102" :use (:instance valuation-bindsp-of-cdr-of-assoc-equal (key (+ 1 (INDEX-OF-LOWEST-0 C))) (alist PIVAR-RENAMING)))
-          ("[1]subgoal 99" :use (:instance valuation-bindsp-of-cdr-of-assoc-equal (key (+ 1 (INDEX-OF-LOWEST-0 C))) (alist PIVAR-RENAMING)))
-          ("[1]subgoal 98" :use (:instance valuation-bindsp-of-cdr-of-assoc-equal (key (+ 1 (INDEX-OF-LOWEST-0 C))) (alist PIVAR-RENAMING)))
-          ("[1]subgoal 97" :use (:instance valuation-bindsp-of-cdr-of-assoc-equal (key (+ 1 (INDEX-OF-LOWEST-0 C))) (alist PIVAR-RENAMING)))
-          ("[1]subgoal 94" :use (:instance valuation-bindsp-of-cdr-of-assoc-equal (key (+ 1 (INDEX-OF-LOWEST-0 C))) (alist PIVAR-RENAMING)))
-          ("[1]subgoal 91" :use (:instance valuation-bindsp-of-cdr-of-assoc-equal (key (+ 1 (INDEX-OF-LOWEST-0 C))) (alist PIVAR-RENAMING)))
-          ("[1]subgoal 90" :use (:instance valuation-bindsp-of-cdr-of-assoc-equal (key (+ 1 (INDEX-OF-LOWEST-0 C))) (alist PIVAR-RENAMING)))
-          ("[1]subgoal 89" :use (:instance valuation-bindsp-of-cdr-of-assoc-equal (key (+ 1 (INDEX-OF-LOWEST-0 C))) (alist PIVAR-RENAMING)))
-          ("[1]subgoal 34" :use (:instance valuation-bindsp-of-cdr-of-assoc-equal (key (+ 1 I)) (alist PIVAR-RENAMING)))
-          ("[1]subgoal 29" :use (:instance valuation-bindsp-of-cdr-of-assoc-equal (key (+ 1 I)) (alist PIVAR-RENAMING)))
-          ("[1]subgoal 28" :use (:instance valuation-bindsp-of-cdr-of-assoc-equal (key (+ 1 I)) (alist PIVAR-RENAMING)))
-          ("[1]subgoal 27" :use (:instance valuation-bindsp-of-cdr-of-assoc-equal (key (+ 1 I)) (alist PIVAR-RENAMING)))
-          ("[1]subgoal 26" :use (:instance valuation-bindsp-of-cdr-of-assoc-equal (key (+ 1 I)) (alist PIVAR-RENAMING)))
-          ("[1]subgoal 21" :use (:instance valuation-bindsp-of-cdr-of-assoc-equal (key (+ 1 I)) (alist PIVAR-RENAMING)))
+  :hints ((and stable-under-simplificationp
+               '(:use ((:instance valuation-bindsp-of-cdr-of-assoc-equal (key (+ 1 I)) (alist PIVAR-RENAMING))
+                       (:instance valuation-bindsp-of-cdr-of-assoc-equal (key (+ 1 (INDEX-OF-LOWEST-0 C))) (alist PIVAR-RENAMING)))))
+          ;; ("[1]subgoal 102" :use (:instance valuation-bindsp-of-cdr-of-assoc-equal (key (+ 1 (INDEX-OF-LOWEST-0 C))) (alist PIVAR-RENAMING)))
+          ;; ("[1]subgoal 99" :use (:instance valuation-bindsp-of-cdr-of-assoc-equal (key (+ 1 (INDEX-OF-LOWEST-0 C))) (alist PIVAR-RENAMING)))
+          ;; ("[1]subgoal 98" :use (:instance valuation-bindsp-of-cdr-of-assoc-equal (key (+ 1 (INDEX-OF-LOWEST-0 C))) (alist PIVAR-RENAMING)))
+          ;; ("[1]subgoal 97" :use (:instance valuation-bindsp-of-cdr-of-assoc-equal (key (+ 1 (INDEX-OF-LOWEST-0 C))) (alist PIVAR-RENAMING)))
+          ;; ("[1]subgoal 94" :use (:instance valuation-bindsp-of-cdr-of-assoc-equal (key (+ 1 (INDEX-OF-LOWEST-0 C))) (alist PIVAR-RENAMING)))
+          ;; ("[1]subgoal 91" :use (:instance valuation-bindsp-of-cdr-of-assoc-equal (key (+ 1 (INDEX-OF-LOWEST-0 C))) (alist PIVAR-RENAMING)))
+          ;; ("[1]subgoal 90" :use (:instance valuation-bindsp-of-cdr-of-assoc-equal (key (+ 1 (INDEX-OF-LOWEST-0 C))) (alist PIVAR-RENAMING)))
+          ;; ("[1]subgoal 89" :use (:instance valuation-bindsp-of-cdr-of-assoc-equal (key (+ 1 (INDEX-OF-LOWEST-0 C))) (alist PIVAR-RENAMING)))
+          ;; ("[1]subgoal 34" :use (:instance valuation-bindsp-of-cdr-of-assoc-equal (key (+ 1 I)) (alist PIVAR-RENAMING)))
+          ;; ("[1]subgoal 29" :use (:instance valuation-bindsp-of-cdr-of-assoc-equal (key (+ 1 I)) (alist PIVAR-RENAMING)))
+          ;; ("[1]subgoal 28" :use (:instance valuation-bindsp-of-cdr-of-assoc-equal (key (+ 1 I)) (alist PIVAR-RENAMING)))
+          ;; ("[1]subgoal 27" :use (:instance valuation-bindsp-of-cdr-of-assoc-equal (key (+ 1 I)) (alist PIVAR-RENAMING)))
+          ;; ("[1]subgoal 26" :use (:instance valuation-bindsp-of-cdr-of-assoc-equal (key (+ 1 I)) (alist PIVAR-RENAMING)))
+          ;; ("[1]subgoal 21" :use (:instance valuation-bindsp-of-cdr-of-assoc-equal (key (+ 1 I)) (alist PIVAR-RENAMING)))
           ("subgoal *1/2" :cases ((equal (index-of-lowest-0 c) (len avars))
                                   (equal (index-of-lowest-0 c) (+ -2 (len avars)))
                                   (and (< i (index-of-lowest-0 c))
@@ -2154,7 +2158,9 @@
                     )
            :in-theory (enable MAKE-RANGE-CHECK-A-CONSTRAINTS
                               TAKE-OPENER-ALT
-                              natp))))
+                              natp
+                              ;;acl2::getbit-when-not-0 ; affects the subgoal numbering
+                              ))))
 
 ;; if A <= C, then the constraints hold
 (defthm make-range-check-a-constraints-correct-backward

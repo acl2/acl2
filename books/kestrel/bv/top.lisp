@@ -163,6 +163,9 @@
 ;; Rules about BV operations of size 1:
 (include-book "single-bit")
 
+;; "Pick a bit" proof support:
+(include-book "pick-a-bit")
+
 ;; Mixed rules:
 (include-book "unsigned-byte-p-forced-rules")
 (include-book "bvcat-rules")
@@ -183,7 +186,7 @@
 (include-book "if-becomes-bvif-rules")
 
 (include-book "intro")
-(include-book "bitops")
+;; (include-book "bitops") ; excluding this since it brings in bitops
 
 (include-book "validation-stp")
 (include-book "validation-smt-lib")

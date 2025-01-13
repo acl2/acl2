@@ -64,7 +64,10 @@
                      (implies anchor
                               (dag-omni-paths-p
                                anchor
-                               (validator-state->dag vstate2)))))))
+                               (validator-state->dag vstate2))))))
+  ///
+  (fty::deffixequiv-sk omni-paths-p
+    :args ((systate system-statep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

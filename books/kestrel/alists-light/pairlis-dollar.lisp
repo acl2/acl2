@@ -106,10 +106,11 @@
          (pairlis$ x y))
   :hints (("Goal" :in-theory (enable pairlis$))))
 
-(defthm pairlis$-of-true-list-fix-arg2
-  (equal (pairlis$ x (true-list-fix y))
-         (pairlis$ x y))
-  :hints (("Goal" :in-theory (enable pairlis$))))
+;; The identical rule PAIRLIS$-TRUE-LIST-FIX is built in to ACL2
+;; (defthm pairlis$-of-true-list-fix-arg2
+;;   (equal (pairlis$ x (true-list-fix y))
+;;          (pairlis$ x y))
+;;   :hints (("Goal" :in-theory (enable pairlis$))))
 
 (defthm len-of-pairlis$
   (equal (len (pairlis$ x y))

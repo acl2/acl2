@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,8 +10,10 @@
 
 (in-package "C$")
 
-(include-book "grammar")
+(include-book "file-paths")
 (include-book "files")
+(include-book "grammar")
+(include-book "keywords")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -55,7 +57,11 @@
    (xdoc::p
     "We plan to add a parser and a pretty-printer."))
   :order-subtopics t
-  :default-parent t)
+  :default-parent (file-paths
+                   files
+                   grammar
+                   keywords
+                   t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

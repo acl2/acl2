@@ -1692,7 +1692,6 @@
   (declare (xargs :guard (and (frame-p frame)
                               (consp (assoc-equal 0 frame))
                               (nat-listp seq))
-                  :guard-debug t
                   :measure (len (frame->frame frame))))
   (b*
       (((when (or (atom (frame->frame frame))

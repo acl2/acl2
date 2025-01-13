@@ -38,7 +38,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule committed-anchors-of-create-certificate-next
+(defruled committed-anchors-of-create-certificate-next
   :short "There is no change in @(tsee committed-anchors)
           under a @('create-certificate') event."
   :long
@@ -72,7 +72,8 @@
            validator-state->dag-subset-create-certificate-next
            validator-state->dag-of-create-certificate-next-same
            validator-state->last-of-create-certificate-next
-           last-anchor-in-dag)
+           last-anchor-in-dag
+           last-anchor-of-create-certificate-next)
   :cases ((equal val (certificate->author cert)))
   :use ((:instance collect-all-anchors-of-unequivocal-dag-superset
                    (vals (all-addresses systate))
@@ -93,7 +94,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule committed-anchors-of-receive-certificate-next
+(defruled committed-anchors-of-receive-certificate-next
   :short "There is no change in @(tsee last-anchor)
           under a @('receive-certificate') event."
   :long
@@ -111,11 +112,12 @@
                                      (all-addresses systate))))
   :enable (committed-anchors
            validator-state->dag-of-receive-certificate-next
-           validator-state->last-of-receive-certificate-next))
+           validator-state->last-of-receive-certificate-next
+           last-anchor-of-receive-certificate-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule committed-anchors-of-store-certificate-next
+(defruled committed-anchors-of-store-certificate-next
   :short "There is no change in @(tsee last-anchor)
           under a @('store-certificate') event."
   :long
@@ -148,7 +150,8 @@
            system-last-anchor-present-p-necc
            validator-state->dag-subset-store-certificate-next
            validator-state->last-of-store-certificate-next
-           last-anchor-in-dag)
+           last-anchor-in-dag
+           last-anchor-of-store-certificate-next)
   :use (:instance collect-all-anchors-of-unequivocal-dag-superset
                   (vals (all-addresses systate))
                   (last-anchor
@@ -164,7 +167,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule committed-anchors-of-advance-round-next
+(defruled committed-anchors-of-advance-round-next
   :short "There is no change in @(tsee last-anchor)
           under a @('advance-round') event."
   :long
@@ -182,11 +185,12 @@
                                      (all-addresses systate))))
   :enable (committed-anchors
            validator-state->dag-of-advance-round-next
-           validator-state->last-of-advance-round-next))
+           validator-state->last-of-advance-round-next
+           last-anchor-of-advance-round-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule committed-anchors-of-commit-anchors
+(defruled committed-anchors-of-commit-anchors
   :short "How the sequence of committed anchors changes
           under a @('commit-anchor') event."
   :long
@@ -242,7 +246,8 @@
            validator-state->last-of-commit-anchors-next
            certificate->author-of-last-anchor
            certificate->round-of-last-anchor
-           last-anchor-in-dag)
+           last-anchor-in-dag
+           last-anchor-of-commit-anchors-next)
   :use (:instance collect-all-anchors-to-append-of-collect-anchors
                   (anchor (last-anchor (get-validator-state val systate)
                                        (all-addresses systate)))
@@ -271,7 +276,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule committed-anchors-of-timer-expires-next
+(defruled committed-anchors-of-timer-expires-next
   :short "There is no change in @(tsee last-anchor)
           under a @('timer-expires') event."
   :long
@@ -289,4 +294,5 @@
                                      (all-addresses systate))))
   :enable (committed-anchors
            validator-state->dag-of-timer-expires-next
-           validator-state->last-of-timer-expires-next))
+           validator-state->last-of-timer-expires-next
+           last-anchor-of-timer-expires-next))

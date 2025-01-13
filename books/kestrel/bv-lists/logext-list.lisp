@@ -1,7 +1,7 @@
 ; Apply logext to every element of a list
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -111,7 +111,7 @@
            (equal (take n (logext-list size lst))
                   (logext-list size (take n lst))))
   :hints
-  (("Goal" :in-theory (e/d (take logext-list) nil))))
+  (("Goal" :in-theory (enable take logext-list))))
 
 (defthm logext-list-does-nothing
   (implies (and (all-signed-byte-p size lst)
@@ -122,15 +122,12 @@
                   lst))
   :hints (("Goal" :in-theory (enable logext-list all-signed-byte-p))))
 
-
-;move
 (defthm car-of-logext-list
-  (equal (CAR (LOGEXT-LIST size lst))
+  (equal (car (logext-list size lst))
          (if (consp lst)
              (logext size (car lst))
            nil))
-  :hints (("Goal" :in-theory (e/d (LOGEXT-LIST) (;CAR-BECOMES-NTH-OF-0 ;yuck
-                                                 )))))
+  :hints (("Goal" :in-theory (enable logext-list))))
 
 (defthm nth-of-logext-list-weird-case
   (implies (not (natp i))
@@ -143,7 +140,6 @@
     :in-theory (e/d (nth ;NTH-WHEN-N-IS-ZP
                      )
                     (;nth-of-cdr
-;CAR-BECOMES-NTH-OF-0
                      )))))
 
 (defthm nth-of-logext-list-weird-case2
@@ -167,7 +163,6 @@
     :in-theory (e/d (nth ;nth-when-n-is-zp
                      )
                     (;nth-of-cdr
-                     ;;car-becomes-nth-of-0
                      )))))
 
 (defthmd not-logext-list-rewrite

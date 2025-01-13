@@ -65,10 +65,11 @@
 (in-theory (disable rkeys))
 
 ;; stuff that should be in the records book:
-(defthm s-hack-1
-  (equal (s a nil nil)
-         nil)
-  :hints (("Goal" :in-theory (enable s))))
+;; this is now in coi/records/records
+;; (defthm s-hack-1
+;;   (equal (s a nil nil)
+;;          nil)
+;;   :hints (("Goal" :in-theory (enable s))))
 
 (in-theory (enable g-of-s-redux))
 
@@ -232,13 +233,13 @@
     ;           :induct t
            :in-theory (e/d (RKEYS ACL2->RCD g key-set) (g-iff-ifrp)))))
 
-;move to sets
 ;expensive?
-(defthm head-when-empty
-  (implies (set::emptyp ads)
-           (equal (set::head ads)
-                  nil))
-  :hints (("Goal" :in-theory (enable set::head set::sfix))))
+;already in osets
+;; (defthm head-when-emptyp
+;;   (implies (set::emptyp ads)
+;;            (equal (set::head ads)
+;;                   nil))
+;;   :hints (("Goal" :in-theory (enable set::head set::sfix))))
 
 (defthm setp-of-rkeys
   (equal (set::setp (rkeys r))

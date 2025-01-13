@@ -327,7 +327,6 @@
 ;;                                  indexsize
 ;;                                  index
 ;;                                  vals))))
-;;   :otf-flg t
 ;;   :hints (("Goal" ;:cases ((natp index) (not (integerp index)))
 ;;            :in-theory (enable bvnth all-integerp-when-all-natp nth2
 ;;                               BVCHOP-WHEN-I-IS-NOT-AN-INTEGER
@@ -882,17 +881,16 @@
 ;;   :hints (("Goal" :in-theory (enable getbit-list logext-list))))
 
 ;use a trim rule!
-(DEFthm BV-ARRAY-WRITE-of-bvcat-reduce
+(defthmd bv-array-write-of-bvcat-reduce
   (implies (and (<= element-size lowsize)
                 (natp element-size)
                 (natp highsize)
                 (natp lowsize)
                 (equal len (len lst))
-                (< key len)
-                (natp key)
-                )
-           (equal (BV-ARRAY-WRITE ELEMENT-SIZE LEN KEY (bvcat highsize highval lowsize lowval) LST)
-                  (BV-ARRAY-WRITE ELEMENT-SIZE LEN KEY lowval LST)))
+                (< index len)
+                (natp index))
+           (equal (bv-array-write element-size len index (bvcat highsize highval lowsize lowval) lst)
+                  (bv-array-write element-size len index lowval lst)))
   :hints (("Goal" :in-theory (enable update-nth2 bv-array-write))))
 
 (defthm bv-array-read-of-getbit-list
@@ -966,8 +964,7 @@
            (equal (BV-ARRAY-READ esize '128 n (UPDATE-SUBRANGE start end vals lst))
                   (BV-ARRAY-READ esize (+ 1 end (- start)) (+ N (- START)) vals)))
   :hints (("Goal" :in-theory (e/d (bv-array-read unsigned-byte-p-of-integer-length-gen ceiling-of-lg)
-                                  (;
-                                   unsigned-byte-p-of-+-of-minus-alt
+                                  (unsigned-byte-p-of-+-of-minus-alt
                                    unsigned-byte-p-of-+-of-minus)))))
 
 ;; (thm
@@ -1015,7 +1012,6 @@
 ;;                                  (+ highsize lowsize)
 ;;                                  (bvcat highsize highval lowsize lowval)
 ;;                                  vals))))
-;;   :otf-flg t
 ;;   :hints (("Goal" :in-theory (enable bvnth all-integerp-when-all-natp
 ;;                                      ADD-BVCHOPS-TO-EQUALITY-OF-SBPS-4-ALT))))
 
@@ -1081,7 +1077,6 @@
 ;;                                    0
 ;;                                    (myif test (car l1) (car l2))
 ;;                                    (myif test (cdr l1) (cdr l2)))))
-;;    :otf-flg t
 ;;    :hints (("Goal" :do-not '(generalize eliminate-destructors)
 ;;             :in-theory (enable myif UPDATE-NTH2 LIST::UPDATE-NTH-EQUAL-REWRITE)))))
 
@@ -1104,8 +1099,6 @@
 ;;                              BVCHOP-OF-LOGTAIL
 ;;                              LOGTAIL-BECOMES-SLICE-BIND-FREE
 ;;                              LOGTAIL-OF-BVCHOP-BECOMES-SLICE
-;;
-;;
 ;;                              SLICE-BECOMES-BVCHOP))))))
 
 
@@ -1435,9 +1428,7 @@
            (equal (bv-array-read element-size len index (subrange start end lst))
                   (bv-array-read element-size (+ 1 end) (+ start index) lst)))
   :hints (("Goal" :in-theory (e/d (bv-array-read-opener bvchop-when-i-is-not-an-integer subrange)
-                                  (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ
-                                   ;;
-                                   )))))
+                                  (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ)))))
 
 ;; (defthm logext-list-of-myif-of-logext-list-arg2
 ;;   (equal (logext-list 8 (myif test x (logext-list 8 y)))
@@ -1640,7 +1631,6 @@
 ;;                (natp key))
 ;;           (equal (myif test x (jvm::update-nth-local key val l))
 ;;                  (jvm::update-nth-local key (myif test (nth key x) val) (myif test x l))))
-;;  :otf-flg t
 ;;  :hints (("Goal" :in-theory (e/d (len-update-nth myif list::update-nth-equal-rewrite nth-when-n-is-zp) (car-becomes-nth-of-0)))))
 
 (defthmd bv-array-read-blast-one-step
@@ -1794,7 +1784,6 @@
 ;;                               (bv-array-read esize len key rhs))
 ;;                        (equal (bv-array-clear esize len key lst)
 ;;                               (bv-array-clear esize len key rhs)))))
-;;   :otf-flg t
 ;;   :hints ((and stable-under-simplificationp
 ;;                '(:use ((:instance update-nths-equal-when-clear-nths-equal (key (+ -1 key))
 ;;                                   (l1 (cdr rhs))
@@ -1898,7 +1887,6 @@
 ;;                 (integerp size2))
 ;;            (equal (bv-array-read size len index (logext-list size2 lst))
 ;;                   (bv-array-read size len index lst)))
-;;   :otf-flg t
 ;;   :hints
 ;;   (("Goal" :cases ((equal 0 (len lst))) ;yuck
 ;;     :in-theory (e/d (bvchop-when-i-is-not-an-integer
@@ -1918,11 +1906,8 @@
 ;;           (equal (< n (logext 32 (+ 1 n)))
 ;;                  (not (equal (bvchop 32 n) 2147483647))))
 ;;  :hints (("Goal" :in-theory (e/d (logext logapp getbit slice)
-;;                                  (
-;;                                                          LOGTAIL-OF-BVCHOP-BECOMES-SLICE
-;;
+;;                                  (LOGTAIL-OF-BVCHOP-BECOMES-SLICE
 ;;                                                          SLICE-BECOMES-BVCHOP
-;;
 ;;                                                          )))))
 
 (defthm bv-array-read-of-logext-arg3

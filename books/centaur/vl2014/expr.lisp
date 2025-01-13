@@ -236,7 +236,10 @@ range list.  The individual arguments are ordinary expressions (in the case of
 @('bar') and @('baz')), with value ranges like @('[a:b]') represented by the
 special @(':vl-valuerange') applied to the two arguments.</p>"
 
-  (list
+; Matt K. mod: In GCL 2.7.0, calls of LIST are limited in length by
+; call-arguments-limit, which is 64.  So here we use LIST$ in place of LIST.
+
+  (list$
    ;; Basic Unary Operators
    (cons :vl-unary-plus     (make-vl-opinfo :arity 1 :text "+"))
    (cons :vl-unary-minus    (make-vl-opinfo :arity 1 :text "-"))

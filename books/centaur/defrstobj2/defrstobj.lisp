@@ -780,7 +780,8 @@ accessor on a stobj's creator function returns the default value.</li>
     `(defstobj ,x.concrete-stobj
        ,@(rstobj-concrete-stobj-fields x.fields)
        :inline ,x.inline
-       :non-memoizable ,x.non-memoizable)))
+       :non-memoizable ,x.non-memoizable
+       :non-executable t)))
 
 (defun rstobj-concrete-stobj-field-child-stobj-accessor/updater-def (x.concrete-stobj field)
   (b* (((rstobj-field field)))

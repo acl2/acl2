@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -15,6 +15,8 @@
 (include-book "std/util/error-value-tuples" :dir :system)
 
 (local (include-book "std/alists/top" :dir :system))
+
+(local (in-theory (enable* abstract-syntax-unambp-rules)))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -1811,9 +1813,10 @@
     :short "Disambiguate an initializer with optional designations."
     (b* (((reterr) (irr-desiniter) (irr-dimb-table))
          ((desiniter desiniter) desiniter)
-         ((erp new-designs table) (dimb-designor-list desiniter.design table))
-         ((erp new-initer table) (dimb-initer desiniter.init table)))
-      (retok (make-desiniter :design new-designs :init new-initer)
+         ((erp new-designors table)
+          (dimb-designor-list desiniter.designors table))
+         ((erp new-initer table) (dimb-initer desiniter.initer table)))
+      (retok (make-desiniter :designors new-designors :initer new-initer)
              table))
     :measure (desiniter-count desiniter))
 
@@ -1897,9 +1900,9 @@
     (b* (((reterr) (irr-declor) (irr-ident) (irr-dimb-table))
          ((declor declor) declor)
          ((erp new-dirdeclor ident table)
-          (dimb-dirdeclor declor.decl fundefp table)))
+          (dimb-dirdeclor declor.direct fundefp table)))
       (retok (make-declor :pointers declor.pointers
-                          :decl new-dirdeclor)
+                          :direct new-dirdeclor)
              ident
              table))
     :measure (declor-count declor))
@@ -3542,9 +3545,10 @@
      (fty::deffixequiv dimb-transunit-ensemble-loop
        :args ((gcc booleanp)))
 
-     (defret transunit-ensemble-unambp-loop-of-dimb-transunit-ensemble-loop
+     (defret filepath-transunit-map-unambp-of-dimb-transunit-ensemble-loop
        (implies (not erp)
-                (transunit-ensemble-unambp-loop new-tumap))
+                (filepath-transunit-map-unambp new-tumap))
+       :hyp (filepath-transunit-mapp tumap)
        :hints (("Goal" :induct t)))))
 
   ///

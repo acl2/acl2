@@ -11,6 +11,10 @@
 (in-package "ACL2")
 
 (local (include-book "logic-fnsp"))
+(local (include-book "termp"))
+
+;; Eventually we would like to avoid users of logic-termp having to open it up
+;; to expose its conjuncts.
 
 ;; This book is about these functions:
 (in-theory (disable logic-termp
@@ -35,12 +39,20 @@
            (equal (logic-termp (car terms) w)
                   (consp terms)))
   :hints (("Goal" :in-theory (enable logic-term-listp
-                                     logic-termp))))
+                                     logic-termp
+                                     termp))))
 
 (defthm logic-term-listp-of-cdr
   (implies (logic-term-listp terms w)
            (logic-term-listp (cdr terms) w))
   :hints (("Goal" :in-theory (enable logic-term-listp))))
+
+(defthm logic-term-listp-of-cdr-when-logic-termp
+  (implies (and (logic-termp term w)
+                (consp term)
+                (not (equal 'quote (car term))))
+           (logic-term-listp (cdr term) w))
+  :hints (("Goal" :in-theory (enable logic-termp logic-term-listp))))
 
 (defthm logic-termp-when-consp
   (implies (and (not (consp (car term))) ;exclude lambda (for now)
@@ -59,19 +71,14 @@
            :in-theory (enable logic-termp
                               logic-term-listp))))
 
-;move
-(defthm LOGIC-TERMP-of-cadr-when-LOGIC-TERMP
-  (IMPLIES (AND (LOGIC-TERMP TERM W)
-                (symbolp (car term))
+(defthm logic-termp-of-cadr-when-logic-termp
+  (implies (and (logic-termp term w)
                 (consp term)
                 (not (eq 'quote (car term)))
-                (< 0 (ARITY (CAR TERM) W))
-                )
-           (LOGIC-TERMP (CADR TERM) W))
-;  :hints (("Goal" :expand ((LOGIC-TERMP TERM W))))
-  )
-
-
+                (< 0 (arity (car term) w)))
+           (logic-termp (cadr term) w))
+  :hints (("Goal" :in-theory (e/d (logic-termp logic-fnsp)
+                                  (logic-term-listp-of-cdr-when-logic-termp)))))
 
 (defthm logic-term-listp-of-nil
   (logic-term-listp nil w)

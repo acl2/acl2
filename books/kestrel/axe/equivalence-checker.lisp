@@ -3190,7 +3190,7 @@
                 ;;perhaps use prefixp and suffixp? now we use prefixp instead of firstn.  make an analogous change for nthdcr?  would need rules about suffixp..
 
                 ;; we shouldn't get all 0's here, because we checked above for target=candidate
-                (let* ((dummy nil) ;(cw "len of target-traces: ~x0. len of candidate-traces: ~x0~%" (len target-traces) (len candidate-traces))
+                (let* ((dummy nil) ;(cw "len of target-traces: ~x0. len of candidate-traces: ~x1~%" (len target-traces) (len candidate-traces))
                        (nth-traces-for-nthcdr (make-nth-list-for-nthcdr-list target-traces candidate-traces)))
                   (declare (ignore dummy))
                   (if nth-traces-for-nthcdr
@@ -4594,6 +4594,11 @@
 
 (mutual-recursion
  (defun fixup-inner-body-for-make-induction-function (expr outer-vars outer-rec-call-exprs inner-fn-name new-fn-name)
+   (declare (xargs :guard (and (pseudo-termp expr)
+                               (symbol-listp outer-vars)
+                               (true-listp outer-rec-call-exprs)
+                               (symbolp inner-fn-name)
+                               (symbolp new-fn-name))))
    (if (atom expr)
        expr
      (let ((fn (ffn-symb expr)))
@@ -4613,6 +4618,11 @@
                (cons fn args))))))))
 
  (defun fixup-inner-body-for-make-induction-function-list (exprs outer-vars outer-rec-call-exprs inner-fn-name new-fn-name)
+   (declare (xargs :guard (and (pseudo-term-listp exprs)
+                               (symbol-listp outer-vars)
+                               (true-listp outer-rec-call-exprs)
+                               (symbolp inner-fn-name)
+                               (symbolp new-fn-name))))
    (if (endp exprs)
        nil
      (cons (fixup-inner-body-for-make-induction-function (car exprs) outer-vars outer-rec-call-exprs inner-fn-name new-fn-name)
@@ -4623,6 +4633,14 @@
 ;;returns (mv new-expr contains-recursive-callp)
 (mutual-recursion
  (defun make-induction-function-aux (expr outer-fn inner-function-body inner-function-params new-fn-name inner-fn-name)
+   (declare (xargs :guard (and (pseudo-termp expr)
+                               (symbolp outer-fn)
+                               (pseudo-termp inner-function-body)
+                               (symbol-listp inner-function-params)
+                               (symbolp new-fn-name)
+                               (symbolp inner-fn-name))
+                   :verify-guards nil ; done below
+                   ))
    (if (atom expr)
        (mv expr nil)
      (let ((fn (ffn-symb expr)))
@@ -4662,6 +4680,12 @@
                          args-contain-recursive-callp))))))))
 
  (defun make-induction-function-aux-list (exprs fn inner-function-body inner-function-params new-fn-name inner-fn-name)
+   (declare (xargs :guard (and (pseudo-term-listp exprs)
+                               (symbolp fn)
+                               (pseudo-termp inner-function-body)
+                               (symbol-listp inner-function-params)
+                               (symbolp new-fn-name)
+                               (symbolp inner-fn-name))))
    (if (endp exprs)
        (mv nil nil)
      (mv-let (new-expr contains-recursive-callp)
@@ -4672,7 +4696,22 @@
                          (or contains-recursive-callp
                              contains-recursive-callp-cdr)))))))
 
+(local
+ (defthm true-listp-of-mv-nth-0-of-make-induction-function-aux-list
+     (true-listp (mv-nth 0 (make-induction-function-aux-list exprs fn inner-function-body inner-function-params new-fn-name inner-fn-name)))
+   :hints (("Goal" :induct (len exprs)
+                   :in-theory (enable (:i len))))))
+
+(verify-guards make-induction-function-aux)
+
 (defun make-induction-function-helper (fn1 formals1 body1 fn2 formals2 body2 induction-fn-name)
+  (declare (xargs :guard (and (symbolp fn1)
+                              (symbol-listp formals1)
+                              (pseudo-termp body1)
+                              (symbolp fn2)
+                              (symbol-listp formals2)
+                              (pseudo-termp body2)
+                              (symbolp induction-fn-name))))
   (let* ((arity1 (len formals1))
          (arity2 (len formals2))
          (new-formals1 (make-var-names 'farg arity1))
@@ -4699,36 +4738,56 @@
 ;could check that they are in fact recursive
 ;returns a defun
 ;ffixme what does this do if one of the functions is undefined?
+;; todo: just take world?
 (defun make-induction-function (fn1 fn2 induction-fn-name state)
-  (declare (xargs ;:mode :program
-                  :stobjs state
-                  :verify-guards nil
-                  ))
-  (let* ((props1 (getprops-non-nil fn1 state))
-         (props2 (getprops-non-nil fn2 state))
-         (body1 (lookup-eq-safe 'unnormalized-body props1))
-         (body2 (lookup-eq-safe 'unnormalized-body props2))
-         (formals1 (lookup-eq-safe 'formals props1))
-         (formals2 (lookup-eq-safe 'formals props2)))
+  (declare (xargs :guard (and (symbolp fn1)
+                              (symbolp fn2)
+                              (symbolp induction-fn-name))
+                  :stobjs state))
+  (let* (;;(props1 (getprops-non-nil fn1 state))
+         ;;(props2 (getprops-non-nil fn2 state))
+         ;;(body1 (lookup-eq-safe 'unnormalized-body props1))
+         ;;(body2 (lookup-eq-safe 'unnormalized-body props2))
+         (body1 (fn-body fn1 t (w state)))
+         (body2 (fn-body fn2 t (w state)))
+         ;;(formals1 (lookup-eq-safe 'formals props1))
+         ;;(formals2 (lookup-eq-safe 'formals props2))
+         (formals1 (fn-formals fn1 (w state)))
+         (formals2 (fn-formals fn2 (w state)))
+         )
     (make-induction-function-helper fn1 formals1 body1 fn2 formals2 body2 induction-fn-name)))
 
 (defun make-induction-function2 (fn1 fn2 formals2 body2 induction-fn-name state)
-  (declare (xargs ;:mode :program
-            :stobjs state
-            :verify-guards nil))
-  (let* ((props1 (getprops fn1 'current-acl2-world (w state)))
-         (body1 (lookup-eq 'unnormalized-body props1))
-         (formals1 (lookup-eq 'formals props1)))
+  (declare (xargs :guard (and (symbolp fn1)
+                              (symbolp fn2)
+                              (symbol-listp formals2)
+                              (pseudo-termp body2)
+                              (symbolp induction-fn-name))
+                  :guard-debug t
+                  :stobjs state))
+  (let* (;(props1 (getprops fn1 'current-acl2-world (w state)))
+         ;;(body1 (lookup-eq 'unnormalized-body props1))
+         (body1 (fn-body fn1 t (w state)))
+         ;(formals1 (lookup-eq 'formals props1))
+         (formals1 (fn-formals fn1 (w state))))
     (make-induction-function-helper fn1 formals1 body1 fn2 formals2 body2 induction-fn-name)))
 
 (defun make-arg-symbols (current symbol)
-  (declare (xargs :measure (nfix (+ 1 current))))
+  (declare (xargs :guard (and (integerp current)
+                              (symbolp symbol))
+                  :measure (nfix (+ 1 current))))
   (if (not (natp current))
       nil
     (cons (pack$ symbol (nat-to-string current))
           (make-arg-symbols (+ -1 current) symbol))))
 
+(local
+ (defthm symbol-listp-of-make-arg-symbols
+     (symbol-listp (make-arg-symbols current symbol))))
+
 (defun nth-nest-around-some-symbol (term symbols)
+  (declare (xargs :guard (and (pseudo-termp term)
+                              (symbol-listp symbols))))
   (if (atom term)
       (member-eq term symbols)
     (and (eq 'nth (ffn-symb term))
@@ -4737,6 +4796,10 @@
 
 (mutual-recursion
  (defun get-mentioned-arg-components-aux (term arg-symbols)
+   (declare (xargs :guard (and (pseudo-termp term)
+                               (symbol-listp arg-symbols))
+                   :verify-guards nil ; done below
+                   ))
    (if (atom term)
        (member-eq term arg-symbols)
      (if (quotep term)
@@ -4746,12 +4809,34 @@
          (get-mentioned-arg-components-aux-lst (fargs term) arg-symbols)))))
 
  (defun get-mentioned-arg-components-aux-lst (terms arg-symbols)
+   (declare (xargs :guard (and (pseudo-term-listp terms)
+                               (symbol-listp arg-symbols))))
    (if (endp terms)
        nil
      (append (get-mentioned-arg-components-aux (car terms) arg-symbols)
              (get-mentioned-arg-components-aux-lst (cdr terms) arg-symbols)))))
 
+(local (make-flag get-mentioned-arg-components-aux))
+
+(local
+ (defthm-flag-get-mentioned-arg-components-aux
+     (defthm theorem-for-get-mentioned-arg-components-aux
+         (implies (and (pseudo-termp term)
+                       (symbol-listp arg-symbols))
+                  (true-listp (get-mentioned-arg-components-aux term arg-symbols)))
+       :flag get-mentioned-arg-components-aux)
+     (defthm theorem-for-get-mentioned-arg-components-aux-lst
+         (implies (and (pseudo-term-listp terms)
+                       (symbol-listp arg-symbols))
+                  (true-listp (get-mentioned-arg-components-aux-lst terms arg-symbols)))
+       :flag get-mentioned-arg-components-aux-lst)))
+
+(verify-guards get-mentioned-arg-components-aux)
+
 (defun get-mentioned-arg-components (terms arity symbol)
+  (declare (xargs :guard (and (pseudo-term-listp terms)
+                              (natp arity)
+                              (symbolp symbol))))
   (let* ((arg-symbols (make-arg-symbols arity symbol)))
     (get-mentioned-arg-components-aux-lst terms arg-symbols)))
 
@@ -5906,7 +5991,7 @@
           (make-connection-equalities3 (cdr lhses) (cdr rhses)))))
 
 (defun packnew-list (item lst state)
-  (declare (xargs :mode :program ;todo
+  (declare (xargs :guard (true-listp lst)
                   :stobjs state))
   (if (endp lst)
       nil
@@ -6454,7 +6539,7 @@
 ;;                         state)
 
 (defun convert-to-head-recursive-events-wrapper (original-function-name state)
-  (declare (xargs :mode :program ;todo
+  (declare (xargs :guard (symbolp original-function-name)
                   :stobjs state))
   (convert-to-head-recursive-events original-function-name
                                     (packnew original-function-name '-exit-test)
@@ -6759,7 +6844,8 @@
                                    ;;base-case-expr
                                    update-expr-list ;the expressions passed as arguments to the recursive call
                                    state)
-  (declare (xargs :mode :program :stobjs state))
+  (declare (xargs :mode :program ; because this calls submit-events-brief
+                  :stobjs state))
   (let* ((arity (len formals)) ;pass in?
          (split-lemma-helper-name (packnew fn '-split-lemma-helper))
          (base-case-lemma-name (packnew limited-fn '-base-case))
@@ -6809,7 +6895,8 @@
                                                ;;base-case-expr
                                                update-expr-list ;the expressions passed as arguments to the recursive call
                                                state)
-  (declare (xargs :mode :program :stobjs state))
+  (declare (xargs :mode :program ; because this calls submit-events-brief
+                  :stobjs state))
   (let* ((arity (len formals)) ;pass in?
          (unroller-lemma-name (packnew limited-fn '-unroller))
          (split-lemma-helper-name ;(packnew unroller-lemma-name '-helper) ;why is unroller part of this name?
@@ -9502,8 +9589,6 @@
                                                              nil state))
                 (mv nil state))
               (make-rules-to-expose-tuple-elements (rest dag-lst) analyzed-function-table (append runes acc) state)))))
-;zz
-
 
 ;returns (mv erp dag state result-array-stobj)
 (defun get-dag-for-expr-no-theorem (expr interpreted-function-alist state result-array-stobj)
@@ -11070,7 +11155,6 @@
                                                ) ;open this manually? and close up in the next theorem?
                                           (,connection-relation-name ,@update-expr-list ,@updated-new-formals-in-terms-of-old-formals ,@old-vars-in-explanations))
                                  :rule-classes nil
-                                 :otf-flg t
                                  :hints (("Goal" :in-theory (union-theories (theory 'minimal-theory)
                                                                             '(,connection-relation-name
                                                                               ,invariant-name
@@ -11101,7 +11185,6 @@
                                                ) ;open this manually? and close up in the next theorem?
                                           (,connection-relation-name ,@update-expr-list ,@new-update-exprs ,@old-vars-in-explanations))
                                  :rule-classes nil
-                                 :otf-flg t
                                  :hints (("Goal" :in-theory (theory 'minimal-theory)
                                           :use (,updates-preserve-connection-relation-theorem-name
                                                 ,@update-fn-defthms ;could use these as rewrites if we first subst in the old vars for the new vars
@@ -11117,7 +11200,6 @@
                                           (equal (,fn ,@formals)
                                                  (,new-fn ,@new-formals ,@old-vars-in-explanations)))
                                  :rule-classes nil
-                                 :otf-flg t
                                  :hints (("Goal"
                                           ;;fffixme what about name clashes between the formals?
 ;ffixme can we use a generic result here, even though the arities of the functions may be different in different cases?
@@ -11170,7 +11252,6 @@
                                  (implies (,invariant-name ,@formals-in-invar ,@old-vars-in-invar)
                                           (,connection-relation-name ,@formals ,@new-formals-in-terms-of-old ,@old-vars-in-explanations))
                                  :rule-classes nil
-                                 :otf-flg t
                                  :hints (("Goal" :use (:instance ,fns-equal-helper2-theorem-name)
                                           :in-theory (union-theories '(,invariant-name
                                                                        ,connection-relation-name
@@ -12706,7 +12787,6 @@
  ;;                        (implies (and ,@hyps)
  ;;                                 ,conjunct)
  ;;                        :rule-classes nil
- ;;                        :otf-flg t
  ;;                        :hints (("Goal" :in-theory (union-theories (theory 'minimal-theory)
  ;;                                                                   '(,connection-relation-name
  ;;                                                                     ,invariant-name
@@ -18893,7 +18973,7 @@
                   (mv :non-t-constant nil state rand result-array-stobj))))
        (dag dag-or-quotep)
        (interpreted-function-alist (make-interpreted-function-alist
-                                    (get-non-built-in-supporting-fns-list (dag-fns dag) (w state)) (w state))) ;Sat Feb 19 14:20:09 2011
+                                    (get-non-built-in-supporting-fns-list (dag-fns dag) *axe-evaluator-functions* (w state)) (w state))) ;Sat Feb 19 14:20:09 2011
        ;;doesn't actually check that the user supplied alist is consistent with the state (fixme just pass in the names and look them up in the current state)?
        (interpreted-function-alist (if (not (consistent-alists interpreted-function-alist user-interpreted-function-alist))
                                        (prog2$ (hard-error 'prove-miter-core "inconsistent interpreted function alists." nil) ;print more?
@@ -18984,15 +19064,20 @@
            (sorted-dag-vars (merge-sort-symbol< dag-vars))
            (vars-given-types (strip-cars var-type-alist))
            (sorted-vars-given-types (merge-sort-symbol< vars-given-types))
-           (- (and (not (subsetp-eq sorted-dag-vars sorted-vars-given-types)) ;stricter check? or warning if extra vars given?
+           (- (and (not (subsetp-eq sorted-dag-vars sorted-vars-given-types))
                    ;; (hard-error 'prove-miter-core
                    ;;               "The DAG variables, ~\x0, don't match the variables given types in the alist, ~x1.  Vars not given types: ~x2.~%"
                    ;;               (acons #\0 sorted-dag-vars
                    ;;                      (acons #\1 sorted-vars-given-types
                    ;;                             (acons #\2 (set-difference-eq sorted-dag-vars sorted-vars-given-types)
                    ;;                                    nil))))
+                   ;; todo: mention the tactics that won't work:
                    (cw "WARNING: The DAG variables, ~x0, don't match the variables given types in the alist, ~x1.  Vars not given types: ~x2.~%"
                        sorted-dag-vars sorted-vars-given-types (set-difference-eq sorted-dag-vars sorted-vars-given-types))))
+           ((when (not (subsetp-eq sorted-vars-given-types sorted-dag-vars)))
+            (er hard? 'prove-miter-core
+                "The following variables are given types in the alist but do not appear in the DAG: ~X01.~%" (set-difference-eq sorted-vars-given-types sorted-dag-vars) nil)
+            (mv :input-error nil state rand result-array-stobj))
            ;;(prog2$ (mv nil state rand result-array-stobj))
            ;; Specialize the fns (make use of constant arguments, when possible) ;do we still need this, if we have the dropping stuff?  maybe this works for head recfns too?
            ;;(how well does this work?): redo it to preserve lambdas (just substitute in them?)
@@ -19064,7 +19149,7 @@
 ;; we failed to reduce the miter to T.
 (defun prove-miter-fn (dag-or-quotep
                        test-case-count ;the total number of tests to generate?  some may not be used
-                       var-type-alist  ;compute this from the hyps?
+                       var-type-alist  ;compute this from the hyps? todo: think about var-type-alist vs test-case-type-alist -- convert from on to the other (when possible), or pass both?
                        print
                        debug-nodes ;do we use this?
                        interpreted-function-alist
@@ -19095,7 +19180,8 @@
   (declare (xargs :guard (and (or (quotep dag-or-quotep)
                                   (weak-dagp dag-or-quotep))
                               (natp test-case-count)
-                              (no-duplicatesp (strip-cars var-type-alist)) ;could check that the cdrs are valid types..
+                              (test-case-type-alistp var-type-alist)
+                              (no-duplicatesp (strip-cars var-type-alist))
                               (not (assoc-eq nil var-type-alist)) ;consider relaxing this?
                               (not (assoc-eq t var-type-alist)) ;consider relaxing this?
                               (if (extra-stuff-okayp extra-stuff)

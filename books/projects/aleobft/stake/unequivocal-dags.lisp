@@ -35,12 +35,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection unequivocal-accepted-certificates-p-always
+(defsection unequivocal-dags-certificates-p-always
   :short "The invariant holds in every state
           reachable from an initial state via a sequence of events."
 
-  (defruled unequivocal-accepted-certificates-p-when-reachable
+  (defruled unequivocal-dags-certificates-p-when-reachable
     (implies (and (system-initp systate)
                   (events-possiblep events systate)
-                  (all-system-committees-fault-tolerant-p events systate))
+                  (all-system-committees-fault-tolerant-p systate events))
              (unequivocal-dags-p (events-next events systate)))))

@@ -41,8 +41,9 @@
 ;; This book contains the specification of the following instructions:
 ;; sub  sbb
 
+(include-book "structures" :dir :utils)
 (include-book "../rflags-spec"
-              :ttags (:include-raw :syscall-exec :other-non-det :undef-flg))
+              :ttags (:undef-flg))
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 

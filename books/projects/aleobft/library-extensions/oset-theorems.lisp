@@ -30,16 +30,6 @@
                   (set::subset x y))
              (not (set::emptyp y))))
 
-  (defruled set::expand-cardinality-of-intersect
-    (equal (set::cardinality (set::intersect x y))
-           (+ (set::cardinality x)
-              (set::cardinality y)
-              (- (set::cardinality (set::union x y))))))
-
-  (theory-invariant
-   (incompatible (:rewrite set::expand-cardinality-of-union)
-                 (:rewrite set::expand-cardinality-of-intersect)))
-
   (defrule set::subset-of-union-when-both-subset
     (implies (and (set::subset a s)
                   (set::subset b s))
@@ -54,17 +44,6 @@
     :rule-classes (:rewrite :linear)
     :enable (set::cardinality)
     :disable set::expand-cardinality-of-union)
-
-  (defrule set::intersect-of-nil-left
-    (equal (set::intersect nil set)
-           nil)
-    :enable set::intersect)
-
-  (defrule set::intersect-of-nil-right
-    (equal (set::intersect set nil)
-           nil)
-    :induct t
-    :enable set::intersect)
 
   (defruled set::intersect-of-insert-left
     (equal (set::intersect (set::insert a x) y)

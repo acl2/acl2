@@ -49,22 +49,24 @@
 ; things, though; see GNUmakefile.
 
   (if (probe-file "acl2r.lisp") (load "acl2r.lisp"))
-  #+sbcl ; keep this in sync with with-warnings-suppressed
+  #+(or sbcl gcl) ; keep this in sync with with-warnings-suppressed
   (handler-bind
    ((style-warning (lambda (c)
                      (declare (ignore c))
                      (invoke-restart 'muffle-warning))))
    (load "acl2-init.lisp"))
-  #-sbcl
+  #-(or sbcl gcl)
   (load "acl2-init.lisp"))
 
 ; We may need a bigger stack than the default, as evidenced by the failure of
 ; the event (verify-guards read-utf8-fast ...) in community book
-; books/unicode/read-utf8.lisp.  We handle this issue here for GCL, and
-; elsewhere for some other lisps.  However, we have seen GCL 2.6.6 on Windows
-; break here, so we skip the stack adjustment for Windows.
+; books/unicode/read-utf8.lisp.  We handle this issue here for GCL (versions
+; before 2.7.0), and elsewhere for some other lisps.  However, we have seen GCL
+; 2.6.6 on Windows break here, so we skip the stack adjustment for Windows.
+; For GCL 2.7.0 and presumably later, there is no need to modify the
+; multiply-stacks setting.
 
-#+gcl
+#+(and gcl (not gcl-2.7.0+))
 (progn
   (defvar *acl2-gcl-multiply-stacks-evaluated* nil)
   (when (not *acl2-gcl-multiply-stacks-evaluated*)

@@ -26,14 +26,7 @@
 
 (local (in-theory (disable LOGEXT-WHEN-NON-NEGATIVE-BECOMES-BVCHOP))) ;for speed
 
-; move these:
-
-(defthm bvchop-of-+-of-expt-same-arg3
-  (implies (and (natp size)
-                (integerp x)
-                (integerp y))
-           (equal (bvchop size (+ x y (expt 2 size)))
-                  (bvchop size (+ x y)))))
+; move these (but need bitnot):
 
 (defthm getbit-of-+-of-expt-same-arg1
   (implies (and (natp n)
