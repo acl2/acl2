@@ -55,8 +55,6 @@
 
 (include-book "centaur/bitops/ihsext-basics" :dir :system)
 (include-book "std/strings/pretty" :dir :system)
-(include-book "hacking/hacker" :dir :system)
-(include-book "tools/include-raw" :dir :system)
 
 (include-book "tlb")
 (include-book "tty")
