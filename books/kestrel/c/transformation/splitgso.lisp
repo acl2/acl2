@@ -13,6 +13,7 @@
 
 (include-book "../syntax/abstract-syntax-operations")
 (include-book "../syntax/unambiguity")
+(include-book "../syntax/validation-information")
 (include-book "deftrans")
 (include-book "utilities/free-vars")
 
@@ -650,7 +651,17 @@
       :member (b* ((match
                      (expr-case
                        expr.arg
-                       :ident (equal expr.arg.ident original)
+                       :ident (b* (((unless (equal expr.arg.ident original))
+                                    nil)
+                                   ((unless (c$::var-infop expr.arg.info))
+                                    (raise "Validator annotation missing or
+                                            ill-formed: ~x0"
+                                           expr.arg.info))
+                                   (linkage (c$::var-info->linkage expr.arg.info)))
+                                (c$::linkage-case
+                                  linkage
+                                  :internal t
+                                  :otherwise nil))
                        :otherwise nil))
                    ((unless match)
                     (make-expr-member
@@ -841,6 +852,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; TODO: check if validated and, if not, validate
+;; (include-book "../syntax/validator")
+;; (valid-transunit tunit t (c$::ienv-default))
 (define splitgso-transunit
   ((orig-struct identp)
    (new-struct1 identp)
@@ -1086,7 +1100,7 @@
                      split-members
                      (ctx ctxp)
                      state)
-  :returns (mv erp (event acl2::pseudo-event-formp) state)
+  :returns (mv erp (event pseudo-event-formp) state)
   :parents (splitgso-implementation)
   :short "Event expansion of @(tsee splitgso)."
   (b* (((mv erp event)
