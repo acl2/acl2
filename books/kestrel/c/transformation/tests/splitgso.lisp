@@ -10,6 +10,8 @@
 
 (in-package "C2C")
 
+(include-book "std/testing/must-fail" :dir :system)
+
 (include-book "../splitgso")
 
 (include-book "../../syntax/parser")
@@ -24,7 +26,7 @@
 (defconst *filepath-splitgso*
   (filepath "file.SPLITGSO.c"))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defconst *old-filedata1*
   (filedata
@@ -155,3 +157,26 @@ int main(void) {
   return my.foo + (-my.bar);
 }
 "))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defconst *old-transunits3*
+  (b* (((mv erp transunits) (c$::parse-fileset *old-fileset1* nil))
+       ((when erp)
+        (cw "~@0" erp))
+       ((when erp)
+        (cw "~@0" erp)))
+    transunits))
+
+;; *old-transunits3* not annotated with validation information.
+(must-fail
+  (splitgso *old-transunits3*
+            *new-transunits3*
+            :object-name "my"
+            :new-object1 "my1"
+            :new-object2 "my2"
+            :new-type1 "s1"
+            :new-type2 "s2"
+            :split-members ("bar"))
+
+  :with-output-off nil)
