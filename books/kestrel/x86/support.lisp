@@ -1,7 +1,7 @@
 ; Mixed x86 supporting material
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2024 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -18,7 +18,7 @@
 
 (include-book "support-x86") ;drop? for stuff about create-canonical-address-list
 (include-book "flags") ; reduce?
-(include-book "projects/x86isa/proofs/utilities/app-view/top" :dir :system)
+;(include-book "projects/x86isa/proofs/utilities/app-view/top" :dir :system)
 (in-theory (disable acl2::nth-when-zp)) ; can cause problems
 ;(include-book "projects/x86isa/tools/execution/top" :dir :system) ;todo don't even use init-x86-state?
 (include-book "kestrel/utilities/defopeners" :dir :system)
