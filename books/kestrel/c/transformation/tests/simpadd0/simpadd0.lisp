@@ -10,10 +10,10 @@
 
 (in-package "C2C")
 
-(include-book "../simpadd0")
+(include-book "../../simpadd0")
 
-(include-book "../../syntax/parser")
-(include-book "../../syntax/printer")
+(include-book "../../../syntax/parser")
+(include-book "../../../syntax/printer")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
