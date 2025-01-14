@@ -547,15 +547,6 @@
                        (xr fld index x86)))
               :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
-    (make-event
-      (generate-xr-over-write-thms
-        (remove-elements-from-list
-          '(:mem :fault :tlb)
-          *x86-field-names-as-keywords*)
-        'las-to-pas
-        (acl2::formals 'las-to-pas (w state))
-        :output-index 2))
-
     ;; The double-rewrites below are crucial to the applicability of the rules
     ;; below (in sys-view mode).
     (defthm xr-rflags-las-to-pas
@@ -570,29 +561,24 @@
                             (xr :fault nil (double-rewrite x86))))
             :hints (("Goal" :in-theory (e/d* () (force (force))))))
 
-    (local (in-theory (e/d () (xr-las-to-pas))))
-
-    ;; The following two make-events generate a bunch of rules that
-    ;; together say the same thing as las-to-pas-xw-values, but these
-    ;; rules are more efficient than las-to-pas-xw-values as they
-    ;; match less frequently.
-    (make-event
-      (generate-read-fn-over-xw-thms
-        (remove-elements-from-list
-          '(:mem :rflags :fault :ctr :msr :app-view :marking-view :seg-visible :tlb :implicit-supervisor-access)
-          *x86-field-names-as-keywords*)
-        'las-to-pas
-        (acl2::formals 'las-to-pas (w state))
-        :output-index 0))
-
-    (make-event
-      (generate-read-fn-over-xw-thms
-        (remove-elements-from-list
-          '(:mem :rflags :fault :ctr :msr :app-view :marking-view :seg-visible :tlb :implicit-supervisor-access)
-          *x86-field-names-as-keywords*)
-        'las-to-pas
-        (acl2::formals 'las-to-pas (w state))
-        :output-index 1))
+    (defthm las-to-pas-xw-values
+      (implies (and (not (equal fld :mem))
+                    (not (equal fld :rflags))
+                    (not (equal fld :fault))
+                    (not (equal fld :ctr))
+                    (not (equal fld :msr))
+                    (not (equal fld :app-view))
+                    (not (equal fld :marking-view))
+                    (not (equal fld :seg-visible))
+                    (not (equal fld :tlb))
+                    (not (equal fld :implicit-supervisor-access))
+                    ;; or we could say this:
+                    ;; (not (member-equal fld '(:mem :rflags :fault :ctr :msr :app-view :marking-view :seg-visible :tlb :implicit-supervisor-access)))
+                    )
+               (and (equal (mv-nth 0 (las-to-pas n lin-addr r-w-x (xw fld index val x86)))
+                           (mv-nth 0 (las-to-pas n lin-addr r-w-x x86)))
+                    (equal (mv-nth 1 (las-to-pas n lin-addr r-w-x (xw fld index val x86)))
+                           (mv-nth 1 (las-to-pas n lin-addr r-w-x x86))))))
 
     (defrule 64-bit-modep-of-las-to-pas
              (equal (64-bit-modep (mv-nth 2 (las-to-pas n lin-addr r-w-x x86)))
@@ -605,18 +591,22 @@
              :hints (("Goal" :in-theory (e/d* (x86-operation-mode)
                                               (las-to-pas)))))
 
-    ;; The following make-event generate a bunch of rules that
-    ;; together say the same thing as las-to-pas-xw-state, but these
-    ;; rules are more efficient than las-to-pas-xw-state as they match
-    ;; less frequently.
-    (make-event
-      (generate-write-fn-over-xw-thms
-        (remove-elements-from-list
-          '(:mem :rflags :fault :ctr :msr :app-view :marking-view :seg-visible :tlb :implicit-supervisor-access)
-          *x86-field-names-as-keywords*)
-        'las-to-pas
-        (acl2::formals 'las-to-pas (w state))
-        :output-index 2))
+    (defthm las-to-pas-xw-state
+      (implies (and (not (equal fld :mem))
+                    (not (equal fld :rflags))
+                    (not (equal fld :fault))
+                    (not (equal fld :ctr))
+                    (not (equal fld :msr))
+                    (not (equal fld :app-view))
+                    (not (equal fld :marking-view))
+                    (not (equal fld :seg-visible))
+                    (not (equal fld :tlb))
+                    (not (equal fld :implicit-supervisor-access))
+                    ;; or we could say this:
+                    ;; (not (member-equal fld '(:mem :rflags :fault :ctr :msr :app-view :marking-view :seg-visible :tlb :implicit-supervisor-access)))
+                    )
+               (equal (mv-nth 2 (las-to-pas n lin-addr r-w-x (xw fld index val x86)))
+                      (xw fld index val(mv-nth 2 (las-to-pas n lin-addr r-w-x x86))))))
 
     (local
       (defun-nx las-to-pas-xw-rflags-not-ac-hint (lin-addr n r-w-x value x86)
