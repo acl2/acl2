@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function floor.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -1436,7 +1436,7 @@
                 (rationalp i)
                 (rationalp j))
            (< (floor i j) i))
-  :rule-classes (:linear))
+  :rule-classes :linear)
 
 ;strengthen?
 (defthm floor-bound-strict
