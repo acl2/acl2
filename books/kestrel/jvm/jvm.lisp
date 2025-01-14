@@ -551,8 +551,8 @@
              (intern-tablep            (intern-table s))
              (intern-table-okp (intern-table s) (heap s))
              ))
- :rule-classes ((:rewrite)
-                (:definition))
+ :rule-classes (:rewrite ; do I need this?
+                :definition)
  :hints (("Goal" :in-theory (enable jvm-statep thread-table heap class-table heapref-table monitor-table static-field-map initialized-classes intern-table))))
 
 (defthm thread-table-of-make-state

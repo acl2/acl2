@@ -1,6 +1,6 @@
 ; Partial spec of IEEE 754 floating point values and operations
 ;
-; Copyright (C) 2021-2024 Kestrel Institute
+; Copyright (C) 2021-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -736,7 +736,7 @@
 
 (defthm bitp-of-mv-nth-0-of-encode-subnormal-number
   (bitp (mv-nth 0 (encode-subnormal-number k p rat)))
-  :rule-classes (:type-prescription)
+  :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable encode-subnormal-number))))
 
 (defthm unsigned-byte-p-of-mv-nth-1-of-encode-subnormal-number

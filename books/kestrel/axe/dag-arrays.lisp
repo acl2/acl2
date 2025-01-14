@@ -1,7 +1,7 @@
 ; DAGs represented in arrays
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -388,7 +388,7 @@
 ;;   (implies (and (natp nodenum)
 ;;                 (pseudo-dag-arrayp-aux dag-array-name dag-array nodenum))
 ;;            (true-listp (cddr (dargs (aref1 dag-array-name dag-array nodenum)))))
-;;   :rule-classes ((:type-prescription)))
+;;   :rule-classes :type-prescription)
 
 ;; (defthm true-listp-of-cddr-of-aref1-when-pseudo-dag-arrayp-aux
 ;;   (implies (and (natp nodenum)
@@ -401,7 +401,7 @@
 ;;   (implies (and (natp nodenum)
 ;;                 (pseudo-dag-arrayp-aux dag-array-name dag-array nodenum))
 ;;            (true-listp (cdr (dargs (aref1 dag-array-name dag-array nodenum)))))
-;;   :rule-classes ((:type-prescription)))
+;;   :rule-classes :type-prescription)
 
 ;avoid name clash
 ;; (defthm true-listp-of-dargs-of-aref1-when-pseudo-dag-arrayp-aux-no-clash
@@ -415,7 +415,7 @@
 ;;   (implies (and (natp nodenum)
 ;;                 (pseudo-dag-arrayp-aux dag-array-name dag-array nodenum))
 ;;            (true-listp (dargs (aref1 dag-array-name dag-array nodenum))))
-;;   :rule-classes ((:type-prescription)))
+;;   :rule-classes :type-prescription)
 
 (defthm dag-exprp-of-aref1-when-pseudo-dag-arrayp-aux
   (implies (and (pseudo-dag-arrayp-aux dag-array-name dag-array n)

@@ -697,7 +697,7 @@
                 (equal 1 (acl2::getbit 63 x)))
            (equal (acl2::bvchop 63 x)
                   (+ x (expt 2 63))))
-  :rule-classes (:linear)
+  :rule-classes :linear
   :hints (("Goal" :use (:instance split-integer
                                   (size 63)
                                   (x x))
