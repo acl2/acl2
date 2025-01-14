@@ -1,7 +1,7 @@
 ; A tool for proving an ACL2 theorem using STP.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -46,7 +46,7 @@
                 ,theorem-body
                 :rule-classes ,rule-classes)) ;todo: suppress if (:rewrite) is given?
             state)
-      (prog2$ (er hard? 'defthm-stp "Failed to prove the theorem ~x0.  Result was ~x1." name result)
+      (prog2$ (er hard? 'defthm-stp "Failed to prove the theorem ~x0.  Result was ~X12." name result nil)
               (mv t ;error
                   nil state)))))
 

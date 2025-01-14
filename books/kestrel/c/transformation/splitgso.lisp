@@ -13,6 +13,7 @@
 
 (include-book "../syntax/abstract-syntax-operations")
 (include-book "../syntax/unambiguity")
+(include-book "../syntax/validation-information")
 (include-book "deftrans")
 (include-book "utilities/free-vars")
 
@@ -466,6 +467,7 @@
    :decl (b* ((type-spec? (type-spec-from-dec-specs decl.specs))
               ((unless type-spec?)
                (mv nil (list (decl-fix decl))))
+              ;; TODO: check that the object is indeed file-scope, as assumed
               ((mv match initer-option1 initer-option2)
                (type-spec-case
                  type-spec?
@@ -475,7 +477,9 @@
                (mv nil (list (decl-fix decl)))))
            (mv t
                (list (c$::make-decl-decl
-                       :specs (list (c$::decl-spec-typespec
+                       :specs (list (c$::decl-spec-stoclass
+                                      (c$::stor-spec-static))
+                                    (c$::decl-spec-typespec
                                       (c$::type-spec-struct
                                         (c$::make-strunispec
                                           :name new1-type))))
@@ -484,7 +488,9 @@
                                                :direct (c$::dirdeclor-ident new1))
                                      :init? initer-option1)))
                      (c$::make-decl-decl
-                       :specs (list (c$::decl-spec-typespec
+                       :specs (list (c$::decl-spec-stoclass
+                                      (c$::stor-spec-static))
+                                    (c$::decl-spec-typespec
                                       (c$::type-spec-struct
                                         (c$::make-strunispec
                                           :name new2-type))))
@@ -650,7 +656,17 @@
       :member (b* ((match
                      (expr-case
                        expr.arg
-                       :ident (equal expr.arg.ident original)
+                       :ident (b* (((unless (equal expr.arg.ident original))
+                                    nil)
+                                   ((unless (c$::var-infop expr.arg.info))
+                                    (raise "Validator annotation missing or
+                                            ill-formed: ~x0"
+                                           expr.arg.info))
+                                   (linkage (c$::var-info->linkage expr.arg.info)))
+                                (c$::linkage-case
+                                  linkage
+                                  :internal t
+                                  :otherwise nil))
                        :otherwise nil))
                    ((unless match)
                     (make-expr-member
@@ -841,6 +857,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; TODO: check if validated and, if not, validate
+;; (include-book "../syntax/validator")
+;; (valid-transunit tunit t (c$::ienv-default))
 (define splitgso-transunit
   ((orig-struct identp)
    (new-struct1 identp)
@@ -1086,7 +1105,7 @@
                      split-members
                      (ctx ctxp)
                      state)
-  :returns (mv erp (event acl2::pseudo-event-formp) state)
+  :returns (mv erp (event pseudo-event-formp) state)
   :parents (splitgso-implementation)
   :short "Event expansion of @(tsee splitgso)."
   (b* (((mv erp event)
