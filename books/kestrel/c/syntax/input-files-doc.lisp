@@ -66,7 +66,7 @@
      "             :int-bytes          ...  ; default 4"
      "             :long-bytes         ...  ; default 8"
      "             :long-long-bytes    ...  ; default 8"
-     "             :plain-char-signed  ... ; default nil"
+     "             :plain-char-signed  ...  ; default nil"
      "  )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
