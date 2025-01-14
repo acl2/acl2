@@ -1,7 +1,7 @@
 ; More material on DAGs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -224,7 +224,7 @@
   (implies (and (weak-dagp-aux dag)
                 dag)
            (<= 0 (car (car dag))))
-  :rule-classes (:linear)
+  :rule-classes :linear
   :hints (("Goal" :in-theory (enable weak-dagp-aux))))
 
 (defthm weak-dagp-aux-of-cdr
@@ -236,14 +236,14 @@
   (implies (and (weak-dagp-aux dag)
                 dag)
            (<= 0 (car (car dag))))
-  :rule-classes (:linear)
+  :rule-classes :linear
   :hints (("Goal" :in-theory (enable weak-dagp-aux))))
 
 (defthm car-of-car-type-when-weak-dagp-aux-type
   (implies (and (weak-dagp-aux dag)
                 dag)
            (natp (car (car dag))))
-  :rule-classes (:type-prescription)
+  :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable weak-dagp-aux))))
 
 

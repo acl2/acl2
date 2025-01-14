@@ -1,7 +1,7 @@
 ; Mixed x86 supporting material
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2024 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -697,7 +697,7 @@
                 (equal 1 (acl2::getbit 63 x)))
            (equal (acl2::bvchop 63 x)
                   (+ x (expt 2 63))))
-  :rule-classes (:linear)
+  :rule-classes :linear
   :hints (("Goal" :use (:instance split-integer
                                   (size 63)
                                   (x x))

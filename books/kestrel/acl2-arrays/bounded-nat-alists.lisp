@@ -1,7 +1,7 @@
 ; A recognizer for alists that can be made into ACL2 arrays
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -155,14 +155,14 @@
 ;;   (implies (and (natp-alistp alist)
 ;;                 (natp max-so-far))
 ;;            (integerp (max-key alist max-so-far)))
-;;   :rule-classes ((:type-prescription))
+;;   :rule-classes :type-prescription
 ;;   :hints (("Goal" :expand ((NATP-ALISTP ALIST)))))
 
 (defthm max-key-linear-1
   (implies (and (natp-alistp alist)
                 (natp max-so-far))
            (<= max-so-far (max-key alist max-so-far)))
-  :rule-classes ((:linear))
+  :rule-classes :linear
   :hints (("Goal" :in-theory (enable max-key)
            :expand ((NATP-ALISTP ALIST)))))
 

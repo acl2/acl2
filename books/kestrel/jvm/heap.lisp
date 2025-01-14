@@ -1,7 +1,7 @@
 ; More material on the JVM heap
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -104,7 +104,7 @@
 
 (defthm default-value-non-nil
   (default-value desc)
-  :rule-classes ((:type-prescription))
+  :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable default-value))))
 
 
