@@ -4756,15 +4756,6 @@
                                            x86isa::signed-byte-p-48-to-<-rule))))
     :rule-classes (:rewrite :type-prescription)))
 
-; The following two functions, for 512 bits, are commented out because they
-; currently take too long to certify: if they are uncommented, this file takes
-; about 10 minutes to certify on a very fast machine, while it takes about 1
-; minute when they are commented out. For now we do not need these, but we
-; should speed up their proofs and uncomment them, since they will be needed to
-; support certain instructions on 512 bits (e.g. involving the ZMM registers).
-
-#|
-
 ;; TODO: Prove rml512 equivalent to rb in the system-level view. (again)
 (define rml512 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
                 (r-x      :type (member :r :x))
@@ -4904,7 +4895,11 @@
                                   l31 l30 l29 l28 l27 l26 l25 l24 l23 l22 l21 l20 l19 l18 l17 l16
                                   l15 l14 l13 l12 l11 l10 l9 l8 l7 l6 l5 l4 l3 l2 l1 l0)
      :hints (("Goal" :in-theory (e/d* () (unsigned-byte-p))))
-     :gen-linear t))
+     :hints-l (("Goal" :in-theory (disable BITOPS::UNSIGNED-BYTE-P-512-OF-MERGE-64-U8S)))
+     :gen-rewrite nil
+     :gen-linear t)
+
+   (local (in-theory (disable ia32e-la-to-pa-fixes-perm))))
 
 
   (if (mbt (canonical-address-p lin-addr))
@@ -5342,14 +5337,19 @@
     :hyp t
     :bound 512
     :concl (mv-nth 1 (rml512 lin-addr r-x x86))
-    :hints (("Goal" :in-theory (e/d () (force (force) signed-byte-p))))
+    :hints (("Goal" :in-theory (e/d () (force (force) signed-byte-p
+                                              ;; for speed:
+                                              x86isa::signed-byte-p-48-to-<-rule
+                                              x86isa::la-to-pa$inline))))
     :gen-linear t
     :gen-type t)
 
   (defthm x86p-rml512
     (implies (force (x86p x86))
              (x86p (mv-nth 2 (rml512 lin-addr r-x x86))))
-    :hints (("Goal" :in-theory (e/d () ((force) unsigned-byte-p signed-byte-p))))
+    :hints (("Goal" :in-theory (e/d () ((force) unsigned-byte-p signed-byte-p
+                                        ;; for speed:
+                                        x86isa::signed-byte-p-48-to-<-rule))))
     :rule-classes (:rewrite :type-prescription))
 
   (defthm rml512-value-when-error
@@ -5357,17 +5357,21 @@
              (equal (mv-nth 1 (rml512 lin-addr r-x x86))
                     0))
     :hints (("Goal" :in-theory (e/d (rml512)
-                                    (force (force))))))
+                                    (force
+                                     (force)
+                                     ;; for speed:
+                                     x86isa::signed-byte-p-48-to-<-rule
+                                     x86isa::la-to-pa$inline)))))
 
-  (defthm rml512-x86-unmodified-in-not-marking-view
-    (implies (and (not (marking-view x86))
-                  (not (mv-nth 0 (rml512 lin-addr r-x x86))))
-             (equal (mv-nth 2 (rml512 lin-addr r-x x86))
-                    x86))
-    :hints (("Goal" :in-theory (e/d (rml512
-                                     unsigned-byte-p
-                                     signed-byte-p)
-                                    (force (force))))))
+  ;; (defthm rml512-x86-unmodified-in-not-marking-view
+  ;;   (implies (and (not (marking-view x86))
+  ;;                 (not (mv-nth 0 (rml512 lin-addr r-x x86))))
+  ;;            (equal (mv-nth 2 (rml512 lin-addr r-x x86))
+  ;;                   x86))
+  ;;   :hints (("Goal" :in-theory (e/d (rml512
+  ;;                                    unsigned-byte-p
+  ;;                                    signed-byte-p)
+  ;;                                   (force (force))))))
 
   (defthm rml512-x86-unmodified-in-app-view
     (implies (app-view x86)
@@ -5382,12 +5386,16 @@
     (implies (and ;; (not (app-view x86))
                   (not (equal fld :mem))
                   (not (equal fld :fault))
+                  (not (equal fld :tlb))
                   ;; (member-equal fld *x86-field-names-as-keywords*)
                   )
              (equal (xr fld index (mv-nth 2 (rml512 lin-addr r-x x86)))
                     (xr fld index x86)))
     :hints (("Goal" :in-theory (e/d (rml512)
-                                    (force (force))))))
+                                    (force
+                                     (force)
+                                     ;; for speed:
+                                     x86isa::signed-byte-p-48-to-<-rule)))))
 
   (defrule rml512-xw-app-view
     (implies (and (app-view x86)
@@ -5414,6 +5422,7 @@
           (not (equal fld :rflags))
           (not (equal fld :app-view))
           (not (equal fld :marking-view))
+          (not (equal fld :tlb))
           (not (equal fld :implicit-supervisor-access))
           (member-equal fld *x86-field-names-as-keywords*))
      (and (equal (mv-nth 0 (rml512 lin-addr r-x (xw fld index value x86)))
@@ -5423,7 +5432,9 @@
           (equal (mv-nth 2 (rml512 lin-addr r-x (xw fld index value x86)))
                  (xw fld index value (mv-nth 2 (rml512 lin-addr r-x x86))))))
     :enable (rml512)
-    :disable (rb unsigned-byte-p signed-byte-p force (force)))
+    :disable (rb unsigned-byte-p signed-byte-p force (force)
+                 ;; for speed:
+                 x86isa::signed-byte-p-48-to-<-rule))
 
   (defrule rml512-xw-sys-view-rflags-not-ac
     (implies
@@ -5438,7 +5449,9 @@
                  (xw :rflags nil value
                      (mv-nth 2 (rml512 lin-addr r-x x86))))))
     :enable (rml512)
-    :disable (rb unsigned-byte-p signed-byte-p member-equal)))
+    :disable (rb unsigned-byte-p signed-byte-p member-equal
+                 ;; for speed:
+                 signed-byte-p-48-to-<-rule)))
 
 ;; TODO: Prove wml512 equivalent to rb in the system-level view (again).
 (define wml512 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
@@ -6079,8 +6092,6 @@
              (x86p (mv-nth 1 (wml512 lin-addr val x86))))
     :hints (("Goal" :in-theory (e/d () (rb x86p force (force) unsigned-byte-p signed-byte-p))))
     :rule-classes (:rewrite :type-prescription)))
-
-|#
 
 ;; ======================================================================
 
