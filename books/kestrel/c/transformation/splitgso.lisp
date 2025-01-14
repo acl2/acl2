@@ -658,11 +658,8 @@
                        expr.arg
                        :ident (b* (((unless (equal expr.arg.ident original))
                                     nil)
-                                   ((unless (c$::var-infop expr.arg.info))
-                                    (raise "Validator annotation missing or
-                                            ill-formed: ~x0"
-                                           expr.arg.info))
-                                   (linkage (c$::var-info->linkage expr.arg.info)))
+                                   (linkage (c$::var-info->linkage
+                                              (c$::coerce-var-info expr.arg.info))))
                                 (c$::linkage-case
                                   linkage
                                   :internal t
@@ -967,6 +964,8 @@
        (tunits-old (acl2::constant-value const-old wrld))
        ((unless (transunit-ensemblep tunits-old))
         (reterr (msg "~x0 must be a translation unit ensemble." const-old)))
+       ((unless (c$::transunit-ensemble-annop tunits-old))
+        (reterr (msg "~x0 must be an annotated with validation information." const-old)))
        (tunits-map (transunit-ensemble->unwrap tunits-old))
        ((when (or (omap::emptyp tunits-map)
                   (not (omap::emptyp (omap::tail tunits-map)))))
