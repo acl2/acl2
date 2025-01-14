@@ -1,7 +1,7 @@
 ; A parser for Java class files (passed in as sequences of bytes)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -372,7 +372,7 @@
   (<= (len (mv-nth 2 (readnbytes n bytes)))
       (len bytes))
   :hints (("Goal" :in-theory (enable readnbytes)))
-  :rule-classes (:linear))
+  :rule-classes :linear)
 
 ;; Returns (mv erp u2s remaining-bytes).
 (defund readu2s (number-of-u2s bytes)
