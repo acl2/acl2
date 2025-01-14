@@ -39,6 +39,7 @@
 (in-package "X86ISA")
 
 (include-book "base")
+(include-book "centaur/gl/defthm-using-gl" :dir :system)
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
