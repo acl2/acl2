@@ -361,13 +361,6 @@
 
 ;; split global struct object
 
-;; TODO: qualifiers are dropped from split global struct object
-;; e.g.
-;;   static struct S s =;
-;; becomes
-;;   struct S1 s1;
-;;   struct S2 s2;
-
 (define match-designors
   ((split-members ident-listp)
    (designors designor-listp))
@@ -590,8 +583,7 @@
 
 ;; replace all instances of `s.field` with `s1.field` or `s2.field`.
 
-;; TODO: detect if global object is shadowed (via linkage information)
-;;   - also, check replacement identifiers for the same
+;; TODO: check if replacement struct objects have been shadowed
 (deftrans replace-field-access
   ;; Need the
   :extra-args
@@ -863,9 +855,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; TODO: check if validated and, if not, validate
-;; (include-book "../syntax/validator")
-;; (valid-transunit tunit t (c$::ienv-default))
 (define splitgso-transunit
   ((orig-struct identp)
    (new-struct1 identp)
