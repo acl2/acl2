@@ -104,3 +104,23 @@ int main(void) {
 ")
 
   :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(acl2::must-succeed*
+  (c$::input-files :files ("test3.c")
+                   :process :validate
+                   :const *old*)
+
+  ;; Global struct object occurs outside of field access.
+  (must-fail
+    (splitgso *old*
+              *new*
+              :object-name "my"
+              :new-object1 "my1"
+              :new-object2 "my2"
+              :new-type1 "s1"
+              :new-type2 "s2"
+              :split-members ("baz")))
+
+  :with-output-off nil)
