@@ -18,7 +18,7 @@
 
 (include-book "support-x86") ;drop? for stuff about create-canonical-address-list
 (include-book "flags") ; reduce?
-(include-book "projects/x86isa/proofs/utilities/app-view/top" :dir :system)
+;(include-book "projects/x86isa/proofs/utilities/app-view/top" :dir :system)
 (in-theory (disable acl2::nth-when-zp)) ; can cause problems
 ;(include-book "projects/x86isa/tools/execution/top" :dir :system) ;todo don't even use init-x86-state?
 (include-book "kestrel/utilities/defopeners" :dir :system)
