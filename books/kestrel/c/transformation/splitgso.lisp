@@ -603,8 +603,17 @@
   (lambda (expr original new1 new2 split-members)
     (expr-case
       expr
-      ;; TODO: if it matches original, flag as unhandled
-      :ident (expr-fix expr)
+      :ident (b* (((unless (equal expr.ident original))
+                   (expr-fix expr))
+                  (linkage (c$::var-info->linkage
+                             (c$::coerce-var-info expr.info))))
+               (c$::linkage-case
+                 linkage
+                 :internal (prog2$ (raise "Global struct object ~x0 occurs in
+                                           illegal expression."
+                                          original)
+                                   (expr-fix expr))
+                 :otherwise (expr-fix expr)))
       :const (expr-fix expr)
       :string (expr-fix expr)
       :paren (expr-paren (replace-field-access-expr
