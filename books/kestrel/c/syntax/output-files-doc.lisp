@@ -45,7 +45,11 @@
       the result of applying transformations to
       code obtained via @(tsee input-files);
       so this @('output-files') macros can provide
-      the final step in that process."))
+      the final step in that process.")
+
+    (xdoc::p
+     "The (non-event) macro @(tsee output-files-prog) provides
+      a programmatic interface to the functionality of @('output-files')."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
