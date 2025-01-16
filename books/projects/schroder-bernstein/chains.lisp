@@ -1,8 +1,10 @@
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
 ; Author: Grant Jurgensen (grant@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "SBT")
 
@@ -14,214 +16,227 @@
 
 (include-book "setup")
 
+(local (include-book "kestrel/arithmetic-light/fix" :dir :system))
+(local (include-book "kestrel/utilities/nfix" :dir :system))
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-induction-depth-limit 0)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; A chain element is an object decorated with a boolean polarity, indicating
 ;; membership in either p or q. This polarity tracking is necessary since p and
 ;; q may overlap.
-(define chain-elem-p (x)
-  :returns (is-chain-elem booleanp)
+;; Note that we cannot define a fixer for chain elements, because `p` and `q`
+;; may be unsatisfiable.
+(define chain-elemp (x)
+  (declare (xargs :type-prescription (booleanp (chain-elemp x))))
   (and (consp x)
        (booleanp (car x))
        (if (car x)
            (and (p (cdr x)) t)
          (and (q (cdr x)) t))))
 
-(defrule consp-when-chain-elem-p-compound-recognizer
-  (implies (chain-elem-p x)
-           (consp x))
-  :enable (chain-elem-p)
-  :rule-classes :compound-recognizer)
+(defrule consp-when-chain-elemp-compound-recognizer
+  (implies (chain-elemp elem)
+           (consp elem))
+  :rule-classes :compound-recognizer
+  :enable chain-elemp)
 
-(define make-chain-elem (polarity x)
-  :guard (if polarity (p x) (q x))
-  :returns (chain-elem chain-elem-p
-                       :hyp :guard
-                       :hints (("Goal" :in-theory (enable chain-elem-p))))
-  (cons (and polarity t) x))
-
-
-(define polarity ((x consp))
-  (car x))
-
-(defrule booleanp-of-polarity-when-chain-elem-p
-  (implies (chain-elem-p x)
-           (booleanp (polarity x)))
-  :enable (chain-elem-p polarity)
-  :rule-classes ((:type-prescription) (:forward-chaining)))
-
-(defrule polarity-of-make-chain-elem
-  (equal (polarity (make-chain-elem polarity x))
-         (and polarity t))
-  :enable (polarity make-chain-elem))
-
-
-(define chain-elem ((x consp))
-  (cdr x))
-
-(defrule in-chain-elem-of-x-when-chain-elem-p-forward
-  (implies (chain-elem-p x)
-           (if (polarity x)
-               (p (chain-elem x))
-             (q (chain-elem x))))
-  :enable (chain-elem-p polarity chain-elem)
-  :rule-classes :forward-chaining)
-
-(defrule chain-elem-of-make-chain-elem
-  (equal (chain-elem (make-chain-elem polarity x))
-         x)
-  :enable (chain-elem make-chain-elem))
-
-
-(defrule p-of-chain-elem-when-polarity
-  (implies (and (chain-elem-p x)
-                (polarity x))
-           (p (chain-elem x))))
-
-(defrule q-of-chain-elem-when-not-polarity
-  (implies (and (chain-elem-p x)
-                (not (polarity x)))
-           (q (chain-elem x))))
-
-(defruled equal-when-chain-elem-p
-  (implies (and (chain-elem-p x)
-                (chain-elem-p y))
-           (equal (equal x y)
-                  (and (equal (polarity x) (polarity y))
-                       (equal (chain-elem x) (chain-elem y)))))
-  :enable (chain-elem-p
-           polarity
-           chain-elem)
-  :rule-classes ((:rewrite :backchain-limit-lst (1 1))))
-
-(defrule equal-when-chain-elem-p-2
-  (implies (and (chain-elem-p x)
-                (chain-elem-p y)
-                (equal (polarity x) (polarity y))
-                (equal (chain-elem x) (chain-elem y)))
-           (equal (equal x y) t))
-  :enable (equal-when-chain-elem-p)
-  :rule-classes ((:rewrite :backchain-limit-lst (1 1 nil nil))))
-
-(defrule equal-of-make-chain-elem
-  (equal (equal (make-chain-elem polarity1 x1)
-                (make-chain-elem polarity2 x2))
-         (and (iff polarity1 polarity2)
-              (equal x1 x2)))
-  :enable (make-chain-elem))
-
+;; Constructor for chain-elemp
+(define chain-elem (polarity val)
+  :returns (chain-elem chain-elemp
+                       :hyp (if polarity (p val) (q val))
+                       :hints (("Goal" :in-theory (enable chain-elemp))))
+  (cons (and polarity t) val))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define polarity ((elem consp))
+  (declare (xargs :type-prescription (booleanp (polarity elem))))
+  (and (car elem)
+       t))
+
+(defrule polarity-of-chain-elem
+  (equal (polarity (chain-elem polarity val))
+         (and polarity t))
+  :enable (polarity chain-elem))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define val ((elem consp))
+  (cdr elem))
+
+(defrule val-of-chain-elem
+  (equal (val (chain-elem polarity val))
+         val)
+  :enable (val chain-elem))
+
+(defrule p-of-val-when-polarity
+  (implies (and (chain-elemp x)
+                (polarity x))
+           (p (val x)))
+  :enable (chain-elemp polarity val))
+
+(defrule q-of-val-when-not-polarity
+  (implies (and (chain-elemp x)
+                (not (polarity x)))
+           (q (val x)))
+  :enable (chain-elemp polarity val))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled equal-when-chain-elemp
+  (implies (and (chain-elemp x)
+                (chain-elemp y))
+           (equal (equal x y)
+                  (and (equal (polarity x) (polarity y))
+                       (equal (val x) (val y)))))
+  :rule-classes ((:rewrite :backchain-limit-lst (1 1)))
+  :enable (chain-elemp
+           polarity
+           val))
+
+(defrule equal-when-chain-elemp-2
+  (implies (and (chain-elemp x)
+                (chain-elemp y)
+                (equal (polarity x) (polarity y))
+                (equal (val x) (val y)))
+           (equal (equal x y) t))
+  :rule-classes ((:rewrite :backchain-limit-lst (1 1 nil nil)))
+  :enable equal-when-chain-elemp)
+
+(defrule equal-of-chain-elem
+  (equal (equal (chain-elem polarity1 x1)
+                (chain-elem polarity2 x2))
+         (and (iff polarity1 polarity2)
+              (equal x1 x2)))
+  :enable chain-elem)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Steps in chain sequences
 
 (define chain-step
-  ((x chain-elem-p))
-  :returns (chain-elem chain-elem-p :hyp :guard)
-  (let ((polarity (polarity x)))
-    (make-chain-elem (not polarity)
-                     (if polarity
-                         (f (chain-elem x))
-                       (g (chain-elem x))))))
-
+  ((elem consp))
+  :returns (elem$ chain-elemp :hyp (chain-elemp elem))
+  (let ((polarity (polarity elem)))
+    (chain-elem (not polarity)
+                (if polarity
+                    (f (val elem))
+                  (g (val elem))))))
 
 (defrule polarity-chain-step
-  (equal (polarity (chain-step x))
-         (not (polarity x)))
+  (equal (polarity (chain-step elem))
+         (not (polarity elem)))
   :enable chain-step)
 
-(defrule chain-elem-of-chain-step
-  (equal (chain-elem (chain-step x))
-         (if (polarity x)
-             (f (chain-elem x))
-           (g (chain-elem x))))
-  :enable (chain-step))
+(defrule val-of-chain-step
+  (equal (val (chain-step elem))
+         (if (polarity elem)
+             (f (val elem))
+           (g (val elem))))
+  :enable chain-step)
 
 ;; Follows from injectivity of f ang g
-(defrule injectivity-of-chain-step-when-chain-elem-p
-  (implies (and (chain-elem-p x)
-                (chain-elem-p y))
+(defrule injectivity-of-chain-step-when-chain-elemp
+  (implies (and (chain-elemp x)
+                (chain-elemp y))
            (equal (equal (chain-step x)
                          (chain-step y))
                   (equal x y)))
-  :enable (equal-when-chain-elem-p))
+  :enable equal-when-chain-elemp)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define chain-steps
-  ((x chain-elem-p)
+  ((elem consp)
    (steps natp))
-  :returns (stepped chain-elem-p :hyp (chain-elem-p x))
+  :returns (elem$ chain-elemp :hyp (chain-elemp elem))
   (if (zp steps)
-      x
-    (chain-steps (chain-step x) (- steps 1))))
+      elem
+    (chain-steps (chain-step elem)
+                 (- steps 1))))
 
-
-(defrule chain-steps-of-arg1-and-0
+(defrule chain-steps-of-arg1-and-0-cheap
   (implies (zp steps)
-           (equal (chain-steps x steps)
-                  x))
-  :enable (chain-steps)
-  :rule-classes ((:rewrite :backchain-limit-lst (0))))
+           (equal (chain-steps elem steps)
+                  elem))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :enable chain-steps)
 
-(defrule chain-steps-of-chain-step
- (equal (chain-steps (chain-step x) n)
-        (chain-step (chain-steps x n)))
+(defrule chain-steps-of-arg1-and-nfix
+  (equal (chain-steps elem (nfix steps))
+         (chain-steps elem steps))
+  :enable (chain-steps nfix))
+
+(defruled chain-steps-of-chain-step-becomes-chain-step-of-chain-steps
+ (equal (chain-steps (chain-step elem) n)
+        (chain-step (chain-steps elem n)))
+ :induct t
  :enable (chain-steps
           chain-step))
 
-;; Note: backchain limit has to be 0, or else we may end up splitting on zp
-(defrule chain-steps-of-arg1-and-not-zp-cheap
-  (implies (not (zp steps))
-           (equal (chain-steps x steps)
-                  (chain-step (chain-steps x (- steps 1)))))
-  :enable (chain-steps)
-  :rule-classes ((:rewrite :backchain-limit-lst (0))))
+(defrule chain-steps-of-chain-step
+ (equal (chain-steps (chain-step elem) n)
+        (chain-steps elem (+ 1 (nfix n))))
+ :induct t
+ :enable (chain-steps
+          chain-step))
 
-(defrule chain-steps-of-+
- (implies (and (natp n)
-               (natp m))
-          (equal (chain-steps x (+ n m))
-                 (chain-steps (chain-steps x n) m)))
- :disable (chain-steps-of-chain-step
-           chain-steps-of-arg1-and-not-zp-cheap)
- :enable (chain-steps))
+(defrule chain-step-of-chain-steps
+ (equal (chain-step (chain-steps elem n))
+        (chain-steps elem (+ 1 (nfix n))))
+ :use chain-steps-of-chain-step-becomes-chain-step-of-chain-steps)
 
-(defrule commutativity-of-chain-steps
- (equal (chain-steps (chain-steps x m) n)
-        (chain-steps (chain-steps x n) m))
- :use ((:instance chain-steps-of-+)
-       (:instance chain-steps-of-+
-                  (m n)
-                  (n m))))
+(defrule chain-steps-of-chain-steps
+  (equal (chain-steps (chain-steps elem n) m)
+         (chain-steps elem (+ (nfix n) (nfix m))))
+ :induct t
+ :enable (chain-steps nfix))
 
-(defrule injectivity-of-chain-steps-on-arg1-when-chain-elem-p
-  (implies (and (chain-elem-p x)
-                (chain-elem-p y))
+(defruled chain-steps-of-+
+  (implies (and (natp n)
+                (natp m))
+           (equal (chain-steps elem (+ n m))
+                  (chain-steps (chain-steps elem n) m))))
+
+(theory-invariant
+ (incompatible! (:rewrite chain-steps-of-chain-steps)
+                (:rewrite chain-steps-of-+)))
+
+(defruled commutativity-of-chain-steps
+  (equal (chain-steps (chain-steps elem m) n)
+         (chain-steps (chain-steps elem n) m)))
+
+(defrule injectivity-of-chain-steps-on-arg1-when-chain-elemp
+  (implies (and (chain-elemp x)
+                (chain-elemp y))
            (equal (equal (chain-steps x n)
                          (chain-steps y n))
                   (equal x y)))
-  :enable (chain-steps))
+  :induct t
+  :enable chain-steps)
 
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; A preorder over position in a chain
 ;; Note, it is not a partial order (i.e. not antisymmetric) because chains may
 ;; be cyclic.
-
 ;; Specifies that the latter chain element is reachable after some number of
 ;; steps taken from the former.
 (define-sk chain<=
-  ((x chain-elem-p)
-   (y chain-elem-p))
+  ((x consp)
+   y)
   (exists n
-    (equal (chain-steps x (nfix n)) y)))
-
+    (equal (chain-steps x (nfix n))
+           y)))
 
 (defrule chain<=-of-arg1-and-chain-steps
   (chain<= x (chain-steps x n))
-  :use ((:instance chain<=-suff (y (chain-steps x n)))))
+  :use (:instance chain<=-suff (y (chain-steps x n))))
 
 (defrule reflexivity-of-chain<=
   (chain<= x x)
@@ -233,70 +248,58 @@
                 (chain<= y z))
            (chain<= x z))
   :expand ((chain<= x y)
-           (chain<= y z))
-  :disable (chain-steps-of-arg1-and-not-zp-cheap)
-  :use ((:instance chain<=-suff
-                   (y z)
-                   (n (+ (chain<=-witness x y)
-                         (chain<=-witness y z))))))
+           (chain<= y z)))
 
-(defrule chain-elem-p-when-chain<=-of-arg1-forward
-  (implies (and (chain-elem-p x)
+(defrule chain-elemp-when-chain<=-of-arg1-forward
+  (implies (and (chain-elemp x)
                 (chain<= x y))
-           (chain-elem-p y))
-  :enable (chain<=)
-  :rule-classes ((:forward-chaining :trigger-terms ((chain<= x y)))))
+           (chain-elemp y))
+  :rule-classes ((:forward-chaining :trigger-terms ((chain<= x y))))
+  :enable chain<=)
 
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; An equivalence relation based on membership within the same chain
 
-;; Note: when the arguments are not chain-elem-p, the relation becomes exact
+;; Note: when the arguments are not chain-elemp, the relation becomes exact
 ;; equality. This is done so that chain= acts as an equivalence relation even
-;; when the elements are outside of the intended domain. Ordinarily, we would
-;; just force the elements into the domain with a fixing function, but such a
-;; function is not easily defined without modifying our notion of
-;; chain-elem-p. As it is now, chain-elem-p may be vacuous (iff p or q are
-;; vacuous), so there may not exist some arbitrary value to map to.
+;; when the elements are outside of the intended domain.
 (define chain=
-  ((x chain-elem-p)
-   (y chain-elem-p))
-  (if (mbt (and (chain-elem-p x)
-                (chain-elem-p y)))
+  ((x consp)
+   (y consp))
+  (if (and (chain-elemp x)
+           (chain-elemp y))
       (or (chain<= x y)
           (chain<= y x))
     (equal x y)))
 
-
 (defrule chain=-when-chain<=-forward
-  (implies (and (chain-elem-p x)
+  (implies (and (chain-elemp x)
                 (chain<= x y))
            (chain= x y))
-  :enable (chain=)
-  :rule-classes ((:forward-chaining :trigger-terms ((chain<= x y)))))
-
+  :rule-classes ((:forward-chaining :trigger-terms ((chain<= x y))))
+  :enable chain=)
 
 (defrule reflexivity-of-chain=
   (chain= x x)
-  :enable (chain=))
+  :enable chain=)
 
 (defrule symmetry-of-chain=
   (equal (chain= y x)
          (chain= x y))
-  :enable (chain=))
+  :enable chain=)
 
-
+;; TODO: simplify these proofs
 (defrule chain=-when-shared-chain<=-base
-  (implies (and (chain-elem-p x)
+  (implies (and (chain-elemp x)
                 (chain<= x y)
                 (chain<= x z))
            (chain= y z))
+  :enable (chain= nfix)
   :cases ((< (chain<=-witness x y)
              (chain<=-witness x z)))
   :expand ((chain<= x y)
            (chain<= x z))
-  :enable (chain=)
   :prep-lemmas
   ((defrule chain<=-when-chain-steps-from-shared-base
      (implies (and (natp n)
@@ -305,42 +308,41 @@
                    (equal (chain-steps x m) z)
                    (<= n m))
               (chain<= y z))
-     :use ((:instance chain<=-suff
-                      (x y)
-                      (y z)
-                      (n (- m n)))
-           (:instance chain-steps-of-+
-                      (n n)
-                      (m (- m n)))))))
+     :enable nfix
+     :use (:instance chain<=-suff
+                     (x y)
+                     (y z)
+                     (n (- m n))))))
 
 (defrule chain=-when-shared-chain<=-of
-  (implies (and (chain-elem-p x)
-                (chain-elem-p y)
+  (implies (and (chain-elemp x)
+                (chain-elemp y)
                 (chain<= x z)
                 (chain<= y z))
            (chain= x y))
+  :enable (chain= nfix)
   :cases ((< (chain<=-witness x z)
              (chain<=-witness y z)))
   :expand ((chain<= x z)
            (chain<= y z))
-  :enable (chain=)
   :prep-lemmas
   ((defrule chain<=-when-chain-steps-from-shared-end
-     (implies (and (chain-elem-p x)
-                   (chain-elem-p y)
+     (implies (and (chain-elemp x)
+                   (chain-elemp y)
                    (natp n)
                    (natp m)
                    (equal (chain-steps x n) z)
                    (equal (chain-steps y m) z)
                    (<= n m))
               (chain<= y x))
-     :disable (commutativity-of-chain-steps)
+     :enable natp
+     :disable chain-steps-of-chain-steps
      :use ((:instance chain<=-suff
                       (x y)
                       (y x)
                       (n (- m n)))
            (:instance chain-steps-of-+
-                      (x y)
+                      (elem y)
                       (n (- m n))
                       (m n))))))
 
@@ -348,7 +350,7 @@
   (implies (and (chain= x y)
                 (chain= y z))
            (chain= x z))
-  :enable (chain=)
+  :enable chain=
   :use ((:instance chain=-when-shared-chain<=-base
                    (x y)
                    (y x)
@@ -360,154 +362,153 @@
 
 (defequiv chain=)
 
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Definedness of inverses via chain membership
 
-(defruled has-f-inverse-of-chain-elem-when-chain-steps
-  (implies (and (chain-elem-p x)
+(defruled exists-f-inverse-of-chain-elem-when-chain-steps
+  (implies (and (chain-elemp x)
                 (posp n)
                 (equal (chain-steps x n) y)
                 (not (polarity y)))
-           (has-f-inverse (chain-elem y)))
-  :enable (chain-steps))
+           (exists-f-inverse (val y)))
+  :induct t
+  :enable chain-steps)
 
-(defruled has-f-inverse-of-chain-elem-when-chain<=
-  (implies (and (chain-elem-p x)
+(defruled exists-f-inverse-of-chain-elem-when-chain<=
+  (implies (and (chain-elemp x)
                 (chain<= x y)
                 (polarity x)
                 (not (polarity y)))
-           (has-f-inverse (chain-elem y)))
-  :disable (chain-steps-of-arg1-and-not-zp-cheap)
-  :use ((:instance has-f-inverse-of-chain-elem-when-chain-steps
-                   (n (chain<=-witness x y))))
-  :enable (chain<=))
-
-
-(defruled has-g-inverse-of-chain-elem-when-chain-steps
-  (implies (and (chain-elem-p x)
-                (posp n)
-                (equal (chain-steps x n) y)
-                (polarity y))
-           (has-g-inverse (chain-elem y)))
-  :enable (chain-steps))
-
-(defruled has-g-inverse-of-chain-elem-when-chain<=
-  (implies (and (chain-elem-p x)
-                (chain<= x y)
-                (not (polarity x))
-                (polarity y))
-           (has-g-inverse (chain-elem y)))
-  :disable (has-g-inverse-of-chain-elem-when-chain-steps
-            chain-steps-of-arg1-and-not-zp-cheap)
-  :use ((:instance has-g-inverse-of-chain-elem-when-chain-steps
-                   (n (chain<=-witness x y))))
-  :enable (chain<=))
-
+           (exists-f-inverse (val y)))
+  :use (:instance exists-f-inverse-of-chain-elem-when-chain-steps
+                  (n (chain<=-witness x y)))
+  :enable chain<=)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defruled exists-g-inverse-of-chain-elem-when-chain-steps
+  (implies (and (chain-elemp x)
+                (posp n)
+                (equal (chain-steps x n) y)
+                (polarity y))
+           (exists-g-inverse (val y)))
+  :induct t
+  :enable chain-steps)
+
+(defruled exists-g-inverse-of-chain-elem-when-chain<=
+  (implies (and (chain-elemp x)
+                (chain<= x y)
+                (not (polarity x))
+                (polarity y))
+           (exists-g-inverse (val y)))
+  :use (:instance exists-g-inverse-of-chain-elem-when-chain-steps
+                  (n (chain<=-witness x y)))
+  :enable chain<=)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Initial chain elements
 
-(define initial-p ((x chain-elem-p))
-  (if (polarity x)
-      (not (has-g-inverse (chain-elem x)))
-    (not (has-f-inverse (chain-elem x)))))
-
+(define initialp ((elem consp))
+  (if (polarity elem)
+      (not (exists-g-inverse (val elem)))
+    (not (exists-f-inverse (val elem)))))
 
 ;; TODO: forward to nil?
 (defrule equal-when-chain<=-initial
-  (implies (and (chain-elem-p x)
-                (initial-p initial)
-                (equal (chain-steps x n) initial))
-           (equal x initial))
-  :enable (initial-p
-           chain-steps)
-  :rule-classes nil)
+  (implies (and (chain-elemp elem)
+                (initialp initial)
+                (equal (chain-steps elem n) initial))
+           (equal elem initial))
+  :rule-classes nil
+  :induct t
+  :enable (initialp
+           chain-steps))
 
 (defrule chain<=-of-arg1-and-initial
-  (implies (and (chain-elem-p x)
-                (initial-p initial))
-           (equal (chain<= x initial)
-                  (equal x initial)))
-  :enable (chain<=)
-  :cases ((equal x initial))
-  :use ((:instance equal-when-chain<=-initial
-                   (n (chain<=-witness x initial)))))
+  (implies (and (chain-elemp elem)
+                (initialp initial))
+           (equal (chain<= elem initial)
+                  (equal elem initial)))
+  :enable chain<=
+  :cases ((equal elem initial))
+  :use (:instance equal-when-chain<=-initial
+                  (n (chain<=-witness elem initial))))
 
 (defruled chain<=-of-initial-and-arg2
-  (implies (and (chain-elem-p x)
-                (chain-elem-p initial)
-                (initial-p initial))
-           (equal (chain<= initial x)
-                  (chain= initial x)))
-  :enable (chain=))
+  (implies (and (chain-elemp elem)
+                (chain-elemp initial)
+                (initialp initial))
+           (equal (chain<= initial elem)
+                  (chain= initial elem)))
+  :enable chain=)
 
 (theory-invariant
  (incompatible! (:rewrite chain<=-of-initial-and-arg2)
                 (:definition chain=)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define initial-wrt (initial (x chain-elem-p))
-  (and (chain-elem-p initial)
-       (initial-p initial)
-       (chain<= initial x)))
+(define initial-wrt
+  ((initial consp)
+   (elem consp))
+  (declare (xargs :type-prescription (booleanp (initial-wrt initial elem))))
+  (and (chain-elemp initial)
+       (initialp initial)
+       (chain<= initial elem)))
 
-
-(defrule chain-elem-p-of-arg1-when-initial-wrt-forward
+(defrule chain-elemp-of-arg1-when-initial-wrt-forward
   (implies (initial-wrt x y)
-           (chain-elem-p x))
-  :enable (initial-wrt)
-  :rule-classes :forward-chaining)
+           (chain-elemp x))
+  :rule-classes :forward-chaining
+  :enable initial-wrt)
 
-(defrule chain-elem-p-of-arg2-when-initial-wrt-forward
+(defrule chain-elemp-of-arg2-when-initial-wrt-forward
   (implies (initial-wrt x y)
-           (chain-elem-p y))
-  :enable (initial-wrt)
-  :rule-classes :forward-chaining)
+           (chain-elemp y))
+  :rule-classes :forward-chaining
+  :enable initial-wrt)
 
-(defrule initial-p-when-initial-wrt-forward
+(defrule initialp-when-initial-wrt-forward
   (implies (initial-wrt x y)
-           (initial-p x))
-  :enable (initial-wrt)
-  :rule-classes :forward-chaining)
+           (initialp x))
+  :rule-classes :forward-chaining
+  :enable initial-wrt)
 
 (defrule chain<=-when-initial-wrt-forward
   (implies (initial-wrt x y)
            (chain<= x y))
-  :enable (initial-wrt)
-  :rule-classes :forward-chaining)
-
+  :rule-classes :forward-chaining
+  :enable initial-wrt)
 
 (defruled uniquenss-of-initial-wrt
   (implies (initial-wrt initial1 x)
            (equal (initial-wrt initial2 x)
                   (equal initial1 initial2)))
-  :disable (transitivity-of-chain=)
+  :enable initial-wrt
+  :disable transitivity-of-chain=
+  :expand (chain= initial1 initial2)
   :use ((:instance transitivity-of-chain=
                    (x initial1)
                    (y x)
                    (z initial2))
         (:instance chain<=-of-initial-and-arg2
                    (initial initial2)
-                   (x x)))
-  :enable (initial-wrt)
-  :expand (chain= initial1 initial2))
-
+                   (elem x))))
 
 (defrule initial-wrt-under-chain=
   (implies (chain= x y)
            (equal (initial-wrt initial x)
                   (initial-wrt initial y)))
+  :rule-classes :congruence
   :enable (initial-wrt
            chain<=-of-initial-and-arg2)
   :use lemma
-  :rule-classes :congruence
   :prep-lemmas
   ((defruled lemma
-     (implies (and (or (not (chain-elem-p x))
-                       (not (chain-elem-p y)))
+     (implies (and (or (not (chain-elemp x))
+                       (not (chain-elemp y)))
                    (chain= x y))
               (equal (initial-wrt initial x)
                      (initial-wrt initial y)))
@@ -516,189 +517,189 @@
 (defrule reflexivity-of-initial-wrt-when-initial-wrt
   (implies (initial-wrt initial x)
            (initial-wrt initial initial))
-  :enable (initial-wrt)
-  :rule-classes :forward-chaining)
+  :rule-classes :forward-chaining
+  :enable initial-wrt)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Of course, not all chains have initial elements, since chains may be
 ;; cyclic or backwards-infinite (chains are always forward-infinite).
-(defchoose get-initial (initial) (x)
-  (initial-wrt initial x))
+(defchoose get-initial (initial) (elem)
+  (initial-wrt initial elem))
 
-(define has-initial ((x chain-elem-p))
-  (initial-wrt (get-initial x) x))
+(define exists-initial ((elem consp))
+  (and (chain-elemp (get-initial elem))
+       (initial-wrt (get-initial elem) elem)))
 
+(defrule chain-elemp-of-get-initial-when-exists-initial
+  (implies (exists-initial elem)
+           (chain-elemp (get-initial elem)))
+  :enable (exists-initial initial-wrt))
 
-(defrule chain-elem-p-of-get-initial-when-has-initial
-  (implies (has-initial x)
-           (chain-elem-p (get-initial x)))
-  :enable (has-initial initial-wrt))
+(defrule initialp-of-get-initial-when-exists-initial
+  (implies (exists-initial elem)
+           (initialp (get-initial elem)))
+  :enable (exists-initial initial-wrt))
 
-(defrule initial-p-of-get-initial-when-has-initial
-  (implies (has-initial x)
-           (initial-p (get-initial x)))
-  :enable (has-initial initial-wrt))
+(defrule chain=-of-get-initial-when-exists-initial
+  (implies (exists-initial elem)
+           (chain= (get-initial elem) elem))
+  :enable (exists-initial initial-wrt))
 
-(defrule chain=-of-get-initial-when-has-initial
-  (implies (has-initial x)
-           (chain= (get-initial x) x))
-  :enable (has-initial initial-wrt))
+(defrule chain<=-of-get-initial-when-exists-initial
+  (implies (exists-initial elem)
+           (chain<= (get-initial elem) elem))
+  :enable exists-initial)
 
-(defrule chain<=-of-get-initial-when-has-initial
-  (implies (has-initial x)
-           (chain<= (get-initial x) x))
-  :enable (has-initial))
+(defrule chain-elemp-when-exists-initial-forward
+  (implies (exists-initial elem)
+           (chain-elemp elem))
+  :rule-classes :forward-chaining
+  :enable exists-initial)
 
-(defrule chain-elem-p-when-has-initial-forward
-  (implies (has-initial x)
-           (chain-elem-p x))
-  :enable (has-initial)
-  :rule-classes :forward-chaining)
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Note: this is disabled because it is soon "bootstrapped" into a version
 ;; with less hypotheses.
-(defruled get-initial-under-chain=-when-has-initials
-  (implies (and (has-initial x)
-                (has-initial y)
+(defruled get-initial-under-chain=-when-exists-initials
+  (implies (and (exists-initial x)
+                (exists-initial y)
                 (chain= x y))
            (equal (get-initial x)
                   (get-initial y)))
-  :enable (has-initial)
-  :disable (uniquenss-of-initial-wrt)
-  :use ((:instance uniquenss-of-initial-wrt
-                   (x y)
-                   (initial1 (get-initial x))
-                   (initial2 (get-initial y)))))
+  :enable exists-initial
+  :use (:instance uniquenss-of-initial-wrt
+                  (x y)
+                  (initial1 (get-initial x))
+                  (initial2 (get-initial y))))
 
 (defrule equal-get-initial-when-initial-wrt
-  (implies (initial-wrt initial x)
-           (equal (get-initial x) initial))
-  :enable (uniquenss-of-initial-wrt)
+  (implies (initial-wrt initial elem)
+           (equal (get-initial elem) initial))
+  :enable uniquenss-of-initial-wrt
   :use get-initial)
 
-(defrule has-initial-when-initial-wrt-forward
-  (implies (initial-wrt initial x)
-           (has-initial x))
-  :enable (has-initial)
-  :rule-classes :forward-chaining)
+(defrule exists-initial-when-initial-wrt-forward
+  (implies (initial-wrt initial elem)
+           (exists-initial elem))
+  :rule-classes :forward-chaining
+  :enable exists-initial)
 
-(defrule has-initial-when-initial-p-forward
-  (implies (and (chain-elem-p x)
-                (initial-p x))
-           (has-initial x))
-  :enable (initial-wrt)
-  :use ((:instance has-initial-when-initial-wrt-forward
-                   (initial x)))
-  :rule-classes ((:forward-chaining :trigger-terms ((initial-p x)))))
+(defrule exists-initial-when-initialp-forward
+  (implies (and (chain-elemp initial)
+                (initialp initial))
+           (exists-initial initial))
+  :rule-classes ((:forward-chaining :trigger-terms ((initialp initial))))
+  :enable initial-wrt
+  :disable exists-initial-when-initial-wrt-forward
+  :use (:instance exists-initial-when-initial-wrt-forward
+                  (initial initial)
+                  (elem initial)))
 
-
-(defrule has-initial-under-chain=
+(defrule exists-initial-under-chain=
   (implies (chain= x y)
-           (equal (has-initial x)
-                  (has-initial y)))
-  :enable (chain=)
-  :use ((:instance has-initial-under-chain=-aux)
-        (:instance has-initial-under-chain=-aux
+           (equal (exists-initial x)
+                  (exists-initial y)))
+  :rule-classes :congruence
+  :enable chain=
+  :use ((:instance exists-initial-under-chain=-aux)
+        (:instance exists-initial-under-chain=-aux
                    (x y)
                    (y x)))
-  :rule-classes :congruence
   :prep-lemmas
-  ((defruled has-initial-under-chain=-aux
-     (implies (and (chain-elem-p x)
+  ((defruled exists-initial-under-chain=-aux
+     (implies (and (chain-elemp x)
                    (chain= x y)
-                   (has-initial y))
-              (has-initial x))
-     :enable (has-initial))))
+                   (exists-initial y))
+              (exists-initial x))
+     :enable exists-initial)))
 
 
-(defruled get-initial-under-chain=-when-has-initial
-  (implies (and (has-initial x)
-                (chain-elem-p y)
+(defruled get-initial-under-chain=-when-exists-initial
+  (implies (and (exists-initial x)
+                (chain-elemp y)
                 (chain= x y))
            (equal (get-initial x)
                   (get-initial y)))
-  :use get-initial-under-chain=-when-has-initials)
+  :use get-initial-under-chain=-when-exists-initials)
 
-(defrule get-initial-under-chain=-when-has-initial-syntaxp
-  (implies (and (has-initial x)
-                (chain-elem-p y)
+(defrule get-initial-under-chain=-when-exists-initial-syntaxp
+  (implies (and (exists-initial x)
+                (chain-elemp y)
                 (chain= x y)
                 ;; Prevents looping
                 (syntaxp (<< y x)))
            (equal (get-initial x)
                   (get-initial y)))
-  :use get-initial-under-chain=-when-has-initial)
+  :use get-initial-under-chain=-when-exists-initial)
 
-(defrule has-g-inverse-when-not-has-initial
-  (implies (and (chain-elem-p x)
-                (not (has-initial x))
-                (polarity x))
-           (has-g-inverse (chain-elem x)))
-  :enable (initial-p)
-  :use has-initial-when-initial-p-forward
-  :rule-classes ((:forward-chaining :trigger-terms ((has-initial x)))))
+(defrule exists-g-inverse-when-not-exists-initial
+  (implies (and (chain-elemp elem)
+                (not (exists-initial elem))
+                (polarity elem))
+           (exists-g-inverse (val elem)))
+  ;; :rule-classes ((:forward-chaining :trigger-terms ((exists-initial elem))))
+  :enable initialp
+  :use (:instance exists-initial-when-initialp-forward
+                  (initial elem)))
 
-(defrule has-f-inverse-when-not-has-initial
-  (implies (and (chain-elem-p x)
-                (not (has-initial x))
-                (not (polarity x)))
-           (has-f-inverse (chain-elem x)))
-  :enable (initial-p)
-  :use has-initial-when-initial-p-forward
-  :rule-classes ((:forward-chaining :trigger-terms ((has-initial x)))))
+(defrule exists-f-inverse-when-not-exists-initial
+  (implies (and (chain-elemp elem)
+                (not (exists-initial elem))
+                (not (polarity elem)))
+           (exists-f-inverse (val elem)))
+  ;; :rule-classes ((:forward-chaining :trigger-terms ((exists-initial elem))))
+  :enable initialp
+  :use (:instance exists-initial-when-initialp-forward
+                  (initial elem)))
 
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; "Stoppers" are chains with initial elements. A p-stopper is a chain whose
 ;; initial element has positive polarity (is in p), and q-stopper is one whose
 ;; initial element has negative polarity (is in q).
 
-(define in-q-stopper ((x chain-elem-p))
-  (and (has-initial x)
-       (not (polarity (get-initial x)))))
+(define in-q-stopper ((elem consp))
+  (and (exists-initial elem)
+       (not (polarity (get-initial elem)))))
 
-(defrule has-initial-when-in-q-stopper-forward
-  (implies (in-q-stopper x)
-           (has-initial x))
-  :enable (in-q-stopper)
-  :rule-classes :forward-chaining)
+(defrule exists-initial-when-in-q-stopper-forward
+  (implies (in-q-stopper elem)
+           (exists-initial elem))
+  :rule-classes :forward-chaining
+  :enable in-q-stopper)
 
 (defrule not-polarity-of-get-initial-when-in-q-stopper-forward
-  (implies (in-q-stopper x)
-           (not (polarity (get-initial x))))
-  :enable (in-q-stopper)
-  :rule-classes :forward-chaining)
+  (implies (in-q-stopper elem)
+           (not (polarity (get-initial elem))))
+  :rule-classes :forward-chaining
+  :enable in-q-stopper)
 
+(defrule exists-g-inverse-when-in-q-stopper
+  (implies (and (in-q-stopper elem)
+                (polarity elem))
+           (exists-g-inverse (val elem)))
+  :enable in-q-stopper
+  :disable exists-g-inverse-of-chain-elem-when-chain<=
+  :use (:instance exists-g-inverse-of-chain-elem-when-chain<=
+                  (x (get-initial elem))
+                  (y elem)))
 
-(defrule has-g-inverse-when-in-q-stopper-forward
-  (implies (and (in-q-stopper x)
-                (polarity x))
-           (has-g-inverse (chain-elem x)))
-  :disable (has-g-inverse-of-chain-elem-when-chain<=)
-  :use (:instance has-g-inverse-of-chain-elem-when-chain<=
-                  (x (get-initial x))
-                  (y x))
-  :enable (in-q-stopper)
-  :rule-classes ((:forward-chaining :trigger-terms ((in-q-stopper x)))))
-
-(defruled has-f-inverse-when-not-in-q-stopper-forward
-  (implies (and (chain-elem-p x)
-                (not (in-q-stopper x))
-                (not (polarity x)))
-           (has-f-inverse (chain-elem x)))
-  :enable (in-q-stopper)
-  :disable (has-f-inverse-of-chain-elem-when-chain<=)
-  :use ((:instance has-f-inverse-of-chain-elem-when-chain<=
-                   (x (get-initial x))
-                   (y x))
-        (:instance has-f-inverse-when-not-has-initial)))
-
+(defrule exists-f-inverse-when-not-in-q-stopper
+  (implies (and (chain-elemp elem)
+                (not (in-q-stopper elem))
+                (not (polarity elem)))
+           (exists-f-inverse (val elem)))
+  :enable in-q-stopper
+  :disable exists-f-inverse-of-chain-elem-when-chain<=
+  :use ((:instance exists-f-inverse-of-chain-elem-when-chain<=
+                   (x (get-initial elem))
+                   (y elem))
+        (:instance exists-f-inverse-when-not-exists-initial)))
 
 (defrule in-q-stopper-under-chain=
   (implies (chain= x y)
            (equal (in-q-stopper x)
                   (in-q-stopper y)))
-  :enable (in-q-stopper)
-  :rule-classes :congruence)
+  :rule-classes :congruence
+  :enable in-q-stopper)
