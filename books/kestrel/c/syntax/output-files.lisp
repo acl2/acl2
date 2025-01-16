@@ -417,8 +417,7 @@
     "We also return the file set that is
      either the same as the input (if @(':process') is @(':write')),
      or the result of printing (if @(':process') is @(':print'))."))
-  (b* ((irr-fileset (fileset nil))
-       ((reterr) nil irr-fileset state)
+  (b* (((reterr) nil (irr-fileset) state)
        ;; Initialize list of generated events.
        (events nil)
        ;; Print the abstract syntax if required.
@@ -479,8 +478,7 @@
      either passed as input or the result of prining,
      depending on @(':process'),
      for use by the programmatic interface."))
-  (b* ((irr-fileset (fileset nil))
-       ((reterr) '(_) irr-fileset state)
+  (b* (((reterr) '(_) (irr-fileset) state)
        ((erp tunits/files
              process
              const-files
@@ -575,8 +573,7 @@
     "We set the flag @('progp') for the programmatic interface to @('t').
      We ignore the event returned as result,
      and instead return the file set."))
-  (b* ((irr-fileset (fileset nil))
-       ((reterr) irr-fileset state)
+  (b* (((reterr) (irr-fileset) state)
        ((erp & files state)
         (output-files-process-inputs-and-gen-files+events arg args t state)))
     (retok files state)))

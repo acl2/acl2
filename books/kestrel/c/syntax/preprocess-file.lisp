@@ -259,7 +259,7 @@
      "This function preprocesses a @(see filepath-setp). See @(see
       preprocess-file) for a similar utility which operates on individuals
       files."))
-  (b* (((reterr) (fileset nil) state)
+  (b* (((reterr) (irr-fileset) state)
        ((when (emptyp files))
         (retok (fileset nil) state))
        (out (and out-dir

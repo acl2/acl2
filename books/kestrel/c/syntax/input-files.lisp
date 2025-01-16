@@ -478,7 +478,7 @@
     "We go through each path,
      and we attempt to read the file at each path,
      constructing the file set along the way."))
-  (b* (((reterr) (fileset nil) state)
+  (b* (((reterr) (irr-fileset) state)
        ((when (set::emptyp paths)) (retok (fileset nil) state))
        (path (set::head paths))
        (path-string (filepath->unwrap path))
@@ -530,11 +530,10 @@
      we return an irrelevant value for it as result.
      If the programmatic interface is being used,
      no events are actually generated."))
-  (b* ((irr-fileset (fileset nil))
-       ((reterr)
+  (b* (((reterr)
         nil
-        irr-fileset
-        irr-fileset
+        (irr-fileset)
+        (irr-fileset)
         (irr-transunit-ensemble)
         (irr-transunit-ensemble)
         (irr-transunit-ensemble)
@@ -554,7 +553,7 @@
                               (preprocess-files paths
                                                 :preprocessor preprocessor)
                             (retok read-files state)))
-       (preproc-files (if preprocessor files irr-fileset))
+       (preproc-files (if preprocessor files (irr-fileset)))
        ;; Generate :CONST-PREPROC if required.
        (events (if (and const-preproc
                         (not progp))
@@ -648,11 +647,10 @@
      this is called via the programmatic interface.
      We also return the artifacts at all the applicable stages,
      for use by the programmatic interface."))
-  (b* ((irr-fileset (fileset nil))
-       ((reterr)
+  (b* (((reterr)
         '(_)
-        irr-fileset
-        irr-fileset
+        (irr-fileset)
+        (irr-fileset)
         (irr-transunit-ensemble)
         (irr-transunit-ensemble)
         (irr-transunit-ensemble)
@@ -808,10 +806,9 @@
     "We set the flag @('progp') for the programmatic interface to @('t').
      We ignore the event returned as result,
      and just return the artifacts."))
-  (b* ((irr-fileset (fileset nil))
-       ((reterr)
-        irr-fileset
-        irr-fileset
+  (b* (((reterr)
+        (irr-fileset)
+        (irr-fileset)
         (irr-transunit-ensemble)
         (irr-transunit-ensemble)
         (irr-transunit-ensemble)
