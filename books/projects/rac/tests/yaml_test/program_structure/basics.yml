@@ -74,6 +74,8 @@
   description: "For now, program can compile without end guads"
 
 - name: function-call
+- name: function-missing
+  should_report_error: true
 - name: function-duplicate
   should_report_error: true
 
@@ -159,3 +161,5 @@
 - name: disable-opt-enable
   input: "disable_opt.cpp"
   env: {RAC_DISABLE_OPTIMIZATIONS: 'true'}
+
+- name: null-statement

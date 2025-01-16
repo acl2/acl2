@@ -1,0 +1,3 @@
+missing-function.cpp:8 (19-22): Unknown symbol `foo`
+  8 | int bar() { return foo<2, 4>() + foo2<1, 3>(); }
+    |                    ^^^
