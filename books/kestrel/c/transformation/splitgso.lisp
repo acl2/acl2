@@ -381,7 +381,7 @@
           new2
           split-members
           tunit.decls)))
-    (retok (transunit extdecls))))
+    (retok (make-transunit :decls extdecls :info tunit.info))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -671,7 +671,7 @@
           new2-type
           split-members
           tunit.decls)))
-    (retok (transunit extdecls))))
+    (retok (make-transunit :decls extdecls :info tunit.info))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

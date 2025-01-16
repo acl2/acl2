@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -1153,7 +1153,8 @@
   :returns (new-tunit transunitp)
   :short "Transform a translation unit."
   (b* (((transunit tunit) tunit))
-    (transunit (simpadd0-extdecl-list tunit.decls)))
+    (make-transunit :decls (simpadd0-extdecl-list tunit.decls)
+                    :info tunit.info))
   :hooks (:fix)
 
   ///

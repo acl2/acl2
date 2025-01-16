@@ -850,7 +850,7 @@
     :enable extdecl-unambp)
 
   (defrule transunit-unambp-of-transunit
-    (equal (transunit-unambp (transunit edecls))
+    (equal (transunit-unambp (transunit edecls info))
            (extdecl-list-unambp edecls))
     :enable transunit-unambp)
 

@@ -5982,7 +5982,7 @@
            table))
        ((erp new-edecls table)
         (valid-extdecl-list (transunit->decls tunit) table ienv)))
-    (retok (transunit new-edecls) table))
+    (retok (make-transunit :decls new-edecls :info nil) table))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

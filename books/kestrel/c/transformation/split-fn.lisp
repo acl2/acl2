@@ -408,7 +408,7 @@
   (b* (((transunit tunit) tunit)
        ((mv er extdecls)
         (split-fn-extdecl-list target-fn new-fn-name tunit.decls split-point)))
-    (mv er (transunit extdecls))))
+    (mv er (make-transunit :decls extdecls :info tunit.info))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
