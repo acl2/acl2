@@ -361,13 +361,6 @@
 
 ;; split global struct object
 
-;; TODO: qualifiers are dropped from split global struct object
-;; e.g.
-;;   static struct S s =;
-;; becomes
-;;   struct S1 s1;
-;;   struct S2 s2;
-
 (define match-designors
   ((split-members ident-listp)
    (designors designor-listp))
@@ -590,8 +583,7 @@
 
 ;; replace all instances of `s.field` with `s1.field` or `s2.field`.
 
-;; TODO: detect if global object is shadowed (via linkage information)
-;;   - also, check replacement identifiers for the same
+;; TODO: check if replacement struct objects have been shadowed
 (deftrans replace-field-access
   ;; Need the
   :extra-args
@@ -603,8 +595,17 @@
   (lambda (expr original new1 new2 split-members)
     (expr-case
       expr
-      ;; TODO: if it matches original, flag as unhandled
-      :ident (expr-fix expr)
+      :ident (b* (((unless (equal expr.ident original))
+                   (expr-fix expr))
+                  (linkage (c$::var-info->linkage
+                             (c$::coerce-var-info expr.info))))
+               (c$::linkage-case
+                 linkage
+                 :internal (prog2$ (raise "Global struct object ~x0 occurs in
+                                           illegal expression."
+                                          original)
+                                   (expr-fix expr))
+                 :otherwise (expr-fix expr)))
       :const (expr-fix expr)
       :string (expr-fix expr)
       :paren (expr-paren (replace-field-access-expr
@@ -658,11 +659,8 @@
                        expr.arg
                        :ident (b* (((unless (equal expr.arg.ident original))
                                     nil)
-                                   ((unless (c$::var-infop expr.arg.info))
-                                    (raise "Validator annotation missing or
-                                            ill-formed: ~x0"
-                                           expr.arg.info))
-                                   (linkage (c$::var-info->linkage expr.arg.info)))
+                                   (linkage (c$::var-info->linkage
+                                              (c$::coerce-var-info expr.arg.info))))
                                 (c$::linkage-case
                                   linkage
                                   :internal t
@@ -857,9 +855,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; TODO: check if validated and, if not, validate
-;; (include-book "../syntax/validator")
-;; (valid-transunit tunit t (c$::ienv-default))
 (define splitgso-transunit
   ((orig-struct identp)
    (new-struct1 identp)
@@ -967,6 +962,8 @@
        (tunits-old (acl2::constant-value const-old wrld))
        ((unless (transunit-ensemblep tunits-old))
         (reterr (msg "~x0 must be a translation unit ensemble." const-old)))
+       ((unless (c$::transunit-ensemble-annop tunits-old))
+        (reterr (msg "~x0 must be an annotated with validation information." const-old)))
        (tunits-map (transunit-ensemble->unwrap tunits-old))
        ((when (or (omap::emptyp tunits-map)
                   (not (omap::emptyp (omap::tail tunits-map)))))

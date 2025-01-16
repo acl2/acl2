@@ -1,7 +1,7 @@
 ; Rules about separateness of addresses
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2024 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,7 +11,7 @@
 
 (in-package "X86ISA") ;todo: use X package?
 
-(include-book "projects/x86isa/proofs/utilities/disjoint" :dir :system)
+(include-book "projects/x86isa/proofs/utilities/disjoint" :dir :system) ; for separate
 (include-book "projects/x86isa/machine/application-level-memory" :dir :system) ; for canonical-address-p
 (include-book "kestrel/bv/bvchop" :dir :system)
 

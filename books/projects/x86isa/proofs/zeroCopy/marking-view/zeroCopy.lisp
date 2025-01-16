@@ -3302,7 +3302,7 @@
                              acl2::loghead-identity
                              mv-nth-1-rb-and-xlate-equiv-memory-disjoint-from-paging-structures
                              member-p-canonical-address-listp
-                             xr-marking-view-mv-nth-2-las-to-pas
+                             ;; xr-marking-view-mv-nth-2-las-to-pas
                              right-shift-to-logtail
                              (:rewrite mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs)
                              (:rewrite greater-logbitp-of-unsigned-byte-p . 2)
@@ -3357,7 +3357,7 @@
                   acl2::loghead-identity
                   mv-nth-1-rb-and-xlate-equiv-memory-disjoint-from-paging-structures
                   member-p-canonical-address-listp
-                  xr-marking-view-mv-nth-2-las-to-pas
+                  ;; xr-marking-view-mv-nth-2-las-to-pas
                   right-shift-to-logtail
                   (:rewrite mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs)
                   (:rewrite greater-logbitp-of-unsigned-byte-p . 2)
@@ -3535,7 +3535,7 @@
                              acl2::loghead-identity
                              mv-nth-1-rb-and-xlate-equiv-memory-disjoint-from-paging-structures
                              member-p-canonical-address-listp
-                             xr-marking-view-mv-nth-2-las-to-pas
+                             ;; xr-marking-view-mv-nth-2-las-to-pas
                              right-shift-to-logtail
                              (:rewrite mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs)
                              (:rewrite greater-logbitp-of-unsigned-byte-p . 2)
@@ -3626,7 +3626,7 @@
                         acl2::loghead-identity
                         mv-nth-1-rb-and-xlate-equiv-memory-disjoint-from-paging-structures
                         member-p-canonical-address-listp
-                        xr-marking-view-mv-nth-2-las-to-pas
+                        ;; xr-marking-view-mv-nth-2-las-to-pas
                         right-shift-to-logtail
                         (:rewrite mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs)
                         (:rewrite greater-logbitp-of-unsigned-byte-p . 2)
@@ -3645,7 +3645,7 @@
                         pdpt-base-addr-after-mv-nth-2-las-to-pas
                         rb-and-rm-low-64-for-direct-map
                         all-xlation-governing-entries-paddrs-1g-pages-and-wb-to-page-dir-ptr-table-entry-addr
-                        xr-ctr-mv-nth-2-las-to-pas
+                        ;; xr-ctr-mv-nth-2-las-to-pas
                         direct-map-p-and-wb-disjoint-from-xlation-governing-addrs
                         (:rewrite rb-no-reads-when-zp-n)
                         (:rewrite rb-values-1g-pages-and-wb-to-page-dir-ptr-table-entry-addr)
@@ -4064,7 +4064,7 @@
        acl2::loghead-identity
        mv-nth-1-rb-and-xlate-equiv-memory-disjoint-from-paging-structures
        member-p-canonical-address-listp
-       xr-marking-view-mv-nth-2-las-to-pas
+       ;; xr-marking-view-mv-nth-2-las-to-pas
        right-shift-to-logtail
        (:rewrite mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs)
        (:rewrite greater-logbitp-of-unsigned-byte-p . 2)
@@ -4174,7 +4174,7 @@
        (:meta acl2::mv-nth-cons-meta)
        mv-nth-1-rb-and-xlate-equiv-memory-disjoint-from-paging-structures
        member-p-canonical-address-listp
-       xr-marking-view-mv-nth-2-las-to-pas
+       ;; xr-marking-view-mv-nth-2-las-to-pas
        (:rewrite mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs)
        (:rewrite x86-run-opener-not-ms-not-zp-n)
        (:rewrite x86-run-opener-not-ms-not-fault-zp-n)
@@ -4254,7 +4254,7 @@
        (:meta acl2::mv-nth-cons-meta)
        mv-nth-1-rb-and-xlate-equiv-memory-disjoint-from-paging-structures
        member-p-canonical-address-listp
-       xr-marking-view-mv-nth-2-las-to-pas
+       ;; xr-marking-view-mv-nth-2-las-to-pas
        (:rewrite mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs)
        (:rewrite x86-run-opener-not-ms-not-zp-n)
        (:rewrite x86-run-opener-not-ms-not-fault-zp-n)
@@ -4335,7 +4335,7 @@
       (:meta acl2::mv-nth-cons-meta)
       mv-nth-1-rb-and-xlate-equiv-memory-disjoint-from-paging-structures
       member-p-canonical-address-listp
-      xr-marking-view-mv-nth-2-las-to-pas
+      ;; xr-marking-view-mv-nth-2-las-to-pas
       (:rewrite mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs)
       (:rewrite x86-run-opener-not-ms-not-zp-n)
       (:rewrite x86-run-opener-not-ms-not-fault-zp-n)
@@ -4525,7 +4525,7 @@
        (:meta acl2::mv-nth-cons-meta)
        mv-nth-1-rb-and-xlate-equiv-memory-disjoint-from-paging-structures
        member-p-canonical-address-listp
-       xr-marking-view-mv-nth-2-las-to-pas
+       ;; xr-marking-view-mv-nth-2-las-to-pas
        (:rewrite mv-nth-1-las-to-pas-subset-p-disjoint-from-other-p-addrs)
        (:rewrite x86-run-opener-not-ms-not-zp-n)
        (:rewrite x86-run-opener-not-ms-not-fault-zp-n)
