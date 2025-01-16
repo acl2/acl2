@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -73,7 +73,8 @@
            validator-state->dag-of-create-certificate-next-same
            validator-state->last-of-create-certificate-next
            last-anchor-in-dag
-           last-anchor-of-create-certificate-next)
+           last-anchor-of-create-certificate-next
+           system-unequivocal-certificates-p-of-create-certificate-next)
   :cases ((equal val (certificate->author cert)))
   :use ((:instance collect-all-anchors-of-unequivocal-dag-superset
                    (vals (all-addresses systate))
@@ -151,7 +152,8 @@
            validator-state->dag-subset-store-certificate-next
            validator-state->last-of-store-certificate-next
            last-anchor-in-dag
-           last-anchor-of-store-certificate-next)
+           last-anchor-of-store-certificate-next
+           system-unequivocal-certificates-p-of-store-certificate-next)
   :use (:instance collect-all-anchors-of-unequivocal-dag-superset
                   (vals (all-addresses systate))
                   (last-anchor

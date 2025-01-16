@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -103,7 +103,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule system-unequivocal-certificates-p-when-system-state-initp
+(defruled system-unequivocal-certificates-p-when-system-state-initp
   :short "Estalishment of the invariant:
           the invariant holds on any initial system state."
   (implies (system-state-initp systate)
@@ -175,17 +175,13 @@
      which is then used as a rewrite rule
      in the proof of the main theorem."))
 
-  ;; Most of the local theorems below are enabled.
-  ;; The disabled ones are the ones used in :USE hints,
-  ;; to avoid having to disable them explicitly when the :USE hints are used.
-
   ;; The signers of both the old and new certificates are validators.
   ;; For the old certificate, this follows from
   ;; the SYSTEM-SIGNERS-ARE-VALIDATORS-P invariant.
   ;; For the new certificate, this follows from
   ;; the definition of CREATE-CERTIFICATE-POSSIBLEP.
 
-  (defrulel old-certificate-signers-are-validators
+  (defruledl old-certificate-signers-are-validators
     (implies (and (system-signers-are-validators-p systate)
                   (set::in val (correct-addresses systate))
                   (set::in cert (certificates-for-validator val systate)))
@@ -194,7 +190,7 @@
     :use system-signers-are-validators-p-necc
     :enable certificate-signers-are-validators-p)
 
-  (defrulel create-certificate-signers-are-validators
+  (defruledl create-certificate-signers-are-validators
     (implies (create-certificate-possiblep new-cert systate)
              (set::subset (certificate->signers new-cert)
                           (all-addresses systate)))
@@ -207,7 +203,7 @@
   ;; For the new certificate, this follows from
   ;; the definition of CREATE-CERTIFICATE-POSSIBLEP.
 
-  (defrulel old-certificate-signers-form-quorum
+  (defruledl old-certificate-signers-form-quorum
     (implies (and (system-signers-are-quorum-p systate)
                   (set::in val (correct-addresses systate))
                   (set::in cert (certificates-for-validator val systate)))
@@ -215,7 +211,7 @@
                     (quorum systate)))
     :enable system-signers-are-quorum-p-necc)
 
-  (defrulel create-certificate-signers-form-quorum
+  (defruledl create-certificate-signers-form-quorum
     (implies (create-certificate-possiblep new-cert systate)
              (equal (set::cardinality (certificate->signers new-cert))
                     (quorum systate)))
@@ -236,7 +232,7 @@
   ;; If the signers of two certificates are validators,
   ;; so are the common signers of the two certificates.
 
-  (defrulel common-signers-are-validators
+  (defruledl common-signers-are-validators
     (implies (and (set::subset (certificate->signers cert1)
                                (all-addresses systate))
                   (set::subset (certificate->signers cert2)
@@ -250,7 +246,7 @@
   ;; its cardinality is limited by the number of validators.
   ;; We need this fact to prove the next one after this.
 
-  (defrulel cardinality-of-union-of-validators
+  (defruledl cardinality-of-union-of-validators
     (implies (and (set::subset vals1 (all-addresses systate))
                   (set::subset vals2 (all-addresses systate)))
              (<= (set::cardinality (set::union vals1 vals2))
@@ -303,7 +299,9 @@
                 (max-faulty systate)))
     :rule-classes :linear
     :enable (set::expand-cardinality-of-intersect
-             quorum)
+             quorum
+             old-certificate-signers-are-validators
+             cardinality-of-union-of-validators)
     :use (number-validators-lower-bound-wrt-max-faulty)
     :disable (set::expand-cardinality-of-union
               number-validators-lower-bound-wrt-max-faulty))
@@ -311,7 +309,7 @@
   ;; We can now transfer the property just proved
   ;; to the common signers of the old and new certificates.
 
-  (defrulel common-signers-gt-max-faulty
+  (defruledl common-signers-gt-max-faulty
     (implies (and (system-signers-are-quorum-p systate)
                   (system-signers-are-validators-p systate)
                   (set::in val (correct-addresses systate))
@@ -321,7 +319,11 @@
                 (max-faulty systate)))
     :rule-classes :linear
     :enable (common-signers
-             nonempty-all-addresses-when-correct-validator)
+             nonempty-all-addresses-when-correct-validator
+             old-certificate-signers-are-validators
+             create-certificate-signers-are-validators
+             old-certificate-signers-form-quorum
+             create-certificate-signers-form-quorum)
     :use (:instance intersection-gt-max-faulty
                     (vals1 (certificate->signers cert))
                     (vals2 (certificate->signers new-cert))))
@@ -343,13 +345,13 @@
   ;; it returns a validator in the set,
   ;; and in fact a correct one in the system.
 
-  (defrulel pick-correct-validator-in-vals-when-not-nil
+  (defruledl pick-correct-validator-in-vals-when-not-nil
     (implies (pick-correct-validator vals systate)
              (set::in (pick-correct-validator vals systate) vals))
     :induct t
     :enable pick-correct-validator)
 
-  (defrulel pick-correct-validator-is-correct-validator-when-not-nil
+  (defruledl pick-correct-validator-is-correct-validator-when-not-nil
     (implies (pick-correct-validator vals systate)
              (set::in (pick-correct-validator vals systate)
                       (correct-addresses systate)))
@@ -374,7 +376,7 @@
   ;; the function must not return NIL.
   ;; That is, it must return a correct validator address.
 
-  (defrulel pick-correct-validator-when-fault-tolerant-p
+  (defruledl pick-correct-validator-when-fault-tolerant-p
     (implies (and (set::subset vals (all-addresses systate))
                   (fault-tolerant-p systate)
                   (> (set::cardinality vals)
@@ -390,7 +392,7 @@
   ;; We first prove that any signer of the old certificate has the pair,
   ;; and that any signer of the new certificate does not have it.
 
-  (defrulel old-signer-has-author+round
+  (defruledl old-signer-has-author+round
     (implies (and (system-signers-have-author+round-p systate)
                   (set::in val (correct-addresses systate))
                   (set::in cert (certificates-for-validator val systate))
@@ -416,7 +418,7 @@
   ;; if a validator has the pair, then it does not not have the pair
   ;; (the repetition of 'not not' is intentional).
 
-  (defrulel not-no-author+round-when-author+round
+  (defruledl not-no-author+round-when-author+round
     (implies (and (set::in signer (correct-addresses systate))
                   (signer-has-author+round-p signer author cert systate))
              (not (signer-does-not-have-author+round-p
@@ -444,7 +446,7 @@
   ;; Given the properties of those functions proved above,
   ;; and with a few hints, the theorem is proved.
 
-  (defrulel not-create-certificate-possiblep-when-existing-author+round
+  (defruledl not-create-certificate-possiblep-when-existing-author+round
     (implies (and (fault-tolerant-p systate)
                   (system-signers-are-validators-p systate)
                   (system-signers-are-quorum-p systate)
@@ -457,6 +459,15 @@
                   (equal (certificate->round new-cert)
                          (certificate->round cert)))
              (not (create-certificate-possiblep new-cert systate)))
+    :enable (old-certificate-signers-are-validators
+             create-certificate-signers-are-validators
+             common-signers-are-validators
+             common-signers-gt-max-faulty
+             pick-correct-validator-in-vals-when-not-nil
+             pick-correct-validator-is-correct-validator-when-not-nil
+             pick-correct-validator-when-fault-tolerant-p
+             old-signer-has-author+round
+             not-no-author+round-when-author+round)
     :use ((:instance in-both-signers-if-in-common-signers
                      (val (pick-correct-validator (common-signers cert new-cert)
                                                   systate))
@@ -482,7 +493,7 @@
   ;; proved just above applies,
   ;; resolving the non-trivial case of the proof below.
 
-  (defrule system-unequivocal-certificates-p-of-create-certificate-next
+  (defruled system-unequivocal-certificates-p-of-create-certificate-next
     (implies (and (system-unequivocal-certificates-p systate)
                   (system-signers-are-validators-p systate)
                   (system-signers-are-quorum-p systate)
@@ -494,7 +505,8 @@
               (create-certificate-next cert systate)))
     :expand (system-unequivocal-certificates-p
              (create-certificate-next cert systate))
-    :enable certificates-for-validator-of-create-certificate-next
+    :enable (certificates-for-validator-of-create-certificate-next
+             not-create-certificate-possiblep-when-existing-author+round)
     :use (:instance system-unequivocal-certificates-p-necc
                     (val
                      (mv-nth 0 (system-unequivocal-certificates-p-witness
@@ -508,7 +520,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule system-unequivocal-certificates-p-of-receive-certificate-next
+(defruled system-unequivocal-certificates-p-of-receive-certificate-next
   :short "Preservation of the invariant by @('receive-certificate') events."
   :long
   (xdoc::topstring
@@ -535,7 +547,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule system-unequivocal-certificates-p-of-store-certificate-next
+(defruled system-unequivocal-certificates-p-of-store-certificate-next
   :short "Preservation of the invariant by @('store-certificate') events."
   :long
   (xdoc::topstring
@@ -562,7 +574,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule system-unequivocal-certificates-p-of-advance-round-next
+(defruled system-unequivocal-certificates-p-of-advance-round-next
   :short "Preservation of the invariant by @('advance-round') events."
   :long
   (xdoc::topstring
@@ -589,7 +601,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule system-unequivocal-certificates-p-of-commit-anchors-next
+(defruled system-unequivocal-certificates-p-of-commit-anchors-next
   :short "Preservation of the invariant by @('commit-anchors') events."
   :long
   (xdoc::topstring
@@ -616,7 +628,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule system-unequivocal-certificates-p-of-timer-expires-next
+(defruled system-unequivocal-certificates-p-of-timer-expires-next
   :short "Preservation of the invariant by @('timer-expires') events."
   :long
   (xdoc::topstring
@@ -643,7 +655,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule system-unequivocal-certificates-p-of-event-next
+(defruled system-unequivocal-certificates-p-of-event-next
   :short "Preservation of the invariant by all events."
   :long
   (xdoc::topstring
