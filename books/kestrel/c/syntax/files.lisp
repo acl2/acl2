@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -13,6 +13,7 @@
 (include-book "file-paths")
 
 (include-book "kestrel/fty/byte-list" :dir :system)
+(include-book "std/util/defirrelevant" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -70,7 +71,7 @@
     :induct t
     :enable omap::keys))
 
-;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod fileset
   :short "Fixtype of file sets."
@@ -83,6 +84,13 @@
      for separation and extensibility."))
   ((unwrap filepath-filedata-map))
   :pred filesetp)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-fileset
+  :short "An irrelevant file set."
+  :type filesetp
+  :body (fileset nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
