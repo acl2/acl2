@@ -21,6 +21,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Successes
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (acl2::must-succeed*
   (c$::input-files :files ("test1.c")
                    :process :validate
@@ -51,27 +55,7 @@ int main(void) {
 
   :with-output-off nil)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(acl2::must-succeed*
-  (c$::input-files :files ("test1.c")
-                   ;; Not validating
-                   :process :disambiguate
-                   :const *old*)
-
-  (must-fail
-    (splitgso *old*
-              *new*
-              :object-name "my"
-              :new-object1 "my1"
-              :new-object2 "my2"
-              :new-type1 "s1"
-              :new-type2 "s2"
-              :split-members ("bar")))
-
-  :with-output-off nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::must-succeed*
   (c$::input-files :files ("test2.c")
@@ -94,8 +78,8 @@ int main(void) {
     :content "struct myStruct { int foo; _Bool bar; unsigned long int baz; };
 struct s1 { int foo; _Bool bar; };
 struct s2 { unsigned long int baz; };
-static struct s1 my1;
-static struct s2 my2;
+static struct s1 my1 = {.foo = 0, .bar = 0};
+static struct s2 my2 = {.baz = 42};
 int main(void) {
   int x = my1.foo + (-my2.baz);
   struct myStruct my;
@@ -106,6 +90,30 @@ int main(void) {
   :with-output-off nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Failures
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(acl2::must-succeed*
+  (c$::input-files :files ("test1.c")
+                   ;; Not validating
+                   :process :disambiguate
+                   :const *old*)
+
+  (must-fail
+    (splitgso *old*
+              *new*
+              :object-name "my"
+              :new-object1 "my1"
+              :new-object2 "my2"
+              :new-type1 "s1"
+              :new-type2 "s2"
+              :split-members ("bar")))
+
+  :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::must-succeed*
   (c$::input-files :files ("test3.c")
@@ -121,6 +129,95 @@ int main(void) {
               :new-object2 "my2"
               :new-type1 "s1"
               :new-type2 "s2"
-              :split-members ("baz")))
+              :split-members ("baz"))
+    :with-output-off nil)
+
+  :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(acl2::must-succeed*
+  (c$::input-files :files ("weird_initializer.c")
+                   :process :validate
+                   :const *old*)
+
+  ;; Unsupported initializer
+  (must-fail
+    (splitgso *old*
+              *new*
+              :object-name "my"
+              :new-object1 "my1"
+              :new-object2 "my2"
+              :new-type1 "s1"
+              :new-type2 "s2"
+              :split-members ("baz"))
+
+    :with-output-off nil)
+
+  :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(acl2::must-succeed*
+  (c$::input-files :files ("static_assert_struct_declaration.c")
+                   :process :validate
+                   :const *old*)
+
+  ;; Unsupported static assert struct declaration
+  (must-fail
+    (splitgso *old*
+              *new*
+              :object-name "my"
+              :new-object1 "my1"
+              :new-object2 "my2"
+              :new-type1 "s1"
+              :new-type2 "s2"
+              :split-members ("baz"))
+
+    :with-output-off nil)
+
+  :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(acl2::must-succeed*
+  (c$::input-files :files ("simultaneous_struct_fields.c")
+                   :process :validate
+                   :const *old*)
+
+  ;; Unsupported multiple struct declarators
+  (must-fail
+    (splitgso *old*
+              *new*
+              :object-name "my"
+              :new-object1 "my1"
+              :new-object2 "my2"
+              :new-type1 "s1"
+              :new-type2 "s2"
+              :split-members ("baz"))
+
+    :with-output-off nil)
+
+  :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(acl2::must-succeed*
+  (c$::input-files :files ("simultaneous_init_declors.c")
+                   :process :validate
+                   :const *old*)
+
+  ;; Unsupported simultaneous struct initializer/declarations
+  (must-fail
+    (splitgso *old*
+              *new*
+              :object-name "my"
+              :new-object1 "my1"
+              :new-object2 "my2"
+              :new-type1 "s1"
+              :new-type2 "s2"
+              :split-members ("baz"))
+
+    :with-output-off nil)
 
   :with-output-off nil)
