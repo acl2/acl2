@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -42,11 +42,7 @@
       This representation can be further processed,
       e.g. to perform code transformations,
       after which the macro @(tsee output-files)
-      can be used to write the transformed code to the file system.")
-
-    (xdoc::p
-     "This macro currently does not perform very thorough input validation,
-      but we plan to improve that."))
+      can be used to write the transformed code to the file system."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
