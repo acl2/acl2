@@ -4,14 +4,11 @@ struct myStruct {
   unsigned long int baz;
 };
 
-static struct myStruct my = {
-  .foo = 0,
-  .bar = 0,
-  .baz = 42
-};
+static struct myStruct my = {0};
 
 int main(void) {
   int x = my.foo + (-my.baz);
+  int size = sizeof(my);
   struct myStruct my;
   return my.foo + (-my.baz);
 }
