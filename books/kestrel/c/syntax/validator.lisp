@@ -5769,9 +5769,7 @@
 
 (define valid-transunit ((tunit transunitp) (gcc booleanp) (ienv ienvp))
   :guard (transunit-unambp tunit)
-  :returns (mv erp
-               (new-tunit transunitp)
-               (table valid-tablep))
+  :returns (mv erp (new-tunit transunitp))
   :short "Validate a translation unit."
   :long
   (xdoc::topstring
@@ -5790,14 +5788,10 @@
      all the referenced names must be declared in the translation unit,
      so it is appropriate to start with the initial validation table.")
    (xdoc::p
-    "If validation is successful, we return the final validation table.
-     For now we do no make any use of the returned table,
-     but in the future we should use it to validate
-     the externally linked identifiers across
-     different translation units of a translation unit ensemble.
-     In fact, we should probably extend this validation function
-     to trim the returned validation table
-     so it only has entries for identifiers with external linkage.")
+    "If validation is successful,
+     we add the final validation table to
+     the information slot of the translation unit,
+     i.e. we annotate the translation unit with its final validation table.")
    (xdoc::p
     "For each GCC function, the associated information consists of
      the function type, external linkage, and defined status.
@@ -5807,7 +5801,7 @@
      For each GCC object, the associated information consists of
      the unknown type, external linkage, and defined status;
      the rationale for the latter two is the same as for functions."))
-  (b* (((reterr) (irr-transunit) (irr-valid-table))
+  (b* (((reterr) (irr-transunit))
        (table (valid-init-table))
        (table
          (if gcc
@@ -5982,7 +5976,7 @@
            table))
        ((erp new-edecls table)
         (valid-extdecl-list (transunit->decls tunit) table ienv)))
-    (retok (make-transunit :decls new-edecls :info nil) table))
+    (retok (make-transunit :decls new-edecls :info table)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5998,12 +5992,11 @@
    (xdoc::p
     "We validate each translation unit.
      As mentioned in @(tsee valid-transunit),
-     for now we discard the result validation tables,
-     but in the future we should cross-check them.")
-   (xdoc::p
-    "If validation is successful, we return no information (@('nil')).
-     Otherwise, we return an error message,
-     which a caller can show to the user in an event macro."))
+     we annotate the translation unit with the finval validation table.
+     For now we do no make any use of the returned table,
+     but in the future we should use it to validate
+     the externally linked identifiers across
+     different translation units of a translation unit ensemble."))
   (b* (((reterr) (irr-transunit-ensemble))
        ((erp new-map)
         (valid-transunit-ensemble-loop
@@ -6021,7 +6014,7 @@
      (b* (((reterr) nil)
           ((when (omap::emptyp map)) (retok nil))
           (path (omap::head-key map))
-          ((erp new-tunit &) (valid-transunit (omap::head-val map) gcc ienv))
+          ((erp new-tunit) (valid-transunit (omap::head-val map) gcc ienv))
           ((erp new-map)
            (valid-transunit-ensemble-loop (omap::tail map) gcc ienv)))
        (retok (omap::update path new-tunit new-map)))
