@@ -42,27 +42,31 @@
       This representation can be further processed,
       e.g. to perform code transformations,
       after which the macro @(tsee output-files)
-      can be used to write the transformed code to the file system."))
+      can be used to write the transformed code to the file system.")
+
+    (xdoc::p
+     "The (non-event) macro @(tsee input-files-prog) provides
+      a programmatic interface to the functionality of @('input-files')."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::evmac-section-form
 
     (xdoc::codeblock
-     "(input-files :files              ...  ; no default"
-     "             :preprocess         ...  ; default nil"
-     "             :process            ...  ; default :disambiguate"
-     "             :const              ...  ; no default"
-     "             :const-files        ...  ; default nil"
-     "             :const-preproc      ...  ; default nil"
-     "             :const-parsed       ...  ; default nil"
-     "             :const-disamb       ...  ; default nil"
-     "             :gcc                ...  ; default nil"
-     "             :short-bytes        ...  ; default 2"
-     "             :int-bytes          ...  ; default 4"
-     "             :long-bytes         ...  ; default 8"
-     "             :long-long-bytes    ...  ; default 8"
-     "             :plain-char-signed  ...  ; default nil"
+     "(input-files :files             ...  ; no default"
+     "             :preprocess        ...  ; default nil"
+     "             :process           ...  ; default :validate"
+     "             :const             ...  ; no default"
+     "             :const-files       ...  ; default nil"
+     "             :const-preproc     ...  ; default nil"
+     "             :const-parsed      ...  ; default nil"
+     "             :const-disamb      ...  ; default nil"
+     "             :gcc               ...  ; default nil"
+     "             :short-bytes       ...  ; default 2"
+     "             :int-bytes         ...  ; default 4"
+     "             :long-bytes        ...  ; default 8"
+     "             :long-long-bytes   ...  ; default 8"
+     "             :plain-char-signed ...  ; default nil"
      "  )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
