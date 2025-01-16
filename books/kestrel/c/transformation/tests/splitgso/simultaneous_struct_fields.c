@@ -1,7 +1,6 @@
 struct myStruct {
-  int foo;
-  _Bool bar;
-  unsigned long int baz;
+  int foo, bar;
+  unsigned int baz;
 };
 
 static struct myStruct my = {
@@ -12,6 +11,7 @@ static struct myStruct my = {
 
 int main(void) {
   int x = my.foo + (-my.baz);
+  int size = sizeof(my);
   struct myStruct my;
   return my.foo + (-my.baz);
 }
