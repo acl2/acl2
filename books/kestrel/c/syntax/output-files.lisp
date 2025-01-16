@@ -32,14 +32,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled symbol-listp-of-strip-cars-when-symbol-alistp
-  (implies (symbol-alistp alist)
-           (symbol-listp (strip-cars alist)))
-  :induct t
-  :enable symbol-alistp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defrulel all-bytep-when-byte-listp
   (implies (byte-listp x)
            (acl2::all-bytep x))
