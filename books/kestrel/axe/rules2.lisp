@@ -1,7 +1,7 @@
 ; Mixed rules 2
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -2063,7 +2063,7 @@
 ;; ;bozo lots more like this!
 ;; (defthm bvor-non-negative-tp
 ;;   (<= 0 (bvor size a b))
-;;   :rule-classes (:type-prescription)
+;;   :rule-classes :type-prescription
 ;;   :hints (("Goal" :in-theory (e/d (bvor)))))
 
 ;bozo move up

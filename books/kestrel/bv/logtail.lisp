@@ -229,7 +229,7 @@
 (defthm <=-of-logtail-same-linear
   (implies (natp x)
            (<= (logtail n x) x))
-  :rule-classes ((:linear))
+  :rule-classes :linear
   :hints (("Goal" :in-theory (enable logtail <-of-floor-arg1))))
 
 ;can loop with REWRITE-UNSIGNED-BYTE-P-WHEN-TERM-SIZE-IS-LARGER
@@ -266,7 +266,7 @@
 (defthm logtail-non-negative-linear
   (implies (<= 0 x)
            (<= 0 (logtail n x)))
-  :rule-classes ((:linear)))
+  :rule-classes :linear)
 
 (defthmd logtail-becomes-ash
   (implies (natp n)

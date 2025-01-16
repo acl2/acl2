@@ -267,7 +267,7 @@
 
 ;; for some reason the 128 and 256 functions are not as nice as the others
 ;; we assume app-view here to be able to get a nice, simple RHS
-;; also simplified the MBEs/MBTs and remove the THEs
+;; also simplified the MBEs/MBTs and removed the THEs
 (defthmd rml128-when-app-view
   (implies (app-view x86)
            (equal (rml128 lin-addr r-x x86)
@@ -276,7 +276,6 @@
                         (if (canonical-address-p 15+lin-addr)
                             (rb 16 lin-addr r-x x86)
                           (mv 'rml128 0 x86)))
-
                     (mv 'rml128 0 x86))))
   :hints (("Goal" :in-theory (enable rml128))))
 

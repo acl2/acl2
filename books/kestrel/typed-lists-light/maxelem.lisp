@@ -171,7 +171,7 @@
 (defthm maxelem-car-linear
   (implies (consp x)
            (<= (car x) (maxelem x)))
-  :rule-classes ((:rewrite)
+  :rule-classes (:rewrite ; todo: split out
                  (:linear :trigger-terms ((maxelem lst)))))
 
 ;BOZO seems gross

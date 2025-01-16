@@ -13,6 +13,7 @@
 
 (include-book "../syntax/abstract-syntax-operations")
 (include-book "../syntax/unambiguity")
+(include-book "../syntax/validation-information")
 (include-book "deftrans")
 (include-book "utilities/free-vars")
 
@@ -40,22 +41,28 @@
      The transformation splits it into two objects, of two new struct types,
      each with a subset of the original struct members,
      which are divided between the two new struct types (and objects).
-     References to (members of) the original object
-     are replaced with references to one or the other object.")
+     Member access expressions are replaced with new access expressions with
+     the original object replaced with one of the new objects.
+     The transformation will fail if the original object appears in any other
+     sorts of expressions.")
    (xdoc::p
-    "Currently this transformation operates on a single translation unit.")
+    "This transformation expects translation unit ensembles to be annotated
+     with validation information.
+     See the @(see c$::validator).")
    (xdoc::section
-    "Status"
-    (xdoc::p
-     "This transformation is a work in progress. It makes a number of
-      simplifying assumptions, some of which are still not checked. In
-      particular, it assumes:")
+    "Current Limitations"
     (xdoc::ul
-     (xdoc::li "members of the struct type are each declared independently.")
-     (xdoc::li "each element of a struct initializer list features just one designation.")
-     (xdoc::li "the file-scope struct variable is not shadowed."))
-    (xdoc::p
-     "Other assumptions are noted in inline comments within the source.")))
+     (xdoc::li "The transformation currently operates on a single translation
+                unit.")
+     (xdoc::li "Fields in a struct type declaration must not share a type
+                specification (e.g., @('int x, y;') is currently unsupported,
+                where @('int x; int y;') <i>is</i> supported)")
+     (xdoc::li "Similarly, struct object declarations must not share a type
+                specification (e.g. @('struct myStruct foo, bar;') is currently
+                unsupported, while @('struct myStruct foo; struct myStuct
+                bar;') is allowed.)")
+     (xdoc::li "The names of the new struct objects and their types are not yet
+                checked for uniqueness/shadowing."))))
   :order-subtopics t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -86,7 +93,6 @@
                (type decl-spec-listp))
   (extdecl-case
    extdecl
-   ;; TODO: generalize to include functions?
    :fundef (mv nil nil)
    :decl (decl-case
            extdecl.unwrap
@@ -104,7 +110,7 @@
 (define get-decl-specs-of-global-extdecl-list
   ((ident identp)
    (extdecls extdecl-listp))
-  :returns (mv er
+  :returns (mv erp
                (type decl-spec-listp))
   (b* (((reterr) nil)
        ((when (endp extdecls))
@@ -118,7 +124,7 @@
 (define get-decl-specs-of-global-transunit
   ((ident identp)
    (tunit transunitp))
-  :returns (mv er
+  :returns (mv erp
                (type decl-spec-listp))
   (b* (((transunit tunit) tunit))
     (get-decl-specs-of-global-extdecl-list ident tunit.decls)))
@@ -153,7 +159,7 @@
 (define get-type-spec-of-global-transunit
   ((ident identp)
    (tunit transunitp))
-  :returns (mv er
+  :returns (mv erp
                (type type-specp))
   (b* (((reterr) (irr-type-spec))
        ((erp decl-specs)
@@ -167,7 +173,7 @@
 (define get-struct-type-name-of-global-transunit
   ((ident identp)
    (tunit transunitp))
-  :returns (mv er
+  :returns (mv erp
                (name identp))
   (b* (((reterr) (c$::irr-ident))
        ((erp type-spec)
@@ -185,49 +191,64 @@
 
 ;; split global struct type
 
-;; TODO: get all idents, not just the first
 (define structdeclor-list-get-ident
   ((structdeclors structdeclor-listp))
-  :returns (ident? ident-optionp)
-  (b* (((when (endp structdeclors))
-        nil)
+  :returns (mv erp
+               (ident identp))
+  (b* (((reterr) (c$::irr-ident))
+       ((when (endp structdeclors))
+        (reterr (msg "Syntax error: there should be at least one struct
+                      declarator in the struct declaration.")))
+       ((unless (endp (rest structdeclors)))
+        (reterr (msg "Multiple struct declarators in a single struct
+                      declaration are unsupported: ~x0"
+                     structdeclors)))
        ((structdeclor structdeclor) (first structdeclors))
+       ((when structdeclor.expr?)
+        (reterr (msg "Bit-field struct declarator is unsupported: ~x0"
+                     structdeclor.expr?)))
        ((unless structdeclor.declor?)
-        (structdeclor-list-get-ident (rest structdeclors)))
-       (ident? (declor->ident structdeclor.declor?)))
-    (or ident?
-        (structdeclor-list-get-ident (rest structdeclors)))))
+        (reterr (msg "Syntax error: a non-bit-field struct declarator must have
+                      a declarator: ~x0"
+                     structdeclor))))
+    (retok (declor->ident structdeclor.declor?))))
 
 (define structdecl-member-in-listp
   ((names ident-listp)
    (structdecl structdeclp))
-  (declare (xargs :type-prescription
-                  (booleanp (structdecl-member-in-listp names structdecl))))
-  (structdecl-case
-   structdecl
-   ;; TODO: need to check if the member has more than one ident, and handle
-   ;;   appropriately (or at least error).
-   :member (b* ((ident? (structdeclor-list-get-ident structdecl.declor)))
-             (and ident?
-                  (member-equal ident? names)
-                  t))
-   :otherwise nil))
+  :returns (mv erp
+               (yes/no booleanp
+                       :rule-classes :type-prescription))
+  (b* (((reterr) nil))
+    (structdecl-case
+      structdecl
+      ;; TODO: properly handle struct declarations with multiple declarators
+      ;;   instead of returning error.
+      :member (b* (((erp ident)
+                    (structdeclor-list-get-ident structdecl.declor)))
+                (retok (and (member-equal ident names) t)))
+      :statassert (reterr (msg "Static assertion structure declaration
+                                unsupported: ~x0"
+                               structdecl.unwrap))
+      :empty (retok nil))))
 
 (define split-structdecl-list
   ((split-members ident-listp)
    (structdecls structdecl-listp))
-  :returns (mv (structdecls1 structdecl-listp)
+  :returns (mv erp
+               (structdecls1 structdecl-listp)
                (structdecls2 structdecl-listp))
-  (b* (((when (endp structdecls))
-        (mv nil nil))
+  (b* (((reterr) nil nil)
+       ((when (endp structdecls))
+        (retok nil nil))
        (structdecl (structdecl-fix (first structdecls)))
-       (split
-         (structdecl-member-in-listp split-members structdecl))
-       ((mv structdecls1 structdecls2)
+       ((erp split)
+        (structdecl-member-in-listp split-members structdecl))
+       ((erp structdecls1 structdecls2)
         (split-structdecl-list split-members (rest structdecls))))
     (if split
-        (mv structdecls1 (cons structdecl structdecls2))
-      (mv (cons structdecl structdecls1) structdecls2))))
+        (retok structdecls1 (cons structdecl structdecls2))
+      (retok (cons structdecl structdecls1) structdecls2))))
 
 (define split-global-struct-type-decl
   ((original identp)
@@ -235,46 +256,49 @@
    (new2 identp)
    (split-members ident-listp)
    (decl declp))
-  :returns (mv found
+  :returns (mv erp
+               (found booleanp
+                      :rule-classes :type-prescription)
                (decls decl-listp))
-  (decl-case
-   decl
-   :decl
-   (b* ((type-spec? (type-spec-from-dec-specs decl.specs))
-        ((mv type-match remanining-struct-decls split-struct-decls)
-         (if (and type-spec?
-                  (endp decl.init))
-             (type-spec-case
-               type-spec?
-               :struct (b* (((strunispec strunispec) type-spec?.spec)
-                            (match
-                              (equal strunispec.name original))
-                            ((unless match)
-                             (mv nil nil nil))
-                            ((mv remanining-struct-decls split-struct-decls)
-                             ;; TODO: also check that split-members are
-                             ;;   all in the struct.
-                             (split-structdecl-list split-members strunispec.members)))
-                         (mv t remanining-struct-decls split-struct-decls))
-               :otherwise (mv nil nil nil))
-           (mv nil nil nil))))
-     (if type-match
-         (mv t
-             (list (decl-fix decl)
-                   (c$::make-decl-decl
-                     :specs (list (c$::decl-spec-typespec
-                                    (c$::type-spec-struct
-                                      (c$::make-strunispec
-                                        :name new1
-                                        :members remanining-struct-decls)))))
-                   (c$::make-decl-decl
-                     :specs (list (c$::decl-spec-typespec
-                                    (c$::type-spec-struct
-                                      (c$::make-strunispec
-                                        :name new2
-                                        :members split-struct-decls)))))))
-       (mv nil (list (decl-fix decl)))))
-   :statassert (mv nil (list (decl-fix decl)))))
+  (b* (((reterr) nil nil))
+    (decl-case
+      decl
+      :decl
+      (b* ((type-spec? (type-spec-from-dec-specs decl.specs))
+           ((erp type-match remanining-struct-decls split-struct-decls)
+            (b* (((reterr) nil nil nil)
+                 ((unless (and type-spec?
+                               (endp decl.init)))
+                  (retok nil nil nil)))
+              (type-spec-case
+                type-spec?
+                :struct (b* (((strunispec strunispec) type-spec?.spec)
+                             (match (equal strunispec.name original))
+                             ((unless match)
+                              (retok nil nil nil))
+                             ((erp remanining-struct-decls split-struct-decls)
+                              ;; TODO: also check that split-members are
+                              ;;   all in the struct.
+                              (split-structdecl-list split-members strunispec.members)))
+                          (retok t remanining-struct-decls split-struct-decls))
+                :otherwise (retok nil nil nil))))
+           ((unless type-match)
+            (retok nil (list (decl-fix decl)))))
+        (retok t
+               (list (decl-fix decl)
+                     (c$::make-decl-decl
+                       :specs (list (c$::decl-spec-typespec
+                                      (c$::type-spec-struct
+                                        (c$::make-strunispec
+                                          :name new1
+                                          :members remanining-struct-decls)))))
+                     (c$::make-decl-decl
+                       :specs (list (c$::decl-spec-typespec
+                                      (c$::type-spec-struct
+                                        (c$::make-strunispec
+                                          :name new2
+                                          :members split-struct-decls))))))))
+      :statassert (retok nil (list (decl-fix decl))))))
 
 (define decl-list-to-extdecl-list
   ((decls decl-listp))
@@ -290,22 +314,25 @@
    (new2 identp)
    (split-members ident-listp)
    (extdecl extdeclp))
-  :returns (mv found
+  :returns (mv erp
+               (found booleanp
+                      :rule-classes :type-prescription)
                (extdecls extdecl-listp))
-  (extdecl-case
-   extdecl
-   :fundef (mv nil (list (extdecl-fix extdecl)))
-   :decl (b* (((mv found decls)
-               (split-global-struct-type-decl
-                 original
-                 new1
-                 new2
-                 split-members
-                 extdecl.unwrap)))
-           (mv found
-               (decl-list-to-extdecl-list decls)))
-   :empty (mv nil (list (extdecl-fix extdecl)))
-   :asm (mv nil (list (extdecl-fix extdecl)))))
+  (b* (((reterr) nil nil))
+    (extdecl-case
+      extdecl
+      :fundef (retok nil (list (extdecl-fix extdecl)))
+      :decl (b* (((erp found decls)
+                  (split-global-struct-type-decl
+                    original
+                    new1
+                    new2
+                    split-members
+                    extdecl.unwrap)))
+              (retok found
+                     (decl-list-to-extdecl-list decls)))
+      :empty (retok nil (list (extdecl-fix extdecl)))
+      :asm (retok nil (list (extdecl-fix extdecl))))))
 
 (define split-global-struct-type-extdecl-list
   ((original identp)
@@ -313,12 +340,12 @@
    (new2 identp)
    (split-members ident-listp)
    (extdecls extdecl-listp))
-  :returns (mv er
+  :returns (mv erp
                (extdecls extdecl-listp))
   (b* (((reterr) nil)
        ((when (endp extdecls))
         (retok nil))
-       ((mv found new-extdecls1)
+       ((erp found new-extdecls1)
         (split-global-struct-type-extdecl
           original
           new1
@@ -343,7 +370,7 @@
    (new2 identp)
    (split-members ident-listp)
    (tunit transunitp))
-  :returns (mv er
+  :returns (mv erp
                (new-tunit transunitp))
   (b* (((reterr) (c$::irr-transunit))
        ((transunit tunit) tunit)
@@ -360,93 +387,146 @@
 
 ;; split global struct object
 
-;; TODO: qualifiers are dropped from split global struct object
-;; e.g.
-;;   static struct S s =;
-;; becomes
-;;   struct S1 s1;
-;;   struct S2 s2;
-
 (define match-designors
   ((split-members ident-listp)
    (designors designor-listp))
-  (declare (xargs :type-prescription (booleanp (match-designors split-members designors))))
-  ;; TODO: right now this only handles single-designation initializers. Needs
-  ;;   to be expanded to separate multi-designation initializers.
-  ;;   - Also, what about non-dot initializers?
-  (b* (((when (or (endp designors)
-                  (not (endp (rest designors)))))
-        nil)
+  :returns (mv erp
+               (match booleanp
+                      :rule-classes :type-prescription))
+  (b* (((reterr) nil)
+       ((when (endp designors))
+        (reterr
+          (msg "Initializer elements without designations are unsupported.")))
+       ((unless (endp (rest designors)))
+        (reterr
+          (msg "Initializer element with mutiple designations is unuspported:
+                ~x0"
+               designors)))
        (designor (first designors)))
     (designor-case
       designor
-      :sub nil
-      :dot (and (member-equal designor.name split-members) t))))
+      ;; :sub case should be ill-typed, since this function should only be
+      ;; called on objects with struct types (not array types).
+      :sub (reterr (msg "Array index initializer element is unsupported: ~x0"
+                        designor))
+      :dot (retok (and (member-equal designor.name split-members) t)))))
 
 (define split-desiniter-list
   ((split-members ident-listp)
    (desiniters desiniter-listp))
-  :returns (mv (desiniter-list1 desiniter-listp)
+  :returns (mv erp
+               (desiniter-list1 desiniter-listp)
                (desiniter-list2 desiniter-listp))
-  (b* (((when (endp desiniters))
-        (mv nil nil))
-       ((mv desiniters1 desiniters2)
+  (b* (((reterr) nil nil)
+       ((when (endp desiniters))
+        (retok nil nil))
+       ((erp desiniters1 desiniters2)
         (split-desiniter-list split-members (rest desiniters)))
-       ((desiniter desiniter) (desiniter-fix (first desiniters))))
-    (if (match-designors split-members desiniter.designors)
-        (mv desiniters1 (cons desiniter desiniters2))
-      (mv (cons desiniter desiniters1) desiniters2))))
+       ((desiniter desiniter) (desiniter-fix (first desiniters)))
+       ((erp match)
+        (match-designors split-members desiniter.designors)))
+    (if match
+        (retok desiniters1 (cons desiniter desiniters2))
+      (retok (cons desiniter desiniters1) desiniters2))))
 
 (define split-struct-initer
   ((split-members ident-listp)
    (initer initerp))
-  :returns (mv (initer-option1 initer-optionp)
+  :returns (mv erp
+               (initer-option1 initer-optionp)
                (initer-option2 initer-optionp))
-  (initer-case
-   initer
-   ;; TODO
-   :single (mv nil nil)
-   :list (b* (((mv elems1 elems2)
-               (split-desiniter-list split-members initer.elems)))
-           (mv (c$::make-initer-list
-                 :elems elems1
-                 :final-comma initer.final-comma)
-               (c$::make-initer-list
-                 :elems elems2
-                 :final-comma initer.final-comma)))))
+  (b* (((reterr) nil nil))
+    (initer-case
+      initer
+      :single (reterr
+                (msg "Assignment expression initializers are unsupported: ~x0"
+                     initer.expr))
+      :list (b* (((erp elems1 elems2)
+                  (split-desiniter-list split-members initer.elems)))
+              (retok (c$::make-initer-list
+                       :elems elems1
+                       :final-comma initer.final-comma)
+                     (c$::make-initer-list
+                       :elems elems2
+                       :final-comma initer.final-comma))))))
+
+(defines match-simple-declor-ident
+  :parents (splitgso-implementation)
+  :short "Matches against a simple declarator."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+     "A simple declarator is an identifier, potentially in nested
+      parentheses. It does not have any pointer qualifiers."))
+
+  (define match-simple-declor-ident
+    ((declor declorp)
+     (ident identp))
+    (declare (xargs
+               :type-prescription (booleanp (match-simple-declor-ident declor ident))))
+    (and (endp (c$::declor->pointers declor))
+         (match-simple-dirdeclor-ident (declor->direct declor) ident))
+    :measure (declor-count declor))
+
+  (define match-simple-dirdeclor-ident
+    ((dirdeclor dirdeclorp)
+     (ident identp))
+    (declare
+     (xargs
+       :type-prescription (booleanp
+                            (match-simple-dirdeclor-ident dirdeclor ident))))
+    (dirdeclor-case
+     dirdeclor
+     :ident (equal dirdeclor.unwrap ident)
+     :paren (match-simple-declor-ident dirdeclor.unwrap ident)
+     :array nil
+     :array-static1 nil
+     :array-static2 nil
+     :array-star nil
+     :function-params nil
+     :function-names nil)
+    :measure (dirdeclor-count dirdeclor))
+
+  :hints (("Goal" :in-theory (enable o< o-finp))))
 
 (define split-struct-initdeclor
   ((target identp)
    (split-members ident-listp)
    (initdeclor initdeclorp))
-  :returns (mv (match booleanp
+  :returns (mv erp
+               ;; TODO: is the generated type-prescription reasonable?
+               (match booleanp
                       :rule-classes :type-prescription)
                (initer-option1 initer-optionp)
                (initer-option2 initer-optionp))
-  (b* (((initdeclor initdeclor) initdeclor)
-       ;; TODO: check initdeclor.declor.pointers is nil?
-       (ident (declor->ident initdeclor.declor))
-       ((unless (equal ident target))
-        (mv nil nil nil))
+  (b* (((reterr) nil nil nil)
+       ((initdeclor initdeclor) initdeclor)
+       ((unless (match-simple-declor-ident initdeclor.declor target))
+        (retok nil nil nil))
        ((unless initdeclor.init?)
-        (mv t nil nil))
-       ((mv initer-option1 initer-option2)
+        (retok t nil nil))
+       ((erp initer-option1 initer-option2)
         (split-struct-initer split-members initdeclor.init?)))
-    (mv t initer-option1 initer-option2)))
+    (retok t initer-option1 initer-option2)))
 
 (define split-struct-initdeclors
   ((target identp)
    (split-members ident-listp)
    (initdeclors initdeclor-listp))
-  :returns (mv (match booleanp
+  :returns (mv erp
+               (match booleanp
                       :rule-classes :type-prescription)
                (initer-option1 initer-optionp)
                (initer-option2 initer-optionp))
   ;; Only accepts singletons for now
   ;; TODO: broaden this
-  (if (or (endp initdeclors)
-          (not (endp (rest initdeclors))))
-      (mv nil nil nil)
+  (b* (((reterr) nil nil nil)
+       ((when (endp initdeclors))
+        (retok nil nil nil))
+       ((unless (endp (rest initdeclors)))
+        (reterr
+          (msg "Multiple initializer declarators are not supported: ~x0"
+               initdeclors))))
     (split-struct-initdeclor target
                              split-members
                              (first initdeclors))))
@@ -459,40 +539,50 @@
    (new2-type identp)
    (split-members ident-listp)
    (decl declp))
-  :returns (mv found
+  :returns (mv erp
+               (found booleanp
+                      :rule-classes :type-prescription)
                (decls decl-listp))
-  (decl-case
-   decl
-   :decl (b* ((type-spec? (type-spec-from-dec-specs decl.specs))
-              ((unless type-spec?)
-               (mv nil (list (decl-fix decl))))
-              ((mv match initer-option1 initer-option2)
-               (type-spec-case
-                 type-spec?
-                 :struct (split-struct-initdeclors original split-members decl.init)
-                 :otherwise (mv nil nil nil)))
-              ((unless match)
-               (mv nil (list (decl-fix decl)))))
-           (mv t
-               (list (c$::make-decl-decl
-                       :specs (list (c$::decl-spec-typespec
-                                      (c$::type-spec-struct
-                                        (c$::make-strunispec
-                                          :name new1-type))))
-                       :init (list (c$::make-initdeclor
-                                     :declor (c$::make-declor
-                                               :direct (c$::dirdeclor-ident new1))
-                                     :init? initer-option1)))
-                     (c$::make-decl-decl
-                       :specs (list (c$::decl-spec-typespec
-                                      (c$::type-spec-struct
-                                        (c$::make-strunispec
-                                          :name new2-type))))
-                       :init (list (c$::make-initdeclor
-                                     :declor (c$::make-declor
-                                               :direct (c$::dirdeclor-ident new2))
-                                     :init? initer-option2))))))
-   :statassert (mv nil (list (decl-fix decl)))))
+  (b* (((reterr) nil nil))
+    (decl-case
+      decl
+      :decl
+      (b* ((type-spec? (type-spec-from-dec-specs decl.specs))
+           ((unless type-spec?)
+            (retok nil (list (decl-fix decl))))
+           ;; TODO: check that the object is indeed file-scope, as assumed
+           ((erp match initer-option1 initer-option2)
+            (type-spec-case
+              type-spec?
+              :struct (split-struct-initdeclors original split-members decl.init)
+              :otherwise (mv nil nil nil nil)))
+           ((unless match)
+            (retok nil (list (decl-fix decl)))))
+        (retok
+          t
+          (list (c$::make-decl-decl
+                  :specs (list (c$::decl-spec-stoclass
+                                 (c$::stor-spec-static))
+                               (c$::decl-spec-typespec
+                                 (c$::type-spec-struct
+                                   (c$::make-strunispec
+                                     :name new1-type))))
+                  :init (list (c$::make-initdeclor
+                                :declor (c$::make-declor
+                                          :direct (c$::dirdeclor-ident new1))
+                                :init? initer-option1)))
+                (c$::make-decl-decl
+                  :specs (list (c$::decl-spec-stoclass
+                                 (c$::stor-spec-static))
+                               (c$::decl-spec-typespec
+                                 (c$::type-spec-struct
+                                   (c$::make-strunispec
+                                     :name new2-type))))
+                  :init (list (c$::make-initdeclor
+                                :declor (c$::make-declor
+                                          :direct (c$::dirdeclor-ident new2))
+                                :init? initer-option2))))))
+      :statassert (retok nil (list (decl-fix decl))))))
 
 (define split-global-struct-obj-extdecl
   ((original identp)
@@ -502,24 +592,27 @@
    (new2-type identp)
    (split-members ident-listp)
    (extdecl extdeclp))
-  :returns (mv found
+  :returns (mv erp
+               (found booleanp
+                      :rule-classes :type-prescription)
                (extdecls extdecl-listp))
-  (extdecl-case
-   extdecl
-   :fundef (mv nil (list (extdecl-fix extdecl)))
-   :decl (b* (((mv found decls)
-               (split-global-struct-obj-decl
-                 original
-                 new1
-                 new2
-                 new1-type
-                 new2-type
-                 split-members
-                 extdecl.unwrap)))
-           (mv found
-               (decl-list-to-extdecl-list decls)))
-   :empty (mv nil (list (extdecl-fix extdecl)))
-   :asm (mv nil (list (extdecl-fix extdecl)))))
+  (b* (((reterr) nil nil))
+    (extdecl-case
+      extdecl
+      :fundef (retok nil (list (extdecl-fix extdecl)))
+      :decl (b* (((erp found decls)
+                  (split-global-struct-obj-decl
+                    original
+                    new1
+                    new2
+                    new1-type
+                    new2-type
+                    split-members
+                    extdecl.unwrap)))
+              (retok found
+                     (decl-list-to-extdecl-list decls)))
+      :empty (retok nil (list (extdecl-fix extdecl)))
+      :asm (retok nil (list (extdecl-fix extdecl))))))
 
 (define split-global-struct-obj-extdecl-list
   ((original identp)
@@ -529,12 +622,12 @@
    (new2-type identp)
    (split-members ident-listp)
    (extdecls extdecl-listp))
-  :returns (mv er
+  :returns (mv erp
                (extdecls extdecl-listp))
   (b* (((reterr) nil)
        ((when (endp extdecls))
-        (retok nil))
-       ((mv found new-extdecls1)
+        (reterr (msg "Global struct object not found: ~x0" original)))
+       ((erp found new-extdecls1)
         (split-global-struct-obj-extdecl
           original
           new1
@@ -565,7 +658,7 @@
    (new2-type identp)
    (split-members ident-listp)
    (tunit transunitp))
-  :returns (mv er
+  :returns (mv erp
                (new-tunit transunitp))
   (b* (((reterr) (c$::irr-transunit))
        ((transunit tunit) tunit)
@@ -584,260 +677,278 @@
 
 ;; replace all instances of `s.field` with `s1.field` or `s2.field`.
 
-;; TODO: detect if global object is shadowed (via linkage information)
-;;   - also, check replacement identifiers for the same
-(deftrans replace-field-access
-  ;; Need the
-  :extra-args
-  ((original identp)
-   (new1 identp)
-   (new2 identp)
-   (split-members ident-listp))
-  :expr
-  (lambda (expr original new1 new2 split-members)
-    (expr-case
-      expr
-      ;; TODO: if it matches original, flag as unhandled
-      :ident (expr-fix expr)
-      :const (expr-fix expr)
-      :string (expr-fix expr)
-      :paren (expr-paren (replace-field-access-expr
-                           expr.inner
-                           original
-                           new1
-                           new2
-                           split-members))
-      :gensel (make-expr-gensel
-                :control (replace-field-access-expr
-                           expr.control
-                           original
-                           new1
-                           new2
-                           split-members)
-                :assocs (replace-field-access-genassoc-list
-                          expr.assocs
-                          original
-                          new1
-                          new2
-                          split-members))
-      :arrsub (make-expr-arrsub
-                :arg1 (replace-field-access-expr
-                        expr.arg1
-                        original
-                        new1
-                        new2
-                        split-members)
-                :arg2 (replace-field-access-expr
-                        expr.arg2
-                        original
-                        new1
-                        new2
-                        split-members))
-      :funcall (make-expr-funcall
-                 :fun (replace-field-access-expr
-                        expr.fun
-                        original
-                        new1
-                        new2
-                        split-members)
-                 :args (replace-field-access-expr-list
-                         expr.args
-                         original
-                         new1
-                         new2
-                         split-members))
-      ;; TODO: handle when arg is a paren (and perhaps generic selection?)
-      :member (b* ((match
-                     (expr-case
-                       expr.arg
-                       :ident (equal expr.arg.ident original)
-                       :otherwise nil))
-                   ((unless match)
-                    (make-expr-member
-                      :arg (replace-field-access-expr
-                             expr.arg
+(encapsulate ()
+  (local (xdoc::set-default-parents splitgso-implementation))
+
+  ;; TODO: check if replacement struct objects have been shadowed
+  (deftrans replace-field-access
+    :parents (splitgso-implementation)
+    :extra-args
+    ((original identp)
+     (new1 identp)
+     (new2 identp)
+     (split-members ident-listp))
+    :expr
+    (lambda (expr original new1 new2 split-members)
+      (expr-case
+        expr
+        :ident (b* (((unless (equal expr.ident original))
+                     (expr-fix expr))
+                    (linkage (c$::var-info->linkage
+                               (c$::coerce-var-info expr.info))))
+                 (c$::linkage-case
+                   linkage
+                   :internal (prog2$ (raise "Global struct object ~x0 occurs in
+                                           illegal expression."
+                                            original)
+                                     (expr-fix expr))
+                   :otherwise (expr-fix expr)))
+        :const (expr-fix expr)
+        :string (expr-fix expr)
+        :paren (expr-paren (replace-field-access-expr
+                             expr.inner
+                             original
+                             new1
+                             new2
+                             split-members))
+        :gensel (make-expr-gensel
+                  :control (replace-field-access-expr
+                             expr.control
                              original
                              new1
                              new2
                              split-members)
-                      :name expr.name)))
-                (make-expr-member
-                  :arg (c$::make-expr-ident
-                         :ident (if (member-equal expr.name split-members)
-                                    new2
-                                  new1))
-                  :name expr.name))
-      :memberp (make-expr-memberp
+                  :assocs (replace-field-access-genassoc-list
+                            expr.assocs
+                            original
+                            new1
+                            new2
+                            split-members))
+        :arrsub (make-expr-arrsub
+                  :arg1 (replace-field-access-expr
+                          expr.arg1
+                          original
+                          new1
+                          new2
+                          split-members)
+                  :arg2 (replace-field-access-expr
+                          expr.arg2
+                          original
+                          new1
+                          new2
+                          split-members))
+        :funcall (make-expr-funcall
+                   :fun (replace-field-access-expr
+                          expr.fun
+                          original
+                          new1
+                          new2
+                          split-members)
+                   :args (replace-field-access-expr-list
+                           expr.args
+                           original
+                           new1
+                           new2
+                           split-members))
+        ;; TODO: handle when arg is a paren (and perhaps generic selection?)
+        :member (b* ((match
+                       (expr-case
+                         expr.arg
+                         :ident (b* (((unless (equal expr.arg.ident original))
+                                      nil)
+                                     (linkage (c$::var-info->linkage
+                                                (c$::coerce-var-info expr.arg.info))))
+                                  (c$::linkage-case
+                                    linkage
+                                    :internal t
+                                    :otherwise nil))
+                         :otherwise nil))
+                     ((unless match)
+                      (make-expr-member
+                        :arg (replace-field-access-expr
+                               expr.arg
+                               original
+                               new1
+                               new2
+                               split-members)
+                        :name expr.name)))
+                  (make-expr-member
+                    :arg (c$::make-expr-ident
+                           :ident (if (member-equal expr.name split-members)
+                                      new2
+                                    new1))
+                    :name expr.name))
+        :memberp (make-expr-memberp
+                   :arg (replace-field-access-expr
+                          expr.arg
+                          original
+                          new1
+                          new2
+                          split-members)
+                   :name expr.name)
+        :complit (make-expr-complit
+                   :type (replace-field-access-tyname
+                           expr.type
+                           original
+                           new1
+                           new2
+                           split-members)
+                   :elems (replace-field-access-desiniter-list
+                            expr.elems
+                            original
+                            new1
+                            new2
+                            split-members)
+                   :final-comma expr.final-comma)
+        :unary (make-expr-unary
+                 :op expr.op
                  :arg (replace-field-access-expr
                         expr.arg
                         original
                         new1
                         new2
-                        split-members)
-                 :name expr.name)
-      :complit (make-expr-complit
-                 :type (replace-field-access-tyname
-                         expr.type
-                         original
-                         new1
-                         new2
-                         split-members)
-                 :elems (replace-field-access-desiniter-list
-                          expr.elems
-                          original
-                          new1
-                          new2
-                          split-members)
-                 :final-comma expr.final-comma)
-      :unary (make-expr-unary
-               :op expr.op
-               :arg (replace-field-access-expr
-                      expr.arg
-                      original
-                      new1
-                      new2
-                      split-members))
-      :sizeof (expr-sizeof (replace-field-access-tyname
-                             expr.type
-                             original
-                             new1
-                             new2
-                             split-members))
-      :sizeof-ambig (prog2$
-                      (raise "Misusage error: ~x0." (expr-fix expr))
-                      (expr-fix expr))
-      :alignof (make-expr-alignof :type (replace-field-access-tyname
-                                          expr.type
-                                          original
-                                          new1
-                                          new2
-                                          split-members)
-                                  :uscores expr.uscores)
-      :cast (make-expr-cast
-              :type (replace-field-access-tyname
-                      expr.type
-                      original
-                      new1
-                      new2
-                      split-members)
-              :arg (replace-field-access-expr
-                     expr.arg
-                     original
-                     new1
-                     new2
-                     split-members))
-      :binary (make-expr-binary
-                :op expr.op
-                :arg1 (replace-field-access-expr
-                        expr.arg1
-                        original
-                        new1
-                        new2
-                        split-members)
-                :arg2 (replace-field-access-expr
-                        expr.arg2
-                        original
-                        new1
-                        new2
                         split-members))
-      :cond (make-expr-cond
-              :test (replace-field-access-expr
-                      expr.test
-                      original
-                      new1
-                      new2
-                      split-members)
-              :then (replace-field-access-expr-option
-                      expr.then
-                      original
-                      new1
-                      new2
-                      split-members)
-              :else (replace-field-access-expr
-                      expr.else
-                      original
-                      new1
-                      new2
-                      split-members))
-      :comma (make-expr-comma
-               :first (replace-field-access-expr
-                        expr.first
-                        original
-                        new1
-                        new2
-                        split-members)
-               :next (replace-field-access-expr
-                       expr.next
-                       original
-                       new1
-                       new2
-                       split-members))
-      :cast/call-ambig (prog2$
-                         (raise "Misusage error: ~x0." (expr-fix expr))
-                         (expr-fix expr))
-      :cast/mul-ambig (prog2$
+        :sizeof (expr-sizeof (replace-field-access-tyname
+                               expr.type
+                               original
+                               new1
+                               new2
+                               split-members))
+        :sizeof-ambig (prog2$
                         (raise "Misusage error: ~x0." (expr-fix expr))
                         (expr-fix expr))
-      :cast/add-ambig (prog2$
-                        (raise "Misusage error: ~x0." (expr-fix expr))
-                        (expr-fix expr))
-      :cast/sub-ambig (prog2$
-                        (raise "Misusage error: ~x0." (expr-fix expr))
-                        (expr-fix expr))
-      :cast/and-ambig (prog2$
-                        (raise "Misusage error: ~x0." (expr-fix expr))
-                        (expr-fix expr))
-      :stmt (expr-stmt (replace-field-access-block-item-list
-                         expr.items
-                         original
-                         new1
-                         new2
-                         split-members))
-      :tycompat (make-expr-tycompat
-                  :type1 (replace-field-access-tyname
-                           expr.type1
-                           original
-                           new1
-                           new2
-                           split-members)
-                  :type2 (replace-field-access-tyname
-                           expr.type2
-                           original
-                           new1
-                           new2
-                           split-members))
-      :offsetof (make-expr-offsetof
-                  :type (replace-field-access-tyname
-                          expr.type
-                          original
-                          new1
-                          new2
-                          split-members)
-                  :member (replace-field-access-member-designor
-                            expr.member
-                            original
-                            new1
-                            new2
-                            split-members))
-      :va-arg (make-expr-va-arg
-                :list (replace-field-access-expr
-                        expr.list
-                        original
-                        new1
-                        new2
-                        split-members)
+        :alignof (make-expr-alignof :type (replace-field-access-tyname
+                                            expr.type
+                                            original
+                                            new1
+                                            new2
+                                            split-members)
+                                    :uscores expr.uscores)
+        :cast (make-expr-cast
                 :type (replace-field-access-tyname
                         expr.type
                         original
                         new1
                         new2
+                        split-members)
+                :arg (replace-field-access-expr
+                       expr.arg
+                       original
+                       new1
+                       new2
+                       split-members))
+        :binary (make-expr-binary
+                  :op expr.op
+                  :arg1 (replace-field-access-expr
+                          expr.arg1
+                          original
+                          new1
+                          new2
+                          split-members)
+                  :arg2 (replace-field-access-expr
+                          expr.arg2
+                          original
+                          new1
+                          new2
+                          split-members))
+        :cond (make-expr-cond
+                :test (replace-field-access-expr
+                        expr.test
+                        original
+                        new1
+                        new2
+                        split-members)
+                :then (replace-field-access-expr-option
+                        expr.then
+                        original
+                        new1
+                        new2
+                        split-members)
+                :else (replace-field-access-expr
+                        expr.else
+                        original
+                        new1
+                        new2
                         split-members))
-      :extension (expr-extension (replace-field-access-expr
-                                   expr.expr
-                                   original
-                                   new1
-                                   new2
-                                   split-members)))))
+        :comma (make-expr-comma
+                 :first (replace-field-access-expr
+                          expr.first
+                          original
+                          new1
+                          new2
+                          split-members)
+                 :next (replace-field-access-expr
+                         expr.next
+                         original
+                         new1
+                         new2
+                         split-members))
+        :cast/call-ambig (prog2$
+                           (raise "Misusage error: ~x0." (expr-fix expr))
+                           (expr-fix expr))
+        :cast/mul-ambig (prog2$
+                          (raise "Misusage error: ~x0." (expr-fix expr))
+                          (expr-fix expr))
+        :cast/add-ambig (prog2$
+                          (raise "Misusage error: ~x0." (expr-fix expr))
+                          (expr-fix expr))
+        :cast/sub-ambig (prog2$
+                          (raise "Misusage error: ~x0." (expr-fix expr))
+                          (expr-fix expr))
+        :cast/and-ambig (prog2$
+                          (raise "Misusage error: ~x0." (expr-fix expr))
+                          (expr-fix expr))
+        :stmt (expr-stmt (replace-field-access-block-item-list
+                           expr.items
+                           original
+                           new1
+                           new2
+                           split-members))
+        :tycompat (make-expr-tycompat
+                    :type1 (replace-field-access-tyname
+                             expr.type1
+                             original
+                             new1
+                             new2
+                             split-members)
+                    :type2 (replace-field-access-tyname
+                             expr.type2
+                             original
+                             new1
+                             new2
+                             split-members))
+        :offsetof (make-expr-offsetof
+                    :type (replace-field-access-tyname
+                            expr.type
+                            original
+                            new1
+                            new2
+                            split-members)
+                    :member (replace-field-access-member-designor
+                              expr.member
+                              original
+                              new1
+                              new2
+                              split-members))
+        :va-arg (make-expr-va-arg
+                  :list (replace-field-access-expr
+                          expr.list
+                          original
+                          new1
+                          new2
+                          split-members)
+                  :type (replace-field-access-tyname
+                          expr.type
+                          original
+                          new1
+                          new2
+                          split-members))
+        :extension (expr-extension (replace-field-access-expr
+                                     expr.expr
+                                     original
+                                     new1
+                                     new2
+                                     split-members))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -849,7 +960,7 @@
    (new-struct-type2 identp)
    (split-members ident-listp)
    (tunit transunitp))
-  :returns (mv er
+  :returns (mv erp
                (new-tunit transunitp))
   (b* (((reterr) (c$::transunit-fix tunit))
        ((erp struct-name)
@@ -948,6 +1059,8 @@
        (tunits-old (acl2::constant-value const-old wrld))
        ((unless (transunit-ensemblep tunits-old))
         (reterr (msg "~x0 must be a translation unit ensemble." const-old)))
+       ((unless (c$::transunit-ensemble-annop tunits-old))
+        (reterr (msg "~x0 must be an annotated with validation information." const-old)))
        (tunits-map (transunit-ensemble->unwrap tunits-old))
        ((when (or (omap::emptyp tunits-map)
                   (not (omap::emptyp (omap::tail tunits-map)))))
@@ -1086,7 +1199,7 @@
                      split-members
                      (ctx ctxp)
                      state)
-  :returns (mv erp (event acl2::pseudo-event-formp) state)
+  :returns (mv erp (event pseudo-event-formp) state)
   :parents (splitgso-implementation)
   :short "Event expansion of @(tsee splitgso)."
   (b* (((mv erp event)

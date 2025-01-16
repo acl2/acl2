@@ -1,6 +1,6 @@
 ; The mathematical subsequence predicate for lists.
 ;
-; Copyright (C) 2017-2020 Kestrel Institute
+; Copyright (C) 2017-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -305,7 +305,7 @@
 (defthm lower-bound-of-len-when-subsequencep-equal
   (implies (subsequencep-equal x y)
            (<= (len x) (len y)))
-  :rule-classes ((:rewrite) (:linear)))
+  :rule-classes (:rewrite :linear))
 
 (defthmd subsequencep-equal-antisymmetric
   (implies (and (true-listp x) (true-listp y)

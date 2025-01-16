@@ -1,7 +1,7 @@
 ; A theory of x86 state readers and writers (emphasis on readability of terms)
 ;
 ; Copyright (C) 2016-2022 Kestrel Technology, LLC
-; Copyright (C) 2023-2024 Kestrel Institute
+; Copyright (C) 2023-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -16,7 +16,6 @@
 ;; calls (set-undef <val> <x86>).
 
 (include-book "projects/x86isa/machine/state" :dir :system) ;for xr
-;(include-book "projects/x86isa/machine/state-field-thms" :dir :system)
 (local (include-book "kestrel/bv/logext" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

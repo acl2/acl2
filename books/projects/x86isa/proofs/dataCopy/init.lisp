@@ -41,6 +41,7 @@
 ;; Tweaked by Eric Smith to include official top-level book for app-view proofs:
 (include-book "app-view/top" :dir :proof-utils :ttags :all)
 (include-book "centaur/bitops/ihs-extensions" :dir :system)
+(include-book "centaur/gl/defthm-using-gl" :dir :system)
 
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
