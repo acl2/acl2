@@ -911,7 +911,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod var-info
-  :short "Fixtype of validator information for variables."
+  :short "Fixtype of validation information for variables."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -927,7 +927,7 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (defirrelevant irr-var-info
-  :short "An irrelevant validator information for variables."
+  :short "An irrelevant validation information for variables."
   :type var-infop
   :body (make-var-info :type (irr-type)
                        :linkage (irr-linkage)))
@@ -946,6 +946,43 @@
       x
     (prog2$ (raise "Internal error: ~x0 does not satisfy VAR-INFOP." x)
             (irr-var-info))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod transunit-info
+  :short "Fixtype of validation information for translation units."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the type of the annotations that
+     the validator adds to translation units.
+     The information consists of
+     the final validation table for the translation unit.
+     We wrap it into a product fixtype for easier future extensibility."))
+  ((table valid-table))
+  :pred transunit-infop)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-transunit-info
+  :short "An irrelevant validation information for translation units."
+  :type transunit-infop
+  :body (make-transunit-info :table (irr-valid-table)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define coerce-transunit-info (x)
+  :returns (info transunit-infop)
+  :short "Coerce a value to @(tsee transunit-info)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This must be used when the value is expected to have that type.
+     We raise a hard error if that is not the case."))
+  (if (transunit-infop x)
+      x
+    (prog2$ (raise "Internal error: ~x0 does not satisfy TRANSUNIT-INFOP." x)
+            (irr-transunit-info))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1017,4 +1054,5 @@
                                 (amb-declor/absdeclor-fix
                                  amb-declor/absdeclor)))
    (amb-decl/stmt (raise "Internal error: ambiguous ~x0."
-                         (amb-decl/stmt-fix amb-decl/stmt)))))
+                         (amb-decl/stmt-fix amb-decl/stmt)))
+   (transunit (transunit-infop (transunit->info transunit)))))
