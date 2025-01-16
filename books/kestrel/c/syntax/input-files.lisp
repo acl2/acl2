@@ -514,9 +514,9 @@
                (events pseudo-event-form-listp)
                (read-files filesetp)
                (preproc-files filesetp)
-               (parsed-tuens transunit-ensemblep)
-               (disamb-tuens transunit-ensemblep)
-               (valid-tuens transunit-ensemblep)
+               (parsed-tunits transunit-ensemblep)
+               (disamb-tunits transunit-ensemblep)
+               (valid-tunits transunit-ensemblep)
                state)
   :short "Generate the events."
   :long
@@ -574,57 +574,57 @@
                  (irr-transunit-ensemble)
                  state)))
        ;; At least parsing is required.
-       ((erp parsed-tuens) (parse-fileset files gcc))
+       ((erp parsed-tunits) (parse-fileset files gcc))
        ;; Generate :CONST-PARSED constant if required.
        (events (if (and const-parsed
                         (not progp))
-                   (rcons `(defconst ,const-parsed ',parsed-tuens) events)
+                   (rcons `(defconst ,const-parsed ',parsed-tunits) events)
                  events))
        ;; If only parsing is required, we are done;
        ;; generate :CONST constant with the parsed translation units.
        ((when (eq process :parse))
         (b* ((events (if (not progp)
-                         (rcons `(defconst ,const ',parsed-tuens) events)
+                         (rcons `(defconst ,const ',parsed-tunits) events)
                        events)))
           (retok events
                  read-files
                  preproc-files
-                 parsed-tuens
+                 parsed-tunits
                  (irr-transunit-ensemble)
                  (irr-transunit-ensemble)
                  state)))
        ;; Disambiguation is required.
-       ((erp disamb-tuens) (dimb-transunit-ensemble parsed-tuens gcc))
+       ((erp disamb-tunits) (dimb-transunit-ensemble parsed-tunits gcc))
        ;; Generate :CONST-DISAMB constant if required.
        (events (if (and const-disamb
                         (not progp))
-                   (rcons `(defconst ,const-disamb ',disamb-tuens) events)
+                   (rcons `(defconst ,const-disamb ',disamb-tunits) events)
                  events))
        ;; If no validation is required, we are done;
        ;; generate :CONST constant with the disambiguated translation unit.
        ((when (eq process :disambiguate))
         (b* ((events (if (not progp)
-                         (rcons `(defconst ,const ',disamb-tuens) events)
+                         (rcons `(defconst ,const ',disamb-tunits) events)
                        events)))
           (retok events
                  read-files
                  preproc-files
-                 parsed-tuens
-                 disamb-tuens
+                 parsed-tunits
+                 disamb-tunits
                  (irr-transunit-ensemble)
                  state)))
        ;; Validation is required.
-       ((erp valid-tuens) (valid-transunit-ensemble disamb-tuens gcc ienv))
+       ((erp valid-tunits) (valid-transunit-ensemble disamb-tunits gcc ienv))
        ;; Generate :CONST constant with the validated translation unit.
        (events (if (not progp)
-                   (rcons `(defconst ,const ',valid-tuens) events)
+                   (rcons `(defconst ,const ',valid-tunits) events)
                  events)))
     (retok events
            read-files
            preproc-files
-           parsed-tuens
-           disamb-tuens
-           valid-tuens
+           parsed-tunits
+           disamb-tunits
+           valid-tunits
            state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -636,9 +636,9 @@
                (event pseudo-event-formp)
                (read-files filesetp)
                (preproc-files filesetp)
-               (parsed-tuens transunit-ensemblep)
-               (disamb-tuens transunit-ensemblep)
-               (valid-tuens transunit-ensemblep)
+               (parsed-tunits transunit-ensemblep)
+               (disamb-tunits transunit-ensemblep)
+               (valid-tunits transunit-ensemblep)
                state)
   :short "Process the inputs and generate the events."
   :long
@@ -671,9 +671,9 @@
        ((erp events
              read-files
              preproc-files
-             parsed-tuens
-             disamb-tuens
-             valid-tuens
+             parsed-tunits
+             disamb-tunits
+             valid-tunits
              state)
         (input-files-gen-events paths
                                 preprocessor
@@ -690,9 +690,9 @@
     (retok `(progn ,@events)
            read-files
            preproc-files
-           parsed-tuens
-           disamb-tuens
-           valid-tuens
+           parsed-tunits
+           disamb-tunits
+           valid-tunits
            state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -761,7 +761,7 @@
       or an irrelevant value of type @(tsee fileset),
       if @(':preprocess') is @('nil').")
     (xdoc::li
-     "@('parsed-tuens'):
+     "@('parsed-tunits'):
       the @(tsee transunit-ensemble) resulting from
       parsing either @('read-files') (if @(':preprocess') is @('nil'))
       or @('preproc-files') (if @(':preprocess') is not @('nil')),
@@ -769,16 +769,16 @@
       or an irrelevant value of type @(tsee transunit-ensemble),
       if @(':process') is @(':read').")
     (xdoc::li
-     "@('disamb-tuens'):
+     "@('disamb-tunits'):
       the @(tsee transunit-ensemble) resulting from
-      disambiguating @('parsed-tuens'),
+      disambiguating @('parsed-tunits'),
       if @(':process') is @(':disambiguate') or @(':validate');
       or an irrelevant value of type @(tsee transunit-ensemble),
       if @(':process') is @(':read') or @(':parse').")
     (xdoc::li
-     "@('valid-tuens'):
+     "@('valid-tunits'):
       the @(tsee transunit-ensemble) resulting from
-      validating @('disamb-tuens'),
+      validating @('disamb-tunits'),
       if @(':process') is @(':validate');
       or an irrelevant value of type @(tsee transunit-ensemble),
       if @(':process') is @(':read') or @(':parse') or @(':disambiguate').")
@@ -797,9 +797,9 @@
   :returns (mv erp
                (read-files filesetp)
                (preproc-files filesetp)
-               (parsed-tuens transunit-ensemblep)
-               (disamb-tuens transunit-ensemblep)
-               (valid-tuens transunit-ensemblep)
+               (parsed-tunits transunit-ensemblep)
+               (disamb-tunits transunit-ensemblep)
+               (valid-tunits transunit-ensemblep)
                state)
   :short "Implementation of @(tsee input-files-prog)."
   :long
@@ -819,16 +819,16 @@
        ((erp &
              read-files
              preproc-files
-             parsed-tuens
-             disamb-tuens
-             valid-tuens
+             parsed-tunits
+             disamb-tunits
+             valid-tunits
              state)
         (input-files-process-inputs-and-gen-events args t state)))
     (retok read-files
            preproc-files
-           parsed-tuens
-           disamb-tuens
-           valid-tuens
+           parsed-tunits
+           disamb-tunits
+           valid-tunits
            state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
