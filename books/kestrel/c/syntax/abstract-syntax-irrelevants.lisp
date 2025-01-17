@@ -510,7 +510,7 @@
 (defirrelevant irr-transunit
   :short "An irrelevant translation unit."
   :type transunitp
-  :body (transunit nil))
+  :body (transunit nil nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

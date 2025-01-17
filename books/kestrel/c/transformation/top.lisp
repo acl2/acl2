@@ -10,6 +10,7 @@
 
 (in-package "C2C")
 
+(include-book "constant-propagation")
 (include-book "copy-fn")
 (include-book "deftrans")
 (include-book "rename")

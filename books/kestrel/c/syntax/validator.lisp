@@ -81,143 +81,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum valid-defstatus
-  :short "Fixtype of definition statuses for validation."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This applies to objects and functions, which may be
-     undefined, defined, or tentatively defined [C:6.7/5] [C:6.9.2],
-     with the latter actually only applying to objects, not functions."))
-  (:undefined ())
-  (:tentative ())
-  (:defined ())
-  :pred valid-defstatusp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deftagsum valid-ord-info
-  :short "Fixtype of validation information about ordinary identifiers."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Ordinary identifiers [C:6.2.3/1] denote
-     objects, functions, enumeration constants, and @('typedef') names;
-     Ordinary identifiers form their own name space.
-     The other entities denoted by identifiers [C:6.2.1/1]
-     are in other name spaces, disjoint from the one of ordinary identifiers.")
-   (xdoc::p
-    "This fixtype formalizes the information about ordinary identifiers
-     tracked by our current validator.
-     Since our model of types includes both object and function types,
-     the information for both objects and functions includes (different) types;
-     that information also includes the linkage [C:6.2.2],
-     as well as definition status (see @(tsee valid-defstatus)).
-     For enumeration constants and for @('typedef') names,
-     for now we only track that they are
-     enumeration constants and @('typedef') names.")
-   (xdoc::p
-    "We will refine this fixtype as we refine our validator."))
-  (:objfun ((type type)
-            (linkage linkage)
-            (defstatus valid-defstatus)))
-  (:enumconst ())
-  (:typedef ())
-  :pred valid-ord-infop)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(fty::defoption valid-ord-info-option
-  valid-ord-info
-  :short "Fixtype of
-          optional validation information about ordinary identifiers."
-  :pred valid-ord-info-optionp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defalist valid-ord-scope
-  :short "Fixtype of validation scopes of ordinary identifiers."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Identifiers have scopes [C:6.2.1], which the validator tracks.
-     In each scope, for each name space,
-     each identifier must have one meaning (if any) [C:6.2.1/2].
-     Thus, we use an alist from identifiers
-     to the validation information about ordinary identifiers,
-     to track each scope in the name space of ordinary identifiers."))
-  :key-type ident
-  :val-type valid-ord-info
-  :true-listp t
-  :keyp-of-nil nil
-  :valp-of-nil nil
-  :pred valid-ord-scopep
-  :prepwork ((set-induction-depth-limit 1))
-  ///
-
-  (defrule valid-ord-infop-of-cdr-assoc-when-valid-ord-scopep
-    (implies (and (valid-ord-scopep scope)
-                  (assoc-equal ident scope))
-             (valid-ord-infop (cdr (assoc-equal ident scope))))
-    :induct t
-    :enable (valid-ord-scopep assoc-equal)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod valid-scope
-  :short "Fixtype of validation scopes."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Identifiers have scopes [C:6.2.1], which the validator tracks.
-     This fixtype contains all the information about a scope,
-     which currently only considers the name space of ordinary identifiers.
-     We will extend this fixtype to contain additional information,
-     particularly about tag of structure, union, and enumeration types."))
-  ((ord valid-ord-scope))
-  :pred valid-scopep)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist valid-scope-list
-  :short "Fixtype of lists of validation scopes."
-  :elt-type valid-scope
-  :true-listp t
-  :elementp-of-nil nil
-  :pred valid-scope-listp
-  :prepwork ((local (in-theory (enable nfix)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod valid-table
-  :short "Fixtype of validation tables."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Scopes are treated in a stack-like manner [C:6.2.1].
-     Thus, we define a validation table as
-     containing a list (i.e. stack) of scopes.
-     The stack grows from right to left:
-     the leftmost scope is the top, and the rightmost scope is the bottom;
-     in other words, in the nesting of scopes in the stack,
-     the leftmost scope is the innermost,
-     and the rightmost scope is the outermost
-     (i.e. the file scope [C:6.2.1/4].)")
-   (xdoc::p
-    "We wrap the list of scopes into a @(tsee fty::defprod)
-     for abstraction and extensibility."))
-  ((scopes valid-scope-list))
-  :pred valid-tablep)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-valid-table
-  :short "An irrelevant validation table."
-  :type valid-tablep
-  :body (valid-table nil))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define valid-empty-scope ()
   :returns (scope valid-scopep)
   :short "Empty validator scope."
@@ -5769,9 +5632,7 @@
 
 (define valid-transunit ((tunit transunitp) (gcc booleanp) (ienv ienvp))
   :guard (transunit-unambp tunit)
-  :returns (mv erp
-               (new-tunit transunitp)
-               (table valid-tablep))
+  :returns (mv erp (new-tunit transunitp))
   :short "Validate a translation unit."
   :long
   (xdoc::topstring
@@ -5790,14 +5651,10 @@
      all the referenced names must be declared in the translation unit,
      so it is appropriate to start with the initial validation table.")
    (xdoc::p
-    "If validation is successful, we return the final validation table.
-     For now we do no make any use of the returned table,
-     but in the future we should use it to validate
-     the externally linked identifiers across
-     different translation units of a translation unit ensemble.
-     In fact, we should probably extend this validation function
-     to trim the returned validation table
-     so it only has entries for identifiers with external linkage.")
+    "If validation is successful,
+     we add the final validation table to
+     the information slot of the translation unit,
+     i.e. we annotate the translation unit with its final validation table.")
    (xdoc::p
     "For each GCC function, the associated information consists of
      the function type, external linkage, and defined status.
@@ -5807,7 +5664,7 @@
      For each GCC object, the associated information consists of
      the unknown type, external linkage, and defined status;
      the rationale for the latter two is the same as for functions."))
-  (b* (((reterr) (irr-transunit) (irr-valid-table))
+  (b* (((reterr) (irr-transunit))
        (table (valid-init-table))
        (table
          (if gcc
@@ -5981,8 +5838,9 @@
                table)
            table))
        ((erp new-edecls table)
-        (valid-extdecl-list (transunit->decls tunit) table ienv)))
-    (retok (transunit new-edecls) table))
+        (valid-extdecl-list (transunit->decls tunit) table ienv))
+       (info (make-transunit-info :table table)))
+    (retok (make-transunit :decls new-edecls :info info)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -5998,12 +5856,11 @@
    (xdoc::p
     "We validate each translation unit.
      As mentioned in @(tsee valid-transunit),
-     for now we discard the result validation tables,
-     but in the future we should cross-check them.")
-   (xdoc::p
-    "If validation is successful, we return no information (@('nil')).
-     Otherwise, we return an error message,
-     which a caller can show to the user in an event macro."))
+     we annotate the translation unit with the finval validation table.
+     For now we do no make any use of the returned table,
+     but in the future we should use it to validate
+     the externally linked identifiers across
+     different translation units of a translation unit ensemble."))
   (b* (((reterr) (irr-transunit-ensemble))
        ((erp new-map)
         (valid-transunit-ensemble-loop
@@ -6021,7 +5878,7 @@
      (b* (((reterr) nil)
           ((when (omap::emptyp map)) (retok nil))
           (path (omap::head-key map))
-          ((erp new-tunit &) (valid-transunit (omap::head-val map) gcc ienv))
+          ((erp new-tunit) (valid-transunit (omap::head-val map) gcc ienv))
           ((erp new-map)
            (valid-transunit-ensemble-loop (omap::tail map) gcc ienv)))
        (retok (omap::update path new-tunit new-map)))

@@ -149,7 +149,10 @@
     ".")
    (xdoc::p
     "We provide event macros @(tsee input-files) and @(tsee output-files)
-     to read, preprocess, parse, disambiguate, print, and write files.")
+     to read, preprocess, parse, disambiguate, print, and write files.
+     We also provide programmatic interfaces to both,
+     via the (non-event) macros
+     @(tsee input-files-prog) and @(tsee output-files-prog).")
    (xdoc::p
     "We plan to prove theorems connecting this tool-oriented syntax
      with the formal language definition in @(see c::language).

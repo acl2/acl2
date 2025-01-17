@@ -148,6 +148,24 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 "Schroeder-Bernstein Library")
+
+   (xdoc::p
+    "This library has moved from @('[books]/projects/schroder-bernstein') to
+     @('[books]/projects/schroeder-bernstein') in order to reflect the
+     prevailing German convention of printing an @('\"o\"') with umlaut as
+     @('\"oe\"') when umlaut letters are unavailable.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "std/typed-alists"
+                             "Standard Typed Alists Library"))
+
+   (xdoc::p
+    "A theorem has been added.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 (xdoc::seetopic "std::std/util" "Standard Utilities Library"))
 
    (xdoc::p

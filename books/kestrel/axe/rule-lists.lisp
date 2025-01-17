@@ -1,7 +1,7 @@
 ; Lists of rule names (general purpose)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -195,10 +195,10 @@
             eq ; introduces EQUAL
             /= ; "not equal"
 
-            null ; opens to EQ, which opens to EQUAL
-            zerop ; opens to EQL, which opens to EQUAL
+            null ; opens to EQ, which opens to EQUAL (todo: go directly)
+            zerop ; opens to EQL, which opens to EQUAL (todo: go directly)
 
-            double-rewrite
+            double-rewrite ; todo: or remove these when we make the axe-rules
             return-last
 
             not-stringp-of-cons)

@@ -1,7 +1,7 @@
 ; A theory of register readers and writers (emphasis on readability of terms)
 ;
 ; Copyright (C) 2016-2022 Kestrel Technology, LLC
-; Copyright (C) 2024 Kestrel Institute
+; Copyright (C) 2024-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -19,7 +19,6 @@
 ;; cost of making proof terms a bit bigger and a bit less readable.
 
 (include-book "projects/x86isa/machine/state" :dir :system) ;for xr
-;(include-book "projects/x86isa/machine/state-field-thms" :dir :system)
 (include-book "kestrel/utilities/myif" :dir :system)
 (include-book "readers-and-writers64") ; drop?
 (include-book "readers-and-writers")

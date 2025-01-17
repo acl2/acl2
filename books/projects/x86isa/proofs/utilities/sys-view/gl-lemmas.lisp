@@ -40,6 +40,7 @@
 
 (include-book "paging" :dir :machine)
 (include-book "../../../portcullis/utils")
+(include-book "centaur/gl/defthm-using-gl" :dir :system)
 (local (include-book "centaur/gl/gl" :dir :system))
 
 ;; ======================================================================

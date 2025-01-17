@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -45,28 +45,28 @@
       can be used to write the transformed code to the file system.")
 
     (xdoc::p
-     "This macro currently does not perform very thorough input validation,
-      but we plan to improve that."))
+     "The (non-event) macro @(tsee input-files-prog) provides
+      a programmatic interface to the functionality of @('input-files')."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::evmac-section-form
 
     (xdoc::codeblock
-     "(input-files :files              ...  ; no default"
-     "             :preprocess         ...  ; default nil"
-     "             :process            ...  ; default :disambiguate"
-     "             :const              ...  ; no default"
-     "             :const-files        ...  ; default nil"
-     "             :const-preproc      ...  ; default nil"
-     "             :const-parsed       ...  ; default nil"
-     "             :const-disamb       ...  ; default nil"
-     "             :gcc                ...  ; default nil"
-     "             :short-bytes        ...  ; default 2"
-     "             :int-bytes          ...  ; default 4"
-     "             :long-bytes         ...  ; default 8"
-     "             :long-long-bytes    ...  ; default 8"
-     "             :plain-char-signed  ... ; default nil"
+     "(input-files :files             ...  ; no default"
+     "             :preprocess        ...  ; default nil"
+     "             :process           ...  ; default :validate"
+     "             :const             ...  ; no default"
+     "             :const-files       ...  ; default nil"
+     "             :const-preproc     ...  ; default nil"
+     "             :const-parsed      ...  ; default nil"
+     "             :const-disamb      ...  ; default nil"
+     "             :gcc               ...  ; default nil"
+     "             :short-bytes       ...  ; default 2"
+     "             :int-bytes         ...  ; default 4"
+     "             :long-bytes        ...  ; default 8"
+     "             :long-long-bytes   ...  ; default 8"
+     "             :plain-char-signed ...  ; default nil"
      "  )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

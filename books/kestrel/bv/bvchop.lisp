@@ -599,7 +599,7 @@
                 (natp small)
                 (integerp big))
            (<= (bvchop small x) (bvchop big x)))
-  :rule-classes ((:linear))
+  :rule-classes :linear
   :hints (("Goal" :in-theory (enable natp))))
 
 ;; Do not remove: helps justify the correctness of some operations done by Axe.

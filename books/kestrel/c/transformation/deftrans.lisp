@@ -1805,7 +1805,8 @@
    '((tunit transunitp))
    extra-args
    `(b* (((transunit tunit) tunit))
-      (transunit (,(cdr (assoc-eq 'extdecl-list names)) tunit.decls ,@extra-args-names)))
+      (make-transunit :decls (,(cdr (assoc-eq 'extdecl-list names)) tunit.decls ,@extra-args-names)
+                      :info tunit.info))
    '(:returns (new-tunit transunitp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

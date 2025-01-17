@@ -2258,10 +2258,10 @@
 
                all-xlation-governing-entries-paddrs-and-xw-mem-not-member
 
-               xr-app-view-mv-nth-2-las-to-pas
+               ;; xr-app-view-mv-nth-2-las-to-pas
                all-xlation-governing-entries-paddrs-and-xw-not-mem
-               xr-seg-visible-mv-nth-2-las-to-pas
-               xr-marking-view-mv-nth-2-las-to-pas
+               ;; xr-seg-visible-mv-nth-2-las-to-pas
+               ;; xr-marking-view-mv-nth-2-las-to-pas
                disjoint-p
                member-p
                rewrite-get-prefixes-to-get-prefixes-alt
