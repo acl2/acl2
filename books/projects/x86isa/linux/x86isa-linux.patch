@@ -1,9 +1,9 @@
-From 9b4127029b5263f60b80466aded79356fe5f4f13 Mon Sep 17 00:00:00 2001
-From: Yahya Sohail <yahya.sohail@intel.com>
-Date: Wed, 31 Jul 2024 12:06:33 -0700
+From 8c6ae59e7fef48b7e19caa2fa534332d53452e3d Mon Sep 17 00:00:00 2001
+From: Yahya Sohail <yahya@yahyasohail.com>
+Date: Thu, 28 Nov 2024 19:40:03 -0600
 Subject: [PATCH] This patch adds support for running the ACL2 x86isa model.
 
-This patch was last tested on 12214540ad87ce824a8a791a3f063e6121ec5b66
+This patch was last tested on Linux tag v6.12
 
 The changes include the following:
 - Support for the x86isa timer and TTY devices
@@ -18,6 +18,7 @@ model.
 Copyright (C) May - August 2023, Regents of the University of Texas
 Copyright (C) August 2023 - May 2024, Yahya Sohail
 Copyright (C) May 2024 - August 2024, Intel Corporation
+Copyright (C) November - December 2024, Yahya Sohail
 
 This program is free software; you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published by the
@@ -32,7 +33,7 @@ You should have received a copy of the GNU General Public License along
 with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 ---
- .config                               | 2465 +++++++++++++++++++++++++
+ .config                               | 2559 +++++++++++++++++++++++++
  arch/x86/boot/compressed/acpi.c       |    5 +-
  arch/x86/boot/compressed/pgtable_64.c |   10 +-
  arch/x86/boot/cpuflags.c              |   26 +-
@@ -45,9 +46,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
  arch/x86/kernel/ebda.c                |    2 +
  arch/x86/kernel/fpu/init.c            |   12 +-
  arch/x86/kernel/i8237.c               |    1 +
- arch/x86/kernel/i8253.c               |   66 +-
- arch/x86/kernel/i8259.c               |   24 +-
- arch/x86/kernel/irq.c                 |   14 +-
+ arch/x86/kernel/i8253.c               |   76 +-
+ arch/x86/kernel/i8259.c               |   22 +-
+ arch/x86/kernel/irq.c                 |    9 +-
  arch/x86/kernel/rtc.c                 |    2 +
  arch/x86/kernel/time.c                |   49 +-
  arch/x86/lib/delay.c                  |   54 +-
@@ -56,18 +57,18 @@ with this program; if not, write to the Free Software Foundation, Inc.,
  arch/x86/pci/pcbios.c                 |    2 +
  drivers/block/Kconfig                 |    5 +
  drivers/block/Makefile                |    1 +
- drivers/block/blkx86isa.c             |   86 +
+ drivers/block/blkx86isa.c             |   85 +
  drivers/char/Kconfig                  |    8 +
  drivers/char/Makefile                 |    1 +
- drivers/char/ttyprintk.c              |   32 +-
+ drivers/char/ttyprintk.c              |   31 +-
  drivers/char/ttyx86isa.c              |  136 ++
  drivers/clocksource/Kconfig           |    3 +
  drivers/clocksource/Makefile          |    1 +
- drivers/clocksource/clockx86isa.c     |   62 +
+ drivers/clocksource/clockx86isa.c     |   63 +
  include/linux/clockx86isa.h           |   11 +
  init/calibrate.c                      |  445 ++---
  kernel/printk/printk.c                |    1 +
- 35 files changed, 3278 insertions(+), 420 deletions(-)
+ 35 files changed, 3374 insertions(+), 420 deletions(-)
  create mode 100644 .config
  create mode 100644 drivers/block/blkx86isa.c
  create mode 100644 drivers/char/ttyx86isa.c
@@ -76,30 +77,32 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 diff --git a/.config b/.config
 new file mode 100644
-index 000000000000..e7c7afed1e9e
+index 000000000000..c60cace0997a
 --- /dev/null
 +++ b/.config
-@@ -0,0 +1,2465 @@
+@@ -0,0 +1,2559 @@
 +#
 +# Automatically generated file; DO NOT EDIT.
-+# Linux/x86 6.5.0-rc3 Kernel Configuration
++# Linux/x86 6.12.0 Kernel Configuration
 +#
-+CONFIG_CC_VERSION_TEXT="gcc (GCC) 13.2.0"
++CONFIG_CC_VERSION_TEXT="gcc (Debian 12.2.0-14) 12.2.0"
 +CONFIG_CC_IS_GCC=y
-+CONFIG_GCC_VERSION=130200
++CONFIG_GCC_VERSION=120200
 +CONFIG_CLANG_VERSION=0
 +CONFIG_AS_IS_GNU=y
-+CONFIG_AS_VERSION=24100
++CONFIG_AS_VERSION=24000
 +CONFIG_LD_IS_BFD=y
-+CONFIG_LD_VERSION=24100
++CONFIG_LD_VERSION=24000
 +CONFIG_LLD_VERSION=0
++CONFIG_RUSTC_VERSION=0
++CONFIG_RUSTC_LLVM_VERSION=0
 +CONFIG_CC_CAN_LINK=y
 +CONFIG_CC_CAN_LINK_STATIC=y
-+CONFIG_CC_HAS_ASM_GOTO_OUTPUT=y
-+CONFIG_CC_HAS_ASM_GOTO_TIED_OUTPUT=y
++CONFIG_GCC_ASM_GOTO_OUTPUT_BROKEN=y
++CONFIG_TOOLS_SUPPORT_RELR=y
 +CONFIG_CC_HAS_ASM_INLINE=y
 +CONFIG_CC_HAS_NO_PROFILE_FN_ATTR=y
-+CONFIG_PAHOLE_VERSION=112
++CONFIG_PAHOLE_VERSION=0
 +CONFIG_IRQ_WORK=y
 +CONFIG_BUILDTIME_TABLE_SORT=y
 +CONFIG_THREAD_INFO_IN_TASK=y
@@ -158,6 +161,7 @@ index 000000000000..e7c7afed1e9e
 +CONFIG_GENERIC_TIME_VSYSCALL=y
 +CONFIG_GENERIC_CLOCKEVENTS=y
 +CONFIG_GENERIC_CLOCKEVENTS_BROADCAST=y
++CONFIG_GENERIC_CLOCKEVENTS_BROADCAST_IDLE=y
 +CONFIG_GENERIC_CLOCKEVENTS_MIN_ADJUST=y
 +CONFIG_GENERIC_CMOS_UPDATE=y
 +CONFIG_HAVE_POSIX_CPU_TIMERS_TASK_WORK=y
@@ -190,6 +194,7 @@ index 000000000000..e7c7afed1e9e
 +CONFIG_PREEMPT_NONE=y
 +# CONFIG_PREEMPT_VOLUNTARY is not set
 +# CONFIG_PREEMPT is not set
++# CONFIG_PREEMPT_RT is not set
 +CONFIG_PREEMPT_COUNT=y
 +CONFIG_PREEMPTION=y
 +CONFIG_PREEMPT_DYNAMIC=y
@@ -213,6 +218,7 @@ index 000000000000..e7c7afed1e9e
 +# CONFIG_RCU_EXPERT is not set
 +CONFIG_TREE_SRCU=y
 +CONFIG_TASKS_RCU_GENERIC=y
++CONFIG_NEED_TASKS_RCU=y
 +CONFIG_TASKS_RCU=y
 +CONFIG_RCU_STALL_COMMON=y
 +CONFIG_RCU_NEED_SEGCBLIST=y
@@ -233,8 +239,10 @@ index 000000000000..e7c7afed1e9e
 +CONFIG_ARCH_WANT_BATCHED_UNMAP_TLB_FLUSH=y
 +CONFIG_CC_HAS_INT128=y
 +CONFIG_CC_IMPLICIT_FALLTHROUGH="-Wimplicit-fallthrough=5"
-+CONFIG_GCC11_NO_ARRAY_BOUNDS=y
++CONFIG_GCC10_NO_ARRAY_BOUNDS=y
 +CONFIG_CC_NO_ARRAY_BOUNDS=y
++CONFIG_GCC_NO_STRINGOP_OVERFLOW=y
++CONFIG_CC_NO_STRINGOP_OVERFLOW=y
 +CONFIG_ARCH_SUPPORTS_INT128=y
 +CONFIG_CGROUPS=y
 +CONFIG_PAGE_COUNTER=y
@@ -290,7 +298,7 @@ index 000000000000..e7c7afed1e9e
 +CONFIG_BUG=y
 +CONFIG_ELF_CORE=y
 +CONFIG_PCSPKR_PLATFORM=y
-+CONFIG_BASE_FULL=y
++# CONFIG_BASE_SMALL is not set
 +CONFIG_FUTEX=y
 +CONFIG_FUTEX_PI=y
 +CONFIG_EPOLL=y
@@ -302,18 +310,16 @@ index 000000000000..e7c7afed1e9e
 +CONFIG_IO_URING=y
 +CONFIG_ADVISE_SYSCALLS=y
 +CONFIG_MEMBARRIER=y
++CONFIG_KCMP=y
++CONFIG_RSEQ=y
++# CONFIG_DEBUG_RSEQ is not set
++CONFIG_CACHESTAT_SYSCALL=y
++# CONFIG_PC104 is not set
 +CONFIG_KALLSYMS=y
 +# CONFIG_KALLSYMS_SELFTEST is not set
 +# CONFIG_KALLSYMS_ALL is not set
-+CONFIG_KALLSYMS_BASE_RELATIVE=y
 +CONFIG_ARCH_HAS_MEMBARRIER_SYNC_CORE=y
-+CONFIG_KCMP=y
-+CONFIG_RSEQ=y
-+CONFIG_CACHESTAT_SYSCALL=y
-+# CONFIG_DEBUG_RSEQ is not set
-+# CONFIG_EMBEDDED is not set
 +CONFIG_HAVE_PERF_EVENTS=y
-+# CONFIG_PC104 is not set
 +
 +#
 +# Kernel Performance Events And Counters
@@ -324,6 +330,18 @@ index 000000000000..e7c7afed1e9e
 +
 +CONFIG_PROFILING=y
 +CONFIG_TRACEPOINTS=y
++
++#
++# Kexec and crash features
++#
++CONFIG_CRASH_RESERVE=y
++CONFIG_VMCORE_INFO=y
++CONFIG_KEXEC_CORE=y
++CONFIG_KEXEC=y
++# CONFIG_KEXEC_FILE is not set
++# CONFIG_KEXEC_JUMP is not set
++CONFIG_CRASH_DUMP=y
++# end of Kexec and crash features
 +# end of General setup
 +
 +CONFIG_64BIT=y
@@ -358,8 +376,8 @@ index 000000000000..e7c7afed1e9e
 +# CONFIG_SMP is not set
 +# CONFIG_X86_X2APIC is not set
 +CONFIG_X86_MPPARSE=y
-+# CONFIG_GOLDFISH is not set
 +# CONFIG_X86_CPU_RESCTRL is not set
++# CONFIG_X86_FRED is not set
 +CONFIG_X86_EXTENDED_PLATFORM=y
 +# CONFIG_X86_GOLDFISH is not set
 +CONFIG_X86_SUPPORTS_MEMORY_FAILURE=y
@@ -383,6 +401,7 @@ index 000000000000..e7c7afed1e9e
 +CONFIG_X86_INTERNODE_CACHE_SHIFT=6
 +CONFIG_X86_L1_CACHE_SHIFT=6
 +CONFIG_X86_TSC=y
++CONFIG_X86_HAVE_PAE=y
 +CONFIG_X86_CMPXCHG64=y
 +CONFIG_X86_CMOV=y
 +CONFIG_X86_MINIMUM_CPU_FAMILY=64
@@ -424,9 +443,6 @@ index 000000000000..e7c7afed1e9e
 +CONFIG_X86_VSYSCALL_EMULATION=y
 +CONFIG_X86_IOPL_IOPERM=y
 +CONFIG_MICROCODE=y
-+CONFIG_MICROCODE_INTEL=y
-+CONFIG_MICROCODE_AMD=y
-+# CONFIG_MICROCODE_LATE_LOADING is not set
 +CONFIG_X86_MSR=y
 +CONFIG_X86_CPUID=y
 +# CONFIG_X86_5LEVEL is not set
@@ -442,24 +458,33 @@ index 000000000000..e7c7afed1e9e
 +CONFIG_MTRR=y
 +# CONFIG_MTRR_SANITIZER is not set
 +CONFIG_X86_PAT=y
-+CONFIG_ARCH_USES_PG_UNCACHED=y
 +CONFIG_X86_UMIP=y
 +CONFIG_CC_HAS_IBT=y
++CONFIG_X86_CET=y
 +CONFIG_X86_KERNEL_IBT=y
 +CONFIG_X86_INTEL_MEMORY_PROTECTION_KEYS=y
++CONFIG_ARCH_PKEY_BITS=4
 +CONFIG_X86_INTEL_TSX_MODE_OFF=y
 +# CONFIG_X86_INTEL_TSX_MODE_ON is not set
 +# CONFIG_X86_INTEL_TSX_MODE_AUTO is not set
++# CONFIG_X86_USER_SHADOW_STACK is not set
 +# CONFIG_HZ_100 is not set
 +# CONFIG_HZ_250 is not set
 +# CONFIG_HZ_300 is not set
 +CONFIG_HZ_1000=y
 +CONFIG_HZ=1000
 +CONFIG_SCHED_HRTICK=y
-+CONFIG_KEXEC=y
-+# CONFIG_KEXEC_FILE is not set
-+CONFIG_CRASH_DUMP=y
-+# CONFIG_KEXEC_JUMP is not set
++CONFIG_ARCH_SUPPORTS_KEXEC=y
++CONFIG_ARCH_SUPPORTS_KEXEC_FILE=y
++CONFIG_ARCH_SUPPORTS_KEXEC_PURGATORY=y
++CONFIG_ARCH_SUPPORTS_KEXEC_SIG=y
++CONFIG_ARCH_SUPPORTS_KEXEC_SIG_FORCE=y
++CONFIG_ARCH_SUPPORTS_KEXEC_BZIMAGE_VERIFY_SIG=y
++CONFIG_ARCH_SUPPORTS_KEXEC_JUMP=y
++CONFIG_ARCH_SUPPORTS_CRASH_DUMP=y
++CONFIG_ARCH_DEFAULT_CRASH_DUMP=y
++CONFIG_ARCH_SUPPORTS_CRASH_HOTPLUG=y
++CONFIG_ARCH_HAS_GENERIC_CRASHKERNEL_RESERVATION=y
 +CONFIG_PHYSICAL_START=0x1000000
 +CONFIG_RELOCATABLE=y
 +# CONFIG_RANDOMIZE_BASE is not set
@@ -473,14 +498,15 @@ index 000000000000..e7c7afed1e9e
 +CONFIG_HAVE_LIVEPATCH=y
 +# end of Processor type and features
 +
++CONFIG_CC_HAS_NAMED_AS=y
++CONFIG_USE_X86_SEG_SUPPORT=y
 +CONFIG_CC_HAS_SLS=y
 +CONFIG_CC_HAS_RETURN_THUNK=y
 +CONFIG_CC_HAS_ENTRY_PADDING=y
 +CONFIG_FUNCTION_PADDING_CFI=11
 +CONFIG_FUNCTION_PADDING_BYTES=16
-+# CONFIG_SPECULATION_MITIGATIONS is not set
++# CONFIG_CPU_MITIGATIONS is not set
 +CONFIG_ARCH_HAS_ADD_PAGES=y
-+CONFIG_ARCH_MHP_MEMMAP_ON_MEMORY_ENABLE=y
 +
 +#
 +# Power management and ACPI options
@@ -492,6 +518,8 @@ index 000000000000..e7c7afed1e9e
 +CONFIG_HIBERNATE_CALLBACKS=y
 +CONFIG_HIBERNATION=y
 +CONFIG_HIBERNATION_SNAPSHOT_DEV=y
++CONFIG_HIBERNATION_COMP_LZO=y
++CONFIG_HIBERNATION_DEF_COMP="lzo"
 +CONFIG_PM_STD_PARTITION=""
 +CONFIG_PM_SLEEP=y
 +# CONFIG_PM_AUTOSLEEP is not set
@@ -564,7 +592,6 @@ index 000000000000..e7c7afed1e9e
 +# CONFIG_X86_X32_ABI is not set
 +# end of Binary Emulations
 +
-+CONFIG_HAVE_KVM=y
 +CONFIG_VIRTUALIZATION=y
 +# CONFIG_KVM is not set
 +CONFIG_AS_AVX512=y
@@ -572,12 +599,14 @@ index 000000000000..e7c7afed1e9e
 +CONFIG_AS_SHA256_NI=y
 +CONFIG_AS_TPAUSE=y
 +CONFIG_AS_GFNI=y
++CONFIG_AS_VAES=y
++CONFIG_AS_VPCLMULQDQ=y
++CONFIG_AS_WRUSS=y
++CONFIG_ARCH_CONFIGURES_CPU_MITIGATIONS=y
 +
 +#
 +# General architecture-dependent options
 +#
-+CONFIG_CRASH_CORE=y
-+CONFIG_KEXEC_CORE=y
 +CONFIG_GENERIC_ENTRY=y
 +CONFIG_KPROBES=y
 +CONFIG_JUMP_LABEL=y
@@ -628,6 +657,7 @@ index 000000000000..e7c7afed1e9e
 +CONFIG_MMU_GATHER_MERGE_VMAS=y
 +CONFIG_MMU_LAZY_TLB_REFCOUNT=y
 +CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG=y
++CONFIG_ARCH_HAVE_EXTRA_ELF_NOTES=y
 +CONFIG_ARCH_HAS_NMI_SAFE_THIS_CPU_OPS=y
 +CONFIG_HAVE_ALIGNED_STRUCT_PAGE=y
 +CONFIG_HAVE_CMPXCHG_LOCAL=y
@@ -665,8 +695,11 @@ index 000000000000..e7c7afed1e9e
 +CONFIG_HAVE_ARCH_MMAP_RND_BITS=y
 +CONFIG_HAVE_EXIT_THREAD=y
 +CONFIG_ARCH_MMAP_RND_BITS=28
++CONFIG_HAVE_PAGE_SIZE_4KB=y
++CONFIG_PAGE_SIZE_4KB=y
 +CONFIG_PAGE_SIZE_LESS_THAN_64KB=y
 +CONFIG_PAGE_SIZE_LESS_THAN_256KB=y
++CONFIG_PAGE_SHIFT=12
 +CONFIG_HAVE_OBJTOOL=y
 +CONFIG_HAVE_JUMP_LABEL_HACK=y
 +CONFIG_HAVE_NOINSTR_HACK=y
@@ -675,6 +708,7 @@ index 000000000000..e7c7afed1e9e
 +CONFIG_HAVE_STACK_VALIDATION=y
 +CONFIG_HAVE_RELIABLE_STACKTRACE=y
 +CONFIG_COMPAT_32BIT_TIME=y
++CONFIG_ARCH_SUPPORTS_RT=y
 +CONFIG_HAVE_ARCH_VMAP_STACK=y
 +CONFIG_VMAP_STACK=y
 +CONFIG_HAVE_ARCH_RANDOMIZE_KSTACK_OFFSET=y
@@ -697,7 +731,9 @@ index 000000000000..e7c7afed1e9e
 +CONFIG_ARCH_HAS_ELFCORE_COMPAT=y
 +CONFIG_ARCH_HAS_PARANOID_L1D_FLUSH=y
 +CONFIG_DYNAMIC_SIGFRAME=y
++CONFIG_ARCH_HAS_HW_PTE_YOUNG=y
 +CONFIG_ARCH_HAS_NONLEAF_PMD_YOUNG=y
++CONFIG_ARCH_HAS_KERNEL_FPU_SUPPORT=y
 +
 +#
 +# GCOV-based kernel profiling
@@ -707,15 +743,12 @@ index 000000000000..e7c7afed1e9e
 +# end of GCOV-based kernel profiling
 +
 +CONFIG_HAVE_GCC_PLUGINS=y
-+CONFIG_GCC_PLUGINS=y
-+# CONFIG_GCC_PLUGIN_LATENT_ENTROPY is not set
 +CONFIG_FUNCTION_ALIGNMENT_4B=y
 +CONFIG_FUNCTION_ALIGNMENT_16B=y
 +CONFIG_FUNCTION_ALIGNMENT=16
 +# end of General architecture-dependent options
 +
 +CONFIG_RT_MUTEXES=y
-+CONFIG_BASE_SMALL=0
 +CONFIG_MODULES=y
 +# CONFIG_MODULE_DEBUG is not set
 +# CONFIG_MODULE_FORCE_LOAD is not set
@@ -725,10 +758,7 @@ index 000000000000..e7c7afed1e9e
 +# CONFIG_MODVERSIONS is not set
 +# CONFIG_MODULE_SRCVERSION_ALL is not set
 +# CONFIG_MODULE_SIG is not set
-+CONFIG_MODULE_COMPRESS_NONE=y
-+# CONFIG_MODULE_COMPRESS_GZIP is not set
-+# CONFIG_MODULE_COMPRESS_XZ is not set
-+# CONFIG_MODULE_COMPRESS_ZSTD is not set
++# CONFIG_MODULE_COMPRESS is not set
 +# CONFIG_MODULE_ALLOW_MISSING_NAMESPACE_IMPORTS is not set
 +CONFIG_MODPROBE_PATH="/sbin/modprobe"
 +# CONFIG_TRIM_UNUSED_KSYMS is not set
@@ -738,6 +768,7 @@ index 000000000000..e7c7afed1e9e
 +CONFIG_BLK_RQ_ALLOC_TIME=y
 +# CONFIG_BLK_DEV_BSGLIB is not set
 +# CONFIG_BLK_DEV_INTEGRITY is not set
++CONFIG_BLK_DEV_WRITE_MOUNTED=y
 +# CONFIG_BLK_DEV_ZONED is not set
 +# CONFIG_BLK_DEV_THROTTLING is not set
 +# CONFIG_BLK_WBT is not set
@@ -795,16 +826,17 @@ index 000000000000..e7c7afed1e9e
 +# CONFIG_ZSWAP is not set
 +
 +#
-+# SLAB allocator options
++# Slab allocator options
 +#
-+# CONFIG_SLAB_DEPRECATED is not set
 +CONFIG_SLUB=y
 +# CONFIG_SLUB_TINY is not set
 +CONFIG_SLAB_MERGE_DEFAULT=y
 +# CONFIG_SLAB_FREELIST_RANDOM is not set
 +# CONFIG_SLAB_FREELIST_HARDENED is not set
++# CONFIG_SLAB_BUCKETS is not set
 +# CONFIG_SLUB_STATS is not set
-+# end of SLAB allocator options
++# CONFIG_RANDOM_KMALLOC_CACHES is not set
++# end of Slab allocator options
 +
 +# CONFIG_SHUFFLE_PAGE_ALLOCATOR is not set
 +# CONFIG_COMPAT_BRK is not set
@@ -812,18 +844,20 @@ index 000000000000..e7c7afed1e9e
 +CONFIG_SPARSEMEM_EXTREME=y
 +CONFIG_SPARSEMEM_VMEMMAP_ENABLE=y
 +CONFIG_SPARSEMEM_VMEMMAP=y
-+CONFIG_ARCH_WANT_OPTIMIZE_VMEMMAP=y
-+CONFIG_HAVE_FAST_GUP=y
++CONFIG_ARCH_WANT_OPTIMIZE_DAX_VMEMMAP=y
++CONFIG_ARCH_WANT_OPTIMIZE_HUGETLB_VMEMMAP=y
++CONFIG_HAVE_GUP_FAST=y
 +CONFIG_EXCLUSIVE_SYSTEM_RAM=y
 +CONFIG_ARCH_ENABLE_MEMORY_HOTPLUG=y
 +# CONFIG_MEMORY_HOTPLUG is not set
-+CONFIG_SPLIT_PTLOCK_CPUS=4
++CONFIG_ARCH_MHP_MEMMAP_ON_MEMORY_ENABLE=y
 +CONFIG_ARCH_ENABLE_SPLIT_PMD_PTLOCK=y
 +CONFIG_COMPACTION=y
 +CONFIG_COMPACT_UNEVICTABLE_DEFAULT=1
 +# CONFIG_PAGE_REPORTING is not set
 +CONFIG_MIGRATION=y
 +CONFIG_ARCH_ENABLE_HUGEPAGE_MIGRATION=y
++CONFIG_PCP_BATCH_SCALE_MAX=5
 +CONFIG_PHYS_ADDR_T_64BIT=y
 +# CONFIG_KSM is not set
 +CONFIG_DEFAULT_MMAP_MIN_ADDR=4096
@@ -832,6 +866,7 @@ index 000000000000..e7c7afed1e9e
 +CONFIG_ARCH_WANT_GENERAL_HUGETLB=y
 +CONFIG_ARCH_WANTS_THP_SWAP=y
 +# CONFIG_TRANSPARENT_HUGEPAGE is not set
++CONFIG_PGTABLE_HAS_HUGE_LEAVES=y
 +CONFIG_NEED_PER_CPU_KM=y
 +CONFIG_NEED_PER_CPU_EMBED_FIRST_CHUNK=y
 +CONFIG_NEED_PER_CPU_PAGE_FIRST_CHUNK=y
@@ -847,17 +882,20 @@ index 000000000000..e7c7afed1e9e
 +CONFIG_ZONE_DMA32=y
 +CONFIG_ARCH_USES_HIGH_VMA_FLAGS=y
 +CONFIG_ARCH_HAS_PKEYS=y
++CONFIG_ARCH_USES_PG_ARCH_2=y
 +CONFIG_VM_EVENT_COUNTERS=y
 +# CONFIG_PERCPU_STATS is not set
 +# CONFIG_GUP_TEST is not set
 +# CONFIG_DMAPOOL_TEST is not set
 +CONFIG_ARCH_HAS_PTE_SPECIAL=y
++CONFIG_MEMFD_CREATE=y
 +CONFIG_SECRETMEM=y
 +# CONFIG_ANON_VMA_NAME is not set
 +# CONFIG_USERFAULTFD is not set
 +# CONFIG_LRU_GEN is not set
 +CONFIG_ARCH_SUPPORTS_PER_VMA_LOCK=y
 +CONFIG_LOCK_MM_AND_FIND_VMA=y
++CONFIG_EXECMEM=y
 +
 +#
 +# Data Access Monitoring
@@ -874,6 +912,7 @@ index 000000000000..e7c7afed1e9e
 +CONFIG_HAVE_EISA=y
 +# CONFIG_EISA is not set
 +CONFIG_HAVE_PCI=y
++CONFIG_GENERIC_PCI_IOMAP=y
 +# CONFIG_PCI is not set
 +# CONFIG_PCCARD is not set
 +
@@ -903,6 +942,7 @@ index 000000000000..e7c7afed1e9e
 +# CONFIG_DEBUG_DEVRES is not set
 +# CONFIG_DEBUG_TEST_DRIVER_REMOVE is not set
 +# CONFIG_TEST_ASYNC_DRIVER_PROBE is not set
++CONFIG_GENERIC_CPU_DEVICES=y
 +CONFIG_GENERIC_CPU_AUTOPROBE=y
 +CONFIG_GENERIC_CPU_VULNERABILITIES=y
 +CONFIG_DMA_SHARED_BUFFER=y
@@ -916,6 +956,11 @@ index 000000000000..e7c7afed1e9e
 +# CONFIG_MHI_BUS is not set
 +# CONFIG_MHI_BUS_EP is not set
 +# end of Bus devices
++
++#
++# Cache Drivers
++#
++# end of Cache Drivers
 +
 +#
 +# Firmware Drivers
@@ -936,6 +981,11 @@ index 000000000000..e7c7afed1e9e
 +# CONFIG_GOOGLE_FIRMWARE is not set
 +
 +#
++# Qualcomm firmware drivers
++#
++# end of Qualcomm firmware drivers
++
++#
 +# Tegra firmware driver
 +#
 +# end of Tegra firmware driver
@@ -950,6 +1000,8 @@ index 000000000000..e7c7afed1e9e
 +# CONFIG_BLK_DEV_NULL_BLK is not set
 +CONFIG_BLK_DEV_X86ISA=y
 +# CONFIG_BLK_DEV_FD is not set
++# CONFIG_ZRAM is not set
++CONFIG_ZRAM_DEF_COMP="unset-value"
 +# CONFIG_BLK_DEV_LOOP is not set
 +
 +#
@@ -985,13 +1037,13 @@ index 000000000000..e7c7afed1e9e
 +# CONFIG_DS1682 is not set
 +# CONFIG_SRAM is not set
 +# CONFIG_XILINX_SDFEC is not set
++# CONFIG_NSM is not set
 +# CONFIG_C2PORT is not set
 +
 +#
 +# EEPROM support
 +#
 +# CONFIG_EEPROM_AT24 is not set
-+# CONFIG_EEPROM_LEGACY is not set
 +# CONFIG_EEPROM_MAX6875 is not set
 +# CONFIG_EEPROM_93CX6 is not set
 +# CONFIG_EEPROM_IDT_89HPESX is not set
@@ -1103,7 +1155,6 @@ index 000000000000..e7c7afed1e9e
 +CONFIG_CONSOLE_TRANSLATIONS=y
 +CONFIG_VT_CONSOLE=y
 +CONFIG_VT_CONSOLE_SLEEP=y
-+CONFIG_HW_CONSOLE=y
 +# CONFIG_VT_HW_CONSOLE_BINDING is not set
 +CONFIG_UNIX98_PTYS=y
 +# CONFIG_LEGACY_PTYS is not set
@@ -1159,7 +1210,6 @@ index 000000000000..e7c7afed1e9e
 +#
 +CONFIG_I2C=y
 +CONFIG_I2C_BOARDINFO=y
-+CONFIG_I2C_COMPAT=y
 +# CONFIG_I2C_CHARDEV is not set
 +# CONFIG_I2C_MUX is not set
 +CONFIG_I2C_HELPER_AUTO=y
@@ -1171,7 +1221,7 @@ index 000000000000..e7c7afed1e9e
 +#
 +# I2C system bus drivers (mostly embedded / system-on-chip)
 +#
-+# CONFIG_I2C_DESIGNWARE_PLATFORM is not set
++# CONFIG_I2C_DESIGNWARE_CORE is not set
 +# CONFIG_I2C_OCORES is not set
 +# CONFIG_I2C_PCA_PLATFORM is not set
 +# CONFIG_I2C_SIMTEC is not set
@@ -1228,6 +1278,7 @@ index 000000000000..e7c7afed1e9e
 +# CONFIG_GPIOLIB is not set
 +# CONFIG_W1 is not set
 +# CONFIG_POWER_RESET is not set
++# CONFIG_POWER_SEQUENCING is not set
 +CONFIG_POWER_SUPPLY=y
 +# CONFIG_POWER_SUPPLY_DEBUG is not set
 +# CONFIG_IP5XXX_POWER is not set
@@ -1241,8 +1292,8 @@ index 000000000000..e7c7afed1e9e
 +# CONFIG_BATTERY_SBS is not set
 +# CONFIG_CHARGER_SBS is not set
 +# CONFIG_BATTERY_BQ27XXX is not set
-+# CONFIG_BATTERY_MAX17040 is not set
 +# CONFIG_BATTERY_MAX17042 is not set
++# CONFIG_BATTERY_MAX1720X is not set
 +# CONFIG_CHARGER_MAX8903 is not set
 +# CONFIG_CHARGER_LP8727 is not set
 +# CONFIG_CHARGER_LTC4162L is not set
@@ -1253,11 +1304,13 @@ index 000000000000..e7c7afed1e9e
 +# CONFIG_BATTERY_RT5033 is not set
 +# CONFIG_CHARGER_BD99954 is not set
 +# CONFIG_BATTERY_UG3105 is not set
++# CONFIG_FUEL_GAUGE_MM8013 is not set
 +# CONFIG_HWMON is not set
 +CONFIG_THERMAL=y
 +# CONFIG_THERMAL_STATISTICS is not set
++# CONFIG_THERMAL_DEBUGFS is not set
++# CONFIG_THERMAL_CORE_TESTING is not set
 +CONFIG_THERMAL_EMERGENCY_POWEROFF_DELAY_MS=0
-+CONFIG_THERMAL_WRITABLE_TRIPS=y
 +CONFIG_THERMAL_DEFAULT_GOV_STEP_WISE=y
 +# CONFIG_THERMAL_DEFAULT_GOV_FAIR_SHARE is not set
 +# CONFIG_THERMAL_DEFAULT_GOV_USER_SPACE is not set
@@ -1298,6 +1351,7 @@ index 000000000000..e7c7afed1e9e
 +# CONFIG_MFD_BCM590XX is not set
 +# CONFIG_MFD_BD9571MWV is not set
 +# CONFIG_MFD_AXP20X_I2C is not set
++# CONFIG_MFD_CS42L43_I2C is not set
 +# CONFIG_MFD_MADERA is not set
 +# CONFIG_PMIC_DA903X is not set
 +# CONFIG_MFD_DA9052_I2C is not set
@@ -1335,7 +1389,6 @@ index 000000000000..e7c7afed1e9e
 +# CONFIG_MFD_SM501 is not set
 +# CONFIG_MFD_SKY81452 is not set
 +# CONFIG_MFD_SYSCON is not set
-+# CONFIG_MFD_TI_AM335X_TSCADC is not set
 +# CONFIG_MFD_LP3943 is not set
 +# CONFIG_MFD_LP8788 is not set
 +# CONFIG_MFD_TI_LMU is not set
@@ -1359,6 +1412,7 @@ index 000000000000..e7c7afed1e9e
 +# CONFIG_MFD_WM8350_I2C is not set
 +# CONFIG_MFD_WM8994 is not set
 +# CONFIG_MFD_ATC260X_I2C is not set
++# CONFIG_MFD_CS40L50_I2C is not set
 +# end of Multifunction device drivers
 +
 +# CONFIG_REGULATOR is not set
@@ -1376,11 +1430,13 @@ index 000000000000..e7c7afed1e9e
 +# Graphics support
 +#
 +CONFIG_APERTURE_HELPERS=y
-+CONFIG_VIDEO_CMDLINE=y
-+CONFIG_VIDEO_NOMODESET=y
++CONFIG_VIDEO=y
++# CONFIG_AUXDISPLAY is not set
 +CONFIG_DRM=y
 +# CONFIG_DRM_DEBUG_MM is not set
++# CONFIG_DRM_PANIC is not set
 +# CONFIG_DRM_DEBUG_MODESET_LOCK is not set
++# CONFIG_DRM_FBDEV_EMULATION is not set
 +# CONFIG_DRM_LOAD_EDID_FIRMWARE is not set
 +
 +#
@@ -1409,7 +1465,6 @@ index 000000000000..e7c7afed1e9e
 +# CONFIG_DRM_ETNAVIV is not set
 +# CONFIG_DRM_SIMPLEDRM is not set
 +# CONFIG_DRM_SSD130X is not set
-+# CONFIG_DRM_LEGACY is not set
 +CONFIG_DRM_PANEL_ORIENTATION_QUIRKS=y
 +
 +#
@@ -1423,11 +1478,13 @@ index 000000000000..e7c7afed1e9e
 +#
 +# CONFIG_LCD_CLASS_DEVICE is not set
 +CONFIG_BACKLIGHT_CLASS_DEVICE=y
++# CONFIG_BACKLIGHT_KTD2801 is not set
 +# CONFIG_BACKLIGHT_KTZ8866 is not set
 +# CONFIG_BACKLIGHT_QCOM_WLED is not set
 +# CONFIG_BACKLIGHT_SAHARA is not set
 +# CONFIG_BACKLIGHT_ADP8860 is not set
 +# CONFIG_BACKLIGHT_ADP8870 is not set
++# CONFIG_BACKLIGHT_LM3509 is not set
 +# CONFIG_BACKLIGHT_LM3639 is not set
 +# CONFIG_BACKLIGHT_LV5207LP is not set
 +# CONFIG_BACKLIGHT_BD6107 is not set
@@ -1476,7 +1533,6 @@ index 000000000000..e7c7afed1e9e
 +# CONFIG_DMABUF_SYSFS_STATS is not set
 +# end of DMABUF options
 +
-+# CONFIG_AUXDISPLAY is not set
 +# CONFIG_UIO is not set
 +# CONFIG_VFIO is not set
 +# CONFIG_VIRT_DRIVERS is not set
@@ -1494,7 +1550,9 @@ index 000000000000..e7c7afed1e9e
 +# CONFIG_GREYBUS is not set
 +# CONFIG_COMEDI is not set
 +# CONFIG_STAGING is not set
++# CONFIG_GOLDFISH is not set
 +# CONFIG_CHROME_PLATFORMS is not set
++# CONFIG_CZNIC_PLATFORMS is not set
 +# CONFIG_MELLANOX_PLATFORM is not set
 +# CONFIG_SURFACE_PLATFORMS is not set
 +CONFIG_X86_PLATFORM_DEVICES=y
@@ -1510,7 +1568,7 @@ index 000000000000..e7c7afed1e9e
 +
 +# CONFIG_INTEL_PUNIT_IPC is not set
 +# CONFIG_SAMSUNG_LAPTOP is not set
-+# CONFIG_MLX_PLATFORM is not set
++# CONFIG_SIEMENS_SIMATIC_IPC is not set
 +# CONFIG_WINMATE_FM07_KEYS is not set
 +# CONFIG_COMMON_CLK is not set
 +# CONFIG_HWSPINLOCK is not set
@@ -1590,6 +1648,31 @@ index 000000000000..e7c7afed1e9e
 +# end of Xilinx SoC drivers
 +# end of SOC (System On Chip) specific Drivers
 +
++#
++# PM Domains
++#
++
++#
++# Amlogic PM Domains
++#
++# end of Amlogic PM Domains
++
++#
++# Broadcom PM Domains
++#
++# end of Broadcom PM Domains
++
++#
++# i.MX PM Domains
++#
++# end of i.MX PM Domains
++
++#
++# Qualcomm PM Domains
++#
++# end of Qualcomm PM Domains
++# end of PM Domains
++
 +# CONFIG_PM_DEVFREQ is not set
 +# CONFIG_EXTCON is not set
 +# CONFIG_MEMORY is not set
@@ -1599,6 +1682,7 @@ index 000000000000..e7c7afed1e9e
 +#
 +# IRQ chip support
 +#
++# CONFIG_LAN966X_OIC is not set
 +# end of IRQ chip support
 +
 +# CONFIG_IPACK_BUS is not set
@@ -1664,6 +1748,7 @@ index 000000000000..e7c7afed1e9e
 +CONFIG_DCACHE_WORD_ACCESS=y
 +# CONFIG_VALIDATE_FS_PARSER is not set
 +CONFIG_FS_IOMAP=y
++CONFIG_BUFFER_HEAD=y
 +CONFIG_LEGACY_DIRECT_IO=y
 +# CONFIG_EXT2_FS is not set
 +# CONFIG_EXT3_FS is not set
@@ -1682,6 +1767,7 @@ index 000000000000..e7c7afed1e9e
 +# CONFIG_BTRFS_FS is not set
 +# CONFIG_NILFS2_FS is not set
 +# CONFIG_F2FS_FS is not set
++# CONFIG_BCACHEFS_FS is not set
 +CONFIG_FS_POSIX_ACL=y
 +CONFIG_EXPORTFS=y
 +# CONFIG_EXPORTFS_BLOCK_OPS is not set
@@ -1698,7 +1784,6 @@ index 000000000000..e7c7afed1e9e
 +# CONFIG_QFMT_V1 is not set
 +CONFIG_QFMT_V2=y
 +CONFIG_QUOTACTL=y
-+CONFIG_AUTOFS4_FS=y
 +CONFIG_AUTOFS_FS=y
 +# CONFIG_FUSE_FS is not set
 +# CONFIG_OVERLAY_FS is not set
@@ -1706,7 +1791,6 @@ index 000000000000..e7c7afed1e9e
 +#
 +# Caches
 +#
-+# CONFIG_FSCACHE is not set
 +# end of Caches
 +
 +#
@@ -1728,8 +1812,8 @@ index 000000000000..e7c7afed1e9e
 +CONFIG_FAT_DEFAULT_IOCHARSET="iso8859-1"
 +# CONFIG_FAT_DEFAULT_UTF8 is not set
 +# CONFIG_EXFAT_FS is not set
-+# CONFIG_NTFS_FS is not set
 +# CONFIG_NTFS3_FS is not set
++# CONFIG_NTFS_FS is not set
 +# end of DOS/FAT/EXFAT/NT Filesystems
 +
 +#
@@ -1749,11 +1833,11 @@ index 000000000000..e7c7afed1e9e
 +CONFIG_TMPFS_POSIX_ACL=y
 +CONFIG_TMPFS_XATTR=y
 +# CONFIG_TMPFS_INODE64 is not set
++# CONFIG_TMPFS_QUOTA is not set
 +CONFIG_HUGETLBFS=y
++# CONFIG_HUGETLB_PAGE_OPTIMIZE_VMEMMAP_DEFAULT_ON is not set
 +CONFIG_HUGETLB_PAGE=y
 +CONFIG_HUGETLB_PAGE_OPTIMIZE_VMEMMAP=y
-+# CONFIG_HUGETLB_PAGE_OPTIMIZE_VMEMMAP_DEFAULT_ON is not set
-+CONFIG_MEMFD_CREATE=y
 +CONFIG_ARCH_HAS_GIGANTIC_PAGE=y
 +# CONFIG_CONFIGFS_FS is not set
 +# end of Pseudo filesystems
@@ -1846,6 +1930,9 @@ index 000000000000..e7c7afed1e9e
 +# CONFIG_ENCRYPTED_KEYS is not set
 +# CONFIG_KEY_DH_OPERATIONS is not set
 +# CONFIG_SECURITY_DMESG_RESTRICT is not set
++CONFIG_PROC_MEM_ALWAYS_FORCE=y
++# CONFIG_PROC_MEM_FORCE_PTRACE is not set
++# CONFIG_PROC_MEM_NO_FORCE is not set
 +CONFIG_SECURITY=y
 +# CONFIG_SECURITYFS is not set
 +CONFIG_SECURITY_NETWORK=y
@@ -1878,16 +1965,20 @@ index 000000000000..e7c7afed1e9e
 +# CONFIG_INIT_STACK_NONE is not set
 +# CONFIG_INIT_STACK_ALL_PATTERN is not set
 +CONFIG_INIT_STACK_ALL_ZERO=y
-+# CONFIG_GCC_PLUGIN_STACKLEAK is not set
 +# CONFIG_INIT_ON_ALLOC_DEFAULT_ON is not set
 +# CONFIG_INIT_ON_FREE_DEFAULT_ON is not set
 +CONFIG_CC_HAS_ZERO_CALL_USED_REGS=y
 +# CONFIG_ZERO_CALL_USED_REGS is not set
 +# end of Memory initialization
 +
++#
++# Hardening of kernel data structures
++#
++# CONFIG_LIST_HARDENED is not set
++# CONFIG_BUG_ON_DATA_CORRUPTION is not set
++# end of Hardening of kernel data structures
++
 +CONFIG_RANDSTRUCT_NONE=y
-+# CONFIG_RANDSTRUCT_FULL is not set
-+# CONFIG_RANDSTRUCT_PERFORMANCE is not set
 +# end of Kernel hardening options
 +# end of Security options
 +
@@ -1900,6 +1991,7 @@ index 000000000000..e7c7afed1e9e
 +CONFIG_CRYPTO_ALGAPI2=y
 +CONFIG_CRYPTO_AEAD=y
 +CONFIG_CRYPTO_AEAD2=y
++CONFIG_CRYPTO_SIG=y
 +CONFIG_CRYPTO_SIG2=y
 +CONFIG_CRYPTO_SKCIPHER=y
 +CONFIG_CRYPTO_SKCIPHER2=y
@@ -1930,7 +2022,6 @@ index 000000000000..e7c7afed1e9e
 +# CONFIG_CRYPTO_ECDH is not set
 +# CONFIG_CRYPTO_ECDSA is not set
 +# CONFIG_CRYPTO_ECRDSA is not set
-+# CONFIG_CRYPTO_SM2 is not set
 +# CONFIG_CRYPTO_CURVE25519 is not set
 +# end of Public-key cryptography
 +
@@ -1957,14 +2048,12 @@ index 000000000000..e7c7afed1e9e
 +# CONFIG_CRYPTO_ADIANTUM is not set
 +# CONFIG_CRYPTO_CHACHA20 is not set
 +CONFIG_CRYPTO_CBC=y
-+# CONFIG_CRYPTO_CFB is not set
 +CONFIG_CRYPTO_CTR=y
 +# CONFIG_CRYPTO_CTS is not set
-+# CONFIG_CRYPTO_ECB is not set
++CONFIG_CRYPTO_ECB=y
 +# CONFIG_CRYPTO_HCTR2 is not set
 +# CONFIG_CRYPTO_KEYWRAP is not set
 +# CONFIG_CRYPTO_LRW is not set
-+# CONFIG_CRYPTO_OFB is not set
 +# CONFIG_CRYPTO_PCBC is not set
 +# CONFIG_CRYPTO_XTS is not set
 +# end of Length-preserving ciphers and modes
@@ -2018,7 +2107,7 @@ index 000000000000..e7c7afed1e9e
 +# Compression
 +#
 +# CONFIG_CRYPTO_DEFLATE is not set
-+# CONFIG_CRYPTO_LZO is not set
++CONFIG_CRYPTO_LZO=y
 +# CONFIG_CRYPTO_842 is not set
 +# CONFIG_CRYPTO_LZ4 is not set
 +# CONFIG_CRYPTO_LZ4HC is not set
@@ -2035,7 +2124,9 @@ index 000000000000..e7c7afed1e9e
 +# CONFIG_CRYPTO_DRBG_CTR is not set
 +CONFIG_CRYPTO_DRBG=y
 +CONFIG_CRYPTO_JITTERENTROPY=y
-+# CONFIG_CRYPTO_JITTERENTROPY_TESTINTERFACE is not set
++CONFIG_CRYPTO_JITTERENTROPY_MEMORY_BLOCKS=64
++CONFIG_CRYPTO_JITTERENTROPY_MEMORY_BLOCKSIZE=32
++CONFIG_CRYPTO_JITTERENTROPY_OSR=1
 +# end of Random number generation
 +
 +#
@@ -2118,7 +2209,6 @@ index 000000000000..e7c7afed1e9e
 +CONFIG_GENERIC_STRNLEN_USER=y
 +# CONFIG_CORDIC is not set
 +# CONFIG_PRIME_NUMBERS is not set
-+CONFIG_GENERIC_PCI_IOMAP=y
 +CONFIG_GENERIC_IOMAP=y
 +CONFIG_ARCH_USE_CMPXCHG_LOCKREF=y
 +CONFIG_ARCH_HAS_FAST_MULTIPLIER=y
@@ -2166,10 +2256,11 @@ index 000000000000..e7c7afed1e9e
 +CONFIG_XZ_DEC=y
 +CONFIG_XZ_DEC_X86=y
 +CONFIG_XZ_DEC_POWERPC=y
-+CONFIG_XZ_DEC_IA64=y
 +CONFIG_XZ_DEC_ARM=y
 +CONFIG_XZ_DEC_ARMTHUMB=y
++CONFIG_XZ_DEC_ARM64=y
 +CONFIG_XZ_DEC_SPARC=y
++CONFIG_XZ_DEC_RISCV=y
 +# CONFIG_XZ_DEC_MICROLZMA is not set
 +CONFIG_XZ_DEC_BCJ=y
 +# CONFIG_XZ_DEC_TEST is not set
@@ -2181,6 +2272,7 @@ index 000000000000..e7c7afed1e9e
 +CONFIG_DECOMPRESS_LZ4=y
 +CONFIG_DECOMPRESS_ZSTD=y
 +CONFIG_GENERIC_ALLOCATOR=y
++CONFIG_XARRAY_MULTI=y
 +CONFIG_ASSOCIATIVE_ARRAY=y
 +CONFIG_HAS_IOMEM=y
 +CONFIG_HAS_IOPORT=y
@@ -2190,9 +2282,12 @@ index 000000000000..e7c7afed1e9e
 +CONFIG_NEED_DMA_MAP_STATE=y
 +CONFIG_ARCH_DMA_ADDR_T_64BIT=y
 +CONFIG_SWIOTLB=y
++# CONFIG_SWIOTLB_DYNAMIC is not set
++CONFIG_DMA_NEED_SYNC=y
 +# CONFIG_DMA_API_DEBUG is not set
 +# CONFIG_DMA_MAP_BENCHMARK is not set
 +CONFIG_SGL_ALLOC=y
++CONFIG_FORCE_NR_CPUS=y
 +CONFIG_GLOB=y
 +# CONFIG_GLOB_SELFTEST is not set
 +CONFIG_CLZ_TAB=y
@@ -2202,6 +2297,8 @@ index 000000000000..e7c7afed1e9e
 +CONFIG_HAVE_GENERIC_VDSO=y
 +CONFIG_GENERIC_GETTIMEOFDAY=y
 +CONFIG_GENERIC_VDSO_TIME_NS=y
++CONFIG_GENERIC_VDSO_OVERFLOW_PROTECT=y
++CONFIG_VDSO_GETRANDOM=y
 +CONFIG_SG_POOL=y
 +CONFIG_ARCH_HAS_PMEM_API=y
 +CONFIG_ARCH_HAS_CPU_CACHE_INVALIDATE_MEMREGION=y
@@ -2209,7 +2306,9 @@ index 000000000000..e7c7afed1e9e
 +CONFIG_ARCH_HAS_COPY_MC=y
 +CONFIG_ARCH_STACKWALK=y
 +CONFIG_STACKDEPOT=y
++CONFIG_STACKDEPOT_MAX_FRAMES=64
 +CONFIG_SBITMAP=y
++# CONFIG_LWQ_TEST is not set
 +# end of Library routines
 +
 +#
@@ -2238,7 +2337,7 @@ index 000000000000..e7c7afed1e9e
 +#
 +# Compile-time checks and compiler options
 +#
-+CONFIG_AS_HAS_NON_CONST_LEB128=y
++CONFIG_AS_HAS_NON_CONST_ULEB128=y
 +CONFIG_DEBUG_INFO_NONE=y
 +# CONFIG_DEBUG_INFO_DWARF_TOOLCHAIN_DEFAULT is not set
 +# CONFIG_DEBUG_INFO_DWARF4 is not set
@@ -2268,7 +2367,7 @@ index 000000000000..e7c7afed1e9e
 +# CONFIG_DEBUG_FS_ALLOW_NONE is not set
 +CONFIG_HAVE_ARCH_KGDB=y
 +# CONFIG_KGDB is not set
-+CONFIG_ARCH_HAS_UBSAN_SANITIZE_ALL=y
++CONFIG_ARCH_HAS_UBSAN=y
 +# CONFIG_UBSAN is not set
 +CONFIG_HAVE_ARCH_KCSAN=y
 +CONFIG_HAVE_KCSAN_COMPILER=y
@@ -2311,6 +2410,7 @@ index 000000000000..e7c7afed1e9e
 +# CONFIG_DEBUG_MEMORY_INIT is not set
 +CONFIG_ARCH_SUPPORTS_KMAP_LOCAL_FORCE_MAP=y
 +# CONFIG_DEBUG_KMAP_LOCAL_FORCE_MAP is not set
++# CONFIG_MEM_ALLOC_PROFILING is not set
 +CONFIG_HAVE_ARCH_KASAN=y
 +CONFIG_HAVE_ARCH_KASAN_VMALLOC=y
 +CONFIG_CC_HAS_KASAN_GENERIC=y
@@ -2365,7 +2465,6 @@ index 000000000000..e7c7afed1e9e
 +# CONFIG_LOCK_TORTURE_TEST is not set
 +# CONFIG_WW_MUTEX_SELFTEST is not set
 +# CONFIG_SCF_TORTURE_TEST is not set
-+# CONFIG_CSD_LOCK_WAIT_DEBUG is not set
 +# end of Lock Debugging (spinlocks, mutexes, etc...)
 +
 +# CONFIG_NMI_CHECK_CPU is not set
@@ -2381,11 +2480,8 @@ index 000000000000..e7c7afed1e9e
 +# CONFIG_DEBUG_PLIST is not set
 +# CONFIG_DEBUG_SG is not set
 +# CONFIG_DEBUG_NOTIFIERS is not set
-+# CONFIG_BUG_ON_DATA_CORRUPTION is not set
 +# CONFIG_DEBUG_MAPLE_TREE is not set
 +# end of Debug kernel data structures
-+
-+# CONFIG_DEBUG_CREDENTIALS is not set
 +
 +#
 +# RCU Debugging
@@ -2503,6 +2599,7 @@ index 000000000000..e7c7afed1e9e
 +# CONFIG_LKDTM is not set
 +# CONFIG_TEST_MIN_HEAP is not set
 +# CONFIG_TEST_DIV64 is not set
++# CONFIG_TEST_MULDIV64 is not set
 +# CONFIG_BACKTRACE_SELF_TEST is not set
 +# CONFIG_TEST_REF_TRACKER is not set
 +# CONFIG_RBTREE_TEST is not set
@@ -2511,8 +2608,6 @@ index 000000000000..e7c7afed1e9e
 +# CONFIG_PERCPU_TEST is not set
 +# CONFIG_ATOMIC64_SELFTEST is not set
 +# CONFIG_TEST_HEXDUMP is not set
-+# CONFIG_STRING_SELFTEST is not set
-+# CONFIG_TEST_STRING_HELPERS is not set
 +# CONFIG_TEST_KSTRTOX is not set
 +# CONFIG_TEST_PRINTF is not set
 +# CONFIG_TEST_SCANF is not set
@@ -2525,7 +2620,6 @@ index 000000000000..e7c7afed1e9e
 +# CONFIG_TEST_LKM is not set
 +# CONFIG_TEST_BITOPS is not set
 +# CONFIG_TEST_VMALLOC is not set
-+# CONFIG_TEST_USER_COPY is not set
 +# CONFIG_FIND_BIT_BENCHMARK is not set
 +# CONFIG_TEST_FIRMWARE is not set
 +# CONFIG_TEST_SYSCTL is not set
@@ -2536,6 +2630,7 @@ index 000000000000..e7c7afed1e9e
 +# CONFIG_TEST_FREE_PAGES is not set
 +# CONFIG_TEST_FPU is not set
 +# CONFIG_TEST_CLOCKSOURCE_WATCHDOG is not set
++# CONFIG_TEST_OBJPOOL is not set
 +CONFIG_ARCH_USE_MEMTEST=y
 +# CONFIG_MEMTEST is not set
 +# end of Kernel Testing and Coverage
@@ -2546,10 +2641,10 @@ index 000000000000..e7c7afed1e9e
 +# end of Rust hacking
 +# end of Kernel hacking
 diff --git a/arch/x86/boot/compressed/acpi.c b/arch/x86/boot/compressed/acpi.c
-index 9caf89063e77..35e990fc7316 100644
+index f196b1d1ddf8..8a43331a6a56 100644
 --- a/arch/x86/boot/compressed/acpi.c
 +++ b/arch/x86/boot/compressed/acpi.c
-@@ -129,8 +129,9 @@ static acpi_physical_address bios_get_rsdp_addr(void)
+@@ -131,8 +131,9 @@ static acpi_physical_address bios_get_rsdp_addr(void)
  	u8 *rsdp;
  
  	/* Get the location of the Extended BIOS Data Area (EBDA) */
@@ -2562,13 +2657,13 @@ index 9caf89063e77..35e990fc7316 100644
  	/*
  	 * Search EBDA paragraphs (EBDA is required to be a minimum of
 diff --git a/arch/x86/boot/compressed/pgtable_64.c b/arch/x86/boot/compressed/pgtable_64.c
-index 2ac12ff4111b..75e6df88f9cc 100644
+index c882e1f67af0..85c5e3863a9b 100644
 --- a/arch/x86/boot/compressed/pgtable_64.c
 +++ b/arch/x86/boot/compressed/pgtable_64.c
-@@ -55,11 +55,11 @@ static unsigned long find_trampoline_placement(void)
+@@ -50,11 +50,11 @@ static unsigned long find_trampoline_placement(void)
  	 * Only look for values in the legacy ROM for non-EFI system.
  	 */
- 	signature = (char *)&boot_params->efi_info.efi_loader_signature;
+ 	signature = (char *)&boot_params_ptr->efi_info.efi_loader_signature;
 -	if (strncmp(signature, EFI32_LOADER_SIGNATURE, 4) &&
 -	    strncmp(signature, EFI64_LOADER_SIGNATURE, 4)) {
 -		ebda_start = *(unsigned short *)0x40e << 4;
@@ -2620,10 +2715,10 @@ index d75237ba7ce9..a68427c8b7ba 100644
  
  /*
 diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
-index 98c32aa5963a..1c210e43a862 100644
+index f21ff1932699..9b6f84104ddf 100644
 --- a/arch/x86/include/asm/apic.h
 +++ b/arch/x86/include/asm/apic.h
-@@ -121,11 +121,13 @@ extern u64 native_apic_icr_read(void);
+@@ -118,11 +118,13 @@ extern u64 native_apic_icr_read(void);
  
  static inline bool apic_is_x2apic_enabled(void)
  {
@@ -2660,10 +2755,10 @@ index 4d5a17e2febe..bfbc4163df9b 100644
  
  void reserve_bios_regions(void);
 diff --git a/arch/x86/include/asm/i8259.h b/arch/x86/include/asm/i8259.h
-index 637fa1df3512..36875a564e3f 100644
+index c715097e92fd..c4b75a8d420f 100644
 --- a/arch/x86/include/asm/i8259.h
 +++ b/arch/x86/include/asm/i8259.h
-@@ -74,7 +74,8 @@ extern struct legacy_pic null_legacy_pic;
+@@ -76,7 +76,8 @@ extern struct legacy_pic null_legacy_pic;
  
  static inline bool has_legacy_pic(void)
  {
@@ -2674,10 +2769,10 @@ index 637fa1df3512..36875a564e3f 100644
  
  static inline int nr_legacy_irqs(void)
 diff --git a/arch/x86/include/asm/nospec-branch.h b/arch/x86/include/asm/nospec-branch.h
-index 1a65cf4acb2b..905a6e4ad1d3 100644
+index 96b410b1d4e8..c4492e3e2086 100644
 --- a/arch/x86/include/asm/nospec-branch.h
 +++ b/arch/x86/include/asm/nospec-branch.h
-@@ -538,7 +538,7 @@ DECLARE_STATIC_KEY_FALSE(mmio_stale_data_clear);
+@@ -589,7 +589,7 @@ extern u16 mds_verw_sel;
   */
  static __always_inline void mds_clear_cpu_buffers(void)
  {
@@ -2686,7 +2781,7 @@ index 1a65cf4acb2b..905a6e4ad1d3 100644
  
  	/*
  	 * Has to be the memory-operand variant because only that
-@@ -549,7 +549,7 @@ static __always_inline void mds_clear_cpu_buffers(void)
+@@ -600,7 +600,7 @@ static __always_inline void mds_clear_cpu_buffers(void)
  	 *
  	 * "cc" clobber is required because VERW modifies ZF.
  	 */
@@ -2696,10 +2791,10 @@ index 1a65cf4acb2b..905a6e4ad1d3 100644
  
  /**
 diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index 0ba1067f4e5f..f74bf8424f31 100644
+index f43bb974fc66..114ebaca7330 100644
 --- a/arch/x86/kernel/cpu/common.c
 +++ b/arch/x86/kernel/cpu/common.c
-@@ -2017,6 +2017,7 @@ EXPORT_PER_CPU_SYMBOL_GPL(fixed_percpu_data);
+@@ -2024,6 +2024,7 @@ EXPORT_PER_CPU_SYMBOL_GPL(fixed_percpu_data);
  
  static void wrmsrl_cstar(unsigned long val)
  {
@@ -2708,7 +2803,7 @@ index 0ba1067f4e5f..f74bf8424f31 100644
  	 * Intel CPUs do not support 32-bit SYSCALL. Writing to MSR_CSTAR
  	 * is so far ignored by the CPU, but raises a #VE trap in a TDX
 diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
-index fb8cf953380d..1d180e09124a 100644
+index 4893d30ce438..d40f7a6a2ad4 100644
 --- a/arch/x86/kernel/e820.c
 +++ b/arch/x86/kernel/e820.c
 @@ -450,14 +450,14 @@ static int __init __append_e820_table(struct boot_e820_entry *entries, u32 nr_en
@@ -2734,7 +2829,7 @@ index fb8cf953380d..1d180e09124a 100644
  
  static u64 __init
  __e820__range_update(struct e820_table *table, u64 start, u64 size, enum e820_type old_type, enum e820_type new_type)
-@@ -1267,22 +1267,25 @@ char *__init e820__memory_setup_default(void)
+@@ -1256,22 +1256,25 @@ char *__init e820__memory_setup_default(void)
  	 * Otherwise fake a memory map; one section from 0k->640k,
  	 * the next section from 1mb->appropriate_mem_k
  	 */
@@ -2832,10 +2927,10 @@ index 2cd124ad9380..bf475321e8a9 100644
  	 * From SKL PCH onwards, the legacy DMA device is removed in which the
  	 * I/O ports (81h-83h, 87h, 89h-8Bh, 8Fh) related to it are removed
 diff --git a/arch/x86/kernel/i8253.c b/arch/x86/kernel/i8253.c
-index 2b7999a1a50a..052854a91349 100644
+index 80e262bb627f..02030a1d3555 100644
 --- a/arch/x86/kernel/i8253.c
 +++ b/arch/x86/kernel/i8253.c
-@@ -6,12 +6,33 @@
+@@ -6,13 +6,34 @@
  #include <linux/clockchips.h>
  #include <linux/init.h>
  #include <linux/timex.h>
@@ -2843,6 +2938,7 @@ index 2b7999a1a50a..052854a91349 100644
 +#include <linux/interrupt.h>
 +#include <linux/clockx86isa.h>
  
+ #include <asm/hypervisor.h>
  #include <asm/apic.h>
  #include <asm/hpet.h>
  #include <asm/time.h>
@@ -2870,7 +2966,7 @@ index 2b7999a1a50a..052854a91349 100644
  
  /*
   * HPET replaces the PIT, when enabled. So we need to know, which of
-@@ -28,40 +49,43 @@ struct clock_event_device *global_clock_event;
+@@ -29,32 +50,34 @@ struct clock_event_device *global_clock_event;
   * requires to know the local APIC timer frequency as it normally is
   * calibrated against the PIT interrupt.
   */
@@ -2893,14 +2989,26 @@ index 2b7999a1a50a..052854a91349 100644
  
  bool __init pit_timer_init(void)
  {
--	if (!use_pit())
+-	if (!use_pit()) {
+-		/*
+-		 * Don't just ignore the PIT. Ensure it's stopped, because
+-		 * VMMs otherwise steal CPU time just to pointlessly waggle
+-		 * the (masked) IRQ.
+-		 */
+-		clockevent_i8253_disable();
 -		return false;
--
+-	}
 -	clockevent_i8253_init(true);
 -	global_clock_event = &i8253_clockevent;
-+	// if (!use_pit())
++	// if (!use_pit()) {
++	// 	/*
++	// 	 * Don't just ignore the PIT. Ensure it's stopped, because
++	// 	 * VMMs otherwise steal CPU time just to pointlessly waggle
++	// 	 * the (masked) IRQ.
++	// 	 */
++	// 	clockevent_i8253_disable();
 +	// 	return false;
-+	//
++	// }
 +	// clockevent_i8253_init(true);
 +	setup_default_timer_irq();
 +	global_clock_event = &x86isa_clock_event;
@@ -2912,11 +3020,8 @@ index 2b7999a1a50a..052854a91349 100644
 +// #ifndef CONFIG_X86_64
  static int __init init_pit_clocksource(void)
  {
--	 /*
-+	/*
- 	  * Several reasons not to register PIT as a clocksource:
- 	  *
- 	  * - On SMP PIT does not scale due to i8253_lock
+ 	 /*
+@@ -64,11 +87,12 @@ static int __init init_pit_clocksource(void)
  	  * - when HPET is enabled
  	  * - when local APIC timer is active (PIT is switched off)
  	  */
@@ -2935,10 +3040,10 @@ index 2b7999a1a50a..052854a91349 100644
 -#endif /* !CONFIG_X86_64 */
 +// #endif /* !CONFIG_X86_64 */
 diff --git a/arch/x86/kernel/i8259.c b/arch/x86/kernel/i8259.c
-index 4d8aff05a509..5fcc865e6402 100644
+index c20d1832c481..9b3712f35e52 100644
 --- a/arch/x86/kernel/i8259.c
 +++ b/arch/x86/kernel/i8259.c
-@@ -111,12 +111,12 @@ static int i8259A_irq_pending(unsigned int irq)
+@@ -112,12 +112,12 @@ static int i8259A_irq_pending(unsigned int irq)
  
  static void make_8259A_irq(unsigned int irq)
  {
@@ -2954,18 +3059,17 @@ index 4d8aff05a509..5fcc865e6402 100644
  }
  
  /*
-@@ -302,8 +302,8 @@ static void unmask_8259A(void)
+@@ -300,8 +300,8 @@ static void unmask_8259A(void)
+ 
  static int probe_8259A(void)
  {
+-	unsigned char new_val, probe_val = ~(1 << PIC_CASCADE_IR);
  	unsigned long flags;
--	unsigned char probe_val = ~(1 << PIC_CASCADE_IR);
--	unsigned char new_val;
-+	// unsigned char probe_val = ~(1 << PIC_CASCADE_IR);
-+	// unsigned char new_val;
++	// unsigned char new_val, probe_val = ~(1 << PIC_CASCADE_IR);
+ 
  	/*
- 	 * Check to see if we have a PIC.
- 	 * Mask all except the cascade and read
-@@ -313,10 +313,10 @@ static int probe_8259A(void)
+ 	 * If MADT has the PCAT_COMPAT flag set, then do not bother probing
+@@ -329,10 +329,10 @@ static int probe_8259A(void)
  	 */
  	raw_spin_lock_irqsave(&i8259A_lock, flags);
  
@@ -2980,7 +3084,7 @@ index 4d8aff05a509..5fcc865e6402 100644
  		printk(KERN_INFO "Using NULL legacy PIC\n");
  		legacy_pic = &null_legacy_pic;
  	}
-@@ -396,7 +396,7 @@ static int legacy_pic_probe(void)
+@@ -412,7 +412,7 @@ static int legacy_pic_probe(void)
  }
  
  struct legacy_pic null_legacy_pic = {
@@ -2989,7 +3093,7 @@ index 4d8aff05a509..5fcc865e6402 100644
  	.chip = &dummy_irq_chip,
  	.mask = legacy_pic_uint_noop,
  	.unmask = legacy_pic_uint_noop,
-@@ -405,12 +405,12 @@ struct legacy_pic null_legacy_pic = {
+@@ -421,12 +421,12 @@ struct legacy_pic null_legacy_pic = {
  	.init = legacy_pic_int_noop,
  	.probe = legacy_pic_probe,
  	.irq_pending = legacy_pic_irq_pending_noop,
@@ -3005,7 +3109,7 @@ index 4d8aff05a509..5fcc865e6402 100644
  	.unmask = unmask_8259A_irq,
  	.mask_all = mask_8259A,
 diff --git a/arch/x86/kernel/irq.c b/arch/x86/kernel/irq.c
-index 9f668d2f3d11..198ded762dc7 100644
+index 385e3a5fc304..bc30dbc829b3 100644
 --- a/arch/x86/kernel/irq.c
 +++ b/arch/x86/kernel/irq.c
 @@ -3,6 +3,7 @@
@@ -3016,7 +3120,7 @@ index 9f668d2f3d11..198ded762dc7 100644
  #include <linux/interrupt.h>
  #include <linux/kernel_stat.h>
  #include <linux/of.h>
-@@ -244,6 +245,8 @@ static __always_inline void handle_irq(struct irq_desc *desc,
+@@ -275,6 +276,8 @@ static __always_inline int call_irq_handler(int vector, struct pt_regs *regs)
   * common_interrupt() handles all normal device IRQ's (the special SMP
   * cross-CPU interrupts have their own entry points).
   */
@@ -3025,29 +3129,24 @@ index 9f668d2f3d11..198ded762dc7 100644
  DEFINE_IDTENTRY_IRQ(common_interrupt)
  {
  	struct pt_regs *old_regs = set_irq_regs(regs);
-@@ -258,10 +261,13 @@ DEFINE_IDTENTRY_IRQ(common_interrupt)
- 	} else {
- 		ack_APIC_irq();
+@@ -282,7 +285,11 @@ DEFINE_IDTENTRY_IRQ(common_interrupt)
+ 	/* entry code tells RCU that we're not quiescent.  Check it. */
+ 	RCU_LOCKDEP_WARN(!rcu_is_watching(), "IRQ failed to wake up RCU");
  
--		if (desc == VECTOR_UNUSED) {
--			pr_emerg_ratelimited("%s: %d.%u No irq handler for vector\n",
--					     __func__, smp_processor_id(),
--					     vector);
-+		// This is a hack cause it seems I broke interrupts at some point
-+		if (vector == 32) {
-+			global_clock_event->event_handler(global_clock_event);
-+      ttyprink_poll_input();
-+		} else if (desc == VECTOR_UNUSED) {
-+			printk("%s: %d.%u No irq handler for vector\n",
-+			       __func__, smp_processor_id(), vector);
- 		} else {
- 			__this_cpu_write(vector_irq[vector], VECTOR_UNUSED);
- 		}
+-	if (unlikely(call_irq_handler(vector, regs)))
++	// This is a hack cause it seems I broke interrupts at some point
++	if (vector == 32) {
++		global_clock_event->event_handler(global_clock_event);
++		ttyprink_poll_input();
++	} else if (unlikely(call_irq_handler(vector, regs)))
+ 		apic_eoi();
+ 
+ 	set_irq_regs(old_regs);
 diff --git a/arch/x86/kernel/rtc.c b/arch/x86/kernel/rtc.c
-index 1309b9b05338..2a78b2b573b1 100644
+index 51a849a79c98..ca4411b0b00b 100644
 --- a/arch/x86/kernel/rtc.c
 +++ b/arch/x86/kernel/rtc.c
-@@ -81,6 +81,7 @@ void mach_get_cmos_time(struct timespec64 *now)
+@@ -80,6 +80,7 @@ void mach_get_cmos_time(struct timespec64 *now)
  unsigned char rtc_cmos_read(unsigned char addr)
  {
  	unsigned char val;
@@ -3055,7 +3154,7 @@ index 1309b9b05338..2a78b2b573b1 100644
  
  	lock_cmos_prefix(addr);
  	outb(addr, RTC_PORT(0));
-@@ -93,6 +94,7 @@ EXPORT_SYMBOL(rtc_cmos_read);
+@@ -92,6 +93,7 @@ EXPORT_SYMBOL(rtc_cmos_read);
  
  void rtc_cmos_write(unsigned char val, unsigned char addr)
  {
@@ -3064,10 +3163,10 @@ index 1309b9b05338..2a78b2b573b1 100644
  	outb(addr, RTC_PORT(0));
  	outb(val, RTC_PORT(1));
 diff --git a/arch/x86/kernel/time.c b/arch/x86/kernel/time.c
-index e42faa792c07..440c7bc66249 100644
+index 52e1f3f0b361..c8e3acb55fc7 100644
 --- a/arch/x86/kernel/time.c
 +++ b/arch/x86/kernel/time.c
-@@ -52,34 +52,35 @@ EXPORT_SYMBOL(profile_pc);
+@@ -34,34 +34,35 @@ EXPORT_SYMBOL(profile_pc);
  /*
   * Default timer interrupt handler for PIT/HPET
   */
@@ -3128,7 +3227,7 @@ index e42faa792c07..440c7bc66249 100644
  
  static __init void x86_late_time_init(void)
 diff --git a/arch/x86/lib/delay.c b/arch/x86/lib/delay.c
-index 0e65d00e2339..896f4bbfc04b 100644
+index 23f81ca3f06b..37b6d91ce3a9 100644
 --- a/arch/x86/lib/delay.c
 +++ b/arch/x86/lib/delay.c
 @@ -39,24 +39,24 @@ static void (*delay_halt_fn)(u64 start, u64 cycles) __ro_after_init;
@@ -3318,10 +3417,10 @@ index 0c122226ca56..7146d34f9b99 100644
  #ifdef __ASSEMBLY__
  #include "fpu_asm.h"
 diff --git a/arch/x86/pci/pcbios.c b/arch/x86/pci/pcbios.c
-index 4f15280732ed..1a45536415b1 100644
+index 244c643bb0b5..936862bbc3f4 100644
 --- a/arch/x86/pci/pcbios.c
 +++ b/arch/x86/pci/pcbios.c
-@@ -292,6 +292,8 @@ static const struct pci_raw_ops *__init pci_find_bios(void)
+@@ -305,6 +305,8 @@ static const struct pci_raw_ops *__init pci_find_bios(void)
  	unsigned char sum;
  	int i, length;
  
@@ -3331,7 +3430,7 @@ index 4f15280732ed..1a45536415b1 100644
  	 * Follow the standard procedure for locating the BIOS32 Service
  	 * directory by scanning the permissible address range from
 diff --git a/drivers/block/Kconfig b/drivers/block/Kconfig
-index 5b9d4aaebb81..7f2db2c89a4e 100644
+index ed209f4f2798..591360b1a631 100644
 --- a/drivers/block/Kconfig
 +++ b/drivers/block/Kconfig
 @@ -18,6 +18,11 @@ if BLK_DEV
@@ -3347,12 +3446,12 @@ index 5b9d4aaebb81..7f2db2c89a4e 100644
  	tristate "Normal floppy disk support"
  	depends on ARCH_MAY_HAVE_PC_FDC
 diff --git a/drivers/block/Makefile b/drivers/block/Makefile
-index 101612cba303..f7a7a425448e 100644
+index 1105a2d4fdcb..51eb9b1a283d 100644
 --- a/drivers/block/Makefile
 +++ b/drivers/block/Makefile
-@@ -9,6 +9,7 @@
- # needed for trace events
- ccflags-y				+= -I$(src)
+@@ -12,6 +12,7 @@ ccflags-y				+= -I$(src)
+ obj-$(CONFIG_BLK_DEV_RUST_NULL) += rnull_mod.o
+ rnull_mod-y := rnull.o
  
 +obj-$(CONFIG_BLK_DEV_X86ISA)	+= blkx86isa.o
  obj-$(CONFIG_MAC_FLOPPY)	+= swim3.o
@@ -3360,10 +3459,10 @@ index 101612cba303..f7a7a425448e 100644
  obj-$(CONFIG_BLK_DEV_FD)	+= floppy.o
 diff --git a/drivers/block/blkx86isa.c b/drivers/block/blkx86isa.c
 new file mode 100644
-index 000000000000..0b532b6bda4b
+index 000000000000..d053beba9644
 --- /dev/null
 +++ b/drivers/block/blkx86isa.c
-@@ -0,0 +1,86 @@
+@@ -0,0 +1,85 @@
 +#include <linux/fs.h>
 +#include <linux/io.h>
 +#include <linux/blk-mq.h>
@@ -3430,10 +3529,9 @@ index 000000000000..0b532b6bda4b
 +	blkx86isa.tag_set.cmd_size = 0;
 +	blkx86isa.tag_set.flags = BLK_MQ_F_SHOULD_MERGE;
 +	blk_mq_alloc_tag_set(&blkx86isa.tag_set);
-+	blkx86isa.queue = blk_mq_init_queue(&blkx86isa.tag_set);
-+	blk_queue_logical_block_size(blkx86isa.queue, 512);
++	blkx86isa.queue = blk_mq_alloc_queue(&blkx86isa.tag_set, NULL, NULL);
 +	blkx86isa.queue->queuedata = &blkx86isa;
-+	blkx86isa.gd = blk_mq_alloc_disk(&blkx86isa.tag_set, &blkx86isa);
++	blkx86isa.gd = blk_mq_alloc_disk(&blkx86isa.tag_set, NULL, &blkx86isa);
 +	blkx86isa.gd->major = major;
 +	blkx86isa.gd->minors = 16;
 +	blkx86isa.gd->fops = &blkx86isa_fops;
@@ -3451,7 +3549,7 @@ index 000000000000..0b532b6bda4b
 +
 +module_init(blkx86isa_init)
 diff --git a/drivers/char/Kconfig b/drivers/char/Kconfig
-index 625af75833fc..c3789f131ca6 100644
+index 7c8dd0abcfdf..c6165928409f 100644
 --- a/drivers/char/Kconfig
 +++ b/drivers/char/Kconfig
 @@ -7,6 +7,14 @@ menu "Character devices"
@@ -3470,7 +3568,7 @@ index 625af75833fc..c3789f131ca6 100644
  	tristate "TTY driver to output user messages via printk"
  	depends on EXPERT && TTY
 diff --git a/drivers/char/Makefile b/drivers/char/Makefile
-index c5f532e412f1..a852b8fcc306 100644
+index e9b360cdc99a..539ce997e177 100644
 --- a/drivers/char/Makefile
 +++ b/drivers/char/Makefile
 @@ -4,6 +4,7 @@
@@ -3482,10 +3580,10 @@ index c5f532e412f1..a852b8fcc306 100644
  obj-y				+= misc.o
  obj-$(CONFIG_ATARI_DSP56K)	+= dsp56k.o
 diff --git a/drivers/char/ttyprintk.c b/drivers/char/ttyprintk.c
-index ed45d04905c2..baecce1afe04 100644
+index d7f841ab4323..6cd0a14ac477 100644
 --- a/drivers/char/ttyprintk.c
 +++ b/drivers/char/ttyprintk.c
-@@ -17,14 +17,29 @@
+@@ -17,14 +17,30 @@
  #include <linux/tty.h>
  #include <linux/module.h>
  #include <linux/spinlock.h>
@@ -3499,23 +3597,24 @@ index ed45d04905c2..baecce1afe04 100644
  
  static struct ttyprintk_port tpk_port;
  
++void ttyprink_poll_input(void);
 +void ttyprink_poll_input(void)
 +{
 +	if (tpk_port.ioptr) {
 +		while (tpk_port.ioptr[3]) {
-+      if (!tty_buffer_space_avail(&tpk_port.port))
-+        tty_flip_buffer_push(&tpk_port.port);
-+      tty_insert_flip_char(&tpk_port.port, tpk_port.ioptr[2], TTY_NORMAL);
++			if (!tty_buffer_space_avail(&tpk_port.port))
++				tty_flip_buffer_push(&tpk_port.port);
++			tty_insert_flip_char(&tpk_port.port, tpk_port.ioptr[2], TTY_NORMAL);
 +			tpk_port.ioptr[3] = 0;
 +		}
-+    tty_flip_buffer_push(&tpk_port.port);
++		tty_flip_buffer_push(&tpk_port.port);
 +	}
 +}
 +
  /*
   * Our simple preformatting supports transparent output of (time-stamped)
   * printk messages (also suitable for logging service):
-@@ -87,6 +102,8 @@ static int tpk_open(struct tty_struct *tty, struct file *filp)
+@@ -87,6 +103,8 @@ static int tpk_open(struct tty_struct *tty, struct file *filp)
  {
  	tty->driver_data = &tpk_port;
  
@@ -3524,7 +3623,7 @@ index ed45d04905c2..baecce1afe04 100644
  	return tty_port_open(&tpk_port.port, tty, filp);
  }
  
-@@ -97,14 +114,17 @@ static void tpk_close(struct tty_struct *tty, struct file *filp)
+@@ -97,6 +115,9 @@ static void tpk_close(struct tty_struct *tty, struct file *filp)
  {
  	struct ttyprintk_port *tpkp = tty->driver_data;
  
@@ -3534,17 +3633,7 @@ index ed45d04905c2..baecce1afe04 100644
  	tty_port_close(&tpkp->port, tty, filp);
  }
  
- /*
-  * TTY operations write function.
-  */
--static int tpk_write(struct tty_struct *tty,
--		const unsigned char *buf, int count)
-+static int tpk_write(struct tty_struct *tty, const unsigned char *buf,
-+		     int count)
- {
- 	struct ttyprintk_port *tpkp = tty->driver_data;
- 	unsigned long flags;
-@@ -112,6 +132,14 @@ static int tpk_write(struct tty_struct *tty,
+@@ -111,6 +132,14 @@ static ssize_t tpk_write(struct tty_struct *tty, const u8 *buf, size_t count)
  
  	/* exclusive use of tpk_printk within this tty */
  	spin_lock_irqsave(&tpkp->spinlock, flags);
@@ -3558,6 +3647,15 @@ index ed45d04905c2..baecce1afe04 100644
 +	}
  	ret = tpk_printk(buf, count);
  	spin_unlock_irqrestore(&tpkp->spinlock, flags);
+ 
+@@ -197,7 +226,7 @@ static int __init ttyprintk_init(void)
+ 	ttyprintk_driver->minor_start = 3;
+ 	ttyprintk_driver->type = TTY_DRIVER_TYPE_CONSOLE;
+ 	ttyprintk_driver->init_termios = tty_std_termios;
+-	ttyprintk_driver->init_termios.c_oflag = OPOST | OCRNL | ONOCR | ONLRET;
++	ttyprintk_driver->init_termios.c_oflag = OPOST | ONLCR | ONOCR | ONLRET;
+ 	tty_set_operations(ttyprintk_driver, &ttyprintk_ops);
+ 	tty_port_link_device(&tpk_port.port, ttyprintk_driver, 0);
  
 diff --git a/drivers/char/ttyx86isa.c b/drivers/char/ttyx86isa.c
 new file mode 100644
@@ -3702,32 +3800,32 @@ index 000000000000..c0f887bf6f91
 +
 +device_initcall(ttyx86isa_init);
 diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
-index c4d671a5a13d..0fea19fd2b00 100644
+index 95dd4660b5b6..116e5f5cd2ef 100644
 --- a/drivers/clocksource/Kconfig
 +++ b/drivers/clocksource/Kconfig
-@@ -739,4 +739,7 @@ config GOLDFISH_TIMER
- 	help
- 	  Support for the timer/counter of goldfish-rtc
+@@ -753,4 +753,7 @@ config EP93XX_TIMER
+ 	  Enables support for the Cirrus Logic timer block
+ 	  EP93XX.
  
 +config CLOCK_X86ISA
 +	bool "x86isa clock"
 +
  endmenu
 diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
-index 5d93c9e3fc55..e95471512430 100644
+index 22743785299e..cf7f06ae8f45 100644
 --- a/drivers/clocksource/Makefile
 +++ b/drivers/clocksource/Makefile
-@@ -90,3 +90,4 @@ obj-$(CONFIG_MSC313E_TIMER)		+= timer-msc313e.o
- obj-$(CONFIG_GOLDFISH_TIMER)		+= timer-goldfish.o
+@@ -91,3 +91,4 @@ obj-$(CONFIG_GOLDFISH_TIMER)		+= timer-goldfish.o
  obj-$(CONFIG_GXP_TIMER)			+= timer-gxp.o
  obj-$(CONFIG_CLKSRC_LOONGSON1_PWM)	+= timer-loongson1-pwm.o
-+obj-$(CONFIG_CLOCK_X86ISA)	+= clockx86isa.o
+ obj-$(CONFIG_EP93XX_TIMER)		+= timer-ep93xx.o
++obj-$(CONFIG_CLOCK_X86ISA)		+= clockx86isa.o
 diff --git a/drivers/clocksource/clockx86isa.c b/drivers/clocksource/clockx86isa.c
 new file mode 100644
-index 000000000000..0b296d5219b9
+index 000000000000..cea3e4afac07
 --- /dev/null
 +++ b/drivers/clocksource/clockx86isa.c
-@@ -0,0 +1,62 @@
+@@ -0,0 +1,63 @@
 +#include <linux/clockchips.h>
 +#include <linux/init.h>
 +#include <linux/io.h>
@@ -3745,10 +3843,10 @@ index 000000000000..0b296d5219b9
 +
 +static struct clocksource x86isa_cs = {
 +	.name = "x86isa clocksource",
-+	.rating = 400,
++	.rating = 499,
 +	.read = clocksource_x86isa_read,
 +	.mask = CLOCKSOURCE_MASK(64),
-+  .flags = CLOCK_SOURCE_IS_CONTINUOUS
++	.flags = CLOCK_SOURCE_IS_CONTINUOUS
 +};
 +
 +int __init clocksource_x86isa_init(void)
@@ -3778,13 +3876,14 @@ index 000000000000..0b296d5219b9
 +struct clock_event_device x86isa_clock_event = {
 +	.name = "x86isa clock event",
 +	.features = CLOCK_EVT_FEAT_PERIODIC,
-+  .rating = 400,
++	.rating = 499,
 +	.set_state_shutdown = x86isa_clock_event_shutdown,
 +	.set_state_periodic = x86isa_clock_event_periodic,
 +};
 +
 +void __init clockevent_x86isa_init(void)
 +{
++	printk("initing clockevent x86isa\n");
 +	x86isa_clock_event.cpumask = cpumask_of(smp_processor_id());
 +
 +	clock_x86isa_enable_ptr = ioremap_wt(0x108, 1);
@@ -4278,10 +4377,10 @@ index f3831272f113..19d87ffab661 100644
  	if (!printed)
  		pr_cont("%lu.%02lu BogoMIPS (lpj=%lu)\n",
 diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index 357a4d18f638..abca2df532ec 100644
+index beb808f4c367..331e7396edc7 100644
 --- a/kernel/printk/printk.c
 +++ b/kernel/printk/printk.c
-@@ -2126,6 +2126,7 @@ static u16 printk_sprint(char *text, u16 size, int facility,
+@@ -2195,6 +2195,7 @@ static u16 printk_sprint(char *text, u16 size, int facility,
  	u16 text_len;
  
  	text_len = vscnprintf(text, size, fmt, args);
@@ -4290,5 +4389,5 @@ index 357a4d18f638..abca2df532ec 100644
  	/* Mark and strip a trailing newline. */
  	if (text_len && text[text_len - 1] == '\n') {
 -- 
-2.26.2
+2.45.2
 

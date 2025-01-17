@@ -1,0 +1,10 @@
+#!/bin/busybox sh
+
+mount -t devtmpfs none /dev
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+
+hostname x86isa-linux
+export HOME=/root
+
+exec sh -l

@@ -226,47 +226,6 @@
                         :elf ,elf
                         :mach-o ,mach-o))
 
-(local (include-book "std/io/top" :dir :system))
-
-(local (defthm unsigned-byte-p-8-read-byte$
-               (implies (and (state-p1 state)
-                             (open-input-channel-p1 channel :byte state)
-                             (mv-nth 0 (read-byte$ channel state)))
-                 (unsigned-byte-p 8 (mv-nth 0 (read-byte$ channel state))))
-               :hints (("Goal" :in-theory (enable unsigned-byte-p)))))
-
-(define read-channel-into-byte-list1 ((channel symbolp)
-                                      (limit natp)
-                                      acc
-                                      state)
-  :guard (open-input-channel-p channel :byte state)
-  :returns (mv (bytes byte-listp
-                      :hyp (and (state-p1 state)
-                                (symbolp channel)
-                                (open-input-channel-p channel :byte state)
-                                (byte-listp acc))
-                      :hints (("Goal" :in-theory (enable byte-listp))))
-               (state state-p1 :hyp (and (state-p1 state)
-                                         (symbolp channel)
-                                         (open-input-channel-p1 channel :byte state))))
-  (if (zp limit)
-    (mv acc state)
-    (b* (((mv current-byte state) (read-byte$ channel state)))
-        (if (not current-byte)
-          (mv acc state)
-          (read-channel-into-byte-list1 channel (1- limit) (cons current-byte acc) state))))
-  ///
-  (defthm read-channel-into-byte-list1-leaves-channel-open
-          (implies (open-input-channel-p1 channel :byte state)
-                   (open-input-channel-p1 channel :byte
-                                          (mv-nth 1 (read-channel-into-byte-list1 channel limit acc state))))))
-
-;; Read from the given byte channel into the returned list. Reads limit
-;; bytes or until EOF, whichever comes first.
-(defmacro read-channel-into-byte-list (channel limit state)
-  `(b* (((mv result state) (read-channel-into-byte-list1 ,channel ,limit nil ,state)))
-      (mv (reverse result) state)))
-
 (define chars-to-c-str ((char-lst character-listp))
   :returns (c-str byte-listp :hints (("Goal" :in-theory (enable unsigned-byte-p))))
   (if (mbt (character-listp char-lst))
@@ -330,23 +289,106 @@
 (local (defthm byte-listp-is-true-listp (implies (byte-listp x)
                                                  (true-listp x))))
 
-(define load-file-into-memory ((filename stringp)
+(local (include-book "std/io/top" :dir :system))
+
+(local (defthm unsigned-byte-p-8-read-byte$
+               (implies (and (state-p1 state)
+                             (open-input-channel-p1 channel :byte state)
+                             (mv-nth 0 (read-byte$ channel state)))
+                 (unsigned-byte-p 8 (mv-nth 0 (read-byte$ channel state))))
+               :hints (("Goal" :in-theory (enable unsigned-byte-p)))))
+
+
+(define read-channel-into-memory ((channel symbolp)
+                                  (ptr canonical-address-p)
+                                  (bytes-read natp)
+                                  x86
+                                  state)
+  :measure (acl2::file-measure channel state)
+  :guard (and (open-input-channel-p channel :byte state)
+              (canonical-address-p (+ ptr bytes-read)))
+  :returns (mv (bytes-read natp
+                          :hyp (and (state-p1 state)
+                                   (symbolp channel)
+                                   (open-input-channel-p channel :byte state)))
+              (x86 x86p :hyp (x86p x86))
+              (state state-p1 :hyp (and (state-p1 state)
+                                       (symbolp channel)
+                                       (open-input-channel-p1 channel :byte state))))
+  (b* ((bytes-read (nfix bytes-read))
+       ((mv current-byte state) (read-byte$ channel state))
+       ((when (not current-byte)) (mv bytes-read x86 state))
+       ((mv flg x86) (wml08 (+ ptr bytes-read) current-byte x86))
+       ((when (or flg
+                  (not (canonical-address-p (+ ptr bytes-read 1)))))
+        (mv bytes-read x86 state)))
+      (read-channel-into-memory channel 
+                                ptr 
+                                (1+ bytes-read) 
+                                x86 
+                                state))
+  ///
+  (defthm read-channel-into-memory-leaves-channel-open
+          (implies (open-input-channel-p1 channel :byte state)
+                   (open-input-channel-p1 channel 
+                                          :byte
+                                          (mv-nth 2 (read-channel-into-memory 
+                                                      channel ptr bytes-read x86 state))))))
+
+
+(define read-file-into-memory ((filename stringp)
                                (ptr canonical-address-p)
                                x86
                                state)
-  :returns (mv (file-contents byte-listp :hyp (and (stringp filename)
-                                                   (canonical-address-p ptr)
-                                                   (state-p1 state)))
+  :returns (mv (bytes-read natp :hyp (and (stringp filename)
+                                         (canonical-address-p ptr)
+                                         (state-p1 state)))
                (x86 x86p :hyp (x86p x86))
                (state state-p1 :hyp (and (stringp filename)
-                                         (state-p1 state))))
+                                        (state-p1 state))))
   (b* (((mv channel state) (open-input-channel filename :byte state))
-       ((when (not channel)) (mv nil x86 state))
-       ((mv file-contents state) (read-channel-into-byte-list channel (1- (ash 1 60)) state))
-       ((unless (canonical-address-p (+ ptr (len file-contents)))) (mv nil x86 state))
-       ((mv & x86) (write-bytes-to-memory ptr file-contents x86)) 
+       ((when (not channel)) (mv 0 x86 state))
+       ((mv bytes-read x86 state) 
+        (read-channel-into-memory channel ptr 0 x86 state))
        (state (close-input-channel channel state)))
-      (mv file-contents x86 state)))
+      (mv bytes-read x86 state)))
+
+(define read-channel-into-byte-list ((channel symbolp)
+                                     acc
+                                     state)
+  :measure (acl2::file-measure channel state)
+  :guard (open-input-channel-p channel :byte state)
+  :returns (mv (bytes byte-listp
+                      :hyp (and (state-p1 state)
+                                (symbolp channel)
+                                (open-input-channel-p channel :byte state)
+                                (byte-listp acc))
+                      :hints (("Goal" :in-theory (enable byte-listp))))
+               (state state-p1 :hyp (and (state-p1 state)
+                                         (symbolp channel)
+                                         (open-input-channel-p1 channel :byte state))))
+    (b* (((mv current-byte state) (read-byte$ channel state)))
+        (if (not current-byte)
+          (mv acc state)
+          (read-channel-into-byte-list channel (cons current-byte acc) state)))
+  ///
+  (defthm read-channel-into-byte-list-leaves-channel-open
+          (implies (open-input-channel-p1 channel :byte state)
+                   (open-input-channel-p1 channel :byte
+                                          (mv-nth 1 (read-channel-into-byte-list channel acc state))))))
+
+(define read-file-into-byte-list ((filename stringp) state)
+  :returns (mv (file-contents byte-listp
+                              :hyp (and (stringp filename)
+                                        (state-p1 state)))
+               (state state-p1
+                      :hyp (and (stringp filename)
+                                (state-p1 state))))
+  (b* (((mv channel state) (open-input-channel filename :byte state))
+       ((when (not channel)) (mv nil state))
+       ((mv file-contents state) (read-channel-into-byte-list channel nil state))
+       (state (close-input-channel channel state)))
+      (mv (reverse file-contents) state)))
 
 (define init-zero-page ((zero-page-ptr canonical-address-p)
                         (command-line-ptr canonical-address-p)
@@ -425,8 +467,6 @@
                                (and (consp (car id))
                                     (< 1 (len (car id)))
                                     '(:cases ((app-view x86))))))))
-  :guard-hints ((and stable-under-simplificationp
-                     '(:in-theory (enable 64-bit-modep init-zero-page load-file-into-memory))))
   (b* (;; Enable some features in cr0
        (x86 (!ctri 0 (logior #x60000010 ;; initial value of cr0 using vmx on an i7 10700k
                              (ash 1 0)  ;; Protected mode enable
@@ -434,21 +474,27 @@
                              ) x86))
 
        (kernel-ptr #x1000000)
-       ((mv kernel-image x86 state) (load-file-into-memory kernel-image-filename kernel-ptr x86 state))
+       ((mv kernel-image state) (read-file-into-byte-list kernel-image-filename state))
+       ((unless (canonical-address-p (+ kernel-ptr (len kernel-image))))
+        (raise "Kernel too large to load at ~x0, not enough canonical addresses" kernel-ptr)
+        (mv x86 state))
+       ((mv & x86) (write-bytes-to-memory kernel-ptr kernel-image x86))
 
        (zero-page-ptr #x1000)
        (gdt-ptr (+ zero-page-ptr #x1000))
        (gdt-size #x20)
        (command-line-ptr (+ gdt-ptr gdt-size))
-       (disk-image-ptr #x100000)
+       (disk-image-ptr #x80000000)
 
        ;; Setup command line
        (command-line-c-str (string-to-c-str command-line))
-       ((unless (canonical-address-p (+ command-line-ptr (len command-line-c-str)))) (mv x86 state))
+       ((unless (canonical-address-p (+ command-line-ptr (len command-line-c-str))))
+        (raise "Command line too large to load at ~x0, not enough canonical addresses" command-line-ptr)
+        (mv x86 state))
        ((mv & x86) (write-bytes-to-memory command-line-ptr command-line-c-str x86))
 
-       ((mv disk-image x86 state) (load-file-into-memory disk-image-filename disk-image-ptr x86 state))
-       (disk-image-size (len disk-image))
+       ((mv disk-image-size x86 state)
+        (read-file-into-memory disk-image-filename disk-image-ptr x86 state))
 
        ;; Setup Zero page
 
