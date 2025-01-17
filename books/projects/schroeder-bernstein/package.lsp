@@ -12,7 +12,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; "SBT" = "Schroder-Bernstein Theorem"
+;; "SBT" = "Schroeder-Bernstein Theorem"
 (defpkg "SBT"
   (append *std-pkg-symbols*
           '(define-sk

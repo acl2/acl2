@@ -36,7 +36,7 @@
 (include-book "projects/numbers/triangular" :dir :system)
 (include-book "projects/numbers/triples" :dir :system)
 (include-book "projects/numbers/z2q" :dir :system)
-(include-book "projects/schroder-bernstein/schroder-bernstein" :dir :system)
+(include-book "projects/schroeder-bernstein/schroeder-bernstein" :dir :system)
 (include-book "projects/linear/reduction" :dir :system)
 (include-book "workshops/2006/cowles-gamboa-euclid/Euclid/prime-fac" :dir :system)
 ;; (include-book "workshops/2018/kwan-greenstreet/cauchy-schwarz" :dir :system) ; needs ACL2r
@@ -229,7 +229,7 @@
      "@(def sbt::injectivity-of-sb)"
      "@(def sbt::surjectivity-of-sb)"
 
-     "<p>By Grant Jurgensen, in <a href=\"https://github.com/acl2/acl2/blob/master/books/projects/schroder-bernstein/schroder-bernstein.lisp\">books/projects/schroder-bernstein/schroder-bernstein.lisp</a>.</p>"
+     "<p>By Grant Jurgensen, in <a href=\"https://github.com/acl2/acl2/blob/master/books/projects/schroeder-bernstein/schroeder-bernstein.lisp\">books/projects/schroeder-bernstein/schroeder-bernstein.lisp</a>.</p>"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

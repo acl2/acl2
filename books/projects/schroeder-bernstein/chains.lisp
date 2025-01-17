@@ -119,8 +119,7 @@
 
 ;; Steps in chain sequences
 
-(define chain-step
-  ((elem consp))
+(define chain-step ((elem consp))
   :returns (elem$ chain-elemp :hyp (chain-elemp elem))
   (let ((polarity (polarity elem)))
     (chain-elem (not polarity)
