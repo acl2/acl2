@@ -1,7 +1,7 @@
 ; BV Library: slice
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -307,7 +307,7 @@
                 (integerp high)
                 (integerp low))
            (<= (slice high low x) (+ -1 (expt 2 (+ 1 high (- low))))))
-  :rule-classes (:linear)
+  :rule-classes :linear
   :hints (("Goal" :use (:instance unsigned-byte-p-of-slice-gen (n (+ 1 high (- low))))
            :cases ((integerp (expt 2 (+ 1 high (- low))))) ;yuck!
            :in-theory (e/d (unsigned-byte-p)
@@ -321,7 +321,7 @@
                 (integerp high)
                 (integerp low))
            (<= (slice high low x) (+ -1 (expt 2 (+ 1 high (- low))))))
-  :rule-classes (:linear))
+  :rule-classes :linear)
 
 (defthm <-of-slice-and-constant
   (implies (and (syntaxp (and (quotep k)

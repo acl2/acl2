@@ -1,7 +1,7 @@
 ; Mixed rules 3
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -434,7 +434,7 @@
 ;;                 (< (logext size i) (expt 2 (+ -1 size)))))
 ;;   :hints (("Goal" :in-theory (enable logext logapp)))
 ;;   :rule-classes ((:linear :trigger-terms ((logext size i)))
-;;                  (:rewrite)))
+;;                  :rewrite))
 
 ;(in-theory (disable LOGEXT-BOUNDS)) ; now in a locally included book
 
@@ -4014,7 +4014,7 @@
                 (integerp x)
                 (integerp y))
            (<= (MOD X Y) (+ -1 Y)))
-  :rule-classes (:linear))
+  :rule-classes :linear)
 
 ;this one only holds for integers..
 ;gen!
@@ -4111,13 +4111,13 @@
 (defthmd bvchop-upper-bound-tight-linear
   (implies (natp size)
            (<= (bvchop size x) (+ -1 (expt 2 size))))
-  :rule-classes ((:linear))
+  :rule-classes :linear
   )
 
 (defthmd expt-plus-expt-linear
   (implies (integerp size)
            (equal (expt 2 size) (+ (expt 2 (+ -1 size)) (expt 2 (+ -1 size)))))
-  :rule-classes ((:linear))
+  :rule-classes :linear
   :hints (("Goal" :in-theory (enable expt-of-+))))
 
 (defthm plus-of-bvchop-<-expt
@@ -8043,7 +8043,7 @@
 (defthm slice-linear
   (implies (unsigned-byte-p 31 x)
            (<= (+ 3 (* 4 (slice 30 2 x))) (+ 4 x)))
-  :rule-classes ((:linear))
+  :rule-classes :linear
   :hints (("Goal" :use (:instance split-bv (x x) (n 31) (m 2))
            ;;           :use (:instance <-of-bvcat
            ;;                           (x (+ 3 (* 4 (slice 30 2 x))))
@@ -13718,7 +13718,7 @@
 ;;                 (<= 0 Y)
 ;;                 (RATIONALP Y))
 ;;            (EQUAL (< X (MOD X Y)) NIL))
-;;   :rule-classes ((:linear))
+;;   :rule-classes :linear
 ;;   )
 
 ;used below

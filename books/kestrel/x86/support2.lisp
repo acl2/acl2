@@ -14,15 +14,16 @@
 ;todo: move this material to libraries
 
 (include-book "portcullis")
-(include-book "projects/x86isa/proofs/utilities/app-view/top" :dir :system)
+(include-book "projects/x86isa/machine/get-prefixes" :dir :system)
 (include-book "flags")
 ;(include-book "support-x86") ;todo reduce
 ;(include-book "read-and-write") ; drop?
 (include-book "kestrel/utilities/defopeners" :dir :system)
 (include-book "kestrel/bv-lists/packbv" :dir :system)
 (include-book "kestrel/bv/bvshr" :dir :system)
-(include-book "kestrel/lists-light/finalcdr" :dir :system)
-(include-book "kestrel/lists-light/reverse-list" :dir :system)
+;(include-book "kestrel/lists-light/finalcdr" :dir :system)
+;(include-book "kestrel/lists-light/reverse-list" :dir :system)
+(include-book "centaur/bitops/fast-rotate" :dir :system)
 (local (include-book "linear-memory"))
 (local (include-book "kestrel/bv/rules10" :dir :system)) ; todo, for floor-of-/-arg2
 (local (include-book "kestrel/bv/rules3" :dir :system)) ; todo, for logtail-of-one-more
@@ -52,34 +53,35 @@
                            ;ACL2::UNSIGNED-BYTE-P-FROM-BOUNDS
                            )))
 
+;; ;todo: it's an error to call this in app-view?
+;; (defthm mv-nth-0-of-ia32e-la-to-pa-of-set-flag
+;;   (implies (and ;(not (equal :ac flag))
+;;             (app-view x86))
+;;            (equal (mv-nth 0 (x86isa::ia32e-la-to-pa lin-addr r-w-x (set-flag flag val x86)))
+;;                   (mv-nth 0 (x86isa::ia32e-la-to-pa lin-addr r-w-x x86))))
+;;   :hints (("Goal" :in-theory (enable x86isa::ia32e-la-to-pa
+;;                                      set-flag
+;;                                      x86isa::rflagsbits->ac
+;;                                      ))))
 
-(defthm mv-nth-0-of-ia32e-la-to-pa-of-set-flag
-  (implies (and ;(not (equal :ac flag))
-            (app-view x86))
-           (equal (mv-nth 0 (x86isa::ia32e-la-to-pa lin-addr r-w-x (set-flag flag val x86)))
-                  (mv-nth 0 (x86isa::ia32e-la-to-pa lin-addr r-w-x x86))))
-  :hints (("Goal" :in-theory (enable x86isa::ia32e-la-to-pa
-                                     set-flag
-                                     x86isa::rflagsbits->ac
-                                     ))))
+;; ;todo: it's an error to call this in app-view?
+;; (defthm mv-nth-2-of-ia32e-la-to-pa-of-set-flag
+;;   (implies (and ;(not (equal :ac flag))
+;;             (app-view x86)
+;;             (not (mv-nth 0 (x86isa::ia32e-la-to-pa lin-addr r-w-x (set-flag flag val x86)))))
+;;            (equal (mv-nth 2 (x86isa::ia32e-la-to-pa lin-addr r-w-x (set-flag flag val x86)))
+;;                   (set-flag flag val (mv-nth 2 (x86isa::ia32e-la-to-pa lin-addr r-w-x x86)))))
+;;   :hints (("Goal" :in-theory (enable x86isa::ia32e-la-to-pa
+;;                                      set-flag
+;;                                      x86isa::rflagsbits->ac
+;;                                      ))))
 
-(defthm mv-nth-2-of-ia32e-la-to-pa-of-set-flag
-  (implies (and ;(not (equal :ac flag))
-            (app-view x86)
-            (not (mv-nth 0 (x86isa::ia32e-la-to-pa lin-addr r-w-x (set-flag flag val x86)))))
-           (equal (mv-nth 2 (x86isa::ia32e-la-to-pa lin-addr r-w-x (set-flag flag val x86)))
-                  (set-flag flag val (mv-nth 0 (x86isa::ia32e-la-to-pa lin-addr r-w-x x86)))))
-  :hints (("Goal" :in-theory (enable x86isa::ia32e-la-to-pa
-                                     set-flag
-                                     x86isa::rflagsbits->ac
-                                     ))))
+;; it's an error to call this in app-view?
+;; (defthm app-view-of-mv-nth-2-of-ia32e-la-to-pa
+;;   (implies (app-view x86)
+;;            (app-view (mv-nth 2 (x86isa::ia32e-la-to-pa lin-addr r-w-x x86))))
+;;   :hints (("Goal" :in-theory (enable x86isa::ia32e-la-to-pa))))
 
-(defthm app-view-of-mv-nth-2-of-ia32e-la-to-pa
-  (implies (app-view x86)
-           (app-view (mv-nth 2 (x86isa::ia32e-la-to-pa lin-addr r-w-x x86))))
-  :hints (("Goal" :in-theory (enable x86isa::ia32e-la-to-pa))))
-
-;; zz
 ;; (defthm mv-nth-0-of-las-to-pas-of-set-flag
 ;;   (implies (and (app-view x86)
 ;; ;                (not (mv-nth 0 (x86isa::las-to-pas n lin-addr r-w-x x86)))
@@ -145,103 +147,6 @@
 ;;                 (x86p x86))
 ;;            (equal (set-flag i2 v2 (set-flag i1 v1 x86))
 ;;                   (set-flag i1 v1 (set-flag i2 v2 x86)))))
-
-;; Critically, this uses equal for the comparisons, so the huge IF can usually be resolved
-;; Also, the force is gone
-(defthm x86isa::x86p-xw-better
-  (implies (and (member-equal x86isa::fld x86isa::*x86-field-names-as-keywords*)
-                (if (equal x86isa::fld ':rgf)
-                    (if (integerp x86isa::index)
-                        (signed-byte-p '64 value)
-                      'nil)
-                  (if (equal x86isa::fld ':rip)
-                      (signed-byte-p '48 value)
-                    (if (equal x86isa::fld ':rflags)
-                        (unsigned-byte-p '32 value)
-                      (if (equal x86isa::fld ':seg-visible)
-                          (AND (INTEGERP X86ISA::INDEX)
-                               (UNSIGNED-BYTE-P 16 VALUE))
-                        (if (equal x86isa::fld ':seg-hidden-base)
-                            (AND (INTEGERP X86ISA::INDEX)
-                                 (UNSIGNED-BYTE-P 64 VALUE))
-                          (if (equal x86isa::fld ':seg-hidden-limit)
-                              (AND (INTEGERP X86ISA::INDEX)
-                                   (UNSIGNED-BYTE-P 32 VALUE))
-                            (if (equal x86isa::fld ':seg-hidden-attr)
-                                (AND (INTEGERP X86ISA::INDEX)
-                                     (UNSIGNED-BYTE-P 16 VALUE))
-                              (if (equal x86isa::fld ':str)
-                                  (if (integerp x86isa::index)
-                                      (unsigned-byte-p '80 value)
-                                    'nil)
-                                (if (equal x86isa::fld ':ssr-visible)
-                                    (AND (INTEGERP X86ISA::INDEX)
-                                         (UNSIGNED-BYTE-P 16 VALUE))
-                                  (if (equal x86isa::fld ':ssr-hidden-base)
-                                      (AND (INTEGERP X86ISA::INDEX)
-                                           (UNSIGNED-BYTE-P 64 VALUE))
-                                    (if (equal x86isa::fld ':ssr-hidden-limit)
-                                        (AND (INTEGERP X86ISA::INDEX)
-                                             (UNSIGNED-BYTE-P 32 VALUE))
-                                      (if (equal x86isa::fld ':ssr-hidden-attr)
-                                          (AND (INTEGERP X86ISA::INDEX)
-                                               (UNSIGNED-BYTE-P 16 VALUE))
-                                        (if (equal x86isa::fld ':ctr)
-                                            (if (integerp x86isa::index)
-                                                (unsigned-byte-p '64 value)
-                                              'nil)
-                                          (if (equal x86isa::fld ':dbg)
-                                              (if (integerp x86isa::index)
-                                                  (unsigned-byte-p '64 value)
-                                                'nil)
-                                            (if (equal x86isa::fld ':fp-data)
-                                                (if (integerp x86isa::index)
-                                                    (unsigned-byte-p '80 value)
-                                                  'nil)
-                                              (if (equal x86isa::fld ':fp-ctrl)
-                                                  (unsigned-byte-p '16 value)
-                                                (if (equal x86isa::fld ':fp-status)
-                                                    (unsigned-byte-p '16 value)
-                                                  (if (equal x86isa::fld ':fp-tag)
-                                                      (unsigned-byte-p '16 value)
-                                                    (if (equal x86isa::fld ':fp-last-inst)
-                                                        (unsigned-byte-p '48 value)
-                                                      (if (equal x86isa::fld ':fp-last-data)
-                                                          (unsigned-byte-p '48 value)
-                                                        (if (equal x86isa::fld ':fp-opcode)
-                                                            (unsigned-byte-p '11 value)
-                                                          (if (equal x86isa::fld ':zmm)
-                                                              (if (integerp x86isa::index)
-                                                                  (unsigned-byte-p '128 value)
-                                                                'nil)
-                                                            (if (equal x86isa::fld ':mxcsr)
-                                                                (unsigned-byte-p '32 value)
-                                                              (if (equal x86isa::fld ':msr)
-                                                                  (if (integerp x86isa::index)
-                                                                      (unsigned-byte-p '64 value)
-                                                                    'nil)
-                                                                (if (equal x86isa::fld ':env)
-                                                                    (x86isa::env-alistp value)
-                                                                  (if (equal x86isa::fld ':app-view)
-                                                                      (booleanp value)
-                                                                    (if (equal x86isa::fld
-                                                                               ':marking-view)
-                                                                        (booleanp value)
-                                                                      (if (equal x86isa::fld ':os-info)
-                                                                          (keywordp value)
-                                                                        (if (equal x86isa::fld ':mem)
-                                                                            (if (integerp x86isa::index)
-                                                                                (unsigned-byte-p '8 value)
-                                                                              'nil)
-                                                                          (equal x86isa::index
-                                                                                 '0))))))))))))))))))
-                                        ;;))
-                                        ))))))))))))
-                (x86p x86))
-           (x86p (xw x86isa::fld x86isa::index value x86)))
-  :hints (("Goal" :in-theory (disable X86ISA::ENV-READ-LOGIC
-                                      ;;X86ISA::ENV$INLINE
-                                      ))))
 
 ;move
 (defthm bvchop-of-ash-when-negative-becomes-bvshr
@@ -333,12 +238,12 @@
 ;; Now it's reading from #x405A00, which is after the end of the UPX1 section but before UPX2. Add assumption (equal 0 (read #x600 #x405a00 x86)).
 ;; Now it's reading from #x406200, which is after the UPX2 section.  Should we try assuming those bytes are 0 as well?
 
-
-(defthm mv-nth-0-of-las-to-pas-of-set-flag
-  (implies (app-view x86)
-           (equal (mv-nth 0 (x86isa::las-to-pas n lin-addr r-w-x (set-flag flag val x86)))
-                  (mv-nth 0 (x86isa::las-to-pas n lin-addr r-w-x x86))))
-  :hints (("Goal" :in-theory (enable x86isa::las-to-pas x86isa::ia32e-la-to-pa))))
+;; it's an error to call this in app-view?
+;; (defthm mv-nth-0-of-las-to-pas-of-set-flag
+;;   (implies (app-view x86)
+;;            (equal (mv-nth 0 (x86isa::las-to-pas n lin-addr r-w-x (set-flag flag val x86)))
+;;                   (mv-nth 0 (x86isa::las-to-pas n lin-addr r-w-x x86))))
+;;   :hints (("Goal" :in-theory (enable x86isa::las-to-pas x86isa::ia32e-la-to-pa))))
 
 ;; could move some of this stuff to linear-memory.lisp:
 

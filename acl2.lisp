@@ -1,5 +1,5 @@
 ; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2024, Regents of the University of Texas
+; Copyright (C) 2025, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -1877,10 +1877,10 @@ ACL2 from scratch.")
 ; https://github.com/Clozure/ccl/pull/384
 ; says:  "xrme merged commit 110c230 into Clozure:master  on Sep 27, 2021".
 
-    (error "This Lisp may be unsuitable for ACL2, because it does not ~%~
-            specify support for IEEE floating point, that is, feature ~%~
-            :ieee-floating-point is missing from *features*.  This may ~%~
-            be easily fixed with an environment variable; see :DOC fp."))
+    (error "This Lisp may be unsuitable for ACL2 because feature~%~
+            :ieee-floating-point is missing.  This is easily fixed~%~
+            by setting environment variable ACL2_FP_OK to t, but at~%~
+            some risk of unsoundness; see :DOC fp."))
 
 (or (equal (rational (float 0 0.0D0))
            0)

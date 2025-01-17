@@ -40,8 +40,10 @@
 ; Shilpi Goel         <shigoel@cs.utexas.edu>
 ; Contributing Author(s):
 ; Yahya Sohail        <yahya.sohail@intel.com>
+; Eric Smith          <eric.smith@kestrel.edu>
 
 (in-package "X86ISA")
+(include-book "application-level-memory")
 (include-book "paging-structures" :dir :utils)
 (include-book "physical-memory" :ttags (:undef-flg))
 (include-book "clause-processors/find-matching" :dir :system)
@@ -4162,6 +4164,11 @@
   :enabled t
 
   :guard (not (app-view x86))
+
+  :returns (mv flg
+               (p-addr physical-address-p)
+               (x86    x86p :hyp (x86p x86)))
+  
   :parents (ia32e-paging)
 
   :short "Top-level page translation function"
@@ -4171,7 +4178,24 @@
       (ia32e-la-to-pa lin-addr r-w-x x86)
     (mv (list :ia32e-paging-invalid-linear-address-or-not-in-sys-view
               lin-addr)
-        0 x86)))
+        0 x86))
+
+  ///
+
+  (defthm-unsigned-byte-p n52p-mv-nth-1-la-to-pa
+                          :hyp t
+                          :bound #.*physical-address-size*
+                          :concl (mv-nth 1 (la-to-pa lin-addr r-w-x x86))
+                          :gen-linear t
+                          :gen-type t)
+
+  (defthm xr-and-la-to-pa
+    (implies (and (not (equal fld :tlb))
+                  (not (equal fld :mem))
+                  (not (equal fld :fault)))
+             (equal (xr fld index (mv-nth 2 (la-to-pa lin-addr r-w-x x86)))
+                    (xr fld index x86)))
+    :hints (("Goal" :in-theory (enable la-to-pa)))))
 
 ;; ======================================================================
 

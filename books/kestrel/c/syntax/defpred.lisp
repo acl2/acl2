@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -12,6 +12,7 @@
 
 (include-book "abstract-syntax")
 
+(include-book "kestrel/fty/database" :dir :system)
 (include-book "kestrel/utilities/er-soft-plus" :dir :system)
 (include-book "std/system/table-alist-plus" :dir :system)
 (include-book "std/util/defval" :dir :system)
@@ -19,7 +20,9 @@
 (include-book "system/pseudo-event-form-listp" :dir :system)
 
 (local (include-book "std/alists/top" :dir :system))
+(local (include-book "std/lists/true-listp" :dir :system))
 (local (include-book "std/system/partition-rest-and-keyword-args" :dir :system))
+(local (include-book "std/system/pseudo-event-form-listp" :dir :system))
 (local (include-book "std/system/w" :dir :system))
 (local (include-book "std/typed-lists/atom-listp" :dir :system))
 (local (include-book "std/typed-alists/symbol-alistp" :dir :system))
@@ -29,85 +32,6 @@
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
 (set-induction-depth-limit 0)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(progn
-  (verify-termination fty::flexprod-field-p)
-  (verify-termination fty::flexprod-field->acc-name$inline)
-  (verify-termination fty::flexprod-field->type$inline))
-
-(progn
-  (verify-termination fty::flexprod-p)
-  (verify-termination fty::flexprod->kind$inline)
-  (verify-termination fty::flexprod->fields$inline)
-  (verify-termination fty::flexprod->type-name$inline))
-
-(progn
-  (verify-termination fty::flexsum-p)
-  (verify-termination fty::flexsum->name$inline)
-  (verify-termination fty::flexsum->pred$inline)
-  (verify-termination fty::flexsum->count$inline)
-  (verify-termination fty::flexsum->case$inline)
-  (verify-termination fty::flexsum->prods$inline)
-  (verify-termination fty::flexsum->recp$inline)
-  (verify-termination fty::flexsum->typemacro$inline))
-
-(progn
-  (verify-termination fty::flexlist-p)
-  (verify-termination fty::flexlist->name$inline)
-  (verify-termination fty::flexlist->pred$inline)
-  (verify-termination fty::flexlist->count$inline)
-  (verify-termination fty::flexlist->elt-type$inline)
-  (verify-termination fty::flexlist->recp$inline))
-
-(progn
-  (verify-termination fty::flexalist-p)
-  (verify-termination fty::flexalist->name$inline)
-  (verify-termination fty::flexalist->pred$inline))
-
-(progn
-  (verify-termination fty::flextranssum-p)
-  (verify-termination fty::flextranssum->name$inline)
-  (verify-termination fty::flextranssum->pred$inline))
-
-(progn
-  (verify-termination fty::flexset-p)
-  (verify-termination fty::flexset->name$inline)
-  (verify-termination fty::flexset->pred$inline))
-
-(progn
-  (verify-termination fty::flexomap-p)
-  (verify-termination fty::flexomap->name$inline)
-  (verify-termination fty::flexomap->pred$inline)
-  (verify-termination fty::flexomap->count$inline)
-  (verify-termination fty::flexomap->val-type$inline)
-  (verify-termination fty::flexomap->recp$inline))
-
-(progn
-  (verify-termination fty::flextypes-p)
-  (verify-termination fty::flextypes->name$inline)
-  (verify-termination fty::flextypes->types$inline))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(std::deflist fty::flexprod-field-listp (acl2::x)
-  (fty::flexprod-field-p acl2::x)
-  :true-listp t
-  :elementp-of-nil nil)
-
-(std::deflist fty::flexprod-listp (acl2::x)
-  (fty::flexprod-p acl2::x)
-  :true-listp t
-  :elementp-of-nil nil)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define fty::flexprod-list->kind-list ((prods fty::flexprod-listp))
-  :returns (kinds true-listp)
-  (cond ((endp prods) nil)
-        (t (cons (fty::flexprod->kind (car prods))
-                 (fty::flexprod-list->kind-list (cdr prods))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -142,240 +66,6 @@
    of all the type names for which predicates are generated."
 
   "@('type') is an element of @('types') explained above."))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defxdoc+ defpred-library-extensions
-  :short "Some FTY library extensions for @(tsee defpred)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "These should be moved to the FTY library eventually.
-     Perhaps there is already something like that there,
-     but it may be in program mode."))
-  :order-subtopics t
-  :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define defpred-type-with-name ((type symbolp) (fty-table alistp))
-  :returns info?
-  :short "Find, in the FTY table,
-          the information for a type with a given name."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Each type has a unique name, so we stop as soon as we find a match.
-     We return @('nil') if there is no match.")
-   (xdoc::p
-    "Based on the format as described in @(see defpred-implementation),
-     we do an outer loop on the entries of the table,
-     and for each element an inner loop on
-     the elements of the mutually recursive clique
-     (which may be a singleton)."))
-  (b* (((when (endp fty-table)) nil)
-       ((cons & info) (car fty-table))
-       ((unless (fty::flextypes-p info))
-        (raise "Internal error: malformed type clique ~x0." info))
-       (type-entries (fty::flextypes->types info))
-       (info? (defpred-type-with-name-loop type type-entries)))
-    (or info?
-        (defpred-type-with-name type (cdr fty-table))))
-  :prepwork
-  ((define defpred-type-with-name-loop ((type symbolp) type-entries)
-     :returns info?
-     :parents nil
-     (b* (((when (atom type-entries)) nil)
-          (type-entry (car type-entries))
-          (foundp (cond ((fty::flexsum-p type-entry)
-                         (eq type (fty::flexsum->name type-entry)))
-                        ((fty::flexlist-p type-entry)
-                         (eq type (fty::flexlist->name type-entry)))
-                        ((fty::flexalist-p type-entry)
-                         (eq type (fty::flexalist->name type-entry)))
-                        ((fty::flextranssum-p type-entry)
-                         (eq type (fty::flextranssum->name type-entry)))
-                        ((fty::flexset-p type-entry)
-                         (eq type (fty::flexset->name type-entry)))
-                        ((fty::flexomap-p type-entry)
-                         (eq type (fty::flexomap->name type-entry)))
-                        (t nil)))
-          ((when foundp) type-entry))
-       (defpred-type-with-name-loop type (cdr type-entries))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define defpred-type-with-recognizer ((recog symbolp) (fty-table alistp))
-  :returns info?
-  :short "Look up, in the FTY table,
-          the information for a type with a given recognizer."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Each type should have a unique recognizer,
-     so we stop as soon as we find a match.
-     We return @('nil') if there is no match.")
-   (xdoc::p
-    "This is similar to @(tsee defpred-type-with-name),
-     but we check the recognizer instead of the name."))
-  (b* (((when (endp fty-table)) nil)
-       ((cons & info) (car fty-table))
-       ((unless (fty::flextypes-p info))
-        (raise "Internal error: malformed type clique ~x0." info))
-       (type-entries (fty::flextypes->types info))
-       (info? (defpred-type-with-recognizer-loop recog type-entries)))
-    (or info?
-        (defpred-type-with-recognizer recog (cdr fty-table))))
-  :prepwork
-  ((define defpred-type-with-recognizer-loop ((recog symbolp) type-entries)
-     :returns info?
-     :parents nil
-     (b* (((when (atom type-entries)) nil)
-          (type-entry (car type-entries))
-          (foundp (cond ((fty::flexsum-p type-entry)
-                         (eq recog (fty::flexsum->pred type-entry)))
-                        ((fty::flexlist-p type-entry)
-                         (eq recog (fty::flexlist->pred type-entry)))
-                        ((fty::flexalist-p type-entry)
-                         (eq recog (fty::flexalist->pred type-entry)))
-                        ((fty::flextranssum-p type-entry)
-                         (eq recog (fty::flextranssum->pred type-entry)))
-                        ((fty::flexset-p type-entry)
-                         (eq recog (fty::flexset->pred type-entry)))
-                        ((fty::flexomap-p type-entry)
-                         (eq recog (fty::flexomap->pred type-entry)))
-                        (t nil)))
-          ((when foundp) type-entry))
-       (defpred-type-with-recognizer-loop recog (cdr type-entries))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define defpred-flex->name (info)
-  :returns (name symbolp)
-  :short "Name of a sum, list, alist, transparent sum, set, or omap type,
-          given the information associated to the type."
-  (b* ((name (cond ((fty::flexsum-p info) (fty::flexsum->name info))
-                   ((fty::flexlist-p info) (fty::flexlist->name info))
-                   ((fty::flexalist-p info) (fty::flexalist->name info))
-                   ((fty::flextranssum-p info) (fty::flextranssum->name info))
-                   ((fty::flexset-p info) (fty::flexset->name info))
-                   ((fty::flexomap-p info) (fty::flexomap->name info))
-                   (t (raise "Internal error: malformed type ~x0." info))))
-       ((unless (symbolp name))
-        (raise "Internal error: malformed type name ~x0." name)))
-    name))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define defpred-flex-list->name-list ((infos true-listp))
-  :returns (names symbol-listp)
-  :short "Lift @(tsee defpred-flex->name) to lists."
-  (cond ((endp infos) nil)
-        (t (cons (defpred-flex->name (car infos))
-                 (defpred-flex-list->name-list (cdr infos))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define defpred-option-type->components ((option-type symbolp)
-                                         (fty-table alistp))
-  :returns (mv (base-type symbolp)
-               (some-accessor symbolp))
-  :short "Components of an option type."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "We return the name of the base type,
-     and the name of the accessor for the @(':some') case.
-     These are both @('nil') if
-     the given option type name does not resolve to an actual option type.")
-   (xdoc::p
-    "We look up the information for the option type.
-     We find the product for the @(':some') summand.
-     We obtain the field recognizer and accessor.
-     We use the recognizer to look up the base type."))
-  (b* ((info (defpred-type-with-name option-type fty-table))
-       ((unless info) (mv nil nil))
-       ((unless (fty::flexsum-p info)) (mv nil nil))
-       ((unless (eq (fty::flexsum->typemacro info) 'fty::defoption))
-        (mv nil nil))
-       (prods (fty::flexsum->prods info))
-       ((unless (and (fty::flexprod-listp prods)
-                     (consp prods)
-                     (consp (cdr prods))
-                     (endp (cddr prods))))
-        (raise "Internal error: malformed option products ~x0." prods)
-        (mv nil nil))
-       (prod1 (first prods))
-       (prod2 (second prods))
-       (prod (cond ((eq (fty::flexprod->kind prod1) :some) prod1)
-                   ((eq (fty::flexprod->kind prod2) :some) prod2)
-                   (t (prog2$
-                       (raise "Internal error: no :SOME product in ~x0."
-                              prods)
-                       prod1))))
-       (fields (fty::flexprod->fields prod))
-       ((unless (and (fty::flexprod-field-listp fields)
-                     (= (len fields) 1)))
-        (raise "Internal error: malformed option :SOME fields ~x0." fields)
-        (mv nil nil))
-       (field (car fields))
-       (base-recog (fty::flexprod-field->type field))
-       ((unless (symbolp base-recog))
-        (raise "Internal error: malformed :SOME field recognizer ~x0."
-               base-recog)
-        (mv nil nil))
-       (base-info (defpred-type-with-recognizer base-recog fty-table))
-       (base-type (defpred-flex->name base-info))
-       ((unless (symbolp base-type))
-        (raise "Internal error: malformed type name ~x0." base-type)
-        (mv nil nil))
-       (some-accessor (fty::flexprod-field->acc-name field))
-       ((unless (symbolp some-accessor))
-        (raise "Internal error: malformed accessor name ~x0." some-accessor)
-        (mv nil nil)))
-    (mv base-type some-accessor)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define defpred-type-clique-with-name ((clique symbolp) (fty-table alistp))
-  :returns (info? (implies info? (fty::flextypes-p info?)))
-  :short "Find, in the FTY table,
-          the information for a type clique with a given name."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Each type clique has a unique name,
-     we we stop as soon as we find a match.
-     We return @('nil') if there is no match."))
-  (b* ((info? (cdr (assoc-eq clique fty-table)))
-       ((unless (or (fty::flextypes-p info?)
-                    (eq info? nil)))
-        (raise "Internal error: malformed type clique ~x0." info?)))
-    info?))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define defpred-type-names-in-cliques-with-names ((cliques symbol-listp)
-                                                  (fty-table alistp))
-  :returns (types symbol-listp)
-  :short "Collect, from the FTY table,
-          all the type names from the named cliques."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "If any named clique is not found in the table, it is skipped."))
-  (b* (((when (endp cliques)) nil)
-       (clique (car cliques))
-       (info (defpred-type-clique-with-name clique fty-table))
-       ((unless info)
-        (defpred-type-names-in-cliques-with-names (cdr cliques) fty-table))
-       (infos (fty::flextypes->types info))
-       ((unless (true-listp infos))
-        (raise "Internal error: malformed clique members ~x0." infos))
-       (types (defpred-flex-list->name-list infos))
-       (more-types (defpred-type-names-in-cliques-with-names
-                     (cdr cliques) fty-table)))
-    (append types more-types)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -426,7 +116,7 @@
                          must be a symbol, ~
                          but ~x0 is not."
                         type)))
-          (info (defpred-type-with-name type fty-table))
+          (info (fty::type-with-name type fty-table))
           ((unless info)
            (reterr (msg "The first element of ~
                          every element of the :OVERRIDE list ~
@@ -480,7 +170,10 @@
 (defval *defpred-allowed-options*
   :short "Keyword options accepted by @(tsee defpred)."
   '(:default
-    :override))
+    :override
+    :parents
+    :short
+    :long))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -488,9 +181,15 @@
   :returns (mv erp
                (suffix symbolp)
                (default booleanp)
-               (overrides alistp))
+               (overrides alistp)
+               (parents-presentp booleanp)
+               parents
+               (short-presentp booleanp)
+               short
+               (long-presentp booleanp)
+               long)
   :short "Process all the inputs."
-  (b* (((reterr) nil nil nil)
+  (b* (((reterr) nil nil nil nil nil nil nil nil nil)
        ((mv erp suffix options)
         (partition-rest-and-keyword-args args *defpred-allowed-options*))
        ((when (or erp
@@ -516,8 +215,25 @@
        (override (if override-option
                      (cdr override-option)
                    nil))
-       ((erp overrides) (defpred-process-override override fty-table)))
-    (retok suffix default overrides))
+       ((erp overrides) (defpred-process-override override fty-table))
+       (parents-option (assoc-eq :parents options))
+       (parents-presentp (consp parents-option))
+       (parents (cdr parents-option))
+       (short-option (assoc-eq :short options))
+       (short-presentp (consp short-option))
+       (short (cdr short-option))
+       (long-option (assoc-eq :long options))
+       (long-presentp (consp long-option))
+       (long (cdr long-option)))
+    (retok suffix
+           default
+           overrides
+           parents-presentp
+           parents
+           short-presentp
+           short
+           long-presentp
+           long))
   :guard-hints (("Goal" :in-theory (enable acl2::alistp-when-symbol-alistp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -526,10 +242,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define defpred-gen-name ((type symbolp) (suffix symbolp))
+(define defpred-gen-topic-name ((suffix symbolp))
   :returns (name symbolp)
-  :short "Generate the name of a predicate."
+  :short "Generate the name of the XDOC topic."
+  (packn-pos (list 'abstract-syntax- suffix) suffix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defpred-gen-pred-name ((type symbolp) (suffix symbolp))
+  :returns (name symbolp)
+  :short "Generate the name of a predicate for a type."
   (packn-pos (list type '- suffix) suffix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define defpred-gen-ruleset-name ((suffix symbolp))
+  :returns (name symbolp)
+  :short "Generate the name of the ruleset."
+  (packn-pos (list 'abstract-syntax- suffix '-rules) suffix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -568,14 +298,14 @@
        (recog (fty::flexprod-field->type field))
        ((unless (symbolp recog))
         (raise "Internal error: malformed field recognizer ~x0." recog))
-       (info (defpred-type-with-recognizer recog fty-table))
+       (info (fty::type-with-recognizer recog fty-table))
        (field-type (and info
-                        (defpred-flex->name info)))
+                        (fty::flex->name info)))
        ((unless (and field-type
                      (member-eq field-type types)))
         (defpred-gen-prod-conjuncts type (cdr fields) types suffix fty-table))
        (accessor (fty::flexprod-field->acc-name field))
-       (field-type-suffix (defpred-gen-name field-type suffix))
+       (field-type-suffix (defpred-gen-pred-name field-type suffix))
        (term `(,field-type-suffix (,accessor ,type)))
        (terms
         (defpred-gen-prod-conjuncts type (cdr fields) types suffix fty-table)))
@@ -662,7 +392,7 @@
        ((unless (symbolp type))
         (raise "Internal error: malformed type name ~x0." type)
         '(_))
-       (type-suffix (defpred-gen-name type suffix))
+       (type-suffix (defpred-gen-pred-name type suffix))
        (type-count (fty::flexsum->count sum))
        (recog (fty::flexsum->pred sum))
        (recp (fty::flexsum->recp sum))
@@ -688,6 +418,7 @@
     `(define ,type-suffix ((,type ,recog))
        ,@(and ignorable `((declare (ignorable ,type))))
        :returns (yes/no booleanp)
+       :parents (,(defpred-gen-topic-name suffix))
        ,body
        ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
        ,@(and (not mutrecp) '(:hooks (:fix))))))
@@ -725,7 +456,7 @@
        ((unless (symbolp type))
         (raise "Internal error: malformed type name ~x0." type)
         '(_))
-       (type-suffix (defpred-gen-name type suffix))
+       (type-suffix (defpred-gen-pred-name type suffix))
        (type-count (fty::flexsum->count sum))
        (recog (fty::flexsum->pred sum))
        (recp (fty::flexsum->recp sum))
@@ -744,6 +475,7 @@
     `(define ,type-suffix ((,type ,recog))
        ,@(and ignorable `((declare (ignorable ,type))))
        :returns (yes/no booleanp)
+       :parents (,(defpred-gen-topic-name suffix))
        ,body
        ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
        ,@(and (not mutrecp) '(:hooks (:fix))))))
@@ -771,19 +503,19 @@
        ((unless (symbolp type))
         (raise "Internal error: malformed type name ~x0." type)
         '(_))
-       (type-suffix (defpred-gen-name type suffix))
+       (type-suffix (defpred-gen-pred-name type suffix))
        (type-count (fty::flexsum->count sum))
        (recog (fty::flexsum->pred sum))
        (recp (fty::flexsum->recp sum))
        (type-case (fty::flexsum->case sum))
-       ((mv base-type accessor)
-        (defpred-option-type->components type fty-table))
-       (base-type-suffix (defpred-gen-name base-type suffix))
+       ((mv base-type accessor) (fty::option-type->components type fty-table))
+       (base-type-suffix (defpred-gen-pred-name base-type suffix))
        (body `(,type-case ,type
                           :some (,base-type-suffix (,accessor ,type))
                           :none t)))
     `(define ,type-suffix ((,type ,recog))
        :returns (yes/no booleanp)
+       :parents (,(defpred-gen-topic-name suffix))
        ,body
        ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
        ,@(and (not mutrecp) '(:hooks (:fix))))))
@@ -823,40 +555,54 @@
                                (suffix symbolp)
                                (fty-table alistp))
   :returns (event pseudo-event-formp)
-  :short "Generate a predicate for a list type."
+  :short "Generate a predicate for a list type, with accompanying theorems."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is as described in @(tsee defpred).")
    (xdoc::p
     "The @('mutrec') flag says whether
-     this product type is part of a mutually recursive clique."))
+     this product type is part of a mutually recursive clique.")
+   (xdoc::p
+    "The accompanying theorems are generated as a @(tsee std::deflist) event,
+     which generates the actual theorems."))
   (b* ((type (fty::flexlist->name list))
        ((unless (symbolp type))
         (raise "Internal error: malformed type name ~x0." type)
         '(_))
-       (type-suffix (defpred-gen-name type suffix))
+       (type-suffix (defpred-gen-pred-name type suffix))
        (type-count (fty::flexlist->count list))
        (recog (fty::flexlist->pred list))
        (elt-recog (fty::flexlist->elt-type list))
        ((unless (symbolp elt-recog))
         (raise "Internal error: malformed recognizer ~x0." elt-recog)
         '(_))
-       (elt-info (defpred-type-with-recognizer elt-recog fty-table))
-       (elt-type (defpred-flex->name elt-info))
+       (elt-info (fty::type-with-recognizer elt-recog fty-table))
+       (elt-type (fty::flex->name elt-info))
        (recp (fty::flexlist->recp list))
        ((unless (symbolp elt-type))
         (raise "Internal error: malformed type name ~x0." elt-type)
         '(_))
-       (elt-type-suffix (defpred-gen-name elt-type suffix))
+       (elt-type-suffix (defpred-gen-pred-name elt-type suffix))
        (body `(or (endp ,type)
                   (and (,elt-type-suffix (car ,type))
-                       (,type-suffix (cdr ,type))))))
-    `(define ,type-suffix ((,type ,recog))
-       :returns (yes/no booleanp)
-       ,body
-       ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
-       ,@(and (not mutrecp) '(:hooks (:fix))))))
+                       (,type-suffix (cdr ,type)))))
+       (deflist-event
+         `(std::deflist ,type-suffix (x)
+            :guard (,recog x)
+            (,elt-type-suffix x)
+            :true-listp nil))
+       (thm-events (list deflist-event))
+       (event
+        `(define ,type-suffix ((,type ,recog))
+           :returns (yes/no booleanp)
+           :parents (,(defpred-gen-topic-name suffix))
+           ,body
+           ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
+           ,@(and (not mutrecp) '(:hooks (:fix)))
+           ///
+           ,@thm-events)))
+    event))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -877,26 +623,77 @@
        ((unless (symbolp type))
         (raise "Internal error: malformed type name ~x0." type)
         '(_))
-       (type-suffix (defpred-gen-name type suffix))
+       (type-suffix (defpred-gen-pred-name type suffix))
        (type-count (fty::flexomap->count omap))
        (recog (fty::flexomap->pred omap))
        (recp (fty::flexomap->recp omap))
+       (key-recog (fty::flexomap->key-type omap))
+       ((unless (symbolp key-recog))
+        (raise "Internal error: malformed recognizer ~x0." key-recog)
+        '(_))
+       (key-info (fty::type-with-recognizer key-recog fty-table))
+       (key-type (fty::flex->name key-info))
        (val-recog (fty::flexomap->val-type omap))
        ((unless (symbolp val-recog))
         (raise "Internal error: malformed recognizer ~x0." val-recog)
         '(_))
-       (val-info (defpred-type-with-recognizer val-recog fty-table))
-       (val-type (defpred-flex->name val-info))
-       (val-type-suffix (defpred-gen-name val-type suffix))
+       (val-info (fty::type-with-recognizer val-recog fty-table))
+       (val-type (fty::flex->name val-info))
+       (val-type-suffix (defpred-gen-pred-name val-type suffix))
        (body `(or (not (mbt (,recog ,type)))
                   (omap::emptyp ,type)
                   (and (,val-type-suffix (omap::head-val ,type))
-                       (,type-suffix (omap::tail ,type))))))
+                       (,type-suffix (omap::tail ,type)))))
+       (type-suffix-when-emptyp
+        (packn-pos (list type-suffix '-when-emptyp) suffix))
+       (type-suffix-of-update
+        (packn-pos (list type-suffix '-of-update) suffix))
+       (val-type-suffix-of-head-when-type-suffix
+        (packn-pos (list val-type '-of-head-when- type-suffix) suffix))
+       (type-suffix-of-tail
+        (packn-pos (list type-suffix '-of-tail) suffix))
+       (thm-events
+        `((defruled ,type-suffix-when-emptyp
+            (implies (omap::emptyp ,type)
+                     (,type-suffix ,type))
+            :enable ,type-suffix)
+          (defruled ,type-suffix-of-update
+            (implies (and (,recog ,type)
+                          (,val-type-suffix ,val-type)
+                          (,type-suffix ,type))
+                     (,type-suffix (omap::update ,key-type ,val-type ,type)))
+            :induct t
+            :enable (,recog
+                     omap::update
+                     omap::emptyp
+                     omap::mfix
+                     omap::mapp
+                     omap::head
+                     omap::tail))
+          (defruled ,val-type-suffix-of-head-when-type-suffix
+            (implies (and (,recog ,type)
+                          (,type-suffix ,type)
+                          (not (omap::emptyp ,type)))
+                     (,val-type-suffix (mv-nth 1 (omap::head ,type)))))
+          (defruled ,type-suffix-of-tail
+            (implies (and (,recog ,type)
+                          (,type-suffix ,type))
+                     (,type-suffix (omap::tail ,type))))))
+       (ruleset-event
+        `(add-to-ruleset ,(defpred-gen-ruleset-name suffix)
+                         '(,type-suffix-when-emptyp
+                           ,type-suffix-of-update
+                           ,val-type-suffix-of-head-when-type-suffix
+                           ,type-suffix-of-tail))))
     `(define ,type-suffix ((,type ,recog))
        :returns (yes/no booleanp)
+       :parents (,(defpred-gen-topic-name suffix))
        ,body
        ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
-       ,@(and (not mutrecp) '(:hooks (:fix))))))
+       ,@(and (not mutrecp) '(:hooks (:fix)))
+       ///
+       ,@thm-events
+       ,ruleset-event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -908,7 +705,7 @@
                                (overrides alistp)
                                (fty-table alistp))
   :returns (event pseudo-event-formp)
-  :short "Generate a predicate for a type."
+  :short "Generate a predicate for a type, with accompanying theorems."
   (cond ((fty::flexsum-p flex)
          (defpred-gen-prod/sum/option-pred
            flex mutrecp types suffix default overrides fty-table))
@@ -916,7 +713,8 @@
          (defpred-gen-list-pred flex mutrecp suffix fty-table))
         ((fty::flexomap-p flex)
          (defpred-gen-omap-pred flex mutrecp suffix fty-table))
-        (t (prog2$ (raise "Internal error: unsupported type ~x0." flex) '(_)))))
+        (t (prog2$ (raise "Internal error: unsupported type ~x0." flex)
+                   '(_)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -928,13 +726,16 @@
                                  (overrides alistp)
                                  (fty-table alistp))
   :returns (events pseudo-event-form-listp)
-  :short "Generate a list of predicates for a list of types."
-  (cond ((endp flexs) nil)
-        (t (cons
-            (defpred-gen-type-pred
-              (car flexs) mutrecp types suffix default overrides fty-table)
-            (defpred-gen-types-preds
-              (cdr flexs) mutrecp types suffix default overrides fty-table)))))
+  :short "Generate a list of predicates for a list of types,
+          with accompanying theorems."
+  (b* (((when (endp flexs)) nil)
+       (event
+        (defpred-gen-type-pred
+          (car flexs) mutrecp types suffix default overrides fty-table))
+       (more-events
+        (defpred-gen-types-preds
+          (cdr flexs) mutrecp types suffix default overrides fty-table)))
+    (cons event more-events)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -956,14 +757,19 @@
      based on the flag we read from the information about the type.
      If the clique consists of two or more types,
      we generate a clique of mutually recursive predicates,
-     with a @(tsee fty::deffixequiv-mutual) at the end;
+     with a @(tsee fty::deffixequiv-mutual) after the @('///'),
+     and with the deferred events after that;
      the name of the clique of predicates is derived from
      the name of the clique of types.")
    (xdoc::p
     "We also generate a @(':flag-local nil') to export
      the flag macro @('defthm-<name>-flag'),
      where @('<name>') is the name of the @(tsee defines) clique.
-     This facilitates proving theorems by induction on the predicates."))
+     This facilitates proving theorems by induction on the predicates.")
+   (xdoc::p
+    "We also generate a form to allow bogus mutual recursion,
+     since we have no control on how the user overrides the boilerplate.
+     Note that this form is automatically local to the @(tsee defines)."))
   (b* ((members (fty::flextypes->types clique))
        ((unless (true-listp members))
         (raise "Internal error: malformed members of type clique ~x0." clique)
@@ -978,13 +784,16 @@
        ((unless (symbolp clique-name))
         (raise "Internal error: malformed clique name ~x0." clique-name)
         '(_))
-       (clique-name-suffix (defpred-gen-name clique-name suffix))
-       (events (defpred-gen-types-preds
-                 members t types suffix default overrides fty-table)))
+       (clique-name-suffix (defpred-gen-pred-name clique-name suffix))
+       (events
+        (defpred-gen-types-preds
+          members t types suffix default overrides fty-table)))
     `(defines ,clique-name-suffix
+       :parents (,(defpred-gen-topic-name suffix))
        ,@events
        :hints (("Goal" :in-theory (enable o< o-finp)))
        :flag-local nil
+       :prepwork ((set-bogus-mutual-recursion-ok t))
        ///
        (fty::deffixequiv-mutual ,clique-name-suffix))))
 
@@ -1001,7 +810,7 @@
           for a list of type cliques with given names."
   (b* (((when (endp clique-names)) nil)
        (clique-name (car clique-names))
-       (clique (defpred-type-clique-with-name clique-name fty-table))
+       (clique (fty::type-clique-with-name clique-name fty-table))
        ((unless clique)
         (raise "Internal error: no type clique with name ~x0." clique-name))
        ((unless (fty::flextypes-p clique))
@@ -1038,6 +847,12 @@
 (define defpred-gen-everything ((suffix symbolp)
                                 (default booleanp)
                                 (overrides alistp)
+                                (parents-presentp booleanp)
+                                parents
+                                (short-presentp booleanp)
+                                short
+                                (long-presentp booleanp)
+                                long
                                 (fty-table alistp))
   :returns (event pseudo-event-formp)
   :short "Generate all the events."
@@ -1048,12 +863,24 @@
      and then we call the code to generate the predicates,
      which we put into one event."))
   (b* ((types
-        (defpred-type-names-in-cliques-with-names *defpred-cliques* fty-table))
-       (events (defpred-gen-cliques-preds
-                 *defpred-cliques* types suffix default overrides fty-table)))
-    `(progn
-       (set-bogus-mutual-recursion-ok t)
-       ,@events)))
+        (fty::type-names-in-cliques-with-names *defpred-cliques* fty-table))
+       (pred-events
+        (defpred-gen-cliques-preds
+          *defpred-cliques* types suffix default overrides fty-table))
+       (xdoc-name (defpred-gen-topic-name suffix))
+       (xdoc-event
+        `(defxdoc+ ,xdoc-name
+           ,@(and parents-presentp `(:parents ,parents))
+           ,@(and short-presentp `(:short ,short))
+           ,@(and long-presentp `(:long ,long))
+           :order-subtopics t))
+       (ruleset-event
+        `(def-ruleset! ,(defpred-gen-ruleset-name suffix) nil)))
+    `(encapsulate
+       ()
+       ,xdoc-event
+       ,ruleset-event
+       ,@pred-events)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1064,9 +891,27 @@
   :short "Process the inputs and generate the events."
   (b* (((reterr) '(_))
        (fty-table (table-alist+ 'fty::flextypes-table wrld))
-       ((erp suffix default overrides)
+       ((erp suffix
+             default
+             overrides
+             parents-presentp
+             parents
+             short-presentp
+             short
+             long-presentp
+             long)
         (defpred-process-inputs args fty-table)))
-    (retok (defpred-gen-everything suffix default overrides fty-table))))
+    (retok (defpred-gen-everything
+             suffix
+             default
+             overrides
+             parents-presentp
+             parents
+             short-presentp
+             short
+             long-presentp
+             long
+             fty-table))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

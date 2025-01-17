@@ -1,6 +1,6 @@
 ; A simple JSON parser
 ;
-; Copyright (C) 2019-2023 Kestrel Institute
+; Copyright (C) 2019-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -430,12 +430,12 @@
 
 (defthm natp-of-mv-nth-1-of-parse-json-digits
   (natp (mv-nth 1 (parse-json-digits chars)))
-  :rule-classes (:type-prescription)
+  :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable parse-json-digits))))
 
 (defthm natp-of-mv-nth-0-of-parse-json-digits
   (natp (mv-nth 0 (parse-json-digits chars)))
-  :rule-classes (:type-prescription)
+  :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable parse-json-digits member-equal))))
 
 (verify-guards parse-json-digits)

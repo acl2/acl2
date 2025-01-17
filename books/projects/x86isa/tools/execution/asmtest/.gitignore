@@ -1,0 +1,12 @@
+check-test
+check-test.*
+!check-test.lsp
+inputs
+results
+outputs
+snippets/testgen.nasm
+snippets-generated.txt
+snippets-combined.txt
+asmtest
+snippets.lsp
+snippets.h

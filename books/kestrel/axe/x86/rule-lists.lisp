@@ -23,6 +23,29 @@
 (acl2::defconst-computed-simple *instruction-decoding-and-spec-rules*
   (acl2::get-ruleset 'x86isa::instruction-decoding-and-spec-rules (w state)))
 
+(defun map-add-suffix (syms str)
+  (declare (xargs :guard (and (symbol-listp syms)
+                              (stringp str))))
+  (if (endp syms)
+      nil
+    (cons (add-suffix (first syms) str)
+          (map-add-suffix (rest syms) str))))
+
+;; todo: some of these should be added to the X86 package:
+
+;; n08$inline and many more
+;; todo: go directly to bvchop?
+(acl2::defconst-computed-simple *unsigned-choppers* (map-add-suffix (acl2::get-ruleset 'x86isa::nw-defs (w state)) "$INLINE"))
+
+;; i08$inline and many more
+(acl2::defconst-computed-simple *signed-choppers* (map-add-suffix (acl2::get-ruleset 'x86isa::iw-defs (w state)) "$INLINE"))
+
+;; n08p$inline and many more
+(acl2::defconst-computed-simple *unsigned-recognizers* (map-add-suffix (acl2::get-ruleset 'x86isa::nwp-defs (w state)) "$INLINE"))
+
+;; i08p$inline and many more
+(acl2::defconst-computed-simple *signed-recognizers* (map-add-suffix (acl2::get-ruleset 'x86isa::iwp-defs (w state)) "$INLINE"))
+
 ;; Most of these are just names of functions to open
 (defun instruction-rules ()
   (declare (xargs :guard t))
@@ -242,7 +265,7 @@
 
 (defun read-introduction-rules ()
   (declare (xargs :guard t))
-  '(rb-becomes-read ; no need to target mv-nth-1-of-rv, etc. since this rewrites the entire rb
+  '(rb-becomes-read ; no need to target mv-nth-1-of-rb, etc. since this rewrites the entire rb
     ;;mv-nth-1-of-rb-becomes-read
     ;; These just clarify failures to turn RB into READ: ; TODO: Only use when debugging?
     mv-nth-1-of-rb-of-set-rip
@@ -1223,8 +1246,7 @@
 
 (defun simple-opener-rules ()
   (declare (xargs :guard t))
-  '(x86isa::n08p$inline ;just unsigned-byte-p
-    ; 64-bit-modep ; using rules about this instead, since this is no longer just true
+  '(; 64-bit-modep ; using rules about this instead, since this is no longer just true
     ))
 
 ;; These open the branch conditions, without trying to make the expressions nice.
@@ -1663,6 +1685,10 @@
           (acl2::bvif-rules)
           (bitops-rules)
           (acl2::if-becomes-bvif-rules)
+          *unsigned-choppers* ;; these are just logead, aka bvchop
+          *signed-choppers* ;; these are just logext
+          *unsigned-recognizers* ;; these are just unsigned-byte-p
+          *signed-recognizers* ;; these are just signed-byte-p
           '(;; It would be nice is all uses of !rflags could become calls to set-flag, but sometimes we seem to set all of the flags?
             ;; !rflags-becomes-xw ; todo: now get rid of rules about !rflags and rflags
             ;; rflags-becomes-xr
@@ -1699,28 +1725,7 @@
             ;; rgfi-becomes-rax
             ;; rgfi-becomes-rbx
 
-            ;; Chopping operators (these are just bvchop):
-            x86isa::n01$inline
-            x86isa::n03$inline
-            x86isa::n06$inline
-            x86isa::n08$inline
-            x86isa::n16$inline
-            x86isa::n32$inline
-            x86isa::n64-becomes-bvchop ;; x86isa::n64$inline
-            x86isa::n128$inline
-            x86isa::n256$inline
-            x86isa::n512$inline
-
-            ;; These are just logext:
-            x86isa::i08$inline
-            x86isa::i16$inline
-            x86isa::i32$inline
-            x86isa::i64$inline
-            x86isa::i128$inline
-            x86isa::i256$inline
-            x86isa::i512$inline
-
-            ;; These are just logext:
+            ;; These are just logext: ; todo: more!
             x86isa::n08-to-i08$inline
             x86isa::n16-to-i16$inline
             x86isa::n32-to-i32$inline
@@ -2012,7 +2017,7 @@
             acl2::slice-of-bvchop-low
             x86isa::rflags x86isa::rflags$a ;exposes xr
 ;            x86isa::rflags-set-flag ;targets xr-of-set-flag ;drop?
-            x86isa::rflags-is-n32p-unforced
+            x86isa::elem-p-of-xr-rflags ; unsigned-byte-p-32-of-rflags
              ;targets unsigned-byte-p-of-rflags
 ;                    acl2::bvcat-trim-arg4-axe-all
  ;                   acl2::bvcat-trim-arg2-axe-all

@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -18,7 +18,8 @@
 
   :parents (syntax-for-tools)
 
-  :short "Generate predicates over the C abstract syntax for tools."
+  :short "Generate predicates over the C abstract syntax for tools,
+          along with theorems about the predicates."
 
   :long
 
@@ -32,8 +33,8 @@
      "The "
      (xdoc::seetopic "abstract-syntax" "C abstract syntax for tools")
      " consists of a large collection of (fix)types.
-      This macro automates the creation of
-      unary predicates over those types.
+      This macro automates the creation of unary predicates over those types;
+      it also generates theorems about the theorems.
       The user provides information that is specific to the desired predicates,
       and the macro integrates it into generated boilerplate."))
 
@@ -45,6 +46,9 @@
      "(defpred suffix"
      "         :default  ...  ; no default"
      "         :override ...  ; default nil"
+     "         :parents  ...  ; no default"
+     "         :short    ...  ; no default"
+     "         :long     ...  ; no default"
      "  )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -99,38 +103,41 @@
         (e.g. @(tsee expr)),
         @('<kind>') is a keyword identifying one of the summands of the type,
         and @('<term>') is an (untranslated) term
-        whose only free variable is @('<type>')."))))
+        whose only free variable is @('<type>').")))
+
+    (xdoc::desc
+     (list
+      "@(':parents')"
+      "@(':short')"
+      "@(':long')")
+     (xdoc::p
+      "These, if present, are added to the generated XDOC topic
+       described in the Section `Generated Events' below.")))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::evmac-section-generated
 
-    (xdoc::p
-     "A predicate is generated for
-      the following types of the abstract syntax:")
-    (xdoc::ul
-     (xdoc::li
-      "All the types in the mutually recursive clique
-       @(tsee exprs/decls/stmts).")
-     (xdoc::li
-      "The types
-       @(tsee type-spec-list),
-       @(tsee expr/tyname),
-       @(tsee declor/absdeclor),
-       @(tsee decl/stmt),
-       @(tsee fundef),
-       @9tsee fundef-option),
-       @(tsee extdecl),
-       @(tsee extdecl-list),
-       @(tsee transunit),
-       @(tsee filepath-transunit-map), and
-       @(tsee transunit-ensemble)."))
+    (xdoc::desc
+     "@('abstract-syntax-<suffix>')"
+     (xdoc::p
+      "An XDOC topic whose name is obtained by adding
+       at the end of the symbol @('abstract-syntax-'),
+       the symbol specified in the @('suffix') input.
+       If any of the @(':parents'), @(':short'), or @(':long') inputs
+       are provided, they are added to this XDOC topic.
+       This XDOC topic is generated with @(tsee defxdoc+),
+       with @(':order-topics t'),
+       so that the other generated events (described below),
+       which all have this XDOC topic as parent,
+       are listed in order as subtopics."))
 
     (xdoc::desc
      "@('<type>-<suffix>')"
      (xdoc::p
-      "For each type @('<type>') designated above,
-      a predicate over the type, defined as follows:")
+      "For each type @('<type>') designated in
+       the `Types for Which Predicates Are Generated' below,
+       a predicate over the type, defined as follows:")
      (xdoc::ul
       (xdoc::li
        "If @('<type>') is a @(tsee fty::defprod):"
@@ -195,4 +202,73 @@
         the predicate is defined recursively,
         as the conjunction of the predicate generated for the value type
         applied to each value of the map;
-        the conjunction is @('t') if the map is empty."))))))
+        the conjunction is @('t') if the map is empty.")))
+
+    (xdoc::desc
+     "Accompanying list type theorems."
+     (xdoc::p
+      "For each list type designated in
+       the `Types for Which Predicates Are Generated' below,
+       we generate a @(tsee std::deflist) for the predicates,
+       which automatically generates theorems.
+       The enablement of these theorems is determined by @(tsee std::deflist);
+       currently @('defpred') does not modify that for any of those theorems."))
+
+    (xdoc::desc
+     "Accompanying omap type theorems."
+     (xdoc::p
+      "For each omap type @('<type>') designated in
+       the `Types for Which Predicates Are Generated' below,
+       whose value type @('<valtype>') is also designated there,
+       but whose key type @('<keytype>') is not,
+       we generate the following theorems,
+       whose exact form can be inspected with @(tsee pe) or similar command:")
+     (xdoc::ul
+      (xdoc::li
+       "@('<type>-<suffix>-when-emptyp')")
+      (xdoc::li
+       "@('<type>-<suffix>-of-update')")
+      (xdoc::li
+       "@('<valtype>-<suffix>-of-head-when-<type>-<suffix>').")
+      (xdoc::li
+       "@('<type>-<suffix>-of-tail')"))
+     (xdoc::p
+      "These theorems are all disabled,
+       and added to the generated ruleset described below."))
+
+    (xdoc::desc
+     "@('abstract-syntax-<suffix>-rules')"
+     (xdoc::p
+      "A "
+      (xdoc::seetopic "acl2::rulesets" "ruleset")
+      " with the theorems that accompany the predicates,
+       except for the ones that accompany the list type predicates."))
+
+    (xdoc::p
+     "The theorems that accompany the predicates
+      are generated as part of the @(tsee define) and @(tsee defines)
+      that define the predicates, after the @('///').")
+
+    (xdoc::subsection
+     "Types for Which Predicates Are Generated"
+
+     (xdoc::p
+      "A predicate is generated for
+       the following types of the abstract syntax:")
+     (xdoc::ul
+      (xdoc::li
+       "All the types in the mutually recursive clique
+        @(tsee exprs/decls/stmts).")
+      (xdoc::li
+       "The types
+        @(tsee type-spec-list),
+        @(tsee expr/tyname),
+        @(tsee declor/absdeclor),
+        @(tsee decl/stmt),
+        @(tsee fundef),
+        @(tsee fundef-option),
+        @(tsee extdecl),
+        @(tsee extdecl-list),
+        @(tsee transunit),
+        @(tsee filepath-transunit-map), and
+        @(tsee transunit-ensemble)."))))))

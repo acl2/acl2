@@ -45,11 +45,11 @@
 
 (include-book "xdoc/top" :dir :system)
 (include-book "std/util/define" :dir :system)
+(include-book "std/util/defrule" :dir :system)
 (include-book "std/util/def-bound-theorems" :dir :system)
-(include-book "std/strings/case-conversion" :dir :system)
+(include-book "std/lists/list-fix" :dir :system)
 (include-book "centaur/bitops/part-install" :dir :system)
 (include-book "centaur/bitops/fast-logext" :dir :system)
-(include-book "centaur/gl/defthm-using-gl" :dir :system)
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "centaur/bitops/logbitp-bounds" :dir :system))

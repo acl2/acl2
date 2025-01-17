@@ -45,6 +45,7 @@
 (include-book "../utils/segmentation-structures")
 (include-book "tools/rulesets" :dir :system)
 (include-book "centaur/bitops/ihs-extensions" :dir :system)
+(include-book "centaur/gl/defthm-using-gl" :dir :system)
 
 (local (include-book "centaur/gl/gl" :dir :system))
 
