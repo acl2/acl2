@@ -146,8 +146,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-with-recognizer ((recog symbolp) (fty-table alistp))
-  :returns info?
+(define flextype-with-recognizer ((recog symbolp) (fty-table alistp))
+  :returns flextype?
   :short "Look up, in the FTY table,
           the information for a type with a given recognizer."
   :long
@@ -160,34 +160,34 @@
     "This is similar to @(tsee flextype-with-name),
      but we check the recognizer instead of the name."))
   (b* (((when (endp fty-table)) nil)
-       ((cons & clique-info) (car fty-table))
-       ((unless (flextypes-p clique-info))
-        (raise "Internal error: malformed type clique ~x0." clique-info))
-       (type-infos (flextypes->types clique-info))
-       (type-info? (type-with-recognizer-loop recog type-infos)))
-    (or type-info?
-        (type-with-recognizer recog (cdr fty-table))))
+       ((cons & flextypes) (car fty-table))
+       ((unless (flextypes-p flextypes))
+        (raise "Internal error: malformed type clique ~x0." flextypes))
+       (flextype-list (flextypes->types flextypes))
+       (flextype? (flextype-with-recognizer-loop recog flextype-list)))
+    (or flextype?
+        (flextype-with-recognizer recog (cdr fty-table))))
   :prepwork
-  ((define type-with-recognizer-loop ((recog symbolp) type-infos)
-     :returns type-info?
+  ((define flextype-with-recognizer-loop ((recog symbolp) flextype-list)
+     :returns flextype?
      :parents nil
-     (b* (((when (atom type-infos)) nil)
-          (type-info (car type-infos))
-          (foundp (cond ((flexsum-p type-info)
-                         (eq recog (flexsum->pred type-info)))
-                        ((flexlist-p type-info)
-                         (eq recog (flexlist->pred type-info)))
-                        ((flexalist-p type-info)
-                         (eq recog (flexalist->pred type-info)))
-                        ((flextranssum-p type-info)
-                         (eq recog (flextranssum->pred type-info)))
-                        ((flexset-p type-info)
-                         (eq recog (flexset->pred type-info)))
-                        ((flexomap-p type-info)
-                         (eq recog (flexomap->pred type-info)))
+     (b* (((when (atom flextype-list)) nil)
+          (flextype (car flextype-list))
+          (foundp (cond ((flexsum-p flextype)
+                         (eq recog (flexsum->pred flextype)))
+                        ((flexlist-p flextype)
+                         (eq recog (flexlist->pred flextype)))
+                        ((flexalist-p flextype)
+                         (eq recog (flexalist->pred flextype)))
+                        ((flextranssum-p flextype)
+                         (eq recog (flextranssum->pred flextype)))
+                        ((flexset-p flextype)
+                         (eq recog (flexset->pred flextype)))
+                        ((flexomap-p flextype)
+                         (eq recog (flexomap->pred flextype)))
                         (t nil)))
-          ((when foundp) type-info))
-       (type-with-recognizer-loop recog (cdr type-infos))))))
+          ((when foundp) flextype))
+       (flextype-with-recognizer-loop recog (cdr flextype-list))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -281,7 +281,7 @@
         (raise "Internal error: malformed :SOME field recognizer ~x0."
                base-recog)
         (mv nil nil))
-       (base-info (type-with-recognizer base-recog fty-table))
+       (base-info (flextype-with-recognizer base-recog fty-table))
        (base-type-name (flextype->name base-info))
        ((unless (symbolp base-type-name))
         (raise "Internal error: malformed type name ~x0." base-type-name)
