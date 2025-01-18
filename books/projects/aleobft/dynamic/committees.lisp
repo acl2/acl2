@@ -795,7 +795,7 @@
      We also prove that @($n \\geq 3f + 1$).")
    (xdoc::p
     "If @($n$) is 1 or 2 or 3, no failures are tolerated:
-     @($f$), and hence @($f$), must be 0.
+     @($f$) must be 0.
      The case @($n = 1$) is a degenerate one,
      but the protocol could probably still work in a degenerate way.
      The cases @($n = 2$) and @($n = 3$) could make sense,
