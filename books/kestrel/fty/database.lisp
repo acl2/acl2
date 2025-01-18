@@ -73,29 +73,29 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define flextype->name (type-info)
+(define flextype->name (flextype)
   :returns (name symbolp)
   :short "Name of a sum, list, alist, transparent sum, set, or omap type,
           given the information associated to the type."
-  (b* ((name (cond ((flexsum-p type-info) (flexsum->name type-info))
-                   ((flexlist-p type-info) (flexlist->name type-info))
-                   ((flexalist-p type-info) (flexalist->name type-info))
-                   ((flextranssum-p type-info) (flextranssum->name type-info))
-                   ((flexset-p type-info) (flexset->name type-info))
-                   ((flexomap-p type-info) (flexomap->name type-info))
-                   (t (raise "Internal error: malformed type ~x0." type-info))))
+  (b* ((name (cond ((flexsum-p flextype) (flexsum->name flextype))
+                   ((flexlist-p flextype) (flexlist->name flextype))
+                   ((flexalist-p flextype) (flexalist->name flextype))
+                   ((flextranssum-p flextype) (flextranssum->name flextype))
+                   ((flexset-p flextype) (flexset->name flextype))
+                   ((flexomap-p flextype) (flexomap->name flextype))
+                   (t (raise "Internal error: malformed type ~x0." flextype))))
        ((unless (symbolp name))
         (raise "Internal error: malformed type name ~x0." name)))
     name))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define flextype-list->name-list ((type-infos true-listp))
+(define flextype-list->name-list ((flextype-list true-listp))
   :returns (names symbol-listp)
   :short "Lift @(tsee flextype->name) to lists."
-  (cond ((endp type-infos) nil)
-        (t (cons (flextype->name (car type-infos))
-                 (flextype-list->name-list (cdr type-infos))))))
+  (cond ((endp flextype-list) nil)
+        (t (cons (flextype->name (car flextype-list))
+                 (flextype-list->name-list (cdr flextype-list))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
