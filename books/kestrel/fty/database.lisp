@@ -73,34 +73,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define flex->name (info)
+(define flex->name (type-info)
   :returns (name symbolp)
   :short "Name of a sum, list, alist, transparent sum, set, or omap type,
           given the information associated to the type."
-  (b* ((name (cond ((flexsum-p info) (flexsum->name info))
-                   ((flexlist-p info) (flexlist->name info))
-                   ((flexalist-p info) (flexalist->name info))
-                   ((flextranssum-p info) (flextranssum->name info))
-                   ((flexset-p info) (flexset->name info))
-                   ((flexomap-p info) (flexomap->name info))
-                   (t (raise "Internal error: malformed type ~x0." info))))
+  (b* ((name (cond ((flexsum-p type-info) (flexsum->name type-info))
+                   ((flexlist-p type-info) (flexlist->name type-info))
+                   ((flexalist-p type-info) (flexalist->name type-info))
+                   ((flextranssum-p type-info) (flextranssum->name type-info))
+                   ((flexset-p type-info) (flexset->name type-info))
+                   ((flexomap-p type-info) (flexomap->name type-info))
+                   (t (raise "Internal error: malformed type ~x0." type-info))))
        ((unless (symbolp name))
         (raise "Internal error: malformed type name ~x0." name)))
     name))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define flex-list->name-list ((infos true-listp))
+(define flex-list->name-list ((type-infos true-listp))
   :returns (names symbol-listp)
   :short "Lift @(tsee flex->name) to lists."
-  (cond ((endp infos) nil)
-        (t (cons (flex->name (car infos))
-                 (flex-list->name-list (cdr infos))))))
+  (cond ((endp type-infos) nil)
+        (t (cons (flex->name (car type-infos))
+                 (flex-list->name-list (cdr type-infos))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-with-name ((type symbolp) (fty-table alistp))
-  :returns info?
+(define type-with-name ((type-name symbolp) (fty-table alistp))
+  :returns type-info?
   :short "Find, in the FTY table,
           the information for a type with a given name."
   :long
@@ -115,34 +115,34 @@
      the elements of the mutually recursive clique
      (which may be a singleton)."))
   (b* (((when (endp fty-table)) nil)
-       ((cons & info) (car fty-table))
-       ((unless (flextypes-p info))
-        (raise "Internal error: malformed type clique ~x0." info))
-       (type-entries (flextypes->types info))
-       (info? (type-with-name-loop type type-entries)))
-    (or info?
-        (type-with-name type (cdr fty-table))))
+       ((cons & clique-info) (car fty-table))
+       ((unless (flextypes-p clique-info))
+        (raise "Internal error: malformed type clique ~x0." clique-info))
+       (type-infos (flextypes->types clique-info))
+       (type-info? (type-with-name-loop type-name type-infos)))
+    (or type-info?
+        (type-with-name type-name (cdr fty-table))))
   :prepwork
-  ((define type-with-name-loop ((type symbolp) type-entries)
-     :returns info?
+  ((define type-with-name-loop ((type-name symbolp) type-infos)
+     :returns type-info?
      :parents nil
-     (b* (((when (atom type-entries)) nil)
-          (type-entry (car type-entries))
-          (foundp (cond ((flexsum-p type-entry)
-                         (eq type (flexsum->name type-entry)))
-                        ((flexlist-p type-entry)
-                         (eq type (flexlist->name type-entry)))
-                        ((flexalist-p type-entry)
-                         (eq type (flexalist->name type-entry)))
-                        ((flextranssum-p type-entry)
-                         (eq type (flextranssum->name type-entry)))
-                        ((flexset-p type-entry)
-                         (eq type (flexset->name type-entry)))
-                        ((flexomap-p type-entry)
-                         (eq type (flexomap->name type-entry)))
+     (b* (((when (atom type-infos)) nil)
+          (type-info (car type-infos))
+          (foundp (cond ((flexsum-p type-info)
+                         (eq type-name (flexsum->name type-info)))
+                        ((flexlist-p type-info)
+                         (eq type-name (flexlist->name type-info)))
+                        ((flexalist-p type-info)
+                         (eq type-name (flexalist->name type-info)))
+                        ((flextranssum-p type-info)
+                         (eq type-name (flextranssum->name type-info)))
+                        ((flexset-p type-info)
+                         (eq type-name (flexset->name type-info)))
+                        ((flexomap-p type-info)
+                         (eq type-name (flexomap->name type-info)))
                         (t nil)))
-          ((when foundp) type-entry))
-       (type-with-name-loop type (cdr type-entries))))))
+          ((when foundp) type-info))
+       (type-with-name-loop type-name (cdr type-infos))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -160,39 +160,39 @@
     "This is similar to @(tsee type-with-name),
      but we check the recognizer instead of the name."))
   (b* (((when (endp fty-table)) nil)
-       ((cons & info) (car fty-table))
-       ((unless (flextypes-p info))
-        (raise "Internal error: malformed type clique ~x0." info))
-       (type-entries (flextypes->types info))
-       (info? (type-with-recognizer-loop recog type-entries)))
-    (or info?
+       ((cons & clique-info) (car fty-table))
+       ((unless (flextypes-p clique-info))
+        (raise "Internal error: malformed type clique ~x0." clique-info))
+       (type-infos (flextypes->types clique-info))
+       (type-info? (type-with-recognizer-loop recog type-infos)))
+    (or type-info?
         (type-with-recognizer recog (cdr fty-table))))
   :prepwork
-  ((define type-with-recognizer-loop ((recog symbolp) type-entries)
-     :returns info?
+  ((define type-with-recognizer-loop ((recog symbolp) type-infos)
+     :returns type-info?
      :parents nil
-     (b* (((when (atom type-entries)) nil)
-          (type-entry (car type-entries))
-          (foundp (cond ((flexsum-p type-entry)
-                         (eq recog (flexsum->pred type-entry)))
-                        ((flexlist-p type-entry)
-                         (eq recog (flexlist->pred type-entry)))
-                        ((flexalist-p type-entry)
-                         (eq recog (flexalist->pred type-entry)))
-                        ((flextranssum-p type-entry)
-                         (eq recog (flextranssum->pred type-entry)))
-                        ((flexset-p type-entry)
-                         (eq recog (flexset->pred type-entry)))
-                        ((flexomap-p type-entry)
-                         (eq recog (flexomap->pred type-entry)))
+     (b* (((when (atom type-infos)) nil)
+          (type-info (car type-infos))
+          (foundp (cond ((flexsum-p type-info)
+                         (eq recog (flexsum->pred type-info)))
+                        ((flexlist-p type-info)
+                         (eq recog (flexlist->pred type-info)))
+                        ((flexalist-p type-info)
+                         (eq recog (flexalist->pred type-info)))
+                        ((flextranssum-p type-info)
+                         (eq recog (flextranssum->pred type-info)))
+                        ((flexset-p type-info)
+                         (eq recog (flexset->pred type-info)))
+                        ((flexomap-p type-info)
+                         (eq recog (flexomap->pred type-info)))
                         (t nil)))
-          ((when foundp) type-entry))
-       (type-with-recognizer-loop recog (cdr type-entries))))))
+          ((when foundp) type-info))
+       (type-with-recognizer-loop recog (cdr type-infos))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-clique-with-name ((clique symbolp) (fty-table alistp))
-  :returns (info? (implies info? (flextypes-p info?)))
+(define type-clique-with-name ((clique-name symbolp) (fty-table alistp))
+  :returns (clique-info? (implies clique-info? (flextypes-p clique-info?)))
   :short "Find, in the FTY table,
           the information for a type clique with a given name."
   :long
@@ -201,40 +201,41 @@
     "Each type clique has a unique name,
      we we stop as soon as we find a match.
      We return @('nil') if there is no match."))
-  (b* ((info? (cdr (assoc-eq clique fty-table)))
-       ((unless (or (flextypes-p info?)
-                    (eq info? nil)))
-        (raise "Internal error: malformed type clique ~x0." info?)))
-    info?))
+  (b* ((clique-info? (cdr (assoc-eq clique-name fty-table)))
+       ((unless (or (flextypes-p clique-info?)
+                    (eq clique-info? nil)))
+        (raise "Internal error: malformed type clique ~x0." clique-info?)))
+    clique-info?))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-names-in-cliques-with-names ((cliques symbol-listp)
+(define type-names-in-cliques-with-names ((clique-names symbol-listp)
                                           (fty-table alistp))
-  :returns (types symbol-listp)
+  :returns (type-names symbol-listp)
   :short "Collect, from the FTY table,
           all the type names from the named cliques."
   :long
   (xdoc::topstring
    (xdoc::p
     "If any named clique is not found in the table, it is skipped."))
-  (b* (((when (endp cliques)) nil)
-       (clique (car cliques))
-       (info (type-clique-with-name clique fty-table))
-       ((unless info)
-        (type-names-in-cliques-with-names (cdr cliques) fty-table))
-       (infos (flextypes->types info))
-       ((unless (true-listp infos))
-        (raise "Internal error: malformed clique members ~x0." infos))
-       (types (flex-list->name-list infos))
-       (more-types (type-names-in-cliques-with-names (cdr cliques) fty-table)))
-    (append types more-types)))
+  (b* (((when (endp clique-names)) nil)
+       (clique-name (car clique-names))
+       (clique-info (type-clique-with-name clique-name fty-table))
+       ((unless clique-info)
+        (type-names-in-cliques-with-names (cdr clique-names) fty-table))
+       (type-infos (flextypes->types clique-info))
+       ((unless (true-listp type-infos))
+        (raise "Internal error: malformed clique members ~x0." type-infos))
+       (type-names (flex-list->name-list type-infos))
+       (more-type-names (type-names-in-cliques-with-names (cdr clique-names)
+                                                          fty-table)))
+    (append type-names more-type-names)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define option-type->components ((option-type symbolp)
+(define option-type->components ((option-type-name symbolp)
                                  (fty-table alistp))
-  :returns (mv (base-type symbolp)
+  :returns (mv (base-type-name symbolp)
                (some-accessor symbolp))
   :short "Components of an option type."
   :long
@@ -249,44 +250,44 @@
      We find the product for the @(':some') summand.
      We obtain the field recognizer and accessor.
      We use the recognizer to look up the base type."))
-  (b* ((info (type-with-name option-type fty-table))
-       ((unless info) (mv nil nil))
-       ((unless (flexsum-p info)) (mv nil nil))
-       ((unless (eq (flexsum->typemacro info) 'defoption))
+  (b* ((type-info (type-with-name option-type-name fty-table))
+       ((unless type-info) (mv nil nil))
+       ((unless (flexsum-p type-info)) (mv nil nil))
+       ((unless (eq (flexsum->typemacro type-info) 'defoption))
         (mv nil nil))
-       (prods (flexsum->prods info))
-       ((unless (and (flexprod-listp prods)
-                     (consp prods)
-                     (consp (cdr prods))
-                     (endp (cddr prods))))
-        (raise "Internal error: malformed option products ~x0." prods)
+       (prod-infos (flexsum->prods type-info))
+       ((unless (and (flexprod-listp prod-infos)
+                     (consp prod-infos)
+                     (consp (cdr prod-infos))
+                     (endp (cddr prod-infos))))
+        (raise "Internal error: malformed option products ~x0." prod-infos)
         (mv nil nil))
-       (prod1 (first prods))
-       (prod2 (second prods))
-       (prod (cond ((eq (flexprod->kind prod1) :some) prod1)
-                   ((eq (flexprod->kind prod2) :some) prod2)
-                   (t (prog2$
-                       (raise "Internal error: no :SOME product in ~x0."
-                              prods)
-                       prod1))))
-       (fields (flexprod->fields prod))
-       ((unless (and (flexprod-field-listp fields)
-                     (= (len fields) 1)))
-        (raise "Internal error: malformed option :SOME fields ~x0." fields)
+       (prod-info1 (first prod-infos))
+       (prod-info2 (second prod-infos))
+       (prod-info (cond ((eq (flexprod->kind prod-info1) :some) prod-info1)
+                        ((eq (flexprod->kind prod-info2) :some) prod-info2)
+                        (t (prog2$
+                            (raise "Internal error: no :SOME product in ~x0."
+                                   prod-infos)
+                            prod-info1))))
+       (field-infos (flexprod->fields prod-info))
+       ((unless (and (flexprod-field-listp field-infos)
+                     (= (len field-infos) 1)))
+        (raise "Internal error: malformed option :SOME fields ~x0." field-infos)
         (mv nil nil))
-       (field (car fields))
-       (base-recog (flexprod-field->type field))
+       (field-info (car field-infos))
+       (base-recog (flexprod-field->type field-info))
        ((unless (symbolp base-recog))
         (raise "Internal error: malformed :SOME field recognizer ~x0."
                base-recog)
         (mv nil nil))
        (base-info (type-with-recognizer base-recog fty-table))
-       (base-type (flex->name base-info))
-       ((unless (symbolp base-type))
-        (raise "Internal error: malformed type name ~x0." base-type)
+       (base-type-name (flex->name base-info))
+       ((unless (symbolp base-type-name))
+        (raise "Internal error: malformed type name ~x0." base-type-name)
         (mv nil nil))
-       (some-accessor (flexprod-field->acc-name field))
+       (some-accessor (flexprod-field->acc-name field-info))
        ((unless (symbolp some-accessor))
         (raise "Internal error: malformed accessor name ~x0." some-accessor)
         (mv nil nil)))
-    (mv base-type some-accessor)))
+    (mv base-type-name some-accessor)))
