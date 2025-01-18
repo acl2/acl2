@@ -94,7 +94,7 @@
     (implies (blocks-orderedp blocks)
              (blocks-orderedp (cdr blocks))))
 
-  (defruled newest-geq-oldest-when-blocks-ordered-even-p
+  (defruled newest-geq-oldest-when-blocks-orderedp
     (implies (and (blocks-orderedp blocks)
                   (consp blocks))
              (>= (block->round (car blocks))
@@ -126,7 +126,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "If @(tsee blocks-ordered-even-p) holds,
+    "If @(tsee blocks-orderedp) holds,
      block rounds are in strictly increading order from right to left.
      This function returns the latest, i.e. highest, round.
      If there are no blocks, we totalize this function to return 0."))
@@ -140,7 +140,7 @@
   (defruled evenp-of-blocks-last-round
     (evenp (blocks-last-round blocks)))
 
-  (defruled oldest-of-prefix-gt-newest-of-suffix-when-blocks-ordered-even-p
+  (defruled oldest-of-prefix-gt-newest-of-suffix-when-blocks-orderedp
     (implies (and (blocks-orderedp (append blocks1 blocks2))
                   (consp blocks1))
              (> (block->round (car (last blocks1)))
