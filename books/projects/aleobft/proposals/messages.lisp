@@ -1,0 +1,164 @@
+; AleoBFT Library
+;
+; Copyright (C) 2025 Provable Inc.
+;
+; License: See the LICENSE file distributed with this library.
+;
+; Authors: Alessandro Coglio (www.alessandrocoglio.info)
+;          Eric McCarthy (bendyarm on GitHub)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(in-package "ALEOBFT-PROPOSALS")
+
+(include-book "certificates")
+
+(local (include-book "kestrel/built-ins/disable" :dir :system))
+(local (acl2::disable-most-builtin-logic-defuns))
+(local (acl2::disable-builtin-rewrite-rules-for-defaults))
+(set-induction-depth-limit 0)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc+ messages
+  :parents (states events)
+  :short "Messages."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We model the network that connects the validators
+     as consisting of authenticated point-to-point connections
+     with unbounded delays,
+     as commonly assumed in the BFT literature.
+     We model messages that include information about both sender and receiver,
+     and we model the network (in the system states)
+     as the set of messages currently in transit,
+     i.e. sent but not yet received.")
+   (xdoc::p
+    "There are three kinds of messages:
+     proposals, endorsements, and certificates."))
+  :order-subtopics t
+  :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum message
+  :short "Fixtype of messages."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A proposal message consists of a proposal and a destination address.
+     When a validator creates a proposal,
+     it broadcasts it to other validators,
+     one message per validator,
+     with the same proposal but different destination (i.e. receiver).
+     In a proposal message, the sender is the author of the proposal.")
+   (xdoc::p
+    "An endorsement message consists of a proposal and an endorser address.
+     When a validator receives a valid proposal from another validator,
+     it endorses it by sending an endorsement back to the proposal author.
+     The endorser's address represents a signature of the endorser in our model.
+     The endorser is the sender,
+     while the receiver is the author of the proposal.
+     In AleoBFT, endorsements only include
+     cryptographically unique references to proposals,
+     but in our model we use the whole proposal for modeling simplicity.")
+   (xdoc::p
+    "A certificate message consists of a certificate and a destination address.
+     When a validator, after creating and broadcasting a proposal,
+     receives enough endorsements,
+     it creates and broadcasts a certificate.
+     Thus a certificate message is similar to a proposal message,
+     but with a certificate instead of a proposal.
+     The sender of a certificate is the author of the proposal/certificate."))
+  (:proposal ((proposal proposal)
+              (destination address)))
+  (:endorsement ((proposal proposal)
+                 (endorser address)))
+  (:certificate ((certificate certificate)
+                 (destination address)))
+  :pred messagep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defset message-set
+  :short "Fixtype of sets of messages."
+  :elt-type message
+  :elementp-of-nil nil
+  :pred message-setp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define make-proposal-messages ((prop proposalp)
+                                (dests address-setp))
+  :returns (msgs message-setp)
+  :short "Create messages for a proposal with given destinations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For each given address,
+     we create a message with the proposal
+     and with the address as destination.")
+   (xdoc::p
+    "These are the messages broadcasted to the network
+     when a proposal is created."))
+  (cond ((set::emptyp dests) nil)
+        (t (set::insert (make-message-proposal
+                         :proposal prop
+                         :destination (set::head dests))
+                        (make-proposal-messages prop (set::tail dests)))))
+  :verify-guards :after-returns
+
+  ///
+
+  (fty::deffixequiv make-proposal-messages
+    :args ((prop proposalp)))
+
+  (defruled in-of-make-proposal-messages
+    (implies (address-setp dests)
+             (equal (set::in msg (make-proposal-messages prop dests))
+                    (and (messagep msg)
+                         (message-case msg :proposal)
+                         (equal (message-proposal->proposal msg)
+                                (proposal-fix prop))
+                         (set::in (message-proposal->destination msg)
+                                  dests))))
+    :induct t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define make-certificate-messages ((cert certificatep)
+                                   (dests address-setp))
+  :returns (msgs message-setp)
+  :short "Create messages for a certificate with given destinations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For each given address,
+     we create a message with the certificate
+     and with the address as destination.")
+   (xdoc::p
+    "These are the messages broadcasted to the network
+     when a certificate is created."))
+  (cond ((set::emptyp dests) nil)
+        (t (set::insert (make-message-certificate
+                         :certificate cert
+                         :destination (set::head dests))
+                        (make-certificate-messages cert (set::tail dests)))))
+  :verify-guards :after-returns
+
+  ///
+
+  (fty::deffixequiv make-certificate-messages
+    :args ((cert certificatep)))
+
+  (defruled in-of-make-certificate-messages
+    (implies (address-setp dests)
+             (equal (set::in msg (make-certificate-messages cert dests))
+                    (and (messagep msg)
+                         (message-case msg :certificate)
+                         (equal (message-certificate->certificate msg)
+                                (certificate-fix cert))
+                         (set::in (message-certificate->destination msg)
+                                  dests))))
+    :induct t))
