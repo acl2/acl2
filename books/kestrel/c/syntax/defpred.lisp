@@ -863,7 +863,8 @@
      and then we call the code to generate the predicates,
      which we put into one event."))
   (b* ((types
-        (fty::type-names-in-cliques-with-names *defpred-cliques* fty-table))
+        (fty::flextype-names-in-flextypes-with-names *defpred-cliques*
+                                                     fty-table))
        (pred-events
         (defpred-gen-cliques-preds
           *defpred-cliques* types suffix default overrides fty-table))

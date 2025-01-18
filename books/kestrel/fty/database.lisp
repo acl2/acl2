@@ -209,27 +209,29 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-names-in-cliques-with-names ((clique-names symbol-listp)
-                                          (fty-table alistp))
-  :returns (type-names symbol-listp)
+(define flextype-names-in-flextypes-with-names ((flextypes-names symbol-listp)
+                                                (fty-table alistp))
+  :returns (flextype-names symbol-listp)
   :short "Collect, from the FTY table,
           all the type names from the named cliques."
   :long
   (xdoc::topstring
    (xdoc::p
     "If any named clique is not found in the table, it is skipped."))
-  (b* (((when (endp clique-names)) nil)
-       (clique-name (car clique-names))
-       (clique-info (flextypes-with-name clique-name fty-table))
-       ((unless clique-info)
-        (type-names-in-cliques-with-names (cdr clique-names) fty-table))
-       (type-infos (flextypes->types clique-info))
-       ((unless (true-listp type-infos))
-        (raise "Internal error: malformed clique members ~x0." type-infos))
-       (type-names (flextype-list->name-list type-infos))
-       (more-type-names (type-names-in-cliques-with-names (cdr clique-names)
-                                                          fty-table)))
-    (append type-names more-type-names)))
+  (b* (((when (endp flextypes-names)) nil)
+       (flextypes-name (car flextypes-names))
+       (flextypes (flextypes-with-name flextypes-name fty-table))
+       ((unless flextypes)
+        (flextype-names-in-flextypes-with-names (cdr flextypes-names)
+                                                fty-table))
+       (flextype-list (flextypes->types flextypes))
+       ((unless (true-listp flextype-list))
+        (raise "Internal error: malformed clique members ~x0." flextype-list))
+       (flextype-names (flextype-list->name-list flextype-list))
+       (more-flextype-names
+        (flextype-names-in-flextypes-with-names (cdr flextypes-names)
+                                                fty-table)))
+    (append flextype-names more-flextype-names)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
