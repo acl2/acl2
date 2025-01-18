@@ -67,6 +67,7 @@
   :short "Keyword options accepted by @(tsee input-files)."
   (list :files
         :preprocess
+        :preprocess-args
         :process
         :const
         :const-files
@@ -154,6 +155,41 @@
                          "cpp"
                        preprocess)))
     (retok preprocessor)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define input-files-process-preprocess-args ((options symbol-alistp)
+                                             (preprocessor string-optionp))
+  :returns (mv erp
+               (preprocess-args-presentp booleanp)
+               (preprocess-extra-args string-listp))
+  :short "Process the @(':preprocess-args') input."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @('preprocessor') input to this function
+     is the result of processing the @(':preprocess') input.")
+   (xdoc::p
+    "If processing of the @(':preprocess-args') input is successful,
+     we return a boolean saying whether the input was present or not,
+     and the list of strings that it consists of (@('nil') if absent);
+     the latter are passed as the @(':extra-args') input
+     of @(tsee preprocess-files), which justifies the name of the result."))
+  (b* (((reterr) nil nil)
+       (preprocess-args-option (assoc-eq :preprocess-args options))
+       ((when (not preprocess-args-option))
+        (retok nil nil))
+       (preprocess-args (cdr preprocess-args-option))
+       ((when (not preprocessor))
+        (reterr (msg "Since the :PREPROCESS input is NIL, ~
+                      the :PREPROCESS-ARGS input must be absent, ~
+                      but it is ~x0 instead."
+                     preprocess-args)))
+       ((unless (string-listp preprocess-args))
+        (reterr (msg "The :PREPROCESS-ARGS input must a list of strings, ~
+                      but it is ~x0 instead."
+                     preprocess-args))))
+    (retok t preprocess-args)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -410,6 +446,8 @@
   :returns (mv erp
                (paths filepath-setp)
                (preprocessor string-optionp)
+               (preprocess-args-presentp booleanp)
+               (preprocess-extra-args string-listp)
                (process input-files-process-inputp)
                (const symbolp)
                (const-files symbolp)
@@ -432,7 +470,7 @@
     "The other results of this function are the homonymous inputs,
      except that the last five inputs are combined into
      an implementation environment result."))
-  (b* (((reterr) nil nil :read nil nil nil nil nil nil (ienv-default))
+  (b* (((reterr) nil nil nil nil :read nil nil nil nil nil nil (ienv-default))
        ;; Check and obtain inputs.
        ((mv erp extra options)
         (partition-rest-and-keyword-args
@@ -450,6 +488,8 @@
        ;; Process the inputs.
        ((erp paths) (input-files-process-files options))
        ((erp preprocessor) (input-files-process-preprocess options))
+       ((erp preprocess-args-presentp preprocess-extra-args)
+        (input-files-process-preprocess-args options preprocessor))
        ((erp process) (input-files-process-process options))
        ((erp const const-files const-preproc const-parsed const-disamb)
         (input-files-process-const-inputs options preprocessor process progp))
@@ -457,6 +497,8 @@
        ((erp ienv) (input-files-process-ienv options)))
     (retok paths
            preprocessor
+           preprocess-args-presentp
+           preprocess-extra-args
            process
            const
            const-files
@@ -500,6 +542,8 @@
 
 (define input-files-gen-events ((paths filepath-setp)
                                 (preprocessor string-optionp)
+                                (preprocess-args-presentp booleanp)
+                                (preprocess-extra-args string-listp)
                                 (process input-files-process-inputp)
                                 (const symbolp)
                                 (const-files symbolp)
@@ -550,8 +594,14 @@
        ;; Preprocess if required;
        ;; either way, after this, FILES contains the files to process.
        ((erp files state) (if preprocessor
-                              (preprocess-files paths
-                                                :preprocessor preprocessor)
+                              (if preprocess-args-presentp
+                                  (preprocess-files
+                                   paths
+                                   :preprocessor preprocessor
+                                   :extra-args preprocess-extra-args)
+                                (preprocess-files
+                                 paths
+                                 :preprocessor preprocessor))
                             (retok read-files state)))
        (preproc-files (if preprocessor files (irr-fileset)))
        ;; Generate :CONST-PREPROC if required.
@@ -657,6 +707,8 @@
         state)
        ((erp paths
              preprocessor
+             preprocess-args-presentp
+             preprocess-extra-args
              process
              const
              const-files
@@ -675,6 +727,8 @@
              state)
         (input-files-gen-events paths
                                 preprocessor
+                                preprocess-args-presentp
+                                preprocess-extra-args
                                 process
                                 const
                                 const-files
@@ -730,6 +784,7 @@
    (xdoc::codeblock
     "(input-files-prog :files             ...  ; no default"
     "                  :preprocess        ...  ; default nil"
+    "                  :preprocess-args   ...  ; no default"
     "                  :process           ...  ; default :validate"
     "                  :gcc               ...  ; default nil"
     "                  :short-bytes       ...  ; default 2"
