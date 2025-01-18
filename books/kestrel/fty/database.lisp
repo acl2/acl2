@@ -34,7 +34,7 @@
      that encode fixtype information in the fixtype table.
      Here we define some extensions of these aggregates,
      e.g. lists of some of those types,
-     and operations on those aggregates.")
+     and we also define operations on those aggregates.")
    (xdoc::p
     "The FTY table is the table of all (fix)types
      (except some built-in ones, such as @('nat')),
