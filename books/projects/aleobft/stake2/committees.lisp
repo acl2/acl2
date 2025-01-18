@@ -1034,7 +1034,7 @@
    (xdoc::p
     "Some recent BFT literature uses @($2f + 1$) as the quorum number,
      which is correct only if @($n = 3f + 1$),
-     but not if @($n = 3f + 2$) and @($n = 3f+2$),
+     but not if @($n = 3f + 2$) and @($n = 3f + 3$),
      which are the other two possibilities,
      as discussed in @(tsee max-faulty-for-total).
      Unfortunately that literature uses @($2f + 1$)
