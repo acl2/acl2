@@ -810,7 +810,7 @@
           for a list of type cliques with given names."
   (b* (((when (endp clique-names)) nil)
        (clique-name (car clique-names))
-       (clique (fty::type-clique-with-name clique-name fty-table))
+       (clique (fty::flextypes-with-name clique-name fty-table))
        ((unless clique)
         (raise "Internal error: no type clique with name ~x0." clique-name))
        ((unless (fty::flextypes-p clique))

@@ -191,8 +191,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-clique-with-name ((clique-name symbolp) (fty-table alistp))
-  :returns (clique-info? (implies clique-info? (flextypes-p clique-info?)))
+(define flextypes-with-name ((name symbolp) (fty-table alistp))
+  :returns (flextypes? (implies flextypes? (flextypes-p flextypes?)))
   :short "Find, in the FTY table,
           the information for a type clique with a given name."
   :long
@@ -201,11 +201,11 @@
     "Each type clique has a unique name,
      we we stop as soon as we find a match.
      We return @('nil') if there is no match."))
-  (b* ((clique-info? (cdr (assoc-eq clique-name fty-table)))
-       ((unless (or (flextypes-p clique-info?)
-                    (eq clique-info? nil)))
-        (raise "Internal error: malformed type clique ~x0." clique-info?)))
-    clique-info?))
+  (b* ((flextypes? (cdr (assoc-eq name fty-table)))
+       ((unless (or (flextypes-p flextypes?)
+                    (eq flextypes? nil)))
+        (raise "Internal error: malformed type clique ~x0." flextypes?)))
+    flextypes?))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -220,7 +220,7 @@
     "If any named clique is not found in the table, it is skipped."))
   (b* (((when (endp clique-names)) nil)
        (clique-name (car clique-names))
-       (clique-info (type-clique-with-name clique-name fty-table))
+       (clique-info (flextypes-with-name clique-name fty-table))
        ((unless clique-info)
         (type-names-in-cliques-with-names (cdr clique-names) fty-table))
        (type-infos (flextypes->types clique-info))
