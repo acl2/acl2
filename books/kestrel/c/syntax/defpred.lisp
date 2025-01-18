@@ -508,7 +508,8 @@
        (recog (fty::flexsum->pred sum))
        (recp (fty::flexsum->recp sum))
        (type-case (fty::flexsum->case sum))
-       ((mv base-type accessor) (fty::option-type->components type fty-table))
+       ((mv base-type accessor)
+        (fty::components-of-flexoption-with-name type fty-table))
        (base-type-suffix (defpred-gen-pred-name base-type suffix))
        (body `(,type-case ,type
                           :some (,base-type-suffix (,accessor ,type))

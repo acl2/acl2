@@ -235,11 +235,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define option-type->components ((option-type-name symbolp)
-                                 (fty-table alistp))
-  :returns (mv (base-type-name symbolp)
+(define components-of-flexoption-with-name ((name symbolp) (fty-table alistp))
+  :returns (mv (base-name symbolp)
                (some-accessor symbolp))
-  :short "Components of an option type."
+  :short "Components of a named option type."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -252,44 +251,45 @@
      We find the product for the @(':some') summand.
      We obtain the field recognizer and accessor.
      We use the recognizer to look up the base type."))
-  (b* ((type-info (flextype-with-name option-type-name fty-table))
-       ((unless type-info) (mv nil nil))
-       ((unless (flexsum-p type-info)) (mv nil nil))
-       ((unless (eq (flexsum->typemacro type-info) 'defoption))
+  (b* ((flextype (flextype-with-name name fty-table))
+       ((unless flextype) (mv nil nil))
+       ((unless (flexsum-p flextype)) (mv nil nil))
+       ((unless (eq (flexsum->typemacro flextype) 'defoption))
         (mv nil nil))
-       (prod-infos (flexsum->prods type-info))
-       ((unless (and (flexprod-listp prod-infos)
-                     (consp prod-infos)
-                     (consp (cdr prod-infos))
-                     (endp (cddr prod-infos))))
-        (raise "Internal error: malformed option products ~x0." prod-infos)
+       (flexprod-list (flexsum->prods flextype))
+       ((unless (and (flexprod-listp flexprod-list)
+                     (consp flexprod-list)
+                     (consp (cdr flexprod-list))
+                     (endp (cddr flexprod-list))))
+        (raise "Internal error: malformed option products ~x0." flexprod-list)
         (mv nil nil))
-       (prod-info1 (first prod-infos))
-       (prod-info2 (second prod-infos))
-       (prod-info (cond ((eq (flexprod->kind prod-info1) :some) prod-info1)
-                        ((eq (flexprod->kind prod-info2) :some) prod-info2)
-                        (t (prog2$
-                            (raise "Internal error: no :SOME product in ~x0."
-                                   prod-infos)
-                            prod-info1))))
-       (field-infos (flexprod->fields prod-info))
-       ((unless (and (flexprod-field-listp field-infos)
-                     (= (len field-infos) 1)))
-        (raise "Internal error: malformed option :SOME fields ~x0." field-infos)
+       (flexprod1 (first flexprod-list))
+       (flexprod2 (second flexprod-list))
+       (flexprod (cond ((eq (flexprod->kind flexprod1) :some) flexprod1)
+                       ((eq (flexprod->kind flexprod2) :some) flexprod2)
+                       (t (prog2$
+                           (raise "Internal error: no :SOME product in ~x0."
+                                  flexprod-list)
+                           flexprod1))))
+       (flexfield-list (flexprod->fields flexprod))
+       ((unless (and (flexprod-field-listp flexfield-list)
+                     (= (len flexfield-list) 1)))
+        (raise "Internal error: malformed option :SOME fields ~x0."
+               flexfield-list)
         (mv nil nil))
-       (field-info (car field-infos))
-       (base-recog (flexprod-field->type field-info))
+       (flexfield (car flexfield-list))
+       (base-recog (flexprod-field->type flexfield))
        ((unless (symbolp base-recog))
         (raise "Internal error: malformed :SOME field recognizer ~x0."
                base-recog)
         (mv nil nil))
-       (base-info (flextype-with-recognizer base-recog fty-table))
-       (base-type-name (flextype->name base-info))
-       ((unless (symbolp base-type-name))
-        (raise "Internal error: malformed type name ~x0." base-type-name)
+       (base-flextype (flextype-with-recognizer base-recog fty-table))
+       (base-name (flextype->name base-flextype))
+       ((unless (symbolp base-name))
+        (raise "Internal error: malformed type name ~x0." base-name)
         (mv nil nil))
-       (some-accessor (flexprod-field->acc-name field-info))
+       (some-accessor (flexprod-field->acc-name flexfield))
        ((unless (symbolp some-accessor))
         (raise "Internal error: malformed accessor name ~x0." some-accessor)
         (mv nil nil)))
-    (mv base-type-name some-accessor)))
+    (mv base-name some-accessor)))
