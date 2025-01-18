@@ -73,7 +73,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define flex->name (type-info)
+(define flextype->name (type-info)
   :returns (name symbolp)
   :short "Name of a sum, list, alist, transparent sum, set, or omap type,
           given the information associated to the type."
@@ -90,12 +90,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define flex-list->name-list ((type-infos true-listp))
+(define flextype-list->name-list ((type-infos true-listp))
   :returns (names symbol-listp)
-  :short "Lift @(tsee flex->name) to lists."
+  :short "Lift @(tsee flextype->name) to lists."
   (cond ((endp type-infos) nil)
-        (t (cons (flex->name (car type-infos))
-                 (flex-list->name-list (cdr type-infos))))))
+        (t (cons (flextype->name (car type-infos))
+                 (flextype-list->name-list (cdr type-infos))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -226,7 +226,7 @@
        (type-infos (flextypes->types clique-info))
        ((unless (true-listp type-infos))
         (raise "Internal error: malformed clique members ~x0." type-infos))
-       (type-names (flex-list->name-list type-infos))
+       (type-names (flextype-list->name-list type-infos))
        (more-type-names (type-names-in-cliques-with-names (cdr clique-names)
                                                           fty-table)))
     (append type-names more-type-names)))
@@ -282,7 +282,7 @@
                base-recog)
         (mv nil nil))
        (base-info (type-with-recognizer base-recog fty-table))
-       (base-type-name (flex->name base-info))
+       (base-type-name (flextype->name base-info))
        ((unless (symbolp base-type-name))
         (raise "Internal error: malformed type name ~x0." base-type-name)
         (mv nil nil))
