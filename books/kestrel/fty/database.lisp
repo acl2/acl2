@@ -99,8 +99,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define type-with-name ((type-name symbolp) (fty-table alistp))
-  :returns type-info?
+(define flextype-with-name ((name symbolp) (fty-table alistp))
+  :returns flextype?
   :short "Find, in the FTY table,
           the information for a type with a given name."
   :long
@@ -115,34 +115,34 @@
      the elements of the mutually recursive clique
      (which may be a singleton)."))
   (b* (((when (endp fty-table)) nil)
-       ((cons & clique-info) (car fty-table))
-       ((unless (flextypes-p clique-info))
-        (raise "Internal error: malformed type clique ~x0." clique-info))
-       (type-infos (flextypes->types clique-info))
-       (type-info? (type-with-name-loop type-name type-infos)))
-    (or type-info?
-        (type-with-name type-name (cdr fty-table))))
+       ((cons & flextypes) (car fty-table))
+       ((unless (flextypes-p flextypes))
+        (raise "Internal error: malformed type clique ~x0." flextypes))
+       (flextype-list (flextypes->types flextypes))
+       (flextype? (flextype-with-name-loop name flextype-list)))
+    (or flextype?
+        (flextype-with-name name (cdr fty-table))))
   :prepwork
-  ((define type-with-name-loop ((type-name symbolp) type-infos)
-     :returns type-info?
+  ((define flextype-with-name-loop ((name symbolp) flextype-list)
+     :returns flextype?
      :parents nil
-     (b* (((when (atom type-infos)) nil)
-          (type-info (car type-infos))
-          (foundp (cond ((flexsum-p type-info)
-                         (eq type-name (flexsum->name type-info)))
-                        ((flexlist-p type-info)
-                         (eq type-name (flexlist->name type-info)))
-                        ((flexalist-p type-info)
-                         (eq type-name (flexalist->name type-info)))
-                        ((flextranssum-p type-info)
-                         (eq type-name (flextranssum->name type-info)))
-                        ((flexset-p type-info)
-                         (eq type-name (flexset->name type-info)))
-                        ((flexomap-p type-info)
-                         (eq type-name (flexomap->name type-info)))
+     (b* (((when (atom flextype-list)) nil)
+          (flextype (car flextype-list))
+          (foundp (cond ((flexsum-p flextype)
+                         (eq name (flexsum->name flextype)))
+                        ((flexlist-p flextype)
+                         (eq name (flexlist->name flextype)))
+                        ((flexalist-p flextype)
+                         (eq name (flexalist->name flextype)))
+                        ((flextranssum-p flextype)
+                         (eq name (flextranssum->name flextype)))
+                        ((flexset-p flextype)
+                         (eq name (flexset->name flextype)))
+                        ((flexomap-p flextype)
+                         (eq name (flexomap->name flextype)))
                         (t nil)))
-          ((when foundp) type-info))
-       (type-with-name-loop type-name (cdr type-infos))))))
+          ((when foundp) flextype))
+       (flextype-with-name-loop name (cdr flextype-list))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -157,7 +157,7 @@
      so we stop as soon as we find a match.
      We return @('nil') if there is no match.")
    (xdoc::p
-    "This is similar to @(tsee type-with-name),
+    "This is similar to @(tsee flextype-with-name),
      but we check the recognizer instead of the name."))
   (b* (((when (endp fty-table)) nil)
        ((cons & clique-info) (car fty-table))
@@ -250,7 +250,7 @@
      We find the product for the @(':some') summand.
      We obtain the field recognizer and accessor.
      We use the recognizer to look up the base type."))
-  (b* ((type-info (type-with-name option-type-name fty-table))
+  (b* ((type-info (flextype-with-name option-type-name fty-table))
        ((unless type-info) (mv nil nil))
        ((unless (flexsum-p type-info)) (mv nil nil))
        ((unless (eq (flexsum->typemacro type-info) 'defoption))

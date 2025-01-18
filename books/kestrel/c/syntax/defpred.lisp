@@ -116,7 +116,7 @@
                          must be a symbol, ~
                          but ~x0 is not."
                         type)))
-          (info (fty::type-with-name type fty-table))
+          (info (fty::flextype-with-name type fty-table))
           ((unless info)
            (reterr (msg "The first element of ~
                          every element of the :OVERRIDE list ~
