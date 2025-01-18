@@ -55,6 +55,7 @@
     (xdoc::codeblock
      "(input-files :files             ...  ; no default"
      "             :preprocess        ...  ; default nil"
+     "             :preprocess-args   ...  ; no default"
      "             :process           ...  ; default :validate"
      "             :const             ...  ; no default"
      "             :const-files       ...  ; default nil"
@@ -109,6 +110,30 @@
      (xdoc::p
       "The preprocessing (if this input is not @('nil')),
        is performed via the @(tsee preprocess-file) tool."))
+
+    (xdoc::desc
+     "@(':preprocess-args') &mdash; default @('nil')"
+     (xdoc::p
+      "Specifies arguments to pass to the preprocessor.")
+     (xdoc::p
+      "This must either absent or a list of zero or more strings,
+       each of which is an argument to pass, e.g. @('-I').")
+     (xdoc::p
+      "If @(':preprocess') is @('nil'),
+       the @(':preprocess-args') input must be absent.")
+     (xdoc::p
+      "If @(':preprocess') is not @('nil'),
+       and the @(':preprocess-args') input is absent,
+       the arguments @('-E') and @('-P') are passed to the preprocessor,
+       in that order.")
+     (xdoc::p
+      "If @(':preprocess') is not @('nil'),
+       and @(':preprocess-args') input is present,
+       the argument @('-E') is passed to the preprocessor,
+       followed by the arguments in the list, in that order.")
+     (xdoc::p
+      "See the preprocessor documentation for information about
+       the arguments mentioned above."))
 
     (xdoc::desc
      "@(':process') &mdash; default @(':validate')"
