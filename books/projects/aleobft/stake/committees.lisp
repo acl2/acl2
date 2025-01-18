@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -40,7 +40,7 @@
      validators join and leave the committe, by bonding and unbonding,
      which happens via transactions in the blockchain.
      Since every validator has its own view of the blockchain,
-     it also has its own view of how the committees evolves.
+     it also has its own view of how the committee evolves.
      The agreement on the blockchains of the validators
      also provides an agreement on how the committee evolves,
      as proved elsewhere.")
@@ -48,7 +48,7 @@
     "In our model a committee consists of
      a finite map from validator addresses to their bonded stake,
      the latter expressed as a positive integer
-     whose exact units is irrelevant (cf. @(tsee transaction)).
+     whose exact units are irrelevant (cf. @(tsee transaction)).
      We introduce a fixtype to wrap that,
      for greater abstraction and extensibility.")
    (xdoc::p
@@ -93,7 +93,7 @@
    (xdoc::p
     "Committees are not explicit components of the "
     (xdoc::seetopic "system-states" "system states")
-    ", but they are in a way derived components of validator states."))
+    ", but they are, in a way, derived components of validator states."))
   :order-subtopics t
   :default-parent t)
 
@@ -458,11 +458,11 @@
      with a block that changes the committee;
      on the other hand, it is always clear
      what the bonded committee at an odd round is,
-     and also at even rounds without blocks
+     and also at even rounds without blocks,
      or with blocks that do not change the committee.")
    (xdoc::p
     "There seems to be no real criterion to choose between the two options,
-     and it should no matter to correctness,
+     and it should not matter to correctness,
      i.e. the protocol should be correct either way.
      We choose to change committee at the end of the even round.
      Thus, the bonded committee at round 2 is always the genesis committee,
