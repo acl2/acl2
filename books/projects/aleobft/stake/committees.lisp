@@ -801,7 +801,7 @@
      but units of stake associated to the validators;
      thus @($n$) is the sum of the units of stake
      of all the validators in the committee,
-     and @($f$) is the sum of the units of stake
+     and @($f$) is the maximum sum of the units of stake
      of the faulty validators in the committee.")
    (xdoc::p
     "The distinction between the maximum @($f$)
