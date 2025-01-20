@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -20,6 +20,9 @@
 (include-book "std/basic/two-nats-measure" :dir :system)
 
 (include-book "../../syntax/abstract-syntax-operations")
+(include-book "../../syntax/validation-information")
+
+(local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -73,6 +76,10 @@
        mutually recursive function is in its own transitive closure. See @(tsee
        direct-recursivep) and @(tsee recursivep).")
     (xdoc::p
+      "Identifiers in the call graph are qualified to distinguish internal
+       functions of the same name across different translation units. See @(see
+       qualified-ident).")
+    (xdoc::p
       "Note that call graph construction currently only recognizes direct
        function calls. No sort of analysis is done to attempt to resolve calls
        of dereferenced function pointers. We may wish to add such analysis in
@@ -87,154 +94,330 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defoption filepath-option
+  filepath
+  :pred filepath-optionp)
+
+(fty::defprod qualified-ident
+  :short "Fixtype for fully qualified identifiers"
+  :long
+  (xdoc::topstring
+    (xdoc::p
+      "This type tags an identifiers with an optional filepath for the
+       translation unit in which it was defined. This tagged identifier is
+       unique across a translation unit ensemble.")
+    (xdoc::p
+      "Only identifiers with internal linkage are tagged with a
+       filepath. External identifiers do not need qualification, as they are
+       already unique across the translation unit ensemble."))
+  ((filepath? filepath-option)
+   (ident ident))
+  :pred qualified-identp)
+
+(fty::defoption qualified-ident-option
+  qualified-ident
+  :pred qualified-ident-optionp)
+
+(fty::defset qualified-ident-option-set
+  :elt-type qualified-ident-option
+  :elementp-of-nil t
+  :pred qualified-ident-option-setp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define qualified-ident-externalp
+  ((ident qualified-identp))
+  (declare (xargs :type-prescription
+                  (booleanp (qualified-ident-externalp ident))))
+  :parents (qualified-ident)
+  (not (qualified-ident->filepath? ident)))
+
+(define qualified-ident-internalp
+  ((ident qualified-identp))
+  (declare (xargs :type-prescription
+                  (booleanp (qualified-ident-internalp ident))))
+  :parents (qualified-ident)
+  (and (qualified-ident->filepath? ident) t))
+
+(defrule qualified-ident-internalp-becomes-not-qualified-ident-externalp
+  (equal (qualified-ident-internalp ident)
+         (not (qualified-ident-externalp ident)))
+  :enable (qualified-ident-internalp
+           qualified-ident-externalp))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define external-ident
+  ((ident identp))
+  :returns (qualified-ident qualified-identp)
+  :parents (qualified-ident)
+  (make-qualified-ident
+   :ident ident))
+
+(defrule qualified-ident-externalp-of-external-ident
+  (qualified-ident-externalp (external-ident ident))
+  :enable (qualified-ident-externalp
+           external-ident))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define internal-ident
+  ((filepath filepathp)
+   (ident identp))
+  :returns (qualified-ident qualified-identp)
+  :parents (qualified-ident)
+  (make-qualified-ident
+   :filepath? (c$::filepath-fix filepath)
+   :ident ident))
+
+(defrule qualified-ident-internalp-of-internal-ident
+  (qualified-ident-internalp (internal-ident filepath ident))
+  :enable (qualified-ident-internalp
+           internal-ident)
+  :disable qualified-ident-internalp-becomes-not-qualified-ident-externalp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (encapsulate ()
   (set-induction-depth-limit 1)
 
-  (fty::defomap ident-ident-option-set-map
-    :key-type ident
-    :val-type ident-option-set
-    :pred ident-ident-option-set-mapp))
+  (fty::defomap call-graph
+    :key-type qualified-ident
+    :val-type qualified-ident-option-set
+    :pred call-graphp))
+
+(defrulel qualified-ident-option-setp-of-cdr-assoc-when-call-graphp
+  (implies (call-graphp graph)
+           (qualified-ident-option-setp (cdr (omap::assoc key graph))))
+  :induct t
+  :enable omap::assoc)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define call-graph-update
-  ((fn-name identp)
-   (called-fn-name ident-optionp)
-   (call-graph ident-ident-option-set-mapp))
-  :returns (new-call-graph ident-ident-option-set-mapp)
-  (b* ((call-graph (ident-ident-option-set-map-fix call-graph))
+  ((fn-name qualified-identp)
+   (called-fn-name? qualified-ident-optionp)
+   (call-graph call-graphp))
+  :returns (call-graph$ call-graphp)
+  (b* ((call-graph (call-graph-fix call-graph))
        (assoc (omap::assoc fn-name call-graph))
        (set (if assoc (cdr assoc) nil)))
-    (omap::update (ident-fix fn-name)
-                  (insert (ident-option-fix called-fn-name) set)
+    (omap::update (qualified-ident-fix fn-name)
+                  (insert (qualified-ident-option-fix called-fn-name?) set)
                   call-graph)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define valid-table-global-lookup
+  ((ident identp)
+   (valid-table c$::valid-tablep))
+  :returns (info? c$::valid-ord-info-optionp)
+  (b* ((scopes
+         (c$::valid-table->scopes valid-table))
+       ((when (endp scopes))
+        (raise "Ill-formed validation table: no scope found"))
+       ((unless (endp (rest scopes)))
+        (raise "Ill-formed validation table: more than one scope found"))
+       (scope (first scopes))
+       (ord (c$::valid-scope->ord scope))
+       (lookup (assoc-equal ident ord)))
+    (if lookup
+        (cdr lookup)
+      nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define qualify-ident
+  ((filepath filepathp)
+   (valid-table c$::valid-tablep)
+   (ident identp))
+  :returns (qualified-ident qualified-identp)
+  (b* ((info? (valid-table-global-lookup ident valid-table))
+       (is-internal
+         (and info?
+              (c$::valid-ord-info-case
+                info?
+                :objfun (equal (c$::valid-ord-info-objfun->linkage info?)
+                               (c$::linkage-internal))
+                :otherwise nil))))
+    (if is-internal
+        (internal-ident filepath ident)
+      (external-ident ident))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defines call-graph-exprs-decls
   (define call-graph-expr
     ((expr exprp)
-     (fn-name identp)
-     (acc ident-ident-option-set-mapp))
-    :returns (call-graph ident-ident-option-set-mapp)
+     (fn-name qualified-identp)
+     (filepath filepathp)
+     (valid-table c$::valid-tablep)
+     (call-graph call-graphp))
+    ;; :guard (expr-annop expr)
+    :returns (call-graph$ call-graphp)
     (expr-case
      expr
-     :paren (call-graph-expr expr.inner fn-name acc)
+     :paren (call-graph-expr expr.inner fn-name filepath valid-table call-graph)
      ;; :gensel?
      :arrsub (call-graph-expr
                expr.arg2
                fn-name
+               filepath
+               valid-table
                (call-graph-expr
                  expr.arg1
                  fn-name
-                 acc))
-     :funcall (call-graph-update fn-name
-                                 (expr-case
-                                   expr.fun
-                                   :ident expr.fun.ident
-                                   :otherwise nil)
-                                 acc)
+                 filepath
+                 valid-table
+                 call-graph))
+     ;; TODO: need to look at expr.args as well, recurse
+     :funcall (b* ((qualified-ident?
+                     (expr-case
+                       expr.fun
+                       :ident (qualify-ident filepath
+                                             valid-table
+                                             expr.fun.ident)
+                       :otherwise nil)))
+                (call-graph-update fn-name
+                                   qualified-ident?
+                                   call-graph))
      :member (call-graph-expr
                expr.arg
                fn-name
-               acc)
+               filepath
+               valid-table
+               call-graph)
      :memberp (call-graph-expr
                 expr.arg
                 fn-name
-                acc)
+                filepath
+                valid-table
+                call-graph)
      :complit (call-graph-desiniter-list
                 expr.elems
                 fn-name
-                acc)
+                filepath
+                valid-table
+                call-graph)
      :unary (call-graph-expr
               expr.arg
               fn-name
-              acc)
+              filepath
+              valid-table
+              call-graph)
      :cast (call-graph-expr
              expr.arg
              fn-name
-             acc)
+             filepath
+             valid-table
+             call-graph)
      :binary (call-graph-expr
                expr.arg2
                fn-name
+               filepath
+               valid-table
                (call-graph-expr
                  expr.arg1
                  fn-name
-                 acc))
+                 filepath
+                 valid-table
+                 call-graph))
      :cond (call-graph-expr
              expr.else
              fn-name
+             filepath
+             valid-table
              (call-graph-expr-option
                expr.then
                fn-name
+               filepath
+               valid-table
                (call-graph-expr
                  expr.test
                  fn-name
-                 acc)))
+                 filepath
+                 valid-table
+                 call-graph)))
      :comma (call-graph-expr
               expr.next
               fn-name
+              filepath
+              valid-table
               (call-graph-expr
                 expr.first
                 fn-name
-                acc))
+                filepath
+                valid-table
+                call-graph))
      ;; TODO: error on ambiguous constructs
-     :otherwise (ident-ident-option-set-map-fix acc))
+     :otherwise (call-graph-fix call-graph))
     :measure (expr-count expr))
 
   (define call-graph-expr-option
     ((expr? expr-optionp)
-     (fn-name identp)
-     (acc ident-ident-option-set-mapp))
-    :returns (call-graph ident-ident-option-set-mapp)
+     (fn-name qualified-identp)
+     (filepath filepathp)
+     (valid-table c$::valid-tablep)
+     (call-graph call-graphp))
+    :returns (call-graph$ call-graphp)
     (expr-option-case
      expr?
-     :some (call-graph-expr expr?.val fn-name acc)
-     :none (ident-ident-option-set-map-fix acc))
+     :some (call-graph-expr expr?.val fn-name filepath valid-table call-graph)
+     :none (call-graph-fix call-graph))
     :measure (expr-option-count expr?))
 
   (define call-graph-initer
     ((initer initerp)
-     (fn-name identp)
-     (acc ident-ident-option-set-mapp))
-    :returns (call-graph ident-ident-option-set-mapp)
+     (fn-name qualified-identp)
+     (filepath filepathp)
+     (valid-table c$::valid-tablep)
+     (call-graph call-graphp))
+    :returns (call-graph$ call-graphp)
     (initer-case
      initer
-     :single (call-graph-expr initer.expr fn-name acc)
-     :list (call-graph-desiniter-list initer.elems fn-name acc))
+     :single (call-graph-expr initer.expr fn-name filepath valid-table call-graph)
+     :list (call-graph-desiniter-list initer.elems fn-name filepath valid-table call-graph))
     :measure (initer-count initer))
 
   (define call-graph-initer-option
     ((initer? initer-optionp)
-     (fn-name identp)
-     (acc ident-ident-option-set-mapp))
-    :returns (call-graph ident-ident-option-set-mapp)
+     (fn-name qualified-identp)
+     (filepath filepathp)
+     (valid-table c$::valid-tablep)
+     (call-graph call-graphp))
+    :returns (call-graph$ call-graphp)
     (initer-option-case
      initer?
-     :some (call-graph-initer initer?.val fn-name acc)
-     :none (ident-ident-option-set-map-fix acc))
+     :some (call-graph-initer initer?.val fn-name filepath valid-table call-graph)
+     :none (call-graph-fix call-graph))
     :measure (initer-option-count initer?))
 
   (define call-graph-desiniter
     ((desiniter desiniterp)
-     (fn-name identp)
-     (acc ident-ident-option-set-mapp))
-    :returns (call-graph ident-ident-option-set-mapp)
+     (fn-name qualified-identp)
+     (filepath filepathp)
+     (valid-table c$::valid-tablep)
+     (call-graph call-graphp))
+    :returns (call-graph$ call-graphp)
     (b* (((desiniter desiniter) desiniter))
-      (call-graph-initer desiniter.initer fn-name acc))
+      (call-graph-initer desiniter.initer fn-name filepath valid-table call-graph))
     :measure (desiniter-count desiniter))
 
   (define call-graph-desiniter-list
     ((desiniters desiniter-listp)
-     (fn-name identp)
-     (acc ident-ident-option-set-mapp))
-    :returns (call-graph ident-ident-option-set-mapp)
+     (fn-name qualified-identp)
+     (filepath filepathp)
+     (valid-table c$::valid-tablep)
+     (call-graph call-graphp))
+    :returns (call-graph$ call-graphp)
     (if (endp desiniters)
-        (ident-ident-option-set-map-fix acc)
+        (call-graph-fix call-graph)
       (call-graph-desiniter-list
         (rest desiniters)
         fn-name
-        (call-graph-desiniter (first desiniters) fn-name acc)))
+        filepath
+        valid-table
+        (call-graph-desiniter (first desiniters) fn-name filepath valid-table call-graph)))
     :measure (desiniter-list-count desiniters))
 
   :hints (("Goal" :in-theory (enable o< o-finp)))
@@ -242,147 +425,195 @@
 
 (define call-graph-const-expr
   ((const-expr const-exprp)
-   (fn-name identp)
-   (acc ident-ident-option-set-mapp))
-  :returns (call-graph ident-ident-option-set-mapp)
+   (fn-name qualified-identp)
+   (filepath filepathp)
+   (valid-table c$::valid-tablep)
+   (call-graph call-graphp))
+  :returns (call-graph$ call-graphp)
   (b* (((const-expr const-expr) const-expr))
-    (call-graph-expr const-expr.expr fn-name acc)))
+    (call-graph-expr const-expr.expr fn-name filepath valid-table call-graph)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define call-graph-initdeclor
   ((initdeclor initdeclorp)
-   (fn-name identp)
-   (acc ident-ident-option-set-mapp))
-  :returns (call-graph ident-ident-option-set-mapp)
+   (fn-name qualified-identp)
+   (filepath filepathp)
+   (valid-table c$::valid-tablep)
+   (call-graph call-graphp))
+  :returns (call-graph$ call-graphp)
   (b* (((initdeclor initdeclor) initdeclor))
     ;; TODO: need to look at initdeclor.declor?
-    (call-graph-initer-option initdeclor.init? fn-name acc)))
+    (call-graph-initer-option initdeclor.init? fn-name filepath valid-table call-graph)))
 
 (define call-graph-initdeclor-list
   ((initdeclors initdeclor-listp)
-   (fn-name identp)
-   (acc ident-ident-option-set-mapp))
-  :returns (call-graph ident-ident-option-set-mapp)
+   (fn-name qualified-identp)
+   (filepath filepathp)
+   (valid-table c$::valid-tablep)
+   (call-graph call-graphp))
+  :returns (call-graph$ call-graphp)
   (if (endp initdeclors)
-      (ident-ident-option-set-map-fix acc)
+      (call-graph-fix call-graph)
     (call-graph-initdeclor-list
       (rest initdeclors)
       fn-name
-      (call-graph-initdeclor (first initdeclors) fn-name acc))))
+      filepath
+      valid-table
+      (call-graph-initdeclor (first initdeclors) fn-name filepath valid-table call-graph))))
 
 (define call-graph-statassert
   ((statassert statassertp)
-   (fn-name identp)
-   (acc ident-ident-option-set-mapp))
-  :returns (call-graph ident-ident-option-set-mapp)
+   (fn-name qualified-identp)
+   (filepath filepathp)
+   (valid-table c$::valid-tablep)
+   (call-graph call-graphp))
+  :returns (call-graph$ call-graphp)
   (b* (((statassert statassert) statassert))
-    (call-graph-const-expr statassert.test fn-name acc)))
+    (call-graph-const-expr statassert.test fn-name filepath valid-table call-graph)))
 
 (define call-graph-decl
   ((decl declp)
-   (fn-name identp)
-   (acc ident-ident-option-set-mapp))
-  :returns (call-graph ident-ident-option-set-mapp)
+   (fn-name qualified-identp)
+   (filepath filepathp)
+   (valid-table c$::valid-tablep)
+   (call-graph call-graphp))
+  :returns (call-graph$ call-graphp)
   (decl-case
    decl
-   :decl (call-graph-initdeclor-list decl.init fn-name acc)
+   :decl (call-graph-initdeclor-list decl.init fn-name filepath valid-table call-graph)
    ;; TODO: Do we want function calls in statasserts to be part of our call
    ;;   graph?
-   :statassert (call-graph-statassert decl.unwrap fn-name acc)))
+   :statassert (call-graph-statassert decl.unwrap fn-name filepath valid-table call-graph)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines call-graph-stmts/block
   (define call-graph-stmt
     ((stmt stmtp)
-     (fn-name identp)
-     (acc ident-ident-option-set-mapp))
-    :returns (call-graph ident-ident-option-set-mapp)
+     (fn-name qualified-identp)
+     (filepath filepathp)
+     (valid-table c$::valid-tablep)
+     (call-graph call-graphp))
+    :returns (call-graph$ call-graphp)
     (stmt-case
      stmt
-     :labeled (call-graph-stmt stmt.stmt fn-name acc)
-     :compound (call-graph-block-item-list stmt.items fn-name acc)
-     :expr (call-graph-expr-option stmt.expr? fn-name acc)
+     :labeled (call-graph-stmt stmt.stmt fn-name filepath valid-table call-graph)
+     :compound (call-graph-block-item-list stmt.items fn-name filepath valid-table call-graph)
+     :expr (call-graph-expr-option stmt.expr? fn-name filepath valid-table call-graph)
      :if (call-graph-stmt
            stmt.then
            fn-name
-           (call-graph-expr stmt.test fn-name acc))
+           filepath
+           valid-table
+           (call-graph-expr stmt.test fn-name filepath valid-table call-graph))
      :ifelse (call-graph-stmt
                stmt.else
                fn-name
+               filepath
+               valid-table
                (call-graph-stmt
                  stmt.then
                  fn-name
-                 (call-graph-expr stmt.test fn-name acc)))
+                 filepath
+                 valid-table
+                 (call-graph-expr stmt.test fn-name filepath valid-table call-graph)))
      :switch (call-graph-stmt
                stmt.body
                fn-name
-               (call-graph-expr stmt.target fn-name acc))
+               filepath
+               valid-table
+               (call-graph-expr stmt.target fn-name filepath valid-table call-graph))
      :while (call-graph-stmt
               stmt.body
               fn-name
-              (call-graph-expr stmt.test fn-name acc))
+              filepath
+              valid-table
+              (call-graph-expr stmt.test fn-name filepath valid-table call-graph))
      :dowhile (call-graph-expr
                 stmt.test
                 fn-name
-                (call-graph-stmt stmt.body fn-name acc))
+                filepath
+                valid-table
+                (call-graph-stmt stmt.body fn-name filepath valid-table call-graph))
      :for-expr (call-graph-stmt
                  stmt.body
                  fn-name
+                 filepath
+                 valid-table
                  (call-graph-expr-option
                    stmt.next
                    fn-name
+                   filepath
+                   valid-table
                    (call-graph-expr-option
                      stmt.test
                      fn-name
+                     filepath
+                     valid-table
                      (call-graph-expr-option
                        stmt.init
                        fn-name
-                       acc))))
+                       filepath
+                       valid-table
+                       call-graph))))
      :for-decl (call-graph-stmt
                  stmt.body
                  fn-name
+                 filepath
+                 valid-table
                  (call-graph-expr-option
                    stmt.next
                    fn-name
+                   filepath
+                   valid-table
                    (call-graph-expr-option
                      stmt.test
                      fn-name
+                     filepath
+                     valid-table
                      (call-graph-decl
                        stmt.init
                        fn-name
-                       acc))))
+                       filepath
+                       valid-table
+                       call-graph))))
      ;; TODO: error on ambiguous constructs
      ;; :for-ambig
-     :return (call-graph-expr-option stmt.expr? fn-name acc)
-     :otherwise (ident-ident-option-set-map-fix acc))
+     :return (call-graph-expr-option stmt.expr? fn-name filepath valid-table call-graph)
+     :otherwise (call-graph-fix call-graph))
     :measure (stmt-count stmt))
 
   (define call-graph-block-item
     ((item block-itemp)
-     (fn-name identp)
-     (acc ident-ident-option-set-mapp))
-    :returns (call-graph ident-ident-option-set-mapp)
+     (fn-name qualified-identp)
+     (filepath filepathp)
+     (valid-table c$::valid-tablep)
+     (call-graph call-graphp))
+    :returns (call-graph$ call-graphp)
     (block-item-case
      item
-     :decl (call-graph-decl item.unwrap fn-name acc)
-     :stmt (call-graph-stmt item.unwrap fn-name acc)
+     :decl (call-graph-decl item.unwrap fn-name filepath valid-table call-graph)
+     :stmt (call-graph-stmt item.unwrap fn-name filepath valid-table call-graph)
      ;; TODO: error on ambiguous constructs
-     :ambig (ident-ident-option-set-map-fix acc))
+     :ambig (call-graph-fix call-graph))
     :measure (block-item-count item))
 
   (define call-graph-block-item-list
     ((items block-item-listp)
-     (fn-name identp)
-     (acc ident-ident-option-set-mapp))
-    :returns (call-graph ident-ident-option-set-mapp)
+     (fn-name qualified-identp)
+     (filepath filepathp)
+     (valid-table c$::valid-tablep)
+     (call-graph call-graphp))
+    :returns (call-graph$ call-graphp)
     (if (endp items)
-        (ident-ident-option-set-map-fix acc)
+        (call-graph-fix call-graph)
       (call-graph-block-item-list
         (rest items)
         fn-name
-        (call-graph-block-item (first items) fn-name acc)))
+        filepath
+        valid-table
+        (call-graph-block-item (first items) fn-name filepath valid-table call-graph)))
     :measure (block-item-list-count items))
 
    :hints (("Goal" :in-theory (enable o< o-finp)))
@@ -392,53 +623,110 @@
 
 (define call-graph-fundef
   ((fundef fundefp)
-   (acc ident-ident-option-set-mapp))
-  :returns (call-graph ident-ident-option-set-mapp)
+   (filepath filepathp)
+   (valid-table c$::valid-tablep)
+   (call-graph call-graphp))
+  :returns (call-graph$ call-graphp)
   (b* (((fundef fundef) fundef)
        ((declor fundef.declor) fundef.declor))
     (dirdeclor-case
       fundef.declor.direct
-      :function-params (b* ((fn-name (c$::dirdeclor->ident fundef.declor.direct.decl)))
-                         (call-graph-stmt fundef.body fn-name acc))
-      :function-names (b* ((fn-name (c$::dirdeclor->ident fundef.declor.direct.decl)))
-                         (call-graph-stmt fundef.body fn-name acc))
-      :otherwise (ident-ident-option-set-map-fix acc))))
+      :function-params (b* ((fn-name
+                              (c$::dirdeclor->ident fundef.declor.direct.decl))
+                            (qualified-fn-name
+                              (qualify-ident filepath valid-table fn-name)))
+                         (call-graph-stmt
+                           fundef.body
+                           qualified-fn-name
+                           filepath
+                           valid-table
+                           call-graph))
+      :function-names (b* ((fn-name
+                             (c$::dirdeclor->ident fundef.declor.direct.decl))
+                           (qualified-fn-name
+                             (qualify-ident filepath valid-table fn-name)))
+                        (call-graph-stmt
+                          fundef.body
+                          qualified-fn-name
+                          filepath
+                          valid-table
+                          call-graph))
+      :otherwise (call-graph-fix call-graph))))
 
 (define call-graph-extdecl
   ((extdecl extdeclp)
-   (acc ident-ident-option-set-mapp))
-  :returns (call-graph ident-ident-option-set-mapp)
+   (filepath filepathp)
+   (valid-table c$::valid-tablep)
+   (call-graph call-graphp))
+  :returns (call-graph$ call-graphp)
   (extdecl-case
    extdecl
-   :fundef (call-graph-fundef extdecl.unwrap acc)
-   :decl (ident-ident-option-set-map-fix acc)
-   :empty (ident-ident-option-set-map-fix acc)
-   :asm (ident-ident-option-set-map-fix acc)))
+   :fundef (call-graph-fundef extdecl.unwrap filepath valid-table call-graph)
+   :decl (call-graph-fix call-graph)
+   :empty (call-graph-fix call-graph)
+   :asm (call-graph-fix call-graph)))
 
 (define call-graph-extdecl-list
   ((extdecls extdecl-listp)
-   (acc ident-ident-option-set-mapp))
-  :returns (call-graph ident-ident-option-set-mapp)
+   (filepath filepathp)
+   (valid-table c$::valid-tablep)
+   (call-graph call-graphp))
+  :returns (call-graph$ call-graphp)
   (if (endp extdecls)
-      (ident-ident-option-set-map-fix acc)
+      (call-graph-fix call-graph)
     (call-graph-extdecl-list
       (rest extdecls)
-      (call-graph-extdecl (first extdecls)
-                          acc))))
+      filepath
+      valid-table
+      (call-graph-extdecl
+        (first extdecls)
+        filepath
+        valid-table
+        call-graph))))
 
 (define call-graph-transunit
-  ((transunit transunitp))
-  :returns (call-graph ident-ident-option-set-mapp)
+  ((filepath filepathp)
+   (transunit transunitp)
+   (call-graph call-graphp))
+  :guard (c$::transunit-annop transunit)
+  :returns (call-graph$ call-graphp)
   :short "Build a call graph corresponding to a translation unit."
-  (b* (((transunit transunit) transunit))
-    (call-graph-extdecl-list transunit.decls nil)))
+  (b* (((transunit transunit) transunit)
+       (info (c$::transunit-info-fix (c$::transunit->info transunit)))
+       (valid-table (c$::transunit-info->table info)))
+    (call-graph-extdecl-list transunit.decls filepath valid-table call-graph))
+  :guard-hints (("Goal" :in-theory (enable c$::transunit-annop))))
+
+(define call-graph-filepath-transunit-map
+  ((map filepath-transunit-mapp)
+   (call-graph call-graphp))
+  :guard (c$::filepath-transunit-map-annop map)
+  :returns (call-graph$ call-graphp)
+  (if (omap::emptyp map)
+      (call-graph-fix call-graph)
+    (call-graph-filepath-transunit-map
+      (omap::tail map)
+      (call-graph-transunit
+        (omap::head-key map)
+        (omap::head-val map)
+        call-graph))))
+
+(define call-graph-transunit-ensemble
+  ((ensemble transunit-ensemblep))
+  :guard (c$::transunit-ensemble-annop ensemble)
+  :returns (call-graph$ call-graphp)
+  :short "Build a call graph corresponding to a translation unit ensemble."
+  (call-graph-filepath-transunit-map
+   (c$::transunit-ensemble->unwrap ensemble)
+   nil)
+  :guard-hints (("Goal" :in-theory (enable c$::transunit-ensemble-annop))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define call-graph-transitive-closure
-  ((ident identp)
-   (call-graph ident-ident-option-set-mapp))
-  :returns (called ident-option-setp)
+  ((ident qualified-identp)
+   (call-graph call-graphp))
+  :returns (called qualified-ident-option-setp)
   :short "Build a transitive closure for some identifier in the given call graph."
   :long
   (xdoc::topstring
@@ -459,50 +747,50 @@
 
    ;; Currently we are using a step counter for termination.
    ;; TODO: replace step with termination argument. The measure may be
-   ;; lexicographic, primarily measuring the difference in size of acc with
-   ;; respect to the identifiers in the call graph (acc is a subset of the this
-   ;; finite set of identifiers), and secondarily the decrease if ident?s.
+   ;; lexicographic, primarily measuring the difference in size of call-graph with
+   ;; respect to the identifiers in the call graph (call-graph is a subset of the this
+   ;; finite set of identifiers), and secondarily the decrease of ident?s.
    (define call-graph-transitive-closure0
-     ((ident?s ident-option-setp)
-      (call-graph ident-ident-option-set-mapp)
-      (acc ident-option-setp)
+     ((ident?s qualified-ident-option-setp)
+      (call-graph call-graphp)
+      (called qualified-ident-option-setp)
       (steps :type (unsigned-byte 60)))
-     :returns (called ident-option-setp)
+     :returns (called$ qualified-ident-option-setp)
      (b* (((when (or (int= 0 (mbe :logic (if (natp (acl2::the-fixnat steps))
                                              (acl2::the-fixnat steps)
                                            0)
                                   :exec (acl2::the-fixnat steps)))
                      (emptyp ident?s)))
-           (ident-option-set-fix acc))
+           (qualified-ident-option-set-fix called))
           (ident? (head ident?s))
           ((when (not ident?))
            (call-graph-transitive-closure0
              (tail ident?s)
              call-graph
-             (insert nil acc)
+             (insert nil called)
              (- steps 1)))
           (lookup (omap::assoc ident? call-graph))
           (ident?s
             (if lookup
-                (union (difference (cdr lookup) acc)
+                (union (difference (cdr lookup) called)
                        (tail ident?s))
               (tail ident?s)))
-          (acc
+          (called
             (if lookup
-                (union (cdr lookup) acc)
-              acc)))
+                (union (cdr lookup) called)
+              called)))
        (call-graph-transitive-closure0
          ident?s
          call-graph
-         acc
+         called
          (- steps 1)))
      :measure (nfix steps)
      :hints (("Goal" :in-theory (enable o< o-finp))))))
 
 (define exists-call-pathp
-  ((from identp)
-   (to ident-optionp)
-   (call-graph ident-ident-option-set-mapp))
+  ((from qualified-identp)
+   (to qualified-ident-optionp)
+   (call-graph call-graphp))
   :short "Check for the existence of a call path from the destination to the
           target."
   :long
@@ -515,22 +803,22 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define direct-recursivep
-  ((ident identp)
-   (call-graph ident-ident-option-set-mapp))
+  ((ident qualified-identp)
+   (call-graph call-graphp))
   :short "Recognizes functions which calls themselves."
   :long
   (xdoc::topstring
    (xdoc::p
      "This function checks where the @('ident') is related to itself under the
-     call graph. See @(tsee call-graph-transitive-closure) and (see
-     call-graph)."))
+      call graph. See @(tsee call-graph-transitive-closure) and (see
+      call-graph)."))
   (b* ((lookup (omap::assoc ident call-graph)))
     (and lookup
          (in ident (cdr lookup)))))
 
 (define recursivep
-  ((ident identp)
-   (call-graph ident-ident-option-set-mapp))
+  ((ident qualified-identp)
+   (call-graph call-graphp))
   :short "Recognizes directly or mutually recursive functions."
   :long
   (xdoc::topstring
@@ -541,8 +829,8 @@
   (exists-call-pathp ident ident call-graph))
 
 (define uncertain-call-pathp
-  ((ident identp)
-   (call-graph ident-ident-option-set-mapp))
+  ((ident qualified-identp)
+   (call-graph call-graphp))
   :short "Recognizes functions which possess an unresolved function call path."
   :long
   (xdoc::topstring
