@@ -1554,7 +1554,17 @@
    (xdoc::p
     "Here we accept all the lists of type specifiers in [C:6.7.2/2]
      except for those that are singletons determining a type
-     and that may not be part of longer sequences."))
+     and that may not be part of longer sequences.")
+   (xdoc::p
+    "The GCC documentation says that @('__int128')
+     can be used alone for signed,
+     or accompanied by @('unsigned') for unsigned.
+     But we also found it accompanied by @('signed')
+     (and its underscore variations)
+     in practical code,
+     which seems indeed consistent with other types like @('signed int');
+     so we accept all three variants.
+     But for now we map all of them to the unknown type."))
   (b* (((reterr) (irr-type)))
     (cond
      ((type-spec-list-char-p tyspecs)
@@ -1606,6 +1616,11 @@
       (retok (type-doublec)))
      ((type-spec-list-long-double-complex-p tyspecs)
       (retok (type-ldoublec)))
+     ((or (type-spec-list-int128-p tyspecs)
+          (type-spec-list-signed-int128-p tyspecs))
+      (retok (type-unknown)))
+     ((type-spec-list-unsigned-int128-p tyspecs)
+      (retok (type-unknown)))
      (t (reterr (msg "The type specifier sequence ~x0 is invalid."
                      (type-spec-list-fix tyspecs))))))
   :hooks (:fix))
@@ -2520,7 +2535,14 @@
        all the type specifiers that are GCC extensions
        to determine the unknown type;
        except for an empty structure type specifier,
-       which determines the structure type."))
+       which determines the structure type.
+       The @('__int128') may be preceded by @('unsigned'),
+       according to the GCC documentation;
+       we found, in practical code,
+       that it can also be preceded by @('signed') and its underscore variants;
+       so @('__int128') alone does not determine a type,
+       and we use @(tsee valid-type-spec-list-residual)
+       to determine the type, if any, as done in other cases."))
     (b* (((reterr) (irr-type-spec) nil nil nil (irr-valid-table))
          ((when type?)
           (reterr (msg "Since the type ~x0 has been determined, ~
@@ -2590,13 +2612,7 @@
                            nil
                            same-table)
                   (reterr msg-bad-preceding))
-       :int128 (if (endp tyspecs)
-                   (retok (type-spec-int128)
-                          (type-unknown)
-                          nil
-                          nil
-                          same-table)
-                 (reterr msg-bad-preceding))
+       :int128 (retok (type-spec-int128) nil ext-tyspecs nil same-table)
        :float32 (if (endp tyspecs)
                     (retok (type-spec-float32)
                            (type-unknown)
