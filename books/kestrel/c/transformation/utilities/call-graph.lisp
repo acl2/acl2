@@ -31,9 +31,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ call-graph
+(defxdoc+ call-graphs
   :parents (utilities)
-  :short "A utility to build a call graph given a C translation unit."
+  :short "Utilities to build a call graph from C translation units."
   :long
   (xdoc::topstring
     (xdoc::p
