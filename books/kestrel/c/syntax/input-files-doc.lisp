@@ -112,7 +112,7 @@
        is performed via the @(tsee preprocess-file) tool."))
 
     (xdoc::desc
-     "@(':preprocess-args') &mdash; default @('nil')"
+     "@(':preprocess-args') &mdash; no default"
      (xdoc::p
       "Specifies arguments to pass to the preprocessor.")
      (xdoc::p
