@@ -1988,7 +1988,7 @@
                              (:type-prescription member-p-physical-address-p-physical-address-listp)
                              (:rewrite acl2::car-of-append)
                              (:rewrite acl2::consp-of-append)
-                             (:rewrite xr-ms-mv-nth-2-rb)
+                             ;; (:rewrite xr-ms-mv-nth-2-rb)
                              (:rewrite acl2::append-atom-under-list-equiv)
                              (:type-prescription member-p-physical-address-p)
                              (:type-prescription binary-append)
