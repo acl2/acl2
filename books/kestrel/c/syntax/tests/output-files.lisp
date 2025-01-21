@@ -16,39 +16,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Write.
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; Change paths, to avoid overwriting files.
-(defconst *renamed-files-simple*
-  (fileset
-   (list (cons (filepath "simple-renamed.c")
-               (file-at-path (filepath "simple.c") *files-simple*)))))
-
-(output-files :const *renamed-files-simple*
-              :process :write)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; Change paths, to avoid overwriting files.
-(defconst *renamed-files-simple/stdbool/stdint*
-  (fileset
-   (list (cons (filepath "simple-renamed.c")
-               (file-at-path (filepath "simple.c")
-                             *files-simple/stdbool/stdint*))
-         (cons (filepath "stdbool-renamed.c")
-               (file-at-path (filepath "stdbool.c")
-                             *files-simple/stdbool/stdint*))
-         (cons (filepath "stdint-renamed.c")
-               (file-at-path (filepath "stdint.c")
-                             *files-simple/stdbool/stdint*)))))
-
-(output-files :const *renamed-files-simple/stdbool/stdint*
-              :process :write)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ; Print and write.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -49,33 +49,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define tunitens/fileset-p (x)
-  :returns (yes/no booleanp)
-  :parents (transunit-ensemblep filesetp)
-  :short "Recognize a translation unit ensemble or a file set."
-  (or (transunit-ensemblep x)
-      (filesetp x))
-
-  ///
-
-  (defruled tunitens/fileset-p-when-transunit-ensemblep
-    (implies (transunit-ensemblep x)
-             (tunitens/fileset-p x)))
-
-  (defruled tunitens/fileset-p-when-filesetp
-    (implies (filesetp x)
-             (tunitens/fileset-p x))))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-tunitens/fileset
-  :parents (tunitens/fileset-p)
-  :short "An irrelevant translation unit ensemble or file set."
-  :type tunitens/fileset-p
-  :body (irr-transunit-ensemble))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defxdoc+ input-files-implementation
   :parents (input-files)
   :short "Implementation of @(tsee input-files)."
@@ -131,7 +104,7 @@
 (define input-files-process-inputp (x)
   :returns (yes/no booleanp)
   :short "Recognize valid values of the @(':process') input."
-  (and (member-eq x '(:read :parse :disambiguate :validate)) t))
+  (and (member-eq x '(:parse :disambiguate :validate)) t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -219,14 +192,14 @@
 (define input-files-process-process ((options symbol-alistp))
   :returns (mv erp (process input-files-process-inputp))
   :short "Process the @(':process') input."
-  (b* (((reterr) :read)
+  (b* (((reterr) :parse)
        (process-option (assoc-eq :process options))
        (process (if process-option
                     (cdr process-option)
                   :validate))
        ((unless (input-files-process-inputp process))
         (reterr (msg "The :PROCESS input must be ~
-                      :READ, :PARSE, :DISAMBIGUATE, or :VALIDATE ~
+                      :PARSE, :DISAMBIGUATE, or :VALIDATE ~
                       but it is ~x0 instead."
                      process))))
     (retok process)))
@@ -388,7 +361,7 @@
     "The other results of this function are the homonymous inputs,
      except that the last five inputs are combined into
      an implementation environment result."))
-  (b* (((reterr) nil nil nil nil :read nil nil (ienv-default))
+  (b* (((reterr) nil nil nil nil :parse nil nil (ienv-default))
        ;; Check and obtain inputs.
        ((mv erp extra options)
         (partition-rest-and-keyword-args
@@ -465,19 +438,18 @@
                                 state)
   :returns (mv erp
                (events pseudo-event-form-listp)
-               (tunits/files tunitens/fileset-p)
+               (tunits transunit-ensemblep)
                state)
   :short "Generate the events."
   :long
   (xdoc::topstring
    (xdoc::p
     "We perform all the necessary preprocessing and processing.
-     Besides the events, we also return
-     the final translation unit ensemble or file set,
+     Besides the events, we also return the translation unit ensemble
      resulting from processing the (possibly preprocessed) files.
      If the programmatic interface is being used,
      no events are actually generated."))
-  (b* (((reterr) nil (irr-tunitens/fileset) state)
+  (b* (((reterr) nil (irr-transunit-ensemble) state)
        ;; Initialize list of generated events.
        (events nil)
        ;; Preprocess if required, or read files from file system.
@@ -491,14 +463,7 @@
                                  paths
                                  :preprocessor preprocessor))
                             (input-files-read-files paths state)))
-       ;; If no processing is required, we are done;
-       ;; generate :CONST constant with the files.
-       ((when (eq process :read))
-        (b* ((events (if (not progp)
-                         (rcons `(defconst ,const ',files) events)
-                       events)))
-          (retok events files state)))
-       ;; Parsing is required.
+       ;; Parsing is always required.
        ((erp tunits) (parse-fileset files gcc))
        ;; If only parsing is required, we are done;
        ;; generate :CONST constant with the parsed translation units.
@@ -507,7 +472,7 @@
                          (rcons `(defconst ,const ',tunits) events)
                        events)))
           (retok events tunits state)))
-       ;; Disambiguation is required.
+       ;; Disambiguation is required, if we get here.
        ((erp tunits) (dimb-transunit-ensemble tunits gcc))
        ;; If no validation is required, we are done;
        ;; generate :CONST constant with the disambiguated translation unit.
@@ -516,7 +481,7 @@
                          (rcons `(defconst ,const ',tunits) events)
                        events)))
           (retok events tunits state)))
-       ;; Validation is required.
+       ;; Validation is required, if we get here.
        ((erp tunits) (valid-transunit-ensemble tunits gcc ienv))
        ;; Generate :CONST constant with the validated translation unit.
        (events (if (not progp)
@@ -531,7 +496,7 @@
                                                    state)
   :returns (mv erp
                (event pseudo-event-formp)
-               (tunits/files tunitens/fileset-p)
+               (tunits transunit-ensemblep)
                state)
   :short "Process the inputs and generate the events."
   :long
@@ -539,9 +504,9 @@
    (xdoc::p
     "The event is an empty @(tsee progn) if
      this is called via the programmatic interface.
-     We also return the final translation unit ensemble or file set,
+     We also return the translation unit ensemble
      resulting from processing the (possibly preprocessed) files."))
-  (b* (((reterr) '(_) (irr-tunitens/fileset) state)
+  (b* (((reterr) '(_) (irr-transunit-ensemble) state)
        ((erp paths
              preprocessor
              preprocess-args-presentp
@@ -551,9 +516,7 @@
              gcc
              ienv)
         (input-files-process-inputs args progp))
-       ((erp events
-             tunits/files
-             state)
+       ((erp events tunits state)
         (input-files-gen-events paths
                                 preprocessor
                                 preprocess-args-presentp
@@ -564,7 +527,7 @@
                                 ienv
                                 progp
                                 state)))
-    (retok `(progn ,@events) tunits/files state)))
+    (retok `(progn ,@events) tunits state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -623,8 +586,9 @@
      These are the results of the error-value tuple, in order:")
    (xdoc::ul
     (xdoc::li
-     "@('tunits/files'):
-      the @(tsee transunit-ensemble) or @(tsee fileset)
+     "@('tunits'):
+      the translation unit ensemble
+      (a value of type @(tsee transunit-ensemble))
       resulting from processing, according to the @(':process') input,
       the files read from the paths specified by @(':files')
       (if @(':preprocess') is @('nil'))
@@ -642,7 +606,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define input-files-prog-fn ((args true-listp) state)
-  :returns (mv erp (tunits/files tunitens/fileset-p) state)
+  :returns (mv erp (tunits transunit-ensemblep) state)
   :short "Implementation of @(tsee input-files-prog)."
   :long
   (xdoc::topstring
@@ -650,10 +614,10 @@
     "We set the flag @('progp') for the programmatic interface to @('t').
      We ignore the event returned as result,
      and just return the artifacts."))
-  (b* (((reterr) (irr-tunitens/fileset) state)
-       ((erp & tunits/files state)
+  (b* (((reterr) (irr-transunit-ensemble) state)
+       ((erp & tunits state)
         (input-files-process-inputs-and-gen-events args t state)))
-    (retok tunits/files state)))
+    (retok tunits state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

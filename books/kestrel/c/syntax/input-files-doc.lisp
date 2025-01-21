@@ -143,10 +143,6 @@
       "This input must be one of the following:")
      (xdoc::ul
       (xdoc::li
-       "@(':read'),
-        to perform no processing,
-        i.e. just reading the files.")
-      (xdoc::li
        "@(':parse'),
         to "
        (xdoc::seetopic "parser" "parse")
@@ -165,8 +161,10 @@
         to parse and disambiguate the files, and then to "
        (xdoc::seetopic "validator" "validate")
        " the disambiguated abstract syntax representation
-        obtained from the disambiguator.
-        Validation depends on the
+        obtained from the disambiguator,
+        which annotated the abstract syntax with "
+       (xdoc::seetopic "validation-information" "validation information")
+       ". Validation depends on the
         @(':short-bytes'),
         @(':int-bytes'),
         @(':long-bytes'),
@@ -179,7 +177,7 @@
      (xdoc::p
       "These levels of processing are ordered as")
      (xdoc::codeblock
-      ":read < :parse < :disambiguate < :validate")
+      ":parse < :disambiguate < :validate")
      (xdoc::p
       "where a larger level includes and extends
        the processing of smaller levels.
@@ -194,17 +192,6 @@
       "Name of the generated ACL2 constant whose value is
        the final result of processing (and preprocessing)
        the files specified in the @(':files') input.")
-     (xdoc::p
-      "This must be a valid name for a new constant.")
-     (xdoc::p
-      "If @(':process') is @(':read'),
-       the value of the constant named by @(':const') is
-       a file set (i.e. a value of type @(tsee fileset)),
-       containing a representation of
-       the files specified by @(':files')
-       (if @(':preprocess') is @('nil'))
-       or the files resulting from preprocessing those
-       (if @(':preprocess') is not @('nil')).")
      (xdoc::p
       "If @(':process') is @(':parse'),
        the value of the constant named by @(':const') is
@@ -228,7 +215,8 @@
        (i.e. a value of type @(tsee transunit-ensemble)),
        containing the abstract syntax representation of the code
        obtained by disambiguating the one resulting from the parser,
-       and such that the abstract syntax representation passed validation.")
+       and such that the abstract syntax representation passed validation;
+       this abstract syntax is annotated with validation information.")
      (xdoc::p
       "In the rest of this documentation page,
        let @('*const*') be the name of this constant."))
@@ -236,7 +224,7 @@
     (xdoc::desc
      "@(':gcc') &mdash; default @('nil')"
      (xdoc::p
-      "Boolean saying whether certain GCC extensions
+      "Boolean flag saying whether certain GCC extensions
        should be accepted or not."))
 
     (xdoc::desc

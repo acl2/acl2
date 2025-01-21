@@ -20,85 +20,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Read.
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(input-files :files ("simple.c")
-             :const *files-simple*
-             :process :read)
-
-(acl2::assert! (filesetp *files-simple*))
-
-(acl2::assert-equal
- *files-simple*
- (fileset (list (cons (filepath "simple.c")
-                      (filedata
-                       (acl2::string=>nats
-                        "int main(void) {
-  return 0;
-}
-"))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(input-files :files ("simple.c" "stdbool.c" "stdint.c")
-             :const *files-simple/stdbool/stdint*
-             :process :read)
-
-(acl2::assert! (filesetp *files-simple/stdbool/stdint*))
-
-(acl2::assert-equal
- *files-simple/stdbool/stdint*
- (fileset (list (cons (filepath "simple.c")
-                      (filedata
-                       (acl2::string=>nats
-                        "int main(void) {
-  return 0;
-}
-")))
-                (cons (filepath "stdbool.c")
-                      (filedata
-                       (acl2::string=>nats
-                        "#include <stdbool.h>
-
-int main(void) {
-  return (int)false;
-}
-")))
-                (cons (filepath "stdint.c")
-                      (filedata
-                       (acl2::string=>nats
-                        "#include <stdint.h>
-
-int main(void) {
-  uint32_t x = 0;
-  return 0;
-}
-"))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; Read and preprocess.
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(input-files :files ("simple.c" "stdbool.c" "stdint.c")
-             :preprocess :auto
-             :process :read
-             :const *preproc-simple/stdbool/stdint*)
-
-(acl2::assert! (filesetp *preproc-simple/stdbool/stdint*))
-
-(acl2::assert-equal
- (fileset-paths *preproc-simple/stdbool/stdint*)
- (set::mergesort (list (filepath "simple.c")
-                       (filepath "stdbool.c")
-                       (filepath "stdint.c"))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; Read and parse.
+; Parse.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -114,7 +36,7 @@ int main(void) {
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Read and preprocess and parse.
+; Preprocess and parse.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -134,7 +56,7 @@ int main(void) {
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Read and parse and disambiguate.
+; Parse and disambiguate.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -146,7 +68,7 @@ int main(void) {
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Read and preprocess and parse and disambiguate.
+; Preprocess and parse and disambiguate.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -161,7 +83,7 @@ int main(void) {
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Read and parse and disambiguate and validate.
+; Parse and disambiguate and validate.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -173,7 +95,7 @@ int main(void) {
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Read and preprocess and parse and disambiguate and validate.
+; Preprocess and parse and disambiguate and validate.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
