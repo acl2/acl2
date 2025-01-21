@@ -40,6 +40,32 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define tunitens/fileset-p (x)
+  :returns (yes/no booleanp)
+  :parents (transunit-ensemblep filesetp)
+  :short "Recognize a translation unit ensemble or a file set."
+  (or (transunit-ensemblep x)
+      (filesetp x))
+
+  ///
+
+  (defruled tunitens/fileset-p-when-transunit-ensemblep
+    (implies (transunit-ensemblep x)
+             (tunitens/fileset-p x)))
+
+  (defruled tunitens/fileset-p-when-filesetp
+    (implies (filesetp x)
+             (tunitens/fileset-p x))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+(defirrelevant irr-tunitens/fileset
+  :short "An irrelevant translation unit ensemble or file set."
+  :type tunitens/fileset-p
+  :body (irr-transunit-ensemble))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defxdoc+ output-files-implementation
   :parents (output-files)
   :short "Implementation of @(tsee output-files)."
@@ -73,31 +99,6 @@
   ///
   (assert-event (keyword-listp *output-files-printer-options*))
   (assert-event (no-duplicatesp-eq *output-files-printer-options*)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define tunitens/fileset-p (x)
-  :returns (yes/no booleanp)
-  :short "Recognize a translation unit ensemble or a file set."
-  (or (transunit-ensemblep x)
-      (filesetp x))
-
-  ///
-
-  (defruled tunitens/fileset-p-when-transunit-ensemblep
-    (implies (transunit-ensemblep x)
-             (tunitens/fileset-p x)))
-
-  (defruled tunitens/fileset-p-when-filesetp
-    (implies (filesetp x)
-             (tunitens/fileset-p x))))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-tunitens/fileset
-  :short "An irrelevant translation unit ensemble or file set."
-  :type tunitens/fileset-p
-  :body (irr-transunit-ensemble))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
