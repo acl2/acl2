@@ -60,6 +60,7 @@
 ;;;;;;;;;;;;;;;;;;;;
 
 (defirrelevant irr-tunitens/fileset
+  :parents (tunitens/fileset-p)
   :short "An irrelevant translation unit ensemble or file set."
   :type tunitens/fileset-p
   :body (irr-transunit-ensemble))
