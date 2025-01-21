@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -96,20 +96,6 @@ int main(void) {
                        (filepath "stdbool.c")
                        (filepath "stdint.c"))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(input-files :files ("simple.c" "stdbool.c" "stdint.c")
-             :preprocess :auto
-             :process :read
-             :const *preproc-simple/stdbool/stdint-2*
-             :const-files *files-simple/stdbool/stdint-2*)
-
-(acl2::assert-equal *preproc-simple/stdbool/stdint-2*
-                    *preproc-simple/stdbool/stdint*)
-
-(acl2::assert-equal *files-simple/stdbool/stdint-2*
-                    *files-simple/stdbool/stdint*)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Read and parse.
@@ -125,19 +111,6 @@ int main(void) {
 (acl2::assert-equal
  (transunit-ensemble-paths *parsed-simple*)
  (set::mergesort (list (filepath "simple.c"))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(input-files :files ("simple.c")
-             :process :parse
-             :const *parsed-simple-2*
-             :const-files *files-simple-2*)
-
-(acl2::assert-equal *parsed-simple-2*
-                    *parsed-simple*)
-
-(acl2::assert-equal *files-simple-2*
-                    *files-simple*)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -159,56 +132,6 @@ int main(void) {
  (set::mergesort (list (filepath "simple.c")
                        (filepath "stdbool.c"))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(input-files :files ("simple.c" "stdbool.c")
-             ;; We exclude stdint.c because it has occurrences of #define
-             ;; (not at the left margin) even after preprocessing.
-             :preprocess :auto
-             :process :parse
-             :const *parsed-simple/stdbool-2*
-             :const-files *files-simple/stdbool*)
-
-(acl2::assert! (filesetp *files-simple/stdbool*))
-
-(acl2::assert-equal *parsed-simple/stdbool-2*
-                    *parsed-simple/stdbool*)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(input-files :files ("simple.c" "stdbool.c")
-             ;; We exclude stdint.c because it has occurrences of #define
-             ;; (not at the left margin) even after preprocessing.
-             :preprocess :auto
-             :process :parse
-             :const *parsed-simple/stdbool-3*
-             :const-preproc *preproc-simple/stdbool*)
-
-(acl2::assert! (filesetp *preproc-simple/stdbool*))
-
-(acl2::assert-equal *parsed-simple/stdbool-3*
-                    *parsed-simple/stdbool*)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(input-files :files ("simple.c" "stdbool.c")
-             ;; We exclude stdint.c because it has occurrences of #define
-             ;; (not at the left margin) even after preprocessing.
-             :preprocess :auto
-             :process :parse
-             :const *parsed-simple/stdbool-4*
-             :const-files *files-simple/stdbool-2*
-             :const-preproc *preproc-simple/stdbool-2*)
-
-(acl2::assert-equal *parsed-simple/stdbool-4*
-                    *parsed-simple/stdbool*)
-
-(acl2::assert-equal *files-simple/stdbool-2*
-                    *files-simple/stdbool*)
-
-(acl2::assert-equal *preproc-simple/stdbool-2*
-                    *preproc-simple/stdbool*)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Read and parse and disambiguate.
@@ -220,23 +143,6 @@ int main(void) {
              :const *disamb-simple*)
 
 (acl2::assert! (transunit-ensemblep *disamb-simple*))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(input-files :files ("simple.c")
-             :process :disambiguate
-             :const *disamb-simple-2*
-             :const-files *files-simple-3*
-             :const-parsed *parsed-simple-3*)
-
-(acl2::assert-equal *disamb-simple-2*
-                    *disamb-simple*)
-
-(acl2::assert-equal *files-simple-3*
-                    *files-simple*)
-
-(acl2::assert-equal *parsed-simple-3*
-                    *parsed-simple*)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -253,30 +159,6 @@ int main(void) {
 
 (acl2::assert! (transunit-ensemblep *disamb-simple/stdbool*))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(input-files :files ("simple.c" "stdbool.c")
-             ;; We exclude stdint.c because it has occurrences of #define
-             ;; (not at the left margin) even after preprocessing.
-             :preprocess :auto
-             :process :disambiguate
-             :const *disamb-simple/stdbool-2*
-             :const-files *files-simple/stdbool-3*
-             :const-preproc *preproc-simple/stdbool-3*
-             :const-parsed *parsed-simple/stdbool-5*)
-
-(acl2::assert-equal *disamb-simple/stdbool-2*
-                    *disamb-simple/stdbool*)
-
-(acl2::assert-equal *files-simple/stdbool-3*
-                    *files-simple/stdbool*)
-
-(acl2::assert-equal *preproc-simple/stdbool-3*
-                    *preproc-simple/stdbool*)
-
-(acl2::assert-equal *parsed-simple/stdbool-5*
-                    *parsed-simple/stdbool*)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Read and parse and disambiguate and validate.
@@ -288,27 +170,6 @@ int main(void) {
              :const *valid-simple*)
 
 (acl2::assert! (transunit-ensemblep *valid-simple*))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(input-files :files ("simple.c")
-             :process :validate
-             :const *valid-simple-2*
-             :const-files *files-simple-3*
-             :const-parsed *parsed-simple-3*
-             :const-disamb *disamb-simple-3*)
-
-(acl2::assert-equal *valid-simple-2*
-                    *valid-simple*)
-
-(acl2::assert-equal *files-simple-3*
-                    *files-simple*)
-
-(acl2::assert-equal *parsed-simple-3*
-                    *parsed-simple*)
-
-(acl2::assert-equal *disamb-simple-3*
-                    *disamb-simple*)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -324,31 +185,3 @@ int main(void) {
              :const *valid-simple/stdbool*)
 
 (acl2::assert! (transunit-ensemblep *valid-simple/stdbool*))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(input-files :files ("simple.c" "stdbool.c")
-             ;; We exclude stdint.c because it has occurrences of #define
-             ;; (not at the left margin) even after preprocessing.
-             :preprocess :auto
-             :process :validate
-             :const *valid-simple/stdbool-2*
-             :const-files *files-simple/stdbool-3*
-             :const-preproc *preproc-simple/stdbool-3*
-             :const-parsed *parsed-simple/stdbool-5*
-             :const-disamb *disamb-simple/stdbool-3*)
-
-(acl2::assert-equal *valid-simple/stdbool-2*
-                    *valid-simple/stdbool*)
-
-(acl2::assert-equal *files-simple/stdbool-3*
-                    *files-simple/stdbool*)
-
-(acl2::assert-equal *preproc-simple/stdbool-3*
-                    *preproc-simple/stdbool*)
-
-(acl2::assert-equal *parsed-simple/stdbool-5*
-                    *parsed-simple/stdbool*)
-
-(acl2::assert-equal *disamb-simple/stdbool-3*
-                    *disamb-simple/stdbool*)

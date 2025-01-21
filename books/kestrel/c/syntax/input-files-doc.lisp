@@ -58,10 +58,6 @@
      "             :preprocess-args   ...  ; no default"
      "             :process           ...  ; default :validate"
      "             :const             ...  ; no default"
-     "             :const-files       ...  ; default nil"
-     "             :const-preproc     ...  ; default nil"
-     "             :const-parsed      ...  ; default nil"
-     "             :const-disamb      ...  ; default nil"
      "             :gcc               ...  ; default nil"
      "             :short-bytes       ...  ; default 2"
      "             :int-bytes         ...  ; default 4"
@@ -238,103 +234,6 @@
        let @('*const*') be the name of this constant."))
 
     (xdoc::desc
-     "@(':const-files') &mdash; default @('nil')"
-     (xdoc::p
-      "Name of the generated ACL2 constant whose value is
-       the file set (i.e. a value of type @(tsee fileset))
-       that represents the files specified by the @(':files') input,
-       as read from the file system, without preprocessing.")
-     (xdoc::p
-      "If this input is @('nil'),
-       this constant is not generated.")
-     (xdoc::p
-      "This input must be @('nil') if
-       @(':preprocess') is @('nil') and @(':process') is @(':read'),
-       because in this case the constant would contain
-       the same value as the one specified by @(':const').")
-     (xdoc::p
-      "In the rest of this documentation page,
-       let @('*const-files*') be the name of this constant,
-       if not @('nil')."))
-
-    (xdoc::desc
-     "@(':const-preproc') &mdash; default @('nil')"
-     (xdoc::p
-      "Name of the generated ACL2 constant whole value is
-       the file set (i.e. a value of type @(tsee fileset))
-       that represents the files obtained by preprocessing
-       the files specified by the @(':files') inputs.")
-     (xdoc::p
-      "If this input is @('nil'),
-       this constant is not generated.")
-     (xdoc::p
-      "This input must be @('nil') if
-       @(':preprocess') is @('nil'),
-       because in that case there is no preprocessing.
-       If a constant for the files is desired,
-       the @(':const-files') input can be used for that.")
-     (xdoc::p
-      "In the rest of this documentation page,
-       let @('*const-preproc*') be the name of this constant,
-       if not @('nil')."))
-
-    (xdoc::desc
-     "@(':const-parsed') &mdash; default @('nil')"
-     (xdoc::p
-      "Name of the generated ACL2 constant whose value is
-       the translation unit ensemble
-       (i.e. a value of type @(tsee transunit-ensemble))
-       that represents the result of parsing
-       the files specified by @(':files')
-       (if @(':preprocess') is @('nil'))
-       or the files resulting from preprocessing those
-       (if @(':preprocess') is not @('nil')).")
-     (xdoc::p
-      "If this input is @('nil'),
-       this constant is not generated.")
-     (xdoc::p
-      "This input must be @('nil') if
-       the @(':process') input is @(':read'),
-       because in that case the files are not parsed.")
-     (xdoc::p
-      "This input must be @('nil') if
-       the @(':process') input is @(':parse'),
-       because in that case this constant would contain
-       the same value as the constant specified by the @(':const') input.")
-     (xdoc::p
-      "In the rest of this documentation page,
-       let @('*const-parsed*') be the name of this constant,
-       if not @('nil')."))
-
-    (xdoc::desc
-     "@(':const-disamb') &mdash; default @('nil')"
-     (xdoc::p
-      "Name of the generated ACL2 constant whose value is
-       the translation unit ensemble
-       (i.e. a value of type @(tsee transunit-ensemble))
-       that represents the result of parsing and disambiguating
-       the files specified by @(':files')
-       (if @(':preprocess') is @('nil'))
-       or the files resulting from preprocessing those
-       (if @(':preprocess') is not @('nil')).")
-     (xdoc::p
-      "If this input is @('nil'),
-       this constant is not generated.")
-     (xdoc::p
-      "This input must be @('nil') if
-       the @(':process') input is @(':read') or @(':parse'),
-       because in that case the files are not parsed or disambiguated.")
-     (xdoc::p
-      "This input must be @('nil') if
-       the @(':process') input is @(':disambiguate'),
-       because in that case this constant would contain
-       the same value as the constant specified by the @(':const') input.")
-     (xdoc::p
-      "In the rest of this documentation page,
-       let @('*const-disamb*') be the name of this constant,
-       if not @('nil')."))
-
-    (xdoc::desc
      "@(':gcc') &mdash; default @('nil')"
      (xdoc::p
       "Boolean saying whether certain GCC extensions
@@ -390,45 +289,6 @@
      (xdoc::p
       "The named constant containing the result of processing,
        as specified by @(':process'),
-       the files specified by @(':files')
-       (if @(':preprocess') is @('nil'))
-       or the files resulting from preprocessing those
-       (if @(':preprocess') is not @('nil'))."))
-
-    (xdoc::desc
-     "@('*const-files*')"
-     (xdoc::p
-      "Optionally,
-       the named constant containing the file set that represents
-       the files specified by @(':files')
-       (if @(':preprocess') is @('nil'))
-       or the files resulting from preprocessing those
-       (if @(':preprocess') is not @('nil'))."))
-
-    (xdoc::desc
-     "@('*const-preproc*')"
-     (xdoc::p
-      "Optionally,
-       the named constant containing the file set that represents
-       the result of preprocessing the files specified by @(':files')."))
-
-    (xdoc::desc
-     "@('*const-parsed*')"
-     (xdoc::p
-      "Optionally,
-       the named constant containing the abstract syntax representation,
-       obtained from the parser without disambiguation, of
-       the files specified by @(':files')
-       (if @(':preprocess') is @('nil'))
-       or the files resulting from preprocessing those
-       (if @(':preprocess') is not @('nil'))."))
-
-    (xdoc::desc
-     "@('*const-disamb*')"
-     (xdoc::p
-      "Optionally,
-       the named constant containing the abstract syntax representation,
-       obtained from the disambiguator, of
        the files specified by @(':files')
        (if @(':preprocess') is @('nil'))
        or the files resulting from preprocessing those
