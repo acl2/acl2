@@ -57,8 +57,6 @@
 
     (xdoc::codeblock
      "(output-files :const           ...  ; no default"
-     "              :process         ...  ; default :print"
-     "              :const-files     ...  ; default nil"
      "              :printer-options ...  ; default nil"
      "  )"))
 
@@ -73,53 +71,16 @@
        the representation of the C code to write to the file system.")
      (xdoc::p
       "This constant must contain
-       a fileset
-       (i.e. a value of type @(tsee fileset))
-       if the @(':process') input (see below) is @(':write'),
-       or an "
+       an "
       (xdoc::seetopic "unambiguity" "unambiguous")
       " translation unit ensemble
-       (i.e. a value of type @(tsee transunit-ensemble))
-       if the @(':process') input is @(':print').")
+       (i.e. a value of type @(tsee transunit-ensemble)
+       that additionally satisfies @(tsee transunit-ensemble-unambp)).
+       The translation unit is printed to a file set,
+       whose files are written to the file system.")
      (xdoc::p
       "In the rest of this documentation page,
        let @('*const*') be the name of this constant."))
-
-    (xdoc::desc
-     "@(':process') &mdash; default @(':print')"
-     (xdoc::p
-      "Specifies the processing to perform
-       on the ACL2 representation of the C code in @('*const*').")
-     (xdoc::p
-      "This must be one of the following:")
-     (xdoc::ul
-      (xdoc::li
-       "@(':write'),
-        for no processing (i.e. just writing the files).
-        In this case, @('*const*') must contain a file set,
-        which is written to the file system as is.")
-      (xdoc::li
-       "@(':print') (the default),
-        to print the abstract syntax in @('*const*')
-        to a file set that is then written to the file system.
-        In this case, @('*const*') must contain a translation unit ensemble.")))
-
-    (xdoc::desc
-     "@(':const-files') &mdash; default @('nil')"
-     (xdoc::p
-      "Name of the generated ACL2 constant whose value is
-       the file set obtained by printing @('*const*').")
-     (xdoc::p
-      "If this input is @('nil'),
-       this constant is not generated.")
-     (xdoc::p
-      "This input must be @('nil') if
-       @(':process') is @(':write'),
-       because in that case @('*const*') already contains a file set.")
-     (xdoc::p
-      "In the rest of this documentation page,
-       let @('*const-files*') be the name of this constant,
-       if not @('nil')."))
 
     (xdoc::desc
      "@(':printer-options') &mdash; default @('nil')"
@@ -156,13 +117,7 @@
         but the second one is more readable.
         If this option is @('t'), the printer adds the parentheses;
         if thie option is @('nil'), no extra parentheses are added.
-        If this option is not supplied, it defaults to @('nil')."))
-     (xdoc::p
-      "This is currently the only supported printer option.
-       More options may be added in the future.")
-     (xdoc::p
-      "Unless @(':process') is @(':print') (possibly by default),
-       this @(':printer-options') input must be @('nil').")))
+        If this option is not supplied, it defaults to @('nil')."))))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -170,15 +125,7 @@
 
     (xdoc::p
      "This macro generates one file in the file system
-      for each element of the translation unit ensemble or file set
-      in @('*const*'),
+      for each element of the translation unit ensemble in @('*const*'),
       at the paths that are the keys of the maps.
       Non-absolute paths are relative to
-      the connected book directory (see @(tsee cbd)).")
-
-    (xdoc::desc
-     "@('*const-files*')"
-     (xdoc::p
-      "Optionally,
-       the named constant containing the file set
-       obtained by printing the abstract syntax in @('*const*').")))))
+      the connected book directory (see @(tsee cbd))."))))
