@@ -30,5 +30,4 @@
                (transunit-at-path (filepath "stdbool.c")
                                   *disamb-simple/stdbool*)))))
 
-(output-files :const *renamed-disamb-simple/stdbool*
-              :process :print)
+(output-files :const *renamed-disamb-simple/stdbool*)
