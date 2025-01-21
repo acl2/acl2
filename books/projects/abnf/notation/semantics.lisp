@@ -1,10 +1,10 @@
 ; ABNF (Augmented Backus-Naur Form) Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -469,12 +469,7 @@
   (b* ((nat (mbe :logic (nfix nat) :exec nat)))
     (equal nat (char-code char)))
   :no-function t
-  :hooks (:fix)
-  ///
-
-  (defrule nat-match-sensitive-char-p-of-char-fix
-    (equal (nat-match-sensitive-char-p nat (char-fix char))
-           (nat-match-sensitive-char-p nat char))))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -494,12 +489,7 @@
         (equal nat (char-code (upcase-char char)))
         (equal nat (char-code (downcase-char char)))))
   :no-function t
-  :hooks (:fix)
-  ///
-
-  (defrule nat-match-insensitive-char-p-of-char-fix
-    (equal (nat-match-insensitive-char-p nat (char-fix char))
-           (nat-match-insensitive-char-p nat char))))
+  :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
