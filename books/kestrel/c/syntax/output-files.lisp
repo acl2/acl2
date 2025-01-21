@@ -85,7 +85,6 @@
   :short "Keyword options accepted by @(tsee output-files)."
   (list :const
         :process
-        :const-files
         :printer-options)
   ///
   (assert-event (keyword-listp *output-files-allowed-options*))
@@ -188,7 +187,6 @@
                    transunit-ensemblep-when-output-files-process-tunits/files
                    filesetp-when-output-files-process-tunits/files))))
                (process output-files-process-inputp)
-               (const-files symbolp)
                (indent-size posp)
                (paren-nested-conds booleanp))
   :short "Process the inputs."
@@ -208,15 +206,13 @@
      If instead @('progp') is @('t'),
      the translation unit ensemble or file set
      is taken from the required input @('arg'),
-     and the @(':const') input must be absent;
-     the @(':const-files') input must be absent too.")
+     and the @(':const') input must be absent.")
    (xdoc::p
     "The @('tunits/files') result of this function is
      the translation unit ensemble or file set.
      The other results are the homonymous inputs
-     (some are sub-inputs of the @(':printer-options') input);
-     if @('progp') is @('t'), the @('const-files') result is @('nil')."))
-  (b* (((reterr) (irr-tunitens/fileset) :write nil 1 nil)
+     (some are sub-inputs of the @(':printer-options') input)."))
+  (b* (((reterr) (irr-tunitens/fileset) :write 1 nil)
        ;; Check and obtain inputs.
        ((mv erp extra options)
         (partition-rest-and-keyword-args args *output-files-allowed-options*))
@@ -271,29 +267,6 @@
                  (msg "the value of the ~x0 named constant, ~
                        specified by the :CONST input,"
                       (cdr const-option)))))
-       ;; Process :CONST-FILES input.
-       (const-files-option (assoc-eq :const-files options))
-       ((erp const-files)
-        (b* (((reterr) nil))
-          (if progp
-              (b* (((when const-files-option)
-                    (reterr (msg "The :CONST-FILES input must not be supplied ~
-                                  to the programmatic interface."))))
-                (retok nil))
-            (b* ((const-files (if const-files-option
-                                  (cdr const-files-option)
-                                nil))
-                 ((unless (symbolp const-files))
-                  (reterr (msg "The :CONST-FILES input must be a symbol, ~
-                                but it is ~x0 instead."
-                               const-files)))
-                 ((when (and const-files
-                             (not process)))
-                  (reterr (msg "The :CONST-FILES input must be NIL ~
-                                if the :PROCESS input is NIL, ~
-                                which is the case ~
-                                in this call of OUTPUT-FILES."))))
-              (retok const-files)))))
        ;; Process :PRINTER-OPTIONS input.
        (printer-options-option (assoc-eq :printer-options options))
        (printer-options (if printer-options-option
@@ -352,7 +325,6 @@
                      paren-nested-conds))))
     (retok tunits/files
            process
-           const-files
            indent-size
            paren-nested-conds))
   :guard-hints (("Goal" :in-theory (enable acl2::alistp-when-symbol-alistp
@@ -392,26 +364,20 @@
 
 (define output-files-gen-files+events ((tunits/files tunitens/fileset-p)
                                        (process output-files-process-inputp)
-                                       (const-files symbolp)
                                        (indent-size posp)
                                        (paren-nested-conds booleanp)
-                                       (progp booleanp)
                                        state)
   :guard (and (implies (equal process :write)
                        (filesetp tunits/files))
               (implies (equal process :print)
                        (and (transunit-ensemblep tunits/files)
                             (transunit-ensemble-unambp tunits/files))))
-  :returns (mv erp
-               (events pseudo-event-form-listp)
-               (files filesetp)
-               state)
-  :short "Generate the files and (if any) the events."
+  :returns (mv erp (events pseudo-event-form-listp) state)
+  :short "Generate the files."
   :long
   (xdoc::topstring
    (xdoc::p
-    "If required, we print the translation unit ensemble to a file set;
-     if required, we also generate the constant for the file set.
+    "If required, we print the translation unit ensemble to a file set.
      Then we go through the file set
      and write the data of each value in the map
      to the path of the associated key in the map.")
@@ -419,7 +385,7 @@
     "We also return the file set that is
      either the same as the input (if @(':process') is @(':write')),
      or the result of printing (if @(':process') is @(':print'))."))
-  (b* (((reterr) nil (irr-fileset) state)
+  (b* (((reterr) nil state)
        ;; Initialize list of generated events.
        (events nil)
        ;; Print the abstract syntax if required.
@@ -429,14 +395,9 @@
                                  :paren-nested-conds paren-nested-conds)))
                     (print-fileset tunits/files options))
                 (fileset-fix tunits/files)))
-       ;; Generate :CONST-FILES if required.
-       (events (if (and const-files
-                        (not progp))
-                   (cons `(defconst ,const-files ',files) events)
-                 events))
        ;; Write the files to the file system.
        ((erp state) (output-files-gen-files (fileset->unwrap files) state)))
-    (retok events files state))
+    (retok events state))
   :guard-hints (("Goal" :in-theory (enable output-files-process-inputp)))
 
   :prepwork
@@ -466,10 +427,7 @@
                                                           (progp booleanp)
                                                           state)
   :guard (implies (not progp) (not arg))
-  :returns (mv erp
-               (event pseudo-event-formp)
-               (files filesetp)
-               state)
+  :returns (mv erp (event pseudo-event-formp) state)
   :short "Process the inputs and generate the constant event."
   :long
   (xdoc::topstring
@@ -480,22 +438,19 @@
      either passed as input or the result of prining,
      depending on @(':process'),
      for use by the programmatic interface."))
-  (b* (((reterr) '(_) (irr-fileset) state)
+  (b* (((reterr) '(_) state)
        ((erp tunits/files
              process
-             const-files
              indent-size
              paren-nested-conds)
         (output-files-process-inputs arg args progp (w state)))
-       ((erp events files state)
+       ((erp events state)
         (output-files-gen-files+events tunits/files
                                        process
-                                       const-files
                                        indent-size
                                        paren-nested-conds
-                                       progp
                                        state)))
-    (retok `(progn ,@events) files state)))
+    (retok `(progn ,@events) state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -507,7 +462,7 @@
    (xdoc::p
     "We set the flag @('progp) for the programmatic interface to @('nil').
      We ignore the file set returned as additional result."))
-  (b* (((mv erp event & state)
+  (b* (((mv erp event state)
         (output-files-process-inputs-and-gen-files+events nil args nil state))
        ((when erp) (er-soft+ ctx t '(_) "~@0" erp)))
     (value event)))
@@ -538,8 +493,7 @@
     "  )")
    (xdoc::p
     "This is the same as @(tsee output-files),
-     except that there are not inputs for the constant names,
-     because this macro does not generate any events,
+     except that there is no @(':const') input,
      and there is a required (i.e. non-keyword-option) input
      which must be the translation unit ensemble or file set
      (depending on the @(':process') input.
@@ -548,13 +502,6 @@
     (xdoc::seetopic "acl2::error-value-tuples" "error-value tuple")
     " consisting of:")
    (xdoc::ul
-    (xdoc::li
-     "@('files'):
-      the @(tsee fileset) that is
-      either the same as the @('tunits/files') input
-      (if @(':process') is @(':write'))
-      or the result of printing the @('tunits/files') input
-      (if @(':process') is @(':print')).")
     (xdoc::li
      "@('state'):
       the ACL2 @(see state)."))
@@ -567,7 +514,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define output-files-prog-fn (arg (args true-listp) state)
-  :returns (mv erp (files filesetp) state)
+  :returns (mv erp state)
   :short "Implementation of @(tsee output-files-prog)."
   :long
   (xdoc::topstring
@@ -575,10 +522,10 @@
     "We set the flag @('progp') for the programmatic interface to @('t').
      We ignore the event returned as result,
      and instead return the file set."))
-  (b* (((reterr) (irr-fileset) state)
-       ((erp & files state)
+  (b* (((reterr) state)
+       ((erp & state)
         (output-files-process-inputs-and-gen-files+events arg args t state)))
-    (retok files state)))
+    (retok state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

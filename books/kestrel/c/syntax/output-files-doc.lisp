@@ -58,7 +58,6 @@
     (xdoc::codeblock
      "(output-files :const           ...  ; no default"
      "              :process         ...  ; default :print"
-     "              :const-files     ...  ; default nil"
      "              :printer-options ...  ; default nil"
      "  )"))
 
@@ -103,23 +102,6 @@
         to print the abstract syntax in @('*const*')
         to a file set that is then written to the file system.
         In this case, @('*const*') must contain a translation unit ensemble.")))
-
-    (xdoc::desc
-     "@(':const-files') &mdash; default @('nil')"
-     (xdoc::p
-      "Name of the generated ACL2 constant whose value is
-       the file set obtained by printing @('*const*').")
-     (xdoc::p
-      "If this input is @('nil'),
-       this constant is not generated.")
-     (xdoc::p
-      "This input must be @('nil') if
-       @(':process') is @(':write'),
-       because in that case @('*const*') already contains a file set.")
-     (xdoc::p
-      "In the rest of this documentation page,
-       let @('*const-files*') be the name of this constant,
-       if not @('nil')."))
 
     (xdoc::desc
      "@(':printer-options') &mdash; default @('nil')"
@@ -174,11 +156,4 @@
       in @('*const*'),
       at the paths that are the keys of the maps.
       Non-absolute paths are relative to
-      the connected book directory (see @(tsee cbd)).")
-
-    (xdoc::desc
-     "@('*const-files*')"
-     (xdoc::p
-      "Optionally,
-       the named constant containing the file set
-       obtained by printing the abstract syntax in @('*const*').")))))
+      the connected book directory (see @(tsee cbd))."))))
