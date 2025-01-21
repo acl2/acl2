@@ -1,6 +1,6 @@
 ; Standard Utilities Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -16,11 +16,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmacro+ defirrelevant (name &key type body short)
+(defmacro+ defirrelevant (name &key type body (parents 'nil parents-p) short)
   :parents (std/util)
   :short "Define an irrelevant value of a type."
   `(define ,name ()
      :returns (irr ,type)
+     ,@(and parents-p `(:parents ,parents))
      :short ,short
      :long
      (xdoc::topstring
