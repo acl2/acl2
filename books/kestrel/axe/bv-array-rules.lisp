@@ -179,19 +179,23 @@
            :in-theory (e/d ((:induction bv-array-clear-range)
 ;bv-array-write UPDATE-NTH2
                             )
-                           (BV-ARRAY-CLEAR-RANGE-OF-BV-ARRAY-CLEAR
-                            bv-array-clear-range-same
-                            BV-ARRAY-CLEAR-RANGE-OF-BV-ARRAY-CLEAR-ADJACENT2
-;                           BV-ARRAY-CLEAR-OF-BV-ARRAY-CLEAR-RANGE
-                            BV-ARRAY-CLEAR-OF-BV-ARRAY-CLEAR-RANGE-ADJACENT1
-                            BV-ARRAY-CLEAR-RANGE-OF-BV-ARRAY-CLEAR-ADJACENT1
-                            UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN)))))
+                           (;; BV-ARRAY-CLEAR-RANGE-OF-BV-ARRAY-CLEAR
+;;                             bv-array-clear-range-same
+;;                             BV-ARRAY-CLEAR-RANGE-OF-BV-ARRAY-CLEAR-ADJACENT2
+;; ;                           BV-ARRAY-CLEAR-OF-BV-ARRAY-CLEAR-RANGE
+;;                             BV-ARRAY-CLEAR-OF-BV-ARRAY-CLEAR-RANGE-ADJACENT1
+;;                             BV-ARRAY-CLEAR-RANGE-OF-BV-ARRAY-CLEAR-ADJACENT1
+;;                             UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN
+                            )))))
 
 (defthm bv-array-clear-of-0-and-cons
   (implies (syntaxp (not (quotep a)))
            (equal (bv-array-clear size len 0 (cons a b))
                   (bv-array-clear size len 0 (cons 0 b))))
-  :hints (("Goal" :in-theory (e/d (bv-array-clear bv-array-write update-nth2) (update-nth-becomes-update-nth2-extend-gen)))))
+  :hints (("Goal" :in-theory (e/d (bv-array-clear bv-array-write update-nth2)
+                                  (
+                                   ;;update-nth-becomes-update-nth2-extend-gen
+                                   )))))
 
 (defthm bv-array-clear-range-of-cons
   (implies (and (syntaxp (not (quotep a))) ;ffixme we really want to do it for anything but 0? add support for equal to make-axe-rules
@@ -245,7 +249,7 @@
                                    ;; BV-ARRAY-CLEAR-OF-BV-ARRAY-CLEAR-DIFF
                                    )))))
 
-(defthmd array-write-of-0
+(defthmd bv-array-write-of-0-becomes-bv-array-clear
   (equal (bv-array-write elem-size len index1 0 lst)
          (bv-array-clear elem-size len index1 lst))
   :hints (("Goal" :in-theory (enable bv-array-clear))))
@@ -261,10 +265,9 @@
                 (NATP INDEX1)
                 (NATP LOWINDEX)
                 (NATP HIGHINDEX))
-           (EQUAL
-            (BV-ARRAY-CLEAR-RANGE ELEM-SIZE LEN LOWINDEX HIGHINDEX (BV-ARRAY-write ELEM-SIZE LEN INDEX1 0 LST))
-            (BV-ARRAY-CLEAR-RANGE ELEM-SIZE LEN INDEX1 HIGHINDEX LST)))
-  :hints (("Goal" :in-theory (enable ARRAY-WRITE-of-0))))
+           (EQUAL (BV-ARRAY-CLEAR-RANGE ELEM-SIZE LEN LOWINDEX HIGHINDEX (BV-ARRAY-write ELEM-SIZE LEN INDEX1 0 LST))
+                  (BV-ARRAY-CLEAR-RANGE ELEM-SIZE LEN INDEX1 HIGHINDEX LST)))
+  :hints (("Goal" :in-theory (enable bv-array-write-of-0-becomes-bv-array-clear))))
 
 (DEFTHM BV-ARRAY-CLEAR-RANGE-OF-BV-ARRAY-write-of-0-ADJACENT2
   (IMPLIES (AND (EQUAL INDEX1 (+ 1 HIGHINDEX))
@@ -277,10 +280,9 @@
                 (NATP INDEX1)
                 (NATP LOWINDEX)
                 (NATP HIGHINDEX))
-           (EQUAL
-            (BV-ARRAY-CLEAR-RANGE ELEM-SIZE LEN LOWINDEX HIGHINDEX (BV-ARRAY-write ELEM-SIZE LEN INDEX1 0 LST))
-            (BV-ARRAY-CLEAR-RANGE ELEM-SIZE LEN LOWINDEX INDEX1 LST)))
-  :hints (("Goal" :in-theory (enable ARRAY-WRITE-of-0))))
+           (EQUAL (BV-ARRAY-CLEAR-RANGE ELEM-SIZE LEN LOWINDEX HIGHINDEX (BV-ARRAY-write ELEM-SIZE LEN INDEX1 0 LST))
+                  (BV-ARRAY-CLEAR-RANGE ELEM-SIZE LEN LOWINDEX INDEX1 LST)))
+  :hints (("Goal" :in-theory (enable bv-array-write-of-0-becomes-bv-array-clear))))
 
 ;gen!
 (defthm bv-array-clear-range-of-append-one-more
@@ -289,8 +291,7 @@
                 (< index (+ -1 (len z))) ;to prevent loops
                 (< (len z) len)
                 (natp index)
-                (natp len)
-                )
+                (natp len))
            (equal (bv-array-clear-range 32 len 0 index (binary-append z x))
                   (bv-array-clear-range 32 len 0 (+ -1 (len z)) (binary-append z x))))
   :hints (("Goal" :in-theory (e/d (equal-of-append nthcdr-of-cdr-combine-strong) (;EQUAL-OF-REPEAT-OF-LEN-SAME

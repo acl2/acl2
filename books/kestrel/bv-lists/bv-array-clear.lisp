@@ -221,3 +221,205 @@
                 (natp element-size))
            (all-unsigned-byte-p size (bv-array-clear element-size len key lst)))
   :hints (("Goal" :in-theory (enable bv-array-clear))))
+
+(defthm bv-array-clear-of-take
+  (equal (bv-array-clear esize len key (take len lst))
+         (bv-array-clear esize len key lst))
+  :hints (("Goal" :in-theory (enable bv-array-clear))))
+
+(defthm bv-array-clear-of-bv-array-write
+  (implies (and (not (equal key1 key2))
+                (natp esize)
+                (natp key1)
+                (< key1 len)
+                (natp key2)
+                (< key2 len)
+                (natp len)
+                (equal len (len lst)))
+           (equal (bv-array-clear esize len key1 (bv-array-write esize len key2 val lst))
+                  (bv-array-write esize len key2 val (bv-array-clear esize len key1 lst))))
+  :hints (("Goal" :cases ((< KEY1 KEY2)
+                          (< KEY2 KEY1)
+                          )
+           :in-theory (e/d (BV-ARRAY-CLEAR ;bv-array-write
+                            BV-ARRAY-WRITE-OF-BV-ARRAY-WRITE-DIFF ;could this ever loop?  make a syntaxp version for non constants?
+                            )
+                           ()))))
+
+(defthm bv-array-clear-of-bv-array-write-same
+  (implies (and (natp esize)
+                (< key len)
+                (natp key)
+                (natp len)
+                (equal len (len lst)))
+           (equal (bv-array-clear esize len key (bv-array-write esize len key val lst))
+                  (bv-array-clear esize len key lst)))
+  :hints (("Goal" :cases ((< KEY1 KEY2)
+                          (< KEY2 KEY1))
+           :in-theory (e/d (BV-ARRAY-CLEAR) ()))))
+
+(defthm bv-array-clear-of-bvchop-list
+  (equal (bv-array-clear elemement-width len index (bvchop-list elemement-width array))
+         (bv-array-clear elemement-width len index array))
+  :hints (("Goal" :in-theory (enable bv-array-clear))))
+
+(defthm bv-array-clear-of-bv-array-clear-diff
+  (implies (and (syntaxp (smaller-termp index2 index1))
+                (<= element-size2 element-size1) ;other case?
+                (< index1 len)
+                (< index2 len)
+                (natp index1)
+                (natp index2)
+                (natp len)
+                (natp element-size1)
+                (natp element-size2))
+           (equal (bv-array-clear element-size1 len index1 (bv-array-clear element-size2 len index2 lst))
+                  (bv-array-clear element-size2 len index2 (bv-array-clear element-size2 len index1 lst))))
+  :hints (("Goal"
+           :use (:instance bv-array-write-of-bv-array-write-diff-constant-indices-gen (val1 0) (val2 0))
+           :cases ((equal element-size1 element-size2))
+           :in-theory (e/d (bv-array-clear)
+                           (bv-array-write-of-bv-array-write-diff-constant-indices-gen
+                            )))))
+
+(defthm bv-array-clear-of-bv-array-clear-diff-constant-indices
+  (implies (and (syntaxp (quotep index1))
+                (syntaxp (quotep index2))
+                (< index2 index1)
+                (<= element-size2 element-size1) ;other case?
+                (< index1 len)
+                (< index2 len)
+                (natp index1)
+                (natp index2)
+                (natp len)
+                (natp element-size1)
+                (natp element-size2))
+           (equal (bv-array-clear element-size1 len index1 (bv-array-clear element-size2 len index2 lst))
+                  (bv-array-clear element-size2 len index2 (bv-array-clear element-size2 len index1 lst))))
+
+  :hints (("Goal" :use (:instance bv-array-clear-of-bv-array-clear-diff)
+           :in-theory (disable bv-array-clear-of-bv-array-clear-diff))))
+
+(defthm bv-array-clear-range-when-out-of-order
+  (implies (< highindex lowindex)
+           (equal (bv-array-clear-range esize len lowindex highindex data)
+                  (bvchop-list esize (take len data))))
+  :hints (("Goal" :in-theory (enable bv-array-clear-range))))
+
+;; no, the index gets chopped?
+;; (defthm bv-array-clear-range-when-low-too-high
+;;   (implies (<= len lowindex)
+;;            (equal (bv-array-clear-range esize len lowindex highindex data)
+;;                   (bvchop-list esize (take len data))))
+;;   :hints (("Goal" :in-theory (enable bv-array-clear-range))))
+
+(defthm bv-array-clear-of-bv-array-clear-adjacent1
+  (implies (and (equal index2 (+ 1 index1))
+                (< index1 len)
+                (< index2 len)
+                (natp elem-size)
+                (natp len)
+                (natp index1)
+                (natp index2))
+           (equal (bv-array-clear elem-size len index1 (bv-array-clear elem-size len index2 lst))
+                  (bv-array-clear-range elem-size len index1 index2 lst))))
+
+(defthm bv-array-clear-of-bv-array-clear-adjacent2
+  (implies (and (equal index1 (+ 1 index2))
+                (< index1 len)
+                (< index2 len)
+                (natp elem-size)
+                (natp len)
+                (natp index1)
+                (natp index2))
+           (equal (bv-array-clear elem-size len index1 (bv-array-clear elem-size len index2 lst))
+                  (bv-array-clear-range elem-size len index2 index1 lst))))
+
+(defthm bv-array-clear-of-bv-array-clear-range-adjacent1
+  (implies (and (equal lowindex (+ 1 index1))
+                (< index1 len)
+                (< lowindex len)
+                (< highindex len)
+                (<= lowindex highindex)
+                (natp elem-size)
+                (natp len)
+                (natp index1)
+                (natp lowindex)
+                (natp highindex))
+           (equal (bv-array-clear elem-size len index1 (bv-array-clear-range elem-size len lowindex highindex lst))
+                  (bv-array-clear-range elem-size len index1 highindex lst))))
+
+(defthm bv-array-clear-of-bv-array-clear-range-adjacent2
+  (implies (and (equal index1 (+ 1 highindex))
+                (< index1 len)
+                (< lowindex len)
+                (< highindex len)
+                (<= lowindex highindex)
+                (natp elem-size)
+                (natp len)
+                (natp index1)
+                (natp lowindex)
+                (natp highindex))
+           (equal (bv-array-clear elem-size len index1 (bv-array-clear-range elem-size len lowindex highindex lst))
+                  (bv-array-clear-range elem-size len lowindex index1 lst))))
+
+(defthm bv-array-clear-range-of-bv-array-clear
+  (implies (and (< index1 len)
+                (< lowindex len)
+                (< highindex len)
+                (<= lowindex highindex)
+                (natp elem-size)
+                (natp len)
+                (natp index1)
+                (natp lowindex)
+                (natp highindex))
+           (equal (bv-array-clear-range elem-size len lowindex highindex (bv-array-clear elem-size len index1 lst))
+                  (bv-array-clear elem-size len index1 (bv-array-clear-range elem-size len lowindex highindex lst)))))
+
+(defthm bv-array-clear-range-of-bv-array-clear-adjacent1
+  (implies (and (equal lowindex (+ 1 index1))
+                (< index1 len)
+                (< lowindex len)
+                (< highindex len)
+                (<= lowindex highindex)
+                (natp elem-size)
+                (natp len)
+                (natp index1)
+                (natp lowindex)
+                (natp highindex))
+           (equal (bv-array-clear-range elem-size len lowindex highindex (bv-array-clear elem-size len index1 lst))
+                  (bv-array-clear-range elem-size len index1 highindex lst)))
+  :hints (("Goal" :in-theory (disable bv-array-clear-of-bv-array-clear-range-adjacent1 bv-array-clear-of-bv-array-clear-range-adjacent2))))
+
+(defthm bv-array-clear-range-of-bv-array-clear-adjacent2
+  (implies (and (equal index1 (+ 1 highindex))
+                (< index1 len)
+                (< lowindex len)
+                (< highindex len)
+                (<= lowindex highindex)
+                (natp elem-size)
+                (natp len)
+                (natp index1)
+                (natp lowindex)
+                (natp highindex))
+           (equal (bv-array-clear-range elem-size len lowindex highindex (bv-array-clear elem-size len index1 lst))
+                  (bv-array-clear-range elem-size len lowindex index1 lst))))
+
+(defthm bv-array-clear-range-same
+  (implies (natp key)
+           (equal (bv-array-clear-range esize len key key lst)
+                  (bv-array-clear esize len key lst)))
+  :hints (("Goal" :expand ((bv-array-clear-range esize len key key lst)))))
+
+;todo
+;; (defthm bv-array-clear-of-bv-array-clear-range
+;;   (implies (and (natp len)
+;;                 (< LOWINDEX LEN)
+;;                 (< INDEX LEN)
+;;                 (natp index)
+;;                 (natp elemement-width))
+;;            (equal (bv-array-clear elemement-width len index (bv-array-clear-range elemement-width len lowindex highindex data))
+;;                   (bv-array-clear-range elemement-width len lowindex highindex (bv-array-clear elemement-width len index data))))
+;;   :hints (("Goal" :in-theory (enable bv-array-clear-range))))
+
+
