@@ -1,6 +1,6 @@
 ; Top file for the lightweight world utilities
 ;
-; Copyright (C) 2022-2023 Kestrel Institute
+; Copyright (C) 2022-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -28,3 +28,5 @@
 (include-book "filter-defined-fns")
 (include-book "filter-logic-mode-fns")
 (include-book "defined-fns-in-term")
+
+(include-book "defs-in-world")
