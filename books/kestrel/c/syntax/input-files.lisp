@@ -202,7 +202,17 @@
                       :PARSE, :DISAMBIGUATE, or :VALIDATE ~
                       but it is ~x0 instead."
                      process))))
-    (retok process)))
+    (retok process))
+
+  ///
+
+  (defret input-files-process-process-to-cdr-assoc-options
+    (implies (not erp)
+             (equal process
+                    (if (assoc-equal :process options)
+                        (cdr (assoc-equal :process options))
+                      :validate))))
+  (in-theory (disable input-files-process-process-to-cdr-assoc-options)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -393,7 +403,23 @@
            const
            gcc
            ienv))
-  :guard-hints (("Goal" :in-theory (enable acl2::alistp-when-symbol-alistp))))
+  :guard-hints (("Goal" :in-theory (enable acl2::alistp-when-symbol-alistp)))
+
+  ///
+
+  (defret input-files-process-inputs.process-to-cdr-assoc-args
+    (implies (not erp)
+             (equal process
+                    (b* (((mv & & options)
+                          (partition-rest-and-keyword-args
+                           args *input-files-allowed-options*)))
+                      (if (assoc-equal :process options)
+                          (cdr (assoc-equal :process options))
+                        :validate))))
+    :hints
+    (("Goal"
+      :in-theory (enable input-files-process-process-to-cdr-assoc-options))))
+  (in-theory (disable input-files-process-inputs.process-to-cdr-assoc-args)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -487,7 +513,15 @@
        (events (if (not progp)
                    (rcons `(defconst ,const ',tunits) events)
                  events)))
-    (retok events tunits state)))
+    (retok events tunits state))
+
+  ///
+
+  (defret transunit-ensemble-unambp-of-input-files-gen-events
+    (implies (not erp)
+             (transunit-ensemble-unambp tunits))
+    :hyp (or (equal process :disambiguate)
+             (equal process :validate))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -527,7 +561,25 @@
                                 ienv
                                 progp
                                 state)))
-    (retok `(progn ,@events) tunits state)))
+    (retok `(progn ,@events) tunits state))
+
+  ///
+
+  (defret transunit-ensemble-unambp-of-input-files-process-inputs-and-gen-events
+    (implies (not erp)
+             (transunit-ensemble-unambp tunits))
+    :hyp (b* (((mv & & options)
+               (partition-rest-and-keyword-args
+                args *input-files-allowed-options*))
+              (process (if (assoc-equal :process options)
+                           (cdr (assoc-equal :process options))
+                         :validate)))
+           (or (equal process :disambiguate)
+               (equal process :validate)))
+    :hints
+    (("Goal"
+      :in-theory
+      (enable input-files-process-inputs.process-to-cdr-assoc-args)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -617,7 +669,21 @@
   (b* (((reterr) (irr-transunit-ensemble) state)
        ((erp & tunits state)
         (input-files-process-inputs-and-gen-events args t state)))
-    (retok tunits state)))
+    (retok tunits state))
+
+  ///
+
+  (defret transunit-ensemble-unambp-of-input-files-prog-fn
+    (implies (not erp)
+             (transunit-ensemble-unambp tunits))
+    :hyp (b* (((mv & & options)
+               (partition-rest-and-keyword-args
+                args *input-files-allowed-options*))
+              (process (if (assoc-equal :process options)
+                           (cdr (assoc-equal :process options))
+                         :validate)))
+           (or (equal process :disambiguate)
+               (equal process :validate)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
