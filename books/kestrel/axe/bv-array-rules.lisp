@@ -1,7 +1,7 @@
 ; bv-array rules
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -15,7 +15,7 @@
 ;; todo: move these out of axe
 
 (include-book "kestrel/bv-lists/bv-array-clear" :dir :system)
-(include-book "rules1")
+(include-book "rules1") ; todo
 
 ;; (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 ;; ;(local (include-book "arithmetic/equalities" :dir :system))
@@ -412,6 +412,18 @@
                   (if (equal key1 key2)
                       (bv-array-clear esize len key1 lst)
                     (bv-array-write esize len key2 val (bv-array-clear esize len key1 lst))))))
+
+(defthmd cons-becomes-bv-array-write-size-1
+  (implies (unsigned-byte-p 1 a)
+           (equal (cons a nil)
+                  (bv-array-write 1 1 0 a (list 0))))
+  :hints (("Goal" :in-theory (enable update-nth2 bv-array-write))))
+
+(defthmd cons-becomes-bv-array-write-size-4
+  (implies (unsigned-byte-p 4 a)
+           (equal (cons a nil)
+                  (bv-array-write 4 1 0 a (list 0))))
+  :hints (("Goal" :in-theory (enable update-nth2 bv-array-write))))
 
 ;gross
  ;might be expensive

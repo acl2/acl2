@@ -1,7 +1,7 @@
 ; Clearing values in bv-arrays
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -213,4 +213,11 @@
 (defthm bv-array-clear-of-true-list-fix
   (equal (bv-array-clear elem-size len index (true-list-fix lst))
          (bv-array-clear elem-size len index lst))
+  :hints (("Goal" :in-theory (enable bv-array-clear))))
+
+(defthm all-unsigned-byte-p-of-bv-array-clear-gen
+  (implies (and (<= element-size size)
+                (natp size)
+                (natp element-size))
+           (all-unsigned-byte-p size (bv-array-clear element-size len key lst)))
   :hints (("Goal" :in-theory (enable bv-array-clear))))

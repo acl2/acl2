@@ -1,7 +1,7 @@
 ; Mixed rules 1
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -67,31 +67,25 @@
    (equal (+ x (- (* 1/2 x)))
           (* 1/2 x))))
 
-;expensive?
-;fixme which do we prefer?  depends on priorities..
-;not needed except for axe?
-;rename
-(defthmd len-equal-0-rewrite-alt
-  (equal (equal (len x) 0)
-         (not (consp x))))
-
 ;; ;make local?
 ;; (defthmd true-listp-of-cdr-when-consp
 ;;   (implies (consp x)
 ;;            (equal (true-listp (cdr x))
 ;;                   (true-listp x))))
 
+;move
 (defthm equal-of-true-listp-when-equal-of-cdr
-  (IMPLIES (AND (EQUAL (CDR LST) (CDR RHS))
-                (< 0 (LEN LST))
-                (< 0 (LEN RHS)))
-           (equal (equal (TRUE-LISTP RHS) (TRUE-LISTP LST))
+  (implies (and (equal (cdr lst) (cdr rhs))
+                (< 0 (len lst))
+                (< 0 (len rhs)))
+           (equal (equal (true-listp rhs) (true-listp lst))
                   t))
   :hints (("Goal" :induct t
            :in-theory (enable true-listp))))
 
 (in-theory (disable TRUE-LISTP)) ; todo
 
+;move
 (defthm equal-of-len-and-len-when-equal-of-nthcdr-and-nthcdr
   (implies (and (equal (nthcdr n x) (nthcdr n y))
                 (or (< n (len x))
@@ -421,15 +415,6 @@
 ;; ;just a special case of a cancellation rule
 ;; (defthm <-of-+-of-1-same-alt
 ;;   (not (< (+ 1 x) x)))
-
-;should collect the constants
-;could then use a rule that len is not equal to an impossible constant
-(defthm one-plus-len-hack
-  (equal (equal (+ 1 (len x)) 0)
-         nil))
-
-
-;BBOZO what do we currently do with free variables?
 
 ;; (defthm hack-arith-cancel
 ;;   (equal (< (+ a x) (+ b x))
@@ -776,23 +761,23 @@
 ;;                   t))
 ;;   :hints (("Goal" :in-theory (enable logext-list all-signed-byte-p))))
 
-(DEFTHM all-signed-byte-p-OF-MYIF
-  (IMPLIES (AND (all-signed-byte-p N A)
-                (all-signed-byte-p N B))
-           (all-signed-byte-p N (MYIF TEST A B)))
-  :HINTS (("Goal" :IN-THEORY (ENABLE MYIF))))
+(defthm all-signed-byte-p-of-myif
+  (implies (and (all-signed-byte-p n a)
+                (all-signed-byte-p n b))
+           (all-signed-byte-p n (myif test a b)))
+  :hints (("Goal" :in-theory (enable myif))))
 
-(DEFTHM all-signed-byte-p-OF-MYIF-strong
-  (equal (all-signed-byte-p N (MYIF TEST A B))
-         (myif test (all-signed-byte-p N A)
-               (all-signed-byte-p N B)))
-  :HINTS (("Goal" :IN-THEORY (ENABLE MYIF))))
+(defthm all-signed-byte-p-of-myif-strong
+  (equal (all-signed-byte-p n (myif test a b))
+         (myif test (all-signed-byte-p n a)
+               (all-signed-byte-p n b)))
+  :hints (("Goal" :in-theory (enable myif))))
 
-(DEFTHM all-unsigned-byte-p-OF-MYIF-strong
-  (equal (all-unsigned-byte-p N (MYIF TEST A B))
-         (myif test (all-unsigned-byte-p N A)
-               (all-unsigned-byte-p N B)))
-  :HINTS (("Goal" :IN-THEORY (ENABLE MYIF))))
+(defthm all-unsigned-byte-p-of-myif-strong
+  (equal (all-unsigned-byte-p n (myif test a b))
+         (myif test (all-unsigned-byte-p n a)
+               (all-unsigned-byte-p n b)))
+  :hints (("Goal" :in-theory (enable myif))))
 
 (defthm all-signed-byte-p-when-all-unsigned-byte-p
   (implies (and (all-unsigned-byte-p n x)
@@ -1149,20 +1134,6 @@
 
 
 ;how can we easily turn a nest of conses into a nest of bv-array-write calls?
-
-;bozo
-(defthmd cons-becomes-bv-array-write-size-4
-  (implies (unsigned-byte-p 4 a)
-           (equal (cons a nil)
-                  (bv-array-write 4 1 0 a (list 0))))
-  :hints (("Goal" :in-theory (enable update-nth2 bv-array-write))))
-
-;bozo
-(defthmd cons-becomes-bv-array-write-size-1
-  (implies (unsigned-byte-p 1 a)
-           (equal (cons a nil)
-                  (bv-array-write 1 1 0 a (list 0))))
-  :hints (("Goal" :in-theory (enable update-nth2 bv-array-write))))
 
 ;main rule for handling a nest of conses - gen the 4...
 ;will this loop?
@@ -1836,14 +1807,6 @@
                               (bv-array-clear esize len key rhs)))))
   :hints (("Goal" :use (:instance bv-array-write-equal-rewrite)
            :in-theory (disable bv-array-write-equal-rewrite))))
-
-(defthm all-unsigned-byte-p-of-bv-array-clear-gen
-  (implies (and (<= element-size size)
-                (natp size)
-                (natp element-size))
-           (all-unsigned-byte-p size (bv-array-clear element-size len key lst)))
-  :hints (("Goal" :in-theory (enable bv-array-clear))))
-
 
 (defthm trim-of-bv-array-read
   (equal (trim n (bv-array-read element-size len index data))
