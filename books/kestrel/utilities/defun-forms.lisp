@@ -1,6 +1,6 @@
 ; Utilities for processing defun forms
 ;
-; Copyright (C) 2015-2023 Kestrel Institute
+; Copyright (C) 2015-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -37,7 +37,7 @@
   '(defun defund defun-nx defund-nx))
 
 ;add more to this!
-;; (<defun-type> <name> <formals> [doc-string] <declare>* <body>)
+;; (<defun-type> <name> <formals> <declare/doc-string>* <body>)
 (defund defun-formp (defun)
   (declare (xargs :guard t))
   (and (true-listp defun)
@@ -46,27 +46,20 @@
        (let* ((args (fargs defun))
               (name (first args))
               (formals (second args))
-              (declares (if (stringp (third args))
-                            ;; there is a doc string present:
-                            (butlast (cdr (cdr (cdr args))) 1)
-                          ;; no doc string:
-                          (butlast (cdr (cdr args)) 1)))
+              (declares-and-doc-strings (butlast (cdr (cdr args)) 1)) ; skip name and args, remove body (comes last)
+              (declares (remove-strings declares-and-doc-strings)) ; todo: could check that there is at most one doc string
               ;; (body (car (last args))) ; not much to say about the body, since it is an untranslated term
               )
          (and (symbolp name)
               (symbol-listp formals)
-              ;; doc-string is checked above
               (all-declarep declares)))))
 
 (defund get-declares-from-defun (defun)
   (declare (xargs :guard (defun-formp defun)
                   :guard-hints (("Goal" :in-theory (enable defun-formp)))))
-  (let ((args (fargs defun)))
-    (if (stringp (third args))
-        ;; there is a doc string present:
-        (butlast (cdr (cdr (cdr args))) 1)
-      ;; no doc string:
-      (butlast (cdr (cdr args)) 1))))
+  (let* ((args (fargs defun))
+         (declares-and-doc-strings (butlast (cdr (cdr args)) 1)))
+    (remove-strings declares-and-doc-strings)))
 
 (defthm all-declarep-of-get-declares-from-defun
   (implies (defun-formp defun)

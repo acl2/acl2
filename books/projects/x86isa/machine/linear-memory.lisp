@@ -955,17 +955,15 @@
     :hints (("Goal" :in-theory (e/d* (rb rb-1) ())
              :induct (rb-1 n addr r-x x86))))
 
-  (make-event
-    (generate-xr-over-write-thms
-      (remove-elements-from-list
-        '(:mem :fault :tlb)
-        *x86-field-names-as-keywords*)
-      'rb
-      (acl2::formals 'rb (w state))
-      :output-index 2))
-
+  (defthm xr-rb
+    (implies (and (not (equal fld :mem))
+                  (not (equal fld :fault))
+                  (not (equal fld :tlb)))
+             (equal (xr fld index (mv-nth 2 (rb n addr r-x x86)))
+                    (xr fld index x86))))
+  
   (defthm rb-1-xw-values-in-sys-view
-          (implies (and (not (app-view x86))
+          (implies (and ;; (not (app-view x86))
                         (not (equal fld :mem))
                         (not (equal fld :rflags))
                         (not (equal fld :ctr))
@@ -981,25 +979,23 @@
           :hints (("Goal" :in-theory (e/d* (rb rb-1) ())
                    :induct (rb-1 n addr r-x x86))))
 
-  (make-event
-    (generate-read-fn-over-xw-thms
-      (remove-elements-from-list
-        '(:mem :rflags :ctr :seg-visible :msr :fault
-               :app-view :marking-view :tlb :implicit-supervisor-access)
-        *x86-field-names-as-keywords*)
-      'rb
-      (acl2::formals 'rb (w state))
-      :output-index 0))
+  (defthm rb-xw-values
+    (implies (and (not (equal fld :mem))
+                  (not (equal fld :rflags))
+                  (not (equal fld :ctr))
+                  (not (equal fld :seg-visible))
+                  (not (equal fld :msr))
+                  (not (equal fld :fault))
+                  (not (equal fld :app-view))
+                  (not (equal fld :marking-view))
+                  (not (equal fld :tlb))
+                  (not (equal fld :implicit-supervisor-access)))
+             (and (equal (mv-nth 0 (rb n addr r-x (xw fld index value x86)))
+                         (mv-nth 0 (rb n addr r-x x86)))
+                  (equal (mv-nth 1 (rb n addr r-x (xw fld index value x86)))
+                         (mv-nth 1 (rb n addr r-x x86)))))
+    :hints (("Goal" :in-theory (e/d* (rb) ()))))
 
-  (make-event
-    (generate-read-fn-over-xw-thms
-      (remove-elements-from-list
-        '(:mem :rflags :ctr :seg-visible :msr :fault
-               :app-view :marking-view :tlb :implicit-supervisor-access)
-        *x86-field-names-as-keywords*)
-      'rb
-      (acl2::formals 'rb (w state))
-      :output-index 1))
 
   (defthm rb-1-xw-rflags-not-ac-values-in-sys-view
           (implies (and (not (app-view x86))
@@ -1023,7 +1019,7 @@
           :hints (("Goal" :in-theory (e/d* (rb) ()))))
 
   (defthm rb-1-xw-state-in-sys-view
-          (implies (and (not (app-view x86))
+          (implies (and ;; (not (app-view x86))
                         (not (equal fld :mem))
                         (not (equal fld :rflags))
                         (not (equal fld :ctr))
@@ -1037,15 +1033,21 @@
           :hints (("Goal" :in-theory (e/d* (rb rb-1) ())
                    :induct (rb-1 n addr r-x x86))))
 
-  (make-event
-    (generate-write-fn-over-xw-thms
-      (remove-elements-from-list
-        '(:mem :rflags :ctr :seg-visible :msr :fault
-               :app-view :marking-view :tlb :implicit-supervisor-access)
-        *x86-field-names-as-keywords*)
-      'rb
-      (acl2::formals 'rb (w state))
-      :output-index 2))
+  (defthm rb-xw-state
+    (implies (and (not (equal fld :mem))
+                  (not (equal fld :rflags))
+                  (not (equal fld :ctr))
+                  (not (equal fld :seg-visible))
+                  (not (equal fld :msr))
+                  (not (equal fld :fault))
+                  (not (equal fld :app-view))
+                  (not (equal fld :marking-view))
+                  (not (equal fld :tlb))
+                  (not (equal fld :implicit-supervisor-access)))
+             (equal (mv-nth 2 (rb n addr r-x (xw fld index value x86)))
+                    (xw fld index value (mv-nth 2 (rb n addr r-x x86)))))
+    :hints (("Goal" :in-theory (e/d* (rb rb-1) ())
+             :induct (rb-1 n addr r-x x86))))
 
   (defthm rb-1-xw-rflags-not-ac-state-in-sys-view
           (implies (and (not (app-view x86))
@@ -1104,14 +1106,13 @@
 
   ;; Relating wb and xr/xw in the system-level view:
 
-  (make-event
-    (generate-xr-over-write-thms
-      (remove-elements-from-list
-        '(:mem :fault :tlb)
-        *x86-field-names-as-keywords*)
-      'wb
-      (acl2::formals 'wb (w state))
-      :output-index 1))
+  (defthm xr-wb
+    (implies (and (not (equal fld :mem))
+                  (not (equal fld :fault))
+                  (not (equal fld :tlb)))
+             (equal (xr fld index (mv-nth 1 (wb n addr w value x86)))
+                    (xr fld index x86)))
+    :hints (("Goal" :in-theory (e/d* (wb) ()))))
 
   (defthm xr-fault-wb-in-system-level-marking-view
           (implies
@@ -1136,31 +1137,38 @@
            :hints (("Goal" :in-theory (e/d* (x86-operation-mode)
                                             (wb)))))
 
-  ;; The following make-events generate a bunch of rules that together
-  ;; say the same thing as wb-xw-in-sys-view, but these rules
-  ;; are more efficient than wb-xw-in-sys-view as they match
-  ;; less frequently.  Note that wb is kept inside all other nests of
-  ;; writes.
-  (make-event
-    (generate-read-fn-over-xw-thms
-      (remove-elements-from-list
-        '(:mem :rflags :ctr :seg-visible :msr :fault
-               :app-view :marking-view :tlb :implicit-supervisor-access)
-        *x86-field-names-as-keywords*)
-      'wb
-      (acl2::formals 'wb (w state))
-      :output-index 0))
+  (defthm wb-xw-values
+    (implies (and (not (equal fld :mem))
+                  (not (equal fld :rflags))
+                  (not (equal fld :ctr))
+                  (not (equal fld :seg-visible))
+                  (not (equal fld :msr))
+                  (not (equal fld :fault))
+                  (not (equal fld :app-view))
+                  (not (equal fld :marking-view))
+                  (not (equal fld :tlb))
+                  (not (equal fld :implicit-supervisor-access)))
+             (equal (mv-nth 0 (wb n addr w value (xw fld index val x86)))
+                    (mv-nth 0 (wb n addr w value x86))))
+    :hints (("Goal" :in-theory (e/d* (wb) ()))))
 
-  (make-event
-    (generate-write-fn-over-xw-thms
-      (remove-elements-from-list
-        '(:mem :rflags :ctr :seg-visible :msr :fault
-               :app-view :marking-view :tlb :implicit-supervisor-access)
-        *x86-field-names-as-keywords*)
-      'wb
-      (acl2::formals 'wb (w state))
-      :output-index 1))
-
+  (defthm wb-xw-state
+    (implies (and (not (equal fld :mem))
+                  (not (equal fld :rflags))
+                  (not (equal fld :ctr))
+                  (not (equal fld :seg-visible))
+                  (not (equal fld :msr))
+                  (not (equal fld :fault))
+                  (not (equal fld :app-view))
+                  (not (equal fld :marking-view))
+                  (not (equal fld :tlb))
+                  (not (equal fld :implicit-supervisor-access)))
+             (equal (mv-nth 1 (wb n addr w value (xw fld index val x86)))
+                    (xw fld index val (mv-nth 1 (wb n addr w value x86)))))
+    :hints (("Goal" :in-theory (e/d* (wb) ()))))
+  
+  ;; Note that wb is kept inside all other nests of writes.
+  
   (defthm wb-xw-rflags-not-ac-in-sys-view
           ;; Keep the state updated by wb inside all other nests of writes.
           (implies (equal (rflagsBits->ac value)
