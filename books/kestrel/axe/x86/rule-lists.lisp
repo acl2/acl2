@@ -760,7 +760,8 @@
     rflagsbits->id$inline-of-xr
 
 ;    x86isa::get-flag-wb-in-app-view
-    x86isa::xr-ms-mv-nth-1-wb ;new  (see also xr-wb-in-app-view)
+    x86isa::xr-wb
+    ;;x86isa::xr-ms-mv-nth-1-wb ;new  (see also xr-wb-in-app-view)
 
     acl2::bfix-when-bitp ; move? or drop if we go to unsigned-byte-p
     x86isa::unsigned-byte-p-of-bfix
@@ -1855,7 +1856,8 @@
             x86isa::xr-of-xw-intra-field
             x86isa::xr-of-xw-inter-field
             x86isa::program-at-xw-in-app-view
-            x86isa::xr-app-view-mv-nth-1-wb ;has a hyp of t
+            x86isa::xr-wb
+            ;x86isa::xr-app-view-mv-nth-1-wb ;has a hyp of t
             x86isa::program-at-wb-disjoint ;drop?
 ;            strip-cars-of-create-addr-bytes-alist
             x86isa::true-listp-create-canonical-address-list
@@ -1887,8 +1889,11 @@
             acl2::ash-of-0
             ;acl2::fix-when-acl2-numberp
             ;acl2::acl2-numberp-of-+    ;we also have acl2::acl2-numberp-of-sum
-            x86isa::mv-nth-1-rb-xw-rip         ;targets mv-nth-1-of-rb
-            x86isa::mv-nth-1-rb-xw-rgf         ;targets mv-nth-1-of-rb
+            x86isa::rb-xw-values ; targets mv-nth-0-of-rb-of-xw and mv-nth-1-of-rb-of-xw
+            ;x86isa::mv-nth-1-rb-xw-rip         ;targets mv-nth-1-of-rb
+            ;x86isa::mv-nth-1-rb-xw-rgf         ;targets mv-nth-1-of-rb
+            ;x86isa::mv-nth-1-rb-xw-undef
+            
             x86isa::rb-wb-disjoint-eric
             x86isa::disjoint-p-two-create-canonical-address-lists-thm-1
             x86isa::rb-wb-subset
@@ -1964,7 +1969,6 @@
 ;            x86isa::set-flag-undefined$inline ;trying this..
 ;            x86isa::xr-set-flag-undefined
  ;           x86isa::program-at-set-flag-undefined
-            x86isa::mv-nth-1-rb-xw-rgf
 ;xr-rgf-mv-nth-2-rb
 ;xr-app-view-mv-nth-2-rb
 
@@ -1996,7 +2000,6 @@
             ;;x86isa::rip$a                           ;expose the call to xr
             ;;app-view$inline         ;expose the call to xr
 
-            x86isa::mv-nth-1-rb-xw-undef
             x86isa::wb-xw-in-app-view
 
             ;acl2::bvchop-of-bvmult
@@ -2793,8 +2796,9 @@
 ;    ea-to-la-of-write-to-segment
 ;    canonical-address-p-of-mv-nth-1-of-ea-to-la-of-cs
 ;    canonical-address-p-of-mv-nth-1-of-ea-to-la-of-ss
-    x86isa::mv-nth-0-rb-xw-rgf ;gen?
-    x86isa::mv-nth-0-rb-xw-rip
+    ;x86isa::mv-nth-0-rb-xw-rgf ;gen?
+    ;x86isa::mv-nth-0-rb-xw-rip
+    x86isa::rb-xw-values
 ;    fix-of-mv-nth-1-of-ea-to-la
 ;    read-of-ea-to-la-becomes-read-byte-from-segment
 ;    canonical-address-p-of-+-of-mv-nth-1-of-ea-to-la-of-ss
