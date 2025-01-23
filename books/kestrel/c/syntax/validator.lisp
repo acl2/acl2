@@ -17,6 +17,8 @@
 
 (local (include-book "std/alists/top" :dir :system))
 
+(local (in-theory (enable* abstract-syntax-unambp-rules)))
+
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
@@ -5426,7 +5428,265 @@
 
   (verify-guards valid-expr)
 
-  (fty::deffixequiv-mutual valid-exprs/decls/stmts))
+  (fty::deffixequiv-mutual valid-exprs/decls/stmts)
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defret-mutual valid-exprs/decls/stmts
+    (defret expr-unambp-of-valid-expr
+      (implies (not erp)
+               (expr-unambp new-expr))
+      :hyp (expr-unambp expr)
+      :fn valid-expr)
+    (defret expr-list-unambp-of-valid-expr-list
+      (implies (not erp)
+               (expr-list-unambp new-exprs))
+      :hyp (expr-list-unambp exprs)
+      :fn valid-expr-list)
+    (defret expr-option-unambp-of-valid-expr-option
+      (implies (not erp)
+               (expr-option-unambp new-expr?))
+      :hyp (expr-option-unambp expr?)
+      :fn valid-expr-option)
+    (defret const-expr-unambp-of-valid-const-expr
+      (implies (not erp)
+               (const-expr-unambp new-cexpr))
+      :hyp (const-expr-unambp cexpr)
+      :fn valid-const-expr)
+    (defret const-expr-option-unambp-of-valid-const-expr-option
+      (implies (not erp)
+               (const-expr-option-unambp new-cexpr?))
+      :hyp (const-expr-option-unambp cexpr?)
+      :fn valid-const-expr-option)
+    (defret genassoc-unambp-of-valid-genassoc
+      (implies (not erp)
+               (genassoc-unambp new-genassoc))
+      :hyp (genassoc-unambp genassoc)
+      :fn valid-genassoc)
+    (defret genassoc-list-unambp-of-valid-genassoc-list
+      (implies (not erp)
+               (genassoc-list-unambp new-genassocs))
+      :hyp (genassoc-list-unambp genassocs)
+      :fn valid-genassoc-list)
+    (defret member-designor-unambp-of-valid-member-designor
+      (implies (not erp)
+               (member-designor-unambp new-memdesign))
+      :hyp (member-designor-unambp memdesign)
+      :fn valid-member-designor)
+    (defret type-spec-unambp-of-valid-type-spec
+      (implies (not erp)
+               (and (type-spec-unambp new-tyspec)
+                    (type-spec-list-unambp new-tyspecs)))
+      :hyp (and (type-spec-unambp tyspec)
+                (type-spec-list-unambp tyspecs))
+      :fn valid-type-spec)
+    (defret spec/qual-unambp-of-valid-spec/qual
+      (implies (not erp)
+               (and (spec/qual-unambp new-specqual)
+                    (type-spec-list-unambp new-tyspecs)))
+      :hyp (and (spec/qual-unambp specqual)
+                (type-spec-list-unambp tyspecs))
+      :fn valid-spec/qual)
+    (defret spec/qual-list-unambp-of-valid-spec/qual-list
+      (implies (not erp)
+               (spec/qual-list-unambp new-specquals))
+      :hyp (and (spec/qual-list-unambp specquals)
+                (type-spec-list-unambp tyspecs))
+      :fn valid-spec/qual-list)
+    (defret align-spec-unambp-of-valid-align-spec
+      (implies (not erp)
+               (align-spec-unambp new-align))
+      :hyp (align-spec-unambp align)
+      :fn valid-align-spec)
+    (defret decl-spec-unambp-of-valid-decl-spec
+      (implies (not erp)
+               (and (decl-spec-unambp new-declspec)
+                    (type-spec-list-unambp new-tyspecs)))
+      :hyp (and (decl-spec-unambp declspec)
+                (type-spec-list-unambp tyspecs))
+      :fn valid-decl-spec)
+    (defret decl-spec-list-unambp-of-valid-decl-spec-list
+      (implies (not erp)
+               (decl-spec-list-unambp new-declspecs))
+      :hyp (and (decl-spec-list-unambp declspecs)
+                (type-spec-list-unambp tyspecs))
+      :fn valid-decl-spec-list)
+    (defret initer-unambp-of-valid-initer
+      (implies (not erp)
+               (initer-unambp new-initer))
+      :hyp (initer-unambp initer)
+      :fn valid-initer)
+    (defret initer-option-unambp-of-valid-initer-option
+      (implies (not erp)
+               (initer-option-unambp new-initer?))
+      :hyp (initer-option-unambp initer?)
+      :fn valid-initer-option)
+    (defret desiniter-unambp-of-valid-desiniter
+      (implies (not erp)
+               (desiniter-unambp new-desiniter))
+      :hyp (desiniter-unambp desiniter)
+      :fn valid-desiniter)
+    (defret desiniter-list-unambp-of-valid-desiniter-list
+      (implies (not erp)
+               (desiniter-list-unambp new-desiniters))
+      :hyp (desiniter-list-unambp desiniters)
+      :fn valid-desiniter-list)
+    (defret designor-unambp-of-valid-designor
+      (implies (not erp)
+               (designor-unambp new-designor))
+      :hyp (designor-unambp designor)
+      :fn valid-designor)
+    (defret designor-list-unambp-of-valid-designor-list
+      (implies (not erp)
+               (designor-list-unambp new-designors))
+      :hyp (designor-list-unambp designors)
+      :fn valid-designor-list)
+    (defret declor-unambp-of-valid-declor
+      (implies (not erp)
+               (declor-unambp new-declor))
+      :hyp (declor-unambp declor)
+      :fn valid-declor)
+    (defret declor-option-unambp-of-valid-declor-option
+      (implies (not erp)
+               (declor-option-unambp new-declor?))
+      :hyp (declor-option-unambp declor?)
+      :fn valid-declor-option)
+    (defret dirdeclor-unambp-of-valid-dirdeclor
+      (implies (not erp)
+               (dirdeclor-unambp new-dirdeclor))
+      :hyp (dirdeclor-unambp dirdeclor)
+      :fn valid-dirdeclor)
+    (defret absdeclor-unambp-of-valid-absdeclor
+      (implies (not erp)
+               (absdeclor-unambp new-absdeclor))
+      :hyp (absdeclor-unambp absdeclor)
+      :fn valid-absdeclor)
+    (defret absdeclor-option-unambp-of-valid-absdeclor-option
+      (implies (not erp)
+               (absdeclor-option-unambp new-absdeclor?))
+      :hyp (absdeclor-option-unambp absdeclor?)
+      :fn valid-absdeclor-option)
+    (defret dirabsdeclor-unambp-of-valid-dirabsdeclor
+      (implies (not erp)
+               (dirabsdeclor-unambp new-dirabsdeclor))
+      :hyp (dirabsdeclor-unambp dirabsdeclor)
+      :fn valid-dirabsdeclor)
+    (defret dirabsdeclor-option-unambp-of-valid-dirabsdeclor-option
+      (implies (not erp)
+               (dirabsdeclor-option-unambp new-dirabsdeclor?))
+      :hyp (dirabsdeclor-option-unambp dirabsdeclor?)
+      :fn valid-dirabsdeclor-option)
+    (defret paramdecl-unambp-of-valid-paramdecl
+      (implies (not erp)
+               (paramdecl-unambp new-paramdecl))
+      :hyp (paramdecl-unambp paramdecl)
+      :fn valid-paramdecl)
+    (defret paramdecl-list-unambp-of-valid-paramdecl-list
+      (implies (not erp)
+               (paramdecl-list-unambp new-paramdecls))
+      :hyp (paramdecl-list-unambp paramdecls)
+      :fn valid-paramdecl-list)
+    (defret paramdeclor-unambp-of-valid-paramdeclor
+      (implies (not erp)
+               (paramdeclor-unambp new-paramdeclor))
+      :hyp (paramdeclor-unambp paramdeclor)
+      :fn valid-paramdeclor)
+    (defret tyname-unambp-of-valid-tyname
+      (implies (not erp)
+               (tyname-unambp new-tyname))
+      :hyp (tyname-unambp tyname)
+      :fn valid-tyname)
+    (defret strunispec-unambp-of-valid-strunispec
+      (implies (not erp)
+               (strunispec-unambp new-strunispec))
+      :hyp (strunispec-unambp strunispec)
+      :fn valid-strunispec)
+    (defret structdecl-unambp-of-valid-structdecl
+      (implies (not erp)
+               (structdecl-unambp new-structdecl))
+      :hyp (structdecl-unambp structdecl)
+      :fn valid-structdecl)
+    (defret structdecl-list-unambp-of-valid-structdecl-list
+      (implies (not erp)
+               (structdecl-list-unambp new-structdecls))
+      :hyp (structdecl-list-unambp structdecls)
+      :fn valid-structdecl-list)
+    (defret structdeclor-unambp-of-valid-structdeclor
+      (implies (not erp)
+               (structdeclor-unambp new-structdeclor))
+      :hyp (structdeclor-unambp structdeclor)
+      :fn valid-structdeclor)
+    (defret structdeclor-list-unambp-of-valid-structdeclor-list
+      (implies (not erp)
+               (structdeclor-list-unambp new-structdeclors))
+      :hyp (structdeclor-list-unambp structdeclors)
+      :fn valid-structdeclor-list)
+    (defret enumspec-unambp-of-valid-enumspec
+      (implies (not erp)
+               (enumspec-unambp new-enumspec))
+      :hyp (enumspec-unambp enumspec)
+      :fn valid-enumspec)
+    (defret enumer-unambp-of-valid-enumer
+      (implies (not erp)
+               (enumer-unambp new-enumer))
+      :hyp (enumer-unambp enumer)
+      :fn valid-enumer)
+    (defret enumer-list-unambp-of-valid-enumer-list
+      (implies (not erp)
+               (enumer-list-unambp new-enumers))
+      :hyp (enumer-list-unambp enumers)
+      :fn valid-enumer-list)
+    (defret statassert-unambp-of-valid-statassert
+      (implies (not erp)
+               (statassert-unambp new-statassert))
+      :hyp (statassert-unambp statassert)
+      :fn valid-statassert)
+    (defret initdeclor-unambp-of-valid-initdeclor
+      (implies (not erp)
+               (initdeclor-unambp new-initdeclor))
+      :hyp (initdeclor-unambp initdeclor)
+      :fn valid-initdeclor)
+    (defret initdeclor-list-unambp-of-valid-initdeclor-list
+      (implies (not erp)
+               (initdeclor-list-unambp new-initdeclors))
+      :hyp (initdeclor-list-unambp initdeclors)
+      :fn valid-initdeclor-list)
+    (defret decl-unambp-of-valid-decl
+      (implies (not erp)
+               (decl-unambp new-decl))
+      :hyp (decl-unambp decl)
+      :fn valid-decl)
+    (defret decl-list-unambp-of-valid-decl-list
+      (implies (not erp)
+               (decl-list-unambp new-decls))
+      :hyp (decl-list-unambp decls)
+      :fn valid-decl-list)
+    (defret label-unambp-of-valid-label
+      (implies (not erp)
+               (label-unambp new-label))
+      :hyp (label-unambp label)
+      :fn valid-label)
+    (defret stmt-unambp-of-valid-stmt
+      (implies (not erp)
+               (stmt-unambp new-stmt))
+      :hyp (stmt-unambp stmt)
+      :fn valid-stmt)
+    (defret block-item-unambp-of-valid-block-item
+      (implies (not erp)
+               (block-item-unambp new-item))
+      :hyp (block-item-unambp item)
+      :fn valid-block-item)
+    (defret block-item-list-unambp-of-valid-block-item-list
+      (implies (not erp)
+               (block-item-list-unambp new-items))
+      :hyp (block-item-list-unambp items)
+      :fn valid-block-item-list)
+    ;; These hints only enable VALID-DECL-SPEC-LIST
+    ;; in the cases involving that function.
+    ;; Without this, the proof seems to hang, or at least take a very long time.
+    :hints (("Goal" :in-theory (disable valid-decl-spec-list))
+            (and (acl2::occur-lst '(acl2::flag-is 'valid-decl-spec-list) clause)
+                 '(:in-theory (enable valid-decl-spec-list))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5590,7 +5850,14 @@
                         :body (stmt-compound new-items))
            table))
   :guard-hints (("Goal" :in-theory (disable (:e tau-system)))) ; for speed
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret fundef-unambp-of-valid-fundef
+    (implies (not erp)
+             (fundef-unambp new-fundef))
+    :hyp (fundef-unambp fundef)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5621,7 +5888,14 @@
              (retok (extdecl-decl new-decl) table))
      :empty (retok (extdecl-empty) (valid-table-fix table))
      :asm (retok (extdecl-fix edecl) (valid-table-fix table))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret extdecl-unambp-of-valid-extdecl
+    (implies (not erp)
+             (extdecl-unambp new-edecl))
+    :hyp (extdecl-unambp edecl)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5630,7 +5904,7 @@
                             (ienv ienvp))
   :guard (extdecl-list-unambp edecls)
   :returns (mv erp
-               (new-decls extdecl-listp)
+               (new-edecls extdecl-listp)
                (new-table valid-tablep))
   :short "Validate a list of external declarations."
   :long
@@ -5642,7 +5916,15 @@
        ((erp new-edecl table) (valid-extdecl (car edecls) table ienv))
        ((erp new-edecls table) (valid-extdecl-list (cdr edecls) table ienv)))
     (retok (cons new-edecl new-edecls) table))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret extdecl-list-unambp-of-valid-extdecl-list
+    (implies (not erp)
+             (extdecl-list-unambp new-edecls))
+    :hyp (extdecl-list-unambp edecls)
+    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5857,7 +6139,14 @@
         (valid-extdecl-list (transunit->decls tunit) table ienv))
        (info (make-transunit-info :table table)))
     (retok (make-transunit :decls new-edecls :info info)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret transunit-unambp-of-valid-transunit
+    (implies (not erp)
+             (transunit-unambp new-tunit))
+    :hyp (transunit-unambp tunit)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5882,6 +6171,7 @@
         (valid-transunit-ensemble-loop
          (transunit-ensemble->unwrap tunits) gcc ienv)))
     (retok (transunit-ensemble new-map)))
+
   :prepwork
   ((define valid-transunit-ensemble-loop ((map filepath-transunit-mapp)
                                           (gcc booleanp)
@@ -5899,7 +6189,24 @@
            (valid-transunit-ensemble-loop (omap::tail map) gcc ienv)))
        (retok (omap::update path new-tunit new-map)))
      :verify-guards :after-returns
+
      ///
+
      (fty::deffixequiv valid-transunit-ensemble-loop
-       :args ((gcc booleanp) (ienv ienvp)))))
-  :hooks (:fix))
+       :args ((gcc booleanp) (ienv ienvp)))
+
+     (defret filepath-transunit-map-unambp-of-valid-transunit-ensemble-loop
+       (implies (not erp)
+                (filepath-transunit-map-unambp new-map))
+       :hyp (and (filepath-transunit-mapp map)
+                 (filepath-transunit-map-unambp map))
+       :hints (("Goal" :induct t)))))
+
+  :hooks (:fix)
+
+  ///
+
+  (defret transunit-ensemble-unambp-of-valid-transunit-ensemble
+    (implies (not erp)
+             (transunit-ensemble-unambp new-tunits))
+    :hyp (transunit-ensemble-unambp tunits)))
