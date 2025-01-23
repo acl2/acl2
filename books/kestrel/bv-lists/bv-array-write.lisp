@@ -402,3 +402,16 @@
                      ;BV-ARRAY-WRITE-EQUAL-REWRITE-ALT
                      ;BV-ARRAY-WRITE-EQUAL-REWRITE
                      )))))
+
+(defthmd bv-array-write-tighten-to-1-bit
+  (implies (and (< 1 esize)
+                (all-unsigned-byte-p 1 data)
+                (unsigned-byte-p 1 val)
+                (NATP ESIZE)
+                (equal len (len data))
+                (natp index)
+                (true-listp data)
+                (< INDEX LEN))
+           (equal (bv-array-write esize len index val data)
+                  (bv-array-write 1 len index val data)))
+  :hints (("Goal" :in-theory (enable UPDATE-NTH2 BV-ARRAY-WRITE))))

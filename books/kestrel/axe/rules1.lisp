@@ -1183,19 +1183,6 @@
 
 (in-theory (enable nth-of-bv-array-write-becomes-bv-array-read))
 
-(defthmd bv-array-write-tighten-to-1-bit
-  (implies (and (< 1 esize)
-                (all-unsigned-byte-p 1 data)
-                (unsigned-byte-p 1 val)
-                (NATP ESIZE)
-                (equal len (len data))
-                (natp index)
-                (true-listp data)
-                (< INDEX LEN))
-           (equal (bv-array-write esize len index val data)
-                  (bv-array-write 1 len index val data)))
-  :hints (("Goal" :in-theory (enable UPDATE-NTH2 BV-ARRAY-WRITE))))
-
 (defthm bv-array-read-of-myif
   (equal (bv-array-read esize len index (myif test x y))
          (myif test (bv-array-read esize len index x) (bv-array-read esize len index y)))
@@ -1487,11 +1474,8 @@
                 )
            (equal (bv-array-read width1 len index (bvchop-list width2 lst))
                   (bv-array-read width2 len index lst)))
-  :hints (("Goal" :in-theory (e/d (;list::nth-with-large-index
-                                   bv-array-read BVCHOP-WHEN-I-IS-NOT-AN-INTEGER)
-                                  (;JVM::INT-LEMMA0
-                                   NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ
-                                   )))))
+  :hints (("Goal" :in-theory (e/d (bv-array-read bvchop-when-i-is-not-an-integer)
+                                  (nth-of-bv-array-write-becomes-bv-array-read)))))
 
 (in-theory (disable size-non-negative-when-unsigned-byte-p-free)) ;this caused problems..
 
@@ -1742,12 +1726,6 @@
 ;;                  (BVSHL 32 free SHIFT-AMOUNT)))
 ;;  :hints (("Goal" :in-theory (enable bvshl))))
 
-(defthm bv-array-read-when-arg3-not-integer
-  (implies (not (integerp arg3))
-           (equal (bv-array-read arg1 arg2 arg3 arg4)
-                  (bv-array-read arg1 arg2 0 arg4)))
-  :hints (("Goal" :in-theory (e/d (bv-array-read) (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ)))))
-
 ;what do we want to happen in this case?
 ;; (defthm bv-array-read-when-arg3-negative
 ;;   (implies (< arg3 0)
@@ -1755,12 +1733,10 @@
 ;;                   (bv-array-read arg1 arg2 0 arg4)))
 ;;   :hints (("Goal" :in-theory (enable bv-array-read))))
 
-(defthmd nth-unroll
-  (implies (not (zp n))
-           (equal (nth n l)
-                  (nth (- n 1) (cdr l)))))
-
-
+;; (defthmd nth-unroll
+;;   (implies (not (zp n))
+;;            (equal (nth n l)
+;;                   (nth (- n 1) (cdr l)))))
 
 ;; (defthm bv-array-read-of-logext-list-gen
 ;;   (implies (and (<= size size2)
@@ -1827,8 +1803,6 @@
   :hints (("Goal" :cases ((< KEY LEN))
            :use (:instance BV-ARRAY-WRITE-OF-LOGEXT-AROUND-VALUE)
            :in-theory (e/d (BV-ARRAY-WRITE) (BV-ARRAY-WRITE-OF-LOGEXT-AROUND-VALUE)))))
-
-
 
 (defthm equal-nil-of-myif
   (implies (and (not (equal nil a))
@@ -2093,84 +2067,6 @@
 
 ;move a bunch of this stuff
 
-
-
-
-
-;could drop hyps if we change what bv-array-clear-range does in the base case
-(defthm take-of-bv-array-clear-irrel
-  (implies (and (<= index index2)
-                (natp len)
-                (< index2 len)
-;                (<= len (len lst))
-                (natp index)
-                (natp index2))
-           (equal (take index (bv-array-clear elem-size len index2 lst))
-                  (bvchop-list elem-size (take index lst))))
-  :hints (("Goal" :in-theory (e/d (bv-array-clear bv-array-write update-nth2 ceiling-of-lg) (update-nth-becomes-update-nth2-extend-gen)))))
-
-(defthm take-of-bv-array-clear-range-irrel
-  (implies (and (<= n lowindex)
-                (natp len)
-                (< highindex len)
-;(<= lowindex highindex)
-                (natp n)
-                (< n len)
-                (natp lowindex)
-                (natp highindex))
-           (equal (take n (bv-array-clear-range elem-size len lowindex highindex lst))
-                  (bvchop-list elem-size (take n lst))))
-  :hints (("Goal" :in-theory (e/d (bv-array-clear bv-array-write update-nth2 ceiling-of-lg
-                                                  ;;natp
-                                                  take
-                                                  UNSIGNED-BYTE-P-OF-INTEGER-LENGTH-GEN)
-                                  (update-nth-becomes-update-nth2-extend-gen
-                                   EQUAL-OF-UPDATE-NTH-new
-                                   FIRSTN-BECOMES-TAKE-GEN
-                                   natp)))))
-
-(defthm bv-array-clear-range-of-bv-array-clear-range-adjacent1
-  (implies (and (equal lowindex2 (+ 1 highindex1))
-                (< lowindex1 len)
-                (< highindex1 len)
-;                (< lowindex2 len)
-                (< highindex2 len)
-                (<= lowindex1 highindex1)
-                (<= lowindex2 highindex2) ;added back
-                (natp elem-size)
-                (natp len)
-                (natp lowindex1)
-                (natp highindex1)
-                (natp lowindex2)
-                (natp highindex2))
-           (equal (bv-array-clear-range elem-size len lowindex1 highindex1 (bv-array-clear-range elem-size len lowindex2 highindex2 lst))
-                  (bv-array-clear-range elem-size len lowindex1 highindex2 lst))))
-
-(defthm bv-array-clear-range-of-bv-array-clear-range-adjacent2
-  (implies (and (equal lowindex2 (+ 1 highindex1))
-                (< lowindex1 len)
-                (< highindex1 len)
-                (< lowindex2 len)
-                (< highindex2 len)
-                (<= lowindex1 highindex1) ;added back
-                (<= lowindex2 highindex2)
-                (natp elem-size)
-                (natp len)
-                (natp lowindex1)
-                (natp highindex1)
-                (natp lowindex2)
-                (natp highindex2))
-           (equal (bv-array-clear-range elem-size len lowindex2 highindex2 (bv-array-clear-range elem-size len lowindex1 highindex1 lst))
-                  (if (<= lowindex1 highindex1)
-                      (bv-array-clear-range elem-size len lowindex1 highindex2 lst)
-                    (bv-array-clear-range elem-size len lowindex2 highindex2 lst)))))
-
-(in-theory (disable bv-array-clear-range))
-
-(defthm true-listp-of-bv-array-clear-range
-  (implies (true-listp lst)
-           (true-listp (bv-array-clear-range elem-size len lowindex highindex lst))))
-
 (defthm nthcdr-of-bv-array-clear
   (implies (and (<= n len)
                 (< key len)
@@ -2231,10 +2127,6 @@
   :hints (("Goal" :in-theory (enable equal-of-append
                                      subrange ;todo
                                      ))))
-
-
-
-
 
 (defthm car-of-BV-ARRAY-CLEAR-of-0
   (implies (posp len)
@@ -2305,14 +2197,13 @@
          (take n x))
   :hints (("Goal" :in-theory (enable take firstn))))
 
+;move or drop
 (defthm take-when-not-consp-cheap
   (implies (not (consp x))
            (equal (take n x)
                   (repeat n nil)))
   :rule-classes ((:rewrite :backchain-limit-lst (0)))
   :hints (("Goal" :in-theory (enable take))))
-
-
 
 (defthm bv-array-clear-bottom-range
   (implies (and (posp len)
@@ -2329,8 +2220,6 @@
                                    ;TAKE-OF-NTHCDR-BECOMES-SUBRANGE
                                    ;;TAKE-OF-CDR-BECOMES-SUBRANGE
                                    )))))
-
-
 
 (defthm bv-array-clear-whole-range
   (implies (and (equal i (+ -1 len))
@@ -2352,46 +2241,6 @@
   (equal (bv-array-clear element-size len index (firstn len data))
          (bv-array-clear element-size len index data))
   :hints (("Goal" :in-theory (enable bv-array-clear))))
-
-(defthm bv-array-clear-of-bv-array-write-better
-  (implies (and (not (equal key1 key2))
-                (natp esize)
-                (natp key1)
-                (< key1 len)
-                (natp key2)
-                (< key2 len)
-                (natp len)
-                (<= len (len lst)) ;drop?
-                )
-           (equal (bv-array-clear esize len key1 (bv-array-write esize len key2 val lst))
-                  (bv-array-write esize len key2 val (bv-array-clear esize len key1 lst))))
-  :hints (("Goal" :use (:instance bv-array-clear-of-bv-array-write (lst (firstn len lst)))
-           :in-theory (disable bv-array-clear-of-bv-array-write
-                               bv-array-write-equal-rewrite-alt
-                               bv-array-write-equal-rewrite))))
-
-(defthm bv-array-clear-of-bv-array-clear-same
-  (implies (and (natp index)
-                (natp len)
-                (natp element-size))
-           (equal (bv-array-clear element-size len index (bv-array-clear element-size len index lst))
-                  (bv-array-clear element-size len index lst)))
-  :hints (("Goal" :in-theory (e/d (bv-array-write bv-array-clear update-nth2) (update-nth-becomes-update-nth2-extend-gen)))))
-
-(defthm bv-array-clear-of-bv-array-clear-range-contained
-  (implies (and (<= lowindex index1)
-                (<= index1 highindex)
-                (< highindex len)
-                (<= lowindex highindex)
-                (natp elem-size)
-                (natp len)
-                (natp index1)
-                (natp lowindex)
-                (natp highindex))
-           (equal (bv-array-clear elem-size len index1 (bv-array-clear-range elem-size len lowindex highindex lst))
-                  (bv-array-clear-range elem-size len lowindex highindex lst)))
-  :hints (("Goal" :expand ((BV-ARRAY-CLEAR-RANGE ELEM-SIZE LEN INDEX1 HIGHINDEX LST))
-           :in-theory (enable bv-array-clear-range))))
 
 (defthm bv-array-read-of-bv-array-clear
   (implies (and (< index1 len)
