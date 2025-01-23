@@ -961,7 +961,7 @@
                   (not (equal fld :tlb)))
              (equal (xr fld index (mv-nth 2 (rb n addr r-x x86)))
                     (xr fld index x86))))
-  
+
   (defthm rb-1-xw-values-in-sys-view
           (implies (and ;; (not (app-view x86))
                         (not (equal fld :mem))
@@ -1166,9 +1166,9 @@
              (equal (mv-nth 1 (wb n addr w value (xw fld index val x86)))
                     (xw fld index val (mv-nth 1 (wb n addr w value x86)))))
     :hints (("Goal" :in-theory (e/d* (wb) ()))))
-  
+
   ;; Note that wb is kept inside all other nests of writes.
-  
+
   (defthm wb-xw-rflags-not-ac-in-sys-view
           ;; Keep the state updated by wb inside all other nests of writes.
           (implies (equal (rflagsBits->ac value)
@@ -4781,7 +4781,9 @@
                                   (:rewrite acl2::zip-open)
                                   (:linear bitops::logior-<-0-linear-2)
                                   (:rewrite xr-and-ia32e-la-to-pa-in-non-marking-view)
-                                  (:rewrite bitops::logior-equal-0)))))
+                                  (:rewrite bitops::logior-equal-0)
+                                  la-to-pa
+                                  rb))))
 
   :prepwork
   ((local
@@ -5357,7 +5359,9 @@
              (x86p (mv-nth 2 (rml512 lin-addr r-x x86))))
     :hints (("Goal" :in-theory (e/d () ((force) unsigned-byte-p signed-byte-p
                                         ;; for speed:
-                                        x86isa::signed-byte-p-48-to-<-rule))))
+                                        x86isa::signed-byte-p-48-to-<-rule
+                                        la-to-pa
+                                        rb))))
     :rule-classes (:rewrite :type-prescription))
 
   (defthm rml512-value-when-error
@@ -5369,7 +5373,8 @@
                                      (force)
                                      ;; for speed:
                                      x86isa::signed-byte-p-48-to-<-rule
-                                     x86isa::la-to-pa$inline)))))
+                                     x86isa::la-to-pa$inline
+                                     rb)))))
 
   ;; (defthm rml512-x86-unmodified-in-not-marking-view
   ;;   (implies (and (not (marking-view x86))
@@ -5403,7 +5408,9 @@
                                     (force
                                      (force)
                                      ;; for speed:
-                                     x86isa::signed-byte-p-48-to-<-rule)))))
+                                     x86isa::signed-byte-p-48-to-<-rule
+                                     la-to-pa
+                                     rb)))))
 
   (defrule rml512-xw-app-view
     (implies (and (app-view x86)
@@ -5477,7 +5484,9 @@
                             (:rewrite acl2::zip-open)
                             (:linear bitops::logior-<-0-linear-2)
                             (:rewrite xr-and-ia32e-la-to-pa-in-non-marking-view)
-                            (:rewrite bitops::logior-equal-0)))))
+                            (:rewrite bitops::logior-equal-0)
+                            la-to-pa
+                            wb))))
 
   :prepwork
   ((defthmd wb-and-wvm512
@@ -6098,7 +6107,7 @@
   (defthm x86p-wml512
     (implies (force (x86p x86))
              (x86p (mv-nth 1 (wml512 lin-addr val x86))))
-    :hints (("Goal" :in-theory (e/d () (rb x86p force (force) unsigned-byte-p signed-byte-p))))
+    :hints (("Goal" :in-theory (e/d () (rb x86p force (force) unsigned-byte-p signed-byte-p la-to-pa))))
     :rule-classes (:rewrite :type-prescription)))
 
 ;; ======================================================================
