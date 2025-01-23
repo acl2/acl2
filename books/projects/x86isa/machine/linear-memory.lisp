@@ -3444,7 +3444,22 @@
 ; Thanks to Dmitry Nadezhin for proving the equivalence of rm/wml128
 ; to rb/wb.
 
-;; TODO: Prove rml128 equivalent to rb in the system-level view. (again)
+(local
+  (defthmd las-to-pas-opener
+    (implies (posp n)
+             (equal (las-to-pas n lin-addr r-w-x x86)
+                    (B* (((UNLESS (CANONICAL-ADDRESS-P LIN-ADDR))
+                          (MV T NIL X86))
+                         ((MV FLG P-ADDR X86)
+                          (IA32E-LA-TO-PA LIN-ADDR R-W-X X86))
+                         ((WHEN FLG) (MV FLG NIL X86))
+                         ((MV FLG P-ADDRS X86)
+                          (LAS-TO-PAS (1- N)
+                                      (1+ LIN-ADDR)
+                                      R-W-X X86)))
+                      (MV FLG (IF FLG NIL (CONS P-ADDR P-ADDRS))
+                          X86))))))
+
 (define rml128 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
                 (r-x      :type (member :r :x))
                 (x86))
@@ -3452,10 +3467,13 @@
   :parents (linear-memory)
   :guard (canonical-address-p lin-addr)
   :guard-hints (("Goal"
-                 :in-theory (e/d (rb-and-rvm128
-                                   rml08 rml64
+                 :in-theory (e/d (las-to-pas-opener
+                                  rb-and-rvm128
+                                   ;rml08 rml64
                                    rb-and-rvm128-helper-1
-                                   rb-and-rvm128-helper-2)
+                                   rb-and-rvm128-helper-2
+                                   bitops::merge-16-u8s
+                                   LOGAPP-IS-LOGAPP-INLINE)
                                  (not
                                    (:rewrite acl2::ash-0)
                                    (:rewrite acl2::zip-open)
@@ -3547,9 +3565,12 @@
                              15+lin-addr)
                         #.*2^47*))
 
-        (if (app-view x86)
-          (mbe :logic (rb 16 lin-addr r-x x86)
-               :exec (rvm128 lin-addr x86))
+          (mbe :logic
+               (rb 16 lin-addr r-x x86)
+               :exec
+               (if (app-view x86)
+
+                   (rvm128 lin-addr x86)
 
           (b* (((mv flag (the (unsigned-byte #.*physical-address-size*) p-addr0) x86)
                 (la-to-pa lin-addr r-x x86))
@@ -3655,7 +3676,7 @@
                         byte7  byte6  byte5  byte4
                         byte3  byte2  byte1  byte0))))
 
-              (mv nil oword x86)))
+              (mv nil oword x86))))
 
         (mv 'rml128 0 x86)))
 
