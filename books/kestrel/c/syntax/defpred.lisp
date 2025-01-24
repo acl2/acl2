@@ -169,7 +169,8 @@
 
 (defval *defpred-allowed-options*
   :short "Keyword options accepted by @(tsee defpred)."
-  '(:default
+  '(:extra-args
+    :default
     :override
     :parents
     :short
@@ -180,6 +181,7 @@
 (define defpred-process-inputs ((args true-listp) (fty-table alistp))
   :returns (mv erp
                (suffix symbolp)
+               (extra-args true-listp)
                (default booleanp)
                (overrides alistp)
                (parents-presentp booleanp)
@@ -189,7 +191,7 @@
                (long-presentp booleanp)
                long)
   :short "Process all the inputs."
-  (b* (((reterr) nil nil nil nil nil nil nil nil nil)
+  (b* (((reterr) nil nil nil nil nil nil nil nil nil nil)
        ((mv erp suffix options)
         (partition-rest-and-keyword-args args *defpred-allowed-options*))
        ((when (or erp
@@ -203,6 +205,14 @@
         (reterr (msg "The SUFFIX input must be a symbol, ~
                       but it is ~x0 instead."
                      suffix)))
+       (extra-args-option (assoc-eq :extra-args options))
+       (extra-args (if extra-args-option
+                       (cdr extra-args-option)
+                     nil))
+       ((unless (true-listp extra-args))
+        (reterr (msg "The :EXTRA-ARGS input must be a list, ~
+                      but it is ~x0 instead."
+                     extra-args)))
        (default-option (assoc-eq :default options))
        ((unless (consp default-option))
         (reterr (msg "The :DEFAULT input must be supllied.")))
@@ -226,6 +236,7 @@
        (long-presentp (consp long-option))
        (long (cdr long-option)))
     (retok suffix
+           extra-args
            default
            overrides
            parents-presentp
@@ -263,10 +274,23 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define defpred-extra-args-to-names ((extra-args true-listp))
+  :returns (names true-listp)
+  :short "Map the @(':extra-args') input to
+          a list of the names of the arguments."
+  (b* (((when (endp extra-args)) nil)
+       (extra-arg (car extra-args))
+       (name (if (atom extra-arg) extra-arg (car extra-arg)))
+       (names (defpred-extra-args-to-names (cdr extra-args))))
+    (cons name names)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define defpred-gen-prod-conjuncts ((type symbolp)
                                     (fields fty::flexprod-field-listp)
                                     (types symbol-listp)
                                     (suffix symbolp)
+                                    (extra-args true-listp)
                                     (fty-table alistp))
   :returns (terms true-listp)
   :short "Generate the conjuncts for the fields of a product type."
@@ -303,12 +327,14 @@
                         (fty::flex->name info)))
        ((unless (and field-type
                      (member-eq field-type types)))
-        (defpred-gen-prod-conjuncts type (cdr fields) types suffix fty-table))
+        (defpred-gen-prod-conjuncts
+          type (cdr fields) types suffix extra-args fty-table))
        (accessor (fty::flexprod-field->acc-name field))
        (field-type-suffix (defpred-gen-pred-name field-type suffix))
-       (term `(,field-type-suffix (,accessor ,type)))
-       (terms
-        (defpred-gen-prod-conjuncts type (cdr fields) types suffix fty-table)))
+       (extra-args-names (defpred-extra-args-to-names extra-args))
+       (term `(,field-type-suffix (,accessor ,type) ,@extra-args-names))
+       (terms (defpred-gen-prod-conjuncts
+                type (cdr fields) types suffix extra-args fty-table)))
     (cons term terms)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -317,6 +343,7 @@
                                (prods fty::flexprod-listp)
                                (types symbol-listp)
                                (suffix symbolp)
+                               (extra-args true-listp)
                                (default booleanp)
                                (overrides alistp)
                                (fty-table alistp))
@@ -350,13 +377,14 @@
               (raise "Internal error: malformed fields ~x0." fields))
              (conjuncts
               (defpred-gen-prod-conjuncts
-                type fields types suffix fty-table))
+                type fields types suffix extra-args fty-table))
              ((when (endp conjuncts)) default))
           `(and ,@conjuncts))))
     (list* kind
            term
            (defpred-gen-sum-cases
-             type (cdr prods) types suffix default overrides fty-table))))
+             type (cdr prods) types
+             suffix extra-args default overrides fty-table))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -364,6 +392,7 @@
                                (mutrecp booleanp)
                                (types symbol-listp)
                                (suffix symbolp)
+                               (extra-args true-listp)
                                (overrides alistp)
                                (fty-table alistp))
   :guard (eq (fty::flexsum->typemacro sum) 'fty::defprod)
@@ -413,9 +442,9 @@
               (raise "Internal error: malformed fields ~x0." fields)
               (mv nil nil)))
           (mv `(and ,@(defpred-gen-prod-conjuncts
-                        type fields types suffix fty-table))
+                        type fields types suffix extra-args fty-table))
               t))))
-    `(define ,type-suffix ((,type ,recog))
+    `(define ,type-suffix ((,type ,recog) ,@extra-args)
        ,@(and ignorable `((declare (ignorable ,type))))
        :returns (yes/no booleanp)
        :parents (,(defpred-gen-topic-name suffix))
@@ -429,6 +458,7 @@
                               (mutrecp booleanp)
                               (types symbol-listp)
                               (suffix symbolp)
+                              (extra-args true-listp)
                               (default booleanp)
                               (overrides alistp)
                               (fty-table alistp))
@@ -469,10 +499,11 @@
               (raise "Internal error: products ~x0 have the wrong type." prods)
               (mv nil nil))
              (cases (defpred-gen-sum-cases
-                      type prods types suffix default overrides fty-table))
+                      type prods types
+                      suffix extra-args default overrides fty-table))
              (body `(,type-case ,type ,@cases)))
           (mv body nil))))
-    `(define ,type-suffix ((,type ,recog))
+    `(define ,type-suffix ((,type ,recog) ,@extra-args)
        ,@(and ignorable `((declare (ignorable ,type))))
        :returns (yes/no booleanp)
        :parents (,(defpred-gen-topic-name suffix))
@@ -485,6 +516,7 @@
 (define defpred-gen-option-pred ((sum fty::flexsum-p)
                                  (mutrecp booleanp)
                                  (suffix symbolp)
+                                 (extra-args true-listp)
                                  (fty-table alistp))
   :guard (eq (fty::flexsum->typemacro sum) 'fty::defoption)
   :returns (event pseudo-event-formp)
@@ -510,10 +542,12 @@
        (type-case (fty::flexsum->case sum))
        ((mv base-type accessor) (fty::option-type->components type fty-table))
        (base-type-suffix (defpred-gen-pred-name base-type suffix))
+       (extra-args-names (defpred-extra-args-to-names extra-args))
        (body `(,type-case ,type
-                          :some (,base-type-suffix (,accessor ,type))
+                          :some (,base-type-suffix (,accessor ,type)
+                                                   ,@extra-args-names)
                           :none t)))
-    `(define ,type-suffix ((,type ,recog))
+    `(define ,type-suffix ((,type ,recog) ,@extra-args)
        :returns (yes/no booleanp)
        :parents (,(defpred-gen-topic-name suffix))
        ,body
@@ -526,6 +560,7 @@
                                           (mutrecp booleanp)
                                           (types symbol-listp)
                                           (suffix symbolp)
+                                          (extra-args true-listp)
                                           (default booleanp)
                                           (overrides alistp)
                                           (fty-table alistp))
@@ -539,11 +574,14 @@
   (b* ((typemacro (fty::flexsum->typemacro sum)))
     (cond
      ((eq typemacro 'fty::defprod)
-      (defpred-gen-prod-pred sum mutrecp types suffix overrides fty-table))
+      (defpred-gen-prod-pred
+        sum mutrecp types suffix extra-args overrides fty-table))
      ((eq typemacro 'fty::deftagsum)
-      (defpred-gen-sum-pred sum mutrecp types suffix default overrides fty-table))
+      (defpred-gen-sum-pred
+        sum mutrecp types suffix extra-args default overrides fty-table))
      ((eq typemacro 'fty::defoption)
-      (defpred-gen-option-pred sum mutrecp suffix fty-table))
+      (defpred-gen-option-pred
+        sum mutrecp suffix extra-args fty-table))
      (t (prog2$
          (raise "Internal error: unsupported sum type ~x0." sum)
          '(_))))))
@@ -553,6 +591,7 @@
 (define defpred-gen-list-pred ((list fty::flexlist-p)
                                (mutrecp booleanp)
                                (suffix symbolp)
+                               (extra-args true-listp)
                                (fty-table alistp))
   :returns (event pseudo-event-formp)
   :short "Generate a predicate for a list type, with accompanying theorems."
@@ -565,7 +604,9 @@
      this product type is part of a mutually recursive clique.")
    (xdoc::p
     "The accompanying theorems are generated as a @(tsee std::deflist) event,
-     which generates the actual theorems."))
+     which generates the actual theorems.
+     For now we only generate theorems if there are no @(':extra-args');
+     we need to do a little work to generate the appropriate @(':guard')."))
   (b* ((type (fty::flexlist->name list))
        ((unless (symbolp type))
         (raise "Internal error: malformed type name ~x0." type)
@@ -584,17 +625,20 @@
         (raise "Internal error: malformed type name ~x0." elt-type)
         '(_))
        (elt-type-suffix (defpred-gen-pred-name elt-type suffix))
+       (extra-args-names (defpred-extra-args-to-names extra-args))
        (body `(or (endp ,type)
-                  (and (,elt-type-suffix (car ,type))
-                       (,type-suffix (cdr ,type)))))
+                  (and (,elt-type-suffix (car ,type) ,@extra-args-names)
+                       (,type-suffix (cdr ,type) ,@extra-args-names))))
        (deflist-event
-         `(std::deflist ,type-suffix (x)
-            :guard (,recog x)
-            (,elt-type-suffix x)
-            :true-listp nil))
+         (if extra-args
+             '(progn) ; no-op event -- temporary limitation
+           `(std::deflist ,type-suffix (x)
+              :guard (,recog x)
+              (,elt-type-suffix x)
+              :true-listp nil)))
        (thm-events (list deflist-event))
        (event
-        `(define ,type-suffix ((,type ,recog))
+        `(define ,type-suffix ((,type ,recog) ,@extra-args)
            :returns (yes/no booleanp)
            :parents (,(defpred-gen-topic-name suffix))
            ,body
@@ -609,6 +653,7 @@
 (define defpred-gen-omap-pred ((omap fty::flexomap-p)
                                (mutrecp booleanp)
                                (suffix symbolp)
+                               (extra-args true-listp)
                                (fty-table alistp))
   :returns (event pseudo-event-formp)
   :short "Generate a predicate for an omap type."
@@ -640,10 +685,13 @@
        (val-info (fty::type-with-recognizer val-recog fty-table))
        (val-type (fty::flex->name val-info))
        (val-type-suffix (defpred-gen-pred-name val-type suffix))
+       (extra-args-names (defpred-extra-args-to-names extra-args))
        (body `(or (not (mbt (,recog ,type)))
                   (omap::emptyp ,type)
-                  (and (,val-type-suffix (omap::head-val ,type))
-                       (,type-suffix (omap::tail ,type)))))
+                  (and (,val-type-suffix (omap::head-val ,type)
+                                         ,@extra-args-names)
+                       (,type-suffix (omap::tail ,type)
+                                     ,@extra-args-names))))
        (type-suffix-when-emptyp
         (packn-pos (list type-suffix '-when-emptyp) suffix))
        (type-suffix-of-update
@@ -655,13 +703,14 @@
        (thm-events
         `((defruled ,type-suffix-when-emptyp
             (implies (omap::emptyp ,type)
-                     (,type-suffix ,type))
+                     (,type-suffix ,type ,@extra-args-names))
             :enable ,type-suffix)
           (defruled ,type-suffix-of-update
             (implies (and (,recog ,type)
-                          (,val-type-suffix ,val-type)
-                          (,type-suffix ,type))
-                     (,type-suffix (omap::update ,key-type ,val-type ,type)))
+                          (,val-type-suffix ,val-type ,@extra-args-names)
+                          (,type-suffix ,type ,@extra-args-names))
+                     (,type-suffix (omap::update ,key-type ,val-type ,type)
+                                   ,@extra-args-names))
             :induct t
             :enable (,recog
                      omap::update
@@ -672,20 +721,21 @@
                      omap::tail))
           (defruled ,val-type-suffix-of-head-when-type-suffix
             (implies (and (,recog ,type)
-                          (,type-suffix ,type)
+                          (,type-suffix ,type ,@extra-args-names)
                           (not (omap::emptyp ,type)))
-                     (,val-type-suffix (mv-nth 1 (omap::head ,type)))))
+                     (,val-type-suffix (mv-nth 1 (omap::head ,type))
+                                       ,@extra-args-names)))
           (defruled ,type-suffix-of-tail
             (implies (and (,recog ,type)
-                          (,type-suffix ,type))
-                     (,type-suffix (omap::tail ,type))))))
+                          (,type-suffix ,type ,@extra-args-names))
+                     (,type-suffix (omap::tail ,type) ,@extra-args-names)))))
        (ruleset-event
         `(add-to-ruleset ,(defpred-gen-ruleset-name suffix)
                          '(,type-suffix-when-emptyp
                            ,type-suffix-of-update
                            ,val-type-suffix-of-head-when-type-suffix
                            ,type-suffix-of-tail))))
-    `(define ,type-suffix ((,type ,recog))
+    `(define ,type-suffix ((,type ,recog) ,@extra-args)
        :returns (yes/no booleanp)
        :parents (,(defpred-gen-topic-name suffix))
        ,body
@@ -701,6 +751,7 @@
                                (mutrecp booleanp)
                                (types symbol-listp)
                                (suffix symbolp)
+                               (extra-args true-listp)
                                (default booleanp)
                                (overrides alistp)
                                (fty-table alistp))
@@ -708,11 +759,11 @@
   :short "Generate a predicate for a type, with accompanying theorems."
   (cond ((fty::flexsum-p flex)
          (defpred-gen-prod/sum/option-pred
-           flex mutrecp types suffix default overrides fty-table))
+           flex mutrecp types suffix extra-args default overrides fty-table))
         ((fty::flexlist-p flex)
-         (defpred-gen-list-pred flex mutrecp suffix fty-table))
+         (defpred-gen-list-pred flex mutrecp suffix extra-args fty-table))
         ((fty::flexomap-p flex)
-         (defpred-gen-omap-pred flex mutrecp suffix fty-table))
+         (defpred-gen-omap-pred flex mutrecp suffix extra-args fty-table))
         (t (prog2$ (raise "Internal error: unsupported type ~x0." flex)
                    '(_)))))
 
@@ -722,6 +773,7 @@
                                  (mutrecp booleanp)
                                  (types symbol-listp)
                                  (suffix symbolp)
+                                 (extra-args true-listp)
                                  (default booleanp)
                                  (overrides alistp)
                                  (fty-table alistp))
@@ -731,10 +783,12 @@
   (b* (((when (endp flexs)) nil)
        (event
         (defpred-gen-type-pred
-          (car flexs) mutrecp types suffix default overrides fty-table))
+          (car flexs) mutrecp types
+          suffix extra-args default overrides fty-table))
        (more-events
         (defpred-gen-types-preds
-          (cdr flexs) mutrecp types suffix default overrides fty-table)))
+          (cdr flexs) mutrecp types
+          suffix extra-args default overrides fty-table)))
     (cons event more-events)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -742,6 +796,7 @@
 (define defpred-gen-clique-pred/preds ((clique fty::flextypes-p)
                                        (types symbol-listp)
                                        (suffix symbolp)
+                                       (extra-args true-listp)
                                        (default booleanp)
                                        (overrides alistp)
                                        (fty-table alistp))
@@ -779,7 +834,8 @@
         '(_))
        ((when (endp (cdr members)))
         (defpred-gen-type-pred
-          (car members) nil types suffix default overrides fty-table))
+          (car members) nil types
+          suffix extra-args default overrides fty-table))
        (clique-name (fty::flextypes->name clique))
        ((unless (symbolp clique-name))
         (raise "Internal error: malformed clique name ~x0." clique-name)
@@ -787,7 +843,7 @@
        (clique-name-suffix (defpred-gen-pred-name clique-name suffix))
        (events
         (defpred-gen-types-preds
-          members t types suffix default overrides fty-table)))
+          members t types suffix extra-args default overrides fty-table)))
     `(defines ,clique-name-suffix
        :parents (,(defpred-gen-topic-name suffix))
        ,@events
@@ -802,6 +858,7 @@
 (define defpred-gen-cliques-preds ((clique-names symbol-listp)
                                    (types symbol-listp)
                                    (suffix symbolp)
+                                   (extra-args true-listp)
                                    (default booleanp)
                                    (overrides alistp)
                                    (fty-table alistp))
@@ -816,9 +873,11 @@
        ((unless (fty::flextypes-p clique))
         (raise "Internal error: malformed type clique ~x0." clique))
        (event (defpred-gen-clique-pred/preds
-                clique types suffix default overrides fty-table))
+                clique types
+                suffix extra-args default overrides fty-table))
        (events (defpred-gen-cliques-preds
-                 (cdr clique-names) types suffix default overrides fty-table)))
+                 (cdr clique-names) types
+                 suffix extra-args default overrides fty-table)))
     (cons event events)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -845,6 +904,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define defpred-gen-everything ((suffix symbolp)
+                                (extra-args true-listp)
                                 (default booleanp)
                                 (overrides alistp)
                                 (parents-presentp booleanp)
@@ -866,7 +926,8 @@
         (fty::type-names-in-cliques-with-names *defpred-cliques* fty-table))
        (pred-events
         (defpred-gen-cliques-preds
-          *defpred-cliques* types suffix default overrides fty-table))
+          *defpred-cliques* types
+          suffix extra-args default overrides fty-table))
        (xdoc-name (defpred-gen-topic-name suffix))
        (xdoc-event
         `(defxdoc+ ,xdoc-name
@@ -892,6 +953,7 @@
   (b* (((reterr) '(_))
        (fty-table (table-alist+ 'fty::flextypes-table wrld))
        ((erp suffix
+             extra-args
              default
              overrides
              parents-presentp
@@ -903,6 +965,7 @@
         (defpred-process-inputs args fty-table)))
     (retok (defpred-gen-everything
              suffix
+             extra-args
              default
              overrides
              parents-presentp
