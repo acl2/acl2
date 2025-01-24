@@ -648,6 +648,16 @@
   :hints (("Goal" :in-theory (enable rml32 rb rb-1-opener rb-1 rvm08
                                      read read-opener read-byte))))
 
+(defthm rml48-becomes-read
+  (implies (app-view x86)
+           (equal (rml48 lin-addr r-x x86)
+                  (if (and (canonical-address-p (+ 5 lin-addr))
+                           (canonical-address-p lin-addr))
+                      (mv nil (read 6 lin-addr x86) x86)
+                    (mv 'rml48 0 x86))))
+  :hints (("Goal" :in-theory (enable rml48 rb rb-1-opener rb-1 rvm08
+                                     read read-opener read-byte))))
+
 (defthm rml64-becomes-read
   (implies (app-view x86)
            (equal (rml64 lin-addr r-x x86)
@@ -656,6 +666,16 @@
                       (mv nil (read 8 lin-addr x86) x86)
                     (mv 'rml64 0 x86))))
   :hints (("Goal" :in-theory (enable rml64 rb rb-1-opener rb-1 rvm08
+                                     read read-opener read-byte))))
+
+(defthm rml80-becomes-read
+  (implies (app-view x86)
+           (equal (rml80 lin-addr r-x x86)
+                  (if (and (canonical-address-p (+ 9 lin-addr))
+                           (canonical-address-p lin-addr))
+                      (mv nil (read 10 lin-addr x86) x86)
+                    (mv 'rml80 0 x86))))
+  :hints (("Goal" :in-theory (enable rml80 rb rb-1-opener rb-1 rvm08
                                      read read-opener read-byte))))
 
 ;; todo:

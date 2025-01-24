@@ -221,11 +221,15 @@
   (declare (xargs :guard t))
   '(;; We can either open these read operations to RB, which then gets turned into READ, or turn these into READ directly:
     rml08-becomes-read ;; rml08
-    rml16-becomes-read ;; rml16; 
+    rml16-becomes-read ;; rml16 
     rml32-becomes-read ;; rml32
-    rml64-becomes-read ;; rml64   ; todo: more sizes!
-    x86isa::rml128-when-app-view
-    x86isa::rml256-when-app-view
+    rml48-becomes-read ;; rml48
+    rml64-becomes-read ;; rml64
+    rml80-becomes-read ;; rml80
+    ;; rml128-becomes-read ; todo
+    ;; rml256-becomes-read ; todo
+    x86isa::rml128-when-app-view ; introduces rb
+    x86isa::rml256-when-app-view ; introduces rb
     x86isa::rml-size$inline ;shilpi leaves this enabled ;todo: consider rml-size-becomes-rb
     ;; rml-size-of-1-becomes-read ;; todo: try these (for which proofs?)
     ;; rml-size-of-2-becomes-read
@@ -236,6 +240,8 @@
     ;; rml-size-of-16-becomes-read
     ;; rml-size-of-32-becomes-read
 
+    ;; Rules about rimlXX (there are only 4 of these):
+    ;; We open these to expose RML08, etc:
     x86isa::riml08 ; todo: go to logext of read?
     x86isa::riml16
     x86isa::riml32
