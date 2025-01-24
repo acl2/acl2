@@ -577,9 +577,23 @@ Sexpression *PrefixExpr::ACL2Expr() {
 
   } else if (op == Op::Not) {
     return new Plist({ &s_lognot1, s });
+
   } else if (op == Op::BitNot) {
 
     Plist *val = new Plist({ &s_lognot, expr->ACL2Expr() });
+
+    if (auto pt = dynamic_cast<const IntType *>(get_type())) {
+      Sexpression *upper_bound = nullptr;
+      upper_bound
+          = pt->width()->isStaticallyEvaluable()
+                ? Integer(this->loc(), this->ACL2ValWidth() - 1).ACL2Expr()
+                : new Plist(
+                    { &s_minus, pt->width()->ACL2Expr(), new Symbol(1) });
+
+      val = new Plist({ &s_bits, val, upper_bound,
+                        Integer::zero_v(this->loc())->ACL2Expr() });
+    }
+
     return val;
   } else
     UNREACHABLE();
@@ -734,10 +748,26 @@ Sexpression *BinaryExpr::ACL2Expr() {
     // AC types are guranted to fit in their result type.
     need_narrowing = !isa<const IntType *>(get_type());
     break;
-  case Op::Divide:
-    return new Plist({ &s_truncate,
-                       new Plist({ &s_slash, sexpr1_val, sexpr2_val }),
-                       Integer::one_v(loc_)->ACL2Expr() });
+  case Op::Divide: {
+    Sexpression *val = new Plist(
+        { &s_truncate, new Plist({ &s_slash, sexpr1_val, sexpr2_val }),
+          Integer::one_v(loc_)->ACL2Expr() });
+    if (auto pt = dynamic_cast<const PrimType *>(get_type())) {
+      (void)pt;
+      // For now, we ingore primitive type overflows.
+    } else if (auto pt = dynamic_cast<const IntType *>(get_type())) {
+      Sexpression *upper_bound = nullptr;
+      upper_bound
+          = pt->width()->isStaticallyEvaluable()
+                ? Integer(this->loc(), this->ACL2ValWidth() - 1).ACL2Expr()
+                : new Plist(
+                    { &s_minus, pt->width()->ACL2Expr(), new Symbol(1) });
+
+      val = new Plist({ &s_bits, val, upper_bound,
+                        Integer::zero_v(this->loc())->ACL2Expr() });
+    }
+    return val;
+  }
   case Op::Mod:
     // AC types are guranted to fit in their result type.
     need_narrowing = !isa<const IntType *>(get_type());
@@ -823,6 +853,16 @@ Sexpression *BinaryExpr::ACL2Expr() {
   }
 
   Type *t = get_type();
+
+  if (auto it = dynamic_cast<const IntType *>(t)) {
+    if (it->isSigned()->isStaticallyEvaluable()) {
+      if (it->isSigned()->evalConst()) {
+        need_narrowing = true;
+      }
+    } else {
+      need_narrowing = true;
+    }
+  }
 
   if (need_narrowing) {
     if (auto pt = dynamic_cast<const PrimType *>(t)) {

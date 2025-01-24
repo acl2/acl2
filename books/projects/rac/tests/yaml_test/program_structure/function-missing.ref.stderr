@@ -1,0 +1,3 @@
+function-missing.cpp:3 (19-24): Undefined function
+  3 | int bar() { return foo(); }
+    |                    ^^^^^
