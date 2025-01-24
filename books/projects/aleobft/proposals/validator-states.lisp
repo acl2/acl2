@@ -54,7 +54,15 @@
     :short "Fixtype of maps from proposals to sets of addresses."
     :key-type proposal
     :val-type address-set
-    :pred proposal-address-set-mapp))
+    :pred proposal-address-set-mapp
+
+    ///
+
+    (defruled proposal-setp-of-keys-when-proposal-address-set-mapp
+      (implies (proposal-address-set-mapp map)
+               (proposal-setp (omap::keys map)))
+      :induct t
+      :enable omap::keys)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
