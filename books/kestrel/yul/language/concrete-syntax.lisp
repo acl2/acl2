@@ -29,7 +29,15 @@
      an ABNF grammar based on the grammar in [Yul].
      We parse the ABNF grammar into an ACL2 representation.")
    (xdoc::p
-    "The primary API for parsing Yul is
+    "A complete specification of the concrete syntax of Yul
+     would need to complement the grammar with predicates that
+     define and relate the two levels of lexical and syntactic sub-grammars,
+     and also restrict certain grammar rules.
+     We plan to do that in the future.")
+   (xdoc::p
+    "We also provide a @(see parser) of Yul, based on our ABNF grammar.
+     The parser is currently not verified, but it follows the grammar closely.
+     The primary API for parsing Yul is
      @(see parse-yul) and @(see parse-yul-bytes).")
    (xdoc::p
     "There are currently two published grammars of Yul:
@@ -78,5 +86,7 @@
       The old grammar only allows surrounding double quotes,
       while the new grammar also allows surrounding single quotes.")
     (xdoc::li
-     "The new grammar adds hex strings to the possible literals.")))
+     "The new grammar adds hex strings to the possible literals."))
+   (xdoc::p
+    "The aforementioned parser is based on the new grammar."))
   :order-subtopics t)
