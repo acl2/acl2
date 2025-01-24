@@ -9,6 +9,6 @@
 (include-book "ccg/ccg" :ttags ((:ccg)) :load-compiled-file nil)
 (include-book "installation")
 (include-book "extra-doc")
-(include-book "interface/acl2s-utils/top" :ttags :all)
-(include-book "interface/top")
+(include-book "aspf/interface/acl2s-utils/top" :ttags :all)
+(include-book "aspf/interface/top")
 (include-book "top" :ttags :all)

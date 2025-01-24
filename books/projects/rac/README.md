@@ -151,6 +151,20 @@ Parsing, pretty-printing, and translating RAC programs
   behavior), define RAC_EXTRA_FLAGS=-pedantic. Note with this flags, "good
   enough" program can fails to compile.
 
+  By default, the parser try to remove as many cast as possible (in Lisp, the
+  bits expressions). To disable this behavior, `RAC_DISABLE_OPTIMIZATIONS` can
+  be defined to any value.
+
+  Example:
+
+  `$ rac tests/yaml_test/program_structure/disable_opt.cpp -a`
+
+  Translate `uint foo(ui8 x) { return x; }` to `(DEFUND FOO (X) X)`
+
+  But if we run:
+  `$ RAC_DISABLE_OPTIMIZATIONS= true rac tests/yaml_test/program_structure/disable_opt.cpp -a`
+
+  We get: `(DEFUND FOO (X) (BITS X 31 0))`.
 
 Compiling RAC programs for simulation
 --------------------------------------

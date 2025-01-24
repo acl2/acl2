@@ -489,7 +489,7 @@ Sexpression *MultipleAssignment::ACL2Expr() {
 
   Plist *result_with_tmp = new Plist({ &s_block });
 
-  for (int i = lval_.size(); i >= 0; --i) {
+  for (int i = lval_.size() - 1; i >= 0; --i) {
     if (lval_[i]) {
       result_with_tmp->add(new Plist({ &s_declare, tmp_vars[i] }));
     }
