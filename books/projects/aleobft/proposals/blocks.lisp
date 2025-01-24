@@ -120,7 +120,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define blocks-last-round ((blocks block-listp))
-  :guard (blocks-orderedp blocks)
   :returns (last natp)
   :short "Last round in a list of blocks, or 0 if there are no blocks."
   :long
@@ -129,7 +128,19 @@
     "If @(tsee blocks-orderedp) holds,
      block rounds are in strictly increading order from right to left.
      This function returns the latest, i.e. highest, round.
-     If there are no blocks, we totalize this function to return 0."))
+     If there are no blocks, we totalize this function to return 0.")
+   (xdoc::p
+    "Although it may seem natural
+     to add @(tsee blocks-orderedp) to this function's guard,
+     we deliberately avoid that, for the following reason.
+     Adding that guard here requires adding it to other operations,
+     particularly @(tsee active-committee-at-round).
+     The latter is used to define system transistions,
+     and is applied to blockchains of validators,
+     which are just lists of blocks, not necessarily ordered.
+     It is an invariant that they are in fact ordered,
+     but that invariant is proved after defining the transitions,
+     and so it is not available when defining the transitions."))
   (if (consp blocks)
       (block->round (car blocks))
     0)

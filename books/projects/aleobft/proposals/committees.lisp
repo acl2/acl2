@@ -454,7 +454,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define bonded-committee-at-round ((round posp) (blocks block-listp))
-  :guard (blocks-orderedp blocks)
   :returns (commtt? committee-optionp)
   :short "Bonded committee at a given round."
   :long
@@ -525,7 +524,7 @@
     "Since, as explained above, we regard the committe as
      changing at the end of the even round of each block,
      we need to find the latest block whose round is below @('round').
-     Assuming that the block rounds are ordered, as required by the guard,
+     Assuming that the block rounds are ordered,
      we stop the loop as soon as we find a block with round below @('round'):
      we calculate the committee from that block and preceding blocks,
      and we return that as the bonded committee.
@@ -550,7 +549,6 @@
 
   :prepwork
   ((define bonded-committee-at-round-loop ((round posp) (blocks block-listp))
-     :guard (blocks-orderedp blocks)
      :returns (commtt committeep)
      :parents nil
      (b* (((when (> (pos-fix round)
@@ -684,7 +682,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define active-committee-at-round ((round posp) (blocks block-listp))
-  :guard (blocks-orderedp blocks)
   :returns (commtt? committee-optionp)
   :short "Active committee at a given round."
   :long
@@ -1079,8 +1076,6 @@
 
 (define-sk same-bonded-committees-p ((blocks1 block-listp)
                                      (blocks2 block-listp))
-  :guard (and (blocks-orderedp blocks1)
-              (blocks-orderedp blocks2))
   :returns (yes/no booleanp)
   :short "Check if two blockchains calculate consistent bonded committees."
   :long
@@ -1108,8 +1103,6 @@
 
 (define-sk same-active-committees-p ((blocks1 block-listp)
                                      (blocks2 block-listp))
-  :guard (and (blocks-orderedp blocks1)
-              (blocks-orderedp blocks2))
   :returns (yes/no booleanp)
   :short "Check if two blockchains calculate consistent active committees."
   :long
