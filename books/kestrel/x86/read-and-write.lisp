@@ -635,7 +635,7 @@
                           (mv nil (read 2 lin-addr x86) x86)
                         (mv 'rb-1 0 x86))
                     (mv 'rml16 0 x86))))
-  :hints (("Goal" :in-theory (enable rml08 rb rb-1-opener rb-1 rvm08
+  :hints (("Goal" :in-theory (enable rml16 rb rb-1-opener rb-1 rvm08
                                      read read-byte))))
 
 (defthm rml32-becomes-read
@@ -655,8 +655,30 @@
                            (canonical-address-p lin-addr))
                       (mv nil (read 8 lin-addr x86) x86)
                     (mv 'rml64 0 x86))))
-  :hints (("Goal" :in-theory (enable rml32 rb rb-1-opener rb-1 rvm08
+  :hints (("Goal" :in-theory (enable rml64 rb rb-1-opener rb-1 rvm08
                                      read read-opener read-byte))))
+
+;; todo:
+;; (defthm rm128-becomes-read
+;;   (implies (app-view x86)
+;;            (equal (rml128 lin-addr r-x x86)
+;;                   (if (and (canonical-address-p (+ 15 lin-addr))
+;;                            (canonical-address-p lin-addr))
+;;                       (mv nil (read 16 lin-addr x86) x86)
+;;                     (mv 'rml128 0 x86))))
+;;   :hints (("Goal" :in-theory (enable rml128 rb rb-1-opener rb-1 rvm08
+;;                                      read read-opener read-byte))))
+
+;; todo:
+;; (defthm rm256-becomes-read
+;;   (implies (app-view x86)
+;;            (equal (rml256 lin-addr r-x x86)
+;;                   (if (and (canonical-address-p (+ 31 lin-addr))
+;;                            (canonical-address-p lin-addr))
+;;                       (mv nil (read 32 lin-addr x86) x86)
+;;                     (mv 'rml256 0 x86))))
+;;   :hints (("Goal" :in-theory (enable rml256 rb rb-1-opener rb-1 rvm08
+;;                                      read read-opener read-byte))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
