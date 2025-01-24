@@ -100,3 +100,19 @@
   :elt-type proposal
   :elementp-of-nil nil
   :pred proposal-setp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define props-with-round ((round posp) (props proposal-setp))
+  :returns (props-with-round proposal-setp)
+  :short "Retrieve, from a set of proposals,
+          the subset of proposals with a given round."
+  (b* (((when (set::emptyp (proposal-set-fix props))) nil)
+       ((proposal prop) (set::head props)))
+    (if (equal (pos-fix round) prop.round)
+        (set::insert (proposal-fix prop)
+                     (props-with-round round (set::tail props)))
+      (props-with-round round (set::tail props))))
+  :prepwork ((local (in-theory (enable emptyp-of-proposal-set-fix))))
+  :verify-guards :after-returns
+  :hooks (:fix))
