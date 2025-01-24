@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -27,7 +27,7 @@
    (xdoc::p
     "We introduce an abstract syntax of Yul based on its "
     (xdoc::seetopic "concrete-syntax" "concrete syntax")
-    "; more precisely, on the new grammar.")
+    "; more precisely, on the new grammar (see description there).")
    (xdoc::p
     "The abstract syntax defined here is fairly close to the concrete syntax,
      more precisely to the grammar,
@@ -95,7 +95,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defset identifier-set
-  :short "Fixtype of osets of identifiers."
+  :short "Fixtype of sets of identifiers."
   :elt-type identifier
   :elementp-of-nil nil
   :pred identifier-setp)
@@ -119,14 +119,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defresult identifier-set-result
-  :short "Fixtype of errors and osets of identifiers."
+  :short "Fixtype of errors and sets of identifiers."
   :ok identifier-set
   :pred identifier-set-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defomap identifier-identifier-map
-  :short "Fixtype of omaps from identifiers to identifiers."
+  :short "Fixtype of maps from identifiers to identifiers."
   :key-type identifier
   :val-type identifier
   :pred identifier-identifier-mapp)
@@ -148,7 +148,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defresult identifier-identifier-map-result
-  :short "Fixtype of errors and omaps from identifiers to identifiers."
+  :short "Fixtype of errors and maps from identifiers to identifiers."
   :ok identifier-identifier-map
   :pred identifier-identifier-map-resultp)
 
