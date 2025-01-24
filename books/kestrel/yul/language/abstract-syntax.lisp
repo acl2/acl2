@@ -526,7 +526,7 @@
     (:variable-single ((name identifier)
                        (init expression-option)))
     (:variable-multi ((names identifier-list)
-                      (init funcall-optionp)))
+                      (init funcall-option)))
     (:assign-single ((target path)
                      (value expression)))
     (:assign-multi ((targets path-list)
