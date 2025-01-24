@@ -217,9 +217,25 @@
     ))
 
 ;; For 64-bit mode and low-level 32-bit mode proofs.
+;; When using these, also include (read-rules) and (write-rules).
 (defun linear-memory-rules ()
   (declare (xargs :guard t))
-  '(;; We can either open these read operations to RB, which then gets turned into READ, or turn these into READ directly:
+  '(;; Rules about reads:
+    
+    ;; Rules about rimlXX (there are only 4 of these):
+    ;; We open these to expose RML08, etc (handled below):
+    ;; TODO: go to logext of read?
+    x86isa::riml08
+    x86isa::riml16
+    x86isa::riml32
+    x86isa::riml64
+    x86isa::riml-size$inline ;shilpi leaves this enabled -- could restrict to constant
+    ;; riml-size-of-1-becomes-read ; todo: try these (for which proofs?)
+    ;; riml-size-of-2-becomes-read
+    ;; riml-size-of-4-becomes-read
+    ;; riml-size-of-8-becomes-read
+
+    ;; We can either open these read operations to RB, which then gets turned into READ, or turn these into READ directly:
     rml08-becomes-read ;; rml08
     rml16-becomes-read ;; rml16 
     rml32-becomes-read ;; rml32
@@ -228,7 +244,7 @@
     rml80-becomes-read ;; rml80
     ;; rml128-becomes-read ; todo
     ;; rml256-becomes-read ; todo
-    x86isa::rml128-when-app-view ; introduces rb
+    x86isa::rml128-when-app-view ; introduces rb (handled below)
     x86isa::rml256-when-app-view ; introduces rb
     x86isa::rml-size$inline ;shilpi leaves this enabled ;todo: consider rml-size-becomes-rb
     ;; rml-size-of-1-becomes-read ;; todo: try these (for which proofs?)
@@ -240,53 +256,39 @@
     ;; rml-size-of-16-becomes-read
     ;; rml-size-of-32-becomes-read
 
-    ;; Rules about rimlXX (there are only 4 of these):
-    ;; We open these to expose RML08, etc:
-    x86isa::riml08 ; todo: go to logext of read?
-    x86isa::riml16
-    x86isa::riml32
-    x86isa::riml64               ;shilpi leaves this enabled
-
-    x86isa::riml-size$inline ;shilpi leaves this enabled -- could restrict to constant
-    ;; riml-size-of-1-becomes-read ; todo: try these (for which proofs?)
-    ;; riml-size-of-2-becomes-read
-    ;; riml-size-of-4-becomes-read
-    ;; riml-size-of-8-becomes-read
-
-    x86isa::wml08
-    x86isa::wml16
-    x86isa::wml32
-    x86isa::wml64           ;shilpi leaves this enabled, but this is big!
-    x86isa::wml128-when-app-view
-    x86isa::wml256-when-app-view
-    x86isa::wml-size$inline ;shilpi leaves this enabled
-
-    x86isa::wiml08
-    x86isa::wiml16
-    x86isa::wiml32
-    x86isa::wiml64
-    x86isa::wiml-size$inline
-    ))
-
-;; For 64-bit mode and low-level 32-bit mode proofs.
-(defun read-introduction-rules ()
-  (declare (xargs :guard t))
-  '(rb-becomes-read ; no need to target mv-nth-1-of-rb, etc. since this rewrites the entire rb
+    rb-becomes-read ; no need to target mv-nth-1-of-rb, etc. since this rewrites the entire rb
     ;;mv-nth-1-of-rb-becomes-read
     ;; These just clarify failures to turn RB into READ: ; TODO: Only use when debugging?
     mv-nth-1-of-rb-of-set-rip
     mv-nth-1-of-rb-of-set-rax ; could add more like this
 
-    ;;mv-nth-1-of-rb-1-becomes-read
+    ;; Rules about writes:
+    
+    ;; Rules about wimlXX (there are only 4 of these):
+    ;; We open these to expose WML08, etc (handled below)::
+    ;; TODO: Go directly to WRITE
+    x86isa::wiml08
+    x86isa::wiml16
+    x86isa::wiml32
+    x86isa::wiml64
+    x86isa::wiml-size$inline
+
+    ;; TODO: Go directly to WRITE?
+    x86isa::wml08
+    x86isa::wml16
+    x86isa::wml32
+    x86isa::wml48
+    x86isa::wml64
+    x86isa::wml80
+    x86isa::wml128-when-app-view
+    x86isa::wml256-when-app-view
+    x86isa::wml512
+    x86isa::wml-size$inline ;shilpi leaves this enabled
+
+    mv-nth-1-of-wb-becomes-write
     ))
 
 (set-axe-rule-priority rb-becomes-read -1) ; get rid of RB immediately
-
-;; When using these, also include (write-rules).
-(defun write-introduction-rules ()
-  (declare (xargs :guard t))
-  '(;; mv-nth-1-of-wb-1-becomes-write
-    mv-nth-1-of-wb-becomes-write))
 
 ;; Usually not needed except for in the loop lifter (showing that assumptions are preserved):
 (defund program-at-rules ()
@@ -3213,8 +3215,6 @@
   (declare (xargs :guard t))
   (append (lifter-rules-common)
           (if-lowering-rules64)
-          (read-introduction-rules)
-          (write-introduction-rules)
           (read-rules)
           (write-rules)
           (read-and-write-rules)
@@ -4388,8 +4388,6 @@
 (defun low-level-rules-32 ()
     (declare (xargs :guard t))
   (append (linear-memory-rules)
-          (read-introduction-rules)
-          (write-introduction-rules)
           (read-rules)
           (write-rules)
           (read-and-write-rules)
