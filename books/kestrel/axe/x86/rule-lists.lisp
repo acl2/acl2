@@ -221,9 +221,9 @@
   (declare (xargs :guard t))
   '(;; We can either open these read operations to RB, which then gets turned into READ, or turn these into READ directly:
     rml08-becomes-read ;; rml08
-    rml16 ;; rml16-becomes-read ;; 
-    rml32 ;; rml32-becomes-read ;; 
-    rml64 ;; rml64-becomes-read ;; rml64   ; todo: more sizes!
+    rml16-becomes-read ;; rml16; 
+    rml32-becomes-read ;; rml32
+    rml64-becomes-read ;; rml64   ; todo: more sizes!
     x86isa::rml128-when-app-view
     x86isa::rml256-when-app-view
     x86isa::rml-size$inline ;shilpi leaves this enabled ;todo: consider rml-size-becomes-rb
