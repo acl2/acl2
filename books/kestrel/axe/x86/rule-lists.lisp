@@ -216,17 +216,16 @@
     x86isa::subset-p-reflexive
     ))
 
+;; For 64-bit mode and low-level 32-bit mode proofs.
 (defun linear-memory-rules ()
   (declare (xargs :guard t))
-  '(
-    ;; Open these read operations to RB, which then gets turned into READ (TODO: Turn these into READ directly?)
-    rml08-becomes-read ;; x86isa::rml08
-    x86isa::rml16
-    x86isa::rml32
-    x86isa::rml64           ;shilpi leaves this enabled
+  '(;; We can either open these read operations to RB, which then gets turned into READ, or turn these into READ directly:
+    rml08-becomes-read ;; rml08
+    rml16 ;; rml16-becomes-read ;; 
+    rml32 ;; rml32-becomes-read ;; 
+    rml64 ;; rml64-becomes-read ;; rml64   ; todo: more sizes!
     x86isa::rml128-when-app-view
     x86isa::rml256-when-app-view
-
     x86isa::rml-size$inline ;shilpi leaves this enabled ;todo: consider rml-size-becomes-rb
     ;; rml-size-of-1-becomes-read ;; todo: try these (for which proofs?)
     ;; rml-size-of-2-becomes-read
@@ -237,7 +236,7 @@
     ;; rml-size-of-16-becomes-read
     ;; rml-size-of-32-becomes-read
 
-    x86isa::riml08
+    x86isa::riml08 ; todo: go to logext of read?
     x86isa::riml16
     x86isa::riml32
     x86isa::riml64               ;shilpi leaves this enabled
@@ -263,6 +262,7 @@
     x86isa::wiml-size$inline
     ))
 
+;; For 64-bit mode and low-level 32-bit mode proofs.
 (defun read-introduction-rules ()
   (declare (xargs :guard t))
   '(rb-becomes-read ; no need to target mv-nth-1-of-rb, etc. since this rewrites the entire rb
@@ -311,7 +311,7 @@
     read-of-set-flag
     read-when-program-at ; trying just this one
     ;; since read-when-program-at can introduce bv-array-read-chunk-little
-    acl2::bv-array-read-chunk-little-constant-opener
+    ;; acl2::bv-array-read-chunk-little-constant-opener ; drop now that we can eval it
     acl2::bv-array-read-chunk-little-base ; todo: try to do better than these in some cases (try the other rules first)
     acl2::bv-array-read-chunk-little-unroll
     ;; read-when-program-at-1-byte-simple
@@ -377,17 +377,16 @@
   (declare (xargs :guard t))
   '(xr-becomes-fault
     xr-becomes-ms
-    xr-becomes-undef
     xr-becomes-mxcsr
+    xr-becomes-undef
     xw-becomes-set-fault
     xw-becomes-set-ms
-    xw-becomes-set-undef
     xw-becomes-set-mxcsr
+    xw-becomes-set-undef
     !fault-becomes-set-fault
     !ms-becomes-set-ms
-    x86isa::!mxcsr-becomes-set-mxcsr ; package
-    x86isa::!undef-becomes-set-undef ; package
-    ))
+    !mxcsr-becomes-set-mxcsr
+    !undef-becomes-set-undef))
 
 ;; For the loop lifter
 (defund reader-and-writer-opener-rules ()
@@ -408,26 +407,23 @@
     ;; app-view-of-set-ms
     app-view-of-set-mxcsr
     app-view-of-set-undef
+    app-view-of-!rflags
 
-    x86isa::x86p-xw ;big rule with forced hyps
+    ;; Rules about x86p:
+    x86isa::x86p-xw
     x86p-of-set-flag
     ;; x86p-of-set-ms
     x86p-of-set-mxcsr
     x86p-of-set-undef
-
     x86p-of-!rflags
 
     ;; Rules about fault:
-
-    ;; fault x86isa::fault$a  ;expose the call to xr
-    ;; fault-of-set-ms
-    fault-of-set-flag
-    ;; fault-of-myif
-    fault-of-!rflags ; why is !rflags not going away?
-    fault-of-set-rip ; move to 64 rules?
-    fault-of-set-undef
-    fault-of-set-mxcsr
     fault-of-xw ; currently needed at least for writes to float registers
+    fault-of-set-flag
+    ;; fault-of-set-ms
+    fault-of-set-mxcsr
+    fault-of-set-undef
+    fault-of-!rflags ; why is !rflags not going away?
 
     xr-of-set-undef-irrel
     xr-of-set-mxcsr-irrel
@@ -3383,6 +3379,7 @@
     ms-of-write-byte
 
     fault-of-write-byte ; todo: move?
+    fault-of-set-rip
 
     app-view-of-set-rip
     app-view-of-set-rax
@@ -4592,7 +4589,6 @@
             if-of-set-flag-and-set-flag
             xr-of-!rflags-irrel ; todo: better normal form?
             64-bit-modep-of-!rflags
-            app-view-of-!rflags
             read-of-!rflags
             acl2::logext-of-+-of-bvplus-same-size
             acl2::logext-of-+-of-+-of-mult-same-size
@@ -4899,9 +4895,6 @@
      acl2::equal-of-bvplus-constant-and-constant-alt
      acl2::mod-of-+-of-constant
      xr-of-if
-     ;; since we are still using the legacy rewriter, which can't eval bv-array-read-chunk-little:
-     ;acl2::bv-array-read-chunk-little-base
-     ;acl2::bv-array-read-chunk-little-unroll
      )
    (program-at-rules) ; to show that program-at assumptions still hold after the loop body
    (write-rules)
