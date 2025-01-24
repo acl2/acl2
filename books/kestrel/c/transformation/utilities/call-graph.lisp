@@ -106,7 +106,7 @@
       "Only identifiers with internal linkage are tagged with a
        filepath. External identifiers do not need qualification, as they are
        already unique across the translation unit ensemble."))
-  ((filepath? filepath-option)
+  ((filepath? c$::filepath-option)
    (ident ident))
   :pred qualified-identp)
 
