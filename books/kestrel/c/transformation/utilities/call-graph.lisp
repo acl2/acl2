@@ -94,10 +94,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defoption filepath-option
-  filepath
-  :pred filepath-optionp)
-
 (fty::defprod qualified-ident
   :short "Fixtype for fully qualified identifiers"
   :long

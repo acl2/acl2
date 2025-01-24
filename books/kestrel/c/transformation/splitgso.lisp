@@ -20,6 +20,7 @@
 (include-book "std/system/constant-value" :dir :system)
 (include-book "std/util/error-value-tuples" :dir :system)
 
+(local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 (local (include-book "std/system/w" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
@@ -86,7 +87,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define get-decl-specs-of-global-extdecl
+(define get-gso-decl-specs-extdecl
   ((ident identp)
    (extdecl extdeclp))
   :returns (mv found
@@ -107,7 +108,7 @@
    :empty (mv nil nil)
    :asm (mv nil nil)))
 
-(define get-decl-specs-of-global-extdecl-list
+(define get-gso-decl-specs-extdecl-list
   ((ident identp)
    (extdecls extdecl-listp))
   :returns (mv erp
@@ -116,18 +117,18 @@
        ((when (endp extdecls))
         (reterr (msg "No object found")))
        ((mv found type)
-        (get-decl-specs-of-global-extdecl ident (first extdecls))))
+        (get-gso-decl-specs-extdecl ident (first extdecls))))
     (if found
         (retok type)
-      (get-decl-specs-of-global-extdecl-list ident (rest extdecls)))))
+      (get-gso-decl-specs-extdecl-list ident (rest extdecls)))))
 
-(define get-decl-specs-of-global-transunit
+(define get-gso-decl-specs-transunit
   ((ident identp)
    (tunit transunitp))
   :returns (mv erp
                (type decl-spec-listp))
   (b* (((transunit tunit) tunit))
-    (get-decl-specs-of-global-extdecl-list ident tunit.decls)))
+    (get-gso-decl-specs-extdecl-list ident tunit.decls)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -156,28 +157,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define get-type-spec-of-global-transunit
+(define get-gso-type-spec
   ((ident identp)
    (tunit transunitp))
   :returns (mv erp
                (type type-specp))
   (b* (((reterr) (irr-type-spec))
        ((erp decl-specs)
-        (get-decl-specs-of-global-transunit ident tunit))
+        (get-gso-decl-specs-transunit ident tunit))
        (type?
          (type-spec-from-dec-specs decl-specs)))
     (if type?
         (retok type?)
       (reterr (msg "Could not convert declaration specifiers to type")))))
 
-(define get-struct-type-name-of-global-transunit
+(define get-gso-type-name
   ((ident identp)
    (tunit transunitp))
   :returns (mv erp
                (name identp))
   (b* (((reterr) (c$::irr-ident))
        ((erp type-spec)
-        (get-type-spec-of-global-transunit ident tunit)))
+        (get-gso-type-spec ident tunit)))
     (type-spec-case
       type-spec
       :struct (b* (((strunispec strunispec) type-spec.spec)
@@ -186,6 +187,143 @@
                     (retok ident?)
                   (reterr (msg "Struct type is anonymous"))))
       :otherwise (reterr (msg "Type is not a struct")))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define get-gso-linkage-from-valid-table
+  ((ident identp)
+   (table c$::valid-tablep))
+  :returns (mv erp
+               (linkage c$::linkagep))
+  (b* (((reterr) (c$::irr-linkage))
+       (scopes (c$::valid-table->scopes table))
+       ((when (endp scopes))
+        (reterr (msg "Ill-formed validation table, no scope found")))
+       ((unless (endp (rest scopes)))
+        (reterr (msg "Ill-formed validation table, more than one scope found:
+                      ~x0"
+                     scopes)))
+       (scope (first scopes))
+       (ord (c$::valid-scope->ord scope))
+       (lookup (assoc-equal ident ord))
+       ((unless lookup)
+        (reterr (msg "Global struct object ~x0 not in the validation table."
+                     ident)))
+       (ord-info (cdr lookup)))
+    (c$::valid-ord-info-case
+      ord-info
+      :objfun (if (equal ord-info.type (c$::type-struct))
+                  ;; TODO also check defstatus isn't undefined?
+                  (retok ord-info.linkage)
+                (reterr (msg "~x0 has type ~x1, not a struct type"
+                             ident
+                             ord-info.type)))
+      :otherwise (reterr (msg "~x0 is not an object." ident)))))
+
+(define get-gso-filepath-linkage-search
+  ((ident identp)
+   (tunits filepath-transunit-mapp))
+  :guard (c$::filepath-transunit-map-annop tunits)
+  :returns (mv erp
+               (filepath filepathp)
+               (linkage c$::linkagep))
+  (b* (((reterr) (filepath "") (c$::irr-linkage))
+       ((when (omap::emptyp tunits))
+        (reterr (msg "Global struct object ~x0 does not exist." ident)))
+       (filepath (c$::filepath-fix (omap::head-key tunits)))
+       (tunit (omap::head-val tunits))
+       ((mv erp linkage)
+        (get-gso-linkage-from-valid-table
+          ident
+          (c$::transunit-info->table (c$::transunit->info tunit))))
+       ((unless erp)
+        (retok filepath linkage)))
+    (get-gso-filepath-linkage-search ident (omap::tail tunits)))
+  :guard-hints (("Goal" :in-theory (enable c$::filepath-transunit-map-annop
+                                           c$::transunit-annop))))
+
+(defrulel assoc-of-get-gso-filepath-linkage-search.filepath
+  (implies
+    (and (filepath-transunit-mapp tunits)
+         (not (mv-nth 0 (get-gso-filepath-linkage-search ident tunits))))
+    (omap::assoc (mv-nth 1 (get-gso-filepath-linkage-search ident tunits))
+                 tunits))
+  :induct t
+  :enable get-gso-filepath-linkage-search)
+
+(define get-gso-filepath-linkage
+  ((filepath? c$::filepath-optionp)
+   (ident identp)
+   (tunits transunit-ensemblep))
+  :guard (c$::transunit-ensemble-annop tunits)
+  :returns (mv erp
+               (filepath filepathp)
+               (linkage c$::linkagep))
+  (b* (((reterr) (filepath "") (c$::irr-linkage) )
+       (unwrapped-tunits (transunit-ensemble->unwrap tunits))
+       ((unless filepath?)
+        (get-gso-filepath-linkage-search ident unwrapped-tunits))
+       (lookup
+         (omap::assoc filepath? unwrapped-tunits))
+       ((unless lookup)
+        (reterr (msg "Provided filepath ~x0 does not exist in the translation
+                      unit ensemble."
+                     filepath?)))
+       (tunit (cdr lookup))
+       ((erp linkage)
+        (get-gso-linkage-from-valid-table
+          ident
+          (c$::transunit-info->table (c$::transunit->info tunit)))))
+    (retok filepath? linkage))
+  :guard-hints (("Goal" :in-theory (enable c$::transunit-ensemble-annop)))
+  :prepwork
+  ((defrulel transunit-infop-of-assoc-tunits
+     (implies (and (filepath-transunit-mapp tunits)
+                   (c$::filepath-transunit-map-annop tunits)
+                   (omap::assoc filepath tunits))
+              (c$::transunit-infop
+                (c$::transunit->info
+                  (cdr (omap::assoc filepath tunits)))))
+     :induct t
+     :enable (omap::assoc
+              c$::filepath-transunit-map-annop
+              c$::transunit-annop))))
+
+(defrulel assoc-of-get-gso-filepath-linkage.filepath
+  (implies
+    (and (transunit-ensemblep tunits)
+         (not (mv-nth 0 (get-gso-filepath-linkage filepath? ident tunits))))
+    (omap::assoc (mv-nth 1 (get-gso-filepath-linkage filepath? ident tunits))
+                 (transunit-ensemble->unwrap tunits)))
+  :enable get-gso-filepath-linkage)
+
+(define get-gso-info
+  ((filepath? c$::filepath-optionp)
+   (ident identp)
+   (tunits transunit-ensemblep))
+  :guard (c$::transunit-ensemble-annop tunits)
+  :returns (mv erp
+               (struct-type identp)
+               (filepath filepathp)
+               (linkage c$::linkagep))
+  (b* (((reterr) (c$::irr-ident) (filepath "") (c$::irr-linkage))
+       ((erp filepath linkage)
+        (get-gso-filepath-linkage filepath? ident tunits))
+       (tunit
+         (omap::lookup filepath (transunit-ensemble->unwrap tunits)))
+       ((erp struct-type)
+        (get-gso-type-name ident tunit)))
+    (retok struct-type filepath linkage)))
+
+(defruled assoc-of-get-gso-info.filepath?
+  (implies
+    (and (transunit-ensemblep tunits)
+         (not (mv-nth 0 (get-gso-info filepath? ident tunits))))
+    (omap::assoc (mv-nth 2 (get-gso-info filepath? ident tunits))
+                 (transunit-ensemble->unwrap tunits)))
+  :enable get-gso-info)
+
+(local (in-theory (enable assoc-of-get-gso-info.filepath?)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -250,7 +388,7 @@
         (retok structdecls1 (cons structdecl structdecls2))
       (retok (cons structdecl structdecls1) structdecls2))))
 
-(define split-global-struct-type-decl
+(define dup-split-struct-type-decl
   ((original identp)
    (new1 identp)
    (new2 identp)
@@ -308,7 +446,7 @@
     (cons (c$::extdecl-decl (first decls))
           (decl-list-to-extdecl-list (rest decls)))))
 
-(define split-global-struct-type-extdecl
+(define dup-split-struct-type-extdecl
   ((original identp)
    (new1 identp)
    (new2 identp)
@@ -323,7 +461,7 @@
       extdecl
       :fundef (retok nil (list (extdecl-fix extdecl)))
       :decl (b* (((erp found decls)
-                  (split-global-struct-type-decl
+                  (dup-split-struct-type-decl
                     original
                     new1
                     new2
@@ -334,7 +472,7 @@
       :empty (retok nil (list (extdecl-fix extdecl)))
       :asm (retok nil (list (extdecl-fix extdecl))))))
 
-(define split-global-struct-type-extdecl-list
+(define dup-split-struct-type-extdecl-list
   ((original identp)
    (new1 identp)
    (new2 identp)
@@ -346,7 +484,7 @@
        ((when (endp extdecls))
         (retok nil))
        ((erp found new-extdecls1)
-        (split-global-struct-type-extdecl
+        (dup-split-struct-type-extdecl
           original
           new1
           new2
@@ -356,7 +494,7 @@
         (retok (append new-extdecls1
                        (extdecl-list-fix (rest extdecls)))))
        ((erp new-extdecls2)
-        (split-global-struct-type-extdecl-list
+        (dup-split-struct-type-extdecl-list
           original
           new1
           new2
@@ -364,7 +502,7 @@
           (rest extdecls))))
     (retok (append new-extdecls1 new-extdecls2))))
 
-(define split-global-struct-type-transunit
+(define dup-split-struct-type-transunit
   ((original identp)
    (new1 identp)
    (new2 identp)
@@ -375,13 +513,43 @@
   (b* (((reterr) (c$::irr-transunit))
        ((transunit tunit) tunit)
        ((erp extdecls)
-        (split-global-struct-type-extdecl-list
+        (dup-split-struct-type-extdecl-list
           original
           new1
           new2
           split-members
           tunit.decls)))
     (retok (make-transunit :decls extdecls :info tunit.info))))
+
+(define dup-split-struct-type-filepath-transunit-map
+  ((original identp)
+   (new1 identp)
+   (new2 identp)
+   (split-members ident-listp)
+   (map filepath-transunit-mapp))
+  :returns (mv erp
+               (map$ filepath-transunit-mapp))
+  (b* (((reterr) nil)
+       ((when (omap::emptyp map))
+        (retok nil))
+       ((erp tunit)
+        (dup-split-struct-type-transunit
+          original
+          new1
+          new2
+          split-members
+          (omap::head-val map)))
+       ((erp map$)
+        (dup-split-struct-type-filepath-transunit-map
+          original
+          new1
+          new2
+          split-members
+          (omap::tail map))))
+    (retok (omap::update (c$::filepath-fix (omap::head-key map))
+                         tunit
+                         map$)))
+  :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -429,6 +597,14 @@
         (retok desiniters1 (cons desiniter desiniters2))
       (retok (cons desiniter desiniters1) desiniters2))))
 
+(defrulel split-desiniter-list.desiniter-list1-type-prescription
+  (true-listp (mv-nth 1 (split-desiniter-list split-members desiniters)))
+  :rule-classes :type-prescription)
+
+(defrulel split-desiniter-list.desiniter-list2-type-prescription
+  (true-listp (mv-nth 2 (split-desiniter-list split-members desiniters)))
+  :rule-classes :type-prescription)
+
 (define split-struct-initer
   ((split-members ident-listp)
    (initer initerp))
@@ -442,13 +618,19 @@
                 (msg "Assignment expression initializers are unsupported: ~x0"
                      initer.expr))
       :list (b* (((erp elems1 elems2)
-                  (split-desiniter-list split-members initer.elems)))
-              (retok (c$::make-initer-list
-                       :elems elems1
-                       :final-comma initer.final-comma)
-                     (c$::make-initer-list
-                       :elems elems2
-                       :final-comma initer.final-comma))))))
+                  (split-desiniter-list split-members initer.elems))
+                 (elems1 (desiniter-list-fix elems1))
+                 (elems2 (desiniter-list-fix elems2)))
+              (retok (if (endp elems1)
+                         nil
+                       (c$::make-initer-list
+                         :elems elems1
+                         :final-comma initer.final-comma))
+                     (if (endp elems2)
+                         nil
+                       (c$::make-initer-list
+                         :elems elems2
+                         :final-comma initer.final-comma)))))))
 
 (defines match-simple-declor-ident
   :parents (splitgso-implementation)
@@ -531,8 +713,9 @@
                              split-members
                              (first initdeclors))))
 
-(define split-global-struct-obj-decl
+(define split-gso-decl
   ((original identp)
+   (linkage c$::linkagep)
    (new1 identp)
    (new2 identp)
    (new1-type identp)
@@ -557,35 +740,46 @@
               :struct (split-struct-initdeclors original split-members decl.init)
               :otherwise (mv nil nil nil nil)))
            ((unless match)
-            (retok nil (list (decl-fix decl)))))
+            (retok nil (list (decl-fix decl))))
+           (decl-new1-type
+             (c$::decl-spec-typespec
+               (c$::type-spec-struct
+                 (c$::make-strunispec
+                   :name new1-type))))
+           (decl-new2-type
+             (c$::decl-spec-typespec
+               (c$::type-spec-struct
+                 (c$::make-strunispec
+                   :name new2-type)))))
         (retok
           t
           (list (c$::make-decl-decl
-                  :specs (list (c$::decl-spec-stoclass
-                                 (c$::stor-spec-static))
-                               (c$::decl-spec-typespec
-                                 (c$::type-spec-struct
-                                   (c$::make-strunispec
-                                     :name new1-type))))
+                  :specs (c$::linkage-case
+                           linkage
+                           :internal (list (c$::decl-spec-stoclass
+                                             (c$::stor-spec-static))
+                                           decl-new1-type)
+                           :otherwise (list decl-new1-type))
                   :init (list (c$::make-initdeclor
                                 :declor (c$::make-declor
                                           :direct (c$::dirdeclor-ident new1))
                                 :init? initer-option1)))
                 (c$::make-decl-decl
-                  :specs (list (c$::decl-spec-stoclass
-                                 (c$::stor-spec-static))
-                               (c$::decl-spec-typespec
-                                 (c$::type-spec-struct
-                                   (c$::make-strunispec
-                                     :name new2-type))))
+                  :specs (c$::linkage-case
+                           linkage
+                           :internal (list (c$::decl-spec-stoclass
+                                             (c$::stor-spec-static))
+                                           decl-new2-type)
+                           :otherwise (list decl-new2-type))
                   :init (list (c$::make-initdeclor
                                 :declor (c$::make-declor
                                           :direct (c$::dirdeclor-ident new2))
                                 :init? initer-option2))))))
       :statassert (retok nil (list (decl-fix decl))))))
 
-(define split-global-struct-obj-extdecl
+(define split-gso-extdecl
   ((original identp)
+   (linkage c$::linkagep)
    (new1 identp)
    (new2 identp)
    (new1-type identp)
@@ -601,8 +795,9 @@
       extdecl
       :fundef (retok nil (list (extdecl-fix extdecl)))
       :decl (b* (((erp found decls)
-                  (split-global-struct-obj-decl
+                  (split-gso-decl
                     original
+                    linkage
                     new1
                     new2
                     new1-type
@@ -614,8 +809,9 @@
       :empty (retok nil (list (extdecl-fix extdecl)))
       :asm (retok nil (list (extdecl-fix extdecl))))))
 
-(define split-global-struct-obj-extdecl-list
+(define split-gso-extdecl-list
   ((original identp)
+   (linkage c$::linkagep)
    (new1 identp)
    (new2 identp)
    (new1-type identp)
@@ -626,10 +822,11 @@
                (extdecls extdecl-listp))
   (b* (((reterr) nil)
        ((when (endp extdecls))
-        (reterr (msg "Global struct object not found: ~x0" original)))
+        (retok nil))
        ((erp found new-extdecls1)
-        (split-global-struct-obj-extdecl
+        (split-gso-extdecl
           original
+          linkage
           new1
           new2
           new1-type
@@ -640,8 +837,9 @@
         (retok (append new-extdecls1
                        (extdecl-list-fix (rest extdecls)))))
        ((erp new-extdecls2)
-        (split-global-struct-obj-extdecl-list
+        (split-gso-extdecl-list
           original
+          linkage
           new1
           new2
           new1-type
@@ -650,8 +848,9 @@
           (rest extdecls))))
     (retok (append new-extdecls1 new-extdecls2))))
 
-(define split-global-struct-obj-transunit
+(define split-gso-transunit
   ((original identp)
+   (linkage c$::linkagep)
    (new1 identp)
    (new2 identp)
    (new1-type identp)
@@ -663,8 +862,9 @@
   (b* (((reterr) (c$::irr-transunit))
        ((transunit tunit) tunit)
        ((erp extdecls)
-        (split-global-struct-obj-extdecl-list
+        (split-gso-extdecl-list
           original
+          linkage
           new1
           new2
           new1-type
@@ -672,6 +872,45 @@
           split-members
           tunit.decls)))
     (retok (make-transunit :decls extdecls :info tunit.info))))
+
+(define split-gso-filepath-transunit-map
+  ((original identp)
+   (linkage c$::linkagep)
+   (new1 identp)
+   (new2 identp)
+   (new1-type identp)
+   (new2-type identp)
+   (split-members ident-listp)
+   (map filepath-transunit-mapp))
+  :returns (mv erp
+               (map$ filepath-transunit-mapp))
+  (b* (((reterr) nil)
+       ((when (omap::emptyp map))
+        (retok nil))
+       ((erp tunit)
+        (split-gso-transunit
+          original
+          linkage
+          new1
+          new2
+          new1-type
+          new2-type
+          split-members
+          (omap::head-val map)))
+       ((erp map$)
+        (split-gso-filepath-transunit-map
+          original
+          linkage
+          new1
+          new2
+          new1-type
+          new2-type
+          split-members
+          (omap::tail map))))
+    (retok (omap::update (c$::filepath-fix (omap::head-key map))
+                         tunit
+                         map$)))
+  :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -685,29 +924,30 @@
     :parents (splitgso-implementation)
     :extra-args
     ((original identp)
+     (linkage c$::linkagep)
      (new1 identp)
      (new2 identp)
      (split-members ident-listp))
     :expr
-    (lambda (expr original new1 new2 split-members)
+    (lambda (expr original linkage new1 new2 split-members)
       (expr-case
         expr
         :ident (b* (((unless (equal expr.ident original))
                      (expr-fix expr))
-                    (linkage (c$::var-info->linkage
-                               (c$::coerce-var-info expr.info))))
-                 (c$::linkage-case
-                   linkage
-                   :internal (prog2$ (raise "Global struct object ~x0 occurs in
-                                           illegal expression."
-                                            original)
-                                     (expr-fix expr))
-                   :otherwise (expr-fix expr)))
+                    (ident-linkage
+                      (c$::var-info->linkage
+                        (c$::coerce-var-info expr.info)))
+                    (- (and (equal linkage ident-linkage)
+                            (raise "Global struct object ~x0 occurs in illegal
+                                    expression."
+                                   original))))
+                 (expr-fix expr))
         :const (expr-fix expr)
         :string (expr-fix expr)
         :paren (expr-paren (replace-field-access-expr
                              expr.inner
                              original
+                             linkage
                              new1
                              new2
                              split-members))
@@ -715,12 +955,14 @@
                   :control (replace-field-access-expr
                              expr.control
                              original
+                             linkage
                              new1
                              new2
                              split-members)
                   :assocs (replace-field-access-genassoc-list
                             expr.assocs
                             original
+                            linkage
                             new1
                             new2
                             split-members))
@@ -728,12 +970,14 @@
                   :arg1 (replace-field-access-expr
                           expr.arg1
                           original
+                          linkage
                           new1
                           new2
                           split-members)
                   :arg2 (replace-field-access-expr
                           expr.arg2
                           original
+                          linkage
                           new1
                           new2
                           split-members))
@@ -741,12 +985,14 @@
                    :fun (replace-field-access-expr
                           expr.fun
                           original
+                          linkage
                           new1
                           new2
                           split-members)
                    :args (replace-field-access-expr-list
                            expr.args
                            original
+                           linkage
                            new1
                            new2
                            split-members))
@@ -756,18 +1002,17 @@
                          expr.arg
                          :ident (b* (((unless (equal expr.arg.ident original))
                                       nil)
-                                     (linkage (c$::var-info->linkage
-                                                (c$::coerce-var-info expr.arg.info))))
-                                  (c$::linkage-case
-                                    linkage
-                                    :internal t
-                                    :otherwise nil))
+                                     (ident-linkage
+                                       (c$::var-info->linkage
+                                         (c$::coerce-var-info expr.arg.info))))
+                                  (equal linkage ident-linkage))
                          :otherwise nil))
                      ((unless match)
                       (make-expr-member
                         :arg (replace-field-access-expr
                                expr.arg
                                original
+                               linkage
                                new1
                                new2
                                split-members)
@@ -782,6 +1027,7 @@
                    :arg (replace-field-access-expr
                           expr.arg
                           original
+                          linkage
                           new1
                           new2
                           split-members)
@@ -790,12 +1036,14 @@
                    :type (replace-field-access-tyname
                            expr.type
                            original
+                           linkage
                            new1
                            new2
                            split-members)
                    :elems (replace-field-access-desiniter-list
                             expr.elems
                             original
+                            linkage
                             new1
                             new2
                             split-members)
@@ -805,12 +1053,14 @@
                  :arg (replace-field-access-expr
                         expr.arg
                         original
+                        linkage
                         new1
                         new2
                         split-members))
         :sizeof (expr-sizeof (replace-field-access-tyname
                                expr.type
                                original
+                               linkage
                                new1
                                new2
                                split-members))
@@ -820,6 +1070,7 @@
         :alignof (make-expr-alignof :type (replace-field-access-tyname
                                             expr.type
                                             original
+                                            linkage
                                             new1
                                             new2
                                             split-members)
@@ -828,12 +1079,14 @@
                 :type (replace-field-access-tyname
                         expr.type
                         original
+                        linkage
                         new1
                         new2
                         split-members)
                 :arg (replace-field-access-expr
                        expr.arg
                        original
+                       linkage
                        new1
                        new2
                        split-members))
@@ -842,12 +1095,14 @@
                   :arg1 (replace-field-access-expr
                           expr.arg1
                           original
+                          linkage
                           new1
                           new2
                           split-members)
                   :arg2 (replace-field-access-expr
                           expr.arg2
                           original
+                          linkage
                           new1
                           new2
                           split-members))
@@ -855,18 +1110,21 @@
                 :test (replace-field-access-expr
                         expr.test
                         original
+                        linkage
                         new1
                         new2
                         split-members)
                 :then (replace-field-access-expr-option
                         expr.then
                         original
+                        linkage
                         new1
                         new2
                         split-members)
                 :else (replace-field-access-expr
                         expr.else
                         original
+                        linkage
                         new1
                         new2
                         split-members))
@@ -874,12 +1132,14 @@
                  :first (replace-field-access-expr
                           expr.first
                           original
+                          linkage
                           new1
                           new2
                           split-members)
                  :next (replace-field-access-expr
                          expr.next
                          original
+                         linkage
                          new1
                          new2
                          split-members))
@@ -901,6 +1161,7 @@
         :stmt (expr-stmt (replace-field-access-block-item-list
                            expr.items
                            original
+                           linkage
                            new1
                            new2
                            split-members))
@@ -908,12 +1169,14 @@
                     :type1 (replace-field-access-tyname
                              expr.type1
                              original
+                             linkage
                              new1
                              new2
                              split-members)
                     :type2 (replace-field-access-tyname
                              expr.type2
                              original
+                             linkage
                              new1
                              new2
                              split-members))
@@ -921,12 +1184,14 @@
                     :type (replace-field-access-tyname
                             expr.type
                             original
+                            linkage
                             new1
                             new2
                             split-members)
                     :member (replace-field-access-member-designor
                               expr.member
                               original
+                              linkage
                               new1
                               new2
                               split-members))
@@ -934,47 +1199,123 @@
                   :list (replace-field-access-expr
                           expr.list
                           original
+                          linkage
                           new1
                           new2
                           split-members)
                   :type (replace-field-access-tyname
                           expr.type
                           original
+                          linkage
                           new1
                           new2
                           split-members))
         :extension (expr-extension (replace-field-access-expr
                                      expr.expr
                                      original
+                                     linkage
                                      new1
                                      new2
                                      split-members))))))
 
+(define replace-field-access-map
+  ((map filepath-transunit-mapp)
+   (original identp)
+   (linkage c$::linkagep)
+   (new1 identp)
+   (new2 identp)
+   (split-members ident-listp))
+  :returns (map$ filepath-transunit-mapp)
+  (if (omap::emptyp map)
+      nil
+    (omap::update
+      (c$::filepath-fix (omap::head-key map))
+      (replace-field-access-transunit
+        (omap::head-val map)
+        original
+        linkage
+        new1
+        new2
+        split-members)
+      (replace-field-access-map
+        (omap::tail map)
+        original
+        linkage
+        new1
+        new2
+        split-members)))
+  :verify-guards :after-returns)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define splitgso-transunit
-  ((orig-struct identp)
+(define splitgso-rename-filepaths
+  ((map filepath-transunit-mapp))
+  :returns (map$ filepath-transunit-mapp)
+  (b* (((when (omap::emptyp map)) nil)
+       ((mv path tunit) (omap::head map))
+       (path$ (deftrans-filepath path "SPLITGSO")))
+    (omap::update path$
+                  (c$::transunit-fix tunit)
+                  (splitgso-rename-filepaths (omap::tail map))))
+  :verify-guards :after-returns)
+
+(define splitgso-filepath-transunit-map
+  ((struct-type identp)
+   (filepath filepathp)
+   (linkage c$::linkagep)
+   (orig-struct identp)
    (new-struct1 identp)
    (new-struct2 identp)
    (new-struct-type1 identp)
    (new-struct-type2 identp)
    (split-members ident-listp)
-   (tunit transunitp))
+   (map filepath-transunit-mapp))
+  :guard (omap::assoc filepath map)
   :returns (mv erp
-               (new-tunit transunitp))
-  (b* (((reterr) (c$::transunit-fix tunit))
-       ((erp struct-name)
-        (get-struct-type-name-of-global-transunit orig-struct tunit))
+               (map$ filepath-transunit-mapp))
+  (b* (((reterr) nil)
+       (map (c$::filepath-transunit-map-fix map))
+       ((when (equal linkage (c$::linkage-none)))
+        (reterr (msg "Invalid struct object linkage: ~x0" linkage)))
+       ((when (equal linkage (c$::linkage-external)))
+        (b* (((erp map)
+              (dup-split-struct-type-filepath-transunit-map
+                struct-type
+                new-struct-type1
+                new-struct-type2
+                split-members
+                map))
+             ((erp map)
+              (split-gso-filepath-transunit-map
+                orig-struct
+                linkage
+                new-struct1
+                new-struct2
+                new-struct-type1
+                new-struct-type2
+                split-members
+                map))
+             (map
+               (replace-field-access-map
+                 map
+                 orig-struct
+                 linkage
+                 new-struct1
+                 new-struct2
+                 split-members)))
+          (retok map)))
+       (tunit (omap::lookup filepath map))
        ((erp tunit)
-        (split-global-struct-type-transunit
-          struct-name
+        (dup-split-struct-type-transunit
+          struct-type
           new-struct-type1
           new-struct-type2
           split-members
           tunit))
        ((erp tunit)
-        (split-global-struct-obj-transunit
+        (split-gso-transunit
           orig-struct
+          linkage
           new-struct1
           new-struct2
           new-struct-type1
@@ -985,10 +1326,44 @@
          (replace-field-access-transunit
            tunit
            orig-struct
+           linkage
            new-struct1
            new-struct2
            split-members)))
-    (retok tunit)))
+    (retok (omap::update (c$::filepath-fix filepath)
+                         tunit
+                         map))))
+
+(define splitgso-transunit-ensemble
+  ((filepath? c$::filepath-optionp)
+   (orig-struct identp)
+   (new-struct1 identp)
+   (new-struct2 identp)
+   (new-struct-type1 identp)
+   (new-struct-type2 identp)
+   (split-members ident-listp)
+   (tunits transunit-ensemblep))
+  :guard (c$::transunit-ensemble-annop tunits)
+  :returns (mv erp
+               (tunits$ transunit-ensemblep))
+  (b* (((reterr) (c$::transunit-ensemble-fix tunits))
+       ((erp struct-type filepath linkage)
+        (get-gso-info filepath? orig-struct tunits))
+       (map (transunit-ensemble->unwrap tunits))
+       ((erp map)
+        (splitgso-filepath-transunit-map
+          struct-type
+          filepath
+          linkage
+          orig-struct
+          new-struct1
+          new-struct2
+          new-struct-type1
+          new-struct-type2
+          split-members
+          map)))
+    (retok
+      (transunit-ensemble (splitgso-rename-filepaths map)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -996,24 +1371,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Check that const-old is a symbol that denotes a named constant
-; whole value is a translation unit ensemble with a single translation unit.
-; Return its file path and translation unit if successful.
-
 ; Check that const-new is a symbol usable as a new named constant.
 ; (At least check that it is a symbol at all.)
 ; Return it unchanged, but with type symbolp for further use
 ; (or use suitable theorems).
-
-; Check that object-name is an ACL2 string that is the name of
-; a file-scope object with a single declaration in the translation unit,
-; and satisfying additional conditions.
-; Return it as an identifier, or more likely return more information,
-; such as the whole declaration, or better its key constituents,
-; maybe also the key constituents of the struct type.
-
-; Probably add separate functions splitgso-process-<name-of-input>,
-; which the following function calls.
 
 (define ident-map
   ((strings string-listp))
@@ -1024,9 +1385,15 @@
           (ident-map (rest strings))))
   :guard-hints (("Goal" :in-theory (enable string-listp))))
 
+(defrulel transunit-ensemble-annop-of-irr-transunit-ensemble
+  (c$::transunit-ensemble-annop (c$::irr-transunit-ensemble))
+  :enable ((:e c$::transunit-ensemble-annop)
+           (:e c$::irr-transunit-ensemble)))
+
 (define splitgso-process-inputs (const-old
                                  const-new
                                  object-name
+                                 object-filepath
                                  new-object1
                                  new-object2
                                  new-type1
@@ -1034,9 +1401,10 @@
                                  split-members
                                  (wrld plist-worldp))
   :returns (mv erp
-               (filepath filepathp)
-               (tunit transunitp)
+               (tunits (and (transunit-ensemblep tunits)
+                            (c$::transunit-ensemble-annop tunits)))
                (object-ident identp)
+               (filepath? c$::filepath-optionp)
                (new-object1 identp)
                (new-object2 identp)
                (new-type1 identp)
@@ -1045,9 +1413,9 @@
                (const-new$ symbolp))
   :short "Process the inputs."
   (b* (((reterr)
-        (filepath :irrelevant)
-        (c$::irr-transunit)
+        (c$::irr-transunit-ensemble)
         (c$::irr-ident)
+        nil
         (c$::irr-ident)
         (c$::irr-ident)
         (c$::irr-ident)
@@ -1056,21 +1424,17 @@
         nil)
        ((unless (symbolp const-old))
         (reterr (msg "~x0 must be a symbol" const-old)))
-       (tunits-old (acl2::constant-value const-old wrld))
-       ((unless (transunit-ensemblep tunits-old))
+       (tunits (acl2::constant-value const-old wrld))
+       ((unless (transunit-ensemblep tunits))
         (reterr (msg "~x0 must be a translation unit ensemble." const-old)))
-       ((unless (c$::transunit-ensemble-annop tunits-old))
+       ((unless (c$::transunit-ensemble-annop tunits))
         (reterr (msg "~x0 must be an annotated with validation information." const-old)))
-       (tunits-map (transunit-ensemble->unwrap tunits-old))
-       ((when (or (omap::emptyp tunits-map)
-                  (not (omap::emptyp (omap::tail tunits-map)))))
-        (reterr (msg "~x0 must be a translation unit ensemble with at exactly
-                      one translation unit"
-                     const-old)))
-       (filepath (deftrans-filepath
-                   (omap::head-key tunits-map)
-                   "SPLITGSO"))
-       (tunit (omap::head-val tunits-map))
+       ((unless (or (not object-filepath)
+                    (stringp object-filepath)))
+        (reterr (msg "~x0 must be nil or a string" object-filepath)))
+       (object-filepath
+         (and object-filepath
+              (filepath object-filepath)))
        ((unless (stringp object-name))
         (reterr (msg "~x0 must be a string" object-name)))
        (object-ident (c$::ident object-name))
@@ -1091,9 +1455,9 @@
        (split-members (ident-map split-members))
        ((unless (symbolp const-new))
         (reterr (msg "~x0 must be a symbol" const-new))))
-    (retok filepath
-           tunit
+    (retok tunits
            object-ident
+           object-filepath
            new-object1
            new-object2
            new-type1
@@ -1107,59 +1471,55 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Generate a defconst event with name const-new
-; and value a translation unit ensemble consisting of
-; a single translation unit with the given filepath.
-; That single translation unit is the result of transforming tunit-old
-; according to the design of the transformation.
-
-(define splitgso-gen-everything ((filepath filepathp)
-                                 (tunit transunitp)
-                                 (object-ident identp)
-                                 (new-object1 identp)
-                                 (new-object2 identp)
-                                 (new-type1 identp)
-                                 (new-type2 identp)
-                                 (split-members ident-listp)
-                                 (const-new symbolp))
+(define splitgso-gen-everything
+  ((tunits transunit-ensemblep)
+   (object-ident identp)
+   (filepath? c$::filepath-optionp)
+   (new-object1 identp)
+   (new-object2 identp)
+   (new-type1 identp)
+   (new-type2 identp)
+   (split-members ident-listp)
+   (const-new symbolp))
+  :guard (c$::transunit-ensemble-annop tunits)
   :returns (mv erp (event pseudo-event-formp))
   :short "Generate all the events."
   (b* (((reterr) '(_))
        ((erp tunit)
-        (splitgso-transunit
+        (splitgso-transunit-ensemble
+          filepath?
           object-ident
           new-object1
           new-object2
           new-type1
           new-type2
           split-members
-          tunit))
+          tunits))
        (defconst-event
          `(defconst ,const-new
-            (transunit-ensemble
-              (omap::update ',filepath
-                            ',tunit
-                            nil)))))
+            ',tunit)))
     (retok defconst-event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define splitgso-process-inputs-and-gen-everything (const-old
-                                                    const-new
-                                                    object-name
-                                                    new-object1
-                                                    new-object2
-                                                    new-type1
-                                                    new-type2
-                                                    split-members
-                                                    (wrld plist-worldp))
+(define splitgso-process-inputs-and-gen-everything
+  (const-old
+   const-new
+   object-name
+   object-filepath
+   new-object1
+   new-object2
+   new-type1
+   new-type2
+   split-members
+   (wrld plist-worldp))
   :returns (mv erp (event pseudo-event-formp))
   :parents (splitgso-implementation)
   :short "Process the inputs and generate the events."
   (b* (((reterr) '(_))
-       ((erp filepath
-             tunit
+       ((erp tunits
              object-ident
+             filepath?
              new-object1
              new-object2
              new-type1
@@ -1169,6 +1529,7 @@
         (splitgso-process-inputs const-old
                                  const-new
                                  object-name
+                                 object-filepath
                                  new-object1
                                  new-object2
                                  new-type1
@@ -1176,9 +1537,9 @@
                                  split-members
                                  wrld))
        ((erp event)
-        (splitgso-gen-everything filepath
-                                 tunit
+        (splitgso-gen-everything tunits
                                  object-ident
+                                 filepath?
                                  new-object1
                                  new-object2
                                  new-type1
@@ -1192,6 +1553,7 @@
 (define splitgso-fn (const-old
                      const-new
                      object-name
+                     object-filepath
                      new-object1
                      new-object2
                      new-type1
@@ -1206,6 +1568,7 @@
         (splitgso-process-inputs-and-gen-everything const-old
                                                     const-new
                                                     object-name
+                                                    object-filepath
                                                     new-object1
                                                     new-object2
                                                     new-type1
@@ -1225,6 +1588,7 @@
      const-new
      &key
      object-name
+     object-filepath
      new-object1
      new-object2
      new-type1
@@ -1233,6 +1597,7 @@
     `(make-event (splitgso-fn ',const-old
                               ',const-new
                               ',object-name
+                              ',object-filepath
                               ',new-object1
                               ',new-object2
                               ',new-type1
