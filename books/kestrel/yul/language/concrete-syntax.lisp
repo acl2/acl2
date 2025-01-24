@@ -1,10 +1,10 @@
 ; Yul Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -29,22 +29,28 @@
      an ABNF grammar based on the grammar in [Yul].
      We parse the ABNF grammar into an ACL2 representation.")
    (xdoc::p
-    "The primary API for parsing Yul is
+    "A complete specification of the concrete syntax of Yul
+     would need to complement the grammar with predicates that
+     define and relate the two levels of lexical and syntactic sub-grammars,
+     and also restrict certain grammar rules.
+     We plan to do that in the future.")
+   (xdoc::p
+    "We also provide a @(see parser) of Yul, based on our ABNF grammar.
+     The parser is currently not verified, but it follows the grammar closely.
+     The primary API for parsing Yul is
      @(see parse-yul) and @(see parse-yul-bytes).")
    (xdoc::p
     "There are currently two published grammars of Yul:
      one is in [Yul: Specification of Yul];
-     the other is part of the Solidity grammar in "
-    (xdoc::ahref "https://docs.soliditylang.org/en/latest/grammar.html"
-                 "this section of the Solidity documentation")
-    ". The Yul team has told us that the former is older than the latter,
+     the other is part of the Solidity grammar in [Solidity: Language Grammar].
+     The Yul team has told us that the former is older than the latter,
      and that the plan is to have a separate Yul grammar
      along the lines of the one that is part of the Solidity grammar.
      For now, we formalize both grammars in ABNF,
      and we parse both grammars into ACL2.
      (The reason is somewhat accidental:
-     we initially formalized and parsed the old grammar,
-     after which we were told that the other grammar is new;
+     we initially formalized and parsed the older grammar,
+     after which we were told that the other grammar is newer;
      but since we have the old one formalized and parsed already,
      we like to keep it for now, along with the new one.")
    (xdoc::p
@@ -80,5 +86,7 @@
       The old grammar only allows surrounding double quotes,
       while the new grammar also allows surrounding single quotes.")
     (xdoc::li
-     "The new grammar adds hex strings to the possible literals.")))
+     "The new grammar adds hex strings to the possible literals."))
+   (xdoc::p
+    "The aforementioned parser is based on the new grammar."))
   :order-subtopics t)

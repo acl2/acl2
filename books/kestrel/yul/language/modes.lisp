@@ -1,10 +1,10 @@
 ; Yul Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -43,7 +43,7 @@
 
 (fty::defset mode-set
   :parents (static-semantics dynamic-semantics)
-  :short "Fixtype of osets of modes."
+  :short "Fixtype of sets of modes."
   :elt-type mode
   :elementp-of-nil nil
   :pred mode-setp)
@@ -52,6 +52,6 @@
 
 (fty::defresult mode-set-result
   :parents (static-semantics dynamic-semantics)
-  :short "Fixtype of errors and osets of modes."
+  :short "Fixtype of errors and sets of modes."
   :ok mode-set
   :pred mode-set-resultp)

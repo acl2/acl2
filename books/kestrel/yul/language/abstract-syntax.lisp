@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -27,7 +27,7 @@
    (xdoc::p
     "We introduce an abstract syntax of Yul based on its "
     (xdoc::seetopic "concrete-syntax" "concrete syntax")
-    "; more precisely, on the new grammar.")
+    "; more precisely, on the new grammar (see description there).")
    (xdoc::p
     "The abstract syntax defined here is fairly close to the concrete syntax,
      more precisely to the grammar,
@@ -95,60 +95,56 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defset identifier-set
-  :short "Fixtype of osets of identifiers."
+  :short "Fixtype of sets of identifiers."
   :elt-type identifier
   :elementp-of-nil nil
-  :pred identifier-setp)
+  :pred identifier-setp
 
-;;;;;;;;;;;;;;;;;;;;
+  ///
 
-(defrule identifier-setp-of-mergesort
-  (implies (true-listp x)
-           (equal (identifier-setp (set::mergesort x))
-                  (identifier-listp x)))
-  :enable set::mergesort)
+  (defrule identifier-setp-of-mergesort
+    (implies (true-listp x)
+             (equal (identifier-setp (set::mergesort x))
+                    (identifier-listp x)))
+    :enable set::mergesort)
 
-;;;;;;;;;;;;;;;;;;;;
-
-(defrule identifier-setp-of-list-insert
-  (implies (and (identifier-listp list)
-                (identifier-setp set))
-           (identifier-setp (set::list-insert list set)))
-  :enable set::list-insert)
+  (defrule identifier-setp-of-list-insert
+    (implies (and (identifier-listp list)
+                  (identifier-setp set))
+             (identifier-setp (set::list-insert list set)))
+    :enable set::list-insert))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defresult identifier-set-result
-  :short "Fixtype of errors and osets of identifiers."
+  :short "Fixtype of errors and sets of identifiers."
   :ok identifier-set
   :pred identifier-set-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defomap identifier-identifier-map
-  :short "Fixtype of omaps from identifiers to identifiers."
+  :short "Fixtype of maps from identifiers to identifiers."
   :key-type identifier
   :val-type identifier
-  :pred identifier-identifier-mapp)
+  :pred identifier-identifier-mapp
 
-;;;;;;;;;;;;;;;;;;;;
+  ///
 
-(defrule identifier-setp-of-keys-when-identifier-identifier-mapp
-  (implies (identifier-identifier-mapp m)
-           (identifier-setp (omap::keys m)))
-  :enable omap::keys)
+  (defrule identifier-setp-of-keys-when-identifier-identifier-mapp
+    (implies (identifier-identifier-mapp m)
+             (identifier-setp (omap::keys m)))
+    :enable omap::keys)
 
-;;;;;;;;;;;;;;;;;;;;
-
-(defrule identifier-setp-of-values-when-identifier-identifier-mapp
-  (implies (identifier-identifier-mapp m)
-           (identifier-setp (omap::values m)))
-  :enable omap::values)
+  (defrule identifier-setp-of-values-when-identifier-identifier-mapp
+    (implies (identifier-identifier-mapp m)
+             (identifier-setp (omap::values m)))
+    :enable omap::values))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defresult identifier-identifier-map-result
-  :short "Fixtype of errors and omaps from identifiers to identifiers."
+  :short "Fixtype of errors and maps from identifiers to identifiers."
   :ok identifier-identifier-map
   :pred identifier-identifier-map-resultp)
 
@@ -161,19 +157,17 @@
   :true-listp t
   :keyp-of-nil nil
   :valp-of-nil nil
-  :pred identifier-identifier-alistp)
+  :pred identifier-identifier-alistp
 
-;;;;;;;;;;;;;;;;;;;;
+  ///
 
-(defruled identifier-listp-of-strip-cars-when-identifier-identifier-alistp
-  (implies (identifier-identifier-alistp alist)
-           (identifier-listp (strip-cars alist))))
+  (defruled identifier-listp-of-strip-cars-when-identifier-identifier-alistp
+    (implies (identifier-identifier-alistp alist)
+             (identifier-listp (strip-cars alist))))
 
-;;;;;;;;;;;;;;;;;;;;
-
-(defruled identifier-listp-of-strip-cdrs-when-identifier-identifier-alistp
-  (implies (identifier-identifier-alistp alist)
-           (identifier-listp (strip-cdrs alist))))
+  (defruled identifier-listp-of-strip-cdrs-when-identifier-identifier-alistp
+    (implies (identifier-identifier-alistp alist)
+             (identifier-listp (strip-cdrs alist)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -532,7 +526,7 @@
     (:variable-single ((name identifier)
                        (init expression-option)))
     (:variable-multi ((names identifier-list)
-                      (init funcall-optionp)))
+                      (init funcall-option)))
     (:assign-single ((target path)
                      (value expression)))
     (:assign-multi ((targets path-list)
