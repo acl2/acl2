@@ -1,16 +1,17 @@
 ; Yul Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "YUL")
 
 (include-book "projects/abnf/grammar-definer/defgrammar" :dir :system)
+(include-book "projects/abnf/grammar-definer/deftreeops" :dir :system)
 (include-book "projects/abnf/operations/in-terminal-set" :dir :system)
 
 (local (include-book "kestrel/utilities/integers-from-to-as-set" :dir :system))
@@ -66,3 +67,11 @@
              abnf::char-insensitive-in-termset-p
              abnf::char-sensitive-in-termset-p)
     :disable ((:e acl2::integers-from-to))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; We use the prefix OCST, where 'O' stands for 'old',
+; to distinguish it from the prefix CST used in grammar-new.lisp,
+; which is the primary grammar (the one that our parser matches).
+; This old grammar is here mainly for historical and testing purposes.
+(abnf::deftreeops *grammar-old* :prefix ocst)
