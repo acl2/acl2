@@ -27,8 +27,8 @@
 ; but we add 'corresponds to ...' if the rule name here is not the same
 ; as the rule name in the official grammars.
 ; We organize the rules bottom-up.
-; We leave out the yul-evm-builtin rule because that seems to belong
-; more to the EVM dialect of Yul than to generic Yul.
+; We leave out the yul-evm-builtin rule because
+; that belongs to the EVM dialect and not generic Yul.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
