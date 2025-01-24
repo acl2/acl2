@@ -583,44 +583,80 @@
                             len-of-rb
                             acl2::len-of-cdr)))))
 
+(defthmd rb-1-opener
+  (implies (posp n)
+           (equal (rb-1 n addr r-x x86)
+                  (B* (((COMMON-LISP::UNLESS (CANONICAL-ADDRESS-P ADDR))
+                        (MV 'RB-1 0 X86))
+                       ((MV FLG0 X86ISA::BYTE0 X86)
+                        (RVM08 ADDR X86))
+                       ((WHEN FLG0) (MV FLG0 0 X86))
+                       ((MV X86ISA::REST-FLG X86ISA::REST-BYTES X86)
+                        (RB-1 (1- N) (1+ ADDR) R-X X86)))
+                    (MV X86ISA::REST-FLG
+                        (LOGIOR X86ISA::BYTE0
+                                (ASH X86ISA::REST-BYTES 8))
+                        X86))))
+  :hints (("Goal" :in-theory (enable rb-1))))
+
+(defthmd read-opener
+  (implies (posp n)
+           (equal (read n addr x86)
+                  (LET ((ADDR (MBE :LOGIC (IFIX ADDR) :EXEC ADDR)))
+                     (BVCAT (* 8 (- N 1))
+                            (READ (- N 1) (+ 1 ADDR) X86)
+                            8 (READ-BYTE ADDR X86)))))
+  :hints (("Goal" :in-theory (enable read))))
+
+;; Generalizes X86ISA::ELEM-P-OF-XR-MEM.
+(defthm unsigned-byte-p-of-xr-of-mem
+  (implies (and (<= 8 n)
+                (integerp n))
+           (unsigned-byte-p n (xr :mem i x86$a)))
+  :hints (("Goal" :use (x86isa::elem-p-of-xr-mem)
+           :in-theory (disable x86isa::elem-p-of-xr-mem))))
+
 ;; todo: more like this for other sizes (48,80,128,256)
 (defthm rml08-becomes-read
-  (implies (and (canonical-address-p lin-addr) ; only one address to check in this case
-                (app-view x86)
-                (x86p x86) ; why?
-                )
+  (implies (app-view x86)
            (equal (rml08 lin-addr r-x x86)
-                  (mv nil
-                        (read 1 lin-addr x86)
-                        x86)))
-  :hints (("Goal" :in-theory (enable rml08 rb-becomes-read))))
+                  (if (canonical-address-p lin-addr) ; only one address to check in this case
+                      (mv nil (read 1 lin-addr x86) x86)
+                    (mv 'rb-1 0 x86))))
+  :hints (("Goal" :in-theory (enable rml08 rb rb-1-opener rb-1 rvm08
+                                     read read-byte))))
 
+;; todo: unfortunate that the erp is different in the 2 error cases
 (defthm rml16-becomes-read
-  (implies (and (canonical-address-p lin-addr)
-                (canonical-address-p (+ 1 lin-addr))
-                (app-view x86)
-                (x86p x86))
+  (implies (app-view x86)
            (equal (rml16 lin-addr r-x x86)
-                  (mv nil (read 2 lin-addr x86) x86)))
-  :hints (("Goal" :in-theory (enable rml16 rb-becomes-read))))
+                  (if (canonical-address-p (+ 1 lin-addr))
+                      (if (canonical-address-p lin-addr)
+                          (mv nil (read 2 lin-addr x86) x86)
+                        (mv 'rb-1 0 x86))
+                    (mv 'rml16 0 x86))))
+  :hints (("Goal" :in-theory (enable rml08 rb rb-1-opener rb-1 rvm08
+                                     read read-byte))))
 
 (defthm rml32-becomes-read
-  (implies (and (canonical-address-p lin-addr)
-                (canonical-address-p (+ 3 lin-addr))
-                (app-view x86)
-                (x86p x86))
+  (implies (app-view x86)
            (equal (rml32 lin-addr r-x x86)
-                  (mv nil (read 4 lin-addr x86) x86)))
-  :hints (("Goal" :in-theory (enable rml32 rb-becomes-read))))
+                  (if (and (canonical-address-p (+ 3 lin-addr))
+                           (canonical-address-p lin-addr))
+                      (mv nil (read 4 lin-addr x86) x86)
+                    (mv 'rml32 0 x86))))
+  :hints (("Goal" :in-theory (enable rml32 rb rb-1-opener rb-1 rvm08
+                                     read read-opener read-byte))))
 
 (defthm rml64-becomes-read
-  (implies (and (canonical-address-p lin-addr)
-                (canonical-address-p (+ 7 lin-addr))
-                (app-view x86)
-                (x86p x86))
+  (implies (app-view x86)
            (equal (rml64 lin-addr r-x x86)
-                  (mv nil (read 8 lin-addr x86) x86)))
-  :hints (("Goal" :in-theory (enable rml64 rb-becomes-read))))
+                  (if (and (canonical-address-p (+ 7 lin-addr))
+                           (canonical-address-p lin-addr))
+                      (mv nil (read 8 lin-addr x86) x86)
+                    (mv 'rml64 0 x86))))
+  :hints (("Goal" :in-theory (enable rml32 rb rb-1-opener rb-1 rvm08
+                                     read read-opener read-byte))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
