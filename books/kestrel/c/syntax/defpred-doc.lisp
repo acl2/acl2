@@ -33,10 +33,13 @@
      "The "
      (xdoc::seetopic "abstract-syntax" "C abstract syntax for tools")
      " consists of a large collection of (fix)types.
-      This macro automates the creation of unary predicates over those types;
-      it also generates theorems about the theorems.
+      This macro automates the creation of predicates over those types;
+      it also generates theorems about the predicates.
       The user provides information that is specific to the desired predicates,
-      and the macro integrates it into generated boilerplate."))
+      and the macro integrates it into generated boilerplate.
+      The predicates may be unary,
+      i.e. operating over the abstract syntax constructs only,
+      or there may be extra arguments, which are passed through recursively."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -44,11 +47,12 @@
 
     (xdoc::codeblock
      "(defpred suffix"
-     "         :default  ...  ; no default"
-     "         :override ...  ; default nil"
-     "         :parents  ...  ; no default"
-     "         :short    ...  ; no default"
-     "         :long     ...  ; no default"
+     "         :extra-args ...  ; default nil"
+     "         :default    ...  ; no default"
+     "         :override   ...  ; default nil"
+     "         :parents    ...  ; no default"
+     "         :short      ...  ; no default"
+     "         :long       ...  ; no default"
      "  )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -71,6 +75,16 @@
        then the predicate generated for expressions,
        whose type is @(tsee expr),
        is @('expr-goodp')."))
+
+    (xdoc::desc
+     "@(':extra-args') &mdash; default @('nil')"
+     (xdoc::p
+      "Extra arguments of the predicates,
+       which are passed unchanged to the recursively calls.")
+     (xdoc::p
+      "This must be a list of "
+      (xdoc::seetopic "std::extended-formals" "extended formals")
+      " which @('defpred') puts into the generated @(tsee define)s."))
 
     (xdoc::desc
      "@(':default') &mdash; no default"
@@ -96,14 +110,16 @@
         of the abstract syntax
         (e.g. @(tsee tyname) or @(tsee expr)),
         and @('<term>') is an (untranslated) term
-        whose only free variable is @('<type>').")
+        whose only free variables may be @('<type>')
+        and the formals specified in @(':extra-args').")
       (xdoc::li
        "A triple @('(<type> <kind> <term>)'),
         where @('<type>') is a @(tsee fty::deftagsum) of the abstract syntax
         (e.g. @(tsee expr)),
         @('<kind>') is a keyword identifying one of the summands of the type,
         and @('<term>') is an (untranslated) term
-        whose only free variable is @('<type>').")))
+        whose only free variables may be @('<type>')
+        and the formals specified in @(':extra-args').")))
 
     (xdoc::desc
      (list

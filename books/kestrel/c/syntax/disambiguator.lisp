@@ -3045,7 +3045,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defret-mutual dimb-exprs/decls
+  (defret-mutual unambp-of-dimb-exprs/decls/stmts
     (defret expr-unambp-of-dimb-expr
       (implies (not erp)
                (expr-unambp new-expr))
