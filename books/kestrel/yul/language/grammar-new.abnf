@@ -66,7 +66,7 @@ hex-digit = decimal-digit / %i"a" / %i"b" / %i"c" / %i"d" / %i"e" / %i"f"
 ; corresponds to yul-decimal-number
 decimal-number = "0" / nonzero-decimal-digit *decimal-digit
 
-; Corresponds to yul-hex-number
+; corresponds to yul-hex-number
 hex-number = %s"0x" *hex-digit
 
 hex-string = %s"hex" ( dquote [ 2hex-digit *( [ "_" ] 2hex-digit ) ] dquote
