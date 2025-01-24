@@ -1,10 +1,11 @@
 ; Yul Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Authors: Alessandro Coglio (www.alessandrocoglio.info)
+;          Eric McCarthy (bendyarm on GitHub)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -75,10 +76,10 @@ double-quoted-printable = %x20-21 / %x23-5B / %x5D-7E ; anything but " or \
 
 single-quoted-printable = %x20-26 / %x28-5B / %x5D-7E ; anything but ' or \
 
-escape-sequence = "\"
-                  ( ( squote / dquote / %s"\" / %s"n" / %s"r" / %s"t" / lf / cr )
-                    / %s"u" 4hex-digit
-                    / %s"x" 2hex-digit )
+escape-sequence =
+    "\" ( ( squote / dquote / %s"\" / %s"n" / %s"r" / %s"t" / lf / cr )
+          / %s"u" 4hex-digit
+          / %s"x" 2hex-digit )
 
 ; corresponds to yul-string-literal
 string-literal = dquote *( double-quoted-printable / escape-sequence ) dquote
