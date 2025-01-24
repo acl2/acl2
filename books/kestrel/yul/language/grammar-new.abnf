@@ -143,7 +143,6 @@ symbol = "." / ","
          / ":="
          / "{" / "}"
 
-
 ;;; --------------------------------
 ;;; whitespace and comments
 
@@ -181,7 +180,6 @@ end-of-line-comment = "//" *not-lf-or-cr
 
 comment = block-comment / end-of-line-comment
 
-
 ;; --------------------------------
 ;; tokens
 
@@ -193,7 +191,6 @@ token = keyword
 lexeme = token / comment / whitespace
 
 ;; A file can be tokenized with *lexeme
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
