@@ -277,14 +277,15 @@
     mv-nth-1-of-rb-of-set-rip
     mv-nth-1-of-rb-of-set-rax ; could add more like this
 
-    mv-nth-1-of-rb-1-becomes-read))
+    ;;mv-nth-1-of-rb-1-becomes-read
+    ))
 
 (set-axe-rule-priority rb-becomes-read -1) ; get rid of RB immediately
 
 ;; When using these, also include (write-rules).
 (defun write-introduction-rules ()
   (declare (xargs :guard t))
-  '(mv-nth-1-of-wb-1-becomes-write
+  '(;; mv-nth-1-of-wb-1-becomes-write
     mv-nth-1-of-wb-becomes-write))
 
 ;; Usually not needed except for in the loop lifter (showing that assumptions are preserved):
@@ -770,7 +771,7 @@
     acl2::bitp-becomes-unsigned-byte-p
 
     ;; Just for making terms in failures more readable:
-    mv-nth-1-of-rb-1-of-set-rip
+    ;; mv-nth-1-of-rb-1-of-set-rip
     ))
 
 (defun decoding-and-dispatch-rules ()
@@ -4506,7 +4507,7 @@
     not-mv-nth-0-of-wme-size ;gets rid of error branch
     mv-nth-1-of-wme-size     ;introduces write-to-segment
     mv-nth-1-of-rb-becomes-read
-    mv-nth-1-of-rb-1-becomes-read
+    ;; mv-nth-1-of-rb-1-becomes-read
     ;; x86isa::x86-fetch-decode-execute-base
     ))
 
