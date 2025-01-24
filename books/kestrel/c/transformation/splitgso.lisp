@@ -53,8 +53,6 @@
    (xdoc::section
     "Current Limitations"
     (xdoc::ul
-     (xdoc::li "The transformation currently operates on a single translation
-                unit.")
      (xdoc::li "Fields in a struct type declaration must not share a type
                 specification (e.g., @('int x, y;') is currently unsupported,
                 where @('int x; int y;') <i>is</i> supported)")
