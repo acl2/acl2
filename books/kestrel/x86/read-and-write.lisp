@@ -533,7 +533,7 @@
                   (read n addr x86)))
   :hints (("Goal" :in-theory (enable rb))))
 
-;shouldn't need this for app-view, but it support rb-when-zp below
+;shouldn't need this for app-view, but it supports rb-when-zp below
 (defthm x86isa::las-to-pas-when-zp
   (implies (zp n)
            (equal (x86isa::las-to-pas n lin-addr x86isa::r-w-x x86)
@@ -589,9 +589,9 @@
            (equal (rb-1 n addr r-x x86)
                   (B* (((COMMON-LISP::UNLESS (CANONICAL-ADDRESS-P ADDR))
                         (MV 'RB-1 0 X86))
-                       ((MV FLG0 X86ISA::BYTE0 X86)
+                       ((MV & X86ISA::BYTE0 &) ; flg0 is not used, x86 is unchanged
                         (RVM08 ADDR X86))
-                       ((WHEN FLG0) (MV FLG0 0 X86))
+                       ;; ((WHEN FLG0) (MV FLG0 0 X86)) ; can never happen
                        ((MV X86ISA::REST-FLG X86ISA::REST-BYTES X86)
                         (RB-1 (1- N) (1+ ADDR) R-X X86)))
                     (MV X86ISA::REST-FLG
@@ -609,9 +609,7 @@
                             8 (READ-BYTE ADDR X86)))))
   :hints (("Goal" :in-theory (enable read))))
 
-
-
-;; todo: more like this for other sizes (48,80,128,256)
+;; todo: more like this for other sizes (256, 512)
 (defthm rml08-becomes-read
   (implies (app-view x86)
            (equal (rml08 lin-addr r-x x86)
@@ -622,6 +620,7 @@
                                      read read-byte))))
 
 ;; todo: unfortunate that the erp is different in the 2 error cases
+;; todo: use hints like the below
 (defthm rml16-becomes-read
   (implies (app-view x86)
            (equal (rml16 lin-addr r-x x86)
@@ -640,8 +639,8 @@
                            (canonical-address-p lin-addr))
                       (mv nil (read 4 lin-addr x86) x86)
                     (mv 'rml32 0 x86))))
-  :hints (("Goal" :in-theory (enable rml32 rb rb-1-opener rb-1 rvm08
-                                     read read-opener read-byte))))
+  :hints (("Goal" :in-theory (e/d (rml32 rb-becomes-read)
+                                  (acl2::equal-of-cons)))))
 
 (defthm rml48-becomes-read
   (implies (app-view x86)
@@ -650,8 +649,8 @@
                            (canonical-address-p lin-addr))
                       (mv nil (read 6 lin-addr x86) x86)
                     (mv 'rml48 0 x86))))
-  :hints (("Goal" :in-theory (enable rml48 rb rb-1-opener rb-1 rvm08
-                                     read read-opener read-byte))))
+  :hints (("Goal" :in-theory (e/d (rml48 rb-becomes-read)
+                                  (acl2::equal-of-cons)))))
 
 (defthm rml64-becomes-read
   (implies (app-view x86)
@@ -660,8 +659,8 @@
                            (canonical-address-p lin-addr))
                       (mv nil (read 8 lin-addr x86) x86)
                     (mv 'rml64 0 x86))))
-  :hints (("Goal" :in-theory (enable rml64 rb rb-1-opener rb-1 rvm08
-                                     read read-opener read-byte))))
+  :hints (("Goal" :in-theory (e/d (rml64 rb-becomes-read)
+                                  (acl2::equal-of-cons)))))
 
 (defthm rml80-becomes-read
   (implies (app-view x86)
@@ -670,19 +669,30 @@
                            (canonical-address-p lin-addr))
                       (mv nil (read 10 lin-addr x86) x86)
                     (mv 'rml80 0 x86))))
-  :hints (("Goal" :in-theory (enable rml80 rb rb-1-opener rb-1 rvm08
-                                     read read-opener read-byte))))
+  :hints (("Goal" :in-theory (e/d (rml80 rb-becomes-read)
+                                  (acl2::equal-of-cons)))))
 
-;; todo:
-;; (defthm rm128-becomes-read
-;;   (implies (app-view x86)
-;;            (equal (rml128 lin-addr r-x x86)
-;;                   (if (and (canonical-address-p (+ 15 lin-addr))
-;;                            (canonical-address-p lin-addr))
-;;                       (mv nil (read 16 lin-addr x86) x86)
-;;                     (mv 'rml128 0 x86))))
-;;   :hints (("Goal" :in-theory (enable rml128 rb rb-1-opener rb-1 rvm08
-;;                                      read read-opener read-byte))))
+(defthm rm128-becomes-read
+  (implies (app-view x86)
+           (equal (rml128 lin-addr r-x x86)
+                  (if (and (canonical-address-p (+ 15 lin-addr))
+                           (canonical-address-p lin-addr))
+                      (mv nil (read 16 lin-addr x86) x86)
+                    (mv 'rml128 0 x86))))
+  :hints (("Goal" :in-theory (e/d (rml128 rb-becomes-read)
+                                  (acl2::equal-of-cons
+                                   ;; mv-nth
+                                   ;; ;; for speed:
+                                   ;; ACL2::LOGIOR-BOUND-LINEAR-2
+                                   ;; BITOPS::LOGIOR->=-0-LINEAR BITOPS::LOGIOR-<-0-LINEAR-2
+                                   ;; ;; bad:
+                                   ;; X86ISA::UNSIGNED-BYTE-P-WHEN-DATA-SEGMENT-DESCRIPTORBITS-P
+                                   ;; X86ISA::UNSIGNED-BYTE-P-WHEN-FP-STATUSBITS-P
+                                   ;; X86ISA::UNSIGNED-BYTE-P-WHEN-GDTR/IDTRBITS-P
+                                   ;; X86ISA::UNSIGNED-BYTE-P-WHEN-HIDDEN-SEGMENT-REGISTERBITS-P
+                                   ;; X86ISA::UNSIGNED-BYTE-P-WHEN-INTERRUPT/TRAP-GATE-DESCRIPTORBITS-P
+                                   ;; X86ISA::UNSIGNED-BYTE-P-WHEN-MXCSRBITS-P
+                                   )))))
 
 ;; todo:
 ;; (defthm rm256-becomes-read
@@ -692,8 +702,20 @@
 ;;                            (canonical-address-p lin-addr))
 ;;                       (mv nil (read 32 lin-addr x86) x86)
 ;;                     (mv 'rml256 0 x86))))
-;;   :hints (("Goal" :in-theory (enable rml256 rb rb-1-opener rb-1 rvm08
-;;                                      read read-opener read-byte))))
+;; :hints (("Goal" :in-theory (e/d (rml80 rb-becomes-read)
+;;                                 (acl2::equal-of-cons)))))
+
+;; todo:
+;; (defthm rm512-becomes-read
+;;   (implies (app-view x86)
+;;            (equal (rml512 lin-addr r-x x86)
+;;                   (if (and (canonical-address-p (+ 63 lin-addr))
+;;                            (canonical-address-p lin-addr))
+;;                       (mv nil (read 64 lin-addr x86) x86)
+;;                     (mv 'rml512 0 x86))))
+;; :hints (("Goal" :in-theory (e/d (rml80 rb-becomes-read)
+;;                                 (acl2::equal-of-cons)))))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
