@@ -1,10 +1,10 @@
 ; Yul Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -34,17 +34,15 @@
    (xdoc::p
     "There are currently two published grammars of Yul:
      one is in [Yul: Specification of Yul];
-     the other is part of the Solidity grammar in "
-    (xdoc::ahref "https://docs.soliditylang.org/en/latest/grammar.html"
-                 "this section of the Solidity documentation")
-    ". The Yul team has told us that the former is older than the latter,
+     the other is part of the Solidity grammar in [Solidity: Language Grammar].
+     The Yul team has told us that the former is older than the latter,
      and that the plan is to have a separate Yul grammar
      along the lines of the one that is part of the Solidity grammar.
      For now, we formalize both grammars in ABNF,
      and we parse both grammars into ACL2.
      (The reason is somewhat accidental:
-     we initially formalized and parsed the old grammar,
-     after which we were told that the other grammar is new;
+     we initially formalized and parsed the older grammar,
+     after which we were told that the other grammar is newer;
      but since we have the old one formalized and parsed already,
      we like to keep it for now, along with the new one.")
    (xdoc::p
