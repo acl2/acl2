@@ -503,18 +503,23 @@
 
 ;(local (in-theory (disable BITOPS::UNSIGNED-BYTE-P-INDUCT))) ; put back but this is used below
 
+;; Generalizes X86ISA::ELEM-P-OF-XR-MEM.
+(defthm unsigned-byte-p-of-xr-of-mem
+  (implies (and (<= 8 n)
+                (integerp n))
+           (unsigned-byte-p n (xr :mem i x86$a)))
+  :hints (("Goal" :use (x86isa::elem-p-of-xr-mem)
+           :in-theory (disable x86isa::elem-p-of-xr-mem))))
+
 ;; Introduces read
 (defthm mv-nth-1-of-rb-1-becomes-read
-  (implies (and ;(app-view x86)
-                (x86p x86) ; drop?
-                (canonical-address-p base-addr)
-                (implies (posp n) (canonical-address-p (+ -1 n base-addr)))
-                )
+  (implies (and (canonical-address-p base-addr)
+                (implies (posp n) (canonical-address-p (+ -1 n base-addr))))
            (equal (mv-nth 1 (rb-1 n base-addr r-x x86))
                   (read n base-addr x86)))
   :hints (("Subgoal *1/2" :cases ((equal n 1))
            :expand ((RB-1 1 BASE-ADDR R-X X86)))
-          ("Goal" :in-theory (e/d (read rb-1 acl2::slice-too-high-is-0-new n48 app-view read-byte)
+          ("Goal" :in-theory (e/d (read rb-1 acl2::slice-too-high-is-0-new n48 app-view read-byte rvm08)
                                   ( ;acl2::bvcat-equal-rewrite-alt acl2::bvcat-equal-rewrite
                                    ))
            :do-not '(generalize eliminate-destructors))))
@@ -522,7 +527,6 @@
 ;; Introduces read, but see rb-becomes-read below.
 (defthm mv-nth-1-of-rb-becomes-read
   (implies (and (app-view x86)
-                (x86p x86)
                 (canonical-address-p addr)
                 (implies (posp n) (canonical-address-p (+ -1 n addr))))
            (equal (mv-nth 1 (rb n addr r-x x86))
@@ -556,12 +560,9 @@
                 ;; (implies (posp n)
                 (canonical-address-p (+ -1 n addr))
                 ;;)
-                (app-view x86)
-                (x86p x86))
+                (app-view x86))
            (equal (rb n addr r-x x86)
-                  (mv nil
-                        (read n addr x86)
-                        x86)))
+                  (mv nil (read n addr x86) x86)))
   :hints (("Goal" :use (len-of-rb
                         (:instance mv-nth-1-of-rb-becomes-read (addr addr))
                         (:instance x86isa::rb-returns-no-error-app-view (x86isa::addr addr))
@@ -608,13 +609,7 @@
                             8 (READ-BYTE ADDR X86)))))
   :hints (("Goal" :in-theory (enable read))))
 
-;; Generalizes X86ISA::ELEM-P-OF-XR-MEM.
-(defthm unsigned-byte-p-of-xr-of-mem
-  (implies (and (<= 8 n)
-                (integerp n))
-           (unsigned-byte-p n (xr :mem i x86$a)))
-  :hints (("Goal" :use (x86isa::elem-p-of-xr-mem)
-           :in-theory (disable x86isa::elem-p-of-xr-mem))))
+
 
 ;; todo: more like this for other sizes (48,80,128,256)
 (defthm rml08-becomes-read
