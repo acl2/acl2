@@ -98,23 +98,21 @@
   :short "Fixtype of sets of identifiers."
   :elt-type identifier
   :elementp-of-nil nil
-  :pred identifier-setp)
+  :pred identifier-setp
 
-;;;;;;;;;;;;;;;;;;;;
+  ///
 
-(defrule identifier-setp-of-mergesort
-  (implies (true-listp x)
-           (equal (identifier-setp (set::mergesort x))
-                  (identifier-listp x)))
-  :enable set::mergesort)
+  (defrule identifier-setp-of-mergesort
+    (implies (true-listp x)
+             (equal (identifier-setp (set::mergesort x))
+                    (identifier-listp x)))
+    :enable set::mergesort)
 
-;;;;;;;;;;;;;;;;;;;;
-
-(defrule identifier-setp-of-list-insert
-  (implies (and (identifier-listp list)
-                (identifier-setp set))
-           (identifier-setp (set::list-insert list set)))
-  :enable set::list-insert)
+  (defrule identifier-setp-of-list-insert
+    (implies (and (identifier-listp list)
+                  (identifier-setp set))
+             (identifier-setp (set::list-insert list set)))
+    :enable set::list-insert))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -129,21 +127,19 @@
   :short "Fixtype of maps from identifiers to identifiers."
   :key-type identifier
   :val-type identifier
-  :pred identifier-identifier-mapp)
+  :pred identifier-identifier-mapp
 
-;;;;;;;;;;;;;;;;;;;;
+  ///
 
-(defrule identifier-setp-of-keys-when-identifier-identifier-mapp
-  (implies (identifier-identifier-mapp m)
-           (identifier-setp (omap::keys m)))
-  :enable omap::keys)
+  (defrule identifier-setp-of-keys-when-identifier-identifier-mapp
+    (implies (identifier-identifier-mapp m)
+             (identifier-setp (omap::keys m)))
+    :enable omap::keys)
 
-;;;;;;;;;;;;;;;;;;;;
-
-(defrule identifier-setp-of-values-when-identifier-identifier-mapp
-  (implies (identifier-identifier-mapp m)
-           (identifier-setp (omap::values m)))
-  :enable omap::values)
+  (defrule identifier-setp-of-values-when-identifier-identifier-mapp
+    (implies (identifier-identifier-mapp m)
+             (identifier-setp (omap::values m)))
+    :enable omap::values))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -161,19 +157,17 @@
   :true-listp t
   :keyp-of-nil nil
   :valp-of-nil nil
-  :pred identifier-identifier-alistp)
+  :pred identifier-identifier-alistp
 
-;;;;;;;;;;;;;;;;;;;;
+  ///
 
-(defruled identifier-listp-of-strip-cars-when-identifier-identifier-alistp
-  (implies (identifier-identifier-alistp alist)
-           (identifier-listp (strip-cars alist))))
+  (defruled identifier-listp-of-strip-cars-when-identifier-identifier-alistp
+    (implies (identifier-identifier-alistp alist)
+             (identifier-listp (strip-cars alist))))
 
-;;;;;;;;;;;;;;;;;;;;
-
-(defruled identifier-listp-of-strip-cdrs-when-identifier-identifier-alistp
-  (implies (identifier-identifier-alistp alist)
-           (identifier-listp (strip-cdrs alist))))
+  (defruled identifier-listp-of-strip-cdrs-when-identifier-identifier-alistp
+    (implies (identifier-identifier-alistp alist)
+             (identifier-listp (strip-cdrs alist)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
