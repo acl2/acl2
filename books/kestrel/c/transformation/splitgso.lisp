@@ -477,7 +477,7 @@
    (split-members ident-listp)
    (extdecls extdecl-listp))
   :returns (mv erp
-               (extdecls extdecl-listp))
+               (extdecls$ extdecl-listp))
   (b* (((reterr) nil)
        ((when (endp extdecls))
         (retok nil))
@@ -507,7 +507,7 @@
    (split-members ident-listp)
    (tunit transunitp))
   :returns (mv erp
-               (new-tunit transunitp))
+               (tunit$ transunitp))
   (b* (((reterr) (c$::irr-transunit))
        ((transunit tunit) tunit)
        ((erp extdecls)
@@ -817,7 +817,7 @@
    (split-members ident-listp)
    (extdecls extdecl-listp))
   :returns (mv erp
-               (extdecls extdecl-listp))
+               (extdecls$ extdecl-listp))
   (b* (((reterr) nil)
        ((when (endp extdecls))
         (retok nil))
@@ -856,7 +856,7 @@
    (split-members ident-listp)
    (tunit transunitp))
   :returns (mv erp
-               (new-tunit transunitp))
+               (tunit$ transunitp))
   (b* (((reterr) (c$::irr-transunit))
        ((transunit tunit) tunit)
        ((erp extdecls)
