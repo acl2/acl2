@@ -1,7 +1,7 @@
 ; A recognizer for lists of unsigned bytes.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -216,3 +216,17 @@
                   ;; might extend the list by one item:
                   (<= (nfix n) (len lst))))
   :hints (("Goal" :in-theory (enable update-nth all-unsigned-byte-p))))
+
+(defthm all-unsigned-byte-p-when-not-integerp-width
+  (implies (not (integerp width))
+           (equal (all-unsigned-byte-p width data)
+                  (endp data)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable all-unsigned-byte-p))))
+
+(defthm all-unsigned-byte-p-when-negative-width
+  (implies (< width 0)
+           (equal (all-unsigned-byte-p width data)
+                  (endp data)))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :in-theory (enable all-unsigned-byte-p))))
