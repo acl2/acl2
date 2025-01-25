@@ -1479,7 +1479,7 @@ examples.</p>")
          ;; :after-returns is used, irrespective of whether returns are
          ;; specified or not.
          ,@(and guts.guards-after-returns
-                `((verify-guards ,guts.name-fn)))
+                `((with-output :stack :pop (verify-guards ,guts.name-fn))))
 
          ;; BOZO using name-fn here is kind of weird, but otherwise we see ugly
          ;; output when there are macro arguments involved because ACL2 shows us
