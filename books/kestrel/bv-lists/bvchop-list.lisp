@@ -1,7 +1,7 @@
 ; BV Lists Library: bvchop-list
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -306,3 +306,11 @@
                   (bvchop-list size2 (take len lst))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (enable take bvchop-list))))
+
+(defthm bvchop-list-of-bvchop-list-tighten
+ (implies (and (<= size1 size2)
+               (natp size1)
+               (natp size2))
+          (equal (bvchop-list size1 (bvchop-list size2 lst))
+                 (bvchop-list size1 lst)))
+ :hints (("Goal" :in-theory (enable bvchop-list))))

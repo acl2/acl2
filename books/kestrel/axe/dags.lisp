@@ -1,7 +1,7 @@
 ; DAGs, represented as lists
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -1328,9 +1328,10 @@
                   0))
   :hints (("Goal" :in-theory (enable pseudo-dagp-aux))))
 
-(defthmd car-of-nth-of-+-of-car-of-car--when-pseudo-dagp-aux
-  (implies (and (pseudo-dagp-aux dag current-nodenum)
-                (natp current-nodenum))
+;here we are getting the nodenum of the last element
+(defthm car-of-nth-of-caar-when-pseudo-dagp-aux
+  (implies (and (pseudo-dagp-aux dag nodenum)
+                (natp nodenum))
            (equal (car (nth (car (car dag)) dag))
                   0))
   :hints (("Goal" :in-theory (enable pseudo-dagp-aux))))
@@ -1339,8 +1340,7 @@
   (implies (pseudo-dagp dag)
            (equal (car (nth (+ -1 (len dag)) dag))
                   0))
-  :hints (("Goal" :in-theory (e/d (pseudo-dagp
-                                   car-of-nth-of-+-of-car-of-car--when-pseudo-dagp-aux)
+  :hints (("Goal" :in-theory (e/d (pseudo-dagp)
                                   (;nth-of-cdr
                                    )))))
 
@@ -1363,11 +1363,11 @@
 
 (defthm nth-0-of-nth-of-+-of--1-and-len-when-pseudo-dagp-cheap
   (implies (pseudo-dagp dag)
-           (equal (nth 0 (nth (binary-+ '-1 (len dag)) dag))
+           (equal (nth 0 (nth (+ -1 (len dag)) dag))
                   0))
-  :hints (("Goal" :use (:instance nth-0-of-nth-of-+-of--1-and-len-when-pseudo-dagp)
-           :in-theory (e/d (nth) (;nth-of-cdr
-                                  car-of-nth-of-+-of--1-and-len-when-pseudo-dagp)))))
+  :rule-classes ((:rewrite :backchain-limit-lst (0)))
+  :hints (("Goal" :use nth-0-of-nth-of-+-of--1-and-len-when-pseudo-dagp
+           :in-theory (disable car-of-nth-of-+-of--1-and-len-when-pseudo-dagp))))
 
 (defthm pseudo-dagp-aux-of-minus1-of-len
   (implies (pseudo-dagp dag)
@@ -1379,14 +1379,6 @@
                 (integerp current-nodenum))
            (rational-listp (strip-cars dag)))
   :hints (("Goal" :in-theory (enable pseudo-dagp-aux bounded-dag-exprp strip-cars))))
-
-;here we are getting the nodenum of the last element
-(defthm car-of-nth-of-caar-when-pseudo-dagp-aux
-  (implies (and (pseudo-dagp-aux dag nodenum)
-                (natp nodenum))
-           (equal (car (nth (car (car dag)) dag))
-                  0))
-  :hints (("Goal" :in-theory (enable pseudo-dagp-aux))))
 
 (defthm all-<-of-strip-cars-and-+-1-of-caar
   (implies (pseudo-dagp-aux dag (car (car dag)))
