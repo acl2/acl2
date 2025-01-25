@@ -2850,7 +2850,6 @@
     ))
 
 ;; todo: get rid of this?
-;; many of these are list rules
 (defun jvm-rules-unfiled-misc ()
   (declare (xargs :guard t))
   (append '(equal-nil-of-myif
@@ -2864,7 +2863,6 @@
 ;    true-listp-of-logext-list
 ;    logext-list-equal-nil-rewrite2
 ;    logext-list-equal-nil-rewrite
-
 ;    iushr-constant-opener
 ;            usbp8-implies-sbp32-2 ;fixme do we still need this?
             integerp-of-nth-when-all-integerp
@@ -2901,9 +2899,8 @@
             map-packbv-constant-opener)))
 
 ;todo: rename?  Maybe to miter-rules?
-;fixme build this from smaller lists of rules?
+;todo: build this from smaller lists of rules?
 ;GETBIT-OF-BVXOR-ERIC ;seemed to be bad for dag prover Tue Jan 12 06:24:08 2010
-;todo: move this out of this jvm-specific file?
 (defun axe-rules ()
   (declare (xargs :guard t))
   (set-difference-equal
@@ -3908,7 +3905,7 @@
           (introduce-bv-array-rules)  ;todo: duplicated above!
           ))
 
-;outside-in rules.  Only used un rewriter-alt.lisp.
+;outside-in rules.  Only used in rewriter-alt.lisp.
 (defun oi-rules ()
   (declare (xargs :guard t))
   '(if-when-nil

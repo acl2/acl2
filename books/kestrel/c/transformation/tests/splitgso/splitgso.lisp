@@ -27,7 +27,6 @@
 
 (acl2::must-succeed*
   (c$::input-files :files ("test1.c")
-                   :process :validate
                    :const *old*)
 
   (splitgso *old*
@@ -59,7 +58,6 @@ int main(void) {
 
 (acl2::must-succeed*
   (c$::input-files :files ("test2.c")
-                   :process :validate
                    :const *old*)
 
   (splitgso *old*
@@ -85,6 +83,184 @@ int main(void) {
   struct myStruct my;
   return my.foo + (-my.baz);
 }
+")
+
+  :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Test an ensemble
+
+(acl2::must-succeed*
+  (c$::input-files :files ("static-struct1.c"
+                           "static-struct2.c"
+                           "extern-struct.c")
+                   :const *old*)
+
+  (splitgso *old*
+            *new*
+            :object-name "s"
+            ;; :object-filepath "extern-struct.c"
+            :new-object1 "s1"
+            :new-object2 "s2"
+            :new-type1 "S1"
+            :new-type2 "S2"
+            :split-members ("x"))
+
+  (c$::output-files :const *new*)
+
+  (assert-file-contents
+    :file "static-struct1.SPLITGSO.c"
+    :content "struct myStruct { int foo; _Bool bar; unsigned long int baz; };
+static struct myStruct my = {.foo = 0, .bar = 0, .baz = 42};
+int main(void) {
+  int x = my.foo + (-my.baz);
+  struct myStruct my;
+  return my.foo + (-my.baz);
+}
+")
+  (assert-file-contents
+    :file "static-struct2.SPLITGSO.c"
+    :content "struct myStruct { int a; int b; };
+static struct myStruct my = {.a = 0, .b = 0, };
+struct S { int x; };
+struct S1;
+struct S2 { int x; };
+struct S1 s1;
+struct S2 s2;
+int foo(void) {
+  int x = my.a + (-my.b);
+  struct myStruct my;
+  if (s2.x) {
+    return my.a + (-my.b);
+  }
+  return 0;
+}
+")
+  (assert-file-contents
+    :file "extern-struct.SPLITGSO.c"
+    :content "struct S { unsigned int x; unsigned int y; };
+struct S1 { unsigned int y; };
+struct S2 { unsigned int x; };
+struct S1 s1;
+struct S2 s2 = {.x = 0};
+")
+
+  :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Same as above, but with the :object-filepath
+
+(acl2::must-succeed*
+  (c$::input-files :files ("static-struct1.c"
+                           "static-struct2.c"
+                           "extern-struct.c")
+                   :const *old*)
+
+  (splitgso *old*
+            *new*
+            :object-name "s"
+            :object-filepath "extern-struct.c"
+            :new-object1 "s1"
+            :new-object2 "s2"
+            :new-type1 "S1"
+            :new-type2 "S2"
+            :split-members ("x"))
+
+  (c$::output-files :const *new*)
+
+  (assert-file-contents
+    :file "static-struct1.SPLITGSO.c"
+    :content "struct myStruct { int foo; _Bool bar; unsigned long int baz; };
+static struct myStruct my = {.foo = 0, .bar = 0, .baz = 42};
+int main(void) {
+  int x = my.foo + (-my.baz);
+  struct myStruct my;
+  return my.foo + (-my.baz);
+}
+")
+  (assert-file-contents
+    :file "static-struct2.SPLITGSO.c"
+    :content "struct myStruct { int a; int b; };
+static struct myStruct my = {.a = 0, .b = 0, };
+struct S { int x; };
+struct S1;
+struct S2 { int x; };
+struct S1 s1;
+struct S2 s2;
+int foo(void) {
+  int x = my.a + (-my.b);
+  struct myStruct my;
+  if (s2.x) {
+    return my.a + (-my.b);
+  }
+  return 0;
+}
+")
+  (assert-file-contents
+    :file "extern-struct.SPLITGSO.c"
+    :content "struct S { unsigned int x; unsigned int y; };
+struct S1 { unsigned int y; };
+struct S2 { unsigned int x; };
+struct S1 s1;
+struct S2 s2 = {.x = 0};
+")
+
+  :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(acl2::must-succeed*
+  (c$::input-files :files ("static-struct1.c"
+                           "static-struct2.c"
+                           "extern-struct.c")
+                   :const *old*)
+
+  (splitgso *old*
+            *new*
+            :object-name "my"
+            :object-filepath "static-struct2.c"
+            :new-object1 "my1"
+            :new-object2 "my2"
+            :new-type1 "myStruct1"
+            :new-type2 "myStruct2"
+            :split-members ("b"))
+
+  (c$::output-files :const *new*)
+
+  (assert-file-contents
+    :file "static-struct1.SPLITGSO.c"
+    :content "struct myStruct { int foo; _Bool bar; unsigned long int baz; };
+static struct myStruct my = {.foo = 0, .bar = 0, .baz = 42};
+int main(void) {
+  int x = my.foo + (-my.baz);
+  struct myStruct my;
+  return my.foo + (-my.baz);
+}
+")
+  (assert-file-contents
+    :file "static-struct2.SPLITGSO.c"
+    :content "struct myStruct { int a; int b; };
+struct myStruct1 { int a; };
+struct myStruct2 { int b; };
+static struct myStruct1 my1 = {.a = 0, };
+static struct myStruct2 my2 = {.b = 0, };
+struct S { int x; };
+extern struct S s;
+int foo(void) {
+  int x = my1.a + (-my2.b);
+  struct myStruct my;
+  if (s.x) {
+    return my.a + (-my.b);
+  }
+  return 0;
+}
+")
+  (assert-file-contents
+    :file "extern-struct.SPLITGSO.c"
+    :content "struct S { unsigned int x; unsigned int y; };
+struct S s = {.x = 0};
 ")
 
   :with-output-off nil)
@@ -117,7 +293,6 @@ int main(void) {
 
 (acl2::must-succeed*
   (c$::input-files :files ("test3.c")
-                   :process :validate
                    :const *old*)
 
   ;; Global struct object occurs outside of field access.
@@ -219,5 +394,29 @@ int main(void) {
               :split-members ("baz"))
 
     :with-output-off nil)
+
+  :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(acl2::must-succeed*
+  (c$::input-files :files ("static-struct1.c"
+                           "static-struct2.c"
+                           "extern-struct.c")
+                   :const *old*)
+
+  ;; (must-fail
+    ;; TODO: should this fail? the struct object it finds is static. Should we
+    ;;   force :object-filepath?
+    (splitgso *old*
+              *new*
+              :object-name "my"
+              :new-object1 "my1"
+              :new-object2 "my2"
+              :new-type1 "myStruct1"
+              :new-type2 "myStruct2"
+              :split-members ("b"))
+
+    ;; :with-output-off nil)
 
   :with-output-off nil)

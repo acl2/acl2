@@ -1,7 +1,7 @@
 ; Finding the largest nodenum in a list of DAG function args ("dargs")
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -56,11 +56,6 @@
 (defthm largest-non-quotep-of-cdr-bound
   (<= (largest-non-quotep (cdr items)) (largest-non-quotep items))
   :rule-classes (:rewrite :linear)
-  :hints (("Goal" :in-theory (enable largest-non-quotep))))
-
-(defthm largest-non-quotep-bound-linear
-  (<= -1 (largest-non-quotep items))
-  :rule-classes :linear
   :hints (("Goal" :in-theory (enable largest-non-quotep))))
 
 (defthm largest-non-quotep-bound
