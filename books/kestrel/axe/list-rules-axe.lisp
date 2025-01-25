@@ -1,7 +1,7 @@
 ; Axe rules about lists
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -179,3 +179,16 @@
 
 (defthmd true-listp-of-take
   (true-listp (take n x)))
+
+;; todo: which do we prefer?  depends on priorities..
+;; Only needed for Axe, since ACL2 uses equal-of-len-and-0 (todo: rename that one?)
+;rename
+(defthmd len-equal-0-rewrite-alt
+  (equal (equal (len x) 0)
+         (not (consp x))))
+
+; only needed for Axe?
+;should collect the constants
+;could then use a rule that len is not equal to an impossible constant
+(defthmd one-plus-len-hack
+  (not (equal (+ 1 (len x)) 0)))
