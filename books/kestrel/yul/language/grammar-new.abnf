@@ -151,7 +151,7 @@ symbol = "." / ","
 ; --------------------------------
 ; whitespace and comments
 
-; Corresponds to [ \t\r\n\u000C]
+; corresponds to [ \t\r\n\u000C]
 whitespace-char = %x20 / %x09 / %x0d / %x0a / %x0c
 
 ; ANTLR4 rule:
