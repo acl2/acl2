@@ -114,22 +114,22 @@ identifier = identifier-start *identifier-rest
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; The rules in this section have to do with separating lexemes
-;; into tokens, whitespace, and comments.
-;; These generally correspond to rules in
-;; https://github.com/ethereum/solidity/blob/develop/docs/grammar/SolidityLexer.g4
-;; although the way whitespace and comments are handled is different in ABNF
-;; than it is in ANTLR4.
+; The rules in this section have to do with separating lexemes
+; into tokens, whitespace, and comments.
+; These generally correspond to rules in
+; https://github.com/ethereum/solidity/blob/develop/docs/grammar/SolidityLexer.g4
+; although the way whitespace and comments are handled is different in ABNF
+; than it is in ANTLR4.
 
-;; --------------------------------
-;; keywords
+; --------------------------------
+; keywords
 
-;; Keywords that could be used as identifiers if they were not keywords.
-;; Note that %s"true" and %s"false" arew not here since we want
-;; them to lex as a boolean literal and therefore a token.
-;; However, %s"leave", %s"break", and %s"continue" should be here
-;; since we want the lexer to recognize them as keywords rather than
-;; identifiers.
+; Keywords that could be used as identifiers if they were not keywords.
+; Note that %s"true" and %s"false" arew not here since we want
+; them to lex as a boolean literal and therefore a token.
+; However, %s"leave", %s"break", and %s"continue" should be here
+; since we want the lexer to recognize them as keywords rather than
+; identifiers.
 keyword = %s"function"
           / %s"if"
           / %s"for"
@@ -141,15 +141,15 @@ keyword = %s"function"
           / %s"break"
           / %s"continue"
 
-;; Keywords that could not be used as identifiers if they were not keywords.
+; Keywords that could not be used as identifiers if they were not keywords.
 symbol = "." / ","
          / "->"
          / "(" / ")"
          / ":="
          / "{" / "}"
 
-;;; --------------------------------
-;;; whitespace and comments
+; --------------------------------
+; whitespace and comments
 
 ; Corresponds to [ \t\r\n\u000C]
 whitespace-char = %x20 / %x09 / %x0d / %x0a / %x0c
@@ -185,8 +185,8 @@ end-of-line-comment = "//" *not-lf-or-cr
 
 comment = block-comment / end-of-line-comment
 
-;; --------------------------------
-;; tokens
+; --------------------------------
+; tokens
 
 token = keyword
         / literal
@@ -195,7 +195,7 @@ token = keyword
 
 lexeme = token / comment / whitespace
 
-;; A file can be tokenized with *lexeme
+; A file can be tokenized with *lexeme
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -203,14 +203,14 @@ lexeme = token / comment / whitespace
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Syntactic grammar, to be applied to a sequence of tokens after
-;; comments and whitespace have been removed.
+; Syntactic grammar, to be applied to a sequence of tokens after
+; comments and whitespace have been removed.
 
-;; All of the rules in this section
-;; (and three in the top section above: boolean (yul-boolean),
-;; literal (yul-literal), and hex-string)
-;; are defined in the SolidityParser grammar
-;; https://docs.soliditylang.org/en/latest/grammar.html#a4.SolidityParser
+; All of the rules in this section
+; (and three in the top section above: boolean (yul-boolean),
+; literal (yul-literal), and hex-string)
+; are defined in the SolidityParser grammar
+; https://docs.soliditylang.org/en/latest/grammar.html#a4.SolidityParser
 
 ; corresponds to yul-path
 path = identifier *( "." identifier )
