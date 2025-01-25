@@ -112,6 +112,23 @@ identifier-rest = identifier-start / decimal-digit
 ; corresponds to yul-identifier
 identifier = identifier-start *identifier-rest
 
+keyword = %s"function"
+        / %s"if"
+        / %s"for"
+        / %s"switch"
+        / %s"case"
+        / %s"default"
+        / %s"let"
+        / %s"leave"
+        / %s"break"
+        / %s"continue"
+
+symbol = "." / ","
+       / "->"
+       / "(" / ")"
+       / ":="
+       / "{" / "}"
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; The rules in this section have to do with separating lexemes
@@ -121,35 +138,7 @@ identifier = identifier-start *identifier-rest
 ; although the way whitespace and comments are handled is different in ABNF
 ; than it is in ANTLR4.
 
-; --------------------------------
-; keywords
-
-; Keywords that could be used as identifiers if they were not keywords.
-; Note that %s"true" and %s"false" arew not here since we want
-; them to lex as a boolean literal and therefore a token.
-; However, %s"leave", %s"break", and %s"continue" should be here
-; since we want the lexer to recognize them as keywords rather than
-; identifiers.
-keyword = %s"function"
-          / %s"if"
-          / %s"for"
-          / %s"switch"
-          / %s"case"
-          / %s"default"
-          / %s"let"
-          / %s"leave"
-          / %s"break"
-          / %s"continue"
-
-; Keywords that could not be used as identifiers if they were not keywords.
-symbol = "." / ","
-         / "->"
-         / "(" / ")"
-         / ":="
-         / "{" / "}"
-
-; --------------------------------
-; whitespace and comments
+;;;;;;;;;;;;;;;;;;;;
 
 ; corresponds to [ \t\r\n\u000C]
 whitespace-char = %x20 / %x09 / %x0d / %x0a / %x0c
@@ -158,6 +147,8 @@ whitespace-char = %x20 / %x09 / %x0d / %x0a / %x0c
 ; YulWS: [ \t\r\n\u000C]+ -> skip ;
 
 whitespace = 1*whitespace-char
+
+;;;;;;;;;;;;;;;;;;;;
 
 ; ANTLR4 rule:
 ; YulCOMMENT: '/*' .*? '*/' -> channel(HIDDEN) ;
@@ -170,11 +161,11 @@ not-star-or-slash = %x00-29 / %x2b-2e / %x30-7f
 block-comment = "/*" rest-of-block-comment
 
 rest-of-block-comment = "*" rest-of-block-comment-after-star
-                        / not-star rest-of-block-comment
+                      / not-star rest-of-block-comment
 
 rest-of-block-comment-after-star = "/"
-                                   / "*" rest-of-block-comment-after-star
-                                   / not-star-or-slash rest-of-block-comment
+                                 / "*" rest-of-block-comment-after-star
+                                 / not-star-or-slash rest-of-block-comment
 
 ; ANTLR4 rule:
 ; YulLINE_COMMENT: '//' ~[\r\n]* -> channel(HIDDEN) ;
@@ -185,17 +176,27 @@ end-of-line-comment = "//" *not-lf-or-cr
 
 comment = block-comment / end-of-line-comment
 
-; --------------------------------
-; tokens
+;;;;;;;;;;;;;;;;;;;;
 
 token = keyword
-        / literal
-        / identifier
-        / symbol
+      / literal
+      / identifier
+      / symbol
+
+;;;;;;;;;;;;;;;;;;;;
 
 lexeme = token / comment / whitespace
 
-; A file can be tokenized with *lexeme
+; A file can be tokenized with *lexeme.
+
+; There is a grammatical overlap
+; between identifiers and keywords,
+; and between identifiers and boolean literals:
+; grammatically, keywords and boolean literals are identifiers.
+; However, there is an implicit constraint, not captured in the grammar,
+; that identifiers are not keywords or boolean literals.
+; Operationally, a lexer must try
+; to recognize keywords and boolean literals before identifiers.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
