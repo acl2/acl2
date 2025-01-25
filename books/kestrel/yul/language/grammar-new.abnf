@@ -36,12 +36,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; This section defines tokens that are to be returned by a tokenizer.
+; This section defines tokens that are to be returned by a tokenizer.
 
-;; The rules in this section mostly correspond to rules in
-;; https://docs.soliditylang.org/en/latest/grammar.html#a4.SolidityLexer
-;; (except for boolean (yul-boolean) and literal (yul-literal); see below,
-;; and except for hex-string, which is also in SolidityParser; see below.
+; The rules in this section mostly correspond to rules in
+; https://docs.soliditylang.org/en/latest/grammar.html#a4.SolidityLexer,
+; except for boolean (yul-boolean), literal (yul-literal), and hex-string,
+; whose rules are in
+; https://docs.soliditylang.org/en/latest/grammar.html#a4.SolidityParser.
 
 ; corresponds to yul-boolean
 boolean = %s"true" / %s"false"
