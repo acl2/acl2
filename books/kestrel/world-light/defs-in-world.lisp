@@ -1,6 +1,6 @@
 ; Getting all defuns and defthms from the world.
 ;
-; Copyright (C) 2021-2024 Kestrel Institute
+; Copyright (C) 2021-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -71,3 +71,19 @@
   (implies (plist-worldp world)
            (symbol-listp (defthms-in-world world)))
   :hints (("Goal" :in-theory (enable defthms-in-world))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns a list of all the names of defuns in the world.
+;; TODO: What about the primitives?  Should we use the 'formals property?
+(defund defuns-in-world (world)
+  (declare (xargs :guard (plist-worldp world)))
+  (mv-let (defun-names defthm-names)
+    (defuns-and-defthms-in-world world nil world nil nil)
+    (declare (ignore defthm-names))
+    defun-names))
+
+(defthm symbol-listp-of-defuns-in-world
+  (implies (plist-worldp world)
+           (symbol-listp (defuns-in-world world)))
+  :hints (("Goal" :in-theory (e/d (defuns-in-world) (mv-nth)))))
