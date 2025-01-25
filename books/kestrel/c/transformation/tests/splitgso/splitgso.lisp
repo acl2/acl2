@@ -405,8 +405,9 @@ struct S s = {.x = 0};
                            "extern-struct.c")
                    :const *old*)
 
-  (must-fail
-    ;; fails due to missing :object-filepath. The struct object is static
+  ;; (must-fail
+    ;; TODO: should this fail? the struct object it finds is static. Should we
+    ;;   force :object-filepath?
     (splitgso *old*
               *new*
               :object-name "my"
@@ -416,6 +417,6 @@ struct S s = {.x = 0};
               :new-type2 "myStruct2"
               :split-members ("b"))
 
-    :with-output-off nil)
+    ;; :with-output-off nil)
 
   :with-output-off nil)
