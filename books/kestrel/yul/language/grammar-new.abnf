@@ -32,6 +32,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Lexical Grammar
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; This section defines tokens that are to be returned by a tokenizer.
 
 ;; The rules in this section mostly correspond to rules in
@@ -107,7 +111,7 @@ identifier-rest = identifier-start / decimal-digit
 ; corresponds to yul-identifier
 identifier = identifier-start *identifier-rest
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; The rules in this section have to do with separating lexemes
 ;; into tokens, whitespace, and comments.
@@ -193,6 +197,10 @@ lexeme = token / comment / whitespace
 ;; A file can be tokenized with *lexeme
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Syntactic Grammar
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Syntactic grammar, to be applied to a sequence of tokens after
 ;; comments and whitespace have been removed.
