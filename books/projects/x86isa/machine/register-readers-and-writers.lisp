@@ -742,7 +742,7 @@ pointer, or opcode registers\).</em></p>"
   (define mmx-instruction-updates (x86)
     :inline t
     :no-function t
-    :guard-hints (("Goal" :in-theory (e/d ()
+    :guard-hints (("Goal" :in-theory (e/d (unsigned-byte-p-when-fp-statusbits-p)
                                           ())))
     :short "We set the FPU tag and TOS field to 00B \(valid\) and 000B
     respectively.  This function accounts for the effects of all MMX
