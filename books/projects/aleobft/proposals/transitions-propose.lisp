@@ -22,7 +22,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ transitions-propose
-  :parents (parents)
+  :parents (transitions)
   :short "Transitions for proposal creation."
   :long
   (xdoc::topstring
