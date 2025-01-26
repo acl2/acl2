@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -40,7 +40,7 @@
      that includes the Yul functions in scope,
      and that is manipulated along with the computation state.")
    (xdoc::p
-    "This is based on the formal specification in
+    "This is based on the semi-formal specification in
      [Yul: Specification of Yul: Formal Specification],
      which defines an interpreter for Yul.")
    (xdoc::p
@@ -322,21 +322,19 @@
      a finite map from identifiers to values."))
   :key-type identifier
   :val-type value
-  :pred lstatep)
+  :pred lstatep
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ///
 
-(defrule lstatep-of-restrict
-  (implies (lstatep map)
-           (lstatep (omap::restrict keys map)))
-  :enable omap::restrict)
+  (defrule lstatep-of-restrict
+    (implies (lstatep map)
+             (lstatep (omap::restrict keys map)))
+    :enable omap::restrict)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defrule identifier-setp-of-keys-when-lstatep
-  (implies (lstatep map)
-           (identifier-setp (omap::keys map)))
-  :enable omap::keys)
+  (defrule identifier-setp-of-keys-when-lstatep
+    (implies (lstatep map)
+             (identifier-setp (omap::keys map)))
+    :enable omap::keys))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
