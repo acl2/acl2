@@ -58,7 +58,7 @@
 
   (defruled unicode-only-*grammar-old*
     (abnf::rulelist-in-termset-p *grammar-old*
-                                 (acl2::integers-from-to 0 #x10ffff))
+                                 (integers-from-to 0 #x10ffff))
     :enable (abnf::rule-in-termset-p
              abnf::repetition-in-termset-p
              abnf::element-in-termset-p
@@ -66,7 +66,7 @@
              abnf::char-val-in-termset-p
              abnf::char-insensitive-in-termset-p
              abnf::char-sensitive-in-termset-p)
-    :disable ((:e acl2::integers-from-to))))
+    :disable ((:e integers-from-to))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
