@@ -74,7 +74,7 @@
          (g-inverse x)
        (f x))))
 
-  (define-sk exists-sb-inv (x)
+  (define-sk exists-sb-inverse (x)
     ;; Guard verified below (otherwise encapsulate complains that guard
     ;; verification may depend on local porperties)
     :verify-guards nil
@@ -99,19 +99,19 @@
 
   (defrule surjectivity-of-sb
     (implies (q x)
-             (exists-sb-inv x))
+             (exists-sb-inverse x))
     :use ((:instance surjectivity-of-sb-witness)
-          (:instance exists-sb-inv-when-exists-sb-inverse))
+          (:instance exists-sb-inverse-when-in-sb-imagep))
     :prep-lemmas
-    ((defrule exists-sb-inv-when-exists-sb-inverse
-       (implies (exists-sb-inverse x)
-                (exists-sb-inv x))
-       :enable (exists-sb-inverse
+    ((defrule exists-sb-inverse-when-in-sb-imagep
+       (implies (in-sb-imagep x)
+                (exists-sb-inverse x))
+       :enable (in-sb-imagep
                 is-sb-inverse
                 sb
                 sb-witness)
-       :use (:instance exists-sb-inv-suff
+       :use (:instance exists-sb-inverse-suff
                        (inv (sb-inverse x))
                        (x x))))))
 
-(verify-guards exists-sb-inv)
+(verify-guards exists-sb-inverse)
