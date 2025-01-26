@@ -34,7 +34,7 @@
   (implies (p x)
            (q (sb-witness x)))
   :enable sb-witness
-  :use (:instance exists-g-inverse-when-in-q-stopper
+  :use (:instance in-g-imagep-when-in-q-stopper
                   (elem (chain-elem t x))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -60,11 +60,11 @@
            (chain-elem t (g x)))
   :enable (chain-step))
 
-(defrule exists-g-inverse-when-in-q-stopper-and-p
+(defrule in-g-imagep-when-in-q-stopper-and-p
   (implies (and (in-q-stopper (chain-elem t x))
                 (p x))
-           (exists-g-inverse x))
-  :use (:instance exists-g-inverse-when-in-q-stopper
+           (in-g-imagep x))
+  :use (:instance in-g-imagep-when-in-q-stopper
                   (elem (chain-elem t x))))
 
 (defrule chain<=-of-g-inverse-when-in-q-stopper
@@ -85,7 +85,7 @@
            (chain<= (chain-elem t (f-inverse x))
                     (chain-elem nil x)))
   :enable chain-step
-  :use (:instance exists-f-inverse-when-not-in-q-stopper
+  :use (:instance in-f-imagep-when-not-in-q-stopper
                   (elem (chain-elem nil x))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -122,9 +122,9 @@
   :enable sb-witness
   :use chain=-when-equal-sb-witness
   :prep-lemmas
-  ((defrule equal-g-inverse-when-exists-g-inverse
-     (implies (and (exists-g-inverse x)
-                   (exists-g-inverse y))
+  ((defrule equal-g-inverse-when-in-g-imagep
+     (implies (and (in-g-imagep x)
+                   (in-g-imagep y))
               (equal (equal (g-inverse x) (g-inverse y))
                      (equal x y)))
      :use (:instance lemma)
@@ -152,24 +152,24 @@
 (defchoose sb-inverse (inv) (x)
   (is-sb-inverse inv x))
 
-(define exists-sb-inverse (x)
+(define in-sb-imagep (x)
   (is-sb-inverse (sb-inverse x) x))
 
-(defrule p-of-sb-inverse-when-exists-sb-inverse
-  (implies (exists-sb-inverse x)
+(defrule p-of-sb-inverse-when-in-sb-imagep
+  (implies (in-sb-imagep x)
            (p (sb-inverse x)))
-  :enable (exists-sb-inverse is-sb-inverse))
+  :enable (in-sb-imagep is-sb-inverse))
 
-(defrule sb-witness-of-sb-inverse-when-exists-sb-inverse
-  (implies (exists-sb-inverse x)
+(defrule sb-witness-of-sb-inverse-when-in-sb-imagep
+  (implies (in-sb-imagep x)
            (equal (sb-witness (sb-inverse x))
                   x))
-  :enable (exists-sb-inverse is-sb-inverse))
+  :enable (in-sb-imagep is-sb-inverse))
 
-(defrule exists-sb-inverse-of-sb-witness-when-p
+(defrule in-sb-imagep-of-sb-witness-when-p
  (implies (p x)
-          (exists-sb-inverse (sb-witness x)))
- :enable (exists-sb-inverse
+          (in-sb-imagep (sb-witness x)))
+ :enable (in-sb-imagep
            is-sb-inverse)
  :use (:instance sb-inverse (x (sb-witness x)) (inv x)))
 
@@ -190,8 +190,8 @@
 (defrule surjectivity-of-sb-witness-when-in-q-stopper
   (implies (and (q x)
                 (in-q-stopper (chain-elem nil x)))
-           (exists-sb-inverse x))
-  :enable (exists-sb-inverse
+           (in-sb-imagep x))
+  :enable (in-sb-imagep
            is-sb-inverse)
   :use (:instance sb-inverse (x x) (inv (g x))))
 
@@ -205,24 +205,24 @@
   :use ((:instance in-q-stopper-under-chain=
                    (x (chain-elem nil x))
                    (y (chain-elem t (f-inverse x))))
-        (:instance exists-f-inverse-when-not-in-q-stopper
+        (:instance in-f-imagep-when-not-in-q-stopper
                    (elem (chain-elem nil x)))))
 
 (defrule surjectivity-of-sb-witness-when-not-in-q-stopper
   (implies (and (q x)
                 (not (in-q-stopper (chain-elem nil x))))
-           (exists-sb-inverse x))
-  :enable (exists-sb-inverse
+           (in-sb-imagep x))
+  :enable (in-sb-imagep
            is-sb-inverse)
-  :use (:instance exists-f-inverse-when-not-in-q-stopper
+  :use (:instance in-f-imagep-when-not-in-q-stopper
                   (elem (chain-elem nil x)))
   :prep-lemmas
-  ((defrule exists-sb-inverse-when-equal-sb-witness-of-f-inverse
+  ((defrule in-sb-imagep-when-equal-sb-witness-of-f-inverse
      (implies (and (q x)
-                   (exists-f-inverse x)
+                   (in-f-imagep x)
                    (equal (sb-witness (f-inverse x)) x))
-              (exists-sb-inverse x))
-     :enable (exists-sb-inverse
+              (in-sb-imagep x))
+     :enable (in-sb-imagep
               is-sb-inverse)
      :use (:instance sb-inverse (x x) (inv (f-inverse x))))))
 
@@ -230,5 +230,5 @@
 
 (defrule surjectivity-of-sb-witness
   (implies (q x)
-           (exists-sb-inverse x))
+           (in-sb-imagep x))
   :cases ((in-q-stopper (chain-elem nil x))))
