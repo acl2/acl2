@@ -38,7 +38,7 @@
 
 (in-package "X86ISA")
 (include-book "../physical-memory-utils")
-(include-book "../gl-lemmas")
+(local (include-book "../gl-lemmas"))
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "centaur/bitops/equal-by-logbitp" :dir :system))

@@ -64,19 +64,19 @@
          (packn-pos-no-cl (list 'is- function '-inverse) function))
        (inverse
          (packn-pos-no-cl (list function '-inverse) function))
-       (exists-inverse
-         (packn-pos-no-cl (list 'exists- function '-inverse) function))
-       (domain-of-inverse-when-exists-inverse
-         (packn-pos-no-cl (list domain '-of- inverse '-when- exists-inverse)
+       (in-imagep
+         (packn-pos-no-cl (list 'in- function '-imagep) function))
+       (domain-of-inverse-when-in-imagep
+         (packn-pos-no-cl (list domain '-of- inverse '-when- in-imagep)
                           function))
-       (function-of-inverse-when-exists-inverse
-         (packn-pos-no-cl (list function '-of- inverse '-when- exists-inverse)
+       (function-of-inverse-when-in-imagep
+         (packn-pos-no-cl (list function '-of- inverse '-when- in-imagep)
                           function))
        (inverse-of-function-when-domain
          (packn-pos-no-cl (list inverse '-of- function '-when- domain)
                           function))
-       (exists-inverse-of-function-when-domain
-         (packn-pos-no-cl (list exists-inverse '-of- function '-when- domain)
+       (in-imagep-of-function-when-domain
+         (packn-pos-no-cl (list in-imagep '-of- function '-when- domain)
                           function)))
     `(progn
        ;; Prep
@@ -95,19 +95,18 @@
               (equal (,function inv) x)))
        (defchoose ,inverse (inv) (x)
          (,is-inverse inv x))
-       ;; TODO: rename "in-<function>-image"?
-       (defun ,exists-inverse (x)
+       (defun ,in-imagep (x)
          (declare (xargs :guard t))
          (,is-inverse (,inverse x) x))
-       (defthm ,domain-of-inverse-when-exists-inverse
-         (implies (,exists-inverse x)
+       (defthm ,domain-of-inverse-when-in-imagep
+         (implies (,in-imagep x)
                   (,domain (,inverse x)))
-         :hints (("Goal" :in-theory '(,exists-inverse ,is-inverse))))
-       (defthm ,function-of-inverse-when-exists-inverse
-         (implies (,exists-inverse x)
+         :hints (("Goal" :in-theory '(,in-imagep ,is-inverse))))
+       (defthm ,function-of-inverse-when-in-imagep
+         (implies (,in-imagep x)
                   (equal (,function (,inverse x))
                          x))
-         :hints (("Goal" :in-theory '(,exists-inverse ,is-inverse))))
+         :hints (("Goal" :in-theory '(,in-imagep ,is-inverse))))
        (defthm ,inverse-of-function-when-domain
          (implies (,domain x)
                   (equal (,inverse (,function x))
@@ -117,14 +116,14 @@
                          ;;   codomain-of-function-when-domain.
                          :in-theory (enable ,is-inverse)
                          :use ((:instance ,inverse (inv x) (x (,function x)))))))
-       (defthm ,exists-inverse-of-function-when-domain
+       (defthm ,in-imagep-of-function-when-domain
          (implies (,domain x)
-                  (,exists-inverse (,function x)))
-         :hints (("Goal" ;; :in-theory '(,exists-inverse
+                  (,in-imagep (,function x)))
+         :hints (("Goal" ;; :in-theory '(,in-imagep
                          ;;              ,is-inverse
                          ;;              ,inverse-of-function-when-domain)
                          ;; Open-world because we need codomain-of-function-when-domain.
-                         :in-theory (enable ,exists-inverse
+                         :in-theory (enable ,in-imagep
                                             ,is-inverse
                                             ,inverse-of-function-when-domain)
                          )))
