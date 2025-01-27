@@ -439,41 +439,72 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; primary-expression = identifier / integer
+; Large mutual recursion to parse expressions
+(defines parse-expressions
 
-(define parse-primary-expression ((token abnf::tree-optionp)
-                                  (input abnf::tree-listp))
-  :returns (mv (tree abnf::tree-resultp)
-               (next-token abnf::tree-optionp)
-               (rest-input abnf::tree-listp))
-  :short "Parse a @('primary-expression')."
-  (b* (((mv tree token0 input0) (parse-identifier token input))
-       ((when (not (reserrp tree)))
-        (mv (abnf-tree-wrap tree "primary-expression")
-            token0 input0))
-       ((pok tree) (parse-pfcs-integer token input)))
-    (mv (abnf-tree-wrap tree "primary-expression")
-        token input))
-  :hooks (:fix)
-  ///
+  ;; expression = addition-expression
 
-  (defret parsize-of-parse-primary-expression-<=
-    (<= (parsize next-token rest-input)
-        (parsize token input))
-    :rule-classes :linear)
+  (define parse-expression ((token abnf::tree-optionp)
+                            (input abnf::tree-listp))
+    :returns (mv (tree abnf::tree-resultp)
+                 (next-token abnf::tree-optionp)
+                 (rest-input abnf::tree-listp))
+    :short "Parse an @('expression')."
+    (b* (((pok tree) (parse-addition-expression token input)))
+      (mv (abnf-tree-wrap tree "expression")
+          token
+          input))
+    :measure (two-nats-measure (parsize token input) 4))
 
-  (defret parsize-of-parse-primary-expression-<
-    (implies (not (reserrp tree))
-             (< (parsize next-token rest-input)
-                (parsize token input)))
-    :rule-classes :linear))
+  ;; addition-expression = multiplication-expression
+  ;;                     / addition-expression "+" multiplication-expression
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  (define parse-addition-expression ((token abnf::tree-optionp)
+                                     (input abnf::tree-listp))
+    :returns (mv (tree abnf::tree-resultp)
+                 (next-token abnf::tree-optionp)
+                 (rest-input abnf::tree-listp))
+    :short "Parse a @('addition-expression')."
+    (b* (((pok< tree) (parse-multiplication-expression token input))
+         (current (abnf-tree-wrap tree "addition-expression"))
+         ((pok tree) (parse-addition-expression-rest token
+                                                     input
+                                                     current)))
+      (mv tree token input))
+    :measure (two-nats-measure (parsize token input) 3))
 
-;; multiplication-expression = primary-expression
-;;                           / multiplication-expression "*" primary-expression
+  (define parse-addition-expression-rest ((token abnf::tree-optionp)
+                                          (input abnf::tree-listp)
+                                          (current abnf::treep))
+    :returns (mv (tree abnf::tree-resultp)
+                 (next-token abnf::tree-optionp)
+                 (rest-input abnf::tree-listp))
+    :short "Parse the rest of a @('addition-expression')."
+    (b* (((when (not (token-stringp "+" token)))
+          (mv (abnf::tree-fix current)
+              (abnf::tree-option-fix token)
+              (abnf::tree-list-fix input)))
+         ((pok tree2) (parse-operator "+" token input))
+         ((pok< tree3) (parse-multiplication-expression token input))
+         ;; About the previous clause:
+         ;; Although in general we could return the argument `current`
+         ;; when we see "+" but no following multiplication-expression,
+         ;; but since there is nothing else that could start with "+"
+         ;; we simplify and return an error if there is "+" without a
+         ;; following multiplication-expression.
+         (current (abnf::make-tree-nonleaf
+                   :rulename? (abnf::rulename "addition-expression")
+                   :branches (list (list current)
+                                   (list tree2)
+                                   (list tree3))))
+         ((pok tree) (parse-addition-expression-rest token
+                                                     input
+                                                     current)))
+      (mv tree token input))
+    :measure (two-nats-measure (parsize token input) 3))
 
-(defines parse-multiplication-expressions
+  ;; multiplication-expression = primary-expression
+  ;;                          / multiplication-expression "*" primary-expression
 
   (define parse-multiplication-expression ((token abnf::tree-optionp)
                                            (input abnf::tree-listp))
@@ -487,7 +518,7 @@
                                                              input
                                                              current)))
         (mv tree token input))
-      :measure (parsize token input))
+      :measure (two-nats-measure (parsize token input) 2))
 
   (define parse-multiplication-expression-rest ((token abnf::tree-optionp)
                                                 (input abnf::tree-listp)
@@ -517,139 +548,61 @@
                                                            input
                                                            current)))
       (mv tree token input))
-    :measure (parsize token input))
+    :measure (two-nats-measure (parsize token input) 2))
 
-  :prepwork
-  ((defun parse-multiplication-expressions-expand-hints (id clause world)
-     (declare (ignore id world))
-     (cond
-       ((acl2::occur-lst
-         '(acl2::flag-is 'parse-multiplication-expression) clause)
-        '(:expand
-          (parse-multiplication-expression token input)))
-       ((acl2::occur-lst
-        '(acl2::flag-is 'parse-multiplication-expression-rest) clause)
-       '(:expand
-         (parse-multiplication-expression-rest token input current))))))
+  ;; primary-expression = identifier / integer / "(" expression ")"
 
-  :ruler-extenders :all
-
-  :verify-guards nil ; done below
-
-  :returns-hints
-  (("Goal"
-    :in-theory
-    (e/d (abnf::treep-when-tree-resultp-and-not-reserrp
-          abnf::tree-listp-when-tree-list-resultp-and-not-reserrp)
-         (parse-multiplication-expression
-          parse-multiplication-expression-rest)))
-   parse-multiplication-expressions-expand-hints)
-
-  ///
-
-  (defret-mutual parsize-of-parse-multiplication-expressions-<=
-    (defret parsize-of-parse-multiplication-expression-<=
-      (<= (parsize next-token rest-input)
-          (parsize token input))
-      :rule-classes :linear
-      :fn parse-multiplication-expression)
-    (defret parsize-of-parse-multiplication-expression-rest-<=
-      (<= (parsize next-token rest-input)
-          (parsize token input))
-      :rule-classes :linear
-      :fn parse-multiplication-expression-rest)
-    :hints
-    (("Goal" :in-theory (disable parse-multiplication-expression
-                                 parse-multiplication-expression-rest))
-     parse-multiplication-expressions-expand-hints))
-
-  (defret-mutual parsize-of-parse-multiplication-expressions-<
-    (defret parsize-of-parse-multiplication-expression-<
-      (implies (not (reserrp tree))
-               (< (parsize next-token rest-input)
-                  (parsize token input)))
-      :rule-classes :linear
-      :fn parse-multiplication-expression)
-    (defret parsize-of-parse-multiplication-expression-rest-<
-      t
-      :rule-classes nil
-      :fn parse-multiplication-expression-rest)
-    :hints
-    (("Goal" :in-theory (disable parse-multiplication-expression
-                                 parse-multiplication-expression-rest))
-     parse-multiplication-expressions-expand-hints))
-
-  (verify-guards parse-multiplication-expression
-    :hints
-    (("Goal" :in-theory (disable parse-multiplication-expression
-                                 parse-multiplication-expression-rest))))
-
-  (fty::deffixequiv-mutual parse-multiplication-expressions)
-  )
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; addition-expression = multiplication-expression
-;;                     / addition-expression "+" multiplication-expression
-
-(defines parse-addition-expressions
-
-  (define parse-addition-expression ((token abnf::tree-optionp)
-                                           (input abnf::tree-listp))
-      :returns (mv (tree abnf::tree-resultp)
-                   (next-token abnf::tree-optionp)
-                   (rest-input abnf::tree-listp))
-      :short "Parse a @('addition-expression')."
-      (b* (((pok< tree) (parse-multiplication-expression token input))
-           (current (abnf-tree-wrap tree "addition-expression"))
-           ((pok tree) (parse-addition-expression-rest token
-                                                             input
-                                                             current)))
-        (mv tree token input))
-      :measure (parsize token input))
-
-  (define parse-addition-expression-rest ((token abnf::tree-optionp)
-                                                (input abnf::tree-listp)
-                                                (current abnf::treep))
+  (define parse-primary-expression ((token abnf::tree-optionp)
+                                    (input abnf::tree-listp))
     :returns (mv (tree abnf::tree-resultp)
                  (next-token abnf::tree-optionp)
                  (rest-input abnf::tree-listp))
-    :short "Parse the rest of a @('addition-expression')."
-    (b* (((when (not (token-stringp "+" token)))
-          (mv (abnf::tree-fix current)
-              (abnf::tree-option-fix token)
-              (abnf::tree-list-fix input)))
-         ((pok tree2) (parse-operator "+" token input))
-         ((pok< tree3) (parse-multiplication-expression token input))
-         ;; About the previous clause:
-         ;; Although in general we could return the argument `current`
-         ;; when we see "+" but no following multiplication-expression,
-         ;; but since there is nothing else that could start with "*"
-         ;; we simplify and return an error if there is "*" without a
-         ;; following multiplication-expression.
-         (current (abnf::make-tree-nonleaf
-                   :rulename? (abnf::rulename "addition-expression")
-                   :branches (list (list current)
-                                   (list tree2)
-                                   (list tree3))))
-         ((pok tree) (parse-addition-expression-rest token
-                                                           input
-                                                           current)))
-      (mv tree token input))
-    :measure (parsize token input))
+    :short "Parse a @('primary-expression')."
+    (b* (((mv tree token0 input0) (parse-identifier token input))
+         ((when (not (reserrp tree)))
+          (mv (abnf-tree-wrap tree "primary-expression")
+              token0 input0))
+         ((mv tree token1 input1) (parse-pfcs-integer token input))
+         ((when (not (reserrp tree)))
+          (mv (abnf-tree-wrap tree "primary-expression")
+              token1 input1))
+         ((pok tree1) (parse-separator "(" token input))
+         ((pok tree2) (parse-expression token input)) ; maybe pok< ?
+         ((pok tree3) (parse-separator ")" token input)))
+      (mv (abnf::make-tree-nonleaf
+           :rulename? (abnf::rulename "primary-expression")
+           :branches (list (list tree1)
+                           (list tree2)
+                           (list tree3)))
+          token input))
+    :measure (two-nats-measure (parsize token input) 1))
 
   :prepwork
-  ((defun parse-addition-expressions-expand-hints (id clause world)
+  ((defun parse-expressions-expand-hints (id clause world)
      (declare (ignore id world))
      (cond
-       ((acl2::occur-lst
-         '(acl2::flag-is 'parse-addition-expression) clause)
-        '(:expand
-          (parse-addition-expression token input)))
-       ((acl2::occur-lst
+      ((acl2::occur-lst
+        '(acl2::flag-is 'parse-expression) clause)
+       '(:expand
+         (parse-expression token input)))
+      ((acl2::occur-lst
+        '(acl2::flag-is 'parse-addition-expression) clause)
+       '(:expand (parse-addition-expression token input)))
+      ((acl2::occur-lst
         '(acl2::flag-is 'parse-addition-expression-rest) clause)
        '(:expand
-         (parse-addition-expression-rest token input current))))))
+         (parse-addition-expression-rest token input current)))
+      ((acl2::occur-lst
+        '(acl2::flag-is 'parse-multiplication-expression) clause)
+       '(:expand (parse-multiplication-expression token input)))
+      ((acl2::occur-lst
+        '(acl2::flag-is 'parse-multiplication-expression-rest) clause)
+       '(:expand
+         (parse-multiplication-expression-rest token input current)))
+      ((acl2::occur-lst
+        '(acl2::flag-is 'parse-primary-expression) clause)
+       '(:expand
+         (parse-primary-expression token input))))))
 
   :ruler-extenders :all
 
@@ -660,13 +613,22 @@
     :in-theory
     (e/d (abnf::treep-when-tree-resultp-and-not-reserrp
           abnf::tree-listp-when-tree-list-resultp-and-not-reserrp)
-         (parse-addition-expression
-          parse-addition-expression-rest)))
-   parse-addition-expressions-expand-hints)
+         (parse-expression
+          parse-addition-expression
+          parse-addition-expression-rest
+          parse-multiplication-expression
+          parse-multiplication-expression-rest
+          parse-primary-expression)))
+   parse-expressions-expand-hints)
 
   ///
 
-  (defret-mutual parsize-of-parse-addition-expressions-<=
+  (defret-mutual parsize-of-parse-expressions-<=
+    (defret parsize-of-parse-expression-<=
+      (<= (parsize next-token rest-input)
+          (parsize token input))
+      :rule-classes :linear
+      :fn parse-expression)
     (defret parsize-of-parse-addition-expression-<=
       (<= (parsize next-token rest-input)
           (parsize token input))
@@ -677,12 +639,38 @@
           (parsize token input))
       :rule-classes :linear
       :fn parse-addition-expression-rest)
+    (defret parsize-of-parse-multiplication-expression-<=
+      (<= (parsize next-token rest-input)
+          (parsize token input))
+      :rule-classes :linear
+      :fn parse-multiplication-expression)
+    (defret parsize-of-parse-multiplication-expression-rest-<=
+      (<= (parsize next-token rest-input)
+          (parsize token input))
+      :rule-classes :linear
+      :fn parse-multiplication-expression-rest)
+    (defret parsize-of-parse-primary-expression-<=
+      (<= (parsize next-token rest-input)
+          (parsize token input))
+      :rule-classes :linear
+      :fn parse-primary-expression)
     :hints
-    (("Goal" :in-theory (disable parse-addition-expression
-                                 parse-addition-expression-rest))
-     parse-addition-expressions-expand-hints))
+    (("Goal" :in-theory (disable parse-expression
+                                 parse-addition-expression
+                                 parse-addition-expression-rest
+                                 parse-multiplication-expression
+                                 parse-multiplication-expression-rest
+                                 parse-primary-expression))
+     parse-expressions-expand-hints))
 
-  (defret-mutual parsize-of-parse-addition-expressions-<
+  (defret-mutual parsize-of-parse-expressions-<
+    (defret parsize-of-parse-expression-<
+      (implies (not (reserrp tree))
+               (< (parsize next-token rest-input)
+                  (parsize token input)))
+      :rule-classes :linear
+      :fn parse-expression)
+
     (defret parsize-of-parse-addition-expression-<
       (implies (not (reserrp tree))
                (< (parsize next-token rest-input)
@@ -693,46 +681,42 @@
       t
       :rule-classes nil
       :fn parse-addition-expression-rest)
+    (defret parsize-of-parse-multiplication-expression-<
+      (implies (not (reserrp tree))
+               (< (parsize next-token rest-input)
+                  (parsize token input)))
+      :rule-classes :linear
+      :fn parse-multiplication-expression)
+    (defret parsize-of-parse-multiplication-expression-rest-<
+      t
+      :rule-classes nil
+      :fn parse-multiplication-expression-rest)
+    (defret parsize-of-parse-primary-expression-<
+      (implies (not (reserrp tree))
+               (< (parsize next-token rest-input)
+                  (parsize token input)))
+      :rule-classes :linear
+      :fn parse-primary-expression)
     :hints
-    (("Goal" :in-theory (disable parse-addition-expression
-                                 parse-addition-expression-rest))
-     parse-addition-expressions-expand-hints))
+    (("Goal" :in-theory (disable parse-expression
+                                 parse-addition-expression
+                                 parse-addition-expression-rest
+                                 parse-multiplication-expression
+                                 parse-multiplication-expression-rest
+                                 parse-primary-expression))
+     parse-expressions-expand-hints))
 
-  (verify-guards parse-addition-expression
+  (verify-guards parse-expression
     :hints
-    (("Goal" :in-theory (disable parse-addition-expression
-                                 parse-addition-expression-rest))))
+    (("Goal" :in-theory (disable parse-expression
+                                 parse-multiplication-expression
+                                 parse-multiplication-expression-rest
+                                 parse-multiplication-expression
+                                 parse-multiplication-expression-rest
+                                 parse-primary-expression))))
 
-  (fty::deffixequiv-mutual parse-addition-expressions)
+  (fty::deffixequiv-mutual parse-expressions)
   )
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; expression = addition-expression
-
-(define parse-expression ((token abnf::tree-optionp)
-                          (input abnf::tree-listp))
-  :returns (mv (tree abnf::tree-resultp)
-               (next-token abnf::tree-optionp)
-               (rest-input abnf::tree-listp))
-  :short "Parse an @('expression')."
-  (b* (((pok tree) (parse-addition-expression token input)))
-    (mv (abnf-tree-wrap tree "expression")
-        token
-        input))
-  :hooks (:fix)
-  ///
-
-  (defret parsize-of-parse-expression-<=
-    (<= (parsize next-token rest-input)
-        (parsize token input))
-    :rule-classes :linear)
-
-  (defret parsize-of-parse-expression-<
-    (implies (not (reserrp tree))
-             (< (parsize next-token rest-input)
-                (parsize token input)))
-    :rule-classes :linear))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
