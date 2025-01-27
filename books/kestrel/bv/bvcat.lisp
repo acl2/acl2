@@ -1,7 +1,7 @@
 ; BV Library: Theorems about bvcat
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -1535,3 +1535,13 @@
            (equal (bvcat highsize (expt 2 highsize) lowsize lowval)
                   (bvcat highsize 0 lowsize lowval)))
   :hints (("Goal" :in-theory (enable bvcat))))
+
+;rename
+;disable?
+(defthmd plus-bvcat-with-0-special
+  (implies (and (unsigned-byte-p n x)
+                (natp m)
+                (natp n))
+           (equal (+ x (bvcat m y n 0))
+                  (bvcat m y n x)))
+  :hints (("Goal" :in-theory (enable bvcat logapp))))
