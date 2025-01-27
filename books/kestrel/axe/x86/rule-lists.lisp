@@ -221,7 +221,7 @@
 (defun linear-memory-rules ()
   (declare (xargs :guard t))
   '(;; Rules about reads:
-    
+
     ;; Rules about rimlXX (there are only 4 of these):
     ;; We open these to expose RML08, etc (handled below):
     ;; TODO: go to logext of read?
@@ -237,7 +237,7 @@
 
     ;; We can either open these read operations to RB, which then gets turned into READ, or turn these into READ directly:
     rml08-becomes-read ;; rml08
-    rml16-becomes-read ;; rml16 
+    rml16-becomes-read ;; rml16
     rml32-becomes-read ;; rml32
     rml48-becomes-read ;; rml48
     rml64-becomes-read ;; rml64
@@ -263,7 +263,7 @@
     mv-nth-1-of-rb-of-set-rax ; could add more like this
 
     ;; Rules about writes:
-    
+
     ;; Rules about wimlXX (there are only 4 of these):
     ;; We open these to expose WML08, etc (handled below)::
     ;; TODO: Go directly to WRITE
@@ -1898,7 +1898,7 @@
             ;x86isa::mv-nth-1-rb-xw-rip         ;targets mv-nth-1-of-rb
             ;x86isa::mv-nth-1-rb-xw-rgf         ;targets mv-nth-1-of-rb
             ;x86isa::mv-nth-1-rb-xw-undef
-            
+
             x86isa::rb-wb-disjoint-eric
             x86isa::disjoint-p-two-create-canonical-address-lists-thm-1
             x86isa::rb-wb-subset
