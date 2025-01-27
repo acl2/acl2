@@ -1,7 +1,7 @@
 ; A function to write to an array of bit-vectors
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,11 +14,13 @@
 (include-book "kestrel/lists-light/update-nth2" :dir :system)
 (include-book "kestrel/arithmetic-light/ceiling-of-lg" :dir :system)
 (include-book "bvchop-list")
+(include-book "kestrel/utilities/smaller-termp" :dir :system)
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
+(local (include-book "kestrel/lists-light/update-nth" :dir :system))
 (local (include-book "kestrel/bv/bvchop" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system)) ;for UNSIGNED-BYTE-P-INTEGER-LENGTH-ONE-LESS
 
@@ -238,3 +240,178 @@
            (equal (bv-array-write elemement-width len index val (take n array))
                   (bv-array-write elemement-width len index val array)))
   :hints (("Goal" :in-theory (enable bv-array-write update-nth2 bvchop-list-of-take-of-bvchop-list take))))
+
+(defthm bv-array-write-of-take-same
+  (equal (bv-array-write elemement-width len index val (take len array))
+         (bv-array-write elemement-width len index val array))
+  :hints (("Goal" :in-theory (enable bv-array-write update-nth2 bvchop-list-of-take-of-bvchop-list take))))
+
+;fixme can loop?
+(defthmd bv-array-write-of-bv-array-write-diff
+  (implies (and ;this is implied by them being unequal nats both of which are in bounds:
+            (not (equal (bvchop (integer-length (+ -1 len)) index1)
+                        (bvchop (integer-length (+ -1 len)) index2)))
+;                (< index1 len)
+;                (< index2 len)
+            (natp index1)
+            (natp index2)
+;                (natp len)
+;                (natp element-size)
+            )
+           (equal (bv-array-write element-size len index1 val1 (bv-array-write element-size len index2 val2 lst))
+                  (bv-array-write element-size len index2 val2 (bv-array-write element-size len index1 val1 lst))
+                  ))
+  :hints (("Goal"
+           :cases ((equal (bvchop (integer-length (+ -1 len))
+                                   index2)
+                          (bvchop (integer-length (+ -1 len))
+                                   index1)))
+           :in-theory (enable update-nth2 ceiling-of-lg bv-array-write))))
+
+;would like this not to mention len, but we have to know that the indices (after trimming down to the number of bits indicated by len) are in fact different.
+;; TODO: Maybe we prefer the other order since lower indices are usually done first.
+(defthmd bv-array-write-of-bv-array-write-diff-constant-indices
+  (implies (and (syntaxp (and (quotep index1)
+                              (quotep index2)))
+                (< index2 index1)
+                (< index1 len)
+                ;; (< index2 len)
+                (natp index1)
+                (natp index2)
+                ;; (natp len) ;drop?
+                )
+           (equal (bv-array-write element-size len index1 val1 (bv-array-write element-size len index2 val2 lst))
+                  (bv-array-write element-size len index2 val2 (bv-array-write element-size len index1 val1 lst))
+                  ))
+  :hints (("Goal" :use bv-array-write-of-bv-array-write-diff
+           :cases ((not (natp len)))
+           :in-theory (disable bv-array-write-of-bv-array-write-diff))))
+
+;fixme think about how this interacts with the tightening rules...
+(defthm bv-array-write-of-bv-array-write-diff-constant-indices-gen
+  (implies (and (syntaxp (quotep index1))
+                (syntaxp (quotep index2))
+                (< index2 index1) ;only do it when the indices are out of order
+                (<= element-size2 element-size1) ;the outer size is bigger
+                (< index1 len)
+                ;; (< index2 len)
+                (natp index1)
+                (natp index2)
+                (natp len)
+                (natp element-size1)
+                (natp element-size2)
+                )
+           (equal (bv-array-write element-size1 len index1 val1 (bv-array-write element-size2 len index2 val2 lst))
+                  (bv-array-write element-size1 len index2 (bvchop element-size2 val2)
+;the bvchop-list should have no affect when lst is a bv-array-write nest with element-size2
+                                  (bv-array-write element-size1 len index1 val1 (bvchop-list element-size2 lst)))))
+  :hints
+  (("Goal" :cases ((<= len (len lst)))
+    :in-theory (e/d (update-nth2 bv-array-write-opener
+                                 bvchop-list-of-take-of-bvchop-list-gen
+                                 )
+                    (BVCHOP-LIST-OF-TAKE)))))
+
+(DEFTHMd BV-ARRAY-WRITE-OF-BV-ARRAY-WRITE-tighten
+  (IMPLIES (AND (< element-size1 element-size2)
+                (< INDEX1 LEN)
+                (< INDEX2 LEN)
+                (equal len (len lst))
+                (NATP INDEX1)
+                (NATP INDEX2)
+                (NATP LEN)
+                (NATP ELEMENT-SIZE1)
+                (NATP ELEMENT-SIZE2))
+           (EQUAL (BV-ARRAY-WRITE ELEMENT-SIZE1 LEN INDEX1 VAL1 (BV-ARRAY-WRITE ELEMENT-SIZE2 LEN INDEX2 VAL2 LST))
+                  (BV-ARRAY-WRITE ELEMENT-SIZE1 LEN INDEX1 VAL1 (BV-ARRAY-WRITE ELEMENT-SIZE1 LEN INDEX2 VAL2 LST))))
+  :hints (("Goal" :in-theory (enable update-nth2 LEN-UPDATE-NTH bv-array-write))))
+
+(defthm bvchop-list-of-bv-array-write
+  (implies (and (<= size1 size2)
+                (natp size1)
+                (integerp size2))
+           (equal (bvchop-list size1 (bv-array-write size2 len index val lst))
+                  (bv-array-write size1 len index val lst)))
+  :hints (("Goal" :in-theory (enable bv-array-write))))
+
+(defthm bv-array-write-of-bvchop-list-tighten
+  (implies (and (unsigned-byte-p width2 val) ;what if this isn't true?
+                (< 0 len)
+                (integerp len)
+                (natp index)
+                (< index len)
+                (<= width2 width1) ;handle the other case?
+                (natp width2)
+                (integerp width1)
+                (equal len (len lst)) ;gross!
+                )
+           (equal (bv-array-write width1 len index val (bvchop-list width2 lst))
+                  (bv-array-write width2 len index val lst)))
+  :hints (("Goal" :in-theory (e/d (bv-array-write BVCHOP-WHEN-I-IS-NOT-AN-INTEGER update-nth2)
+                                  (;JVM::INT-LEMMA0
+                                   )))))
+
+(defthm bv-array-write-of-bv-array-write-same-index
+  (implies (and (< index len)
+                (natp index)
+                (natp len)
+                (natp element-size)
+                )
+           (equal (bv-array-write element-size len index val1 (bv-array-write element-size len index val2 lst))
+                  (bv-array-write element-size len index val1 lst)))
+  :hints (("Goal" :in-theory (enable update-nth2 bv-array-write))))
+
+(defthm bv-array-write-of-0-and-bv-array-write-tighter
+  (implies (and (< element-size2 element-size1) ;true for = but would loop
+                (natp element-size2)
+                (natp index2)
+                (natp element-size1))
+           (equal (BV-ARRAY-WRITE ELEMENT-SIZE1 LEN INDEX2 0 (BV-ARRAY-WRITE ELEMENT-SIZE2 LEN INDEX1 0 LST))
+                  (BV-ARRAY-WRITE ELEMENT-SIZE2 LEN INDEX2 0 (BV-ARRAY-WRITE ELEMENT-SIZE2 LEN INDEX1 0 LST))
+                  ))
+  :hints (("Goal" :cases ((< len (len lst)))
+           :in-theory (e/d (bv-array-write update-nth2) ()))))
+
+; do we need this one?
+(defthm bv-array-write-of-0-and-bvchop-list
+  (implies (and (<= element-size2 element-size1)
+                (natp element-size2)
+                (natp index2)
+                (natp element-size1))
+           (equal (bv-array-write element-size1 len index2 0 (bvchop-list element-size2 lst))
+                  (bv-array-write element-size2 len index2 0 lst)))
+  :hints (("Goal" :cases ((< len (len lst)))
+           :in-theory (e/d (bv-array-write update-nth2 BVCHOP-LIST-OF-TAKE-OF-BVCHOP-LIST-GEN)
+                           ()))))
+
+(defthm bv-array-write-of-bv-array-write-diff-same-val
+  (implies (and (syntaxp (smaller-termp index2 index1))
+                (< index1 len)
+                (< index2 len)
+                (natp index1)
+                (natp index2)
+                (natp len)
+                (natp element-size))
+           (equal (bv-array-write element-size len index1 val (bv-array-write element-size len index2 val lst))
+                  (bv-array-write element-size len index2 val (bv-array-write element-size len index1 val lst))))
+  :hints
+  (("Goal"
+    :in-theory (e/d (update-nth2 ;list::update-nth-update-nth-diff
+                     bv-array-write)
+                    (;UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN
+                     ;BV-ARRAY-WRITE-EQUAL-REWRITE-ALT
+                     ;BV-ARRAY-WRITE-EQUAL-REWRITE
+                     )))))
+
+(defthmd bv-array-write-tighten-to-1-bit
+  (implies (and (< 1 esize)
+                (all-unsigned-byte-p 1 data)
+                (unsigned-byte-p 1 val)
+                (NATP ESIZE)
+                (equal len (len data))
+                (natp index)
+                (true-listp data)
+                (< INDEX LEN))
+           (equal (bv-array-write esize len index val data)
+                  (bv-array-write 1 len index val data)))
+  :hints (("Goal" :in-theory (enable UPDATE-NTH2 BV-ARRAY-WRITE))))

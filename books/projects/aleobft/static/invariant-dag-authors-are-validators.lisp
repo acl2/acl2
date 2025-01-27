@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -128,7 +128,7 @@
              certificate-signers-are-validators-p
              certificate->signers))
 
-  (defrule system-authors-are-validators-p-when-signers-are-validators
+  (defruled system-authors-are-validators-p-when-signers-are-validators
     (implies (system-signers-are-validators-p systate)
              (system-authors-are-validators-p systate))
     :enable (system-authors-are-validators-p

@@ -66,7 +66,7 @@
          edges. It was built quickly to help track down bugs when attempting to
          get Linux to boot on the model. Additionally, it only works in the
          system-view mode, though if you have userspace Linux binary that you
-         wish to use to test, you can do it by @(tsee booting-linux) and then
+         wish to use to test, you can do it by @(see running-linux) and then
          running the program under Linux on the model. Of course, this won't
          catch bugs that only occur in app-view. This tool also requires
          including raw lisp and is unsound. It also requires using CCL.</p>

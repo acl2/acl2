@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -22,5 +22,4 @@
 
 (simpadd0 *old-code* *new-code* :proofs t)
 
-(c$::output-files :const *new-code*
-                  :process :print)
+(c$::output-files :const *new-code*)

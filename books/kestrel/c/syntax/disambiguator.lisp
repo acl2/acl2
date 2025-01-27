@@ -3045,7 +3045,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defret-mutual dimb-exprs/decls
+  (defret-mutual unambp-of-dimb-exprs/decls/stmts
     (defret expr-unambp-of-dimb-expr
       (implies (not erp)
                (expr-unambp new-expr))
@@ -3497,7 +3497,7 @@
               table)
            table))
        ((erp new-edecls &) (dimb-extdecl-list edecls table)))
-    (retok (transunit new-edecls)))
+    (retok (make-transunit :decls new-edecls :info nil)))
   :hooks (:fix)
 
   ///

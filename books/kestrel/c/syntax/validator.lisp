@@ -17,6 +17,8 @@
 
 (local (include-book "std/alists/top" :dir :system))
 
+(local (in-theory (enable* abstract-syntax-unambp-rules)))
+
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
@@ -78,143 +80,6 @@
     "This validator is work in progress."))
   :order-subtopics t
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deftagsum valid-defstatus
-  :short "Fixtype of definition statuses for validation."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This applies to objects and functions, which may be
-     undefined, defined, or tentatively defined [C:6.7/5] [C:6.9.2],
-     with the latter actually only applying to objects, not functions."))
-  (:undefined ())
-  (:tentative ())
-  (:defined ())
-  :pred valid-defstatusp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deftagsum valid-ord-info
-  :short "Fixtype of validation information about ordinary identifiers."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Ordinary identifiers [C:6.2.3/1] denote
-     objects, functions, enumeration constants, and @('typedef') names;
-     Ordinary identifiers form their own name space.
-     The other entities denoted by identifiers [C:6.2.1/1]
-     are in other name spaces, disjoint from the one of ordinary identifiers.")
-   (xdoc::p
-    "This fixtype formalizes the information about ordinary identifiers
-     tracked by our current validator.
-     Since our model of types includes both object and function types,
-     the information for both objects and functions includes (different) types;
-     that information also includes the linkage [C:6.2.2],
-     as well as definition status (see @(tsee valid-defstatus)).
-     For enumeration constants and for @('typedef') names,
-     for now we only track that they are
-     enumeration constants and @('typedef') names.")
-   (xdoc::p
-    "We will refine this fixtype as we refine our validator."))
-  (:objfun ((type type)
-            (linkage linkage)
-            (defstatus valid-defstatus)))
-  (:enumconst ())
-  (:typedef ())
-  :pred valid-ord-infop)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(fty::defoption valid-ord-info-option
-  valid-ord-info
-  :short "Fixtype of
-          optional validation information about ordinary identifiers."
-  :pred valid-ord-info-optionp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defalist valid-ord-scope
-  :short "Fixtype of validation scopes of ordinary identifiers."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Identifiers have scopes [C:6.2.1], which the validator tracks.
-     In each scope, for each name space,
-     each identifier must have one meaning (if any) [C:6.2.1/2].
-     Thus, we use an alist from identifiers
-     to the validation information about ordinary identifiers,
-     to track each scope in the name space of ordinary identifiers."))
-  :key-type ident
-  :val-type valid-ord-info
-  :true-listp t
-  :keyp-of-nil nil
-  :valp-of-nil nil
-  :pred valid-ord-scopep
-  :prepwork ((set-induction-depth-limit 1))
-  ///
-
-  (defrule valid-ord-infop-of-cdr-assoc-when-valid-ord-scopep
-    (implies (and (valid-ord-scopep scope)
-                  (assoc-equal ident scope))
-             (valid-ord-infop (cdr (assoc-equal ident scope))))
-    :induct t
-    :enable (valid-ord-scopep assoc-equal)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod valid-scope
-  :short "Fixtype of validation scopes."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Identifiers have scopes [C:6.2.1], which the validator tracks.
-     This fixtype contains all the information about a scope,
-     which currently only considers the name space of ordinary identifiers.
-     We will extend this fixtype to contain additional information,
-     particularly about tag of structure, union, and enumeration types."))
-  ((ord valid-ord-scope))
-  :pred valid-scopep)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist valid-scope-list
-  :short "Fixtype of lists of validation scopes."
-  :elt-type valid-scope
-  :true-listp t
-  :elementp-of-nil nil
-  :pred valid-scope-listp
-  :prepwork ((local (in-theory (enable nfix)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod valid-table
-  :short "Fixtype of validation tables."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Scopes are treated in a stack-like manner [C:6.2.1].
-     Thus, we define a validation table as
-     containing a list (i.e. stack) of scopes.
-     The stack grows from right to left:
-     the leftmost scope is the top, and the rightmost scope is the bottom;
-     in other words, in the nesting of scopes in the stack,
-     the leftmost scope is the innermost,
-     and the rightmost scope is the outermost
-     (i.e. the file scope [C:6.2.1/4].)")
-   (xdoc::p
-    "We wrap the list of scopes into a @(tsee fty::defprod)
-     for abstraction and extensibility."))
-  ((scopes valid-scope-list))
-  :pred valid-tablep)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-valid-table
-  :short "An irrelevant validation table."
-  :type valid-tablep
-  :body (valid-table nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1691,7 +1556,17 @@
    (xdoc::p
     "Here we accept all the lists of type specifiers in [C:6.7.2/2]
      except for those that are singletons determining a type
-     and that may not be part of longer sequences."))
+     and that may not be part of longer sequences.")
+   (xdoc::p
+    "The GCC documentation says that @('__int128')
+     can be used alone for signed,
+     or accompanied by @('unsigned') for unsigned.
+     But we also found it accompanied by @('signed')
+     (and its underscore variations)
+     in practical code,
+     which seems indeed consistent with other types like @('signed int');
+     so we accept all three variants.
+     But for now we map all of them to the unknown type."))
   (b* (((reterr) (irr-type)))
     (cond
      ((type-spec-list-char-p tyspecs)
@@ -1743,6 +1618,11 @@
       (retok (type-doublec)))
      ((type-spec-list-long-double-complex-p tyspecs)
       (retok (type-ldoublec)))
+     ((or (type-spec-list-int128-p tyspecs)
+          (type-spec-list-signed-int128-p tyspecs))
+      (retok (type-unknown)))
+     ((type-spec-list-unsigned-int128-p tyspecs)
+      (retok (type-unknown)))
      (t (reterr (msg "The type specifier sequence ~x0 is invalid."
                      (type-spec-list-fix tyspecs))))))
   :hooks (:fix))
@@ -2657,7 +2537,14 @@
        all the type specifiers that are GCC extensions
        to determine the unknown type;
        except for an empty structure type specifier,
-       which determines the structure type."))
+       which determines the structure type.
+       The @('__int128') may be preceded by @('unsigned'),
+       according to the GCC documentation;
+       we found, in practical code,
+       that it can also be preceded by @('signed') and its underscore variants;
+       so @('__int128') alone does not determine a type,
+       and we use @(tsee valid-type-spec-list-residual)
+       to determine the type, if any, as done in other cases."))
     (b* (((reterr) (irr-type-spec) nil nil nil (irr-valid-table))
          ((when type?)
           (reterr (msg "Since the type ~x0 has been determined, ~
@@ -2727,13 +2614,7 @@
                            nil
                            same-table)
                   (reterr msg-bad-preceding))
-       :int128 (if (endp tyspecs)
-                   (retok (type-spec-int128)
-                          (type-unknown)
-                          nil
-                          nil
-                          same-table)
-                 (reterr msg-bad-preceding))
+       :int128 (retok (type-spec-int128) nil ext-tyspecs nil same-table)
        :float32 (if (endp tyspecs)
                     (retok (type-spec-float32)
                            (type-unknown)
@@ -5547,7 +5428,265 @@
 
   (verify-guards valid-expr)
 
-  (fty::deffixequiv-mutual valid-exprs/decls/stmts))
+  (fty::deffixequiv-mutual valid-exprs/decls/stmts)
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defret-mutual valid-exprs/decls/stmts
+    (defret expr-unambp-of-valid-expr
+      (implies (not erp)
+               (expr-unambp new-expr))
+      :hyp (expr-unambp expr)
+      :fn valid-expr)
+    (defret expr-list-unambp-of-valid-expr-list
+      (implies (not erp)
+               (expr-list-unambp new-exprs))
+      :hyp (expr-list-unambp exprs)
+      :fn valid-expr-list)
+    (defret expr-option-unambp-of-valid-expr-option
+      (implies (not erp)
+               (expr-option-unambp new-expr?))
+      :hyp (expr-option-unambp expr?)
+      :fn valid-expr-option)
+    (defret const-expr-unambp-of-valid-const-expr
+      (implies (not erp)
+               (const-expr-unambp new-cexpr))
+      :hyp (const-expr-unambp cexpr)
+      :fn valid-const-expr)
+    (defret const-expr-option-unambp-of-valid-const-expr-option
+      (implies (not erp)
+               (const-expr-option-unambp new-cexpr?))
+      :hyp (const-expr-option-unambp cexpr?)
+      :fn valid-const-expr-option)
+    (defret genassoc-unambp-of-valid-genassoc
+      (implies (not erp)
+               (genassoc-unambp new-genassoc))
+      :hyp (genassoc-unambp genassoc)
+      :fn valid-genassoc)
+    (defret genassoc-list-unambp-of-valid-genassoc-list
+      (implies (not erp)
+               (genassoc-list-unambp new-genassocs))
+      :hyp (genassoc-list-unambp genassocs)
+      :fn valid-genassoc-list)
+    (defret member-designor-unambp-of-valid-member-designor
+      (implies (not erp)
+               (member-designor-unambp new-memdesign))
+      :hyp (member-designor-unambp memdesign)
+      :fn valid-member-designor)
+    (defret type-spec-unambp-of-valid-type-spec
+      (implies (not erp)
+               (and (type-spec-unambp new-tyspec)
+                    (type-spec-list-unambp new-tyspecs)))
+      :hyp (and (type-spec-unambp tyspec)
+                (type-spec-list-unambp tyspecs))
+      :fn valid-type-spec)
+    (defret spec/qual-unambp-of-valid-spec/qual
+      (implies (not erp)
+               (and (spec/qual-unambp new-specqual)
+                    (type-spec-list-unambp new-tyspecs)))
+      :hyp (and (spec/qual-unambp specqual)
+                (type-spec-list-unambp tyspecs))
+      :fn valid-spec/qual)
+    (defret spec/qual-list-unambp-of-valid-spec/qual-list
+      (implies (not erp)
+               (spec/qual-list-unambp new-specquals))
+      :hyp (and (spec/qual-list-unambp specquals)
+                (type-spec-list-unambp tyspecs))
+      :fn valid-spec/qual-list)
+    (defret align-spec-unambp-of-valid-align-spec
+      (implies (not erp)
+               (align-spec-unambp new-align))
+      :hyp (align-spec-unambp align)
+      :fn valid-align-spec)
+    (defret decl-spec-unambp-of-valid-decl-spec
+      (implies (not erp)
+               (and (decl-spec-unambp new-declspec)
+                    (type-spec-list-unambp new-tyspecs)))
+      :hyp (and (decl-spec-unambp declspec)
+                (type-spec-list-unambp tyspecs))
+      :fn valid-decl-spec)
+    (defret decl-spec-list-unambp-of-valid-decl-spec-list
+      (implies (not erp)
+               (decl-spec-list-unambp new-declspecs))
+      :hyp (and (decl-spec-list-unambp declspecs)
+                (type-spec-list-unambp tyspecs))
+      :fn valid-decl-spec-list)
+    (defret initer-unambp-of-valid-initer
+      (implies (not erp)
+               (initer-unambp new-initer))
+      :hyp (initer-unambp initer)
+      :fn valid-initer)
+    (defret initer-option-unambp-of-valid-initer-option
+      (implies (not erp)
+               (initer-option-unambp new-initer?))
+      :hyp (initer-option-unambp initer?)
+      :fn valid-initer-option)
+    (defret desiniter-unambp-of-valid-desiniter
+      (implies (not erp)
+               (desiniter-unambp new-desiniter))
+      :hyp (desiniter-unambp desiniter)
+      :fn valid-desiniter)
+    (defret desiniter-list-unambp-of-valid-desiniter-list
+      (implies (not erp)
+               (desiniter-list-unambp new-desiniters))
+      :hyp (desiniter-list-unambp desiniters)
+      :fn valid-desiniter-list)
+    (defret designor-unambp-of-valid-designor
+      (implies (not erp)
+               (designor-unambp new-designor))
+      :hyp (designor-unambp designor)
+      :fn valid-designor)
+    (defret designor-list-unambp-of-valid-designor-list
+      (implies (not erp)
+               (designor-list-unambp new-designors))
+      :hyp (designor-list-unambp designors)
+      :fn valid-designor-list)
+    (defret declor-unambp-of-valid-declor
+      (implies (not erp)
+               (declor-unambp new-declor))
+      :hyp (declor-unambp declor)
+      :fn valid-declor)
+    (defret declor-option-unambp-of-valid-declor-option
+      (implies (not erp)
+               (declor-option-unambp new-declor?))
+      :hyp (declor-option-unambp declor?)
+      :fn valid-declor-option)
+    (defret dirdeclor-unambp-of-valid-dirdeclor
+      (implies (not erp)
+               (dirdeclor-unambp new-dirdeclor))
+      :hyp (dirdeclor-unambp dirdeclor)
+      :fn valid-dirdeclor)
+    (defret absdeclor-unambp-of-valid-absdeclor
+      (implies (not erp)
+               (absdeclor-unambp new-absdeclor))
+      :hyp (absdeclor-unambp absdeclor)
+      :fn valid-absdeclor)
+    (defret absdeclor-option-unambp-of-valid-absdeclor-option
+      (implies (not erp)
+               (absdeclor-option-unambp new-absdeclor?))
+      :hyp (absdeclor-option-unambp absdeclor?)
+      :fn valid-absdeclor-option)
+    (defret dirabsdeclor-unambp-of-valid-dirabsdeclor
+      (implies (not erp)
+               (dirabsdeclor-unambp new-dirabsdeclor))
+      :hyp (dirabsdeclor-unambp dirabsdeclor)
+      :fn valid-dirabsdeclor)
+    (defret dirabsdeclor-option-unambp-of-valid-dirabsdeclor-option
+      (implies (not erp)
+               (dirabsdeclor-option-unambp new-dirabsdeclor?))
+      :hyp (dirabsdeclor-option-unambp dirabsdeclor?)
+      :fn valid-dirabsdeclor-option)
+    (defret paramdecl-unambp-of-valid-paramdecl
+      (implies (not erp)
+               (paramdecl-unambp new-paramdecl))
+      :hyp (paramdecl-unambp paramdecl)
+      :fn valid-paramdecl)
+    (defret paramdecl-list-unambp-of-valid-paramdecl-list
+      (implies (not erp)
+               (paramdecl-list-unambp new-paramdecls))
+      :hyp (paramdecl-list-unambp paramdecls)
+      :fn valid-paramdecl-list)
+    (defret paramdeclor-unambp-of-valid-paramdeclor
+      (implies (not erp)
+               (paramdeclor-unambp new-paramdeclor))
+      :hyp (paramdeclor-unambp paramdeclor)
+      :fn valid-paramdeclor)
+    (defret tyname-unambp-of-valid-tyname
+      (implies (not erp)
+               (tyname-unambp new-tyname))
+      :hyp (tyname-unambp tyname)
+      :fn valid-tyname)
+    (defret strunispec-unambp-of-valid-strunispec
+      (implies (not erp)
+               (strunispec-unambp new-strunispec))
+      :hyp (strunispec-unambp strunispec)
+      :fn valid-strunispec)
+    (defret structdecl-unambp-of-valid-structdecl
+      (implies (not erp)
+               (structdecl-unambp new-structdecl))
+      :hyp (structdecl-unambp structdecl)
+      :fn valid-structdecl)
+    (defret structdecl-list-unambp-of-valid-structdecl-list
+      (implies (not erp)
+               (structdecl-list-unambp new-structdecls))
+      :hyp (structdecl-list-unambp structdecls)
+      :fn valid-structdecl-list)
+    (defret structdeclor-unambp-of-valid-structdeclor
+      (implies (not erp)
+               (structdeclor-unambp new-structdeclor))
+      :hyp (structdeclor-unambp structdeclor)
+      :fn valid-structdeclor)
+    (defret structdeclor-list-unambp-of-valid-structdeclor-list
+      (implies (not erp)
+               (structdeclor-list-unambp new-structdeclors))
+      :hyp (structdeclor-list-unambp structdeclors)
+      :fn valid-structdeclor-list)
+    (defret enumspec-unambp-of-valid-enumspec
+      (implies (not erp)
+               (enumspec-unambp new-enumspec))
+      :hyp (enumspec-unambp enumspec)
+      :fn valid-enumspec)
+    (defret enumer-unambp-of-valid-enumer
+      (implies (not erp)
+               (enumer-unambp new-enumer))
+      :hyp (enumer-unambp enumer)
+      :fn valid-enumer)
+    (defret enumer-list-unambp-of-valid-enumer-list
+      (implies (not erp)
+               (enumer-list-unambp new-enumers))
+      :hyp (enumer-list-unambp enumers)
+      :fn valid-enumer-list)
+    (defret statassert-unambp-of-valid-statassert
+      (implies (not erp)
+               (statassert-unambp new-statassert))
+      :hyp (statassert-unambp statassert)
+      :fn valid-statassert)
+    (defret initdeclor-unambp-of-valid-initdeclor
+      (implies (not erp)
+               (initdeclor-unambp new-initdeclor))
+      :hyp (initdeclor-unambp initdeclor)
+      :fn valid-initdeclor)
+    (defret initdeclor-list-unambp-of-valid-initdeclor-list
+      (implies (not erp)
+               (initdeclor-list-unambp new-initdeclors))
+      :hyp (initdeclor-list-unambp initdeclors)
+      :fn valid-initdeclor-list)
+    (defret decl-unambp-of-valid-decl
+      (implies (not erp)
+               (decl-unambp new-decl))
+      :hyp (decl-unambp decl)
+      :fn valid-decl)
+    (defret decl-list-unambp-of-valid-decl-list
+      (implies (not erp)
+               (decl-list-unambp new-decls))
+      :hyp (decl-list-unambp decls)
+      :fn valid-decl-list)
+    (defret label-unambp-of-valid-label
+      (implies (not erp)
+               (label-unambp new-label))
+      :hyp (label-unambp label)
+      :fn valid-label)
+    (defret stmt-unambp-of-valid-stmt
+      (implies (not erp)
+               (stmt-unambp new-stmt))
+      :hyp (stmt-unambp stmt)
+      :fn valid-stmt)
+    (defret block-item-unambp-of-valid-block-item
+      (implies (not erp)
+               (block-item-unambp new-item))
+      :hyp (block-item-unambp item)
+      :fn valid-block-item)
+    (defret block-item-list-unambp-of-valid-block-item-list
+      (implies (not erp)
+               (block-item-list-unambp new-items))
+      :hyp (block-item-list-unambp items)
+      :fn valid-block-item-list)
+    ;; These hints only enable VALID-DECL-SPEC-LIST
+    ;; in the cases involving that function.
+    ;; Without this, the proof seems to hang, or at least take a very long time.
+    :hints (("Goal" :in-theory (disable valid-decl-spec-list))
+            (and (acl2::occur-lst '(acl2::flag-is 'valid-decl-spec-list) clause)
+                 '(:in-theory (enable valid-decl-spec-list))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5711,7 +5850,14 @@
                         :body (stmt-compound new-items))
            table))
   :guard-hints (("Goal" :in-theory (disable (:e tau-system)))) ; for speed
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret fundef-unambp-of-valid-fundef
+    (implies (not erp)
+             (fundef-unambp new-fundef))
+    :hyp (fundef-unambp fundef)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5742,7 +5888,14 @@
              (retok (extdecl-decl new-decl) table))
      :empty (retok (extdecl-empty) (valid-table-fix table))
      :asm (retok (extdecl-fix edecl) (valid-table-fix table))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret extdecl-unambp-of-valid-extdecl
+    (implies (not erp)
+             (extdecl-unambp new-edecl))
+    :hyp (extdecl-unambp edecl)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5751,7 +5904,7 @@
                             (ienv ienvp))
   :guard (extdecl-list-unambp edecls)
   :returns (mv erp
-               (new-decls extdecl-listp)
+               (new-edecls extdecl-listp)
                (new-table valid-tablep))
   :short "Validate a list of external declarations."
   :long
@@ -5763,15 +5916,21 @@
        ((erp new-edecl table) (valid-extdecl (car edecls) table ienv))
        ((erp new-edecls table) (valid-extdecl-list (cdr edecls) table ienv)))
     (retok (cons new-edecl new-edecls) table))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret extdecl-list-unambp-of-valid-extdecl-list
+    (implies (not erp)
+             (extdecl-list-unambp new-edecls))
+    :hyp (extdecl-list-unambp edecls)
+    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define valid-transunit ((tunit transunitp) (gcc booleanp) (ienv ienvp))
   :guard (transunit-unambp tunit)
-  :returns (mv erp
-               (new-tunit transunitp)
-               (table valid-tablep))
+  :returns (mv erp (new-tunit transunitp))
   :short "Validate a translation unit."
   :long
   (xdoc::topstring
@@ -5790,14 +5949,10 @@
      all the referenced names must be declared in the translation unit,
      so it is appropriate to start with the initial validation table.")
    (xdoc::p
-    "If validation is successful, we return the final validation table.
-     For now we do no make any use of the returned table,
-     but in the future we should use it to validate
-     the externally linked identifiers across
-     different translation units of a translation unit ensemble.
-     In fact, we should probably extend this validation function
-     to trim the returned validation table
-     so it only has entries for identifiers with external linkage.")
+    "If validation is successful,
+     we add the final validation table to
+     the information slot of the translation unit,
+     i.e. we annotate the translation unit with its final validation table.")
    (xdoc::p
     "For each GCC function, the associated information consists of
      the function type, external linkage, and defined status.
@@ -5807,7 +5962,7 @@
      For each GCC object, the associated information consists of
      the unknown type, external linkage, and defined status;
      the rationale for the latter two is the same as for functions."))
-  (b* (((reterr) (irr-transunit) (irr-valid-table))
+  (b* (((reterr) (irr-transunit))
        (table (valid-init-table))
        (table
          (if gcc
@@ -5981,9 +6136,17 @@
                table)
            table))
        ((erp new-edecls table)
-        (valid-extdecl-list (transunit->decls tunit) table ienv)))
-    (retok (transunit new-edecls) table))
-  :hooks (:fix))
+        (valid-extdecl-list (transunit->decls tunit) table ienv))
+       (info (make-transunit-info :table table)))
+    (retok (make-transunit :decls new-edecls :info info)))
+  :hooks (:fix)
+
+  ///
+
+  (defret transunit-unambp-of-valid-transunit
+    (implies (not erp)
+             (transunit-unambp new-tunit))
+    :hyp (transunit-unambp tunit)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -5998,17 +6161,17 @@
    (xdoc::p
     "We validate each translation unit.
      As mentioned in @(tsee valid-transunit),
-     for now we discard the result validation tables,
-     but in the future we should cross-check them.")
-   (xdoc::p
-    "If validation is successful, we return no information (@('nil')).
-     Otherwise, we return an error message,
-     which a caller can show to the user in an event macro."))
+     we annotate the translation unit with the finval validation table.
+     For now we do no make any use of the returned table,
+     but in the future we should use it to validate
+     the externally linked identifiers across
+     different translation units of a translation unit ensemble."))
   (b* (((reterr) (irr-transunit-ensemble))
        ((erp new-map)
         (valid-transunit-ensemble-loop
          (transunit-ensemble->unwrap tunits) gcc ienv)))
     (retok (transunit-ensemble new-map)))
+
   :prepwork
   ((define valid-transunit-ensemble-loop ((map filepath-transunit-mapp)
                                           (gcc booleanp)
@@ -6021,12 +6184,29 @@
      (b* (((reterr) nil)
           ((when (omap::emptyp map)) (retok nil))
           (path (omap::head-key map))
-          ((erp new-tunit &) (valid-transunit (omap::head-val map) gcc ienv))
+          ((erp new-tunit) (valid-transunit (omap::head-val map) gcc ienv))
           ((erp new-map)
            (valid-transunit-ensemble-loop (omap::tail map) gcc ienv)))
        (retok (omap::update path new-tunit new-map)))
      :verify-guards :after-returns
+
      ///
+
      (fty::deffixequiv valid-transunit-ensemble-loop
-       :args ((gcc booleanp) (ienv ienvp)))))
-  :hooks (:fix))
+       :args ((gcc booleanp) (ienv ienvp)))
+
+     (defret filepath-transunit-map-unambp-of-valid-transunit-ensemble-loop
+       (implies (not erp)
+                (filepath-transunit-map-unambp new-map))
+       :hyp (and (filepath-transunit-mapp map)
+                 (filepath-transunit-map-unambp map))
+       :hints (("Goal" :induct t)))))
+
+  :hooks (:fix)
+
+  ///
+
+  (defret transunit-ensemble-unambp-of-valid-transunit-ensemble
+    (implies (not erp)
+             (transunit-ensemble-unambp new-tunits))
+    :hyp (transunit-ensemble-unambp tunits)))

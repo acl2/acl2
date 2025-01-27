@@ -1,10 +1,10 @@
 ; Yul Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -93,7 +93,7 @@
   ///
 
   (defrule abnf-treep-when-abnf-tree-with-root-p
-    (implies (abnf-tree-with-root-p tree rulename) ; RULENAME intentionally free variable
+    (implies (abnf-tree-with-root-p tree rulename) ; RULENAME free variable
              (abnf::treep tree)))
 
   (defrule not-abnf-tree-with-root-p-of-nil

@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -28,18 +28,36 @@
      but also to variables declared in blocks in outer functions:
      the former variables are accessible, while the latter are not.")
    (xdoc::p
+    "For instance, consider the following Yul code:")
+   (xdoc::codeblock
+    "function f () {"
+    "  let x"
+    "  function g () {"
+    "    let y"
+    "    // here"
+    "  }"
+    "}"
+    )
+   (xdoc::p
+    "At the point marked as `here',
+     @('x') is visible but not accessible,
+     while @('y') is both visible and accessible.")
+   (xdoc::p
     "The non-shadowing of outer variables in the same function
+     (e.g. the non-shadowing of @('y') in function @('g'))
      is checked as part of the safety checks
      formalized in @(see static-safety-checking).
      This is necessary for safety,
      because the dynamic semantics has
-     a single variable scope (not a stack of scopes).")
+     a single variable scope (not a stack of scopes),
+     as formalized in @(see static-safety-checking).")
    (xdoc::p
     "The non-shadowing of outer variables in different functions
+     (e.g. the non-shadowing of @('x') in function @('g'))
      is not needed for safe execution,
-     because when the body of a function is executed,
+     because when the body of a function (e.g. @('g')) is executed,
      a new variable scope is started,
-     and the function has no access to outside variables.
+     and the function has no access to outside variables (e.g. to @('x')).
      Nonetheless, it is part of the Yul static semantics:
      the Yul team has explained that its purpose is
      just to prevent human error.

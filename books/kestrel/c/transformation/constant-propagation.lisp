@@ -1933,7 +1933,8 @@
   ((tunit transunitp))
   :returns (new-tunit transunitp)
   (b* (((transunit tunit) tunit))
-    (transunit (const-prop-extdecl-list tunit.decls nil))))
+    (make-transunit :decls (const-prop-extdecl-list tunit.decls nil)
+                    :info tunit.info)))
 
 (define const-prop-filepath-transunit-map
   ((map filepath-transunit-mapp))

@@ -12,3 +12,10 @@ int foo(bool bsigned, ui8 b) {
 }
 
 // RAC end
+
+#include <iostream>
+
+int main() {
+
+  std::cout << foo(1, 0) << ' ' << foo(1, 255) << ' ' << foo(1, 127) << '\n';
+}

@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -3284,9 +3284,10 @@
    (xdoc::p
     "This corresponds to <i>translation-unit</i> in the grammar in [C].")
    (xdoc::p
-    "We wrap the list of external declarations in this fixtype
-     to maintain a conceptual separation with translation units."))
-  ((decls extdecl-list))
+    "A translation unit consists of a list of external declarations.
+     We also add a slot with additional information, e.g. from validation."))
+  ((decls extdecl-list)
+   (info any))
   :pred transunitp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

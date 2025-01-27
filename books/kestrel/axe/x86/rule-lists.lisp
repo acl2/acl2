@@ -216,17 +216,36 @@
     x86isa::subset-p-reflexive
     ))
 
+;; For 64-bit mode and low-level 32-bit mode proofs.
+;; When using these, also include (read-rules) and (write-rules).
 (defun linear-memory-rules ()
   (declare (xargs :guard t))
-  '(
-    ;; Open these read operations to RB, which then gets turned into READ (TODO: Turn these into READ directly?)
-    rml08-becomes-read ;; x86isa::rml08
-    x86isa::rml16
-    x86isa::rml32
-    x86isa::rml64           ;shilpi leaves this enabled
-    x86isa::rml128-when-app-view
-    x86isa::rml256-when-app-view
+  '(;; Rules about reads:
+    
+    ;; Rules about rimlXX (there are only 4 of these):
+    ;; We open these to expose RML08, etc (handled below):
+    ;; TODO: go to logext of read?
+    x86isa::riml08
+    x86isa::riml16
+    x86isa::riml32
+    x86isa::riml64
+    x86isa::riml-size$inline ;shilpi leaves this enabled -- could restrict to constant
+    ;; riml-size-of-1-becomes-read ; todo: try these (for which proofs?)
+    ;; riml-size-of-2-becomes-read
+    ;; riml-size-of-4-becomes-read
+    ;; riml-size-of-8-becomes-read
 
+    ;; We can either open these read operations to RB, which then gets turned into READ, or turn these into READ directly:
+    rml08-becomes-read ;; rml08
+    rml16-becomes-read ;; rml16 
+    rml32-becomes-read ;; rml32
+    rml48-becomes-read ;; rml48
+    rml64-becomes-read ;; rml64
+    rml80-becomes-read ;; rml80
+    ;; rml128-becomes-read ; todo
+    ;; rml256-becomes-read ; todo
+    x86isa::rml128-when-app-view ; introduces rb (handled below)
+    x86isa::rml256-when-app-view ; introduces rb
     x86isa::rml-size$inline ;shilpi leaves this enabled ;todo: consider rml-size-becomes-rb
     ;; rml-size-of-1-becomes-read ;; todo: try these (for which proofs?)
     ;; rml-size-of-2-becomes-read
@@ -237,49 +256,39 @@
     ;; rml-size-of-16-becomes-read
     ;; rml-size-of-32-becomes-read
 
-    x86isa::riml08
-    x86isa::riml16
-    x86isa::riml32
-    x86isa::riml64               ;shilpi leaves this enabled
-
-    x86isa::riml-size$inline ;shilpi leaves this enabled -- could restrict to constant
-    ;; riml-size-of-1-becomes-read ; todo: try these (for which proofs?)
-    ;; riml-size-of-2-becomes-read
-    ;; riml-size-of-4-becomes-read
-    ;; riml-size-of-8-becomes-read
-
-    x86isa::wml08
-    x86isa::wml16
-    x86isa::wml32
-    x86isa::wml64           ;shilpi leaves this enabled, but this is big!
-    x86isa::wml128-when-app-view
-    x86isa::wml256-when-app-view
-    x86isa::wml-size$inline ;shilpi leaves this enabled
-
-    x86isa::wiml08
-    x86isa::wiml16
-    x86isa::wiml32
-    x86isa::wiml64
-    x86isa::wiml-size$inline
-    ))
-
-(defun read-introduction-rules ()
-  (declare (xargs :guard t))
-  '(rb-becomes-read ; no need to target mv-nth-1-of-rb, etc. since this rewrites the entire rb
+    rb-becomes-read ; no need to target mv-nth-1-of-rb, etc. since this rewrites the entire rb
     ;;mv-nth-1-of-rb-becomes-read
     ;; These just clarify failures to turn RB into READ: ; TODO: Only use when debugging?
     mv-nth-1-of-rb-of-set-rip
     mv-nth-1-of-rb-of-set-rax ; could add more like this
 
-    mv-nth-1-of-rb-1-becomes-read))
+    ;; Rules about writes:
+    
+    ;; Rules about wimlXX (there are only 4 of these):
+    ;; We open these to expose WML08, etc (handled below)::
+    ;; TODO: Go directly to WRITE
+    x86isa::wiml08
+    x86isa::wiml16
+    x86isa::wiml32
+    x86isa::wiml64
+    x86isa::wiml-size$inline
+
+    ;; TODO: Go directly to WRITE?
+    x86isa::wml08
+    x86isa::wml16
+    x86isa::wml32
+    x86isa::wml48
+    x86isa::wml64
+    x86isa::wml80
+    x86isa::wml128-when-app-view
+    x86isa::wml256-when-app-view
+    x86isa::wml512
+    x86isa::wml-size$inline ;shilpi leaves this enabled
+
+    mv-nth-1-of-wb-becomes-write
+    ))
 
 (set-axe-rule-priority rb-becomes-read -1) ; get rid of RB immediately
-
-;; When using these, also include (write-rules).
-(defun write-introduction-rules ()
-  (declare (xargs :guard t))
-  '(mv-nth-1-of-wb-1-becomes-write
-    mv-nth-1-of-wb-becomes-write))
 
 ;; Usually not needed except for in the loop lifter (showing that assumptions are preserved):
 (defund program-at-rules ()
@@ -311,7 +320,7 @@
     read-of-set-flag
     read-when-program-at ; trying just this one
     ;; since read-when-program-at can introduce bv-array-read-chunk-little
-    acl2::bv-array-read-chunk-little-constant-opener
+    ;; acl2::bv-array-read-chunk-little-constant-opener ; drop now that we can eval it
     acl2::bv-array-read-chunk-little-base ; todo: try to do better than these in some cases (try the other rules first)
     acl2::bv-array-read-chunk-little-unroll
     ;; read-when-program-at-1-byte-simple
@@ -377,17 +386,16 @@
   (declare (xargs :guard t))
   '(xr-becomes-fault
     xr-becomes-ms
-    xr-becomes-undef
     xr-becomes-mxcsr
+    xr-becomes-undef
     xw-becomes-set-fault
     xw-becomes-set-ms
-    xw-becomes-set-undef
     xw-becomes-set-mxcsr
+    xw-becomes-set-undef
     !fault-becomes-set-fault
     !ms-becomes-set-ms
-    x86isa::!mxcsr-becomes-set-mxcsr ; package
-    x86isa::!undef-becomes-set-undef ; package
-    ))
+    !mxcsr-becomes-set-mxcsr
+    !undef-becomes-set-undef))
 
 ;; For the loop lifter
 (defund reader-and-writer-opener-rules ()
@@ -408,26 +416,23 @@
     ;; app-view-of-set-ms
     app-view-of-set-mxcsr
     app-view-of-set-undef
+    app-view-of-!rflags
 
-    x86isa::x86p-xw ;big rule with forced hyps
+    ;; Rules about x86p:
+    x86isa::x86p-xw
     x86p-of-set-flag
     ;; x86p-of-set-ms
     x86p-of-set-mxcsr
     x86p-of-set-undef
-
     x86p-of-!rflags
 
     ;; Rules about fault:
-
-    ;; fault x86isa::fault$a  ;expose the call to xr
-    ;; fault-of-set-ms
-    fault-of-set-flag
-    ;; fault-of-myif
-    fault-of-!rflags ; why is !rflags not going away?
-    fault-of-set-rip ; move to 64 rules?
-    fault-of-set-undef
-    fault-of-set-mxcsr
     fault-of-xw ; currently needed at least for writes to float registers
+    fault-of-set-flag
+    ;; fault-of-set-ms
+    fault-of-set-mxcsr
+    fault-of-set-undef
+    fault-of-!rflags ; why is !rflags not going away?
 
     xr-of-set-undef-irrel
     xr-of-set-mxcsr-irrel
@@ -760,14 +765,15 @@
     rflagsbits->id$inline-of-xr
 
 ;    x86isa::get-flag-wb-in-app-view
-    x86isa::xr-ms-mv-nth-1-wb ;new  (see also xr-wb-in-app-view)
+    x86isa::xr-wb
+    ;;x86isa::xr-ms-mv-nth-1-wb ;new  (see also xr-wb-in-app-view)
 
     acl2::bfix-when-bitp ; move? or drop if we go to unsigned-byte-p
     x86isa::unsigned-byte-p-of-bfix
     acl2::bitp-becomes-unsigned-byte-p
 
     ;; Just for making terms in failures more readable:
-    mv-nth-1-of-rb-1-of-set-rip
+    ;; mv-nth-1-of-rb-1-of-set-rip
     ))
 
 (defun decoding-and-dispatch-rules ()
@@ -1855,7 +1861,8 @@
             x86isa::xr-of-xw-intra-field
             x86isa::xr-of-xw-inter-field
             x86isa::program-at-xw-in-app-view
-            x86isa::xr-app-view-mv-nth-1-wb ;has a hyp of t
+            x86isa::xr-wb
+            ;x86isa::xr-app-view-mv-nth-1-wb ;has a hyp of t
             x86isa::program-at-wb-disjoint ;drop?
 ;            strip-cars-of-create-addr-bytes-alist
             x86isa::true-listp-create-canonical-address-list
@@ -1887,8 +1894,11 @@
             acl2::ash-of-0
             ;acl2::fix-when-acl2-numberp
             ;acl2::acl2-numberp-of-+    ;we also have acl2::acl2-numberp-of-sum
-            x86isa::mv-nth-1-rb-xw-rip         ;targets mv-nth-1-of-rb
-            x86isa::mv-nth-1-rb-xw-rgf         ;targets mv-nth-1-of-rb
+            x86isa::rb-xw-values ; targets mv-nth-0-of-rb-of-xw and mv-nth-1-of-rb-of-xw
+            ;x86isa::mv-nth-1-rb-xw-rip         ;targets mv-nth-1-of-rb
+            ;x86isa::mv-nth-1-rb-xw-rgf         ;targets mv-nth-1-of-rb
+            ;x86isa::mv-nth-1-rb-xw-undef
+            
             x86isa::rb-wb-disjoint-eric
             x86isa::disjoint-p-two-create-canonical-address-lists-thm-1
             x86isa::rb-wb-subset
@@ -1964,7 +1974,6 @@
 ;            x86isa::set-flag-undefined$inline ;trying this..
 ;            x86isa::xr-set-flag-undefined
  ;           x86isa::program-at-set-flag-undefined
-            x86isa::mv-nth-1-rb-xw-rgf
 ;xr-rgf-mv-nth-2-rb
 ;xr-app-view-mv-nth-2-rb
 
@@ -1996,7 +2005,6 @@
             ;;x86isa::rip$a                           ;expose the call to xr
             ;;app-view$inline         ;expose the call to xr
 
-            x86isa::mv-nth-1-rb-xw-undef
             x86isa::wb-xw-in-app-view
 
             ;acl2::bvchop-of-bvmult
@@ -2793,8 +2801,9 @@
 ;    ea-to-la-of-write-to-segment
 ;    canonical-address-p-of-mv-nth-1-of-ea-to-la-of-cs
 ;    canonical-address-p-of-mv-nth-1-of-ea-to-la-of-ss
-    x86isa::mv-nth-0-rb-xw-rgf ;gen?
-    x86isa::mv-nth-0-rb-xw-rip
+    ;x86isa::mv-nth-0-rb-xw-rgf ;gen?
+    ;x86isa::mv-nth-0-rb-xw-rip
+    x86isa::rb-xw-values
 ;    fix-of-mv-nth-1-of-ea-to-la
 ;    read-of-ea-to-la-becomes-read-byte-from-segment
 ;    canonical-address-p-of-+-of-mv-nth-1-of-ea-to-la-of-ss
@@ -3206,8 +3215,6 @@
   (declare (xargs :guard t))
   (append (lifter-rules-common)
           (if-lowering-rules64)
-          (read-introduction-rules)
-          (write-introduction-rules)
           (read-rules)
           (write-rules)
           (read-and-write-rules)
@@ -3379,6 +3386,7 @@
     ms-of-write-byte
 
     fault-of-write-byte ; todo: move?
+    fault-of-set-rip
 
     app-view-of-set-rip
     app-view-of-set-rax
@@ -4380,8 +4388,6 @@
 (defun low-level-rules-32 ()
     (declare (xargs :guard t))
   (append (linear-memory-rules)
-          (read-introduction-rules)
-          (write-introduction-rules)
           (read-rules)
           (write-rules)
           (read-and-write-rules)
@@ -4499,7 +4505,7 @@
     not-mv-nth-0-of-wme-size ;gets rid of error branch
     mv-nth-1-of-wme-size     ;introduces write-to-segment
     mv-nth-1-of-rb-becomes-read
-    mv-nth-1-of-rb-1-becomes-read
+    ;; mv-nth-1-of-rb-1-becomes-read
     ;; x86isa::x86-fetch-decode-execute-base
     ))
 
@@ -4588,7 +4594,6 @@
             if-of-set-flag-and-set-flag
             xr-of-!rflags-irrel ; todo: better normal form?
             64-bit-modep-of-!rflags
-            app-view-of-!rflags
             read-of-!rflags
             acl2::logext-of-+-of-bvplus-same-size
             acl2::logext-of-+-of-+-of-mult-same-size
@@ -4895,9 +4900,6 @@
      acl2::equal-of-bvplus-constant-and-constant-alt
      acl2::mod-of-+-of-constant
      xr-of-if
-     ;; since we are still using the legacy rewriter, which can't eval bv-array-read-chunk-little:
-     ;acl2::bv-array-read-chunk-little-base
-     ;acl2::bv-array-read-chunk-little-unroll
      )
    (program-at-rules) ; to show that program-at assumptions still hold after the loop body
    (write-rules)

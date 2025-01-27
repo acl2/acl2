@@ -226,7 +226,9 @@
   :short "Transform a translation unit."
   :returns (new-tunit transunitp)
   (b* (((transunit tunit) tunit))
-    (transunit (specialize-extdecl-list tunit.decls target-fn target-param const))))
+    (make-transunit
+     :decls (specialize-extdecl-list tunit.decls target-fn target-param const)
+     :info tunit.info)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
