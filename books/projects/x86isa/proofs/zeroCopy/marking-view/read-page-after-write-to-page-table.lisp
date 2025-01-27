@@ -52,6 +52,7 @@
 (in-package "X86ISA")
 
 (include-book "zeroCopy-init")
+(local (include-book "../../utilities/sys-view/gl-lemmas"))
 
 (local (in-theory (e/d* (x86-operation-mode)
                         (unsigned-byte-p signed-byte-p))))

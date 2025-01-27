@@ -47,6 +47,7 @@
 (include-book "centaur/bitops/signed-byte-p" :dir :system)
 (include-book "arithmetic/top-with-meta" :dir :system)
 (include-book "centaur/gl/gl" :dir :system)
+(local (include-book "../../utilities/sys-view/gl-lemmas"))
 
 ;; ======================================================================
 

@@ -42,6 +42,7 @@
 (in-package "X86ISA")
 
 (include-book "zeroCopy-init")
+(local (include-book "../../utilities/sys-view/gl-lemmas"))
 
 ;; ======================================================================
 
