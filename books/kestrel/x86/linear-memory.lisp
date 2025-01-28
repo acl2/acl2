@@ -263,7 +263,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; These have much simpler RHSes than the definitions:
-;; TODO: try enabling these
+;; TODO: try enabling these.  But see rules like rml512-becomes-read instead!
 
 ;; for some reason the 128 and 256 functions are not as nice as the others
 ;; we assume app-view here to be able to get a nice, simple RHS
@@ -289,6 +289,17 @@
                           (mv 'rml256 0 x86)))
                     (mv 'rml256 0 x86))))
   :hints (("Goal" :in-theory (enable rml256))))
+
+(defthmd rml512-when-app-view
+  (implies (app-view x86)
+           (equal (rml512 lin-addr r-x x86)
+                  (if (canonical-address-p lin-addr)
+                      (let* ((63+lin-addr (+ 63 lin-addr)))
+                        (if (canonical-address-p 63+lin-addr)
+                            (rb 64 lin-addr r-x x86)
+                          (mv 'rml512 0 x86)))
+                    (mv 'rml512 0 x86))))
+  :hints (("Goal" :in-theory (enable rml512))))
 
 (defthmd wml128-when-app-view
   (implies (app-view x86)
