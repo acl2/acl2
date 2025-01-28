@@ -4,8 +4,8 @@
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (www.alessandrocoglio.info)
-; Contributing author: Eric McCarthy (mccarthy@kestrel.edu)
+; Authors: Alessandro Coglio (www.alessandrocoglio.info)
+;          Eric McCarthy (mccarthy@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
