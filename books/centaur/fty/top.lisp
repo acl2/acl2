@@ -1580,17 +1580,17 @@ mutually-recursive with other @(see deftypes)-compatible type generators.</p>
   :parents (...)       ;; xdoc
   :short \"...\"         ;; xdoc
   :long \"...\"          ;; xdoc
+  :measure (+ 1 (* 2 (acl2-count x)))
+                       ;; default: (acl2-count x)
+  :xvar x              ;; default: x, or find x symbol in measure
+  :prepwork            ;; admit these events before starting
   :pred foo?-p         ;; default: foo-option-p
   :fix foo?-fix        ;; default: foo-option-fix
   :equiv foo?-=        ;; default: foo-option-equiv
   :case  foo?-case     ;; default: foo-option-case
   :count foo?-cnt      ;; default: fooalist-count
                        ;; (may be nil; skipped unless mutually recursive)
-  :xvar x              ;; default: x, or find x symbol in measure
-  :measure (+ 1 (* 2 (acl2-count x)))
-                       ;; default: (acl2-count x)
   :inline (:kind :fix) ;; default: (:kind :fix :acc)
-  :prepwork            ;; admit these events before starting
   )
 })
 
