@@ -241,22 +241,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define eval-hex-pair-list ((hps hex-pair-listp))
-  :returns (bytes ubyte8-listp)
-  :short "Evaluate a list of hex pairs to a list of bytes."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is done element-wise:
-     each pair is turned into a byte,
-     and the order is preserved."))
-  (cond ((endp hps) nil)
-        (t (cons (eval-hex-pair (car hps))
-                 (eval-hex-pair-list (cdr hps)))))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define eval-hex-string-rest-element ((elem hex-string-rest-elementp))
   :returns (val ubyte8p)
   :short "Evaluate an element of hex strings after the first one."
