@@ -160,7 +160,6 @@
     )
   )
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; token type: keyword
@@ -265,7 +264,6 @@
                 (len tokens)))
     :rule-classes :linear)
   )
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -418,7 +416,6 @@
   (list (abnf::rulename "double-quoted-printable") (abnf::rulename "escape-sequence")))
 (defval *single-quoted-content-rulenames*
   (list (abnf::rulename "single-quoted-printable") (abnf::rulename "escape-sequence")))
-
 
 ;; a single backslash for an escape sequence
 (defval *list-leafterm-92*
@@ -700,7 +697,6 @@
      :get (make-hex-string :content hex-pairs
                            :double-quote-p (equal (nth 3 fringe) (char-code #\"))))))
 
-
 ;; ---------------------------------
 ;; putting the literals together in parse-literal
 
@@ -817,7 +813,6 @@
         (len tokens))
     :rule-classes :linear))
 
-
 ;; path = identifier *( "." identifier )
 (define parse-path ((tokens abnf::tree-listp))
   :returns (mv (ast-node path-resultp) (tokens-after-path abnf::tree-listp))
@@ -844,7 +839,6 @@
              (< (len tokens-after-path)
                 (len tokens)))
     :rule-classes :linear))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -999,8 +993,6 @@
   (verify-guards parse-expression)
   )
 
-
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; variable-declaration = %s"let" identifier [ ":=" expression ]
@@ -1009,7 +1001,6 @@
 
 ;; In the abstract syntax, we have two kinds of statement
 ;; modelling these two alternatives: variable-single and variable-multi.
-
 
 (define parse-*-comma-identifier ((tokens abnf::tree-listp))
   :returns (mv (result-asts identifier-listp) (tokens-after-identifiers abnf::tree-listp))
@@ -1042,7 +1033,6 @@
 ;; (implies (null result-asts) (= (len tokens-after-identifiers) (len tokens)))
 ;; and
 ;; (implies (not (null result-asts)) (< (len tokens-after-identifiers) (len tokens)))
-
 
 (define parse-variable-declaration ((tokens abnf::tree-listp))
   :returns (mv (result-ast statement-resultp) (tokens-after-statement abnf::tree-listp))
@@ -1220,7 +1210,6 @@
              (< (len tokens-after-statement) (len tokens)))
     :rule-classes :linear))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; continue statement
@@ -1239,7 +1228,6 @@
     (implies (not (reserrp result-ast))
              (< (len tokens-after-statement) (len tokens)))
     :rule-classes :linear))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1778,7 +1766,6 @@
   (verify-guards parse-statement)
   )
 
-
 (define parse-yul ((yul-string stringp))
   :returns (block? block-resultp)
   :short "Parses a Yul source program string into abstract syntax."
@@ -1799,7 +1786,6 @@
        ((unless (null tokens-after-ast))
         (reserrf "after parsing top-level yul block, there should be no more tokens")))
     top-block))
-
 
 ;; variation on parse-yul that takes a list of bytes
 (define parse-yul-bytes ((yul-bytes nat-listp))
