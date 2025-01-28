@@ -1588,7 +1588,7 @@ mutually-recursive with other @(see deftypes)-compatible type generators.</p>
   :fix foo?-fix        ;; default: foo-option-fix
   :equiv foo?-=        ;; default: foo-option-equiv
   :case  foo?-case     ;; default: foo-option-case
-  :count foo?-cnt      ;; default: fooalist-count
+  :count foo?-cnt      ;; default: foo-option-count
                        ;; (may be nil; skipped unless mutually recursive)
   :inline (:kind :fix) ;; default: (:kind :fix :acc)
   )
