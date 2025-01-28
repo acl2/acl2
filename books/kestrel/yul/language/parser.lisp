@@ -19,6 +19,7 @@
 (include-book "abstract-syntax")
 
 (local (include-book "std/lists/len" :dir :system))
+(local (include-book "std/typed-lists/character-listp" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -646,32 +647,46 @@
        (member (nth 3 fringe) (list (char-code #\") (char-code #\')))
        t)) ; just so it will return t rather than the member it found
 
-(define hex-chars-to-hex-pair-list ((chars str::hex-digit-char-list*p))
-  :returns (hex-pair-list hex-pair-list-resultp)
-  (cond ((null chars) nil)
-        ((not (and (str::hex-digit-char-list*p chars)
-                   (consp chars)
-                   (consp (cdr chars))
-                   (str::hex-digit-char-p (first chars))
-                   (str::hex-digit-char-p (second chars))))
-         (reserrf "hex-char-codes-to-hex-pair-list: chars should be a true list of hex digits"))
-        (t
-         (let* ((hex-digit1 (make-hex-digit :get (first chars)))
-                (hex-digit2 (make-hex-digit :get (second chars)))
-                (first-hex-pair (make-hex-pair :1st hex-digit1 :2nd hex-digit2)))
-           (if (not (str::hex-digit-char-list*p (cddr chars)))
-               (reserrf "problem in hex-char-codes-to-hex-pair-list")
-             (let ((rest-hex-pairs (hex-chars-to-hex-pair-list (cddr chars))))
-               (if (not (hex-pair-listp rest-hex-pairs))
-                   (reserrf "problem in hex-char-codes-to-hex-pair-list 2")
-                 (cons first-hex-pair rest-hex-pairs))))))))
+(define hex-chars-and-uscores-to-hex-string-rest-element-list
+  ((chars character-listp))
+  :returns (hex-string-rest-elements hex-string-rest-element-listp)
+  :short "Map the characters of a hex string after the first two
+          to a list of hex string elements."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used after processing the first two hex digits of the hex string,
+     assuming that the hex string is not empty.")
+   (xdoc::p
+    "This is never expected to fail,
+     because the lexer should guarantee that
+     these characters have the expected form;
+     thus, we throw a hard error (which should never happen),
+     if the characters do not have the expected form."))
+  (b* (((when (endp chars)) nil)
+       ((mv uscorep chars)
+        (if (eql (car chars) #\_)
+            (mv t (cdr chars))
+          (mv nil chars)))
+       ((unless (and (consp chars)
+                     (consp (cdr chars))
+                     (str::hex-digit-char-p (first chars))
+                     (str::hex-digit-char-p (second chars))))
+        (raise "Internal error: characters ~x0." chars))
+       (digit1 (make-hex-digit :get (first chars)))
+       (digit2 (make-hex-digit :get (second chars)))
+       (pair (make-hex-pair :1st digit1 :2nd digit2))
+       (elem (make-hex-string-rest-element :uscorep uscorep :pair pair))
+       (elems
+        (hex-chars-and-uscores-to-hex-string-rest-element-list (cddr chars))))
+    (cons elem elems)))
 
 (define cst2ast-hex-string ((tree abnf::treep))
   :returns (ast-node? literal-optionp)
   :short "Given a :nonleaf tree with rulename \"hex-string\",
           return the appropriate literal AST node."
   (b* (((unless (and (abnf::treep tree)
-                    (abnf::tree-case tree :nonleaf)))
+                     (abnf::tree-case tree :nonleaf)))
         nil)
        ;; There should be two branches, the first of which is "hex",
        ;; and then one with the delimited hex string.
@@ -679,23 +694,31 @@
        (fringe (abnf::tree-list-list->string (abnf::tree-nonleaf->branches tree)))
        ((unless (and (true-listp fringe)
                      (unsigned-byte-listp 8 fringe)
-                     ;; 4 for "hex'" and 1 for the closing "'
+                     ;; 3 for hex + 1 for opening quote + 1 for closing quote
                      (>= (len fringe) 5)))
         nil)
+       (double-quote-p (equal (nth 3 fringe) (char-code #\")))
        (hex-chars-and-underbars (subseq fringe 4 (- (len fringe) 1)))
-       (hex-char-codes (remove-equal (char-code #\_) hex-chars-and-underbars))
-       ((unless (unsigned-byte-listp 8 hex-char-codes))
-        nil)
-       (hex-chars (nats=>chars hex-char-codes))
-       ((unless (str::hex-digit-char-list*p hex-chars))
-        nil)
-       (hex-pairs (hex-chars-to-hex-pair-list hex-chars))
-       ((unless (hex-pair-listp hex-pairs))
-        nil)
-       )
-    (make-literal-hex-string
-     :get (make-hex-string :content hex-pairs
-                           :double-quote-p (equal (nth 3 fringe) (char-code #\"))))))
+       ((unless (unsigned-byte-listp 8 hex-chars-and-underbars))
+        (raise "Internal error: character codes ~x0." hex-chars-and-underbars))
+       (hex-chars-and-underbars (nats=>chars hex-chars-and-underbars))
+       ((when (endp hex-chars-and-underbars))
+        (make-literal-hex-string
+         :get (make-hex-string :content nil :double-quote-p double-quote-p)))
+       ((unless (and (consp hex-chars-and-underbars)
+                     (consp (cdr hex-chars-and-underbars))
+                     (str::hex-digit-char-p (first hex-chars-and-underbars))
+                     (str::hex-digit-char-p (second hex-chars-and-underbars))))
+        (raise "Internal error: characters ~x0." hex-chars-and-underbars))
+       (digit1 (make-hex-digit :get (first hex-chars-and-underbars)))
+       (digit2 (make-hex-digit :get (second hex-chars-and-underbars)))
+       (pair (make-hex-pair :1st digit1 :2nd digit2))
+       (rest (hex-chars-and-uscores-to-hex-string-rest-element-list
+              (cddr hex-chars-and-underbars)))
+       (content (make-hex-string-content :first pair :rest rest))
+       (hex-string (make-hex-string :content content
+                                    :double-quote-p double-quote-p)))
+    (make-literal-hex-string :get hex-string)))
 
 ;; ---------------------------------
 ;; putting the literals together in parse-literal
