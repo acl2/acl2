@@ -365,43 +365,43 @@
 
 ;; Definedness of inverses via chain membership
 
-(defruled exists-f-inverse-of-chain-elem-when-chain-steps
+(defruled in-f-imagep-of-chain-elem-when-chain-steps
   (implies (and (chain-elemp x)
                 (posp n)
                 (equal (chain-steps x n) y)
                 (not (polarity y)))
-           (exists-f-inverse (val y)))
+           (in-f-imagep (val y)))
   :induct t
   :enable chain-steps)
 
-(defruled exists-f-inverse-of-chain-elem-when-chain<=
+(defruled in-f-imagep-of-chain-elem-when-chain<=
   (implies (and (chain-elemp x)
                 (chain<= x y)
                 (polarity x)
                 (not (polarity y)))
-           (exists-f-inverse (val y)))
-  :use (:instance exists-f-inverse-of-chain-elem-when-chain-steps
+           (in-f-imagep (val y)))
+  :use (:instance in-f-imagep-of-chain-elem-when-chain-steps
                   (n (chain<=-witness x y)))
   :enable chain<=)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled exists-g-inverse-of-chain-elem-when-chain-steps
+(defruled in-g-imagep-of-chain-elem-when-chain-steps
   (implies (and (chain-elemp x)
                 (posp n)
                 (equal (chain-steps x n) y)
                 (polarity y))
-           (exists-g-inverse (val y)))
+           (in-g-imagep (val y)))
   :induct t
   :enable chain-steps)
 
-(defruled exists-g-inverse-of-chain-elem-when-chain<=
+(defruled in-g-imagep-of-chain-elem-when-chain<=
   (implies (and (chain-elemp x)
                 (chain<= x y)
                 (not (polarity x))
                 (polarity y))
-           (exists-g-inverse (val y)))
-  :use (:instance exists-g-inverse-of-chain-elem-when-chain-steps
+           (in-g-imagep (val y)))
+  :use (:instance in-g-imagep-of-chain-elem-when-chain-steps
                   (n (chain<=-witness x y)))
   :enable chain<=)
 
@@ -411,8 +411,8 @@
 
 (define initialp ((elem consp))
   (if (polarity elem)
-      (not (exists-g-inverse (val elem)))
-    (not (exists-f-inverse (val elem)))))
+      (not (in-g-imagep (val elem)))
+    (not (in-f-imagep (val elem)))))
 
 ;; TODO: forward to nil?
 (defrule equal-when-chain<=-initial
@@ -632,21 +632,21 @@
                   (get-initial y)))
   :use get-initial-under-chain=-when-exists-initial)
 
-(defrule exists-g-inverse-when-not-exists-initial
+(defrule in-g-imagep-when-not-exists-initial
   (implies (and (chain-elemp elem)
                 (not (exists-initial elem))
                 (polarity elem))
-           (exists-g-inverse (val elem)))
+           (in-g-imagep (val elem)))
   ;; :rule-classes ((:forward-chaining :trigger-terms ((exists-initial elem))))
   :enable initialp
   :use (:instance exists-initial-when-initialp-forward
                   (initial elem)))
 
-(defrule exists-f-inverse-when-not-exists-initial
+(defrule in-f-imagep-when-not-exists-initial
   (implies (and (chain-elemp elem)
                 (not (exists-initial elem))
                 (not (polarity elem)))
-           (exists-f-inverse (val elem)))
+           (in-f-imagep (val elem)))
   ;; :rule-classes ((:forward-chaining :trigger-terms ((exists-initial elem))))
   :enable initialp
   :use (:instance exists-initial-when-initialp-forward
@@ -674,27 +674,27 @@
   :rule-classes :forward-chaining
   :enable in-q-stopper)
 
-(defrule exists-g-inverse-when-in-q-stopper
+(defrule in-g-imagep-when-in-q-stopper
   (implies (and (in-q-stopper elem)
                 (polarity elem))
-           (exists-g-inverse (val elem)))
+           (in-g-imagep (val elem)))
   :enable in-q-stopper
-  :disable exists-g-inverse-of-chain-elem-when-chain<=
-  :use (:instance exists-g-inverse-of-chain-elem-when-chain<=
+  :disable in-g-imagep-of-chain-elem-when-chain<=
+  :use (:instance in-g-imagep-of-chain-elem-when-chain<=
                   (x (get-initial elem))
                   (y elem)))
 
-(defrule exists-f-inverse-when-not-in-q-stopper
+(defrule in-f-imagep-when-not-in-q-stopper
   (implies (and (chain-elemp elem)
                 (not (in-q-stopper elem))
                 (not (polarity elem)))
-           (exists-f-inverse (val elem)))
+           (in-f-imagep (val elem)))
   :enable in-q-stopper
-  :disable exists-f-inverse-of-chain-elem-when-chain<=
-  :use ((:instance exists-f-inverse-of-chain-elem-when-chain<=
+  :disable in-f-imagep-of-chain-elem-when-chain<=
+  :use ((:instance in-f-imagep-of-chain-elem-when-chain<=
                    (x (get-initial elem))
                    (y elem))
-        (:instance exists-f-inverse-when-not-exists-initial)))
+        (:instance in-f-imagep-when-not-exists-initial)))
 
 (defrule in-q-stopper-under-chain=
   (implies (chain= x y)

@@ -45,6 +45,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defoption filepath-option
+  filepath
+  :short "Fixtype of optional file paths."
+  :pred filepath-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defset filepath-set
   :short "Fixtype of sets of file paths."
   :elt-type filepath

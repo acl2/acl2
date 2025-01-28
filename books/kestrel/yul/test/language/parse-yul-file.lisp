@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -32,7 +32,7 @@
        ((when (or erp (not (consp bytes))))
         (prog2$ (er hard? 'parse-yul-file "Failed to read bytes from file: ~x0." filename)
                 (mv `(:failed-to-read-from-file ,filename) nil state)))
-       ((unless (acl2::nat-listp bytes))
+       ((unless (nat-listp bytes))
         (mv t nil state))
        ;; Parse the bytes read:
        (yul-or-err (parse-yul-bytes bytes)))
@@ -53,7 +53,7 @@
         (acl2::read-file-into-byte-list filename state))
        ((when (or erp (not (consp bytes))))
         (mv (reserrf `(:failed-to-read-from-file ,filename)) state))
-       ((unless (acl2::nat-listp bytes))
+       ((unless (nat-listp bytes))
         ;; can't happen, but helps guard checks
         (mv (reserrf `(:bytes-in-file-are-not-nats ,filename)) state))
        ;; Parse the bytes read:

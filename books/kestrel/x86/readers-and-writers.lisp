@@ -1,7 +1,7 @@
 ; A theory of x86 state readers and writers (emphasis on readability of terms)
 ;
 ; Copyright (C) 2016-2022 Kestrel Technology, LLC
-; Copyright (C) 2023-2024 Kestrel Institute
+; Copyright (C) 2023-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -50,7 +50,7 @@
   (x86isa::!undef undef x86))
 
 ;; Introduces set-undef
-(defthmd x86isa::!undef-becomes-set-undef
+(defthmd !undef-becomes-set-undef
   (equal (x86isa::!undef undef x86)
          (set-undef undef x86))
   :hints (("Goal" :in-theory (enable set-undef))))
@@ -229,7 +229,7 @@
   (x86isa::!mxcsr mxcsr x86))
 
 ;; Introduces set-mxcsr
-(defthmd x86isa::!mxcsr-becomes-set-mxcsr
+(defthmd !mxcsr-becomes-set-mxcsr
   (equal (x86isa::!mxcsr mxcsr x86)
          (set-mxcsr mxcsr x86))
   :hints (("Goal" :in-theory (enable set-mxcsr))))

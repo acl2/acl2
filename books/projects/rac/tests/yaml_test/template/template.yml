@@ -16,6 +16,9 @@
 
 - name: template-ac-int-sign
 
+- name: missing-function
+  should_report_error: true
+
 - name: arity
   should_report_error: true
 

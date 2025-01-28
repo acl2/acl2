@@ -42,7 +42,7 @@
 
 (in-package "X86ISA")
 (include-book "physical-memory-utils")
-(include-book "gl-lemmas")
+(local (include-book "gl-lemmas"))
 (include-book "bind-free-utils")
 (include-book "paging/tlb")
 (include-book "clause-processors/find-subterms" :dir :system)

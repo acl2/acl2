@@ -1,6 +1,6 @@
 ; Prime fields library: moving negated addends using bind-free
 ;
-; Copyright (C) 2020 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -19,7 +19,7 @@
 (include-book "prime-fields-rules") ;needed just for some "add of neg" rules?
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system)) ;;for integerp of mod
 (local (include-book "kestrel/utilities/symbol-term-alistp" :dir :system))
-(local (include-book "system/all-fnnames" :dir :system))
+(local (include-book "kestrel/terms-light/all-fnnames1" :dir :system))
 
 (local (in-theory (disable intersection-equal pseudo-term-listp)))
 

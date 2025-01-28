@@ -44,6 +44,7 @@
 (include-book "zeroCopy-part-1")
 (include-book "zeroCopy-part-2")
 (include-book "read-page-after-write-to-page-table")
+(local (include-book "../../utilities/sys-view/gl-lemmas"))
 
 ;; ======================================================================
 

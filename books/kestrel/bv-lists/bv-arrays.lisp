@@ -343,59 +343,7 @@
 (defthm bvchop-list-of-repeat-of-nil
   (equal (bvchop-list n (repeat m nil))
          (repeat m 0))
-  :hints (("Goal" :in-theory (e/d (bvchop-list repeat) (cons-onto-repeat
-                                                         )))))
-
-(defthm bv-array-write-of-bv-array-write-same-index
-  (implies (and (< index len)
-                (natp index)
-                (natp len)
-                (natp element-size)
-                )
-           (equal (bv-array-write element-size len index val1 (bv-array-write element-size len index val2 lst))
-                  (bv-array-write element-size len index val1 lst)))
-  :hints (("Goal" :in-theory (enable update-nth2 bv-array-write))))
-
-;fixme can loop?
-(defthmd bv-array-write-of-bv-array-write-diff
-  (implies (and ;this is implied by them being unequal nats both of which are in bounds:
-            (not (equal (bvchop (integer-length (+ -1 len)) index1)
-                        (bvchop (integer-length (+ -1 len)) index2)))
-;                (< index1 len)
-;                (< index2 len)
-            (natp index1)
-            (natp index2)
-;                (natp len)
-;                (natp element-size)
-            )
-           (equal (bv-array-write element-size len index1 val1 (bv-array-write element-size len index2 val2 lst))
-                  (bv-array-write element-size len index2 val2 (bv-array-write element-size len index1 val1 lst))
-                  ))
-  :hints (("Goal"
-           :cases ((equal (bvchop (integer-length (+ -1 len))
-                                   index2)
-                          (bvchop (integer-length (+ -1 len))
-                                   index1)))
-           :in-theory (enable update-nth2 ceiling-of-lg bv-array-write))))
-
-;would like this not to mention len, but we have to know that the indices (after trimming down to the number of bits indicated by len) are in fact different.
-;; TODO: Maybe we prefer the other order since lower indices are usually done first.
-(defthmd bv-array-write-of-bv-array-write-diff-constant-indices
-  (implies (and (syntaxp (and (quotep index1)
-                              (quotep index2)))
-                (< index2 index1)
-                (< index1 len)
-                ;; (< index2 len)
-                (natp index1)
-                (natp index2)
-                ;; (natp len) ;drop?
-                )
-           (equal (bv-array-write element-size len index1 val1 (bv-array-write element-size len index2 val2 lst))
-                  (bv-array-write element-size len index2 val2 (bv-array-write element-size len index1 val1 lst))
-                  ))
-  :hints (("Goal" :use bv-array-write-of-bv-array-write-diff
-           :cases ((not (natp len)))
-           :in-theory (disable bv-array-write-of-bv-array-write-diff))))
+  :hints (("Goal" :in-theory (e/d (bvchop-list repeat) (cons-onto-repeat)))))
 
 ;subsumes the one for <
 ;seems gross
@@ -406,31 +354,6 @@
                       nil
                     (append x (repeat (- (nfix n) (len x)) nil)))))
   :hints (("Goal" :in-theory (enable take))))
-
-;fixme think about how this interacts with the tightening rules...
-(defthm bv-array-write-of-bv-array-write-diff-constant-indices-gen
-  (implies (and (syntaxp (quotep index1))
-                (syntaxp (quotep index2))
-                (< index2 index1) ;only do it when the indices are out of order
-                (<= element-size2 element-size1) ;the outer size is bigger
-                (< index1 len)
-                ;; (< index2 len)
-                (natp index1)
-                (natp index2)
-                (natp len)
-                (natp element-size1)
-                (natp element-size2)
-                )
-           (equal (bv-array-write element-size1 len index1 val1 (bv-array-write element-size2 len index2 val2 lst))
-                  (bv-array-write element-size1 len index2 (bvchop element-size2 val2)
-;the bvchop-list should have no affect when lst is a bv-array-write nest with element-size2
-                                  (bv-array-write element-size1 len index1 val1 (bvchop-list element-size2 lst)))))
-  :hints
-  (("Goal" :cases ((<= len (len lst)))
-    :in-theory (e/d (update-nth2 bv-array-write-opener
-                                 bvchop-list-of-take-of-bvchop-list-gen
-                                 )
-                    (BVCHOP-LIST-OF-TAKE)))))
 
 ;allows the widths to differ (so we don't have to tighten the write nest first)
 (defthm bv-array-read-of-bv-array-write-same-gen
