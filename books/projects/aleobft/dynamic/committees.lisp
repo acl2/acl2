@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -36,7 +36,7 @@
      validators join and leave the committe, by bonding and unbonding,
      which happens via transactions in the blockchain.
      Since every validator has its own view of the blockchain,
-     it also has its own view of how the committees evolves.
+     it also has its own view of how the committee evolves.
      The agreement on the blockchains of the validators
      also provides an agreement on how the committee evolves,
      as proved in @(see same-committees).")
@@ -93,7 +93,7 @@
    (xdoc::p
     "Committees are not explicit components of the "
     (xdoc::seetopic "system-states" "system states")
-    ", but they are in a way derived components of validator states."))
+    ", but they are, in a way, derived components of validator states."))
   :order-subtopics t
   :default-parent t)
 
@@ -360,11 +360,11 @@
      with a block that changes the committee;
      on the other hand, it is always clear
      what the bonded committee at an odd round is,
-     and also at even rounds without blocks
+     and also at even rounds without blocks,
      or with blocks that do not change the committee.")
    (xdoc::p
     "There seems to be no real criterion to choose between the two options,
-     and it should no matter to correctness,
+     and it should not matter to correctness,
      i.e. the protocol should be correct either way.
      We choose to change committee at the end of the even round.
      Thus, the bonded committee at round 2 is always the genesis committee,
@@ -577,7 +577,7 @@
      There is no need to pick a specific value in this model;
      this way the model is more general.
      Should the need arise to prove properties that depend on
-     specific values of @('B'), 
+     specific values of @('B'),
      or more generally, on whether @('B') is in a certain range,
      those constraints can be hypotheses of such theorems."))
 
@@ -795,7 +795,7 @@
      We also prove that @($n \\geq 3f + 1$).")
    (xdoc::p
     "If @($n$) is 1 or 2 or 3, no failures are tolerated:
-     @($f$), and hence @($f$), must be 0.
+     @($f$) must be 0.
      The case @($n = 1$) is a degenerate one,
      but the protocol could probably still work in a degenerate way.
      The cases @($n = 2$) and @($n = 3$) could make sense,
@@ -938,7 +938,7 @@
    (xdoc::p
     "Some recent BFT literature uses @($2f + 1$) as the quorum number,
      which is correct only if @($n = 3f + 1$),
-     but not if @($n = 3f + 2$) and @($n = 3f+2$),
+     but not if @($n = 3f + 2$) and @($n = 3f + 3$),
      which are the other two possibilities,
      as discussed in @(tsee max-faulty-for-total).
      Unfortunately that literature uses @($2f + 1$)

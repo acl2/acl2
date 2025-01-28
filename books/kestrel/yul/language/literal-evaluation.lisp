@@ -1,10 +1,10 @@
 ; Yul Library
 ;
-; Copyright (C) 2022 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -28,11 +28,11 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define ubyte16-to-utf8 ((codepoint acl2::ubyte16p))
-  :returns (bytes acl2::ubyte8-listp
-                  :hints (("Goal" :in-theory (enable acl2::ubyte8p
-                                                     acl2::ubyte16p
-                                                     acl2::ubyte16-fix))))
+(define ubyte16-to-utf8 ((codepoint ubyte16p))
+  :returns (bytes ubyte8-listp
+                  :hints (("Goal" :in-theory (enable ubyte8p
+                                                     ubyte16p
+                                                     ubyte16-fix))))
   :short "UTF-8 encoding of a 16-bit Unicode code point."
   :long
   (xdoc::topstring
@@ -58,7 +58,7 @@
      "A code point between 800h and FFFFh,
       which consists of 12 to 16 bits @('abcdefghijklmnop'),
       is encoded as three bytes @('1110abcd 10efghij 10klmnop').")))
-  (b* ((codepoint (acl2::ubyte16-fix codepoint)))
+  (b* ((codepoint (ubyte16-fix codepoint)))
     (cond ((<= codepoint #x7f) (list codepoint))
           ((<= codepoint #x7ff) (list (logior #b11000000
                                               (ash codepoint -6))
@@ -73,8 +73,8 @@
                                        (logior #b10000000
                                                (logand codepoint
                                                        #b111111))))
-          (t (acl2::impossible))))
-  :guard-hints (("Goal" :in-theory (enable acl2::ubyte16p)))
+          (t (impossible))))
+  :guard-hints (("Goal" :in-theory (enable ubyte16p)))
   :prepwork ((local (include-book "arithmetic-5/top" :dir :system))
              (local (include-book "ihs/logops-lemmas" :dir :system)))
   :hooks (:fix))
@@ -82,9 +82,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define eval-hex-pair ((hp hex-pairp))
-  :returns (val acl2::ubyte8p
+  :returns (val ubyte8p
                 :hints (("Goal"
-                         :in-theory (enable acl2::ubyte8p
+                         :in-theory (enable ubyte8p
                                             str::hex-digit-chars-value))))
   :short "Evaluate a pair of hex digits to a byte."
   :long
@@ -100,9 +100,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define eval-hex-quad ((hq hex-quadp))
-  :returns (val acl2::ubyte16p
+  :returns (val ubyte16p
                 :hints (("Goal"
-                         :in-theory (enable acl2::ubyte16p
+                         :in-theory (enable ubyte16p
                                             str::hex-digit-chars-value))))
   :short "Evaluate a quadruple of hex digits to a 16-bit unsigned integer."
   :long
@@ -120,7 +120,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define eval-escape ((esc escapep))
-  :returns (bytes acl2::ubyte8-listp)
+  :returns (bytes ubyte8-listp)
   :short "Evaluate an escape to a list of bytes."
   :long
   (xdoc::topstring
@@ -151,8 +151,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define eval-string-element ((elem string-elementp))
-  :returns (bytes acl2::ubyte8-listp
-                  :hints (("Goal" :in-theory (enable acl2::ubyte8p))))
+  :returns (bytes ubyte8-listp
+                  :hints (("Goal" :in-theory (enable ubyte8p))))
   :short "Evaluate a string element to a list of bytes."
   :long
   (xdoc::topstring
@@ -172,7 +172,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define eval-string-element-list ((elems string-element-listp))
-  :returns (bytes acl2::ubyte8-listp)
+  :returns (bytes ubyte8-listp)
   :short "Evaluate a list of string elements to a list of bytes."
   :long
   (xdoc::topstring
@@ -206,11 +206,11 @@
        ((unless (<= (len bytes) 32))
         (reserrf (list :plain-string-too-long bytes)))
        (bytes (append bytes (repeat (- 32 (len bytes)) 0))))
-    (value (acl2::bebytes=>nat bytes)))
+    (value (bebytes=>nat bytes)))
   :guard-hints
   (("Goal"
-    :in-theory (enable acl2::ubyte256p
-                       acl2::bebytes=>nat)
+    :in-theory (enable ubyte256p
+                       bebytes=>nat)
     :use (:instance acl2::bendian=>nat-upper-bound
           (base 256)
           (digits (append
@@ -224,14 +224,14 @@
   :prepwork
 
   ((defrulel lemma1
-     (implies (acl2::ubyte8p x)
-              (acl2::bytep x))
-     :enable acl2::bytep)
+     (implies (ubyte8p x)
+              (bytep x))
+     :enable bytep)
 
    (defrulel lemma2
-     (implies (acl2::ubyte8-listp x)
-              (acl2::byte-listp x))
-     :enable (acl2::byte-listp acl2::ubyte8-listp)))
+     (implies (ubyte8-listp x)
+              (byte-listp x))
+     :enable (byte-listp ubyte8-listp)))
 
   ///
 
@@ -242,7 +242,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define eval-hex-pair-list ((hps hex-pair-listp))
-  :returns (bytes acl2::ubyte8-listp)
+  :returns (bytes ubyte8-listp)
   :short "Evaluate a list of hex pairs to a list of bytes."
   :long
   (xdoc::topstring
@@ -278,11 +278,11 @@
        ((unless (<= (len bytes) 32))
         (reserrf (list :hex-string-too-long bytes)))
        (bytes (append bytes (repeat (- 32 (len bytes)) 0))))
-    (value (acl2::bebytes=>nat bytes)))
+    (value (bebytes=>nat bytes)))
   :guard-hints
   (("Goal"
-    :in-theory (enable acl2::ubyte256p
-                       acl2::bebytes=>nat)
+    :in-theory (enable ubyte256p
+                       bebytes=>nat)
     :use (:instance acl2::bendian=>nat-upper-bound
           (base 256)
           (digits (append
@@ -296,14 +296,14 @@
   :prepwork
 
   ((defrulel lemma1
-     (implies (acl2::ubyte8p x)
-              (acl2::bytep x))
-     :enable acl2::bytep)
+     (implies (ubyte8p x)
+              (bytep x))
+     :enable bytep)
 
    (defrulel lemma2
-     (implies (acl2::ubyte8-listp x)
-              (acl2::byte-listp x))
-     :enable (acl2::byte-listp acl2::ubyte8-listp)))
+     (implies (ubyte8-listp x)
+              (byte-listp x))
+     :enable (byte-listp ubyte8-listp)))
 
   ///
 
@@ -337,12 +337,12 @@
   (literal-case
    lit
    :boolean (if lit.get (value 1) (value 0))
-   :dec-number (if (acl2::ubyte256p lit.get)
+   :dec-number (if (ubyte256p lit.get)
                    (value lit.get)
                  (reserrf (list :dec-number-too-large lit.get)))
    :hex-number (b* ((num (str::hex-digit-chars-value
                           (hex-digit-list->chars lit.get))))
-                 (if (acl2::ubyte256p num)
+                 (if (ubyte256p num)
                      (value num)
                    (reserrf (list :hex-number-too-large lit.get))))
    :plain-string (eval-plain-string-literal lit.get)
