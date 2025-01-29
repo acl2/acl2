@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -65,7 +65,7 @@
      In fact, we do not include that requirement in the static safety checks
      formalized here.
      This requirement is formalized separately
-     in  @(see static-shadowing-checking)."))
+     in @(see static-shadowing-checking)."))
   :order-subtopics t
   :default-parent t)
 
@@ -693,30 +693,30 @@
                         :modes modes))
      :variable-single
      (b* (((okf varset) (check-safe-variable-single stmt.name
+                                                    stmt.init
+                                                    varset
+                                                    funtab)))
+       (make-vars+modes :vars varset
+                        :modes (set::insert (mode-regular) nil)))
+     :variable-multi
+     (b* (((okf varset) (check-safe-variable-multi stmt.names
                                                    stmt.init
                                                    varset
                                                    funtab)))
        (make-vars+modes :vars varset
                         :modes (set::insert (mode-regular) nil)))
-     :variable-multi
-     (b* (((okf varset) (check-safe-variable-multi stmt.names
-                                                  stmt.init
-                                                  varset
-                                                  funtab)))
-       (make-vars+modes :vars varset
-                        :modes (set::insert (mode-regular) nil)))
      :assign-single
      (b* (((okf &) (check-safe-assign-single stmt.target
-                                            stmt.value
-                                            varset
-                                            funtab)))
+                                             stmt.value
+                                             varset
+                                             funtab)))
        (make-vars+modes :vars (identifier-set-fix varset)
                         :modes (set::insert (mode-regular) nil)))
      :assign-multi
      (b* (((okf &) (check-safe-assign-multi stmt.targets
-                                           stmt.value
-                                           varset
-                                           funtab)))
+                                            stmt.value
+                                            varset
+                                            funtab)))
        (make-vars+modes :vars (identifier-set-fix varset)
                         :modes (set::insert (mode-regular) nil)))
      :funcall
@@ -730,8 +730,8 @@
           ((unless (= results 1))
            (reserrf (list :multi-valued-if-test stmt.test)))
           ((okf modes) (check-safe-block stmt.body
-                                        varset
-                                        funtab)))
+                                         varset
+                                         funtab)))
        (make-vars+modes :vars (identifier-set-fix varset)
                         :modes (set::insert (mode-regular) modes)))
      :for
@@ -748,15 +748,15 @@
           ((unless (= results 1))
            (reserrf (list :multi-valued-for-test stmt.test)))
           ((okf update-modes) (check-safe-block stmt.update
-                                               varset1
-                                               funtab))
+                                                varset1
+                                                funtab))
           ((when (set::in (mode-break) update-modes))
            (reserrf (list :break-in-loop-update stmt.update)))
           ((when (set::in (mode-continue) update-modes))
            (reserrf (list :continue-in-loop-update stmt.update)))
           ((okf body-modes) (check-safe-block stmt.body
-                                             varset1
-                                             funtab))
+                                              varset1
+                                              funtab))
           (modes (if (or (set::in (mode-leave) init-modes)
                          (set::in (mode-leave) update-modes)
                          (set::in (mode-leave) body-modes))
@@ -773,11 +773,11 @@
           ((unless (no-duplicatesp-equal (swcase-list->value-list stmt.cases)))
            (reserrf (list :duplicate-switch-cases (statement-fix stmt))))
           ((okf cases-modes) (check-safe-swcase-list stmt.cases
-                                                    varset
-                                                    funtab))
+                                                     varset
+                                                     funtab))
           ((okf default-modes) (check-safe-block-option stmt.default
-                                                       varset
-                                                       funtab)))
+                                                        varset
+                                                        funtab)))
        (make-vars+modes :vars (identifier-set-fix varset)
                         :modes (set::union cases-modes default-modes)))
      :leave
@@ -821,13 +821,13 @@
           (make-vars+modes :vars (identifier-set-fix varset)
                            :modes (set::insert (mode-regular) nil)))
          ((okf varsmodes) (check-safe-statement (car stmts)
-                                               varset
-                                               funtab))
+                                                varset
+                                                funtab))
          (varset (vars+modes->vars varsmodes))
          (first-modes (vars+modes->modes varsmodes))
          ((okf varsmodes) (check-safe-statement-list (cdr stmts)
-                                                    varset
-                                                    funtab))
+                                                     varset
+                                                     funtab))
          (varset (vars+modes->vars varsmodes))
          (rest-modes (vars+modes->modes varsmodes))
          (modes (if (set::in (mode-regular) first-modes)
@@ -911,11 +911,11 @@
        with the union of the termination modes for the remaining cases."))
     (b* (((when (endp cases)) nil)
          ((okf first-modes) (check-safe-swcase (car cases)
-                                              varset
-                                              funtab))
+                                               varset
+                                               funtab))
          ((okf rest-modes) (check-safe-swcase-list (cdr cases)
-                                                  varset
-                                                  funtab)))
+                                                   varset
+                                                   funtab)))
       (set::union first-modes rest-modes))
     :measure (swcase-list-count cases))
 
@@ -949,8 +949,8 @@
          ((okf varset) (add-vars fundef.inputs nil))
          ((okf varset) (add-vars fundef.outputs varset))
          ((okf modes) (check-safe-block fundef.body
-                                       varset
-                                       funtab))
+                                        varset
+                                        funtab))
          ((when (set::in (mode-break) modes))
           (reserrf (list :break-from-function (fundef-fix fundef))))
          ((when (set::in (mode-continue) modes))

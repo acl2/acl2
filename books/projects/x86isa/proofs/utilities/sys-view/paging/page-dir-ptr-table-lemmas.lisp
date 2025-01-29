@@ -45,6 +45,7 @@
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
+(local (include-book "../gl-lemmas"))
 
 (local
  (in-theory

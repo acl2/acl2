@@ -1,11 +1,11 @@
 ; Yul Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (www.alessandrocoglio.info)
-; Contributing author: Eric McCarthy (mccarthy@kestrel.edu)
+; Authors: Alessandro Coglio (www.alessandrocoglio.info)
+;          Eric McCarthy (mccarthy@kestrel.edu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -19,6 +19,7 @@
 (include-book "abstract-syntax")
 
 (local (include-book "std/lists/len" :dir :system))
+(local (include-book "std/typed-lists/character-listp" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -137,13 +138,13 @@
                   (reserrf (cons "cst structure error" tokens))))
 
          (leafterm-nats (abnf::tree-leafterm->get (caar branches)))
-         ((unless (acl2::unsigned-byte-listp 8 leafterm-nats))
+         ((unless (unsigned-byte-listp 8 leafterm-nats))
           ;; Another incorrect structure hard error
           (prog2$ (er hard? 'top-level
                       (string-append "unexpected type of leafterm nats when parsing symbol: " symbol))
                   (reserrf (cons "cst structure error 2" tokens))))
 
-         (terminal-symbol (acl2::nats=>string leafterm-nats))
+         (terminal-symbol (nats=>string leafterm-nats))
          ((unless (equal symbol terminal-symbol))
           ;; We didn't find this symbol, but something else might be valid at this point.
           (reserrf (cons (concatenate 'string
@@ -159,7 +160,6 @@
     :rule-classes :linear
     )
   )
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -238,14 +238,14 @@
                       (reserrf (cons "cst structure error" tokens)))))
 
          (leafterm-nats (abnf::tree-leafterm->get (caar branches)))
-         ((unless (acl2::unsigned-byte-listp 8 leafterm-nats))
+         ((unless (unsigned-byte-listp 8 leafterm-nats))
           ;; Another incorrect structure hard error
           (prog2$ (er hard? 'top-level
                       (string-append "unexpected type of leafterm nats when parsing keyword: " keyword))
                   (mv nil
                       (reserrf (cons "cst structure error 2" tokens)))))
 
-         (terminal-keyword (acl2::nats=>string leafterm-nats))
+         (terminal-keyword (nats=>string leafterm-nats))
          ((unless (equal keyword terminal-keyword))
           ;; We didn't find this keyword, but something else might be valid at this point.
           (mv nil
@@ -265,7 +265,6 @@
                 (len tokens)))
     :rule-classes :linear)
   )
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -304,12 +303,12 @@
     ;; abnf::tree->string states it returns stringp but it actually returns a list of nats.
     ;; Grab the nats, make sure they are unsigned bytes, and then convert them to a string.
     (b* ((fringe (abnf::tree->string (first tokens)))
-         ((unless (acl2::unsigned-byte-listp 8 fringe))
+         ((unless (unsigned-byte-listp 8 fringe))
           (prog2$ (er hard? 'top-level
                       "unexpected type of leafterm nats when parsing identifier")
                   (mv nil
                       (reserrf (cons "cst structure error" tokens))))))
-      (mv (make-identifier :get (acl2::nats=>string fringe))
+      (mv (make-identifier :get (nats=>string fringe))
           (abnf::tree-list-fix (rest tokens)))))
   ///
   (defret len-of-parse-identifier-<
@@ -338,11 +337,11 @@
           return the appropriate literal AST node."
   ;; We don't bother checking the whole substructure.
   (b* ((fringe (abnf::tree->string tree))
-       ((unless (acl2::unsigned-byte-listp 8 fringe))
+       ((unless (unsigned-byte-listp 8 fringe))
         (prog2$ (er hard? 'top-level
                     "unexpected type of leafterm nats when parsing idenntifier")
                 nil))
-       (decimal-number-string (acl2::nats=>string fringe))
+       (decimal-number-string (nats=>string fringe))
        (maybe-nat (str::strval decimal-number-string)))
     (if (natp maybe-nat)
         (make-literal-dec-number :get maybe-nat)
@@ -366,7 +365,7 @@
           return the appropriate literal AST node."
   ;; We don't bother checking the whole substructure.
   (b* ((fringe (abnf::tree->string tree))
-       ((unless (acl2::unsigned-byte-listp 8 fringe))
+       ((unless (unsigned-byte-listp 8 fringe))
         (prog2$ (er hard? 'top-level
                     "unexpected type of leafterm nats when parsing identifier")
                 nil))
@@ -376,9 +375,9 @@
                      (equal (second fringe) (char-code #\x))))
         nil)
        (hex-digit-char-codes (cddr fringe))
-       ((unless (acl2::unsigned-byte-listp 8 hex-digit-char-codes))
+       ((unless (unsigned-byte-listp 8 hex-digit-char-codes))
         nil)
-       (hex-digit-chars (acl2::nats=>chars hex-digit-char-codes))
+       (hex-digit-chars (nats=>chars hex-digit-char-codes))
        ((unless (str::hex-digit-char-list*p hex-digit-chars))
         nil)
        (hex-digits (cst2ast-hex-digit-char-list hex-digit-chars)))
@@ -392,11 +391,11 @@
   :short "Given a :nonleaf tree with rulename \"boolean\",
           return the appropriate literal AST node."
   (b* ((fringe (abnf::tree->string tree))
-       ((unless (acl2::unsigned-byte-listp 8 fringe))
+       ((unless (unsigned-byte-listp 8 fringe))
         (prog2$ (er hard? 'top-level
                     "unexpected type of leafterm nats when parsing identifier")
                 nil))
-       (fringe-string (acl2::nats=>string fringe)))
+       (fringe-string (nats=>string fringe)))
     (cond ((equal fringe-string "true") (make-literal-boolean :get t))
           ((equal fringe-string "false") (make-literal-boolean :get nil))
           (t nil))))
@@ -419,7 +418,6 @@
 (defval *single-quoted-content-rulenames*
   (list (abnf::rulename "single-quoted-printable") (abnf::rulename "escape-sequence")))
 
-
 ;; a single backslash for an escape sequence
 (defval *list-leafterm-92*
   (list (abnf::make-tree-leafterm :get (list (char-code #\\)))))
@@ -438,10 +436,10 @@
                      (equal (len escape-contents) 4)))
         (reserrf "unexpected input to cst2ast-uhhhh"))
        (fringe (abnf::tree-list->string escape-contents))
-       ((unless (and (acl2::unsigned-byte-listp 8 fringe)
+       ((unless (and (unsigned-byte-listp 8 fringe)
                      (equal (len fringe) 4)))
         (reserrf "unexpected input to cst2ast-uhhhh 2"))
-       (hex-digit-chars (acl2::nats=>chars fringe))
+       (hex-digit-chars (nats=>chars fringe))
        ((unless (and (str::hex-digit-char-list*p hex-digit-chars)
                      (str::hex-digit-char-p (first hex-digit-chars))
                      (str::hex-digit-char-p (second hex-digit-chars))
@@ -462,9 +460,9 @@
         (reserrf "unexpected input to cst2ast-xhh"))
        (fringe (abnf::tree-list->string escape-contents))
        ((unless (and (equal (len fringe) 2)
-                     (acl2::unsigned-byte-listp 8 fringe)))
+                     (unsigned-byte-listp 8 fringe)))
         (reserrf "unexpected input to cst2ast-xhh 2"))
-       (hex-digit-chars (acl2::nats=>chars fringe))
+       (hex-digit-chars (nats=>chars fringe))
        ((unless (and (str::hex-digit-char-list*p hex-digit-chars)
                      (str::hex-digit-char-p (first hex-digit-chars))
                      (str::hex-digit-char-p (second hex-digit-chars))))
@@ -481,7 +479,7 @@
         (reserrf "unexpected input to cst2ast-single-char"))
        (fringe (abnf::tree-list->string escape-contents))
        ((unless (and (equal (len fringe) 1)
-                     (acl2::unsigned-byte-listp 8 fringe)))
+                     (unsigned-byte-listp 8 fringe)))
         (reserrf "unexpected input to cst2ast-single-char 2")))
     (case (car fringe)
       (39 (make-escape-single-quote))
@@ -649,57 +647,78 @@
        (member (nth 3 fringe) (list (char-code #\") (char-code #\')))
        t)) ; just so it will return t rather than the member it found
 
-(define hex-chars-to-hex-pair-list ((chars str::hex-digit-char-list*p))
-  :returns (hex-pair-list hex-pair-list-resultp)
-  (cond ((null chars) nil)
-        ((not (and (str::hex-digit-char-list*p chars)
-                   (consp chars)
-                   (consp (cdr chars))
-                   (str::hex-digit-char-p (first chars))
-                   (str::hex-digit-char-p (second chars))))
-         (reserrf "hex-char-codes-to-hex-pair-list: chars should be a true list of hex digits"))
-        (t
-         (let* ((hex-digit1 (make-hex-digit :get (first chars)))
-                (hex-digit2 (make-hex-digit :get (second chars)))
-                (first-hex-pair (make-hex-pair :1st hex-digit1 :2nd hex-digit2)))
-           (if (not (str::hex-digit-char-list*p (cddr chars)))
-               (reserrf "problem in hex-char-codes-to-hex-pair-list")
-             (let ((rest-hex-pairs (hex-chars-to-hex-pair-list (cddr chars))))
-               (if (not (hex-pair-listp rest-hex-pairs))
-                   (reserrf "problem in hex-char-codes-to-hex-pair-list 2")
-                 (cons first-hex-pair rest-hex-pairs))))))))
+(define hex-chars-and-uscores-to-hex-string-rest-element-list
+  ((chars character-listp))
+  :returns (hex-string-rest-elements hex-string-rest-element-listp)
+  :short "Map the characters of a hex string after the first two
+          to a list of hex string elements."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used after processing the first two hex digits of the hex string,
+     assuming that the hex string is not empty.")
+   (xdoc::p
+    "This is never expected to fail,
+     because the lexer should guarantee that
+     these characters have the expected form;
+     thus, we throw a hard error (which should never happen),
+     if the characters do not have the expected form."))
+  (b* (((when (endp chars)) nil)
+       ((mv uscorep chars)
+        (if (eql (car chars) #\_)
+            (mv t (cdr chars))
+          (mv nil chars)))
+       ((unless (and (consp chars)
+                     (consp (cdr chars))
+                     (str::hex-digit-char-p (first chars))
+                     (str::hex-digit-char-p (second chars))))
+        (raise "Internal error: characters ~x0." chars))
+       (digit1 (make-hex-digit :get (first chars)))
+       (digit2 (make-hex-digit :get (second chars)))
+       (pair (make-hex-pair :1st digit1 :2nd digit2))
+       (elem (make-hex-string-rest-element :uscorep uscorep :pair pair))
+       (elems
+        (hex-chars-and-uscores-to-hex-string-rest-element-list (cddr chars))))
+    (cons elem elems)))
 
 (define cst2ast-hex-string ((tree abnf::treep))
   :returns (ast-node? literal-optionp)
   :short "Given a :nonleaf tree with rulename \"hex-string\",
           return the appropriate literal AST node."
   (b* (((unless (and (abnf::treep tree)
-                    (abnf::tree-case tree :nonleaf)))
+                     (abnf::tree-case tree :nonleaf)))
         nil)
        ;; There should be two branches, the first of which is "hex",
        ;; and then one with the delimited hex string.
        ;; However, for simplicity let's just use strings.
        (fringe (abnf::tree-list-list->string (abnf::tree-nonleaf->branches tree)))
        ((unless (and (true-listp fringe)
-                     (acl2::unsigned-byte-listp 8 fringe)
-                     ;; 4 for "hex'" and 1 for the closing "'
+                     (unsigned-byte-listp 8 fringe)
+                     ;; 3 for hex + 1 for opening quote + 1 for closing quote
                      (>= (len fringe) 5)))
         nil)
+       (double-quote-p (equal (nth 3 fringe) (char-code #\")))
        (hex-chars-and-underbars (subseq fringe 4 (- (len fringe) 1)))
-       (hex-char-codes (remove-equal (char-code #\_) hex-chars-and-underbars))
-       ((unless (acl2::unsigned-byte-listp 8 hex-char-codes))
-        nil)
-       (hex-chars (acl2::nats=>chars hex-char-codes))
-       ((unless (str::hex-digit-char-list*p hex-chars))
-        nil)
-       (hex-pairs (hex-chars-to-hex-pair-list hex-chars))
-       ((unless (hex-pair-listp hex-pairs))
-        nil)
-       )
-    (make-literal-hex-string
-     :get (make-hex-string :content hex-pairs
-                           :double-quote-p (equal (nth 3 fringe) (char-code #\"))))))
-
+       ((unless (unsigned-byte-listp 8 hex-chars-and-underbars))
+        (raise "Internal error: character codes ~x0." hex-chars-and-underbars))
+       (hex-chars-and-underbars (nats=>chars hex-chars-and-underbars))
+       ((when (endp hex-chars-and-underbars))
+        (make-literal-hex-string
+         :get (make-hex-string :content nil :double-quote-p double-quote-p)))
+       ((unless (and (consp hex-chars-and-underbars)
+                     (consp (cdr hex-chars-and-underbars))
+                     (str::hex-digit-char-p (first hex-chars-and-underbars))
+                     (str::hex-digit-char-p (second hex-chars-and-underbars))))
+        (raise "Internal error: characters ~x0." hex-chars-and-underbars))
+       (digit1 (make-hex-digit :get (first hex-chars-and-underbars)))
+       (digit2 (make-hex-digit :get (second hex-chars-and-underbars)))
+       (pair (make-hex-pair :1st digit1 :2nd digit2))
+       (rest (hex-chars-and-uscores-to-hex-string-rest-element-list
+              (cddr hex-chars-and-underbars)))
+       (content (make-hex-string-content :first pair :rest rest))
+       (hex-string (make-hex-string :content content
+                                    :double-quote-p double-quote-p)))
+    (make-literal-hex-string :get hex-string)))
 
 ;; ---------------------------------
 ;; putting the literals together in parse-literal
@@ -817,7 +836,6 @@
         (len tokens))
     :rule-classes :linear))
 
-
 ;; path = identifier *( "." identifier )
 (define parse-path ((tokens abnf::tree-listp))
   :returns (mv (ast-node path-resultp) (tokens-after-path abnf::tree-listp))
@@ -844,7 +862,6 @@
              (< (len tokens-after-path)
                 (len tokens)))
     :rule-classes :linear))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -999,8 +1016,6 @@
   (verify-guards parse-expression)
   )
 
-
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; variable-declaration = %s"let" identifier [ ":=" expression ]
@@ -1009,7 +1024,6 @@
 
 ;; In the abstract syntax, we have two kinds of statement
 ;; modelling these two alternatives: variable-single and variable-multi.
-
 
 (define parse-*-comma-identifier ((tokens abnf::tree-listp))
   :returns (mv (result-asts identifier-listp) (tokens-after-identifiers abnf::tree-listp))
@@ -1042,7 +1056,6 @@
 ;; (implies (null result-asts) (= (len tokens-after-identifiers) (len tokens)))
 ;; and
 ;; (implies (not (null result-asts)) (< (len tokens-after-identifiers) (len tokens)))
-
 
 (define parse-variable-declaration ((tokens abnf::tree-listp))
   :returns (mv (result-ast statement-resultp) (tokens-after-statement abnf::tree-listp))
@@ -1220,7 +1233,6 @@
              (< (len tokens-after-statement) (len tokens)))
     :rule-classes :linear))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; continue statement
@@ -1239,7 +1251,6 @@
     (implies (not (reserrp result-ast))
              (< (len tokens-after-statement) (len tokens)))
     :rule-classes :linear))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1778,7 +1789,6 @@
   (verify-guards parse-statement)
   )
 
-
 (define parse-yul ((yul-string stringp))
   :returns (block? block-resultp)
   :short "Parses a Yul source program string into abstract syntax."
@@ -1799,7 +1809,6 @@
        ((unless (null tokens-after-ast))
         (reserrf "after parsing top-level yul block, there should be no more tokens")))
     top-block))
-
 
 ;; variation on parse-yul that takes a list of bytes
 (define parse-yul-bytes ((yul-bytes nat-listp))

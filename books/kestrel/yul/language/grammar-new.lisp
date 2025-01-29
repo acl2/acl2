@@ -1,10 +1,10 @@
 ; Yul Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -58,7 +58,7 @@
 
   (defruled ascii-only-*grammar-new*
     (abnf::rulelist-in-termset-p *grammar-new*
-                                 (acl2::integers-from-to 0 #x7f))
+                                 (integers-from-to 0 #x7f))
     :enable (abnf::rule-in-termset-p
              abnf::repetition-in-termset-p
              abnf::element-in-termset-p
@@ -66,7 +66,7 @@
              abnf::char-val-in-termset-p
              abnf::char-insensitive-in-termset-p
              abnf::char-sensitive-in-termset-p)
-    :disable ((:e acl2::integers-from-to))))
+    :disable ((:e integers-from-to))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -93,7 +93,7 @@
   ///
 
   (defrule abnf-treep-when-abnf-tree-with-root-p
-    (implies (abnf-tree-with-root-p tree rulename) ; RULENAME intentionally free variable
+    (implies (abnf-tree-with-root-p tree rulename) ; RULENAME free variable
              (abnf::treep tree)))
 
   (defrule not-abnf-tree-with-root-p-of-nil

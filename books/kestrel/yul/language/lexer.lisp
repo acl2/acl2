@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -248,14 +248,14 @@
   (b* (((mv tree-digit1 input-after-digit1) (lex-hex-digit input))
        ((when (reserrp tree-digit1))
         (mv tree-digit1
-            (acl2::nat-list-fix input)))
+            (nat-list-fix input)))
        ((mv tree-digit2 input-after-digit2) (lex-hex-digit input-after-digit1))
        ((when (reserrp tree-digit2))
         (mv tree-digit2
             ;; Note, this error result does not mention the successful
             ;; first hex digit, but that is fine, because rules fail
             ;; all the time and other rules succeed.
-            (acl2::nat-list-fix input))))
+            (nat-list-fix input))))
     (mv (list tree-digit1 tree-digit2)
         input-after-digit2))
   :hooks (:fix)
@@ -324,19 +324,19 @@
   (b* (((mv tree-digit1 input-after-digit1) (lex-hex-digit input))
        ((when (reserrp tree-digit1))
         (mv tree-digit1
-            (acl2::nat-list-fix input)))
+            (nat-list-fix input)))
        ((mv tree-digit2 input-after-digit2) (lex-hex-digit input-after-digit1))
        ((when (reserrp tree-digit2))
         (mv tree-digit2
-            (acl2::nat-list-fix input)))
+            (nat-list-fix input)))
        ((mv tree-digit3 input-after-digit3) (lex-hex-digit input-after-digit2))
        ((when (reserrp tree-digit3))
         (mv tree-digit3
-            (acl2::nat-list-fix input)))
+            (nat-list-fix input)))
        ((mv tree-digit4 input-after-digit4) (lex-hex-digit input-after-digit3))
        ((when (reserrp tree-digit4))
         (mv tree-digit4
-            (acl2::nat-list-fix input)))
+            (nat-list-fix input)))
        )
     (mv (list tree-digit1 tree-digit2 tree-digit3 tree-digit4)
         input-after-digit4))
@@ -418,14 +418,14 @@
         (lex-whitespace-char input))
        ((when (reserrp tree-1char))
         (mv (reserrf "whitespace problem")
-            (acl2::nat-list-fix input)))
+            (nat-list-fix input)))
        ((mv trees-restchars input-after-restchars)
         (lex-repetition-*-whitespace-char input-after-1char))
        ;; Can an error even happen?  Wouldn't it just return NIL (zero trees)?
        ;; Check error just in case.
        ((when (reserrp trees-restchars))
         (mv (reserrf "whitespace problem")
-            (acl2::nat-list-fix input))))
+            (nat-list-fix input))))
     (mv (abnf::make-tree-nonleaf
          :rulename? (abnf::rulename "whitespace")
          :branches (list (cons tree-1char trees-restchars)))
@@ -489,7 +489,7 @@
             (mv tree-not-star+rest
                 input-after-not-star+rest)))
          ((when (reserrp trees))
-          (mv trees (acl2::nat-list-fix input))))
+          (mv trees (nat-list-fix input))))
       (mv (abnf::make-tree-nonleaf
            :rulename? (abnf::rulename "rest-of-block-comment")
            :branches trees)
@@ -544,7 +544,7 @@
             (mv tree-not-star-or-slash+rest
                 input-after-not-star-or-slash+rest)))
          ((when (reserrp trees))
-          (mv trees (acl2::nat-list-fix input))))
+          (mv trees (nat-list-fix input))))
       (mv (abnf::make-tree-nonleaf
            :rulename? (abnf::rulename "rest-of-block-comment-after-star")
            :branches trees)

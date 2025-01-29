@@ -46,7 +46,7 @@ lexeme = token / whitespace
 
 ; Syntactic Grammar
 
-primary-expression = identifier / integer
+primary-expression = identifier / integer / "(" expression ")"
 
 multiplication-expression = primary-expression
                           / multiplication-expression "*" primary-expression
