@@ -1055,4 +1055,5 @@
                                  amb-declor/absdeclor)))
    (amb-decl/stmt (raise "Internal error: ambiguous ~x0."
                          (amb-decl/stmt-fix amb-decl/stmt)))
-   (transunit (transunit-infop (transunit->info transunit)))))
+   (transunit (and (extdecl-list-annop (transunit->decls transunit))
+                   (transunit-infop (transunit->info transunit))))))
