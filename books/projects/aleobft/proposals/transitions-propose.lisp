@@ -35,8 +35,12 @@
      A faulty validator is much less constrained,
      but it cannot forge signatures
      (if a validator's private key is compromised,
-     the validator is considered faulty).
-     Either way, the proposal is broadcast to other validators.")
+     the validator is considered faulty).")
+   (xdoc::p
+    "Either way, the proposal is broadcast to other validators.
+     A correct validator sends it exactly to
+     all the other members of the active committee;
+     a faulty validator may send it to any validators.")
    (xdoc::p
     "If the validator is correct,
      it stores the proposal into its internal state,
@@ -82,7 +86,7 @@
      "The author must be in the active committee for that round.
       This means that the author must be able to calculate that committee.")
     (xdoc::li
-     "The validator has not already created
+     "The validator must not have already created
       another proposal with the same round,
       because that would cause equivocation.
       Not only the DAG must include no certificate with that author and round,
@@ -92,8 +96,8 @@
       so there is no need to check the author).")
     (xdoc::li
      "The certificates referenced in the @('previous') component
-      are present in the DAG,
-      and their authors form a non-empty quorum in
+      must be present in the DAG,
+      and their authors must form a non-empty quorum in
       the active committee for the round just before the current one
       (which, as noted above, is the same as the proposal);
       note that the validator can always calculate this committee,
@@ -106,36 +110,24 @@
      the committee (at the previous round) is not empty.
      Our model allows committees to become empty,
      but this non-emptiness check of the previous quorum
-     enforces, in the protocol, that committees do not actually become empty.")
+     enforces, in the protocol, that committees do not actually become empty.
+     If they do, the protocol effectively stops;
+     correct validators cannot create new certificates.")
    (xdoc::p
     "A correct validator broadcasts the proposal to
-     exactly all the correct validators.
-     In an implementation,
-     a correct validator does not know which validators are correct or faulty,
-     and so it will send it to all validators.
-     The restrictions is just an artifact of our model:
+     exactly all the other validators in the active committee,
+     which it calculates as already mentioned above.")
+   (xdoc::p
+    "A faulty validator may send the proposal to any set of validators.
+     Thus the only requirement in this case is that
+     the destination addresses are a subset of the correct validators.
+     There is no need to model the sending to faulty validators:
      since, as explained in @(tsee system-state),
      we do not explicitly model (the states of) faulty validators,
      sending a message to a faulty validator would have no effect in our model,
      because faulty validators can behave arbitrarily
      (except for forging signatures and things like that)
-     regardless of which messages they receive or not.")
-   (xdoc::p
-    "Although a correct validator broadcasts the message
-     to all the correct validators,
-     there is no guarantee, in our model,
-     that the message is eventually received by those validators.
-     Our model of the network is that the links are authenticated
-     (based on the senders, which are explained in @(tsee message)),
-     but delays are unbounded,
-     possibly infinite (i.e. a message may never be received).")
-   (xdoc::p
-    "A faulty validator may choose to send the proposal
-     to a subset of validators.
-     Thus the only requirement in this case is that
-     the destination addresses are a subset of the correct validators.
-     There is no need to model the sending to faulty validators,
-     for the same reasons explained above.
+     regardless of which messages they receive or not.
      By not necessarily sending the message to all correct validators,
      our model avoids assuming any form of reliable broadcast
      (in the technical sense of the BFT literature).
@@ -151,9 +143,6 @@
        ((when (not (set::in prop.author (correct-addresses systate))))
         (set::subset (address-set-fix dests)
                      (correct-addresses systate)))
-       ((unless (equal (address-set-fix dests)
-                       (correct-addresses systate)))
-        nil)
        ((validator-state vstate) (get-validator-state prop.author systate))
        ((unless (= prop.round vstate.round)) nil)
        (commtt (active-committee-at-round prop.round vstate.blockchain))
@@ -178,6 +167,9 @@
         nil)
        ((unless (>= (committee-members-stake prop.previous prev-commtt)
                     (committee-quorum-stake prev-commtt)))
+        nil)
+       ((unless (equal (address-set-fix dests)
+                       (set::delete prop.author (committee-members commtt))))
         nil))
     t)
   :guard-hints
