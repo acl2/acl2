@@ -787,7 +787,7 @@
        if all the expressions are successfuly evaluated,
        includes a list of values, one for each expression, in the same order."))
     (b* (((when (zp limit)) (reserrf (list :limit (expression-list-fix exprs))))
-         ((when (endp exprs)) (make-eoutcome :cstate (cstate-fix cstate)
+         ((when (endp exprs)) (make-eoutcome :cstate cstate
                                              :values nil))
          ((okf (eoutcome outcome))
           (exec-expression (car exprs) cstate funenv (1- limit)))
@@ -1057,13 +1057,13 @@
                            outcome.cstate
                            funenv
                            (1- limit)))
-       :leave (make-soutcome :cstate (cstate-fix cstate)
+       :leave (make-soutcome :cstate cstate
                              :mode (mode-leave))
-       :break (make-soutcome :cstate (cstate-fix cstate)
+       :break (make-soutcome :cstate cstate
                              :mode (mode-break))
-       :continue (make-soutcome :cstate (cstate-fix cstate)
+       :continue (make-soutcome :cstate cstate
                                 :mode (mode-continue))
-       :fundef (make-soutcome :cstate (cstate-fix cstate)
+       :fundef (make-soutcome :cstate cstate
                               :mode (mode-regular))))
     :measure (nfix limit))
 
@@ -1082,7 +1082,7 @@
        we stop executing the statements and return that non-regular mode.
        Otherwise, the statement list is executed to completion regularly."))
     (b* (((when (zp limit)) (reserrf (list :limit (statement-list-fix stmts))))
-         ((when (endp stmts)) (make-soutcome :cstate (cstate-fix cstate)
+         ((when (endp stmts)) (make-soutcome :cstate cstate
                                              :mode (mode-regular)))
          ((okf (soutcome outcome))
           (exec-statement (car stmts) cstate funenv (1- limit)))
@@ -1200,7 +1200,7 @@
           (block-option-case
            default
            :some (exec-block default.val cstate funenv (1- limit))
-           :none (make-soutcome :cstate (cstate-fix cstate)
+           :none (make-soutcome :cstate cstate
                                 :mode (mode-regular))))
          ((swcase case) (car cases))
          ((okf caseval) (eval-literal case.value))

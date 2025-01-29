@@ -241,18 +241,48 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define eval-hex-pair-list ((hps hex-pair-listp))
+(define eval-hex-string-rest-element ((elem hex-string-rest-elementp))
+  :returns (val ubyte8p)
+  :short "Evaluate an element of hex strings after the first one."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This reduces to the evaluation of the pair of hex digits.
+     The optional underscore is merely concrete syntactic information,
+     retained in the abstract syntax but semantically irrelevant."))
+  (eval-hex-pair (hex-string-rest-element->pair elem))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define eval-hex-string-rest-element-list
+  ((elems hex-string-rest-element-listp))
   :returns (bytes ubyte8-listp)
-  :short "Evaluate a list of hex pairs to a list of bytes."
+  :short "Evaluate a list of element of hex strings after the first one."
   :long
   (xdoc::topstring
    (xdoc::p
     "This is done element-wise:
-     each pair is turned into a byte,
+     each element is turned into a byte,
      and the order is preserved."))
-  (cond ((endp hps) nil)
-        (t (cons (eval-hex-pair (car hps))
-                 (eval-hex-pair-list (cdr hps)))))
+  (cond ((endp elems) nil)
+        (t (cons (eval-hex-string-rest-element (car elems))
+                 (eval-hex-string-rest-element-list (cdr elems)))))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define eval-hex-string-content ((content hex-string-contentp))
+  :returns (bytes ubyte8-listp)
+  :short "Evaluate the content of a hex string."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We return a byte for the first element,
+     followed by zero or more bytes for the remaining elements."))
+  (b* (((hex-string-content content) content))
+    (cons (eval-hex-pair content.first)
+          (eval-hex-string-rest-element-list content.rest)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -263,7 +293,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We convert the list of hex pairs to a list of bytes.
+    "We convert the hex pairs to a list of bytes,
+     empty if the hex string is empty.
      If the resulting bytes exceed 32 in number, it is an error.
      Otherwise, we pad the list with zeros (bytes of value 0)
      on the right to reach 32 bytes,
@@ -273,8 +304,11 @@
      This evaluation is not described in detail in [Yul],
      but it was explained via discussions on Gitter,
      and [Yul] is being extended with these explanations."))
-  (b* ((content (hex-string->content hstring))
-       (bytes (eval-hex-pair-list content))
+  (b* (((hex-string hstring) hstring)
+       (bytes (hex-string-content-option-case
+               hstring.content
+               :some (eval-hex-string-content hstring.content.val)
+               :none nil))
        ((unless (<= (len bytes) 32))
         (reserrf (list :hex-string-too-long bytes)))
        (bytes (append bytes (repeat (- 32 (len bytes)) 0))))
@@ -284,13 +318,13 @@
     :in-theory (enable ubyte256p
                        bebytes=>nat)
     :use (:instance acl2::bendian=>nat-upper-bound
-          (base 256)
-          (digits (append
-                   (eval-hex-pair-list
-                    (hex-string->content hstring))
-                   (repeat (- 32 (len (eval-hex-pair-list
-                                       (hex-string->content hstring))))
-                           0))))))
+                    (base 256)
+                    (digits
+                     (b* ((bytes
+                           (eval-hex-string-content
+                            (hex-string-content-option-some->val
+                             (hex-string->content hstring)))))
+                       (append bytes (repeat (- 32 (len bytes)) 0)))))))
   :hooks (:fix)
 
   :prepwork
