@@ -222,20 +222,44 @@
   (declare (xargs :guard t))
   '(;; Rules about reads:
 
+    x86isa::rime-size-when-64-bit-modep-and-not-fs/gs ; introduces riml-size
+    x86isa::rime-size-when-64-bit-modep-fs/gs ; introduces segment-base-and-bounds and riml-size
+
+    rme08-of-0-when-not-fs/gs-becomes-read ;; x86isa::rme08-when-64-bit-modep-and-not-fs/gs ; puts in rml08
+    x86isa::rme16-when-64-bit-modep-and-not-fs/gs ; todo: go to read like we do for rme08? at least make strong versions that put the canonical hyp in the conclusion
+    x86isa::rme32-when-64-bit-modep-and-not-fs/gs
+    x86isa::rme48-when-64-bit-modep-and-not-fs/gs
+    x86isa::rme64-when-64-bit-modep-and-not-fs/gs
+    x86isa::rme80-when-64-bit-modep-and-not-fs/gs
+    x86isa::rme128-when-64-bit-modep-and-not-fs/gs
+    x86isa::rme256-when-64-bit-modep-and-not-fs/gs
+
+    ;; rme-size can arize in 64-bit mode (e.g., when a stack protection value is read via the FS segment register):
+    x86isa::rme-size-when-64-bit-modep-and-not-fs/gs-strong ; puts in rml-size
+    x86isa::rme-size-when-64-bit-modep-fs/gs ; exposes segment-base-and-bounds and rml-size
+
     ;; Rules about rimlXX (there are only 4 of these):
     ;; We open these to expose RML08, etc (handled below):
-    ;; TODO: go to logext of read?
+    ;; TODO: go directly to logext of read
     riml08
     riml16
     riml32
     riml64
-    riml-size$inline
+    riml-size$inline ; dispatches to riml08, etc.
     ;; riml-size-of-1-becomes-read ; todo: try these (for which proofs?)
     ;; riml-size-of-2-becomes-read
     ;; riml-size-of-4-becomes-read
     ;; riml-size-of-8-becomes-read
 
-    rml-size$inline ;; dispatch tom rml08, etc.; can become RB but only for ill-guarded calls
+    rml-size$inline ;; dispatches to rml08, etc.  can become RB but only for ill-guarded calls.
+    ;; rml-size-of-1-becomes-read ;; todo: try these, or combine them
+    ;; rml-size-of-2-becomes-read
+    ;; rml-size-of-4-becomes-read
+    ;; rml-size-of-6-becomes-read
+    ;; rml-size-of-8-becomes-read
+    ;; rml-size-of-10-becomes-read
+    ;; rml-size-of-16-becomes-read
+    ;; rml-size-of-32-becomes-read
     ;; Or we could open these to expose RB and turn that into READ:
     rml08-becomes-read
     rml16-becomes-read
@@ -246,14 +270,6 @@
     rml128-becomes-read ;; x86isa::rml128-when-app-view ; introduces rb (handled below)
     rml256-becomes-read ;; x86isa::rml256-when-app-view ; introduces rb
     rml512-becomes-read ;;
-    ;; rml-size-of-1-becomes-read ;; todo: try these (for which proofs?)
-    ;; rml-size-of-2-becomes-read
-    ;; rml-size-of-4-becomes-read
-    ;; rml-size-of-6-becomes-read
-    ;; rml-size-of-8-becomes-read
-    ;; rml-size-of-10-becomes-read
-    ;; rml-size-of-16-becomes-read
-    ;; rml-size-of-32-becomes-read
 
 ;    rb-becomes-read ; no need to target mv-nth-1-of-rb, etc. since this rewrites the entire rb
     ;; These just clarify failures to turn RB into READ: ; TODO: Only use when debugging?
@@ -266,26 +282,29 @@
 
     ;; Rules about writes:
 
+    x86isa::wme-size-when-64-bit-modep-and-not-fs/gs-strong ; puts in wml-size
+    x86isa::wime-size-when-64-bit-modep-and-not-fs/gs
+
     ;; Rules about wimlXX (there are only 4 of these):
     ;; We open these to expose WML08, etc (handled below)::
     ;; TODO: Go directly to WRITE
-    x86isa::wiml08
-    x86isa::wiml16
-    x86isa::wiml32
-    x86isa::wiml64
-    x86isa::wiml-size$inline
+    wiml08
+    wiml16
+    wiml32
+    wiml64
+    wiml-size$inline ; dispatches to wiml08, etc.
 
+    wml-size$inline ; dispatches to wml08, etc.  can go to wb but only for ill-guarded calls.
     ;; TODO: Go directly to WRITE?
-    x86isa::wml08
-    x86isa::wml16
-    x86isa::wml32
-    x86isa::wml48
-    x86isa::wml64
-    x86isa::wml80
+    wml08
+    wml16
+    wml32
+    wml48
+    wml64
+    wml80
     x86isa::wml128-when-app-view
     x86isa::wml256-when-app-view
-    x86isa::wml512
-    x86isa::wml-size$inline ;shilpi leaves this enabled
+    x86isa::wml512-when-app-view
 
     mv-nth-1-of-wb-becomes-write
     ))
@@ -1715,19 +1734,20 @@
             ;; Reading/writing registers (or parts of registers).  we leave
             ;; these enabled to expose rgfi and !rgfi, which then get rewritten
             ;; to xr and xw.  shilpi seems to do the same.
-            x86isa::rr08$inline
-            x86isa::rr16$inline
-            x86isa::rr32$inline
-            x86isa::rr64$inline
-            x86isa::wr08$inline
-            x86isa::wr16$inline
-            x86isa::wr32$inline
-            x86isa::wr64$inline
-            x86isa::rgfi-size$inline ;dispatches to rr08, etc.
-            x86isa::!rgfi-size$inline ; dispatches to wr08, etc.
-            x86isa::!rgfi x86isa::!rgfi$a ;expose the call to xw ; todo: go directly to the right writer
+            rr08$inline
+            rr16$inline
+            rr32$inline
+            rr64$inline
+            wr08$inline
+            wr16$inline
+            wr32$inline
+            wr64$inline
 
-            x86isa::rgfi x86isa::rgfi$a ;expose the call to xr ; todo: go directly to the right reader
+            rgfi rgfi$a ;expose the call to xr ; todo: go directly to the right reader
+            rgfi-size$inline ;dispatches to rr08, etc.
+            !rgfi !rgfi$a ;expose the call to xw ; todo: go directly to the right writer
+            !rgfi-size$inline ; dispatches to wr08, etc.
+
             ;; rgfi-becomes-rbp ; todo: uncomment these (and comment out the 2 rules above) but only for non-loop lifter
             ;; rgfi-becomes-rsp
             ;; rgfi-becomes-rax
@@ -1737,7 +1757,7 @@
             x86isa::n08-to-i08$inline
             x86isa::n16-to-i16$inline
             x86isa::n32-to-i32$inline
-            x86isa::n64-to-i64$inline         ;shilpi leaves this enabled
+            x86isa::n64-to-i64$inline
             x86isa::n128-to-i128$inline
             x86isa::n256-to-i256$inline
             x86isa::n512-to-i512$inline
@@ -3223,15 +3243,6 @@
           '(;x86isa::x86-fetch-decode-execute-base-new
             x86-fetch-decode-execute-opener-safe-64 ; trying
             ;; !rip-becomes-set-rip ; todo: uncomment for non-loop case
-            rme08-of-0-when-not-fs/gs-becomes-read ;; x86isa::rme08-when-64-bit-modep-and-not-fs/gs ; puts in rml08, todo: rules for other sizes?
-
-            ;; rme-size can arize in 64-bit mode (e.g., when a stack protection value is read via the FS segment register):
-            x86isa::rme-size-when-64-bit-modep-and-not-fs/gs-strong ; puts in rml-size
-            x86isa::rme-size-when-64-bit-modep-fs/gs ; exposes SEGMENT-BASE-AND-BOUNDS and RML-SIZE
-
-            x86isa::wme-size-when-64-bit-modep-and-not-fs/gs-strong ; puts in wml-size
-            x86isa::rime-size-when-64-bit-modep-and-not-fs/gs
-            x86isa::wime-size-when-64-bit-modep-and-not-fs/gs
 
             ;; instruction pointer:
             x86isa::read-*ip-when-64-bit-modep ; goes to rip
@@ -4424,12 +4435,12 @@
 
             ea-to-la$inline
 
-            x86isa::read-*ip$inline
-            x86isa::write-*ip$inline
-            x86isa::add-to-*ip$inline
-            x86isa::read-*sp$inline
-            x86isa::write-*sp$inline
-            x86isa::add-to-*sp$inline
+            read-*ip$inline
+            write-*ip$inline
+            add-to-*ip$inline
+            read-*sp$inline
+            write-*sp$inline
+            add-to-*sp$inline
 
             ;; x86isa::data-segment-descriptor-attributesbits->e$inline
             ;; x86isa::data-segment-descriptor-attributesbits->d/b$inline
