@@ -116,7 +116,7 @@
                          must be a symbol, ~
                          but ~x0 is not."
                         type)))
-          (info (fty::type-with-name type fty-table))
+          (info (fty::flextype-with-name type fty-table))
           ((unless info)
            (reterr (msg "The first element of ~
                          every element of the :OVERRIDE list ~
@@ -322,9 +322,9 @@
        (recog (fty::flexprod-field->type field))
        ((unless (symbolp recog))
         (raise "Internal error: malformed field recognizer ~x0." recog))
-       (info (fty::type-with-recognizer recog fty-table))
+       (info (fty::flextype-with-recognizer recog fty-table))
        (field-type (and info
-                        (fty::flex->name info)))
+                        (fty::flextype->name info)))
        ((unless (and field-type
                      (member-eq field-type types)))
         (defpred-gen-prod-conjuncts
@@ -540,7 +540,8 @@
        (recog (fty::flexsum->pred sum))
        (recp (fty::flexsum->recp sum))
        (type-case (fty::flexsum->case sum))
-       ((mv base-type accessor) (fty::option-type->components type fty-table))
+       ((mv base-type accessor)
+        (fty::components-of-flexoption-with-name type fty-table))
        (base-type-suffix (defpred-gen-pred-name base-type suffix))
        (extra-args-names (defpred-extra-args-to-names extra-args))
        (body `(,type-case ,type
@@ -618,8 +619,8 @@
        ((unless (symbolp elt-recog))
         (raise "Internal error: malformed recognizer ~x0." elt-recog)
         '(_))
-       (elt-info (fty::type-with-recognizer elt-recog fty-table))
-       (elt-type (fty::flex->name elt-info))
+       (elt-info (fty::flextype-with-recognizer elt-recog fty-table))
+       (elt-type (fty::flextype->name elt-info))
        (recp (fty::flexlist->recp list))
        ((unless (symbolp elt-type))
         (raise "Internal error: malformed type name ~x0." elt-type)
@@ -676,14 +677,14 @@
        ((unless (symbolp key-recog))
         (raise "Internal error: malformed recognizer ~x0." key-recog)
         '(_))
-       (key-info (fty::type-with-recognizer key-recog fty-table))
-       (key-type (fty::flex->name key-info))
+       (key-info (fty::flextype-with-recognizer key-recog fty-table))
+       (key-type (fty::flextype->name key-info))
        (val-recog (fty::flexomap->val-type omap))
        ((unless (symbolp val-recog))
         (raise "Internal error: malformed recognizer ~x0." val-recog)
         '(_))
-       (val-info (fty::type-with-recognizer val-recog fty-table))
-       (val-type (fty::flex->name val-info))
+       (val-info (fty::flextype-with-recognizer val-recog fty-table))
+       (val-type (fty::flextype->name val-info))
        (val-type-suffix (defpred-gen-pred-name val-type suffix))
        (extra-args-names (defpred-extra-args-to-names extra-args))
        (body `(or (not (mbt (,recog ,type)))
@@ -867,7 +868,7 @@
           for a list of type cliques with given names."
   (b* (((when (endp clique-names)) nil)
        (clique-name (car clique-names))
-       (clique (fty::type-clique-with-name clique-name fty-table))
+       (clique (fty::flextypes-with-name clique-name fty-table))
        ((unless clique)
         (raise "Internal error: no type clique with name ~x0." clique-name))
        ((unless (fty::flextypes-p clique))
@@ -923,7 +924,8 @@
      and then we call the code to generate the predicates,
      which we put into one event."))
   (b* ((types
-        (fty::type-names-in-cliques-with-names *defpred-cliques* fty-table))
+        (fty::flextype-names-in-flextypes-with-names *defpred-cliques*
+                                                     fty-table))
        (pred-events
         (defpred-gen-cliques-preds
           *defpred-cliques* types

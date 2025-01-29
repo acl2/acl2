@@ -1,7 +1,7 @@
 ; Mixed theorems about bit-vector operations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,7 +14,7 @@
 (include-book "rules")
 (include-book "bvashr")
 ;(local (include-book "logior"))
-(local (include-book "logxor"))
+(local (include-book "logxor")) ; used in BVXOR-OF-BVIF?
 (local (include-book "logand-b"))
 ;(local (include-book "rules0")) ; needed to prove getbit-0-of-bvplus
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
@@ -28,19 +28,9 @@
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
 
-(defthm lessthan-256-backchain
+(defthmd lessthan-256-backchain
   (implies (unsigned-byte-p 8 x)
            (< x 256)))
-
-;rename
-;disable?
-(defthmd plus-bvcat-with-0-special
-  (implies (and (unsigned-byte-p n x)
-                (natp m)
-                (natp n))
-           (equal (+ x (BVCAT m y n 0))
-                  (bvcat m y n x)))
-  :hints (("Goal" :in-theory (enable BVCAT LOGAPP))))
 
 ;the complication here is because of how we associate bvcat...
 ;restrict to when y is a bvcat?
