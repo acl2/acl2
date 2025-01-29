@@ -416,8 +416,16 @@
 
     x86isa::!app-view
     x86isa::init-x86-state-64
+
     x86isa::rgfi
+    x86isa::rgfi$a
+    x86isa::rgfi-size
+    x86isa::rgfi-size$inline
     x86isa::!rgfi
+    x86isa::!rgfi$a
+    x86isa::!rgfi-size
+    x86isa::!rgfi-size$inline
+
     x86isa::rip
     x86isa::rip$a
     x86isa::x86-run
@@ -435,7 +443,7 @@
     ;; special symbol that can appear in the MS field:
     x86isa::X86-HLT
 
-    x86isa::increment-*ip
+    x86isa::increment-*ip ; remove?
     x86isa::one-byte-opcode-execute
     x86isa::fault
     x86isa::fault$a
@@ -752,7 +760,19 @@
     x86isa::undef$a
     x86isa::!undef
 
-    X86ISA::READ-*IP$INLINE
+    x86isa::read-*ip
+    x86isa::write-*ip
+    x86isa::add-to-*ip
+    x86isa::read-*ip$inline
+    x86isa::write-*ip$inline
+    x86isa::add-to-*ip$inline
+
+    x86isa::read-*sp
+    x86isa::write-*sp
+    x86isa::add-to-*sp
+    x86isa::read-*sp$inline
+    x86isa::write-*sp$inline
+    x86isa::add-to-*sp$inline
 
     x86isa::vex->vvvv$inline
     x86isa::vex->l$inline
@@ -970,7 +990,14 @@
     ;; more like this:
     x86isa::!prefixes->nxt$inline
 
+    x86isa::code-segment-descriptor-attributesbits->d
     x86isa::code-segment-descriptor-attributesbits->d$inline
+    x86isa::code-segment-descriptor-attributesbits->p
+    x86isa::code-segment-descriptor-attributesbits->p$inline
+    x86isa::code-segment-descriptor-attributesbits-fix
+
+    x86isa::data-segment-descriptor-attributesbits->
+    x86isa::data-segment-descriptor-attributesbits->e$inline
 
     ;; error values:
     x86isa::rime-size-opt-error
@@ -988,9 +1015,25 @@
     x86isa::la-to-pa
     x86isa::las-to-pas
 
-    x86isa::add-to-*ip
-
     X86ISA::ADDRESS-ALIGNED-P
+
+    x86isa::rr08
+    x86isa::rr16
+    x86isa::rr32
+    x86isa::rr64
+    x86isa::rr08$inline
+    x86isa::rr16$inline
+    x86isa::rr32$inline
+    x86isa::rr64$inline
+
+    x86isa::wr08
+    x86isa::wr16
+    x86isa::wr32
+    x86isa::wr64
+    x86isa::wr08$inline
+    x86isa::wr16$inline
+    x86isa::wr32$inline
+    x86isa::wr64$inline
     ))
 
 (defconst *symbols-from-acl2-package*
@@ -1214,6 +1257,7 @@
     b-xor ; from ihs, via bitops
     logbit$inline ; really from ihs
     b-xor$inline ; really from ihs
+    part-select
     ))
 
 ;; Ideally, these would all be rewritten away
@@ -1308,6 +1352,8 @@
     x86isa::mem-ptr?
     x86isa::check-alignment?
     x86isa::base
+
+    x86isa::*ip
 ))
 
 ;; TODO: Think about this...
