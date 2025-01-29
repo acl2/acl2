@@ -1567,7 +1567,9 @@ function.  This is @(':rewrite') by default; you may wish to change it to
   :long "<p>@('defoption') generates a recognizer predicate and fixing function
 for a new type whose elements either belong to the argument type or are
 @('nil'). This is analagous to the \"option\" or \"maybe\" types of various
-other languages, except that @('defoption') types are untagged.</p>
+other languages, except that @('defoption') types are untagged. In order to
+distinguish the @('nil') case from the parameterized type, the recognizer for
+the parameterized type must not admit @('nil').</p>
 
 <p>@('defoption') is compatible with @(see deftypes) and can be
 mutually-recursive with other @(see deftypes)-compatible type generators.</p>
