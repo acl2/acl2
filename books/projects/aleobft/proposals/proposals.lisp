@@ -103,6 +103,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define props-with-author+round ((author addressp)
+                                 (round posp)
+                                 (props proposal-setp))
+  :returns (props-with-author+round proposal-setp)
+  :short "Retrieve, from a set of proposals,
+          the subset of proposals with a given author and round."
+  (b* (((when (set::emptyp (proposal-set-fix props))) nil)
+       ((proposal prop) (set::head props)))
+    (if (and (equal (address-fix author) prop.author)
+             (equal (pos-fix round) prop.round))
+        (set::insert (proposal-fix prop)
+                     (props-with-author+round author round (set::tail props)))
+      (props-with-author+round author round (set::tail props))))
+  :prepwork ((local (in-theory (enable emptyp-of-proposal-set-fix))))
+  :verify-guards :after-returns
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define props-with-round ((round posp) (props proposal-setp))
   :returns (props-with-round proposal-setp)
   :short "Retrieve, from a set of proposals,
