@@ -14,6 +14,7 @@ framework of Walter et al. to facilitate easy integration with other systems.
 
 ### Building
 This guide assumes you are familiar with the process of building ACL2/ACL2s and you have a working `acl2` executable. 
+A working `quicklisp` installation is also a prerequisite: [https://www.quicklisp.org/beta/](https://www.quicklisp.org/beta/).
 
 Make sure your `ACL2_SYSTEM_BOOKS` environment variable is set to the `books` subdirectory of this repository.
 Then, run `make`. It may complain with an error related to certdeps. If so, it should be directing you to run
