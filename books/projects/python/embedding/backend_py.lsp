@@ -1,25 +1,11 @@
 (load "package.lsp")
 (in-package :wgdt)
 
-(ql:quickload :cl-json)
-
 (declaim (ftype (function (* symbol) symbol) intern-sym-in-package))
 (defun intern-sym-in-package (pkg sym)
   (intern (symbol-name sym) pkg))
 
-(declaim (ftype (function (list) string) concat-syms))
-(defun concat-syms (syms)
-  (if (endp syms)
-      ""
-    (concatenate 'string (symbol-name (car syms))
-                 (concat-syms (cdr syms)))))
 
-;; Concatenate all of the symbols in syms together, and then intern them in the given package
-(declaim (ftype (function (* list) symbol) concat-syms-in-package))
-(defun concat-syms-in-package (pkg syms)
-  (intern (concat-syms syms) pkg))
-
-(defconst *type-table* (make-hash-table :test #'equal))
 #|
 Entries in the type table are of one of the following forms:
 'nonparametric': (:name <string> :kind "nonparametric" :defdata-ty <sexpr>  )
@@ -27,6 +13,7 @@ Entries in the type table are of one of the following forms:
 'constant': (:name "constant" :kind "constant")
 |#
 
+(defconst *type-table* (make-hash-table :test #'equal))
 (defconst *alias-table* (make-hash-table :test #'equal))
 
 (defun add-alias-type (name alias-of)
