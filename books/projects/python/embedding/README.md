@@ -17,7 +17,7 @@ This guide assumes you are familiar with the process of building ACL2/ACL2s and 
 
 Make sure your `ACL2_SYSTEM_BOOKS` environment variable is set to the `books` subdirectory of this repository.
 Then, run `make`. It may complain with an error related to certdeps. If so, it should be directing you to run
-`make build/Makefile-features` in the `books` directory. 
+`make build/Makefile-features` in the `books` directory. Do so, and then run `make` here again.
 
 
 ### Example
