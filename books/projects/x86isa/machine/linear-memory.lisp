@@ -1337,7 +1337,9 @@
                (x86))
 
   :parents (linear-memory)
-  :guard (canonical-address-p lin-addr)
+  :guard (and (canonical-address-p lin-addr)
+              (member-eq r-x '(:r :x)))
+  :split-types t
   :guard-hints (("goal"
                  :in-theory (e/d* (ifix rvm08) ())))
 
