@@ -221,33 +221,38 @@
 (defun linear-memory-rules ()
   (declare (xargs :guard t))
   '(;; Rules about reads:
-    
+
+    x86isa::rime-size-when-64-bit-modep-and-not-fs/gs ; introduces riml-size
+    x86isa::rime-size-when-64-bit-modep-fs/gs ; introduces segment-base-and-bounds and riml-size
+
+    rme08-of-0-when-not-fs/gs-becomes-read ;; x86isa::rme08-when-64-bit-modep-and-not-fs/gs ; puts in rml08
+    x86isa::rme16-when-64-bit-modep-and-not-fs/gs ; todo: go to read like we do for rme08? at least make strong versions that put the canonical hyp in the conclusion
+    x86isa::rme32-when-64-bit-modep-and-not-fs/gs
+    x86isa::rme48-when-64-bit-modep-and-not-fs/gs
+    x86isa::rme64-when-64-bit-modep-and-not-fs/gs
+    x86isa::rme80-when-64-bit-modep-and-not-fs/gs
+    x86isa::rme128-when-64-bit-modep-and-not-fs/gs
+    x86isa::rme256-when-64-bit-modep-and-not-fs/gs
+
+    ;; rme-size can arize in 64-bit mode (e.g., when a stack protection value is read via the FS segment register):
+    x86isa::rme-size-when-64-bit-modep-and-not-fs/gs-strong ; puts in rml-size
+    x86isa::rme-size-when-64-bit-modep-fs/gs ; exposes segment-base-and-bounds and rml-size
+
     ;; Rules about rimlXX (there are only 4 of these):
     ;; We open these to expose RML08, etc (handled below):
-    ;; TODO: go to logext of read?
-    x86isa::riml08
-    x86isa::riml16
-    x86isa::riml32
-    x86isa::riml64
-    x86isa::riml-size$inline ;shilpi leaves this enabled -- could restrict to constant
+    ;; TODO: go directly to logext of read
+    riml08
+    riml16
+    riml32
+    riml64
+    riml-size$inline ; dispatches to riml08, etc.
     ;; riml-size-of-1-becomes-read ; todo: try these (for which proofs?)
     ;; riml-size-of-2-becomes-read
     ;; riml-size-of-4-becomes-read
     ;; riml-size-of-8-becomes-read
 
-    ;; We can either open these read operations to RB, which then gets turned into READ, or turn these into READ directly:
-    rml08-becomes-read ;; rml08
-    rml16-becomes-read ;; rml16 
-    rml32-becomes-read ;; rml32
-    rml48-becomes-read ;; rml48
-    rml64-becomes-read ;; rml64
-    rml80-becomes-read ;; rml80
-    ;; rml128-becomes-read ; todo
-    ;; rml256-becomes-read ; todo
-    x86isa::rml128-when-app-view ; introduces rb (handled below)
-    x86isa::rml256-when-app-view ; introduces rb
-    x86isa::rml-size$inline ;shilpi leaves this enabled ;todo: consider rml-size-becomes-rb
-    ;; rml-size-of-1-becomes-read ;; todo: try these (for which proofs?)
+    rml-size$inline ;; dispatches to rml08, etc.  can become RB but only for ill-guarded calls.
+    ;; rml-size-of-1-becomes-read ;; todo: try these, or combine them
     ;; rml-size-of-2-becomes-read
     ;; rml-size-of-4-becomes-read
     ;; rml-size-of-6-becomes-read
@@ -255,40 +260,56 @@
     ;; rml-size-of-10-becomes-read
     ;; rml-size-of-16-becomes-read
     ;; rml-size-of-32-becomes-read
+    ;; Or we could open these to expose RB and turn that into READ:
+    rml08-becomes-read
+    rml16-becomes-read
+    rml32-becomes-read
+    rml48-becomes-read
+    rml64-becomes-read
+    rml80-becomes-read
+    rml128-becomes-read ;; x86isa::rml128-when-app-view ; introduces rb (handled below)
+    rml256-becomes-read ;; x86isa::rml256-when-app-view ; introduces rb
+    rml512-becomes-read ;;
 
-    rb-becomes-read ; no need to target mv-nth-1-of-rb, etc. since this rewrites the entire rb
-    ;;mv-nth-1-of-rb-becomes-read
+;    rb-becomes-read ; no need to target mv-nth-1-of-rb, etc. since this rewrites the entire rb
     ;; These just clarify failures to turn RB into READ: ; TODO: Only use when debugging?
-    mv-nth-1-of-rb-of-set-rip
-    mv-nth-1-of-rb-of-set-rax ; could add more like this
+    ;mv-nth-1-of-rb-of-set-rip
+    ;mv-nth-1-of-rb-of-set-rax ; could add more like this
+    ;; x86isa::mv-nth-0-of-rb-of-1 ; todo: gen
+    ;; x86isa::rb-returns-no-error-app-view ;targets mv-nth-0-of-rb
+    ;; x86isa::rb-in-terms-of-nth-and-pos-eric-gen ;rb-in-terms-of-nth-and-pos-eric ;targets mv-nth-1-of-rb ; todo: or do we just always go to read?
+    ;;x86isa::rb-returns-x86-app-view ;targets mv-nth-2-of-rb
 
     ;; Rules about writes:
-    
+
+    x86isa::wme-size-when-64-bit-modep-and-not-fs/gs-strong ; puts in wml-size
+    x86isa::wime-size-when-64-bit-modep-and-not-fs/gs
+
     ;; Rules about wimlXX (there are only 4 of these):
     ;; We open these to expose WML08, etc (handled below)::
     ;; TODO: Go directly to WRITE
-    x86isa::wiml08
-    x86isa::wiml16
-    x86isa::wiml32
-    x86isa::wiml64
-    x86isa::wiml-size$inline
+    wiml08
+    wiml16
+    wiml32
+    wiml64
+    wiml-size$inline ; dispatches to wiml08, etc.
 
+    wml-size$inline ; dispatches to wml08, etc.  can go to wb but only for ill-guarded calls.
     ;; TODO: Go directly to WRITE?
-    x86isa::wml08
-    x86isa::wml16
-    x86isa::wml32
-    x86isa::wml48
-    x86isa::wml64
-    x86isa::wml80
+    wml08
+    wml16
+    wml32
+    wml48
+    wml64
+    wml80
     x86isa::wml128-when-app-view
     x86isa::wml256-when-app-view
-    x86isa::wml512
-    x86isa::wml-size$inline ;shilpi leaves this enabled
+    x86isa::wml512-when-app-view
 
     mv-nth-1-of-wb-becomes-write
     ))
 
-(set-axe-rule-priority rb-becomes-read -1) ; get rid of RB immediately
+;; (set-axe-rule-priority rb-becomes-read -1) ; get rid of RB immediately
 
 ;; Usually not needed except for in the loop lifter (showing that assumptions are preserved):
 (defund program-at-rules ()
@@ -1713,19 +1734,20 @@
             ;; Reading/writing registers (or parts of registers).  we leave
             ;; these enabled to expose rgfi and !rgfi, which then get rewritten
             ;; to xr and xw.  shilpi seems to do the same.
-            x86isa::rr08$inline
-            x86isa::rr16$inline
-            x86isa::rr32$inline
-            x86isa::rr64$inline
-            x86isa::wr08$inline
-            x86isa::wr16$inline
-            x86isa::wr32$inline
-            x86isa::wr64$inline
-            x86isa::rgfi-size$inline ;dispatches to rr08, etc.
-            x86isa::!rgfi-size$inline ; dispatches to wr08, etc.
-            x86isa::!rgfi x86isa::!rgfi$a ;expose the call to xw ; todo: go directly to the right writer
+            rr08$inline
+            rr16$inline
+            rr32$inline
+            rr64$inline
+            wr08$inline
+            wr16$inline
+            wr32$inline
+            wr64$inline
 
-            x86isa::rgfi x86isa::rgfi$a ;expose the call to xr ; todo: go directly to the right reader
+            rgfi rgfi$a ;expose the call to xr ; todo: go directly to the right reader
+            rgfi-size$inline ;dispatches to rr08, etc.
+            !rgfi !rgfi$a ;expose the call to xw ; todo: go directly to the right writer
+            !rgfi-size$inline ; dispatches to wr08, etc.
+
             ;; rgfi-becomes-rbp ; todo: uncomment these (and comment out the 2 rules above) but only for non-loop lifter
             ;; rgfi-becomes-rsp
             ;; rgfi-becomes-rax
@@ -1735,7 +1757,7 @@
             x86isa::n08-to-i08$inline
             x86isa::n16-to-i16$inline
             x86isa::n32-to-i32$inline
-            x86isa::n64-to-i64$inline         ;shilpi leaves this enabled
+            x86isa::n64-to-i64$inline
             x86isa::n128-to-i128$inline
             x86isa::n256-to-i256$inline
             x86isa::n512-to-i512$inline
@@ -1769,9 +1791,8 @@
 
             ;; todo: organize these:
 
-
-            x86isa::rb-wb-equal
-            x86isa::rb-of-if-arg2
+            ;; x86isa::rb-wb-equal
+            ;; x86isa::rb-of-if-arg2
 
 ;            x86isa::set-flag-of-mv-nth-1-of-wb
 
@@ -1797,11 +1818,6 @@
             x86isa::logext-48-does-nothing-when-canonical-address-p
 
             x86isa::create-canonical-address-list-1
-
-            x86isa::mv-nth-0-of-rb-of-1 ; todo: gen
-            ;; x86isa::rb-returns-no-error-app-view ;targets mv-nth-0-of-rb
-            ;; x86isa::rb-in-terms-of-nth-and-pos-eric-gen ;rb-in-terms-of-nth-and-pos-eric ;targets mv-nth-1-of-rb ; todo: or do we just always go to read?
-            ;;x86isa::rb-returns-x86-app-view ;targets mv-nth-2-of-rb
 
             x86isa::canonical-address-listp-of-cons
             x86isa::canonical-address-listp-of-nil ;wouldn't need this if we could evaluate it
@@ -1894,14 +1910,14 @@
             acl2::ash-of-0
             ;acl2::fix-when-acl2-numberp
             ;acl2::acl2-numberp-of-+    ;we also have acl2::acl2-numberp-of-sum
-            x86isa::rb-xw-values ; targets mv-nth-0-of-rb-of-xw and mv-nth-1-of-rb-of-xw
+            ;; x86isa::rb-xw-values ; targets mv-nth-0-of-rb-of-xw and mv-nth-1-of-rb-of-xw
             ;x86isa::mv-nth-1-rb-xw-rip         ;targets mv-nth-1-of-rb
             ;x86isa::mv-nth-1-rb-xw-rgf         ;targets mv-nth-1-of-rb
             ;x86isa::mv-nth-1-rb-xw-undef
-            
-            x86isa::rb-wb-disjoint-eric
+
+            ;; x86isa::rb-wb-disjoint-eric
             x86isa::disjoint-p-two-create-canonical-address-lists-thm-1
-            x86isa::rb-wb-subset
+            ;; x86isa::rb-wb-subset
             x86isa::subset-p-two-create-canonical-address-lists-same-base-address
             x86isa::canonical-address-p-of-logext-64
             ;;x86isa::xw-xw-intra-array-field-shadow-writes
@@ -2803,7 +2819,7 @@
 ;    canonical-address-p-of-mv-nth-1-of-ea-to-la-of-ss
     ;x86isa::mv-nth-0-rb-xw-rgf ;gen?
     ;x86isa::mv-nth-0-rb-xw-rip
-    x86isa::rb-xw-values
+    ;; x86isa::rb-xw-values
 ;    fix-of-mv-nth-1-of-ea-to-la
 ;    read-of-ea-to-la-becomes-read-byte-from-segment
 ;    canonical-address-p-of-+-of-mv-nth-1-of-ea-to-la-of-ss
@@ -3227,24 +3243,20 @@
           '(;x86isa::x86-fetch-decode-execute-base-new
             x86-fetch-decode-execute-opener-safe-64 ; trying
             ;; !rip-becomes-set-rip ; todo: uncomment for non-loop case
-            x86isa::rme08-of-0-when-not-fs/gs-becomes-read ;; x86isa::rme08-when-64-bit-modep-and-not-fs/gs ; puts in rml08, todo: rules for other sizes?
-            x86isa::rme-size-when-64-bit-modep-and-not-fs/gs-strong ; puts in rml-size
-            ;; this is sometimes needed in 64-bit mode (e.g., when a stack
-            ;; protection value is read via the FS segment register):
-            x86isa::rme-size-when-64-bit-modep-fs/gs
-            x86isa::wme-size-when-64-bit-modep-and-not-fs/gs-strong ; puts in wml-size
-            x86isa::rime-size-when-64-bit-modep-and-not-fs/gs
-            x86isa::wime-size-when-64-bit-modep-and-not-fs/gs
-            x86isa::read-*ip-when-64-bit-modep
-            x86isa::add-to-*ip-of-0
+
+            ;; instruction pointer:
+            x86isa::read-*ip-when-64-bit-modep ; goes to rip
             ;; x86isa::mv-nth-0-of-add-to-*ip-when-64-bit-modep ; subsumed by add-to-*ip-of-0
             ;; x86isa::mv-nth-1-of-add-to-*ip-when-64-bit-modep ; subsumed by add-to-*ip-of-0
-            x86isa::write-*ip-when-64-bit-modep
-            x86isa::read-*sp-when-64-bit-modep
+            x86isa::write-*ip-when-64-bit-modep ; does to !rip -- todo: go to set-rip
+            x86isa::add-to-*ip-of-0
+
+            ;; stack pointer:
+            x86isa::read-*sp-when-64-bit-modep ; puts in rgfi -- todo: go to rsp
+            x86isa::write-*sp-when-64-bit-modep ; puts in !rgfi -- todo: go to set-rsp
+            ;; todo: combine these:
             x86isa::mv-nth-0-of-add-to-*sp-when-64-bit-modep
-            x86isa::mv-nth-1-of-add-to-*sp-when-64-bit-modep
-            x86isa::write-*sp-when-64-bit-modep
-            )))
+            x86isa::mv-nth-1-of-add-to-*sp-when-64-bit-modep)))
 
 (defund lifter-rules64-new ()
   (declare (xargs :guard t))
@@ -4321,47 +4333,45 @@
     msri-of-set-rbp
     msri-of-set-flag
 
-    ;; These help make failures more clear, by dropping irrelevant
-    ;; state writes inside rme-size:
-    mv-nth-0-of-rme-size-of-set-rip
-    mv-nth-0-of-rme-size-of-set-rax
-    mv-nth-0-of-rme-size-of-set-rbx
-    mv-nth-0-of-rme-size-of-set-rcx
-    mv-nth-0-of-rme-size-of-set-rdx
-    mv-nth-0-of-rme-size-of-set-rsi
-    mv-nth-0-of-rme-size-of-set-rdi
-    mv-nth-0-of-rme-size-of-set-r8
-    mv-nth-0-of-rme-size-of-set-r9
-    mv-nth-0-of-rme-size-of-set-r10
-    mv-nth-0-of-rme-size-of-set-r11
-    mv-nth-0-of-rme-size-of-set-r12
-    mv-nth-0-of-rme-size-of-set-r13
-    mv-nth-0-of-rme-size-of-set-r14
-    mv-nth-0-of-rme-size-of-set-r15
-    mv-nth-0-of-rme-size-of-set-rsp
-    mv-nth-0-of-rme-size-of-set-rbp
-    mv-nth-0-of-rme-size-of-set-undef ; move?
-    mv-nth-0-of-rme-size-of-set-mxcsr ; move?
+    ;; ;; These help make failures more clear, by dropping irrelevant
+    ;; ;; state writes inside rme-size (actually, we should now be pretty good at removing rme-size):
+    ;; mv-nth-0-of-rme-size-of-set-rip
+    ;; mv-nth-0-of-rme-size-of-set-rax
+    ;; mv-nth-0-of-rme-size-of-set-rbx
+    ;; mv-nth-0-of-rme-size-of-set-rcx
+    ;; mv-nth-0-of-rme-size-of-set-rdx
+    ;; mv-nth-0-of-rme-size-of-set-rsi
+    ;; mv-nth-0-of-rme-size-of-set-rdi
+    ;; mv-nth-0-of-rme-size-of-set-r8
+    ;; mv-nth-0-of-rme-size-of-set-r9
+    ;; mv-nth-0-of-rme-size-of-set-r10
+    ;; mv-nth-0-of-rme-size-of-set-r11
+    ;; mv-nth-0-of-rme-size-of-set-r12
+    ;; mv-nth-0-of-rme-size-of-set-r13
+    ;; mv-nth-0-of-rme-size-of-set-r14
+    ;; mv-nth-0-of-rme-size-of-set-r15
+    ;; mv-nth-0-of-rme-size-of-set-rsp
+    ;; mv-nth-0-of-rme-size-of-set-rbp
+    ;; mv-nth-0-of-rme-size-of-set-undef ; move?
+    ;; mv-nth-0-of-rme-size-of-set-mxcsr ; move?
 
-    mv-nth-1-of-rme-size-of-set-rip
-    mv-nth-1-of-rme-size-of-set-rax
-    mv-nth-1-of-rme-size-of-set-rbx
-    mv-nth-1-of-rme-size-of-set-rcx
-    mv-nth-1-of-rme-size-of-set-rdx
-    mv-nth-1-of-rme-size-of-set-rsi
-    mv-nth-1-of-rme-size-of-set-rdi
-    mv-nth-1-of-rme-size-of-set-r8
-    mv-nth-1-of-rme-size-of-set-r9
-    mv-nth-1-of-rme-size-of-set-r10
-    mv-nth-1-of-rme-size-of-set-r11
-    mv-nth-1-of-rme-size-of-set-r12
-    mv-nth-1-of-rme-size-of-set-r13
-    mv-nth-1-of-rme-size-of-set-r14
-    mv-nth-1-of-rme-size-of-set-r15
-    mv-nth-1-of-rme-size-of-set-rsp
-    mv-nth-1-of-rme-size-of-set-rbp
-
-    x86isa::mv-nth-2-of-rme-size-when-app-view ; move?
+    ;; mv-nth-1-of-rme-size-of-set-rip
+    ;; mv-nth-1-of-rme-size-of-set-rax
+    ;; mv-nth-1-of-rme-size-of-set-rbx
+    ;; mv-nth-1-of-rme-size-of-set-rcx
+    ;; mv-nth-1-of-rme-size-of-set-rdx
+    ;; mv-nth-1-of-rme-size-of-set-rsi
+    ;; mv-nth-1-of-rme-size-of-set-rdi
+    ;; mv-nth-1-of-rme-size-of-set-r8
+    ;; mv-nth-1-of-rme-size-of-set-r9
+    ;; mv-nth-1-of-rme-size-of-set-r10
+    ;; mv-nth-1-of-rme-size-of-set-r11
+    ;; mv-nth-1-of-rme-size-of-set-r12
+    ;; mv-nth-1-of-rme-size-of-set-r13
+    ;; mv-nth-1-of-rme-size-of-set-r14
+    ;; mv-nth-1-of-rme-size-of-set-r15
+    ;; mv-nth-1-of-rme-size-of-set-rsp
+    ;; mv-nth-1-of-rme-size-of-set-rbp
 
     if-of-set-rip-and-set-rip-same))
 
@@ -4391,30 +4401,46 @@
           (read-rules)
           (write-rules)
           (read-and-write-rules)
-          '(x86isa::rme08$inline
-            x86isa::rme16$inline
-            x86isa::rme32$inline
-            x86isa::rme64$inline
-            x86isa::rme128$inline
-            x86isa::rme-size$inline
-            x86isa::rime08$inline
-            x86isa::rime16$inline
-            x86isa::rime32$inline
-            x86isa::rime64$inline
-            x86isa::rime-size$inline
-            x86isa::wme08$inline
-            x86isa::wme16$inline
-            x86isa::wme32$inline
-            x86isa::wme64$inline
-            x86isa::wme128$inline
-            x86isa::wme-size$inline
+          '(rime08$inline
+            rime16$inline
+            rime32$inline
+            rime64$inline
+            rime-size$inline
+
+            wime08$inline
+            wime16$inline
+            wime32$inline
+            wime64$inline
+            wime-size$inline
+
+            rme08$inline
+            rme16$inline
+            rme32$inline
+            rme48$inline
+            rme64$inline
+            rme80$inline
+            rme128$inline
+            rme256$inline
+            rme-size$inline
+
+            wme08$inline
+            wme16$inline
+            wme32$inline
+            wme48$inline
+            wme64$inline
+            wme80$inline
+            wme128$inline
+            wme256$inline
+            wme-size$inline
+
             ea-to-la$inline
-            x86isa::read-*ip$inline
-            x86isa::write-*ip$inline
-            x86isa::add-to-*ip$inline
-            x86isa::read-*sp$inline
-            x86isa::write-*sp$inline
-            x86isa::add-to-*sp$inline
+
+            read-*ip$inline
+            write-*ip$inline
+            add-to-*ip$inline
+            read-*sp$inline
+            write-*sp$inline
+            add-to-*sp$inline
 
             ;; x86isa::data-segment-descriptor-attributesbits->e$inline
             ;; x86isa::data-segment-descriptor-attributesbits->d/b$inline
@@ -4504,7 +4530,7 @@
   '(run-until-stack-shorter-than-opener
     not-mv-nth-0-of-wme-size ;gets rid of error branch
     mv-nth-1-of-wme-size     ;introduces write-to-segment
-    mv-nth-1-of-rb-becomes-read
+    ;; mv-nth-1-of-rb-becomes-read
     ;; mv-nth-1-of-rb-1-becomes-read
     ;; x86isa::x86-fetch-decode-execute-base
     ))
@@ -4521,8 +4547,8 @@
   (append (debug-rules-common)
           (get-prefixes-openers)
           ;; todo: flesh out this list:
-          '(x86isa::wme-size-when-64-bit-modep-and-not-fs/gs-strong
-            x86isa::rme-size-when-64-bit-modep-and-not-fs/gs-strong
+          '(x86isa::rme-size-when-64-bit-modep-and-not-fs/gs-strong
+            x86isa::wme-size-when-64-bit-modep-and-not-fs/gs-strong
             ;; could consider things like these:
             ;; READ-OF-WRITE-IRREL2
             x86-fetch-decode-execute-opener-safe-64
@@ -4884,7 +4910,7 @@
      acl2::if-x-x-y-when-booleanp
      read-of-xw-irrel
      mod-of-plus-reduce-constants
-     mv-nth-1-of-rb-becomes-read
+     ;; mv-nth-1-of-rb-becomes-read
      mv-nth-1-of-wb-becomes-write
      read-of-xw-irrel
      read-of-set-flag
@@ -4922,7 +4948,7 @@
 (defun loop-lifter-invariant-preservation-rules ()
   (declare (xargs :guard t))
   (append (extra-loop-lifter-rules)
-          '(mv-nth-1-of-rb-becomes-read
+          '(;; mv-nth-1-of-rb-becomes-read
             read-of-write-irrel
             read-of-write-same
             )))

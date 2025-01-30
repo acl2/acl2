@@ -609,7 +609,8 @@
                             8 (READ-BYTE ADDR X86)))))
   :hints (("Goal" :in-theory (enable read))))
 
-;; todo: more like this for other sizes (256, 512)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defthm rml08-becomes-read
   (implies (app-view x86)
            (equal (rml08 lin-addr r-x x86)
@@ -672,7 +673,7 @@
   :hints (("Goal" :in-theory (e/d (rml80 rb-becomes-read)
                                   (acl2::equal-of-cons)))))
 
-(defthm rm128-becomes-read
+(defthm rml128-becomes-read
   (implies (app-view x86)
            (equal (rml128 lin-addr r-x x86)
                   (if (and (canonical-address-p (+ 15 lin-addr))
@@ -694,42 +695,37 @@
                                    ;; X86ISA::UNSIGNED-BYTE-P-WHEN-MXCSRBITS-P
                                    )))))
 
-;; todo:
-;; (defthm rm256-becomes-read
-;;   (implies (app-view x86)
-;;            (equal (rml256 lin-addr r-x x86)
-;;                   (if (and (canonical-address-p (+ 31 lin-addr))
-;;                            (canonical-address-p lin-addr))
-;;                       (mv nil (read 32 lin-addr x86) x86)
-;;                     (mv 'rml256 0 x86))))
-;; :hints (("Goal" :in-theory (e/d (rml80 rb-becomes-read)
-;;                                 (acl2::equal-of-cons)))))
+(defthm rml256-becomes-read
+  (implies (app-view x86)
+           (equal (rml256 lin-addr r-x x86)
+                  (if (and (canonical-address-p (+ 31 lin-addr))
+                           (canonical-address-p lin-addr))
+                      (mv nil (read 32 lin-addr x86) x86)
+                    (mv 'rml256 0 x86))))
+  :hints (("Goal" :in-theory (e/d (rml256 rb-becomes-read)
+                                  (acl2::equal-of-cons)))))
 
-;; todo:
-;; (defthm rm512-becomes-read
-;;   (implies (app-view x86)
-;;            (equal (rml512 lin-addr r-x x86)
-;;                   (if (and (canonical-address-p (+ 63 lin-addr))
-;;                            (canonical-address-p lin-addr))
-;;                       (mv nil (read 64 lin-addr x86) x86)
-;;                     (mv 'rml512 0 x86))))
-;; :hints (("Goal" :in-theory (e/d (rml80 rb-becomes-read)
-;;                                 (acl2::equal-of-cons)))))
-
+(defthm rml512-becomes-read
+  (implies (app-view x86)
+           (equal (rml512 lin-addr r-x x86)
+                  (if (and (canonical-address-p (+ 63 lin-addr))
+                           (canonical-address-p lin-addr))
+                      (mv nil (read 64 lin-addr x86) x86)
+                    (mv 'rml512 0 x86))))
+:hints (("Goal" :in-theory (e/d (rml512 rb-becomes-read)
+                                (acl2::equal-of-cons)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm x86isa::rme08-of-0-when-not-fs/gs-becomes-read
-  (implies (and (not (equal seg-reg 4))
-                (not (equal seg-reg 5))
-                (canonical-address-p eff-addr)
-                (app-view x86)
-                (x86p x86) ; why?
-                )
-           (equal (x86isa::rme08 0 eff-addr seg-reg r-x x86) ; 0 means 64-bit-mode
-                  (mv nil
-                        (read 1 eff-addr x86)
-                        x86))))
+(defthm rme08-of-0-when-not-fs/gs-becomes-read
+  (implies (and (not (equal seg-reg *fs*))
+                (not (equal seg-reg *gs*))
+                (app-view x86))
+           (equal (rme08 0 eff-addr seg-reg r-x x86) ; 0 means 64-bit-mode
+                  (if (canonical-address-p eff-addr)
+                      (mv nil (read 1 eff-addr x86) x86)
+                    (mv (list :non-canonical-address eff-addr) 0 x86))))
+  :hints (("Goal" :in-theory (e/d (rme08) (rml08)))))
 
 ;; ;; Just the reverse of the above
 ;; (defthmd read-becomes-mv-nth-1-of-rb
