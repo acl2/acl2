@@ -522,10 +522,12 @@
   (integerp (!MXCSRBITS->IE$INLINE bit mxcsr)))
 
 (defthm unsigned-byte-p-32-of-!MXCSRBITS->IE
-  (unsigned-byte-p 32 (!MXCSRBITS->IE$INLINE bit mxcsr)))
+  (unsigned-byte-p 32 (!MXCSRBITS->IE$INLINE bit mxcsr))
+  :hints (("Goal" :in-theory (enable x86isa::unsigned-byte-p-when-mxcsrbits-p))))
 
 (defthm unsigned-byte-p-32-of-!MXCSRBITS->DE
-  (unsigned-byte-p 32 (!MXCSRBITS->DE$INLINE bit mxcsr)))
+  (unsigned-byte-p 32 (!MXCSRBITS->DE$INLINE bit mxcsr))
+  :hints (("Goal" :in-theory (enable x86isa::unsigned-byte-p-when-mxcsrbits-p))))
 
 (defthm integerp-of-!MXCSRBITS->DE
   (integerp (!MXCSRBITS->DE$INLINE bit mxcsr)))
