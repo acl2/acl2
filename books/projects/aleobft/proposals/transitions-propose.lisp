@@ -32,9 +32,9 @@
     "A correct validator creates a proposal only under certain conditions;
      in particular, it never creates an equivocal proposal,
      i.e. one with the same author and round as an existing one.
-     A faulty validator is much less constrained,
-     but it cannot forge signatures
-     (if a validator's private key is compromised,
+     A faulty validator is not so constrained,
+     but it cannot forge signatures of correct validators
+     (because if a validator's private key is compromised,
      the validator is considered faulty).")
    (xdoc::p
     "Either way, the proposal is broadcast to other validators.
@@ -45,7 +45,7 @@
     "If the validator is correct,
      it stores the proposal into its internal state,
      along with information about endorsements received by other validators;
-     initially there are no endorsements."))
+     initially there are no such endorsements."))
   :order-subtopics t
   :default-parent t)
 
@@ -64,10 +64,16 @@
    (xdoc::p
     "The author of the proposal identifies
      the validator that creates the proposal.
-     Since signatures cannot be forged,
+     Since signatures of correct validators cannot be forged,
      a faulty validator cannot impersonate a correct one,
      and thus the fact that the proposal's author is a correct validator
      means that the proposal is indeed created by that validator.
+     If the author of the proposal is faulty,
+     it does not actually matter whether
+     it actually originates from that validator,
+     or instead some other (faulty) validator
+     impersonating the author;
+     the correctness of the protocol does not not depend on that.
      If the author of the proposal is a faulty validator,
      there are no other requirements:
      our model assumes that all transactions are valid,
@@ -116,33 +122,20 @@
    (xdoc::p
     "A correct validator broadcasts the proposal to
      exactly all the other validators in the active committee,
-     which it calculates as already mentioned above.")
+     which it calculates as already mentioned above.
+     These may include both correct and faulty validators:
+     the proposal author cannot distinguish them.")
    (xdoc::p
-    "A faulty validator may send the proposal to any set of validators.
-     Thus the only requirement in this case is that
-     the destination addresses are a subset of the correct validators.
-     There is no need to model the sending to faulty validators:
-     since, as explained in @(tsee system-state),
-     we do not explicitly model (the states of) faulty validators,
-     sending a message to a faulty validator would have no effect in our model,
-     because faulty validators can behave arbitrarily
-     (except for forging signatures and things like that)
-     regardless of which messages they receive or not.
-     By not necessarily sending the message to all correct validators,
-     our model avoids assuming any form of reliable broadcast
-     (in the technical sense of the BFT literature).
-     Equivalently, we could have faulty validators
-     send messages to all correct validators,
-     since our model, as noted above,
-     does not require messages to be eventually delivered.
+    "A faulty validator may send the proposal to any set of validators,
+     correct or faulty, whether part of (any) committees or not.")
+   (xdoc::p
+    "Note that we do not model any form of reliable broadcast here.
      For the purpose of properties like blockchain nonforking,
-     it does not in fact matter there there is any form of reliable broadcast;
+     it does not matter there there is any form of reliable broadcast;
      however, it matters for other kinds of properties,
      so we plan to refine our model when studying those other properties."))
   (b* (((proposal prop) prop)
-       ((when (not (set::in prop.author (correct-addresses systate))))
-        (set::subset (address-set-fix dests)
-                     (correct-addresses systate)))
+       ((when (not (set::in prop.author (correct-addresses systate)))) t)
        ((validator-state vstate) (get-validator-state prop.author systate))
        ((unless (= prop.round vstate.round)) nil)
        (commtt (active-committee-at-round prop.round vstate.blockchain))
