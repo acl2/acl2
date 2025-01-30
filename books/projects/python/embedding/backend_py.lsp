@@ -247,6 +247,16 @@ Entries in the type table are of one of the following forms:
       `((:name . ,(getf ty ':name)) (:kind . ,(getf ty ':kind)))
       nil)))
 
+
+(defun make-cl-seed (val)
+  (assert (< val (expt 2 32)))
+  #+SBCL (let ((byte-array (make-array '(4) :element-type '(unsigned-byte 8))))
+           (setf (aref byte-array 0) (ldb (byte 8 0) val))
+           (setf (aref byte-array 1) (ldb (byte 8 8) val))
+           (setf (aref byte-array 2) (ldb (byte 8 16) val))
+           (setf (aref byte-array 3) (ldb (byte 8 24) val))
+           (sb-ext:seed-random-state byte-array)))
+
 #|
 (defun flatten-alist (alist)
   (loop for (k . v) in alist
