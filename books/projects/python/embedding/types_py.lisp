@@ -288,29 +288,3 @@
 
 
 (acl2s-defaults :set defdata-aliasing-enabled *types-py-defdata-aliasing-was-enabled*)
-
-#|
-(defun pow-two-ints-help (lo hi)
-  (if (or (not (integerp lo)) (not (integerp hi)) (>= lo hi))
-      nil
-    (let ((pow (expt 2 lo)))
-      (append (remove-duplicates (list pow (- pow) (+ pow 1) (- pow 1)))
-              (pow-two-ints-help (1+ lo) hi)))))
-
-(defun pow-two-ints (lo hi)
-  (remove-duplicates (pow-two-ints-help lo hi)))
-
-;; Values were obtained from my machine's sys.float_info
-(defdata py-float-edge-cases
-         (enum (list 
-                 (* 17976931348623157 (expt 10 292))
-                 (* 22250738585072014 (expt 10 -324)))))
-
-(defdata py-float-pows (enum (pow-two-ints 0 8)))
-(defdata py-float (oneof 
-                    0 
-                    py-float-special-cases 
-                    py-float-pows
-                    py-float-edge-cases
-                    rational))
-|#

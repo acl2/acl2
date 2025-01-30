@@ -33,7 +33,6 @@ Entries in the type table are of one of the following forms:
         `(:name ,name :kind "parametric" :defdata-ty ,defdata-ty-lambda)))
 
 (defun get-type (name)
-  ;;(print name)
   (let* ((name (string-downcase name))
          (alias (gethash name *alias-table*)))
     (if alias (get-type alias)
@@ -44,8 +43,6 @@ Entries in the type table are of one of the following forms:
         append (list key val)))
 
 (defun init-types ()
-  ;;(add-nonparametric-type "character" 'acl2s::character)
-  ;;(add-alias-type "char" "character")
   (add-nonparametric-type "integer" 'acl2s::py-integer)
   (add-alias-type "int" "integer")
   (add-nonparametric-type "float" 'acl2s::py-float)
@@ -107,15 +104,13 @@ Entries in the type table are of one of the following forms:
                (fresh-name (intern-sym-in-package :ACL2s (gensym "TY")))
                (query `(acl2s::defdata ,fresh-name ,ty-defdata ,@(when is-list '(:do-not-alias t))))
                (res (acl2s-interface::acl2s-event query)))
-          (format t "~a~%" query)
-          (finish-output)
           (when (car res) (error "ERROR: Error occurred when running query ~S" query))
           ;; Attach the appropriate pylistof enumerator when needed
           (when is-list
             (let* ((attach-query (acl2s::attach-pylistof-wrap
                                   fresh-name
                                   (cadr ty-defdata)))
-                   (res2 (progn (format t "~a~%" attach-query) (finish-output) (acl2s-interface::acl2s-event attach-query))))
+                   (res2 (acl2s-interface::acl2s-event attach-query)))
               (when (car res2) (error "ERROR: Error occurred when running generate-attach-pylistof-enumerators query"))))
           (setf (gethash ty-defdata *define-type-cache*) fresh-name))))))
 
@@ -136,8 +131,6 @@ Entries in the type table are of one of the following forms:
 (defun generate-examples (ty n random-state)
   (let* ((temporary-ty-name (if (stringp ty) (getf (get-type ty) ':defdata-ty) (define-type ty)))
          (enumerator (get-enumerator temporary-ty-name)))
-    (print temporary-ty-name)
-    (print enumerator)
     (loop for i below n
           collect (funcall enumerator (random ENUM-MAX-INPUT random-state)))))
 
@@ -154,15 +147,11 @@ Entries in the type table are of one of the following forms:
                    ,defdata-name
                    (acl2s::record 
                      ,@(mapcar (lambda (x)
-                                 (print (get-type (cdr x)))
                                 `(,(read-from-string (car x)) 
                                    . 
                                    ,(getf (get-type (cdr x)) ':defdata-ty)))
                          fields))))
          (res (acl2s-interface::acl2s-event query)))
-    (print query)
-    (format t "~a~%" res)
-    (finish-output)
     (when (car res) (error "ERROR: Error occurred when running query ~S" query))
     (add-nonparametric-type (string-downcase name) defdata-name)
     name))
@@ -218,16 +207,14 @@ Entries in the type table are of one of the following forms:
                    ,defdata-name
                    ,@defdata-union-args)))
          (res (acl2s-interface::acl2s-event query)))
-    (print defdata-union-args)
-    (print query)
-    (format t "~a~%" res)
-    (finish-output)
     (if (car res)
       (error "ERROR: Error occurred when running query ~S" query)
       (progn
         (add-nonparametric-type (string-downcase name) defdata-name)
         name))))
 
+
+;; Query the embedding for a particular name
 (defun type-query (name)
   (let* ((ty (get-type name)))
     (if ty
@@ -235,6 +222,7 @@ Entries in the type table are of one of the following forms:
       nil)))
 
 
+;; Create a common lisp seed object, for seeding the random number generator
 (defun make-cl-seed (val)
   (assert (< val (expt 2 32)))
   #+SBCL (let ((byte-array (make-array '(4) :element-type '(unsigned-byte 8))))
@@ -243,53 +231,3 @@ Entries in the type table are of one of the following forms:
            (setf (aref byte-array 2) (ldb (byte 8 16) val))
            (setf (aref byte-array 3) (ldb (byte 8 24) val))
            (sb-ext:seed-random-state byte-array)))
-
-#|
-(defun flatten-alist (alist)
-  (loop for (k . v) in alist
-        append (list k v)))
-
-(defparameter f (json::decode-json-from-string "{\"kind\":\"parametric\",\"name\":\"range\",\"args\":[\"integer\",0,10]}"))
-(defparameter s (json::decode-json-from-string "{\"kind\":\"nonparametric\",\"name\":\"string\"}"))
-
-(funcall (get-enumerator (define-type (flatten-alist f))) 0)
-(funcall (get-enumerator (define-type (flatten-alist s))) 0)
-
-(acl2s::quiet-mode-on)
-
-(generate-examples (flatten-alist f) 100)
-(generate-examples (flatten-alist s) 100)
-|#
-#|
-(require :sb-sprof)
-(sb-sprof:with-profiling (:mode :cpu :MAX-SAMPLES 10000 :sample-interval 0.001 :loop t) (progn (generate-examples (flatten-alist f) 100) nil))
-
-(SB-SPROF:START-PROFILING :MODE :CPU :MAX-SAMPLES 10000
-                          :SAMPLE-INTERVAL 0.001 :THREADS :ALL)
-(loop (when (>= sb-sprof::trace-count 1000) (return))
-      (progn (generate-examples (flatten-alist f) 1000) nil))
-
-(sb-sprof:report)
-(sb-sprof:reset)
-(sb-sprof:stop-profiling)
-|#
-#|
-(defun defdata-events (a1 wrld)
-  (b* (((list D kwd-alist) a1) ;a1 is the result of parse-defdata
-       (d-alist (cdar d))
-       (name (get1 'name d-alist))
-       (odef (get1 'odef (cdar d)))
-       (pdef (get1 'pdef (cdar d)))
-       (ndef (get1 'ndef (cdar d)))
-       (record? (and (consp odef) (equal 'record (car odef))))
-       (global-alias-off?
-        (not (acl2s::get-acl2s-defaults :defdata-aliasing-enabled wrld)))
-       (do-not-alias? (or record? global-alias-off? (get1 :do-not-alias kwd-alist)))
-       (M (type-metadata-table wrld))
-       (match-def (match-alist name :DEF odef M))
-       (match-def (or match-def (match-alist name :PRETTYIFIED-DEF pdef M)))
-       (match-def (or match-def (match-alist name :NORMALIZED-DEF ndef M))))
-    (if (and match-def (not do-not-alias?))
-        `(defdata-alias ,name ,match-def)
-      (defdata-core-events a1 wrld))))
-|#
