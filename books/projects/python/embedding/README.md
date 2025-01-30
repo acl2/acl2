@@ -1,6 +1,7 @@
 # Python Embedding in ACL2s
 
 Authors: Samuel Xifaras and Andrew Walter
+
 Prepared for the 2025 ACL2 Workshop
 
 
