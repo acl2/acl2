@@ -178,15 +178,14 @@
                   :mode :program))
   (if (not (and (consp event)
                 (symbolp (car event))))
-      ;; todo: can this happen?
-      "..."
+      (er hard? 'abbreviate-event "Unexpected event: ~X01." event nil)
     (let ((fn (car event)))
       (case fn
         (local (if (= 1 (len (cdr event)))
                    (concatenate 'string "(local "
                                 (abbreviate-event (cadr event))
                                 ")")
-                 "(local ...)" ; can this happen?
+                 (er hard? 'abbreviate-event "Unexpected event: ~X01." event nil) ;; "(local ...)" ; can this happen?
                  ))
         (include-book (print-to-string event))
         (otherwise
@@ -437,7 +436,7 @@
    (let ((name (cadr event)))
      ;; Do the proof and time it
      ;; todo: consider excluding prep-lemmas and prep-books from the timing, somehow
-     ;; could try dropping prep-books or any local prep lemmas
+     ;; could try dropping prep-books or any local prep lemmas -- see improve-book
      ;; todo: save event date only on the second try?  or avoid that, since it can interfere with the timing?
      (mv-let (erp elapsed-time state)
        (submit-and-revert-event-twice-with-time `(saving-event-data ,event) nil nil state)
@@ -495,6 +494,7 @@
                                                   (if erp
                                                       (mv erp state)
                                                     (submit-event `(skip-proofs ,event) nil t state))))
+         ;; todo: try dropping local events (that is a kind of speed-up) -- see improve-book
          (local (speed-up-and-submit-event (farg1 event) synonym-alist min-time-savings min-event-time print throw-errorp state)) ; strip the local ; todo: this submits it as non-local (ok?)
          ;; For a call of with-output, the form is the last arg:
          (with-output (speed-up-and-submit-event (car (last (fargs event))) synonym-alist min-time-savings min-event-time print throw-errorp state))
@@ -524,7 +524,8 @@
          ;; events (submitting each as we go), then we revert the world and
          ;; finally submit the whole encapsulate:
          (encapsulate
-             (let ((events (rest (fargs event)))) ; skip the signatures
+             (let (;; (signatures (first (fargs event))) ; we ignore the signatures
+                   (events (rest (fargs event))))
                (mv-let (erp val state)
                  (revert-world
                   (mv-let (erp state)
