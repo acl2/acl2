@@ -325,22 +325,22 @@ minor boilerplate theorems.</p>
 
 <h5>:verbosep</h5>
 
-<p>@(':verbosep') can be set to T to avoid suppressing theorem prover output
+<p>@(':verbosep') can be set to @('t') to avoid suppressing theorem prover output
 during the resulting forms.  This can be useful if the macro causes an error
 and you need to debug it.</p>
 
 
 <h5>:define</h5>
 
-<p>@(':define') is NIL by default; if set to T, then the equivalence relation
-is assumed not to exist yet, and is defined as equality of fix, with
+<p>@(':define') is @('nil') by default; if set to @('t'), then the equivalence
+relation is assumed not to exist yet, and is defined as equality of fix, with
 appropriate rules to rewrite the fix away under the equivalence and to
 propagate the congruence into the fix.</p>
 
 
 <h5>:forward</h5>
 
-<p>Only matters when @('define') is T.  When @(':forward') is T, four
+<p>Only matters when @('define') is @('t').  When @(':forward') is @('t'), four
 additional lemmas will be proved about the new equivalence relation and stored
 as @(see acl2::forward-chaining) rules.  In particular, the following will all
 forward-chain to @('(widget-equiv x y)'):</p>
@@ -355,37 +355,37 @@ forward-chain to @('(widget-equiv x y)'):</p>
 
 <h5>:hints</h5>
 
-<p>Only matters when @('define') is NIL.  This allows you to give @(see
+<p>Only matters when @('define') is @('nil').  This allows you to give @(see
 acl2::hints) for the theorem that shows the new equivalence relation holds
 between @('x') and @('y') exactly when @('(equal (widget-fix x) (widget-fix
 y))').</p>
 
-<p>(When @('define') is T we don't need to prove this, because it's exactly the
-definition of the equivalence relation we introduce.)</p>
+<p>(When @('define') is @('t') we don't need to prove this, because it's
+exactly the definition of the equivalence relation we introduce.)</p>
 
 
 <h5>:inline</h5>
 
-<p>Minor efficiency option, only matters when @(':define') is T.  When
-@(':inline') is T (which is the default), the new equivalence relation's
+<p>Minor efficiency option, only matters when @(':define') is @('t').  When
+@(':inline') is @('t') (which is the default), the new equivalence relation's
 function will be introduced using @(see defun-inline) instead of @(see
 defun).</p>
 
 
 <h5>:equal</h5>
 
-<p>Minor efficiency option, only matters when @('define') is T.  By default,
-the new equivalence relation will compute the @('equal') of the fixes.  In some
-cases, your type may be so restrictive that a more efficient equality check
-like @(see eq) or @(see eql) can be used instead.  For instance, if you are
-defining character equivalence, you might use @(':equal eql') so that your new
-equivalence relation will compute the @('eql') of the fixes instead of the
+<p>Minor efficiency option, only matters when @('define') is @('t').  By
+default, the new equivalence relation will compute the @('equal') of the fixes.
+In some cases, your type may be so restrictive that a more efficient equality
+check like @(see eq) or @(see eql) can be used instead.  For instance, if you
+are defining character equivalence, you might use @(':equal eql') so that your
+new equivalence relation will compute the @('eql') of the fixes instead of the
 @('equal') of the fixes.</p>
 
 
 <h5>:executablep</h5>
 
-<p>@(':executablep') should be set to NIL if either the fixing function or
+<p>@(':executablep') should be set to @('nil') if either the fixing function or
 predicate are @(see acl2::non-executable) or especially expensive.  This mainly
 affects, in @('deffixequiv') and @('deffixequiv-mutual'), whether a theorem is
 introduced that normalizes constants by applying the fixing function to
@@ -956,7 +956,7 @@ expands to a constructor call but uses the given defaults.</li>
 <li>A @(see b*) binder @('sandwich'), like those in @(see std::defaggregate).</li>
 </ul>
 
-<p>Much of this&mdash;the make/change macros, accessor names, b*
+<p>Much of this&mdash;the make/change macros, accessor names, @(see b*)
 binders&mdash;is nearly identical to @(see std::defaggregate).  If you have
 used @('defaggregate'), switching to @('defprod') should be very
 comfortable.</p>
@@ -1077,7 +1077,7 @@ when you print them it is still pretty easy to tell what the fields are.</dd>
 
 <dt>@(':hons')</dt>
 
-<dd>NIL by default.  When T, the constructor is defined using @(see hons)
+<dd>@('nil') by default.  When @('t'), the constructor is defined using @(see hons)
 rather than @(see cons), so your structures will always be structure shared.
 This may improve memory efficiency in certain cases but is probably not a good
 idea for most structures.</dd>
@@ -1160,8 +1160,9 @@ fixing functions for @('atype') and @('btype'), respectively):</p>
       (foo-req a b c)))
  })
 
-<p>Notice the LET, rather than LET*, binding the fields to their reqfixes.  It
-would NOT be sufficient for this to be true with a LET*.</p>")
+<p>Notice the @('let'), rather than @('let*'), binding the fields to their
+reqfixes.  It would NOT be sufficient for this to be true with a
+@('let*').</p>")
 
 
 (defxdoc deftagsum
@@ -1284,8 +1285,8 @@ the arrangement of fields within the product object (as in @(see defprod)),</li>
 <li>@(':inline'), determining whether the constructor and accessors are inlined
 or not.  This may be @(':all') or a subset of @('(:xtor :acc)').  Defaults to
 @('(:acc)') if not overridden.</li>
-<li>@(':hons'), NIL by default, determining whether objects are constructed
-with @(see hons).</li>
+<li>@(':hons'), @('nil') by default, determining whether objects are
+constructed with @(see hons).</li>
 <li>@(':base-name'), overrides the name of the constructor and the base name
 used to generate accessors.</li>
 <li>@(':require') adds a dependent type requirement; see the section on this
@@ -1299,7 +1300,7 @@ feature in @(see defprod).</li>
 <ul>
 
 <li>@(':pred'), @(':fix'), @(':equiv'), @(':kind'), @(':count'): override
-default function names.  @(':count') may also be set to NIL, to turn of
+default function names.  @(':count') may also be set to @('nil'), to turn of
 generation of the count function.</li>
 
 <li>@(':parents'), @(':short'), @(':long'): add xdoc about the type.</li>
@@ -1344,7 +1345,7 @@ terminate.
 
 <p>What is the problem?  As the text suggests, the problem lies in what we
 should do when given an atom as input to the fixing function.  With the default
-measure of @('(acl2-count x)'), we're not allowed to recur on, say, @('NIL'),
+measure of @('(acl2-count x)'), we're not allowed to recur on, say, @('nil'),
 because its acl2-count is already 0.  This is fine as long as we can pick a
 product type that has no recursive components, but in this case, the @(':pair')
 and @(':call') product both do.  However, the @(':call') product could have an
