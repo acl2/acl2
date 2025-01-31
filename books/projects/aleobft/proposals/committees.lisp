@@ -331,6 +331,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define committee-validators-stake ((vals address-setp) (commtt committeep))
+  :returns (stake natp)
+  :short "Total stake of a set of validators with respect to a committee."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The validators may or may not be members of the committee.
+     We add up the stake of the validators who are members,
+     while the validators who are not members contribute 0 stake."))
+  (committee-members-stake (set::intersect (address-set-fix vals)
+                                           (committee-members commtt))
+                           commtt)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defsection genesis-committee
   :short "Genesis committee."
   :long
