@@ -131,13 +131,6 @@ the @('fault') field instead.</li>
   :parents (decoding-and-spec-utils)
   :short "Operations to manipulate instruction pointers."
 
-  (defthm-signed-byte-p i48p-xr-rip
-    :hyp t
-    :bound 48
-    :concl (xr :rip i x86)
-    :gen-linear t
-    :gen-type t)
-
   (define read-*ip ((proc-mode :type (integer 0 #.*num-proc-modes-1*))
                     x86)
     :returns (*ip i48p :hyp (x86p x86))
