@@ -1075,14 +1075,14 @@ when you print them it is still pretty easy to tell what the fields are.</dd>
 })</dd>
 
 
-<dt>:hons</dt>
+<dt>@(':hons')</dt>
 
 <dd>NIL by default.  When T, the constructor is defined using @(see hons)
 rather than @(see cons), so your structures will always be structure shared.
 This may improve memory efficiency in certain cases but is probably not a good
 idea for most structures.</dd>
 
-<dt>:inline</dt>
+<dt>@(':inline')</dt>
 
 <dd>Default: @('(:acc :fix)'), meaning that the accessors and fixing function,
 which for execution purposes is just the identity, will be defined as an @(see
