@@ -48,7 +48,7 @@
 
 ;; ======================================================================
 
-(local (include-book "guard-helpers"))
+;(local (include-book "guard-helpers"))
 ; (local (include-book "centaur/bitops/ihs-extensions" :dir :system)) ;; Redundant
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
@@ -1332,6 +1332,21 @@
 
 (local (in-theory (e/d* () (member-equal))))
 
+(local
+  (defthmd las-to-pas-opener-when-canonical
+    (implies (and (posp n)
+                  (canonical-address-p lin-addr))
+             (equal (las-to-pas n lin-addr r-w-x x86)
+                    (b* (((mv flg p-addr x86)
+                          (ia32e-la-to-pa lin-addr r-w-x x86))
+                         ((when flg) (mv flg nil x86))
+                         ((mv flg p-addrs x86)
+                          (las-to-pas (1- n)
+                                      (1+ lin-addr)
+                                      r-w-x x86)))
+                      (mv flg (if flg nil (cons p-addr p-addrs))
+                          x86))))))
+
 (define rml08 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
                (r-x      :type (member  :r :x))
                (x86))
@@ -2218,12 +2233,9 @@
   :parents (linear-memory)
   :guard (canonical-address-p lin-addr)
   :guard-hints (("Goal"
-                 :expand ((las-to-pas 6 lin-addr r-x x86)
-                          (las-to-pas 5 (+ 1 lin-addr) r-x (mv-nth 2 (ia32e-la-to-pa lin-addr r-x x86))))
                  :in-theory (e/d (rb-and-rvm48
-                                   rml08
-                                   rb-and-rml48-helper-1
-                                   rb-and-rml48-helper-2)
+                                  las-to-pas-opener-when-canonical
+                                  push-ash-inside-logior)
                                  (not
                                    (:rewrite acl2::ash-0)
                                    (:rewrite acl2::zip-open)
@@ -2260,9 +2272,9 @@
                             (rb 6 lin-addr r-x x86)))
             :hints (("Goal"
                      :in-theory (e/d (rb-and-rvm48-helper
-                                       rml48-guard-proof-helper)
+                                      push-ash-inside-logior)
                                      (signed-byte-p
-                                       force (force)))))))
+                                      force (force)))))))
 
   (if (mbt (canonical-address-p lin-addr))
 
@@ -2446,9 +2458,8 @@
   :guard (canonical-address-p lin-addr)
 
   :guard-hints (("Goal"
-                 :expand ((las-to-pas 6 lin-addr :w x86)
-                          (las-to-pas 5 (+ 1 lin-addr) :w (mv-nth 2 (ia32e-la-to-pa lin-addr :w x86))))
-                 :in-theory (e/d (wb-and-wvm48)
+                 :in-theory (e/d (wb-and-wvm48
+                                  las-to-pas-opener-when-canonical)
                                  ((:rewrite acl2::ash-0)
                                   (:rewrite acl2::zip-open)
                                   (:linear bitops::logior-<-0-linear-2)
@@ -2575,17 +2586,9 @@
   :guard (canonical-address-p lin-addr)
   :guard-hints
   (("Goal"
-    :expand
-    ((las-to-pas 8 lin-addr r-x x86)
-     (las-to-pas 7 (+ 1 lin-addr) r-x (mv-nth 2 (ia32e-la-to-pa lin-addr r-x x86)))
-     (las-to-pas 6 (+ 2 lin-addr) r-x
-                 (mv-nth 2 (ia32e-la-to-pa (+ 1 lin-addr) r-x
-                                           (mv-nth 2 (ia32e-la-to-pa lin-addr r-x x86)))))
-     (las-to-pas 5 (+ 3 lin-addr) r-x
-                 (mv-nth 2 (las-to-pas 6 (+ 2 lin-addr) r-x
-                                       (mv-nth 2 (ia32e-la-to-pa (+ 1 lin-addr) r-x
-                                                                 (mv-nth 2 (ia32e-la-to-pa lin-addr r-x x86))))))))
-    :in-theory (e/d (rb-and-rvm64 rml08)
+    :in-theory (e/d (rb-and-rvm64
+                     las-to-pas-opener-when-canonical
+                     push-ash-inside-logior)
                     (not
                       (:rewrite acl2::ash-0)
                       (:rewrite acl2::zip-open)
@@ -2595,9 +2598,6 @@
 
   :prepwork
   (
-   ;; Maybe we don't need this lemma anymore?
-   (local (in-theory (e/d* () (rb-and-rvm64-helper))))
-
    (local
      (defthmd rb-and-rvm64-helper-1
               (implies (and (app-view x86)
@@ -2645,10 +2645,8 @@
                                       (n 8)))
                      :in-theory (e/d (rb-and-rvm64-helper-1
                                        rb-and-rvm64-helper-2)
-                                     (rb-and-rvm32-helper
-                                       rml64-guard-proof-helper
-                                       signed-byte-p
-                                       force (force)))))))
+                                     (signed-byte-p
+                                      force (force)))))))
 
   (if (mbt (canonical-address-p lin-addr))
 
@@ -2877,17 +2875,7 @@
 
   :guard-hints
   (("Goal"
-    :expand
-    ((las-to-pas 8 lin-addr :w x86)
-     (las-to-pas 7 (+ 1 lin-addr) :w (mv-nth 2 (ia32e-la-to-pa lin-addr :w x86)))
-     (las-to-pas 6 (+ 2 lin-addr) :w
-                 (mv-nth 2 (ia32e-la-to-pa (+ 1 lin-addr) :w
-                                           (mv-nth 2 (ia32e-la-to-pa lin-addr :w x86)))))
-     (las-to-pas 5 (+ 3 lin-addr) :w
-                 (mv-nth 2 (las-to-pas 6 (+ 2 lin-addr) :w
-                                       (mv-nth 2 (ia32e-la-to-pa (+ 1 lin-addr) :w
-                                                                 (mv-nth 2 (ia32e-la-to-pa lin-addr :w x86))))))))
-    :in-theory (e/d (wb-and-wvm64)
+    :in-theory (e/d (wb-and-wvm64 las-to-pas-opener-when-canonical)
                     ((:rewrite acl2::ash-0)
                      (:rewrite acl2::zip-open)
                      (:linear bitops::logior-<-0-linear-2)
@@ -3035,20 +3023,9 @@
   :guard (canonical-address-p lin-addr)
   :guard-hints
   (("Goal"
-    :expand
-    ((las-to-pas 10 lin-addr r-x x86)
-     (las-to-pas 9 (+ 1 lin-addr) r-x (mv-nth 2 (ia32e-la-to-pa lin-addr r-x x86)))
-     (las-to-pas 8 (+ 2 lin-addr) r-x
-                 (mv-nth 2 (ia32e-la-to-pa (+ 1 lin-addr) r-x
-                                           (mv-nth 2 (ia32e-la-to-pa lin-addr r-x x86)))))
-     (las-to-pas 7 (+ 3 lin-addr) r-x
-                 (mv-nth 2 (ia32e-la-to-pa (+ 2 lin-addr) r-x
-                                           (mv-nth 2 (ia32e-la-to-pa
-                                                       (+ 1 lin-addr) r-x
-                                                       (mv-nth 2 (ia32e-la-to-pa lin-addr r-x x86))))))))
     :in-theory (e/d (rb-and-rvm80
-                      rml80-in-sys-view-guard-proof-helper
-                      rml08)
+                     las-to-pas-opener-when-canonical
+                     push-ash-inside-logior)
                     (not
                       (:rewrite acl2::ash-0)
                       (:rewrite acl2::zip-open)
@@ -3065,8 +3042,7 @@
                      (equal (rvm80 lin-addr x86)
                             (rb 10 lin-addr r-x x86)))
             :hints (("Goal"
-
-                     :in-theory (e/d (rvm80 rb-and-rvm16 rb-and-rvm64 rml80-guard-proof-helper)
+                     :in-theory (e/d (rvm80 rb-and-rvm16 rb-and-rvm64 push-ash-inside-logior)
                                      (force (force)))))))
 
   (if (mbt (canonical-address-p lin-addr))
@@ -3288,18 +3264,7 @@
   :guard (canonical-address-p lin-addr)
   :guard-hints
   (("Goal"
-    :expand
-    ((las-to-pas 10 lin-addr :w x86)
-     (las-to-pas 9 (+ 1 lin-addr) :w (mv-nth 2 (ia32e-la-to-pa lin-addr :w x86)))
-     (las-to-pas 8 (+ 2 lin-addr) :w
-                 (mv-nth 2 (ia32e-la-to-pa (+ 1 lin-addr) :w
-                                           (mv-nth 2 (ia32e-la-to-pa lin-addr :w x86)))))
-     (las-to-pas 7 (+ 3 lin-addr) :w
-                 (mv-nth 2 (ia32e-la-to-pa (+ 2 lin-addr) :w
-                                           (mv-nth 2 (ia32e-la-to-pa
-                                                       (+ 1 lin-addr) :w
-                                                       (mv-nth 2 (ia32e-la-to-pa lin-addr :w x86))))))))
-    :in-theory (e/d (wb-and-wvm80)
+    :in-theory (e/d (wb-and-wvm80 las-to-pas-opener-when-canonical)
                     ((:rewrite acl2::ash-0)
                      (:rewrite acl2::zip-open)
                      (:linear bitops::logior-<-0-linear-2)
@@ -3446,22 +3411,6 @@
 ; Thanks to Dmitry Nadezhin for proving the equivalence of rm/wml128
 ; to rb/wb.
 
-(local
-  (defthmd las-to-pas-opener
-    (implies (posp n)
-             (equal (las-to-pas n lin-addr r-w-x x86)
-                    (B* (((UNLESS (CANONICAL-ADDRESS-P LIN-ADDR))
-                          (MV T NIL X86))
-                         ((MV FLG P-ADDR X86)
-                          (IA32E-LA-TO-PA LIN-ADDR R-W-X X86))
-                         ((WHEN FLG) (MV FLG NIL X86))
-                         ((MV FLG P-ADDRS X86)
-                          (LAS-TO-PAS (1- N)
-                                      (1+ LIN-ADDR)
-                                      R-W-X X86)))
-                      (MV FLG (IF FLG NIL (CONS P-ADDR P-ADDRS))
-                          X86))))))
-
 (define rml128 ((lin-addr :type (signed-byte #.*max-linear-address-size*))
                 (r-x      :type (member :r :x))
                 (x86))
@@ -3469,13 +3418,10 @@
   :parents (linear-memory)
   :guard (canonical-address-p lin-addr)
   :guard-hints (("Goal"
-                 :in-theory (e/d (las-to-pas-opener
+                 :in-theory (e/d (las-to-pas-opener-when-canonical
                                   rb-and-rvm128
-                                   ;rml08 rml64
-                                   rb-and-rvm128-helper-1
-                                   rb-and-rvm128-helper-2
-                                   bitops::merge-16-u8s
-                                   LOGAPP-IS-LOGAPP-INLINE)
+                                  bitops::merge-16-u8s
+                                  logapp-is-logapp-inline)
                                  (not
                                    (:rewrite acl2::ash-0)
                                    (:rewrite acl2::zip-open)
@@ -3997,10 +3943,7 @@
   :parents (linear-memory)
   :guard (canonical-address-p lin-addr)
   :guard-hints (("Goal"
-                 :in-theory (e/d (rb-and-rvm256
-                                  rml08 rml128
-                                  rb-and-rvm256-helper-1
-                                  rb-and-rvm256-helper-2)
+                 :in-theory (e/d (rb-and-rvm256)
                                  (not
                                   (:rewrite acl2::ash-0)
                                   (:rewrite acl2::zip-open)
@@ -4446,8 +4389,7 @@
 
   :guard-hints
   (("Goal" :in-theory (e/d (wb-and-wvm256)
-                           (wvm256
-                            not
+                           (not
                             (:rewrite acl2::ash-0)
                             (:rewrite acl2::zip-open)
                             (:linear bitops::logior-<-0-linear-2)
@@ -4795,10 +4737,7 @@
   :parents (linear-memory)
   :guard (canonical-address-p lin-addr)
   :guard-hints (("Goal"
-                 :in-theory (e/d (rb-and-rvm512
-                                  rml08 rml256
-                                  rb-and-rvm512-helper-1
-                                  rb-and-rvm512-helper-2)
+                 :in-theory (e/d (rb-and-rvm512)
                                  (not
                                   (:rewrite acl2::ash-0)
                                   (:rewrite acl2::zip-open)
@@ -5498,11 +5437,9 @@
 
   :parents (linear-memory)
   :guard (canonical-address-p lin-addr)
-
   :guard-hints
   (("Goal" :in-theory (e/d (wb-and-wvm512)
-                           (wvm512
-                            not
+                           (not
                             (:rewrite acl2::ash-0)
                             (:rewrite acl2::zip-open)
                             (:linear bitops::logior-<-0-linear-2)
