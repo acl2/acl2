@@ -1564,9 +1564,39 @@ function.  This is @(':rewrite') by default; you may wish to change it to
 (defxdoc defoption
   :parents (fty deftypes)
   :short "Define an option type."
-  :long "<p>BOZO document me.  There used to be documentation for this when
-it was part of VL.  See @(see vl::defoption).  I don't know how much of it
-is the same...</p>")
+  :long "<p>@('defoption') generates a recognizer predicate and fixing function
+for a new type whose elements either belong to the argument type or are
+@('nil'). This is analagous to the \"option\" or \"maybe\" types of various
+other languages, except that @('defoption') types are untagged. In order to
+distinguish the @('nil') case from the parameterized type, the recognizer for
+the parameterized type must not admit @('nil').</p>
+
+<p>@('defoption') is compatible with @(see deftypes) and can be
+mutually-recursive with other @(see deftypes)-compatible type generators.</p>
+
+<p>The syntax of @('defoption') is:</p>
+
+@({
+(defoption foo-option
+  foo                  ;; type argument
+  :parents (...)       ;; xdoc
+  :short \"...\"         ;; xdoc
+  :long \"...\"          ;; xdoc
+  :measure (+ 1 (* 2 (acl2-count x)))
+                       ;; default: (acl2-count x)
+  :xvar x              ;; default: x, or find x symbol in measure
+  :prepwork            ;; admit these events before starting
+  :pred foo?-p         ;; default: foo-option-p
+  :fix foo?-fix        ;; default: foo-option-fix
+  :equiv foo?-=        ;; default: foo-option-equiv
+  :case  foo?-case     ;; default: foo-option-case
+  :count foo?-cnt      ;; default: foo-option-count
+                       ;; (may be nil; skipped unless mutually recursive)
+  :inline (:kind :fix) ;; default: (:kind :fix :acc)
+  )
+})
+
+<p>Note that the type argument must precede any keyword arguments.</p>")
 
 (defxdoc defvisitor-template
   :parents (defvisitors)
