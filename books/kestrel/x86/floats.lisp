@@ -1,7 +1,7 @@
 ; Rules (theorems) relied upon by the Formal Unit Tester
 ;
 ; Copyright (C) 2016-2023 Kestrel Technology, LLC
-; Copyright (C) 2024 Kestrel Institute
+; Copyright (C) 2024-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -378,7 +378,6 @@
 ;; todo: move some of these:
 
 ;drop!
-(include-book "kestrel/booleans/boolif" :dir :system)
 (include-book "kestrel/utilities/myif" :dir :system)
 ;drop!
 (defthm boolif-of-myif-arg1-true
