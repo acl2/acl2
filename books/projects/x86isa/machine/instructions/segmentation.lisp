@@ -45,7 +45,7 @@
 
 (include-book "../decoding-and-spec-utils"
               :ttags (:undef-flg))
-(local (include-book "../guard-helpers"))
+;(local (include-book "../guard-helpers"))
 
 ;; No alignment check is done for these instructions because they are
 ;; supervisor-level instructions.
@@ -478,9 +478,8 @@ LSL instructions) cause a general protection exception.</p>
 <p><b>TO-DO:</b> If a memory address referencing the SS segment is in
 a non-canonical form, raise the SS exception.</p>"
 
-  :prepwork
-
-  ((local (in-theory (e/d* (lldt-guard-helpers) ()))))
+  ;; :prepwork
+  ;; ((local (in-theory (e/d* (lldt-guard-helpers) ()))))
 
   :returns (x86 x86p :hyp (x86p x86))
 
