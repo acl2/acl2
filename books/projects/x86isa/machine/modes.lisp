@@ -72,13 +72,6 @@
 
 ;; ----------------------------------------------------------------------
 
-(defthm-unsigned-byte-p n64p-xr-msr
-  :hyp t
-  :bound 64
-  :concl (xr :msr i x86)
-  :gen-linear t
-  :gen-type t)
-
 (define 64-bit-modep (x86)
   :parents (x86-modes)
   :short "Check whether we are in 64-bit mode."

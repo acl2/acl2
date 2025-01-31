@@ -1216,24 +1216,6 @@
                          (bvxor size2 y x))))
   :hints (("Goal" :in-theory (enable SLICE-TOO-HIGH-IS-0 unsigned-byte-p-forced))))
 
-
-;this fires on (bvor x (bvchop 8 y)) but what if y is an 8-bit var and we drop the logherad from it
-;might be better to discover that x is a bvcat with 0's at the bottom
-;for or, wouldn't it be better to just split the or into a cat of the top part of x
-(defthmd bvplus-disjoint-ones-arg2-gen
-   (implies (and (axe-bind-free (bind-bv-size-axe y 'size2 dag-array) '(size2))
-                 (< size2 size)
-                 (equal 0 (bvchop size2 x))
-                 (unsigned-byte-p-forced size2 y)
-                 (natp size)
-                 (natp size2))
-            (equal (bvplus size x y)
-                   (bvcat (- size size2) (slice (+ -1 size) size2 x) size2 y)))
-   :hints (("Goal" :expand ((slice (+ -1 size) size2 (+ x y)))
-            :in-theory (e/d (slice bvplus slice-too-high-is-0 slice-when-val-is-not-an-integer logtail-of-bvchop unsigned-byte-p-forced
-                                   logtail-of-plus)
-                            (logtail-of-bvchop-becomes-slice slice-becomes-bvchop bvchop-of-logtail)))))
-
 (local (in-theory (enable unsigned-byte-p-forced)))
 
 (defthmd bvor-with-small-arg1
@@ -1400,6 +1382,9 @@
                   (bvand xsize y x)))
   :hints (("Goal" :use (:instance bvand-with-small-arg1))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; in case the small term is a var, might be better to ask how many low 0s there are in the bvcat and then see if the other term fits
 (defthmd bvor-disjoint-ones-arg2-gen
   (implies (and (axe-bind-free (bind-bv-size-axe y 'size2 dag-array) '(size2))
                 (axe-syntaxp (bvcat-nest-with-low-zerosp-axe x size2 dag-array)) ;new
@@ -1412,32 +1397,38 @@
                   (bvcat (- size size2) (slice (+ -1 size) size2 x) size2 y)))
   :hints (("Goal" :in-theory (enable BVOR SLICE-TOO-HIGH-IS-0))))
 
-(defthmd bvplus-disjoint-ones-arg1-gen
+(defthmd bvor-disjoint-ones-arg1-gen
   (implies (and (axe-bind-free (bind-bv-size-axe y 'size2 dag-array) '(size2))
+                (axe-syntaxp (bvcat-nest-with-low-zerosp-axe x size2 dag-array)) ;new
                 (< size2 size)
                 (equal 0 (bvchop size2 x))
                 (unsigned-byte-p-forced size2 y)
                 (natp size)
                 (natp size2))
-           (equal (bvplus size y x)
+           (equal (bvor size y x)
                   (bvcat (- size size2) (slice (+ -1 size) size2 x) size2 y)))
-  :hints (("Goal" :use (:instance bvplus-disjoint-ones-arg2-gen)
-           :in-theory (disable bvplus-disjoint-ones-arg2-gen))))
+  :hints (("Goal" :in-theory (enable BVOR SLICE-TOO-HIGH-IS-0))))
 
-(defthmd bvplus-disjoint-ones-arg1-gen-better
-  (implies (and (axe-bind-free (bind-bv-size-axe y 'size2 dag-array) '(size2))
-                (< size2 size)
-                (axe-syntaxp (bvcat-nest-with-low-zerosp-axe x size2 dag-array))
-                (equal 0 (bvchop size2 x)) ;; force, or something?
-                (unsigned-byte-p-forced size2 y)
-                (natp size)
-                (natp size2))
-           (equal (bvplus size y x)
-                  (bvcat (- size size2) (slice (+ -1 size) size2 x) size2 y)))
-  :hints (("Goal" :use (:instance bvplus-disjoint-ones-arg1-gen)
-           :in-theory (e/d (SLICE-TOO-HIGH-IS-0) (bvplus-disjoint-ones-arg1-gen)))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthmd bvplus-disjoint-ones-arg2-gen-better
+;this fires on (bvor x (bvchop 8 y)) but what if y is an 8-bit var and we drop the loghead from it
+;might be better to discover that x is a bvcat with 0's at the bottom
+;for or, wouldn't it be better to just split the or into a cat of the top part of x
+;; (defthmd bvplus-disjoint-ones-arg2-gen
+;;    (implies (and (axe-bind-free (bind-bv-size-axe y 'size2 dag-array) '(size2))
+;;                  (< size2 size)
+;;                  (equal 0 (bvchop size2 x))
+;;                  (unsigned-byte-p-forced size2 y)
+;;                  (natp size)
+;;                  (natp size2))
+;;             (equal (bvplus size x y)
+;;                    (bvcat (- size size2) (slice (+ -1 size) size2 x) size2 y)))
+;;    :hints (("Goal" :expand ((slice (+ -1 size) size2 (+ x y)))
+;;             :in-theory (e/d (slice bvplus slice-too-high-is-0 slice-when-val-is-not-an-integer logtail-of-bvchop unsigned-byte-p-forced
+;;                                    logtail-of-plus)
+;;                             (logtail-of-bvchop-becomes-slice slice-becomes-bvchop bvchop-of-logtail)))))
+
+(defthmd bvplus-disjoint-ones-arg2-gen
   (implies (and (axe-bind-free (bind-bv-size-axe y 'size2 dag-array) '(size2))
                 (< size2 size)
                 (axe-syntaxp (bvcat-nest-with-low-zerosp-axe x size2 dag-array))
@@ -1447,10 +1438,26 @@
                 (natp size2))
            (equal (bvplus size x y)
                   (bvcat (- size size2) (slice (+ -1 size) size2 x) size2 y)))
-  :hints (("Goal" :use (:instance bvplus-disjoint-ones-arg2-gen)
-           :in-theory (e/d (SLICE-TOO-HIGH-IS-0) (bvplus-disjoint-ones-arg2-gen)))))
+   :hints (("Goal" :expand ((slice (+ -1 size) size2 (+ x y)))
+            :in-theory (e/d (slice bvplus slice-too-high-is-0 slice-when-val-is-not-an-integer logtail-of-bvchop unsigned-byte-p-forced
+                                   logtail-of-plus)
+                            (logtail-of-bvchop-becomes-slice slice-becomes-bvchop bvchop-of-logtail)))))
 
-(in-theory (disable bvplus-disjoint-ones-arg1-gen bvplus-disjoint-ones-arg2-gen bvplus-disjoint-ones-arg1-gen-better bvplus-disjoint-ones-arg2-gen-better))
+(defthmd bvplus-disjoint-ones-arg1-gen
+  (implies (and (axe-bind-free (bind-bv-size-axe y 'size2 dag-array) '(size2))
+                (< size2 size)
+                (axe-syntaxp (bvcat-nest-with-low-zerosp-axe x size2 dag-array))
+                (equal 0 (bvchop size2 x)) ;; force, or something?
+                (unsigned-byte-p-forced size2 y)
+                (natp size)
+                (natp size2))
+           (equal (bvplus size y x)
+                  (bvcat (- size size2) (slice (+ -1 size) size2 x) size2 y)))
+  :hints (("Goal" :use (:instance bvplus-disjoint-ones-arg2-gen)
+           :in-theory (disable bvplus-disjoint-ones-arg2-gen)))
+  ;; :hints (("Goal" :use (:instance bvplus-disjoint-ones-arg1-gen)
+  ;;          :in-theory (e/d (SLICE-TOO-HIGH-IS-0) (bvplus-disjoint-ones-arg1-gen))))
+  )
 
 (defthmd bvplus-disjoint-ones-2
   (implies (and (axe-bind-free (bind-bv-size-axe y 'size2 dag-array) '(size2))
@@ -1462,7 +1469,7 @@
                 (natp size2))
            (equal (bvplus size y (bvplus size x z))
                   (bvplus size (bvcat (- size size2) (slice (+ -1 size) size2 x) size2 y) z)))
-  :hints (("Goal" :use (:instance bvplus-disjoint-ones-arg1-gen-better)
+  :hints (("Goal" :use (:instance bvplus-disjoint-ones-arg1-gen)
            :in-theory (disable BVCAT-EQUAL-REWRITE BVCAT-EQUAL-REWRITE-alt))))
 
 (defthmd bvplus-disjoint-ones-2-alt
@@ -1475,20 +1482,8 @@
                 (natp size2))
            (equal (bvplus size x (bvplus size y z))
                   (bvplus size (bvcat (- size size2) (slice (+ -1 size) size2 x) size2 y) z)))
-  :hints (("Goal" :use (:instance bvplus-disjoint-ones-arg1-gen-better)
+  :hints (("Goal" :use (:instance bvplus-disjoint-ones-arg1-gen)
            :in-theory (disable BVCAT-EQUAL-REWRITE BVCAT-EQUAL-REWRITE-alt))))
-
-(defthmd bvor-disjoint-ones-arg1-gen
-  (implies (and (axe-bind-free (bind-bv-size-axe y 'size2 dag-array) '(size2))
-                (axe-syntaxp (bvcat-nest-with-low-zerosp-axe x size2 dag-array)) ;new
-                (< size2 size)
-                (equal 0 (bvchop size2 x))
-                (unsigned-byte-p-forced size2 y)
-                (natp size)
-                (natp size2))
-           (equal (bvor size y x)
-                  (bvcat (- size size2) (slice (+ -1 size) size2 x) size2 y)))
-  :hints (("Goal" :in-theory (enable BVOR SLICE-TOO-HIGH-IS-0))))
 
 ;how does the speed of this compare to doing it for each operator separately?
 (defthmd <-lemma-for-known-operators-axe
