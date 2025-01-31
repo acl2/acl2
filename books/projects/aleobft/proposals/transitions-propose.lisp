@@ -70,14 +70,13 @@
      means that the proposal is indeed created by that validator.
      If the author of the proposal is faulty,
      it does not actually matter whether
-     it actually originates from that validator,
-     or instead some other (faulty) validator
+     the proposal actually originates from that validator,
+     or instead it originates from some other (faulty) validator
      impersonating the author;
      the correctness of the protocol does not not depend on that.
      If the author of the proposal is a faulty validator,
      there are no other requirements:
-     our model assumes that all transactions are valid,
-     and thus nothing prevents a faulty validator from
+     nothing prevents a faulty validator from
      generating a proposal with arbitrary
      round, transactions, and previous certificate addresses.")
    (xdoc::p
@@ -110,6 +109,14 @@
       if it can calculate the one for the current round, as mentioned above.
       This condition only applies if the round is not 1;
       if the round is 1, the @('previous') component must be empty."))
+   (xdoc::p
+    "For the case of a round that is not 1,
+     we use @(tsee committee-validators-stake) for the quorum test;
+     we do not check that the previous certificate authors
+     are in fact members of the committee at the previous round.
+     As proved elsewhere, it is an invariant that
+     those authors are indeed members of the committee;
+     so the check can be safely skipped.")
    (xdoc::p
     "Note that above we say `non-empty quorum', not just `quorum'.
      The two are equivalent only if
@@ -155,10 +162,7 @@
         nil)
        (prev-commtt
         (active-committee-at-round (1- prop.round) vstate.blockchain))
-       ((unless (set::subset prop.previous
-                             (committee-members prev-commtt)))
-        nil)
-       ((unless (>= (committee-members-stake prop.previous prev-commtt)
+       ((unless (>= (committee-validators-stake prop.previous prev-commtt)
                     (committee-quorum-stake prev-commtt)))
         nil)
        ((unless (equal (address-set-fix dests)
