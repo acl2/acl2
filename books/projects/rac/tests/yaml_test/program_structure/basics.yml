@@ -163,3 +163,6 @@
   env: {RAC_DISABLE_OPTIMIZATIONS: 'true'}
 
 - name: null-statement
+
+- name: mv-deref
+  description: Multiple value return types should be dereferenced for type-checking
