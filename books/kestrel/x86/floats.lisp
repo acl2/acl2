@@ -1,7 +1,7 @@
 ; Rules (theorems) relied upon by the Formal Unit Tester
 ;
 ; Copyright (C) 2016-2023 Kestrel Technology, LLC
-; Copyright (C) 2024 Kestrel Institute
+; Copyright (C) 2024-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -378,7 +378,6 @@
 ;; todo: move some of these:
 
 ;drop!
-(include-book "kestrel/booleans/boolif" :dir :system)
 (include-book "kestrel/utilities/myif" :dir :system)
 ;drop!
 (defthm boolif-of-myif-arg1-true
@@ -522,10 +521,12 @@
   (integerp (!MXCSRBITS->IE$INLINE bit mxcsr)))
 
 (defthm unsigned-byte-p-32-of-!MXCSRBITS->IE
-  (unsigned-byte-p 32 (!MXCSRBITS->IE$INLINE bit mxcsr)))
+  (unsigned-byte-p 32 (!MXCSRBITS->IE$INLINE bit mxcsr))
+  :hints (("Goal" :in-theory (enable x86isa::unsigned-byte-p-when-mxcsrbits-p))))
 
 (defthm unsigned-byte-p-32-of-!MXCSRBITS->DE
-  (unsigned-byte-p 32 (!MXCSRBITS->DE$INLINE bit mxcsr)))
+  (unsigned-byte-p 32 (!MXCSRBITS->DE$INLINE bit mxcsr))
+  :hints (("Goal" :in-theory (enable x86isa::unsigned-byte-p-when-mxcsrbits-p))))
 
 (defthm integerp-of-!MXCSRBITS->DE
   (integerp (!MXCSRBITS->DE$INLINE bit mxcsr)))

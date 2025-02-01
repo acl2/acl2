@@ -789,6 +789,20 @@ before including the x86 books:</p>
   :gen-linear t
   :gen-type t)
 
+(defthm-unsigned-byte-p n64p-xr-msr
+  :hyp t
+  :bound 64
+  :concl (xr :msr i x86)
+  :gen-linear t
+  :gen-type t)
+
+(defthm-signed-byte-p i48p-xr-rip
+  :hyp t
+  :bound 48
+  :concl (xr :rip i x86)
+  :gen-linear t
+  :gen-type t)
+
 ;; ----------------------------------------------------------------------
 
 (make-event
