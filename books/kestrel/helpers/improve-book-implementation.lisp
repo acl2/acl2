@@ -1,6 +1,6 @@
 ; Replaying the events in a book (perhaps with changes).
 ;
-; Copyright (C) 2022-2024 Kestrel Institute
+; Copyright (C) 2022-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -572,7 +572,7 @@
          (prog2$ (cw "~%   Skipping: Already included before improve-book was called.)~%")
                  (submit-event-expect-no-error event nil state))
        (if (member-equal full-path (all-included-books (w state)))
-           (prog2$ (cw "~%   Drop include (redundant).)~%" event nil)
+           (prog2$ (cw "~%   Drop include (redundant).)~%")
                    ;; We submit the event anyway, so as to not interfere with subsequent suggested improvements:
                    (submit-event-expect-no-error event nil state))
          (mv-let (successp state)
@@ -587,12 +587,12 @@
                ;; Somehow avoid suggesting to drop books that introduce names used
                ;; in macros (they will seem like they can be dropped, unless the
                ;; book contains an actual call of the macro).
-               (prog2$ (cw "~%   Drop include.)~%" event nil)
+               (prog2$ (cw "~%   Drop include.)~%")
                        ;; We submit the event anyway, so as to not interfere with subsequent suggested improvements:
                        (submit-event-expect-no-error event nil state))
              ;;failed to submit the rest of the events, so we can't just skip this one:
              (progn$ ;; (cw " Cannot be dropped.)~%" event)
-              (cw ")~%" event)
+              (cw ")~%")
               (submit-event-expect-no-error event nil state)))))))))
 
 (defun improve-local-event (event
@@ -620,7 +620,7 @@
                  (submit-event-expect-no-error event nil state))
        ;;failed to submit the rest of the events, so we can't just skip this one:
        (progn$ ;(cw " Cannot be dropped.)~%" event)
-         (cw ")~%" event)
+         (cw ")~%")
          (submit-event-expect-no-error event nil state))))))
 
 (mutual-recursion
