@@ -540,7 +540,7 @@
            )
   (prog2$ (and print (cw " (For ~x0:)~%" event))
           ;; Submitting the in-package event actually seems unnecessary in most cases:
-          (let ((state (submit-event! event print state)))
+          (let ((state (submit-event! event nil state)))
             (mv nil state))))
 
 ;; ;; Test whether the given book is included in the wrld.  FILENAME should include the .lisp extension.
