@@ -97,11 +97,12 @@
   (xdoc::topstring
    (xdoc::p
     "For each given address,
-     we create a message with the proposal
+     we create a proposal message with the proposal
      and with the address as destination.")
    (xdoc::p
     "These are the messages broadcasted to the network
-     when a proposal is created."))
+     when a proposal is created:
+     see @(see transitions-propose)."))
   (cond ((set::emptyp dests) nil)
         (t (set::insert (make-message-proposal
                          :proposal prop
@@ -127,6 +128,45 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define make-endorsement-messages ((prop proposalp)
+                                   (endors address-setp))
+  :returns (msgs message-setp)
+  :short "Create messages for an endorsement from given endorsers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For each given address,
+     we create an endorsement message with the proposal
+     and with the address as endorser.")
+   (xdoc::p
+    "These are the messages consumed from the network
+     when a faulty validator creates a certificate:
+     see @(see transitions-certify)."))
+  (cond ((set::emptyp endors) nil)
+        (t (set::insert (make-message-endorsement
+                         :proposal prop
+                         :endorser (set::head endors))
+                        (make-endorsement-messages prop (set::tail endors)))))
+  :verify-guards :after-returns
+
+  ///
+
+  (fty::deffixequiv make-endorsement-messages
+    :args ((prop proposalp)))
+
+  (defruled in-of-make-endorsement-messages
+    (implies (address-setp endors)
+             (equal (set::in msg (make-endorsement-messages prop endors))
+                    (and (messagep msg)
+                         (message-case msg :endorsement)
+                         (equal (message-endorsement->proposal msg)
+                                (proposal-fix prop))
+                         (set::in (message-endorsement->endorser msg)
+                                  endors))))
+    :induct t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define make-certificate-messages ((cert certificatep)
                                    (dests address-setp))
   :returns (msgs message-setp)
@@ -139,7 +179,8 @@
      and with the address as destination.")
    (xdoc::p
     "These are the messages broadcasted to the network
-     when a certificate is created."))
+     when a certificate is created:
+     see @(see transitions-certify)."))
   (cond ((set::emptyp dests) nil)
         (t (set::insert (make-message-certificate
                          :certificate cert
