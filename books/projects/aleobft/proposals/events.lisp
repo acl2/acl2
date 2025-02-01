@@ -81,7 +81,7 @@
              (endorser address)))
   (:augment ((proposal proposal)
              (endorser address)))
-  (:certify ((proposal proposal)
+  (:certify ((certificate certificate)
              (destinations address-set)))
   (:accept ((message message)))
   (:advance ((validator address)))
