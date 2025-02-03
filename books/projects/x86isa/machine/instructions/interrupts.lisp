@@ -43,8 +43,6 @@
 (include-book "../decoding-and-spec-utils"
               :ttags (:undef-flg))
 
-(local (include-book "centaur/bitops/ihs-extensions" :dir :system))
-
 ;; ======================================================================
 
 ;; ======================================================================
