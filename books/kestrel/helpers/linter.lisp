@@ -230,7 +230,10 @@
     (max (char-to-nat (first chars))
          (max-val-of-chars (rest chars)))))
 
-(defun my-prefixp (chars1 chars2)
+;rename
+(defund my-prefixp (chars1 chars2)
+  (declare (xargs :guard (and (character-listp chars1)
+                              (character-listp chars2))))
   (and (<= (len chars1) (len chars2))
        (equal chars1 (take (len chars1) chars2))))
 
@@ -257,8 +260,13 @@
 
 ;; A newline is printed before each item
 (defun check-first-arg-as-ctx (form thing-being-checked)
+  (declare (xargs :guard (and (pseudo-termp form) ; hope this is ok
+                              (consp form)
+                              (<= 1 (len (fargs form)))
+                              (thing-being-checkedp thing-being-checked))))
   (let ((ctx (farg1 form)))
-    (and (quotep ctx)
+    (and (quotep ctx) ; todo: strengthen to myquotep
+         (consp (cdr ctx))
          (symbolp (unquote ctx))
          (symbolp thing-being-checked)
          (not (eq (unquote ctx) thing-being-checked))
@@ -271,6 +279,11 @@
          (cw "~%   Context ~x0 is used in call of ~x1." ctx (ffn-symb form)))))
 
 (defun check-keys-of-alist-wrt-format-string (string alist call)
+  (declare (xargs :guard (and (stringp string)
+                              (pseudo-termp alist) ;todo: rename to alist-term
+                              (pseudo-termp call))
+                  :verify-guards nil ; todo
+                  ))
   (let* ((args-mentioned (args-in-format-string string)) ;these are chars
          (alist-keys (symbolic-strip-cars alist))
          (quoted-args-mentioned (enquote-list args-mentioned)))
