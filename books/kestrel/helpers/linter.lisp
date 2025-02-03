@@ -301,14 +301,17 @@
            ;; we check the vals of the alist since the keys are always the digits 0 through 9:
            (check-keys-of-alist-wrt-format-string string alist call)))))
 
+;; (hard-error ctx str alist).
 (defun check-call-of-hard-error (call thing-being-checked suppress)
   (prog2$ (and (not (member-eq :context suppress))
                (check-first-arg-as-ctx call thing-being-checked))
           (let ((string (farg2 call)))
-            (and (quotep string)
-                 (let ((string (unquote string))
-                       (alist (farg3 call)))
-                   (check-keys-of-alist-wrt-format-string string alist call))))))
+            (and (quotep string) ; usually true
+                 (if (not (stringp (unquote string)))
+                     (cw "~%   Bad format string (second arg) in ~x0." call)
+                   (let ((string (unquote string))
+                         (alist (farg3 call)))
+                     (check-keys-of-alist-wrt-format-string string alist call)))))))
 
 (defun check-call-of-illegal (call thing-being-checked suppress)
   (prog2$ (and (not (member-eq :context suppress))
