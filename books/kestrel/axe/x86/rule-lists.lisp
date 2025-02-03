@@ -1854,7 +1854,7 @@
             acl2::logbitp-to-getbit-equal-1
 
             associativity-of-+
-            x86isa::integerp-of-xr-rgf
+            x86isa::integerp-of-xr-rgf ; drop if we always use a different normal form
             x86isa::wb-returns-no-error-app-view ;targets mv-nth 0 of wb
 ;            addr-byte-alistp-create-addr-bytes-alist
 ;            byte-listp-byte-ify
@@ -2402,7 +2402,7 @@
      acl2::fold-consts-in-+
      x86isa::canonical-address-listp-of-nil
      acl2::integerp-of-+-when-integerp-1-cheap
-     x86isa::integerp-of-xr-rgf-4
+     x86isa::integerp-of-xr-rgf
      x86isa::fix-of-xr-rgf-4
      x86isa::integerp-when-canonical-address-p-cheap ; requires acl2::equal-same
      acl2::fix-when-integerp
@@ -4778,7 +4778,6 @@
             acl2::bvplus-of-+-arg2 ; todo: drop once we characterize long negation?
             acl2::bvplus-of-+-arg3 ; todo: drop once we characterize long negation?
             ;acl2::integerp-when-unsigned-byte-p-free ; needed for the bvplus-of-+ rules.
-            x86isa::integerp-of-xr-rgf
             acl2::natp-of-+-of-- ; trying, or simplify (natp (binary-+ '32 (unary-- (bvchop '5 x))))
             min ; why is min arising?  or add min-same
             acl2::<-becomes-bvlt-axe-bind-free-arg1-strong

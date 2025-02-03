@@ -21,30 +21,26 @@
                   (xr fld2 i2 x86))))
 
 (defthm unsigned-byte-p-of-xr-of-mem
-  (implies (and (<= 8 size)
-                (x86p x86))
+  (implies (<= 8 size)
            (equal (unsigned-byte-p size (xr :mem i x86))
                   (natp size)))
   :hints (("Goal" :use (:instance X86ISA::ELEM-P-OF-XR-MEM (x86$a x86))
            :in-theory (disable X86ISA::ELEM-P-OF-XR-MEM))))
 
 (defthm integerp-of-xr-mem
-  (implies (x86p x86)
-           (integerp (xr :mem acl2::i x86)))
+  (integerp (xr :mem acl2::i x86))
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :use (:instance x86isa::unsigned-byte-p-of-xr-of-mem (size 8))
            :in-theory (disable x86isa::unsigned-byte-p-of-xr-of-mem))))
 
 (defthm unsigned-byte-p-of-memi
-  (implies (and (<= 8 size)
-                (x86p x86))
+  (implies (<= 8 size)
            (equal (unsigned-byte-p size (memi i x86))
                   (natp size)))
   :hints (("Goal" :in-theory (enable memi))))
 
 (defthm integerp-of-memi
-  (implies (x86p x86)
-           (integerp (memi i x86)))
+  (integerp (memi i x86))
   :hints (("Goal" :in-theory (enable memi))))
 
 (defthm x86isa::xr-of-if
@@ -65,9 +61,16 @@
              (xr :fault nil state1)
            (xr :fault nil state2))))
 
-(defthm integerp-of-xr-of-rsp
-  (implies (x86p x86)
-           (integerp (xr :rgf *rsp* x86))))
+;; For Axe, since ACL2 will use the :type-prescription rule
+(defthmd x86isa::integerp-of-xr-rgf
+  (integerp (xr :rgf index x86)))
+
+(defthm x86isa::integerp-of-xr-rgf-type
+  (integerp (xr :rgf index x86))
+  :rule-classes :type-prescription
+  :hints (("Goal" :use (:instance x86isa::elem-p-of-xr-rgf (x86isa::x86$a x86))
+           :in-theory (e/d (xr) (x86isa::elem-p-of-xr-rgf)))))
+
 
 (defthm app-view-of-xw
   (implies (not (equal fld :app-view))
@@ -88,19 +91,15 @@
            (xw :rip nil rip2 x86))))
 
 ;gen?
-(defthm integerp-of-xr-rgf-4
-  (implies (x86p x86)
-           (integerp (xr ':rgf '4 x86))))
-
-;gen?
 (defthm fix-of-xr-rgf-4
   (equal (fix (xr ':rgf '4 x86))
          (xr ':rgf '4 x86)))
 
 (defthm x86p-of-!memi
   (implies (and (x86p x86)
-                (INTEGERP ADDR)
-                (UNSIGNED-BYTE-P 8 VAL))
+                ;;(INTEGERP ADDR)
+                ;;(UNSIGNED-BYTE-P 8 VAL)
+                )
            (x86p (!memi addr val x86)))
   :hints (("Goal" :in-theory (enable !memi))))
 
@@ -134,7 +133,7 @@
 
 ;rename
 (defthm memi-of-!memi
-  (implies (unsigned-byte-p 48 addr)
+  (implies t; (unsigned-byte-p 48 addr)
            (equal (memi addr (!memi addr val x86))
                   (acl2::loghead 8 val)))
   :hints (("Goal" :in-theory (enable memi))))
@@ -145,7 +144,7 @@
 
 ;crosses abstraction layers?
 (defthm memi-of-xw-same
-  (implies (unsigned-byte-p 48 addr)
+  (implies t; (unsigned-byte-p 48 addr)
            (equal (memi addr (xw :mem addr val x86))
                   (acl2::loghead 8 val)))
   :hints (("Goal" :in-theory (enable memi))))
