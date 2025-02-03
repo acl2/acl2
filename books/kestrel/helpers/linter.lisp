@@ -403,13 +403,14 @@
              (ts-eqlable (ts-union *ts-symbol*
                                    (ts-union *ts-character*
                                              *ts-acl2-number*))))
-          (progn$ (if arg1-symbolp
-                      (if arg2-symbolp
-                          (cw "~%   EQL test ~x0 could use EQ since both arguments are known to be symbols." orig-term)
-                        (cw "~%   EQL test ~x0 could use EQ since ~x1 is known to be a symbol." orig-term arg1))
-                    (if arg2-symbolp
-                        (cw "~%   EQL test ~x0 could use EQ since ~x1 is known to be a symbol." orig-term arg2)
-                      nil))
+          (progn$ (and (not (eq (fargn orig-term 1) 'acl2::case-do-not-use-elsewhere)) ; avoid flagging an EQL call that comes from CASE (todo: this doesn't catch cases where the selector is just a variable)
+                       (if arg1-symbolp
+                           (if arg2-symbolp
+                               (cw "~%   EQL test ~x0 could use EQ since both arguments are known to be symbols." orig-term)
+                             (cw "~%   EQL test ~x0 could use EQ since ~x1 is known to be a symbol." orig-term arg1))
+                         (if arg2-symbolp
+                             (cw "~%   EQL test ~x0 could use EQ since ~x1 is known to be a symbol." orig-term arg2)
+                           nil)))
                   (and arg1-numberp
                        arg2-numberp
                        (cw "~%   EQL test ~x0 could use = since both arguments are known to be numbers." orig-term))
