@@ -150,7 +150,7 @@
       (if x
           (er hard? ctx
               "deftranssum members should be nil-terminated; found ~
-                 final cdr ~x1.~%" ctx x)
+                 final cdr ~x0.~%" x)
         nil)
     (cons (parse-transsum-member ctx (car x) our-fixtypes fixtypes table)
           (parse-transsum-members ctx (cdr x) our-fixtypes fixtypes table))))
