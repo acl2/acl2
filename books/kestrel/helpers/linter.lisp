@@ -1100,6 +1100,7 @@
             (vars-bound-after-hyps (rest hyps) (union-eq hyp-vars acc))))))))
 
 (defun lint-conclusion (conclusion name hyps suppress)
+  (declare (ignore name)) ; todo
   (if (not (call-of 'equal conclusion)) ; todo: support iff, etc.?
       nil
     (let* ((lhs (farg1 conclusion))
@@ -1110,7 +1111,7 @@
           nil
         (and (not (subsetp-equal (free-vars-in-term rhs) vars-bound-after-hyps))
              (not (member-eq :free-vars-in-rhs suppress)) ; todo: currently impossible
-             (cw "~%   ~s1 ~x2 has free vars ~x3." name "rhs" rhs (set-difference-eq (free-vars-in-term rhs) vars-bound-after-hyps)))))))
+             (cw "~%   ~s0 ~x1 has free vars ~x2." "rhs" rhs (set-difference-eq (free-vars-in-term rhs) vars-bound-after-hyps)))))))
 
 (defun lint-conclusions (conclusions name hyps suppress)
   (declare (xargs :mode :program))
