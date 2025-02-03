@@ -2243,27 +2243,19 @@
 
 (defthm bvor-of-bvcat-appending-idiom
   (implies (and (>= size (+ m n)) ;gen?
-                (unsigned-byte-p n y)
-                (<= 0 n)
-                (integerp n)
+                (unsigned-byte-p n y) ; y fits into the region of n 0s
                 (natp m)
-                (< 0 m)
-                (natp size)
-                ;(integerp x)
-                ;(integerp y)
-                )
+                (integerp size))
            (equal (bvor size (bvcat m x n 0) y)
                   (bvcat m x n y)))
-  :hints (("Goal" :in-theory (e/d (slice-too-high-is-0) (size-non-negative-when-unsigned-byte-p-free)))))
+  :hints (("Goal" :cases ((posp m))
+           :in-theory (e/d (slice-too-high-is-0) (size-non-negative-when-unsigned-byte-p-free)))))
 
 (defthm bvor-of-bvcat-appending-idiom-alt
   (implies (and (>= size (+ m n))
                 (unsigned-byte-p n y)
-                (<= 0 n)
-                (integerp n)
                 (natp m)
-                (< 0 m)
-                (natp size))
+                (integerp size))
            (equal (bvor size y (bvcat m x n 0))
                   (bvcat m x n y)))
   :hints (("Goal" :use bvor-of-bvcat-appending-idiom

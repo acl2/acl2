@@ -1104,8 +1104,8 @@
 
     bound-when-usb2 ;uses the dag assumptions - huh? (expensive?)
 
-    bvplus-disjoint-ones-arg1-gen-better
-    bvplus-disjoint-ones-arg2-gen-better
+    bvplus-disjoint-ones-arg1-gen
+    bvplus-disjoint-ones-arg2-gen
     bvplus-disjoint-ones-2-alt
     bvplus-disjoint-ones-2
 
