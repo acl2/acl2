@@ -71,10 +71,12 @@
                   (get-class ref heap)))
   :hints (("Goal" :in-theory (enable get-class clear-field))))
 
-(defthm clear-field-of-s
+(defthmd clear-field-of-s
   (equal (clear-field ad pair (s ad obj heap))
          (s ad (clr pair obj) heap))
   :hints (("Goal" :in-theory (enable clear-field))))
+
+(theory-invariant (incompatible (:rewrite clear-field-of-s) (:rewrite s-of-clr)))
 
 ;more theorems needed about clr?
 
