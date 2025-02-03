@@ -86,7 +86,6 @@
 (include-book "kestrel/utilities/if" :dir :system)
 (include-book "kestrel/utilities/if-rules" :dir :system)
 (include-book "kestrel/booleans/booleans" :dir :system)
-(include-book "kestrel/bv/arith" :dir :system) ;todo
 (include-book "kestrel/bv/intro" :dir :system)
 (include-book "kestrel/bv/rtl" :dir :system)
 (include-book "kestrel/bv/convert-to-bv-rules" :dir :system)
