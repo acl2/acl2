@@ -300,7 +300,7 @@
         state ; the event failed after doing the disable
       (if (member-equal rune (get-event-data 'rules state))
           ;; the disable didn't really work (perhaps there is an explicit enable hint), so don't recommend it
-          (prog2$ (cw "Disablng ~x0 didn't really take effect.")
+          (prog2$ (cw "Disablng ~x0 didn't really take effect." rune)
                   state)
         (if (< elapsed-time time-to-beat)
             (let* ((savings (- time-to-beat elapsed-time))
@@ -402,13 +402,13 @@
                  (cw ":"))
                (if (< original-time min-event-time)
                    (prog2$ (and (print-level-at-least-tp print)
-                                (progn$ (cw "~%  (Not trying to speed up: only takes " name)
+                                (progn$ (cw "~%  (Not trying to speed up: only takes ")
                                         (print-to-hundredths original-time)
                                         (cw " seconds)")))
                            (mv nil state))
               ;; It's worth trying to speed up:
                  (prog2$ (and (print-level-at-least-tp print)
-                              (progn$ (cw "~%  (Original time: " name)
+                              (progn$ (cw "~%  (Original time: ")
                                       (print-to-hundredths original-time)
                                       (cw " seconds)")))
                       ;; Get the list of runes used in the proof:

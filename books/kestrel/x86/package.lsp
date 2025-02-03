@@ -786,9 +786,6 @@
     x86isa::vex->r
     x86isa::vex->w
 
-    x86isa::zmmi
-    x86isa::!zmmi
-
     x86isa::x86-illegal-instruction
     x86isa::x86-step-unimplemented
     x86isa::feature-flags
@@ -1017,7 +1014,9 @@
 
     X86ISA::ADDRESS-ALIGNED-P
 
-    x86isa::rr08
+    ;; register-related functions:
+
+    x86isa::rr08 ; there are only 4 of these
     x86isa::rr16
     x86isa::rr32
     x86isa::rr64
@@ -1026,7 +1025,7 @@
     x86isa::rr32$inline
     x86isa::rr64$inline
 
-    x86isa::wr08
+    x86isa::wr08 ; there are only 4 of these
     x86isa::wr16
     x86isa::wr32
     x86isa::wr64
@@ -1034,6 +1033,57 @@
     x86isa::wr16$inline
     x86isa::wr32$inline
     x86isa::wr64$inline
+
+    x86isa::rx32 ; there seem to be only 3 of these
+    x86isa::rx64
+    x86isa::rx128
+    x86isa::rx32$inline
+    x86isa::rx64$inline
+    x86isa::rx128$inline
+
+    x86isa::wx32$inline ; there seem to be only 3 of these
+    x86isa::wx64$inline
+    x86isa::wx128$inline
+    x86isa::wx32
+    x86isa::wx64
+    x86isa::wx128
+        
+    x86isa::rz32 ; there seem to be only 5 of these
+    x86isa::rz64
+    x86isa::rz128
+    x86isa::rz256
+    x86isa::rz512
+    x86isa::rz32$inline
+    x86isa::rz64$inline
+    x86isa::rz128$inline
+    x86isa::rz256$inline
+    x86isa::rz512$inline
+
+    x86isa::wz32$inline ; there seem to be only 5 of these
+    x86isa::wz64$inline
+    x86isa::wz128$inline
+    x86isa::wz256$inline
+    x86isa::wz512$inline
+    x86isa::wz32
+    x86isa::wz64
+    x86isa::wz128
+    x86isa::wz256
+    x86isa::wz512
+    
+    x86isa::xmmi-size
+    x86isa::xmmi-size$inline
+    x86isa::!xmmi-size
+    x86isa::!xmmi-size$inline
+    
+    x86isa::zmmi
+    x86isa::zmmi$a
+    x86isa::!zmmi
+    x86isa::!zmmi$a
+    
+    x86isa::zmmi-size
+    x86isa::zmmi-size$inline
+    x86isa::!zmmi-size
+    x86isa::!zmmi-size$inline
     ))
 
 (defconst *symbols-from-acl2-package*
