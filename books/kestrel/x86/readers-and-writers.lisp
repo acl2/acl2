@@ -26,16 +26,6 @@
          (undef x86))
   :hints (("Goal" :in-theory (enable undef))))
 
-(defthm x86isa::integerp-of-xr-rgf-type
-  (integerp (xr :rgf i x86))
-  :rule-classes :type-prescription
-  :hints (("Goal" :use (:instance x86isa::elem-p-of-xr-rgf (x86isa::x86$a x86))
-           :in-theory (e/d (xr) (x86isa::elem-p-of-xr-rgf)))))
-
-;; For Axe, since ACL2 will use the :type-prescription rule
-(defthmd x86isa::integerp-of-xr-rgf
-  (integerp (xr :rgf i x86)))
-
 (defthm undef-of-xw (implies (not (equal fld :undef)) (equal (undef (xw fld index value x86)) (undef x86))) :hints (("Goal" :in-theory (enable undef))))
 
 (defthm undef-of-if (equal (undef (if test x y)) (if test (undef x) (undef y))))
