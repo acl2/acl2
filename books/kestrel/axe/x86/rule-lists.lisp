@@ -506,8 +506,20 @@
     mxcsr-of-!rflags         ; why is !rflags not going away?
     mxcsr-of-set-rip         ; move to 64 rules?
 
-    alignment-checking-enabled-p-of-set-undef
+    x86isa::64-bit-modep-of-xw
+    64-bit-modep-of-set-flag
+    64-bit-modep-of-set-mxcsr
     64-bit-modep-of-set-undef
+    ;; 64-bit-modep-of-set-ms ; could omit (since set-ms means the run will stop, but this can help clarify things)
+    64-bit-modep-of-!rflags
+
+    x86isa::alignment-checking-enabled-p-and-xw ; targets alignment-checking-enabled-p-of-xw
+    x86isa::alignment-checking-enabled-p-of-xw-irrel ; todo: compare to x86isa::alignment-checking-enabled-p-and-xw
+    x86isa::alignment-checking-enabled-p-of-set-flag ; todo: change package
+    alignment-checking-enabled-p-of-set-mxcsr
+    alignment-checking-enabled-p-of-set-undef
+    alignment-checking-enabled-p-of-!rflags
+
     msri-of-set-undef
     set-undef-of-set-undef
     ;;            set-undef-of-set-mxcsr
@@ -516,8 +528,8 @@
     set-undef-of-!rflags         ; why is !rflags showing up?
     set-undef-of-set-rip         ; move to 64 rules?
 
-    alignment-checking-enabled-p-of-set-mxcsr
-    64-bit-modep-of-set-mxcsr
+
+
     msri-of-set-mxcsr
     set-mxcsr-of-set-mxcsr
     set-mxcsr-of-set-flag
@@ -581,7 +593,6 @@
     set-flag-of-set-flag-diff-axe
     set-flag-of-set-flag-same
     set-flag-of-get-flag-same
-    x86isa::alignment-checking-enabled-p-of-set-flag
 
     x86isa::xw-rgf-of-xr-rgf-same
 
@@ -1711,7 +1722,7 @@
             ;; x86isa::xw-of-xr
             ;; xw-of-rflags-does-nothing ; use a more general rule?
             ;; alignment-checking-enabled-p-of-xw-rflags-of-xr-rflags
-            alignment-checking-enabled-p-of-!rflags
+
             ;; get-flag-of-xw-rflags-of-xr-rflags
             get-flag-of-!rflags-of-xr
             ;; xw-of-rflags-of-xw
@@ -1892,7 +1903,6 @@
             x86isa::trunc$inline        ;shilpi leaves this enabled
 
             acl2::backchain-signed-byte-p-to-unsigned-byte-p-non-const
-            x86isa::alignment-checking-enabled-p-and-xw ; targets alignment-checking-enabled-p-of-xw
             x86isa::alignment-checking-enabled-p-and-wb-in-app-view ;targets alignment-checking-enabled-p-of-mv-nth-1-of-wb
             acl2::unicity-of-0         ;introduces a fix
             acl2::ash-of-0
@@ -1939,7 +1949,6 @@
             ;acl2::slice-becomes-getbit
             ;acl2::getbit-of-bvcat-all
             ;; x86isa::program-at-set-flag
-            ;; x86isa::alignment-checking-enabled-p-and-set-flag
 
 ;            x86isa::rb-set-flag-in-app-view
             acl2::getbit-of-slice-both
@@ -1983,9 +1992,7 @@
 
 ;signed-byte-p-when-between-canonical-addresses
 ;            x86isa::x86p-of-set-flag-undefined-eric ;x86p-of-set-flag-undefined ;drop?
-;            x86isa::alignment-checking-enabled-p-and-set-flag-undefined ;drop?
 ;            x86isa::rb-set-flag-undefined-in-app-view ;drop?
-
 
             x86isa::<-of-logext-and-+-of-constant
             x86isa::canonical-address-p-+-signed-byte-p-16-is-signed-byte-p-64 ;looped
@@ -1995,7 +2002,6 @@
             ;;signed-byte-p-of-+-between
 
             acl2::logext-of-+-of-constant
-;            x86isa::alignment-checking-enabled-p-and-set-flag
             x86isa::unsigned-byte-p-of-bool->bit
 ;            x86isa::set-flag-of-set-flag-undefined-different-concrete-indices ;drop?
 
@@ -2034,9 +2040,7 @@
 ;                    acl2::bvcat-trim-arg4-axe-all
  ;                   acl2::bvcat-trim-arg2-axe-all
 
-            x86isa::64-bit-modep-of-xw
             x86isa::64-bit-modep-of-mv-nth-1-of-wb
-            64-bit-modep-of-set-flag
 
             ;;todo: include all of the lifter rules:
             x86isa::canonical-address-p-of-i48
@@ -2169,7 +2173,7 @@
             gl::gl-mbe-fn ;used by bitops.  yuck.
 
             x86isa::x86-operation-mode
-            x86isa::alignment-checking-enabled-p-of-xw-irrel
+
             ;acl2::slice-of-bvcat-gen
 
             acl2::truncate-becomes-floor-gen ;it might be better to avoid explosing truncate in the first place
@@ -2213,7 +2217,7 @@
             x86isa::chk-exc-fn ; for floating point and/or avx/vex?
 
             x86isa::n512p-xr-zmm ; targets unsigned-byte-p-of-xr-of-zmm
-            
+
             xmmi-size$inline ; dispatches to rx32, etc
             !xmmi-size$inline ; dispatched to wx32, etc
 
@@ -2223,7 +2227,7 @@
             rx32$inline ; these expose the rz variants ; there seem to be only 3 of these
             rx64$inline
             rx128$inline
-            
+
             wx32$inline ; these expose the wz variants  ; there seem to be only 3 of these
             wx64$inline
             wx128$inline
@@ -2247,7 +2251,6 @@
             !zmmi$a ; exposes xw
 
             x86isa::x86-operand-to-zmm/mem
-            ;; 64-bit-modep-of-set-ms ; could omit (since set-ms means the run will stop, but this can help clarify things)
 
             acl2::integerp-of-ash
             acl2::bvplus-of-bvmult-when-power-of-2p-tighten
@@ -4612,7 +4615,7 @@
             acl2::if-of-sbvlt-and-not-sbvlt-helper
             if-of-set-flag-and-set-flag
             xr-of-!rflags-irrel ; todo: better normal form?
-            64-bit-modep-of-!rflags
+
             read-of-!rflags
             acl2::logext-of-+-of-bvplus-same-size
             acl2::logext-of-+-of-+-of-mult-same-size
