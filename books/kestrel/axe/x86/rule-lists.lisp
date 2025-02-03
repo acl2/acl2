@@ -2160,6 +2160,15 @@
             ;; jnle-condition-rewrite-3
             ;; jnz-condition-rule-2
 
+            ;; more like this?
+            bvchop-of-zf-spec
+            logext-of-zf-spec
+
+            ;; more like this?
+            bvchop-of-sub-zf-spec32
+            equal-of-sub-zf-spec32-and-1
+            equal-of-1-and-sub-zf-spec32
+
             x86isa::memory-byte-accesses-are-always-aligned
             x86isa::address-aligned-p-of-8-and-nil
             x86isa::address-aligned-p-of-4-and-nil
@@ -2215,50 +2224,45 @@
 
             x86isa::chk-exc-fn ; for floating point and/or avx/vex?
 
-            x86isa::xmmi-size$inline
-            x86isa::!xmmi-size$inline
-            x86isa::zmmi-size$inline
-            x86isa::!zmmi-size$inline
-
-            x86isa::zmmi
-            x86isa::zmmi$a
-            x86isa::!zmmi
-            x86isa::!zmmi$a
-
             x86isa::n512p-xr-zmm ; targets unsigned-byte-p-of-xr-of-zmm
+            
+            xmmi-size$inline ; dispatches to rx32, etc
+            !xmmi-size$inline ; dispatched to wx32, etc
 
-            x86isa::rx32$inline ; these expose rz
-            x86isa::rx64$inline
-            x86isa::rx128$inline
+            zmmi-size$inline ; dispatches to rz32, etc
+            !zmmi-size$inline ; dispatches to wz32, etc
 
-            x86isa::rz32$inline ; these expose zmmi
-            x86isa::rz64$inline
-            x86isa::rz128$inline
-            x86isa::rz256$inline
-            x86isa::rz512$inline
+            rx32$inline ; these expose the rz variants ; there seem to be only 3 of these
+            rx64$inline
+            rx128$inline
+            
+            wx32$inline ; these expose the wz variants  ; there seem to be only 3 of these
+            wx64$inline
+            wx128$inline
 
-            x86isa::wx32$inline ; these expose wz
-            x86isa::wx64$inline
-            x86isa::wx128$inline
+            rz32$inline ; these expose zmmi ; there seem to be only 5 of these
+            rz64$inline
+            rz128$inline
+            rz256$inline
+            rz512$inline
 
-            x86isa::wz32$inline ; these do zmmi and then !zmmi to write part of the register
-            x86isa::wz64$inline
-            x86isa::wz128$inline
-            x86isa::wz256$inline
-            x86isa::wz512$inline
+            wz32$inline ; these do zmmi and then !zmmi to write part of the register ; there seem to be only 5 of these
+            wz64$inline
+            wz128$inline
+            wz256$inline
+            wz512$inline
+
+            zmmi ; exposes zmmi$a
+            zmmi$a ; exposes xr
+
+            !zmmi ; exposes !zmmi$a
+            !zmmi$a ; exposes xw
 
             x86isa::x86-operand-to-zmm/mem
             ;; 64-bit-modep-of-set-ms ; could omit (since set-ms means the run will stop, but this can help clarify things)
 
             acl2::integerp-of-ash
             acl2::bvplus-of-bvmult-when-power-of-2p-tighten
-
-            bvchop-of-zf-spec
-            logext-of-zf-spec
-
-            bvchop-of-sub-zf-spec32
-            equal-of-sub-zf-spec32-and-1
-            equal-of-1-and-sub-zf-spec32
 
             ;; See books/projects/x86isa/utils/basic-structs.lisp
             ;; x86isa::2bits-fix-constant-opener
@@ -4856,7 +4860,7 @@
             acl2::bvchop-subst-constant-alt
             acl2::boolif-of-bvlt-strengthen-to-equal
             acl2::bvlt-reduce-when-not-equal-one-less
-            ;; trying opening these up if they surive to the proof stage:
+            ;; If any of these survive to the proof stage, we should probably open them up:
             js-condition
             jns-condition
             jo-condition
