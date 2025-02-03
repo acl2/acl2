@@ -1,6 +1,6 @@
 ; A linter for ACL2
 ;
-; Copyright (C) 2018-2023 Kestrel Institute
+; Copyright (C) 2018-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -697,9 +697,11 @@
                               (pseudo-termp term)
                               (natp step-limit))
                   :stobjs state
-                  :mode :program))
+                  :mode :program)
+           (ignore ctx) ; todo
+           )
   (b* (((when (not (logic-fnsp term (w state))))
-        (cw "(Skipping checking ~x0 for contradiction, since it's not entirely in :logic mode.)~%" ctx)
+        ;; (cw "(Skipping checking ~x0 for contradiction, since it's not entirely in :logic mode.)~%" ctx)
         state)
        ((mv erp res state)
         ;; TODO: Suppress step-limit error output here:
@@ -708,7 +710,7 @@
         (er hard? 'check-for-contradiction "Error checking for contradiction in ~s0: ~X12." description term nil)
         state))
     (if res
-        (prog2$ (cw "~%   ~s1 ~x2 is contradictory." ctx description term)
+        (prog2$ (cw "~%   ~s0 ~x1 is contradictory." description term)
                 state)
       state)))
 
@@ -793,7 +795,7 @@
          ((when erp)
           (er hard? 'check-for-implied-terms-aux "Error checking for implication in ~s0 in ~x1." description ctx)
           state)
-         (- (and res (cw "~%   ~s1 ~x2 is implied by others." ctx description term))))
+         (- (and res (cw "~%   ~s0 ~x1 is implied by others." description term))))
       (check-for-implied-terms-aux ctx description (rest terms) all-terms step-limit state))))
 
 ;; Checks whether any of the TERMS is implied by the others.  Returns state.
@@ -865,7 +867,7 @@
          ((when erp)
           (er hard? 'try-to-prove-with-some-hyp "Error attempting to weaken a hyp ~x0 in ~x1 to ~x2." original-hyp ctx hyp)
           state)
-         (- (and res (cw "~%   Hyp ~x1 can be weakened to ~x2." ctx original-hyp hyp))))
+         (- (and res (cw "~%   Hyp ~x0 can be weakened to ~x1." original-hyp hyp))))
       (try-to-prove-with-some-hyp ctx (rest hyps) other-hyps conclusion original-hyp step-limit state))))
 
 ;; Checks whether HYP can be dropped (or weakened), given the OTHER-HYPS, while
@@ -884,7 +886,7 @@
        ((when erp)
         (er hard? 'check-for-droppable-hyps "Error attempting to drop hyp ~x0 in ~x1." hyp ctx)
         state)
-       (- (and res (cw "~%   Drop hyp ~x1." ctx hyp)))
+       (- (and res (cw "~%   Drop hyp ~x0." hyp)))
        (state (if res
                   state ;; don't try to weaken, since the hyp can be dropped
                 (let* ((weakenings (get-weakenings hyp))
@@ -980,7 +982,7 @@
         (er hard? 'try-replacing-each-subterm "Error trying to generalize ~s0." ctx)
         state)
        ((when res)
-        (cw "~%   body can be generalized by replacing ~x1 with a fresh variable." ctx subterm)
+        (cw "~%   body can be generalized by replacing ~x0 with a fresh variable." subterm)
         state)
        ;; todo: skip this if the above succeeds:
 
@@ -995,8 +997,8 @@
        ((when erp)
         (er hard? 'try-replacing-each-subterm "Error trying to generalize ~s0." ctx)
         state)
-       (- (and res (cw "~%   body can be generalized by replacing ~x1 with a fresh variable, ~x2, satisfying ~x3."
-                       ctx subterm new-var
+       (- (and res (cw "~%   body can be generalized by replacing ~x0 with a fresh variable, ~x1, satisfying ~x2."
+                       subterm new-var
                        (type-set-to-term new-var subterm-ts state)))))
     state))
 
