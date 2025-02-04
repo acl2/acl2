@@ -1,7 +1,7 @@
 ; Syntactic utilities for bit-vector terms
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -22,7 +22,7 @@
 
 ;ffixme add binary-+, unary--, myif, etc.?
 ;todo: what about myif when bv branches?
-(defconst *trimmable-non-arithmetic-operators*
+(defconst *trimmable-non-arithmetic-operators*  ; rename to *trimmable-non-arithmetic-bv-operators* ?
   '(
     ;; getbit ; would we ever need to trim a getbit?
     ;; bitxor bitnot bitand bitor  ;could we really trim a one-bit operator?
@@ -37,7 +37,7 @@
     bvsx ;trying
     repeatbit))
 
-(defconst *trimmable-arithmetic-operators*
+(defconst *trimmable-arithmetic-operators* ; rename to *trimmable-arithmetic-bv-operators* ?
   '(bvplus bvmult bvminus bvuminus))
 
 (defconst *trimmable-operators*
@@ -50,10 +50,10 @@
     sbvdiv sbvrem
     bvdiv bvmod
     bv-array-read ;added since we are not trimming reads any more
+    ;; todo: add bvshr?
     ))
 
-;keep this up-to-date!
-;fixme are these only bv operators?
+; are these only bv operators?
 ;rename to *bv-operators* ?
 ;; todo: this is missing the following: getbit bitor bitand bitxor bitnot leftrotate32
 ;; (defconst *operators-whose-size-we-know*
@@ -72,9 +72,10 @@
         (quote (if (natp (unquote term))
                    (integer-length (unquote term))
                  nil))
+        ;; operators that always have size 1:
         ((getbit bitxor bitnot bitand bitor bool-to-bit)
-         ;; these operators always have size 1
          1)
+        ;; normal operators whose size is the first argument:
         ((bvxor bvand bvor bvnot bvif
                 bvchop ;$inline
                 bvplus bvmult bvminus bvuminus
@@ -82,6 +83,8 @@
                 bv-array-read ;new
                 bvsx
                 repeatbit
+                bvshl
+                ;; bvshr ; could uncomment ; not trimmable though
                 )
          (let ((size-arg (farg1 term)))
            (if (and (quotep size-arg)

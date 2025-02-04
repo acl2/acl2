@@ -1,6 +1,6 @@
 ; A linter for ACL2
 ;
-; Copyright (C) 2018-2023 Kestrel Institute
+; Copyright (C) 2018-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -230,7 +230,10 @@
     (max (char-to-nat (first chars))
          (max-val-of-chars (rest chars)))))
 
-(defun my-prefixp (chars1 chars2)
+;rename
+(defund my-prefixp (chars1 chars2)
+  (declare (xargs :guard (and (character-listp chars1)
+                              (character-listp chars2))))
   (and (<= (len chars1) (len chars2))
        (equal chars1 (take (len chars1) chars2))))
 
@@ -257,8 +260,13 @@
 
 ;; A newline is printed before each item
 (defun check-first-arg-as-ctx (form thing-being-checked)
+  (declare (xargs :guard (and (pseudo-termp form) ; hope this is ok
+                              (consp form)
+                              (<= 1 (len (fargs form)))
+                              (thing-being-checkedp thing-being-checked))))
   (let ((ctx (farg1 form)))
-    (and (quotep ctx)
+    (and (quotep ctx) ; todo: strengthen to myquotep
+         (consp (cdr ctx))
          (symbolp (unquote ctx))
          (symbolp thing-being-checked)
          (not (eq (unquote ctx) thing-being-checked))
@@ -271,6 +279,11 @@
          (cw "~%   Context ~x0 is used in call of ~x1." ctx (ffn-symb form)))))
 
 (defun check-keys-of-alist-wrt-format-string (string alist call)
+  (declare (xargs :guard (and (stringp string)
+                              (pseudo-termp alist) ;todo: rename to alist-term
+                              (pseudo-termp call))
+                  :verify-guards nil ; todo
+                  ))
   (let* ((args-mentioned (args-in-format-string string)) ;these are chars
          (alist-keys (symbolic-strip-cars alist))
          (quoted-args-mentioned (enquote-list args-mentioned)))
@@ -301,14 +314,17 @@
            ;; we check the vals of the alist since the keys are always the digits 0 through 9:
            (check-keys-of-alist-wrt-format-string string alist call)))))
 
+;; (hard-error ctx str alist).
 (defun check-call-of-hard-error (call thing-being-checked suppress)
   (prog2$ (and (not (member-eq :context suppress))
                (check-first-arg-as-ctx call thing-being-checked))
           (let ((string (farg2 call)))
-            (and (quotep string)
-                 (let ((string (unquote string))
-                       (alist (farg3 call)))
-                   (check-keys-of-alist-wrt-format-string string alist call))))))
+            (and (quotep string) ; usually true
+                 (if (not (stringp (unquote string)))
+                     (cw "~%   Bad format string (second arg) in ~x0." call)
+                   (let ((string (unquote string))
+                         (alist (farg3 call)))
+                     (check-keys-of-alist-wrt-format-string string alist call)))))))
 
 (defun check-call-of-illegal (call thing-being-checked suppress)
   (prog2$ (and (not (member-eq :context suppress))
@@ -403,13 +419,14 @@
              (ts-eqlable (ts-union *ts-symbol*
                                    (ts-union *ts-character*
                                              *ts-acl2-number*))))
-          (progn$ (if arg1-symbolp
-                      (if arg2-symbolp
-                          (cw "~%   EQL test ~x0 could use EQ since both arguments are known to be symbols." orig-term)
-                        (cw "~%   EQL test ~x0 could use EQ since ~x1 is known to be a symbol." orig-term arg1))
-                    (if arg2-symbolp
-                        (cw "~%   EQL test ~x0 could use EQ since ~x1 is known to be a symbol." orig-term arg2)
-                      nil))
+          (progn$ (and (not (eq (fargn orig-term 1) 'acl2::case-do-not-use-elsewhere)) ; avoid flagging an EQL call that comes from CASE (todo: this doesn't catch cases where the selector is just a variable)
+                       (if arg1-symbolp
+                           (if arg2-symbolp
+                               (cw "~%   EQL test ~x0 could use EQ since both arguments are known to be symbols." orig-term)
+                             (cw "~%   EQL test ~x0 could use EQ since ~x1 is known to be a symbol." orig-term arg1))
+                         (if arg2-symbolp
+                             (cw "~%   EQL test ~x0 could use EQ since ~x1 is known to be a symbol." orig-term arg2)
+                           nil)))
                   (and arg1-numberp
                        arg2-numberp
                        (cw "~%   EQL test ~x0 could use = since both arguments are known to be numbers." orig-term))
@@ -680,9 +697,11 @@
                               (pseudo-termp term)
                               (natp step-limit))
                   :stobjs state
-                  :mode :program))
+                  :mode :program)
+           (ignore ctx) ; todo
+           )
   (b* (((when (not (logic-fnsp term (w state))))
-        (cw "(Skipping checking ~x0 for contradiction, since it's not entirely in :logic mode.)~%" ctx)
+        ;; (cw "(Skipping checking ~x0 for contradiction, since it's not entirely in :logic mode.)~%" ctx)
         state)
        ((mv erp res state)
         ;; TODO: Suppress step-limit error output here:
@@ -691,7 +710,7 @@
         (er hard? 'check-for-contradiction "Error checking for contradiction in ~s0: ~X12." description term nil)
         state))
     (if res
-        (prog2$ (cw "~%   ~s1 ~x2 is contradictory." ctx description term)
+        (prog2$ (cw "~%   ~s0 ~x1 is contradictory." description term)
                 state)
       state)))
 
@@ -776,7 +795,7 @@
          ((when erp)
           (er hard? 'check-for-implied-terms-aux "Error checking for implication in ~s0 in ~x1." description ctx)
           state)
-         (- (and res (cw "~%   ~s1 ~x2 is implied by others." ctx description term))))
+         (- (and res (cw "~%   ~s0 ~x1 is implied by others." description term))))
       (check-for-implied-terms-aux ctx description (rest terms) all-terms step-limit state))))
 
 ;; Checks whether any of the TERMS is implied by the others.  Returns state.
@@ -848,7 +867,7 @@
          ((when erp)
           (er hard? 'try-to-prove-with-some-hyp "Error attempting to weaken a hyp ~x0 in ~x1 to ~x2." original-hyp ctx hyp)
           state)
-         (- (and res (cw "~%   Hyp ~x1 can be weakened to ~x2." ctx original-hyp hyp))))
+         (- (and res (cw "~%   Hyp ~x0 can be weakened to ~x1." original-hyp hyp))))
       (try-to-prove-with-some-hyp ctx (rest hyps) other-hyps conclusion original-hyp step-limit state))))
 
 ;; Checks whether HYP can be dropped (or weakened), given the OTHER-HYPS, while
@@ -867,7 +886,7 @@
        ((when erp)
         (er hard? 'check-for-droppable-hyps "Error attempting to drop hyp ~x0 in ~x1." hyp ctx)
         state)
-       (- (and res (cw "~%   Drop hyp ~x1." ctx hyp)))
+       (- (and res (cw "~%   Drop hyp ~x0." hyp)))
        (state (if res
                   state ;; don't try to weaken, since the hyp can be dropped
                 (let* ((weakenings (get-weakenings hyp))
@@ -963,7 +982,7 @@
         (er hard? 'try-replacing-each-subterm "Error trying to generalize ~s0." ctx)
         state)
        ((when res)
-        (cw "~%   body can be generalized by replacing ~x1 with a fresh variable." ctx subterm)
+        (cw "~%   body can be generalized by replacing ~x0 with a fresh variable." subterm)
         state)
        ;; todo: skip this if the above succeeds:
 
@@ -978,8 +997,8 @@
        ((when erp)
         (er hard? 'try-replacing-each-subterm "Error trying to generalize ~s0." ctx)
         state)
-       (- (and res (cw "~%   body can be generalized by replacing ~x1 with a fresh variable, ~x2, satisfying ~x3."
-                       ctx subterm new-var
+       (- (and res (cw "~%   body can be generalized by replacing ~x0 with a fresh variable, ~x1, satisfying ~x2."
+                       subterm new-var
                        (type-set-to-term new-var subterm-ts state)))))
     state))
 
@@ -1083,6 +1102,7 @@
             (vars-bound-after-hyps (rest hyps) (union-eq hyp-vars acc))))))))
 
 (defun lint-conclusion (conclusion name hyps suppress)
+  (declare (ignore name)) ; todo
   (if (not (call-of 'equal conclusion)) ; todo: support iff, etc.?
       nil
     (let* ((lhs (farg1 conclusion))
@@ -1093,7 +1113,7 @@
           nil
         (and (not (subsetp-equal (free-vars-in-term rhs) vars-bound-after-hyps))
              (not (member-eq :free-vars-in-rhs suppress)) ; todo: currently impossible
-             (cw "~%   ~s1 ~x2 has free vars ~x3." name "rhs" rhs (set-difference-eq (free-vars-in-term rhs) vars-bound-after-hyps)))))))
+             (cw "~%   ~s0 ~x1 has free vars ~x2." "rhs" rhs (set-difference-eq (free-vars-in-term rhs) vars-bound-after-hyps)))))))
 
 (defun lint-conclusions (conclusions name hyps suppress)
   (declare (xargs :mode :program))

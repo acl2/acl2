@@ -24,10 +24,11 @@
 (include-book "kestrel/utilities/defopeners" :dir :system)
 (include-book "kestrel/utilities/polarity" :dir :system)
 ;(local (include-book "kestrel/bv/rules10" :dir :system))
-(include-book "kestrel/axe/rules2" :dir :system) ;drop?
+;(include-book "kestrel/axe/rules2" :dir :system) ;drop?
 (include-book "kestrel/bv/rules3" :dir :system)
 (include-book "kestrel/utilities/mv-nth" :dir :system)
 ;(include-book "kestrel/utilities/def-constant-opener" :dir :system)
+(include-book "kestrel/alists-light/lookup" :dir :system)
 (local (include-book "linear-memory"))
 (local (include-book "kestrel/bv/logand-b" :dir :system))
 (local (include-book "kestrel/bv/logior-b" :dir :system))

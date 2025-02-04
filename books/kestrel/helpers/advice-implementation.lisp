@@ -1,6 +1,6 @@
 ; A tool to get proof advice from a server over the web
 ;
-; Copyright (C) 2022-2024 Kestrel Institute
+; Copyright (C) 2022-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -3229,7 +3229,7 @@
          (- (if print-timep
                 (let* ((time-diff (- done-time start-time))
                        (time-diff (if (< time-diff 0)
-                                      (prog2$ (cw "Warning: negative elapsed time reported: ~x0.~%")
+                                      (prog2$ (cw "Warning: negative elapsed time reported: ~x0.~%" model)
                                               0)
                                     time-diff)))
                   (progn$ (cw "Got ~x0 recs in " (len recs))
@@ -3301,7 +3301,7 @@
                  (- (if (and print-timep ml-modelp)
                         (let* ((time-diff (- done-time start-time))
                                (time-diff (if (< time-diff 0)
-                                              (prog2$ (cw "Warning: negative elapsed time reported: ~x0.~%")
+                                              (prog2$ (cw "Warning: negative elapsed time reported: ~x0.~%" model)
                                                       0)
                                             time-diff)))
                           (progn$ (cw "Started model in ")
