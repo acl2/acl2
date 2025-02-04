@@ -30,7 +30,7 @@
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system)) ;todo
-(local (include-book "kestrel/axe/rules3" :dir :system)) ; todo
+(local (include-book "kestrel/axe/rules3" :dir :system)) ; todo drop but this gets us rules like acl2::getbit-when-<-of-bvchop-and-constant-high ?
 
 (local (in-theory (enable acl2::slice-becomes-getbit)))
 (local (in-theory (disable acl2::equal-of-bvchops-when-equal-of-getbits ;todo: looped, should have 32 in the name
@@ -393,7 +393,8 @@
   :hints (("Goal" :in-theory (enable jle-condition
                                      sbvlt
                                      x86isa::zf-spec
-                                     sf-spec32))))
+                                     sf-spec32
+                                     logext))))
 
 ;todo: drop since the of-spec32 term is always 0
 (defthm jle-condition-rewrite-3
@@ -406,7 +407,8 @@
                                      sbvlt
                                      x86isa::zf-spec
                                      sf-spec32
-                                     of-spec32))))
+                                     of-spec32
+                                     logext))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
