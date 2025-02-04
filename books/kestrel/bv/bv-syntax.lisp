@@ -133,7 +133,7 @@
                nil)
       nil)))
 
-;fixme use this more?
+;use this more?
 ;speed this up?
 ;todo: make a version restricted to non-arithmetic ops?
 (defun bind-var-to-bv-term-size-if-trimmable (var-name term)
@@ -155,16 +155,14 @@
           ;;(< width (integer-length (unquote term)))
           (<= (expt 2 width) (unquote term)) ;this may be faster, since expt may be built in (maybe just a shift)?
           )
-    ;; term must be a nodenum, so look it up
     (and (consp term)
          (or (member-eq (ffn-symb term)
-                        (if (eq 'all operators) ;TODO: Use :all instead?
+                        (if (eq :all operators)
                             *trimmable-operators*
                           *trimmable-non-arithmetic-operators*))
 ;trimming a read from a constant array can turn a single read operation into many (one for each bit)
 ;but do we need the trimming to use the rules that find patterns in array values?
 ;maybe we should trim iff we are using getbit-of-bv-array-read?
-
              ;;                    ;fixme this may be a bad idea?
              ;;                    (and (eq 'bv-array-read (ffn-symb term))
              ;;                         (quotep (farg4 term)))
@@ -176,6 +174,7 @@
 ;TODO: Does this functionality already exist?
 ;OPERATORS should be ':all or ':non-arithmetic
 ;maybe we should add the option to not trim logical ops?  but that's not as dangerous as trimming arithmetic ops...
+;; not used much
 (defund term-should-be-trimmed (quoted-width term operators)
   (declare (xargs :guard (and (myquotep quoted-width)
                               (natp (unquote quoted-width))
