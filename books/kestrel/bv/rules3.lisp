@@ -2020,18 +2020,38 @@
          (bvcat 8 (bvuminus 8 x) 8 0))
   :hints (("Goal" :in-theory (e/d (bvuminus bvcat bvminus) (bvminus-becomes-bvplus-of-bvuminus)))))
 
-;gen or add non-axe trim rule?
-(defthm bvplus-of-bvcat
-  (equal (bvplus 16 x (bvcat 24 y 8 0))
-         (bvplus 16 x (bvcat 8 y 8 0)))
-  :hints (("Goal" :in-theory (e/d (bvplus) ()))))
+;; ;gen or add non-axe trim rule?
+;; (defthm bvplus-of-bvcat
+;;   (equal (bvplus 16 x (bvcat 24 y 8 0))
+;;          (bvplus 16 x (bvcat 8 y 8 0)))
+;;   :hints (("Goal" :in-theory (e/d (bvplus) ()))))
 
 ;gen!
-(defthm bvplus-of-bvshl-becomes-bvcat
-  (implies (and (unsigned-byte-p 8 x)
-                (unsigned-byte-p 8 y))
-           (equal (bvplus 16 x (bvshl 32 y 8)) ;trim the bvshl?
-                  (bvcat 8 y 8 x)))
+;; (defthm bvplus-of-bvshl-becomes-bvcat
+;;   (implies (and (unsigned-byte-p 8 x)
+;;                 (unsigned-byte-p 8 y))
+;;            (equal (bvplus 16 x (bvshl 32 y 8)) ;trim the bvshl?
+;;                   (bvcat 8 y 8 x)))
+;;   :hints (("Goal" :in-theory (enable bvshl-rewrite-with-bvchop))))
+
+(defthm bvplus-of-bvshl-becomes-bvcat-arg2
+  (implies (and (<= amt size2)
+                (= size2 size) ; todo: gen!
+                (natp size2)
+                (unsigned-byte-p amt x)
+                (natp size))
+           (equal (bvplus size (bvshl size2 y amt) x)
+                  (bvcat (- size2 amt) y amt x)))
+  :hints (("Goal" :in-theory (enable bvshl-rewrite-with-bvchop))))
+
+(defthm bvplus-of-bvshl-becomes-bvcat-arg3
+  (implies (and (<= amt size2)
+                (= size2 size) ; todo: gen!
+                (natp size2)
+                (unsigned-byte-p amt x)
+                (natp size))
+           (equal (bvplus size x (bvshl size2 y amt))
+                  (bvcat (- size2 amt) y amt x)))
   :hints (("Goal" :in-theory (enable bvshl-rewrite-with-bvchop))))
 
 ;fixme just add support for bvshl to trim? and then rewrite (bvshl 6 x 8) to 0..
