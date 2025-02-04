@@ -1181,8 +1181,6 @@
                   (bv-array-write 8 (+ 1 (len data)) 0 a (cons 0 data))))
   :hints (("Goal" :in-theory (enable bv-array-write update-nth2))))
 
-(in-theory (enable nth-of-bv-array-write-becomes-bv-array-read))
-
 (defthm bv-array-read-of-myif
   (equal (bv-array-read esize len index (myif test x y))
          (myif test (bv-array-read esize len index x) (bv-array-read esize len index y)))
@@ -1195,7 +1193,7 @@
            (equal (bvif size1 test (bv-array-read size2 len index data) z)
                   (bvif size1 test (bv-array-read size1 len index data) z)))
   :hints (("Goal" :in-theory (e/d (bvif myif bv-array-read)
-                                  (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ
+                                  (
                                    ;;MYIF-OF-GETBIT-BECOMES-BVIF-ARG2 MYIF-OF-GETBIT-BECOMES-BVIF-ARG1
                                    )))))
 
@@ -1206,7 +1204,7 @@
            (equal (bvif size1 test z (bv-array-read size2 len index data))
                   (bvif size1 test z (bv-array-read size1 len index data))))
   :hints (("Goal" :in-theory (e/d (bvif myif bv-array-read)
-                                  (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ
+                                  (
                                    ;;MYIF-OF-GETBIT-BECOMES-BVIF-ARG2 MYIF-OF-GETBIT-BECOMES-BVIF-ARG1
                                    )))))
 
@@ -1240,7 +1238,7 @@
                   (bv-array-read (width-of-widest-int vals) (len vals) index vals)))
   :hints (("Goal" :in-theory (e/d (BV-ARRAY-READ ;bvnth
                                    ceiling-of-lg)
-                                  (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ)))))
+                                  ()))))
 
 ;compare to nth-becomes-bv-array-read-strong
 (defthmd nth-becomes-bv-array-read-strong2
@@ -1270,7 +1268,7 @@
   :hints
   (("Goal" :in-theory (e/d (bv-array-read ceiling-of-lg)
                            (;list::nth-of-cons
-                            NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ)))))
+                            )))))
 
 ;;from des encrypt sun:
 
@@ -1305,9 +1303,7 @@
   :hints (("Goal"
            :use (:instance unsigned-byte-p-of-width-of-widest-int-nth (vals data))
            :in-theory (e/d (bv-array-read-opener) (unsigned-byte-p-of-width-of-widest-int-nth
-                                                   all-unsigned-byte-p-of-width-of-widest-int
-                                                   nth-of-bv-array-write-becomes-bv-array-read
-                                                   )))))
+                                                   all-unsigned-byte-p-of-width-of-widest-int)))))
 
 ;bozo use this more
 ;can be expensive (e.g., if val is a bvcat and the value already there is a constant - then we split the bvcat, etc.)
@@ -1325,7 +1321,7 @@
                                                   update-nth-when-equal-of-nth
                                                   )
                                   ( ;take-of-bvchop-list
-                                   NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ)))))
+                                   )))))
 
 ;; ;just use a trim rule?
 ;; (defthm bvxor-of-bad-constant
@@ -1364,7 +1360,7 @@
            (equal (bv-array-read element-size len index (subrange start end lst))
                   (bv-array-read element-size (+ 1 end) (+ start index) lst)))
   :hints (("Goal" :in-theory (e/d (bv-array-read-opener bvchop-when-i-is-not-an-integer subrange)
-                                  (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ)))))
+                                  ()))))
 
 ;; (defthm logext-list-of-myif-of-logext-list-arg2
 ;;   (equal (logext-list 8 (myif test x (logext-list 8 y)))
@@ -1441,7 +1437,7 @@
                   (bv-array-read width2 len index (bv-array-write width2 len index2 val lst))))
   :hints (("Goal" :in-theory (e/d (bv-array-read bv-array-write
                                                  BVCHOP-WHEN-I-IS-NOT-AN-INTEGER)
-                                  (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ
+                                  (
                                    ;BVCHOP-LIST-OF-TAKE
                                    )))))
 
@@ -1475,7 +1471,7 @@
            (equal (bv-array-read width1 len index (bvchop-list width2 lst))
                   (bv-array-read width2 len index lst)))
   :hints (("Goal" :in-theory (e/d (bv-array-read bvchop-when-i-is-not-an-integer)
-                                  (nth-of-bv-array-write-becomes-bv-array-read)))))
+                                  ()))))
 
 (in-theory (disable size-non-negative-when-unsigned-byte-p-free)) ;this caused problems..
 
@@ -1500,7 +1496,7 @@
   (equal (bv-array-read element-size 2 (getbit 0 x) lst)
          (bv-array-read element-size 2 x lst))
   :hints (("Goal" :in-theory (e/d (bv-array-read bvchop-when-i-is-not-an-integer getbit-when-val-is-not-an-integer getbit)
-                                  (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ)))))
+                                  ()))))
 
 ;; (defthm take-of-logext-list
 ;;   (implies (and (<= n (len lst)) (natp n))
@@ -1576,7 +1572,7 @@
 ;bvcat
                             )
                            (;bif-rewrite
-                            NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ
+                            
                             BVCAT-OF-GETBIT-AND-X-ADJACENT
                             TIMES-4-BECOMES-LOGAPP
                             BVCAT-OF-GETBIT-AND-X-ADJACENT
@@ -1638,7 +1634,7 @@
            :in-theory (e/d (BV-ARRAY-CLEAR bv-array-write BV-ARRAY-READ update-nth2
                                            UPDATE-NTH-WHEN-EQUAL-OF-NTH
                                            equal-of-update-nth-new)
-                           (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ
+                           (
                             UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN)))))
 
 ;; (defthm bv-array-write-equal-rewrite
@@ -1748,7 +1744,7 @@
 ;;   :hints
 ;;   (("Goal" :cases ((equal 0 (len lst))) ;yuck
 ;;     :in-theory (e/d (bvchop-when-i-is-not-an-integer
-;;                        bv-array-read) (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ)))))
+;;                        bv-array-read) ()))))
 
 
 ;move
@@ -1774,7 +1770,7 @@
                 (<= (integer-length (+ -1 len)) width2))
            (equal (bv-array-read width len (logext width2 index) data)
                   (bv-array-read width len index data)))
-  :hints (("Goal" :in-theory (e/d (bv-array-read ceiling-of-lg) (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ)))))
+  :hints (("Goal" :in-theory (e/d (bv-array-read ceiling-of-lg) ()))))
 
 
 ;; (thm
@@ -1961,7 +1957,7 @@
            (equal (equal (nth n x) (bv-array-read size len n x))
                   t))
   :hints (("Goal" :in-theory (e/d (bv-array-read-opener)
-                                  (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ)))))
+                                  ()))))
 
 (defthm equal-of-nth-and-bv-array-read-alt
   (implies (and (<= len (len x))
@@ -1983,7 +1979,7 @@
            (equal (equal (bvchop size (nth n x)) (bv-array-read size len n x))
                   t))
   :hints (("Goal" :in-theory (e/d (bv-array-read-opener ;LIST::NTH-WITH-LARGE-INDEX
-                                   ) (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ)))))
+                                   ) ()))))
 
 (defthm equal-of-bvchop-of-nth-and-bv-array-read
   (implies (and (equal len (len x)) ;relax?
@@ -2061,7 +2057,7 @@
     :IN-THEORY (E/d (BV-ARRAY-READ BV-ARRAY-WRITE update-nth2
                      BVCHOP-WHEN-I-IS-NOT-AN-INTEGER)
                     (;BVCHOP-OF-NTH-BECOMES-BV-ARRAY-READ
-                     NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ
+                     
                      UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN
                      )))))
 
@@ -2320,7 +2316,7 @@
                                            len index data) y)))
   :hints (("Goal" :in-theory (e/d (bv-array-read natp)
                                   (;list::nth-of-cons
-                                   NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ
+                                   
                                    )))))
 
 (defthm bvplus-of-bv-array-read-arg2
@@ -2331,7 +2327,7 @@
                   (bvplus n x (bv-array-read n len index data))))
   :hints (("Goal" :in-theory (e/d (bv-array-read natp)
                                   (;list::nth-of-cons
-                                   NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ)))))
+                                   )))))
 
 ;hack for rc2..
 (defthmd bvuminus-of-bv-array-read
@@ -2342,7 +2338,7 @@
                   (bvuminus n (bv-array-read n len index data))))
   :hints (("Goal" :in-theory (e/d (bv-array-read natp)
                                   (;list::nth-of-cons
-                                   NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ)))))
+                                   )))))
 
 ;is this strictly better?
 (defthm take-of-bv-array-write-better
@@ -2446,7 +2442,7 @@
                                    ;;LIST::NTH-WITH-LARGE-INDEX
                                    natp posp bv-array-read GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER BVCHOP-WHEN-I-IS-NOT-AN-INTEGER)
                                   (;LIST::NTH-OF-CONS
-                                   NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ)))))
+                                   )))))
 
 (defthmd bv-array-read-blast-helper
   (implies (and (< 1 element-width)
@@ -2537,7 +2533,7 @@
                 (<= len (len array)))
            (equal (bv-array-read elem-size len index (take len array))
                   (bv-array-read elem-size (len array) index array)))
-  :hints (("Goal" :in-theory (e/d (bv-array-read-opener) (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ)))))
+  :hints (("Goal" :in-theory (e/d (bv-array-read-opener) ()))))
 
 ;has the right len for the read in the rhs
 ;move
@@ -2560,7 +2556,7 @@
   (("Goal"
     :IN-THEORY
     (E/D (BV-ARRAY-READ-OPENER BVCHOP-WHEN-I-IS-NOT-AN-INTEGER)
-         (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ)))))
+         ()))))
 
 (defthm bv-array-write-of-bv-array-write-diff-constant-indices-work-hard
   (implies (and (syntaxp (quotep index1))

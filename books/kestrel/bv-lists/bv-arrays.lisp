@@ -1,7 +1,7 @@
 ; Rules about bv-array operations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -577,7 +577,7 @@
 ;;   :HINTS
 ;;   (("Goal" :cases ((< INDEX (LEN LST)))
 ;;     :IN-THEORY (E/d (BVCHOP-WHEN-I-IS-NOT-AN-INTEGER
-;;                        BV-ARRAY-READ) (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ)))))
+;;                        BV-ARRAY-READ) ()))))
 
 ;; Chops down the index if needed
 (defthm bv-array-read-when-index-is-too-high
@@ -884,8 +884,7 @@
   (("Goal" :in-theory (e/d (bvchop-when-i-is-not-an-integer
                             BV-ARRAY-WRITE-opener
                             bv-array-read-opener update-nth2)
-                           (NTH-OF-BV-ARRAY-WRITE-BECOMES-BV-ARRAY-READ
-                            ARRAY-REDUCTION-WHEN-ALL-SAME)))))
+                           (ARRAY-REDUCTION-WHEN-ALL-SAME)))))
 
 ;rename
 (defthmd bv-array-write-when-data-isnt-an-all-unsigned-byte-p
@@ -907,6 +906,7 @@
                        UPDATE-NTH2))))
 
 ;disable?
+;rename
 (defthm nth-of-bv-array-write-becomes-bv-array-read-strong
   (implies (natp len)
            (equal (nth n (bv-array-write esize len index val data))

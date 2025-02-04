@@ -1,7 +1,7 @@
 ; Mixed theorems about bit-vector operations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -140,7 +140,7 @@
                 )
            (< (+ z (* (expt 2 n) x))
               (* (expt 2 n) y)))
-  :hints (("Goal" :in-theory (disable ;ineq-hack2 ineq-hack
+  :hints (("Goal" :in-theory (disable ; ineq-hack
                               *-preserves->=-for-nonnegatives <-*-right-cancel *-preserves->-for-nonnegatives-1)
            :use (:instance multiply-both-sides-hack (x y) (y (+ 1 x)) (z (expt 2 n))))))
 

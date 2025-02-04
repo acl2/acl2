@@ -2755,7 +2755,7 @@
 
 ;; (local (include-book "kestrel/axe/axe-rules-mixed" :dir :system))
 ;; ;move
-;; (local (in-theory (disable ACL2::INEQ-HACK2
+;; (local (in-theory (disable
 ;;                            ACL2::INEQ-HACK
 ;;
 ;;                            )))
