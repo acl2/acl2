@@ -3147,7 +3147,7 @@
   :rule-classes ((:rewrite :backchain-limit-lst (0 nil nil nil nil)))
   :hints (("Goal"
            :use (:instance split-with-bvcat (x (slice high low x)) (hs 1) (ls (+ -1 size)))
-           :in-theory (e/d (bvminus bvuminus bvcat logapp bvplus slice-becomes-getbit)
+           :in-theory (e/d (bvminus bvuminus bvcat logapp bvplus slice-becomes-getbit ineq-hack)
                            (bvminus-becomes-bvplus-of-bvuminus)))))
 
 (in-theory (disable BVCHOP-EQUAL-CONSTANT-REDUCE-WHEN-TOP-BIT-3-2-4)) ;if it's a hyp we don't want to reduce it..

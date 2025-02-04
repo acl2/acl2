@@ -2670,7 +2670,8 @@
 
 ;see the file "loops"
 ;rename
-(defthm ineq-hack
+;drop, but used in rules3.lisp and some derivations
+(defthmd ineq-hack
   (implies (and (< a b) ;free var
                 (<= b c)
 ;                (rationalp a)
