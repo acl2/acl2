@@ -729,34 +729,37 @@
        (declares (and (defun-or-mutual-recursion-formp event) ; todo: what if not (e.g., a define?)
                       (get-declares-from-event fn event)))
        (xargs (get-xargs-from-declares declares))
-       (guard-debug-res (assoc-keyword :guard-debug xargs))
-       (guard (fn-guard fn (w state)))
-       ;; Initialize the type-alist by assuming the function's guard:
-       ((mv & & type-alist & &)
-        (if assume-guards
-            (assume-true-false guard nil nil nil nil (ens state) (w state) nil nil nil)
-          ;; Start with a type-alist of nil since we are not assuming guards:
-          (mv nil nil nil nil nil))))
-    (progn$ (and (not (member-eq :guard-debug suppress))
-                 guard-debug-res
-                 (cw "~%    Remove :guard-debug xarg, ~x0." (second guard-debug-res)))
-            ;; Apply the linter to the guard:
-            (and (not (equal guard *t*)) ;; a guard of T is resolvable but uninterseting
-                 (lint-term guard
-                             nil ;empty substitution
-                             nil ;type-alist
-                             t   ;iff-flag
-                             (concatenate 'string "guard of " (symbol-to-string fn))
-                             suppress state))
-            ;; Apply the linter to the body:
-            (lint-term body
-                        nil ;empty substitution
-                        type-alist
-                        nil ;iff-flag
-                        fn
-                        suppress state)
-            (let ((state (check-for-contradiction fn "guard" guard step-limit state)))
-              state))))
+       (guard (fn-guard fn (w state))))
+    (progn$
+     ;; Check for :guard-debug:
+     (and (not (member-eq :guard-debug suppress))
+          (let ((guard-debug-res (assoc-keyword :guard-debug xargs)))
+            (and guard-debug-res
+                 (cw "~%    Remove :guard-debug xarg, ~x0." (second guard-debug-res)))))
+     ;; Apply the linter to the guard:
+     (and (not (equal guard *t*)) ;; a guard of T is resolvable but uninteresting ; todo: move this check into lint-term?
+          (lint-term guard
+                     nil ;empty substitution
+                     nil ;type-alist
+                     t   ;iff-flag
+                     (concatenate 'string "guard of " (symbol-to-string fn))
+                     suppress state))
+     ;; Apply the linter to the body:
+     (b* (       ;; Initialize the type-alist by assuming the function's guard:
+          ((mv & & type-alist & &)
+           (if assume-guards
+               (assume-true-false guard nil nil nil nil (ens state) (w state) nil nil nil)
+             ;; Start with a type-alist of nil since we are not assuming guards:
+             (mv nil nil nil nil nil))))
+       (lint-term body
+                  nil ;empty substitution
+                  type-alist
+                  nil ;iff-flag
+                  fn
+                  suppress state))
+     ;; Check for contradictory guard:
+     (let ((state (check-for-contradiction fn "guard" guard step-limit state)))
+       state))))
 
 ;; Returns state.
 (defun lint-defuns (fns assume-guards suppress skip-fns step-limit state)
