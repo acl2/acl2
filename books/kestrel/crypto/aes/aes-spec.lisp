@@ -724,8 +724,8 @@
                               (expanded-keyp w nk))
                   :guard-hints (("Goal" :in-theory (enable expanded-keyp)))))
   (if (and (< i nk)
-           (integerp i)
-           (integerp nk))
+           (mbt (integerp i))
+           (mbt (integerp nk)))
       (let* ((w (update-nth i
                             (make-word (nth (* 4 i) key)
                                        (nth (+ (* 4 i) 1) key)
@@ -768,8 +768,8 @@
                                                          acl2::mod-by-4-becomes-bvchop ;todo
                                                          ))))))
   (if (and (< i bound)
-           (integerp i)
-           (integerp bound))
+           (mbt (integerp i))
+           (mbt (integerp bound)))
       (let* ((temp (nth (+ -1 i) w))
              (temp (if (equal (mod i nk) 0)
                        (wordxor (subword (rotword temp)) (nth (/ i nk) *rcon*))
