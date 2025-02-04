@@ -739,7 +739,7 @@
           (mv nil nil nil nil nil))))
     (progn$ (and (not (member-eq :guard-debug suppress))
                  guard-debug-res
-                 (cw "(~x0 has a :guard-debug xarg, ~x1." fn (second guard-debug-res)))
+                 (cw "~%    Remove :guard-debug xarg, ~x0." (second guard-debug-res)))
             ;; Apply the linter to the guard:
             (and (not (equal guard *t*)) ;; a guard of T is resolvable but uninterseting
                  (lint-term guard
