@@ -795,8 +795,9 @@
      slice-subst-in-constant
      slice-subst-in-constant-alt
      slice-when-bvchop-known    ;new
-     bvplus-of-bvshl              ;new ; rename or drop
-     bvplus-of-bvshl-becomes-bvcat ;new
+     ;bvplus-of-bvshl              ;new ; rename or drop
+     bvplus-of-bvshl-becomes-bvcat-arg2
+     bvplus-of-bvshl-becomes-bvcat-arg3
      bvuminus-of-bvcat-of-0-16-8 ;new!
 
      bvplus-of-bvchop-and-bvshl ;new
@@ -1829,7 +1830,7 @@
     trim-of-bvchop
     trim-of-bvcat
     trim-of-1-and-leftrotate ; todo: add full trim support for rotate ops
-    trim-does-nothing-axe ; should not be needed?
+    ;; trim-does-nothing-axe ; should not be needed?
     )))
 
 (defun all-trim-rules ()
@@ -3317,6 +3318,8 @@
              move-negative-addend-1
              unicity-of-0
              collect-constants-over-<
+             collect-constants-over-<-2
+
              natp
 
              rationalp-when-bv-operator
@@ -3803,8 +3806,6 @@
              posp
 ;             natp ;loops with not-<-of-0-when-natp
 ;natp-when-integerp
-
-             collect-constants-over-<-2
 
              equal-of-cons
 ;             bv-array-write-with-index-and-len-same ;mon jul 19 21:06:14 2010

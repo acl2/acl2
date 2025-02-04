@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in operation +.
 ;
-; Copyright (C) 2019-2024 Kestrel Institute
+; Copyright (C) 2019-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -50,7 +50,7 @@
 ;; the nth addend (1-based) and there are more addends, whereas "n" means x is
 ;; the nth addend and there are no more.
 
-;; In this series, there is a + on side of the equality and a variable on the
+;; In this series, there is a + on one side of the equality and a variable on the
 ;; other (but see the series just below).
 
 (defthm equal-of-+-cancel-1+

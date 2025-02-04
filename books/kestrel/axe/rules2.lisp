@@ -294,7 +294,6 @@
 ;;            :in-theory (e/d (;LIST::2SET
 ;;                             ) (set::double-containment)))))
 
-
 ;; ;mixes theories?
 ;; (defthm nthcdr-of-push
 ;;   (implies (and (integerp n)
@@ -2394,8 +2393,6 @@
 ;;   :hints (("Goal" :in-theory (e/d ((s) ;bozo
 ;;                                    jvm::INITIALIZE-ONE-DIM-ARRAY) ( s==r)))))
 
-(theory-invariant (incompatible (:rewrite CLEAR-FIELD-OF-S) (:rewrite S-OF-CLR)))
-
 ;this may help shrink the term size...
 ;note that this cuts the mentions of b from 2 to 1.
 (defthm myif-of-cons-same-cdrs
@@ -2558,42 +2555,7 @@
 ;;  (equal (BVXOR 27 x (+ y (* 2 z (LOGEXT 31 w))))
 ;;         (BVXOR 27 x (+ y (* 2 z w)))))
 
-(defthmd take-differs-hack
-  (implies (and (not (equal (take n lst1) ;binds n
-                            (take n lst2)))
-                (not (equal (take n x)
-                            (take n y))))
-           (equal (equal x y)
-                  nil)))
 
-(defthmd nthcdr-differs-hack
-  (implies (and (not (equal (nthcdr n lst1) ;binds n
-                            (nthcdr n lst2)))
-                (not (equal (nthcdr n x)
-                            (nthcdr n y))))
-           (equal (equal x y)
-                  nil)))
-
-(defthmd nth-differs-hack
-  (implies (and (not (equal (nth n lst1) ;binds n
-                            (nth n lst2)))
-                (not (equal (nth n x)
-                            (nth n y))))
-           (equal (equal x y)
-                  nil)))
-
-;problems happen when n is a huge constant...
-(defthm take-plus-1-hack
-  (implies (and (syntaxp (not (quotep n))) ;BOZO
-                (equal (take n x)
-                       (take n y))
-                (equal (len x) (len y))
-                (natp n))
-           (equal (equal (take (+ 1 n) x)
-                         (take (+ 1 n) y))
-                  (equal (nth n x)
-                         (nth n y))))
-  :hints (("Goal" :in-theory (enable take))))
 
 ;(in-theory (disable UPDATE-NTH-WITH-last-VAL))
 ;(in-theory (disable MEMBERP-NTH-AND-CDR)) ;bozo
@@ -2664,29 +2626,6 @@
 ;;  (equal (append (take n x) (nthcdr n x))
 ;;         x))
 
-(defthmd nth-differs-hack2
-  (implies (not (equal (nth n x)
-                       (nth n y)))
-           (equal (equal x y)
-                  nil)))
-
-(defthm nthcdrs-differ-when-nths-differ
-  (implies (and (NOT (EQUAL (NTH m lst1) (NTH m lst2))) ;binds m
-                (<= n m)
-                (natp n)
-                (natp m)
-                )
-           (NOT (EQUAL (NTHCDR n lst1) (NTHCDR n lst2))))
-  :hints (("Goal" :use (:instance nth-differs-hack2 (n (- m n)) (x (NTHCDR n lst1)) (y (NTHCDR n lst2))))))
-
-(defthmd nthcdr-when-its-just-the-last-elem
-  (implies (and (equal n (+ -1 (len x)))
-                (natp n))
-           (equal (NTHCDR n x)
-                  (cons (nth n x) (FINALCDR X))))
-  :hints (("Goal" :in-theory (enable ;EQUAL-CONS-CASES2
-                              ))))
-
 ;update-nth 0 when the list is at most 1 long..
 
 ;BOZO more like this?
@@ -2709,16 +2648,9 @@
 ;;                          (G (OLD 1 "toarray") (JVM::HEAP S1))
 ;;                          (JVM::HEAP S0)))
 
-
-;why I do prefer the latter?  I guess because it makes crystal clear the fact that we don't care about the values of x, only its length
-;; (defthm consp-cdr
-;;   (equal (consp (cdr x))
-;;          (<= 2 (len x))))
-
 ;(in-theory (disable LEN-LESS-THAN-2-REWRITE))
 
 ;(in-theory (disable LOGEXT-NEGATIVE)) ;i don't think i like this one...
-
 
 ;; (defthm gross1
 ;;  (implies (ARRAY-REFP ref
@@ -2738,26 +2670,27 @@
 
 ;see the file "loops"
 ;rename
-(defthm ineq-hack
+;drop, but used in rules3.lisp and some derivations
+(defthmd ineq-hack
   (implies (and (< a b) ;free var
                 (<= b c)
-                (rationalp a)
-                (rationalp b)
-                (rationalp c)
-                )
-           (not (< c a)))
-  :rule-classes ((:rewrite :backchain-limit-lst (nil 2 nil nil nil))))
-
-;rename
-(defthm ineq-hack2
-  (implies (and (< a b) ;free var
-                (<= b c)
-;       (integerp a)
-;      (integerp b)
-;     (integerp c)
+;                (rationalp a)
+ ;               (rationalp b)
+  ;              (rationalp c)
                 )
            (not (< c a)))
   :rule-classes ((:rewrite :backchain-limit-lst (nil 2))))
+
+;; ;rename
+;; (defthm ineq-hack2
+;;   (implies (and (< a b) ;free var
+;;                 (<= b c)
+;; ;       (integerp a)
+;; ;      (integerp b)
+;; ;     (integerp c)
+;;                 )
+;;            (not (< c a)))
+;;   :rule-classes ((:rewrite :backchain-limit-lst (nil 2))))
 
 ;move to be next to the other one
 (defthm not-less-when->=-max-of-containing-bag
@@ -3068,21 +3001,9 @@
            ;; this says x <= y but matches better
            (not (< y x))))
 
-;(in-theory (disable LIST::LEN-EQUAL-1-REWRITE)) ;was looping
-
 ;;
 ;; stuff about arrays of unsigned bytes (BOZO gen to array of arbitrary type elements - we have that notion in ../bvseq/arrays)
 ;;
-(defthm take-when-<-of-len
-  (implies (< (len x) n) ;could be expensive?
-           (equal (take n x)
-                  (if (zp n)
-                      nil
-                    (append x
-                            (repeat (- (nfix n) (len x))
-                                    nil)))))
-  :hints (("Goal" :in-theory (e/d (take; list::nth-append
-                                   ) (take-of-cdr-becomes-subrange)))))
 
 ;could restrict this to constants k and free
 (defthm bound-lemma
@@ -3091,17 +3012,6 @@
                 )
            (< (+ k y) x)))
 
-;move?
-(theory-invariant (incompatible (:rewrite TAKE-EQUAL-LENGTHEN) (:rewrite NTHS-EQUAL-WHEN-TAKES-EQUAL)))
-
-(defthmd nths-equal-when-takes-equal
-  (implies (and (equal (take n lst1) (take n lst2))
-                (< 0 n)
-                (integerp n))
-           (EQUAL (NTH 0 lst1)
-                  (NTH 0 lst2)))
-  :hints (("Goal" :in-theory (enable take))))
-
 ;; (defthm nths-equal-when-takes-equal-gen
 ;;   (implies (and (equal (take n lst1) (take n lst2))
 ;;                 (< m n)
@@ -3109,26 +3019,6 @@
 ;;                 (integerp n))
 ;;            (EQUAL (NTH m lst1)
 ;;                   (NTH m lst2))))
-
-;move
-;maybe this doesn't loop like the other one does?
-(DEFTHM TAKE-EQUAL-LENGTHEN-cheap
-  (IMPLIES (AND (EQUAL (NTH N LST1) (NTH N LST2))
-                (< N (LEN LST1))
-                (< N (LEN LST2))
-                (<= 0 N)
-                (INTEGERP N))
-           (EQUAL (EQUAL (TAKE N LST1)
-                         (TAKE N LST2))
-                  (EQUAL (TAKE (+ 1 N) LST1)
-                         (TAKE (+ 1 N) LST2))))
-  :rule-classes ((:rewrite :backchain-limit-lst (0 nil nil nil nil)))
-  :HINTS (("Goal" :DO-NOT '(GENERALIZE ELIMINATE-DESTRUCTORS)
-           :IN-THEORY (E/d (TAKE NTH) (nth-of-cdr)))))
-
-
-
-;gen  (LEN (TAKE N L))
 
 ;when i need this, lst is the call-stack
 ;or just use + of if
