@@ -33,10 +33,12 @@
     slice
     bvcat
     ;;bv-array-read - trimming array reads seemed bad.  a trimmed array read won't have the same value on test cases as the nth of the corresponding arguments (which will be wider).  Also, if we have a lemma about (bv-array-read 32 80 index <some-function>) but the read is trimmed to less than 32 bits the lemma wont fire on the trimmed read (could get around this if we had bind-free-from-rules) - ffixme maybe we do want to trim reads of constant arrays?
-;bvplus bvminus bvmult ;leaving these off, since the bvchop of blah rules may not always be on...
     bvsx ;trying
     repeatbit))
 
+;; These are separate because we trim them less often (perhaps because
+;; bit-blasting them is less nice, or because slice does not nicely distribute
+;; over them):
 (defconst *trimmable-arithmetic-operators* ; rename to *trimmable-arithmetic-bv-operators* ?
   '(bvplus bvmult bvminus bvuminus))
 
@@ -44,14 +46,13 @@
   (append *trimmable-arithmetic-operators*
           *trimmable-non-arithmetic-operators*))
 
-;these don't have nice trim rules (think more, esp about bvmod)
-(defconst *non-trimmable-bv-operators*
-  '( ;;
-    sbvdiv sbvrem
-    bvdiv bvmod
-    bv-array-read ;added since we are not trimming reads any more
-    ;; todo: add bvshr?
-    ))
+;; ;these don't have nice trim rules (think more, esp about bvmod)
+;; (defconst *non-trimmable-bv-operators*
+;;   '(sbvdiv sbvrem
+;;     bvdiv bvmod
+;;     bv-array-read ;added since we are not trimming reads any more ; todo: this is not even a bv opoerator
+;;     ;; todo: add bvshr?
+;;     ))
 
 ; are these only bv operators?
 ;rename to *bv-operators* ?
@@ -122,6 +123,7 @@
  (or (natp (bv-term-size term))
      (null (bv-term-size term))))
 
+;; Returns an alist binding VAR to the size of TERM, or nil to indicate failure.
 (defun bind-var-to-bv-term-size (var term)
   (declare (xargs :guard (pseudo-termp term)))
   (let ((size (bv-term-size term)))
@@ -185,4 +187,5 @@
       (term-should-be-trimmed-helper width term operators))))
 
 ;; TODO: Consider adding logext, unary--
-(defconst *functions-convertible-to-bv* '(binary-logand binary-logior binary-logxor lognot binary-+))
+(defconst *functions-convertible-to-bv*
+  '(binary-logand binary-logior binary-logxor lognot binary-+))
