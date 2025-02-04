@@ -2312,41 +2312,11 @@
 ;;                                    REWRITE-<-WHEN-SIZES-DONT-MATCH2
 ;;                                    )))))
 
-;non-axe rule
-(defthm slice-trim
-  (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'xsize x))
-                (< (+ 1 high) xsize)
-                (natp high)
-                (natp low)
-                (integerp xsize))
-           (equal (slice high low x)
-                  (slice high low (trim (+ high 1) x))))
-  :hints (("Goal" :in-theory (enable trim) )))
 
 ;; (defthm slice-of-bvplus-trim2
 ;;   (equal (SLICE 4 2 (BVPLUS 29 x y))
 ;;          (SLICE 4 2 (BVPLUS 5 x y)))
 ;;   :hints (("Goal" :in-theory (e/d (slice) (anti-slice)))))
-
-;non-axe rule
-(defthm bvplus-trim-arg1
-  (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'xsize x))
-                (< size xsize)
-                (natp size)
-                (posp xsize))
-           (equal (bvplus size x y)
-                  (bvplus size (trim size x) y)))
-  :hints (("Goal" :in-theory (enable trim))))
-
-;non-axe rule
-(defthm bvplus-trim-arg2
-  (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'xsize x))
-                (< size xsize)
-                (natp size)
-                (posp xsize))
-           (equal (bvplus size y x)
-                  (bvplus size y (trim size x))))
-  :hints (("Goal" :in-theory (enable trim))))
 
 ;gened somewhere?
 (defthm bvplus-32-1-29-4-tighten
@@ -2675,26 +2645,6 @@
            :in-theory (e/d (bvlt unsigned-byte-p) (EXPT-IS-WEAKLY-INCREASING-FOR-BASE>1
                                                    <-of-expt-and-expt-same-base)))))
 
-;non-axe
-(defthm bvlt-trim-arg1
-  (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'xsize x))
-                (< size xsize)
-                (natp size)
-                (posp xsize))
-           (equal (bvlt size x y)
-                  (bvlt size (trim size x) y)))
-  :hints (("Goal" :in-theory (enable bvlt trim))))
-
-;non-axe
-(defthm bvlt-trim-arg2
-  (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'xsize x))
-                (< size xsize)
-                (natp size)
-                (posp xsize))
-           (equal (bvlt size y x)
-                  (bvlt size y (trim size x))))
-  :hints (("Goal" :in-theory (enable bvlt trim))))
-
 (defthm bvlt-of-constant-tighten-when-usb-arg1
   (implies (and (syntaxp (and (quotep k)
                               (quotep size)))
@@ -2919,16 +2869,6 @@
                                    bvmult bvcat logapp)
                                   (logapp-equal-rewrite
                                    bvcat-equal-rewrite-alt bvcat-equal-rewrite)))))
-
-;non-axe
-(defthm getbit-trim
-  (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'xsize x))
-                (< (+ 1 n) xsize)
-                (natp n)
-                (integerp xsize))
-           (equal (getbit n x)
-                  (getbit n (trim (+ 1 n) x))))
-  :hints (("Goal" :in-theory (enable trim))))
 
 (defthm bvplus-of-1-and-1
   (equal (bvplus 1 1 x)
