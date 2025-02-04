@@ -1,3 +1,3 @@
 if-return.cpp:8 (2-8): syntax error, unexpected RETURN, expecting ELSE
-  8 |   return 0;
-    |   ^^^^^^
+ 8 |   return 0;
+   |   ^^^^^^

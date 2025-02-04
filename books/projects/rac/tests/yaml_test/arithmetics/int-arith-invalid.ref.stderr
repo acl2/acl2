@@ -1,6 +1,6 @@
 int-arith-invalid.cpp:8 (52-58): Cannot apply `&&` to arguments of type int and int[3]
-  8 | int binary_invalid(int a, array<int, 3> b) { return a && b; }
-    |                                                     ^^^^^^
+ 8 | int binary_invalid(int a, array<int, 3> b) { return a && b; }
+   |                                                     ^^^^^^
 note: They should be both a primitive type (like an int or enum) or a register type.
 
 int-arith-invalid.cpp:12 (10-11): Cannot apply `-` to an argument of type `int[3]` which is not a register type or a primitive type, aka int, int64, uint, uint64, bool.

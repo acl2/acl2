@@ -1,6 +1,6 @@
 function-param-duplicate.cpp:3 (19-20): A is already used but with a different case (in ACL2, they will refer to the same thing)
-  3 | int foo(int a, int A) { return 0; }
-    |                    ^
+ 3 | int foo(int a, int A) { return 0; }
+   |                    ^
 note: first defined here
-  3 | int foo(int a, int A) { return 0; }
-    |             ^
+ 3 | int foo(int a, int A) { return 0; }
+   |             ^
