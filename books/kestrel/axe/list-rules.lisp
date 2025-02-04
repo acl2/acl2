@@ -17,6 +17,8 @@
 (include-book "kestrel/lists-light/firstn" :dir :system)
 (include-book "kestrel/lists-light/finalcdr" :dir :system)
 (include-book "kestrel/lists-light/repeat" :dir :system)
+(include-book "kestrel/lists-light/subrange" :dir :system)
+(local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
 
 (defun sub1-cdr-cdr-induct (n x y)
@@ -170,3 +172,14 @@
                                     nil)))))
   :hints (("Goal" :in-theory (e/d (take; list::nth-append
                                    ) ()))))
+
+
+;gen
+(defthm subsetp-equal-of-subrange-and-subrange
+  (implies (and (<= high high2)
+                (natp low)
+                (natp high)
+                (natp high2))
+           (subsetp-equal (SUBRANGE low high X) (SUBRANGE low high2 X)))
+  :hints (("Goal" :in-theory (e/d (subrange) (;anti-subrange
+                                              )))))
