@@ -2024,8 +2024,7 @@
 (defthm bvplus-of-bvcat
   (equal (bvplus 16 x (bvcat 24 y 8 0))
          (bvplus 16 x (bvcat 8 y 8 0)))
-  :hints (("Goal" :in-theory (e/d (bvplus) (
-                                            )))))
+  :hints (("Goal" :in-theory (e/d (bvplus) ()))))
 
 ;gen!
 (defthm bvplus-of-bvshl-becomes-bvcat
