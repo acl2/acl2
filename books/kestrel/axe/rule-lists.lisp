@@ -795,7 +795,7 @@
      slice-subst-in-constant
      slice-subst-in-constant-alt
      slice-when-bvchop-known    ;new
-     bvplus-of-bvshl              ;new ; rename or drop
+     ;bvplus-of-bvshl              ;new ; rename or drop
      bvplus-of-bvshl-becomes-bvcat ;new
      bvuminus-of-bvcat-of-0-16-8 ;new!
 
