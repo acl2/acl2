@@ -3317,6 +3317,8 @@
              move-negative-addend-1
              unicity-of-0
              collect-constants-over-<
+             collect-constants-over-<-2
+
              natp
 
              rationalp-when-bv-operator
@@ -3803,8 +3805,6 @@
              posp
 ;             natp ;loops with not-<-of-0-when-natp
 ;natp-when-integerp
-
-             collect-constants-over-<-2
 
              equal-of-cons
 ;             bv-array-write-with-index-and-len-same ;mon jul 19 21:06:14 2010
