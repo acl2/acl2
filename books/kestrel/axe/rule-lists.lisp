@@ -796,7 +796,8 @@
      slice-subst-in-constant-alt
      slice-when-bvchop-known    ;new
      ;bvplus-of-bvshl              ;new ; rename or drop
-     bvplus-of-bvshl-becomes-bvcat ;new
+     bvplus-of-bvshl-becomes-bvcat-arg2
+     bvplus-of-bvshl-becomes-bvcat-arg3
      bvuminus-of-bvcat-of-0-16-8 ;new!
 
      bvplus-of-bvchop-and-bvshl ;new
@@ -1829,7 +1830,7 @@
     trim-of-bvchop
     trim-of-bvcat
     trim-of-1-and-leftrotate ; todo: add full trim support for rotate ops
-    trim-does-nothing-axe ; should not be needed?
+    ;; trim-does-nothing-axe ; should not be needed?
     )))
 
 (defun all-trim-rules ()
