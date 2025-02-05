@@ -1,7 +1,7 @@
 ; A tool to make an axe-bind-free evaluator for given functions
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -12,7 +12,7 @@
 
 (in-package "ACL2")
 
-(include-book "make-axe-syntaxp-evaluator") ;todo: reduce, for bind-fns-to-arities
+(include-book "make-axe-syntaxp-evaluator") ; for bind-fns-to-arities and make-axe-syntaxp-evaluator-cases-for-arities ; todo: reduce?
 (include-book "kestrel/alists-light/symbol-alistp" :dir :system) ;todo: make local to the generated event (but need the :dir to make that convenient)
 
 (local (in-theory (enable rational-listp-when-integer-listp)))
@@ -57,7 +57,7 @@
                                         :expand ((free-vars-in-terms args)
                                                  (free-vars-in-term (car args))))))
                   (ignorable dag-array))
-         ,(make-axe-syntaxp-evaluator-cases 0 max-arity arity-alist eval-axe-bind-free-function-application-fn wrld))
+         ,(make-axe-syntaxp-evaluator-cases-for-arities 0 max-arity arity-alist eval-axe-bind-free-function-application-fn "Unrecognized function in axe-bind-free rule: ~x0." wrld))
 
        (defthm ,(pack$ 'symbol-alistp-of- eval-axe-bind-free-function-application-fn)
          (symbol-alistp (,eval-axe-bind-free-function-application-fn fn args alist dag-array))
