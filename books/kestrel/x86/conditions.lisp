@@ -1,7 +1,7 @@
 ; An approach to dealing with conditional jumps
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2024 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -30,12 +30,11 @@
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system)) ;todo
-(local (include-book "kestrel/axe/rules3" :dir :system)) ; todo drop but this gets us rules like acl2::getbit-when-<-of-bvchop-and-constant-high ?
 
 (local (in-theory (enable acl2::slice-becomes-getbit)))
 (local (in-theory (disable acl2::equal-of-bvchops-when-equal-of-getbits ;todo: looped, should have 32 in the name
                            ;; for speed:
-                           acl2::getbit-when-bound
+                           ;acl2::getbit-when-bound
                            acl2::unsigned-byte-p-from-bounds
                            acl2::unsigned-byte-p-of-bvchop-bigger)))
 
@@ -807,7 +806,8 @@
       SIGNED-BYTE-P BVUMINUS
       BVMINUS SBVLT ACL2::GETBIT-OF-+
       ACL2::EQUAL-OF-BITXOR-AND-1
-      BVCAT LOGAPP LOGEXT acl2::logtail-of-plus)
+      BVCAT LOGAPP LOGEXT acl2::logtail-of-plus
+      acl2::logtail-becomes-slice-bind-free)
      (
 ;ACL2::REWRITE-<-WHEN-SIZES-DONT-MATCH2 ;looped
       ACL2::REWRITE-BV-EQUALITY-WHEN-SIZES-DONT-MATCH-1 ;looped
