@@ -211,6 +211,17 @@
   :parents (whatever))
 
 
+;; Verbose
+
+(deflist foolistp-verbose (x)
+  (foop x)
+  :verbosep t)
+
+(deflist foolistp-not-verbose (x)
+  (foop x)
+  :verbosep nil)
+
+
 ;; Guards
 
 (local (in-theory (enable (:type-prescription evenp))))
@@ -224,6 +235,16 @@
   (evenp x)
   :guard (atom-listp x)
   :verify-guards nil)
+
+;; Test :guard-debug (if the :guard-hints are removed, guard-debug information
+;; is present in the failed guard proof, though it is not easy to test for that
+;; directly).
+(deflist evenlist3p (x)
+  (evenp x)
+  :guard (integer-listp x)
+  :guard-hints(("Goal" :in-theory (enable integer-listp)))
+  ;; :verbosep t ; needed to see the guard-debug info
+  :guard-debug t)
 
 
 ;; Additional arguments
