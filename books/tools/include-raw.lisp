@@ -43,7 +43,7 @@ Unfortunately, the built-in mechanisms (@(see progn!) and @(see set-raw-mode))
 have some portability problems related to compilation, file paths, read tables,
 non-ACL2 objects, and so on.  See below for some examples; still more examples
 may be found under the @(see community-books) directory,
-@('demos/include-raw-examples')./</p>
+@('demos/include-raw-examples/').</p>
 
 <h3>Using Include-Raw</h3>
 
@@ -92,7 +92,7 @@ default, if either compilation or loading fails, an error will occur.</p>
 
 <p>Keeping raw Lisp code in a separate file means you can use various kinds of
 Lisp syntax that are not allowed in ACL2.  Otherwise you have to jump through
-awful hoops like having to @(see intern)ing the names of functions like
+awful hoops like having to @(see intern) the names of functions like
 @('ccl::static-cons') that you want to call.  It's also nice to be able to use
 floats, etc.</p>
 
