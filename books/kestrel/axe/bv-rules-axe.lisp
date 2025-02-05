@@ -1413,6 +1413,30 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defthmd bvor-of-bvcat-becomes-bvcat-arg2
+  (implies (and (axe-bind-free (bind-low-zero-count-in-bvcat-nest x 'zeros dag-array) '(zeros))
+                (unsigned-byte-p zeros y) ; the other term fits into the 0 region
+                (equal 0 (bvchop zeros x)) ; could force or something like that
+                (< zeros size)
+                (natp size)
+                (natp zeros))
+           (equal (bvor size x y)
+                  (bvcat (- size zeros) (slice (+ -1 size) zeros x) zeros y)))
+  :hints (("Goal" :in-theory (enable bvor slice-too-high-is-0))))
+
+(defthmd bvor-of-bvcat-becomes-bvcat-arg3
+  (implies (and (axe-bind-free (bind-low-zero-count-in-bvcat-nest y 'zeros dag-array) '(zeros))
+                (unsigned-byte-p zeros x) ; the other term fits into the 0 region
+                (equal 0 (bvchop zeros y)) ; could force or something like that
+                (< zeros size)
+                (natp size)
+                (natp zeros))
+           (equal (bvor size x y)
+                  (bvcat (- size zeros) (slice (+ -1 size) zeros y) zeros x)))
+  :hints (("Goal" :in-theory (enable bvor slice-too-high-is-0))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;this fires on (bvor x (bvchop 8 y)) but what if y is an 8-bit var and we drop the loghead from it
 ;might be better to discover that x is a bvcat with 0's at the bottom
 ;for or, wouldn't it be better to just split the or into a cat of the top part of x
