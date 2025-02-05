@@ -185,6 +185,6 @@
     (let ((width (unquote quoted-width)))
       (term-should-be-trimmed-helper width term operators))))
 
-;; TODO: Consider adding logext, unary--
+;; TODO: Consider adding logext
 (defconst *functions-convertible-to-bv*
-  '(binary-logand binary-logior binary-logxor lognot binary-+))
+  '(binary-logand binary-logior binary-logxor lognot binary-+ unary--))

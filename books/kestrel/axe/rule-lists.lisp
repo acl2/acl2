@@ -489,6 +489,7 @@
     trim-of-logxor-becomes-bvxor
     trim-of-lognot-becomes-bvnot
     trim-of-+-becomes-bvplus ; fixme: loop on (bvplus 32 x (+ -4 (rsp x86))) involving bvplus-of-constant-when-overflow?
+    trim-of-unary---becomes-bvuminus
     ))
 
 ;; TODO: Consider also the analogous rules about getbit?
