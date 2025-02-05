@@ -17,22 +17,11 @@
 
 ;;  This file was called hacks6.lisp.
 
-(include-book "list-rules")
-;(include-book "kestrel/arrays-2d/bv-arrays-2d" :dir :system)
 (include-book "kestrel/typed-lists-light/maxelem" :dir :system)
-(include-book "kestrel/typed-lists-light/all-true-listp" :dir :system)
-(include-book "kestrel/lists-light/finalcdr" :dir :system)
-(include-book "kestrel/lists-light/update-subrange" :dir :system)
-(include-book "kestrel/bv-lists/getbit-list" :dir :system)
+(include-book "kestrel/typed-lists-light/all-integerp" :dir :system)
 (include-book "kestrel/bv-lists/all-signed-byte-p" :dir :system)
-;(include-book "ihs/logops-lemmas" :dir :system) ;todo
-;fixme move these up
 (include-book "lenconsmeta") ;BOZO did this speed things up?  try with and without...
-(include-book "kestrel/alists-light/lookup" :dir :system)
 (include-book "kestrel/utilities/myif" :dir :system)
-;(include-book "kestrel/bv/logext" :dir :system)
-;(include-book "kestrel/bv/bvor" :dir :system)
-(include-book "kestrel/bv/bvif" :dir :system)
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
@@ -53,12 +42,11 @@
                            ;;unsigned-byte-p-plus
                            ))) ;bad?
 
-(local (in-theory (disable expt
-                           )))
+(local (in-theory (disable expt)))
 
-(in-theory (disable ;logapp-0 ;bad forcing
-                    ;logtail-equal-0
-                    ))
+;; (in-theory (disable ;logapp-0 ;bad forcing
+;;                     ;logtail-equal-0
+;;                     ))
 
 ;(in-theory (disable MV-NTH-TO-VAL)) ;bad rule
 ;(in-theory (disable SYN::LEN-IMPLIES-ACL2-LEN)) ;weird rule
@@ -688,7 +676,7 @@
 
 ;(in-theory (disable STORE-2D-ARRAY-ROW-RECOLLAPSE3))
 ;(in-theory (enable store-array))
-(local (in-theory (enable car-becomes-nth-of-0))) ;todo
+;(local (in-theory (enable car-becomes-nth-of-0))) ;todo
 
 ;; (defthm store-array-list-of-non-consp
 ;;   (implies (not (consp ref-list))
@@ -2712,16 +2700,6 @@
   :hints (("Goal" :use (:instance memberp-of-maxelem-same (x bag1))
            :in-theory (disable memberp-of-maxelem-same))))
 
-;gen
-(defthm subsetp-equal-of-subrange-and-subrange
-  (implies (and (<= high high2)
-                (natp low)
-                (natp high)
-                (natp high2))
-           (subsetp-equal (SUBRANGE low high X) (SUBRANGE low high2 X)))
-  :hints (("Goal" :in-theory (e/d (subrange) (;anti-subrange
-                                              )))))
-
 (defthm maxelem-subrange-shorten-hackb
   (implies (and (<= (NTH i x) y)
                 (< i (len x))
@@ -2951,8 +2929,6 @@
            (equal (equal x y)
                   nil))
   :rule-classes ((:rewrite :backchain-limit-lst (0))))
-
-(local (in-theory (disable true-listp))) ;bozo
 
 ;; todo: compare to the rules below
 (defthm impossible-value-1
