@@ -1,7 +1,7 @@
 ; A tool to make an Axe Prover for a given purpose
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -1339,7 +1339,7 @@
                                                 (cw "Alist: ~x0.~%(Assumptions (to assume false 1):~%" alist)
                                                 (print-dag-array-node-and-supporters-lst nodenums-to-assume-false1 'dag-array dag-array)
                                                 (cw ")~%")
-                                                (cw "(Assumptions (to assume false 2):~%" alist)
+                                                (cw "(Assumptions (to assume false 2):~%")
                                                 (print-dag-array-node-and-supporters-lst nodenums-to-assume-false2 'dag-array dag-array)
                                                 (cw "))~%") ;;(cw "Alist: ~x0.~%Assumptions (to assume false): ~x1~%DAG:~x2)~%" alist nodenums-to-assume-false dag-array)
                                                 ))
