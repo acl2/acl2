@@ -299,44 +299,45 @@
 (defund bind-low-zero-count-in-bvcat-nest (darg quoted-varname dag-array)
   (declare (xargs :guard (and (or (myquotep darg)
                                   (and (natp darg)
-                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 darg)))))
+                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 darg))))
+                              (or (myquotep quoted-varname)
+                                  (and (natp quoted-varname)
+                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 quoted-varname)))))
                   :measure (if (quotep darg)
                                0
                              (+ 1 (nfix darg)))
 ;                  :hints (("Goal" :in-theory (enable car-becomes-nth-of-0)))
                   :guard-hints (("Goal" :in-theory (enable cadr-becomes-nth-of-1 acl2-numberp-when-natp)))
                   ))
-  (if (not (and (myquotep quoted-varname)
-                (symbolp (unquote quoted-varname))))
-      (er hard? 'bind-low-zero-count-in-bvcat-nest "Unexpected varname argument: ~x0." quoted-varname)
-    (if (or (quotep darg)
-            (not (mbt (natp darg)))) ;for termination
-        nil ;failed to find a bvcat nest
-      ;; darg is a nodenum, so look it up:
-      (let* ((expr (aref1 'dag-array dag-array darg)))
-        (if (atom expr) ;check for variable
-            nil ; failed to find a bvcat nest
-          (if (eq 'quote (car expr))
-              nil ; failed to find a bvcat nest
-            (and ;; (mbt (true-listp expr)) ;drop?
-              (eq 'bvcat (ffn-symb expr)) ; (bvcat highsize highval lowsize lowval)
-              (= 4 (len (dargs expr)))
-              (let ((lowval (darg4 expr)))
-                (if (quotep lowval)
-                    (if (not (eql 0 (unquote lowval)))
-                        nil ; fail (there's a constant but it's not 0)
-                      (let ((lowsize (darg3 expr)))
-                        (if (and (quotep lowsize)
-                                 (posp (unquote lowsize)) ; could allow 0 I guess
-                                 )
-                            (acons (unquote quoted-varname) lowsize nil)
-                          nil ;fail
-                          )))
-                  ;; keep looking in the low value:
-                  (and (mbt (or (quotep lowval) ;for termination
-                                (and (< lowval darg)
-                                     (natp lowval))))
-                       (bind-low-zero-count-in-bvcat-nest (darg4 expr) quoted-varname dag-array)))))))))))
+  (if (or (consp darg) ; checks for quoted constant
+          (not (mbt (natp darg)))) ;for termination
+      nil ;failed to find a bvcat nest
+    ;; darg is a nodenum, so look it up:
+    (let* ((expr (aref1 'dag-array dag-array darg)))
+      (if (atom expr) ;check for variable
+          nil ; failed to find a bvcat nest
+        (and (eq 'bvcat (ffn-symb expr)) ; (bvcat highsize highval lowsize lowval)
+             (= 4 (len (dargs expr))) ; drop or optimize?
+             (let ((lowval (darg4 expr)))
+               (if (consp lowval) ; checks for quoted constant
+                   (if (not (eql 0 (unquote lowval)))
+                       nil ; fail (there's a constant but it's not 0)
+                     (let ((lowsize (darg3 expr)))
+                       (if (and (consp lowsize) ; checks for quoted constant
+                                (posp (unquote lowsize)) ; could allow 0 I guess
+                                )
+                           ;; we've found the pattern we are looking for:
+                           (if (not (and (consp quoted-varname) ; checks for quoted constant
+                                         (symbolp (unquote quoted-varname))))
+                               (er hard? 'bind-low-zero-count-in-bvcat-nest "Unexpected varname argument: ~x0." quoted-varname)
+                             (acons (unquote quoted-varname) lowsize nil))
+                         nil ;fail
+                         )))
+                 ;; lowval is a nodenum, so examine it:
+                 (and (mbt (or (quotep lowval) ;for termination
+                               (and (< lowval darg)
+                                    (natp lowval))))
+                      (bind-low-zero-count-in-bvcat-nest lowval quoted-varname dag-array)))))))))
 
 (defthmd symbol-alistp-of-bind-low-zero-count-in-bvcat-nest
   (symbol-alistp (bind-low-zero-count-in-bvcat-nest darg quoted-varname dag-array))
