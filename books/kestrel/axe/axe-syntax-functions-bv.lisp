@@ -15,7 +15,7 @@
 ;; This book contains bit-vector-related functions that support Axe
 ;; rules that call axe-syntaxp and axe-bind-free.
 
-(include-book "axe-types") ;reduce?  we just need the bv-type stuff
+(include-book "axe-types") ;reduce?  we just need the bv and bv-array stuff
 (include-book "dag-arrays")
 (include-book "kestrel/bv/bv-syntax" :dir :system)
 (include-book "kestrel/typed-lists-light/all-natp" :dir :system)
@@ -235,6 +235,104 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;BOZO for what other terms is it syntactically evident that they have low zeros?
+;termination depends on dag property?
+(defund bvcat-nest-with-low-zerosp-axe-aux (term zero-count-needed dag-array)
+  (declare (xargs :measure (if (quotep term)
+                               0
+                             (+ 1 (nfix term)))
+;                  :guard (ALISTP DAG-ARRAY)
+                  :guard (and (natp zero-count-needed)
+                              (or (myquotep term)
+                                  (and (natp term)
+                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 term)))))
+;                  :hints (("Goal" :in-theory (enable car-becomes-nth-of-0)))
+                  :guard-hints (("Goal" :in-theory (enable cadr-becomes-nth-of-1)))
+;:verify-guards nil
+                  ))
+  (if (or (quotep term)
+          (not (mbt (natp term)))) ;for termination
+      (equal (unquote term) 0) ;bozo think about when the constant isn't wrapped in any bvcats
+    ;;it's a nodenum, so look it up:
+    (let* ((expr (aref1 'dag-array dag-array term)))
+      (if (atom expr) ;check for variable
+          nil
+        (if (eq 'quote (car expr))
+            (equal (unquote expr) 0) ;bozo think about when the constant isn't wrapped in any bvcats
+          (and (true-listp expr)     ;for guards (TODO: use mbt?)
+               (eq 'bvcat (ffn-symb expr))
+               (= 4 (len (dargs expr)))
+               (let ((lowsize (darg3 expr)))
+                 (and (quotep lowsize)
+                      (natp (unquote lowsize))
+                      (let ((lowsize (unquote lowsize)))
+                        (and (<= zero-count-needed lowsize) ;keep looking in the low value
+                             (eql 4 (len (dargs expr)))
+                             (mbt (or (quotep (darg4 expr)) ;for termination
+                                      (and (< (darg4 expr) term)
+                                           (natp (darg4 expr)))))
+                             (bvcat-nest-with-low-zerosp-axe-aux (darg4 expr) zero-count-needed dag-array)))))))))))
+
+;zero-count-needed is quoted
+(defund bvcat-nest-with-low-zerosp-axe (term zero-count-needed dag-array)
+  (declare (xargs :guard (or (myquotep term)
+                             (and (natp term)
+                                  (pseudo-dag-arrayp 'dag-array dag-array (+ 1 term))))))
+  (and (myquotep zero-count-needed)
+       (natp (unquote zero-count-needed))
+       (bvcat-nest-with-low-zerosp-axe-aux term (unquote zero-count-needed) dag-array)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Tests that DARG points to a call of one of the *functions-convertible-to-bv*
+;; but not one of the exclude-fns.  No guard on exclude-fns because the caller
+;; cannot easily establish it.
+(defund term-should-be-converted-to-bvp (darg exclude-fns dag-array)
+  (declare (xargs :guard (and (or (myquotep darg)
+                                  (and (natp darg)
+                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 darg)))))))
+  (and (not (consp darg)) ; test for nodenum
+       (let ((expr (aref1 'dag-array dag-array darg)))
+         (and (consp expr)
+              (let ((fn (ffn-symb expr)))
+                (and (member-eq fn *functions-convertible-to-bv*)
+                     (let ((exclude-fns (unquote-if-possible exclude-fns)))
+                       (if exclude-fns
+                           (and (true-listp exclude-fns) ; for guards
+                                (not (member-eq fn exclude-fns)))
+                         t))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; This can be used to decide which functions to open.
+;; But to decide whether we can translate an expression, more checking is needed.
+;; todo: add  repeatbit?
+;instead of using this, check the args, etc.?
+(defconst *bv-and-array-fns-we-can-translate*
+  '(not
+    booland boolor ;boolxor
+    boolif
+    bitnot
+    bitand bitor bitxor
+    bvchop bvnot bvuminus
+    getbit
+    slice
+    bvand bvor bvxor
+    bvplus bvminus bvmult
+    bvdiv bvmod
+    sbvdiv sbvrem
+    bvlt bvle
+    sbvlt sbvle
+    bvcat
+    bvsx
+    bvif
+    leftrotate32
+    bv-array-read
+    bv-array-write
+    equal))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;term and nest are nodenums or quoteps?
 (defund bv-array-write-nest-ending-inp-axe (term nest dag-array)
   (declare (xargs :guard (or (myquotep nest)
@@ -347,58 +445,13 @@
 
 ;in case we can't decide which form to prefer
 ;move
-(defthmd car-when-nth-0-constant
-  (implies (and (equal (nth 0 x) k)
-                (syntaxp (quotep k)))
-           (equal (car x)
-                  k)))
+;; (defthmd car-when-nth-0-constant
+;;   (implies (and (equal (nth 0 x) k)
+;;                 (syntaxp (quotep k)))
+;;            (equal (car x)
+;;                   k)))
 
-;BOZO for what other terms is it syntactically evident that they have low zeros?
-;termination depends on dag property?
-(defund bvcat-nest-with-low-zerosp-axe-aux (term zero-count-needed dag-array)
-  (declare (xargs :measure (if (quotep term)
-                               0
-                             (+ 1 (nfix term)))
-;                  :guard (ALISTP DAG-ARRAY)
-                  :guard (and (natp zero-count-needed)
-                              (or (myquotep term)
-                                  (and (natp term)
-                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 term)))))
-;                  :hints (("Goal" :in-theory (enable car-becomes-nth-of-0)))
-                  :guard-hints (("Goal" :in-theory (enable cadr-becomes-nth-of-1)))
-;:verify-guards nil
-                  ))
-  (if (or (quotep term)
-          (not (mbt (natp term)))) ;for termination
-      (equal (unquote term) 0) ;bozo think about when the constant isn't wrapped in any bvcats
-    ;;it's a nodenum, so look it up:
-    (let* ((expr (aref1 'dag-array dag-array term)))
-      (if (atom expr) ;check for variable
-          nil
-        (if (eq 'quote (car expr))
-            (equal (unquote expr) 0) ;bozo think about when the constant isn't wrapped in any bvcats
-          (and (true-listp expr)     ;for guards (TODO: use mbt?)
-               (eq 'bvcat (ffn-symb expr))
-               (= 4 (len (dargs expr)))
-               (let ((lowsize (darg3 expr)))
-                 (and (quotep lowsize)
-                      (natp (unquote lowsize))
-                      (let ((lowsize (unquote lowsize)))
-                        (and (<= zero-count-needed lowsize) ;keep looking in the low value
-                             (eql 4 (len (dargs expr)))
-                             (mbt (or (quotep (darg4 expr)) ;for termination
-                                      (and (< (darg4 expr) term)
-                                           (natp (darg4 expr)))))
-                             (bvcat-nest-with-low-zerosp-axe-aux (darg4 expr) zero-count-needed dag-array)))))))))))
-
-;zero-count-needed is quoted
-(defund bvcat-nest-with-low-zerosp-axe (term zero-count-needed dag-array)
-  (declare (xargs :guard (or (myquotep term)
-                             (and (natp term)
-                                  (pseudo-dag-arrayp 'dag-array dag-array (+ 1 term))))))
-  (and (myquotep zero-count-needed)
-       (natp (unquote zero-count-needed))
-       (bvcat-nest-with-low-zerosp-axe-aux term (unquote zero-count-needed) dag-array)))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund bv-array-write-nest-with-val-at-indexp-axe-aux (term val index dag-array
                                                         calls-remaining ;ensures termination (todo: drop and use mbt instead)
@@ -451,6 +504,8 @@
        (bv-array-write-nest-with-val-at-indexp-axe-aux term (unquote val) (unquote index) dag-array
                                                        1000000 ;is term a nodenum?  can we use it here?
                                                        )))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; (defund bv-term-syntaxp (nodenum-or-quotep dag-array)
 ;;   (declare (xargs :guard (or (myquotep nodenum-or-quotep)
@@ -527,6 +582,8 @@
                          (acons (unquote quoted-varname) (second (dargs expr)) nil))
                   nil)))))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns an alist binding VARNAME to the element width of the array term represented
 ;; byy nodenum-or-quotep, or nil to indicate failure.
 (defund bind-bv-array-element-size-axe (nodenum-or-quotep quoted-varname dag-array)
@@ -564,52 +621,3 @@
                          (natp (unquote (first (dargs expr))))
                          (acons (unquote quoted-varname) (first (dargs expr)) nil))
                   nil)))))))))
-
-;; Tests that DARG points to a call of one of the *functions-convertible-to-bv*
-;; but not one of the exclude-fns.  No guard on exclude-fns because the caller
-;; cannot easily establish it.
-(defund term-should-be-converted-to-bvp (darg exclude-fns dag-array)
-  (declare (xargs :guard (and (or (myquotep darg)
-                                  (and (natp darg)
-                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 darg)))))))
-  (and (not (consp darg)) ; test for nodenum
-       (let ((expr (aref1 'dag-array dag-array darg)))
-         (and (consp expr)
-              (let ((fn (ffn-symb expr)))
-                (and (member-eq fn *functions-convertible-to-bv*)
-                     (let ((exclude-fns (unquote-if-possible exclude-fns)))
-                       (if exclude-fns
-                           (and (true-listp exclude-fns) ; for guards
-                                (not (member-eq fn exclude-fns)))
-                         t))))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; This can be used to decide which functions to open.
-;; But to decide whether we can translate an expression, more checking is needed.
-;; todo: add sbvdiv sbvrem bvdiv bvmod ?  also excludes repeatbit
-;instead of using this, check the args, etc.?
-;fffixme add bvdiv and bvmod and sbvdiv and sbvrem !!
-;; todo: add bve and sbvle?
-(defconst *bv-and-array-fns-we-can-translate*
-  '(not
-    booland boolor ;boolxor
-    boolif
-    bitnot
-    bitand bitor bitxor
-    bvchop bvnot bvuminus
-    getbit
-    slice
-    bvand bvor bvxor
-    bvplus bvminus bvmult
-    bvdiv bvmod
-    sbvdiv sbvrem
-    bvlt bvle
-    sbvlt sbvle
-    bvcat
-    bvsx
-    bvif
-    leftrotate32
-    bv-array-read
-    bv-array-write
-    equal))

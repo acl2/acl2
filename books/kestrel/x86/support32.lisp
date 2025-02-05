@@ -3014,8 +3014,6 @@
            (equal (read-from-segment n1 eff-addr1 seg-reg (write-to-segment n2 eff-addr2 seg-reg val x86))
                   (read-from-segment n1 eff-addr1 seg-reg x86))))
 
-(local (include-book "kestrel/axe/rules2" :dir :system)) ;why?
-
 ;same segment (we don't know how other segmentes are laid out)
 (defthm read-from-segment-of-write-to-segment-irrel
   (implies (and (sep-eff-addr-ranges eff-addr1 n1 eff-addr2 n2)

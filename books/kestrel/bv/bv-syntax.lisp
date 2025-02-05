@@ -33,10 +33,12 @@
     slice
     bvcat
     ;;bv-array-read - trimming array reads seemed bad.  a trimmed array read won't have the same value on test cases as the nth of the corresponding arguments (which will be wider).  Also, if we have a lemma about (bv-array-read 32 80 index <some-function>) but the read is trimmed to less than 32 bits the lemma wont fire on the trimmed read (could get around this if we had bind-free-from-rules) - ffixme maybe we do want to trim reads of constant arrays?
-;bvplus bvminus bvmult ;leaving these off, since the bvchop of blah rules may not always be on...
     bvsx ;trying
     repeatbit))
 
+;; These are separate because we trim them less often (perhaps because
+;; bit-blasting them is less nice, or because slice does not nicely distribute
+;; over them):
 (defconst *trimmable-arithmetic-operators* ; rename to *trimmable-arithmetic-bv-operators* ?
   '(bvplus bvmult bvminus bvuminus))
 
@@ -44,14 +46,13 @@
   (append *trimmable-arithmetic-operators*
           *trimmable-non-arithmetic-operators*))
 
-;these don't have nice trim rules (think more, esp about bvmod)
-(defconst *non-trimmable-bv-operators*
-  '( ;;
-    sbvdiv sbvrem
-    bvdiv bvmod
-    bv-array-read ;added since we are not trimming reads any more
-    ;; todo: add bvshr?
-    ))
+;; ;these don't have nice trim rules (think more, esp about bvmod)
+;; (defconst *non-trimmable-bv-operators*
+;;   '(sbvdiv sbvrem
+;;     bvdiv bvmod
+;;     bv-array-read ;added since we are not trimming reads any more ; todo: this is not even a bv opoerator
+;;     ;; todo: add bvshr?
+;;     ))
 
 ; are these only bv operators?
 ;rename to *bv-operators* ?
@@ -122,6 +123,7 @@
  (or (natp (bv-term-size term))
      (null (bv-term-size term))))
 
+;; Returns an alist binding VAR to the size of TERM, or nil to indicate failure.
 (defun bind-var-to-bv-term-size (var term)
   (declare (xargs :guard (pseudo-termp term)))
   (let ((size (bv-term-size term)))
@@ -131,7 +133,7 @@
                nil)
       nil)))
 
-;fixme use this more?
+;use this more?
 ;speed this up?
 ;todo: make a version restricted to non-arithmetic ops?
 (defun bind-var-to-bv-term-size-if-trimmable (var-name term)
@@ -153,16 +155,14 @@
           ;;(< width (integer-length (unquote term)))
           (<= (expt 2 width) (unquote term)) ;this may be faster, since expt may be built in (maybe just a shift)?
           )
-    ;; term must be a nodenum, so look it up
     (and (consp term)
          (or (member-eq (ffn-symb term)
-                        (if (eq 'all operators) ;TODO: Use :all instead?
+                        (if (eq :all operators)
                             *trimmable-operators*
                           *trimmable-non-arithmetic-operators*))
 ;trimming a read from a constant array can turn a single read operation into many (one for each bit)
 ;but do we need the trimming to use the rules that find patterns in array values?
 ;maybe we should trim iff we are using getbit-of-bv-array-read?
-
              ;;                    ;fixme this may be a bad idea?
              ;;                    (and (eq 'bv-array-read (ffn-symb term))
              ;;                         (quotep (farg4 term)))
@@ -174,6 +174,7 @@
 ;TODO: Does this functionality already exist?
 ;OPERATORS should be ':all or ':non-arithmetic
 ;maybe we should add the option to not trim logical ops?  but that's not as dangerous as trimming arithmetic ops...
+;; not used much
 (defund term-should-be-trimmed (quoted-width term operators)
   (declare (xargs :guard (and (myquotep quoted-width)
                               (natp (unquote quoted-width))
@@ -184,5 +185,6 @@
     (let ((width (unquote quoted-width)))
       (term-should-be-trimmed-helper width term operators))))
 
-;; TODO: Consider adding logext, unary--
-(defconst *functions-convertible-to-bv* '(binary-logand binary-logior binary-logxor lognot binary-+))
+;; TODO: Consider adding logext
+(defconst *functions-convertible-to-bv*
+  '(binary-logand binary-logior binary-logxor lognot binary-+ unary--))

@@ -3727,7 +3727,8 @@
                             getbit-of-+)
                            (getbit-when-bvlt-of-small-helper
                             equal-of-bvchop-extend
-                            bvcat-of-getbit-and-x-adjacent)))))
+                            bvcat-of-getbit-and-x-adjacent
+                            getbit-when-<=-of-bvchop-and-constant-high)))))
 
 (defthm equal-of-0-and-getbit-of-bvplus
   (implies (and (syntaxp (and (quotep k)
@@ -10413,70 +10414,6 @@
 
 (in-theory (disable sbvlt-of-+-arg2 sbvlt-of-+-arg1))
 
-(defthm getbit-when-bound
-  (implies (and (< x free)
-                (syntaxp (quotep free))
-                (<= free (expt 2 n))
-                (natp n)
-                (natp x) ;could allow some negatives?
-                )
-           (equal (getbit n x)
-                  0))
-  :hints (("Goal"
-           :use (:instance slice-too-high-is-0 (high n) (low n))
-           :in-theory (e/d (getbit) ( )))))
-
-(defthm getbit-when-bound2
-  (implies (and (not (< free x))
-                (syntaxp (quotep free))
-                (< free (expt 2 n))
-                (natp n)
-                (natp free)
-                (natp x) ;could allow some negatives?
-                )
-           (equal (getbit n x)
-                  0))
-  :hints (("Goal" :use (:instance getbit-when-bound (free (+ 1 free)))
-           :in-theory (disable getbit-when-bound))))
-
-(defthmd getbit-when-bound3-helper
-  (implies (and (<= (expt 2 n) x)
-                (unsigned-byte-p (+ 1 n) x)
-                (natp n))
-           (equal (getbit n x)
-                  1))
-  :hints (("Goal"
-;           :use (:instance slice-too-high-is-0 (high n) (low n))
-           :in-theory (e/d (getbit slice logtail floor-must-be-1)
-                           (
-                                                 anti-slice)))))
-
-(defthm getbit-when-bound3
-  (implies (and (< free x)
-                (syntaxp (quotep free))
-                (<= (+ -1 (expt 2 n)) free)
-                (unsigned-byte-p (+ 1 n) x)
-                (natp n)
-                (natp x) ;could allow some negatives?
-                )
-           (equal (getbit n x)
-                  1))
-  :hints (("Goal" :use (:instance getbit-when-bound3-helper)
-           :in-theory (disable getbit-when-bound3-helper))))
-
-(defthm getbit-when-bound4
-  (implies (and (not (< x free))
-                (syntaxp (quotep free))
-                (<= (expt 2 n) free)
-                (unsigned-byte-p (+ 1 n) x)
-                (natp n)
-                (natp x) ;could allow some negatives?
-                )
-           (equal (getbit n x)
-                  1))
-  :hints (("Goal" :use (:instance getbit-when-bound3-helper)
-           :in-theory (disable getbit-when-bound3-helper))))
-
 (defthm boolor-of-sbvlt-combine-gen
   (implies (and (syntaxp (and (quotep k)
                               (quotep k2)))
@@ -14032,49 +13969,6 @@
                   (if (>= SIZE SIZE2)
                       1
                     0))))
-
-;gen!
-(defthmd getbit-when-<=-of-high-helper
-  (implies (and (<= (- (expt 2 size) (expt 2 n)) x) ; size is a free var
-                (unsigned-byte-p size x)
-                (< n size)
-                (natp n))
-           (equal (getbit n x)
-                  1))
-  :hints (("Goal" :use ((:instance getbit-when-slice-is-known-to-be-all-ones
-                                   (n n)
-                                   (high (+ -1 size))
-                                   (low n)
-                                   (free (expt 2 (+ size (- n)))))
-                        (:instance equal-of-slice
-                                   (k (+ -1 (EXPT 2 (+ (- n)
-                                                       size))))
-                                   (high (+ -1 size))
-                                   (low n)))
-           :in-theory (disable getbit-when-slice-is-known-to-be-all-ones
-                               exponents-add))))
-
-(defthm getbit-when-<=-of-bvchop-and-constant-high
-  (implies (and (<= k (bvchop size x)) ; k is a free var
-                (<= (- (expt 2 size) (expt 2 n)) k)
-                (< n size)
-                (natp size)
-                (natp n))
-           (equal (getbit n x)
-                  1))
-  :hints (("Goal" :use (:instance getbit-when-<=-of-high-helper
-                                  (x (bvchop size x))))))
-
-(defthm getbit-when-<-of-bvchop-and-constant-high
-  (implies (and (< k (bvchop size x)) ; k is a free var
-                (<= (+ -1 (- (expt 2 size) (expt 2 n))) k)
-                (< n size)
-                (natp size)
-                (natp n))
-           (equal (getbit n x)
-                  1))
-  :hints (("Goal" :use (:instance getbit-when-<=-of-high-helper
-                                  (x (bvchop size x))))))
 
 (defthm getbit-when-<=-of-constant-high
   (implies (and (syntaxp (quotep n)) ; to ensure this is cheap

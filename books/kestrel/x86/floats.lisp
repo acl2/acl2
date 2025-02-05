@@ -14,7 +14,7 @@
 ;; STATUS: IN-PROGRESS
 
 (include-book "kestrel/x86/portcullis" :dir :system)
-(include-book "kestrel/axe/known-booleans" :dir :system)
+(include-book "kestrel/axe/known-booleans" :dir :system) ; so we can call add-known-boolean (todo: move that to axe dir)
 (include-book "kestrel/axe/axe-syntax" :dir :system) ; todo: split out such rules
 (include-book "kestrel/axe/axe-syntax-functions" :dir :system) ; todo: split out such rules
 (include-book "projects/x86isa/utils/fp-structures" :dir :system)
