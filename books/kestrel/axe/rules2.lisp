@@ -2822,7 +2822,7 @@
 ;;     :IN-THEORY (E/D (UPDATE-NTH-REWRITE) ((FORCE))))))
 
 ;disgusting...
-(defthm if-hack
+(defthmd if-hack
   (implies (integerp x)
            (equal (< z (IF (EQUAL y (+ -1 x))
                            x
