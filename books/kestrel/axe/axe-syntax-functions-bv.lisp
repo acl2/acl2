@@ -147,45 +147,48 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; todo: inline?
 (defund term-should-be-trimmed-axe-helper (width darg operators dag-array)
   (declare (xargs :guard (and (natp width)
-                              (member-eq operators '(all non-arithmetic)) ; todo: make these keywords
+                              ;; (member-eq operators '(all non-arithmetic)) ; todo: make these keywords
                               (or (myquotep darg)
                                   (and (natp darg)
-                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 darg)))))))
-  (if (consp darg) ; check for quotep
-      (or (not (natp (unquote darg)))
-          ;;(< width (integer-length (unquote darg)))
-          (<= (expt 2 width) (unquote darg)) ;this may be faster, since expt may be built in (maybe just a shift)?
-          )
+                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 darg))))))
+           (type (integer 0 *) width))
+  (if (consp darg) ; checks for quotep
+      (let ((val (unquote darg)))
+        (or (not (natp val)) ; not a natp (unusual), so we will trim
+            ;;(< width (integer-length (unquote darg)))
+            (<= (expt 2 width) (the (integer 0 *) val)) ;this may be faster, since expt may be built in (maybe just a shift)?
+            ))
     ;; darg must be a nodenum, so look it up
     (let ((expr (aref1 'dag-array dag-array darg)))
-      (and (consp expr)
-           ;; The operator is one that we can trim:
-           (or (member-eq (ffn-symb expr) (if (eq 'all operators) ;TODO: Use :all instead?
-                                              *trimmable-operators*
-                                            *trimmable-non-arithmetic-operators*))
+      (and (consp expr) ; we don't trim a var
+           (let ((fn (ffn-symb expr)))
+             (and ;; The operator is one that we can trim:
+               (or (member-eq fn (if (equal ''all operators) ;TODO: Use :all instead? ;; todo: combine this member-eq check with the call of maybe-get-type-of-bv-function-call below
+                                     *trimmable-operators*
+                                   *trimmable-non-arithmetic-operators*))
 ;trimming a read from a constant array can turn a single read operation into many (one for each bit)
 ;but do we need the trimming to use the rules that find patterns in array values?
 ;maybe we should trim iff we are using getbit-of-bv-array-read?
 
-               ;;                    ;fixme this may be a bad idea?
-               ;;                    (and (eq 'bv-array-read (ffn-symb expr))
-               ;;                         (quotep (darg4 expr)))
-               )
-           ;; The width of the term is greater than the desired width:
-           (let ((type (maybe-get-type-of-bv-function-call (ffn-symb expr) (dargs expr))))
-             (and type
-                  (< width (bv-type-width type))))))))
+                   ;;                    ;fixme this may be a bad idea?
+                   ;;                    (and (eq 'bv-array-read (ffn-symb expr))
+                   ;;                         (quotep (darg4 expr)))
+                   )
+               ;; The width of the term is greater than the desired width:
+               (let ((type (maybe-get-type-of-bv-function-call fn (dargs expr))))
+                 (and type
+                      (< width (the (integer 0 *) (bv-type-width type)))))))))))
 
-;; decides whether the term indicated by DARG can be trimmed down (by wrapping it with a call of
+;; Decides whether the term indicated by DARG can be trimmed down (by wrapping it with a call of
 ;; trim) to be a bit-vector of the given WIDTH.
-;OPERATORS should be 'all or 'non-arithmetic
 ;maybe we should add the option to not trim logical ops?  but that's not as dangerous as trimming arithmetic ops...
 ;; todo: warn if size-darg is not a quoted natural
 (defund term-should-be-trimmed-axe (size-darg
                                     darg
-                                    operators ;expected to be a quoted constant in every call
+                                    operators ;expected to be a quoted constant in every call, either 'all or 'non-arithmetic
                                     dag-array)
   (declare (xargs :guard (and (or (myquotep size-darg)
                                   (and (natp size-darg)
@@ -195,26 +198,29 @@
                                        (pseudo-dag-arrayp 'dag-array dag-array (+ 1 darg))))
                               ;; (member-equal operators '('all 'non-arithmetic))
                               )))
-  (b* (((when (not (member-equal operators '('all 'non-arithmetic)))) ;; todo: can we avoid this?  use one as the default? use keywords?
-        (er hard? 'term-should-be-trimmed-axe "Unexpected operators argument: ~x0.)~%" operators))
-       ((when (not (and (consp size-darg) ; check for quotep
-                        (natp (unquote size-darg)))))
+  (b* (;; ((when (not (member-equal operators '('all 'non-arithmetic)))) ;; todo: can we avoid this?  use one as the default? use keywords?
+       ;;  (er hard? 'term-should-be-trimmed-axe "Unexpected operators argument: ~x0.)~%" operators))
+       ((when (not (consp size-darg))) ; checks for non-constant size
+        ;; can probably happen, if non-constant sizes are around:
+        nil
+        ;; When variable shifts are involved, we may indeed see BV sizes that are not constants:
+        ;; (cw "Warning: In term-should-be-trimmed-axe: Unexpected width: ~x0.)~%"
+        ;;     (if (consp size-darg) ; check for quotep
+        ;;         size-darg
+        ;;       ;; simplify this?:
+        ;;       (if (and (not (myquotep darg))
+        ;;                (natp size-darg)
+        ;;                (< size-darg (alen1 'dag-array dag-array)))
+        ;;           (aref1 'dag-array dag-array size-darg)
+        ;;         :unknown)))
+        )
+       (size (unquote size-darg))
+       ((when (not (natp size)))
         ;; this case may be quite common (see rules like bvcat-trim-arg2-axe-all, which we saw used with highsize = '-256 !)
         nil
         ;;(er hard? 'term-should-be-trimmed-axe "Unexpected desired width, ~x0, for ~x1.)~%" size-darg darg)
-        )
-       ;; When variable shifts are involved, we may indeed see BV sizes that are not constants:
-       ;; (cw "Warning: In term-should-be-trimmed-axe: Unexpected width: ~x0.)~%"
-       ;;     (if (consp size-darg) ; check for quotep
-       ;;         size-darg
-       ;;       ;; simplify this?:
-       ;;       (if (and (not (myquotep darg))
-       ;;                (natp size-darg)
-       ;;                (< size-darg (alen1 'dag-array dag-array)))
-       ;;           (aref1 'dag-array dag-array size-darg)
-       ;;         :unknown)))
-       )
-    (term-should-be-trimmed-axe-helper (unquote size-darg) darg (unquote operators) dag-array)))
+        ))
+    (term-should-be-trimmed-axe-helper size darg operators dag-array)))
 
 ;for (slice 7 0 x) the relevant width to consider is 8, not 7.  likewise for (getbit 7 x).
 ;todo: this one takes the high bit, not the width.  rename this function and that param
@@ -230,14 +236,16 @@
                                        (pseudo-dag-arrayp 'dag-array dag-array (+ 1 darg))))
                               ;; (member-equal operators '('all 'non-arithmetic))
                               )))
-  (b* (((when (not (member-equal operators '('all 'non-arithmetic)))) ;; todo: can we avoid this?  use one as the default? use keywords?
-        (er hard? 'term-should-be-trimmed-axe "Unexpected operators argument: ~x0.)~%" operators))
-       ((when (not (and (consp top-bit-darg) ; check for quotep
-                        (natp (unquote top-bit-darg)))))
-        ;; may happen; see comment in term-should-be-trimmed-axe:
+  (b* (;; ((when (not (member-equal operators '('all 'non-arithmetic)))) ;; todo: can we avoid this?  use one as the default? use keywords?
+       ;;  (er hard? 'term-should-be-trimmed-axe "Unexpected operators argument: ~x0.)~%" operators))
+       ((when (not (consp top-bit-darg))) ; checks for quotep
         nil)
-       (width (+ 1 (unquote top-bit-darg)))) ;the plus one is for this version
-    (term-should-be-trimmed-axe-helper width darg (unquote operators) dag-array)))
+       (top-bit (unquote top-bit-darg))
+       ((when (not (natp top-bit)))
+        ;; may happen?; see comment in term-should-be-trimmed-axe:
+        nil)
+       (width (+ 1 (the (integer 0 *) top-bit)))) ;the plus one is for this version
+    (term-should-be-trimmed-axe-helper width darg operators dag-array)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
