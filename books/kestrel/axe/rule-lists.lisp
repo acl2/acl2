@@ -1084,7 +1084,16 @@
      putbits
 
      unsigned-byte-p-of-bvmult-of-expt2-constant-version
-     unsigned-byte-p-of-bvchop-becomes-bvlt)))
+     unsigned-byte-p-of-bvchop-becomes-bvlt
+
+     ;; These recognize idioms for bvcat (these are probably not fully general;
+     ;; need to support bvcats with 0 anywhere and other args with 1s only in
+     ;; the 0 region):
+     ;; bvor-disjoint-ones-arg1-gen
+     ;; bvor-disjoint-ones-arg2-gen
+     bvor-of-bvcat-becomes-bvcat-arg2
+     bvor-of-bvcat-becomes-bvcat-arg3
+     )))
 
 ;todo combine this with core-rules-bv
 ;todo: some of these are not bv rules?
@@ -1928,11 +1937,7 @@
 ;for specs:
             ;; nth2-becomes-bvnth-for-natps-dag
 
-            ;; bvor-disjoint-ones-arg1-gen
-            ;; bvor-disjoint-ones-arg2-gen
-
             myif-of-myif-x-x-t
-
             myif-myif-myif-1
             myif-myif-myif-2
 
