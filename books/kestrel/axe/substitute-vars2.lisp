@@ -1202,7 +1202,7 @@
                 (if (print-level-at-least-tp print)
                     (if (consp replacement) ; checks for quotep
                         (cw "Putting in the constant ~x0.~%" replacement)
-                      (prog2$ (cw "Putting in the term:~%" replacement)
+                      (prog2$ (cw "Putting in the term: ~x0~%" replacement)
                               (print-dag-node-nicely replacement 'dag-array dag-array dag-len 1000)))
                   (cw "~%"))
                 (print-subst-candidates (rest subst-candidates) dag-array dag-len print))))))

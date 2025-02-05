@@ -344,51 +344,55 @@
   (declare (xargs :guard (pseudo-termp term)
                   :mode :program
                   :stobjs state))
-  (prog2$
-   (and (not (member-eq :equal-self suppress))
-        (equal (farg1 term) (farg2 term))
-        ;; substitution may have occured, so the args of term may not actually be idential forms
-        (cw "~%   EQUAL test ~x0 compares a value with an identical value." orig-term))
-   (and (not (member-eq :equality-variant suppress))
-        (b* ((arg1 (farg1 term))
-             (arg2 (farg2 term))
-             ((mv type-set1 &)
-              (type-set arg1 nil nil type-alist (ens state) (w state) nil nil nil))
-             ((mv type-set2 &)
-              (type-set arg2 nil nil type-alist (ens state) (w state) nil nil nil))
-             ;;(decoded-ts1 (decode-type-set type-set1))
-             ;;(decoded-ts2 (decode-type-set type-set2))
-             (arg1-symbolp (ts-subsetp type-set1 *ts-symbol*))
-             (arg2-symbolp (ts-subsetp type-set2 *ts-symbol*))
-             (arg1-numberp (ts-subsetp type-set1 *ts-acl2-number*))
-             (arg2-numberp (ts-subsetp type-set2 *ts-acl2-number*))
-             (arg1-eqlablep (or arg1-symbolp
-                                arg1-numberp
-                                (ts-subsetp type-set1 *ts-character*)))
-             (arg2-eqlablep (or arg2-symbolp
-                                arg2-numberp
-                                (ts-subsetp type-set2 *ts-character*))))
-          (progn$ (if arg1-symbolp
-                      (if arg2-symbolp
-                          (cw "~%   EQUAL test ~x0 could use EQ since both arguments are known to be symbols." orig-term)
-                        (cw "~%   EQUAL test ~x0 could use EQ since ~x1 is known to be a symbol." orig-term arg1))
-                    (if arg2-symbolp
-                        (cw "~%   EQUAL test ~x0 could use EQ since ~x1 is known to be a symbol." orig-term arg2)
-                      nil))
-                  (and arg1-numberp
-                       arg2-numberp
-                       (cw "~%   EQUAL test ~x0 could use = since both arguments are known to be numbers." orig-term))
-                  (and (not arg1-symbolp)
-                       (not arg2-symbolp)
-                       (not (and arg1-numberp
-                                 arg2-numberp))
-                       (if arg1-eqlablep
-                           (if arg2-eqlablep
-                               (cw "~%   EQUAL test ~x0 could use EQL since both arguments are known to be numbers, symbols, or characters." orig-term)
-                             (cw "~%   EQUAL test ~x0 could use EQL since ~x1 is known to be a number, symbol, or character." orig-term arg1))
-                         (if arg2-eqlablep
-                             (cw "~%   EQUAL test ~x0 could use EQL since ~x1 is known to be a number, symbol, or character." orig-term arg2)
-                           nil))))))))
+  (let ((arg1 (farg1 term))
+        (arg2 (farg2 term)))
+    (progn$
+      (and (not (member-eq :equal-self suppress))
+           (equal arg1 arg2)
+           ;; substitution may have occured, so the args of term may not actually be idential forms
+           (cw "~%   EQUAL test ~x0 compares a value with an identical value." orig-term))
+      (and (quotep arg1) ; todo: add a suppress option for this
+           (quotep arg2)
+           (not (equal (unquote arg1) (unquote arg2)))
+           (cw "~%   EQUAL test ~x0 compares different constants (perhaps after substituting lets)." orig-term))
+      (and (not (member-eq :equality-variant suppress))
+           (b* (((mv type-set1 &)
+                 (type-set arg1 nil nil type-alist (ens state) (w state) nil nil nil))
+                ((mv type-set2 &)
+                 (type-set arg2 nil nil type-alist (ens state) (w state) nil nil nil))
+                ;;(decoded-ts1 (decode-type-set type-set1))
+                ;;(decoded-ts2 (decode-type-set type-set2))
+                (arg1-symbolp (ts-subsetp type-set1 *ts-symbol*))
+                (arg2-symbolp (ts-subsetp type-set2 *ts-symbol*))
+                (arg1-numberp (ts-subsetp type-set1 *ts-acl2-number*))
+                (arg2-numberp (ts-subsetp type-set2 *ts-acl2-number*))
+                (arg1-eqlablep (or arg1-symbolp
+                                   arg1-numberp
+                                   (ts-subsetp type-set1 *ts-character*)))
+                (arg2-eqlablep (or arg2-symbolp
+                                   arg2-numberp
+                                   (ts-subsetp type-set2 *ts-character*))))
+             (progn$ (if arg1-symbolp
+                         (if arg2-symbolp
+                             (cw "~%   EQUAL test ~x0 could use EQ since both arguments are known to be symbols." orig-term)
+                           (cw "~%   EQUAL test ~x0 could use EQ since ~x1 is known to be a symbol." orig-term arg1))
+                       (if arg2-symbolp
+                           (cw "~%   EQUAL test ~x0 could use EQ since ~x1 is known to be a symbol." orig-term arg2)
+                         nil))
+                     (and arg1-numberp
+                          arg2-numberp
+                          (cw "~%   EQUAL test ~x0 could use = since both arguments are known to be numbers." orig-term))
+                     (and (not arg1-symbolp)
+                          (not arg2-symbolp)
+                          (not (and arg1-numberp
+                                    arg2-numberp))
+                          (if arg1-eqlablep
+                              (if arg2-eqlablep
+                                  (cw "~%   EQUAL test ~x0 could use EQL since both arguments are known to be numbers, symbols, or characters." orig-term)
+                                (cw "~%   EQUAL test ~x0 could use EQL since ~x1 is known to be a number, symbol, or character." orig-term arg1))
+                            (if arg2-eqlablep
+                                (cw "~%   EQUAL test ~x0 could use EQL since ~x1 is known to be a number, symbol, or character." orig-term arg2)
+                              nil)))))))))
 
 ;; For a call of EQL, report an issue if both arguments are known to be
 ;; non-eqlable.  Also report if EQ or = could be used instead.
@@ -398,41 +402,46 @@
   (declare (xargs :guard (pseudo-termp term)
                   :mode :program
                   :stobjs state))
-  (prog2$
-   (and (not (member-eq :equal-self suppress))
-        (equal (farg1 term) (farg2 term))
-        ;; substitution may have occured, so the args of term may not actually be idential forms
-        (cw "~%   EQL test ~x0 compares identical values." orig-term))
-   (and (not (member-eq :equality-variant suppress))
-        (b* ((arg1 (farg1 term))
-             (arg2 (farg2 term))
-             ((mv type-set1 &)
-              (type-set arg1 nil nil type-alist (ens state) (w state) nil nil nil))
-             ((mv type-set2 &)
-              (type-set arg2 nil nil type-alist (ens state) (w state) nil nil nil))
-             ;;(decoded-ts1 (decode-type-set type-set1))
-             ;;(decoded-ts2 (decode-type-set type-set2))
-             (arg1-symbolp (ts-subsetp type-set1 *ts-symbol*))
-             (arg2-symbolp (ts-subsetp type-set2 *ts-symbol*))
-             (arg1-numberp (ts-subsetp type-set1 *ts-acl2-number*))
-             (arg2-numberp (ts-subsetp type-set2 *ts-acl2-number*))
-             (ts-eqlable (ts-union *ts-symbol*
-                                   (ts-union *ts-character*
-                                             *ts-acl2-number*))))
-          (progn$ (and (not (eq (fargn orig-term 1) 'acl2::case-do-not-use-elsewhere)) ; avoid flagging an EQL call that comes from CASE (todo: this doesn't catch cases where the selector is just a variable)
-                       (if arg1-symbolp
-                           (if arg2-symbolp
-                               (cw "~%   EQL test ~x0 could use EQ since both arguments are known to be symbols." orig-term)
-                             (cw "~%   EQL test ~x0 could use EQ since ~x1 is known to be a symbol." orig-term arg1))
-                         (if arg2-symbolp
-                             (cw "~%   EQL test ~x0 could use EQ since ~x1 is known to be a symbol." orig-term arg2)
-                           nil)))
-                  (and arg1-numberp
-                       arg2-numberp
-                       (cw "~%   EQL test ~x0 could use = since both arguments are known to be numbers." orig-term))
-                  (and (ts-disjointp type-set1 ts-eqlable)
-                       (ts-disjointp type-set2 ts-eqlable)
-                       (cw "~%   ill-guarded call ~x0 since both ~x1 and ~x2 are not numbers, symbols, or characters." orig-term arg1 arg2)))))))
+  (let ((arg1 (farg1 term))
+        (arg2 (farg2 term)))
+    (progn$
+      (and (not (member-eq :equal-self suppress))
+           (equal arg1 arg2)
+           ;; substitution may have occured, so the args of term may not actually be idential forms
+           (cw "~%   EQL test ~x0 compares identical values." orig-term))
+      (and (quotep arg1) ; todo: add a suppress option for this
+           (quotep arg2)
+           (not (equal (unquote arg1) (unquote arg2)))
+           (cw "~%   EQL test ~x0 compares different constants (perhaps after substituting lets)." orig-term))
+      (and (not (member-eq :equality-variant suppress))
+           (b* (
+                ((mv type-set1 &)
+                 (type-set arg1 nil nil type-alist (ens state) (w state) nil nil nil))
+                ((mv type-set2 &)
+                 (type-set arg2 nil nil type-alist (ens state) (w state) nil nil nil))
+                ;;(decoded-ts1 (decode-type-set type-set1))
+                ;;(decoded-ts2 (decode-type-set type-set2))
+                (arg1-symbolp (ts-subsetp type-set1 *ts-symbol*))
+                (arg2-symbolp (ts-subsetp type-set2 *ts-symbol*))
+                (arg1-numberp (ts-subsetp type-set1 *ts-acl2-number*))
+                (arg2-numberp (ts-subsetp type-set2 *ts-acl2-number*))
+                (ts-eqlable (ts-union *ts-symbol*
+                                      (ts-union *ts-character*
+                                                *ts-acl2-number*))))
+             (progn$ (and (not (eq (fargn orig-term 1) 'acl2::case-do-not-use-elsewhere)) ; avoid flagging an EQL call that comes from CASE (todo: this doesn't catch cases where the selector is just a variable)
+                          (if arg1-symbolp
+                              (if arg2-symbolp
+                                  (cw "~%   EQL test ~x0 could use EQ since both arguments are known to be symbols." orig-term)
+                                (cw "~%   EQL test ~x0 could use EQ since ~x1 is known to be a symbol." orig-term arg1))
+                            (if arg2-symbolp
+                                (cw "~%   EQL test ~x0 could use EQ since ~x1 is known to be a symbol." orig-term arg2)
+                              nil)))
+                     (and arg1-numberp
+                          arg2-numberp
+                          (cw "~%   EQL test ~x0 could use = since both arguments are known to be numbers." orig-term))
+                     (and (ts-disjointp type-set1 ts-eqlable)
+                          (ts-disjointp type-set2 ts-eqlable)
+                          (cw "~%   ill-guarded call ~x0 since both ~x1 and ~x2 are not numbers, symbols, or characters." orig-term arg1 arg2))))))))
 
 ;; For a call of EQ, report an issue if both arguments are known to be non-symbols.
 (defun check-call-of-eq (term ; let-bound vars have been replaced in this
@@ -441,24 +450,28 @@
   (declare (xargs :guard (pseudo-termp term)
                   :mode :program
                   :stobjs state))
-  (prog2$
-   (and (not (member-eq :equal-self suppress))
-        (equal (farg1 term) (farg2 term))
-        ;; substitution may have occured, so the args of term may not actually be idential forms
-        (cw "~%   EQ test ~x0 compares identical values." orig-term))
-   (and (not (member-eq :equality-variant suppress))
-        (b* ((arg1 (farg1 term))
-             (arg2 (farg2 term))
-             ((mv type-set1 &)
-              (type-set arg1 nil nil type-alist (ens state) (w state) nil nil nil))
-             ((mv type-set2 &)
-              (type-set arg2 nil nil type-alist (ens state) (w state) nil nil nil))
-             ;;(decoded-ts1 (decode-type-set type-set1))
-             ;;(decoded-ts2 (decode-type-set type-set2))
-             )
-          (progn$ (and (ts-disjointp type-set1 *ts-symbol*)
-                       (ts-disjointp type-set2 *ts-symbol*)
-                       (cw "~%   ill-guarded call ~x0 since both ~x1 and ~x2 are not symbols." orig-term arg1 arg2)))))))
+  (let ((arg1 (farg1 term))
+        (arg2 (farg2 term)))
+    (progn$
+      (and (not (member-eq :equal-self suppress))
+           (equal arg1 arg2)
+           ;; substitution may have occured, so the args of term may not actually be idential forms
+           (cw "~%   EQ test ~x0 compares identical values." orig-term))
+      (and (quotep arg1) ; todo: add a suppress option for this
+           (quotep arg2)
+           (not (equal (unquote arg1) (unquote arg2)))
+           (cw "~%   EQ test ~x0 compares different constants (perhaps after substituting lets)." orig-term))
+      (and (not (member-eq :equality-variant suppress))
+           (b* (((mv type-set1 &)
+                 (type-set arg1 nil nil type-alist (ens state) (w state) nil nil nil))
+                ((mv type-set2 &)
+                 (type-set arg2 nil nil type-alist (ens state) (w state) nil nil nil))
+                ;;(decoded-ts1 (decode-type-set type-set1))
+                ;;(decoded-ts2 (decode-type-set type-set2))
+                )
+             (progn$ (and (ts-disjointp type-set1 *ts-symbol*)
+                          (ts-disjointp type-set2 *ts-symbol*)
+                          (cw "~%   ill-guarded call ~x0 since both ~x1 and ~x2 are not symbols." orig-term arg1 arg2))))))))
 
 ;; For a call of =, report an issue if either argument is known to be a non-number.
 (defun check-call-of-= (term ; let-bound vars have been replaced in this
@@ -467,25 +480,29 @@
   (declare (xargs :guard (pseudo-termp term)
                   :mode :program
                   :stobjs state))
-  (prog2$
-   (and (not (member-eq :equal-self suppress))
-        (equal (farg1 term) (farg2 term))
-        ;; substitution may have occured, so the args of term may not actually be idential forms
-        (cw "~%   = test ~x0 compares identical values." orig-term))
-   (and (not (member-eq :equality-variant suppress))
-        (b* ((arg1 (farg1 term))
-             (arg2 (farg2 term))
-             ((mv type-set1 &)
-              (type-set arg1 nil nil type-alist (ens state) (w state) nil nil nil))
-             ((mv type-set2 &)
-              (type-set arg2 nil nil type-alist (ens state) (w state) nil nil nil))
-             ;;(decoded-ts1 (decode-type-set type-set1))
-             ;;(decoded-ts2 (decode-type-set type-set2))
-             )
-          (progn$ (and (ts-disjointp type-set1 *ts-acl2-number*)
-                       (cw "~%   ill-guarded call ~x0 since ~x1 is not a number." orig-term arg1))
-                  (and (ts-disjointp type-set2 *ts-acl2-number*)
-                       (cw "~%   ill-guarded call ~x0 since ~x1 is not a number." orig-term arg2)))))))
+  (let ((arg1 (farg1 term))
+        (arg2 (farg2 term)))
+    (progn$
+      (and (not (member-eq :equal-self suppress))
+           (equal arg1 arg2)
+           ;; substitution may have occured, so the args of term may not actually be idential forms
+           (cw "~%   = test ~x0 compares identical values." orig-term))
+      (and (quotep arg1) ; todo: add a suppress option for this
+           (quotep arg2)
+           (not (equal (unquote arg1) (unquote arg2)))
+           (cw "~%   = test ~x0 compares different constants (perhaps after substituting lets)." orig-term))
+      (and (not (member-eq :equality-variant suppress))
+           (b* (((mv type-set1 &)
+                 (type-set arg1 nil nil type-alist (ens state) (w state) nil nil nil))
+                ((mv type-set2 &)
+                 (type-set arg2 nil nil type-alist (ens state) (w state) nil nil nil))
+                ;;(decoded-ts1 (decode-type-set type-set1))
+                ;;(decoded-ts2 (decode-type-set type-set2))
+                )
+             (progn$ (and (ts-disjointp type-set1 *ts-acl2-number*)
+                          (cw "~%   ill-guarded call ~x0 since ~x1 is not a number." orig-term arg1))
+                     (and (ts-disjointp type-set2 *ts-acl2-number*)
+                          (cw "~%   ill-guarded call ~x0 since ~x1 is not a number." orig-term arg2))))))))
 
 (defun filter-subst (subst vars)
   (if (endp subst)
@@ -729,34 +746,37 @@
        (declares (and (defun-or-mutual-recursion-formp event) ; todo: what if not (e.g., a define?)
                       (get-declares-from-event fn event)))
        (xargs (get-xargs-from-declares declares))
-       (guard-debug-res (assoc-keyword :guard-debug xargs))
-       (guard (fn-guard fn (w state)))
-       ;; Initialize the type-alist by assuming the function's guard:
-       ((mv & & type-alist & &)
-        (if assume-guards
-            (assume-true-false guard nil nil nil nil (ens state) (w state) nil nil nil)
-          ;; Start with a type-alist of nil since we are not assuming guards:
-          (mv nil nil nil nil nil))))
-    (progn$ (and (not (member-eq :guard-debug suppress))
-                 guard-debug-res
-                 (cw "(~x0 has a :guard-debug xarg, ~x1." fn (second guard-debug-res)))
-            ;; Apply the linter to the guard:
-            (and (not (equal guard *t*)) ;; a guard of T is resolvable but uninterseting
-                 (lint-term guard
-                             nil ;empty substitution
-                             nil ;type-alist
-                             t   ;iff-flag
-                             (concatenate 'string "guard of " (symbol-to-string fn))
-                             suppress state))
-            ;; Apply the linter to the body:
-            (lint-term body
-                        nil ;empty substitution
-                        type-alist
-                        nil ;iff-flag
-                        fn
-                        suppress state)
-            (let ((state (check-for-contradiction fn "guard" guard step-limit state)))
-              state))))
+       (guard (fn-guard fn (w state))))
+    (progn$
+     ;; Check for :guard-debug:
+     (and (not (member-eq :guard-debug suppress))
+          (let ((guard-debug-res (assoc-keyword :guard-debug xargs)))
+            (and guard-debug-res
+                 (cw "~%    Remove :guard-debug xarg, ~x0." (second guard-debug-res)))))
+     ;; Apply the linter to the guard:
+     (and (not (equal guard *t*)) ;; a guard of T is resolvable but uninteresting ; todo: move this check into lint-term?
+          (lint-term guard
+                     nil ;empty substitution
+                     nil ;type-alist
+                     t   ;iff-flag
+                     (concatenate 'string "guard of " (symbol-to-string fn))
+                     suppress state))
+     ;; Apply the linter to the body:
+     (b* (       ;; Initialize the type-alist by assuming the function's guard:
+          ((mv & & type-alist & &)
+           (if assume-guards
+               (assume-true-false guard nil nil nil nil (ens state) (w state) nil nil nil)
+             ;; Start with a type-alist of nil since we are not assuming guards:
+             (mv nil nil nil nil nil))))
+       (lint-term body
+                  nil ;empty substitution
+                  type-alist
+                  nil ;iff-flag
+                  fn
+                  suppress state))
+     ;; Check for contradictory guard:
+     (let ((state (check-for-contradiction fn "guard" guard step-limit state)))
+       state))))
 
 ;; Returns state.
 (defun lint-defuns (fns assume-guards suppress skip-fns step-limit state)

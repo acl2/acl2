@@ -250,7 +250,6 @@ FX-8350.</p>
   :parents (hex-digit-chars-value)
   ((x hex-digit-char-list*p)
    (val :type unsigned-byte))
-  :guard-debug t
   (if (consp x)
       (hex-digit-chars-value1
        (cdr x)
