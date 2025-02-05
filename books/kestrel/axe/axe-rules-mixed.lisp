@@ -1,7 +1,7 @@
 ; Mixed Axe rules
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -22,6 +22,7 @@
 (include-book "axe-syntax-functions")
 (include-book "axe-syntax-functions-bv")
 (include-book "kestrel/lists-light/all-same" :dir :system)
+(local (include-book "list-rules"))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system)) ;drop?
