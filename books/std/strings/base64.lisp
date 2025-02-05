@@ -1149,7 +1149,6 @@ when there are two pads.</p>"
 an accumulator."
   :long "<p>We leave this enabled; it would be odd to reason about it.</p>"
   :prepwork ((local (in-theory (enable base64-decode revappend-chars))))
-  :guard-debug t
   (declare (type string x))
   (mbe :logic
        (b* (((mv okp str) (base64-decode x)))
