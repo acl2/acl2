@@ -133,7 +133,7 @@
      as we ensure by way of formal proofs.")
    (xdoc::p
     "We go through the voters, and check whether the leader address
-     is among the refernced previous certificates or not,
+     is among the referenced previous certificates or not,
      counting its stake as part of the resulting vote stake."))
   (b* (((when (or (not (mbt (certificate-setp voters)))
                   (set::emptyp voters)))
