@@ -193,6 +193,28 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define cert-with-author+round ((author addressp)
+                                (round posp)
+                                (certs certificate-setp))
+  :returns (cert? certificate-optionp)
+  :short "Retrieve, from a set of certificates,
+          the certificate with a given author and round."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If there is no certificate with the given author and round,
+     or if there is more thatn one,
+     @('nil') is returned, for no certificate.
+     Otherwise, if there is exactly one certificate with that author and round,
+     the certificate is returned."))
+  (b* ((certs-ar (certs-with-author+round author round certs))
+       ((unless (= (set::cardinality certs-ar) 1)) nil))
+    (certificate-fix (set::head certs-ar)))
+  :guard-hints (("Goal" :in-theory (enable set::cardinality)))
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define certs-with-round ((round posp) (certs certificate-setp))
   :returns (certs-with-round certificate-setp)
   :short "Retrieve, from a set of certificates,
