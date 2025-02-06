@@ -679,7 +679,7 @@ of which recognizers require true-listp and which don't.</p>")
                   :normalize nil
                   ,@(and (eq mode :logic)
                          `(:verify-guards ,verify-guards
-                           :guard-debug   ,guard-debug
+                           ,@(and guard-debug `(:guard-debug ,guard-debug))
                            :guard-hints   ,guard-hints))
                   ,(if non-emptyp
                        `(and (consp ,x)
