@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -69,7 +69,7 @@
     "In AleoBFT, this calculation is deterministic,
      given the round number and committee,
      but the details are unimportant to our model.
-     Thus, the use of constrained function is appropriate."))
+     Thus, the use of a constrained function is appropriate."))
 
   (encapsulate
     (((leader-at-round * *) => *
