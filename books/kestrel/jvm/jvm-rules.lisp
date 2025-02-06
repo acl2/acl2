@@ -1,7 +1,7 @@
 ; Various rules about the jvm model
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -386,9 +386,7 @@
 (defthm s-of-clr
   (equal (s ad (clr pair val) heap)
          (clear-field ad pair (s ad val heap)))
-  :hints (("Goal" :in-theory (e/d (clear-field) (set-to-nil-equal-clear-field)))))
-
-(in-theory (disable CLEAR-FIELD-OF-S))
+  :hints (("Goal" :in-theory (e/d (clear-field clear-field-of-s) (set-to-nil-equal-clear-field)))))
 
 (in-theory (disable array-contents2))
 

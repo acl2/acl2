@@ -2753,15 +2753,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; (local (include-book "kestrel/axe/axe-rules-mixed" :dir :system))
-;; ;move
-;; (local (in-theory (disable ACL2::INEQ-HACK2
-;;                            ACL2::INEQ-HACK
-;;
-;;                            )))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ;; Read N bytes, starting at ADDR.  Unlike read, this returns a list.
 ;; TODO: Consider putting the N parameter first
 (defund read-bytes (addr n x86)

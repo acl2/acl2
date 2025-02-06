@@ -253,3 +253,37 @@
 
 (theory-invariant (incompatible (:definition bv-array-read) (:rewrite bvchop-of-nth-becomes-bv-array-read2)))
 
+
+(defthm equal-of-bv-array-write-same
+  (implies (and (natp width)
+                (natp index)
+                (< index len)
+                (integerp len))
+           (equal (equal x (bv-array-write width len index val x))
+                  (and (equal len (len x))
+                       (true-listp x)
+                       (all-unsigned-byte-p width x)
+                       (equal (bvchop width val)
+                              (bv-array-read width len index x)))))
+  :hints (("Goal" :cases ((equal len (len x))))))
+
+(defthm equal-of-bv-array-write-and-bv-array-write-same
+  (implies (and (natp width)
+                (natp index)
+                (natp index2)
+                (< index len)
+                (< index2 len)
+                (integerp len)
+                (true-listp data)
+                (all-unsigned-byte-p width data)
+                (equal len (len data)))
+           (equal (equal (bv-array-write width len index2 val2 data)
+                         (bv-array-write width len index val data))
+                  (if (equal index index2)
+                      (equal (bvchop width val)
+                             (bvchop width val2))
+                    (and (equal (bvchop width val2)
+                                (bv-array-read width len index2 data))
+                         (equal (bvchop width val)
+                                (bv-array-read width len index data))))))
+  :hints (("Goal" :in-theory (e/d (bv-array-read-of-bv-array-write-both) (BV-ARRAY-READ-OF-BV-ARRAY-WRITE)))))

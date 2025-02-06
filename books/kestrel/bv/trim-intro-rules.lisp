@@ -1,7 +1,7 @@
 ; Rules to chop arguments using trim
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -24,6 +24,7 @@
 (include-book "bvand")
 (include-book "bvor")
 (include-book "bvxor")
+(include-book "bvlt")
 (include-book "trim-rules") ; need these whenever we introduce trim
 
 ;; TODO: Should we only trim when the sizes involved are constants?
@@ -148,7 +149,27 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm bvminus-trim-arg1
+(defthm bvplus-trim-arg2
+  (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'xsize x))
+                (< size xsize)
+                (natp size)
+                (posp xsize))
+           (equal (bvplus size x y)
+                  (bvplus size (trim size x) y)))
+  :hints (("Goal" :in-theory (enable trim))))
+
+(defthm bvplus-trim-arg3
+  (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'ysize y))
+                (< size ysize)
+                (natp size)
+                (posp ysize))
+           (equal (bvplus size x y)
+                  (bvplus size x (trim size y))))
+  :hints (("Goal" :in-theory (enable trim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm bvminus-trim-arg2
   (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'xsize x))
                 (< size xsize)
                 (natp size)
@@ -156,3 +177,55 @@
            (equal (bvminus size x y)
                   (bvminus size (trim size x) y)))
   :hints (("Goal" :in-theory (enable trim))))
+
+(defthm bvminus-trim-arg3
+  (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'ysize y))
+                (< size ysize)
+                (natp size)
+                (posp ysize))
+           (equal (bvminus size x y)
+                  (bvminus size x (trim size y))))
+  :hints (("Goal" :in-theory (enable trim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm slice-trim
+  (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'xsize x))
+                (< (+ 1 high) xsize)
+                (natp high)
+                (natp low)
+                (integerp xsize))
+           (equal (slice high low x)
+                  (slice high low (trim (+ high 1) x))))
+  :hints (("Goal" :in-theory (enable trim) )))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm getbit-trim
+  (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'xsize x))
+                (< (+ 1 size) xsize)
+                (natp size)
+                (integerp xsize))
+           (equal (getbit size x)
+                  (getbit size (trim (+ 1 size) x))))
+  :hints (("Goal" :in-theory (enable trim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm bvlt-trim-arg2
+  (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'xsize x))
+                (< size xsize)
+                (natp size)
+                (posp xsize))
+           (equal (bvlt size x y)
+                  (bvlt size (trim size x) y)))
+  :hints (("Goal" :in-theory (enable bvlt trim))))
+
+(defthm bvlt-trim-arg3
+  (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'xsize x))
+                (< size xsize)
+                (natp size)
+                (posp xsize))
+           (equal (bvlt size y x)
+                  (bvlt size y (trim size x))))
+  :hints (("Goal" :in-theory (enable bvlt trim))))

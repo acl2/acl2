@@ -16,6 +16,9 @@
 
 (include-book "kestrel/lists-light/firstn" :dir :system)
 (include-book "kestrel/lists-light/finalcdr" :dir :system)
+(include-book "kestrel/lists-light/repeat" :dir :system)
+(include-book "kestrel/lists-light/subrange" :dir :system)
+(local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
 
 (defun sub1-cdr-cdr-induct (n x y)
@@ -41,11 +44,44 @@
   :hints (("Goal" :induct (sub1-cdr-cdr-induct n x y)
            :in-theory (enable update-nth))))
 
+(defthmd take-differs-hack
+  (implies (and (not (equal (take n lst1) ;binds n
+                            (take n lst2)))
+                (not (equal (take n x)
+                            (take n y))))
+           (not (equal x y))))
+
+(defthmd nthcdr-differs-hack
+  (implies (and (not (equal (nthcdr n lst1) ;binds n
+                            (nthcdr n lst2)))
+                (not (equal (nthcdr n x)
+                            (nthcdr n y))))
+           (not (equal x y))))
+
+(defthmd nth-differs-hack
+  (implies (and (not (equal (nth n lst1) ;binds n
+                            (nth n lst2)))
+                (not (equal (nth n x)
+                            (nth n y))))
+           (not (equal x y))))
+
 (defthmd nth-differs-hack2
   (implies (not (equal (nth n x)
                        (nth n y)))
-           (equal (equal x y)
-                  nil)))
+           (not (equal x y))))
+
+;problems happen when n is a huge constant...
+(defthm take-plus-1-hack
+  (implies (and (syntaxp (not (quotep n))) ;BOZO
+                (equal (take n x)
+                       (take n y))
+                (equal (len x) (len y))
+                (natp n))
+           (equal (equal (take (+ 1 n) x)
+                         (take (+ 1 n) y))
+                  (equal (nth n x)
+                         (nth n y))))
+  :hints (("Goal" :in-theory (enable take))))
 
 (defthm nthcdrs-differ-when-nths-differ
   (implies (and (NOT (EQUAL (NTH m lst1) (NTH m lst2))) ;binds m
@@ -59,9 +95,8 @@
 (defthmd nthcdr-when-its-just-the-last-elem
   (implies (and (equal n (+ -1 (len x)))
                 (natp n))
-           (equal (NTHCDR n x)
-                  (cons (nth n x) (FINALCDR X))))
-  :hints (("Goal" :in-theory (enable))))
+           (equal (nthcdr n x)
+                  (cons (nth n x) (finalcdr x)))))
 
 (DEFTHM UPDATE-NTH-WITH-LAST-VAL-gen
   (IMPLIES (AND; (SYNTAXP (AND (QUOTEP N)))
@@ -100,3 +135,51 @@
   (implies (equal y (nthcdr n x))
            (equal (equal (nth n x) (car y))
                   t)))
+
+;move
+;maybe this doesn't loop like the other one does?
+(DEFTHM TAKE-EQUAL-LENGTHEN-cheap
+  (IMPLIES (AND (EQUAL (NTH N LST1) (NTH N LST2))
+                (< N (LEN LST1))
+                (< N (LEN LST2))
+                (<= 0 N)
+                (INTEGERP N))
+           (EQUAL (EQUAL (TAKE N LST1)
+                         (TAKE N LST2))
+                  (EQUAL (TAKE (+ 1 N) LST1)
+                         (TAKE (+ 1 N) LST2))))
+  :rule-classes ((:rewrite :backchain-limit-lst (0 nil nil nil nil)))
+  :HINTS (("Goal" :IN-THEORY (E/d (TAKE NTH) ()))))
+
+;move?
+(theory-invariant (incompatible (:rewrite TAKE-EQUAL-LENGTHEN) (:rewrite NTHS-EQUAL-WHEN-TAKES-EQUAL)))
+
+(defthmd nths-equal-when-takes-equal
+  (implies (and (equal (take n lst1) (take n lst2))
+                (< 0 n)
+                (integerp n))
+           (EQUAL (NTH 0 lst1)
+                  (NTH 0 lst2)))
+  :hints (("Goal" :in-theory (enable take))))
+
+(defthm take-when-<-of-len
+  (implies (< (len x) n) ;could be expensive?
+           (equal (take n x)
+                  (if (zp n)
+                      nil
+                    (append x
+                            (repeat (- (nfix n) (len x))
+                                    nil)))))
+  :hints (("Goal" :in-theory (e/d (take; list::nth-append
+                                   ) ()))))
+
+
+;gen
+(defthm subsetp-equal-of-subrange-and-subrange
+  (implies (and (<= high high2)
+                (natp low)
+                (natp high)
+                (natp high2))
+           (subsetp-equal (SUBRANGE low high X) (SUBRANGE low high2 X)))
+  :hints (("Goal" :in-theory (e/d (subrange) (;anti-subrange
+                                              )))))

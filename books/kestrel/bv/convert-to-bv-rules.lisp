@@ -1,6 +1,6 @@
 ; Trim-based rules to convert functions to BV functions
 ;
-; Copyright (C) 2022-2024 Kestrel Institute
+; Copyright (C) 2022-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,6 +15,7 @@
 (include-book "bvor")
 (include-book "bvxor")
 (include-book "bvplus")
+(include-book "bvminus")
 (include-book "bvnot")
 (include-book "bv-syntax")
 (local (include-book "logxor-b"))
@@ -70,6 +71,20 @@
            (equal (trim size (+ x y))
                   (bvplus size x y)))
   :hints (("Goal" :in-theory (enable trim bvplus))))
+
+;; not needed because (- x y) translates to a call of +
+;; (defthmd trim-of---becomes-bvminus
+;;   (implies (and (integerp x)
+;;                 (integerp y))
+;;            (equal (trim size (- x y))
+;;                   (bvminus size x y)))
+;;   :hints (("Goal" :in-theory (enable trim bvminus))))
+
+(defthmd trim-of-unary---becomes-bvuminus
+  (implies (integerp x)
+           (equal (trim size (- x))
+                  (bvuminus size x)))
+  :hints (("Goal" :in-theory (enable trim bvuminus))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

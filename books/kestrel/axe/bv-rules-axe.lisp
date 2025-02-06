@@ -1385,29 +1385,55 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; in case the small term is a var, might be better to ask how many low 0s there are in the bvcat and then see if the other term fits
+;rename bvor-disjoint-ones-arg3-axe
 (defthmd bvor-disjoint-ones-arg2-gen
-  (implies (and (axe-bind-free (bind-bv-size-axe y 'size2 dag-array) '(size2))
-                (axe-syntaxp (bvcat-nest-with-low-zerosp-axe x size2 dag-array)) ;new
-                (< size2 size)
-                (equal 0 (bvchop size2 x))
-                (unsigned-byte-p-forced size2 y)
+  (implies (and (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
+                (axe-syntaxp (bvcat-nest-with-low-zerosp-axe x ysize dag-array)) ;new
+                (< ysize size)
+                (equal 0 (bvchop ysize x))
+                (unsigned-byte-p-forced ysize y)
                 (natp size)
-                (natp size2))
+                (natp ysize))
            (equal (bvor size x y)
-                  (bvcat (- size size2) (slice (+ -1 size) size2 x) size2 y)))
-  :hints (("Goal" :in-theory (enable BVOR SLICE-TOO-HIGH-IS-0))))
+                  (bvcat (- size ysize) (slice (+ -1 size) ysize x) ysize y)))
+  :hints (("Goal" :in-theory (enable bvor slice-too-high-is-0))))
 
+;rename bvor-disjoint-ones-arg2-axe
 (defthmd bvor-disjoint-ones-arg1-gen
-  (implies (and (axe-bind-free (bind-bv-size-axe y 'size2 dag-array) '(size2))
-                (axe-syntaxp (bvcat-nest-with-low-zerosp-axe x size2 dag-array)) ;new
-                (< size2 size)
-                (equal 0 (bvchop size2 x))
-                (unsigned-byte-p-forced size2 y)
+  (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
+                (axe-syntaxp (bvcat-nest-with-low-zerosp-axe y xsize dag-array)) ;new
+                (< xsize size)
+                (equal 0 (bvchop xsize y))
+                (unsigned-byte-p-forced xsize x)
                 (natp size)
-                (natp size2))
-           (equal (bvor size y x)
-                  (bvcat (- size size2) (slice (+ -1 size) size2 x) size2 y)))
-  :hints (("Goal" :in-theory (enable BVOR SLICE-TOO-HIGH-IS-0))))
+                (natp xsize))
+           (equal (bvor size x y)
+                  (bvcat (- size xsize) (slice (+ -1 size) xsize y) xsize x)))
+  :hints (("Goal" :in-theory (enable bvor slice-too-high-is-0))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd bvor-of-bvcat-becomes-bvcat-arg2
+  (implies (and (axe-bind-free (bind-low-zero-count-in-bvcat-nest x 'zeros dag-array) '(zeros))
+                (unsigned-byte-p zeros y) ; the other term fits into the 0 region
+                (equal 0 (bvchop zeros x)) ; could force or something like that
+                (< zeros size)
+                (natp size)
+                (natp zeros))
+           (equal (bvor size x y)
+                  (bvcat (- size zeros) (slice (+ -1 size) zeros x) zeros y)))
+  :hints (("Goal" :in-theory (enable bvor slice-too-high-is-0))))
+
+(defthmd bvor-of-bvcat-becomes-bvcat-arg3
+  (implies (and (axe-bind-free (bind-low-zero-count-in-bvcat-nest y 'zeros dag-array) '(zeros))
+                (unsigned-byte-p zeros x) ; the other term fits into the 0 region
+                (equal 0 (bvchop zeros y)) ; could force or something like that
+                (< zeros size)
+                (natp size)
+                (natp zeros))
+           (equal (bvor size x y)
+                  (bvcat (- size zeros) (slice (+ -1 size) zeros y) zeros x)))
+  :hints (("Goal" :in-theory (enable bvor slice-too-high-is-0))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

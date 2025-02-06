@@ -341,7 +341,8 @@
                                   ;;unsigned-byte-p-when-not-bvlt-tighten
                                   ;bvlt-when-unsigned-byte-p-better-non-constant
                                   ;bvlt-tighten-free
-                                  bvlt-tighten-when-getbit-0-alt)))))
+                                  bvlt-tighten-when-getbit-0-alt
+                                  getbit-when-<-of-bvchop-and-constant-high)))))
 
 ;for underflow to happen, (bvuminus 32 k2) must be negative, so k2 must be positive
 ;rename

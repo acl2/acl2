@@ -1491,7 +1491,9 @@
                 (x86))
 
   :parents (linear-memory)
-  :guard (canonical-address-p lin-addr)
+  :guard (and (canonical-address-p lin-addr)
+              (member-eq r-x '(:r :x)))
+  :split-types t
 
   (mv-let (flag val x86)
           (rml08 lin-addr r-x x86)
@@ -1517,7 +1519,9 @@
                (x86))
 
   :parents (linear-memory)
-  :guard (canonical-address-p lin-addr)
+  :guard (and (canonical-address-p lin-addr)
+              (unsigned-byte-p 8 val))
+  :split-types t
   :guard-hints (("Goal" :in-theory (e/d* (wvm08) ())))
 
   (mbe
@@ -1606,8 +1610,10 @@
                 (x86))
 
   :parents (linear-memory)
-  :guard (canonical-address-p lin-addr)
-
+  :guard (and (canonical-address-p lin-addr)
+              (signed-byte-p 8 val))
+  :split-types t
+  
   (wml08 lin-addr (the (unsigned-byte 8) (n08 val)) x86)
   ///
   (defthm x86p-wiml08
@@ -1624,7 +1630,9 @@
                (x86))
 
   :parents (linear-memory)
-  :guard (canonical-address-p lin-addr)
+  :guard (and (canonical-address-p lin-addr)
+              (member-eq r-x '(:r :x)))
+  :split-types t
   :guard-hints (("Goal" :in-theory (e/d (rb-and-rvm16 rml08)
                                         ())))
 
@@ -1782,7 +1790,9 @@
                 (x86))
 
   :parents (linear-memory)
-  :guard (canonical-address-p lin-addr)
+  :split-types t
+  :guard (and (canonical-address-p lin-addr)
+              (member-eq r-x '(:r :x)))
 
   (mv-let (flag val x86)
           (rml16 lin-addr r-x x86)
@@ -1809,8 +1819,9 @@
    (x86))
 
   :parents (linear-memory)
-  :guard (canonical-address-p lin-addr)
-
+  :guard (and (canonical-address-p lin-addr)
+              (unsigned-byte-p 16 val))
+  :split-types t
   :guard-hints (("Goal" :in-theory (e/d (wb-and-wvm16) ())))
 
   :prepwork
@@ -1881,8 +1892,10 @@
                 (x86))
 
   :parents (linear-memory)
-  :guard (canonical-address-p lin-addr)
-
+  :guard (and (canonical-address-p lin-addr)
+              (signed-byte-p 16 val))
+  :split-types t
+  
   (wml16 lin-addr (the (unsigned-byte 16) (n16 val)) x86)
   ///
   (defthm x86p-wiml16
@@ -1896,7 +1909,9 @@
                (x86))
 
   :parents (linear-memory)
-  :guard (canonical-address-p lin-addr)
+  :guard (and (canonical-address-p lin-addr)
+              (member-eq r-x '(:r :x)))
+  :split-types t
   :guard-hints (("Goal" :in-theory (e/d (rb-and-rvm32 rml08)
                                         (rb-1
                                           (:rewrite acl2::ash-0)
@@ -2079,7 +2094,9 @@
                 (x86))
 
   :parents (linear-memory)
-  :guard (canonical-address-p lin-addr)
+  :guard (and (canonical-address-p lin-addr)
+              (member-eq r-x '(:r :x)))
+  :split-types t
 
   (mv-let (flag val x86)
           (rml32 lin-addr r-x x86)
@@ -2104,8 +2121,9 @@
                (x86))
 
   :parents (linear-memory)
-  :guard (canonical-address-p lin-addr)
-
+  :guard (and (canonical-address-p lin-addr)
+              (unsigned-byte-p 32 val))
+  :split-types t
   :guard-hints (("Goal" :in-theory (e/d (wb-and-wvm32)
                                         ((:rewrite acl2::ash-0)
                                          (:rewrite acl2::zip-open)
@@ -2206,7 +2224,9 @@
                 (x86))
 
   :parents (linear-memory)
-  :guard (canonical-address-p lin-addr)
+  :guard (and (canonical-address-p lin-addr)
+              (signed-byte-p 32 val))
+  :split-types t
 
   (wml32 lin-addr (the (unsigned-byte 32) (n32 val)) x86)
   ///
@@ -2231,7 +2251,9 @@
                (x86))
 
   :parents (linear-memory)
-  :guard (canonical-address-p lin-addr)
+  :guard (and (canonical-address-p lin-addr)
+              (member-eq r-x '(:r :x)))
+  :split-types t
   :guard-hints (("Goal"
                  :in-theory (e/d (rb-and-rvm48
                                   las-to-pas-opener-when-canonical
@@ -2455,8 +2477,9 @@
                (x86))
 
   :parents (linear-memory)
-  :guard (canonical-address-p lin-addr)
-
+  :guard (and (canonical-address-p lin-addr)
+              (unsigned-byte-p 48 val))
+  :split-types t
   :guard-hints (("Goal"
                  :in-theory (e/d (wb-and-wvm48
                                   las-to-pas-opener-when-canonical)
@@ -2583,7 +2606,9 @@
                (x86))
 
   :parents (linear-memory)
-  :guard (canonical-address-p lin-addr)
+  :guard (and (canonical-address-p lin-addr)
+              (member-eq r-x '(:r :x)))
+  :split-types t
   :guard-hints
   (("Goal"
     :in-theory (e/d (rb-and-rvm64
@@ -2846,7 +2871,9 @@
                 (x86))
 
   :parents (linear-memory)
-  :guard (canonical-address-p lin-addr)
+  :guard (and (canonical-address-p lin-addr)
+              (member-eq r-x '(:r :x)))
+  :split-types t
 
   (mv-let (flag val x86)
           (rml64 lin-addr r-x x86)
@@ -2871,7 +2898,9 @@
                (x86))
 
   :parents (linear-memory)
-  :guard (canonical-address-p lin-addr)
+  :guard (and (canonical-address-p lin-addr)
+              (unsigned-byte-p 64 val))
+  :split-types t
 
   :guard-hints
   (("Goal"
@@ -3005,7 +3034,9 @@
                 (x86))
 
   :parents (linear-memory)
-  :guard (canonical-address-p lin-addr)
+  :guard (and (canonical-address-p lin-addr)
+              (signed-byte-p 64 val))
+  :split-types t
 
   (wml64 lin-addr (the (unsigned-byte 64) (n64 val)) x86)
   ///
@@ -3020,7 +3051,9 @@
                (x86))
 
   :parents (linear-memory)
-  :guard (canonical-address-p lin-addr)
+  :guard (and (canonical-address-p lin-addr)
+              (member-eq r-x '(:r :x)))
+  :split-types t
   :guard-hints
   (("Goal"
     :in-theory (e/d (rb-and-rvm80
@@ -3261,7 +3294,9 @@
                (x86))
 
   :parents (linear-memory)
-  :guard (canonical-address-p lin-addr)
+  :guard (and (canonical-address-p lin-addr)
+              (unsigned-byte-p 80 val))
+  :split-types t
   :guard-hints
   (("Goal"
     :in-theory (e/d (wb-and-wvm80 las-to-pas-opener-when-canonical)
@@ -3416,7 +3451,9 @@
                 (x86))
 
   :parents (linear-memory)
-  :guard (canonical-address-p lin-addr)
+  :guard (and (canonical-address-p lin-addr)
+              (member-eq r-x '(:r :x)))
+  :split-types t
   :guard-hints (("Goal"
                  :in-theory (e/d (las-to-pas-opener-when-canonical
                                   rb-and-rvm128
@@ -3736,8 +3773,9 @@
                 (x86))
 
   :parents (linear-memory)
-  :guard (canonical-address-p lin-addr)
-
+  :guard (and (canonical-address-p lin-addr)
+              (unsigned-byte-p 128 val))
+  :split-types t
   :guard-hints
   (("Goal" :in-theory (e/d (wb-and-wvm128)
                            (wvm128
@@ -3941,7 +3979,9 @@
                 (x86))
 
   :parents (linear-memory)
-  :guard (canonical-address-p lin-addr)
+  :guard (and (canonical-address-p lin-addr)
+              (member-eq r-x '(:r :x)))
+  :split-types t  
   :guard-hints (("Goal"
                  :in-theory (e/d (rb-and-rvm256)
                                  (not
@@ -4385,8 +4425,9 @@
                 (x86))
 
   :parents (linear-memory)
-  :guard (canonical-address-p lin-addr)
-
+  :guard (and (canonical-address-p lin-addr)
+              (unsigned-byte-p 256 val))
+  :split-types t
   :guard-hints
   (("Goal" :in-theory (e/d (wb-and-wvm256)
                            (not
@@ -4735,7 +4776,9 @@
                 (x86))
 
   :parents (linear-memory)
-  :guard (canonical-address-p lin-addr)
+  :guard (and (canonical-address-p lin-addr)
+              (member-eq r-x '(:r :x)))
+  :split-types t
   :guard-hints (("Goal"
                  :in-theory (e/d (rb-and-rvm512)
                                  (not
@@ -5436,7 +5479,9 @@
                 (x86))
 
   :parents (linear-memory)
-  :guard (canonical-address-p lin-addr)
+  :guard (and (canonical-address-p lin-addr)
+              (unsigned-byte-p 512 val))
+  :split-types t
   :guard-hints
   (("Goal" :in-theory (e/d (wb-and-wvm512)
                            (not
