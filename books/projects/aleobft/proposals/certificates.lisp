@@ -13,6 +13,8 @@
 
 (include-book "proposals")
 
+(include-book "kestrel/fty/pos-set" :dir :system)
+
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
@@ -169,6 +171,36 @@
     :induct t
     :enable (set::subset
              certificate->author-in-cert-set->author-set)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define cert-set->round-set ((certs certificate-setp))
+  :returns (rounds pos-setp)
+  :short "Lift @(tsee certificate->round) to sets."
+  (cond ((set::emptyp (certificate-set-fix certs)) nil)
+        (t (set::insert (certificate->round (set::head certs))
+                        (cert-set->round-set (set::tail certs)))))
+  :prepwork ((local (in-theory (enable emptyp-of-certificate-set-fix))))
+  :verify-guards :after-returns
+  :hooks (:fix)
+
+  ///
+
+  (defruled certificate->round-in-cert-set->round-set
+    (implies (and (certificate-setp certs)
+                  (set::in cert certs))
+             (set::in (certificate->round cert)
+                      (cert-set->round-set certs)))
+    :induct t)
+
+  (defruled cert-set->round-set-monotone
+    (implies (and (certificate-setp certs2)
+                  (set::subset certs1 certs2))
+             (set::subset (cert-set->round-set certs1)
+                          (cert-set->round-set certs2)))
+    :induct t
+    :enable (set::subset
+             certificate->round-in-cert-set->round-set)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
