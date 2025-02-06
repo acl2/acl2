@@ -211,7 +211,7 @@
   :short "Retrieve, from a set of certificates,
           the subset of certificates with a given author and round."
   (b* (((when (set::emptyp (certificate-set-fix certs))) nil)
-       ((certificate cert) (set::head certs)))
+       (cert (set::head certs)))
     (if (and (equal (address-fix author)
                     (certificate->author cert))
              (equal (pos-fix round)
@@ -252,7 +252,7 @@
   :short "Retrieve, from a set of certificates,
           the subset of certificates with a given round."
   (b* (((when (set::emptyp (certificate-set-fix certs))) nil)
-       ((certificate cert) (set::head certs)))
+       (cert (set::head certs)))
     (if (equal (pos-fix round)
                (certificate->round cert))
         (set::insert (certificate-fix cert)
