@@ -150,7 +150,25 @@
                         (cert-set->author-set (set::tail certs)))))
   :prepwork ((local (in-theory (enable emptyp-of-certificate-set-fix))))
   :verify-guards :after-returns
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defruled certificate->author-in-cert-set->author-set
+    (implies (and (certificate-setp certs)
+                  (set::in cert certs))
+             (set::in (certificate->author cert)
+                      (cert-set->author-set certs)))
+    :induct t)
+
+  (defruled cert-set->author-set-monotone
+    (implies (and (certificate-setp certs2)
+                  (set::subset certs1 certs2))
+             (set::subset (cert-set->author-set certs1)
+                          (cert-set->author-set certs2)))
+    :induct t
+    :enable (set::subset
+             certificate->author-in-cert-set->author-set)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
