@@ -1,7 +1,7 @@
 ; A tool to make an Axe Rewriter for a given application
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -6010,7 +6010,8 @@
     ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
     ;; Simplify a list of terms, returning a list of the simplified terms (not
-    ;; DAGs).  Returns (mv erp terms).
+    ;; DAGs).  Returns (mv erp new-terms), where the new-terms correspond 1-to-1
+    ;; to the original TERMS.
     (defun ,simp-terms-name (terms
                              assumptions
                              rule-alist
