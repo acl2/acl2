@@ -261,3 +261,29 @@
   :prepwork ((local (in-theory (enable emptyp-of-certificate-set-fix))))
   :verify-guards :after-returns
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define certs-with-authors+round ((authors address-setp)
+                                  (round posp)
+                                  (certs certificate-setp))
+  :returns (certs-with-authors+round certificate-setp)
+  :short "Retrieve, from a set of certificates,
+          the subset of certificates
+          with author in a given set and with a given round."
+  (b* (((when (set::emptyp (certificate-set-fix certs))) nil)
+       (cert (set::head certs)))
+    (if (and (set::in (certificate->author cert)
+                      (address-set-fix authors))
+             (equal (certificate->round cert)
+                    (pos-fix round)))
+        (set::insert (certificate-fix cert)
+                     (certs-with-authors+round authors
+                                               round
+                                               (set::tail certs)))
+      (certs-with-authors+round authors
+                                round
+                                (set::tail certs))))
+  :prepwork ((local (in-theory (enable emptyp-of-certificate-set-fix))))
+  :verify-guards :after-returns
+  :hooks (:fix))
