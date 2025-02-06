@@ -124,7 +124,22 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; also used for axe-bind-free
-(defund make-axe-syntaxp-evaluator-args (formals num)
+;; (defund make-axe-syntaxp-evaluator-args (formals num)
+;;   (declare (xargs :guard (and (symbol-listp formals)
+;;                               (natp num))))
+;;   (if (endp formals)
+;;       nil
+;;     (cons (let ((formal (first formals)))
+;;             (if (eq 'dag-array formal)
+;;                 'dag-array ;todo: error?
+;;               (let ((arg (pack$ 'arg num)))
+;;                 `(if (consp ,arg)
+;;                      ,arg ;; (unquote ,arg)
+;;                    ;; arg is a variable, so look it up:
+;;                    (lookup-eq ,arg alist)))))
+;;           (make-axe-syntaxp-evaluator-args (rest formals) (+ 1 num)))))
+
+(defund make-axe-syntaxp-evaluator-arg-vals (formals num)
   (declare (xargs :guard (and (symbol-listp formals)
                               (natp num))))
   (if (endp formals)
@@ -132,12 +147,8 @@
     (cons (let ((formal (first formals)))
             (if (eq 'dag-array formal)
                 'dag-array ;todo: error?
-              (let ((arg (pack$ 'arg num)))
-                `(if (consp ,arg)
-                     ,arg ;; (unquote ,arg)
-                   ;; arg is a variable, so look it up:
-                   (lookup-eq ,arg alist)))))
-          (make-axe-syntaxp-evaluator-args (rest formals) (+ 1 num)))))
+              (pack$ 'arg num '-val)))
+          (make-axe-syntaxp-evaluator-arg-vals (rest formals) (+ 1 num)))))
 
 ;; also used for axe-bind-free
 (defund make-axe-syntaxp-evaluator-case-for-arity-aux (arity fns wrld)
@@ -155,7 +166,7 @@
                                     formals))
            (dag-array-formals (if fn-uses-dagp '(dag-array) nil)))
       (cons ;the entry for FN in a case expression:
-       `(,fn (,fn ,@(make-axe-syntaxp-evaluator-args non-dag-array-formals 0) ,@dag-array-formals))
+       `(,fn (,fn ,@(make-axe-syntaxp-evaluator-arg-vals non-dag-array-formals 0) ,@dag-array-formals))
        (make-axe-syntaxp-evaluator-case-for-arity-aux arity (rest fns) wrld)))))
 
 ;; also used for axe-bind-free
@@ -177,7 +188,7 @@
     `(er hard? ',main-fn ,error-string fn)))
 
 ;; also used for axe-bind-free
-;; args up through arity-1 are bound to vars arg0 ... arg(arity-1) in the overarching term
+;; the values of args up through arity-1 are bound to vars arg0-val ... arg(arity-1)-val in the overarching term
 (defund make-axe-syntaxp-evaluator-cases-for-arities (current-arity max-arity arity-alist main-fn error-string wrld)
   (declare (xargs :guard (and (natp current-arity)
                               (integerp max-arity)
@@ -191,12 +202,17 @@
           (not (mbt (integerp max-arity)))
           (< max-arity current-arity))
       `(er hard? ',main-fn ,error-string fn)
-    `(if (atom args)
-         ,(make-axe-syntaxp-evaluator-case-for-arity current-arity (lookup current-arity arity-alist) main-fn error-string wrld)
-       (let* ((,(pack$ 'arg current-arity) (first args)) ;bind the next arg
+    (let* ((arg-name (pack$ 'arg (+ -1 current-arity))) ; so for arity 1 we will bind arg0
+           (arg-val-name (pack$ arg-name '-val)))
+      `(let* ((,arg-name (first args)) ;bind the next arg
+              (,arg-val-name (if (consp ,arg-name) ; checks for quotep (args are all quoteps or vars)
+                                 ,arg-name
+                               (lookup-eq ,arg-name alist)))
               (args (rest args)))
-         (declare (ignorable args ,(pack$ 'arg current-arity)))
-         ,(make-axe-syntaxp-evaluator-cases-for-arities (+ 1 current-arity) max-arity arity-alist main-fn error-string wrld)))))
+         (declare (ignorable args ,arg-name ,arg-val-name)) ; needed?  there might be no functions with this arity, and this may be the last case
+         (if (atom args)
+             ,(make-axe-syntaxp-evaluator-case-for-arity current-arity (lookup current-arity arity-alist) main-fn error-string wrld)
+           ,(make-axe-syntaxp-evaluator-cases-for-arities (+ 1 current-arity) max-arity arity-alist main-fn error-string wrld))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -235,7 +251,7 @@
        (eval-axe-syntaxp-expr-fn (pack$ 'eval-axe-syntaxp-expr- suffix))
        (arity-alist (bind-fns-to-arities fns wrld nil))
        (arity-0-fns (lookup 0 arity-alist))
-       (arity-1-fns (lookup 1 arity-alist))
+       ;; (arity-1-fns (lookup 1 arity-alist))
        (arities (strip-cars arity-alist))
        (max-arity (max-val arities -1)))
     `(encapsulate ()
@@ -278,21 +294,12 @@
                  ;; arity 0 case:
                  ;; TODO: Can this case be removed, for speed?  Is there a need for 0-ary axe-syntax functions?
                  ,(make-axe-syntaxp-evaluator-case-for-arity 0 arity-0-fns eval-axe-syntaxp-function-application-fn error-string wrld)
-               (let ((arg0 (first args))
-                     (args (rest args)))
-                 (if (atom args)
-                     ;; arity 1 case:
-                     (case fn
-                       ;; Axe-quotep is built into all axe-evaluators
-                       (axe-quotep (axe-quotep
-                                     ;; arg0 is a variable (we check this only for axe-quotep), so look it up:
-                                     (lookup-eq arg0 alist)))
-                       ,@(make-axe-syntaxp-evaluator-case-for-arity-aux 1 arity-1-fns wrld)
-                       (t (er hard? ',eval-axe-syntaxp-function-application-fn ,error-string fn)))
-                   (let ((arg1 (first args))
-                         (args (rest args)))
-                     (declare (ignorable args arg1))
-                     ,(make-axe-syntaxp-evaluator-cases-for-arities 2 max-arity arity-alist eval-axe-syntaxp-function-application-fn error-string wrld)))))))
+               (if (eq fn 'axe-quotep)
+                   ;; Special case: Axe-quotep is built into all axe-evaluators
+                   (axe-quotep
+                     ;; arg0 is a variable (we know this only for axe-quotep), so look it up:
+                     (lookup-eq (first args) alist))
+                 ,(make-axe-syntaxp-evaluator-cases-for-arities 1 max-arity arity-alist eval-axe-syntaxp-function-application-fn error-string wrld)))))
 
        (defund ,eval-axe-syntaxp-expr-fn (expr alist dag-array)
          (declare (xargs :guard (and (pseudo-termp expr)
