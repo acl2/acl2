@@ -105,8 +105,6 @@
 (define leader-stake-votes ((leader addressp)
                             (voters certificate-setp)
                             (commtt committeep))
-  :guard (set::subset (cert-set->author-set voters)
-                      (committee-members commtt))
   :returns (yes-stake natp)
   :short "Count the stake votes for a leader."
   :long
@@ -117,12 +115,21 @@
      as returned by @(tsee leader-at-round).
      The @('voters') input to this function
      is the set of all the certificates in the DAG
-     whose authors are members of the committee active
+     whose authors should be members of the committee active
      at the immediately following odd round:
      these are all the possible voters for the leader.
      The @('commtt') input to this function
      is the active committee at the odd round
      just after the even round of the leader.")
+   (xdoc::p
+    "We do not require, in the guard,
+     that the voter certificates are all at the same round
+     and that they are authored by members of the committee.
+     This is for simplicity, and also because,
+     when this function is used,
+     we do not have, readily available, the condition that
+     the voter certificate authors are members of the committee;
+     that is an invariant that is proved elsewhere.")
    (xdoc::p
     "Note that the active committee may have changed
      between the even and odd round,
@@ -130,24 +137,21 @@
      exactly at the @(tsee lookback) distance.
      This possible change of committee is unproblematic
      for the purpose of the correctness of the protocol,
-     as we ensure by way of formal proofs.")
+     as we ensure by way of formal proofs.
+     This is why we use @(tsee committee-validator-stake)
+     instead of @(tsee committee-member-stake).")
    (xdoc::p
     "We go through the voters, and check whether the leader address
      is among the referenced previous certificates or not,
      counting its stake as part of the resulting vote stake."))
   (b* (((when (set::emptyp (certificate-set-fix voters))) 0)
        (voter (set::head voters))
-       (voter-stake (committee-member-stake (certificate->author voter) commtt))
+       (voter-stake
+        (committee-validator-stake (certificate->author voter) commtt))
        (yes-stake (leader-stake-votes leader (set::tail voters) commtt)))
     (if (set::in (address-fix leader)
                  (certificate->previous voter))
         (+ voter-stake yes-stake)
       yes-stake))
-  :verify-guards :after-returns
-  :guard-hints
-  (("Goal"
-    :in-theory (enable* certificate->author-in-cert-set->author-set
-                        cert-set->author-set-monotone
-                        set::expensive-rules)))
   :prepwork ((local (in-theory (enable emptyp-of-certificate-set-fix))))
   :hooks (:fix))
