@@ -331,6 +331,22 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define committee-validator-stake ((val addressp) (commtt committeep))
+  :returns (stake natp)
+  :short "Stake of a validator with respect to a committee."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The validator may or may not be a member of the committee.
+     If it is not a member, we return 0;
+     otherwise, we return its stake in the committee."))
+  (if (set::in (address-fix val) (committee-members commtt))
+      (committee-member-stake val commtt)
+    0)
+  :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define committee-validators-stake ((vals address-setp) (commtt committeep))
   :returns (stake natp)
   :short "Total stake of a set of validators with respect to a committee."
