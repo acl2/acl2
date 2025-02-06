@@ -186,6 +186,11 @@
 
   ///
 
+  (defrule emptyp-of-cert-set->round-set
+    (equal (set::emptyp (cert-set->round-set certs))
+           (set::emptyp (certificate-set-fix certs)))
+    :induct t)
+
   (defruled certificate->round-in-cert-set->round-set
     (implies (and (certificate-setp certs)
                   (set::in cert certs))
@@ -200,7 +205,16 @@
                           (cert-set->round-set certs2)))
     :induct t
     :enable (set::subset
-             certificate->round-in-cert-set->round-set)))
+             certificate->round-in-cert-set->round-set))
+
+  (defruled cert-set->round-set-of-insert
+    (implies (and (certificatep cert)
+                  (certificate-setp certs))
+             (equal (cert-set->round-set (set::insert cert certs))
+                    (set::insert (certificate->round cert)
+                                 (cert-set->round-set certs))))
+    :induct (set::weak-insert-induction cert certs)
+    :enable certificate->round-in-cert-set->round-set))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -286,4 +300,16 @@
                                 (set::tail certs))))
   :prepwork ((local (in-theory (enable emptyp-of-certificate-set-fix))))
   :verify-guards :after-returns
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defruled cert-set->round-set-of-certs-with-authors+round
+    (equal (cert-set->round-set
+            (certs-with-authors+round authors round certs))
+           (if (set::emptyp
+                (certs-with-authors+round authors round certs))
+               nil
+             (set::insert (pos-fix round) nil)))
+    :induct t
+    :enable cert-set->round-set-of-insert))
