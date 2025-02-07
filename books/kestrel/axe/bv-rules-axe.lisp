@@ -2108,6 +2108,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defthm bvchop-convert-arg2-to-bv-axe
+  (implies (axe-syntaxp (term-should-be-converted-to-bvp x nil dag-array))
+           (equal (bvchop size x)
+                  (bvchop size (trim size x))))
+  :hints (("Goal" :in-theory (enable trim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defthm bvand-convert-arg2-to-bv-axe
   (implies (axe-syntaxp (term-should-be-converted-to-bvp x nil dag-array))
            (equal (bvand size x y)
