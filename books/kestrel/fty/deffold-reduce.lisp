@@ -724,9 +724,11 @@
        (elt-type-suffix (deffoldred-gen-fold-name elt-type suffix))
        (extra-args-names (deffoldred-extra-args-to-names extra-args))
        (body
-        `(cond ((endp ,type) ,default)
-               ((endp (cdr ,type)) (,elt-type-suffix (car ,type) ,@extra-args))
-               (t (,combine (,elt-type-suffix (car ,type) ,@extra-args)
+        `(cond ((endp ,type)
+                ,default)
+               ((endp (cdr ,type))
+                (,elt-type-suffix (car ,type) ,@extra-args-names))
+               (t (,combine (,elt-type-suffix (car ,type) ,@extra-args-names)
                             (,type-suffix (cdr ,type) ,@extra-args-names)))))
        (type-suffix-when-atom
         (acl2::packn-pos (list type-suffix '-when-atom) suffix))
@@ -740,7 +742,7 @@
             (equal (,type-suffix (cons ,elt-type ,type) ,@extra-args-names)
                    (,combine (,elt-type-suffix ,elt-type ,@extra-args-names)
                              (,type-suffix ,type ,@extra-args-names)))
-            :induct t)))
+            :expand (,type-suffix (cons ,elt-type ,type) ,@extra-args-names))))
        (ruleset-event
         `(add-to-ruleset ,(deffoldred-gen-ruleset-name suffix)
                          '(,type-suffix-when-atom
@@ -795,7 +797,7 @@
         `(cond ((not (mbt (,recog ,type))) ,default)
                ((omap::emptyp ,type) ,default)
                ((omap::emptyp (omap::tail ,type))
-                (,val-type-suffix (omap::head-val ,type) ,@extra-args))
+                (,val-type-suffix (omap::head-val ,type) ,@extra-args-names))
                (t (,combine (,val-type-suffix (omap::head-val ,type)
                                               ,@extra-args-names)
                             (,type-suffix (omap::tail ,type)
