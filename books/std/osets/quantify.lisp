@@ -78,7 +78,7 @@
 ;
 ; Controlling Packages.
 ;
-; As you can see, all of these functions are introduced in the SETS package by
+; As you can see, all of these functions are introduced in the SET package by
 ; default.  If you'd like them to be in a different place instead, you can
 ; specify the :in-package-of argument and provide a symbol from some other
 ; package.  For example, since defthm is in the ACL2 package, we might write:
@@ -87,7 +87,7 @@
 ;       :in-package-of defthm)
 ;
 ; And then the functions all<integerp>, all<not-integerp>, and so forth will be
-; in the ACL2 package instead of the LISTS package.
+; in the ACL2 package instead of the SET package.
 ;
 ;
 ; Multi-Argument Predicates.
