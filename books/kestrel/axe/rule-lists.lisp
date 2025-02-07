@@ -469,10 +469,12 @@
     bvsx-of-if-becomes-bvsx-of-bvif-arg3
     repeatbit-of-if-becomes-repeatbit-of-bvif-arg2))
 
-;; These are needed only when operations like logxor or + may appears
+;; These are needed only when operations like logxor or + may appear
+;; Used in the x86/ dir.
 (defun convert-to-bv-rules ()
   (declare (xargs :guard t))
-  '(bvplus-convert-arg2-to-bv-axe-restricted ; todo: use the unrestricted ones
+  '(bvchop-convert-arg2-to-bv-axe
+    bvplus-convert-arg2-to-bv-axe-restricted ; todo: use the unrestricted ones
     bvplus-convert-arg3-to-bv-axe-restricted
     ;; bvminus-convert-arg2-to-bv-axe ; these seemed to cause loops
     ;; bvminus-convert-arg3-to-bv-axe
@@ -3495,7 +3497,10 @@
 
              acl2-numberp-of-floor
              integerp-of-myif-strong
-             bvchop-of-minus-trim
+
+             ;bvchop-of-minus-trim
+             ;bvchop-convert-arg2-to-bv-axe ; need the rest of the convert-to-bv-rules...
+
              sha1-hack-a-million
              subrange-of-take
              nthcdr-of-subrange
