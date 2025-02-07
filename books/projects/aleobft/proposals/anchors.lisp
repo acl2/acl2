@@ -102,7 +102,11 @@
      with which the blockchain is (elsewhere) extended.
      It is an invariant, proved elsewhere,
      that @('last-committed-round') is in fact the round of the latest block
-     (or 0 if the blockchain is empty)."))
+     (or 0 if the blockchain is empty).")
+   (xdoc::p
+    "The returned list of anchors has even round numbers,
+     if @('current-anchor') has an even round number
+     and if @('previous-round') is even."))
   (b* (((unless (and (mbt (and (or (zp previous-round)
                                    (active-committee-at-round previous-round
                                                               blockchain))
@@ -141,4 +145,12 @@
   (("Goal"
     :in-theory (enable evenp
                        active-committee-at-previous2-round-when-at-round)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret cert-list-evenp-of-collect-anchors
+    (cert-list-evenp anchors)
+    :hyp (and (evenp (certificate->round current-anchor))
+              (evenp previous-round))
+    :hints (("Goal" :induct t :in-theory (enable cert-list-evenp evenp)))))
