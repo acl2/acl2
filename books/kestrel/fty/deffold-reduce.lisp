@@ -610,6 +610,7 @@
                                     (suffix symbolp)
                                     (extra-args true-listp)
                                     (result symbolp)
+                                    (default t)
                                     (fty-table alistp))
   :guard (eq (flexsum->typemacro sum) 'defoption)
   :returns (event acl2::pseudo-event-formp)
@@ -640,7 +641,7 @@
        (body `(,type-case ,type
                           :some (,base-type-suffix (,accessor ,type)
                                                    ,@extra-args-names)
-                          :none t)))
+                          :none ,default)))
     `(define ,type-suffix ((,type ,recog) ,@extra-args)
        :returns (result ,result)
        :parents (,(deffoldred-gen-topic-name suffix))
@@ -679,7 +680,7 @@
         targets extra-args result default combine overrides fty-table))
      ((eq typemacro 'defoption)
       (deffoldred-gen-option-fold
-        sum mutrecp suffix extra-args result fty-table))
+        sum mutrecp suffix extra-args result default fty-table))
      (t (prog2$
          (raise "Internal error: unsupported sum type ~x0." sum)
          '(_))))))
@@ -737,7 +738,8 @@
        (thm-events
         `((defruled ,type-suffix-when-atom
             (implies (atom ,type)
-                     (,type-suffix ,type ,@extra-args-names)))
+                     (equal (,type-suffix ,type ,@extra-args-names)
+                            ,default)))
           (defruled ,type-suffix-of-cons
             (equal (,type-suffix (cons ,elt-type ,type) ,@extra-args-names)
                    (,combine (,elt-type-suffix ,elt-type ,@extra-args-names)
