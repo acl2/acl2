@@ -1,6 +1,6 @@
 (in-package "DM")
 
-(include-book "rmat")
+(include-book "projects/linear/support/rmat" :dir :system)
 (include-book "projects/groups/symmetric" :dir :system)
 
 ;; The term contributed by a permutation p in (sym n) to the determinant of an nxn
@@ -1060,66 +1060,59 @@
 ;;   Uniqueness of the Determinant
 ;;-------------------------------------------------------------------------------------------------------
 
-;; We shall show that for given n, rdet is the unique n-linear alternating function on
-;; nxn matrices such that (rdet (id-rmat n) n) = (r1).  To that end, we constrain the
-;; function rdetn as follows:
+;; We shall show that rdet is the unique n-linear alternating function on nxn matrices such that
+;; (rdet (id-rmat n) n) = (r1).  To that end, we constrain the function rdet0 as follows:
 
-(encapsulate (((n) => *))
-  (local (defun n () 2))
-  (defthm posp-n
-    (posp (n))
-    :rule-classes (:type-prescription :rewrite)))
+(encapsulate (((rdet0 * *) => *))
+  (local (defun rdet0 (a n) (rdet a n)))
+  (defthm rp-rdet0
+    (implies (and (rmatp a n n) (posp n))
+             (rp (rdet0 a n))))
+  (defthmd rdet0-n-linear
+    (implies (and (rmatp a n n) (posp n) (natp i) (< i n)
+		  (rlistnp x n) (rlistnp y n) (rp c))
+	     (equal (rdet0 (replace-row a i (rlist-add (rlist-scalar-mul c x) y)) n)
+		    (r+ (r* c (rdet0 (replace-row a i x) n))
+		        (rdet0 (replace-row a i y) n)))))
+  (defthmd rdet0-adjacent-equal
+    (implies (and (rmatp a n n) (posp n)
+		  (natp i) (< i (1- n)) (= (row i a) (row (1+ i) a)))
+	     (equal (rdet0 a n) (r0)))
+    :hints (("Goal" :use ((:instance rdet-alternating (j (1+ i))))))))
 
-(encapsulate (((rdetn *) => *))
-  (local (defun rdetn (a) (rdet a (n))))
-  (defthm rp-rdetn
-    (implies (rmatp a (n) (n))
-             (rp (rdetn a))))
-  (defthmd rdetn-n-linear
-    (implies (and (rmatp a (n) (n)) (natp i) (< i (n))
-		  (rlistnp x (n)) (rlistnp y (n)) (rp c))
-	     (equal (rdetn (replace-row a i (rlist-add (rlist-scalar-mul c x) y)))
-		    (r+ (r* c (rdetn (replace-row a i x)))
-		        (rdetn (replace-row a i y))))))
-  (defthmd rdetn-adjacent-equal
-    (implies (and (rmatp a (n) (n))
-		  (natp i) (< i (1- (n))) (= (row i a) (row (1+ i) a)))
-	     (equal (rdetn a) (r0)))
-    :hints (("Goal" :use ((:instance rdet-alternating (n (n)) (j (1+ i))))))))
-
-;; Our objective is to prove that (rdetn a) = (r* (rdet a (n)) (rdetn (id-rmat (n)))):
+;; Our objective is to prove that (rdetn a) = (r* (rdet a n) (rdetn (id-rmat n))):
 
 ;; (defthmd rdet-unique
-;;   (implies (rmatp a (n) (n))
-;;            (equal (rdetn a)
-;;                   (r* (rdet a (n))
-;;                       (rdetn (id-rmat (n)))))))
+;;   (implies (and (posp n) (rmatp a n n))
+;;            (equal (rdet0 a n)
+;;                   (r* (rdet a n)
+;;                       (rdet0 (id-rmat n) n)))))
 
-;; If we also prove that for a given function f, (f a n) satisfies the constraints on (rdetn a),
+;; If we also prove that for a given function f, (f a n) satisfies the constraints on (rdet0 a n),
 ;; we may conclude by functional instantiation that (f a n) = (r* (rdet a n) (f (id-rmat n))).
 ;; From this it follows that if f has the additional property (f (id-rmat n)) = (r1), then
-;; (f a) = (rdet a (n)).
+;; (f a n) = (rdet a n).
 
-;; Note that we have replaced the property that rdetn is alternating with the weaker property
+;; Note that we have replaced the property that rdet0 is alternating with the weaker property
 ;; rdetn-adjacent-equal, which says that the value is (r0) if 2 adjacent rows are equal.  This
 ;; relaxes the proof obligations for functional instantiation, which will be critical for the
 ;; proof of correctness of cofactor expansion.  We shall show that this property together with
 ;; n-linearity implies that the same holds for 2 non-adjacent rows.
 
-;; It follows from rdetn-n-linear and rdetn-adjacent-equal that transposing 2 adjacent rows negates
-;; the value of rdetn:
+;; It follows from rdet0-n-linear and rdet0-adjacent-equal that transposing 2 adjacent rows negates
+;; the value of rdet0:
 
 (local-in-theory (disable nth rmatp replace-row))
 
 (local-defthmd replace-adjacent-rows-same
-  (implies (and (rmatp a (n) (n))
-		(natp i) (< i (1- (n)))
-		(rlistnp x (n)))
-           (equal (rdetn (replace-row (replace-row a i x) (1+ i) x))
+  (implies (and (rmatp a n n) (posp n)
+		(natp i) (< i (1- n))
+		(rlistnp x n))
+           (equal (rdet0 (replace-row (replace-row a i x) (1+ i) x) n)
 		  (r0)))
   :hints (("Goal" :in-theory (disable len-rmatp)
-                  :use ((:instance len-rmatp (m (n)) (n (n)))
-                        (:instance rdetn-adjacent-equal (a (replace-row (replace-row a i x) (1+ i) x)))))))
+                  :use ((:instance len-rmatp (m n))
+                        (:instance rdet0-adjacent-equal (a (replace-row (replace-row a i x) (1+ i) x)))))))
 
 (local-defthm rlistnp-nth
   (implies (and (natp m) (natp n) (rmatp a m n)
@@ -1127,123 +1120,130 @@
            (rlistnp (nth i a) n))
   :hints (("Goal" :use (rlistnp-row))))
 
-(local-defthmd rdetn-adjacent-alternating-1
-  (implies (and (rmatp a (n) (n))
-		(natp i) (< i (1- (n))))
-           (equal (r+ (rdetn (replace-row (replace-row a i (rlist-add (row i a) (row (1+ i) a)))
+(local-defthmd rdet0-adjacent-alternating-1
+  (implies (and (rmatp a n n) (posp n)
+		(natp i) (< i (1- n)))
+           (equal (r+ (rdet0 (replace-row (replace-row a i (rlist-add (row i a) (row (1+ i) a)))
 	                                 (1+ i)
-		                         (row i a)))
-	              (rdetn (replace-row (replace-row a i (rlist-add (row i a) (row (1+ i) a)))
+		                         (row i a))
+			     n)
+	              (rdet0 (replace-row (replace-row a i (rlist-add (row i a) (row (1+ i) a)))
 	                                 (1+ i)
-				         (row (1+ i) a))))
+				         (row (1+ i) a))
+			     n))
 		  (r0)))
   :hints (("Goal" :in-theory (disable len-rmatp rlist-scalar-mul-r1)
-                  :use ((:instance len-rmatp (m (n)) (n (n)))
-		        (:instance rlist-scalar-mul-r1 (n (n)) (x (nth i a)))
+                  :use ((:instance len-rmatp (m n))
+		        (:instance rlist-scalar-mul-r1 (x (nth i a)))
 			(:instance replace-adjacent-rows-same (x (rlist-add (row i a) (row (1+ i) a))))
-		        (:instance rdetn-n-linear (a (replace-row a i (rlist-add (row i a) (row (1+ i) a))))
+		        (:instance rdet0-n-linear (a (replace-row a i (rlist-add (row i a) (row (1+ i) a))))
 			                         (i (1+ i)) (c (r1)) (x (row i a)) (y (row (1+ i) a)))))))
 
-(local-defthmd rdetn-adjacent-alternating-2
-  (implies (and (rmatp a (n) (n))
-		(natp i) (< i (1- (n))))
-           (equal (rdetn (replace-row (replace-row a i (rlist-add (row i a) (row (1+ i) a)))
+(local-defthmd rdet0-adjacent-alternating-2
+  (implies (and (rmatp a n n) (posp n)
+		(natp i) (< i (1- n)))
+           (equal (rdet0 (replace-row (replace-row a i (rlist-add (row i a) (row (1+ i) a)))
 	                             (1+ i)
-		                     (row i a)))
-		  (rdetn (replace-row (replace-row a (1+ i) (row i a))
+		                     (row i a))
+			 n)
+		  (rdet0 (replace-row (replace-row a (1+ i) (row i a))
 		                     i
-				     (rlist-add (row i a) (row (1+ i) a))))))
+				     (rlist-add (row i a) (row (1+ i) a)))
+			 n)))
   :hints (("Goal" :in-theory (disable len-rmatp)
-                  :use ((:instance len-rmatp (m (n)) (n (n)))
-			(:instance replace-2-rmat-rows (m (n)) (n (n))
+                  :use ((:instance len-rmatp (m n))
+			(:instance replace-2-rmat-rows (m n)
 			                          (x (rlist-add (row i a) (row (1+ i) a))) (j (1+ i)) (y (row i a)))))))
 
-(local-defthmd rdetn-adjacent-alternating-3
-  (implies (and (rmatp a (n) (n))
-		(natp i) (< i (1- (n))))
-           (equal (rdetn (replace-row (replace-row a (1+ i) (row i a))
+(local-defthmd rdet0-adjacent-alternating-3
+  (implies (and (rmatp a n n) (posp n)
+		(natp i) (< i (1- n)))
+           (equal (rdet0 (replace-row (replace-row a (1+ i) (row i a))
 		                     i
-				     (rlist-add (row i a) (row (1+ i) a))))
-		  (rdetn (replace-row (replace-row a (1+ i) (row i a))
+				     (rlist-add (row i a) (row (1+ i) a)))
+			 n)
+		  (rdet0 (replace-row (replace-row a (1+ i) (row i a))
 		                     i
-				     (row (1+ i) a)))))
+				     (row (1+ i) a))
+			 n)))
   :hints (("Goal" :in-theory (disable rlist-scalar-mul-r1 len-rmatp)
-                  :use ((:instance len-rmatp (m (n)) (n (n)))
-		        (:instance rlist-scalar-mul-r1 (n (n)) (x (nth i a)))
-			(:instance rdetn-n-linear (a (replace-row a (1+ i) (row i a)))
+                  :use ((:instance len-rmatp (m n))
+		        (:instance rlist-scalar-mul-r1 (x (nth i a)))
+			(:instance rdet0-n-linear (a (replace-row a (1+ i) (row i a)))
 			                         (c (r1)) (x (row i a)) (y (row (1+ i) a)))
-			(:instance rdetn-adjacent-equal (a (replace-row (replace-row a (1+ i) (row i a))
+			(:instance rdet0-adjacent-equal (a (replace-row (replace-row a (1+ i) (row i a))
 			                                               i (row i a))))))))
 
-(local-defthmd rdetn-adjacent-alternating-4
-  (implies (and (rmatp a (n) (n))
-		(natp i) (< i (1- (n))))
-           (equal (rdetn (replace-row (replace-row a i (rlist-add (row i a) (row (1+ i) a)))
+(local-defthmd rdet0-adjacent-alternating-4
+  (implies (and (rmatp a n n) (posp n)
+		(natp i) (< i (1- n)))
+           (equal (rdet0 (replace-row (replace-row a i (rlist-add (row i a) (row (1+ i) a)))
 	                             (1+ i)
-		                     (row (1+ i) a)))
-		  (rdetn (replace-row a i (rlist-add (row i a) (row (1+ i) a))))))
+		                     (row (1+ i) a))
+			 n)
+		  (rdet0 (replace-row a i (rlist-add (row i a) (row (1+ i) a))) n)))
   :hints (("Goal" :in-theory (disable len-rmatp rlist-scalar-mul-r1)
-                  :use ((:instance len-rmatp (m (n)) (n (n)))
-		        (:instance replace-rmat-row-self (m (n)) (n (n)) (i (1+ i))
+                  :use ((:instance len-rmatp (m n))
+		        (:instance replace-rmat-row-self (m n) (i (1+ i))
 			                            (a (replace-row a i (rlist-add (row i a) (row (1+ i) a)))))))))
 
-(local-defthmd rdetn-adjacent-alternating-5
-  (implies (and (rmatp a (n) (n))
-		(natp i) (< i (1- (n))))
-           (equal (rdetn (replace-row a i (rlist-add (row i a) (row (1+ i) a))))
-		  (rdetn a)))
+(local-defthmd rdet0-adjacent-alternating-5
+  (implies (and (rmatp a n n) (posp n)
+		(natp i) (< i (1- n)))
+           (equal (rdet0 (replace-row a i (rlist-add (row i a) (row (1+ i) a))) n)
+		  (rdet0 a n)))
   :hints (("Goal" :in-theory (disable len-rmatp rlist-scalar-mul-r1)
-                  :use ((:instance len-rmatp (m (n)) (n (n)))
-		        (:instance rlist-scalar-mul-r1 (n (n)) (x (nth i a)))
-			(:instance rdetn-n-linear (c (r1)) (x (row i a)) (y (row (1+ i) a)))
-			(:instance rdetn-adjacent-equal (a (replace-row a i (row (1+ i) a))))
-			(:instance replace-rmat-row-self (m (n)) (n (n)))))))
+                  :use ((:instance len-rmatp (m n))
+		        (:instance rlist-scalar-mul-r1 (x (nth i a)))
+			(:instance rdet0-n-linear (c (r1)) (x (row i a)) (y (row (1+ i) a)))
+			(:instance rdet0-adjacent-equal (a (replace-row a i (row (1+ i) a))))
+			(:instance replace-rmat-row-self (m n))))))
 
-(local-defthmd rdetn-adjacent-alternating-6
-  (implies (and (rmatp a (n) (n))
-		(natp i) (< i (1- (n))))
-           (equal (r+ (rdetn (replace-row (replace-row a (1+ i) (row i a)) i (row (1+ i) a)))
-	              (rdetn a))
+(local-defthmd rdet0-adjacent-alternating-6
+  (implies (and (rmatp a n n) (posp n)
+		(natp i) (< i (1- n)))
+           (equal (r+ (rdet0 (replace-row (replace-row a (1+ i) (row i a)) i (row (1+ i) a)) n)
+	              (rdet0 a n))
 		  (r0)))
-  :hints (("Goal" :use (rdetn-adjacent-alternating-1 rdetn-adjacent-alternating-2 rdetn-adjacent-alternating-3
-                        rdetn-adjacent-alternating-4 rdetn-adjacent-alternating-5))))
+  :hints (("Goal" :use (rdet0-adjacent-alternating-1 rdet0-adjacent-alternating-2 rdet0-adjacent-alternating-3
+                        rdet0-adjacent-alternating-4 rdet0-adjacent-alternating-5))))
 
-(defthmd rdetn-interchange-adjacent
-  (implies (and (rmatp a (n) (n))
-		(natp i) (< i (1- (n))))
-           (equal (rdetn (replace-row (replace-row a (1+ i) (row i a)) i (row (1+ i) a)))
-	          (r- (rdetn a))))
-  :hints (("Goal" :use (rdetn-adjacent-alternating-6
-                        (:instance rlistnp-row (n (n)) (m (n)) (i (1+ i)))
-                        (:instance r-unique (x (rdetn a))
-			                    (y (rdetn (replace-row (replace-row a (1+ i) (row i a)) i (row (1+ i) a)))))
-			(:instance r+comm (x (rdetn a))
-			                  (y (rdetn (replace-row (replace-row a (1+ i) (row i a)) i (row (1+ i) a)))))
-		        (:instance rmatp-replace-row (m (n)) (n (n)) (k (1+ i)) (r (row i a)))
-                        (:instance rmatp-replace-row (m (n)) (n (n)) (a (replace-row a (1+ i) (row i a)))
+(defthmd rdet0-interchange-adjacent
+  (implies (and (rmatp a n n) (posp n)
+		(natp i) (< i (1- n)))
+           (equal (rdet0 (replace-row (replace-row a (1+ i) (row i a)) i (row (1+ i) a)) n)
+	          (r- (rdet0 a n))))
+  :hints (("Goal" :use (rdet0-adjacent-alternating-6
+                        (:instance rlistnp-row (m n) (i (1+ i)))
+                        (:instance r-unique (x (rdet0 a n))
+			                    (y (rdet0 (replace-row (replace-row a (1+ i) (row i a)) i (row (1+ i) a)) n)))
+			(:instance r+comm (x (rdet0 a n))
+			                  (y (rdet0 (replace-row (replace-row a (1+ i) (row i a)) i (row (1+ i) a)) n)))
+		        (:instance rmatp-replace-row (m n) (k (1+ i)) (r (row i a)))
+                        (:instance rmatp-replace-row (m n) (a (replace-row a (1+ i) (row i a)))
 			                             (k i) (r (row (1+ i) a)))))))
 
 ;; Interchanging adjacent rows may be expressed as a permutation:
 
-(local-defthmd rdetn-adjacent-alternating-7
-  (implies (and (rmatp a (n) (n))
-		(natp i) (< i (1- (n)))
-		(natp k) (< k (n)))
+(local-defthmd rdet0-adjacent-alternating-7
+  (implies (and (rmatp a n n) (posp n)
+		(natp i) (< i (1- n))
+		(natp k) (< k n))
            (equal (nth k (replace-row (replace-row a (1+ i) (row i a))
 		                      i
 		                      (row (1+ i) a)))
-	          (nth k (permute a (transpose i (1+ i) (n))))))
+	          (nth k (permute a (transpose i (1+ i) n)))))
   :hints (("Goal" :in-theory (e/d (transpose-vals) (len-rmatp nth-permute len-replace-row rmatp-replace-row))
-                  :use ((:instance len-rmatp (m (n)) (n (n)))
-		        (:instance nth-permute (l a) (p (TRANSPOSE I (+ 1 I) (N))))
-		        (:instance nth-permute (l a) (p (TRANSPOSE I (+ 1 I) (N))) (k i))
-		        (:instance rmatp-replace-row (m (n)) (n (n)) (k (1+ i)) (r (row i a)))
-                        (:instance rmatp-replace-row (m (n)) (n (n)) (a (replace-row a (1+ i) (row i a)))
+                  :use ((:instance len-rmatp (m n))
+		        (:instance nth-permute (l a) (p (TRANSPOSE I (+ 1 I) n)))
+		        (:instance nth-permute (l a) (p (TRANSPOSE I (+ 1 I) n)) (k i))
+		        (:instance rmatp-replace-row (m n) (k (1+ i)) (r (row i a)))
+                        (:instance rmatp-replace-row (m n) (a (replace-row a (1+ i) (row i a)))
 			                             (k i) (r (row (1+ i) a)))
 			(:instance len-replace-row (k (1+ i)) (r (row i a)))
                         (:instance len-replace-row (a (replace-row a (1+ i) (row i a)))
 			                           (k i) (r (row (1+ i) a)))
-			(:instance permp-transpose (n (n)) (j (1+ i)))))))
+			(:instance permp-transpose (j (1+ i)))))))
 
 (local-defthm len-permute
   (equal (len (permute l p))
@@ -1253,48 +1253,48 @@
   (true-listp (permute l p)))
 
 (defthmd interchange-adjacent-rmat-permute
-  (implies (and (rmatp a (n) (n))
-		(natp i) (< i (1- (n))))
+  (implies (and (rmatp a n n) (posp n)
+		(natp i) (< i (1- n)))
            (equal (replace-row (replace-row a (1+ i) (row i a)) i (row (1+ i) a))
-	          (permute a (transpose i (1+ i) (n)))))
+	          (permute a (transpose i (1+ i) n))))
   :hints (("Goal" :in-theory (disable len-rmatp nth-permute len-replace-row rmatp-replace-row)
-                  :use ((:instance len-rmatp (m (n)) (n (n)))
-		        (:instance rmatp-replace-row (m (n)) (n (n)) (k (1+ i)) (r (row i a)))
-                        (:instance rmatp-replace-row (m (n)) (n (n)) (a (replace-row a (1+ i) (row i a)))
+                  :use ((:instance len-rmatp (m n))
+		        (:instance rmatp-replace-row (m n) (k (1+ i)) (r (row i a)))
+                        (:instance rmatp-replace-row (m n) (a (replace-row a (1+ i) (row i a)))
 			                             (k i) (r (row (1+ i) a)))
 			(:instance len-replace-row (k (1+ i)) (r (row i a)))
                         (:instance len-replace-row (a (replace-row a (1+ i) (row i a)))
 			                           (k i) (r (row (1+ i) a)))
-			(:instance permp-transpose (n (n)) (j (1+ i)))
-			(:instance len-perm (n (n)) (x (transpose i (1+ i) (n))))
+			(:instance permp-transpose (j (1+ i)))
+			(:instance len-perm (x (transpose i (1+ i) n)))
 			(:instance nth-diff-diff (x (replace-row (replace-row a (1+ i) (row i a)) i (row (1+ i) a)))
-			                         (y (permute a (transpose i (1+ i) (n)))))
-			(:instance rdetn-adjacent-alternating-7
+			                         (y (permute a (transpose i (1+ i) n))))
+			(:instance rdet0-adjacent-alternating-7
 			  (k (nth-diff (replace-row (replace-row a (1+ i) (row i a)) i (row (1+ i) a))
-			               (permute a (transpose i (1+ i) (n))))))))))
+			               (permute a (transpose i (1+ i) n)))))))))
 
-(defthmd rdetn-permute-adjacent-transpose
-  (implies (and (rmatp a (n) (n))
-                (natp i) (< i (1- (n))))
-           (equal (rdetn (permute a (transpose i (1+ i) (n))))
-                  (r- (rdetn a))))
-  :hints (("Goal" :use (rdetn-interchange-adjacent interchange-adjacent-rmat-permute))))
+(defthmd rdet0-permute-adjacent-transpose
+  (implies (and (rmatp a n n) (posp n)
+                (natp i) (< i (1- n)))
+           (equal (rdet0 (permute a (transpose i (1+ i) n)) n)
+                  (r- (rdet0 a n))))
+  :hints (("Goal" :use (rdet0-interchange-adjacent interchange-adjacent-rmat-permute))))
 
 ;; Note that applying any permutation to the rows of a produces a matrix of the
 ;; same dimensions:
 
 (local-defthm rmatp-remove1
-  (implies (and (rmatp a m n) (natp m) (member r a))
+  (implies (and (rmatp a m n) (posp n) (natp m) (member r a))
            (rmatp (remove1 r a) (1- m) n))	   
   :hints (("Goal" :in-theory (enable rmatp))))
 
 (local-defthm member-rmatp-rlistnp
-  (implies (and (rmatp a m n) (member r a))
+  (implies (and (rmatp a m n) (posp n) (member r a))
            (rlistnp r n))
   :hints (("Goal" :in-theory (enable rmatp))))
 
 (local-defthmd rmatp-perm
-  (implies (and (rmatp a m n) (natp m) (natp n)
+  (implies (and (rmatp a m n) (posp n) (natp m)
                 (true-listp b) (permutationp b a))
 	   (rmatp b m n))
   :hints (("Goal" :in-theory (enable rmatp))))
@@ -1311,57 +1311,56 @@
                         (:instance permutationp-symmetric (l a) (m (permute a p)))
 			(:instance rmatp-perm (b (permute a p)))))))
 
-;; Next we show that rdetn-permute-adjacent-transpose applies to a transposition of any
-;; 2 rows.  First note that for 0 <= i and i - 1 < j < n, (transpose i j (n)) is the
-;; result of conjugating (transpose i (1- j) (n)) by (transpose (1- j) j (n)):
-
+;; Next we show that rdet0-permute-adjacent-transpose applies to a transposition of any
+;; 2 rows.  First note that for 0 <= i and i - 1 < j < n, (transpose i j n) is the
+;; result of conjugating (transpose i (1- j) n) by (transpose (1- j) j n):
 
 (local-defthmd nth-conj-adjacent-transpose-rmat
-  (implies (and (rmatp a (n) (n))
-                (natp i) (natp j) (< i (1- j)) (< j (n))
-		(natp k) (< k (n)))
-           (equal (nth k (comp-perm (comp-perm (transpose (1- j) j (n))
-                                               (transpose i (1- j) (n))
-			                       (n))
-		                    (transpose (1- j) j (n))
-		                    (n)))
-		  (nth k (transpose i j (n)))))
+  (implies (and (rmatp a n n) (posp n)
+                (natp i) (natp j) (< i (1- j)) (< j n)
+		(natp k) (< k n))
+           (equal (nth k (comp-perm (comp-perm (transpose (1- j) j n)
+                                               (transpose i (1- j) n)
+			                       n)
+		                    (transpose (1- j) j n)
+		                    n))
+		  (nth k (transpose i j n))))
   :hints (("Goal" :in-theory (enable transpose-vals)
-                  :use ((:instance permp-transpose (n (n)))
-		        (:instance permp-transpose (n (n)) (i (1- j)))
-		        (:instance permp-transpose (n (n)) (j (1- j))))
+                  :use ((:instance permp-transpose)
+		        (:instance permp-transpose (i (1- j)))
+		        (:instance permp-transpose (j (1- j))))
                   :cases ((= k i) (= k j) (= k (1- j))))))
 
 (defthmd conj-adjacent-transpose-rmat
-  (implies (and (rmatp a (n) (n))
-                (natp i) (natp j) (< i (1- j)) (< j (n)))
-           (equal (comp-perm (comp-perm (transpose (1- j) j (n))
-                                        (transpose i (1- j) (n))
-			                (n))
-		             (transpose (1- j) j (n))
-		             (n))
-		  (transpose i j (n))))
-  :hints (("Goal" :use ((:instance permp-transpose (n (n)))
-		        (:instance permp-transpose (n (n)) (i (1- j)))
-		        (:instance permp-transpose (n (n)) (j (1- j)))
-			(:instance nth-diff-perm (n (n))
-                                                 (x (comp-perm (comp-perm (transpose (1- j) j (n))
-                                                                          (transpose i (1- j) (n))
-									  (n))
-		                                               (transpose (1- j) j (n))
-			                                       (n)))
-						 (y (transpose i j (n))))
+  (implies (and (rmatp a n n) (posp n)
+                (natp i) (natp j) (< i (1- j)) (< j n))
+           (equal (comp-perm (comp-perm (transpose (1- j) j n)
+                                        (transpose i (1- j) n)
+			                n)
+		             (transpose (1- j) j n)
+		             n)
+		  (transpose i j n)))
+  :hints (("Goal" :use ((:instance permp-transpose)
+		        (:instance permp-transpose (i (1- j)))
+		        (:instance permp-transpose (j (1- j)))
+			(:instance nth-diff-perm
+                                                 (x (comp-perm (comp-perm (transpose (1- j) j n)
+                                                                          (transpose i (1- j) n)
+									  n)
+		                                               (transpose (1- j) j n)
+			                                       n))
+						 (y (transpose i j n)))
 			(:instance nth-conj-adjacent-transpose-rmat
-			  (k (nth-diff (comp-perm (comp-perm (transpose (1- j) j (n))
-                                                             (transpose i (1- j) (n))
-					                     (n))
-		                                  (transpose (1- j) j (n))
-			                          (n))
-				       (transpose i j (n)))))))))
+			  (k (nth-diff (comp-perm (comp-perm (transpose (1- j) j n)
+                                                             (transpose i (1- j) n)
+					                     n)
+		                                  (transpose (1- j) j n)
+			                          n)
+				       (transpose i j n))))))))
 
 ;; The claim follows by induction:
 
-;; We need rmatp versions of permute-comp-perm and nth-permut:
+;; We need rmatp versions of permute-comp-perm and nth-permute:
 
 (local-defthm permute-comp-perm-reverse
   (implies (and (rmatp a n n) (posp n)
@@ -1392,143 +1391,131 @@
                   :in-theory (disable len-rmatp))))
 
 	         
-(local-defthmd rdetn-permute-transpose-step
-  (let ((a1 (permute a (transpose (1- j) j (n)))))
-    (implies (and (rmatp a (n) (n))
-                  (natp i) (natp j) (< i (1- j)) (< j (n))
-                  (equal (rdetn (permute a1 (transpose i (1- j) (n))))
-                         (r- (rdetn a1))))
-	   (equal (rdetn (permute a (transpose i j (n))))
-                  (r- (rdetn a)))))
+(local-defthmd rdet0-permute-transpose-step
+  (let ((a1 (permute a (transpose (1- j) j n))))
+    (implies (and (rmatp a n n) (posp n)
+                  (natp i) (natp j) (< i (1- j)) (< j n)
+                  (equal (rdet0 (permute a1 (transpose i (1- j) n)) n)
+                         (r- (rdet0 a1 n))))
+	   (equal (rdet0 (permute a (transpose i j n)) n)
+                  (r- (rdet0 a n)))))
   :hints (("Goal" :use (conj-adjacent-transpose-rmat
-                        (:instance permp-transpose (n (n)))
-		        (:instance permp-transpose (n (n)) (i (1- j)))
-		        (:instance permp-transpose (n (n)) (j (1- j)))			
-			(:instance rdetn-permute-adjacent-transpose (i (1- j)))
-			(:instance rdetn-permute-adjacent-transpose (i (1- j))
+                        (:instance permp-transpose)
+		        (:instance permp-transpose (i (1- j)))
+		        (:instance permp-transpose (j (1- j)))			
+			(:instance rdet0-permute-adjacent-transpose (i (1- j)))
+			(:instance rdet0-permute-adjacent-transpose (i (1- j))
 			                                           (a (permute a
-								               (comp-perm (transpose (1- j) j (n))
-                                                                                          (transpose i (1- j) (n))
-			                                                                  (n)))))))))
+								               (comp-perm (transpose (1- j) j n)
+                                                                                          (transpose i (1- j) n)
+			                                                                  n))))))))
 
-(local-defun rdetn-permute-transpose-induct (i j a)
-  (if (and (natp i) (natp j) (< i (1- j)) (< j (n)))
-      (list (rdetn-permute-transpose-induct i (1- j) (permute a (transpose (1- j) j (n)))))
+(local-defun rdet0-permute-transpose-induct (i j a n)
+  (if (and (posp n) (natp i) (natp j) (< i (1- j)) (< j n))
+      (list (rdet0-permute-transpose-induct i (1- j) (permute a (transpose (1- j) j n)) n))
     (list a)))      
 
-(defthmd rdetn-permute-transpose
-  (implies (and (rmatp a (n) (n))
-                (natp i) (natp j) (< i j) (< j (n)))
-	   (equal (rdetn (permute a (transpose i j (n))))
-                  (r- (rdetn a))))
-  :hints (("Goal" :induct (rdetn-permute-transpose-induct i j a))
-          ("Subgoal *1/2" :use (rdetn-permute-adjacent-transpose))
-          ("Subgoal *1/1" :use (rdetn-permute-transpose-step
-	                        (:instance rmatp-permute (p (TRANSPOSE (+ -1 J) J (N))) (m (n)) (n (n)))
-	                        (:instance permp-transpose (n (n)) (i (1- j)))))))
+(defthmd rdet0-permute-transpose
+  (implies (and (rmatp a n n) (posp n)
+                (natp i) (natp j) (< i j) (< j n))
+	   (equal (rdet0 (permute a (transpose i j n)) n)
+                  (r- (rdet0 a n))))
+  :hints (("Goal" :induct (rdet0-permute-transpose-induct i j a n))
+          ("Subgoal *1/2" :use (rdet0-permute-adjacent-transpose))
+          ("Subgoal *1/1" :use (rdet0-permute-transpose-step
+	                        (:instance rmatp-permute (p (TRANSPOSE (+ -1 J) J n)) (m n))
+	                        (:instance permp-transpose (i (1- j)))))))
        
-;; Now suppose (row i a) = (row j a), where 0 <= i < j < (n).  We would like to show that 
-;; (rdetn a) = (r0).  If j = i + 1 ,then apply rdetn-adjacent-equal.  Otherwise, let
-;; a' = (permute (transpose (1+ i) j (n)) a).  By nth-permute,
+;; Now suppose (row i a) = (row j a), where 0 <= i < j < n.  We would like to show that 
+;; (rdet0 a n) = (r0).  If j = i + 1 ,then apply rdet0-adjacent-equal.  Otherwise, let
+;; a' = (permute (transpose (1+ i) j n) a).  By nth-permute,
 
-;;   (nth i a') = (nth (nth i (transpose (1+ i) j (n))) a) = (nth i a)
+;;   (nth i a') = (nth (nth i (transpose (1+ i) j n)) a) = (nth i a)
 
 ;; and
 
-;;   (nth (1+ i) a') = (nth (nth (1+ i) (transpose (1+ i) j (n))) a) = (nth j a) = (nth i a)
+;;   (nth (1+ i) a') = (nth (nth (1+ i) (transpose (1+ i) j n)) a) = (nth j a) = (nth i a)
 
-;; and by rdetn-adjacent-equal, (rdetn a') = (r0).  By rdetn-transpose-rows,
+;; and by rdet0-adjacent-equal, (rdet0 a' n) = (r0).  By rdet0-transpose-rows,
 
-;;   (rdetn a) = (r- (rdetn a') = (r- (r0)) = (r0).
+;;   (rdet0 a n) = (r- (rdet0 a' n) = (r- (r0)) = (r0).
 
-;; Thus, rdetn is an alternating function:
+;; Thus, rdet0 is an alternating function:
 
-(local-defthmd rdetn-alternating-1
-  (implies (and (rmatp a (n) (n))
-                (natp i) (natp j) (< (1+ i) j) (< j (n)) (= (row i a) (row j a)))
-           (equal (rdetn a) (r0)))
+(local-defthmd rdet0-alternating-1
+  (implies (and (rmatp a n n) (posp n)
+                (natp i) (natp j) (< (1+ i) j) (< j n) (= (row i a) (row j a)))
+           (equal (rdet0 a n) (r0)))
   :hints (("Goal" :in-theory (e/d (transpose-vals) (r-r-))
-                  :use ((:instance permp-transpose (i (1+ i)) (n (n)))
-		        (:instance rdetn-adjacent-equal (a (permute a (transpose (1+ i) j (n)))))
-			(:instance rdetn-permute-transpose (i (1+ i)))
-			(:instance r-r- (x (rdetn a)))))))
+                  :use ((:instance permp-transpose (i (1+ i)))
+		        (:instance rdet0-adjacent-equal (a (permute a (transpose (1+ i) j n))))
+			(:instance rdet0-permute-transpose (i (1+ i)))
+			(:instance r-r- (x (rdet0 a n)))))))
 
-(local-defthmd rdetn-alternating-2
-  (implies (and (rmatp a (n) (n))
-                (natp i) (natp j) (< i j) (< j (n)) (= (row i a) (row j a)))
-           (equal (rdetn a) (r0)))
+(local-defthmd rdet0-alternating-2
+  (implies (and (rmatp a n n) (posp n)
+                (natp i) (natp j) (< i j) (< j n) (= (row i a) (row j a)))
+           (equal (rdet0 a n) (r0)))
   :hints (("Goal" :cases ((= j (1+ i)))
-                  :use (rdetn-adjacent-equal rdetn-alternating-1))))
+                  :use (rdet0-adjacent-equal rdet0-alternating-1))))
 
-(defthmd rdetn-alternating
-  (implies (and (rmatp a (n) (n))
-                (natp i) (natp j) (< i (n)) (< j (n)) (not (= i j)) (= (row i a) (row j a)))
-	   (equal (rdetn a) (r0)))
-  :hints (("Goal" :use (rdetn-alternating-2 (:instance rdetn-alternating-2 (i j) (j i))))))
+(defthmd rdet0-alternating
+  (implies (and (rmatp a n n) (posp n)
+                (natp i) (natp j) (< i n) (< j n) (not (= i j)) (= (row i a) (row j a)))
+	   (equal (rdet0 a n) (r0)))
+  :hints (("Goal" :use (rdet0-alternating-2 (:instance rdet0-alternating-2 (i j) (j i))))))
 
-;; We shall require a generalization of rdetn-transpose-rows to arbitrary permutations.
-;; First note that rdetn-permute-transpose may be restated as follows:
+;; We shall require a generalization of rdet0-transpose-rows to arbitrary permutations.
+;; First note that rdet0-permute-transpose may be restated as follows:
 
-(defthmd rdetn-permute-transp
-  (implies (and (rmatp a (n) (n))
-                (transp p (n)))
-	   (equal (rdetn (permute a p))
-	          (r- (rdetn a))))
+(defthmd rdet0-permute-transp
+  (implies (and (rmatp a n n) (posp n)
+                (transp p n))
+	   (equal (rdet0 (permute a p) n)
+	          (r- (rdet0 a n))))
   :hints (("Goal" :in-theory (enable transp)
-                  :use ((:instance rdetn-permute-transpose (i (least-moved p)) (j (nth (least-moved p) p)))
-		        (:instance least-moved-transpose (n (n)) (i (least-moved p)) (j (nth (least-moved p) p)))))))
+                  :use ((:instance rdet0-permute-transpose (i (least-moved p)) (j (nth (least-moved p) p)))
+		        (:instance least-moved-transpose (i (least-moved p)) (j (nth (least-moved p) p)))))))
 
 (include-book "arithmetic-5/top" :dir :system)
 
-(local-defun rdetn-permute-trans-list-p-induct (a l)
+(local-defun rdet0-permute-trans-list-p-induct (a l)
   (if (consp l)
-      (list (rdetn-permute-trans-list-p-induct (permute a (car l)) (cdr l)))
+      (list (rdet0-permute-trans-list-p-induct (permute a (car l)) (cdr l)))
     (list a l)))
 
-(;; This may be generalized to the composition of a list of transpositions by induction:
+;; This may be generalized to the composition of a list of transpositions by induction: 
 
-defthmd rdetn-permute-trans-list-p
-  (implies (and (rmatp a (n) (n))
-                (trans-list-p l (n)))
-	   (equal (rdetn (permute a (comp-perm-list l (n))))
+(defthmd rdet0-permute-trans-list-p
+  (implies (and (rmatp a n n) (posp n)
+                (trans-list-p l n))
+	   (equal (rdet0 (permute a (comp-perm-list l n)) n)
 	          (if (evenp (len l))
-		      (rdetn a)
-		    (r- (rdetn a)))))
-  :hints (("Goal" :induct (rdetn-permute-trans-list-p-induct a l))
-          ("Subgoal *1/1" :use ((:instance permp-transp (n (n)) (p (car l)))
-                                (:instance permp-trans-list (n (n)) (l (cdr l)))
-				(:instance rdetn-permute-transp (p (car l)))))))
+		      (rdet0 a n)
+		    (r- (rdet0 a n)))))
+  :hints (("Goal" :induct (rdet0-permute-trans-list-p-induct a l))
+          ("Subgoal *1/1" :use ((:instance permp-transp (p (car l)))
+                                (:instance permp-trans-list (l (cdr l)))
+				(:instance rdet0-permute-transp (p (car l)))))))
 
 ;; Since any permutation p may be factored as a list of transpositions, this yields the following:
 
-(defthmd rdetn-permute-rows
-  (implies (and (rmatp a (n) (n))
-                (in p (sym (n))))
-	   (equal (rdetn (permute a p))
-	          (if (even-perm-p p (n))
-		      (rdetn a)
-		    (r- (rdetn a)))))
+(defthmd rdet0-permute-rows
+  (implies (and (rmatp a n n) (posp n)
+                (in p (sym n)))
+	   (equal (rdet0 (permute a p) n)
+	          (if (even-perm-p p n)
+		      (rdet0 a n)
+		    (r- (rdet0 a n)))))
   :hints (("Goal" :in-theory (enable even-perm-p)
-                  :use ((:instance parity-0-1 (n (n)))
-		        (:instance parity-len-trans-list (n (n)))
-			(:instance trans-list-p-trans-list (n (n)))
-			(:instance perm-prod-trans (n (n)))
-			(:instance rdetn-permute-trans-list-p (l (trans-list p (n))))))))
+                  :use ((:instance parity-0-1)
+		        (:instance parity-len-trans-list)
+			(:instance trans-list-p-trans-list)
+			(:instance perm-prod-trans)
+			(:instance rdet0-permute-trans-list-p (l (trans-list p n)))))))
 
-;; Since rdet satisfies the constraints on rdetn, this applies to rdet by functional
+;; Since rdet satisfies the constraints on rdet0, this applies to rdet by functional
 ;; instantiation:
-
-(local-defthmd rdet-permute-rows-n
-  (implies (and (rmatp a (n) (n))
-                (in p (sym (n))))
-	   (equal (rdet (permute a p) (n))
-	          (if (even-perm-p p (n))
-		      (rdet a (n))
-		    (r- (rdet a (n))))))
-  :hints (("Goal" :use ((:functional-instance rdetn-permute-rows
-			  (rdetn (lambda (a) (if (and (rmatp a (n) (n)) (in p (sym (n)))) (rdet a (n)) (rdetn a)))))))
-	  ("Subgoal 3" :use (rdetn-adjacent-equal (:instance rdet-alternating (j (1+ i)) (n (n)))))
-	  ("Subgoal 2" :use (rdetn-n-linear (:instance rdet-n-linear (n (n)))))))
 
 (defthmd rdet-permute-rows
   (implies (and (rmatp a n n) (posp n)
@@ -1537,53 +1524,55 @@ defthmd rdetn-permute-trans-list-p
 	          (if (even-perm-p p n)
 		      (rdet a n)
 		    (r- (rdet a n)))))
-  :hints (("Goal" :use ((:functional-instance rdet-permute-rows-n
-                          (n (lambda () (if (posp n) n (n)))))))))
+  :hints (("Goal" :use ((:functional-instance rdet0-permute-rows
+			  (rdet0 (lambda (a n) (if (and (rmatp a n n) (in p (sym n))) (rdet a n) (rdet0 a n)))))))
+	  ("Subgoal 3" :use (rdet0-adjacent-equal (:instance rdet-alternating (j (1+ i)))))
+	  ("Subgoal 2" :use (rdet0-n-linear (:instance rdet-n-linear)))))
 
-;; The proof of rdet-unique is based on lists of k-tuples of natural numbers less than (n),
-;; where k <= (n):
+;; The proof of rdet-unique is based on lists of k-tuples of natural numbers less than n,
+;; where k <= n:
 
-(defun tuplep (x k)
+(defun tuplep (x k n)
   (if (zp k)
       (null x)
     (and (consp x)
          (natp (car x))
-         (< (car x) (n))
-	 (tuplep (cdr x) (1- k)))))
+         (< (car x) n)
+	 (tuplep (cdr x) (1- k) n))))
 
 (local-defthm true-listp-tuplep
-  (implies (tuplep x k)
+  (implies (tuplep x k n)
            (true-listp x)))
 
 (local-defthm len-tuplep
-  (implies (and (natp k) (tuplep x k))
+  (implies (and (natp k) (tuplep x k n))
            (equal (len x) k)))
 
-(defun tuple-list-p (l k)
+(defun tuple-list-p (l k n)
   (if (consp l)
-      (and (tuplep (car l) k)
-           (tuple-list-p (cdr l) k))
+      (and (tuplep (car l) k n)
+           (tuple-list-p (cdr l) k n))
     (null l)))
 
 (local-defthm member-tuple-list-p
-  (implies (and (tuple-list-p l k) (member x l))
-           (tuplep x k)))
+  (implies (and (tuple-list-p l k n) (member x l))
+           (tuplep x k n)))
 
 ;; We recursively define a dlist containing all such k-tuples:
 
-(defun extend-tuple-aux (x m) 
+(defun extend-tuple-aux (x m)
   (if (consp m)
       (cons (append x (list (car m)))
             (extend-tuple-aux x (cdr m)))
     ()))
 
-(defund extend-tuple (x)
-  (extend-tuple-aux x (ninit (n))))
+(defund extend-tuple (x n)
+  (extend-tuple-aux x (ninit n)))
 
-(defun extend-tuples (l)
+(defun extend-tuples (l n)
   (if (consp l)
-      (append (extend-tuple (car l))
-              (extend-tuples (cdr l)))
+      (append (extend-tuple (car l) n)
+              (extend-tuples (cdr l) n))
     ()))
 
 (local-defun tuplep-append-induct (x k)
@@ -1592,36 +1581,36 @@ defthmd rdetn-permute-trans-list-p
     (list (tuplep-append-induct (cdr x) (1- k)))))
 
 (local-defthm tuplep-append
-  (implies (and (posp k) (tuplep x (1- k)) (member j (ninit (n))))
-           (tuplep (append x (list j)) k))
+  (implies (and (posp k) (tuplep x (1- k) n) (member j (ninit n)) (posp n))
+           (tuplep (append x (list j)) k n))
   :hints (("Goal" :induct (tuplep-append-induct x k))
-          ("Subgoal *1/2" :use ((:instance member-ninit (n (n)) (x j))))))
+          ("Subgoal *1/2" :use ((:instance member-ninit (x j))))))
 
 (local-defthm tuple-list-p-extend-tuple-aux
-  (implies (and (posp k) (tuplep x (1- k)) (sublistp m (ninit (n))))
-           (tuple-list-p (extend-tuple-aux x m) k)))
+  (implies (and (posp k) (posp n) (tuplep x (1- k) n) (sublistp m (ninit n)))
+           (tuple-list-p (extend-tuple-aux x m) k n)))
 
 (local-defthm tuple-list-p-extend-tuple
-  (implies (and (posp k) (tuplep x (1- k)))
-           (tuple-list-p (extend-tuple x) k))
+  (implies (and (posp k) (posp n) (tuplep x (1- k) n))
+           (tuple-list-p (extend-tuple x n) k n))
   :hints (("Goal" :in-theory (enable extend-tuple))))
 
 (local-defthm tuple-list-p-append
-  (implies (and (natp k) (tuple-list-p l k) (tuple-list-p m k))
-           (tuple-list-p (append l m) k)))
+  (implies (and (natp k) (posp n) (tuple-list-p l k n) (tuple-list-p m k n))
+           (tuple-list-p (append l m) k n)))
 
 (local-defthm tuple-list-p-extend-tuples
-  (implies (and (posp k) (tuple-list-p l (1- k)))
-           (tuple-list-p (extend-tuples l) k)))
+  (implies (and (posp k) (posp n) (tuple-list-p l (1- k) n))
+           (tuple-list-p (extend-tuples l n) k n)))
 
-(defun all-tuples (k)
+(defun all-tuples (k n)
   (if (zp k)
       (list ())
-    (extend-tuples (all-tuples (1- k)))))
+    (extend-tuples (all-tuples (1- k) n) n)))
 
 (local-defthm tuple-list-p-all-tuples
-  (implies (and (natp k) (<= k (n)))
-           (tuple-list-p (all-tuples k) k)))
+  (implies (and (natp k) (posp n) (<= k n))
+           (tuple-list-p (all-tuples k n) k n)))
 
 (local-defun equal-append-list-induct (x y)
   (if (consp x)
@@ -1645,40 +1634,40 @@ defthmd rdetn-permute-trans-list-p
            (dlistp (extend-tuple-aux x m))))
 
 (local-defthm dlistp-extend-tuple
-  (implies (and (posp k) (tuplep x (1- k)))
-           (dlistp (extend-tuple x)))
+	      (implies (and (posp k) (posp n) (tuplep x (1- k) n))
+           (dlistp (extend-tuple x n)))
   :hints (("Goal" :in-theory (enable extend-tuple))))
 
 (local-defthm member-append-extend-tuple
  (implies (and (true-listp x) (true-listp y))
-           (iff (member (append x (list j)) (extend-tuple y))
-                (and (equal x y) (member j (ninit (n))))))
+           (iff (member (append x (list j)) (extend-tuple y n))
+                (and (equal x y) (member j (ninit n)))))
   :hints (("Goal" :in-theory (enable extend-tuple))))
 
 (local-defthm member-append-extend-tuples
- (implies (and (true-listp x) (tuple-list-p l k))
-           (iff (member (append x (list j)) (extend-tuples l))
-                (and (member x l) (member j (ninit (n)))))))
+ (implies (and (true-listp x) (tuple-list-p l k n))
+           (iff (member (append x (list j)) (extend-tuples l n))
+                (and (member x l) (member j (ninit n))))))
 
 (local-defthm disjointp-extend-tuple-aux
-  (implies (and (true-listp x) (tuple-list-p l k) (not (member x l)))
-           (disjointp (extend-tuple-aux x m) (extend-tuples l)))
+  (implies (and (true-listp x) (tuple-list-p l k n) (not (member x l)))
+           (disjointp (extend-tuple-aux x m) (extend-tuples l n)))
   :hints (("Goal" :induct (len m))))
 
 (local-defthm disjointp-extend-tuple
-  (implies (and (true-listp x) (tuple-list-p l k) (not (member x l)))
-           (disjointp (extend-tuple x) (extend-tuples l)))
+  (implies (and (true-listp x) (tuple-list-p l k n) (not (member x l)))
+           (disjointp (extend-tuple x n) (extend-tuples l n)))
   :hints (("Goal" :in-theory (enable extend-tuple))))
 
 (local-defthm dlistp-extend-tuples
-  (implies (and (posp k) (tuple-list-p l (1- k)) (dlistp l))
-           (dlistp (extend-tuples l)))
-  :hints (("Subgoal *1/3" :use ((:instance dlistp-append (l (EXTEND-TUPLE (CAR L)))
-                                                         (m (EXTEND-TUPLES (CDR L))))))))
+  (implies (and (posp k) (posp n) (tuple-list-p l (1- k) n) (dlistp l))
+           (dlistp (extend-tuples l n)))
+  :hints (("Subgoal *1/3" :use ((:instance dlistp-append (l (EXTEND-TUPLE (CAR L) n))
+                                                         (m (EXTEND-TUPLES (CDR L) n)))))))
 
 (defthm dlistp-all-tuples
-  (implies (and (natp k) (<= k (n)))
-           (dlistp (all-tuples k))))
+  (implies (and (natp k) (posp n) (<= k n))
+           (dlistp (all-tuples k n))))
 
 (local-defun firstn (n x)
   (if (zp n)
@@ -1686,10 +1675,10 @@ defthmd rdetn-permute-trans-list-p
     (cons (car x) (firstn (1- n) (cdr x)))))
 
 (local-defthmd tuplep-decomp
-  (implies (and (posp k) (tuplep x k))
+  (implies (and (posp k) (tuplep x k n) (posp n))
            (and (equal (append (firstn (1- k) x) (last x)) x)
-	        (tuplep (firstn (1- k) x) (1- k))
-		(member (car (last x)) (ninit (n))))))
+	        (tuplep (firstn (1- k) x) (1- k) n)
+		(member (car (last x)) (ninit n)))))
 
 (local-defun tuplep-member-all-tuples-induct (x k)
   (if (zp k)
@@ -1702,23 +1691,23 @@ defthmd rdetn-permute-trans-list-p
 	          (last x))))
 
 (local-defthm tuplep-member-all-tuples
-  (implies (and (natp k) (<= k (n)) (tuplep x k))
-           (member x (all-tuples k)))
+  (implies (and (natp k) (posp n) (<= k n) (tuplep x k n))
+           (member x (all-tuples k n)))
   :hints (("Goal" :induct (tuplep-member-all-tuples-induct x k))
           ("Subgoal *1/2" :use (tuplep-decomp list-car-last
 	                        (:instance member-append-extend-tuples (x (firstn (1- k) x))
 				                                       (k (1- k))
 				                                       (j (car (last x)))
-								       (l (all-tuples (1- k))))))))
+								       (l (all-tuples (1- k) n)))))))
 
 (defthmd member-all-tuples
-  (implies (and (natp k) (<= k (n)))
-           (iff (member x (all-tuples k))
-	        (tuplep x k)))
+  (implies (and (natp k) (posp n) (<= k n))
+           (iff (member x (all-tuples k n))
+	        (tuplep x k n)))
   :hints (("Goal" :use (tuplep-member-all-tuples
-                        (:instance member-tuple-list-p (l (all-tuples k)))))))
+                        (:instance member-tuple-list-p (l (all-tuples k n)))))))
 
-;; Let a be a fixed (n)x(n) matrix.  We associate a value with a k-tuple x as follows:
+;; Let a be a fixed nxn matrix.  We associate a value with a k-tuple x as follows:
 
 (defun extract-entries (x a)
   (if (consp x)
@@ -1731,165 +1720,165 @@ defthmd rdetn-permute-trans-list-p
       (list (extract-entries-induct (cdr x) (1- k) (cdr a) (1- m)))
     (list x k a m)))
 
-(local-defthm rlistnp-extract-entries
-  (implies (and (natp k) (tuplep x k)
-                (natp m) (<= k m) (<= m (n)) (rmatp a m (n)))
+(local-defthmd rlistnp-extract-entries
+  (implies (and (natp k) (tuplep x k n) (posp n)
+                (natp m) (<= k m) (<= m n) (rmatp a m n))
            (rlistnp (extract-entries x a) k))
   :hints (("Goal" :induct (extract-entries-induct x k a m) :in-theory (enable rmatp))))
 
-(defun runits (x)
+(defun runits (x n)
   (if (consp x)
-      (cons (runit (car x) (n))
-            (runits (cdr x)))
+      (cons (runit (car x) n)
+            (runits (cdr x) n))
     ()))
 
 (local-defthm len-runits
-  (equal (len (runits x))
+  (equal (len (runits x n))
          (len x)))
 
-(defun reval-tuple (x k a)
+(defun reval-tuple (x k a n)
   (r* (rlist-prod (extract-entries x a))
-      (rdetn (append (runits x) (nthcdr k a)))))
+      (rdet0 (append (runits x n) (nthcdr k a)) n)))
 
 (local-defthm rmatp-nthcdr
-  (implies (and (rmatp a m n) (natp k) (<= k m))
-           (rmatp (nthcdr k a) (- m k) n))
+  (implies (and (rmatp a m n) (posp n) (natp k) (<= k m))
+           (rmatp (nthcdr k a) (+ (- k) m) n))
   :hints (("Goal" :in-theory (enable rmatp))))
 
 (local-defthm rmatp-append-runits-nthcdr-1
-  (implies (and (rmatp a (n) (n)) (natp k) (<= k (n))
-                (natp j) (tuplep x j))
-	   (rmatp (append (runits x) (nthcdr k a)) (+ j (- (n) k)) (n)))
-  :hints (("Goal" :induct (tuplep x j) :in-theory (enable rmatp))))
+  (implies (and (rmatp a n n) (posp n) (natp k) (<= k n)
+                (natp j) (tuplep x j n))
+	   (rmatp (append (runits x n) (nthcdr k a)) (+ j (- n k)) n))
+  :hints (("Goal" :induct (tuplep x j n) :in-theory (enable rmatp))))
 
-(local-defthm rmatp-append-runits-nthcdr
-  (implies (and (rmatp a (n) (n)) (natp k) (<= k (n))
-                (tuplep x k))
-	   (rmatp (append (runits x) (nthcdr k a)) (n) (n)))
+(local-defthmd rmatp-append-runits-nthcdr
+  (implies (and (rmatp a n n) (posp n) (natp k) (<= k n)
+                (tuplep x k n))
+	   (rmatp (append (runits x n) (nthcdr k a)) n n))
   :hints (("Goal" :use ((:instance rmatp-append-runits-nthcdr-1 (j k))))))
 
 (defthm rp-reval-tuple
-  (implies (and (rmatp a (n) (n)) (natp k) (<= k (n)) (tuplep x k))
-           (rp (reval-tuple x k a)))
-  :hints (("Goal" :use (rmatp-append-runits-nthcdr (:instance rlistnp-extract-entries (m (n)))))))
+  (implies (and (rmatp a n n) (posp n) (natp k) (<= k n) (tuplep x k n))
+           (rp (reval-tuple x k a n)))
+  :hints (("Goal" :use (rmatp-append-runits-nthcdr (:instance rlistnp-extract-entries (m n))))))
 
 ;; The sum of the values of a list of k-tuples: 
 
-(defun rsum-tuples (l k a)
+(defun rsum-tuples (l k a n)
   (if (consp l)
-      (r+ (reval-tuple (car l) k a)
-	  (rsum-tuples (cdr l) k a))
+      (r+ (reval-tuple (car l) k a n)
+	  (rsum-tuples (cdr l) k a n))
     (r0)))
 
-(defthm fp-rsum-tuples
-  (implies (and (rmatp a (n) (n)) (natp k) (<= k (n)) (tuple-list-p l k))
-           (rp (rsum-tuples l k a)))
+(defthm rp-rsum-tuples
+  (implies (and (rmatp a n n) (posp n) (natp k) (<= k n) (tuple-list-p l k n))
+           (rp (rsum-tuples l k a n)))
   :hints (("Goal" :in-theory (disable reval-tuple))))
 
 ;; We would like to compute (rsum-tuples (all-tuples k) k a).  The case k = 0 is trivial:
 
 (defthmd reval-tuple-nil
-  (implies (rmatp a (n) (n))
-           (equal (reval-tuple () 0 a)
-	          (rdetn a))))
+  (implies (and (rmatp a n n) (posp n))
+           (equal (reval-tuple () 0 a n)
+	          (rdet0 a n))))
 
 (defthm rsum-0-tuples
-  (implies (rmatp a (n) (n))
-           (equal (rsum-tuples (all-tuples 0) 0 a)
-	          (rdetn a))))
+  (implies (and (rmatp a n n) (posp n))
+           (equal (rsum-tuples (all-tuples 0 n) 0 a n)
+	          (rdet0 a n))))
 
-;; We shall prove, as a consequence of n-linearity of rdetn, that incrementing k does not change the value of the sum.
+;; We shall prove, as a consequence of n-linearity of rdet0, that incrementing k does not change the value of the sum.
 
-;; If (rlistnp r (n)), We may think of r as a sum of multiples of unit vectors.  Given a sublist l of (ninit (n)),
-;; (rsum-select l n) is the sum of the subset of these multiples corresponding to the members of l:
+;; If (rlistnp r n), We may think of r as a sum of multiples of unit vectors.  Given a sublist l of (ninit n),
+;; (rsum-select l r n) is the sum of the subset of these multiples corresponding to the members of l:
 
-(defun rsum-select (l r)
+(defun rsum-select (l r n)
   (if (consp l)
-      (rlist-add (rlist-scalar-mul (nth (car l) r) (runit (car l) (n)))
-                 (rsum-select (cdr l) r))
-    (rlistn0 (n))))
+      (rlist-add (rlist-scalar-mul (nth (car l) r) (runit (car l) n))
+                 (rsum-select (cdr l) r n))
+    (rlistn0 n)))
 
 (local-defthm rlistnp-rsum-select
-  (implies (and (rlistnp r (n)) (sublistp l (ninit (n))))
-           (rlistnp (rsum-select l r) (n)))
-  :hints (("Subgoal *1/2" :use ((:instance member-ninit (x (car l)) (n (n)))))))
+  (implies (and (rlistnp r n) (posp n) (sublistp l (ninit n)))
+           (rlistnp (rsum-select l r n) n))
+  :hints (("Subgoal *1/2" :use ((:instance member-ninit (x (car l)))))))
 
 (local-defthm nth-rsum-select
-  (implies (and (rlistnp r (n))
-                (sublistp l (ninit (n)))
+  (implies (and (rlistnp r n) (posp n)
+                (sublistp l (ninit n))
 		(dlistp l)
 		(natp k)
-		(< k (n)))
-	   (equal (nth k (rsum-select l r))
+		(< k n))
+	   (equal (nth k (rsum-select l r n))
 	          (if (member k l) (nth k r) (r0))))
   :hints (("Goal" :induct (len l)) 
-          ("Subgoal *1/1" :use ((:instance member-ninit (n (n)) (x (car l)))
-			        (:instance nth-rlist-add (i (car l)) (n (n))
-				                         (x (RLIST-SCALAR-MUL (NTH k R) (RUNIT k (N))))
-							 (y (RSUM-SELECT (CDR L) R)))
-			        (:instance nth-rlist-scalar-mul (i (car l)) (n (n))
+          ("Subgoal *1/1" :use ((:instance member-ninit (x (car l)))
+			        (:instance nth-rlist-add (i (car l))
+				                         (x (RLIST-SCALAR-MUL (NTH k R) (RUNIT k n)))
+							 (y (RSUM-SELECT (CDR L) R n)))
+			        (:instance nth-rlist-scalar-mul (i (car l))
 				                                (c (NTH (CAR L) R))
-                                                                (x  (RUNIT (CAR L) (N))))
-				(:instance nth-rlist-add (i k) (n (n))
-				                         (x (RLIST-SCALAR-MUL (NTH (car l) R) (RUNIT (car l) (N))))
-							 (y (RSUM-SELECT (CDR L) R)))							   
-				(:instance nth-rlist-scalar-mul (i k) (n (n))
+                                                                (x  (RUNIT (CAR L) n)))
+				(:instance nth-rlist-add (i k)
+				                         (x (RLIST-SCALAR-MUL (NTH (car l) R) (RUNIT (car l) n)))
+							 (y (RSUM-SELECT (CDR L) R n)))							   
+				(:instance nth-rlist-scalar-mul (i k)
 				                                (c (NTH (CAR L) R))
-                                                                (x  (RUNIT (CAR L) (N))))))))
+                                                                (x  (RUNIT (CAR L) n)))))))
 
 (local-defthm nth-rsum-select-ninit
-  (implies (and (rlistnp r (n))
+  (implies (and (rlistnp r n) (posp n)
 		(natp k)
-		(< k (n)))
-	   (equal (nth k (rsum-select (ninit (n)) r))
+		(< k n))
+	   (equal (nth k (rsum-select (ninit n) r n))
 	          (nth k r)))
-  :hints (("Goal" :use ((:instance nth-rsum-select (l (ninit (n))))
-                        (:instance member-ninit (x k) (n (n)))))))		
+  :hints (("Goal" :use ((:instance nth-rsum-select (l (ninit n)))
+                        (:instance member-ninit (x k))))))		
 
 (defthm rsum-select-ninit
-  (implies (rlistnp r (n))
-           (equal (rsum-select (ninit (n)) r)
+  (implies (and (rlistnp r n) (posp n))
+           (equal (rsum-select (ninit n) r n)
 	          r))
   :hints (("Goal" :in-theory (disable len-rlist rlistnp-rsum-select)
-                  :use ((:instance nth-diff-diff (x (rsum-select (ninit (n)) r)) (y r))
-                        (:instance nth-rsum-select-ninit (k (nth-diff (rsum-select (ninit (n)) r) r)))
-			(:instance rlistnp-rsum-select (l (ninit (n))))
-			(:instance len-rlist (n (n)) (x r))
-			(:instance len-rlist (n (n)) (x (rsum-select (ninit (n)) r)))))))
+                  :use ((:instance nth-diff-diff (x (rsum-select (ninit n) r n)) (y r))
+                        (:instance nth-rsum-select-ninit (k (nth-diff (rsum-select (ninit n) r n) r)))
+			(:instance rlistnp-rsum-select (l (ninit n)))
+			(:instance len-rlist (x r))
+			(:instance len-rlist (x (rsum-select (ninit n) r n)))))))
 
 (local-defthmd rsum-tuples-extend-tuple-1
-  (implies (and (rmatp a (n) (n))
-                (natp k) (< k (n))
-                (tuplep x k)
-		(sublistp l (ninit (n)))
+  (implies (and (rmatp a n n) (posp n)
+                (natp k) (< k n)
+                (tuplep x k n)
+		(sublistp l (ninit n))
 		(consp l))
-	   (equal (rsum-tuples (extend-tuple-aux x l) (1+ k) a)
-                  (r+ (reval-tuple (append x (list (car l))) (1+ k) a)
-		      (rsum-tuples (extend-tuple-aux x (cdr l)) (1+ k) a)))))
+	   (equal (rsum-tuples (extend-tuple-aux x l) (1+ k) a n)
+                  (r+ (reval-tuple (append x (list (car l))) (1+ k) a n)
+		      (rsum-tuples (extend-tuple-aux x (cdr l)) (1+ k) a n)))))
 
 (local-defthmd rsum-tuples-extend-tuple-2
-  (implies (and (rmatp a (n) (n))
-                (natp k) (< k (n)) (tuplep x k)
-		(natp i) (< i (n)))
-	   (equal (reval-tuple (append x (list i)) (1+ k) a)
+  (implies (and (rmatp a n n) (posp n)
+                (natp k) (< k n) (tuplep x k n)
+		(natp i) (< i n))
+	   (equal (reval-tuple (append x (list i)) (1+ k) a n)
                   (r* (rlist-prod (extract-entries (append x (list i)) a))
-		      (rdetn (append (runits (append x (list i))) (nthcdr (1+ k) a)))))))
+		      (rdet0 (append (runits (append x (list i)) n) (nthcdr (1+ k) a)) n)))))
 
 (local-defthmd rsum-tuples-extend-tuple-3
-  (implies (and (natp k) (natp m) (< k m) (<= m (n))
-                (tuplep x k) (rmatp a m (n))
-		(natp i) (< i (n)))
+  (implies (and (natp k) (natp m) (< k m) (<= m n) (posp n)
+                (tuplep x k n) (rmatp a m n)
+		(natp i) (< i n))
 	   (equal (rlist-prod (extract-entries (append x (list i)) a))
 	          (r* (rlist-prod (extract-entries x a))
 		      (nth i (nth k a)))))
   :hints (("Goal" :induct (extract-entries-induct x k a m))
           ("Subgoal *1/2" :in-theory (enable rmatp)
 	                  :expand ((nth 0 a))
-			  :use ((:instance rp-entry (n (n)) (i 0) (j i))))
+			  :use ((:instance rp-entry (i 0) (j i))))
 	  ("Subgoal *1/1" :expand ((nth 0 a))
 	                  :in-theory (e/d (rmatp) (rlistnp-extract-entries))
-	                  :use ((:instance rp-entry (n (n)) (i k) (j i))
-	                        (:instance rp-entry (n (n)) (i 0) (j (car x)))
+	                  :use ((:instance rp-entry (i k) (j i))
+	                        (:instance rp-entry (i 0) (j (car x)))
 				(:instance nth (n k) (l a))
 				(:instance rlistnp-extract-entries (x (cdr x)) (k (1- k)) (a (cdr a)) (m (1- m)))
 				(:instance r*assoc (x (NTH (CAR X) (CAR A)))
@@ -1897,19 +1886,19 @@ defthmd rdetn-permute-trans-list-p
 						   (z (NTH I (NTH K A))))))))
 
 (local-defthmd rsum-tuples-extend-tuple-4
-  (implies (and (natp k) (< k (n))
-                (tuplep x k) (rmatp a (n) (n))
-		(natp i) (< i (n)))
+  (implies (and (natp k) (< k n) (posp n)
+                (tuplep x k n) (rmatp a n n)
+		(natp i) (< i n))
 	   (equal (rlist-prod (extract-entries (append x (list i)) a))
 	          (r* (rlist-prod (extract-entries x a))
 		      (nth i (nth k a)))))
-  :hints (("Goal" :use ((:instance rsum-tuples-extend-tuple-3 (m (n)))))))
+  :hints (("Goal" :use ((:instance rsum-tuples-extend-tuple-3 (m n))))))
 
 (local-defthmd rsum-tuples-extend-tuple-5
-  (implies (and (natp k) (<= k (n)) (tuplep x k)
-		(natp i) (< i (n)))
-	   (equal (runits (append x (list i)))
-	          (append (runits x) (list (runit i (n)))))))
+  (implies (and (natp k) (<= k n) (tuplep x k n) (posp n)
+		(natp i) (< i n))
+	   (equal (runits (append x (list i)) n)
+	          (append (runits x n) (list (runit i n))))))
 
 (local-defthm nth-append
   (implies (natp j)
@@ -1925,25 +1914,31 @@ defthmd rdetn-permute-trans-list-p
 	          (- (len l) j))))
 
 (local-defthmd len-append-runits
-  (implies (and (natp k) (< k (n))
-                (tuplep x k) (rmatp a (n) (n))
-		(natp i) (< i (n)))
-	   (equal (len (append (runits x) (nthcdr k a)))
-	          (n))))
+  (implies (and (natp k) (< k n) (posp n)
+                (tuplep x k n) (rmatp a n n)
+		(natp i) (< i n))
+	   (equal (len (append (runits x n) (nthcdr k a)))
+	          n)))
 
 (local-defthmd cdr-nthcdr
   (implies (natp j)
            (equal (nthcdr k (cdr a))
 	          (cdr (nthcdr k a)))))
 
+(local-defthm nth-nil
+  (equal (nth i ()) ())
+  :hints (("Goal" :induct (fact i))
+          ("Subgoal *1/1" :expand ((nth i ())))
+          ("Subgoal *1/2" :expand ((nth i ())))))
+
 (local-defthmd rsum-tuples-extend-tuple-6
-  (implies (and (natp k) (< k (n))
-                (tuplep x k) (rmatp a (n) (n))
-		(natp i) (< i (n))
-		(natp j) (< j (n)))
-	   (equal (nth j (append (append (runits x) (list (runit i (n))))
+  (implies (and (natp k) (< k n) (posp n)
+                (tuplep x k n) (rmatp a n n)
+		(natp i) (< i n)
+		(natp j) (< j n))
+	   (equal (nth j (append (append (runits x n) (list (runit i n)))
 	                         (nthcdr (1+ k) a)))
-		  (nth j (replace-row (append (runits x) (nthcdr k a)) k (runit i (n))))))
+		  (nth j (replace-row (append (runits x n) (nthcdr k a)) k (runit i n)))))
   :hints (("Goal" :cases ((= j k))
                   :expand ((NTH (+ J (- K)) (NTHCDR K A)))
                   :use (cdr-nthcdr len-append-runits))))
@@ -1957,12 +1952,12 @@ defthmd rdetn-permute-trans-list-p
            (true-listp (append l m))))
 
 (local-defthmd rsum-tuples-extend-tuple-7
-  (implies (and (natp k) (< k (n))
-                (tuplep x k) (rmatp a (n) (n))
-		(natp i) (< i (n)))
-           (TRUE-LISTP (APPEND (APPEND (RUNITS X) (LIST (RUNIT I (N))))
+  (implies (and (natp k) (< k n) (posp n)
+                (tuplep x k n) (rmatp a n n)
+		(natp i) (< i n))
+           (TRUE-LISTP (APPEND (APPEND (RUNITS X n) (LIST (RUNIT I n)))
                                (NTHCDR K (CDR A)))))
-  :hints (("Goal" :expand ((rmatp a (n) (n)))
+  :hints (("Goal" :expand ((rmatp a n n))
                   :use ((:instance true-listp-nthcdr (j k) (l (cdr a)))))))
 
 (local-defthm true-listp-replace-row
@@ -1971,82 +1966,82 @@ defthmd rdetn-permute-trans-list-p
   :hints (("Goal" :in-theory (enable replace-row))))
 
 (local-defthmd rsum-tuples-extend-tuple-8
-  (implies (and (natp k) (< k (n))
-                (rmatp a (n) (n)))
-           (TRUE-LISTP (REPLACE-ROW (APPEND (RUNITS X) (NTHCDR K A)) K (RUNIT I (N)))))
+  (implies (and (natp k) (< k n) (posp n)
+                (rmatp a n n))
+           (TRUE-LISTP (REPLACE-ROW (APPEND (RUNITS X n) (NTHCDR K A)) K (RUNIT I n))))
   :hints (("Goal" :in-theory (disable true-listp-nthcdr true-listp-replace-row)
-                  :use ((:instance true-listp-replace-row (a (APPEND (RUNITS X) (NTHCDR K A))) (j k) (r (RUNIT I (N))))
+                  :use ((:instance true-listp-replace-row (a (APPEND (RUNITS X n) (NTHCDR K A))) (j k) (r (RUNIT I n)))
 		        (:instance true-listp-nthcdr (j k) (l a))))))
 
 (local-defthmd rsum-tuples-extend-tuple-9
-  (implies (and (natp k) (< k (n))
-                (tuplep x k) (rmatp a (n) (n))
-		(natp i) (< i (n)))
-           (equal (append (append (runits x) (list (runit i (n))))
+  (implies (and (natp k) (< k n) (posp n)
+                (tuplep x k n) (rmatp a n n)
+		(natp i) (< i n))
+           (equal (append (append (runits x n) (list (runit i n)))
 	                  (nthcdr (1+ k) a))
-		  (replace-row (append (runits x) (nthcdr k a)) k (runit i (n)))))
+		  (replace-row (append (runits x n) (nthcdr k a)) k (runit i n))))
   :hints (("Goal" :in-theory (disable len-rmatp)
                   :use (rsum-tuples-extend-tuple-7 rsum-tuples-extend-tuple-8 len-append-runits
-		        (:instance len-rmatp (m (n)) (n (n)))
-		        (:instance nth-diff-diff (x (append (append (runits x) (list (runit i (n)))) (nthcdr (1+ k) a)))
-                                                 (y (replace-row (append (runits x) (nthcdr k a)) k (runit i (n)))))
+		        (:instance len-rmatp (m n))
+		        (:instance nth-diff-diff (x (append (append (runits x n) (list (runit i n))) (nthcdr (1+ k) a)))
+                                                 (y (replace-row (append (runits x n) (nthcdr k a)) k (runit i n))))
 			(:instance rsum-tuples-extend-tuple-6
-			  (j (nth-diff (append (append (runits x) (list (runit i (n)))) (nthcdr (1+ k) a))
-			               (replace-row (append (runits x) (nthcdr k a)) k (runit i (n))))))))))
+			  (j (nth-diff (append (append (runits x n) (list (runit i n))) (nthcdr (1+ k) a))
+			               (replace-row (append (runits x n) (nthcdr k a)) k (runit i n)))))))))
 
 (local-defthmd rsum-tuples-extend-tuple-10
-  (implies (and (rmatp a (n) (n))
-                (natp k) (< k (n)) (tuplep x k)
-		(natp i) (< i (n)))
-	   (equal (reval-tuple (append x (list i)) (1+ k) a)
+  (implies (and (rmatp a n n) (posp n)
+                (natp k) (< k n) (tuplep x k n)
+		(natp i) (< i n))
+	   (equal (reval-tuple (append x (list i)) (1+ k) a n)
                   (r* (r* (rlist-prod (extract-entries x a))
 		          (nth i (nth k a)))
-		      (rdetn (replace-row (append (runits x) (nthcdr k a)) k (runit i (n)))))))
+		      (rdet0 (replace-row (append (runits x n) (nthcdr k a)) k (runit i n)) n))))
   :hints (("Goal" :use (rsum-tuples-extend-tuple-2 rsum-tuples-extend-tuple-4
                         rsum-tuples-extend-tuple-5 rsum-tuples-extend-tuple-9))))
 
 (local-defthmd rsum-tuples-extend-tuple-11
-  (implies (and (rmatp a (n) (n))
-                (natp k) (< k (n)) (tuplep x k)
-		(natp i) (< i (n)))
-	   (equal (reval-tuple (append x (list i)) (1+ k) a)
+  (implies (and (rmatp a n n) (posp n)
+                (natp k) (< k n) (tuplep x k n)
+		(natp i) (< i n))
+	   (equal (reval-tuple (append x (list i)) (1+ k) a n)
                   (r* (rlist-prod (extract-entries x a))
 		      (r* (nth i (nth k a))
-		          (rdetn (replace-row (append (runits x) (nthcdr k a)) k (runit i (n))))))))
+		          (rdet0 (replace-row (append (runits x n) (nthcdr k a)) k (runit i n)) n)))))
   :hints (("Goal" :in-theory (disable rlistnp-extract-entries)
-                  :use (rsum-tuples-extend-tuple-10
-                        (:instance rlistnp-extract-entries (m (n)))
-			(:instance rp-entry (m (n)) (n (n)) (i k) (j i))
+                  :use (rsum-tuples-extend-tuple-10 rmatp-append-runits-nthcdr
+                        (:instance rlistnp-extract-entries (m n))
+			(:instance rp-entry (m n) (i k) (j i))
                         (:instance r*assoc (x (rlist-prod (extract-entries x a)))
 			                   (y (nth i (nth k a)))
-					   (z (rdetn (replace-row (append (runits x) (nthcdr k a)) k (runit i (n))))))))))
+					   (z (rdet0 (replace-row (append (runits x n) (nthcdr k a)) k (runit i n)) n)))))))
 
 (local-defthmd rsum-tuples-extend-tuple-12
-  (implies (and (rmatp a (n) (n))
-                (natp k) (< k (n))
-                (tuplep x k)
-		(sublistp l (ninit (n))))
-	   (equal (reval-tuple x k (replace-row a k (rsum-select l (nth k a))))
-	          (r* (rlist-prod (extract-entries x (replace-row a k (rsum-select l (nth k a)))))
-		      (rdetn (append (runits x) (nthcdr k (replace-row a k (rsum-select l (nth k a))))))))))
+  (implies (and (rmatp a n n) (posp n)
+                (natp k) (< k n)
+                (tuplep x k n)
+		(sublistp l (ninit n)))
+	   (equal (reval-tuple x k (replace-row a k (rsum-select l (nth k a) n)) n)
+	          (r* (rlist-prod (extract-entries x (replace-row a k (rsum-select l (nth k a) n))))
+		      (rdet0 (append (runits x n) (nthcdr k (replace-row a k (rsum-select l (nth k a) n)))) n)))))
 
 (local-defthmd rsum-tuples-extend-tuple-13
-  (implies (and (rmatp a m (n)) (natp m) (<= m (n))
-                (natp k) (< k (n))
-                (tuplep x k))
+  (implies (and (rmatp a m n) (natp m) (<= m n) (posp n)
+                (natp k) (< k n)
+                (tuplep x k n))
 	   (equal (extract-entries x (replace-row a k r))
 	          (extract-entries x a)))
   :hints (("Goal" :induct (extract-entries-induct x k a m) :in-theory (enable rmatp replace-row))))
 
 (local-defthmd rsum-tuples-extend-tuple-14
-  (implies (and (rmatp a m (n)) (natp m) (<= m (n))
-                (natp k) (< k (n))
-                (tuplep x k))
-	   (equal (reval-tuple x k (replace-row a k (rsum-select l (nth k a))))
+  (implies (and (rmatp a m n) (natp m) (<= m n) (posp n)
+                (natp k) (< k n)
+                (tuplep x k n))
+	   (equal (reval-tuple x k (replace-row a k (rsum-select l (nth k a) n)) n)
 	          (r* (rlist-prod (extract-entries x a))
-		      (rdetn (append (runits x) (nthcdr k (replace-row a k (rsum-select l (nth k a)))))))))
+		      (rdet0 (append (runits x n) (nthcdr k (replace-row a k (rsum-select l (nth k a) n)))) n))))
   :hints (("Goal" :use (rsum-tuples-extend-tuple-12
-                        (:instance rsum-tuples-extend-tuple-13 (r (rsum-select l (nth k a))))))))
+                        (:instance rsum-tuples-extend-tuple-13 (r (rsum-select l (nth k a) n)))))))
 
 (local-defthm car-nthcdr
   (implies (< k (len l))
@@ -2073,244 +2068,246 @@ defthmd rdetn-permute-trans-list-p
 	  ("Subgoal *1/1" :expand ((NTH 0 (NTHCDR K L))))))
 
 (local-defthmd rsum-tuples-extend-tuple-15
-  (implies (and (rmatp a (n) (n))
-                (natp k) (< k (n))
-                (tuplep x k)
-		(natp j) (< j (n)))
-	   (equal (nth j (append (runits x) (nthcdr k (replace-row a k r))))
-	          (nth j (replace-row (append (runits x) (nthcdr k a)) k r))))
+  (implies (and (rmatp a n n) (posp n)
+                (natp k) (< k n)
+                (tuplep x k n)
+		(natp j) (< j n))
+	   (equal (nth j (append (runits x n) (nthcdr k (replace-row a k r))))
+	          (nth j (replace-row (append (runits x n) (nthcdr k a)) k r))))
   :hints (("Goal" :cases ((= k j))
                   :in-theory (disable len-rmatp rmatp-append-runits-nthcdr)
                   :use (rmatp-append-runits-nthcdr
-		        (:instance len-rmatp (m (n)) (n (n)))
-		        (:instance len-rmatp (m (n)) (n (n)) (a (APPEND (RUNITS X) (NTHCDR K A))))))))
+		        (:instance len-rmatp (m n))
+		        (:instance len-rmatp (m n) (a (APPEND (RUNITS X n) (NTHCDR K A))))))))
 
 (local-defthmd rsum-tuples-extend-tuple-16
-  (implies (and (natp k) (< k (n))
-                (rmatp a (n) (n)))
-           (TRUE-LISTP (REPLACE-ROW (APPEND (RUNITS X) (NTHCDR K A)) K r)))
+  (implies (and (natp k) (< k n) (posp n)
+                (rmatp a n n))
+           (TRUE-LISTP (REPLACE-ROW (APPEND (RUNITS X n) (NTHCDR K A)) K r)))
   :hints (("Goal" :in-theory (disable true-listp-nthcdr true-listp-replace-row)
-                  :use ((:instance true-listp-replace-row (a (APPEND (RUNITS X) (NTHCDR K A))) (j k))
+                  :use ((:instance true-listp-replace-row (a (APPEND (RUNITS X n) (NTHCDR K A))) (j k))
 		        (:instance true-listp-nthcdr (j k) (l a))))))
 
 (local-defthmd rsum-tuples-extend-tuple-17
-  (implies (and (natp k) (< k (n))
-                (rmatp a (n) (n)))
-           (TRUE-LISTP (APPEND (RUNITS X) (NTHCDR K (replace-row a k r)))))
+  (implies (and (natp k) (< k n) (posp n)
+                (rmatp a n n))
+           (TRUE-LISTP (APPEND (RUNITS X n) (NTHCDR K (replace-row a k r)))))
   :hints (("Goal" :in-theory (disable true-listp-nthcdr true-listp-replace-row)
                   :use ((:instance true-listp-replace-row (j k))
 		        (:instance true-listp-nthcdr (j k) (l (replace-row a k r)))))))
 
 (local-defthmd rsum-tuples-extend-tuple-18
-  (implies (and (rmatp a (n) (n))
-                (natp k) (< k (n))
-                (tuplep x k))
-           (equal (len (append (runits x) (nthcdr k (replace-row a k r))))
-	          (n)))
+  (implies (and (rmatp a n n) (posp n)
+                (natp k) (< k n)
+                (tuplep x k n))
+           (equal (len (append (runits x n) (nthcdr k (replace-row a k r))))
+	          n))
   :hints (("Goal" :in-theory (enable len-append-runits))))
 
 (local-defthmd rsum-tuples-extend-tuple-19
-  (implies (and (rmatp a (n) (n))
-                (natp k) (< k (n))
-                (tuplep x k))
-           (equal (len (replace-row (append (runits x) (nthcdr k a)) k r))
-	          (n)))
+  (implies (and (rmatp a n n) (posp n)
+                (natp k) (< k n)
+                (tuplep x k n))
+           (equal (len (replace-row (append (runits x n) (nthcdr k a)) k r))
+	          n))
   :hints (("Goal" :in-theory (enable len-append-runits))))
 
 (local-defthmd rsum-tuples-extend-tuple-20
-  (implies (and (rmatp a (n) (n))
-                (natp k) (< k (n))
-                (tuplep x k))
-          (equal (append (runits x) (nthcdr k (replace-row a k r)))
-	         (replace-row (append (runits x) (nthcdr k a)) k r)))
+  (implies (and (rmatp a n n) (posp n)
+                (natp k) (< k n)
+                (tuplep x k n))
+          (equal (append (runits x n) (nthcdr k (replace-row a k r)))
+	         (replace-row (append (runits x n) (nthcdr k a)) k r)))
   :hints (("Goal" :use (rsum-tuples-extend-tuple-16 rsum-tuples-extend-tuple-17 rsum-tuples-extend-tuple-18
 		        rsum-tuples-extend-tuple-19
-                        (:instance nth-diff-diff (x (append (runits x) (nthcdr k (replace-row a k r))))
-                                                 (y (replace-row (append (runits x) (nthcdr k a)) k r)))
+                        (:instance nth-diff-diff (x (append (runits x n) (nthcdr k (replace-row a k r))))
+                                                 (y (replace-row (append (runits x n) (nthcdr k a)) k r)))
 			(:instance rsum-tuples-extend-tuple-15
-			   (j (nth-diff (append (runits x) (nthcdr k (replace-row a k r)))
-			                (replace-row (append (runits x) (nthcdr k a)) k r))))))))
+			   (j (nth-diff (append (runits x n) (nthcdr k (replace-row a k r)))
+			                (replace-row (append (runits x n) (nthcdr k a)) k r))))))))
 
 (local-defthmd rsum-tuples-extend-tuple-21
-  (implies (and (rmatp a (n) (n))
-                (natp k) (< k (n))
-                (tuplep x k))
-	   (equal (reval-tuple x k (replace-row a k (rsum-select l (nth k a))))
+  (implies (and (rmatp a n n) (posp n)
+                (natp k) (< k n)
+                (tuplep x k n))
+	   (equal (reval-tuple x k (replace-row a k (rsum-select l (nth k a) n)) n)
 	          (r* (rlist-prod (extract-entries x a))
-		      (rdetn (replace-row (append (runits x) (nthcdr k a)) k (rsum-select l (nth k a)))))))
-  :hints (("Goal" :use ((:instance rsum-tuples-extend-tuple-14 (m (n)))
-                        (:instance rsum-tuples-extend-tuple-20 (r (rsum-select l (nth k a))))))))
+		      (rdet0 (replace-row (append (runits x n) (nthcdr k a)) k (rsum-select l (nth k a) n)) n))))
+  :hints (("Goal" :use ((:instance rsum-tuples-extend-tuple-14 (m n))
+                        (:instance rsum-tuples-extend-tuple-20 (r (rsum-select l (nth k a) n)))))))
 
 (local-defthmd rsum-tuples-extend-tuple-22
-  (implies (and (rmatp a (n) (n))
-                (natp k) (< k (n))
-                (tuplep x k)
+  (implies (and (rmatp a n n) (posp n)
+                (natp k) (< k n)
+                (tuplep x k n)
 		(consp l)
-		(sublistp l (ninit (n))))
-           (equal (rsum-tuples (extend-tuple-aux x l) (1+ k) a)
-                  (r+ (reval-tuple (append x (list (car l))) (1+ k) a)
-		      (rsum-tuples (extend-tuple-aux x (cdr l)) (1+ k) a)))))
+		(sublistp l (ninit n)))
+           (equal (rsum-tuples (extend-tuple-aux x l) (1+ k) a n)
+                  (r+ (reval-tuple (append x (list (car l))) (1+ k) a n)
+		      (rsum-tuples (extend-tuple-aux x (cdr l)) (1+ k) a n)))))
 
 (local-defthmd rsum-tuples-extend-tuple-23
-  (implies (and (rmatp a (n) (n))
-                (natp k) (< k (n))
-                (tuplep x k)
+  (implies (and (rmatp a n n) (posp n)
+                (natp k) (< k n)
+                (tuplep x k n)
 		(consp l)
-		(sublistp l (ninit (n)))
-	        (equal (rsum-tuples (extend-tuple-aux x (cdr l)) (1+ k) a)
-		       (reval-tuple x k (replace-row a k (rsum-select (cdr l) (nth k a))))))
-	   (equal (rsum-tuples (extend-tuple-aux x l) (1+ k) a)
+		(sublistp l (ninit n))
+	        (equal (rsum-tuples (extend-tuple-aux x (cdr l)) (1+ k) a n)
+		       (reval-tuple x k (replace-row a k (rsum-select (cdr l) (nth k a) n)) n)))
+	   (equal (rsum-tuples (extend-tuple-aux x l) (1+ k) a n)
 		  (r+ (r* (rlist-prod (extract-entries x a))
 		          (r* (nth (car l) (nth k a))
-		              (rdetn (replace-row (append (runits x) (nthcdr k a)) k (runit (car l) (n))))))
+		              (rdet0 (replace-row (append (runits x n) (nthcdr k a)) k (runit (car l) n)) n)))
 		      (r* (rlist-prod (extract-entries x a))
-		          (rdetn (replace-row (append (runits x) (nthcdr k a)) k (rsum-select (cdr l) (nth k a))))))))
+		          (rdet0 (replace-row (append (runits x n) (nthcdr k a)) k (rsum-select (cdr l) (nth k a) n)) n)))))
   :hints (("Goal" :use (rsum-tuples-extend-tuple-22
                         (:instance rsum-tuples-extend-tuple-21 (l (cdr l)))
                         (:instance rsum-tuples-extend-tuple-11 (i (car l)))
-			(:instance member-ninit (x (car l)) (n (n)))))))
+			(:instance member-ninit (x (car l)))))))
 
 (local-defthmd rsum-tuples-extend-tuple-24
-  (implies (and (rmatp a (n) (n))
-                (natp k) (< k (n))
-                (tuplep x k)
+  (implies (and (rmatp a n n) (posp n)
+                (natp k) (< k n)
+                (tuplep x k n)
 		(consp l)
-		(sublistp l (ninit (n))))
+		(sublistp l (ninit n)))
 	   (equal (r+ (r* (rlist-prod (extract-entries x a))
 		          (r* (nth (car l) (nth k a))
-		              (rdetn (replace-row (append (runits x) (nthcdr k a)) k (runit (car l) (n))))))
+		              (rdet0 (replace-row (append (runits x n) (nthcdr k a)) k (runit (car l) n)) n)))
 		      (r* (rlist-prod (extract-entries x a))
-		          (rdetn (replace-row (append (runits x) (nthcdr k a)) k (rsum-select (cdr l) (nth k a))))))
+		          (rdet0 (replace-row (append (runits x n) (nthcdr k a)) k (rsum-select (cdr l) (nth k a) n)) n)))
 		  (r* (rlist-prod (extract-entries x a))
 		      (r+ (r* (nth (car l) (nth k a))
-		              (rdetn (replace-row (append (runits x) (nthcdr k a)) k (runit (car l) (n)))))
-			  (rdetn (replace-row (append (runits x) (nthcdr k a)) k (rsum-select (cdr l) (nth k a))))))))
+		              (rdet0 (replace-row (append (runits x n) (nthcdr k a)) k (runit (car l) n)) n))
+			  (rdet0 (replace-row (append (runits x n) (nthcdr k a)) k (rsum-select (cdr l) (nth k a) n)) n)))))
   :hints (("Goal" :in-theory (disable rlistnp-extract-entries rmatp-append-runits-nthcdr)
                   :use (rmatp-append-runits-nthcdr
-                        (:instance member-ninit (x (car l)) (n (n)))
-			(:instance rlistnp-row (i k) (m (n)) (n (n)))
-			(:instance rp-entry (m (n)) (n (n)) (i k) (j (car l)))
-			(:instance rlistnp-extract-entries (m (n)))
+                        (:instance member-ninit (x (car l)))
+			(:instance rlistnp-row (i k) (m n))
+			(:instance rp-entry (m n) (i k) (j (car l)))
+			(:instance rlistnp-extract-entries (m n))
                         (:instance rdist (x (rlist-prod (extract-entries x a)))
 			                 (y (r* (nth (car l) (nth k a))
-		                                (rdetn (replace-row (append (runits x) (nthcdr k a)) k (runit (car l) (n))))))
-					 (z (rdetn (replace-row (append (runits x) (nthcdr k a)) k
-								(rsum-select (cdr l) (nth k a))))))))))
+		                                (rdet0 (replace-row (append (runits x n) (nthcdr k a)) k (runit (car l) n)) n)))
+					 (z (rdet0 (replace-row (append (runits x n) (nthcdr k a)) k
+								(rsum-select (cdr l) (nth k a) n))
+						   n)))))))
 
 (local-defthmd rsum-tuples-extend-tuple-25
-  (implies (and (rmatp a (n) (n))
-                (natp k) (< k (n))
-                (tuplep x k)
+  (implies (and (rmatp a n n) (posp n)
+                (natp k) (< k n)
+                (tuplep x k n)
 		(consp l)
-		(sublistp l (ninit (n))))
+		(sublistp l (ninit n)))
 	   (equal (r+ (r* (nth (car l) (nth k a))
-		          (rdetn (replace-row (append (runits x) (nthcdr k a)) k (runit (car l) (n)))))
-		      (rdetn (replace-row (append (runits x) (nthcdr k a)) k (rsum-select (cdr l) (nth k a)))))
-		  (rdetn (replace-row (append (runits x) (nthcdr k a)) k (rsum-select l (nth k a))))))
+		          (rdet0 (replace-row (append (runits x n) (nthcdr k a)) k (runit (car l) n)) n))
+		      (rdet0 (replace-row (append (runits x n) (nthcdr k a)) k (rsum-select (cdr l) (nth k a) n)) n))
+		  (rdet0 (replace-row (append (runits x n) (nthcdr k a)) k (rsum-select l (nth k a)n)) n)))
   :hints (("Goal" :in-theory (disable rlistnp-extract-entries rmatp-append-runits-nthcdr)
                   :use (rmatp-append-runits-nthcdr
-                        (:instance member-ninit (x (car l)) (n (n)))
-			(:instance rlistnp-row (i k) (m (n)) (n (n)))
-			(:instance rp-entry (m (n)) (n (n)) (i k) (j (car l)))
-			(:instance rdetn-n-linear (a (append (runits x) (nthcdr k a))) (i k) (c (nth (car l) (nth k a)))
-			                         (x (runit (car l) (n)))
-						 (y (rsum-select (cdr l) (nth k a))))))))
+                        (:instance member-ninit (x (car l)))
+			(:instance rlistnp-row (i k) (m n))
+			(:instance rp-entry (m n) (i k) (j (car l)))
+			(:instance rdet0-n-linear (a (append (runits x n) (nthcdr k a))) (i k) (c (nth (car l) (nth k a)))
+			                         (x (runit (car l) n))
+						 (y (rsum-select (cdr l) (nth k a) n)))))))
 
 (local-defthmd rsum-tuples-extend-tuple-26
-  (implies (and (rmatp a (n) (n))
-                (natp k) (< k (n))
-                (tuplep x k)
+  (implies (and (rmatp a n n) (posp n)
+                (natp k) (< k n)
+                (tuplep x k n)
 		(consp l)
-		(sublistp l (ninit (n)))
-	        (equal (rsum-tuples (extend-tuple-aux x (cdr l)) (1+ k) a)
-		       (reval-tuple x k (replace-row a k (rsum-select (cdr l) (nth k a))))))
-	   (equal (rsum-tuples (extend-tuple-aux x l) (1+ k) a)
+		(sublistp l (ninit n))
+	        (equal (rsum-tuples (extend-tuple-aux x (cdr l)) (1+ k) a n)
+		       (reval-tuple x k (replace-row a k (rsum-select (cdr l) (nth k a) n)) n)))
+	   (equal (rsum-tuples (extend-tuple-aux x l) (1+ k) a n)
 		  (r* (rlist-prod (extract-entries x a))
-		      (rdetn (replace-row (append (runits x) (nthcdr k a)) k (rsum-select l (nth k a)))))))
+		      (rdet0 (replace-row (append (runits x n) (nthcdr k a)) k (rsum-select l (nth k a) n)) n))))
   :hints (("Goal" :use (rsum-tuples-extend-tuple-23 rsum-tuples-extend-tuple-24 rsum-tuples-extend-tuple-25))))
 
 (local-defthmd rsum-tuples-extend-tuple-27
-  (implies (and (rmatp a (n) (n))
-                (natp k) (< k (n))
-                (tuplep x k)
+  (implies (and (rmatp a n n) (posp n)
+                (natp k) (< k n)
+                (tuplep x k n)
 		(consp l)
-		(sublistp l (ninit (n)))
-	        (equal (rsum-tuples (extend-tuple-aux x (cdr l)) (1+ k) a)
-		       (reval-tuple x k (replace-row a k (rsum-select (cdr l) (nth k a))))))
-	   (equal (rsum-tuples (extend-tuple-aux x l) (1+ k) a)
+		(sublistp l (ninit n))
+	        (equal (rsum-tuples (extend-tuple-aux x (cdr l)) (1+ k) a n)
+		       (reval-tuple x k (replace-row a k (rsum-select (cdr l) (nth k a) n)) n)))
+	   (equal (rsum-tuples (extend-tuple-aux x l) (1+ k) a n)
 		  (r* (rlist-prod (extract-entries x a))
-		      (rdetn (append (runits x) (nthcdr k (replace-row a k (rsum-select l (nth k a)))))))))
+		      (rdet0 (append (runits x n) (nthcdr k (replace-row a k (rsum-select l (nth k a) n)))) n))))
   :hints (("Goal" :use (rsum-tuples-extend-tuple-26
-                        (:instance rsum-tuples-extend-tuple-20 (r (rsum-select l (nth k a))))))))
+                        (:instance rsum-tuples-extend-tuple-20 (r (rsum-select l (nth k a) n)))))))
 
 (local-defthmd rsum-tuples-extend-tuple-28
-  (implies (and (rmatp a (n) (n))
-                (natp k) (< k (n))
-                (tuplep x k)
+  (implies (and (rmatp a n n) (posp n)
+                (natp k) (< k n)
+                (tuplep x k n)
 		(consp l)
-		(sublistp l (ninit (n)))
-	        (equal (rsum-tuples (extend-tuple-aux x (cdr l)) (1+ k) a)
-		       (reval-tuple x k (replace-row a k (rsum-select (cdr l) (nth k a))))))
-	   (equal (rsum-tuples (extend-tuple-aux x l) (1+ k) a)
-		  (reval-tuple x k (replace-row a k (rsum-select l (nth k a))))))
+		(sublistp l (ninit n))
+	        (equal (rsum-tuples (extend-tuple-aux x (cdr l)) (1+ k) a n)
+		       (reval-tuple x k (replace-row a k (rsum-select (cdr l) (nth k a) n)) n)))
+	   (equal (rsum-tuples (extend-tuple-aux x l) (1+ k) a n)
+		  (reval-tuple x k (replace-row a k (rsum-select l (nth k a) n)) n)))
   :hints (("Goal" :in-theory (enable rsum-tuples-extend-tuple-13)
                   :use (rsum-tuples-extend-tuple-27))))
 
 ;; We need this basic result:
 
-(local-defthmd rdetn-replace-0-1
-  (implies (and (rmatp a (n) (n)) (natp k) (< k (n)))
-           (equal (r+ (rdetn (replace-row a k (rlistn0 (n))))
-	              (rdetn (replace-row a k (rlistn0 (n)))))
-		  (rdetn (replace-row a k (rlistn0 (n))))))
+(local-defthmd rdet0-replace-0-1
+  (implies (and (rmatp a n n) (posp n) (natp k) (< k n))
+           (equal (r+ (rdet0 (replace-row a k (rlistn0 n)) n)
+	              (rdet0 (replace-row a k (rlistn0 n)) n))
+		  (rdet0 (replace-row a k (rlistn0 n)) n)))
   :hints (("Goal" :in-theory (disable rlist-scalar-mul-r1)
-                  :use ((:instance rdetn-n-linear (i k) (c (r1)) (x (rlistn0 (n))) (y (rlistn0 (n))))
-                        (:instance rlist-scalar-mul-r1 (n (n)) (x (rlistn0 (n))))))))
+                  :use ((:instance rdet0-n-linear (i k) (c (r1)) (x (rlistn0 n)) (y (rlistn0 n)))
+                        (:instance rlist-scalar-mul-r1 (x (rlistn0 n)))))))
 
-(local-defthmd rdetn-replace-0
-  (implies (and (rmatp a (n) (n)) (natp k) (< k (n)))
-           (equal (rdetn (replace-row a k (rlistn0 (n))))
+(local-defthmd rdet0-replace-0
+  (implies (and (rmatp a n n) (posp n) (natp k) (< k n))
+           (equal (rdet0 (replace-row a k (rlistn0 n)) n)
 	          (r0)))
-  :hints (("Goal" :use (rdetn-replace-0-1 (:instance r+left-cancel (x (rdetn (replace-row a k (rlistn0 (n)))))
-                                                           (z (rdetn (replace-row a k (rlistn0 (n)))))
+  :hints (("Goal" :use (rdet0-replace-0-1 (:instance r+left-cancel (x (rdet0 (replace-row a k (rlistn0 n)) n))
+                                                           (z (rdet0 (replace-row a k (rlistn0 n)) n))
 							   (y (r0)))))))
 
-;; Prove by induction on l, using rdetn-replace-0 and rsum-tuples-extend-tuple-26:
+;; Prove by induction on l, using rdet0-replace-0 and rsum-tuples-extend-tuple-26:
 
 (local-defthmd rsum-tuples-extend-tuple-29
-  (implies (and (rmatp a (n) (n))
-                (natp k) (< k (n))
-                (tuplep x k)
-		(sublistp l (ninit (n))))
-	   (equal (rsum-tuples (extend-tuple-aux x l) (1+ k) a)
-		  (reval-tuple x k (replace-row a k (rsum-select l (nth k a))))))
+  (implies (and (rmatp a n n) (posp n)
+                (natp k) (< k n)
+                (tuplep x k n)
+		(sublistp l (ninit n)))
+	   (equal (rsum-tuples (extend-tuple-aux x l) (1+ k) a n)
+		  (reval-tuple x k (replace-row a k (rsum-select l (nth k a) n)) n)))
   :hints (("Goal" :induct (len l))
           ("Subgoal *1/2" :in-theory (enable rsum-tuples-extend-tuple-20)
-	                  :use ((:instance rdetn-replace-0 (a (APPEND (RUNITS X) (NTHCDR K A))))
-			        (:instance rlistnp-extract-entries (m (n)) (a (REPLACE-ROW A K (RLISTN0 (N)))))))
+	                  :use (rmatp-append-runits-nthcdr
+			        (:instance rdet0-replace-0 (a (APPEND (RUNITS X n) (NTHCDR K A))))
+			        (:instance rlistnp-extract-entries (m n) (a (REPLACE-ROW A K (RLISTN0 n))))))
 	  ("Subgoal *1/1" :use (rsum-tuples-extend-tuple-28))))
 
 
 (local-defthm rsum-select-ninit
-  (implies (rlistnp r (n))
-           (equal (rsum-select (ninit (n)) r)
+  (implies (and (rlistnp r n) (posp n))
+           (equal (rsum-select (ninit n) r n)
 	          r)))
 
-;; Substitute (ninit (n)) for l:
+;; Substitute (ninit n) for l:
 
 (local-defthmd rsum-tuples-extend-tuple-30
-  (implies (and (rmatp a (n) (n))
-                (natp k) (< k (n))
-                (tuplep x k))
-	   (equal (rsum-tuples (extend-tuple-aux x (ninit (n))) (1+ k) a)
-		  (reval-tuple x k (replace-row a k (nth k a)))))
+  (implies (and (rmatp a n n) (posp n)
+                (natp k) (< k n)
+                (tuplep x k n))
+	   (equal (rsum-tuples (extend-tuple-aux x (ninit n)) (1+ k) a n)
+		  (reval-tuple x k (replace-row a k (nth k a)) n)))
   :hints (("Goal" :in-theory (disable rsum-tuples reval-tuple)
-                  :use ((:instance rsum-tuples-extend-tuple-29 (l (ninit (n))))
-                        (:instance rlistnp-row (n (n)) (m (n)) (i k))))))
+                  :use ((:instance rsum-tuples-extend-tuple-29 (l (ninit n)))
+                        (:instance rlistnp-row (m n) (i k))))))
 
 ;; We shall derive a formula for (rsum-tuples (extend-tuple x) (1+ k) a).
 
-;; Let l be a sublist of (ninit (n)).  According to the definitions of rsum-tuples and extend-tuple-aux,
+;; Let l be a sublist of (ninit n).  According to the definitions of rsum-tuples and extend-tuple-aux,
 
 ;;   (rsum-tuples (extend-tuple-aux x l) (1+ k) a)
 ;;     = (r+ (reval-tuple (append x (list (car l))) (1+ k) a)
@@ -2320,95 +2317,95 @@ defthmd rdetn-permute-trans-list-p
   
 ;;   (reval-tuple (append x (list i)) (1+ k) a)
 ;;     = (r* (rlist-prod (extract-entries (append x (list i)) a))
-;;           (rdetn (append (runits (append x (list i))) (nthcdr (1+ k) a))))
+;;           (rdet0 (append (runits (append x (list i))) (nthcdr (1+ k) a))))
 ;;     = (r* (rlist-prod (extract-entries x a))
 ;;           (r* (nth i (nth k a))
-;;               (rdetn (append (append (runits x) (list (unit i (n)))) (nthcdr (1+ k) a)))))
+;;               (rdet0 (append (append (runits x) (list (unit i n))) (nthcdr (1+ k) a)))))
 ;;     = (r* (rlist-prod (extract-entries x a))
 ;;           (r* (nth i (nth k a))
-;;	         (rdetn (replace-row (append (runits x) (nthcdr k a) k (unit i (n)))))))
+;;	         (rdet0 (replace-row (append (runits x) (nthcdr k a) k (unit i n))))))
 
 ;; and
 
 ;;   (rsum-tuples (extend-tuple-aux x (cdr l)) (1+ k) a)
 ;;     = (reval-tuple x k (replace-row a k (rsum-select (cdr l) (nth k a))))
 ;;     = (r* (rlist-prod (extract-entries x a))
-;;           (rdetn (append (runits x) (nthcdr k (replace-row a k (rsum-select (cdr l) (nth k a)))))))
+;;           (rdet0 (append (runits x) (nthcdr k (replace-row a k (rsum-select (cdr l) (nth k a)))))))
 ;;     = (r* (rlist-prod (extract-entries x a))
-;;           (rdetn (replace-row (append (runits x) (nthcdr k a)) k (rsum-select (cdr l) (nth k a))))).
+;;           (rdet0 (replace-row (append (runits x) (nthcdr k a)) k (rsum-select (cdr l) (nth k a))))).
 
-;; Thus, by rdetn-n-linear,
+;; Thus, by rdet0-n-linear,
 
 ;;   (rsum-tuples (extend-tuple-aux x l) (1+ k) a)
 ;;     = (r* (rlist-prod (extract-entries x a))
-;;           (rdetn (replace-row (append (runits x) (nthcdr k a)) k (rsum-select l (nth k a)))))
+;;           (rdet0 (replace-row (append (runits x) (nthcdr k a)) k (rsum-select l (nth k a)))))
 ;;     = (r* (rlist-prod (extract-entries x a))
-;;           (rdetn (append (runits x) (nthcdr k (replace-row a k (rsum-select l (nth k a)))))))
+;;           (rdet0 (append (runits x) (nthcdr k (replace-row a k (rsum-select l (nth k a)))))))
 ;;     = (reval-tuple x k (replace-row a k (rsum-select l (nth k a)))).
 
-;; Substitute (ninit (n)) for l:
+;; Substitute (ninit n) for l:
 
 ;;   (rsum-tuples (extend-tuple x) (1+ k) a)
-;;     = (reval-tuple x k (replace-row a k (rsum-select (ninit (n)) (nth k a))))
+;;     = (reval-tuple x k (replace-row a k (rsum-select (ninit n) (nth k a))))
 ;;     = (reval-tuple x k (replace-row a k (nth k a)))
 ;;     = (reval-tuple x k a):
 
 (defthm rsum-tuples-extend-tuple
-  (implies (and (rmatp a (n) (n))
-                (natp k) (< k (n))
-                (tuplep x k))
-	   (equal (rsum-tuples (extend-tuple x) (1+ k) a)
-		  (reval-tuple x k a)))
+  (implies (and (rmatp a n n) (posp n)
+                (natp k) (< k n)
+                (tuplep x k n))
+	   (equal (rsum-tuples (extend-tuple x n) (1+ k) a n)
+		  (reval-tuple x k a n)))
   :hints (("Goal" :in-theory (enable extend-tuple)
                   :use (rsum-tuples-extend-tuple-30
-                        (:instance replace-rmat-row-self (m (n)) (n (n)) (i k))))))
+                        (:instance replace-rmat-row-self (m n) (i k))))))
 
 ;; This leads to the recurrence formula
 
 ;;    (rsum-tuples (all-tuples k) k a) = (rsum-tuples (all-tuples (1- k)) (1- k) a):
 
 (defthm rsum-tuples-append
-  (implies (and (rmatp a (n) (n)) (natp k) (<= k (n)) (tuple-list-p l k) (tuple-list-p m k))
-           (equal (rsum-tuples (append l m) k a)
-	          (r+ (rsum-tuples l k a) (rsum-tuples m k a))))
+  (implies (and (rmatp a n n) (posp n) (natp k) (<= k n) (tuple-list-p l k n) (tuple-list-p m k n))
+           (equal (rsum-tuples (append l m) k a n)
+	          (r+ (rsum-tuples l k a n) (rsum-tuples m k a n))))
   :hints (("Goal" :in-theory (disable reval-tuple))
-          ("Subgoal *1/2" :use ((:instance r+assoc (x (reval-tuple (car l) k a))
-					           (y (RSUM-TUPLES (CDR L) K A))
-					           (z (RSUM-TUPLES M K A)))))))
+          ("Subgoal *1/2" :use ((:instance r+assoc (x (reval-tuple (car l) k a n))
+					           (y (RSUM-TUPLES (CDR L) K A n))
+					           (z (RSUM-TUPLES M K A n)))))))
                         
 (defthmd rsum-tuples-extend-tuples
-  (implies (and (rmatp a (n) (n))
-                (natp k) (< k (n))
-		(tuple-list-p l k))
-	   (equal (rsum-tuples (extend-tuples l) (1+ k) a)
-	          (rsum-tuples l k a)))
+  (implies (and (rmatp a n n) (posp n)
+                (natp k) (< k n)
+		(tuple-list-p l k n))
+	   (equal (rsum-tuples (extend-tuples l n) (1+ k) a n)
+	          (rsum-tuples l k a n)))
   :hints (("Goal" :in-theory (disable reval-tuple))))
 
 (defthm rsum-tuples-extend-all-tuples
-  (implies (and (rmatp a (n) (n))
-                (posp k) (<= k (n)))
-	   (equal (rsum-tuples (all-tuples k) k a)
-	          (rsum-tuples (all-tuples (1- k)) (1- k) a)))
-  :hints (("Goal" :use ((:instance rsum-tuples-extend-tuples (l (all-tuples (1- k))) (k (1- k)))))))
+  (implies (and (rmatp a n n) (posp n)
+                (posp k) (<= k n))
+	   (equal (rsum-tuples (all-tuples k n) k a n)
+	          (rsum-tuples (all-tuples (1- k) n) (1- k) a n)))
+  :hints (("Goal" :use ((:instance rsum-tuples-extend-tuples (l (all-tuples (1- k) n)) (k (1- k)))))))
 
-;; By induction, (rsum-tuples (all-tuples (n)) (n) a) = (rdetn a):
+;; By induction, (rsum-tuples (all-tuples n) n a) = (rdet0 a):
 
 (local-defthmd rsum-tuples-induction
-  (implies (and (rmatp a (n) (n))
-                (natp k) (<= k (n)))
-	   (equal (rsum-tuples (all-tuples k) k a)
-	          (rdetn a)))
+  (implies (and (rmatp a n n) (posp n)
+                (natp k) (<= k n))
+	   (equal (rsum-tuples (all-tuples k n) k a n)
+	          (rdet0 a n)))
   :hints (("Goal" :induct (fact k) :in-theory (disable all-tuples))))
 
-(defthmd rsum-tuples-rdetn
-  (implies (rmatp a (n) (n))
-	   (equal (rsum-tuples (all-tuples (n)) (n) a)
-	          (rdetn a)))
-  :hints (("Goal" :use ((:instance rsum-tuples-induction (k (n)))))))
+(defthmd rsum-tuples-rdet0
+  (implies (and (rmatp a n n) (posp n))
+	   (equal (rsum-tuples (all-tuples n n) n a n)
+	          (rdet0 a n)))
+  :hints (("Goal" :use ((:instance rsum-tuples-induction (k n))))))
 
 (local-in-theory (disable rsum-tuples-induction rsum-tuples-extend-all-tuples))
 
-;; If x is an (n)-tuple, then (reval-tuple x (n) a) = (rdetn (runits x)).  Since rdetn
+;; If x is an n-tuple, then (reval-tuple x n a) = (rdet0 (runits x)).  Since rdet0
 ;; is alternating, this value is (r0) unless x is a dlist:
 
 (local-defthmd nthcdr-nil
@@ -2420,54 +2417,54 @@ defthmd rdetn-permute-trans-list-p
            (equal (append l ()) l)))
 
 (local-defthm reval-tuple-n
-  (implies (and (rmatp a (n) (n))
-                (tuplep x (n)))
-	   (equal (reval-tuple x (n) a)
+  (implies (and (rmatp a n n) (posp n)
+                (tuplep x n n))
+	   (equal (reval-tuple x n a n)
 	          (r* (rlist-prod (extract-entries x a))
-		      (rdetn (runits x)))))
+		      (rdet0 (runits x n) n))))
   :hints (("Goal" :in-theory (disable len-rmatp)
                   :use ((:instance nthcdr-nil (l a))
-                        (:instance append-nil (l (runits x)))
-			(:instance len-rmatp (m (n)) (n (n)))))))
+                        (:instance append-nil (l (runits x n)))
+			(:instance len-rmatp (m n))))))
 
 (local-defthm member-runits
   (implies (member z l)
-           (member (runit z (n))
-	           (runits l))))
+           (member (runit z n)
+	           (runits l n))))
 
 (local-defthmd dlistp-runits-1
-  (implies (and (true-listp x) (dlistp (runits x)))
+  (implies (and (true-listp x) (dlistp (runits x n)))
            (dlistp x)))
 
 (local-defthmd dlistp-runits
-  (implies (and (tuplep x (n)) (dlistp (runits x)))
+  (implies (and (tuplep x n n) (posp n) (dlistp (runits x n)))
            (dlistp x))
   :hints (("Goal" :use (dlistp-runits-1))))
 
 (local-defthmd rmatp-runits
-  (implies (tuplep x k)
-           (rmatp (runits x) k (n)))
+  (implies (and (tuplep x k n) (posp n))
+           (rmatp (runits x n) k n))
   :hints (("Goal" :in-theory (enable rmatp))))
 
-(defthm rdetn-runits-0
-  (implies (and (tuplep x (n)) (not (dlistp x)))
-           (equal (rdetn (runits x))
+(defthm rdet0-runits-0
+  (implies (and (tuplep x n n) (posp n) (not (dlistp x)))
+           (equal (rdet0 (runits x n) n)
 	          (r0)))
   :hints (("Goal" :in-theory (disable len-tuplep dcex-lemma)
                   :use (dlistp-runits
-                        (:instance rmatp-runits (k (n)))
-			(:instance len-tuplep (k (n)))
-                        (:instance rdetn-alternating (a (runits x)) (i (dcex1 (runits x))) (j (dcex2 (runits x))))
-			(:instance dcex-lemma (l (runits x)))))))
+                        (:instance rmatp-runits (k n))
+			(:instance len-tuplep (k n))
+                        (:instance rdet0-alternating (a (runits x n)) (i (dcex1 (runits x n))) (j (dcex2 (runits x n))))
+			(:instance dcex-lemma (l (runits x n)))))))
 
 (defthm reval-tuple-r0
-  (implies (and (rmatp a (n) (n))
-                (tuplep x (n))
+  (implies (and (rmatp a n n) (posp n)
+                (tuplep x n n)
 		(not (dlistp x)))
-	   (equal (reval-tuple x (n) a)
+	   (equal (reval-tuple x n a n)
 	          (r0)))		  
   :hints (("Goal" :in-theory (disable rlistnp-extract-entries)
-                  :use ((:instance rlistnp-extract-entries (m (n)) (k (n)))))))
+                  :use ((:instance rlistnp-extract-entries (m n) (k n))))))
 
 
 (local-defun select-dlists (l)
@@ -2484,14 +2481,14 @@ defthmd rdetn-permute-trans-list-p
   :hints (("Goal" :induct (len l))))
 
 (local-defthmd rsum-tuples-dlists
-  (implies (and (rmatp a (n) (n))
-                (tuple-list-p l (n)))
-	   (equal (rsum-tuples l (n) a)
-	          (rsum-tuples (select-dlists l) (n) a))))
+  (implies (and (rmatp a n n) (posp n)
+                (tuple-list-p l n n))
+	   (equal (rsum-tuples l n a n)
+	          (rsum-tuples (select-dlists l) n a n))))
 
-;; But (select-dlists (all-tuples (n))) = (slist (n)), and therefore (rsum-tuples (slist (n)) (n) a) = (rdetn a).
+;; But (select-dlists (all-tuples n)) = (slist n), and therefore (rsum-tuples (slist n) n a) = (rdet0 a).
 ;; However, that first equation looks like it would be hard to prove, so we shall instead prove
-;; (permp (select-dlists (all-tuples (n))) (slist (n)) and derive the second equation from that.
+;; (permp (select-dlists (all-tuples n)) (slist n) and derive the second equation from that.
 
 (local-defthmd member-select-dlists
   (iff (member x (select-dlists l))
@@ -2500,111 +2497,115 @@ defthmd rdetn-permute-trans-list-p
   :hints (("Goal" :induct (len l))))
 
 (local-defthmd member-select-dlists-all-tuples
-  (iff (member x (select-dlists (all-tuples (n))))
-       (and (tuplep x (n))
+  (iff (member x (select-dlists (all-tuples n n)))
+       (and (tuplep x n n)
             (dlistp x)))
-  :hints (("Goal" :use ((:instance member-select-dlists (l (all-tuples (n))))
-                        (:instance member-all-tuples (k (n)))))))
+  :hints (("Goal" :use ((:instance member-select-dlists (l (all-tuples n n)))
+                        (:instance member-all-tuples (k n))))))
 
 (local-defthmd tuplep-sublistp-ninit
-  (implies (natp k)
-           (iff (tuplep x k)
-	        (and (sublistp x (ninit (n)))
+  (implies (and (natp k) (posp n))
+           (iff (tuplep x k n)
+	        (and (sublistp x (ninit n))
 		     (equal (len x) k)
 		     (true-listp x))))		     
-  :hints (("Subgoal *1/2" :use ((:instance member-ninit (x (car x)) (n (n)))))
-          ("Subgoal *1/1" :use ((:instance member-ninit (x (car x)) (n (n)))))))
+  :hints (("Subgoal *1/2" :use ((:instance member-ninit (x (car x)))))
+          ("Subgoal *1/1" :use ((:instance member-ninit (x (car x)))))))
 
 (local-defthmd member-select-dlists-all-tuples-permp
-  (iff (member x (select-dlists (all-tuples (n))))
-       (permp x (ninit (n))))
+  (implies (posp n)
+           (iff (member x (select-dlists (all-tuples n n)))
+                (permp x (ninit n))))
   :hints (("Goal" :in-theory (enable permp)
                   :use (member-select-dlists-all-tuples
-                        (:instance tuplep-sublistp-ninit (k (n)))
-                        (:instance permp-eq-len (l x) (m (ninit (n))))
-                        (:instance eq-len-permp (l x) (m (ninit (n))))))))
+                        (:instance tuplep-sublistp-ninit (k n))
+                        (:instance permp-eq-len (l x) (m (ninit n)))
+                        (:instance eq-len-permp (l x) (m (ninit n)))))))
 
 (local-defthmd member-select-dlists-slist
-  (iff (member x (select-dlists (all-tuples (n))))
-       (member x (slist (n))))
+  (implies (posp n)
+           (iff (member x (select-dlists (all-tuples n n)))
+                (member x (slist n))))
   :hints (("Goal" :in-theory (enable permp-slist)
                   :use (member-select-dlists-all-tuples-permp))))
 
 (local-defthmd permp-select-dlists-all-tuples
-  (permp (select-dlists (all-tuples (n)))
-         (slist (n)))
+  (implies (posp n)
+           (permp (select-dlists (all-tuples n n))
+                  (slist n)))
   :hints (("Goal" :in-theory (enable permp)
-                  :use ((:instance dlistp-select-dlists (l (all-tuples (n))))
-		        (:instance scex1-lemma (l (select-dlists (all-tuples (n)))) (m (slist (n))))
-		        (:instance scex1-lemma (m (select-dlists (all-tuples (n)))) (l (slist (n))))
-			(:instance member-select-dlists-slist (x (scex1 (select-dlists (all-tuples (n))) (slist (n)))))
-			(:instance member-select-dlists-slist (x (scex1 (slist (n)) (select-dlists (all-tuples (n))))))))))
+                  :use ((:instance dlistp-select-dlists (l (all-tuples n n)))
+		        (:instance scex1-lemma (l (select-dlists (all-tuples n n))) (m (slist n)))
+		        (:instance scex1-lemma (m (select-dlists (all-tuples n n))) (l (slist n)))
+			(:instance member-select-dlists-slist (x (scex1 (select-dlists (all-tuples n n)) (slist n))))
+			(:instance member-select-dlists-slist (x (scex1 (slist n) (select-dlists (all-tuples n n)))))))))
 
-(local-defun tuple-list-p-hack (l k)
+(local-defun tuple-list-p-hack (l k n)
   (if (consp l)
-      (and (tuplep (car l) k)
-           (tuple-list-p-hack (cdr l) k))
+      (and (tuplep (car l) k n)
+           (tuple-list-p-hack (cdr l) k n))
     t))
 
 (local-defthm tuple-list-p-hack-lemma
-  (implies (tuple-list-p l k)
-           (tuple-list-p-hack l k)))
+  (implies (tuple-list-p l k n)
+           (tuple-list-p-hack l k n)))
 	
 (local-defthmd permp-rsum-tuples-hack
-  (implies (and (rmatp a (n) (n)) (true-listp l)
-                (dlistp l) (tuple-list-p-hack l (n))
-		(dlistp m) (tuple-list-p-hack m (n))
+  (implies (and (posp n) (rmatp a n n) (true-listp l)
+                (dlistp l) (tuple-list-p-hack l n n)
+		(dlistp m) (tuple-list-p-hack m n n)
 		(permp l m))
-	   (equal (rsum-tuples l (n) a)
-	          (rsum-tuples m (n) a)))		      
+	   (equal (rsum-tuples l n a n)
+	          (rsum-tuples m n a n)))		      
   :hints (("Goal" :in-theory (disable reval-tuple reval-tuple-n)
                   :use ((:functional-instance rval-sum-permp
-                          (rargp (lambda (x) (if (rmatp a (n) (n)) (tuplep x (n)) (rargp x))))
-                          (rval (lambda (x) (if (rmatp a (n) (n)) (reval-tuple x (n) a) (rval x))))
-                          (rarg-listp (lambda (x) (if (rmatp a (n) (n)) (tuple-list-p-hack x (n)) (rarg-listp x))))
-			  (rval-sum (lambda (x) (if (rmatp a (n) (n)) (rsum-tuples x (n) a) (rval-sum x)))))))))
+                          (rargp (lambda (x) (if (and (posp n) (rmatp a n n)) (tuplep x n n) (rargp x))))
+                          (rval (lambda (x) (if (and (posp n) (rmatp a n n)) (reval-tuple x n a n) (rval x))))
+                          (rarg-listp (lambda (x) (if (and (posp n) (rmatp a n n)) (tuple-list-p-hack x n n) (rarg-listp x))))
+			  (rval-sum (lambda (x) (if (and (posp n) (rmatp a n n)) (rsum-tuples x n a n) (rval-sum x)))))))))
 
 (local-defthmd permp-rsum-tuples
-  (implies (and (rmatp a (n) (n)) (true-listp l)
-                (dlistp l) (tuple-list-p l (n))
-		(dlistp m) (tuple-list-p m (n))
+  (implies (and (posp n) (rmatp a n n) (true-listp l)
+                (dlistp l) (tuple-list-p l n n)
+		(dlistp m) (tuple-list-p m n n)
 		(permp l m))
-	   (equal (rsum-tuples l (n) a)
-	          (rsum-tuples m (n) a)))		      
+	   (equal (rsum-tuples l n a n)
+	          (rsum-tuples m n a n)))		      
   :hints (("Goal" :use (permp-rsum-tuples-hack))))
 
-;; To apply permp-rsum-tuples, we must show (tuple-list-p (slist (n))):
+;; To apply permp-rsum-tuples, we must show (tuple-list-p (slist n)):
 
 (local-defthm tuple-list-p-sublistp
-  (implies (and (tuple-list-p l k) (true-listp m) (sublistp m l))
-           (tuple-list-p m k)))
+  (implies (and (tuple-list-p l k n) (true-listp m) (sublistp m l))
+           (tuple-list-p m k n)))
 
 (local-defthm tuple-list-p-slist
-  (and (tuple-list-p (slist (n)) (n))
-       (tuple-list-p (select-dlists (all-tuples (n))) (n)))
+  (implies (posp n)
+           (and (tuple-list-p (slist n) n n)
+                (tuple-list-p (select-dlists (all-tuples n n)) n n)))
   :hints (("Goal" :in-theory (enable permp)
                   :use (permp-select-dlists-all-tuples
-		        (:instance dlistp-select-dlists (l (all-tuples (n))))
-                        (:instance tuple-list-p-sublistp (k (n)) (l (all-tuples (n))) (m (select-dlists (all-tuples (n)))))
-                        (:instance tuple-list-p-sublistp (k (n)) (m (slist (n))) (l (select-dlists (all-tuples (n)))))))))
+		        (:instance dlistp-select-dlists (l (all-tuples n n)))
+                        (:instance tuple-list-p-sublistp (k n) (l (all-tuples n n)) (m (select-dlists (all-tuples n n))))
+                        (:instance tuple-list-p-sublistp (k n) (m (slist n)) (l (select-dlists (all-tuples n n))))))))
                         
-;; Combine these results with rsum-tuples-dlists and rsum-tuples-rdetn:
+;; Combine these results with rsum-tuples-dlists and rsum-tuples-rdet0:
 
 (defthmd rsum-tuples-n
-  (implies (rmatp a (n) (n))
-	   (equal (rsum-tuples (slist (n)) (n) a)
-	          (rdetn a)))
-  :hints (("Goal" :use (permp-select-dlists-all-tuples rsum-tuples-rdetn
-                        (:instance permp-rsum-tuples (l (select-dlists (all-tuples (n)))) (m (slist (n))))
-			(:instance dlistp-select-dlists (l (all-tuples (n))))
-			(:instance rsum-tuples-dlists (l (all-tuples (n))))))))
+  (implies (and (posp n) (rmatp a n n))
+	   (equal (rsum-tuples (slist n) n a n)
+	          (rdet0 a n)))
+  :hints (("Goal" :use (permp-select-dlists-all-tuples rsum-tuples-rdet0
+                        (:instance permp-rsum-tuples (l (select-dlists (all-tuples n n))) (m (slist n)))
+			(:instance dlistp-select-dlists (l (all-tuples n n)))
+			(:instance rsum-tuples-dlists (l (all-tuples n n)))))))
 			
-;; For p in (slist (n)),
+;; For p in (slist n),
 
-;;   (reval-tuple p (n) a) = (r* (rlist-prod (extract-entries p a))
-;;                              (rdetn (runits p))),
+;;   (reval-tuple p n a) = (r* (rlist-prod (extract-entries p a))
+;;                              (rdet0 (runits p))),
 				
-;; where (rlist-prod (extract-entries p a)) = (rdet-prod a p (n)).
+;; where (rlist-prod (extract-entries p a)) = (rdet-prod a p n).
 
 (local-defun extract-entries (x a)
   (if (consp x)
@@ -2634,20 +2635,20 @@ defthmd rdetn-permute-trans-list-p
 		  n)))
 
 (local-defthmd nth-rdet-entries
-  (implies (and (natp i) (natp k) (< i k) (<= k (n)) (member p (slist (n))) (rmatp a (n) (n)))
+  (implies (and (natp i) (natp k) (< i k) (<= k n) (member p (slist n)) (rmatp a n n))
 	   (equal (nth i (rdet-entries p a k))
 		  (entry i (nth i p) a)))
   :hints (("Goal" :in-theory (enable nth) :induct (fact k))))
 
 (local-defthmd equal-rdet-entries-extract-entries
-  (implies (and (rmatp a (n) (n)) (member p (slist (n))))
-	   (equal (rdet-entries p a (n))
+  (implies (and (posp n) (rmatp a n n) (member p (slist n)))
+	   (equal (rdet-entries p a n)
 		  (extract-entries p a)))
   :hints (("Goal" :in-theory (e/d (len-perm) (len-rmatp entry))
-                  :use ((:instance len-rmatp (m (n)) (n (n)))
-		        (:instance nth-diff-diff (x (rdet-entries p a (n))) (y (extract-entries p a)))
-                        (:instance nth-rdet-entries (k (n)) (i (nth-diff (rdet-entries p a (n)) (extract-entries p a))))
-			(:instance nth-extract-entries (i (nth-diff (rdet-entries p a (n)) (extract-entries p a))))))))
+                  :use ((:instance len-rmatp (m n))
+		        (:instance nth-diff-diff (x (rdet-entries p a n)) (y (extract-entries p a)))
+                        (:instance nth-rdet-entries (k n) (i (nth-diff (rdet-entries p a n) (extract-entries p a))))
+			(:instance nth-extract-entries (i (nth-diff (rdet-entries p a n) (extract-entries p a))))))))
 
 (local-defun rdet-prod (a p n)
   (if (zp n)
@@ -2667,35 +2668,36 @@ defthmd rdetn-permute-trans-list-p
           ("Subgoal *1/2" :use ((:instance r*assoc (x (car l)) (y (rlist-prod (cdr l))) (z (rlist-prod m)))))))
 
 (local-defthm rlistp-rdet-entries
-  (implies (and (natp k) (<= k (n)) (member p (slist (n))) (rmatp a (n) (n)))
+  (implies (and (posp n) (natp k) (<= k n) (member p (slist n)) (rmatp a n n))
            (rlistp (rdet-entries p a k)))
   :hints (("Goal" :induct (fact k))
-          ("Subgoal *1/2" :use ((:instance rp-entry (m (n)) (n (n)) (i (1- k)) (j (nth (1- k) p)))
-	                        (:instance nth-perm-ninit (n (n)) (x p) (k (1- k)))))))
+          ("Subgoal *1/2" :use ((:instance rp-entry (m n) (i (1- k)) (j (nth (1- k) p)))
+	                        (:instance nth-perm-ninit (x p) (k (1- k)))))))
 
 
 (local-defthmd rlist-prod-rdet-entries
-  (implies (and (natp k) (<= k (n)) (member p (slist (n))) (rmatp a (n) (n)))
+  (implies (and (posp n) (natp k) (<= k n) (member p (slist n)) (rmatp a n n))
            (equal (rlist-prod (rdet-entries p a k))
 	          (rdet-prod a p k)))
   :hints (("Goal" :induct (fact k))
-          ("Subgoal *1/2" :use ((:instance rp-entry (m (n)) (n (n)) (i (1- k)) (j (nth (1- k) p)))
-	                        (:instance nth-perm-ninit (n (n)) (x p) (k (1- k)))))))
+          ("Subgoal *1/2" :use ((:instance rp-entry (m n) (i (1- k)) (j (nth (1- k) p)))
+	                        (:instance nth-perm-ninit (x p) (k (1- k)))))))
 
 (local-defthmd rlist-prod-extract-entries
-  (implies (and (rmatp a (n) (n))
-                (member p (slist (n))))
+  (implies (and (posp n) (rmatp a n n)
+                (member p (slist n)))
            (equal (rlist-prod (extract-entries p a))
-	          (rdet-prod a p (n))))
+	          (rdet-prod a p n)))
   :hints (("Goal" :use (equal-rdet-entries-extract-entries
-                        (:instance rlist-prod-rdet-entries (k (n)))))))
+                        (:instance rlist-prod-rdet-entries (k n))))))
 
 (local-defthmd reval-tuple-rdet-prod
-  (implies (and (rmatp a (n) (n))
-                (member p (slist (n))))
-	   (equal (reval-tuple p (n) a)
-	          (r* (rdet-prod a p (n))
-		      (rdetn (runits p)))))
+  (implies (and (posp n)
+                (rmatp a n n)
+                (member p (slist n)))
+	   (equal (reval-tuple p n a n)
+	          (r* (rdet-prod a p n)
+		      (rdet0 (runits p n) n))))
   :hints (("Goal" :use (rlist-prod-extract-entries
                         (:instance reval-tuple-n (x p))
 			(:instance member-select-dlists-all-tuples (x p))
@@ -2703,88 +2705,89 @@ defthmd rdetn-permute-trans-list-p
 
 ;; But
 
-;;   (rdetn (runits p)) = (rdetn (permute (id-rmat (n)) p))
-;;                     = (r* (if (even-perm-p p (n)) (r1) (r- (r1)))
-;;                           (rdetn (id-rmat (n)))).
+;;   (rdet0 (runits p)) = (rdet0 (permute (id-rmat n) p))
+;;                     = (r* (if (even-perm-p p n) (r1) (r- (r1)))
+;;                           (rdet0 (id-rmat n))).
 
 (local-defthmd nth-runits
-  (implies (and (natp k) (< k (len x)))
-           (equal (nth k (runits x))
-	          (runit (nth k x) (n))))
+  (implies (and (posp n) (natp k) (< k (len x)))
+           (equal (nth k (runits x n))
+	          (runit (nth k x) n)))
   :hints (("Goal" :in-theory (enable nth))))
 
 (local-defthmd nth-permute-id-rmat
-  (implies (and (natp k) (< k (n)) (in p (sym (n))))
-           (equal (nth k (permute (id-rmat (n)) p))
-	          (runit (nth k p) (n))))
+  (implies (and (posp n) (natp k) (< k n) (in p (sym n)))
+           (equal (nth k (permute (id-rmat n) p))
+	          (runit (nth k p) n)))
   :hints (("Goal" :in-theory (disable nth-id-rmat len-rmatp)
-                  :use ((:instance len-rmatp (a (id-rmat (n))) (m (n)) (n (n)))
-		        (:instance nth-permute (l (id-rmat (n))))
-			(:instance nth-id-rmat (i (nth k p)) (n (n)))
-			(:instance member-perm (x p) (k (nth k p)) (n (n)))))))
+                  :use ((:instance len-rmatp (a (id-rmat n)) (m n))
+		        (:instance nth-permute (l (id-rmat n)))
+			(:instance nth-perm-ninit (x p))
+			(:instance nth-id-rmat (i (nth k p)))
+			(:instance member-perm (x p) (k (nth k p)))))))
 
 (defthmd runits-permute-id-mat
-  (implies (member p (slist (n)))
-           (equal (runits p)
-	          (permute (id-rmat (n)) p)))
-  :hints (("Goal" :use ((:instance nth-diff-diff (x (runits p)) (y (permute (id-rmat (n)) p)))
-                        (:instance nth-permute-id-rmat (k (nth-diff (runits p) (permute (id-rmat (n)) p))))
-                        (:instance nth-runits (x p) (k (nth-diff (runits p) (permute (id-rmat (n)) p))))
-			(:instance len-perm (x p) (n (n)))))))
+  (implies (and (posp n) (member p (slist n)))
+           (equal (runits p n)
+	          (permute (id-rmat n) p)))
+  :hints (("Goal" :use ((:instance nth-diff-diff (x (runits p n)) (y (permute (id-rmat n) p)))
+                        (:instance nth-permute-id-rmat (k (nth-diff (runits p n) (permute (id-rmat n) p))))
+                        (:instance nth-runits (x p) (k (nth-diff (runits p n) (permute (id-rmat n) p))))
+			(:instance len-perm (x p))))))
 
 (defthmd reval-tuple-rdet-prod
-  (implies (and (rmatp a (n) (n))
-                (member p (slist (n))))
-	   (equal (reval-tuple p (n) a)
-	          (r* (rdet-prod a p (n))
-		      (rdetn (runits p))))))
+  (implies (and (posp n) (rmatp a n n)
+                (member p (slist n)))
+	   (equal (reval-tuple p n a n)
+	          (r* (rdet-prod a p n)
+		      (rdet0 (runits p n) n)))))
 
-(defthmd rdetn-permute-rows
-  (implies (and (rmatp a (n) (n))
-                (in p (sym (n))))
-	   (equal (rdetn (permute a p))
-	          (if (even-perm-p p (n))
-		      (rdetn a)
-		    (r- (rdetn a))))))
+(defthmd rdet0-permute-rows
+  (implies (and (rmatp a n n) (posp n) 
+                (in p (sym n)))
+	   (equal (rdet0 (permute a p) n)
+	          (if (even-perm-p p n)
+		      (rdet0 a n)
+		    (r- (rdet0 a n))))))
 		    
 ;; Thus, we have
 
 (defthmd reval-tuple-perm
-  (implies (and (rmatp a (n) (n))
-                (member p (slist (n))))
-	   (equal (reval-tuple p (n) a)
-	          (r* (rdet-term a p (n))
-		      (rdetn (id-rmat (n))))))
+  (implies (and (posp n) (rmatp a n n)
+                (member p (slist n)))
+	   (equal (reval-tuple p n a n)
+	          (r* (rdet-term a p n)
+		      (rdet0 (id-rmat n) n))))
   :hints (("Goal" :in-theory (e/d (rdet-term) (reval-tuple reval-tuple-n))
                   :use (reval-tuple-rdet-prod runits-permute-id-mat
-                        (:instance rdetn-permute-rows (a (id-rmat (n))))
-			(:instance r-r* (x (RDET-PROD A P (N))) (y (RDETN (ID-RMAT (N)))))
-			(:instance r-r* (y (RDET-PROD A P (N))) (x (RDETN (ID-RMAT (N)))))
-			(:instance r*comm (x (RDET-PROD A P (N))) (y (RDETN (ID-RMAT (N)))))
-			(:instance r*comm (x (R- (RDET-PROD A P (N)))) (y (RDETN (ID-RMAT (N)))))))))
+                        (:instance rdet0-permute-rows (a (id-rmat n)))
+			(:instance r-r* (x (RDET-PROD A P n)) (y (RDET0 (ID-RMAT n) n)))
+			(:instance r-r* (y (RDET-PROD A P n)) (x (RDET0 (ID-RMAT n) n)))
+			(:instance r*comm (x (RDET-PROD A P n)) (y (RDET0 (ID-RMAT n) n)))
+			(:instance r*comm (x (R- (RDET-PROD A P n))) (y (RDET0 (ID-RMAT n) n)))))))
 
-;; The desired result follows by summing over (slist (n)):
+;; The desired result follows by summing over (slist n):
 
 (local-defthmd rsum-tuples-sublist-slist
-  (implies (and (rmatp a (n) (n)) (sublistp l (slist (n))))
-	   (equal (rsum-tuples l (n) a)
-	          (r* (rdet-sum a l (n))
-		      (rdetn (id-rmat (n))))))
+  (implies (and (posp n) (rmatp a n n) (sublistp l (slist n)))
+	   (equal (rsum-tuples l n a n)
+	          (r* (rdet-sum a l n)
+		      (rdet0 (id-rmat n) n))))
   :hints (("Goal" :in-theory (e/d (reval-tuple-perm) (reval-tuple reval-tuple-n)))))
 
 (defthmd rsum-tuples-slist
-  (implies (rmatp a (n) (n))
-	   (equal (rsum-tuples (slist (n)) (n) a)
-	          (r* (rdet a (n))
-		      (rdetn (id-rmat (n))))))
+  (implies (and (posp n) (rmatp a n n))
+	   (equal (rsum-tuples (slist n) n a n)
+	          (r* (rdet a n)
+		      (rdet0 (id-rmat n) n))))
   :hints (("Goal" :in-theory (enable rdet)
-                  :use ((:instance rsum-tuples-sublist-slist (l (slist (n))))))))
+                  :use ((:instance rsum-tuples-sublist-slist (l (slist n)))))))
 	          
 (defthmd rdet-unique
-  (implies (rmatp a (n) (n))
-           (equal (rdetn a)
-                  (r* (rdet a (n))
-                      (rdetn (id-rmat (n))))))
+  (implies (and (posp n) (rmatp a n n))
+           (equal (rdet0 a n)
+                  (r* (rdet a n)
+                      (rdet0 (id-rmat n) n))))
   :hints (("Goal" :use (rsum-tuples-n rsum-tuples-slist))))
 
 
@@ -2797,7 +2800,7 @@ defthmd rdetn-permute-trans-list-p
 ;;   (rdet (rmat* a b) n) = (r* (rdet a n) (rdet b n).
 
 ;; To this end, we shall show that the following is a determinant function of its first
-;; argument, i.e., it satisfies the constraints on rdetn:
+;; argument, i.e., it satisfies the constraints on rdet0:
 
 (defun rdet-rmat* (a b n)
   (rdet (rmat* a b) n))
@@ -2823,7 +2826,7 @@ defthmd rdetn-permute-trans-list-p
 	          (rlist-scalar-mul c (rdot-list x b))))
   :hints (("Goal" :in-theory (enable rmatp rdot-rlist-scalar-mul))))
 
-;; Firsat show that rdet-rmat* is n-linear:
+;; First show that rdet-rmat* is n-linear:
 
 ;;   (rdet-rmat* (replace-row a k (rlist-add (rlist-scalar-mul c x) y)) b n)
 ;;      = (rdet (rmat* (replace-row a k (rlist-add (rlist-scalar-mul c x) y)) b) n)
@@ -2869,23 +2872,15 @@ defthmd rdetn-permute-trans-list-p
 
 ;; Now apply functional instantiation:
 
-(defthmd rdet-rmat*-val-n
-  (implies (and (rmatp a (n) (n)) (rmatp b (n) (n)))
-           (equal (rdet-rmat* a b (n))
-	          (r* (rdet a (n))
-		      (rdet-rmat* (id-rmat (n)) b (n)))))
-  :hints (("Goal" :use ((:functional-instance rdet-unique
-			  (rdetn (lambda (a) (if (and (rmatp a (n) (n)) (rmatp b (n) (n))) (rdet-rmat* a b (n)) (rdetn a)))))))	  
-          ("Subgoal 3" :use (rdetn-adjacent-equal (:instance rdet-rmat*-adjacent-equal (n (n)) (k i))))
-          ("Subgoal 2" :use (rdetn-n-linear (:instance rdet-rmat*-n-linear (n (n)) (k i))))))
-
 (defthmd rdet-multiplicative
   (implies (and (rmatp a n n) (rmatp b n n) (posp n))
            (equal (rdet (rmat* a b) n)
 	          (r* (rdet a n) (rdet b n))))
   :hints (("Goal" :in-theory (enable id-rmat-left)
-                  :use ((:functional-instance rdet-rmat*-val-n
-                          (n (lambda () (if (and (rmatp a n n) (rmatp b n n) (posp n)) n (n)))))))))
+                  :use ((:functional-instance rdet-unique
+			  (rdet0 (lambda (a n) (if (and (rmatp a n n) (rmatp b n n)) (rdet-rmat* a b n) (rdet0 a n)))))))	  
+          ("Subgoal 3" :use (rdet0-adjacent-equal (:instance rdet-rmat*-adjacent-equal (k i))))
+          ("Subgoal 2" :use (rdet0-n-linear (:instance rdet-rmat*-n-linear (k i))))))
 		  
 
 ;;-------------------------------------------------------------------------------------------------------
@@ -3135,7 +3130,7 @@ defthmd rdetn-permute-trans-list-p
 ;; We shall prove, by functional instantiation of rdet-unique,  that the result of cofactor
 ;; expansion by a column has the same value as the determinant, and it will follow that the
 ;; same is true for expansion by a row.  The requires proving analogs of the constraints on
-;; rdetn.
+;; rdet0.
 
 (defthm rp-rdet-cofactor
   (implies (and (rmatp a n n) (natp n) (> n 1)
@@ -3531,26 +3526,18 @@ defthmd rdetn-permute-trans-list-p
 
 ;; By functional instantiation of rdet-unique,we have the following:
 
-(local-defthmd expand-rdet-col-val-n
-  (implies (and (rmatp a (n) (n)) (> (n) 1) (natp k) (< k (n)))
-           (equal (expand-rdet-col a k (n))
-	          (r* (rdet a (n))
-		      (expand-rdet-col (id-rmat (n)) k (n)))))
-  :hints (("Goal" :use ((:functional-instance rdet-unique
-			  (rdetn (lambda (a)
-			                (if (and (rmatp a (n) (n)) (> (n) 1) (natp k) (< k (n)))
-					    (expand-rdet-col a k (n))
-					  (rdetn a)))))))
-	  ("Subgoal 3" :use (rdetn-adjacent-equal (:instance expand-rdet-col-adjacent-equal (k i) (j k) (n (n)))))
-          ("Subgoal 2" :use (rdetn-n-linear (:instance expand-rdet-col-n-linear (k i) (j k) (n (n)))))))
-
 (defthmd expand-rdet-col-val
   (implies (and (rmatp a n n) (posp n) (> n 1) (natp k) (< k n))
            (equal (expand-rdet-col a k n)
 	          (r* (rdet a n)
 		      (expand-rdet-col (id-rmat n) k n))))
-  :hints (("Goal" :use ((:functional-instance expand-rdet-col-val-n
-			  (n (lambda () (if (and (posp n) (> n 1)) n (n)))))))))
+  :hints (("Goal" :use ((:functional-instance rdet-unique
+			  (rdet0 (lambda (a n)
+			                 (if (and (posp n) (rmatp a n n) (> n 1) (natp k) (< k n))
+					     (expand-rdet-col a k n)
+					   (rdet0 a n)))))))
+	  ("Subgoal 3" :use (rdet0-adjacent-equal (:instance expand-rdet-col-adjacent-equal (k i) (j k))))
+          ("Subgoal 2" :use (rdet0-n-linear (:instance expand-rdet-col-n-linear (k i) (j k))))))
 
 ;; It remains to show that (expand-rdet-col (id-rmat n) k n) = (r1).
 ;; By row-rmat-minor, we habe the following expression for the rth row of (minor i j (id-rmat n)):

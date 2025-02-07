@@ -219,7 +219,7 @@
 
 ;; We shall prove by induction that (permute l p) is a permutation of l.  This requires finding the right generalization.
 
-;; (select p l) is the sublist of l constructed by extracting the memebrs of l at indices that are members of p:
+;; (select p l) is the sublist of l constructed by extracting the members of l at indices that are members of p:
 
 (defun select-aux (p l n)
   (if (consp l)
