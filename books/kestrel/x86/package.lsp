@@ -385,6 +385,7 @@
     x86isa::sub-zf-spec64
 
     x86isa::ror-spec
+    x86isa::ror-spec$inline ; todo: more like this
     x86isa::ror-spec-8
     x86isa::ror-spec-16
     x86isa::ror-spec-32
@@ -485,6 +486,7 @@
     x86isa::!rflags
     x86isa::!rflags$a
     x86isa::change-rflagsbits
+    x86isa::write-user-rflags
 
     x86isa::rflagsbits->cf
     x86isa::rflagsbits->res1
@@ -789,6 +791,7 @@
     x86isa::undef$a
     x86isa::!undef
     x86isa::!undef$a
+    x86isa::create-undef
 
     x86isa::read-*ip
     x86isa::write-*ip
@@ -1163,7 +1166,6 @@
     bool-fix
     bool-fix$inline
 
-
     bitxor
     bitnot
     bitand
@@ -1180,6 +1182,9 @@
     rightrotate
     leftrotate32
     rightrotate32
+
+    acl2::bfix$
+    acl2::bfix$inline
 
     binary-logand
     binary-logxor

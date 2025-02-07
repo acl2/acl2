@@ -18,6 +18,12 @@
 ;(include-book "projects/x86isa/machine/instructions/fp/mxcsr" :dir :system) ; would support integerp-of-mxcsr, but it has a ttag
 (include-book "kestrel/utilities/myif" :dir :system)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm xw-of-xr-same-gen (implies (equal (xr fld index x86) (xr fld index x86_2)) (equal (xw fld index (xr fld index x86) x86_2) x86_2)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (in-theory (disable undef))
 
 ;; Introduces undef
@@ -81,6 +87,8 @@
 (defthm set-undef-of-myif (equal (set-undef val (myif test x y)) (myif test (set-undef val x) (set-undef val y))) :hints (("Goal" :in-theory (enable myif))))
 
 (defthm set-undef-of-if (equal (set-undef val (if test x y)) (if test (set-undef val x) (set-undef val y))))
+
+(defthm set-undef-of-undef-same-gen (implies (equal (undef x86) (undef x86_2)) (equal (set-undef (undef x86) x86_2) x86_2)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
