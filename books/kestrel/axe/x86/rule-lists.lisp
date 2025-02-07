@@ -1210,8 +1210,8 @@
     if-of-set-undef-arg3-64
     if-of-set-mxcsr-arg2-64
     if-of-set-mxcsr-arg3-64
-    if-of-write-byte-arg2-64
-    if-of-write-byte-arg3-64
+;    if-of-write-byte-arg2-64
+;    if-of-write-byte-arg3-64
     if-of-write-arg2-64
     if-of-write-arg3-64 ; todo: more?
     ))
@@ -1429,7 +1429,7 @@
     segment-base-and-bounds-of-set-rsi
     segment-base-and-bounds-of-set-rdi
     segment-base-and-bounds-of-set-flag
-    segment-base-and-bounds-of-write-byte
+;    segment-base-and-bounds-of-write-byte
     segment-base-and-bounds-of-write
     ))
 
@@ -3388,13 +3388,13 @@
     rsp-of-set-rsp
     rbp-of-set-rbp
 
-    undef-of-write-byte ; todo: does write-byte actually get introduced?
+    ;; undef-of-write-byte ; todo: does write-byte actually get introduced?
 
-    mxcsr-of-write-byte
+    ;; mxcsr-of-write-byte
 
-    ms-of-write-byte
+    ;; ms-of-write-byte
 
-    fault-of-write-byte ; todo: move?
+;    fault-of-write-byte ; todo: move?
     fault-of-set-rip
 
     app-view-of-set-rip
@@ -4049,7 +4049,7 @@
     write-of-set-rsp
     write-of-set-rbp
 
-    write-byte-of-set-rip
+;    write-byte-of-set-rip
 
     ;; bury set-undef deep in the term:
     set-undef-of-set-rax
@@ -4069,7 +4069,7 @@
     set-undef-of-set-rsp
     set-undef-of-set-rbp
 
-    set-undef-of-write-byte
+;    set-undef-of-write-byte
 
     set-rbx-of-set-rax
     set-rcx-of-set-rax
