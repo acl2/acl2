@@ -163,7 +163,10 @@
       because it maps values of the algebraic data types
       to values of the same algebraic data types,
       with possibly some variations,
-      e.g. turning a list of integers into a list of doubled integers."))))
+      e.g. turning a list of integers into a list of doubled integers."))
+   (xdoc::p
+    "The @(tsee deffold-reduce) event macro generates reducing folds.
+     We plan to add an event macro to generate mapping folds as well.")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
