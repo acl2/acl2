@@ -1,7 +1,7 @@
 ; "Write over write" rules for our 32-bit x86 state writers
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2024 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -24,8 +24,19 @@
          (set-eip eip  (write-to-segment n eff-addr seg-reg val x86)))
   :hints (("Goal" :in-theory (enable write-to-segment))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defthm set-undef-of-write-byte-to-segment
+  (equal (set-undef undef (write-byte-to-segment eff-addr seg-reg val x86))
+         (write-byte-to-segment eff-addr seg-reg val (set-undef undef x86)))
+  :hints (("Goal" :in-theory (enable write-byte-to-segment set-undef))))
 
+(defthm set-undef-of-write-to-segment
+  (equal (set-undef undef (write-to-segment n eff-addr seg-reg val x86))
+         (write-to-segment n eff-addr seg-reg val (set-undef undef x86)))
+  :hints (("Goal" :in-theory (enable write-to-segment))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm set-flag-of-write-byte-to-segment
   (equal (set-flag flag fval (write-byte-to-segment eff-addr seg-reg val x86))
