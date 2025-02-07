@@ -156,6 +156,11 @@
 
   ///
 
+  (defrule emptyp-of-cert-set->author-set
+    (equal (set::emptyp (cert-set->author-set certs))
+           (set::emptyp (certificate-set-fix certs)))
+    :induct t)
+
   (defruled certificate->author-in-cert-set->author-set
     (implies (and (certificate-setp certs)
                   (set::in cert certs))
@@ -170,7 +175,16 @@
                           (cert-set->author-set certs2)))
     :induct t
     :enable (set::subset
-             certificate->author-in-cert-set->author-set)))
+             certificate->author-in-cert-set->author-set))
+
+  (defruled cert-set->author-set-of-insert
+    (implies (and (certificatep cert)
+                  (certificate-setp certs))
+             (equal (cert-set->author-set (set::insert cert certs))
+                    (set::insert (certificate->author cert)
+                                 (cert-set->author-set certs))))
+    :induct (set::weak-insert-induction cert certs)
+    :enable certificate->author-in-cert-set->author-set))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -235,7 +249,29 @@
       (certs-with-author+round author round (set::tail certs))))
   :prepwork ((local (in-theory (enable emptyp-of-certificate-set-fix))))
   :verify-guards :after-returns
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defruled cert-set->author-set-of-certs-with-author+round
+    (equal (cert-set->author-set
+            (certs-with-author+round author round certs))
+           (if (set::emptyp
+                (certs-with-author+round author round certs))
+               nil
+             (set::insert (address-fix author) nil)))
+    :induct t
+    :enable cert-set->author-set-of-insert)
+
+  (defruled cert-set->round-set-of-certs-with-author+round
+    (equal (cert-set->round-set
+            (certs-with-author+round author round certs))
+           (if (set::emptyp
+                (certs-with-author+round author round certs))
+               nil
+             (set::insert (pos-fix round) nil)))
+    :induct t
+    :enable cert-set->round-set-of-insert))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -257,7 +293,33 @@
        ((unless (= (set::cardinality certs-ar) 1)) nil))
     (certificate-fix (set::head certs-ar)))
   :guard-hints (("Goal" :in-theory (enable set::cardinality)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defruled certificate->author-of-cert-with-author+round
+    (implies (cert-with-author+round author round certs)
+             (equal (certificate->author
+                     (cert-with-author+round author round certs))
+                    (address-fix author)))
+    :use (cert-set->author-set-of-certs-with-author+round
+          (:instance certificate->author-in-cert-set->author-set
+                     (cert (set::head
+                            (certs-with-author+round author round certs)))
+                     (certs (certs-with-author+round author round certs))))
+    :enable set::cardinality)
+
+  (defruled certificate->round-of-cert-with-author+round
+    (implies (cert-with-author+round author round certs)
+             (equal (certificate->round
+                     (cert-with-author+round author round certs))
+                    (pos-fix round)))
+    :use (cert-set->round-set-of-certs-with-author+round
+          (:instance certificate->round-in-cert-set->round-set
+                     (cert (set::head
+                            (certs-with-author+round author round certs)))
+                     (certs (certs-with-author+round author round certs))))
+    :enable set::cardinality))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -274,7 +336,17 @@
       (certs-with-round round (set::tail certs))))
   :prepwork ((local (in-theory (enable emptyp-of-certificate-set-fix))))
   :verify-guards :after-returns
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defruled cert-set->round-set-of-certs-with-round
+    (equal (cert-set->round-set (certs-with-round round certs))
+           (if (set::emptyp (certs-with-round round certs))
+               nil
+             (set::insert (pos-fix round) nil)))
+    :induct t
+    :enable cert-set->round-set-of-insert))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
