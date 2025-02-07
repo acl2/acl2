@@ -170,8 +170,7 @@
   :guard-hints
   (("Goal"
     :in-theory (enable evenp
-                       active-committee-at-previous2-round-when-at-round
-                       certificate->round-of-path-to-author+round)))
+                       active-committee-at-previous2-round-when-at-round)))
 
   ///
 
