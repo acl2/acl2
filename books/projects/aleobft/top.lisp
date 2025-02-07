@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -101,7 +101,7 @@
       a slightly simplified variant of the version in @('stake').
       It omits buffers from validator states,
       and combines certificate receiving and storing events
-      into single certificate accepting events;
+      into single certificate acceptance events;
       this makes the model simpler
       without really affecting its expressiveness.
       Another simplification in this version is that
@@ -111,7 +111,7 @@
       which may nondeterministically take place any time, like the other events.
       While this does not affect the expressiveness of the model
       for the purpose of proving properties like blockchain nonforking
-      (because the simplification makes more execution possible
+      (because the simplification makes more executions possible
       than in a model with more detailed and restrictive
       round advancement logic),
       it could affect the ability to prove certain other properties,
