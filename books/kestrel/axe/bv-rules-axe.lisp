@@ -930,7 +930,7 @@
                 (not (unsigned-byte-p xsize k))
                 (unsigned-byte-p-forced xsize x))
            (not (equal k x)))
-  :rule-classes nil ; because of xsize
+  :rule-classes nil ; since in ACL2, xsize not is bound when used
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
 
 ;a cheap case of logext-identity
@@ -1287,7 +1287,7 @@
 ;;       :hints (("Goal" :in-theory (enable SLICE-TOO-HIGH-IS-0))))
 
 ;; ;shoot.  can't conveniently pass in size+1
-;; (defthm slice-trim-arg2
+;; (defthmd slice-trim-arg2
 ;;   (implies (and (axe-syntaxp (term-should-be-trimmed-axe size y 'non-arithmetic dag-array))
 ;;                 (natp size))
 ;;            (equal (slice high low x)
@@ -2092,7 +2092,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm bvmult-tighten-when-power-of-2p-axe
+(defthmd bvmult-tighten-when-power-of-2p-axe
   (implies (and (syntaxp (quotep x))
                 (power-of-2p x)
                 (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
@@ -2108,7 +2108,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm bvchop-convert-arg2-to-bv-axe
+(defthmd bvchop-convert-arg2-to-bv-axe
   (implies (axe-syntaxp (term-should-be-converted-to-bvp x nil dag-array))
            (equal (bvchop size x)
                   (bvchop size (trim size x))))
@@ -2116,13 +2116,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm bvand-convert-arg2-to-bv-axe
+(defthmd bvand-convert-arg2-to-bv-axe
   (implies (axe-syntaxp (term-should-be-converted-to-bvp x nil dag-array))
            (equal (bvand size x y)
                   (bvand size (trim size x) y)))
   :hints (("Goal" :in-theory (enable trim))))
 
-(defthm bvand-convert-arg3-to-bv-axe
+(defthmd bvand-convert-arg3-to-bv-axe
   (implies (axe-syntaxp (term-should-be-converted-to-bvp y nil dag-array))
            (equal (bvand size x y)
                   (bvand size x (trim size y))))
@@ -2130,13 +2130,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm bvor-convert-arg2-to-bv-axe
+(defthmd bvor-convert-arg2-to-bv-axe
   (implies (axe-syntaxp (term-should-be-converted-to-bvp x nil dag-array))
            (equal (bvor size x y)
                   (bvor size (trim size x) y)))
   :hints (("Goal" :in-theory (enable trim))))
 
-(defthm bvor-convert-arg3-to-bv-axe
+(defthmd bvor-convert-arg3-to-bv-axe
   (implies (axe-syntaxp (term-should-be-converted-to-bvp y nil dag-array))
            (equal (bvor size x y)
                   (bvor size x (trim size y))))
@@ -2144,13 +2144,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm bvxor-convert-arg2-to-bv-axe
+(defthmd bvxor-convert-arg2-to-bv-axe
   (implies (axe-syntaxp (term-should-be-converted-to-bvp x nil dag-array))
            (equal (bvxor size x y)
                   (bvxor size (trim size x) y)))
   :hints (("Goal" :in-theory (enable trim))))
 
-(defthm bvxor-convert-arg3-to-bv-axe
+(defthmd bvxor-convert-arg3-to-bv-axe
   (implies (axe-syntaxp (term-should-be-converted-to-bvp y nil dag-array))
            (equal (bvxor size x y)
                   (bvxor size x (trim size y))))
@@ -2159,26 +2159,26 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Doesn't apply when x is a + since we turn bvplus back into + for x86 stack pointer calculations.
-(defthm bvplus-convert-arg2-to-bv-axe-restricted
+(defthmd bvplus-convert-arg2-to-bv-axe-restricted
   (implies (axe-syntaxp (term-should-be-converted-to-bvp x '(binary-+) dag-array))
            (equal (bvplus size x y)
                   (bvplus size (trim size x) y)))
   :hints (("Goal" :in-theory (enable trim))))
 
 ;; Doesn't apply when y is a + since we turn bvplus back into + for x86 stack pointer calculations.
-(defthm bvplus-convert-arg3-to-bv-axe-restricted
+(defthmd bvplus-convert-arg3-to-bv-axe-restricted
   (implies (axe-syntaxp (term-should-be-converted-to-bvp y '(binary-+) dag-array))
            (equal (bvplus size x y)
                   (bvplus size x (trim size y))))
   :hints (("Goal" :in-theory (enable trim))))
 
-(defthm bvplus-convert-arg2-to-bv-axe
+(defthmd bvplus-convert-arg2-to-bv-axe
   (implies (axe-syntaxp (term-should-be-converted-to-bvp x nil dag-array))
            (equal (bvplus size x y)
                   (bvplus size (trim size x) y)))
   :hints (("Goal" :in-theory (enable trim))))
 
-(defthm bvplus-convert-arg3-to-bv-axe
+(defthmd bvplus-convert-arg3-to-bv-axe
   (implies (axe-syntaxp (term-should-be-converted-to-bvp y nil dag-array))
            (equal (bvplus size x y)
                   (bvplus size x (trim size y))))
@@ -2186,13 +2186,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm bvminus-convert-arg2-to-bv-axe
+(defthmd bvminus-convert-arg2-to-bv-axe
   (implies (axe-syntaxp (term-should-be-converted-to-bvp x nil dag-array))
            (equal (bvminus size x y)
                   (bvminus size (trim size x) y)))
   :hints (("Goal" :in-theory (enable trim))))
 
-(defthm bvminus-convert-arg3-to-bv-axe
+(defthmd bvminus-convert-arg3-to-bv-axe
   (implies (axe-syntaxp (term-should-be-converted-to-bvp y nil dag-array))
            (equal (bvminus size x y)
                   (bvminus size x (trim size y))))
@@ -2218,13 +2218,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm bvequal-convert-arg2-to-bv-axe
+(defthmd bvequal-convert-arg2-to-bv-axe
   (implies (axe-syntaxp (term-should-be-converted-to-bvp x nil dag-array))
            (equal (bvequal size x y)
                   (bvequal size (trim size x) y)))
   :hints (("Goal" :in-theory (enable trim))))
 
-(defthm bvequal-convert-arg3-to-bv-axe
+(defthmd bvequal-convert-arg3-to-bv-axe
   (implies (axe-syntaxp (term-should-be-converted-to-bvp y nil dag-array))
            (equal (bvequal size x y)
                   (bvequal size x (trim size y))))
