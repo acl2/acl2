@@ -540,6 +540,7 @@
        :parents (,(deffoldred-gen-topic-name suffix))
        ,body
        ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
+       ,@(and (not mutrecp) '(:verify-guards :after-returns))
        ,@(and (not mutrecp) '(:hooks (:fix))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -601,6 +602,7 @@
        :parents (,(deffoldred-gen-topic-name suffix))
        ,body
        ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
+       ,@(and (not mutrecp) '(:verify-guards :after-returns))
        ,@(and (not mutrecp) '(:hooks (:fix))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -647,6 +649,7 @@
        :parents (,(deffoldred-gen-topic-name suffix))
        ,body
        ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
+       ,@(and (not mutrecp) '(:verify-guards :after-returns))
        ,@(and (not mutrecp) '(:hooks (:fix))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -754,6 +757,7 @@
        :parents (,(deffoldred-gen-topic-name suffix))
        ,body
        ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
+       ,@(and (not mutrecp) '(:verify-guards :after-returns))
        ,@(and (not mutrecp) '(:hooks (:fix)))
        ///
        ,@thm-events
@@ -818,6 +822,7 @@
        :parents (,(deffoldred-gen-topic-name suffix))
        ,body
        ,@(and (or mutrecp recp) `(:measure (,type-count ,type)))
+       ,@(and (not mutrecp) '(:verify-guards :after-returns))
        ,@(and (not mutrecp) '(:hooks (:fix)))
        ///
        ,@thm-events
@@ -937,6 +942,7 @@
        :parents (,(deffoldred-gen-topic-name suffix))
        ,@events
        :hints (("Goal" :in-theory (enable o< o-finp)))
+       :verify-guards :after-returns
        :flag-local nil
        :prepwork ((set-bogus-mutual-recursion-ok t))
        ///
