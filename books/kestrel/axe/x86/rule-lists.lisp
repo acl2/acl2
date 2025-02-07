@@ -403,6 +403,7 @@
     ;;read-of-write-of-write-of-write-of-set-flag
     read-1-of-write-within-new))
 
+;; These rules get removed for the loop-lifter
 (defund reader-and-writer-intro-rules ()
   (declare (xargs :guard t))
   '(xr-becomes-fault
@@ -418,7 +419,7 @@
     !mxcsr-becomes-set-mxcsr
     !undef-becomes-set-undef))
 
-;; For the loop lifter
+;; For the loop-lifter
 (defund reader-and-writer-opener-rules ()
   (declare (xargs :guard t))
   '(x86isa::undef x86isa::undef$a ; exposes xr
@@ -2418,6 +2419,7 @@
 
 ;move?
 ;todo: most of these are not myif rules
+;; only used in loop-lifter
 (defun myif-rules ()
   (declare (xargs :guard t))
   (append '(acl2::myif-same-branches ;add to lifter-rules?
@@ -3241,10 +3243,10 @@
 
             ;; instruction pointer:
             x86isa::read-*ip-when-64-bit-modep ; goes to rip
-            ;; x86isa::mv-nth-0-of-add-to-*ip-when-64-bit-modep ; subsumed by add-to-*ip-of-0
-            ;; x86isa::mv-nth-1-of-add-to-*ip-when-64-bit-modep ; subsumed by add-to-*ip-of-0
+            ;; x86isa::mv-nth-0-of-add-to-*ip-when-64-bit-modep ; subsumed by add-to-*ip-of-*64-bit-mode*
+            ;; x86isa::mv-nth-1-of-add-to-*ip-when-64-bit-modep ; subsumed by add-to-*ip-of-*64-bit-mode*
             x86isa::write-*ip-when-64-bit-modep ; does to !rip -- todo: go to set-rip
-            x86isa::add-to-*ip-of-0
+            x86isa::add-to-*ip-of-*64-bit-mode*
 
             ;; stack pointer:
             x86isa::read-*sp-when-64-bit-modep ; puts in rgfi -- todo: go to rsp
@@ -3470,25 +3472,25 @@
     read-of-set-undef
     read-of-set-mxcsr
 
-    read-byte-of-set-rip
-    read-byte-of-set-rax
-    read-byte-of-set-rbx
-    read-byte-of-set-rcx
-    read-byte-of-set-rdx
-    read-byte-of-set-rsi
-    read-byte-of-set-rdi
-    read-byte-of-set-r8
-    read-byte-of-set-r9
-    read-byte-of-set-r10
-    read-byte-of-set-r11
-    read-byte-of-set-r12
-    read-byte-of-set-r13
-    read-byte-of-set-r14
-    read-byte-of-set-r15
-    read-byte-of-set-rsp
-    read-byte-of-set-rbp
-    read-byte-of-set-undef
-    read-byte-of-set-mxcsr
+    ;; read-byte-of-set-rip ; now we just go to read
+    ;; read-byte-of-set-rax
+    ;; read-byte-of-set-rbx
+    ;; read-byte-of-set-rcx
+    ;; read-byte-of-set-rdx
+    ;; read-byte-of-set-rsi
+    ;; read-byte-of-set-rdi
+    ;; read-byte-of-set-r8
+    ;; read-byte-of-set-r9
+    ;; read-byte-of-set-r10
+    ;; read-byte-of-set-r11
+    ;; read-byte-of-set-r12
+    ;; read-byte-of-set-r13
+    ;; read-byte-of-set-r14
+    ;; read-byte-of-set-r15
+    ;; read-byte-of-set-rsp
+    ;; read-byte-of-set-rbp
+    ;; read-byte-of-set-undef
+    ;; read-byte-of-set-mxcsr
 
     get-flag-of-set-rip
     get-flag-of-set-rax
@@ -4806,11 +4808,7 @@
             not-equal-of-+-when-separate
             not-equal-of-+-when-separate-alt
             x86isa::canonical-address-p-of-sum-when-unsigned-byte-p-32
-            )
-          (acl2::core-rules-bv) ; trying
-          (acl2::unsigned-byte-p-rules)
-          (acl2::unsigned-byte-p-forced-rules) ;remove?
-          ))
+            )))
 
 (defun tester-proof-rules ()
   (declare (xargs :guard t))
