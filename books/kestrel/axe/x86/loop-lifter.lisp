@@ -52,7 +52,7 @@
 (include-book "../rewriter-basic") ; for simplify-conjunction-basic
 (include-book "rewriter-x86")
 (include-book "../rules-in-rule-lists")
-(include-book "../dagify") ; for compose-dags ; todo: has skip-proofs
+(include-book "../dagify0") ; for compose-dags
 ;(include-book "../rules1") ;for ACL2::FORCE-OF-NON-NIL, etc.
 (include-book "../dags2") ; for compose-term-and-dags
 (include-book "../arithmetic-rules-axe")
