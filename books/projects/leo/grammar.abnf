@@ -1,7 +1,7 @@
 ; Leo Library
 ;
 ; Copyright (C) 2019-2023 Aleo Systems Inc.
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2024-2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -188,13 +188,13 @@ integer-literal = unsigned-literal
 
 field-literal = decimal-numeral %s"field"
 
-product-group-literal = decimal-numeral %s"group"
+group-literal = decimal-numeral %s"group"
 
 scalar-literal = decimal-numeral %s"scalar"
 
 numeric-literal = integer-literal
                 / field-literal
-                / product-group-literal
+                / group-literal
                 / scalar-literal
 
 boolean-literal = %s"true" / %s"false"
@@ -238,8 +238,7 @@ symbol = "!"
        / "[" / "]"
        / "{" / "}"
        / "," / "." / ".." / ";" / ":" / "::" / "?"
-       / "->" / "=>" / "_"
-       / %s")group"
+       / "->" / "=>"
 
 token = keyword
       / identifier
@@ -313,17 +312,10 @@ named-type = named-primitive-type
            / untyped-future-type
            / identifier
 
-group-coordinate = ( [ "-" ] decimal-numeral ) / "+" / "-" / "_"
-
-affine-group-literal = "(" group-coordinate "," group-coordinate %s")group"
-
 program-address-literal = program-id
 
 literal = atomic-literal
-        / affine-group-literal
         / program-address-literal
-
-group-literal = product-group-literal / affine-group-literal
 
 address-literal = explicit-address-literal / program-address-literal
 

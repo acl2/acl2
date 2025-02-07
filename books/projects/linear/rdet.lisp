@@ -68,7 +68,7 @@
            (equal (rdet (id-rmat n) n)
 	          (r1))))
 
-;; rdet is invariant under transpose-rmat.  This follows from the observation that the term contributed
+;; rdet is invariant under transpose-mat.  This follows from the observation that the term contributed
 ;; to the determinant of the transpose of a by a permutation p is the same as the term contributed to
 ;; the determinant of a by the inverse of p:
   
@@ -163,74 +163,70 @@
 ;;   Uniqueness of the Determinant
 ;;-------------------------------------------------------------------------------------------------------
 
-;; We shall show that for given n, rdet is the unique n-linear alternating function on
-;; nxn matrices such that (rdet (id-rmat n) n) = (r1).  To that end, we constrain the
-;; function rdetn as follows:
+;; We shall show that rdet is the unique n-linear alternating function on nxn matrices such that
+;; (rdet (id-rmat n) n) = (r1).  To that end, we constrain the function rdet0 as follows:
 
-(encapsulate (((n) => *))
-  (local (defun n () 2))
-  (defthm posp-n
-    (posp (n))
-    :rule-classes (:type-prescription :rewrite)))
+(encapsulate (((rdet0 * *) => *))
+  (local (defun rdet0 (a n) (rdet a n)))
+  (defthm rp-rdet0
+    (implies (and (rmatp a n n) (posp n))
+             (rp (rdet0 a n))))
+  (defthmd rdet0-n-linear
+    (implies (and (rmatp a n n) (posp n) (natp i) (< i n)
+		  (rlistnp x n) (rlistnp y n) (rp c))
+	     (equal (rdet0 (replace-row a i (rlist-add (rlist-scalar-mul c x) y)) n)
+		    (r+ (r* c (rdet0 (replace-row a i x) n))
+		        (rdet0 (replace-row a i y) n)))))
+  (defthmd rdet0-adjacent-equal
+    (implies (and (rmatp a n n) (posp n)
+		  (natp i) (< i (1- n)) (= (row i a) (row (1+ i) a)))
+	     (equal (rdet0 a n) (r0)))
+    :hints (("Goal" :use ((:instance rdet-alternating (j (1+ i))))))))
 
-(encapsulate (((rdetn *) => *))
-  (local (defun rdetn (a) (rdet a (n))))
-  (defthm rp-rdetn
-    (implies (rmatp a (n) (n))
-             (rp (rdetn a))))
-  (defthmd rdetn-n-linear
-    (implies (and (rmatp a (n) (n)) (natp i) (< i (n))
-		  (rlistnp x (n)) (rlistnp y (n)) (rp c))
-	     (equal (rdetn (replace-row a i (rlist-add (rlist-scalar-mul c x) y)))
-		    (r+ (r* c (rdetn (replace-row a i x)))
-		        (rdetn (replace-row a i y))))))
-  (defthmd rdetn-adjacent-equal
-    (implies (and (rmatp a (n) (n))
-		  (natp i) (< i (1- (n))) (= (row i a) (row (1+ i) a)))
-	     (equal (rdetn a) (r0)))
-    :hints (("Goal" :use ((:instance rdet-alternating (n (n)) (j (1+ i))))))))
-
-;; Our objective is to prove that (rdetn a) = (r* (rdet a (n)) (rdetn (id-rmat (n)))):
+;; Our objective is to prove the following:
 
 ;; (defthmd rdet-unique
-;;   (implies (rmatp a (n) (n))
-;;            (equal (rdetn a)
-;;                   (r* (rdet a (n))
-;;                       (rdetn (id-rmat (n)))))))
+;;   (implies (and (posp n) (rmatp a n n))
+;;            (equal (rdet0 a n)
+;;                   (r* (rdet a n)
+;;                       (rdet0 (id-rmat n) n)))))
 
-;; If we also prove that for a given function f, (f a n) satisfies the constraints on (rdetn a),
-;; we may conclude by functional instantiation that (f a n) = (r* (rdet a n) (f (id-rmat n))).
-;; From this it follows that if f has the additional property (f (id-rmat n)) = (r1), then
-;; (f a) = (rdet a (n)).
+;; If we also prove that for a given function f, (f a n) satisfies the constraints on (rdet0 a n),
+;; we may conclude by functional instantiation that
 
-;; Note that we have replaced the property that rdetn is alternating with the weaker property
-;; rdetn-adjacent-equal, which says that the value is (r0) if 2 adjacent rows are equal.  This
+;;    (f a n) = (r* (rdet a n) (f (id-rmat n) n)).
+
+;; From this it follows that if f has the additional property (f (id-rmat n) n) = (r1), then
+;; (f a n) = (rdet a n).
+
+;; Note that we have replaced the property that rdet0 is alternating with the weaker property
+;; rdet0-adjacent-equal, which says that the value is (r0) if 2 *adjacent* rows are equal.  This
 ;; relaxes the proof obligations for functional instantiation, which will be critical for the
 ;; proof of correctness of cofactor expansion.  We shall show that this property together with
 ;; n-linearity implies that the same holds for 2 non-adjacent rows.
 
-;; It follows from rdetn-n-linear and rdetn-adjacent-equal that transposing 2 adjacent rows negates
-;; the value of rdetn:
+;; It follows from rdet0-n-linear and rdet0-adjacent-equal that transposing 2 adjacent rows negates
+;; the value of rdet0:
 
-(defthmd rdetn-interchange-adjacent
-  (implies (and (rmatp a (n) (n))
-		(natp i) (< i (1- (n))))
-           (equal (rdetn (replace-row (replace-row a (1+ i) (row i a)) i (row (1+ i) a)))
-	          (r- (rdetn a)))))
+(defthmd rdet0-interchange-adjacent
+  (implies (and (rmatp a n n) (posp n)
+		(natp i) (< i (1- n)))
+           (equal (rdet0 (replace-row (replace-row a (1+ i) (row i a)) i (row (1+ i) a)) n)
+	          (r- (rdet0 a n)))))
 
 ;; Interchanging adjacent rows may be expressed as a permutation:
 
 (defthmd interchange-adjacent-rmat-permute
-  (implies (and (rmatp a (n) (n))
-		(natp i) (< i (1- (n))))
+  (implies (and (rmatp a n n) (posp n)
+		(natp i) (< i (1- n)))
            (equal (replace-row (replace-row a (1+ i) (row i a)) i (row (1+ i) a))
-	          (permute a (transpose i (1+ i) (n))))))
+	          (permute a (transpose i (1+ i) n)))))
 
-(defthmd rdetn-permute-adjacent-transpose
-  (implies (and (rmatp a (n) (n))
-                (natp i) (< i (1- (n))))
-           (equal (rdetn (permute a (transpose i (1+ i) (n))))
-                  (r- (rdetn a)))))
+(defthmd rdet0-permute-adjacent-transpose
+  (implies (and (rmatp a n n) (posp n)
+                (natp i) (< i (1- n)))
+           (equal (rdet0 (permute a (transpose i (1+ i) n)) n)
+                  (r- (rdet0 a n)))))
 
 ;; Note that applying any permutation to the rows of a produces a matrix of the
 ;; same dimensions:
@@ -240,83 +236,83 @@
                 (in p (sym m)))
 	   (rmatp (permute a p) m n)))
 
-;; Next we show that rdetn-permute-adjacent-transpose applies to a transposition of any
+;; Next we show that rdet0-permute-adjacent-transpose applies to a transposition of any
 ;; 2 rows.  First note that for 0 <= i and i + 1 < j < (n), (transpose i j (n)) is the
 ;; result of conjugating (transpose i (1- j) (n)) by (transpose (1- j) j (n)):
 
 (defthmd conj-adjacent-transpose-rmat
-  (implies (and (rmatp a (n) (n))
-                (natp i) (natp j) (< i (1- j)) (< j (n)))
-           (equal (comp-perm (comp-perm (transpose (1- j) j (n))
-                                        (transpose i (1- j) (n))
-			                (n))
-		             (transpose (1- j) j (n))
-		             (n))
-		  (transpose i j (n)))))
+  (implies (and (rmatp a n n) (posp n)
+                (natp i) (natp j) (< i (1- j)) (< j n))
+           (equal (comp-perm (comp-perm (transpose (1- j) j n)
+                                        (transpose i (1- j) n)
+			                n)
+		             (transpose (1- j) j n)
+		             n)
+		  (transpose i j n))))
 
-;; It follows from rdetn-permute-adjacent-transpose and permute-comp-perm that
+;; It follows from rdet0-permute-adjacent-transpose and permute-comp-perm that
 
-;;   (rdetn (permute a (transpose i j (n)))) = (rdetn (permute a (transpose i (1- j) (n))))
+;;   (rdet0 (permute a (transpose i j n)) n) = (rdet0 (permute a (transpose i (1- j) n)) n)
 
 ;; and the claim follows by induction:
 
-(defthmd rdetn-permute-transpose
-  (implies (and (rmatp a (n) (n))
-                (natp i) (natp j) (< i j) (< j (n)))
-	   (equal (rdetn (permute a (transpose i j (n))))
-                  (r- (rdetn a)))))
+(defthmd rdet0-permute-transpose
+  (implies (and (rmatp a n n) (posp n)
+                (natp i) (natp j) (< i j) (< j n))
+	   (equal (rdet0 (permute a (transpose i j n)) n)
+                  (r- (rdet0 a n)))))
        
-;; Now suppose (row i a) = (row j a), where 0 <= i < j < (n).  We would like to show that 
-;; (rdetn a) = (r0).  If j = i + 1 ,then apply rdetn-adjacent-equal.  Otherwise, let
-;; a' = (permute (transpose (1+ i) j (n)) a).  By nth-permute,
+;; Now suppose (row i a) = (row j a), where 0 <= i < j < n.  We would like to show that 
+;; (rdet0 a n) = (r0).  If j = i + 1 ,then apply rdet0-adjacent-equal.  Otherwise, let
+;; a' = (permute (transpose (1+ i) j n) a).  By nth-permute,
 
-;;   (nth i a') = (nth (nth i (transpose (1+ i) j (n))) a) = (nth i a)
+;;   (nth i a') = (nth (nth i (transpose (1+ i) j n)) a) = (nth i a)
 
 ;; and
 
-;;   (nth (1+ i) a') = (nth (nth (1+ i) (transpose (1+ i) j (n))) a) = (nth j a) = (nth i a)
+;;   (nth (1+ i) a') = (nth (nth (1+ i) (transpose (1+ i) j n)) a) = (nth j a) = (nth i a)
 
-;; and by rdetn-adjacent-equal, (rdetn a') = (r0).  By rdetn-transpose-rows,
+;; and by rdet0-adjacent-equal, (rdet0 a' n) = (r0).  By rdet0-transpose-rows,
 
-;;   (rdetn a) = (r- (rdetn a') = (r- (r0)) = (r0).
+;;   (rdet0 a n) = (r- (rdet0 a' n) = (r- (r0)) = (r0).
 
-;; Thus, rdetn is an alternating function:
+;; Thus, rdet0 is an alternating function:
 
-(defthmd rdetn-alternating
-  (implies (and (rmatp a (n) (n))
-                (natp i) (natp j) (< i (n)) (< j (n)) (not (= i j)) (= (row i a) (row j a)))
-	   (equal (rdetn a) (r0))))
+(defthmd rdet0-alternating
+  (implies (and (rmatp a n n) (posp n)
+                (natp i) (natp j) (< i n) (< j n) (not (= i j)) (= (row i a) (row j a)))
+	   (equal (rdet0 a n) (r0))))
 
-;; We shall require a generalization of rdetn-transpose-rows to arbitrary permutations.
-;; First note that rdetn-permute-transpose may be restated as follows:
+;; We shall require a generalization of rdet0-transpose-rows to arbitrary permutations.
+;; First note that rdet0-permute-transpose may be restated as follows:
 
-(defthmd rdetn-permute-transp
-  (implies (and (rmatp a (n) (n))
-                (transp p (n)))
-	   (equal (rdetn (permute a p))
-	          (r- (rdetn a)))))
+(defthmd rdet0-permute-transp
+  (implies (and (rmatp a n n) (posp n)
+                (transp p n))
+	   (equal (rdet0 (permute a p) n)
+	          (r- (rdet0 a n)))))
 
 ;; This may be generalized to the composition of a list of transpositions by induction:
 
-(defthmd rdetn-permute-trans-list-p
-  (implies (and (rmatp a (n) (n))
-                (trans-list-p l (n)))
-	   (equal (rdetn (permute a (comp-perm-list l (n))))
+(defthmd rdet0-permute-trans-list-p
+  (implies (and (rmatp a n n) (posp n)
+                (trans-list-p l n))
+	   (equal (rdet0 (permute a (comp-perm-list l n)) n)
 	          (if (evenp (len l))
-		      (rdetn a)
-		    (r- (rdetn a))))))
+		      (rdet0 a n)
+		    (r- (rdet0 a n))))))
 
 ;; Since any permutation p may be factored as a list of transpositions, this yields the following:
 
-(defthmd rdetn-permute-rows
-  (implies (and (rmatp a (n) (n))
-                (in p (sym (n))))
-	   (equal (rdetn (permute a p))
-	          (if (even-perm-p p (n))
-		      (rdetn a)
-		    (r- (rdetn a))))))
+(defthmd rdet0-permute-rows
+  (implies (and (rmatp a n n) (posp n)
+                (in p (sym n)))
+	   (equal (rdet0 (permute a p) n)
+	          (if (even-perm-p p n)
+		      (rdet0 a n)
+		    (r- (rdet0 a n))))))
 
-;; Since rdet satisfies the constraints on rdetn, this applies to rdet by functional
+;; Since rdet satisfies the constraints on rdet0, this applies to rdet by functional
 ;; instantiation:
 
 (defthmd rdet-permute-rows
@@ -327,21 +323,21 @@
 		      (rdet a n)
 		    (r- (rdet a n))))))
 
-;; The proof of rdet-unique is based on lists of k-tuples of natural numbers less than (n),
-;; where k <= (n):
+;; The proof of rdet-unique is based on lists of k-tuples of natural numbers less than n,
+;; where k <= n:
 
-(defun tuplep (x k)
+(defun tuplep (x k n)
   (if (zp k)
       (null x)
     (and (consp x)
          (natp (car x))
-         (< (car x) (n))
-	 (tuplep (cdr x) (1- k)))))
+         (< (car x) n)
+	 (tuplep (cdr x) (1- k) n))))
 
-(defun tuple-list-p (l k)
+(defun tuple-list-p (l k n)
   (if (consp l)
-      (and (tuplep (car l) k)
-           (tuple-list-p (cdr l) k))
+      (and (tuplep (car l) k n)
+           (tuple-list-p (cdr l) k n))
     (null l)))
 
 ;; We recursively define a dlist containing all such k-tuples:
@@ -352,30 +348,30 @@
             (extend-tuple-aux x (cdr m)))
     ()))
 
-(defund extend-tuple (x)
-  (extend-tuple-aux x (ninit (n))))
+(defund extend-tuple (x n)
+  (extend-tuple-aux x (ninit n)))
 
-(defun extend-tuples (l)
+(defun extend-tuples (l n)
   (if (consp l)
-      (append (extend-tuple (car l))
-              (extend-tuples (cdr l)))
+      (append (extend-tuple (car l) n)
+              (extend-tuples (cdr l) n))
     ()))
 
-(defun all-tuples (k)
+(defun all-tuples (k n)
   (if (zp k)
       (list ())
-    (extend-tuples (all-tuples (1- k)))))
+    (extend-tuples (all-tuples (1- k) n) n)))
 
 (defthm dlistp-all-tuples
-  (implies (and (natp k) (<= k (n)))
-           (dlistp (all-tuples k))))
+  (implies (and (natp k) (posp n) (<= k n))
+           (dlistp (all-tuples k n))))
 
 (defthmd member-all-tuples
-  (implies (and (natp k) (<= k (n)))
-           (iff (member x (all-tuples k))
-	        (tuplep x k))))
+  (implies (and (natp k) (posp n) (<= k n))
+           (iff (member x (all-tuples k n))
+	        (tuplep x k n))))
 
-;; Let a be a fixed (n)x(n) matrix.  We associate a value with a k-tuple x as follows:
+;; Let a be a fixed nxn matrix.  We associate a value with a k-tuple x as follows:
 
 (defun extract-entries (x a)
   (if (consp x)
@@ -383,210 +379,210 @@
             (extract-entries (cdr x) (cdr a)))
     ()))
 
-(defun runits (x)
+(defun runits (x n)
   (if (consp x)
-      (cons (runit (car x) (n))
-            (runits (cdr x)))
+      (cons (runit (car x) n)
+            (runits (cdr x) n))
     ()))
 
-(defun reval-tuple (x k a)
+(defun reval-tuple (x k a n)
   (r* (rlist-prod (extract-entries x a))
-      (rdetn (append (runits x) (nthcdr k a)))))
+      (rdet0 (append (runits x n) (nthcdr k a)) n)))
 
 (defthm rp-reval-tuple
-  (implies (and (rmatp a (n) (n)) (natp k) (<= k (n)) (tuplep x k))
-           (rp (reval-tuple x k a))))
+  (implies (and (rmatp a n n) (posp n) (natp k) (<= k n) (tuplep x k n))
+           (rp (reval-tuple x k a n))))
 
 ;; The sum of the values of a list of k-tuples: 
 
-(defun rsum-tuples (l k a)
+(defun rsum-tuples (l k a n)
   (if (consp l)
-      (r+ (reval-tuple (car l) k a)
-	  (rsum-tuples (cdr l) k a))
+      (r+ (reval-tuple (car l) k a n)
+	  (rsum-tuples (cdr l) k a n))
     (r0)))
 
-(defthm fp-rsum-tuples
-  (implies (and (rmatp a (n) (n)) (natp k) (<= k (n)) (tuple-list-p l k))
-           (rp (rsum-tuples l k a))))
+(defthm rp-rsum-tuples
+  (implies (and (rmatp a n n) (posp n) (natp k) (<= k n) (tuple-list-p l k n))
+           (rp (rsum-tuples l k a n))))
 
-;; We would like to compute (rsum-tuples (all-tuples k) k a).  The case k = 0 is trivial:
+;; We would like to compute (rsum-tuples (all-tuples k n) k a n).  The case k = 0 is trivial:
 
 (defthmd reval-tuple-nil
-  (implies (rmatp a (n) (n))
-           (equal (reval-tuple () 0 a)
-	          (rdetn a))))
+  (implies (and (rmatp a n n) (posp n))
+           (equal (reval-tuple () 0 a n)
+	          (rdet0 a n))))
 
 (defthm rsum-0-tuples
-  (implies (rmatp a (n) (n))
-           (equal (rsum-tuples (all-tuples 0) 0 a)
-	          (rdetn a))))
+  (implies (and (rmatp a n n) (posp n))
+           (equal (rsum-tuples (all-tuples 0 n) 0 a n)
+	          (rdet0 a n))))
 
-;; We shall prove, as a consequence of n-linearity of rdetn, that incrementing k does not change the value of the sum.
+;; We shall prove, as a consequence of n-linearity of rdet0, that incrementing k does not change the value of the sum.
 
-;; If (rlistnp r (n)), We may think of r as a sum of multiples of unit vectors.  Given a sublist l of (ninit (n)),
-;; (rsum-select l n) is the sum of the subset of these multiples corresponding to the members of l:
+;; If (rlistnp r n), We may think of r as a sum of multiples of unit vectors.  Given a sublist l of (ninit n),
+;; (rsum-select l r n) is the sum of the subset of these multiples corresponding to the members of l:
 
-(defun rsum-select (l r)
+(defun rsum-select (l r n)
   (if (consp l)
-      (rlist-add (rlist-scalar-mul (nth (car l) r) (runit (car l) (n)))
-                 (rsum-select (cdr l) r))
-    (rlistn0 (n))))
+      (rlist-add (rlist-scalar-mul (nth (car l) r) (runit (car l) n))
+                 (rsum-select (cdr l) r n))
+    (rlistn0 n)))
 
 (defthm rsum-select-ninit
-  (implies (rlistnp r (n))
-           (equal (rsum-select (ninit (n)) r)
+  (implies (and (rlistnp r n) (posp n))
+           (equal (rsum-select (ninit n) r n)
 	          r)))
 
-;; We shall derive a formula for (rsum-tuples (extend-tuple x) (1+ k) a).
+;; We shall derive a formula for (rsum-tuples (extend-tuple x n) (1+ k) a n).
 
-;; Let l be a sublist of (ninit (n)).  According to the definitions of rsum-tuples and extend-tuple-aux,
+;; Let l be a sublist of (ninit n).  According to the definitions of rsum-tuples and extend-tuple-aux,
 
-;;   (rsum-tuples (extend-tuple-aux x l) (1+ k) a)
-;;     = (r+ (reval-tuple (append x (list (car l))) (1+ k) a)
-;;             (rsum-tuples (extend-tuple-aux x (cdr l)) (1+ k) a)),
+;;   (rsum-tuples (extend-tuple-aux x l) (1+ k) a n)
+;;     = (r+ (reval-tuple (append x (list (car l))) (1+ k) a n)
+;;             (rsum-tuples (extend-tuple-aux x (cdr l)) (1+ k) a n)),
 
 ;; where
   
-;;   (reval-tuple (append x (list i)) (1+ k) a)
+;;   (reval-tuple (append x (list i)) (1+ k) a n)
 ;;     = (r* (rlist-prod (extract-entries (append x (list i)) a))
-;;           (rdetn (append (runits (append x (list i))) (nthcdr (1+ k) a))))
+;;           (rdet0 (append (runits (append x (list i)) n) (nthcdr (1+ k) a)) n))
 ;;     = (r* (rlist-prod (extract-entries x a))
 ;;           (r* (nth i (nth k a))
-;;               (rdetn (append (append (runits x) (list (unit i (n)))) (nthcdr (1+ k) a)))))
+;;               (rdet0 (append (append (runits x n) (list (runit i n))) (nthcdr (1+ k) a)) n)))
 ;;     = (r* (rlist-prod (extract-entries x a))
 ;;           (r* (nth i (nth k a))
-;;	         (rdetn (replace-row (append (runits x) (nthcdr k a) k (unit i (n)))))))
+;;	         (rdet0 (replace-row (append (runits x n) (nthcdr k a)) k (runit i n)) n)))
 
 ;; and
 
-;;   (rsum-tuples (extend-tuple-aux x (cdr l)) (1+ k) a)
-;;     = (reval-tuple x k (replace-row a k (rsum-select (cdr l) (nth k a))))
+;;   (rsum-tuples (extend-tuple-aux x (cdr l)) (1+ k) a n)
+;;     = (reval-tuple x k (replace-row a k (rsum-select (cdr l) (nth k a) n)) n)
 ;;     = (r* (rlist-prod (extract-entries x a))
-;;           (rdetn (append (runits x) (nthcdr k (replace-row a k (rsum-select (cdr l) (nth k a)))))))
+;;           (rdet0 (append (runits x n) (nthcdr k (replace-row a k (rsum-select (cdr l) (nth k a) n)))) n))
 ;;     = (r* (rlist-prod (extract-entries x a))
-;;           (rdetn (replace-row (append (runits x) (nthcdr k a)) k (rsum-select (cdr l) (nth k a))))).
+;;           (rdet0 (replace-row (append (runits x) (nthcdr k a)) k (rsum-select (cdr l) (nth k a) n)) n)).
 
-;; Thus, by rdetn-n-linear,
+;; Thus, by rdet0-n-linear,
 
-;;   (rsum-tuples (extend-tuple-aux x l) (1+ k) a)
+;;   (rsum-tuples (extend-tuple-aux x l) (1+ k) a n)
 ;;     = (r* (rlist-prod (extract-entries x a))
-;;           (rdetn (replace-row (append (runits x) (nthcdr k a)) k (rsum-select l (nth k a)))))
+;;           (rdet0 (replace-row (append (runits x n) (nthcdr k a)) k (rsum-select l (nth k a) n)) n))
 ;;     = (r* (rlist-prod (extract-entries x a))
-;;           (rdetn (append (runits x) (nthcdr k (replace-row a k (rsum-select l (nth k a)))))))
-;;     = (reval-tuple x k (replace-row a k (rsum-select l (nth k a)))).
+;;           (rdet0 (append (runits x n) (nthcdr k (replace-row a k (rsum-select l (nth k a) n)))) n))
+;;     = (reval-tuple x k (replace-row a k (rsum-select l (nth k a) n)) n).
 
-;; Substitute (ninit (n)) for l:
+;; Substitute (ninit n) for l:
 
-;;   (rsum-tuples (extend-tuple x) (1+ k) a)
-;;     = (reval-tuple x k (replace-row a k (rsum-select (ninit (n)) (nth k a))))
-;;     = (reval-tuple x k (replace-row a k (nth k a)))
-;;     = (reval-tuple x k a):
+;;   (rsum-tuples (extend-tuple x n) (1+ k) a n)
+;;     = (reval-tuple x k (replace-row a k (rsum-select (ninit (n)) (nth k a) n)) n)
+;;     = (reval-tuple x k (replace-row a k (nth k a)) n)
+;;     = (reval-tuple x k a n):
 
 (defthm rsum-tuples-extend-tuple
-  (implies (and (rmatp a (n) (n))
-                (natp k) (< k (n))
-                (tuplep x k))
-	   (equal (rsum-tuples (extend-tuple x) (1+ k) a)
-		  (reval-tuple x k a))))
+  (implies (and (rmatp a n n) (posp n)
+                (natp k) (< k n)
+                (tuplep x k n))
+	   (equal (rsum-tuples (extend-tuple x n) (1+ k) a n)
+		  (reval-tuple x k a n))))
 
 ;; This leads to the recurrence formula
 
-;;    (rsum-tuples (all-tuples k) k a) = (rsum-tuples (all-tuples (1- k)) (1- k) a):
+;;    (rsum-tuples (all-tuples k n) k a n) = (rsum-tuples (all-tuples (1- k) n) (1- k) a n):
 
 (defthm rsum-tuples-append
-  (implies (and (rmatp a (n) (n)) (natp k) (<= k (n)) (tuple-list-p l k) (tuple-list-p m k))
-           (equal (rsum-tuples (append l m) k a)
-	          (r+ (rsum-tuples l k a) (rsum-tuples m k a)))))
+  (implies (and (rmatp a n n) (posp n) (natp k) (<= k n) (tuple-list-p l k n) (tuple-list-p m k n))
+           (equal (rsum-tuples (append l m) k a n)
+	          (r+ (rsum-tuples l k a n) (rsum-tuples m k a n)))))
                         
 (defthmd rsum-tuples-extend-tuples
-  (implies (and (rmatp a (n) (n))
-                (natp k) (< k (n))
-		(tuple-list-p l k))
-	   (equal (rsum-tuples (extend-tuples l) (1+ k) a)
-	          (rsum-tuples l k a))))
+  (implies (and (rmatp a n n) (posp n)
+                (natp k) (< k n)
+		(tuple-list-p l k n))
+	   (equal (rsum-tuples (extend-tuples l n) (1+ k) a n)
+	          (rsum-tuples l k a n))))
 
 (defthm rsum-tuples-extend-all-tuples
-  (implies (and (rmatp a (n) (n))
-                (posp k) (<= k (n)))
-	   (equal (rsum-tuples (all-tuples k) k a)
-	          (rsum-tuples (all-tuples (1- k)) (1- k) a))))
+  (implies (and (rmatp a n n) (posp n)
+                (posp k) (<= k n))
+	   (equal (rsum-tuples (all-tuples k n) k a n)
+	          (rsum-tuples (all-tuples (1- k) n) (1- k) a n))))
 
-;; By induction, (rsum-tuples (all-tuples (n)) (n) a) = (rsum-tuples (all-tuples 0) 0 a) = (rdetn a):
+;; By induction, (rsum-tuples (all-tuples n n) n a n) = (rsum-tuples (all-tuples 0 n) 0 a n) = (rdet0 a n):
 
-(defthmd rsum-tuples-rdetn
-  (implies (rmatp a (n) (n))
-	   (equal (rsum-tuples (all-tuples (n)) (n) a)
-	          (rdetn a))))
+(defthmd rsum-tuples-rdet0
+  (implies (and (rmatp a n n) (posp n))
+	   (equal (rsum-tuples (all-tuples n n) n a n)
+	          (rdet0 a n))))
 
-;; If x is an (n)-tuple, then (reval-tuple x (n) a) = (rdetn (runits x)).  Since rdetn
+;; If x is an n-tuple, then (reval-tuple x n a n) = (rdet0 (runits x n) n).  Since rdet0
 ;; is alternating, this value is (r0) unless x is a dlist:
 
-(defthm rdetn-runits-0
-  (implies (and (tuplep x (n)) (not (dlistp x)))
-           (equal (rdetn (runits x))
+(defthm rdet0-runits-0
+  (implies (and (tuplep x n n) (posp n) (not (dlistp x)))
+           (equal (rdet0 (runits x n) n)
 	          (r0))))
 
 (defthm reval-tuple-r0
-  (implies (and (rmatp a (n) (n))
-                (tuplep x (n))
+  (implies (and (rmatp a n n) (posp n)
+                (tuplep x n n)
 		(not (dlistp x)))
-	   (equal (reval-tuple x (n) a)
+	   (equal (reval-tuple x n a n)
 	          (r0))))
 
-;; But (select-dlists (all-tuples (n))) = (slist (n)), and therefore (rsum-tuples (slist (n)) (n) a) = (rdetn a):
+;; But (select-dlists (all-tuples n n)) = (slist n), and therefore (rsum-tuples (slist n) n a n) = (rdet0 a n):
 
 (defthmd rsum-tuples-n
-  (implies (rmatp a (n) (n))
-	   (equal (rsum-tuples (slist (n)) (n) a)
-	          (rdetn a))))
+  (implies (and (posp n) (rmatp a n n))
+	   (equal (rsum-tuples (slist n) n a n)
+	          (rdet0 a n))))
 			
-;; For p in (slist (n)),
+;; For p in (slist n),
 
-;;   (reval-tuple p (n) a) = (r* (rlist-prod (extract-entries p a))
-;;                               (rdetn (runits p))),
+;;   (reval-tuple p n a) = (r* (rlist-prod (extract-entries p a))
+;;                             (rdet0 (runits p n) n)),
 				
-;; where (rlist-prod (extract-entries p a)) = (rdet-prod a p (n)).
+;; where (rlist-prod (extract-entries p a)) = (rdet-prod a p n).
 
 ;; But
 
-;;   (rdetn (runits p)) = (rdetn (permute (id-rmat (n)) p))
-;;                      = (r* (if (even-perm-p p (n)) (r1) (r- (r1)))
-;;                            (rdetn (id-rmat (n)))).
+;;   (rdet0 (runits p n) n) = (rdet0 (permute (id-rmat n) p) n)
+;;                          = (r* (if (even-perm-p p n) (r1) (r- (r1)))
+;;                                (rdet0 (id-rmat n) n)).
 
 (defthmd runits-permute-id-mat
-  (implies (member p (slist (n)))
-           (equal (runits p)
-	          (permute (id-rmat (n)) p))))
+  (implies (and (posp n) (member p (slist n)))
+           (equal (runits p n)
+	          (permute (id-rmat n) p))))
 
 (defthmd reval-tuple-rdet-prod
-  (implies (and (rmatp a (n) (n))
-                (member p (slist (n))))
-	   (equal (reval-tuple p (n) a)
-	          (r* (rdet-prod a p (n))
-		      (rdetn (runits p))))))
+  (implies (and (posp n) (rmatp a n n)
+                (member p (slist n)))
+	   (equal (reval-tuple p n a n)
+	          (r* (rdet-prod a p n)
+		      (rdet0 (runits p n) n)))))
 
 ;; Thus, we have
 
 (defthmd reval-tuple-perm
-  (implies (and (rmatp a (n) (n))
-                (member p (slist (n))))
-	   (equal (reval-tuple p (n) a)
-	          (r* (rdet-term a p (n))
-		      (rdetn (id-rmat (n)))))))
+  (implies (and (posp n) (rmatp a n n)
+                (member p (slist n)))
+	   (equal (reval-tuple p n a n)
+	          (r* (rdet-term a p n)
+		      (rdet0 (id-rmat n) n)))))
 
-;; The desired result follows by summing over (slist (n)):
+;; The desired result follows by summing over (slist n):
 
 (defthmd rsum-tuples-slist
-  (implies (rmatp a (n) (n))
-	   (equal (rsum-tuples (slist (n)) (n) a)
-	          (r* (rdet a (n))
-		      (rdetn (id-rmat (n)))))))
+  (implies (and (posp n) (rmatp a n n))
+	   (equal (rsum-tuples (slist n) n a n)
+	          (r* (rdet a n)
+		      (rdet0 (id-rmat n) n)))))
 	          
 (defthmd rdet-unique
-  (implies (rmatp a (n) (n))
-           (equal (rdetn a)
-                  (r* (rdet a (n))
-                      (rdetn (id-rmat (n)))))))
+  (implies (and (posp n) (rmatp a n n))
+           (equal (rdet0 a n)
+                  (r* (rdet a n)
+                      (rdet0 (id-rmat n) n)))))
 
 
 ;;-------------------------------------------------------------------------------------------------------
@@ -598,7 +594,7 @@
 ;;   (rdet (rmat* a b) n) = (r* (rdet a n) (rdet b n).
 
 ;; To this end, we shall show that the following is a determinant function of its first
-;; argument, i.e., it satisfies the constraints on rdetn:
+;; argument, i.e., it satisfies the constraints on rdet0:
 
 (defun rdet-rmat* (a b n)
   (rdet (rmat* a b) n))
@@ -644,13 +640,7 @@
 
 ;; Now apply functional instantiation:
 
-(defthmd rdet-rmat*-val-n
-  (implies (and (rmatp a (n) (n)) (rmatp b (n) (n)))
-           (equal (rdet-rmat* a b (n))
-	          (r* (rdet a (n))
-		      (rdet-rmat* (id-rmat (n)) b (n))))))
-
-(defthmd rdet-multiplicative
+(Defthmd rdet-multiplicative
   (implies (and (rmatp a n n) (rmatp b n n) (posp n))
            (equal (rdet (rmat* a b) n)
 	          (r* (rdet a n) (rdet b n)))))
@@ -676,7 +666,7 @@
 
 (defthmd rmatp-delete-row
   (implies (and (rmatp a m n) (natp m) (natp k) (< k m))
-           (rmatp (delete-row k a) (1- m) n)))
+           (Rmatp (delete-row k a) (1- m) n)))
 
 (defthmd rmatp-delete-col
   (implies (and (rmatp a m n) (posp m) (natp n) (> n 1) (natp k) (< k n))
@@ -770,7 +760,7 @@
 ;; We shall prove, by functional instantiation of rdet-unique, that the result of cofactor
 ;; expansion by a column has the same value as the determinant, and it will follow that the
 ;; same is true for expansion by a row.  The requires proving analogs of the constraints on
-;; rdetn.
+;; rdet0.
 
 (defthm rp-rdet-cofactor
   (implies (and (rmatp a n n) (natp n) (> n 1)
@@ -810,7 +800,7 @@
 ;; Now suppose adjacent rows k and k+1 of a are equal.  Then for any i other than k and k+1, (minor i j a)
 ;; has 2 adjacent rows,and therefore (rdet-cofactor i j a n) = (r0).  Meanwhile, (minor k j) = (minor (1+ k) j)
 ;; and (entry k j a) = (entry (1+ k) j a), but k + j and (k + 1) + j have opposite parities, and therefore
-;; (rdet-cofactor k j a n) + (rdet-cofactor (1+ k) j a n) = (r0).  Thus, (expand-rdet-col a j n) = r0:
+;; (rdet-cofactor k j a n) + (rdet-cofactor (1+ k) j a n) = (r0).  Thus, (expand-rdet-col a j n) = (r0):
 
 (defthmd expand-rdet-col-adjacent-equal
   (implies (and (rmatp a n n) (> n 1) (natp j) (< j n)

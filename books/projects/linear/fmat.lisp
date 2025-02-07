@@ -326,7 +326,7 @@
 			  (fmat-sum (strip-mat a)))))))
 
 ;; Since (row 0 a) = (col 0 (transpose-mat a)) and (col 0 a) = (row 0 (transpose-mat a)), we have
-;; the rollowing:
+;; the following:
 
 (defthmd sum-fmat-strip-mat-equal
   (implies (and (posp m) (posp n) (fmatp a m n)
@@ -347,14 +347,14 @@
 	   (equal (entry i j (strip-mat a))
 		  (entry (1+ i) (1+ j) a))))
 
-;; In the remaining case, we have the rollowing:
+;; In the remaining case, we have the following:
 
 (defthmd transpose-strip-mat
   (implies (and (posp m) (posp n) (> m 1) (> n 1) (fmatp a m n))
 	   (equal (transpose-mat (strip-mat a))
 		  (strip-mat (transpose-mat a)))))
 
-;; The result rollows by induction:
+;; The result follows by induction:
 
 (defthmd sum-fmat-transpose
   (implies (and (natp m) (natp n) (fmatp a m n))
@@ -366,59 +366,6 @@
 ;; Matrix Multiplication
 ;;----------------------------------------------------------------------------------------
 
-;; Dot product of 2 lists of field elements of the same length:
-
-(defun fdot (x y)
-  (if (consp x)
-      (f+ (f* (car x) (car y))
-          (fdot (cdr x) (cdr y)))
-    (f0)))
-
-(defthm fp-fdot
-  (implies (and (flistnp x n) (flistnp y n))
-           (fp (fdot x y))))
-
-(defthm fdot-flistn0
-  (implies (and (natp n) (flistnp x n))
-           (equal (fdot (flistn0 n) x)
-	          (f0))))
-
-(defthmd fdot-comm
-  (implies (and (flistnp x n) (flistnp y n))
-           (equal (fdot x y) (fdot y x))))
-
-(defthmd fdot-flist-add
-  (implies (and (flistnp x n) (flistnp y n) (flistnp z n))
-	   (equal (fdot (flist-add x y) z)
-		  (f+ (fdot x z) (fdot y z)))))
-
-(defthmd fdot-flist-add-comm
-  (implies (and (flistnp x n) (flistnp y n) (flistnp z n))
-	   (equal (fdot z (flist-add x y))
-		  (f+ (fdot z x) (fdot z y)))))
-					   
-(defthmd fdot-flist-scalar-mul
-  (implies (and (flistnp x n) (flistnp y n) (fp c))
-	   (equal (fdot (flist-scalar-mul c x) y)
-		  (f* c (fdot x y)))))
-
-;; List of dot products of an flist x with the elements of a list of flists l:
-
-(defun fdot-list (x l)
-  (if (consp l)
-      (cons (fdot x (car l))
-            (fdot-list x (cdr l)))
-    ()))
-
-(defthm flistnp-fdot-list
-  (implies (and (fmatp l m n) (flistnp x n))
-           (flistnp (fdot-list x l) m)))
-
-(defthm nth-fdot-list
-  (implies (and (natp j) (< j (len l)))
-           (equal (nth j (fdot-list x l))
-	          (fdot x (nth j l)))))
-
 ;; Product of mxn matrix a and nxp matrix b:
 
 (defund fmat* (a b)
@@ -426,6 +373,10 @@
       (cons (fdot-list (car a) (transpose-mat b))
             (fmat* (cdr a) b))
     ()))
+
+(defthm flistnp-fdot-list
+  (implies (and (fmatp l m n) (flistnp x n))
+           (flistnp (fdot-list x l) m)))
 
 (defthm fmatp-fmat*
   (implies (and (fmatp a m n) (fmatp b n p) (posp m) (posp n) (posp p) )
@@ -481,6 +432,8 @@
 
 (defthm flistnp-funit
   (flistnp (funit j n) n))
+
+;; The Kronecker delta function:
 
 (defun fdelta (i j)
   (if (= i j) (f1) (f0)))
@@ -556,7 +509,7 @@
 ;; Let a, b, and c be matrices of dimensions mxn, nxp, and pxq, respectively.  Then
 ;; (fmat* a (fmat* b c)) and (fmat* (fmat* a b) c)) are both mxp matrices.  Our
 ;; objective is to prove that they are equal.  Let 0 <= i < m and 0 <= j < q.  It will
-;; surrice to show that
+;; suffice to show that
 
 ;;    (entry i j (fmat* a (fmat* b c))) = (entry i j (fmat* (fmat* a b) c)).
 
@@ -601,7 +554,7 @@
                 (natp i) (< i m) (natp j) (< j q))
 	   (fmatp (fmat12 a b c i j) n p)))
 
-;; We derive the rollowing expression for each entry of this matrix:
+;; We derive the following expression for each entry of this matrix:
 
 (defthmd fmat12-entry
   (implies (and (fmatp a m n) (fmatp b n p) (fmatp c p q) (posp m) (posp n) (posp p) (posp q)
@@ -665,11 +618,4 @@
 (defthmd fmat*-assoc
   (implies (and (fmatp a m n) (fmatp b n p) (fmatp c p q) (posp m) (posp n) (posp p) (posp q))
            (equal (fmat* a (fmat* b c))
-	          (fmat* (fmat* a b) c)))
-  :hints (("Goal" :use (fmatp-fmat*
-                        (:instance fmatp-fmat* (a b) (b c) (m n) (n p) (p q))
-                        (:instance fmatp-fmat* (b (fmat* b c)) (p q))
-                        (:instance fmatp-fmat* (a (fmat* a b)) (b c) (n p) (p q))
-			(:instance fmat-entry-diff-lemma (a (fmat* a (fmat* b c))) (b (fmat* (fmat* a b) c)) (n q))
-			(:instance fmat*-assoc-entry (i (car (entry-diff (fmat* a (fmat* b c)) (fmat* (fmat* a b) c))))
-			                             (j (cdr (entry-diff (fmat* a (fmat* b c)) (fmat* (fmat* a b) c)))))))))
+	          (fmat* (fmat* a b) c))))

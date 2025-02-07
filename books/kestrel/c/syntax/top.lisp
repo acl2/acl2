@@ -16,6 +16,7 @@
 (include-book "abstract-syntax-operations")
 (include-book "unambiguity")
 (include-book "validation-information")
+(include-book "ascii-identifiers")
 (include-book "defpred")
 (include-book "defpred-doc")
 (include-book "preprocess-file")
@@ -142,6 +143,14 @@
     (xdoc::seetopic "validation-information" "annotated abstract syntax")
     ", i.e. abstract syntax enhanced with
      the information added by the validator.")
+   (xdoc::p
+    "We provide a collection of predicates that characterize "
+    (xdoc::seetopic "ascii-identifiers"
+                    "abstract syntax with ASCII identifiers")
+    ", i.e. abstract syntax such that all the identifiers that occur in it
+     are ACL2 strings that start with an ASCII letter,
+     only contain ASCII letters, digits, and underscores,
+     and are distinct from keywords.")
    (xdoc::p
     "We provide various "
     (xdoc::seetopic "abstract-syntax-operations"
