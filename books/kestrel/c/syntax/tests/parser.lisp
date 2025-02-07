@@ -1239,6 +1239,10 @@
 
 (test-parse
  parse-expression
+ "f(x+1,3)")
+
+(test-parse
+ parse-expression
  "__builtin_types_compatible_p(typeof(a), signed long long)"
  :gcc t)
 

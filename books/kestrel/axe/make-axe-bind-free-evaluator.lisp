@@ -17,14 +17,18 @@
 
 (local (in-theory (enable rational-listp-when-integer-listp)))
 
+(local (in-theory (enable symbol-listp-of-lookup-equal)))
+
 (defun make-axe-bind-free-evaluator-fn (suffix fns enables wrld)
   (declare (xargs :guard (and (symbolp suffix)
                               (symbol-listp fns)
                               (plist-worldp wrld))))
   (b* ((eval-axe-bind-free-function-application-fn (pack$ 'eval-axe-bind-free-function-application- suffix))
        (arity-alist (bind-fns-to-arities fns wrld nil))
+       (arity-0-fns (lookup 0 arity-alist))
        (arities (strip-cars arity-alist))
-       (max-arity (max-val arities -1)))
+       (max-arity (max-val arities -1))
+       (error-string "Unrecognized function in axe-bind-free rule: ~x0."))
     `(encapsulate ()
        (local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
        (local (include-book "kestrel/lists-light/union-equal" :dir :system))
@@ -57,7 +61,10 @@
                                         :expand ((free-vars-in-terms args)
                                                  (free-vars-in-term (car args))))))
                   (ignorable dag-array))
-         ,(make-axe-syntaxp-evaluator-cases-for-arities 0 max-arity arity-alist eval-axe-bind-free-function-application-fn "Unrecognized function in axe-bind-free rule: ~x0." wrld))
+         (if (atom args) ; todo: disallow 0-ary axe-bind-free functions
+             ;; no binding of any args happens yet, unlike in the call of make-axe-syntaxp-evaluator-cases-for-arities just below
+             ,(make-axe-syntaxp-evaluator-case-for-arity 0 arity-0-fns eval-axe-bind-free-function-application-fn error-string wrld)
+           ,(make-axe-syntaxp-evaluator-cases-for-arities 1 max-arity arity-alist eval-axe-bind-free-function-application-fn error-string wrld)))
 
        (defthm ,(pack$ 'symbol-alistp-of- eval-axe-bind-free-function-application-fn)
          (symbol-alistp (,eval-axe-bind-free-function-application-fn fn args alist dag-array))

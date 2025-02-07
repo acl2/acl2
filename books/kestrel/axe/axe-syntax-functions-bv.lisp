@@ -34,61 +34,64 @@
                           symbolp-of-nth-0-when-dag-exprp
                           dargp-of-nth-when-darg-listp)))
 
-(defund unquote-if-possible (x)
-  (declare (xargs :guard t))
-  (if (and (quotep x)
-           (consp (cdr x)))
-      (unquote x)
-    nil))
-
-;; Returns a bv-typep or nil (if we could not determine a type).
+;; Returns a bv-typep, or nil (if we could not determine a type).
 ;the args are nodenums or quoteps - we don't deref nodenums that may point to quoteps
 ;what if the number of arguments is wrong?
 ;; NOTE: Soundness depends on this since it is used in the STP translation.
 (defund maybe-get-type-of-bv-function-call (fn dargs)
-  (declare (xargs :guard (darg-listp dargs)))
-  ;; todo: use case here:
-  (cond ;see unsigned-byte-p-1-of-bitxor, etc.:
-   ((member-eq fn '(getbit bitxor bitand bitor bitnot bool-to-bit))
-    (make-bv-type 1))
-   ;; Functions whose type is indicated by the first argument:
-   ((member-eq fn '(bvchop ;$inline
-                    bvxor bvand bvor bvnot
-                    bvplus bvminus bvuminus bvmult
-                    bvsx
-                    bv-array-read
-                    repeatbit
-                    bvdiv bvmod
-                    sbvdiv sbvrem
-                    leftrotate rightrotate ;; see unsigned-byte-p-of-leftrotate and unsigned-byte-p-of-rightrotate
-                    bvif
-                    bvshl
-                    bvshr))
-    (and (consp dargs)
-         (let ((width (first dargs)))
-           (and (darg-quoted-natp width)
-                (make-bv-type (unquote width))))))
-   ;; 32-bit operations:
-   ;;see unsigned-byte-p-32-of-leftrotate32 and unsigned-byte-p-32-of-rightrotate32:
-   ((member-eq fn '(leftrotate32 rightrotate32)) ;eventually drop?
-    (make-bv-type 32))
-   ;; Slice:
-   ((eq fn 'slice)
-    (let ((high (unquote-if-possible (first dargs)))
-          (low (unquote-if-possible (second dargs))))
-      (and (natp high)
-           (natp low)
-           (<= low high)
-           (make-bv-type (+ 1 high (- low))))))
-   ;; Bvcat:
-   ((eq fn 'bvcat)
-    (let ((high-size (unquote-if-possible (first dargs)))
-          (low-size (unquote-if-possible (third dargs))))
-      (and (natp high-size)
-           (natp low-size)
-           (make-bv-type (+ high-size low-size)))))
-   ;; Unknown function, can't find a BV size:
-   (t nil)))
+  (declare (xargs :guard (and (symbolp fn)
+                              (darg-listp dargs))))
+  (case fn
+    ;; Single-bit functions:
+    ((getbit bitxor bitand bitor bitnot bool-to-bit)
+      ;see unsigned-byte-p-1-of-bitxor, etc.:
+     (make-bv-type 1))
+    ;; Functions whose type is indicated by the first argument:
+    ((bvchop ;$inline
+      bvxor bvand bvor bvnot
+      bvplus bvminus bvuminus bvmult
+      bvsx
+      bv-array-read
+      repeatbit
+      bvdiv bvmod
+      sbvdiv sbvrem
+      leftrotate rightrotate ;; see unsigned-byte-p-of-leftrotate and unsigned-byte-p-of-rightrotate
+      bvif
+      bvshl
+      bvshr)
+     (and (consp dargs)
+          (let ((width (first dargs)))
+            (and (darg-quoted-natp width)
+                 (make-bv-type (unquote width))))))
+    ;; 32-bit operations:
+    ((leftrotate32 rightrotate32)  ;eventually drop?
+     ;;see unsigned-byte-p-32-of-leftrotate32 and unsigned-byte-p-32-of-rightrotate32:
+     (make-bv-type 32))
+    ;; (slice high low x):
+    (slice
+     (let ((high-darg (first dargs))
+           (low-darg (second dargs)))
+       (and (consp high-darg) ; checks for quoted constant
+            (consp low-darg) ; checks for quoted constant
+            (let ((high (unquote high-darg))
+                  (low (unquote low-darg)))
+              (and (natp high)
+                   (natp low)
+                   (<= low high)
+                   (make-bv-type (+ 1 high (- low))))))))
+    ;; (bvcat highsize highval lowsize lowval):
+    (bvcat
+     (let ((high-size-darg (first dargs))
+           (low-size-darg (third dargs)))
+       (and (consp high-size-darg) ; checks for quoted constant
+            (consp low-size-darg) ; checks for quoted constant
+            (let ((high-size (unquote high-size-darg))
+                  (low-size (unquote low-size-darg)))
+              (and (natp high-size)
+                   (natp low-size)
+                   (make-bv-type (+ high-size low-size)))))))
+    ;; Unknown function, can't find a BV size:
+    (otherwise nil)))
 
 (defthm maybe-get-type-of-bv-function-call-type
   (or (null (maybe-get-type-of-bv-function-call fn dargs))
@@ -344,6 +347,13 @@
   :hints (("Goal" :in-theory (enable bind-low-zero-count-in-bvcat-nest))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund unquote-if-possible (x)
+  (declare (xargs :guard t))
+  (if (and (quotep x)
+           (consp (cdr x)))
+      (unquote x)
+    nil))
 
 ;; Tests that DARG points to a call of one of the *functions-convertible-to-bv*
 ;; but not one of the exclude-fns.  No guard on exclude-fns because the caller

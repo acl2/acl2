@@ -137,7 +137,7 @@
     (xdoc::desc
      "@('abstract-syntax-<suffix>')"
      (xdoc::p
-      "An XDOC topic whose name is obtained by adding
+      "An XDOC topic whose name is obtained by adding,
        at the end of the symbol @('abstract-syntax-'),
        the symbol specified in the @('suffix') input.
        If any of the @(':parents'), @(':short'), or @(':long') inputs
