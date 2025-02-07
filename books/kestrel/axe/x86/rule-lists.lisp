@@ -339,6 +339,9 @@
     <-of-read-and-non-positive
     read-of-xw-irrel
     read-of-set-flag
+    read-of-set-undef
+    read-of-set-mxcsr
+
     read-when-program-at ; trying just this one
     ;; since read-when-program-at can introduce bv-array-read-chunk-little
     ;; acl2::bv-array-read-chunk-little-constant-opener ; drop now that we can eval it
@@ -430,6 +433,7 @@
     x86isa::!fault x86isa::!fault$a ; exposes xw
     ))
 
+;; todo: some of these are write-over-write rules
 (defund read-over-write-rules ()
   (declare (xargs :guard t))
   '( ; rule to intro app-view?
@@ -522,6 +526,8 @@
     msri-of-set-flag
     msri-of-set-mxcsr
     msri-of-set-undef
+
+    set-undef-of-undef-same
 
     set-undef-of-set-undef
     ;;            set-undef-of-set-mxcsr
@@ -1943,6 +1949,7 @@
             x86isa::select-segment-register$inline
             x86isa::x86-operand-from-modr/m-and-sib-bytes
             x86isa::write-user-rflags-rewrite ;x86isa::write-user-rflags$inline ;shilpi leaves this enabled
+            ;;x86isa::write-user-rflags-rewrite-better ; todo: put this in!
 
             x86isa::check-instruction-length$inline
 
@@ -2487,8 +2494,11 @@
             code-segment-readable-bit-of-set-flag
             code-segment-readable-bit-of-write-byte-to-segment
             code-segment-readable-bit-of-write-to-segment
+
             data-segment-writeable-bit-of-xw-irrel
             data-segment-writeable-bit-of-set-flag
+            data-segment-writeable-bit-of-set-mxcsr
+            data-segment-writeable-bit-of-set-undef
             data-segment-writeable-bit-of-write-byte-to-segment
             data-segment-writeable-bit-of-write-to-segment
             data-segment-writeable-bit-of-set-eip
@@ -2498,6 +2508,7 @@
             data-segment-writeable-bit-of-set-edx
             data-segment-writeable-bit-of-set-esp
             data-segment-writeable-bit-of-set-ebp
+
             code-segment-descriptor-attributesbits->r-of-bvchop
             data-segment-descriptor-attributesbits->w-of-bvchop
             data-segment-descriptor-attributesbits->e-of-bvchop
@@ -3134,6 +3145,10 @@
     write-byte-to-segment-of-xw-rgf
     write-to-segment-of-xw-rgf
 
+    ;; push undef stuff inward:
+    set-undef-of-write-to-segment
+    set-undef-of-write-byte-to-segment
+
     eax-of-set-eax
     ebx-of-set-ebx
     ecx-of-set-ecx
@@ -3469,8 +3484,6 @@
     read-of-set-r15
     read-of-set-rsp
     read-of-set-rbp
-    read-of-set-undef
-    read-of-set-mxcsr
 
     ;; read-byte-of-set-rip ; now we just go to read
     ;; read-byte-of-set-rax
@@ -4696,7 +4709,7 @@
           (extra-tester-rules)
           '(<-of-fp-to-rat ; do we want this?
 
-            !rflags-of-if-arg1
+            !rflags-of-if-arg1 ; do we want this?
             !rflags-of-if-arg2
             ;;xr-of-!rflags-irrel
             acl2::if-x-x-y-when-booleanp
@@ -4918,6 +4931,10 @@
      acl2::equal-of-bvplus-constant-and-constant-alt
      acl2::mod-of-+-of-constant
      xr-of-if
+
+     xw-of-xr-same-gen
+
+     set-undef ; can be introduced by write-user-rflags-rewrite-better
      )
    (program-at-rules) ; to show that program-at assumptions still hold after the loop body
    (write-rules)
