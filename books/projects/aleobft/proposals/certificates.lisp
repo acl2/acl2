@@ -313,3 +313,14 @@
              (set::insert (pos-fix round) nil)))
     :induct t
     :enable cert-set->round-set-of-insert))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(std::deflist cert-list-evenp (x)
+  :guard (certificate-listp x)
+  :short "Check if
+          the round numbers of all the certificates in a list are even."
+  (evenp (certificate->round x))
+  ///
+  (fty::deffixequiv cert-list-evenp
+    :args ((x certificate-listp))))
