@@ -12,7 +12,7 @@
 
 (include-book "../../../syntax/input-files")
 (include-book "../../../syntax/output-files")
-(include-book "../../simpadd0-proofs")
+(include-book "../../simpadd0")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
