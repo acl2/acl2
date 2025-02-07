@@ -1948,8 +1948,8 @@
             x86isa::select-operand-size$inline ;shilpi leaves this enabled (could restrict to ground terms)
             x86isa::select-segment-register$inline
             x86isa::x86-operand-from-modr/m-and-sib-bytes
-            x86isa::write-user-rflags-rewrite ;x86isa::write-user-rflags$inline ;shilpi leaves this enabled
-            ;;x86isa::write-user-rflags-rewrite-better ; todo: put this in!
+            ;; x86isa::write-user-rflags-rewrite ;x86isa::write-user-rflags$inline ;shilpi leaves this enabled
+            x86isa::write-user-rflags-rewrite-better
 
             x86isa::check-instruction-length$inline
 
