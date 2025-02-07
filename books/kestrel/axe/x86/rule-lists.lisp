@@ -497,8 +497,6 @@
     undef-of-!rflags         ; why is !rflags not going away?
     undef-of-set-rip         ; move to 64 rules?
 
-    ;;x86isa::mxcsr
-    ;;x86isa::mxcsr$a
     mxcsr-of-xw
     mxcsr-of-set-flag
     mxcsr-of-set-mxcsr ; read-of-write
@@ -521,7 +519,10 @@
     alignment-checking-enabled-p-of-set-undef
     alignment-checking-enabled-p-of-!rflags
 
+    msri-of-set-flag
+    msri-of-set-mxcsr
     msri-of-set-undef
+
     set-undef-of-set-undef
     ;;            set-undef-of-set-mxcsr
     set-undef-of-set-flag
@@ -530,8 +531,6 @@
     set-undef-of-set-rip         ; move to 64 rules?
 
 
-
-    msri-of-set-mxcsr
     set-mxcsr-of-set-mxcsr
     set-mxcsr-of-set-flag
     ;; set-mxcsr-of-myif
@@ -1583,8 +1582,9 @@
 
     sse-daz-of-nil
 
-    ;x86isa::sse-cmp ; scary ; todo: why is this not enabled like dp-sse-cmp below?
-    x86isa::dp-sse-cmp ; scary?
+    ;sse-cmp ; scary
+    sp-sse-cmp ; single precision wrapper for sse-cmp
+    dp-sse-cmp ; double precision wrapper for sse-cmp
     dazify-of-0-arg2
     unmasked-excp-p-of-63-arg2 ; may help a lot
     mxcsr-rc-redef
@@ -3371,6 +3371,7 @@
     rip-of-write ; todo: more
     rip-of-set-flag
 
+    ;; read of write, same register
     rax-of-set-rax
     rbx-of-set-rbx
     rcx-of-set-rcx
@@ -3395,7 +3396,6 @@
     ;; ms-of-write-byte
 
 ;    fault-of-write-byte ; todo: move?
-    fault-of-set-rip
 
     app-view-of-set-rip
     app-view-of-set-rax
@@ -3527,6 +3527,8 @@
     rax-of-set-rbp
     rax-of-set-undef
     rax-of-set-mxcsr
+    rax-of-set-flag
+
     rbx-of-set-rax
     rbx-of-set-rcx
     rbx-of-set-rdx
@@ -3544,6 +3546,8 @@
     rbx-of-set-rbp
     rbx-of-set-undef
     rbx-of-set-mxcsr
+    rbx-of-set-flag
+
     rcx-of-set-rax
     rcx-of-set-rbx
     rcx-of-set-rdx
@@ -3561,6 +3565,8 @@
     rcx-of-set-rbp
     rcx-of-set-undef
     rcx-of-set-mxcsr
+    rcx-of-set-flag
+
     rdx-of-set-rax
     rdx-of-set-rbx
     rdx-of-set-rcx
@@ -3578,6 +3584,8 @@
     rdx-of-set-rbp
     rdx-of-set-undef
     rdx-of-set-mxcsr
+    rdx-of-set-flag
+
     rsi-of-set-rax
     rsi-of-set-rbx
     rsi-of-set-rcx
@@ -3595,6 +3603,8 @@
     rsi-of-set-rbp
     rsi-of-set-undef
     rsi-of-set-mxcsr
+    rsi-of-set-flag
+
     rdi-of-set-rax
     rdi-of-set-rbx
     rdi-of-set-rcx
@@ -3612,6 +3622,8 @@
     rdi-of-set-rbp
     rdi-of-set-undef
     rdi-of-set-mxcsr
+    rdi-of-set-flag
+
     r8-of-set-rax
     r8-of-set-rbx
     r8-of-set-rcx
@@ -3629,6 +3641,8 @@
     r8-of-set-rbp
     r8-of-set-undef
     r8-of-set-mxcsr
+    r8-of-set-flag
+
     r9-of-set-rax
     r9-of-set-rbx
     r9-of-set-rcx
@@ -3646,6 +3660,8 @@
     r9-of-set-rbp
     r9-of-set-undef
     r9-of-set-mxcsr
+    r9-of-set-flag
+
     r10-of-set-rax
     r10-of-set-rbx
     r10-of-set-rcx
@@ -3663,6 +3679,7 @@
     r10-of-set-rbp
     r10-of-set-undef
     r10-of-set-mxcsr
+    r10-of-set-flag
 
     r11-of-set-rax
     r11-of-set-rbx
@@ -3681,6 +3698,7 @@
     r11-of-set-rbp
     r11-of-set-undef
     r11-of-set-mxcsr
+    r11-of-set-flag
 
     r12-of-set-rax
     r12-of-set-rbx
@@ -3699,6 +3717,7 @@
     r12-of-set-rbp
     r12-of-set-undef
     r12-of-set-mxcsr
+    r12-of-set-flag
 
     r13-of-set-rax
     r13-of-set-rbx
@@ -3717,6 +3736,7 @@
     r13-of-set-rbp
     r13-of-set-undef
     r13-of-set-mxcsr
+    r13-of-set-flag
 
     r14-of-set-rax
     r14-of-set-rbx
@@ -3735,6 +3755,7 @@
     r14-of-set-rbp
     r14-of-set-undef
     r14-of-set-mxcsr
+    r14-of-set-flag
 
     r15-of-set-rax
     r15-of-set-rbx
@@ -3753,6 +3774,7 @@
     r15-of-set-rbp
     r15-of-set-undef
     r15-of-set-mxcsr
+    r15-of-set-flag
 
     rsp-of-set-rax
     rsp-of-set-rbx
@@ -3771,6 +3793,8 @@
     rsp-of-set-rbp
     rsp-of-set-undef
     rsp-of-set-mxcsr
+    rsp-of-set-flag
+
     rbp-of-set-rax
     rbp-of-set-rbx
     rbp-of-set-rcx
@@ -3788,22 +3812,6 @@
     rbp-of-set-rsp
     rbp-of-set-undef
     rbp-of-set-mxcsr
-
-    rax-of-set-flag
-    rbx-of-set-flag
-    rcx-of-set-flag
-    rdx-of-set-flag
-    rsi-of-set-flag
-    rdi-of-set-flag
-    r8-of-set-flag
-    r9-of-set-flag
-    r10-of-set-flag
-    r11-of-set-flag
-    r12-of-set-flag
-    r13-of-set-flag
-    r14-of-set-flag
-    r15-of-set-flag
-    rsp-of-set-flag
     rbp-of-set-flag
 
     alignment-checking-enabled-p-of-set-rip
@@ -3875,6 +3883,7 @@
     ms-of-set-rsp
     ms-of-set-rbp
 
+    fault-of-set-rip
     fault-of-set-rax
     fault-of-set-rbx
     fault-of-set-rcx
@@ -4328,7 +4337,6 @@
     msri-of-set-r15
     msri-of-set-rsp
     msri-of-set-rbp
-    msri-of-set-flag
 
     ;; ;; These help make failures more clear, by dropping irrelevant
     ;; ;; state writes inside rme-size (actually, we should now be pretty good at removing rme-size):
@@ -4695,7 +4703,7 @@
             ;; acl2::if-of-t-and-nil-when-booleanp
             acl2::equal-of-if-arg1-when-quotep
             acl2::equal-of-if-arg2-when-quotep
-            x86isa::sse-cmp-special ; scary
+            sse-cmp-special ; scary
             x86isa::fp-decode-constant-opener
             x86isa::fp-to-rat-constant-opener
             rtl::bias-constant-opener
@@ -4749,10 +4757,8 @@
             acl2::sbvlt-of-bvsx-arg2
 
             acl2::integerp-of-part-install-width-low$inline ; needed?
-            x86isa::sp-sse-cmp
-            ;;x86isa::sse-cmp ;todo: limit?
-            ;x86isa::!mxcsr
-            ;x86isa::!mxcsr$a
+
+            ;; sse-cmp ;todo: limit?
             ;; feature-flag-sse-of-xw
             ;; feature-flag-sse-of-write
             ;; feature-flag-sse-of-set-flag
