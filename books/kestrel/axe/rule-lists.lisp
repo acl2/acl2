@@ -489,6 +489,7 @@
     trim-of-logxor-becomes-bvxor
     trim-of-lognot-becomes-bvnot
     trim-of-+-becomes-bvplus ; fixme: loop on (bvplus 32 x (+ -4 (rsp x86))) involving bvplus-of-constant-when-overflow?
+    trim-of-unary---becomes-bvuminus
     ))
 
 ;; TODO: Consider also the analogous rules about getbit?
@@ -795,8 +796,9 @@
      slice-subst-in-constant
      slice-subst-in-constant-alt
      slice-when-bvchop-known    ;new
-     bvplus-of-bvshl              ;new ; rename or drop
-     bvplus-of-bvshl-becomes-bvcat ;new
+     ;bvplus-of-bvshl              ;new ; rename or drop
+     bvplus-of-bvshl-becomes-bvcat-arg2
+     bvplus-of-bvshl-becomes-bvcat-arg3
      bvuminus-of-bvcat-of-0-16-8 ;new!
 
      bvplus-of-bvchop-and-bvshl ;new
@@ -1082,7 +1084,16 @@
      putbits
 
      unsigned-byte-p-of-bvmult-of-expt2-constant-version
-     unsigned-byte-p-of-bvchop-becomes-bvlt)))
+     unsigned-byte-p-of-bvchop-becomes-bvlt
+
+     ;; These recognize idioms for bvcat (these are probably not fully general;
+     ;; need to support bvcats with 0 anywhere and other args with 1s only in
+     ;; the 0 region):
+     ;; bvor-disjoint-ones-arg1-gen
+     ;; bvor-disjoint-ones-arg2-gen
+     bvor-of-bvcat-becomes-bvcat-arg2
+     bvor-of-bvcat-becomes-bvcat-arg3
+     )))
 
 ;todo combine this with core-rules-bv
 ;todo: some of these are not bv rules?
@@ -1104,8 +1115,8 @@
 
     bound-when-usb2 ;uses the dag assumptions - huh? (expensive?)
 
-    bvplus-disjoint-ones-arg1-gen-better
-    bvplus-disjoint-ones-arg2-gen-better
+    bvplus-disjoint-ones-arg1-gen
+    bvplus-disjoint-ones-arg2-gen
     bvplus-disjoint-ones-2-alt
     bvplus-disjoint-ones-2
 
@@ -1829,7 +1840,7 @@
     trim-of-bvchop
     trim-of-bvcat
     trim-of-1-and-leftrotate ; todo: add full trim support for rotate ops
-    trim-does-nothing-axe ; should not be needed?
+    ;; trim-does-nothing-axe ; should not be needed?
     )))
 
 (defun all-trim-rules ()
@@ -1926,11 +1937,7 @@
 ;for specs:
             ;; nth2-becomes-bvnth-for-natps-dag
 
-            ;; bvor-disjoint-ones-arg1-gen
-            ;; bvor-disjoint-ones-arg2-gen
-
             myif-of-myif-x-x-t
-
             myif-myif-myif-1
             myif-myif-myif-2
 
@@ -3317,6 +3324,8 @@
              move-negative-addend-1
              unicity-of-0
              collect-constants-over-<
+             collect-constants-over-<-2
+
              natp
 
              rationalp-when-bv-operator
@@ -3803,8 +3812,6 @@
              posp
 ;             natp ;loops with not-<-of-0-when-natp
 ;natp-when-integerp
-
-             collect-constants-over-<-2
 
              equal-of-cons
 ;             bv-array-write-with-index-and-len-same ;mon jul 19 21:06:14 2010

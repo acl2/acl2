@@ -150,7 +150,7 @@ will change).
 
 The cast translation is the hardest part of the parser. Cast are handled in two
 stages: during the typing phase, every nodes is typed (types need to be
-resolved before casting). Then, cast are translate in the ACL2Expr() functions
+resolved before casting). Then, cast are translated in the ACL2Expr() functions
 using the type information determined before. An example of cast can be found
 in statement.cpp at line 376 (assignment). The actual cast logic is handled in
 types.cpp.

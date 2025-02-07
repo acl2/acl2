@@ -1,10 +1,10 @@
 ; Yul Library
 ;
-; Copyright (C) 2021 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -23,7 +23,8 @@
     "This is described in
      [Solidity: Internals: The Optimizer: Yul-Based Optimizer Module:
       Statement-Scale Simplifications: DeadCodeEliminator].
-     The description mentions not only @('break'), @('continue') and @('leave'),
+     The description mentions
+     not only @('break'), @('continue'), and @('leave'),
      but also other constructs that are presumably part of the EVM dialect;
      since they are not part of our formalization,
      we do not handle the latter for now.")

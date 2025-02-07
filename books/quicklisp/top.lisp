@@ -28,6 +28,7 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 ; Contributing author: Alessandro Coglio <coglio@kestrel.edu>
+; Contributing author: Grant Jurgensen <grant@kestrel.edu>
 
 (in-package "ACL2")
 (include-book "base")
@@ -102,8 +103,8 @@ to develop your own ACL2 extensions, then you will typically want to:</p>
 <ol>
 
 <li>Include the books for whichever libraries you want to use.  For instance,
-to load <a href='http://weitz.de/cl-fad/'>CL-FAD</a> and <a
-href='https://common-lisp.net/project/osicat/'>OSICAT</a> you could do:
+to load <a href='http://weitz.de/cl-fad/'>CL-FAD</a> and @(see OSICAT) you
+could do:
 
 @({
     (include-book \"quicklisp/cl-fad\" :dir :system)
@@ -230,4 +231,65 @@ work around that using @('eval-when').</p>
 })
 
 <p>The user has access to the CL-JSON functionality because the non-raw
-@('cl-json.lisp') book is included in the non-raw @('my-book.lisp') book.</p>")
+@('cl-json.lisp') book is included in the non-raw @('my-book.lisp') book.</p>
+
+<h3>Build Issues</h3>
+
+<p>The @(see OSICAT) library occasionally causes build issues. See the @(see
+osicat) doc page for a description of the problem as well as the remedy.</p>")
+
+(defsection osicat
+  :parents (quicklisp)
+  :short "<a href='https://osicat.common-lisp.dev/'>OSICAT</a> is a @(see
+Quicklisp) library providing an OS interface for Unix platforms."
+
+  :long "<h3>Build Issues</h3>
+<p>@(see OSICAT) occassionally causes a build to fail with a message like the
+following:</p>
+
+@({
+| HARD ACL2 ERROR in INCLUDE-RAW:  Load of \"osicat-raw.lsp\" failed with
+| the following message:
+| File #P\"/var/lib/jenkins/workspace/acl2-testing/books/quicklisp/asdf-
+| home/cache/common-lisp/ccl-1.12-f98-linux-x64/var/lib/jenkins/workspace/acl2-
+| testing/books/quicklisp/bundle/software/osicat-20220220-git/src/osicat.lx64fsl\
+| \" does not exist.
+})
+
+<h4>Fix Instructions</h4>
+
+<p>Check the timestamps of the files @('libosicat.so') and
+@('wrappers__wrapper.o') in the directory:</p>
+
+@({
+<path-to-acl2>/books/quicklisp/asdf-home/cache/common-lisp/*/<path-to-acl2>/books/quicklisp/bundle/software/osicat-20220220-git/posix/
+})
+
+<p>On Linux, you can use @('ls -la --time-style=full-iso <file>') to see the
+full timestamp. On macOS, you can use @('ls -lT <file>').</p>
+
+<p>If the timestamp seconds are different between the two files, this is the
+issue. The fix is to update the timestamp of @('wrappers__wrapper.o') to fall
+within the same second as @('libosicat.so').</p>
+
+<p>On Linux, you can update the timestamp with @('sudo touch -t <new-time>
+<file>'). See @('man touch') for the formatting of @('<new-time>'). As an
+example, to set the time to @('2023-05-16 23:01:17'), @('<new-time>') would be
+@('202305162301.17').</p>
+
+<p>On macOS, you can perform a relative update of the timestamp, adding one
+second with the command: @('sudo touch -A 01 <file>').</p>
+
+<h4>Explanation</h4>
+
+<p>This build issue may occur when two or more books which depend on @(see
+OSICAT) are being certified simultaneously. A race condition allows one
+certification to attempt to read the compiled binary while the other is
+deleting it to rebuild.</p>
+
+<p>The timestamps are compared to check whether some part of @(see OSICAT)
+needs to be rebuilt. Timestamps are truncated internally to the nearest second
+and the @('wrappers__wrapper.o') file is considered out of date if its
+truncated timestamp is earlier than @('libosicat.so').</p>
+
+<p>Thank you to Eric McCarthy for investigating and debugging this issue.</p>")

@@ -4455,90 +4455,90 @@
 ;; Consequently, x is a solution of our system of equations iff this condition holds for
 ;; all i < q:
 
-(defun solution-test (x aq bq l f k)
+(defun solution-test-aux (x aq bq l f k)
   (if (zp k)
       t
     (and (equal (nth (nth (1- k) l) x)
                 (f+ (car (nth (1- k) bq))
 		    (f- (fdot-select f (nth (1- k) aq) x))))
-	 (solution-test x aq bq l f (1- k)))))
+	 (solution-test-aux x aq bq l f (1- k)))))
 
-(local-defun solution-test-cex (x aq bq l f k)
+(local-defun solution-test-aux-cex (x aq bq l f k)
   (if (zp k)
       ()
     (if (equal (nth (nth (1- k) l) x)
                (f+ (car (nth (1- k) bq))
 		   (f- (fdot-select f (nth (1- k) aq) x))))
-	(solution-test-cex x aq bq l f (1- k))
+	(solution-test-aux-cex x aq bq l f (1- k))
       (1- k))))
 
-(local-defthmd solution-test-1
-  (implies (and (natp k) (solution-test x aq bq l f k) (natp i) (< i k))
+(local-defthmd solution-test-aux-1
+  (implies (and (natp k) (solution-test-aux x aq bq l f k) (natp i) (< i k))
            (equal (nth (nth i l) x)
                   (f+ (car (nth i bq))
 		      (f- (fdot-select f (nth i aq) x)))))
-  :hints (("Goal" :induct (solution-test x aq bq l f k))))
+  :hints (("Goal" :induct (solution-test-aux x aq bq l f k))))
 
-(local-defthmd solution-test-2
-  (implies (and (natp k) (not (solution-test x aq bq l f k)))
-           (let ((i (solution-test-cex x aq bq l f k)))
+(local-defthmd solution-test-aux-2
+  (implies (and (natp k) (not (solution-test-aux x aq bq l f k)))
+           (let ((i (solution-test-aux-cex x aq bq l f k)))
 	     (and (natp i) (< i k)
 	          (not (equal (nth (nth i l) x)
                        (f+ (car (nth i bq))
 		           (f- (fdot-select f (nth i aq) x)))))))))
 
-(local-defthmd solution-test-3
+(local-defthmd solution-test-aux-3
   (implies (and (fmatp aq q n) (fmatp bq q 1) (natp q) (posp n)
                 (row-echelon-p aq)
                 (= (num-nonzero-rows aq) q)
 		(flistnp x n)
-                (solution-test x aq bq (lead-inds aq) (free-inds aq n) q)
+                (solution-test-aux x aq bq (lead-inds aq) (free-inds aq n) q)
 		(natp i) (< i q))
            (equal (nth i (fmat* aq (col-mat x)))
 	                 (nth i bq)))
   :hints (("Goal" :use (equal-rows-lemma
-                        (:instance solution-test-1 (l (lead-inds aq)) (f (free-inds aq n)) (k q))))))
+                        (:instance solution-test-aux-1 (l (lead-inds aq)) (f (free-inds aq n)) (k q))))))
 
-(local-defthmd solution-test-4
+(local-defthmd solution-test-aux-4
   (implies (and (fmatp aq q n) (fmatp bq q 1) (natp q) (posp n)
                 (row-echelon-p aq)
                 (= (num-nonzero-rows aq) q)
 		(flistnp x n)
-                (not (solution-test x aq bq (lead-inds aq) (free-inds aq n) q)))
-           (let ((i (solution-test-cex x aq bq (lead-inds aq) (free-inds aq n) q)))
+                (not (solution-test-aux x aq bq (lead-inds aq) (free-inds aq n) q)))
+           (let ((i (solution-test-aux-cex x aq bq (lead-inds aq) (free-inds aq n) q)))
 	     (and (natp i) (< i q)
 	          (not (equal (nth i (fmat* aq (col-mat x)))
 	               (nth i bq))))))
-  :hints (("Goal" :use ((:instance equal-rows-lemma (i (solution-test-cex x aq bq (lead-inds aq) (free-inds aq n) q)))
-                        (:instance solution-test-2 (l (lead-inds aq)) (f (free-inds aq n)) (k q))))))
+  :hints (("Goal" :use ((:instance equal-rows-lemma (i (solution-test-aux-cex x aq bq (lead-inds aq) (free-inds aq n) q)))
+                        (:instance solution-test-aux-2 (l (lead-inds aq)) (f (free-inds aq n)) (k q))))))
 
-(defthmd solution-test-lemma
+(local-defthmd solution-test-aux-5
   (implies (and (fmatp aq q n) (fmatp bq q 1) (posp q) (posp n)
                 (row-echelon-p aq)
                 (= (num-nonzero-rows aq) q)
 		(flistnp x n))
-	   (iff (solution-test x aq bq (lead-inds aq) (free-inds aq n) q)
+	   (iff (solution-test-aux x aq bq (lead-inds aq) (free-inds aq n) q)
 	        (equal (fmat* aq (col-mat x))
 	               bq)))
   :hints (("Goal" :in-theory (disable fmatp-fmat*)
-	          :use (solution-test-4
+	          :use (solution-test-aux-4
 			(:instance fmatp-fmat* (a aq) (b (col-mat x)) (m q) (p 1))
                         (:instance nth-diff-diff (x (fmat* aq (col-mat x))) (y bq))
-                        (:instance solution-test-3 (i (nth-diff (fmat* aq (col-mat x)) bq)))))))
+                        (:instance solution-test-aux-3 (i (nth-diff (fmat* aq (col-mat x)) bq)))))))
 
 ;; The case q = 0 must be handled separately:
 
-(local-defthm solution-test-0
-  (solution-test x aq bq l f 0))
+(local-defthm solution-test-aux-0
+  (solution-test-aux x aq bq l f 0))
 
 (local-defthmd fmat*-0
   (implies (and (fmatp a 0 n) (fmatp x n 1) (fmatp b 0 1))
            (equal (fmat* a x) b))
   :hints (("Goal" :in-theory (enable fmat* fmatp))))
 
-(in-theory (disable solution-test))
+(in-theory (disable solution-test-aux))
 
-(defthmd linear-equations-solvable-case
+(local-defthmd solution-test-aux-6
   (let* ((ar (row-reduce a))
          (br (fmat* (row-reduce-mat a) (col-mat b)))
 	 (q (num-nonzero-rows ar))
@@ -4549,7 +4549,7 @@
     (implies (and (fmatp a m n) (posp m) (posp n) (flistnp b m) (flistnp x n)
                   (solvablep a b))
              (iff (solutionp x a b)
-                  (solution-test x aq bq l f q))))
+                  (solution-test-aux x aq bq l f q))))
   :hints (("Goal" :in-theory (e/d (fmatp-first-rows fmatp-row-reduce-mat row-echelon-p-row-reduce fmatp-row-reduce)
                                   (fmatp-fmat*))
                   :use (reduce-linear-equations row-ops-mat-row-reduce
@@ -4561,12 +4561,30 @@
 			(:instance num-nonzero-rows<=m (a (row-reduce a)))
                         (:instance first-rows-linear-equations (ar (row-reduce a)) (br (fmat* (row-reduce-mat a) (col-mat b)))
 			                                       (xc (col-mat x)))
-                        (:instance solution-test-lemma (q (num-nonzero-rows (row-reduce a)))
+                        (:instance solution-test-aux-5 (q (num-nonzero-rows (row-reduce a)))
 			                               (aq (first-rows (num-nonzero-rows (row-reduce a)) (row-reduce a)))
 						       (bq (first-rows (num-nonzero-rows (row-reduce a))
 						                       (fmat* (row-reduce-mat a) (col-mat b)))))
 			(:instance fmatp-fmat* (a (row-reduce-mat a)) (b (col-mat b)) (n m) (p 1))))))
                         
+(defund solution-test (x a b n)
+  (let* ((ar (row-reduce a))
+         (br (fmat* (row-reduce-mat a) (col-mat b)))
+         (q (num-nonzero-rows ar))
+         (aq (first-rows q ar))
+         (bq (first-rows q br))
+         (lead-inds (lead-inds aq))
+         (free-inds (free-inds aq n)))
+    (solution-test-aux x aq bq lead-inds free-inds q)))
+  
+(defthmd linear-equations-solvable-case
+  (implies (and (fmatp a m n) (posp m) (posp n) (flistnp b m) (flistnp x n)
+                (solvablep a b))
+           (iff (solutionp x a b)
+                (solution-test x a b n)))
+  :hints (("Goal" :in-theory (enable solution-test)
+		  :use (solution-test-aux-6))))
+
 
 ;; Note that if (len l) = n and f = nil, then the equation
 
@@ -4576,7 +4594,7 @@
 
 ;;   (nth i x) = (car (nth i bq),
 
-;; (solution-test x aq bq l f q) reduces to x = (col 0 bq), and linear-equations-solvable-case
+;; (solution-test-aux x aq bq l f q) reduces to x = (col 0 bq), and linear-equations-solvable-case
 ;; reduces to the earlier result linear-equations-unique-solution-case.
 
 ;; Otherwise, the entries of x corresponding to the indices in (lead-inds aq) are determined

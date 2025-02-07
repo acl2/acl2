@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -78,7 +78,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Values of rnumeration fixtype like @(tsee mode)
+    "Values of enumeration fixtypes like @(tsee mode)
      are usually compared via their kinds (i.e. @(tsee mode-kind)),
      rather than directly;
      the fixtype definition macros in fact generate theorems to this effect,
@@ -408,8 +408,8 @@
                     (not (reserrp funinfoenv)))
                (b* ((funinfo (funinfo+funenv->info funinfoenv))
                     (funenv1 (funinfo+funenv->env funinfoenv))
-                  (varset0 (add-vars (funinfo->inputs funinfo) nil))
-                  (varset (add-vars (funinfo->outputs funinfo) varset0))
+                    (varset0 (add-vars (funinfo->inputs funinfo) nil))
+                    (varset (add-vars (funinfo->outputs funinfo) varset0))
                     (modes (check-safe-block (funinfo->body funinfo)
                                              varset
                                              (funenv-to-funtable funenv1))))
@@ -422,9 +422,9 @@
     :enable (find-fun
              funenv-safep)
     :hints ('(:use (:instance check-safe-block-when-funscope-safep
-                    (fun (identifier-fix fun))
-                    (funscope (funscope-fix (car funenv)))
-                    (funtab (funenv-to-funtable funenv))))))
+                              (fun (identifier-fix fun))
+                              (funscope (funscope-fix (car funenv)))
+                              (funtab (funenv-to-funtable funenv))))))
 
   (defruled funinfo-to-funtype-of-cdr-of-in
     (implies (and (funscopep funscope)
@@ -480,7 +480,7 @@
     "We also prove theorems about the preservation of
      the safety invariant of function environments.
      Essentially, given a safe function environments,
-     if we extend with a new scope whose functions
+     if we extend it with a new scope whose functions
      are safe in the function table that also includes those functions,
      we push a scope into the stack that satisfies the invariant;
      and furthermore, the existing scopes still satisfy the invariant,
@@ -901,7 +901,7 @@
     :enable (check-safe-path-list
              paths-to-vars)
     :expand (reserrp (cons (path-to-var (car paths))
-                              (paths-to-vars (cdr paths)))))
+                           (paths-to-vars (cdr paths)))))
 
   (defrule check-var-list-when-check-safe-path-list
     (implies (not (reserrp (check-safe-path-list paths varset)))
@@ -1051,8 +1051,8 @@
 
   (defrule reserrp-of-check-safe-expression-list-of-append
     (equal (reserrp (check-safe-expression-list (append es es1)
-                                                   varset
-                                                   funtab))
+                                                varset
+                                                funtab))
            (or (reserrp (check-safe-expression-list es varset funtab))
                (reserrp (check-safe-expression-list es1 varset funtab))))
     :enable check-safe-expression-list)
@@ -1069,8 +1069,8 @@
 
   (defruled check-safe-expression-list-not-error-when-rev
     (implies (not (reserrp (check-safe-expression-list (rev es)
-                                                          varset
-                                                          funtab)))
+                                                       varset
+                                                       funtab)))
              (not (reserrp (check-safe-expression-list es varset funtab))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1131,7 +1131,7 @@
    (xdoc::p
     "These are about the mutually recursive execution functions.
      Each theorem says that if the static safety checks succeed,
-     with respect to the variable table for computation state
+     with respect to the variable table for the computation state
      and the function table for the function environment,
      if the function environment is safe,
      and if the execution function does not return a limit error,
@@ -1174,13 +1174,13 @@
 
   (defruled exec-statement-list-cstate-to-vars-lemma
     (implies (and (not (reserrp (add-funs (statements-to-fundefs stmts)
-                                             funenv)))
+                                          funenv)))
                   (not (reserrp (exec-statement-list
-                                    stmts
-                                    cstate
-                                    (add-funs (statements-to-fundefs stmts)
-                                              funenv)
-                                    limit))))
+                                 stmts
+                                 cstate
+                                 (add-funs (statements-to-fundefs stmts)
+                                           funenv)
+                                 limit))))
              (equal (intersect
                      (cstate-to-vars cstate)
                      (cstate-to-vars
@@ -1193,7 +1193,7 @@
                                             limit))))
                     (cstate-to-vars cstate)))
     :use (:instance cstate-to-vars-of-exec-statement-list
-          (cstate (add-funs (statements-to-fundefs stmts) funenv)))
+                    (cstate (add-funs (statements-to-fundefs stmts) funenv)))
     :enable set::intersect-with-subset-left)
 
   (defthm-exec-flag
@@ -1443,5 +1443,5 @@
            reserr-limitp-aux)
   :disable exec-block-static-soundness
   :use (:instance exec-block-static-soundness
-        (cstate (cstate nil))
-        (funenv nil)))
+                  (cstate (cstate nil))
+                  (funenv nil)))

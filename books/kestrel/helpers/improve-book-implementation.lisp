@@ -1,6 +1,6 @@
 ; Replaying the events in a book (perhaps with changes).
 ;
-; Copyright (C) 2022-2024 Kestrel Institute
+; Copyright (C) 2022-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -71,6 +71,25 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Strip out all hints, in case they mention names that are not defined.
+(defun strip-hints (event)
+  (case (car event)
+    ((defthm defthmd) ; (defthm name body ...keyword-value-list...)
+     (let ((defthm-variant (car event))
+           (name (cadr event))
+           (body (caddr event))
+           (keyword-value-list (cdddr event)))
+       (let* ((keyword-value-list (clear-key-in-keyword-value-list :hints keyword-value-list))
+              (keyword-value-list (clear-key-in-keyword-value-list :instructions keyword-value-list)))
+         `(,defthm-variant ,name ,body ,@keyword-value-list))))
+    ;; fixme:
+    ((defthm defthmd) ; (defun name args ...declares/doc-string... body)
+     (remove-hints-from-defun event))
+    (otherwise event)
+    ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;move
 ;; Returns (mv erp nil state).
 (defun submit-event-error-triple (event print state)
@@ -101,7 +120,8 @@
           (submit-and-check-events (rest events) skip-proofsp skip-localsp print state)
         (mv-let (erp state)
           ;; TODO: We need to strip hints here, in case they refer to a local name, or avoid checking hints:
-          (submit-event (if skip-proofsp `(skip-proofs ,event) event)
+          ;; what if it's a make-event that generates some hints?
+          (submit-event (if skip-proofsp `(skip-proofs ,(strip-hints event)) event)
                         nil ;print
                         nil state)
           (if erp
@@ -124,30 +144,21 @@
 
 ;; Returns (mv successp state).  Doesn't change the world (because it reverts it after submitting the events).
 ;; TODO: Suppress error printing here.
+;; Note that the local incompatibility check is dealt with elsewhere.
 (defun events-would-succeedp (events print state)
   (declare (xargs :guard (and (true-listp events)
                               (member-eq print '(nil :brief :verbose)))
                   :mode :program ; because this ultimately calls trans-eval-error-triple
                   :stobjs state))
-  ;; First, quickly detect whether something would fail in the second pass of
-  ;; certify-book (local incompatibility check).  We skip local events here to
-  ;; prevent a local event from making a bad name mention seem ok.  We skip
-  ;; proofs to help this fail fast.  TODO: Do we really need to start this check at the beginning
-  ;; of the book, in case there was already a local event which masks a failure here?
+  ;; TODO: Can we do something else fast here, like checking all the hints but not doing the proofs?
+  ;; May cause includes to be done again...
   (mv-let (erp res state)
-    (revert-world (submit-and-check-events-error-triple events t t print state))
+    (revert-world (submit-and-check-events-error-triple events nil nil print state))
     (declare (ignore res))
     (if erp
         (mv nil state) ; some event gave an error
-      ;; TODO: Can we do something else fast here, like checking all the hints but not doing the proofs?  May cause includes to be done again...
-      ;; Try again for real (without skip-proofs):
-      (mv-let (erp res state)
-        (revert-world (submit-and-check-events-error-triple events nil nil print state))
-        (declare (ignore res))
-        (if erp
-            (mv nil state) ; some event gave an error
-          (mv t state)     ; all events succeeded
-          )))))
+      (mv t state)     ; all events succeeded
+      )))
 
 ;; Returns (mv erp state).
 (defun submit-event-expect-no-error (event print state)
@@ -160,6 +171,110 @@
         (prog2$ (cw "ERROR (~x0) submitting event ~X12.~%" erp event nil)
                 (mv :error-submitting-event state))
       (mv nil state))))
+
+;; Returns state.  May throw an error.
+(defun submit-event! (event print state)
+  (declare (xargs :guard (member-eq print '(nil :brief :verbose))
+                  :mode :program ; because this ultimately calls trans-eval-error-triple
+                  :stobjs state))
+  (mv-let (erp state)
+    (submit-event event print nil state)
+    (if erp
+        (prog2$ (er hard? 'submit-event! "ERROR (~x0) submitting event ~X12.~%" erp event nil)
+                state)
+      state)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns state, not an error triple
+(defun set-ld-skip-proofsp-simple (val state)
+  (declare (xargs :mode :program
+                  :stobjs state))
+  (mv-let (erp val2 state)
+    (set-ld-skip-proofsp val state)
+    (declare (ignore erp val2))
+    state))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns (mv erp event-nums state) where event-nums (1-based) indicates
+;; events that could be dropped without causing a failure during the local
+;; incompatibility check.  Since this mimics the local incompatibility check,
+;; we omit all local events and skip all proofs.  For now, we consider
+;; only include-book events as candidates for dropping.
+;; This makes a pass through the events.  For each event we want to drop, we
+;; see if we could complete the pass without it (then we revert that extension
+;; of the pass).
+(defun maybe-droppable-events-aux (events num print acc state)
+  (declare (xargs :guard (and (true-listp events)
+                              (posp num)
+                              (member-eq print '(nil :brief :verbose))
+                              (nat-listp acc) ; 1-based
+                              ;; We should already be skipping proofs and local events:
+                              (eq 'acl2::include-book (f-get-global 'acl2::ld-skip-proofsp state))
+                              )
+                  :mode :program ; because this calls submit-event
+                  :stobjs state))
+  (if (endp events)
+      (mv nil (reverse acc) state)
+    (let ((event (first events)))
+      (case (car event)
+        (local
+          ;; we skip all local events (perhaps just calling submit-event would
+          ;; work here since we've set ld-skip-proofsp:
+          (maybe-droppable-events-aux (rest events) (+ 1 num) print acc state))
+        (include-book
+          (prog2$
+            (and (eq :verbose print)
+                 (cw "(Does dropping ~x0 violate the local incompatibility check?: " event))
+            (mv-let (erp val state)
+              ;; See if the rest of the events are submittable (for the local incompatibility check) without this event:
+              (revert-world (submit-and-check-events-error-triple (rest events) t t nil state)) ; todo: don't really need the "t t" here since we set ld-skip-proofsp
+              (declare (ignore val))
+              (if erp
+                  ;; Dropping this include-book caused some later event to fail
+                  ;; the local incompatibility check, so we cannot drop it.
+                  ;; Thus, we submit it and continue.
+                  (prog2$
+                    (and (eq :verbose print) (cw "No.~%"))
+                    (let ((state (submit-event! event nil state)))
+                      (maybe-droppable-events-aux (rest events) (+ 1 num) print acc state)))
+                ;; This event is droppable, but we submit it before we continue the pass, so as not to
+                ;; interfere with the rest of the analysis (each maybe-droppable
+                ;; event is determined without dropping anything else):
+                (prog2$
+                  (and (eq :verbose print) (cw "Yes.~%"))
+                  (let* ((acc (cons num acc)) ; this event is droppable
+                         (state (submit-event! event nil state)))
+                    (maybe-droppable-events-aux (rest events) (+ 1 num) print acc state)))))))
+        ;; No need to remove local stuff from the progn because we set ld-skip-proofsp for this pass.
+        ;; (progn
+        ;;   ;; todo: what about non-local include-books in the progn.  should we flatten the progn?
+        ;;   (let* (;(event1 (remove-local-events `(progn ,@(remove-local-events (cdr event)))))
+        ;;          (state (submit-event! event nil state)))
+        ;;     (maybe-droppable-events-aux (rest events) (+ 1 num) print acc state)))
+        (otherwise ;; For anything else, we submit it (skipping proofs) and continue:
+          (let ((state (submit-event! event nil state)))
+            (maybe-droppable-events-aux (rest events) (+ 1 num) print acc state)))))))
+
+;; Returns (mv erp event-nums state)
+;; todo: don't bother with includes of any of the initial-included-books
+;; todo: stop once the last include-book (or other candidate for dropping) is found?
+(defun maybe-droppable-events (events print state)
+  (declare (xargs :guard (and (true-listp events)
+                              (member-eq print '(nil :brief :verbose))
+                              )
+                  :mode :program ; because this ultimately calls trans-eval-error-triple
+                  :stobjs state))
+  (let ((state (set-ld-skip-proofsp-simple 'acl2::include-book state)))
+    (mv-let (erp event-nums state)
+      (revert-world (maybe-droppable-events-aux events 1 print nil state))
+      (if erp
+          (mv erp nil state)
+        (let ((state (set-ld-skip-proofsp-simple nil state)))
+          (mv nil event-nums state))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; ;; See if some events would be admitted, but undo them even if so.
 ;; ;; Returns (mv erp state) where ERP is non-nil if there was an error submitting the events.
@@ -417,13 +532,16 @@
 
 ;; Currently, there is nothing to try for an in-package.
 (defun improve-in-package-event (event rest-events print state)
-  (declare (xargs :guard (and (member-eq print '(nil :brief :verbose)))
-                  :mode :program ; because this ultimately calls trans-eval-error-triple
+  (declare (xargs :guard (and (true-listp rest-events)
+                              (member-eq print '(nil :brief :verbose)))
+                  :mode :program ; because this ultimately calls submit-event
                   :stobjs state)
            (ignore rest-events) ; for now, todo: use these when trying to change the theorem statement
            )
   (prog2$ (and print (cw " (For ~x0:)~%" event))
-          (mv nil state)))
+          ;; Submitting the in-package event actually seems unnecessary in most cases:
+          (let ((state (submit-event! event nil state)))
+            (mv nil state))))
 
 ;; ;; Test whether the given book is included in the wrld.  FILENAME should include the .lisp extension.
 ;; (defun book-includedp (dir filename state)
@@ -436,8 +554,9 @@
 
 ;; Submits EVENT and prints suggestions for improving it.
 ;; Returns (mv erp state).
-(defun improve-include-book-event (event rest-events initial-included-books print state)
-  (declare (xargs :guard (and (member-eq print '(nil :brief :verbose)))
+(defun improve-include-book-event (event num maybe-droppable-event-nums rest-events initial-included-books print top-levelp state)
+  (declare (xargs :guard (and (member-eq print '(nil :brief :verbose))
+                              (booleanp top-levelp))
                   :mode :program ; because this ultimately calls trans-eval-error-triple
                   :stobjs state)
            (ignore print))
@@ -453,27 +572,36 @@
          (prog2$ (cw "~%   Skipping: Already included before improve-book was called.)~%")
                  (submit-event-expect-no-error event nil state))
        (if (member-equal full-path (all-included-books (w state)))
-           (prog2$ (cw "~%   Drop include (redundant).)~%" event nil)
+           (prog2$ (cw "~%   Drop include (redundant).)~%")
                    ;; We submit the event anyway, so as to not interfere with subsequent suggested improvements:
                    (submit-event-expect-no-error event nil state))
          (mv-let (successp state)
-           (events-would-succeedp rest-events nil state)
+           (if (and top-levelp ; drop?
+                    (member num maybe-droppable-event-nums))
+               (events-would-succeedp rest-events nil state)
+             ;; Not top-level, so don't attempt to drop it (TODO: relax this):
+             (mv nil state))
            (if successp
-               ;; This event could be skipped: (but that might break books that use
+               ;; This event could be dropped: (but that might break books that use
                ;; this book) TODO: Also try reducing what is included?  TODO:
                ;; Somehow avoid suggesting to drop books that introduce names used
                ;; in macros (they will seem like they can be dropped, unless the
                ;; book contains an actual call of the macro).
-               (prog2$ (cw "~%   Drop include.)~%" event nil)
+               (prog2$ (cw "~%   Drop include.)~%")
                        ;; We submit the event anyway, so as to not interfere with subsequent suggested improvements:
                        (submit-event-expect-no-error event nil state))
              ;;failed to submit the rest of the events, so we can't just skip this one:
              (progn$ ;; (cw " Cannot be dropped.)~%" event)
-              (cw ")~%" event)
+              (cw ")~%")
               (submit-event-expect-no-error event nil state)))))))))
 
-(defun improve-local-event (event rest-events initial-included-books print state)
-  (declare (xargs :guard (and (member-eq print '(nil :brief :verbose)))
+(defun improve-local-event (event
+                            rest-events ; remaining events in the book or encapsulate
+                            initial-included-books print state)
+  (declare (xargs :guard (and (member-eq print '(nil :brief :verbose))
+                              (true-listp rest-events)
+                              (string-listp initial-included-books)
+                              )
                   :mode :program ; because this ultimately calls trans-eval-error-triple
                   :stobjs state)
            (ignore initial-included-books print))
@@ -482,6 +610,7 @@
   (prog2$
    (cw " (For ~s0:" (abbreviate-event event))
    (mv-let (successp state)
+     ;; Check whether the rest of the events would succeed without this event:
      (events-would-succeedp rest-events nil state)
      (if successp
          ;; This event could be skipped:  TODO: Still, try improving it (it may be a defthm, etc.)?
@@ -491,81 +620,119 @@
                  (submit-event-expect-no-error event nil state))
        ;;failed to submit the rest of the events, so we can't just skip this one:
        (progn$ ;(cw " Cannot be dropped.)~%" event)
-        (cw ")~%" event)
-        (submit-event-expect-no-error event nil state))))))
+         (cw ")~%")
+         (submit-event-expect-no-error event nil state))))))
 
-;; Submits EVENT and prints suggestions for improving it.
-;; Returns (mv erp state).
-(defun improve-event (event rest-events initial-included-books print state)
-  (declare (xargs :guard (and (true-listp rest-events)
-                              (member-eq print '(nil :brief :verbose))
-                              (string-listp initial-included-books))
-                  :mode :program ; because this ultimately calls trans-eval-error-triple
-                  :stobjs state))
-  ;; TODO: Do the submit-event outside this (but currently defuns must be submitted before linting):
-  ;; todo: for some of these, we should print the event before submitting it:
-  ;; TODO: Add more event types here.
-  (case (car event)
-    ;; Since it's just an assert, we can continue after an error, so we just warn:
-    ((assert-event assert-equal)
-     (let ((state (submit-event-handle-error event nil :warn state)))
-       (mv nil state)))
-    ((defcong) (submit-event event nil nil state) ; todo: try to clean up hints
-     )
-    ((defconst) (submit-event event nil nil state) ; todo: check the body?
-     )
-    ((deflabel) (submit-event event nil nil state) ; can't think of anything to do for labels
-     )
-    ((defmacro) (submit-event event nil nil state) ; todo: check the body?
-     )
-    ((defrule defruled) (improve-defrule-event event rest-events print state))
-    ((defstub) (submit-event event nil nil state) ; anything to do?
-     )
-    ((defthm defthmd) (improve-defthm-event event rest-events print state))
-    ((defun defund) (improve-defun-event event rest-events print state))
-    ((defxdoc defxdoc+) (submit-event event nil nil state) ; todo: anything to check?
-     )
-    ((encapsulate) (submit-event event nil nil state) ; todo: handle! may be easy if no constrained functions and no local events
-     )
-    (include-book (improve-include-book-event event rest-events initial-included-books print state))
-    ((in-package) (improve-in-package-event event rest-events print state))
-    ((in-theory) (submit-event event nil nil state) ; todo: check if redundant, consider dropping (check the time difference)
-     )
-    (local (improve-local-event event rest-events initial-included-books print state))
-    ((theory-invariant) (submit-event event nil nil state) ; todo: handle!  could warn about a name that is not defined.
-     )
-    ((verify-guards) (submit-event event nil nil state) ; todo: check if redundant, improve hints
-     )
-    (t (prog2$ (cw " (Just submitting unhandled event ~x0)~%" (abbreviate-event event))
-               (submit-event-expect-no-error event nil state)))))
+(mutual-recursion
+  ;; Submits EVENT and prints suggestions for improving it.
+  ;; Returns (mv erp state).
+  (defun improve-event (event num maybe-droppable-event-nums rest-events initial-included-books print top-levelp state)
+    (declare (xargs :guard (and (natp num)
+                                (true-listp rest-events)
+                                (member-eq print '(nil :brief :verbose))
+                                (string-listp initial-included-books)
+                                (booleanp top-levelp))
+                    :mode :program ; because this ultimately calls trans-eval-error-triple
+                    :stobjs state))
+    ;; TODO: Do the submit-event outside this (but currently defuns must be submitted before linting):
+    ;; todo: for some of these, we should print the event before submitting it:
+    ;; TODO: Add more event types here.
+    (case (car event)
+      ;; Since it's just an assert, we can continue after an error, so we just warn:
+      ((assert-event assert-equal)
+       (let ((state (submit-event-handle-error event nil :warn state)))
+         (mv nil state)))
+      ((defcong) (submit-event event nil nil state) ; todo: try to clean up hints
+       )
+      ((defconst) (submit-event event nil nil state) ; todo: check the body?
+       )
+      ((deflabel) (submit-event event nil nil state) ; can't think of anything to do for labels
+       )
+      ((defmacro) (submit-event event nil nil state) ; todo: check the body?
+       )
+      ((defrule defruled) (improve-defrule-event event rest-events print state))
+      ((defstub) (submit-event event nil nil state) ; anything to do?
+       )
+      ((defthm defthmd) (improve-defthm-event event rest-events print state))
+      ((defun defund) (improve-defun-event event rest-events print state))
+      ((defxdoc defxdoc+) (submit-event event nil nil state) ; todo: anything to check?
+       )
+      ;; For an encapsulate, we attempt to improve each of the subsidiary
+      ;; events (submitting each as we go), then we revert the world and
+      ;; finally submit the whole encapsulate (skipping the proofs):
+      (encapsulate
+          (let (;; (signatures (first (fargs event))) ; TODO: Think about what, if anything, to do with these
+                (events (rest (fargs event))))
+            (mv-let (erp val state)
+              (revert-world
+                (mv-let (erp state)
+                  (improve-events-aux events 1 nil initial-included-books print nil state) ; no longer at the top-level
+                  (mv erp :invisible state)))
+              (declare (ignore val))
+              (if erp
+                  (mv erp state)
+                (submit-event `(skip-proofs ,event) nil t state)))))
+      (include-book (improve-include-book-event event num maybe-droppable-event-nums rest-events initial-included-books print top-levelp state))
+      ((in-package) (improve-in-package-event event rest-events print state))
+      ((in-theory) (submit-event event nil nil state) ; todo: check if redundant, consider dropping (check the time difference)
+       )
+      (local (improve-local-event event rest-events initial-included-books print state))
+      ((theory-invariant) (submit-event event nil nil state) ; todo: handle!  could warn about a name that is not defined.
+       )
+      ((verify-guards) (submit-event event nil nil state) ; todo: check if redundant, improve hints
+       )
+      (t (prog2$ (cw " (Just submitting unhandled event ~x0)~%" (abbreviate-event event))
+                 (submit-event-expect-no-error event nil state)))))
 
-;; Submits each event, after printing suggestions for improving it.
-;; Returns (mv erp state).
-(defun improve-events-aux (events initial-included-books print state)
+  ;; Submits each event, after printing suggestions for improving it.
+  ;; Returns (mv erp state).
+  (defun improve-events-aux (events num maybe-droppable-event-nums initial-included-books print top-levelp state)
+    (declare (xargs :guard (and (true-listp events)
+                                (natp num)
+                                (nat-listp maybe-droppable-event-nums)
+                                (string-listp initial-included-books)
+                                (booleanp top-levelp))
+                    :mode :program
+                    :stobjs state))
+    (if (endp events)
+        (mv nil state)
+      (mv-let (erp state)
+        (improve-event (first events) num maybe-droppable-event-nums (rest events) initial-included-books print top-levelp state)
+        (if erp
+            (mv erp state)
+          (improve-events-aux (rest events) (+ 1 num) maybe-droppable-event-nums initial-included-books print top-levelp state)))))
+
+  ) ; end mutual-recursion
+
+;; does not apply to encapsulate, only progn (whose local events are local wrt the context surrounding the progn)
+;; (defun remove-local-events (events)
+;;   (declare (xargs :guard t))
+;;   (if (atom events)
+;;       nil
+;;     (let ((event (first events)))
+;;       (if (not (consp event))
+;;           (er hard? 'remove-local-events "Unexpected event: ~X01." event nil)
+;;         (case (car event)
+;;           ;; Skip this local event:
+;;           (local (remove-local-events (rest events)))
+;;           ;; For a progn, we remove all the local events within it:
+;;           (progn (cons `(progn ,@(remove-local-events (cdr event)))
+;;                        (remove-local-events (rest events))))
+;;           ;; For anything else, we keep the event:
+;;           (otherwise (cons event (remove-local-events (rest events)))))))))
+
+(defun improve-events (events maybe-droppable-event-nums initial-included-books print state)
   (declare (xargs :guard (and (true-listp events)
+                              (nat-listp maybe-droppable-event-nums)
                               (string-listp initial-included-books))
                   :mode :program
                   :stobjs state))
-  (if (endp events)
-      (mv nil state)
-    (mv-let (erp state)
-      (improve-event (first events) (rest events) initial-included-books print state)
-      (if erp
-          (mv erp state)
-        (improve-events-aux (rest events) initial-included-books print state)))))
-
-(defun improve-events (events initial-included-books print state)
-  (declare (xargs :guard (and (true-listp events)
-                              (string-listp initial-included-books))
-                  :mode :program
-                  :stobjs state))
-  (prog2$ (let ((dupes (duplicate-items events)))
+  (prog2$ (let ((dupes (duplicate-items events))) ; todo: perhaps get rid of this, once we check for redundancy of more events
             (and dupes
                  ;; Some dupes may be okay, such as (logic) and (program), but
                  ;; that seems like bad style.
                  (cw "(Duplicate events: ~X01.)~%" dupes nil)))
-          ;; todo: do local incompat checking without include-books (or making them local) here?
-          (improve-events-aux events initial-included-books print state)))
+          (improve-events-aux events 1 maybe-droppable-event-nums initial-included-books print t state)))
 
 ;; Returns (mv erp state).
 ;; TODO: Set induction depth limit to nil?
@@ -599,13 +766,23 @@
               (declare (ignore fake))
               (let* (;; We cannot try omitting these from the book:
                      (initial-included-books (all-included-books (w state))))
-                (progn$ (and (eq print :verbose) (cw "  Book contains ~x0 forms.~%~%" (len events)))
+                (progn$
+                  (and (eq print :verbose) (cw "  Book contains ~x0 forms.~%~%" (len events)))
+                  ;; Check which include-books could be dropped without violating the local incompatibility check:
+                  (mv-let (erp maybe-droppable-event-nums state)
+                    (maybe-droppable-events events print state)
+                    (if erp
+                        (mv erp state)
+                      (prog2$
+                        (and (eq :verbose print)
+                             (cw "Maybe droppable event nums: ~X01." maybe-droppable-event-nums nil)) ; todo: print the actual events?
                         (mv-let (erp state)
-                          (improve-events events initial-included-books print state)
+                          ;; Try to improve/drop the events in the book:
+                          (improve-events events maybe-droppable-event-nums initial-included-books print state)
                           (let* ((state (unwiden-margins state))
                                  (state (set-cbd-simple old-cbd state)))
                             (prog2$ (cw ")~%")
-                                    (mv erp state)))))))))))))
+                                    (mv erp state))))))))))))))))
 
 ;; Returns (mv erp nil state).  Does not change the world.
 (defun improve-book-fn (bookname ; no extension

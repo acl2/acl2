@@ -168,7 +168,7 @@
     :bound 32
     :concl (mv-nth 2 (sse-cvt-fp-to-int
                       nbytes op mxcsr trunc exp-width frac-width))
-    :hints (("Goal" :in-theory (e/d* () (unsigned-byte-p))))
+    :hints (("Goal" :in-theory (e/d* (unsigned-byte-p-when-mxcsrbits-p) (unsigned-byte-p))))
     :gen-type t
     :gen-linear t))
 
@@ -215,7 +215,7 @@
   (defthm-unsigned-byte-p n32p-mxcsr-sse-cvt-int-to-fp
     :bound 32
     :concl (mv-nth 2 (sse-cvt-int-to-fp op mxcsr exp-width frac-width))
-    :hints (("Goal" :in-theory (e/d* () (unsigned-byte-p))))
+    :hints (("Goal" :in-theory (e/d* (unsigned-byte-p-when-mxcsrbits-p) (unsigned-byte-p))))
     :gen-type t
     :gen-linear t))
 
@@ -400,7 +400,7 @@
   :concl (mv-nth
           2
           (sse-cvt-fp1-to-fp2 op mxcsr exp-width1 frac-width1 exp-width2 frac-width2))
-  :hints (("Goal" :in-theory (e/d* ()
+  :hints (("Goal" :in-theory (e/d* (unsigned-byte-p-when-mxcsrbits-p)
                                    (rtl::sse-post-comp
                                     bitops::loghead-of-loghead-1
                                     unsigned-byte-p

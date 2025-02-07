@@ -1,7 +1,7 @@
 ; A package for x86 proof work
 ;
 ; Copyright (C) 2017-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2024 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,11 +14,12 @@
 ;; The "X" package, for doing proofs about x86 code.  We could improve the name
 ;; if we want, but "X86" is taken.
 
+;; In general, we import function names, but not theorem names, from other
+;; packages into this package.
+
 ;(include-book "std/portcullis" :dir :system)
 (include-book "projects/x86isa/portcullis/portcullis" :dir :system)
 (include-book "rtl/rel11/portcullis" :dir :system)
-
-;; A Package for x86 analysis tools and proofs
 
 ;; TODO: Add a bunch of x86 ISA stuff here
 (defconst *symbols-from-x86isa*
@@ -39,14 +40,151 @@
     x86isa::canonical-address-p
     x86isa::xr
     x86isa::xw
+
+    ;; Memory operations (from most to least complex):
+
+    x86isa::rime-size
+    x86isa::rime08
+    x86isa::rime16
+    x86isa::rime32
+    x86isa::rime64
+    x86isa::rime-size$inline
+    x86isa::rime08$inline
+    x86isa::rime16$inline
+    x86isa::rime32$inline
+    x86isa::rime64$inline
+
+    x86isa::wime-size
+    x86isa::wime08
+    x86isa::wime16
+    x86isa::wime32
+    x86isa::wime64
+    x86isa::wime-size$inline
+    x86isa::wime08$inline
+    x86isa::wime16$inline
+    x86isa::wime32$inline
+    x86isa::wime64$inline
+
+    x86isa::rme-size
+    x86isa::rme08
+    x86isa::rme16
+    x86isa::rme32
+    x86isa::rme48
+    x86isa::rme64
+    x86isa::rme80
+    x86isa::rme128
+    x86isa::rme256
+    x86isa::rme-size$inline
+    x86isa::rme08$inline
+    x86isa::rme16$inline
+    x86isa::rme32$inline
+    x86isa::rme48$inline
+    x86isa::rme64$inline
+    x86isa::rme80$inline
+    x86isa::rme128$inline
+    x86isa::rme256$inline
+
+    x86isa::wme-size
+    x86isa::wme08
+    x86isa::wme16
+    x86isa::wme32
+    x86isa::wme48
+    x86isa::wme64
+    x86isa::wme80
+    x86isa::wme128
+    x86isa::wme256
+    x86isa::wme-size$inline
+    x86isa::wme08$inline
+    x86isa::wme16$inline
+    x86isa::wme32$inline
+    x86isa::wme48$inline
+    x86isa::wme64$inline
+    x86isa::wme80$inline
+    x86isa::wme128$inline
+    x86isa::wme256$inline
+
+    x86isa::riml-size
+    x86isa::riml-size$inline
+    x86isa::riml08
+    x86isa::riml16
+    x86isa::riml32
+    x86isa::riml64
+
+    x86isa::wiml-size
+    x86isa::wiml-size$inline
+    x86isa::wiml08
+    x86isa::wiml16
+    x86isa::wiml32
+    x86isa::wiml64
+
+    x86isa::rml-size
+    x86isa::rml-size$inline
+    x86isa::rml08
+    x86isa::rml16
+    x86isa::rml32
+    x86isa::rml48
+    x86isa::rml64
+    x86isa::rml80
+    x86isa::rml128
+    x86isa::rml256
+    x86isa::rml512
+
+    x86isa::wml-size
+    x86isa::wml-size$inline
+    x86isa::wml08
+    x86isa::wml16
+    x86isa::wml32
+    x86isa::wml48
+    x86isa::wml64
+    x86isa::wml80
+    x86isa::wml128
+    x86isa::wml256
+    x86isa::wml512
+
     x86isa::rb
     x86isa::wb
+
     x86isa::rb-1
     x86isa::wb-1
 
+    x86isa::rvm08
+    x86isa::rvm16
+    x86isa::rvm32
+    x86isa::rvm48
+    x86isa::rvm64
+    x86isa::rvm80
+    x86isa::rvm128
+    x86isa::rvm256
+    x86isa::rvm512
+    x86isa::rvm08$inline
+    x86isa::rvm16$inline
+    x86isa::rvm32$inline
+    x86isa::rvm48$inline
+    x86isa::rvm64$inline
+    x86isa::rvm80$inline
+    x86isa::rvm128$inline
+    x86isa::rvm256$inline
+    x86isa::rvm512$inline
 
-    x86isa::rvm08 ;todo more like this
     x86isa::wvm08
+    x86isa::wvm16
+    x86isa::wvm32
+    x86isa::wvm48
+    x86isa::wvm64
+    x86isa::wvm80
+    x86isa::wvm128
+    x86isa::wvm256
+    x86isa::wvm512
+    x86isa::wvm08$inline
+    x86isa::wvm16$inline
+    x86isa::wvm32$inline
+    x86isa::wvm48$inline
+    x86isa::wvm64$inline
+    x86isa::wvm80$inline
+    x86isa::wvm128$inline
+    x86isa::wvm256$inline
+    x86isa::wvm512$inline
+
     x86isa::flgi
     x86isa::!flgi
     x86isa::!flgi-undefined
@@ -62,28 +200,7 @@
     x86isa::64-bit-modep
     x86isa::*compatibility-mode*
     x86isa::*64-bit-mode*
-    X86ISA::X86-OPERATION-MODE
-
-    x86isa::rme-size
-    x86isa::rme-size$inline
-    x86isa::rme08$inline
-    x86isa::rme16$inline
-    x86isa::rme32$inline
-    x86isa::rme48$inline
-    x86isa::rme64$inline
-    x86isa::rme80$inline
-    x86isa::rme128$inline
-
-    x86isa::rml-size
-    x86isa::rml-size$inline
-    x86isa::rml08
-    x86isa::rml16
-    x86isa::rml32
-    x86isa::rml48
-    x86isa::rml64
-    x86isa::rml80
-    x86isa::rml128
-    x86isa::rml256
+    x86isa::x86-operation-mode
 
     ;; registers (the order is odd but follows the numeric values):
     x86isa::*rax*
@@ -128,7 +245,7 @@
     x86isa::54bits-fix
     x86isa::64bits-fix
 
-    ;; flags:
+    ;; flags (todo: more):
     x86isa::*flg-names*
     x86isa::*cf*
     x86isa::*pf*
@@ -137,10 +254,14 @@
     x86isa::*sf*
     x86isa::*of*
 
-    ;; segment registers:
+    ;; segment registers (see define-segment-registers):
+    x86isa::*es*
     x86isa::*cs*
     x86isa::*ss*
     x86isa::*ds*
+    x86isa::*fs*
+    x86isa::*gs*
+    x86isa::*segment-register-names-len*
 
     ;; flag functions:
 
@@ -295,8 +416,16 @@
 
     x86isa::!app-view
     x86isa::init-x86-state-64
+
     x86isa::rgfi
+    x86isa::rgfi$a
+    x86isa::rgfi-size
+    x86isa::rgfi-size$inline
     x86isa::!rgfi
+    x86isa::!rgfi$a
+    x86isa::!rgfi-size
+    x86isa::!rgfi-size$inline
+
     x86isa::rip
     x86isa::rip$a
     x86isa::x86-run
@@ -314,7 +443,7 @@
     ;; special symbol that can appear in the MS field:
     x86isa::X86-HLT
 
-    x86isa::increment-*ip
+    x86isa::increment-*ip ; remove?
     x86isa::one-byte-opcode-execute
     x86isa::fault
     x86isa::fault$a
@@ -326,7 +455,6 @@
     x86isa::ea-to-la
     x86isa::ea-to-la$inline
     x86isa::segment-base-and-bounds
-    x86isa::*segment-register-names-len*
 
     ;; new stuff after change to x86 model state representation:
 
@@ -632,7 +760,19 @@
     x86isa::undef$a
     x86isa::!undef
 
-    X86ISA::READ-*IP$INLINE
+    x86isa::read-*ip
+    x86isa::write-*ip
+    x86isa::add-to-*ip
+    x86isa::read-*ip$inline
+    x86isa::write-*ip$inline
+    x86isa::add-to-*ip$inline
+
+    x86isa::read-*sp
+    x86isa::write-*sp
+    x86isa::add-to-*sp
+    x86isa::read-*sp$inline
+    x86isa::write-*sp$inline
+    x86isa::add-to-*sp$inline
 
     x86isa::vex->vvvv$inline
     x86isa::vex->l$inline
@@ -645,9 +785,6 @@
     x86isa::vex->pp
     x86isa::vex->r
     x86isa::vex->w
-
-    x86isa::zmmi
-    x86isa::!zmmi
 
     x86isa::x86-illegal-instruction
     x86isa::x86-step-unimplemented
@@ -749,6 +886,98 @@
     x86isa::n256$inline
     x86isa::n512$inline
 
+    ;; this list is from (acl2::get-ruleset 'x86isa::ni-defs (w state)):
+    x86isa::i01
+    x86isa::i02
+    x86isa::i03
+    x86isa::i04
+    x86isa::i05
+    x86isa::i06
+    x86isa::i08
+    x86isa::i09
+    x86isa::i11
+    x86isa::i12
+    x86isa::i16
+    x86isa::i17
+    x86isa::i18
+    x86isa::i20
+    x86isa::i21
+    x86isa::i22
+    x86isa::i24
+    x86isa::i25
+    x86isa::i26
+    x86isa::i27
+    x86isa::i28
+    x86isa::i30
+    x86isa::i32
+    x86isa::i33
+    x86isa::i35
+    x86isa::i43
+    x86isa::i44
+    x86isa::i45
+    x86isa::i47
+    x86isa::i48
+    x86isa::i49
+    x86isa::i51
+    x86isa::i52
+    x86isa::i55
+    x86isa::i59
+    x86isa::i60
+    x86isa::i64
+    x86isa::i65
+    x86isa::i80
+    x86isa::i112
+    x86isa::i120
+    x86isa::i128
+    x86isa::i256
+    x86isa::i512
+
+    ;; same as above list but with $inline:
+    x86isa::i01$inline
+    x86isa::i02$inline
+    x86isa::i03$inline
+    x86isa::i04$inline
+    x86isa::i05$inline
+    x86isa::i06$inline
+    x86isa::i08$inline
+    x86isa::i09$inline
+    x86isa::i11$inline
+    x86isa::i12$inline
+    x86isa::i16$inline
+    x86isa::i17$inline
+    x86isa::i18$inline
+    x86isa::i20$inline
+    x86isa::i21$inline
+    x86isa::i22$inline
+    x86isa::i24$inline
+    x86isa::i25$inline
+    x86isa::i26$inline
+    x86isa::i27$inline
+    x86isa::i28$inline
+    x86isa::i30$inline
+    x86isa::i32$inline
+    x86isa::i33$inline
+    x86isa::i35$inline
+    x86isa::i43$inline
+    x86isa::i44$inline
+    x86isa::i45$inline
+    x86isa::i47$inline
+    x86isa::i48$inline
+    x86isa::i49$inline
+    x86isa::i51$inline
+    x86isa::i52$inline
+    x86isa::i55$inline
+    x86isa::i59$inline
+    x86isa::i60$inline
+    x86isa::i64$inline
+    x86isa::i65$inline
+    x86isa::i80$inline
+    x86isa::i112$inline
+    x86isa::i120$inline
+    x86isa::i128$inline
+    x86isa::i256$inline
+    x86isa::i512$inline
+
     ;; more like this:
     x86isa::prefixes->lck$inline
     x86isa::prefixes->adr$inline
@@ -758,11 +987,19 @@
     ;; more like this:
     x86isa::!prefixes->nxt$inline
 
+    x86isa::code-segment-descriptor-attributesbits->d
     x86isa::code-segment-descriptor-attributesbits->d$inline
+    x86isa::code-segment-descriptor-attributesbits->p
+    x86isa::code-segment-descriptor-attributesbits->p$inline
+    x86isa::code-segment-descriptor-attributesbits-fix
 
+    x86isa::data-segment-descriptor-attributesbits->
+    x86isa::data-segment-descriptor-attributesbits->e$inline
+
+    ;; error values:
     x86isa::rime-size-opt-error
+    ;; there is no wime-size-opt-error
 
-    x86isa::rime-size$inline
     x86isa::rr32$inline
     x86isa::reg-index$inline
 
@@ -770,24 +1007,83 @@
     x86isa::x86-device-not-available
     x86isa::x86-syscall-both-views
 
-    x86isa::wml08
-    x86isa::wml16
-    x86isa::wml32
-    x86isa::wml64
-    x86isa::wml128
-    x86isa::wml256
-
-    x86isa::wiml08
-    x86isa::wiml16
-    x86isa::wiml32
-    x86isa::wiml64
-
     ;; not used much, since we use app-view:
     x86isa::ia32e-la-to-pa
     x86isa::la-to-pa
     x86isa::las-to-pas
 
-    x86isa::add-to-*ip
+    X86ISA::ADDRESS-ALIGNED-P
+
+    ;; register-related functions:
+
+    x86isa::rr08 ; there are only 4 of these
+    x86isa::rr16
+    x86isa::rr32
+    x86isa::rr64
+    x86isa::rr08$inline
+    x86isa::rr16$inline
+    x86isa::rr32$inline
+    x86isa::rr64$inline
+
+    x86isa::wr08 ; there are only 4 of these
+    x86isa::wr16
+    x86isa::wr32
+    x86isa::wr64
+    x86isa::wr08$inline
+    x86isa::wr16$inline
+    x86isa::wr32$inline
+    x86isa::wr64$inline
+
+    x86isa::rx32 ; there seem to be only 3 of these
+    x86isa::rx64
+    x86isa::rx128
+    x86isa::rx32$inline
+    x86isa::rx64$inline
+    x86isa::rx128$inline
+
+    x86isa::wx32$inline ; there seem to be only 3 of these
+    x86isa::wx64$inline
+    x86isa::wx128$inline
+    x86isa::wx32
+    x86isa::wx64
+    x86isa::wx128
+        
+    x86isa::rz32 ; there seem to be only 5 of these
+    x86isa::rz64
+    x86isa::rz128
+    x86isa::rz256
+    x86isa::rz512
+    x86isa::rz32$inline
+    x86isa::rz64$inline
+    x86isa::rz128$inline
+    x86isa::rz256$inline
+    x86isa::rz512$inline
+
+    x86isa::wz32$inline ; there seem to be only 5 of these
+    x86isa::wz64$inline
+    x86isa::wz128$inline
+    x86isa::wz256$inline
+    x86isa::wz512$inline
+    x86isa::wz32
+    x86isa::wz64
+    x86isa::wz128
+    x86isa::wz256
+    x86isa::wz512
+    
+    x86isa::xmmi-size
+    x86isa::xmmi-size$inline
+    x86isa::!xmmi-size
+    x86isa::!xmmi-size$inline
+    
+    x86isa::zmmi
+    x86isa::zmmi$a
+    x86isa::!zmmi
+    x86isa::!zmmi$a
+    
+    x86isa::zmmi-size
+    x86isa::zmmi-size$inline
+    x86isa::!zmmi-size
+    x86isa::!zmmi-size$inline
     ))
 
 (defconst *symbols-from-acl2-package*
@@ -954,6 +1250,7 @@
     ;; Stuff supporting b*
     b*
     when
+    unless
     ///
 
     ;; APT transformations (sometimes used to verify listed code):
@@ -1010,6 +1307,7 @@
     b-xor ; from ihs, via bitops
     logbit$inline ; really from ihs
     b-xor$inline ; really from ihs
+    part-select
     ))
 
 ;; Ideally, these would all be rewritten away
@@ -1100,6 +1398,12 @@
     x86isa::addr
 
     x86isa::x86$a
+
+    x86isa::mem-ptr?
+    x86isa::check-alignment?
+    x86isa::base
+
+    x86isa::*ip
 ))
 
 ;; TODO: Think about this...

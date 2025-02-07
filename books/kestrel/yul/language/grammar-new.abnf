@@ -28,7 +28,8 @@
 ; as the rule name in the official grammars.
 ; We organize the rules bottom-up.
 ; We leave out the yul-evm-builtin rule because
-; that belongs to the EVM dialect and not generic Yul.
+; that belongs to the EVM dialect and not generic Yul;
+; currently we do not model much of the EVM dialect.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

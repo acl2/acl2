@@ -221,33 +221,38 @@
 (defun linear-memory-rules ()
   (declare (xargs :guard t))
   '(;; Rules about reads:
-    
+
+    x86isa::rime-size-when-64-bit-modep-and-not-fs/gs ; introduces riml-size
+    x86isa::rime-size-when-64-bit-modep-fs/gs ; introduces segment-base-and-bounds and riml-size
+
+    rme08-of-0-when-not-fs/gs-becomes-read ;; x86isa::rme08-when-64-bit-modep-and-not-fs/gs ; puts in rml08
+    x86isa::rme16-when-64-bit-modep-and-not-fs/gs ; todo: go to read like we do for rme08? at least make strong versions that put the canonical hyp in the conclusion
+    x86isa::rme32-when-64-bit-modep-and-not-fs/gs
+    x86isa::rme48-when-64-bit-modep-and-not-fs/gs
+    x86isa::rme64-when-64-bit-modep-and-not-fs/gs
+    x86isa::rme80-when-64-bit-modep-and-not-fs/gs
+    x86isa::rme128-when-64-bit-modep-and-not-fs/gs
+    x86isa::rme256-when-64-bit-modep-and-not-fs/gs
+
+    ;; rme-size can arize in 64-bit mode (e.g., when a stack protection value is read via the FS segment register):
+    x86isa::rme-size-when-64-bit-modep-and-not-fs/gs-strong ; puts in rml-size
+    x86isa::rme-size-when-64-bit-modep-fs/gs ; exposes segment-base-and-bounds and rml-size
+
     ;; Rules about rimlXX (there are only 4 of these):
     ;; We open these to expose RML08, etc (handled below):
-    ;; TODO: go to logext of read?
-    x86isa::riml08
-    x86isa::riml16
-    x86isa::riml32
-    x86isa::riml64
-    x86isa::riml-size$inline ;shilpi leaves this enabled -- could restrict to constant
+    ;; TODO: go directly to logext of read
+    riml08
+    riml16
+    riml32
+    riml64
+    riml-size$inline ; dispatches to riml08, etc.
     ;; riml-size-of-1-becomes-read ; todo: try these (for which proofs?)
     ;; riml-size-of-2-becomes-read
     ;; riml-size-of-4-becomes-read
     ;; riml-size-of-8-becomes-read
 
-    ;; We can either open these read operations to RB, which then gets turned into READ, or turn these into READ directly:
-    rml08-becomes-read ;; rml08
-    rml16-becomes-read ;; rml16 
-    rml32-becomes-read ;; rml32
-    rml48-becomes-read ;; rml48
-    rml64-becomes-read ;; rml64
-    rml80-becomes-read ;; rml80
-    ;; rml128-becomes-read ; todo
-    ;; rml256-becomes-read ; todo
-    x86isa::rml128-when-app-view ; introduces rb (handled below)
-    x86isa::rml256-when-app-view ; introduces rb
-    x86isa::rml-size$inline ;shilpi leaves this enabled ;todo: consider rml-size-becomes-rb
-    ;; rml-size-of-1-becomes-read ;; todo: try these (for which proofs?)
+    rml-size$inline ;; dispatches to rml08, etc.  can become RB but only for ill-guarded calls.
+    ;; rml-size-of-1-becomes-read ;; todo: try these, or combine them
     ;; rml-size-of-2-becomes-read
     ;; rml-size-of-4-becomes-read
     ;; rml-size-of-6-becomes-read
@@ -255,40 +260,56 @@
     ;; rml-size-of-10-becomes-read
     ;; rml-size-of-16-becomes-read
     ;; rml-size-of-32-becomes-read
+    ;; Or we could open these to expose RB and turn that into READ:
+    rml08-becomes-read
+    rml16-becomes-read
+    rml32-becomes-read
+    rml48-becomes-read
+    rml64-becomes-read
+    rml80-becomes-read
+    rml128-becomes-read ;; x86isa::rml128-when-app-view ; introduces rb (handled below)
+    rml256-becomes-read ;; x86isa::rml256-when-app-view ; introduces rb
+    rml512-becomes-read ;;
 
-    rb-becomes-read ; no need to target mv-nth-1-of-rb, etc. since this rewrites the entire rb
-    ;;mv-nth-1-of-rb-becomes-read
+;    rb-becomes-read ; no need to target mv-nth-1-of-rb, etc. since this rewrites the entire rb
     ;; These just clarify failures to turn RB into READ: ; TODO: Only use when debugging?
-    mv-nth-1-of-rb-of-set-rip
-    mv-nth-1-of-rb-of-set-rax ; could add more like this
+    ;mv-nth-1-of-rb-of-set-rip
+    ;mv-nth-1-of-rb-of-set-rax ; could add more like this
+    ;; x86isa::mv-nth-0-of-rb-of-1 ; todo: gen
+    ;; x86isa::rb-returns-no-error-app-view ;targets mv-nth-0-of-rb
+    ;; x86isa::rb-in-terms-of-nth-and-pos-eric-gen ;rb-in-terms-of-nth-and-pos-eric ;targets mv-nth-1-of-rb ; todo: or do we just always go to read?
+    ;;x86isa::rb-returns-x86-app-view ;targets mv-nth-2-of-rb
 
     ;; Rules about writes:
-    
+
+    x86isa::wme-size-when-64-bit-modep-and-not-fs/gs-strong ; puts in wml-size
+    x86isa::wime-size-when-64-bit-modep-and-not-fs/gs
+
     ;; Rules about wimlXX (there are only 4 of these):
     ;; We open these to expose WML08, etc (handled below)::
     ;; TODO: Go directly to WRITE
-    x86isa::wiml08
-    x86isa::wiml16
-    x86isa::wiml32
-    x86isa::wiml64
-    x86isa::wiml-size$inline
+    wiml08
+    wiml16
+    wiml32
+    wiml64
+    wiml-size$inline ; dispatches to wiml08, etc.
 
+    wml-size$inline ; dispatches to wml08, etc.  can go to wb but only for ill-guarded calls.
     ;; TODO: Go directly to WRITE?
-    x86isa::wml08
-    x86isa::wml16
-    x86isa::wml32
-    x86isa::wml48
-    x86isa::wml64
-    x86isa::wml80
+    wml08
+    wml16
+    wml32
+    wml48
+    wml64
+    wml80
     x86isa::wml128-when-app-view
     x86isa::wml256-when-app-view
-    x86isa::wml512
-    x86isa::wml-size$inline ;shilpi leaves this enabled
+    x86isa::wml512-when-app-view
 
     mv-nth-1-of-wb-becomes-write
     ))
 
-(set-axe-rule-priority rb-becomes-read -1) ; get rid of RB immediately
+;; (set-axe-rule-priority rb-becomes-read -1) ; get rid of RB immediately
 
 ;; Usually not needed except for in the loop lifter (showing that assumptions are preserved):
 (defund program-at-rules ()
@@ -485,8 +506,20 @@
     mxcsr-of-!rflags         ; why is !rflags not going away?
     mxcsr-of-set-rip         ; move to 64 rules?
 
-    alignment-checking-enabled-p-of-set-undef
+    x86isa::64-bit-modep-of-xw
+    64-bit-modep-of-set-flag
+    64-bit-modep-of-set-mxcsr
     64-bit-modep-of-set-undef
+    ;; 64-bit-modep-of-set-ms ; could omit (since set-ms means the run will stop, but this can help clarify things)
+    64-bit-modep-of-!rflags
+
+    x86isa::alignment-checking-enabled-p-and-xw ; targets alignment-checking-enabled-p-of-xw
+    x86isa::alignment-checking-enabled-p-of-xw-irrel ; todo: compare to x86isa::alignment-checking-enabled-p-and-xw
+    x86isa::alignment-checking-enabled-p-of-set-flag ; todo: change package
+    alignment-checking-enabled-p-of-set-mxcsr
+    alignment-checking-enabled-p-of-set-undef
+    alignment-checking-enabled-p-of-!rflags
+
     msri-of-set-undef
     set-undef-of-set-undef
     ;;            set-undef-of-set-mxcsr
@@ -495,8 +528,8 @@
     set-undef-of-!rflags         ; why is !rflags showing up?
     set-undef-of-set-rip         ; move to 64 rules?
 
-    alignment-checking-enabled-p-of-set-mxcsr
-    64-bit-modep-of-set-mxcsr
+
+
     msri-of-set-mxcsr
     set-mxcsr-of-set-mxcsr
     set-mxcsr-of-set-flag
@@ -560,28 +593,18 @@
     set-flag-of-set-flag-diff-axe
     set-flag-of-set-flag-same
     set-flag-of-get-flag-same
-    x86isa::alignment-checking-enabled-p-of-set-flag
 
     x86isa::xw-rgf-of-xr-rgf-same
+
+    acl2::expt2$inline-constant-opener
 
 ;;     ;; x86isa::get-flag-set-flag ;covers both cases, with a twist for a 2-bit flag
 ;;     ;; x86isa::set-flag-set-flag-same
 ;;     ;; x86isa::set-flag-set-flag-different-concrete-indices
-;;     x86isa::rflagsbits-fix$inline
-
-;;     x86isa::rflagsbits->ac$inline
-;;     x86isa::rflagsbits->af$inline
-;;     x86isa::rflagsbits->cf$inline
-;;     x86isa::rflagsbits->of$inline
-;;     x86isa::rflagsbits->pf$inline
-;;     x86isa::rflagsbits->sf$inline
-;;     x86isa::rflagsbits->zf$inline
 
     x86isa::rflagsbits$inline-constant-opener
 
-    acl2::expt2$inline-constant-opener
-
-    x86isa::!rflagsbits->af$inline-constant-opener
+    x86isa::!rflagsbits->af$inline-constant-opener ; why just this one?
 
     x86isa::rflagsbits->ac$inline-constant-opener
     x86isa::rflagsbits->af$inline-constant-opener
@@ -604,12 +627,52 @@
     x86isa::rflagsbits->vif$inline-constant-opener
     x86isa::rflagsbits->vip$inline-constant-opener
     x86isa::rflagsbits->id$inline-constant-opener
-    x86isa::rflagsbits->res5$inline-constant-opener
-
-    ;todo: more like this, or do we have them all?
+    x86isa::rflagsbits->res5$inline-constant-opener    ;todo: more like this, or do we have them all?
 
     x86isa::rflagsbits-fix$inline-constant-opener
+
     unsigned-byte-p-of-rflagsbits
+
+    ;; These introduce get-flag:
+    rflagsbits->cf$inline-of-xr
+    rflagsbits->pf$inline-of-xr
+    rflagsbits->af$inline-of-xr
+    rflagsbits->zf$inline-of-xr
+    rflagsbits->sf$inline-of-xr
+    rflagsbits->tf$inline-of-xr
+    rflagsbits->intf$inline-of-xr
+    rflagsbits->df$inline-of-xr
+    rflagsbits->of$inline-of-xr
+    rflagsbits->iopl$inline-of-xr
+    rflagsbits->nt$inline-of-xr
+    rflagsbits->rf$inline-of-xr
+    rflagsbits->vm$inline-of-xr
+    rflagsbits->ac$inline-of-xr
+    rflagsbits->vif$inline-of-xr
+    rflagsbits->vip$inline-of-xr
+    rflagsbits->id$inline-of-xr
+
+    ;; These introduce set-flag:
+    !rflags-of-!rflagsbits->af
+    !rflags-of-!rflagsbits->cf
+    !rflags-of-!rflagsbits->of
+    !rflags-of-!rflagsbits->pf
+    !rflags-of-!rflagsbits->sf
+    !rflags-of-!rflagsbits->zf
+
+    x86isa::rflagsbits->af-of-rflagsbits ; these are generated by defbitstruct
+    x86isa::rflagsbits->cf-of-rflagsbits
+    x86isa::rflagsbits->of-of-rflagsbits
+    x86isa::rflagsbits->pf-of-rflagsbits
+    x86isa::rflagsbits->sf-of-rflagsbits
+    x86isa::rflagsbits->zf-of-rflagsbits    ;; todo: more?
+
+    rflagsbits->af$inline-of-bvchop-32
+    rflagsbits->cf$inline-of-bvchop-32
+    rflagsbits->pf$inline-of-bvchop-32
+    rflagsbits->of$inline-of-bvchop-32
+    rflagsbits->sf$inline-of-bvchop-32
+    rflagsbits->zf$inline-of-bvchop-32    ;; todo: more?
 
     ;; Or perhaps instead of these we should recharacterize
     ;; some instruction semantic functions so as not to need these:
@@ -624,36 +687,14 @@
     x86isa::rflagsbits->of$inline-of-if
     x86isa::rflagsbits->pf$inline-of-if
     x86isa::rflagsbits->sf$inline-of-if
-    x86isa::rflagsbits->zf$inline-of-if
+    x86isa::rflagsbits->zf$inline-of-if    ;; todo: more?
 
     rflagsbits->af-of-bvif
     rflagsbits->cf-of-bvif
     rflagsbits->of-of-bvif
     rflagsbits->pf-of-bvif
     rflagsbits->sf-of-bvif
-    rflagsbits->zf-of-bvif
-
-    ;; These introduce set-flag:
-    !rflags-of-!rflagsbits->af
-    !rflags-of-!rflagsbits->cf
-    !rflags-of-!rflagsbits->of
-    !rflags-of-!rflagsbits->pf
-    !rflags-of-!rflagsbits->sf
-    !rflags-of-!rflagsbits->zf
-
-    x86isa::rflagsbits->af-of-rflagsbits
-    x86isa::rflagsbits->cf-of-rflagsbits
-    x86isa::rflagsbits->of-of-rflagsbits
-    x86isa::rflagsbits->pf-of-rflagsbits
-    x86isa::rflagsbits->sf-of-rflagsbits
-    x86isa::rflagsbits->zf-of-rflagsbits
-
-    rflagsbits->af$inline-of-bvchop-32
-    rflagsbits->cf$inline-of-bvchop-32
-    rflagsbits->pf$inline-of-bvchop-32
-    rflagsbits->of$inline-of-bvchop-32
-    rflagsbits->sf$inline-of-bvchop-32
-    rflagsbits->zf$inline-of-bvchop-32
+    rflagsbits->zf-of-bvif    ;; todo: more?
 
     flags-af-cf
     flags-af-pf
@@ -705,17 +746,15 @@
     !rflags-of-set-flag
     !rflags-of-!rflags
     !rflags-does-nothing
+;;     x86isa::!rflags$inline
 
 ;;     x86isa::!rflagsbits->ac$inline
 ;;     x86isa::!rflagsbits->af$inline
-;;     x86isa::!rflagsbits->cf$inline ;it would be better if these called rflagsbits
+;;     x86isa::!rflagsbits->cf$inline ;it would be better if these called rflagsbits?
 ;;     x86isa::!rflagsbits->of$inline
 ;;     x86isa::!rflagsbits->pf$inline
 ;;     x86isa::!rflagsbits->sf$inline
 ;;     x86isa::!rflagsbits->zf$inline
-
-;;     x86isa::!rflags$inline
-
 
 ;;     x86isa::unsigned-byte-p-1-of-rflagsbits->res1$inline
 ;;     x86isa::unsigned-byte-p-1-of-rflagsbits->cf$inline
@@ -744,25 +783,6 @@
 ;;     ;X86ISA::RFLAGSBITS->AC$INLINE-CONSTANT-OPENER
 ;;     x86isa::RFLAGSBITS-rewrite
 ;; ;    x86isa::get-flag-xw
-
-    ;; These introduce get-flag:
-    rflagsbits->cf$inline-of-xr
-    rflagsbits->pf$inline-of-xr
-    rflagsbits->af$inline-of-xr
-    rflagsbits->zf$inline-of-xr
-    rflagsbits->sf$inline-of-xr
-    rflagsbits->tf$inline-of-xr
-    rflagsbits->intf$inline-of-xr
-    rflagsbits->df$inline-of-xr
-    rflagsbits->of$inline-of-xr
-    rflagsbits->iopl$inline-of-xr
-    rflagsbits->nt$inline-of-xr
-    rflagsbits->rf$inline-of-xr
-    rflagsbits->vm$inline-of-xr
-    rflagsbits->ac$inline-of-xr
-    rflagsbits->vif$inline-of-xr
-    rflagsbits->vip$inline-of-xr
-    rflagsbits->id$inline-of-xr
 
 ;    x86isa::get-flag-wb-in-app-view
     x86isa::xr-wb
@@ -1702,7 +1722,7 @@
             ;; x86isa::xw-of-xr
             ;; xw-of-rflags-does-nothing ; use a more general rule?
             ;; alignment-checking-enabled-p-of-xw-rflags-of-xr-rflags
-            alignment-checking-enabled-p-of-!rflags
+
             ;; get-flag-of-xw-rflags-of-xr-rflags
             get-flag-of-!rflags-of-xr
             ;; xw-of-rflags-of-xw
@@ -1713,19 +1733,20 @@
             ;; Reading/writing registers (or parts of registers).  we leave
             ;; these enabled to expose rgfi and !rgfi, which then get rewritten
             ;; to xr and xw.  shilpi seems to do the same.
-            x86isa::rr08$inline
-            x86isa::rr16$inline
-            x86isa::rr32$inline
-            x86isa::rr64$inline
-            x86isa::wr08$inline
-            x86isa::wr16$inline
-            x86isa::wr32$inline
-            x86isa::wr64$inline
-            x86isa::rgfi-size$inline ;dispatches to rr08, etc.
-            x86isa::!rgfi-size$inline ; dispatches to wr08, etc.
-            x86isa::!rgfi x86isa::!rgfi$a ;expose the call to xw ; todo: go directly to the right writer
+            rr08$inline
+            rr16$inline
+            rr32$inline
+            rr64$inline
+            wr08$inline
+            wr16$inline
+            wr32$inline
+            wr64$inline
 
-            x86isa::rgfi x86isa::rgfi$a ;expose the call to xr ; todo: go directly to the right reader
+            rgfi rgfi$a ;expose the call to xr ; todo: go directly to the right reader
+            rgfi-size$inline ;dispatches to rr08, etc.
+            !rgfi !rgfi$a ;expose the call to xw ; todo: go directly to the right writer
+            !rgfi-size$inline ; dispatches to wr08, etc.
+
             ;; rgfi-becomes-rbp ; todo: uncomment these (and comment out the 2 rules above) but only for non-loop lifter
             ;; rgfi-becomes-rsp
             ;; rgfi-becomes-rax
@@ -1735,7 +1756,7 @@
             x86isa::n08-to-i08$inline
             x86isa::n16-to-i16$inline
             x86isa::n32-to-i32$inline
-            x86isa::n64-to-i64$inline         ;shilpi leaves this enabled
+            x86isa::n64-to-i64$inline
             x86isa::n128-to-i128$inline
             x86isa::n256-to-i256$inline
             x86isa::n512-to-i512$inline
@@ -1769,9 +1790,8 @@
 
             ;; todo: organize these:
 
-
-            x86isa::rb-wb-equal
-            x86isa::rb-of-if-arg2
+            ;; x86isa::rb-wb-equal
+            ;; x86isa::rb-of-if-arg2
 
 ;            x86isa::set-flag-of-mv-nth-1-of-wb
 
@@ -1796,24 +1816,19 @@
             x86isa::canonical-address-p-of-logext-48
             x86isa::logext-48-does-nothing-when-canonical-address-p
 
-            x86isa::create-canonical-address-list-1
+;            x86isa::create-canonical-address-list-1
 
-            x86isa::mv-nth-0-of-rb-of-1 ; todo: gen
-            ;; x86isa::rb-returns-no-error-app-view ;targets mv-nth-0-of-rb
-            ;; x86isa::rb-in-terms-of-nth-and-pos-eric-gen ;rb-in-terms-of-nth-and-pos-eric ;targets mv-nth-1-of-rb ; todo: or do we just always go to read?
-            ;;x86isa::rb-returns-x86-app-view ;targets mv-nth-2-of-rb
-
-            x86isa::canonical-address-listp-of-cons
-            x86isa::canonical-address-listp-of-nil ;wouldn't need this if we could evaluate it
-            x86isa::member-p-of-create-canonical-address-list-same
-            x86isa::canonical-address-listp-create-canonical-address-list
-            x86isa::pos-and-create-canonical-address-list
+;            x86isa::canonical-address-listp-of-cons
+;            x86isa::canonical-address-listp-of-nil ;wouldn't need this if we could evaluate it
+;            x86isa::member-p-of-create-canonical-address-list-same
+;            x86isa::canonical-address-listp-create-canonical-address-list
+;            x86isa::pos-and-create-canonical-address-list
 
             inverse-of-+
             x86isa::combine-bytes-when-singleton
 
             x86isa::get-one-byte-prefix-array-code-rewrite-quotep ;;get-one-byte-prefix-array-code ;this is applied to a constant (the function is gross because it uses an array)
-            x86isa::car-create-canonical-address-list
+;            x86isa::car-create-canonical-address-list
             x86isa::canonical-address-p-between ;this was involved in loops (other rules backchained from < to canonical-address-p but this does the reverse)
             ;;will axe try all free variable matches?
             ;; x86isa::canonical-address-p-between-special1
@@ -1837,7 +1852,7 @@
             acl2::integerp-of-+-when-integerp-1-cheap
             acl2::fix-when-integerp
             x86isa::integerp-when-canonical-address-p-cheap ; requires acl2::equal-same
-            x86isa::member-p-canonical-address-listp
+;            x86isa::member-p-canonical-address-listp
             acl2::fold-consts-in-+
             acl2::ash-negative-becomes-slice-axe ; move?
 
@@ -1850,7 +1865,7 @@
             acl2::logbitp-to-getbit-equal-1
 
             associativity-of-+
-            x86isa::integerp-of-xr-rgf
+            x86isa::integerp-of-xr-rgf ; drop if we always use a different normal form
             x86isa::wb-returns-no-error-app-view ;targets mv-nth 0 of wb
 ;            addr-byte-alistp-create-addr-bytes-alist
 ;            byte-listp-byte-ify
@@ -1865,8 +1880,8 @@
             ;x86isa::xr-app-view-mv-nth-1-wb ;has a hyp of t
             x86isa::program-at-wb-disjoint ;drop?
 ;            strip-cars-of-create-addr-bytes-alist
-            x86isa::true-listp-create-canonical-address-list
-            x86isa::len-of-create-canonical-address-list
+;            x86isa::true-listp-create-canonical-address-list
+;            x86isa::len-of-create-canonical-address-list
 ;            len-of-byte-ify ;can we drop the integerp hyp?
 
             x86isa::signed-byte-p-64-when-canonical-address-p-cheap ;i guess axe ignores the backchain-limit-lst ;might loop (but maybe not anymore)?
@@ -1888,21 +1903,20 @@
             x86isa::trunc$inline        ;shilpi leaves this enabled
 
             acl2::backchain-signed-byte-p-to-unsigned-byte-p-non-const
-            x86isa::alignment-checking-enabled-p-and-xw ; targets alignment-checking-enabled-p-of-xw
             x86isa::alignment-checking-enabled-p-and-wb-in-app-view ;targets alignment-checking-enabled-p-of-mv-nth-1-of-wb
             acl2::unicity-of-0         ;introduces a fix
             acl2::ash-of-0
             ;acl2::fix-when-acl2-numberp
             ;acl2::acl2-numberp-of-+    ;we also have acl2::acl2-numberp-of-sum
-            x86isa::rb-xw-values ; targets mv-nth-0-of-rb-of-xw and mv-nth-1-of-rb-of-xw
+            ;; x86isa::rb-xw-values ; targets mv-nth-0-of-rb-of-xw and mv-nth-1-of-rb-of-xw
             ;x86isa::mv-nth-1-rb-xw-rip         ;targets mv-nth-1-of-rb
             ;x86isa::mv-nth-1-rb-xw-rgf         ;targets mv-nth-1-of-rb
             ;x86isa::mv-nth-1-rb-xw-undef
-            
-            x86isa::rb-wb-disjoint-eric
-            x86isa::disjoint-p-two-create-canonical-address-lists-thm-1
-            x86isa::rb-wb-subset
-            x86isa::subset-p-two-create-canonical-address-lists-same-base-address
+
+            ;; x86isa::rb-wb-disjoint-eric
+;            x86isa::disjoint-p-two-create-canonical-address-lists-thm-1
+            ;; x86isa::rb-wb-subset
+;            x86isa::subset-p-two-create-canonical-address-lists-same-base-address
             x86isa::canonical-address-p-of-logext-64
             ;;x86isa::xw-xw-intra-array-field-shadow-writes
             ;;x86isa::xw-xw-intra-simple-field-shadow-writes
@@ -1911,7 +1925,7 @@
             x86isa::xw-xw-intra-field-arrange-writes ;axe puts in a loop-stopper hyp
 ;            assoc-list-of-rev-of-create-addr-bytes-alist
 ;            true-listp-of-byte-ify
-            x86isa::no-duplicates-p-create-canonical-address-list
+;            x86isa::no-duplicates-p-create-canonical-address-list
             ;acl2::slice-becomes-bvchop
             ;acl2::bvchop-of-bvchop
             ;acl2::bvchop-of-bvplus
@@ -1935,7 +1949,6 @@
             ;acl2::slice-becomes-getbit
             ;acl2::getbit-of-bvcat-all
             ;; x86isa::program-at-set-flag
-            ;; x86isa::alignment-checking-enabled-p-and-set-flag
 
 ;            x86isa::rb-set-flag-in-app-view
             acl2::getbit-of-slice-both
@@ -1952,7 +1965,7 @@
 
             x86isa::disjoint-p-cons-1 ;restrict to a singleton?
             ;x86isa::disjoint-p-nil-1
-            x86isa::not-member-p-canonical-address-listp-when-disjoint-p
+;            x86isa::not-member-p-canonical-address-listp-when-disjoint-p
 ; looped! not-member-p-canonical-address-listp-when-disjoint-p-alt
             x86isa::not-memberp-of-+-when-disjoint-from-larger-chunk
             ;acl2::bvplus-combine-constants
@@ -1961,15 +1974,15 @@
 
             ;acl2::logext-of-bvplus-64 ; a bit scary (instead, see todo #1 above)
 
-            x86isa::disjoint-of-create-canonical-address-list-and-create-canonical-address-list-stack-and-text
+;            x86isa::disjoint-of-create-canonical-address-list-and-create-canonical-address-list-stack-and-text
             x86isa::write-canonical-address-to-memory
-            x86isa::canonical-address-listp-of-cdr
-            x86isa::car-create-canonical-address-list
-            x86isa::cdr-create-canonical-address-list
+;            x86isa::canonical-address-listp-of-cdr
+;            x86isa::car-create-canonical-address-list
+;            x86isa::cdr-create-canonical-address-list
             x86isa::combine-bytes-unroll
             x86isa::combine-bytes-base
             x86isa::if-of-xr-app-view
-            x86isa::disjoint-of-create-canonical-address-list-and-create-canonical-address-list-stack-and-text-special
+;            x86isa::disjoint-of-create-canonical-address-list-and-create-canonical-address-list-stack-and-text-special
 
 ;            x86isa::set-flag-undefined$inline ;trying this..
 ;            x86isa::xr-set-flag-undefined
@@ -1979,9 +1992,7 @@
 
 ;signed-byte-p-when-between-canonical-addresses
 ;            x86isa::x86p-of-set-flag-undefined-eric ;x86p-of-set-flag-undefined ;drop?
-;            x86isa::alignment-checking-enabled-p-and-set-flag-undefined ;drop?
 ;            x86isa::rb-set-flag-undefined-in-app-view ;drop?
-
 
             x86isa::<-of-logext-and-+-of-constant
             x86isa::canonical-address-p-+-signed-byte-p-16-is-signed-byte-p-64 ;looped
@@ -1991,7 +2002,6 @@
             ;;signed-byte-p-of-+-between
 
             acl2::logext-of-+-of-constant
-;            x86isa::alignment-checking-enabled-p-and-set-flag
             x86isa::unsigned-byte-p-of-bool->bit
 ;            x86isa::set-flag-of-set-flag-undefined-different-concrete-indices ;drop?
 
@@ -2017,8 +2027,8 @@
             acl2::bvmult-of-bvcat-of-0
             acl2::bvmult-of-bvchop-arg3
 
-            x86isa::disjoint-p-two-create-canonical-address-lists-thm-0-gen
-            x86isa::disjoint-p-two-create-canonical-address-lists-thm-1-gen
+;            x86isa::disjoint-p-two-create-canonical-address-lists-thm-0-gen
+;            x86isa::disjoint-p-two-create-canonical-address-lists-thm-1-gen
             x86isa::not-memberp-of-+-when-disjoint-from-larger-chunk-pos ;only needed for pe file?
 
             acl2::bvplus-of-unary-minus
@@ -2030,9 +2040,7 @@
 ;                    acl2::bvcat-trim-arg4-axe-all
  ;                   acl2::bvcat-trim-arg2-axe-all
 
-            x86isa::64-bit-modep-of-xw
             x86isa::64-bit-modep-of-mv-nth-1-of-wb
-            64-bit-modep-of-set-flag
 
             ;;todo: include all of the lifter rules:
             x86isa::canonical-address-p-of-i48
@@ -2144,6 +2152,15 @@
             ;; jnle-condition-rewrite-3
             ;; jnz-condition-rule-2
 
+            ;; more like this?
+            bvchop-of-zf-spec
+            logext-of-zf-spec
+
+            ;; more like this?
+            bvchop-of-sub-zf-spec32
+            equal-of-sub-zf-spec32-and-1
+            equal-of-1-and-sub-zf-spec32
+
             x86isa::memory-byte-accesses-are-always-aligned
             x86isa::address-aligned-p-of-8-and-nil
             x86isa::address-aligned-p-of-4-and-nil
@@ -2156,7 +2173,7 @@
             gl::gl-mbe-fn ;used by bitops.  yuck.
 
             x86isa::x86-operation-mode
-            x86isa::alignment-checking-enabled-p-of-xw-irrel
+
             ;acl2::slice-of-bvcat-gen
 
             acl2::truncate-becomes-floor-gen ;it might be better to avoid explosing truncate in the first place
@@ -2199,50 +2216,44 @@
 
             x86isa::chk-exc-fn ; for floating point and/or avx/vex?
 
-            x86isa::xmmi-size$inline
-            x86isa::!xmmi-size$inline
-            x86isa::zmmi-size$inline
-            x86isa::!zmmi-size$inline
-
-            x86isa::zmmi
-            x86isa::zmmi$a
-            x86isa::!zmmi
-            x86isa::!zmmi$a
-
             x86isa::n512p-xr-zmm ; targets unsigned-byte-p-of-xr-of-zmm
 
-            x86isa::rx32$inline ; these expose rz
-            x86isa::rx64$inline
-            x86isa::rx128$inline
+            xmmi-size$inline ; dispatches to rx32, etc
+            !xmmi-size$inline ; dispatched to wx32, etc
 
-            x86isa::rz32$inline ; these expose zmmi
-            x86isa::rz64$inline
-            x86isa::rz128$inline
-            x86isa::rz256$inline
-            x86isa::rz512$inline
+            zmmi-size$inline ; dispatches to rz32, etc
+            !zmmi-size$inline ; dispatches to wz32, etc
 
-            x86isa::wx32$inline ; these expose wz
-            x86isa::wx64$inline
-            x86isa::wx128$inline
+            rx32$inline ; these expose the rz variants ; there seem to be only 3 of these
+            rx64$inline
+            rx128$inline
 
-            x86isa::wz32$inline ; these do zmmi and then !zmmi to write part of the register
-            x86isa::wz64$inline
-            x86isa::wz128$inline
-            x86isa::wz256$inline
-            x86isa::wz512$inline
+            wx32$inline ; these expose the wz variants  ; there seem to be only 3 of these
+            wx64$inline
+            wx128$inline
+
+            rz32$inline ; these expose zmmi ; there seem to be only 5 of these
+            rz64$inline
+            rz128$inline
+            rz256$inline
+            rz512$inline
+
+            wz32$inline ; these do zmmi and then !zmmi to write part of the register ; there seem to be only 5 of these
+            wz64$inline
+            wz128$inline
+            wz256$inline
+            wz512$inline
+
+            zmmi ; exposes zmmi$a
+            zmmi$a ; exposes xr
+
+            !zmmi ; exposes !zmmi$a
+            !zmmi$a ; exposes xw
 
             x86isa::x86-operand-to-zmm/mem
-            ;; 64-bit-modep-of-set-ms ; could omit (since set-ms means the run will stop, but this can help clarify things)
 
             acl2::integerp-of-ash
             acl2::bvplus-of-bvmult-when-power-of-2p-tighten
-
-            bvchop-of-zf-spec
-            logext-of-zf-spec
-
-            bvchop-of-sub-zf-spec32
-            equal-of-sub-zf-spec32-and-1
-            equal-of-1-and-sub-zf-spec32
 
             ;; See books/projects/x86isa/utils/basic-structs.lisp
             ;; x86isa::2bits-fix-constant-opener
@@ -2390,7 +2401,7 @@
      addresses-of-subsequent-stack-slots
      ;; addresses-of-subsequent-stack-slots-aux-base
      ;; addresses-of-subsequent-stack-slots-aux-unroll
-     canonical-address-listp-of-addresses-of-subsequent-stack-slots-aux
+     canonical-address-listp-of-addresses-of-subsequent-stack-slots-aux ; seems needed, for assumption simplification
      x86isa::canonical-address-listp-of-cons
      x86isa::canonical-address-p-between-special1
      x86isa::canonical-address-p-between-special2
@@ -2398,7 +2409,7 @@
      acl2::fold-consts-in-+
      x86isa::canonical-address-listp-of-nil
      acl2::integerp-of-+-when-integerp-1-cheap
-     x86isa::integerp-of-xr-rgf-4
+     x86isa::integerp-of-xr-rgf
      x86isa::fix-of-xr-rgf-4
      x86isa::integerp-when-canonical-address-p-cheap ; requires acl2::equal-same
      acl2::fix-when-integerp
@@ -2803,7 +2814,7 @@
 ;    canonical-address-p-of-mv-nth-1-of-ea-to-la-of-ss
     ;x86isa::mv-nth-0-rb-xw-rgf ;gen?
     ;x86isa::mv-nth-0-rb-xw-rip
-    x86isa::rb-xw-values
+    ;; x86isa::rb-xw-values
 ;    fix-of-mv-nth-1-of-ea-to-la
 ;    read-of-ea-to-la-becomes-read-byte-from-segment
 ;    canonical-address-p-of-+-of-mv-nth-1-of-ea-to-la-of-ss
@@ -3227,24 +3238,20 @@
           '(;x86isa::x86-fetch-decode-execute-base-new
             x86-fetch-decode-execute-opener-safe-64 ; trying
             ;; !rip-becomes-set-rip ; todo: uncomment for non-loop case
-            x86isa::rme08-of-0-when-not-fs/gs-becomes-read ;; x86isa::rme08-when-64-bit-modep-and-not-fs/gs ; puts in rml08, todo: rules for other sizes?
-            x86isa::rme-size-when-64-bit-modep-and-not-fs/gs-strong ; puts in rml-size
-            ;; this is sometimes needed in 64-bit mode (e.g., when a stack
-            ;; protection value is read via the FS segment register):
-            x86isa::rme-size-when-64-bit-modep-fs/gs
-            x86isa::wme-size-when-64-bit-modep-and-not-fs/gs-strong ; puts in wml-size
-            x86isa::rime-size-when-64-bit-modep-and-not-fs/gs
-            x86isa::wime-size-when-64-bit-modep-and-not-fs/gs
-            x86isa::read-*ip-when-64-bit-modep
-            x86isa::add-to-*ip-of-0
+
+            ;; instruction pointer:
+            x86isa::read-*ip-when-64-bit-modep ; goes to rip
             ;; x86isa::mv-nth-0-of-add-to-*ip-when-64-bit-modep ; subsumed by add-to-*ip-of-0
             ;; x86isa::mv-nth-1-of-add-to-*ip-when-64-bit-modep ; subsumed by add-to-*ip-of-0
-            x86isa::write-*ip-when-64-bit-modep
-            x86isa::read-*sp-when-64-bit-modep
+            x86isa::write-*ip-when-64-bit-modep ; does to !rip -- todo: go to set-rip
+            x86isa::add-to-*ip-of-0
+
+            ;; stack pointer:
+            x86isa::read-*sp-when-64-bit-modep ; puts in rgfi -- todo: go to rsp
+            x86isa::write-*sp-when-64-bit-modep ; puts in !rgfi -- todo: go to set-rsp
+            ;; todo: combine these:
             x86isa::mv-nth-0-of-add-to-*sp-when-64-bit-modep
-            x86isa::mv-nth-1-of-add-to-*sp-when-64-bit-modep
-            x86isa::write-*sp-when-64-bit-modep
-            )))
+            x86isa::mv-nth-1-of-add-to-*sp-when-64-bit-modep)))
 
 (defund lifter-rules64-new ()
   (declare (xargs :guard t))
@@ -4321,47 +4328,45 @@
     msri-of-set-rbp
     msri-of-set-flag
 
-    ;; These help make failures more clear, by dropping irrelevant
-    ;; state writes inside rme-size:
-    mv-nth-0-of-rme-size-of-set-rip
-    mv-nth-0-of-rme-size-of-set-rax
-    mv-nth-0-of-rme-size-of-set-rbx
-    mv-nth-0-of-rme-size-of-set-rcx
-    mv-nth-0-of-rme-size-of-set-rdx
-    mv-nth-0-of-rme-size-of-set-rsi
-    mv-nth-0-of-rme-size-of-set-rdi
-    mv-nth-0-of-rme-size-of-set-r8
-    mv-nth-0-of-rme-size-of-set-r9
-    mv-nth-0-of-rme-size-of-set-r10
-    mv-nth-0-of-rme-size-of-set-r11
-    mv-nth-0-of-rme-size-of-set-r12
-    mv-nth-0-of-rme-size-of-set-r13
-    mv-nth-0-of-rme-size-of-set-r14
-    mv-nth-0-of-rme-size-of-set-r15
-    mv-nth-0-of-rme-size-of-set-rsp
-    mv-nth-0-of-rme-size-of-set-rbp
-    mv-nth-0-of-rme-size-of-set-undef ; move?
-    mv-nth-0-of-rme-size-of-set-mxcsr ; move?
+    ;; ;; These help make failures more clear, by dropping irrelevant
+    ;; ;; state writes inside rme-size (actually, we should now be pretty good at removing rme-size):
+    ;; mv-nth-0-of-rme-size-of-set-rip
+    ;; mv-nth-0-of-rme-size-of-set-rax
+    ;; mv-nth-0-of-rme-size-of-set-rbx
+    ;; mv-nth-0-of-rme-size-of-set-rcx
+    ;; mv-nth-0-of-rme-size-of-set-rdx
+    ;; mv-nth-0-of-rme-size-of-set-rsi
+    ;; mv-nth-0-of-rme-size-of-set-rdi
+    ;; mv-nth-0-of-rme-size-of-set-r8
+    ;; mv-nth-0-of-rme-size-of-set-r9
+    ;; mv-nth-0-of-rme-size-of-set-r10
+    ;; mv-nth-0-of-rme-size-of-set-r11
+    ;; mv-nth-0-of-rme-size-of-set-r12
+    ;; mv-nth-0-of-rme-size-of-set-r13
+    ;; mv-nth-0-of-rme-size-of-set-r14
+    ;; mv-nth-0-of-rme-size-of-set-r15
+    ;; mv-nth-0-of-rme-size-of-set-rsp
+    ;; mv-nth-0-of-rme-size-of-set-rbp
+    ;; mv-nth-0-of-rme-size-of-set-undef ; move?
+    ;; mv-nth-0-of-rme-size-of-set-mxcsr ; move?
 
-    mv-nth-1-of-rme-size-of-set-rip
-    mv-nth-1-of-rme-size-of-set-rax
-    mv-nth-1-of-rme-size-of-set-rbx
-    mv-nth-1-of-rme-size-of-set-rcx
-    mv-nth-1-of-rme-size-of-set-rdx
-    mv-nth-1-of-rme-size-of-set-rsi
-    mv-nth-1-of-rme-size-of-set-rdi
-    mv-nth-1-of-rme-size-of-set-r8
-    mv-nth-1-of-rme-size-of-set-r9
-    mv-nth-1-of-rme-size-of-set-r10
-    mv-nth-1-of-rme-size-of-set-r11
-    mv-nth-1-of-rme-size-of-set-r12
-    mv-nth-1-of-rme-size-of-set-r13
-    mv-nth-1-of-rme-size-of-set-r14
-    mv-nth-1-of-rme-size-of-set-r15
-    mv-nth-1-of-rme-size-of-set-rsp
-    mv-nth-1-of-rme-size-of-set-rbp
-
-    x86isa::mv-nth-2-of-rme-size-when-app-view ; move?
+    ;; mv-nth-1-of-rme-size-of-set-rip
+    ;; mv-nth-1-of-rme-size-of-set-rax
+    ;; mv-nth-1-of-rme-size-of-set-rbx
+    ;; mv-nth-1-of-rme-size-of-set-rcx
+    ;; mv-nth-1-of-rme-size-of-set-rdx
+    ;; mv-nth-1-of-rme-size-of-set-rsi
+    ;; mv-nth-1-of-rme-size-of-set-rdi
+    ;; mv-nth-1-of-rme-size-of-set-r8
+    ;; mv-nth-1-of-rme-size-of-set-r9
+    ;; mv-nth-1-of-rme-size-of-set-r10
+    ;; mv-nth-1-of-rme-size-of-set-r11
+    ;; mv-nth-1-of-rme-size-of-set-r12
+    ;; mv-nth-1-of-rme-size-of-set-r13
+    ;; mv-nth-1-of-rme-size-of-set-r14
+    ;; mv-nth-1-of-rme-size-of-set-r15
+    ;; mv-nth-1-of-rme-size-of-set-rsp
+    ;; mv-nth-1-of-rme-size-of-set-rbp
 
     if-of-set-rip-and-set-rip-same))
 
@@ -4391,30 +4396,46 @@
           (read-rules)
           (write-rules)
           (read-and-write-rules)
-          '(x86isa::rme08$inline
-            x86isa::rme16$inline
-            x86isa::rme32$inline
-            x86isa::rme64$inline
-            x86isa::rme128$inline
-            x86isa::rme-size$inline
-            x86isa::rime08$inline
-            x86isa::rime16$inline
-            x86isa::rime32$inline
-            x86isa::rime64$inline
-            x86isa::rime-size$inline
-            x86isa::wme08$inline
-            x86isa::wme16$inline
-            x86isa::wme32$inline
-            x86isa::wme64$inline
-            x86isa::wme128$inline
-            x86isa::wme-size$inline
+          '(rime08$inline
+            rime16$inline
+            rime32$inline
+            rime64$inline
+            rime-size$inline
+
+            wime08$inline
+            wime16$inline
+            wime32$inline
+            wime64$inline
+            wime-size$inline
+
+            rme08$inline
+            rme16$inline
+            rme32$inline
+            rme48$inline
+            rme64$inline
+            rme80$inline
+            rme128$inline
+            rme256$inline
+            rme-size$inline
+
+            wme08$inline
+            wme16$inline
+            wme32$inline
+            wme48$inline
+            wme64$inline
+            wme80$inline
+            wme128$inline
+            wme256$inline
+            wme-size$inline
+
             ea-to-la$inline
-            x86isa::read-*ip$inline
-            x86isa::write-*ip$inline
-            x86isa::add-to-*ip$inline
-            x86isa::read-*sp$inline
-            x86isa::write-*sp$inline
-            x86isa::add-to-*sp$inline
+
+            read-*ip$inline
+            write-*ip$inline
+            add-to-*ip$inline
+            read-*sp$inline
+            write-*sp$inline
+            add-to-*sp$inline
 
             ;; x86isa::data-segment-descriptor-attributesbits->e$inline
             ;; x86isa::data-segment-descriptor-attributesbits->d/b$inline
@@ -4504,7 +4525,7 @@
   '(run-until-stack-shorter-than-opener
     not-mv-nth-0-of-wme-size ;gets rid of error branch
     mv-nth-1-of-wme-size     ;introduces write-to-segment
-    mv-nth-1-of-rb-becomes-read
+    ;; mv-nth-1-of-rb-becomes-read
     ;; mv-nth-1-of-rb-1-becomes-read
     ;; x86isa::x86-fetch-decode-execute-base
     ))
@@ -4521,8 +4542,8 @@
   (append (debug-rules-common)
           (get-prefixes-openers)
           ;; todo: flesh out this list:
-          '(x86isa::wme-size-when-64-bit-modep-and-not-fs/gs-strong
-            x86isa::rme-size-when-64-bit-modep-and-not-fs/gs-strong
+          '(x86isa::rme-size-when-64-bit-modep-and-not-fs/gs-strong
+            x86isa::wme-size-when-64-bit-modep-and-not-fs/gs-strong
             ;; could consider things like these:
             ;; READ-OF-WRITE-IRREL2
             x86-fetch-decode-execute-opener-safe-64
@@ -4562,6 +4583,8 @@
             acl2::acl2-numberp-of-*
             bitops::ash-of-0-c ; at least for now
             ;;rflagsbits->af-of-myif
+            ;;rflagsbits->af-of-if
+
             ;; acl2::equal-of-constant-and-bvuminus
             ;; acl2::bvor-of-myif-arg2 ; introduces bvif (myif can arise from expanding a shift into cases)
             ;; acl2::bvor-of-myif-arg3 ; introduces bvif (myif can arise from expanding a shift into cases)
@@ -4588,12 +4611,11 @@
             acl2::bvcat-of-repeatbit-tighten-64-32 ;gen!
             acl2::bvlt-of-bvsx-arg2
             acl2::sbvlt-of-bvsx-32-16-constant
-;            rflagsbits->af-of-if
             acl2::sbvlt-false-when-sbvlt-gen ; did nothing?
             acl2::if-of-sbvlt-and-not-sbvlt-helper
             if-of-set-flag-and-set-flag
             xr-of-!rflags-irrel ; todo: better normal form?
-            64-bit-modep-of-!rflags
+
             read-of-!rflags
             acl2::logext-of-+-of-bvplus-same-size
             acl2::logext-of-+-of-+-of-mult-same-size
@@ -4757,20 +4779,12 @@
             ;acl2::bvlt-of-bvchop-arg3
             ;acl2::sbvlt-of-bvchop-arg2
             ;acl2::sbvlt-of-bvchop-arg3
-            ;; todo: more like this?:
-            x86isa::rflagsbits->cf$inline-of-if
-            x86isa::rflagsbits->pf$inline-of-if
-            x86isa::rflagsbits->of$inline-of-if
-            x86isa::rflagsbits->sf$inline-of-if
-            x86isa::rflagsbits->zf$inline-of-if
-            x86isa::rflagsbits->af$inline-of-if
             ;acl2::bvand-of-bvchop-1 ;rename
             ;acl2::bvand-of-bvchop-2 ;rename
             acl2::bvchop-of-minus-becomes-bvuminus ; todo: or re-characterize the subl instruction
             acl2::bvplus-of-+-arg2 ; todo: drop once we characterize long negation?
             acl2::bvplus-of-+-arg3 ; todo: drop once we characterize long negation?
             ;acl2::integerp-when-unsigned-byte-p-free ; needed for the bvplus-of-+ rules.
-            x86isa::integerp-of-xr-rgf
             acl2::natp-of-+-of-- ; trying, or simplify (natp (binary-+ '32 (unary-- (bvchop '5 x))))
             min ; why is min arising?  or add min-same
             acl2::<-becomes-bvlt-axe-bind-free-arg1-strong
@@ -4831,7 +4845,7 @@
             acl2::bvchop-subst-constant-alt
             acl2::boolif-of-bvlt-strengthen-to-equal
             acl2::bvlt-reduce-when-not-equal-one-less
-            ;; trying opening these up if they surive to the proof stage:
+            ;; If any of these survive to the proof stage, we should probably open them up:
             js-condition
             jns-condition
             jo-condition
@@ -4884,7 +4898,7 @@
      acl2::if-x-x-y-when-booleanp
      read-of-xw-irrel
      mod-of-plus-reduce-constants
-     mv-nth-1-of-rb-becomes-read
+     ;; mv-nth-1-of-rb-becomes-read
      mv-nth-1-of-wb-becomes-write
      read-of-xw-irrel
      read-of-set-flag
@@ -4922,7 +4936,7 @@
 (defun loop-lifter-invariant-preservation-rules ()
   (declare (xargs :guard t))
   (append (extra-loop-lifter-rules)
-          '(mv-nth-1-of-rb-becomes-read
+          '(;; mv-nth-1-of-rb-becomes-read
             read-of-write-irrel
             read-of-write-same
             )))

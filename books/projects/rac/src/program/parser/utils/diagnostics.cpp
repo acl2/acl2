@@ -33,7 +33,7 @@ void DiagnosticHandler::show_code_at(const Location &context,
   // Move the cursor to the begin of the area we need to report.
   assert(fseek(file_, cur_pos, SEEK_SET) == 0);
 
-  static char *buffer = nullptr;
+  char *buffer = nullptr;
   size_t size = 0;
 
   // By default, we show all the context...
@@ -60,14 +60,15 @@ void DiagnosticHandler::show_code_at(const Location &context,
     // Display the code.
     size = getline(&buffer, &size, file_);
     cur_pos += size;
-    std::cerr << format("% 3d | %s", line, buffer);
+    std::string lno_str = std::to_string(line);
+    std::cerr << format(" %s | %s", lno_str.c_str(), buffer);
 
     // If we are not in the part responsible for the error, skip the rest.
     if (line < error.first_line || line > error.last_line) {
       continue;
     }
 
-    std::cerr << "    | ";
+    std::cerr << std::string(lno_str.length(), ' ') << "  | ";
 
     int col = 0;
     if (line == error.first_line) {

@@ -3346,7 +3346,7 @@
                                      :implicit-supervisor-access implicit-supervisor-access
                                      :cpl cpl))
          (tlb-entry (cdr (hons-get tlb-key tlb)))
-         ((when tlb-entry) (mv nil 
+         ((when tlb-entry) (mv nil
                                (mbe :logic (logapp 12 lin-addr tlb-entry)
                                     :exec (the (unsigned-byte 52)
                                                (logapp-inline 12 lin-addr
@@ -4168,7 +4168,7 @@
   :returns (mv flg
                (p-addr physical-address-p)
                (x86    x86p :hyp (x86p x86)))
-  
+
   :parents (ia32e-paging)
 
   :short "Top-level page translation function"

@@ -43,8 +43,6 @@
 (include-book "../decoding-and-spec-utils"
               :ttags (:undef-flg))
 
-(local (include-book "centaur/bitops/ihs-extensions" :dir :system))
-
 ;; ======================================================================
 
 ;; ======================================================================
@@ -71,15 +69,6 @@
        ;; Intel manuals.
        (x86 (!inhibit-interrupts-one-instruction t x86)))
       (write-*ip proc-mode temp-rip x86)))
-
-(local
- (defthm integerp-of-xr-rflags
-     (implies (x86p x86)
-              (integerp (xr :rflags i x86)))
-   :hints (("Goal"
-            :use ((:instance elem-p-of-xr-rflags (x86$a x86)))
-            :in-theory (e/d () (elem-p-of-xr-rflags))))))
-
 
 (def-inst x86-cli
 

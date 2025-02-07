@@ -62,7 +62,14 @@
      the Yul team has explained that its purpose is
      just to prevent human error.
      Thus, we formalize these checks here,
-     separately from the safety checks."))
+     separately from the safety checks.")
+   (xdoc::p
+    "The shadowing restrictions formalized here
+     only apply to variables, not to functions.
+     Variables and functions are subject to
+     different visibility and accessibility rules;
+     all the rules that apply to functions
+     are parts of the safety checks."))
   :order-subtopics t
   :default-parent t)
 

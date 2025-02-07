@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -53,7 +53,7 @@
     (xdoc::topstring
      (xdoc::p
       "We disallow statements that are function definitions obviously,
-       and we recursive check all the nested blocks and switch cases."))
+       and we recursively check all the nested blocks and switch cases."))
     (statement-case
      stmt
      :block (block-nofunp stmt.get)

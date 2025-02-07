@@ -2,12 +2,12 @@ function-params-type.cpp:11 (13-14): Expected `int`, got `struct {int a;}`
  11 |   return foo(s, 0);
     |              ^
 note: Defined here: 
-  6 | int foo(int a, A b) { return a; }
-    | ^^^^^^^^^^^^^^^^^^^
+ 6 | int foo(int a, A b) { return a; }
+   | ^^^^^^^^^^^^^^^^^^^
 
 function-params-type.cpp:11 (16-17): Expected `A`, got `int`
  11 |   return foo(s, 0);
     |                 ^
 note: Defined here: 
-  6 | int foo(int a, A b) { return a; }
-    | ^^^^^^^^^^^^^^^^^^^
+ 6 | int foo(int a, A b) { return a; }
+   | ^^^^^^^^^^^^^^^^^^^

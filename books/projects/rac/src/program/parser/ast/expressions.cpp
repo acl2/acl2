@@ -846,7 +846,7 @@ Sexpression *BinaryExpr::ACL2Expr() {
   //    assert(!"missing type");
   //  }
   Sexpression *val = nullptr;
-  if (isOpShift(op) || isOpBitwise(op) || isOpCompare(op)) {
+  if (isOpShift(op) || isOpBitwise(op)) {
     val = new Plist({ ptr, sexpr1, sexpr2 });
   } else {
     val = new Plist({ ptr, sexpr1_val, sexpr2_val });

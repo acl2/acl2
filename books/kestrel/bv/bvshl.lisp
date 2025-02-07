@@ -183,7 +183,8 @@
   (implies (and (<= size1 size2)
                 (natp size1)
                 (natp size2)
-                (natp amt))
+                ;(natp amt)
+                )
            (equal (bvchop size1 (bvshl size2 x amt))
                   (bvshl size1 x amt)))
   :hints (("Goal" :in-theory (enable bvshl))))
@@ -194,4 +195,11 @@
                 (integerp size1))
            (equal (bvchop size1 (bvshl size2 x amt))
                   (bvshl size2 x amt)))
+  :hints (("Goal" :in-theory (enable bvshl))))
+
+(defthm bvshl-when-amount-too-big
+  (implies (and (<= size shift-amount)
+                (integerp shift-amount))
+           (equal (bvshl size x shift-amount)
+                  0))
   :hints (("Goal" :in-theory (enable bvshl))))
