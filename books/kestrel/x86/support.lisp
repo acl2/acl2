@@ -1757,8 +1757,8 @@
 
 ;; This could go into a support64 book:
 
-(defthm add-to-*ip-of-0 ; 0 means 64-bit mode?
-  (equal (x86isa::add-to-*ip 0 x86isa::*ip x86isa::delta x86)
+(defthm add-to-*ip-of-*64-bit-mode*
+  (equal (x86isa::add-to-*ip *64-bit-mode* x86isa::*ip x86isa::delta x86)
          (if (canonical-address-p (+ x86isa::*ip x86isa::delta))
              (mv nil (+ x86isa::*ip x86isa::delta))
            (mv (list :non-canonical-instruction-pointer (+ x86isa::*ip x86isa::delta))

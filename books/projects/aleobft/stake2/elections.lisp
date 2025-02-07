@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -69,7 +69,7 @@
     "In AleoBFT, this calculation is deterministic,
      given the round number and committee,
      but the details are unimportant to our model.
-     Thus, the use of constrained function is appropriate."))
+     Thus, the use of a constrained function is appropriate."))
 
   (encapsulate
     (((leader-at-round * *) => *
@@ -133,7 +133,7 @@
      as we ensure by way of formal proofs.")
    (xdoc::p
     "We go through the voters, and check whether the leader address
-     is among the refernced previous certificates or not,
+     is among the referenced previous certificates or not,
      counting its stake as part of the resulting vote stake."))
   (b* (((when (or (not (mbt (certificate-setp voters)))
                   (set::emptyp voters)))
