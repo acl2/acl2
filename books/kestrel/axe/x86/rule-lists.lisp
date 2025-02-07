@@ -4709,7 +4709,6 @@
 
             ;x86isa::sub-zf-spec32-same ; this can mess up the condition rules...
             ;x86isa::if-of-sub-zf-spec32-arg2
-            acl2::bfix-when-bitp
             ;;stuff related to flags changes:
 
             acl2::logand-of-1-becomes-getbit-arg2 ;move
@@ -4734,7 +4733,6 @@
             ;;jnl-condition-rewrite-16b
             ; acl2::bvchop-of-logext-becomes-bvsx ; needed for jnl-condition-rewrite-16
             ;acl2::bvsx-when-sizes-match
-            acl2::bvchop-of-bvsx
             ;acl2::bvchop-of-bvchop
             ;acl2::bvplus-of-bvchop-arg2
             ;acl2::sbvlt-of-bvchop-arg2
@@ -4758,7 +4756,7 @@
             ;; feature-flag-sse2-of-write
             ;; feature-flag-sse2-of-set-flag
             acl2::equal-of-if-constants
-            acl2::bvlt-of-bvplus-1-cancel-alt ; optional
+            ;; acl2::bvlt-of-bvplus-1-cancel-alt ; optional
             ;x86isa::idiv-spec-32 ; trying
             acl2::bvchop-when-size-is-not-posp
 
@@ -4799,7 +4797,6 @@
             acl2::bvchop-subst-constant-alt
             acl2::boolif-of-bvlt-strengthen-to-equal
             acl2::bvlt-reduce-when-not-equal-one-less
-            acl2::bvchop-of-logand-becomes-bvand
             ;read-1-of-write-4
             ;read-1-of-write-1-both ; can make things, like failure to resolve rip, hard to debug
             ;read-1-of-write-within-new
@@ -4833,7 +4830,6 @@
             ;; just include boolean-rules?
             acl2::boolif-when-quotep-arg2
             acl2::boolif-when-quotep-arg3
-            acl2::bvchop-of-bvsx
             acl2::bvchop-of-bvuminus-same
             acl2::signed-byte-p-of-bvif
             acl2::logext-identity
