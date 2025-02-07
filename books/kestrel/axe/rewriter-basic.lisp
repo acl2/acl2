@@ -1,7 +1,7 @@
 ; A general-purpose Axe Rewriter
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -128,6 +128,7 @@
                   (symbol-listp known-booleans))
              (pseudo-term-listp (mv-nth 1 (simplify-conjunction-basic-aux passes-left conjuncts rule-alist known-booleans monitored-symbols memoizep warn-missingp))))))
 
+;; Repeatedly simplifies the CONJUNCTS.
 ;; Returns (mv erp new-conjuncts) where NEW-CONJUNCTS is a set of conjuncts
 ;; whose conjunction is equal to the conjunction of the CONJUNCTS.
 (defund simplify-conjunction-basic (conjuncts rule-alist known-booleans monitored-symbols memoizep warn-missingp)

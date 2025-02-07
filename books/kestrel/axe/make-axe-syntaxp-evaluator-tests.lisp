@@ -70,71 +70,70 @@
                         (IMPLIES (EQ FN 'AXE-QUOTEP)
                                  (VARIABLEP (FIRST ARGS)))
                         (PSEUDO-DAG-ARRAYP
-                         'DAG-ARRAY
-                         DAG-ARRAY
-                         (+ 1
-                            (LARGEST-NON-QUOTEP (STRIP-CDRS ALIST)))))
+                          'DAG-ARRAY
+                          DAG-ARRAY
+                          (+ 1
+                             (LARGEST-NON-QUOTEP (STRIP-CDRS ALIST)))))
                    :GUARD-HINTS
                    (("Goal"
                      :IN-THEORY
                      (E/D
-                      (LIST-OF-VARIABLES-AND-CONSTANTSP FREE-VARS-IN-TERMS-OPENER)
-                      (DARGP))
+                       (LIST-OF-VARIABLES-AND-CONSTANTSP FREE-VARS-IN-TERMS-OPENER)
+                       (DARGP))
                      :EXPAND ((FREE-VARS-IN-TERMS ARGS)
                               (FREE-VARS-IN-TERM (CAR ARGS))))))
-    (IGNORABLE DAG-ARRAY))
+            (IGNORABLE DAG-ARRAY))
    (IF
-    (ATOM ARGS)
-    (ER HARD?
-        'EVAL-AXE-SYNTAXP-FUNCTION-APPLICATION-BAZ
-        "Unrecognized function in axe-syntaxp rule: ~x0."
-        FN)
-    (LET
-     ((ARG0 (FIRST ARGS)) (ARGS (REST ARGS)))
-     (IF
-      (ATOM ARGS)
-      (CASE FN
-        (AXE-QUOTEP (AXE-QUOTEP (LOOKUP-EQ ARG0 ALIST)))
-        (SYNTACTIC-VARIABLEP
-         (SYNTACTIC-VARIABLEP (IF (CONSP ARG0)
-                                  ARG0
-                                (LOOKUP-EQ ARG0 ALIST))
-                              dag-array))
-        (t (ER HARD?
-               'EVAL-AXE-SYNTAXP-FUNCTION-APPLICATION-BAZ
-               "Unrecognized function in axe-syntaxp rule: ~x0."
-               FN)))
-      (LET
-       ((ARG1 (FIRST ARGS)) (ARGS (REST ARGS)))
-       (DECLARE (IGNORABLE ARGS ARG1))
-       (IF
-        (ATOM ARGS)
-        (CASE
-          FN
-          (SHOULD-REVERSE-EQUALITY
-           ;; For this, only 2 args are given in the call (dag-array has been
-           ;; removed), but we know that it takes dag-array as the final param,
-           ;; so we pass it separately:
-           (SHOULD-REVERSE-EQUALITY
-            ;; lookup vars:
-            (IF (CONSP ARG0) ARG0 (LOOKUP-EQ ARG0 ALIST))
-            (IF (CONSP ARG1) ARG1 (LOOKUP-EQ ARG1 ALIST))
-            ;; this one takes the dag-array too, which we pass around separately:
-            DAG-ARRAY))
-          (HEAVIER-DAG-TERM
-           ;; this one does not take a dag-array param:
-           (HEAVIER-DAG-TERM
-            (IF (CONSP ARG0) ARG0 (LOOKUP-EQ ARG0 ALIST))
-            (IF (CONSP ARG1) ARG1 (LOOKUP-EQ ARG1 ALIST))))
-          (T
-           (ER HARD?
-               'EVAL-AXE-SYNTAXP-FUNCTION-APPLICATION-BAZ
-               "Unrecognized function in axe-syntaxp rule: ~x0."
-               FN)))
-        (LET*
-         ((ARG2 (FIRST ARGS)) (ARGS (REST ARGS)))
-         (DECLARE (IGNORABLE ARGS ARG2))
-         (ER HARD?
-             'EVAL-AXE-SYNTAXP-FUNCTION-APPLICATION-BAZ
-             "Unrecognized function in axe-syntaxp rule: ~x0."
-             FN)))))))))
+       (ATOM ARGS)
+       (ER HARD?
+           'EVAL-AXE-SYNTAXP-FUNCTION-APPLICATION-BAZ
+           "Unrecognized function in axe-syntaxp rule: ~x0."
+           FN)
+     (if (eq fn 'axe-quotep)
+         (axe-quotep (lookup-eq (first args) alist)) ; special case
+       (LET* ((ARG0 (FIRST ARGS))
+              (arg0-val (if (consp arg0)
+                            arg0
+                          (lookup-eq arg0 alist)))
+              (ARGS (REST ARGS)))
+         (declare (ignorable args arg0 arg0-val))
+        
+         (IF
+             (ATOM ARGS)
+             (CASE FN
+               (SYNTACTIC-VARIABLEP (SYNTACTIC-VARIABLEP arg0-val dag-array))
+               (t (ER HARD?
+                      'EVAL-AXE-SYNTAXP-FUNCTION-APPLICATION-BAZ
+                      "Unrecognized function in axe-syntaxp rule: ~x0."
+                      FN)))
+           (LET* ((ARG1 (FIRST ARGS))
+                  (arg1-val (if (consp arg1)
+                                arg1
+                              (lookup-eq arg1 alist)))
+                  (ARGS (REST ARGS)))
+             (DECLARE (IGNORABLE ARGS ARG1 arg1-val))
+             (IF
+                 (ATOM ARGS)
+                 (CASE
+                   FN
+                   (SHOULD-REVERSE-EQUALITY
+                     ;; For this, only 2 args are given in the call (dag-array has been
+                     ;; removed), but we know that it takes dag-array as the final param,
+                     ;; so we pass it separately:
+                     (SHOULD-REVERSE-EQUALITY
+                       arg0-val arg1-val
+                       ;; this one takes the dag-array too, which we pass around separately:
+                       DAG-ARRAY))
+                   (HEAVIER-DAG-TERM
+                     ;; this one does not take a dag-array param:
+                     (HEAVIER-DAG-TERM arg0-val arg1-val))
+                   (T
+                     (ER HARD?
+                         'EVAL-AXE-SYNTAXP-FUNCTION-APPLICATION-BAZ
+                         "Unrecognized function in axe-syntaxp rule: ~x0."
+                         FN)))
+               (ER HARD?
+                   'EVAL-AXE-SYNTAXP-FUNCTION-APPLICATION-BAZ
+                   "Unrecognized function in axe-syntaxp rule: ~x0."
+                   FN))))))))
+ )
