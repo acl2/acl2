@@ -177,4 +177,28 @@
 
   ///
 
-  (fty::deffixequiv-mutual path-to-author+round))
+  (fty::deffixequiv-mutual path-to-author+round)
+
+  (defret-mutual certificate->author-of-path-to-author+round
+    (defret certificate->author-of-path-to-author+round
+      (implies target-cert?
+               (equal (certificate->author target-cert?)
+                      (address-fix author)))
+      :fn path-to-author+round)
+    (defret certificate->author-of-path-to-author+round-set
+      (implies target-cert?
+               (equal (certificate->author target-cert?)
+                      (address-fix author)))
+      :fn path-to-author+round-set))
+
+  (defret-mutual certificate->round-of-path-to-author+round
+    (defret certificate->round-of-path-to-author+round
+      (implies target-cert?
+               (equal (certificate->round target-cert?)
+                      (pos-fix round)))
+      :fn path-to-author+round)
+    (defret certificate->round-of-path-to-author+round-set
+      (implies target-cert?
+               (equal (certificate->round target-cert?)
+                      (pos-fix round)))
+      :fn path-to-author+round-set)))
