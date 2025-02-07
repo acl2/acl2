@@ -148,6 +148,28 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "acl2::fty" "FTY Library"))
+
+   (xdoc::p
+    "A manual page explaining "
+    (xdoc::seetopic "fty::fold" "general folds for fixtypes")
+    " has been added.")
+
+   (xdoc::p
+    "A new event macro @(tsee fty::deffold-reduce) has been added,
+     to generate reducing folds,
+     according to the nomenclature explained in "
+    (xdoc::seetopic "fty::fold" "the page on general folds")
+    ".")
+
+   (xdoc::p
+    "Some utilities have been added to operate on the FTY database:
+     see @(see fty::database).
+     The data structures for the FTY database have been put into
+     guard-verified logic mode.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h4 "Schroeder-Bernstein Library")
 
    (xdoc::p
