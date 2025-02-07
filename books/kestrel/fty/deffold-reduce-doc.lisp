@@ -160,16 +160,13 @@
      (xdoc::ul
       (xdoc::li
        "A pair @('(<type> <term>)'),
-        where @('<type>') is a @(tsee defprod) or @(tsee deftagsum)
-        of the abstract syntax
-        (e.g. @(tsee tyname) or @(tsee expr)),
+        where @('<type>') is a @(tsee defprod) or @(tsee deftagsum),
         and @('<term>') is an (untranslated) term
         whose only free variables may be @('<type>')
         and the formals specified in @(':extra-args').")
       (xdoc::li
        "A triple @('(<type> <kind> <term>)'),
-        where @('<type>') is a @(tsee deftagsum) of the abstract syntax
-        (e.g. @(tsee expr)),
+        where @('<type>') is a @(tsee deftagsum),
         @('<kind>') is a keyword identifying one of the summands of the type,
         and @('<term>') is an (untranslated) term
         whose only free variables may be @('<type>')
@@ -196,7 +193,7 @@
        the symbol specified by the @('suffix') input.
        If any of the @(':parents'), @(':short'), or @(':long') inputs
        are provided, they are added to this XDOC topic.
-       This XDOC topic is generated with @(tsee defxdoc+),
+       This XDOC topic is generated with @(tsee acl2::defxdoc+),
        with @(':order-topics t'),
        so that the other generated events (described below),
        which all have this XDOC topic as parent,
