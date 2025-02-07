@@ -1,7 +1,7 @@
 ; An evaluator for x86 code lifting
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -1126,6 +1126,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; todo: import more of these into the X package, if needed:
 (defconst *axe-evaluator-x86-fns-and-aliases*
   (append '(implies ; push back to basic evaluator?
             (integer-range-p integer-range-p-unguarded)
@@ -1228,5 +1229,6 @@
             )
           *axe-evaluator-basic-fns-and-aliases*))
 
+;; Creates acl2::eval-axe-evaluator-x86, etc. ;; todo: package
 ;; Makes the evaluator (also checks that each alias given is equivalent to its function):
 (make-evaluator-simple x86 *axe-evaluator-x86-fns-and-aliases*)
