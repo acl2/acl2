@@ -1179,6 +1179,7 @@
 
     define
     __function__
+    defrule
 
     defp
 
