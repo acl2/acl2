@@ -365,6 +365,80 @@
 				(:instance f*comm (x (f+ c d)) (y (car x)))
 				(:instance fdist (x (car x)) (y c) (z d))))))
 
+;; Dot product of 2 lists of rield elements of the same length:
+
+(defun fdot (x y)
+  (if (consp x)
+      (f+ (f* (car x) (car y))
+          (fdot (cdr x) (cdr y)))
+    (f0)))
+
+(in-theory (disable (fdot)))
+
+(defthm fp-fdot
+  (implies (and (flistnp x n) (flistnp y n))
+           (fp (fdot x y)))
+  :hints (("Goal" :in-theory (disable (fdot)))))
+
+(defthm fdot-flistn0
+  (implies (and (natp n) (flistnp x n))
+           (equal (fdot (flistn0 n) x)
+	          (f0)))
+  :hints (("Goal" :in-theory (disable (fdot)))))
+
+(defthmd fdot-comm
+  (implies (and (flistnp x n) (flistnp y n))
+           (equal (fdot x y) (fdot y x)))
+  :hints (("Subgoal *1/1" :use ((:instance f*comm (x (car x)) (y (car y)))))
+          ("Subgoal *1/3" :use ((:instance f*comm (x (car x)) (y (car y)))))))
+
+(defthmd fdot-flist-add
+  (implies (and (flistnp x n) (flistnp y n) (flistnp z n))
+	   (equal (fdot (flist-add x y) z)
+		  (f+ (fdot x z) (fdot y z))))
+  :hints (("Subgoal *1/4" :use ((:instance f+assoc (x (F* (CAR X) (CAR Z)))
+					           (y (FDOT (CDR X) (CDR Z)))
+					           (z (F+ (F* (CAR Y) (CAR Z)) (FDOT (CDR Y) (CDR Z)))))
+				(:instance f+assoc (x (FDOT (CDR X) (CDR Z)))
+					           (y (F* (CAR Y) (CAR Z)))
+						   (z (FDOT (CDR Y) (CDR Z))))
+				(:instance f+comm (x (F* (CAR Y) (CAR Z)))
+				                  (y (FDOT (CDR X) (CDR Z))))
+				(:instance f+assoc (x (F* (CAR Y) (CAR Z)))
+				                   (y (FDOT (CDR X) (CDR Z)))
+						   (z (FDOT (CDR Y) (CDR Z))))
+				(:instance f+assoc (x (F* (CAR X) (CAR Z)))
+				                   (y (F* (CAR Y) (CAR Z)))
+						   (z (FDOT (FLIST-ADD (CDR X) (CDR Y)) (CDR Z))))))))
+
+(defthmd fdot-flist-add-comm
+  (implies (and (flistnp x n) (flistnp y n) (flistnp z n))
+	   (equal (fdot z (flist-add x y))
+		  (f+ (fdot z x) (fdot z y))))
+  :hints (("Goal" :use (fdot-flist-add
+                        (:instance fdot-comm (y z))
+			(:instance fdot-comm (x z))
+			(:instance fdot-comm (x z) (y (flist-add x y)))))))
+					   
+(defthmd fdot-flist-scalar-mul
+  (implies (and (flistnp x n) (flistnp y n) (fp c))
+	   (equal (fdot (flist-scalar-mul c x) y)
+		  (f* c (fdot x y))))
+  :hints (("Goal" :in-theory (enable f*assoc))))
+
+;; List of dot products of an flist x with the elements of a list of flists l:
+
+(defun fdot-list (x l)
+  (if (consp l)
+      (cons (fdot x (car l))
+            (fdot-list x (cdr l)))
+    ()))
+
+(defthm nth-fdot-list
+  (implies (and (natp j) (< j (len l)))
+           (equal (nth j (fdot-list x l))
+	          (fdot x (nth j l)))))
+
 
 ;;------------------------------------------
 

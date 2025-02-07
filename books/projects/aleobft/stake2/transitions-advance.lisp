@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -76,9 +76,7 @@
      the address in the @('advance') event;
      see @(tsee event).")
    (xdoc::p
-    "We increment the validator's round by one.
-     We also restart the timer, setting it to running
-     (which is a no-op if the round has advanced not due to a timeout."))
+    "We increment the validator's round by one."))
   (b* (((validator-state vstate) (get-validator-state val systate))
        (new-round (1+ vstate.round))
        (new-vstate (change-validator-state vstate :round new-round))

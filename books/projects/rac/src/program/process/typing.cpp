@@ -654,7 +654,7 @@ bool TypingAction::VisitMultipleValue(MultipleValue *e) {
     const Type *expected = t->get(i);
     const Type *actual = e->expr()[i]->get_type();
 
-    if (!expected->isEqual(actual)) {
+    if (!actual->canBeImplicitlyCastTo(deref(expected))) {
 
       diag_
           .new_error(e->expr()[i]->loc(),

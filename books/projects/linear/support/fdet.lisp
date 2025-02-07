@@ -1059,66 +1059,59 @@
 ;;   Uniqueness of the Determinant
 ;;-------------------------------------------------------------------------------------------------------
 
-;; We shall show that for given n, fdet is the unique n-linear alternating function on
-;; nxn matrices such that (fdet (id-fmat n) n) = (f1).  To that end, we constrain the
-;; function fdetn as follows:
+;; We shall show that fdet is the unique n-linear alternating function on nxn matrices such that
+;; (fdet (id-fmat n) n) = (f1).  To that end, we constrain the function fdet0 as follows:
 
-(encapsulate (((n) => *))
-  (local (defun n () 2))
-  (defthm posp-n
-    (posp (n))
-    :rule-classes (:type-prescription :rewrite)))
+(encapsulate (((fdet0 * *) => *))
+  (local (defun fdet0 (a n) (fdet a n)))
+  (defthm fp-fdet0
+    (implies (and (fmatp a n n) (posp n))
+             (fp (fdet0 a n))))
+  (defthmd fdet0-n-linear
+    (implies (and (fmatp a n n) (posp n) (natp i) (< i n)
+		  (flistnp x n) (flistnp y n) (fp c))
+	     (equal (fdet0 (replace-row a i (flist-add (flist-scalar-mul c x) y)) n)
+		    (f+ (f* c (fdet0 (replace-row a i x) n))
+		        (fdet0 (replace-row a i y) n)))))
+  (defthmd fdet0-adjacent-equal
+    (implies (and (fmatp a n n) (posp n)
+		  (natp i) (< i (1- n)) (= (row i a) (row (1+ i) a)))
+	     (equal (fdet0 a n) (f0)))
+    :hints (("Goal" :use ((:instance fdet-alternating (j (1+ i))))))))
 
-(encapsulate (((fdetn *) => *))
-  (local (defun fdetn (a) (fdet a (n))))
-  (defthm fp-fdetn
-    (implies (fmatp a (n) (n))
-             (fp (fdetn a))))
-  (defthmd fdetn-n-linear
-    (implies (and (fmatp a (n) (n)) (natp i) (< i (n))
-		  (flistnp x (n)) (flistnp y (n)) (fp c))
-	     (equal (fdetn (replace-row a i (flist-add (flist-scalar-mul c x) y)))
-		    (f+ (f* c (fdetn (replace-row a i x)))
-		        (fdetn (replace-row a i y))))))
-  (defthmd fdetn-adjacent-equal
-    (implies (and (fmatp a (n) (n))
-		  (natp i) (< i (1- (n))) (= (row i a) (row (1+ i) a)))
-	     (equal (fdetn a) (f0)))
-    :hints (("Goal" :use ((:instance fdet-alternating (n (n)) (j (1+ i))))))))
-
-;; Our objective is to prove that (fdetn a) = (f* (fdet a (n)) (fdetn (id-fmat (n)))):
+;; Our objective is to prove that (fdetn a) = (f* (fdet a n) (fdetn (id-fmat n))):
 
 ;; (defthmd fdet-unique
-;;   (implies (fmatp a (n) (n))
-;;            (equal (fdetn a)
-;;                   (f* (fdet a (n))
-;;                       (fdetn (id-fmat (n)))))))
+;;   (implies (and (posp n) (fmatp a n n))
+;;            (equal (fdet0 a n)
+;;                   (f* (fdet a n)
+;;                       (fdet0 (id-fmat n) n)))))
 
-;; If we also prove that for a given function f, (f a n) satisfies the constraints on (fdetn a),
+;; If we also prove that for a given function f, (f a n) satisfies the constraints on (fdet0 a n),
 ;; we may conclude by functional instantiation that (f a n) = (f* (fdet a n) (f (id-fmat n))).
 ;; From this it follows that if f has the additional property (f (id-fmat n)) = (f1), then
-;; (f a) = (fdet a (n)).
+;; (f a n) = (fdet a n).
 
-;; Note that we have replaced the property that fdetn is alternating with the weaker property
-;; fdetn-adjacent-equal, which says that the value is (f0) if 2 adjacent rows are equal.  This
+;; Note that we have replaced the property that fdet0 is alternating with the weaker property
+;; fdet0-adjacent-equal, which says that the value is (f0) if 2 adjacent rows are equal.  This
 ;; relaxes the proof obligations for functional instantiation, which will be critical for the
 ;; proof of correctness of cofactor expansion.  We shall show that this property together with
 ;; n-linearity implies that the same holds for 2 non-adjacent rows.
 
-;; It follows from fdetn-n-linear and fdetn-adjacent-equal that transposing 2 adjacent rows negates
-;; the value of fdetn:
+;; It follows from fdet0-n-linear and fdet0-adjacent-equal that transposing 2 adjacent rows negates
+;; the value of fdet0:
 
 (local-in-theory (disable nth fmatp replace-row))
 
 (local-defthmd replace-adjacent-rows-same
-  (implies (and (fmatp a (n) (n))
-		(natp i) (< i (1- (n)))
-		(flistnp x (n)))
-           (equal (fdetn (replace-row (replace-row a i x) (1+ i) x))
+  (implies (and (fmatp a n n) (posp n)
+		(natp i) (< i (1- n))
+		(flistnp x n))
+           (equal (fdet0 (replace-row (replace-row a i x) (1+ i) x) n)
 		  (f0)))
   :hints (("Goal" :in-theory (disable len-fmatp)
-                  :use ((:instance len-fmatp (m (n)) (n (n)))
-                        (:instance fdetn-adjacent-equal (a (replace-row (replace-row a i x) (1+ i) x)))))))
+                  :use ((:instance len-fmatp (m n))
+                        (:instance fdet0-adjacent-equal (a (replace-row (replace-row a i x) (1+ i) x)))))))
 
 (local-defthm flistnp-nth
   (implies (and (natp m) (natp n) (fmatp a m n)
@@ -1126,123 +1119,130 @@
            (flistnp (nth i a) n))
   :hints (("Goal" :use (flistnp-row))))
 
-(local-defthmd fdetn-adjacent-alternating-1
-  (implies (and (fmatp a (n) (n))
-		(natp i) (< i (1- (n))))
-           (equal (f+ (fdetn (replace-row (replace-row a i (flist-add (row i a) (row (1+ i) a)))
+(local-defthmd fdet0-adjacent-alternating-1
+  (implies (and (fmatp a n n) (posp n)
+		(natp i) (< i (1- n)))
+           (equal (f+ (fdet0 (replace-row (replace-row a i (flist-add (row i a) (row (1+ i) a)))
 	                                 (1+ i)
-		                         (row i a)))
-	              (fdetn (replace-row (replace-row a i (flist-add (row i a) (row (1+ i) a)))
+		                         (row i a))
+			     n)
+	              (fdet0 (replace-row (replace-row a i (flist-add (row i a) (row (1+ i) a)))
 	                                 (1+ i)
-				         (row (1+ i) a))))
+				         (row (1+ i) a))
+			     n))
 		  (f0)))
   :hints (("Goal" :in-theory (disable len-fmatp flist-scalar-mul-f1)
-                  :use ((:instance len-fmatp (m (n)) (n (n)))
-		        (:instance flist-scalar-mul-f1 (n (n)) (x (nth i a)))
+                  :use ((:instance len-fmatp (m n))
+		        (:instance flist-scalar-mul-f1 (x (nth i a)))
 			(:instance replace-adjacent-rows-same (x (flist-add (row i a) (row (1+ i) a))))
-		        (:instance fdetn-n-linear (a (replace-row a i (flist-add (row i a) (row (1+ i) a))))
+		        (:instance fdet0-n-linear (a (replace-row a i (flist-add (row i a) (row (1+ i) a))))
 			                         (i (1+ i)) (c (f1)) (x (row i a)) (y (row (1+ i) a)))))))
 
-(local-defthmd fdetn-adjacent-alternating-2
-  (implies (and (fmatp a (n) (n))
-		(natp i) (< i (1- (n))))
-           (equal (fdetn (replace-row (replace-row a i (flist-add (row i a) (row (1+ i) a)))
+(local-defthmd fdet0-adjacent-alternating-2
+  (implies (and (fmatp a n n) (posp n)
+		(natp i) (< i (1- n)))
+           (equal (fdet0 (replace-row (replace-row a i (flist-add (row i a) (row (1+ i) a)))
 	                             (1+ i)
-		                     (row i a)))
-		  (fdetn (replace-row (replace-row a (1+ i) (row i a))
+		                     (row i a))
+			 n)
+		  (fdet0 (replace-row (replace-row a (1+ i) (row i a))
 		                     i
-				     (flist-add (row i a) (row (1+ i) a))))))
+				     (flist-add (row i a) (row (1+ i) a)))
+			 n)))
   :hints (("Goal" :in-theory (disable len-fmatp)
-                  :use ((:instance len-fmatp (m (n)) (n (n)))
-			(:instance replace-2-fmat-rows (m (n)) (n (n))
+                  :use ((:instance len-fmatp (m n))
+			(:instance replace-2-fmat-rows (m n)
 			                          (x (flist-add (row i a) (row (1+ i) a))) (j (1+ i)) (y (row i a)))))))
 
-(local-defthmd fdetn-adjacent-alternating-3
-  (implies (and (fmatp a (n) (n))
-		(natp i) (< i (1- (n))))
-           (equal (fdetn (replace-row (replace-row a (1+ i) (row i a))
+(local-defthmd fdet0-adjacent-alternating-3
+  (implies (and (fmatp a n n) (posp n)
+		(natp i) (< i (1- n)))
+           (equal (fdet0 (replace-row (replace-row a (1+ i) (row i a))
 		                     i
-				     (flist-add (row i a) (row (1+ i) a))))
-		  (fdetn (replace-row (replace-row a (1+ i) (row i a))
+				     (flist-add (row i a) (row (1+ i) a)))
+			 n)
+		  (fdet0 (replace-row (replace-row a (1+ i) (row i a))
 		                     i
-				     (row (1+ i) a)))))
+				     (row (1+ i) a))
+			 n)))
   :hints (("Goal" :in-theory (disable flist-scalar-mul-f1 len-fmatp)
-                  :use ((:instance len-fmatp (m (n)) (n (n)))
-		        (:instance flist-scalar-mul-f1 (n (n)) (x (nth i a)))
-			(:instance fdetn-n-linear (a (replace-row a (1+ i) (row i a)))
+                  :use ((:instance len-fmatp (m n))
+		        (:instance flist-scalar-mul-f1 (x (nth i a)))
+			(:instance fdet0-n-linear (a (replace-row a (1+ i) (row i a)))
 			                         (c (f1)) (x (row i a)) (y (row (1+ i) a)))
-			(:instance fdetn-adjacent-equal (a (replace-row (replace-row a (1+ i) (row i a))
+			(:instance fdet0-adjacent-equal (a (replace-row (replace-row a (1+ i) (row i a))
 			                                               i (row i a))))))))
 
-(local-defthmd fdetn-adjacent-alternating-4
-  (implies (and (fmatp a (n) (n))
-		(natp i) (< i (1- (n))))
-           (equal (fdetn (replace-row (replace-row a i (flist-add (row i a) (row (1+ i) a)))
+(local-defthmd fdet0-adjacent-alternating-4
+  (implies (and (fmatp a n n) (posp n)
+		(natp i) (< i (1- n)))
+           (equal (fdet0 (replace-row (replace-row a i (flist-add (row i a) (row (1+ i) a)))
 	                             (1+ i)
-		                     (row (1+ i) a)))
-		  (fdetn (replace-row a i (flist-add (row i a) (row (1+ i) a))))))
+		                     (row (1+ i) a))
+			 n)
+		  (fdet0 (replace-row a i (flist-add (row i a) (row (1+ i) a))) n)))
   :hints (("Goal" :in-theory (disable len-fmatp flist-scalar-mul-f1)
-                  :use ((:instance len-fmatp (m (n)) (n (n)))
-		        (:instance replace-fmat-row-self (m (n)) (n (n)) (i (1+ i))
+                  :use ((:instance len-fmatp (m n))
+		        (:instance replace-fmat-row-self (m n) (i (1+ i))
 			                            (a (replace-row a i (flist-add (row i a) (row (1+ i) a)))))))))
 
-(local-defthmd fdetn-adjacent-alternating-5
-  (implies (and (fmatp a (n) (n))
-		(natp i) (< i (1- (n))))
-           (equal (fdetn (replace-row a i (flist-add (row i a) (row (1+ i) a))))
-		  (fdetn a)))
+(local-defthmd fdet0-adjacent-alternating-5
+  (implies (and (fmatp a n n) (posp n)
+		(natp i) (< i (1- n)))
+           (equal (fdet0 (replace-row a i (flist-add (row i a) (row (1+ i) a))) n)
+		  (fdet0 a n)))
   :hints (("Goal" :in-theory (disable len-fmatp flist-scalar-mul-f1)
-                  :use ((:instance len-fmatp (m (n)) (n (n)))
-		        (:instance flist-scalar-mul-f1 (n (n)) (x (nth i a)))
-			(:instance fdetn-n-linear (c (f1)) (x (row i a)) (y (row (1+ i) a)))
-			(:instance fdetn-adjacent-equal (a (replace-row a i (row (1+ i) a))))
-			(:instance replace-fmat-row-self (m (n)) (n (n)))))))
+                  :use ((:instance len-fmatp (m n))
+		        (:instance flist-scalar-mul-f1 (x (nth i a)))
+			(:instance fdet0-n-linear (c (f1)) (x (row i a)) (y (row (1+ i) a)))
+			(:instance fdet0-adjacent-equal (a (replace-row a i (row (1+ i) a))))
+			(:instance replace-fmat-row-self (m n))))))
 
-(local-defthmd fdetn-adjacent-alternating-6
-  (implies (and (fmatp a (n) (n))
-		(natp i) (< i (1- (n))))
-           (equal (f+ (fdetn (replace-row (replace-row a (1+ i) (row i a)) i (row (1+ i) a)))
-	              (fdetn a))
+(local-defthmd fdet0-adjacent-alternating-6
+  (implies (and (fmatp a n n) (posp n)
+		(natp i) (< i (1- n)))
+           (equal (f+ (fdet0 (replace-row (replace-row a (1+ i) (row i a)) i (row (1+ i) a)) n)
+	              (fdet0 a n))
 		  (f0)))
-  :hints (("Goal" :use (fdetn-adjacent-alternating-1 fdetn-adjacent-alternating-2 fdetn-adjacent-alternating-3
-                        fdetn-adjacent-alternating-4 fdetn-adjacent-alternating-5))))
+  :hints (("Goal" :use (fdet0-adjacent-alternating-1 fdet0-adjacent-alternating-2 fdet0-adjacent-alternating-3
+                        fdet0-adjacent-alternating-4 fdet0-adjacent-alternating-5))))
 
-(defthmd fdetn-interchange-adjacent
-  (implies (and (fmatp a (n) (n))
-		(natp i) (< i (1- (n))))
-           (equal (fdetn (replace-row (replace-row a (1+ i) (row i a)) i (row (1+ i) a)))
-	          (f- (fdetn a))))
-  :hints (("Goal" :use (fdetn-adjacent-alternating-6
-                        (:instance flistnp-row (n (n)) (m (n)) (i (1+ i)))
-                        (:instance f-unique (x (fdetn a))
-			                    (y (fdetn (replace-row (replace-row a (1+ i) (row i a)) i (row (1+ i) a)))))
-			(:instance f+comm (x (fdetn a))
-			                  (y (fdetn (replace-row (replace-row a (1+ i) (row i a)) i (row (1+ i) a)))))
-		        (:instance fmatp-replace-row (m (n)) (n (n)) (k (1+ i)) (r (row i a)))
-                        (:instance fmatp-replace-row (m (n)) (n (n)) (a (replace-row a (1+ i) (row i a)))
+(defthmd fdet0-interchange-adjacent
+  (implies (and (fmatp a n n) (posp n)
+		(natp i) (< i (1- n)))
+           (equal (fdet0 (replace-row (replace-row a (1+ i) (row i a)) i (row (1+ i) a)) n)
+	          (f- (fdet0 a n))))
+  :hints (("Goal" :use (fdet0-adjacent-alternating-6
+                        (:instance flistnp-row (m n) (i (1+ i)))
+                        (:instance f-unique (x (fdet0 a n))
+			                    (y (fdet0 (replace-row (replace-row a (1+ i) (row i a)) i (row (1+ i) a)) n)))
+			(:instance f+comm (x (fdet0 a n))
+			                  (y (fdet0 (replace-row (replace-row a (1+ i) (row i a)) i (row (1+ i) a)) n)))
+		        (:instance fmatp-replace-row (m n) (k (1+ i)) (r (row i a)))
+                        (:instance fmatp-replace-row (m n) (a (replace-row a (1+ i) (row i a)))
 			                             (k i) (r (row (1+ i) a)))))))
 
 ;; Interchanging adjacent rows may be expressed as a permutation:
 
-(local-defthmd fdetn-adjacent-alternating-7
-  (implies (and (fmatp a (n) (n))
-		(natp i) (< i (1- (n)))
-		(natp k) (< k (n)))
+(local-defthmd fdet0-adjacent-alternating-7
+  (implies (and (fmatp a n n) (posp n)
+		(natp i) (< i (1- n))
+		(natp k) (< k n))
            (equal (nth k (replace-row (replace-row a (1+ i) (row i a))
 		                      i
 		                      (row (1+ i) a)))
-	          (nth k (permute a (transpose i (1+ i) (n))))))
+	          (nth k (permute a (transpose i (1+ i) n)))))
   :hints (("Goal" :in-theory (e/d (transpose-vals) (len-fmatp nth-permute len-replace-row fmatp-replace-row))
-                  :use ((:instance len-fmatp (m (n)) (n (n)))
-		        (:instance nth-permute (l a) (p (TRANSPOSE I (+ 1 I) (N))))
-		        (:instance nth-permute (l a) (p (TRANSPOSE I (+ 1 I) (N))) (k i))
-		        (:instance fmatp-replace-row (m (n)) (n (n)) (k (1+ i)) (r (row i a)))
-                        (:instance fmatp-replace-row (m (n)) (n (n)) (a (replace-row a (1+ i) (row i a)))
+                  :use ((:instance len-fmatp (m n))
+		        (:instance nth-permute (l a) (p (TRANSPOSE I (+ 1 I) n)))
+		        (:instance nth-permute (l a) (p (TRANSPOSE I (+ 1 I) n)) (k i))
+		        (:instance fmatp-replace-row (m n) (k (1+ i)) (r (row i a)))
+                        (:instance fmatp-replace-row (m n) (a (replace-row a (1+ i) (row i a)))
 			                             (k i) (r (row (1+ i) a)))
 			(:instance len-replace-row (k (1+ i)) (r (row i a)))
                         (:instance len-replace-row (a (replace-row a (1+ i) (row i a)))
 			                           (k i) (r (row (1+ i) a)))
-			(:instance permp-transpose (n (n)) (j (1+ i)))))))
+			(:instance permp-transpose (j (1+ i)))))))
 
 (local-defthm len-permute
   (equal (len (permute l p))
@@ -1252,48 +1252,48 @@
   (true-listp (permute l p)))
 
 (defthmd interchange-adjacent-fmat-permute
-  (implies (and (fmatp a (n) (n))
-		(natp i) (< i (1- (n))))
+  (implies (and (fmatp a n n) (posp n)
+		(natp i) (< i (1- n)))
            (equal (replace-row (replace-row a (1+ i) (row i a)) i (row (1+ i) a))
-	          (permute a (transpose i (1+ i) (n)))))
+	          (permute a (transpose i (1+ i) n))))
   :hints (("Goal" :in-theory (disable len-fmatp nth-permute len-replace-row fmatp-replace-row)
-                  :use ((:instance len-fmatp (m (n)) (n (n)))
-		        (:instance fmatp-replace-row (m (n)) (n (n)) (k (1+ i)) (r (row i a)))
-                        (:instance fmatp-replace-row (m (n)) (n (n)) (a (replace-row a (1+ i) (row i a)))
+                  :use ((:instance len-fmatp (m n))
+		        (:instance fmatp-replace-row (m n) (k (1+ i)) (r (row i a)))
+                        (:instance fmatp-replace-row (m n) (a (replace-row a (1+ i) (row i a)))
 			                             (k i) (r (row (1+ i) a)))
 			(:instance len-replace-row (k (1+ i)) (r (row i a)))
                         (:instance len-replace-row (a (replace-row a (1+ i) (row i a)))
 			                           (k i) (r (row (1+ i) a)))
-			(:instance permp-transpose (n (n)) (j (1+ i)))
-			(:instance len-perm (n (n)) (x (transpose i (1+ i) (n))))
+			(:instance permp-transpose (j (1+ i)))
+			(:instance len-perm (x (transpose i (1+ i) n)))
 			(:instance nth-diff-diff (x (replace-row (replace-row a (1+ i) (row i a)) i (row (1+ i) a)))
-			                         (y (permute a (transpose i (1+ i) (n)))))
-			(:instance fdetn-adjacent-alternating-7
+			                         (y (permute a (transpose i (1+ i) n))))
+			(:instance fdet0-adjacent-alternating-7
 			  (k (nth-diff (replace-row (replace-row a (1+ i) (row i a)) i (row (1+ i) a))
-			               (permute a (transpose i (1+ i) (n))))))))))
+			               (permute a (transpose i (1+ i) n)))))))))
 
-(defthmd fdetn-permute-adjacent-transpose
-  (implies (and (fmatp a (n) (n))
-                (natp i) (< i (1- (n))))
-           (equal (fdetn (permute a (transpose i (1+ i) (n))))
-                  (f- (fdetn a))))
-  :hints (("Goal" :use (fdetn-interchange-adjacent interchange-adjacent-fmat-permute))))
+(defthmd fdet0-permute-adjacent-transpose
+  (implies (and (fmatp a n n) (posp n)
+                (natp i) (< i (1- n)))
+           (equal (fdet0 (permute a (transpose i (1+ i) n)) n)
+                  (f- (fdet0 a n))))
+  :hints (("Goal" :use (fdet0-interchange-adjacent interchange-adjacent-fmat-permute))))
 
 ;; Note that applying any permutation to the rows of a produces a matrix of the
 ;; same dimensions:
 
 (local-defthm fmatp-remove1
-  (implies (and (fmatp a m n) (natp m) (member r a))
+  (implies (and (fmatp a m n) (posp n) (natp m) (member r a))
            (fmatp (remove1 r a) (1- m) n))	   
   :hints (("Goal" :in-theory (enable fmatp))))
 
 (local-defthm member-fmatp-flistnp
-  (implies (and (fmatp a m n) (member r a))
+  (implies (and (fmatp a m n) (posp n) (member r a))
            (flistnp r n))
   :hints (("Goal" :in-theory (enable fmatp))))
 
 (local-defthmd fmatp-perm
-  (implies (and (fmatp a m n) (natp m) (natp n)
+  (implies (and (fmatp a m n) (posp n) (natp m)
                 (true-listp b) (permutationp b a))
 	   (fmatp b m n))
   :hints (("Goal" :in-theory (enable fmatp))))
@@ -1310,57 +1310,56 @@
                         (:instance permutationp-symmetric (l a) (m (permute a p)))
 			(:instance fmatp-perm (b (permute a p)))))))
 
-;; Next we show that fdetn-permute-adjacent-transpose applies to a transposition of any
-;; 2 rows.  First note that for 0 <= i and i - 1 < j < n, (transpose i j (n)) is the
-;; result of conjugating (transpose i (1- j) (n)) by (transpose (1- j) j (n)):
-
+;; Next we show that fdet0-permute-adjacent-transpose applies to a transposition of any
+;; 2 rows.  First note that for 0 <= i and i - 1 < j < n, (transpose i j n) is the
+;; result of conjugating (transpose i (1- j) n) by (transpose (1- j) j n):
 
 (local-defthmd nth-conj-adjacent-transpose-fmat
-  (implies (and (fmatp a (n) (n))
-                (natp i) (natp j) (< i (1- j)) (< j (n))
-		(natp k) (< k (n)))
-           (equal (nth k (comp-perm (comp-perm (transpose (1- j) j (n))
-                                               (transpose i (1- j) (n))
-			                       (n))
-		                    (transpose (1- j) j (n))
-		                    (n)))
-		  (nth k (transpose i j (n)))))
+  (implies (and (fmatp a n n) (posp n)
+                (natp i) (natp j) (< i (1- j)) (< j n)
+		(natp k) (< k n))
+           (equal (nth k (comp-perm (comp-perm (transpose (1- j) j n)
+                                               (transpose i (1- j) n)
+			                       n)
+		                    (transpose (1- j) j n)
+		                    n))
+		  (nth k (transpose i j n))))
   :hints (("Goal" :in-theory (enable transpose-vals)
-                  :use ((:instance permp-transpose (n (n)))
-		        (:instance permp-transpose (n (n)) (i (1- j)))
-		        (:instance permp-transpose (n (n)) (j (1- j))))
+                  :use ((:instance permp-transpose)
+		        (:instance permp-transpose (i (1- j)))
+		        (:instance permp-transpose (j (1- j))))
                   :cases ((= k i) (= k j) (= k (1- j))))))
 
 (defthmd conj-adjacent-transpose-fmat
-  (implies (and (fmatp a (n) (n))
-                (natp i) (natp j) (< i (1- j)) (< j (n)))
-           (equal (comp-perm (comp-perm (transpose (1- j) j (n))
-                                        (transpose i (1- j) (n))
-			                (n))
-		             (transpose (1- j) j (n))
-		             (n))
-		  (transpose i j (n))))
-  :hints (("Goal" :use ((:instance permp-transpose (n (n)))
-		        (:instance permp-transpose (n (n)) (i (1- j)))
-		        (:instance permp-transpose (n (n)) (j (1- j)))
-			(:instance nth-diff-perm (n (n))
-                                                 (x (comp-perm (comp-perm (transpose (1- j) j (n))
-                                                                          (transpose i (1- j) (n))
-									  (n))
-		                                               (transpose (1- j) j (n))
-			                                       (n)))
-						 (y (transpose i j (n))))
+  (implies (and (fmatp a n n) (posp n)
+                (natp i) (natp j) (< i (1- j)) (< j n))
+           (equal (comp-perm (comp-perm (transpose (1- j) j n)
+                                        (transpose i (1- j) n)
+			                n)
+		             (transpose (1- j) j n)
+		             n)
+		  (transpose i j n)))
+  :hints (("Goal" :use ((:instance permp-transpose)
+		        (:instance permp-transpose (i (1- j)))
+		        (:instance permp-transpose (j (1- j)))
+			(:instance nth-diff-perm
+                                                 (x (comp-perm (comp-perm (transpose (1- j) j n)
+                                                                          (transpose i (1- j) n)
+									  n)
+		                                               (transpose (1- j) j n)
+			                                       n))
+						 (y (transpose i j n)))
 			(:instance nth-conj-adjacent-transpose-fmat
-			  (k (nth-diff (comp-perm (comp-perm (transpose (1- j) j (n))
-                                                             (transpose i (1- j) (n))
-					                     (n))
-		                                  (transpose (1- j) j (n))
-			                          (n))
-				       (transpose i j (n)))))))))
+			  (k (nth-diff (comp-perm (comp-perm (transpose (1- j) j n)
+                                                             (transpose i (1- j) n)
+					                     n)
+		                                  (transpose (1- j) j n)
+			                          n)
+				       (transpose i j n))))))))
 
 ;; The claim follows by induction:
 
-;; We need fmatp versions of permute-comp-perm and nth-permut:
+;; We need fmatp versions of permute-comp-perm and nth-permute:
 
 (local-defthm permute-comp-perm-reverse
   (implies (and (fmatp a n n) (posp n)
@@ -1391,139 +1390,131 @@
                   :in-theory (disable len-fmatp))))
 
 	         
-(local-defthmd fdetn-permute-transpose-step
-  (let ((a1 (permute a (transpose (1- j) j (n)))))
-    (implies (and (fmatp a (n) (n))
-                  (natp i) (natp j) (< i (1- j)) (< j (n))
-                  (equal (fdetn (permute a1 (transpose i (1- j) (n))))
-                         (f- (fdetn a1))))
-	   (equal (fdetn (permute a (transpose i j (n))))
-                  (f- (fdetn a)))))
+(local-defthmd fdet0-permute-transpose-step
+  (let ((a1 (permute a (transpose (1- j) j n))))
+    (implies (and (fmatp a n n) (posp n)
+                  (natp i) (natp j) (< i (1- j)) (< j n)
+                  (equal (fdet0 (permute a1 (transpose i (1- j) n)) n)
+                         (f- (fdet0 a1 n))))
+	   (equal (fdet0 (permute a (transpose i j n)) n)
+                  (f- (fdet0 a n)))))
   :hints (("Goal" :use (conj-adjacent-transpose-fmat
-                        (:instance permp-transpose (n (n)))
-		        (:instance permp-transpose (n (n)) (i (1- j)))
-		        (:instance permp-transpose (n (n)) (j (1- j)))			
-			(:instance fdetn-permute-adjacent-transpose (i (1- j)))
-			(:instance fdetn-permute-adjacent-transpose (i (1- j))
+                        (:instance permp-transpose)
+		        (:instance permp-transpose (i (1- j)))
+		        (:instance permp-transpose (j (1- j)))			
+			(:instance fdet0-permute-adjacent-transpose (i (1- j)))
+			(:instance fdet0-permute-adjacent-transpose (i (1- j))
 			                                           (a (permute a
-								               (comp-perm (transpose (1- j) j (n))
-                                                                                          (transpose i (1- j) (n))
-			                                                                  (n)))))))))
+								               (comp-perm (transpose (1- j) j n)
+                                                                                          (transpose i (1- j) n)
+			                                                                  n))))))))
 
-(local-defun fdetn-permute-transpose-induct (i j a)
-  (if (and (natp i) (natp j) (< i (1- j)) (< j (n)))
-      (list (fdetn-permute-transpose-induct i (1- j) (permute a (transpose (1- j) j (n)))))
+(local-defun fdet0-permute-transpose-induct (i j a n)
+  (if (and (posp n) (natp i) (natp j) (< i (1- j)) (< j n))
+      (list (fdet0-permute-transpose-induct i (1- j) (permute a (transpose (1- j) j n)) n))
     (list a)))      
 
-(defthmd fdetn-permute-transpose
-  (implies (and (fmatp a (n) (n))
-                (natp i) (natp j) (< i j) (< j (n)))
-	   (equal (fdetn (permute a (transpose i j (n))))
-                  (f- (fdetn a))))
-  :hints (("Goal" :induct (fdetn-permute-transpose-induct i j a))
-          ("Subgoal *1/2" :use (fdetn-permute-adjacent-transpose))
-          ("Subgoal *1/1" :use (fdetn-permute-transpose-step
-	                        (:instance fmatp-permute (p (TRANSPOSE (+ -1 J) J (N))) (m (n)) (n (n)))
-	                        (:instance permp-transpose (n (n)) (i (1- j)))))))
+(defthmd fdet0-permute-transpose
+  (implies (and (fmatp a n n) (posp n)
+                (natp i) (natp j) (< i j) (< j n))
+	   (equal (fdet0 (permute a (transpose i j n)) n)
+                  (f- (fdet0 a n))))
+  :hints (("Goal" :induct (fdet0-permute-transpose-induct i j a n))
+          ("Subgoal *1/2" :use (fdet0-permute-adjacent-transpose))
+          ("Subgoal *1/1" :use (fdet0-permute-transpose-step
+	                        (:instance fmatp-permute (p (TRANSPOSE (+ -1 J) J n)) (m n))
+	                        (:instance permp-transpose (i (1- j)))))))
        
-;; Now suppose (row i a) = (row j a), where 0 <= i < j < (n).  We would like to show that 
-;; (fdetn a) = (f0).  If j = i + 1 ,then apply fdetn-adjacent-equal.  Otherwise, let
-;; a' = (permute (transpose (1+ i) j (n)) a).  By nth-permute,
+;; Now suppose (row i a) = (row j a), where 0 <= i < j < n.  We would like to show that 
+;; (fdet0 a n) = (f0).  If j = i + 1 ,then apply fdet0-adjacent-equal.  Otherwise, let
+;; a' = (permute (transpose (1+ i) j n) a).  By nth-permute,
 
-;;   (nth i a') = (nth (nth i (transpose (1+ i) j (n))) a) = (nth i a)
+;;   (nth i a') = (nth (nth i (transpose (1+ i) j n)) a) = (nth i a)
 
 ;; and
 
-;;   (nth (1+ i) a') = (nth (nth (1+ i) (transpose (1+ i) j (n))) a) = (nth j a) = (nth i a)
+;;   (nth (1+ i) a') = (nth (nth (1+ i) (transpose (1+ i) j n)) a) = (nth j a) = (nth i a)
 
-;; and by fdetn-adjacent-equal, (fdetn a') = (f0).  By fdetn-transpose-rows,
+;; and by fdet0-adjacent-equal, (fdet0 a' n) = (f0).  By fdet0-transpose-rows,
 
-;;   (fdetn a) = (f- (fdetn a') = (f- (f0)) = (f0).
+;;   (fdet0 a n) = (f- (fdet0 a' n) = (f- (f0)) = (f0).
 
-;; Thus, fdetn is an alternating function:
+;; Thus, fdet0 is an alternating function:
 
-(local-defthmd fdetn-alternating-1
-  (implies (and (fmatp a (n) (n))
-                (natp i) (natp j) (< (1+ i) j) (< j (n)) (= (row i a) (row j a)))
-           (equal (fdetn a) (f0)))
+(local-defthmd fdet0-alternating-1
+  (implies (and (fmatp a n n) (posp n)
+                (natp i) (natp j) (< (1+ i) j) (< j n) (= (row i a) (row j a)))
+           (equal (fdet0 a n) (f0)))
   :hints (("Goal" :in-theory (e/d (transpose-vals) (f-f-))
-                  :use ((:instance permp-transpose (i (1+ i)) (n (n)))
-		        (:instance fdetn-adjacent-equal (a (permute a (transpose (1+ i) j (n)))))
-			(:instance fdetn-permute-transpose (i (1+ i)))
-			(:instance f-f- (x (fdetn a)))))))
+                  :use ((:instance permp-transpose (i (1+ i)))
+		        (:instance fdet0-adjacent-equal (a (permute a (transpose (1+ i) j n))))
+			(:instance fdet0-permute-transpose (i (1+ i)))
+			(:instance f-f- (x (fdet0 a n)))))))
 
-(local-defthmd fdetn-alternating-2
-  (implies (and (fmatp a (n) (n))
-                (natp i) (natp j) (< i j) (< j (n)) (= (row i a) (row j a)))
-           (equal (fdetn a) (f0)))
+(local-defthmd fdet0-alternating-2
+  (implies (and (fmatp a n n) (posp n)
+                (natp i) (natp j) (< i j) (< j n) (= (row i a) (row j a)))
+           (equal (fdet0 a n) (f0)))
   :hints (("Goal" :cases ((= j (1+ i)))
-                  :use (fdetn-adjacent-equal fdetn-alternating-1))))
+                  :use (fdet0-adjacent-equal fdet0-alternating-1))))
 
-(defthmd fdetn-alternating
-  (implies (and (fmatp a (n) (n))
-                (natp i) (natp j) (< i (n)) (< j (n)) (not (= i j)) (= (row i a) (row j a)))
-	   (equal (fdetn a) (f0)))
-  :hints (("Goal" :use (fdetn-alternating-2 (:instance fdetn-alternating-2 (i j) (j i))))))
+(defthmd fdet0-alternating
+  (implies (and (fmatp a n n) (posp n)
+                (natp i) (natp j) (< i n) (< j n) (not (= i j)) (= (row i a) (row j a)))
+	   (equal (fdet0 a n) (f0)))
+  :hints (("Goal" :use (fdet0-alternating-2 (:instance fdet0-alternating-2 (i j) (j i))))))
 
-;; We shall require a generalization of fdetn-transpose-rows to arbitrary permutations.
-;; First note that fdetn-permute-transpose may be restated as follows:
+;; We shall require a generalization of fdet0-transpose-rows to arbitrary permutations.
+;; First note that fdet0-permute-transpose may be restated as follows:
 
-(local-defthmd fdetn-permute-transp
-  (implies (and (fmatp a (n) (n))
-                (transp p (n)))
-	   (equal (fdetn (permute a p))
-	          (f- (fdetn a))))
+(defthmd fdet0-permute-transp
+  (implies (and (fmatp a n n) (posp n)
+                (transp p n))
+	   (equal (fdet0 (permute a p) n)
+	          (f- (fdet0 a n))))
   :hints (("Goal" :in-theory (enable transp)
-                  :use ((:instance fdetn-permute-transpose (i (least-moved p)) (j (nth (least-moved p) p)))
-		        (:instance least-moved-transpose (n (n)) (i (least-moved p)) (j (nth (least-moved p) p)))))))
+                  :use ((:instance fdet0-permute-transpose (i (least-moved p)) (j (nth (least-moved p) p)))
+		        (:instance least-moved-transpose (i (least-moved p)) (j (nth (least-moved p) p)))))))
 
 (include-book "arithmetic-5/top" :dir :system)
 
-(local-defun fdetn-permute-trans-list-p-induct (a l)
+(local-defun fdet0-permute-trans-list-p-induct (a l)
   (if (consp l)
-      (list (fdetn-permute-trans-list-p-induct (permute a (car l)) (cdr l)))
+      (list (fdet0-permute-trans-list-p-induct (permute a (car l)) (cdr l)))
     (list a l)))
 
-(local-defthmd fdetn-permute-trans-list-p
-  (implies (and (fmatp a (n) (n))
-                (trans-list-p l (n)))
-	   (equal (fdetn (permute a (comp-perm-list l (n))))
+;; This may be generalized to the composition of a list of transpositions by induction: 
+
+(defthmd fdet0-permute-trans-list-p
+  (implies (and (fmatp a n n) (posp n)
+                (trans-list-p l n))
+	   (equal (fdet0 (permute a (comp-perm-list l n)) n)
 	          (if (evenp (len l))
-		      (fdetn a)
-		    (f- (fdetn a)))))
-  :hints (("Goal" :induct (fdetn-permute-trans-list-p-induct a l))
-          ("Subgoal *1/1" :use ((:instance permp-transp (n (n)) (p (car l)))
-                                (:instance permp-trans-list (n (n)) (l (cdr l)))
-				(:instance fdetn-permute-transp (p (car l)))))))
+		      (fdet0 a n)
+		    (f- (fdet0 a n)))))
+  :hints (("Goal" :induct (fdet0-permute-trans-list-p-induct a l))
+          ("Subgoal *1/1" :use ((:instance permp-transp (p (car l)))
+                                (:instance permp-trans-list (l (cdr l)))
+				(:instance fdet0-permute-transp (p (car l)))))))
 
-(defthmd fdetn-permute-rows
-  (implies (and (fmatp a (n) (n))
-                (in p (sym (n))))
-	   (equal (fdetn (permute a p))
-	          (if (even-perm-p p (n))
-		      (fdetn a)
-		    (f- (fdetn a)))))
+;; Since any permutation p may be factored as a list of transpositions, this yields the following:
+
+(defthmd fdet0-permute-rows
+  (implies (and (fmatp a n n) (posp n)
+                (in p (sym n)))
+	   (equal (fdet0 (permute a p) n)
+	          (if (even-perm-p p n)
+		      (fdet0 a n)
+		    (f- (fdet0 a n)))))
   :hints (("Goal" :in-theory (enable even-perm-p)
-                  :use ((:instance parity-0-1 (n (n)))
-		        (:instance parity-len-trans-list (n (n)))
-			(:instance trans-list-p-trans-list (n (n)))
-			(:instance perm-prod-trans (n (n)))
-			(:instance fdetn-permute-trans-list-p (l (trans-list p (n))))))))
+                  :use ((:instance parity-0-1)
+		        (:instance parity-len-trans-list)
+			(:instance trans-list-p-trans-list)
+			(:instance perm-prod-trans)
+			(:instance fdet0-permute-trans-list-p (l (trans-list p n)))))))
 
-;; Since fdet satisfies the constraints on fdetn, this applies to fdet by functional
+;; Since fdet satisfies the constraints on fdet0, this applies to fdet by functional
 ;; instantiation:
-
-(local-defthmd fdet-permute-rows-n
-  (implies (and (fmatp a (n) (n))
-                (in p (sym (n))))
-	   (equal (fdet (permute a p) (n))
-	          (if (even-perm-p p (n))
-		      (fdet a (n))
-		    (f- (fdet a (n))))))
-  :hints (("Goal" :use ((:functional-instance fdetn-permute-rows
-			  (fdetn (lambda (a) (if (and (fmatp a (n) (n)) (in p (sym (n)))) (fdet a (n)) (fdetn a)))))))
-	  ("Subgoal 3" :use (fdetn-adjacent-equal (:instance fdet-alternating (j (1+ i)) (n (n)))))
-	  ("Subgoal 2" :use (fdetn-n-linear (:instance fdet-n-linear (n (n)))))))
 
 (defthmd fdet-permute-rows
   (implies (and (fmatp a n n) (posp n)
@@ -1532,53 +1523,55 @@
 	          (if (even-perm-p p n)
 		      (fdet a n)
 		    (f- (fdet a n)))))
-  :hints (("Goal" :use ((:functional-instance fdet-permute-rows-n
-                          (n (lambda () (if (posp n) n (n)))))))))
+  :hints (("Goal" :use ((:functional-instance fdet0-permute-rows
+			  (fdet0 (lambda (a n) (if (and (fmatp a n n) (in p (sym n))) (fdet a n) (fdet0 a n)))))))
+	  ("Subgoal 3" :use (fdet0-adjacent-equal (:instance fdet-alternating (j (1+ i)))))
+	  ("Subgoal 2" :use (fdet0-n-linear (:instance fdet-n-linear)))))
 
-;; The proof of fdet-unique is based on lists of k-tuples of natural numbers less than (n),
-;; where k <= (n):
+;; The proof of fdet-unique is based on lists of k-tuples of natural numbers less than n,
+;; where k <= n:
 
-(defun tuplep (x k)
+(defun tuplep (x k n)
   (if (zp k)
       (null x)
     (and (consp x)
          (natp (car x))
-         (< (car x) (n))
-	 (tuplep (cdr x) (1- k)))))
+         (< (car x) n)
+	 (tuplep (cdr x) (1- k) n))))
 
 (local-defthm true-listp-tuplep
-  (implies (tuplep x k)
+  (implies (tuplep x k n)
            (true-listp x)))
 
 (local-defthm len-tuplep
-  (implies (and (natp k) (tuplep x k))
+  (implies (and (natp k) (tuplep x k n))
            (equal (len x) k)))
 
-(defun tuple-list-p (l k)
+(defun tuple-list-p (l k n)
   (if (consp l)
-      (and (tuplep (car l) k)
-           (tuple-list-p (cdr l) k))
+      (and (tuplep (car l) k n)
+           (tuple-list-p (cdr l) k n))
     (null l)))
 
 (local-defthm member-tuple-list-p
-  (implies (and (tuple-list-p l k) (member x l))
-           (tuplep x k)))
+  (implies (and (tuple-list-p l k n) (member x l))
+           (tuplep x k n)))
 
 ;; We recursively define a dlist containing all such k-tuples:
 
-(defun extend-tuple-aux (x m) 
+(defun extend-tuple-aux (x m)
   (if (consp m)
       (cons (append x (list (car m)))
             (extend-tuple-aux x (cdr m)))
     ()))
 
-(defund extend-tuple (x)
-  (extend-tuple-aux x (ninit (n))))
+(defund extend-tuple (x n)
+  (extend-tuple-aux x (ninit n)))
 
-(defun extend-tuples (l)
+(defun extend-tuples (l n)
   (if (consp l)
-      (append (extend-tuple (car l))
-              (extend-tuples (cdr l)))
+      (append (extend-tuple (car l) n)
+              (extend-tuples (cdr l) n))
     ()))
 
 (local-defun tuplep-append-induct (x k)
@@ -1587,36 +1580,36 @@
     (list (tuplep-append-induct (cdr x) (1- k)))))
 
 (local-defthm tuplep-append
-  (implies (and (posp k) (tuplep x (1- k)) (member j (ninit (n))))
-           (tuplep (append x (list j)) k))
+  (implies (and (posp k) (tuplep x (1- k) n) (member j (ninit n)) (posp n))
+           (tuplep (append x (list j)) k n))
   :hints (("Goal" :induct (tuplep-append-induct x k))
-          ("Subgoal *1/2" :use ((:instance member-ninit (n (n)) (x j))))))
+          ("Subgoal *1/2" :use ((:instance member-ninit (x j))))))
 
 (local-defthm tuple-list-p-extend-tuple-aux
-  (implies (and (posp k) (tuplep x (1- k)) (sublistp m (ninit (n))))
-           (tuple-list-p (extend-tuple-aux x m) k)))
+  (implies (and (posp k) (posp n) (tuplep x (1- k) n) (sublistp m (ninit n)))
+           (tuple-list-p (extend-tuple-aux x m) k n)))
 
 (local-defthm tuple-list-p-extend-tuple
-  (implies (and (posp k) (tuplep x (1- k)))
-           (tuple-list-p (extend-tuple x) k))
+  (implies (and (posp k) (posp n) (tuplep x (1- k) n))
+           (tuple-list-p (extend-tuple x n) k n))
   :hints (("Goal" :in-theory (enable extend-tuple))))
 
 (local-defthm tuple-list-p-append
-  (implies (and (natp k) (tuple-list-p l k) (tuple-list-p m k))
-           (tuple-list-p (append l m) k)))
+  (implies (and (natp k) (posp n) (tuple-list-p l k n) (tuple-list-p m k n))
+           (tuple-list-p (append l m) k n)))
 
 (local-defthm tuple-list-p-extend-tuples
-  (implies (and (posp k) (tuple-list-p l (1- k)))
-           (tuple-list-p (extend-tuples l) k)))
+  (implies (and (posp k) (posp n) (tuple-list-p l (1- k) n))
+           (tuple-list-p (extend-tuples l n) k n)))
 
-(defun all-tuples (k)
+(defun all-tuples (k n)
   (if (zp k)
       (list ())
-    (extend-tuples (all-tuples (1- k)))))
+    (extend-tuples (all-tuples (1- k) n) n)))
 
 (local-defthm tuple-list-p-all-tuples
-  (implies (and (natp k) (<= k (n)))
-           (tuple-list-p (all-tuples k) k)))
+  (implies (and (natp k) (posp n) (<= k n))
+           (tuple-list-p (all-tuples k n) k n)))
 
 (local-defun equal-append-list-induct (x y)
   (if (consp x)
@@ -1640,40 +1633,40 @@
            (dlistp (extend-tuple-aux x m))))
 
 (local-defthm dlistp-extend-tuple
-  (implies (and (posp k) (tuplep x (1- k)))
-           (dlistp (extend-tuple x)))
+	      (implies (and (posp k) (posp n) (tuplep x (1- k) n))
+           (dlistp (extend-tuple x n)))
   :hints (("Goal" :in-theory (enable extend-tuple))))
 
 (local-defthm member-append-extend-tuple
  (implies (and (true-listp x) (true-listp y))
-           (iff (member (append x (list j)) (extend-tuple y))
-                (and (equal x y) (member j (ninit (n))))))
+           (iff (member (append x (list j)) (extend-tuple y n))
+                (and (equal x y) (member j (ninit n)))))
   :hints (("Goal" :in-theory (enable extend-tuple))))
 
 (local-defthm member-append-extend-tuples
- (implies (and (true-listp x) (tuple-list-p l k))
-           (iff (member (append x (list j)) (extend-tuples l))
-                (and (member x l) (member j (ninit (n)))))))
+ (implies (and (true-listp x) (tuple-list-p l k n))
+           (iff (member (append x (list j)) (extend-tuples l n))
+                (and (member x l) (member j (ninit n))))))
 
 (local-defthm disjointp-extend-tuple-aux
-  (implies (and (true-listp x) (tuple-list-p l k) (not (member x l)))
-           (disjointp (extend-tuple-aux x m) (extend-tuples l)))
+  (implies (and (true-listp x) (tuple-list-p l k n) (not (member x l)))
+           (disjointp (extend-tuple-aux x m) (extend-tuples l n)))
   :hints (("Goal" :induct (len m))))
 
 (local-defthm disjointp-extend-tuple
-  (implies (and (true-listp x) (tuple-list-p l k) (not (member x l)))
-           (disjointp (extend-tuple x) (extend-tuples l)))
+  (implies (and (true-listp x) (tuple-list-p l k n) (not (member x l)))
+           (disjointp (extend-tuple x n) (extend-tuples l n)))
   :hints (("Goal" :in-theory (enable extend-tuple))))
 
 (local-defthm dlistp-extend-tuples
-  (implies (and (posp k) (tuple-list-p l (1- k)) (dlistp l))
-           (dlistp (extend-tuples l)))
-  :hints (("Subgoal *1/3" :use ((:instance dlistp-append (l (EXTEND-TUPLE (CAR L)))
-                                                         (m (EXTEND-TUPLES (CDR L))))))))
+  (implies (and (posp k) (posp n) (tuple-list-p l (1- k) n) (dlistp l))
+           (dlistp (extend-tuples l n)))
+  :hints (("Subgoal *1/3" :use ((:instance dlistp-append (l (EXTEND-TUPLE (CAR L) n))
+                                                         (m (EXTEND-TUPLES (CDR L) n)))))))
 
 (defthm dlistp-all-tuples
-  (implies (and (natp k) (<= k (n)))
-           (dlistp (all-tuples k))))
+  (implies (and (natp k) (posp n) (<= k n))
+           (dlistp (all-tuples k n))))
 
 (local-defun firstn (n x)
   (if (zp n)
@@ -1681,10 +1674,10 @@
     (cons (car x) (firstn (1- n) (cdr x)))))
 
 (local-defthmd tuplep-decomp
-  (implies (and (posp k) (tuplep x k))
+  (implies (and (posp k) (tuplep x k n) (posp n))
            (and (equal (append (firstn (1- k) x) (last x)) x)
-	        (tuplep (firstn (1- k) x) (1- k))
-		(member (car (last x)) (ninit (n))))))
+	        (tuplep (firstn (1- k) x) (1- k) n)
+		(member (car (last x)) (ninit n)))))
 
 (local-defun tuplep-member-all-tuples-induct (x k)
   (if (zp k)
@@ -1697,23 +1690,23 @@
 	          (last x))))
 
 (local-defthm tuplep-member-all-tuples
-  (implies (and (natp k) (<= k (n)) (tuplep x k))
-           (member x (all-tuples k)))
+  (implies (and (natp k) (posp n) (<= k n) (tuplep x k n))
+           (member x (all-tuples k n)))
   :hints (("Goal" :induct (tuplep-member-all-tuples-induct x k))
           ("Subgoal *1/2" :use (tuplep-decomp list-car-last
 	                        (:instance member-append-extend-tuples (x (firstn (1- k) x))
 				                                       (k (1- k))
 				                                       (j (car (last x)))
-								       (l (all-tuples (1- k))))))))
+								       (l (all-tuples (1- k) n)))))))
 
 (defthmd member-all-tuples
-  (implies (and (natp k) (<= k (n)))
-           (iff (member x (all-tuples k))
-	        (tuplep x k)))
+  (implies (and (natp k) (posp n) (<= k n))
+           (iff (member x (all-tuples k n))
+	        (tuplep x k n)))
   :hints (("Goal" :use (tuplep-member-all-tuples
-                        (:instance member-tuple-list-p (l (all-tuples k)))))))
+                        (:instance member-tuple-list-p (l (all-tuples k n)))))))
 
-;; Let a be a fixed (n)x(n) matrix.  We associate a value with a k-tuple x as follows:
+;; Let a be a fixed nxn matrix.  We associate a value with a k-tuple x as follows:
 
 (defun extract-entries (x a)
   (if (consp x)
@@ -1726,165 +1719,165 @@
       (list (extract-entries-induct (cdr x) (1- k) (cdr a) (1- m)))
     (list x k a m)))
 
-(local-defthm flistnp-extract-entries
-  (implies (and (natp k) (tuplep x k)
-                (natp m) (<= k m) (<= m (n)) (fmatp a m (n)))
+(local-defthmd flistnp-extract-entries
+  (implies (and (natp k) (tuplep x k n) (posp n)
+                (natp m) (<= k m) (<= m n) (fmatp a m n))
            (flistnp (extract-entries x a) k))
   :hints (("Goal" :induct (extract-entries-induct x k a m) :in-theory (enable fmatp))))
 
-(defun funits (x)
+(defun funits (x n)
   (if (consp x)
-      (cons (funit (car x) (n))
-            (funits (cdr x)))
+      (cons (funit (car x) n)
+            (funits (cdr x) n))
     ()))
 
 (local-defthm len-funits
-  (equal (len (funits x))
+  (equal (len (funits x n))
          (len x)))
 
-(defun feval-tuple (x k a)
+(defun feval-tuple (x k a n)
   (f* (flist-prod (extract-entries x a))
-      (fdetn (append (funits x) (nthcdr k a)))))
+      (fdet0 (append (funits x n) (nthcdr k a)) n)))
 
 (local-defthm fmatp-nthcdr
-  (implies (and (fmatp a m n) (natp k) (<= k m))
-           (fmatp (nthcdr k a) (- m k) n))
+  (implies (and (fmatp a m n) (posp n) (natp k) (<= k m))
+           (fmatp (nthcdr k a) (+ (- k) m) n))
   :hints (("Goal" :in-theory (enable fmatp))))
 
 (local-defthm fmatp-append-funits-nthcdr-1
-  (implies (and (fmatp a (n) (n)) (natp k) (<= k (n))
-                (natp j) (tuplep x j))
-	   (fmatp (append (funits x) (nthcdr k a)) (+ j (- (n) k)) (n)))
-  :hints (("Goal" :induct (tuplep x j) :in-theory (enable fmatp))))
+  (implies (and (fmatp a n n) (posp n) (natp k) (<= k n)
+                (natp j) (tuplep x j n))
+	   (fmatp (append (funits x n) (nthcdr k a)) (+ j (- n k)) n))
+  :hints (("Goal" :induct (tuplep x j n) :in-theory (enable fmatp))))
 
-(local-defthm fmatp-append-funits-nthcdr
-  (implies (and (fmatp a (n) (n)) (natp k) (<= k (n))
-                (tuplep x k))
-	   (fmatp (append (funits x) (nthcdr k a)) (n) (n)))
+(local-defthmd fmatp-append-funits-nthcdr
+  (implies (and (fmatp a n n) (posp n) (natp k) (<= k n)
+                (tuplep x k n))
+	   (fmatp (append (funits x n) (nthcdr k a)) n n))
   :hints (("Goal" :use ((:instance fmatp-append-funits-nthcdr-1 (j k))))))
 
 (defthm fp-feval-tuple
-  (implies (and (fmatp a (n) (n)) (natp k) (<= k (n)) (tuplep x k))
-           (fp (feval-tuple x k a)))
-  :hints (("Goal" :use (fmatp-append-funits-nthcdr (:instance flistnp-extract-entries (m (n)))))))
+  (implies (and (fmatp a n n) (posp n) (natp k) (<= k n) (tuplep x k n))
+           (fp (feval-tuple x k a n)))
+  :hints (("Goal" :use (fmatp-append-funits-nthcdr (:instance flistnp-extract-entries (m n))))))
 
 ;; The sum of the values of a list of k-tuples: 
 
-(defun fsum-tuples (l k a)
+(defun fsum-tuples (l k a n)
   (if (consp l)
-      (f+ (feval-tuple (car l) k a)
-	  (fsum-tuples (cdr l) k a))
+      (f+ (feval-tuple (car l) k a n)
+	  (fsum-tuples (cdr l) k a n))
     (f0)))
 
 (defthm fp-fsum-tuples
-  (implies (and (fmatp a (n) (n)) (natp k) (<= k (n)) (tuple-list-p l k))
-           (fp (fsum-tuples l k a)))
+  (implies (and (fmatp a n n) (posp n) (natp k) (<= k n) (tuple-list-p l k n))
+           (fp (fsum-tuples l k a n)))
   :hints (("Goal" :in-theory (disable feval-tuple))))
 
 ;; We would like to compute (fsum-tuples (all-tuples k) k a).  The case k = 0 is trivial:
 
 (defthmd feval-tuple-nil
-  (implies (fmatp a (n) (n))
-           (equal (feval-tuple () 0 a)
-	          (fdetn a))))
+  (implies (and (fmatp a n n) (posp n))
+           (equal (feval-tuple () 0 a n)
+	          (fdet0 a n))))
 
 (defthm fsum-0-tuples
-  (implies (fmatp a (n) (n))
-           (equal (fsum-tuples (all-tuples 0) 0 a)
-	          (fdetn a))))
+  (implies (and (fmatp a n n) (posp n))
+           (equal (fsum-tuples (all-tuples 0 n) 0 a n)
+	          (fdet0 a n))))
 
-;; We shall prove, as a consequence of n-linearity of fdetn, that incrementing k does not change the value of the sum.
+;; We shall prove, as a consequence of n-linearity of fdet0, that incrementing k does not change the value of the sum.
 
-;; If (flistnp r (n)), We may think of r as a sum of multiples of unit vectors.  Given a sublist l of (ninit (n)),
-;; (fsum-select l n) is the sum of the subset of these multiples corresponding to the members of l:
+;; If (flistnp r n), We may think of r as a sum of multiples of unit vectors.  Given a sublist l of (ninit n),
+;; (fsum-select l r n) is the sum of the subset of these multiples corresponding to the members of l:
 
-(defun fsum-select (l r)
+(defun fsum-select (l r n)
   (if (consp l)
-      (flist-add (flist-scalar-mul (nth (car l) r) (funit (car l) (n)))
-                 (fsum-select (cdr l) r))
-    (flistn0 (n))))
+      (flist-add (flist-scalar-mul (nth (car l) r) (funit (car l) n))
+                 (fsum-select (cdr l) r n))
+    (flistn0 n)))
 
 (local-defthm flistnp-fsum-select
-  (implies (and (flistnp r (n)) (sublistp l (ninit (n))))
-           (flistnp (fsum-select l r) (n)))
-  :hints (("Subgoal *1/2" :use ((:instance member-ninit (x (car l)) (n (n)))))))
+  (implies (and (flistnp r n) (posp n) (sublistp l (ninit n)))
+           (flistnp (fsum-select l r n) n))
+  :hints (("Subgoal *1/2" :use ((:instance member-ninit (x (car l)))))))
 
 (local-defthm nth-fsum-select
-  (implies (and (flistnp r (n))
-                (sublistp l (ninit (n)))
+  (implies (and (flistnp r n) (posp n)
+                (sublistp l (ninit n))
 		(dlistp l)
 		(natp k)
-		(< k (n)))
-	   (equal (nth k (fsum-select l r))
+		(< k n))
+	   (equal (nth k (fsum-select l r n))
 	          (if (member k l) (nth k r) (f0))))
   :hints (("Goal" :induct (len l)) 
-          ("Subgoal *1/1" :use ((:instance member-ninit (n (n)) (x (car l)))
-			        (:instance nth-flist-add (i (car l)) (n (n))
-				                         (x (FLIST-SCALAR-MUL (NTH k R) (FUNIT k (N))))
-							 (y (FSUM-SELECT (CDR L) R)))
-			        (:instance nth-flist-scalar-mul (i (car l)) (n (n))
+          ("Subgoal *1/1" :use ((:instance member-ninit (x (car l)))
+			        (:instance nth-flist-add (i (car l))
+				                         (x (FLIST-SCALAR-MUL (NTH k R) (FUNIT k n)))
+							 (y (FSUM-SELECT (CDR L) R n)))
+			        (:instance nth-flist-scalar-mul (i (car l))
 				                                (c (NTH (CAR L) R))
-                                                                (x  (FUNIT (CAR L) (N))))
-				(:instance nth-flist-add (i k) (n (n))
-				                         (x (FLIST-SCALAR-MUL (NTH (car l) R) (FUNIT (car l) (N))))
-							 (y (FSUM-SELECT (CDR L) R)))							   
-				(:instance nth-flist-scalar-mul (i k) (n (n))
+                                                                (x  (FUNIT (CAR L) n)))
+				(:instance nth-flist-add (i k)
+				                         (x (FLIST-SCALAR-MUL (NTH (car l) R) (FUNIT (car l) n)))
+							 (y (FSUM-SELECT (CDR L) R n)))							   
+				(:instance nth-flist-scalar-mul (i k)
 				                                (c (NTH (CAR L) R))
-                                                                (x  (FUNIT (CAR L) (N))))))))
+                                                                (x  (FUNIT (CAR L) n)))))))
 
 (local-defthm nth-fsum-select-ninit
-  (implies (and (flistnp r (n))
+  (implies (and (flistnp r n) (posp n)
 		(natp k)
-		(< k (n)))
-	   (equal (nth k (fsum-select (ninit (n)) r))
+		(< k n))
+	   (equal (nth k (fsum-select (ninit n) r n))
 	          (nth k r)))
-  :hints (("Goal" :use ((:instance nth-fsum-select (l (ninit (n))))
-                        (:instance member-ninit (x k) (n (n)))))))		
+  :hints (("Goal" :use ((:instance nth-fsum-select (l (ninit n)))
+                        (:instance member-ninit (x k))))))		
 
 (defthm fsum-select-ninit
-  (implies (flistnp r (n))
-           (equal (fsum-select (ninit (n)) r)
+  (implies (and (flistnp r n) (posp n))
+           (equal (fsum-select (ninit n) r n)
 	          r))
   :hints (("Goal" :in-theory (disable len-flist flistnp-fsum-select)
-                  :use ((:instance nth-diff-diff (x (fsum-select (ninit (n)) r)) (y r))
-                        (:instance nth-fsum-select-ninit (k (nth-diff (fsum-select (ninit (n)) r) r)))
-			(:instance flistnp-fsum-select (l (ninit (n))))
-			(:instance len-flist (n (n)) (x r))
-			(:instance len-flist (n (n)) (x (fsum-select (ninit (n)) r)))))))
+                  :use ((:instance nth-diff-diff (x (fsum-select (ninit n) r n)) (y r))
+                        (:instance nth-fsum-select-ninit (k (nth-diff (fsum-select (ninit n) r n) r)))
+			(:instance flistnp-fsum-select (l (ninit n)))
+			(:instance len-flist (x r))
+			(:instance len-flist (x (fsum-select (ninit n) r n)))))))
 
 (local-defthmd fsum-tuples-extend-tuple-1
-  (implies (and (fmatp a (n) (n))
-                (natp k) (< k (n))
-                (tuplep x k)
-		(sublistp l (ninit (n)))
+  (implies (and (fmatp a n n) (posp n)
+                (natp k) (< k n)
+                (tuplep x k n)
+		(sublistp l (ninit n))
 		(consp l))
-	   (equal (fsum-tuples (extend-tuple-aux x l) (1+ k) a)
-                  (f+ (feval-tuple (append x (list (car l))) (1+ k) a)
-		      (fsum-tuples (extend-tuple-aux x (cdr l)) (1+ k) a)))))
+	   (equal (fsum-tuples (extend-tuple-aux x l) (1+ k) a n)
+                  (f+ (feval-tuple (append x (list (car l))) (1+ k) a n)
+		      (fsum-tuples (extend-tuple-aux x (cdr l)) (1+ k) a n)))))
 
 (local-defthmd fsum-tuples-extend-tuple-2
-  (implies (and (fmatp a (n) (n))
-                (natp k) (< k (n)) (tuplep x k)
-		(natp i) (< i (n)))
-	   (equal (feval-tuple (append x (list i)) (1+ k) a)
+  (implies (and (fmatp a n n) (posp n)
+                (natp k) (< k n) (tuplep x k n)
+		(natp i) (< i n))
+	   (equal (feval-tuple (append x (list i)) (1+ k) a n)
                   (f* (flist-prod (extract-entries (append x (list i)) a))
-		      (fdetn (append (funits (append x (list i))) (nthcdr (1+ k) a)))))))
+		      (fdet0 (append (funits (append x (list i)) n) (nthcdr (1+ k) a)) n)))))
 
 (local-defthmd fsum-tuples-extend-tuple-3
-  (implies (and (natp k) (natp m) (< k m) (<= m (n))
-                (tuplep x k) (fmatp a m (n))
-		(natp i) (< i (n)))
+  (implies (and (natp k) (natp m) (< k m) (<= m n) (posp n)
+                (tuplep x k n) (fmatp a m n)
+		(natp i) (< i n))
 	   (equal (flist-prod (extract-entries (append x (list i)) a))
 	          (f* (flist-prod (extract-entries x a))
 		      (nth i (nth k a)))))
   :hints (("Goal" :induct (extract-entries-induct x k a m))
           ("Subgoal *1/2" :in-theory (enable fmatp)
 	                  :expand ((nth 0 a))
-			  :use ((:instance fp-entry (n (n)) (i 0) (j i))))
+			  :use ((:instance fp-entry (i 0) (j i))))
 	  ("Subgoal *1/1" :expand ((nth 0 a))
 	                  :in-theory (e/d (fmatp) (flistnp-extract-entries))
-	                  :use ((:instance fp-entry (n (n)) (i k) (j i))
-	                        (:instance fp-entry (n (n)) (i 0) (j (car x)))
+	                  :use ((:instance fp-entry (i k) (j i))
+	                        (:instance fp-entry (i 0) (j (car x)))
 				(:instance nth (n k) (l a))
 				(:instance flistnp-extract-entries (x (cdr x)) (k (1- k)) (a (cdr a)) (m (1- m)))
 				(:instance f*assoc (x (NTH (CAR X) (CAR A)))
@@ -1892,19 +1885,19 @@
 						   (z (NTH I (NTH K A))))))))
 
 (local-defthmd fsum-tuples-extend-tuple-4
-  (implies (and (natp k) (< k (n))
-                (tuplep x k) (fmatp a (n) (n))
-		(natp i) (< i (n)))
+  (implies (and (natp k) (< k n) (posp n)
+                (tuplep x k n) (fmatp a n n)
+		(natp i) (< i n))
 	   (equal (flist-prod (extract-entries (append x (list i)) a))
 	          (f* (flist-prod (extract-entries x a))
 		      (nth i (nth k a)))))
-  :hints (("Goal" :use ((:instance fsum-tuples-extend-tuple-3 (m (n)))))))
+  :hints (("Goal" :use ((:instance fsum-tuples-extend-tuple-3 (m n))))))
 
 (local-defthmd fsum-tuples-extend-tuple-5
-  (implies (and (natp k) (<= k (n)) (tuplep x k)
-		(natp i) (< i (n)))
-	   (equal (funits (append x (list i)))
-	          (append (funits x) (list (funit i (n)))))))
+  (implies (and (natp k) (<= k n) (tuplep x k n) (posp n)
+		(natp i) (< i n))
+	   (equal (funits (append x (list i)) n)
+	          (append (funits x n) (list (funit i n))))))
 
 (local-defthm nth-append
   (implies (natp j)
@@ -1920,25 +1913,31 @@
 	          (- (len l) j))))
 
 (local-defthmd len-append-funits
-  (implies (and (natp k) (< k (n))
-                (tuplep x k) (fmatp a (n) (n))
-		(natp i) (< i (n)))
-	   (equal (len (append (funits x) (nthcdr k a)))
-	          (n))))
+  (implies (and (natp k) (< k n) (posp n)
+                (tuplep x k n) (fmatp a n n)
+		(natp i) (< i n))
+	   (equal (len (append (funits x n) (nthcdr k a)))
+	          n)))
 
 (local-defthmd cdr-nthcdr
   (implies (natp j)
            (equal (nthcdr k (cdr a))
 	          (cdr (nthcdr k a)))))
 
+(local-defthm nth-nil
+  (equal (nth i ()) ())
+  :hints (("Goal" :induct (fact i))
+          ("Subgoal *1/1" :expand ((nth i ())))
+          ("Subgoal *1/2" :expand ((nth i ())))))
+
 (local-defthmd fsum-tuples-extend-tuple-6
-  (implies (and (natp k) (< k (n))
-                (tuplep x k) (fmatp a (n) (n))
-		(natp i) (< i (n))
-		(natp j) (< j (n)))
-	   (equal (nth j (append (append (funits x) (list (funit i (n))))
+  (implies (and (natp k) (< k n) (posp n)
+                (tuplep x k n) (fmatp a n n)
+		(natp i) (< i n)
+		(natp j) (< j n))
+	   (equal (nth j (append (append (funits x n) (list (funit i n)))
 	                         (nthcdr (1+ k) a)))
-		  (nth j (replace-row (append (funits x) (nthcdr k a)) k (funit i (n))))))
+		  (nth j (replace-row (append (funits x n) (nthcdr k a)) k (funit i n)))))
   :hints (("Goal" :cases ((= j k))
                   :expand ((NTH (+ J (- K)) (NTHCDR K A)))
                   :use (cdr-nthcdr len-append-funits))))
@@ -1952,12 +1951,12 @@
            (true-listp (append l m))))
 
 (local-defthmd fsum-tuples-extend-tuple-7
-  (implies (and (natp k) (< k (n))
-                (tuplep x k) (fmatp a (n) (n))
-		(natp i) (< i (n)))
-           (TRUE-LISTP (APPEND (APPEND (FUNITS X) (LIST (FUNIT I (N))))
+  (implies (and (natp k) (< k n) (posp n)
+                (tuplep x k n) (fmatp a n n)
+		(natp i) (< i n))
+           (TRUE-LISTP (APPEND (APPEND (FUNITS X n) (LIST (FUNIT I n)))
                                (NTHCDR K (CDR A)))))
-  :hints (("Goal" :expand ((fmatp a (n) (n)))
+  :hints (("Goal" :expand ((fmatp a n n))
                   :use ((:instance true-listp-nthcdr (j k) (l (cdr a)))))))
 
 (local-defthm true-listp-replace-row
@@ -1966,82 +1965,82 @@
   :hints (("Goal" :in-theory (enable replace-row))))
 
 (local-defthmd fsum-tuples-extend-tuple-8
-  (implies (and (natp k) (< k (n))
-                (fmatp a (n) (n)))
-           (TRUE-LISTP (REPLACE-ROW (APPEND (FUNITS X) (NTHCDR K A)) K (FUNIT I (N)))))
+  (implies (and (natp k) (< k n) (posp n)
+                (fmatp a n n))
+           (TRUE-LISTP (REPLACE-ROW (APPEND (FUNITS X n) (NTHCDR K A)) K (FUNIT I n))))
   :hints (("Goal" :in-theory (disable true-listp-nthcdr true-listp-replace-row)
-                  :use ((:instance true-listp-replace-row (a (APPEND (FUNITS X) (NTHCDR K A))) (j k) (r (FUNIT I (N))))
+                  :use ((:instance true-listp-replace-row (a (APPEND (FUNITS X n) (NTHCDR K A))) (j k) (r (FUNIT I n)))
 		        (:instance true-listp-nthcdr (j k) (l a))))))
 
 (local-defthmd fsum-tuples-extend-tuple-9
-  (implies (and (natp k) (< k (n))
-                (tuplep x k) (fmatp a (n) (n))
-		(natp i) (< i (n)))
-           (equal (append (append (funits x) (list (funit i (n))))
+  (implies (and (natp k) (< k n) (posp n)
+                (tuplep x k n) (fmatp a n n)
+		(natp i) (< i n))
+           (equal (append (append (funits x n) (list (funit i n)))
 	                  (nthcdr (1+ k) a))
-		  (replace-row (append (funits x) (nthcdr k a)) k (funit i (n)))))
+		  (replace-row (append (funits x n) (nthcdr k a)) k (funit i n))))
   :hints (("Goal" :in-theory (disable len-fmatp)
                   :use (fsum-tuples-extend-tuple-7 fsum-tuples-extend-tuple-8 len-append-funits
-		        (:instance len-fmatp (m (n)) (n (n)))
-		        (:instance nth-diff-diff (x (append (append (funits x) (list (funit i (n)))) (nthcdr (1+ k) a)))
-                                                 (y (replace-row (append (funits x) (nthcdr k a)) k (funit i (n)))))
+		        (:instance len-fmatp (m n))
+		        (:instance nth-diff-diff (x (append (append (funits x n) (list (funit i n))) (nthcdr (1+ k) a)))
+                                                 (y (replace-row (append (funits x n) (nthcdr k a)) k (funit i n))))
 			(:instance fsum-tuples-extend-tuple-6
-			  (j (nth-diff (append (append (funits x) (list (funit i (n)))) (nthcdr (1+ k) a))
-			               (replace-row (append (funits x) (nthcdr k a)) k (funit i (n))))))))))
+			  (j (nth-diff (append (append (funits x n) (list (funit i n))) (nthcdr (1+ k) a))
+			               (replace-row (append (funits x n) (nthcdr k a)) k (funit i n)))))))))
 
 (local-defthmd fsum-tuples-extend-tuple-10
-  (implies (and (fmatp a (n) (n))
-                (natp k) (< k (n)) (tuplep x k)
-		(natp i) (< i (n)))
-	   (equal (feval-tuple (append x (list i)) (1+ k) a)
+  (implies (and (fmatp a n n) (posp n)
+                (natp k) (< k n) (tuplep x k n)
+		(natp i) (< i n))
+	   (equal (feval-tuple (append x (list i)) (1+ k) a n)
                   (f* (f* (flist-prod (extract-entries x a))
 		          (nth i (nth k a)))
-		      (fdetn (replace-row (append (funits x) (nthcdr k a)) k (funit i (n)))))))
+		      (fdet0 (replace-row (append (funits x n) (nthcdr k a)) k (funit i n)) n))))
   :hints (("Goal" :use (fsum-tuples-extend-tuple-2 fsum-tuples-extend-tuple-4
                         fsum-tuples-extend-tuple-5 fsum-tuples-extend-tuple-9))))
 
 (local-defthmd fsum-tuples-extend-tuple-11
-  (implies (and (fmatp a (n) (n))
-                (natp k) (< k (n)) (tuplep x k)
-		(natp i) (< i (n)))
-	   (equal (feval-tuple (append x (list i)) (1+ k) a)
+  (implies (and (fmatp a n n) (posp n)
+                (natp k) (< k n) (tuplep x k n)
+		(natp i) (< i n))
+	   (equal (feval-tuple (append x (list i)) (1+ k) a n)
                   (f* (flist-prod (extract-entries x a))
 		      (f* (nth i (nth k a))
-		          (fdetn (replace-row (append (funits x) (nthcdr k a)) k (funit i (n))))))))
+		          (fdet0 (replace-row (append (funits x n) (nthcdr k a)) k (funit i n)) n)))))
   :hints (("Goal" :in-theory (disable flistnp-extract-entries)
-                  :use (fsum-tuples-extend-tuple-10
-                        (:instance flistnp-extract-entries (m (n)))
-			(:instance fp-entry (m (n)) (n (n)) (i k) (j i))
+                  :use (fsum-tuples-extend-tuple-10 fmatp-append-funits-nthcdr
+                        (:instance flistnp-extract-entries (m n))
+			(:instance fp-entry (m n) (i k) (j i))
                         (:instance f*assoc (x (flist-prod (extract-entries x a)))
 			                   (y (nth i (nth k a)))
-					   (z (fdetn (replace-row (append (funits x) (nthcdr k a)) k (funit i (n))))))))))
+					   (z (fdet0 (replace-row (append (funits x n) (nthcdr k a)) k (funit i n)) n)))))))
 
 (local-defthmd fsum-tuples-extend-tuple-12
-  (implies (and (fmatp a (n) (n))
-                (natp k) (< k (n))
-                (tuplep x k)
-		(sublistp l (ninit (n))))
-	   (equal (feval-tuple x k (replace-row a k (fsum-select l (nth k a))))
-	          (f* (flist-prod (extract-entries x (replace-row a k (fsum-select l (nth k a)))))
-		      (fdetn (append (funits x) (nthcdr k (replace-row a k (fsum-select l (nth k a))))))))))
+  (implies (and (fmatp a n n) (posp n)
+                (natp k) (< k n)
+                (tuplep x k n)
+		(sublistp l (ninit n)))
+	   (equal (feval-tuple x k (replace-row a k (fsum-select l (nth k a) n)) n)
+	          (f* (flist-prod (extract-entries x (replace-row a k (fsum-select l (nth k a) n))))
+		      (fdet0 (append (funits x n) (nthcdr k (replace-row a k (fsum-select l (nth k a) n)))) n)))))
 
 (local-defthmd fsum-tuples-extend-tuple-13
-  (implies (and (fmatp a m (n)) (natp m) (<= m (n))
-                (natp k) (< k (n))
-                (tuplep x k))
+  (implies (and (fmatp a m n) (natp m) (<= m n) (posp n)
+                (natp k) (< k n)
+                (tuplep x k n))
 	   (equal (extract-entries x (replace-row a k r))
 	          (extract-entries x a)))
   :hints (("Goal" :induct (extract-entries-induct x k a m) :in-theory (enable fmatp replace-row))))
 
 (local-defthmd fsum-tuples-extend-tuple-14
-  (implies (and (fmatp a m (n)) (natp m) (<= m (n))
-                (natp k) (< k (n))
-                (tuplep x k))
-	   (equal (feval-tuple x k (replace-row a k (fsum-select l (nth k a))))
+  (implies (and (fmatp a m n) (natp m) (<= m n) (posp n)
+                (natp k) (< k n)
+                (tuplep x k n))
+	   (equal (feval-tuple x k (replace-row a k (fsum-select l (nth k a) n)) n)
 	          (f* (flist-prod (extract-entries x a))
-		      (fdetn (append (funits x) (nthcdr k (replace-row a k (fsum-select l (nth k a)))))))))
+		      (fdet0 (append (funits x n) (nthcdr k (replace-row a k (fsum-select l (nth k a) n)))) n))))
   :hints (("Goal" :use (fsum-tuples-extend-tuple-12
-                        (:instance fsum-tuples-extend-tuple-13 (r (fsum-select l (nth k a))))))))
+                        (:instance fsum-tuples-extend-tuple-13 (r (fsum-select l (nth k a) n)))))))
 
 (local-defthm car-nthcdr
   (implies (< k (len l))
@@ -2068,244 +2067,246 @@
 	  ("Subgoal *1/1" :expand ((NTH 0 (NTHCDR K L))))))
 
 (local-defthmd fsum-tuples-extend-tuple-15
-  (implies (and (fmatp a (n) (n))
-                (natp k) (< k (n))
-                (tuplep x k)
-		(natp j) (< j (n)))
-	   (equal (nth j (append (funits x) (nthcdr k (replace-row a k r))))
-	          (nth j (replace-row (append (funits x) (nthcdr k a)) k r))))
+  (implies (and (fmatp a n n) (posp n)
+                (natp k) (< k n)
+                (tuplep x k n)
+		(natp j) (< j n))
+	   (equal (nth j (append (funits x n) (nthcdr k (replace-row a k r))))
+	          (nth j (replace-row (append (funits x n) (nthcdr k a)) k r))))
   :hints (("Goal" :cases ((= k j))
                   :in-theory (disable len-fmatp fmatp-append-funits-nthcdr)
                   :use (fmatp-append-funits-nthcdr
-		        (:instance len-fmatp (m (n)) (n (n)))
-		        (:instance len-fmatp (m (n)) (n (n)) (a (APPEND (FUNITS X) (NTHCDR K A))))))))
+		        (:instance len-fmatp (m n))
+		        (:instance len-fmatp (m n) (a (APPEND (FUNITS X n) (NTHCDR K A))))))))
 
 (local-defthmd fsum-tuples-extend-tuple-16
-  (implies (and (natp k) (< k (n))
-                (fmatp a (n) (n)))
-           (TRUE-LISTP (REPLACE-ROW (APPEND (FUNITS X) (NTHCDR K A)) K r)))
+  (implies (and (natp k) (< k n) (posp n)
+                (fmatp a n n))
+           (TRUE-LISTP (REPLACE-ROW (APPEND (FUNITS X n) (NTHCDR K A)) K r)))
   :hints (("Goal" :in-theory (disable true-listp-nthcdr true-listp-replace-row)
-                  :use ((:instance true-listp-replace-row (a (APPEND (FUNITS X) (NTHCDR K A))) (j k))
+                  :use ((:instance true-listp-replace-row (a (APPEND (FUNITS X n) (NTHCDR K A))) (j k))
 		        (:instance true-listp-nthcdr (j k) (l a))))))
 
 (local-defthmd fsum-tuples-extend-tuple-17
-  (implies (and (natp k) (< k (n))
-                (fmatp a (n) (n)))
-           (TRUE-LISTP (APPEND (FUNITS X) (NTHCDR K (replace-row a k r)))))
+  (implies (and (natp k) (< k n) (posp n)
+                (fmatp a n n))
+           (TRUE-LISTP (APPEND (FUNITS X n) (NTHCDR K (replace-row a k r)))))
   :hints (("Goal" :in-theory (disable true-listp-nthcdr true-listp-replace-row)
                   :use ((:instance true-listp-replace-row (j k))
 		        (:instance true-listp-nthcdr (j k) (l (replace-row a k r)))))))
 
 (local-defthmd fsum-tuples-extend-tuple-18
-  (implies (and (fmatp a (n) (n))
-                (natp k) (< k (n))
-                (tuplep x k))
-           (equal (len (append (funits x) (nthcdr k (replace-row a k r))))
-	          (n)))
+  (implies (and (fmatp a n n) (posp n)
+                (natp k) (< k n)
+                (tuplep x k n))
+           (equal (len (append (funits x n) (nthcdr k (replace-row a k r))))
+	          n))
   :hints (("Goal" :in-theory (enable len-append-funits))))
 
 (local-defthmd fsum-tuples-extend-tuple-19
-  (implies (and (fmatp a (n) (n))
-                (natp k) (< k (n))
-                (tuplep x k))
-           (equal (len (replace-row (append (funits x) (nthcdr k a)) k r))
-	          (n)))
+  (implies (and (fmatp a n n) (posp n)
+                (natp k) (< k n)
+                (tuplep x k n))
+           (equal (len (replace-row (append (funits x n) (nthcdr k a)) k r))
+	          n))
   :hints (("Goal" :in-theory (enable len-append-funits))))
 
 (local-defthmd fsum-tuples-extend-tuple-20
-  (implies (and (fmatp a (n) (n))
-                (natp k) (< k (n))
-                (tuplep x k))
-          (equal (append (funits x) (nthcdr k (replace-row a k r)))
-	         (replace-row (append (funits x) (nthcdr k a)) k r)))
+  (implies (and (fmatp a n n) (posp n)
+                (natp k) (< k n)
+                (tuplep x k n))
+          (equal (append (funits x n) (nthcdr k (replace-row a k r)))
+	         (replace-row (append (funits x n) (nthcdr k a)) k r)))
   :hints (("Goal" :use (fsum-tuples-extend-tuple-16 fsum-tuples-extend-tuple-17 fsum-tuples-extend-tuple-18
 		        fsum-tuples-extend-tuple-19
-                        (:instance nth-diff-diff (x (append (funits x) (nthcdr k (replace-row a k r))))
-                                                 (y (replace-row (append (funits x) (nthcdr k a)) k r)))
+                        (:instance nth-diff-diff (x (append (funits x n) (nthcdr k (replace-row a k r))))
+                                                 (y (replace-row (append (funits x n) (nthcdr k a)) k r)))
 			(:instance fsum-tuples-extend-tuple-15
-			   (j (nth-diff (append (funits x) (nthcdr k (replace-row a k r)))
-			                (replace-row (append (funits x) (nthcdr k a)) k r))))))))
+			   (j (nth-diff (append (funits x n) (nthcdr k (replace-row a k r)))
+			                (replace-row (append (funits x n) (nthcdr k a)) k r))))))))
 
 (local-defthmd fsum-tuples-extend-tuple-21
-  (implies (and (fmatp a (n) (n))
-                (natp k) (< k (n))
-                (tuplep x k))
-	   (equal (feval-tuple x k (replace-row a k (fsum-select l (nth k a))))
+  (implies (and (fmatp a n n) (posp n)
+                (natp k) (< k n)
+                (tuplep x k n))
+	   (equal (feval-tuple x k (replace-row a k (fsum-select l (nth k a) n)) n)
 	          (f* (flist-prod (extract-entries x a))
-		      (fdetn (replace-row (append (funits x) (nthcdr k a)) k (fsum-select l (nth k a)))))))
-  :hints (("Goal" :use ((:instance fsum-tuples-extend-tuple-14 (m (n)))
-                        (:instance fsum-tuples-extend-tuple-20 (r (fsum-select l (nth k a))))))))
+		      (fdet0 (replace-row (append (funits x n) (nthcdr k a)) k (fsum-select l (nth k a) n)) n))))
+  :hints (("Goal" :use ((:instance fsum-tuples-extend-tuple-14 (m n))
+                        (:instance fsum-tuples-extend-tuple-20 (r (fsum-select l (nth k a) n)))))))
 
 (local-defthmd fsum-tuples-extend-tuple-22
-  (implies (and (fmatp a (n) (n))
-                (natp k) (< k (n))
-                (tuplep x k)
+  (implies (and (fmatp a n n) (posp n)
+                (natp k) (< k n)
+                (tuplep x k n)
 		(consp l)
-		(sublistp l (ninit (n))))
-           (equal (fsum-tuples (extend-tuple-aux x l) (1+ k) a)
-                  (f+ (feval-tuple (append x (list (car l))) (1+ k) a)
-		      (fsum-tuples (extend-tuple-aux x (cdr l)) (1+ k) a)))))
+		(sublistp l (ninit n)))
+           (equal (fsum-tuples (extend-tuple-aux x l) (1+ k) a n)
+                  (f+ (feval-tuple (append x (list (car l))) (1+ k) a n)
+		      (fsum-tuples (extend-tuple-aux x (cdr l)) (1+ k) a n)))))
 
 (local-defthmd fsum-tuples-extend-tuple-23
-  (implies (and (fmatp a (n) (n))
-                (natp k) (< k (n))
-                (tuplep x k)
+  (implies (and (fmatp a n n) (posp n)
+                (natp k) (< k n)
+                (tuplep x k n)
 		(consp l)
-		(sublistp l (ninit (n)))
-	        (equal (fsum-tuples (extend-tuple-aux x (cdr l)) (1+ k) a)
-		       (feval-tuple x k (replace-row a k (fsum-select (cdr l) (nth k a))))))
-	   (equal (fsum-tuples (extend-tuple-aux x l) (1+ k) a)
+		(sublistp l (ninit n))
+	        (equal (fsum-tuples (extend-tuple-aux x (cdr l)) (1+ k) a n)
+		       (feval-tuple x k (replace-row a k (fsum-select (cdr l) (nth k a) n)) n)))
+	   (equal (fsum-tuples (extend-tuple-aux x l) (1+ k) a n)
 		  (f+ (f* (flist-prod (extract-entries x a))
 		          (f* (nth (car l) (nth k a))
-		              (fdetn (replace-row (append (funits x) (nthcdr k a)) k (funit (car l) (n))))))
+		              (fdet0 (replace-row (append (funits x n) (nthcdr k a)) k (funit (car l) n)) n)))
 		      (f* (flist-prod (extract-entries x a))
-		          (fdetn (replace-row (append (funits x) (nthcdr k a)) k (fsum-select (cdr l) (nth k a))))))))
+		          (fdet0 (replace-row (append (funits x n) (nthcdr k a)) k (fsum-select (cdr l) (nth k a) n)) n)))))
   :hints (("Goal" :use (fsum-tuples-extend-tuple-22
                         (:instance fsum-tuples-extend-tuple-21 (l (cdr l)))
                         (:instance fsum-tuples-extend-tuple-11 (i (car l)))
-			(:instance member-ninit (x (car l)) (n (n)))))))
+			(:instance member-ninit (x (car l)))))))
 
 (local-defthmd fsum-tuples-extend-tuple-24
-  (implies (and (fmatp a (n) (n))
-                (natp k) (< k (n))
-                (tuplep x k)
+  (implies (and (fmatp a n n) (posp n)
+                (natp k) (< k n)
+                (tuplep x k n)
 		(consp l)
-		(sublistp l (ninit (n))))
+		(sublistp l (ninit n)))
 	   (equal (f+ (f* (flist-prod (extract-entries x a))
 		          (f* (nth (car l) (nth k a))
-		              (fdetn (replace-row (append (funits x) (nthcdr k a)) k (funit (car l) (n))))))
+		              (fdet0 (replace-row (append (funits x n) (nthcdr k a)) k (funit (car l) n)) n)))
 		      (f* (flist-prod (extract-entries x a))
-		          (fdetn (replace-row (append (funits x) (nthcdr k a)) k (fsum-select (cdr l) (nth k a))))))
+		          (fdet0 (replace-row (append (funits x n) (nthcdr k a)) k (fsum-select (cdr l) (nth k a) n)) n)))
 		  (f* (flist-prod (extract-entries x a))
 		      (f+ (f* (nth (car l) (nth k a))
-		              (fdetn (replace-row (append (funits x) (nthcdr k a)) k (funit (car l) (n)))))
-			  (fdetn (replace-row (append (funits x) (nthcdr k a)) k (fsum-select (cdr l) (nth k a))))))))
+		              (fdet0 (replace-row (append (funits x n) (nthcdr k a)) k (funit (car l) n)) n))
+			  (fdet0 (replace-row (append (funits x n) (nthcdr k a)) k (fsum-select (cdr l) (nth k a) n)) n)))))
   :hints (("Goal" :in-theory (disable flistnp-extract-entries fmatp-append-funits-nthcdr)
                   :use (fmatp-append-funits-nthcdr
-                        (:instance member-ninit (x (car l)) (n (n)))
-			(:instance flistnp-row (i k) (m (n)) (n (n)))
-			(:instance fp-entry (m (n)) (n (n)) (i k) (j (car l)))
-			(:instance flistnp-extract-entries (m (n)))
+                        (:instance member-ninit (x (car l)))
+			(:instance flistnp-row (i k) (m n))
+			(:instance fp-entry (m n) (i k) (j (car l)))
+			(:instance flistnp-extract-entries (m n))
                         (:instance fdist (x (flist-prod (extract-entries x a)))
 			                 (y (f* (nth (car l) (nth k a))
-		                                (fdetn (replace-row (append (funits x) (nthcdr k a)) k (funit (car l) (n))))))
-					 (z (fdetn (replace-row (append (funits x) (nthcdr k a)) k
-								(fsum-select (cdr l) (nth k a))))))))))
+		                                (fdet0 (replace-row (append (funits x n) (nthcdr k a)) k (funit (car l) n)) n)))
+					 (z (fdet0 (replace-row (append (funits x n) (nthcdr k a)) k
+								(fsum-select (cdr l) (nth k a) n))
+						   n)))))))
 
 (local-defthmd fsum-tuples-extend-tuple-25
-  (implies (and (fmatp a (n) (n))
-                (natp k) (< k (n))
-                (tuplep x k)
+  (implies (and (fmatp a n n) (posp n)
+                (natp k) (< k n)
+                (tuplep x k n)
 		(consp l)
-		(sublistp l (ninit (n))))
+		(sublistp l (ninit n)))
 	   (equal (f+ (f* (nth (car l) (nth k a))
-		          (fdetn (replace-row (append (funits x) (nthcdr k a)) k (funit (car l) (n)))))
-		      (fdetn (replace-row (append (funits x) (nthcdr k a)) k (fsum-select (cdr l) (nth k a)))))
-		  (fdetn (replace-row (append (funits x) (nthcdr k a)) k (fsum-select l (nth k a))))))
+		          (fdet0 (replace-row (append (funits x n) (nthcdr k a)) k (funit (car l) n)) n))
+		      (fdet0 (replace-row (append (funits x n) (nthcdr k a)) k (fsum-select (cdr l) (nth k a) n)) n))
+		  (fdet0 (replace-row (append (funits x n) (nthcdr k a)) k (fsum-select l (nth k a)n)) n)))
   :hints (("Goal" :in-theory (disable flistnp-extract-entries fmatp-append-funits-nthcdr)
                   :use (fmatp-append-funits-nthcdr
-                        (:instance member-ninit (x (car l)) (n (n)))
-			(:instance flistnp-row (i k) (m (n)) (n (n)))
-			(:instance fp-entry (m (n)) (n (n)) (i k) (j (car l)))
-			(:instance fdetn-n-linear (a (append (funits x) (nthcdr k a))) (i k) (c (nth (car l) (nth k a)))
-			                         (x (funit (car l) (n)))
-						 (y (fsum-select (cdr l) (nth k a))))))))
+                        (:instance member-ninit (x (car l)))
+			(:instance flistnp-row (i k) (m n))
+			(:instance fp-entry (m n) (i k) (j (car l)))
+			(:instance fdet0-n-linear (a (append (funits x n) (nthcdr k a))) (i k) (c (nth (car l) (nth k a)))
+			                         (x (funit (car l) n))
+						 (y (fsum-select (cdr l) (nth k a) n)))))))
 
 (local-defthmd fsum-tuples-extend-tuple-26
-  (implies (and (fmatp a (n) (n))
-                (natp k) (< k (n))
-                (tuplep x k)
+  (implies (and (fmatp a n n) (posp n)
+                (natp k) (< k n)
+                (tuplep x k n)
 		(consp l)
-		(sublistp l (ninit (n)))
-	        (equal (fsum-tuples (extend-tuple-aux x (cdr l)) (1+ k) a)
-		       (feval-tuple x k (replace-row a k (fsum-select (cdr l) (nth k a))))))
-	   (equal (fsum-tuples (extend-tuple-aux x l) (1+ k) a)
+		(sublistp l (ninit n))
+	        (equal (fsum-tuples (extend-tuple-aux x (cdr l)) (1+ k) a n)
+		       (feval-tuple x k (replace-row a k (fsum-select (cdr l) (nth k a) n)) n)))
+	   (equal (fsum-tuples (extend-tuple-aux x l) (1+ k) a n)
 		  (f* (flist-prod (extract-entries x a))
-		      (fdetn (replace-row (append (funits x) (nthcdr k a)) k (fsum-select l (nth k a)))))))
+		      (fdet0 (replace-row (append (funits x n) (nthcdr k a)) k (fsum-select l (nth k a) n)) n))))
   :hints (("Goal" :use (fsum-tuples-extend-tuple-23 fsum-tuples-extend-tuple-24 fsum-tuples-extend-tuple-25))))
 
 (local-defthmd fsum-tuples-extend-tuple-27
-  (implies (and (fmatp a (n) (n))
-                (natp k) (< k (n))
-                (tuplep x k)
+  (implies (and (fmatp a n n) (posp n)
+                (natp k) (< k n)
+                (tuplep x k n)
 		(consp l)
-		(sublistp l (ninit (n)))
-	        (equal (fsum-tuples (extend-tuple-aux x (cdr l)) (1+ k) a)
-		       (feval-tuple x k (replace-row a k (fsum-select (cdr l) (nth k a))))))
-	   (equal (fsum-tuples (extend-tuple-aux x l) (1+ k) a)
+		(sublistp l (ninit n))
+	        (equal (fsum-tuples (extend-tuple-aux x (cdr l)) (1+ k) a n)
+		       (feval-tuple x k (replace-row a k (fsum-select (cdr l) (nth k a) n)) n)))
+	   (equal (fsum-tuples (extend-tuple-aux x l) (1+ k) a n)
 		  (f* (flist-prod (extract-entries x a))
-		      (fdetn (append (funits x) (nthcdr k (replace-row a k (fsum-select l (nth k a)))))))))
+		      (fdet0 (append (funits x n) (nthcdr k (replace-row a k (fsum-select l (nth k a) n)))) n))))
   :hints (("Goal" :use (fsum-tuples-extend-tuple-26
-                        (:instance fsum-tuples-extend-tuple-20 (r (fsum-select l (nth k a))))))))
+                        (:instance fsum-tuples-extend-tuple-20 (r (fsum-select l (nth k a) n)))))))
 
 (local-defthmd fsum-tuples-extend-tuple-28
-  (implies (and (fmatp a (n) (n))
-                (natp k) (< k (n))
-                (tuplep x k)
+  (implies (and (fmatp a n n) (posp n)
+                (natp k) (< k n)
+                (tuplep x k n)
 		(consp l)
-		(sublistp l (ninit (n)))
-	        (equal (fsum-tuples (extend-tuple-aux x (cdr l)) (1+ k) a)
-		       (feval-tuple x k (replace-row a k (fsum-select (cdr l) (nth k a))))))
-	   (equal (fsum-tuples (extend-tuple-aux x l) (1+ k) a)
-		  (feval-tuple x k (replace-row a k (fsum-select l (nth k a))))))
+		(sublistp l (ninit n))
+	        (equal (fsum-tuples (extend-tuple-aux x (cdr l)) (1+ k) a n)
+		       (feval-tuple x k (replace-row a k (fsum-select (cdr l) (nth k a) n)) n)))
+	   (equal (fsum-tuples (extend-tuple-aux x l) (1+ k) a n)
+		  (feval-tuple x k (replace-row a k (fsum-select l (nth k a) n)) n)))
   :hints (("Goal" :in-theory (enable fsum-tuples-extend-tuple-13)
                   :use (fsum-tuples-extend-tuple-27))))
 
 ;; We need this basic result:
 
-(local-defthmd fdetn-replace-0-1
-  (implies (and (fmatp a (n) (n)) (natp k) (< k (n)))
-           (equal (f+ (fdetn (replace-row a k (flistn0 (n))))
-	              (fdetn (replace-row a k (flistn0 (n)))))
-		  (fdetn (replace-row a k (flistn0 (n))))))
+(local-defthmd fdet0-replace-0-1
+  (implies (and (fmatp a n n) (posp n) (natp k) (< k n))
+           (equal (f+ (fdet0 (replace-row a k (flistn0 n)) n)
+	              (fdet0 (replace-row a k (flistn0 n)) n))
+		  (fdet0 (replace-row a k (flistn0 n)) n)))
   :hints (("Goal" :in-theory (disable flist-scalar-mul-f1)
-                  :use ((:instance fdetn-n-linear (i k) (c (f1)) (x (flistn0 (n))) (y (flistn0 (n))))
-                        (:instance flist-scalar-mul-f1 (n (n)) (x (flistn0 (n))))))))
+                  :use ((:instance fdet0-n-linear (i k) (c (f1)) (x (flistn0 n)) (y (flistn0 n)))
+                        (:instance flist-scalar-mul-f1 (x (flistn0 n)))))))
 
-(local-defthmd fdetn-replace-0
-  (implies (and (fmatp a (n) (n)) (natp k) (< k (n)))
-           (equal (fdetn (replace-row a k (flistn0 (n))))
+(local-defthmd fdet0-replace-0
+  (implies (and (fmatp a n n) (posp n) (natp k) (< k n))
+           (equal (fdet0 (replace-row a k (flistn0 n)) n)
 	          (f0)))
-  :hints (("Goal" :use (fdetn-replace-0-1 (:instance f+left-cancel (x (fdetn (replace-row a k (flistn0 (n)))))
-                                                           (z (fdetn (replace-row a k (flistn0 (n)))))
+  :hints (("Goal" :use (fdet0-replace-0-1 (:instance f+left-cancel (x (fdet0 (replace-row a k (flistn0 n)) n))
+                                                           (z (fdet0 (replace-row a k (flistn0 n)) n))
 							   (y (f0)))))))
 
-;; Prove by induction on l, using fdetn-replace-0 and fsum-tuples-extend-tuple-26:
+;; Prove by induction on l, using fdet0-replace-0 and fsum-tuples-extend-tuple-26:
 
 (local-defthmd fsum-tuples-extend-tuple-29
-  (implies (and (fmatp a (n) (n))
-                (natp k) (< k (n))
-                (tuplep x k)
-		(sublistp l (ninit (n))))
-	   (equal (fsum-tuples (extend-tuple-aux x l) (1+ k) a)
-		  (feval-tuple x k (replace-row a k (fsum-select l (nth k a))))))
+  (implies (and (fmatp a n n) (posp n)
+                (natp k) (< k n)
+                (tuplep x k n)
+		(sublistp l (ninit n)))
+	   (equal (fsum-tuples (extend-tuple-aux x l) (1+ k) a n)
+		  (feval-tuple x k (replace-row a k (fsum-select l (nth k a) n)) n)))
   :hints (("Goal" :induct (len l))
           ("Subgoal *1/2" :in-theory (enable fsum-tuples-extend-tuple-20)
-	                  :use ((:instance fdetn-replace-0 (a (APPEND (FUNITS X) (NTHCDR K A))))
-			        (:instance flistnp-extract-entries (m (n)) (a (REPLACE-ROW A K (FLISTN0 (N)))))))
+	                  :use (fmatp-append-funits-nthcdr
+			        (:instance fdet0-replace-0 (a (APPEND (FUNITS X n) (NTHCDR K A))))
+			        (:instance flistnp-extract-entries (m n) (a (REPLACE-ROW A K (FLISTN0 n))))))
 	  ("Subgoal *1/1" :use (fsum-tuples-extend-tuple-28))))
 
 
 (local-defthm fsum-select-ninit
-  (implies (flistnp r (n))
-           (equal (fsum-select (ninit (n)) r)
+  (implies (and (flistnp r n) (posp n))
+           (equal (fsum-select (ninit n) r n)
 	          r)))
 
-;; Substitute (ninit (n)) for l:
+;; Substitute (ninit n) for l:
 
 (local-defthmd fsum-tuples-extend-tuple-30
-  (implies (and (fmatp a (n) (n))
-                (natp k) (< k (n))
-                (tuplep x k))
-	   (equal (fsum-tuples (extend-tuple-aux x (ninit (n))) (1+ k) a)
-		  (feval-tuple x k (replace-row a k (nth k a)))))
+  (implies (and (fmatp a n n) (posp n)
+                (natp k) (< k n)
+                (tuplep x k n))
+	   (equal (fsum-tuples (extend-tuple-aux x (ninit n)) (1+ k) a n)
+		  (feval-tuple x k (replace-row a k (nth k a)) n)))
   :hints (("Goal" :in-theory (disable fsum-tuples feval-tuple)
-                  :use ((:instance fsum-tuples-extend-tuple-29 (l (ninit (n))))
-                        (:instance flistnp-row (n (n)) (m (n)) (i k))))))
+                  :use ((:instance fsum-tuples-extend-tuple-29 (l (ninit n)))
+                        (:instance flistnp-row (m n) (i k))))))
 
 ;; We shall derive a formula for (fsum-tuples (extend-tuple x) (1+ k) a).
 
-;; Let l be a sublist of (ninit (n)).  According to the definitions of fsum-tuples and extend-tuple-aux,
+;; Let l be a sublist of (ninit n).  According to the definitions of fsum-tuples and extend-tuple-aux,
 
 ;;   (fsum-tuples (extend-tuple-aux x l) (1+ k) a)
 ;;     = (f+ (feval-tuple (append x (list (car l))) (1+ k) a)
@@ -2315,95 +2316,95 @@
   
 ;;   (feval-tuple (append x (list i)) (1+ k) a)
 ;;     = (f* (flist-prod (extract-entries (append x (list i)) a))
-;;           (fdetn (append (funits (append x (list i))) (nthcdr (1+ k) a))))
+;;           (fdet0 (append (funits (append x (list i))) (nthcdr (1+ k) a))))
 ;;     = (f* (flist-prod (extract-entries x a))
 ;;           (f* (nth i (nth k a))
-;;               (fdetn (append (append (funits x) (list (unit i (n)))) (nthcdr (1+ k) a)))))
+;;               (fdet0 (append (append (funits x) (list (unit i n))) (nthcdr (1+ k) a)))))
 ;;     = (f* (flist-prod (extract-entries x a))
 ;;           (f* (nth i (nth k a))
-;;	         (fdetn (replace-row (append (funits x) (nthcdr k a) k (unit i (n)))))))
+;;	         (fdet0 (replace-row (append (funits x) (nthcdr k a) k (unit i n))))))
 
 ;; and
 
 ;;   (fsum-tuples (extend-tuple-aux x (cdr l)) (1+ k) a)
-;;     = (feval-tuple x k (replace-row a k (fsum-select (cdr l) (nth k a))))
+;;     = (feval-tuple x k (replace-row a k (fsum-select (cdr l) (nth k a) n)))
 ;;     = (f* (flist-prod (extract-entries x a))
-;;           (fdetn (append (funits x) (nthcdr k (replace-row a k (fsum-select (cdr l) (nth k a)))))))
+;;           (fdet0 (append (funits x) (nthcdr k (replace-row a k (fsum-select (cdr l) (nth k a) n)))) n))
 ;;     = (f* (flist-prod (extract-entries x a))
-;;           (fdetn (replace-row (append (funits x) (nthcdr k a)) k (fsum-select (cdr l) (nth k a))))).
+;;           (fdet0 (replace-row (append (funits x) (nthcdr k a)) k (fsum-select (cdr l) (nth k a) n)) n))
 
-;; Thus, by fdetn-n-linear,
+;; Thus, by fdet0-n-linear,
 
 ;;   (fsum-tuples (extend-tuple-aux x l) (1+ k) a)
 ;;     = (f* (flist-prod (extract-entries x a))
-;;           (fdetn (replace-row (append (funits x) (nthcdr k a)) k (fsum-select l (nth k a)))))
+;;           (fdet0 (replace-row (append (funits x) (nthcdr k a)) k (fsum-select l (nth k a) n)) n))
 ;;     = (f* (flist-prod (extract-entries x a))
-;;           (fdetn (append (funits x) (nthcdr k (replace-row a k (fsum-select l (nth k a)))))))
-;;     = (feval-tuple x k (replace-row a k (fsum-select l (nth k a)))).
+;;           (fdet0 (append (funits x) (nthcdr k (replace-row a k (fsum-select l (nth k a) n)))) n))
+;;     = (feval-tuple x k (replace-row a k (fsum-select l (nth k a) n)) n)
 
-;; Substitute (ninit (n)) for l:
+;; Substitute (ninit n) for l:
 
 ;;   (fsum-tuples (extend-tuple x) (1+ k) a)
-;;     = (feval-tuple x k (replace-row a k (fsum-select (ninit (n)) (nth k a))))
-;;     = (feval-tuple x k (replace-row a k (nth k a)))
-;;     = (feval-tuple x k a):
+;;     = (feval-tuple x k (replace-row a k (fsum-select (ninit n) (nth k a) n)) n)
+;;     = (feval-tuple x k (replace-row a k (nth k a)) n)
+;;     = (feval-tuple x k a n):
 
 (defthm fsum-tuples-extend-tuple
-  (implies (and (fmatp a (n) (n))
-                (natp k) (< k (n))
-                (tuplep x k))
-	   (equal (fsum-tuples (extend-tuple x) (1+ k) a)
-		  (feval-tuple x k a)))
+  (implies (and (fmatp a n n) (posp n)
+                (natp k) (< k n)
+                (tuplep x k n))
+	   (equal (fsum-tuples (extend-tuple x n) (1+ k) a n)
+		  (feval-tuple x k a n)))
   :hints (("Goal" :in-theory (enable extend-tuple)
                   :use (fsum-tuples-extend-tuple-30
-                        (:instance replace-fmat-row-self (m (n)) (n (n)) (i k))))))
+                        (:instance replace-fmat-row-self (m n) (i k))))))
 
 ;; This leads to the recurrence formula
 
-;;    (fsum-tuples (all-tuples k) k a) = (fsum-tuples (all-tuples (1- k)) (1- k) a):
+;;    (fsum-tuples (all-tuples k n) k a n) = (fsum-tuples (all-tuples (1- k) n) (1- k) a n):
 
 (defthm fsum-tuples-append
-  (implies (and (fmatp a (n) (n)) (natp k) (<= k (n)) (tuple-list-p l k) (tuple-list-p m k))
-           (equal (fsum-tuples (append l m) k a)
-	          (f+ (fsum-tuples l k a) (fsum-tuples m k a))))
+  (implies (and (fmatp a n n) (posp n) (natp k) (<= k n) (tuple-list-p l k n) (tuple-list-p m k n))
+           (equal (fsum-tuples (append l m) k a n)
+	          (f+ (fsum-tuples l k a n) (fsum-tuples m k a n))))
   :hints (("Goal" :in-theory (disable feval-tuple))
-          ("Subgoal *1/2" :use ((:instance f+assoc (x (feval-tuple (car l) k a))
-					           (y (FSUM-TUPLES (CDR L) K A))
-					           (z (FSUM-TUPLES M K A)))))))
+          ("Subgoal *1/2" :use ((:instance f+assoc (x (feval-tuple (car l) k a n))
+					           (y (FSUM-TUPLES (CDR L) K A n))
+					           (z (FSUM-TUPLES M K A n)))))))
                         
 (defthmd fsum-tuples-extend-tuples
-  (implies (and (fmatp a (n) (n))
-                (natp k) (< k (n))
-		(tuple-list-p l k))
-	   (equal (fsum-tuples (extend-tuples l) (1+ k) a)
-	          (fsum-tuples l k a)))
+  (implies (and (fmatp a n n) (posp n)
+                (natp k) (< k n)
+		(tuple-list-p l k n))
+	   (equal (fsum-tuples (extend-tuples l n) (1+ k) a n)
+	          (fsum-tuples l k a n)))
   :hints (("Goal" :in-theory (disable feval-tuple))))
 
 (defthm fsum-tuples-extend-all-tuples
-  (implies (and (fmatp a (n) (n))
-                (posp k) (<= k (n)))
-	   (equal (fsum-tuples (all-tuples k) k a)
-	          (fsum-tuples (all-tuples (1- k)) (1- k) a)))
-  :hints (("Goal" :use ((:instance fsum-tuples-extend-tuples (l (all-tuples (1- k))) (k (1- k)))))))
+  (implies (and (fmatp a n n) (posp n)
+                (posp k) (<= k n))
+	   (equal (fsum-tuples (all-tuples k n) k a n)
+	          (fsum-tuples (all-tuples (1- k) n) (1- k) a n)))
+  :hints (("Goal" :use ((:instance fsum-tuples-extend-tuples (l (all-tuples (1- k) n)) (k (1- k)))))))
 
-;; By induction, (fsum-tuples (all-tuples (n)) (n) a) = (fdetn a):
+;; By induction, (fsum-tuples (all-tuples n n) n a n) = (fdet0 a n):
 
 (local-defthmd fsum-tuples-induction
-  (implies (and (fmatp a (n) (n))
-                (natp k) (<= k (n)))
-	   (equal (fsum-tuples (all-tuples k) k a)
-	          (fdetn a)))
+  (implies (and (fmatp a n n) (posp n)
+                (natp k) (<= k n))
+	   (equal (fsum-tuples (all-tuples k n) k a n)
+	          (fdet0 a n)))
   :hints (("Goal" :induct (fact k) :in-theory (disable all-tuples))))
 
-(defthmd fsum-tuples-fdetn
-  (implies (fmatp a (n) (n))
-	   (equal (fsum-tuples (all-tuples (n)) (n) a)
-	          (fdetn a)))
-  :hints (("Goal" :use ((:instance fsum-tuples-induction (k (n)))))))
+(defthmd fsum-tuples-fdet0
+  (implies (and (fmatp a n n) (posp n))
+	   (equal (fsum-tuples (all-tuples n n) n a n)
+	          (fdet0 a n)))
+  :hints (("Goal" :use ((:instance fsum-tuples-induction (k n))))))
 
 (local-in-theory (disable fsum-tuples-induction fsum-tuples-extend-all-tuples))
 
-;; If x is an (n)-tuple, then (feval-tuple x (n) a) = (fdetn (funits x)).  Since fdetn
+;; If x is an n-tuple, then (feval-tuple x n a) = (fdet0 (funits x)).  Since fdet0
 ;; is alternating, this value is (f0) unless x is a dlist:
 
 (local-defthmd nthcdr-nil
@@ -2415,54 +2416,54 @@
            (equal (append l ()) l)))
 
 (local-defthm feval-tuple-n
-  (implies (and (fmatp a (n) (n))
-                (tuplep x (n)))
-	   (equal (feval-tuple x (n) a)
+  (implies (and (fmatp a n n) (posp n)
+                (tuplep x n n))
+	   (equal (feval-tuple x n a n)
 	          (f* (flist-prod (extract-entries x a))
-		      (fdetn (funits x)))))
+		      (fdet0 (funits x n) n))))
   :hints (("Goal" :in-theory (disable len-fmatp)
                   :use ((:instance nthcdr-nil (l a))
-                        (:instance append-nil (l (funits x)))
-			(:instance len-fmatp (m (n)) (n (n)))))))
+                        (:instance append-nil (l (funits x n)))
+			(:instance len-fmatp (m n))))))
 
 (local-defthm member-funits
   (implies (member z l)
-           (member (funit z (n))
-	           (funits l))))
+           (member (funit z n)
+	           (funits l n))))
 
 (local-defthmd dlistp-funits-1
-  (implies (and (true-listp x) (dlistp (funits x)))
+  (implies (and (true-listp x) (dlistp (funits x n)))
            (dlistp x)))
 
 (local-defthmd dlistp-funits
-  (implies (and (tuplep x (n)) (dlistp (funits x)))
+  (implies (and (tuplep x n n) (posp n) (dlistp (funits x n)))
            (dlistp x))
   :hints (("Goal" :use (dlistp-funits-1))))
 
 (local-defthmd fmatp-funits
-  (implies (tuplep x k)
-           (fmatp (funits x) k (n)))
+  (implies (and (tuplep x k n) (posp n))
+           (fmatp (funits x n) k n))
   :hints (("Goal" :in-theory (enable fmatp))))
 
-(defthm fdetn-funits-0
-  (implies (and (tuplep x (n)) (not (dlistp x)))
-           (equal (fdetn (funits x))
+(defthm fdet0-funits-0
+  (implies (and (tuplep x n n) (posp n) (not (dlistp x)))
+           (equal (fdet0 (funits x n) n)
 	          (f0)))
   :hints (("Goal" :in-theory (disable len-tuplep dcex-lemma)
                   :use (dlistp-funits
-                        (:instance fmatp-funits (k (n)))
-			(:instance len-tuplep (k (n)))
-                        (:instance fdetn-alternating (a (funits x)) (i (dcex1 (funits x))) (j (dcex2 (funits x))))
-			(:instance dcex-lemma (l (funits x)))))))
+                        (:instance fmatp-funits (k n))
+			(:instance len-tuplep (k n))
+                        (:instance fdet0-alternating (a (funits x n)) (i (dcex1 (funits x n))) (j (dcex2 (funits x n))))
+			(:instance dcex-lemma (l (funits x n)))))))
 
-(defthm feval-tuple-r0
-  (implies (and (fmatp a (n) (n))
-                (tuplep x (n))
+(defthm feval-tuple-f0
+  (implies (and (fmatp a n n) (posp n)
+                (tuplep x n n)
 		(not (dlistp x)))
-	   (equal (feval-tuple x (n) a)
+	   (equal (feval-tuple x n a n)
 	          (f0)))		  
   :hints (("Goal" :in-theory (disable flistnp-extract-entries)
-                  :use ((:instance flistnp-extract-entries (m (n)) (k (n)))))))
+                  :use ((:instance flistnp-extract-entries (m n) (k n))))))
 
 
 (local-defun select-dlists (l)
@@ -2479,14 +2480,14 @@
   :hints (("Goal" :induct (len l))))
 
 (local-defthmd fsum-tuples-dlists
-  (implies (and (fmatp a (n) (n))
-                (tuple-list-p l (n)))
-	   (equal (fsum-tuples l (n) a)
-	          (fsum-tuples (select-dlists l) (n) a))))
+  (implies (and (fmatp a n n) (posp n)
+                (tuple-list-p l n n))
+	   (equal (fsum-tuples l n a n)
+	          (fsum-tuples (select-dlists l) n a n))))
 
-;; But (select-dlists (all-tuples (n))) = (slist (n)), and therefore (fsum-tuples (slist (n)) (n) a) = (fdetn a).
+;; But (select-dlists (all-tuples n)) = (slist n), and therefore (fsum-tuples (slist n) n a) = (fdet0 a).
 ;; However, that first equation looks like it would be hard to prove, so we shall instead prove
-;; (permp (select-dlists (all-tuples (n))) (slist (n)) and derive the second equation from that.
+;; (permp (select-dlists (all-tuples n)) (slist n) and derive the second equation from that.
 
 (local-defthmd member-select-dlists
   (iff (member x (select-dlists l))
@@ -2495,111 +2496,115 @@
   :hints (("Goal" :induct (len l))))
 
 (local-defthmd member-select-dlists-all-tuples
-  (iff (member x (select-dlists (all-tuples (n))))
-       (and (tuplep x (n))
+  (iff (member x (select-dlists (all-tuples n n)))
+       (and (tuplep x n n)
             (dlistp x)))
-  :hints (("Goal" :use ((:instance member-select-dlists (l (all-tuples (n))))
-                        (:instance member-all-tuples (k (n)))))))
+  :hints (("Goal" :use ((:instance member-select-dlists (l (all-tuples n n)))
+                        (:instance member-all-tuples (k n))))))
 
 (local-defthmd tuplep-sublistp-ninit
-  (implies (natp k)
-           (iff (tuplep x k)
-	        (and (sublistp x (ninit (n)))
+  (implies (and (natp k) (posp n))
+           (iff (tuplep x k n)
+	        (and (sublistp x (ninit n))
 		     (equal (len x) k)
 		     (true-listp x))))		     
-  :hints (("Subgoal *1/2" :use ((:instance member-ninit (x (car x)) (n (n)))))
-          ("Subgoal *1/1" :use ((:instance member-ninit (x (car x)) (n (n)))))))
+  :hints (("Subgoal *1/2" :use ((:instance member-ninit (x (car x)))))
+          ("Subgoal *1/1" :use ((:instance member-ninit (x (car x)))))))
 
 (local-defthmd member-select-dlists-all-tuples-permp
-  (iff (member x (select-dlists (all-tuples (n))))
-       (permp x (ninit (n))))
+  (implies (posp n)
+           (iff (member x (select-dlists (all-tuples n n)))
+                (permp x (ninit n))))
   :hints (("Goal" :in-theory (enable permp)
                   :use (member-select-dlists-all-tuples
-                        (:instance tuplep-sublistp-ninit (k (n)))
-                        (:instance permp-eq-len (l x) (m (ninit (n))))
-                        (:instance eq-len-permp (l x) (m (ninit (n))))))))
+                        (:instance tuplep-sublistp-ninit (k n))
+                        (:instance permp-eq-len (l x) (m (ninit n)))
+                        (:instance eq-len-permp (l x) (m (ninit n)))))))
 
 (local-defthmd member-select-dlists-slist
-  (iff (member x (select-dlists (all-tuples (n))))
-       (member x (slist (n))))
+  (implies (posp n)
+           (iff (member x (select-dlists (all-tuples n n)))
+                (member x (slist n))))
   :hints (("Goal" :in-theory (enable permp-slist)
                   :use (member-select-dlists-all-tuples-permp))))
 
 (local-defthmd permp-select-dlists-all-tuples
-  (permp (select-dlists (all-tuples (n)))
-         (slist (n)))
+  (implies (posp n)
+           (permp (select-dlists (all-tuples n n))
+                  (slist n)))
   :hints (("Goal" :in-theory (enable permp)
-                  :use ((:instance dlistp-select-dlists (l (all-tuples (n))))
-		        (:instance scex1-lemma (l (select-dlists (all-tuples (n)))) (m (slist (n))))
-		        (:instance scex1-lemma (m (select-dlists (all-tuples (n)))) (l (slist (n))))
-			(:instance member-select-dlists-slist (x (scex1 (select-dlists (all-tuples (n))) (slist (n)))))
-			(:instance member-select-dlists-slist (x (scex1 (slist (n)) (select-dlists (all-tuples (n))))))))))
+                  :use ((:instance dlistp-select-dlists (l (all-tuples n n)))
+		        (:instance scex1-lemma (l (select-dlists (all-tuples n n))) (m (slist n)))
+		        (:instance scex1-lemma (m (select-dlists (all-tuples n n))) (l (slist n)))
+			(:instance member-select-dlists-slist (x (scex1 (select-dlists (all-tuples n n)) (slist n))))
+			(:instance member-select-dlists-slist (x (scex1 (slist n) (select-dlists (all-tuples n n)))))))))
 
-(local-defun tuple-list-p-hack (l k)
+(local-defun tuple-list-p-hack (l k n)
   (if (consp l)
-      (and (tuplep (car l) k)
-           (tuple-list-p-hack (cdr l) k))
+      (and (tuplep (car l) k n)
+           (tuple-list-p-hack (cdr l) k n))
     t))
 
 (local-defthm tuple-list-p-hack-lemma
-  (implies (tuple-list-p l k)
-           (tuple-list-p-hack l k)))
+  (implies (tuple-list-p l k n)
+           (tuple-list-p-hack l k n)))
 	
 (local-defthmd permp-fsum-tuples-hack
-  (implies (and (fmatp a (n) (n)) (true-listp l)
-                (dlistp l) (tuple-list-p-hack l (n))
-		(dlistp m) (tuple-list-p-hack m (n))
+  (implies (and (posp n) (fmatp a n n) (true-listp l)
+                (dlistp l) (tuple-list-p-hack l n n)
+		(dlistp m) (tuple-list-p-hack m n n)
 		(permp l m))
-	   (equal (fsum-tuples l (n) a)
-	          (fsum-tuples m (n) a)))		      
+	   (equal (fsum-tuples l n a n)
+	          (fsum-tuples m n a n)))		      
   :hints (("Goal" :in-theory (disable feval-tuple feval-tuple-n)
                   :use ((:functional-instance fval-sum-permp
-                          (fargp (lambda (x) (if (fmatp a (n) (n)) (tuplep x (n)) (fargp x))))
-                          (fval (lambda (x) (if (fmatp a (n) (n)) (feval-tuple x (n) a) (fval x))))
-                          (farg-listp (lambda (x) (if (fmatp a (n) (n)) (tuple-list-p-hack x (n)) (farg-listp x))))
-			  (fval-sum (lambda (x) (if (fmatp a (n) (n)) (fsum-tuples x (n) a) (fval-sum x)))))))))
+                          (fargp (lambda (x) (if (and (posp n) (fmatp a n n)) (tuplep x n n) (fargp x))))
+                          (fval (lambda (x) (if (and (posp n) (fmatp a n n)) (feval-tuple x n a n) (fval x))))
+                          (farg-listp (lambda (x) (if (and (posp n) (fmatp a n n)) (tuple-list-p-hack x n n) (farg-listp x))))
+			  (fval-sum (lambda (x) (if (and (posp n) (fmatp a n n)) (fsum-tuples x n a n) (fval-sum x)))))))))
 
 (local-defthmd permp-fsum-tuples
-  (implies (and (fmatp a (n) (n)) (true-listp l)
-                (dlistp l) (tuple-list-p l (n))
-		(dlistp m) (tuple-list-p m (n))
+  (implies (and (posp n) (fmatp a n n) (true-listp l)
+                (dlistp l) (tuple-list-p l n n)
+		(dlistp m) (tuple-list-p m n n)
 		(permp l m))
-	   (equal (fsum-tuples l (n) a)
-	          (fsum-tuples m (n) a)))		      
+	   (equal (fsum-tuples l n a n)
+	          (fsum-tuples m n a n)))		      
   :hints (("Goal" :use (permp-fsum-tuples-hack))))
 
-;; To apply permp-fsum-tuples, we must show (tuple-list-p (slist (n))):
+;; To apply permp-fsum-tuples, we must show (tuple-list-p (slist n)):
 
 (local-defthm tuple-list-p-sublistp
-  (implies (and (tuple-list-p l k) (true-listp m) (sublistp m l))
-           (tuple-list-p m k)))
+  (implies (and (tuple-list-p l k n) (true-listp m) (sublistp m l))
+           (tuple-list-p m k n)))
 
 (local-defthm tuple-list-p-slist
-  (and (tuple-list-p (slist (n)) (n))
-       (tuple-list-p (select-dlists (all-tuples (n))) (n)))
+  (implies (posp n)
+           (and (tuple-list-p (slist n) n n)
+                (tuple-list-p (select-dlists (all-tuples n n)) n n)))
   :hints (("Goal" :in-theory (enable permp)
                   :use (permp-select-dlists-all-tuples
-		        (:instance dlistp-select-dlists (l (all-tuples (n))))
-                        (:instance tuple-list-p-sublistp (k (n)) (l (all-tuples (n))) (m (select-dlists (all-tuples (n)))))
-                        (:instance tuple-list-p-sublistp (k (n)) (m (slist (n))) (l (select-dlists (all-tuples (n)))))))))
+		        (:instance dlistp-select-dlists (l (all-tuples n n)))
+                        (:instance tuple-list-p-sublistp (k n) (l (all-tuples n n)) (m (select-dlists (all-tuples n n))))
+                        (:instance tuple-list-p-sublistp (k n) (m (slist n)) (l (select-dlists (all-tuples n n))))))))
                         
-;; Combine these results with fsum-tuples-dlists and fsum-tuples-fdetn:
+;; Combine these results with fsum-tuples-dlists and fsum-tuples-fdet0:
 
 (defthmd fsum-tuples-n
-  (implies (fmatp a (n) (n))
-	   (equal (fsum-tuples (slist (n)) (n) a)
-	          (fdetn a)))
-  :hints (("Goal" :use (permp-select-dlists-all-tuples fsum-tuples-fdetn
-                        (:instance permp-fsum-tuples (l (select-dlists (all-tuples (n)))) (m (slist (n))))
-			(:instance dlistp-select-dlists (l (all-tuples (n))))
-			(:instance fsum-tuples-dlists (l (all-tuples (n))))))))
+  (implies (and (posp n) (fmatp a n n))
+	   (equal (fsum-tuples (slist n) n a n)
+	          (fdet0 a n)))
+  :hints (("Goal" :use (permp-select-dlists-all-tuples fsum-tuples-fdet0
+                        (:instance permp-fsum-tuples (l (select-dlists (all-tuples n n))) (m (slist n)))
+			(:instance dlistp-select-dlists (l (all-tuples n n)))
+			(:instance fsum-tuples-dlists (l (all-tuples n n)))))))
 			
-;; For p in (slist (n)),
+;; For p in (slist n),
 
-;;   (feval-tuple p (n) a) = (f* (flist-prod (extract-entries p a))
-;;                              (fdetn (funits p))),
+;;   (feval-tuple p n a) = (f* (flist-prod (extract-entries p a))
+;;                              (fdet0 (funits p))),
 				
-;; where (flist-prod (extract-entries p a)) = (fdet-prod a p (n)).
+;; where (flist-prod (extract-entries p a)) = (fdet-prod a p n).
 
 (local-defun extract-entries (x a)
   (if (consp x)
@@ -2629,20 +2634,20 @@
 		  n)))
 
 (local-defthmd nth-fdet-entries
-  (implies (and (natp i) (natp k) (< i k) (<= k (n)) (member p (slist (n))) (fmatp a (n) (n)))
+  (implies (and (natp i) (natp k) (< i k) (<= k n) (member p (slist n)) (fmatp a n n))
 	   (equal (nth i (fdet-entries p a k))
 		  (entry i (nth i p) a)))
   :hints (("Goal" :in-theory (enable nth) :induct (fact k))))
 
 (local-defthmd equal-fdet-entries-extract-entries
-  (implies (and (fmatp a (n) (n)) (member p (slist (n))))
-	   (equal (fdet-entries p a (n))
+  (implies (and (posp n) (fmatp a n n) (member p (slist n)))
+	   (equal (fdet-entries p a n)
 		  (extract-entries p a)))
   :hints (("Goal" :in-theory (e/d (len-perm) (len-fmatp entry))
-                  :use ((:instance len-fmatp (m (n)) (n (n)))
-		        (:instance nth-diff-diff (x (fdet-entries p a (n))) (y (extract-entries p a)))
-                        (:instance nth-fdet-entries (k (n)) (i (nth-diff (fdet-entries p a (n)) (extract-entries p a))))
-			(:instance nth-extract-entries (i (nth-diff (fdet-entries p a (n)) (extract-entries p a))))))))
+                  :use ((:instance len-fmatp (m n))
+		        (:instance nth-diff-diff (x (fdet-entries p a n)) (y (extract-entries p a)))
+                        (:instance nth-fdet-entries (k n) (i (nth-diff (fdet-entries p a n) (extract-entries p a))))
+			(:instance nth-extract-entries (i (nth-diff (fdet-entries p a n) (extract-entries p a))))))))
 
 (local-defun fdet-prod (a p n)
   (if (zp n)
@@ -2662,35 +2667,36 @@
           ("Subgoal *1/2" :use ((:instance f*assoc (x (car l)) (y (flist-prod (cdr l))) (z (flist-prod m)))))))
 
 (local-defthm flistp-fdet-entries
-  (implies (and (natp k) (<= k (n)) (member p (slist (n))) (fmatp a (n) (n)))
+  (implies (and (posp n) (natp k) (<= k n) (member p (slist n)) (fmatp a n n))
            (flistp (fdet-entries p a k)))
   :hints (("Goal" :induct (fact k))
-          ("Subgoal *1/2" :use ((:instance fp-entry (m (n)) (n (n)) (i (1- k)) (j (nth (1- k) p)))
-	                        (:instance nth-perm-ninit (n (n)) (x p) (k (1- k)))))))
+          ("Subgoal *1/2" :use ((:instance fp-entry (m n) (i (1- k)) (j (nth (1- k) p)))
+	                        (:instance nth-perm-ninit (x p) (k (1- k)))))))
 
 
 (local-defthmd flist-prod-fdet-entries
-  (implies (and (natp k) (<= k (n)) (member p (slist (n))) (fmatp a (n) (n)))
+  (implies (and (posp n) (natp k) (<= k n) (member p (slist n)) (fmatp a n n))
            (equal (flist-prod (fdet-entries p a k))
 	          (fdet-prod a p k)))
   :hints (("Goal" :induct (fact k))
-          ("Subgoal *1/2" :use ((:instance fp-entry (m (n)) (n (n)) (i (1- k)) (j (nth (1- k) p)))
-	                        (:instance nth-perm-ninit (n (n)) (x p) (k (1- k)))))))
+          ("Subgoal *1/2" :use ((:instance fp-entry (m n) (i (1- k)) (j (nth (1- k) p)))
+	                        (:instance nth-perm-ninit (x p) (k (1- k)))))))
 
 (local-defthmd flist-prod-extract-entries
-  (implies (and (fmatp a (n) (n))
-                (member p (slist (n))))
+  (implies (and (posp n) (fmatp a n n)
+                (member p (slist n)))
            (equal (flist-prod (extract-entries p a))
-	          (fdet-prod a p (n))))
+	          (fdet-prod a p n)))
   :hints (("Goal" :use (equal-fdet-entries-extract-entries
-                        (:instance flist-prod-fdet-entries (k (n)))))))
+                        (:instance flist-prod-fdet-entries (k n))))))
 
 (local-defthmd feval-tuple-fdet-prod
-  (implies (and (fmatp a (n) (n))
-                (member p (slist (n))))
-	   (equal (feval-tuple p (n) a)
-	          (f* (fdet-prod a p (n))
-		      (fdetn (funits p)))))
+  (implies (and (posp n)
+                (fmatp a n n)
+                (member p (slist n)))
+	   (equal (feval-tuple p n a n)
+	          (f* (fdet-prod a p n)
+		      (fdet0 (funits p n) n))))
   :hints (("Goal" :use (flist-prod-extract-entries
                         (:instance feval-tuple-n (x p))
 			(:instance member-select-dlists-all-tuples (x p))
@@ -2698,88 +2704,89 @@
 
 ;; But
 
-;;   (fdetn (funits p)) = (fdetn (permute (id-fmat (n)) p))
-;;                     = (f* (if (even-perm-p p (n)) (f1) (f- (f1)))
-;;                           (fdetn (id-fmat (n)))).
+;;   (fdet0 (funits p)) = (fdet0 (permute (id-fmat n) p))
+;;                      = (f* (if (even-perm-p p n) (f1) (f- (f1)))
+;;                            (fdet0 (id-fmat n))).
 
 (local-defthmd nth-funits
-  (implies (and (natp k) (< k (len x)))
-           (equal (nth k (funits x))
-	          (funit (nth k x) (n))))
+  (implies (and (posp n) (natp k) (< k (len x)))
+           (equal (nth k (funits x n))
+	          (funit (nth k x) n)))
   :hints (("Goal" :in-theory (enable nth))))
 
 (local-defthmd nth-permute-id-fmat
-  (implies (and (natp k) (< k (n)) (in p (sym (n))))
-           (equal (nth k (permute (id-fmat (n)) p))
-	          (funit (nth k p) (n))))
+  (implies (and (posp n) (natp k) (< k n) (in p (sym n)))
+           (equal (nth k (permute (id-fmat n) p))
+	          (funit (nth k p) n)))
   :hints (("Goal" :in-theory (disable nth-id-fmat len-fmatp)
-                  :use ((:instance len-fmatp (a (id-fmat (n))) (m (n)) (n (n)))
-		        (:instance nth-permute (l (id-fmat (n))))
-			(:instance nth-id-fmat (i (nth k p)) (n (n)))
-			(:instance member-perm (x p) (k (nth k p)) (n (n)))))))
+                  :use ((:instance len-fmatp (a (id-fmat n)) (m n))
+		        (:instance nth-permute (l (id-fmat n)))
+			(:instance nth-perm-ninit (x p))
+			(:instance nth-id-fmat (i (nth k p)))
+			(:instance member-perm (x p) (k (nth k p)))))))
 
 (defthmd funits-permute-id-mat
-  (implies (member p (slist (n)))
-           (equal (funits p)
-	          (permute (id-fmat (n)) p)))
-  :hints (("Goal" :use ((:instance nth-diff-diff (x (funits p)) (y (permute (id-fmat (n)) p)))
-                        (:instance nth-permute-id-fmat (k (nth-diff (funits p) (permute (id-fmat (n)) p))))
-                        (:instance nth-funits (x p) (k (nth-diff (funits p) (permute (id-fmat (n)) p))))
-			(:instance len-perm (x p) (n (n)))))))
+  (implies (and (posp n) (member p (slist n)))
+           (equal (funits p n)
+	          (permute (id-fmat n) p)))
+  :hints (("Goal" :use ((:instance nth-diff-diff (x (funits p n)) (y (permute (id-fmat n) p)))
+                        (:instance nth-permute-id-fmat (k (nth-diff (funits p n) (permute (id-fmat n) p))))
+                        (:instance nth-funits (x p) (k (nth-diff (funits p n) (permute (id-fmat n) p))))
+			(:instance len-perm (x p))))))
 
 (defthmd feval-tuple-fdet-prod
-  (implies (and (fmatp a (n) (n))
-                (member p (slist (n))))
-	   (equal (feval-tuple p (n) a)
-	          (f* (fdet-prod a p (n))
-		      (fdetn (funits p))))))
+  (implies (and (posp n) (fmatp a n n)
+                (member p (slist n)))
+	   (equal (feval-tuple p n a n)
+	          (f* (fdet-prod a p n)
+		      (fdet0 (funits p n) n)))))
 
-(defthmd fdetn-permute-rows
-  (implies (and (fmatp a (n) (n))
-                (in p (sym (n))))
-	   (equal (fdetn (permute a p))
-	          (if (even-perm-p p (n))
-		      (fdetn a)
-		    (f- (fdetn a))))))
+(defthmd fdet0-permute-rows
+  (implies (and (fmatp a n n) (posp n) 
+                (in p (sym n)))
+	   (equal (fdet0 (permute a p) n)
+	          (if (even-perm-p p n)
+		      (fdet0 a n)
+		    (f- (fdet0 a n))))))
 		    
 ;; Thus, we have
 
 (defthmd feval-tuple-perm
-  (implies (and (fmatp a (n) (n))
-                (member p (slist (n))))
-	   (equal (feval-tuple p (n) a)
-	          (f* (fdet-term a p (n))
-		      (fdetn (id-fmat (n))))))
+  (implies (and (posp n) (fmatp a n n)
+                (member p (slist n)))
+	   (equal (feval-tuple p n a n)
+	          (f* (fdet-term a p n)
+		      (fdet0 (id-fmat n) n))))
   :hints (("Goal" :in-theory (e/d (fdet-term) (feval-tuple feval-tuple-n))
                   :use (feval-tuple-fdet-prod funits-permute-id-mat
-                        (:instance fdetn-permute-rows (a (id-fmat (n))))
-			(:instance f-f* (x (FDET-PROD A P (N))) (y (FDETN (ID-FMAT (N)))))
-			(:instance f-f* (y (FDET-PROD A P (N))) (x (FDETN (ID-FMAT (N)))))
-			(:instance f*comm (x (FDET-PROD A P (N))) (y (FDETN (ID-FMAT (N)))))
-			(:instance f*comm (x (f- (FDET-PROD A P (N)))) (y (FDETN (ID-FMAT (N)))))))))
+                        (:instance fdet0-permute-rows (a (id-fmat n)))
+			(:instance f-f* (x (FDET-PROD A P n)) (y (FDET0 (ID-FMAT n) n)))
+			(:instance f-f* (y (FDET-PROD A P n)) (x (FDET0 (ID-FMAT n) n)))
+			(:instance f*comm (x (FDET-PROD A P n)) (y (FDET0 (ID-FMAT n) n)))
+			(:instance f*comm (x (f- (FDET-PROD A P n))) (y (FDET0 (ID-FMAT n) n)))))))
 
-;; The desired result follows by summing over (slist (n)):
+;; The desired result follows by summing over (slist n):
 
 (local-defthmd fsum-tuples-sublist-slist
-  (implies (and (fmatp a (n) (n)) (sublistp l (slist (n))))
-	   (equal (fsum-tuples l (n) a)
-	          (f* (fdet-sum a l (n))
-		      (fdetn (id-fmat (n))))))
+  (implies (and (posp n) (fmatp a n n) (sublistp l (slist n)))
+	   (equal (fsum-tuples l n a n)
+	          (f* (fdet-sum a l n)
+		      (fdet0 (id-fmat n) n))))
   :hints (("Goal" :in-theory (e/d (feval-tuple-perm) (feval-tuple feval-tuple-n)))))
 
 (defthmd fsum-tuples-slist
-  (implies (fmatp a (n) (n))
-	   (equal (fsum-tuples (slist (n)) (n) a)
-	          (f* (fdet a (n))
-		      (fdetn (id-fmat (n))))))
+  (implies (and (posp n) (fmatp a n n))
+	   (equal (fsum-tuples (slist n) n a n)
+	          (f* (fdet a n)
+		      (fdet0 (id-fmat n) n))))
   :hints (("Goal" :in-theory (enable fdet)
-                  :use ((:instance fsum-tuples-sublist-slist (l (slist (n))))))))
+                  :use ((:instance fsum-tuples-sublist-slist (l (slist n)))))))
 	          
 (defthmd fdet-unique
-  (implies (fmatp a (n) (n))
-           (equal (fdetn a)
-                  (f* (fdet a (n))
-                      (fdetn (id-fmat (n))))))
+  (implies (and (posp n) (fmatp a n n))
+           (equal (fdet0 a n)
+                  (f* (fdet a n)
+                      (fdet0 (id-fmat n) n))))
   :hints (("Goal" :use (fsum-tuples-n fsum-tuples-slist))))
 
 
@@ -2792,7 +2799,7 @@
 ;;   (fdet (fmat* a b) n) = (f* (fdet a n) (fdet b n).
 
 ;; To this end, we shall show that the following is a determinant function of its first
-;; argument, i.e., it satisfies the constraints on fdetn:
+;; argument, i.e., it satisfies the constraints on fdet0:
 
 (defun fdet-fmat* (a b n)
   (fdet (fmat* a b) n))
@@ -2818,7 +2825,7 @@
 	          (flist-scalar-mul c (fdot-list x b))))
   :hints (("Goal" :in-theory (enable fmatp fdot-flist-scalar-mul))))
 
-;; Firsat show that fdet-fmat* is n-linear:
+;; First show that fdet-fmat* is n-linear:
 
 ;;   (fdet-fmat* (replace-row a k (flist-add (flist-scalar-mul c x) y)) b n)
 ;;      = (fdet (fmat* (replace-row a k (flist-add (flist-scalar-mul c x) y)) b) n)
@@ -2864,24 +2871,16 @@
 
 ;; Now apply functional instantiation:
 
-(defthmd fdet-fmat*-val-n
-  (implies (and (fmatp a (n) (n)) (fmatp b (n) (n)))
-           (equal (fdet-fmat* a b (n))
-	          (f* (fdet a (n))
-		      (fdet-fmat* (id-fmat (n)) b (n)))))
-  :hints (("Goal" :use ((:functional-instance fdet-unique
-			  (fdetn (lambda (a) (if (and (fmatp a (n) (n)) (fmatp b (n) (n))) (fdet-fmat* a b (n)) (fdetn a)))))))	  
-          ("Subgoal 3" :use (fdetn-adjacent-equal (:instance fdet-fmat*-adjacent-equal (n (n)) (k i))))
-          ("Subgoal 2" :use (fdetn-n-linear (:instance fdet-fmat*-n-linear (n (n)) (k i))))))
-
 (defthmd fdet-multiplicative
   (implies (and (fmatp a n n) (fmatp b n n) (posp n))
            (equal (fdet (fmat* a b) n)
 	          (f* (fdet a n) (fdet b n))))
   :hints (("Goal" :in-theory (enable id-fmat-left)
-                  :use ((:functional-instance fdet-fmat*-val-n
-                          (n (lambda () (if (and (fmatp a n n) (fmatp b n n) (posp n)) n (n)))))))))
-		  
+                  :use ((:functional-instance fdet-unique
+			  (fdet0 (lambda (a n) (if (and (fmatp a n n) (fmatp b n n)) (fdet-fmat* a b n) (fdet0 a n)))))))	  
+          ("Subgoal 3" :use (fdet0-adjacent-equal (:instance fdet-fmat*-adjacent-equal (k i))))
+          ("Subgoal 2" :use (fdet0-n-linear (:instance fdet-fmat*-n-linear (k i))))));
+
 
 ;;-------------------------------------------------------------------------------------------------------
 ;;   Cofactor Expansion
@@ -3405,7 +3404,7 @@
 ;; Now suppose adjacent rows k and k+1 of a are equal.  Then for any i other than k and k+1, (minor i j a)
 ;; has 2 adjacent rows,and therefore (fdet-cofactor i j a n) = (f0).  Meanwhile, (minor k j) = (minor (1+ k) j)
 ;; and (entry k j a) = (entry (1+ k) j a), but k + j and (k + 1) + j have opposite parities, and therefore
-;; (fdet-cofactor k j a n) + (fdet-cofactor (1+ k) j a n) = (f0).  Thus, (expand-fdet-col a j n) = r0:
+;; (fdet-cofactor k j a n) + (fdet-cofactor (1+ k) j a n) = (f0).  Thus, (expand-fdet-col a j n) = f0:
 
 (local-defthmd minor-equal-rows-1
   (implies (and (fmatp a n n) (natp n) (> n 1) (natp j) (< j n)
@@ -3526,26 +3525,19 @@
 
 ;; By functional instantiation of fdet-unique,we have the following:
 
-(local-defthmd expand-fdet-col-val-n
-  (implies (and (fmatp a (n) (n)) (> (n) 1) (natp k) (< k (n)))
-           (equal (expand-fdet-col a k (n))
-	          (f* (fdet a (n))
-		      (expand-fdet-col (id-fmat (n)) k (n)))))
-  :hints (("Goal" :use ((:functional-instance fdet-unique
-			  (fdetn (lambda (a)
-			                (if (and (fmatp a (n) (n)) (> (n) 1) (natp k) (< k (n)))
-					    (expand-fdet-col a k (n))
-					  (fdetn a)))))))
-	  ("Subgoal 3" :use (fdetn-adjacent-equal (:instance expand-fdet-col-adjacent-equal (k i) (j k) (n (n)))))
-          ("Subgoal 2" :use (fdetn-n-linear (:instance expand-fdet-col-n-linear (k i) (j k) (n (n)))))))
-
 (defthmd expand-fdet-col-val
   (implies (and (fmatp a n n) (posp n) (> n 1) (natp k) (< k n))
            (equal (expand-fdet-col a k n)
 	          (f* (fdet a n)
 		      (expand-fdet-col (id-fmat n) k n))))
-  :hints (("Goal" :use ((:functional-instance expand-fdet-col-val-n
-			  (n (lambda () (if (and (posp n) (> n 1)) n (n)))))))))
+  :hints (("Goal" :use ((:functional-instance fdet-unique
+			  (fdet0 (lambda (a n)
+			                 (if (and (posp n) (fmatp a n n) (> n 1) (natp k) (< k n))
+					     (expand-fdet-col a k n)
+					   (fdet0 a n)))))))
+	  ("Subgoal 3" :use (fdet0-adjacent-equal (:instance expand-fdet-col-adjacent-equal (k i) (j k))))
+          ("Subgoal 2" :use (fdet0-n-linear (:instance expand-fdet-col-n-linear (k i) (j k))))))
+
 
 ;; It remains to show that (expand-fdet-col (id-fmat n) k n) = (f1).
 ;; By row-fmat-minor, we habe the following expression for the rth row of (minor i j (id-fmat n)):
