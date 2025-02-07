@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -12,8 +12,8 @@
 
 (include-book "../../simpadd0")
 
-(include-book "../../../syntax/parser")
-(include-book "../../../syntax/printer")
+(include-book "../../../syntax/input-files")
+(include-book "../../../syntax/output-files")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -63,3 +63,13 @@
   return x;
 }
 "))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(c$::input-files :files ("file.c")
+                 :process :parse
+                 :const *old-code*)
+
+(simpadd0 *old-code* *new-code* :proofs t)
+
+(c$::output-files :const *new-code*)
