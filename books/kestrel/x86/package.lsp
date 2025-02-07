@@ -655,8 +655,14 @@
     x86isa::cr8bits->cr8-trpl
 
     x86isa::msri
+    x86isa::msri$a
+    x86isa::!msri
+    x86isa::!msri$a
 
+    x86isa::mxcsr
+    x86isa::mxcsr$a
     x86isa::!mxcsr
+    x86isa::!mxcsr$a
     x86isa::mxcsrbits-fix
 
     x86isa::mxcsrbits->ie$inline
@@ -734,8 +740,8 @@
     x86isa::fp-to-rat
     x86isa::sse-cmp
     x86isa::sse-cmp-special
-    x86isa::mxcsr
-    x86isa::mxcsr$a
+    x86isa::sp-sse-cmp
+    x86isa::dp-sse-cmp
     x86isa::sse-daz
     x86isa::denormal-exception
     x86isa::*OP-UCOMI*
