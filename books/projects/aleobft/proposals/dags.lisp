@@ -205,7 +205,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defines certificate-causal-history
+(defines cert-causal-history
   :short "Causal history of a certificate in a DAG."
   :long
   (xdoc::topstring
@@ -248,27 +248,27 @@
      the one for @(tsee path-to-author+round);
      see that function for details."))
 
-  (define certificate-causal-history ((cert certificatep)
-                                      (dag certificate-setp))
+  (define cert-causal-history ((cert certificatep)
+                               (dag certificate-setp))
     :returns (hist certificate-setp)
     (b* (((when (= (certificate->round cert) 1))
           (set::insert (certificate-fix cert) nil))
          (prev-certs (certs-with-authors+round (certificate->previous cert)
                                                (1- (certificate->round cert))
                                                dag))
-         (prev-hist (certificate-set-causal-history prev-certs dag)))
+         (prev-hist (cert-set-causal-history prev-certs dag)))
       (set::insert (certificate-fix cert) prev-hist))
     :measure (acl2::nat-list-measure (list (certificate->round cert)
                                            0
                                            0)))
 
-  (define certificate-set-causal-history ((certs certificate-setp)
-                                          (dag certificate-setp))
+  (define cert-set-causal-history ((certs certificate-setp)
+                                   (dag certificate-setp))
     :returns (hist certificate-setp)
     (cond ((set::emptyp (certificate-set-fix certs)) nil)
           (t (set::union
-              (certificate-causal-history (set::head certs) dag)
-              (certificate-set-causal-history (set::tail certs) dag))))
+              (cert-causal-history (set::head certs) dag)
+              (cert-set-causal-history (set::tail certs) dag))))
     :measure (acl2::nat-list-measure (list
                                       (pos-set-max (cert-set->round-set certs))
                                       1
@@ -290,8 +290,10 @@
                      (set1 (cert-set->round-set (set::tail certs)))
                      (set2 (cert-set->round-set certs))))))
 
-  :guard-hints (("Goal" :in-theory (enable posp)))
-
   :verify-guards :after-returns
 
-  :flag-local nil)
+  :guard-hints (("Goal" :in-theory (enable posp)))
+
+  ///
+
+  (fty::deffixequiv-mutual cert-causal-history))
