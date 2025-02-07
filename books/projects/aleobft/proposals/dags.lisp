@@ -202,3 +202,96 @@
                (equal (certificate->round target-cert?)
                       (pos-fix round)))
       :fn path-to-author+round-set)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines certificate-causal-history
+  :short "Causal history of a certificate in a DAG."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the set of all the certificates in the DAG
+     that the certificate has a path to.
+     This includes the certificate itself,
+     which has an empty path to itself.
+     We calculate the causal history by going backwards through rounds.")
+   (xdoc::p
+    "We start with the certificate.
+     If its round number is 1,
+     we stop and return the singleton set with the certificate.
+     Since certificates have positive round numbers,
+     the DAG cannot have any certificate at round 0.
+     It is in fact an invariant that a certificate at round 1
+     has no edges to previous certificates,
+     although the invariant is not available here.")
+   (xdoc::p
+    "If the certificate's round number is not 1,
+     we retrieve its immediate predecessor certificates,
+     which all have the round number that precedes the certificate's.
+     We use a mutually recursive companion of this function
+     to go through the set of preceding certificates,
+     obtaining the causal history for all of them
+     (i.e. the union of their causal histories).
+     Then we add the current certificate to those combined causal histories,
+     and return the result.")
+   (xdoc::p
+    "This function is executable, but not necessarily efficient:
+     it tries out all possible paths in the DAG.
+     It is adequate for specification,
+     because it has a simple definition
+     that is easier to assess and to prove properties about,
+     compared to a more efficient definition.
+     A more efficient definition could be provided as well,
+     and proved equivalent to this one.")
+   (xdoc::p
+    "The termination measure and proof is similar to
+     the one for @(tsee path-to-author+round);
+     see that function for details."))
+
+  (define certificate-causal-history ((cert certificatep)
+                                      (dag certificate-setp))
+    :returns (hist certificate-setp)
+    (b* (((when (= (certificate->round cert) 1))
+          (set::insert (certificate-fix cert) nil))
+         (prev-certs (certs-with-authors+round (certificate->previous cert)
+                                               (1- (certificate->round cert))
+                                               dag))
+         (prev-hist (certificate-set-causal-history prev-certs dag)))
+      (set::insert (certificate-fix cert) prev-hist))
+    :measure (acl2::nat-list-measure (list (certificate->round cert)
+                                           0
+                                           0)))
+
+  (define certificate-set-causal-history ((certs certificate-setp)
+                                          (dag certificate-setp))
+    :returns (hist certificate-setp)
+    (cond ((set::emptyp (certificate-set-fix certs)) nil)
+          (t (set::union
+              (certificate-causal-history (set::head certs) dag)
+              (certificate-set-causal-history (set::tail certs) dag))))
+    :measure (acl2::nat-list-measure (list
+                                      (pos-set-max (cert-set->round-set certs))
+                                      1
+                                      (set::cardinality certs))))
+
+  :prepwork ((local (in-theory (enable emptyp-of-certificate-set-fix))))
+
+  :hints
+  (("Goal"
+    :in-theory (enable set::cardinality
+                       pos-fix
+                       cert-set->round-set-monotone
+                       certificate->round-in-cert-set->round-set
+                       cert-set->round-set-of-certs-with-authors+round)
+    :use ((:instance acl2::pos-set-max->=-element
+                     (elem (certificate->round (set::head certs)))
+                     (set (cert-set->round-set certs)))
+          (:instance acl2::pos-set-max->=-subset
+                     (set1 (cert-set->round-set (set::tail certs)))
+                     (set2 (cert-set->round-set certs))))))
+
+  :guard-hints (("Goal" :in-theory (enable posp)))
+
+  :verify-guards :after-returns
+
+  :flag-local nil)
