@@ -1340,12 +1340,18 @@
 
 ;; Ideally, these would all be rewritten to BV ops
 (defconst *symbols-from-bitops*
-  '(bitops::part-install-width-low$inline
+  '(bitops::part-select ; a macro
+    bitops::part-select-low-high
+    bitops::part-select-low-high$inline
+    bitops::part-select-width-low
     bitops::part-select-width-low$inline
+    bitops::part-install ; a macro
+    bitops::part-install-width-low
+    bitops::part-install-width-low$inline
     b-xor ; from ihs, via bitops
-    logbit$inline ; really from ihs
     b-xor$inline ; really from ihs
-    part-select
+    logbit
+    logbit$inline ; really from ihs
     ))
 
 ;; Ideally, these would all be rewritten away
