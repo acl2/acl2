@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -170,8 +170,7 @@
   :guard-hints
   (("Goal"
     :in-theory (enable evenp
-                       active-committee-at-previous2-round-when-at-round
-                       certificate->round-of-path-to-author+round)))
+                       active-committee-at-previous2-round-when-at-round)))
 
   ///
 
