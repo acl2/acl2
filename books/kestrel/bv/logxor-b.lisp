@@ -1,7 +1,7 @@
 ; BV Library: additional logxor theorems
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -68,4 +68,4 @@
                 (integerp j2))
            (equal (logbitp i (logxor j1 j2))
                   (xor (logbitp i j1) (logbitp i j2))))
-  :hints (("Goal" :in-theory (enable logbitp-iff-getbit))))
+  :hints (("Goal" :in-theory (enable logbitp-to-getbit-equal-1))))

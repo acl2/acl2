@@ -173,7 +173,7 @@
   (defthm mxcsrbits->reserved-of-bvif (implies (and (<= 32 size) (natp size)) (equal (mxcsrbits->reserved (bvif size test x y)) (bvif 16 test (mxcsrbits->reserved x) (mxcsrbits->reserved y))))))
 
 (encapsulate ()
-  (local (in-theory (e/d (mxcsrbits-fix acl2::b-ior) (acl2::loghead-becomes-bvchop acl2::logbitp-iff-getbit))))
+  (local (in-theory (e/d (mxcsrbits-fix acl2::b-ior) (acl2::loghead-becomes-bvchop acl2::logbitp-to-getbit-equal-1))))
   (defthm mxcsrbits->ie-of-logior (equal (mxcsrbits->ie (logior x y)) (logior (mxcsrbits->ie x) (mxcsrbits->ie y))) :hints (("Goal" :in-theory (enable mxcsrbits->ie))))
   (defthm mxcsrbits->de-of-logior (equal (mxcsrbits->de (logior x y)) (logior (mxcsrbits->de x) (mxcsrbits->de y))) :hints (("Goal" :in-theory (enable mxcsrbits->de))))
   (defthm mxcsrbits->ze-of-logior (equal (mxcsrbits->ze (logior x y)) (logior (mxcsrbits->ze x) (mxcsrbits->ze y))) :hints (("Goal" :in-theory (enable mxcsrbits->ze))))

@@ -1,7 +1,7 @@
 ; More rules about bit vectors
 ;
 ; Copyright (C) 2017-2021 Kestrel Technology, LLC
-; Copyright (C) 2022-2024 Kestrel Institute
+; Copyright (C) 2022-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -214,11 +214,6 @@
            (equal (logext 64 (bvplus 64 x y))
                   (logext 64 (+ x y))))
   :hints (("Goal" :in-theory (enable bvplus))))
-
-;todo: strengthen LOGBITP-IFF-GETBIT
-(defthm logbitp-to-getbit-equal-1
-  (equal (logbitp n x)
-         (equal 1 (getbit n x))))
 
 ;really want this for every unary function
 (defthm unsigned-byte-p-of-if-two-constants
