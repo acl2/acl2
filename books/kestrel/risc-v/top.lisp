@@ -10,6 +10,7 @@
 
 (in-package "RISCV")
 
+(include-book "features")
 (include-book "instructions")
 (include-book "decoding")
 (include-book "states")
