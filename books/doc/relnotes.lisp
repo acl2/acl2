@@ -139,6 +139,7 @@
      which covers unprivileged RV32IM and RV64IM
      (except for @('FENCE'), @('HINT'), @('ECALL'), and @('EBREAK')),
      little endian memory access,
+     fully readable and writable address space,
      and no alignment checks.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

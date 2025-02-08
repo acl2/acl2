@@ -35,6 +35,7 @@
      (except for
      the @('FENCE'), @('HINT'), @('ECALL') and @('EBREAK') instructions),
      little endian memory access,
+     fully readable and writable address space,
      no alignment checks.
      We plan to extend and improve this library.")
    (xdoc::p
