@@ -27,7 +27,7 @@
 ;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
-; Contributing author: Alessandro Coglio <coglio@kestrel.edu>
+; Contributing author: Alessandro Coglio (www.alessandrocoglio.info)
 
 (in-package "ACL2")
 
@@ -129,6 +129,17 @@
     "See projects/hol-acl2/README-acl2.  That directory provides modifications
      of the HOL-ACL2 link from a HOL4 distribution, updating ACL2 aspects of
      that link to work with the latest versions of ACL2.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "riscv::riscv" "RISC-V ISA Model"))
+
+   (xdoc::p
+    "A preliminary model of RISC-V ISA has been added,
+     which covers unprivileged RV32IM and RV64IM
+     (except for @('FENCE'), @('HINT'), @('ECALL'), and @('EBREAK')),
+     little endian memory access,
+     and no alignment checks.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
