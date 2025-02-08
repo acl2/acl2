@@ -592,13 +592,14 @@
     x86isa::x86p-of-wb ;  wb-returns-x86p ;targets x86p-of-mv-nth-1-of-wb ;drop if WB will always be rewritten to WRITE
 
     ;; Flags:
+    unsigned-byte-p-of-get-flag-one-bit ; todo: other case
     get-flag-of-xw
     xr-of-set-flag
     set-flag-of-xw
     get-flag-of-set-flag
     set-flag-of-set-flag-diff-axe
     set-flag-of-set-flag-same
-    set-flag-of-get-flag-same
+    set-flag-of-get-flag-same-gen ;; set-flag-of-get-flag-same
 
     x86isa::xw-rgf-of-xr-rgf-same
 
@@ -1869,7 +1870,7 @@
             acl2::binary-+-bring-constant-forward ;improve to disallow the other arg to be constant
 
             x86isa::reg-index$inline ;not sure what this is, maybe restrict to ground terms?
-            acl2::logbitp-to-getbit-equal-1
+            acl2::logbitp-to-getbit-equal-1 ;rename to use 'becomes'
 
             associativity-of-+
             x86isa::integerp-of-xr-rgf ; drop if we always use a different normal form
