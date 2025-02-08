@@ -1,7 +1,7 @@
 ; Rules to convert bitops operations to operations from the Kestrel BV library
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2024 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -324,3 +324,9 @@
                               bvchop-of-logior-becomes-bvor
                               ifix
                               logand-of-bvchop-becomes-bvand-alt))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm logbit-becomes-getbit
+  (equal (logbit pos i)
+         (getbit pos i)))
