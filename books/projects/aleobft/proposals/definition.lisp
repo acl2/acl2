@@ -15,6 +15,7 @@
 (include-book "events")
 (include-book "initialization")
 (include-book "transitions")
+(include-book "reachability")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -35,4 +36,5 @@
   :order-subtopics (states
                     events
                     initialization
-                    transitions))
+                    transitions
+                    reachability))
