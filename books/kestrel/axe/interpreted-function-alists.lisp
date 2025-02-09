@@ -1,7 +1,7 @@
 ; Operations on interpreted-function-alists
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -88,8 +88,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Create an interpreted-function-alist for FNS, a list of function names, by
-;; getting their formals and bodies from WRLD.  TODO: Make a variant that also
-;; adds all necessary supporting functions.
+;; getting their formals and bodies from WRLD.  See also
+;; make-complete-interpreted-function-alist, a variant that also adds all
+;; necessary supporting functions.
 (defund make-interpreted-function-alist (fns wrld)
   (declare (xargs :guard (and (symbol-listp fns)
                               (plist-worldp wrld))))
