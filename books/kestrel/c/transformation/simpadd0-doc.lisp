@@ -62,10 +62,10 @@
        that contains a  validated translation unit ensemble,
        i.e. a value of type @(tsee transunit-ensemble)
        resulting from "
-      (xdoc::seetopic "validator" "validation")
+      (xdoc::seetopic "c$::validator" "validation")
       ", and in particular containing "
-      (xdoc::seetopic "validation-information" "validation information")
-      ". This constant could result from @(tsee input-files),
+      (xdoc::seetopic "c$::validation-information" "validation information")
+      ". This constant could result from @(tsee c$::input-files),
        or from some other "
       (xdoc::seetopic "transformation-tools" "transformation")
       ".")
