@@ -2,7 +2,7 @@
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -94,3 +94,18 @@
   (equal (equal (bitxor x y) (bitor x y))
          (equal 0 (bitand x y)))
   :hints (("Goal" :cases ((equal 1 (getbit 0 x))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Gets rid of bitor
+(defthmd bitor-becomes-bitnot-of-bitand-of-bitnot-and-bitnot
+  (equal (bitor x y)
+         (bitnot (bitand (bitnot x) (bitnot y))))
+  :hints (("Goal" :in-theory (enable bitor bvor bitand bitand bitnot))))
+
+;; Gets rid of bitxor
+(defthmd bitxor-becomes-bitor-of-bitand-of-bitnot-and-bitand-of-bitnot
+  (equal (bitxor x y)
+         (bitor (bitand x (bitnot y))
+                (bitand (bitnot x) y)))
+  :hints (("Goal" :in-theory (enable bitor bvor bitand bitand bitnot))))
