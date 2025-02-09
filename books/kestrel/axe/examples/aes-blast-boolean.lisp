@@ -28,6 +28,7 @@
 
 (defopeners bytes-to-bits)
 
+;; Converts each of the BITS to a boolean, returning a list of booleans.
 (defund map-bit-to-bool (bits)
   (declare (xargs :guard (bit-listp bits)))
   (if (endp bits)
@@ -76,19 +77,6 @@
       nil
     (cons (bool-to-bit (first bools))
           (map-bool-to-bit (rest bools)))))
-
-;todo: move to library
-(defthm bitor-becomes-bitnot-of-bitand-of-bitnot-and-bitnot
-  (equal (bitor x y)
-         (bitnot (bitand (bitnot x) (bitnot y))))
-  :hints (("Goal" :in-theory (enable bitor bvor BITAND BITAND bitnot))))
-
-;todo: move to library
-(defthm bitxor-becomes-bitor-of-bitand-of-bitnot-and-bitand-of-bitnot
-  (equal (bitxor x y)
-         (bitor (bitand x (bitnot y))
-                (bitand (bitnot x) y)))
-  :hints (("Goal" :in-theory (enable bitor bvor bitand bitand bitnot))))
 
 (defthm equal-of-0-and-bitxor-alt
   (implies (and (unsigned-byte-p 1 x)
