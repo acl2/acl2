@@ -14,6 +14,8 @@
 (include-book "system-states")
 (include-book "committees")
 
+(local (include-book "kestrel/utilities/nfix" :dir :system))
+
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
@@ -243,8 +245,7 @@
 
   (defret validator-state->last-of-propose-next
     (equal (validator-state->last (get-validator-state val new-systate))
-           (validator-state->last (get-validator-state val systate)))
-    :hints (("Goal" :in-theory (enable nfix))))
+           (validator-state->last (get-validator-state val systate))))
 
   (defret validator-state->blockchain-of-propose-next
     (equal (validator-state->blockchain (get-validator-state val new-systate))
