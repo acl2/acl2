@@ -44,7 +44,7 @@
 (include-book "bvshr")
 (include-book "bvshl")
 (include-book "bool-to-bit")
-(include-book "bit-to-bool")
+(include-book "bit-to-bool-def")
 (include-book "kestrel/booleans/boolxor" :dir :system)
 (include-book "kestrel/booleans/booland" :dir :system)
 (include-book "kestrel/booleans/boolif" :dir :system)
