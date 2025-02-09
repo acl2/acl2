@@ -1,7 +1,7 @@
 ; Utilities to merge terms into dags, with no simplification or evaluation
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -767,6 +767,18 @@
                *max-1d-array-index*))
   :rule-classes :linear
   :hints (("Goal" :in-theory (enable wrap-term-around-dag))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns the new dag-or-quotep.  This version does not return an erp.
+(defund wrap-term-around-dag! (term var dag-or-quotep)
+  (mv-let (erp dag-or-quotep)
+    (wrap-term-around-dag term var dag-or-quotep)
+    (if erp
+        (prog2$ (er hard? 'wrap-term-around-dag! "Error wrapping term around dag: ~x0." erp)
+                *nil* ; just return some constant
+                )
+      dag-or-quotep)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
