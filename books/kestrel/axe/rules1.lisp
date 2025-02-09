@@ -1572,7 +1572,7 @@
 ;bvcat
                             )
                            (;bif-rewrite
-                            
+
                             BVCAT-OF-GETBIT-AND-X-ADJACENT
                             TIMES-4-BECOMES-LOGAPP
                             BVCAT-OF-GETBIT-AND-X-ADJACENT
@@ -2057,7 +2057,7 @@
     :IN-THEORY (E/d (BV-ARRAY-READ BV-ARRAY-WRITE update-nth2
                      BVCHOP-WHEN-I-IS-NOT-AN-INTEGER)
                     (;BVCHOP-OF-NTH-BECOMES-BV-ARRAY-READ
-                     
+
                      UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN
                      )))))
 
@@ -2312,12 +2312,8 @@
                 (natp n)
                 (integerp element-size))
            (equal (bvplus n (bv-array-read element-size len index data) y)
-                  (bvplus n (bv-array-read n
-                                           len index data) y)))
-  :hints (("Goal" :in-theory (e/d (bv-array-read natp)
-                                  (;list::nth-of-cons
-                                   
-                                   )))))
+                  (bvplus n (bv-array-read n len index data) y)))
+  :hints (("Goal" :in-theory (enable bv-array-read natp))))
 
 (defthm bvplus-of-bv-array-read-arg2
   (implies (and (< n element-size)
@@ -2325,9 +2321,7 @@
                 (integerp element-size))
            (equal (bvplus n x (bv-array-read element-size len index data))
                   (bvplus n x (bv-array-read n len index data))))
-  :hints (("Goal" :in-theory (e/d (bv-array-read natp)
-                                  (;list::nth-of-cons
-                                   )))))
+  :hints (("Goal" :in-theory (enable bv-array-read natp))))
 
 ;hack for rc2..
 (defthmd bvuminus-of-bv-array-read
@@ -2336,9 +2330,7 @@
                 (integerp element-size))
            (equal (bvuminus n (bv-array-read element-size len index data))
                   (bvuminus n (bv-array-read n len index data))))
-  :hints (("Goal" :in-theory (e/d (bv-array-read natp)
-                                  (;list::nth-of-cons
-                                   )))))
+  :hints (("Goal" :in-theory (enable bv-array-read natp))))
 
 ;is this strictly better?
 (defthm take-of-bv-array-write-better
@@ -2354,9 +2346,7 @@
   :hints (("Goal" :in-theory (e/d (update-nth2 bv-array-write-opener)
                                   (update-nth-becomes-update-nth2-extend-gen)))))
 
-
-
-;fixme -add hyps
+;todo -add hyps
 ;Thu Mar  4 15:41:42 2010
 ;; (skip -proofs
 ;; (defthmd update-nth2-becomes-bv-array-write-8
@@ -2429,7 +2419,6 @@
                                    )))))
 
 
-
 ;dup
 (defthmd getbit-of-bv-array-read-helper
   (implies (and (natp n)
@@ -2438,11 +2427,8 @@
                 (natp element-size))
            (equal (getbit n (bv-array-read element-size len index data))
                   (bv-array-read 1 len index (getbit-list n data))))
-  :hints (("Goal" :in-theory (e/d (getbit-list
-                                   ;;LIST::NTH-WITH-LARGE-INDEX
-                                   natp posp bv-array-read GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER BVCHOP-WHEN-I-IS-NOT-AN-INTEGER)
-                                  (;LIST::NTH-OF-CONS
-                                   )))))
+  :hints (("Goal" :in-theory (enable getbit-list
+                                     natp posp bv-array-read GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER BVCHOP-WHEN-I-IS-NOT-AN-INTEGER))))
 
 (defthmd bv-array-read-blast-helper
   (implies (and (< 1 element-width)
@@ -2552,11 +2538,7 @@
           (BV-ARRAY-READ ELEMENT-SIZE (len lst) ;(+ 1 END)
                          (+ START INDEX)
                          LST)))
-  :HINTS
-  (("Goal"
-    :IN-THEORY
-    (E/D (BV-ARRAY-READ-OPENER BVCHOP-WHEN-I-IS-NOT-AN-INTEGER)
-         ()))))
+  :hints (("Goal" :in-theory (enable bv-array-read-opener bvchop-when-i-is-not-an-integer))))
 
 (defthm bv-array-write-of-bv-array-write-diff-constant-indices-work-hard
   (implies (and (syntaxp (quotep index1))
