@@ -253,4 +253,10 @@
 
   (defret validator-state->committed-of-propose-next
     (equal (validator-state->committed (get-validator-state val new-systate))
-           (validator-state->committed (get-validator-state val systate)))))
+           (validator-state->committed (get-validator-state val systate))))
+
+  (defret get-network-state-of-propose-next
+    (equal (get-network-state new-systate)
+           (set::union (get-network-state systate)
+                       (make-proposal-messages prop (address-set-fix dests)))))
+  (in-theory (disable get-network-state-of-propose-next)))
