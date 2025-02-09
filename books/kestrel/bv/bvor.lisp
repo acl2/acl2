@@ -1,7 +1,7 @@
 ; Bitwise or
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -63,8 +63,6 @@
   (equal (bvor size x 0)
          (bvchop size x))
   :hints (("Goal" :in-theory (enable bvor))))
-
-;; TODO: Rewrite bvor when one arg is a mask of all ones
 
 (defthm bvor-when-size-is-not-positive
   (implies (<= size 0)
@@ -514,4 +512,24 @@
                  (integerp y))
             (equal (bvor size (slice high low x) y)
                    (bvor size (slice (+ low size -1) low x) y)))
+  :hints (("Goal" :in-theory (enable bvor))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm bvor-of-constant-arg2-when-all-ones
+  (implies (and (syntaxp (and (quotep x)
+                              (quotep size)))
+                (equal x (+ -1 (expt 2 size)))
+                (natp size))
+           (equal (bvor size x y)
+                  (+ -1 (expt 2 size))))
+  :hints (("Goal" :in-theory (enable bvor))))
+
+(defthm bvor-of-constant-arg3-when-all-ones
+  (implies (and (syntaxp (and (quotep y)
+                              (quotep size)))
+                (equal y (+ -1 (expt 2 size)))
+                (natp size))
+           (equal (bvor size x y)
+                  (+ -1 (expt 2 size))))
   :hints (("Goal" :in-theory (enable bvor))))
