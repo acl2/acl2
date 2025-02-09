@@ -208,4 +208,66 @@
        (new-vstate (change-validator-state vstate :proposed new-proposed))
        (systate (update-validator-state prop.author new-vstate systate)))
     systate)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret correct-addresses-of-propose-next
+    (equal (correct-addresses new-systate)
+           (correct-addresses systate)))
+
+  (defret validator-state->round-of-propose-next
+    (equal (validator-state->round (get-validator-state val new-systate))
+           (validator-state->round (get-validator-state val systate)))
+    :hints
+    (("Goal"
+      :in-theory (enable get-validator-state-of-update-validator-state))))
+
+  (defret validator-state->dag-of-propose-next
+    (equal (validator-state->dag (get-validator-state val new-systate))
+           (validator-state->dag (get-validator-state val systate)))
+    :hints
+    (("Goal"
+      :in-theory (enable get-validator-state-of-update-validator-state))))
+
+  (defret validator-state->proposed-of-propose-next
+    (equal (validator-state->proposed (get-validator-state val new-systate))
+           (if (and (equal (address-fix val) (proposal->author prop))
+                    (set::in (address-fix val) (correct-addresses systate)))
+               (omap::update (proposal-fix prop)
+                             nil
+                             (validator-state->proposed
+                              (get-validator-state val systate)))
+             (validator-state->proposed (get-validator-state val systate))))
+    :hints
+    (("Goal"
+      :in-theory (enable get-validator-state-of-update-validator-state))))
+  (in-theory (disable validator-state->proposed-of-propose-next))
+
+  (defret validator-state->endorsed-of-propose-next
+    (equal (validator-state->endorsed (get-validator-state val new-systate))
+           (validator-state->endorsed (get-validator-state val systate)))
+    :hints
+    (("Goal"
+      :in-theory (enable get-validator-state-of-update-validator-state))))
+
+  (defret validator-state->last-of-propose-next
+    (equal (validator-state->last (get-validator-state val new-systate))
+           (validator-state->last (get-validator-state val systate)))
+    :hints
+    (("Goal"
+      :in-theory (enable nfix get-validator-state-of-update-validator-state))))
+
+  (defret validator-state->blockchain-of-propose-next
+    (equal (validator-state->blockchain (get-validator-state val new-systate))
+           (validator-state->blockchain (get-validator-state val systate)))
+    :hints
+    (("Goal"
+      :in-theory (enable get-validator-state-of-update-validator-state))))
+
+  (defret validator-state->committed-of-propose-next
+    (equal (validator-state->committed (get-validator-state val new-systate))
+           (validator-state->committed (get-validator-state val systate)))
+    :hints
+    (("Goal"
+      :in-theory (enable get-validator-state-of-update-validator-state)))))
