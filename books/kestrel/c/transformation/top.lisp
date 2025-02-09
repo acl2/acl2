@@ -15,6 +15,7 @@
 (include-book "deftrans")
 (include-book "rename")
 (include-book "simpadd0")
+(include-book "simpadd0-doc")
 (include-book "specialize")
 (include-book "split-fn-proofs")
 (include-book "splitgso")
