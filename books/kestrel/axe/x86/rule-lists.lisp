@@ -1125,7 +1125,12 @@
     acl2::part-install-width-low-becomes-bvcat-256
     acl2::part-install-width-low-becomes-bvcat-512
     acl2::rotate-right-becomes-rightrotate
-    acl2::rotate-left-becomes-leftrotate))
+    acl2::rotate-left-becomes-leftrotate
+    acl2::logbit-becomes-getbit
+    acl2::b-and-becomes-bitand
+    acl2::b-ior-becomes-bitor
+    acl2::b-xor-becomes-bitxor
+    ))
 
 ;; See also bitops-to-bv-rules.
 ;; todo: add more constant openers
