@@ -11,6 +11,8 @@
 
 (in-package "ACL2")
 
+;; See README.md for setup instructions.
+
 (include-book "kestrel/axe/unroll-spec-basic" :dir :system)
 (include-book "kestrel/axe/jvm/unroll-java-code" :dir :system :ttags :all)
 (include-book "kestrel/axe/equivalence-checker" :dir :system)
