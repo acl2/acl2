@@ -11,6 +11,8 @@
 
 (in-package "ACL2")
 
+;; See also aes-blast-boolean.lisp
+
 (include-book "kestrel/axe/unroll-spec-basic" :dir :system)
 (include-book "kestrel/axe/rewriter-basic" :dir :system)
 (include-book "kestrel/axe/merge-term-into-dag-array-simple" :dir :system) ; for wrap-term-around-dag
