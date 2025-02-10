@@ -70,8 +70,7 @@
       "Name of the existing ACL2 constant that contains
        the representation of the C code to write to the file system.")
      (xdoc::p
-      "This constant must contain
-       an "
+      "This constant must contain an "
       (xdoc::seetopic "unambiguity" "unambiguous")
       " translation unit ensemble
        (i.e. a value of type @(tsee transunit-ensemble)
