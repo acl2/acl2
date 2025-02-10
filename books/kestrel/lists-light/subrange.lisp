@@ -1,7 +1,7 @@
 ; A lightweight book of theorems about subrange.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -495,3 +495,23 @@
   :hints (("Goal" :in-theory (e/d (subrange repeat)
                                   (;anti-subrange
                                    )))))
+
+;disable?  use polarities?
+;bozo maybe want to go the other way?
+;prove from a lemma about firstn
+(defthm subrange-equality-lengthen
+  (implies (and (equal (nth n lst1)
+                       (nth n lst2)
+                       )
+                (< n (len lst1))
+                (< n (len lst2))
+;                (< 0 n)
+                (integerp n))
+           (equal (EQUAL (SUBRANGE 0 (+ -1 n) lst1)
+                         (SUBRANGE 0 (+ -1 n) lst2))
+                  (EQUAL (SUBRANGE 0 n lst1)
+                         (SUBRANGE 0 n lst2))))
+  :hints (("Goal" :in-theory (e/d (SUBRANGE ;firstn
+                                     nth
+                                     ) (NTH-OF-CDR
+                                        TAKE-OF-CDR)))))

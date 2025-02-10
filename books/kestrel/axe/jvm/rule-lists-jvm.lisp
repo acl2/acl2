@@ -1441,7 +1441,7 @@
              binary-append-opener          ;restrict to constants?
              not-null-refp-when-addressp-free
              ))
-   '(update-nth-becomes-update-nth2-extend-new
+   '(update-nth-becomes-append ; drop?
      update-nth-becomes-update-nth2
      )))
 
