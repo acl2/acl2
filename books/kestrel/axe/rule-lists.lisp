@@ -2855,7 +2855,7 @@
   '(update-nth-becomes-update-nth2 ; drop once arraycopy keeps types better?
     ;; update-nth-becomes-update-nth2-extend
     ;; update-nth-becomes-update-nth2-extend-gen
-    update-nth-becomes-update-nth2-extend-new ; drop once arraycopy keeps types better?
+    update-nth-becomes-append ; drop once arraycopy keeps types better?
     ))
 
 ;; todo: get rid of this?

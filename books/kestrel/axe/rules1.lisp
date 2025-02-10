@@ -457,8 +457,8 @@
 ;;   :HINTS
 ;;   (("Goal" :IN-THEORY (DISABLE LIST::EQUAL-APPEND-REDUCTION!))))
 
-;todo: bad name
-(defthm update-nth-becomes-update-nth2-extend-new
+;; updating one past the end
+(defthm update-nth-becomes-append
   (implies (and (equal key (len lst))
                 (true-listp lst)
                 (natp key))
@@ -1572,7 +1572,7 @@
 ;bvcat
                             )
                            (;bif-rewrite
-                            
+
                             BVCAT-OF-GETBIT-AND-X-ADJACENT
                             TIMES-4-BECOMES-LOGAPP
                             BVCAT-OF-GETBIT-AND-X-ADJACENT
@@ -2057,7 +2057,7 @@
     :IN-THEORY (E/d (BV-ARRAY-READ BV-ARRAY-WRITE update-nth2
                      BVCHOP-WHEN-I-IS-NOT-AN-INTEGER)
                     (;BVCHOP-OF-NTH-BECOMES-BV-ARRAY-READ
-                     
+
                      UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN
                      )))))
 
@@ -2316,7 +2316,7 @@
                                            len index data) y)))
   :hints (("Goal" :in-theory (e/d (bv-array-read natp)
                                   (;list::nth-of-cons
-                                   
+
                                    )))))
 
 (defthm bvplus-of-bv-array-read-arg2
