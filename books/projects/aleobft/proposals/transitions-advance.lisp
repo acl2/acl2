@@ -74,4 +74,53 @@
        (systate (update-validator-state val new-vstate systate)))
     systate)
   :guard-hints (("Goal" :in-theory (enable advance-possiblep)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret correct-addresses-of-advance-next
+    (equal (correct-addresses new-systate)
+           (correct-addresses systate))
+    :hyp (advance-possiblep val systate)
+    :hints (("Goal" :in-theory (enable advance-possiblep))))
+
+  (local (in-theory (enable get-validator-state-of-update-validator-state)))
+
+  (defret validator-state->round-of-advance-next
+    (equal (validator-state->round (get-validator-state val1 new-systate))
+           (if (and (equal (address-fix val1) (address-fix val))
+                    (set::in (address-fix val1) (correct-addresses systate)))
+               (1+ (validator-state->round (get-validator-state val1 systate)))
+             (validator-state->round (get-validator-state val1 systate))))
+    :hyp (advance-possiblep val systate)
+    :hints (("Goal" :in-theory (enable advance-possiblep))))
+  (in-theory (disable validator-state->round-of-advance-next))
+
+  (defret validator-state->dag-of-advance-next
+    (equal (validator-state->dag (get-validator-state val1 new-systate))
+           (validator-state->dag (get-validator-state val1 systate))))
+
+  (defret validator-state->proposed-of-advance-next
+    (equal (validator-state->proposed (get-validator-state val1 new-systate))
+           (validator-state->proposed (get-validator-state val1 systate))))
+
+  (defret validator-state->endorsed-of-advance-next
+    (equal (validator-state->endorsed (get-validator-state val1 new-systate))
+           (validator-state->endorsed (get-validator-state val1 systate))))
+
+  (defret validator-state->last-of-advance-next
+    (equal (validator-state->last (get-validator-state val1 new-systate))
+           (validator-state->last (get-validator-state val1 systate)))
+    :hints (("Goal" :in-theory (enable nfix))))
+
+  (defret validator-state->blockchain-of-advance-next
+    (equal (validator-state->blockchain (get-validator-state val1 new-systate))
+           (validator-state->blockchain (get-validator-state val1 systate))))
+
+  (defret validator-state->committed-of-advance-next
+    (equal (validator-state->committed (get-validator-state val1 new-systate))
+           (validator-state->committed (get-validator-state val1 systate))))
+
+  (defret get-network-state-of-advance-next
+    (equal (get-network-state new-systate)
+           (get-network-state systate))))
