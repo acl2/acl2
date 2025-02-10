@@ -97,9 +97,9 @@
 ;TTODO: Move these rules to the appropriate libraries!
 ;TODO: Handle the things with -dag in the name
 
-(local (in-theory (enable BVCHOP-WHEN-I-IS-NOT-AN-INTEGER)))
+;(local (in-theory (enable BVCHOP-WHEN-I-IS-NOT-AN-INTEGER)))
 
-(local (in-theory (disable NATP-WHEN-UNSIGNED-BYTE-P-SIZE-ARG)))
+;(local (in-theory (disable NATP-WHEN-UNSIGNED-BYTE-P-SIZE-ARG)))
 
 ;(local (in-theory (disable LIST::FIX-OF-NTHCDR))) ;loops with NTHCDR-OF-TRUE-LIST-FIX !
 
@@ -869,7 +869,7 @@
 
 ;bozo now delete some rules with constants as arg2 - same thing for bvmult and other binary functions?
 
-(local (in-theory (enable myif)))
+;(local (in-theory (enable myif)))
 
 ;; ;drop?   breaks the bv-array abstraction
 ;; (defthmd bytes-to-bits-of-bv-array-write
@@ -969,9 +969,6 @@
 ;;                                  vals))))
 ;;   :hints (("Goal" :in-theory (enable bvnth all-integerp-when-all-natp
 ;;                                      ADD-BVCHOPS-TO-EQUALITY-OF-SBPS-4-ALT))))
-
-
-
 
 ;needed for 2d arrays - BOZO gen!
 (defthm split-nth-access-hack
