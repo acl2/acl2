@@ -15,16 +15,13 @@
 
 (include-book "kestrel/axe/unroll-spec-basic" :dir :system)
 (include-book "kestrel/axe/rewriter-basic" :dir :system)
-(include-book "kestrel/axe/merge-term-into-dag-array-simple" :dir :system) ; for wrap-term-around-dag
 (include-book "kestrel/crypto/aes/aes-spec" :dir :system)
-
-(defconst *key-byte-count* 16) ; AES-128 has 128 key bits (= 16 bytes)
 
 ;; Unroll the spec:
 (unroll-spec-basic *aes-128-encrypt-spec-dag*
                    ;; The result here is a list of 16 bytes:
-                   `(aes::aes-128-encrypt ,(bit-blasted-symbolic-byte-list 'in 16)
-                                          ,(bit-blasted-symbolic-byte-list 'key *key-byte-count*))
+                   `(aes::aes-128-encrypt ,(bit-blasted-symbolic-byte-list 'in 16) ; 16 bytes of input
+                                          ,(bit-blasted-symbolic-byte-list 'key 16)) ; AES-128 has 128 key bits (= 16 bytes)
                    :rules :auto
                    ;; :interpreted-function-alist (make-interpreted-function-alist '(getbit-list) (w state)) ; todo: build in ;; todo why did this take forever unless done separately?
                    :extra-rules (append (bit-blast-rules3)
@@ -42,5 +39,5 @@
   :interpreted-function-alist (make-interpreted-function-alist '(getbit-list subrange) (w state)))
 
 ;; Now, doing (dag-info *aes-128-encrypt-spec-dag-bit-blasted*) shows that
-;; almost all the functions are BITAND and BITNOT.  The exception is the
-;; functions uses to assemble the final bits into a list of bytes.
+;; almost all the functions are BITAND and BITNOT.  The exceptions are the
+;; calls of CONS and BVCAT that assemble the final bits into a list of bytes.
