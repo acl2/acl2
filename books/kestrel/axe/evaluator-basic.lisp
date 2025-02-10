@@ -1,7 +1,7 @@
 ; An simple evaluator supporting a basic set of functions
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -168,6 +168,9 @@
     ; means they will at least be evaluated on constants:
     force ; unguarded
     case-split ; unguarded
+
+    (bit-to-bool bit-to-bool-unguarded)
+    (bool-to-bit bool-to-bit-unguarded)
     ))
 
 ;; Makes the evaluator (also checks that each alias given is equivalent to its function):
