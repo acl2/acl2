@@ -457,15 +457,6 @@
 ;;   :HINTS
 ;;   (("Goal" :IN-THEORY (DISABLE LIST::EQUAL-APPEND-REDUCTION!))))
 
-;; updating one past the end
-(defthm update-nth-becomes-append
-  (implies (and (equal key (len lst))
-                (true-listp lst)
-                (natp key))
-           (equal (update-nth key val lst)
-                  (append lst (list val))))
-  :hints (("Goal" :in-theory (e/d (update-nth2 true-listp) (update-nth-becomes-update-nth2)))))
-
 ;; (DEFTHM UPDATE-NTH2-OF-CONS
 ;;   (EQUAL (UPDATE-NTH2 len N VAL (CONS A LST))
 ;;          (IF (ZP N)
