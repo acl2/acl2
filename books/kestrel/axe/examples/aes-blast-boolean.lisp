@@ -41,6 +41,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Converts each of the BOOLS to a bit, returning a list of bits.
 (defund map-bool-to-bit (bools)
   (declare (xargs :guard (boolean-listp bools)))
   (if (endp bools)
@@ -50,6 +51,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Creates a list of assumptions asserting that the VARS are all booleans.
 (defun make-booleanp-assumptions (vars)
   (declare (xargs :guard (symbol-listp vars)))
   (if (endp vars)
@@ -96,14 +98,13 @@
                    ;; equal-of-1-and-bitand
                    ;; equal-of-0-and-bitand-new
                    ;bvif-becomes-bif
-                   UNSIGNED-BYTE-P-1-OF-BOOL-TO-BIT
-                   ;ARRAY-REDUCTION-1-0
+                   unsigned-byte-p-1-of-bool-to-bit
+                   ;array-reduction-1-0
                    integerp-of-bool-to-bit
                    natp-of-bool-to-bit
-                   IFIX-WHEN-INTEGERP ; todo: avoid introducing ifix
-                   BIT-TO-BOOL-OF-BOOL-TO-BIT
-                   BOOL-TO-BIT-of-BIT-TO-BOOL
-                   )
+                   ifix-when-integerp ; todo: avoid introducing ifix
+                   bit-to-bool-of-bool-to-bit
+                   bool-to-bit-of-bit-to-bool)
                  (array-reduction-rules)
                  (core-rules-bv)
                  (type-rules)
