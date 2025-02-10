@@ -19,6 +19,7 @@
 (include-book "kestrel/crypto/aes/aes-spec" :dir :system)
 (include-book "kestrel/bv-lists/bit-listp" :dir :system)
 (include-book "kestrel/bv-lists/bits-to-bytes" :dir :system)
+(local (include-book "kestrel/bv/bit-to-bool" :dir :system))
 
 (defconst *key-byte-count* 16) ; AES-128 has 128 key bits (= 16 bytes)
 
@@ -38,38 +39,7 @@
 
 (defopeners map-bit-to-bool)
 
-;; The BITNOT is turned into a NOT.
-(defthm bit-to-bool-of-bitnot
-  (implies (unsigned-byte-p 1 x)
-           (equal (bit-to-bool (bitnot x))
-                  (not (bit-to-bool x)))))
-
-;; The BITNOT is turned into a NOT.
-;; This version has no hyps.
-(defthm bit-to-bool-of-bitnot-strong
-  (equal (bit-to-bool (bitnot x))
-         ;; the getbit here should go away if X is a bit:
-         (not (bit-to-bool (getbit 0 x)))))
-
-;; The BITAND is turned into a BOOLAND (we use BOOLAND because AND in ACL2 is a
-;; macro).
-(defthm bit-to-bool-of-bitand
-  (implies (and (unsigned-byte-p 1 x)
-                (unsigned-byte-p 1 y))
-           (equal (bit-to-bool (bitand x y))
-                  (booland (bit-to-bool x)
-                           (bit-to-bool y)))))
-
-;; The BITAND is turned into a BOOLAND (we use BOOLAND because AND in ACL2 is a
-;; macro).
-;; This version has no hyps.
-(defthm bit-to-bool-of-bitand-strong
-  (equal (bit-to-bool (bitand x y))
-         ;; the getbits here should go away if X is a bit:
-         (booland (bit-to-bool (getbit 0 x))
-                  (bit-to-bool (getbit 0 y)))))
-
-(def-constant-opener bit-to-bool)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund map-bool-to-bit (bools)
   (declare (xargs :guard (boolean-listp bools)))
@@ -77,6 +47,8 @@
       nil
     (cons (bool-to-bit (first bools))
           (map-bool-to-bit (rest bools)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm equal-of-0-and-bitxor-alt
   (implies (and (unsigned-byte-p 1 x)
@@ -115,13 +87,6 @@
   (equal (equal (bitnot x) 0)
          (equal 1 (getbit 0 x)))
   :hints (("Goal" :in-theory (enable bitnot))))
-
-;; for axe (ACL2 knows this by type reasoning)
-(defthmd integerp-of-bool-to-bit
-   (integerp (bool-to-bit x)))
-
-(defthmd natp-of-bool-to-bit
-   (natp (bool-to-bit x)))
 
 (defthm bool-to-bit-of-bit-to-bool
   (implies (unsigned-byte-p 1 x)
