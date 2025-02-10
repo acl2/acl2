@@ -28,7 +28,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Temporary additional symbolic execution rule.
+; Temporary additional symbolic execution rule,
+; to support simpadd0's preliminary proof generation capability.
 
 (defruled c::exec-binary-strict-pure-when-add-alt
   (implies (and (equal c::op (c::binop-add))
@@ -47,32 +48,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ simpadd0
-  :parents (transformation-tools)
-  :short "A transformation to simplify @('x + 0') to @('x')."
+(defxdoc+ simpadd0-implementation
+  :parents (simpadd0)
+  :short "Implementation of @(tsee simpadd0)."
   :long
   (xdoc::topstring
-   (xdoc::p
-    "This is a very simple proof-of-concept transformation,
-     which replaces expressions of the form @('x + 0') with @('x').
-     Due to C's arithmetic conversions, it is not immediately clear whether
-     this transformation always preserves code equivalence,
-     but for now we are not concerned about this,
-     as the goal of this proof-of-concept transformation
-     is just to show a plausible example of C-to-C transformation;
-     and there are certainly many cases (perhaps all cases) in which
-     this transformation is indeed equivalence-preserving.")
    (xdoc::p
     "This transformation is implemented as a collection of ACL2 functions
      that operate on the abstract syntax,
      following the recursive structure of the abstract syntax.
      This is a typical pattern for C-to-C transformations,
      which we may want to partially automate,
-     via things like generalized `folds' over the abstract syntax.")
-   (xdoc::p
-    "We also include a very preliminary proof generateion capability
-     for this transformation.
-     This is also just a proof of concept for now."))
+     via things like generalized `folds' over the abstract syntax."))
   :order-subtopics t
   :default-parent t)
 
