@@ -210,3 +210,10 @@
                   (append (take n lst)
                           (list val)
                           (nthcdr (+ 1 n) lst)))))
+
+;; updating one past the end
+(defthm update-nth-becomes-append
+  (implies (equal key (len lst))
+           (equal (update-nth key val lst)
+                  (append lst (list val))))
+  :hints (("Goal" :in-theory (e/d (true-listp) ()))))

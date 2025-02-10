@@ -97,9 +97,9 @@
 ;TTODO: Move these rules to the appropriate libraries!
 ;TODO: Handle the things with -dag in the name
 
-(local (in-theory (enable BVCHOP-WHEN-I-IS-NOT-AN-INTEGER)))
+;(local (in-theory (enable BVCHOP-WHEN-I-IS-NOT-AN-INTEGER)))
 
-(local (in-theory (disable NATP-WHEN-UNSIGNED-BYTE-P-SIZE-ARG)))
+;(local (in-theory (disable NATP-WHEN-UNSIGNED-BYTE-P-SIZE-ARG)))
 
 ;(local (in-theory (disable LIST::FIX-OF-NTHCDR))) ;loops with NTHCDR-OF-TRUE-LIST-FIX !
 
@@ -420,28 +420,7 @@
 ;;   (equal (< (+ a x) (+ b x))
 ;;          (< a b)))
 
-;maybe this won't happen for arrays, since they start out initialized to their final length?
-(defthmd update-nth-becomes-update-nth2-extend
-  (implies (and (true-listp lst)
-                (equal key (len lst))
-                (natp key))
-           (equal (update-nth key val lst)
-                  (update-nth2 (+ 1 (len lst))
-                               key
-                               val lst)))
-  :hints (("Goal" :in-theory (enable update-nth2 true-listp))))
 
-(defthmd update-nth-becomes-update-nth2-extend-gen
-  (implies (and (true-listp lst)
-                (>= key (len lst))
-                (natp key))
-           (equal (update-nth key val lst)
-                  (update-nth2 (+ 1 key)
-                               key
-                               val
-                               lst)))
-  :hints (("Goal" :in-theory (enable update-nth2 ;LIST::LEN-UPDATE-NTH-BETTER
-                                     equal-of-append))))
 
 ;; ;drop? expensive?
 ;; (defthmd usbp8-implies-sbp32-2
@@ -456,15 +435,6 @@
 ;;            ;)
 ;;   :HINTS
 ;;   (("Goal" :IN-THEORY (DISABLE LIST::EQUAL-APPEND-REDUCTION!))))
-
-;todo: bad name
-(defthm update-nth-becomes-update-nth2-extend-new
-  (implies (and (equal key (len lst))
-                (true-listp lst)
-                (natp key))
-           (equal (update-nth key val lst)
-                  (append lst (list val))))
-  :hints (("Goal" :in-theory (e/d (update-nth2 true-listp) (update-nth-becomes-update-nth2)))))
 
 ;; (DEFTHM UPDATE-NTH2-OF-CONS
 ;;   (EQUAL (UPDATE-NTH2 len N VAL (CONS A LST))
@@ -924,7 +894,7 @@
 
 ;bozo now delete some rules with constants as arg2 - same thing for bvmult and other binary functions?
 
-(local (in-theory (enable myif)))
+;(local (in-theory (enable myif)))
 
 ;; ;drop?   breaks the bv-array abstraction
 ;; (defthmd bytes-to-bits-of-bv-array-write
@@ -1024,9 +994,6 @@
 ;;                                  vals))))
 ;;   :hints (("Goal" :in-theory (enable bvnth all-integerp-when-all-natp
 ;;                                      ADD-BVCHOPS-TO-EQUALITY-OF-SBPS-4-ALT))))
-
-
-
 
 ;needed for 2d arrays - BOZO gen!
 (defthm split-nth-access-hack
@@ -1529,18 +1496,6 @@
 ;;                   (logext-list size (take n lst))))
 ;;   :hints (("Goal" :in-theory (e/d (take logext-list) (take-of-cdr-becomes-subrange)))))
 
-(theory-invariant (incompatible (:definition UPDATE-NTH2) (:rewrite UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN)))
-
-;; (defthm cdr-of-update-nth2
-;;   (implies (and (posp len)
-;;                 (< n len))
-;;            (equal (cdr (update-nth2 len n val list))
-;;                   (if (zp len)
-;;                       nil
-;;                     (if (zp n)
-;;                         (take (+ -1 len) (cdr list))
-;;                         (update-nth2 len (+ -1 n) val (cdr list))))))
-;;   :hints (("Goal" :in-theory (e/d (update-nth2 posp) (update-nth-becomes-update-nth2-extend-gen)))))
 
 (DEFTHM GETBIT-LIST-OF-BV-ARRAY-WRITE-too-high
   (IMPLIES (AND (>= N ESIZE)
