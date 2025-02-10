@@ -139,4 +139,70 @@
        (new-network (set::union new-msgs network))
        (systate (update-network-state new-network systate)))
     systate)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret correct-addresses-of-certify-next
+    (equal (correct-addresses new-systate)
+           (correct-addresses systate)))
+
+  (local (in-theory (enable get-validator-state-of-update-validator-state)))
+
+  (defret validator-state->round-of-certify-next
+    (equal (validator-state->round (get-validator-state val new-systate))
+           (validator-state->round (get-validator-state val systate))))
+
+  (defret validator-state->dag-of-certify-next
+    (equal (validator-state->dag (get-validator-state val new-systate))
+           (if (and (equal (address-fix val) (certificate->author cert))
+                    (set::in (address-fix val) (correct-addresses systate)))
+               (set::insert (certificate-fix cert)
+                            (validator-state->dag
+                             (get-validator-state val systate)))
+             (validator-state->dag (get-validator-state val systate))))
+    :hints (("Goal" :in-theory (enable certificate->author))))
+  (in-theory (disable validator-state->dag-of-certify-next))
+
+  (defret validator-state->proposed-of-certify-next
+    (equal (validator-state->proposed (get-validator-state val new-systate))
+           (if (and (equal (address-fix val) (certificate->author cert))
+                    (set::in (address-fix val) (correct-addresses systate)))
+               (omap::delete (certificate->proposal cert)
+                             (validator-state->proposed
+                              (get-validator-state val systate)))
+             (validator-state->proposed (get-validator-state val systate))))
+    :hints (("Goal" :in-theory (enable certificate->author))))
+  (in-theory (disable validator-state->proposed-of-certify-next))
+
+  (defret validator-state->endorsed-of-certify-next
+    (equal (validator-state->endorsed (get-validator-state val new-systate))
+           (validator-state->endorsed (get-validator-state val systate))))
+
+  (defret validator-state->last-of-certify-next
+    (equal (validator-state->last (get-validator-state val new-systate))
+           (validator-state->last (get-validator-state val systate)))
+    :hints (("Goal" :in-theory (enable nfix))))
+
+  (defret validator-state->blockchain-of-certify-next
+    (equal (validator-state->blockchain (get-validator-state val new-systate))
+           (validator-state->blockchain (get-validator-state val systate))))
+
+  (defret validator-state->committed-of-certify-next
+    (equal (validator-state->committed (get-validator-state val new-systate))
+           (validator-state->committed (get-validator-state val systate))))
+
+  (defret get-network-state-of-certify-next
+    (equal (get-network-state new-systate)
+           (if (set::in (certificate->author cert) (correct-addresses systate))
+               (set::union (make-certificate-messages
+                            cert (address-set-fix dests))
+                           (get-network-state systate))
+             (set::union (make-certificate-messages
+                          cert (address-set-fix dests))
+                         (set::difference (get-network-state systate)
+                                          (make-endorsement-messages
+                                           (certificate->proposal cert)
+                                           (certificate->endorsers cert))))))
+    :hints (("Goal" :in-theory (enable certificate->author))))
+  (in-theory (disable get-network-state-of-certify-next)))
