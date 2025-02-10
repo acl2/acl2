@@ -9545,7 +9545,7 @@
                  (equal 1 (GETBIT (DIFFERING-BIT (+ -1 size) 0 (BVAND size X Y)) X))
                  ))
            :in-theory (e/d (BVOR-1-BECOMES-BITOR GETBIT-OF-BVXOR-CORE not-equal-bvxor-and-bvor)
-                           (GETBIT-OF-BVXOR equal-of-bitand-and-constant))
+                           (GETBIT-OF-BVXOR equal-of-bitand-and-constant equal-of-0-and-bitand))
            :use ((:instance differing-bit-bad-guy-lemma (x (bvxor size x y)) (y (bvor size x y)) (n size))
                  (:instance differing-bit-bad-guy-lemma (x 0) (y (bvand size x y)) (n size))
                  ))))

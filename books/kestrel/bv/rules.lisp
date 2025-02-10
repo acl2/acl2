@@ -44,7 +44,7 @@
 (include-book "bvshr")
 (include-book "bvshl")
 (include-book "bool-to-bit")
-(include-book "bit-to-bool")
+(include-book "bit-to-bool-def")
 (include-book "kestrel/booleans/boolxor" :dir :system)
 (include-book "kestrel/booleans/booland" :dir :system)
 (include-book "kestrel/booleans/boolif" :dir :system)
@@ -5537,6 +5537,12 @@
 (defthm bit-to-bool-of-bool-to-bit
   (implies (booleanp x)
            (equal (bit-to-bool (bool-to-bit x))
+                  x)))
+
+;move
+(defthm bool-to-bit-of-bit-to-bool
+  (implies (unsigned-byte-p 1 x)
+           (equal (bool-to-bit (bit-to-bool x))
                   x)))
 
 ;move
