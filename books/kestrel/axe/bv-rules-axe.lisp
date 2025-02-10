@@ -32,6 +32,7 @@
 (include-book "kestrel/bv/unsigned-byte-p-forced" :dir :system) ; add to bv/defs.lisp?
 (include-book "kestrel/bv-lists/bv-array-read" :dir :system)
 (include-book "kestrel/bv/bool-to-bit-def" :dir :system)
+(include-book "kestrel/bv/bit-to-bool-def" :dir :system)
 (include-book "known-booleans")
 (include-book "kestrel/utilities/def-constant-opener" :dir :system)
 (local (include-book "kestrel/bv/logior-b" :dir :system))
