@@ -2307,7 +2307,7 @@
   :hints (("Goal" :use equal-of-bitand-and-constant
            :in-theory (disable equal-of-bitand-and-constant))))
 
-(defthmd equal-of-constanr-and-bitor
+(defthmd equal-of-constant-and-bitor
   (implies (syntaxp (quotep k))
            (equal (equal k (bitor x y))
                   (if (equal 0 k)
