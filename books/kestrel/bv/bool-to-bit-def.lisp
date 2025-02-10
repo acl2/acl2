@@ -11,7 +11,8 @@
 
 (in-package "ACL2")
 
-;; Convert a boolean (t or nil) to a bit (1 or 0).
+;; Convertd a boolean (t or nil) to a bit (1 or 0).
 (defund bool-to-bit (test)
-  (declare (xargs :guard (booleanp test))) ;trying this
+  (declare (xargs :guard (booleanp test) ;trying this
+                  :type-prescription (bitp (bool-to-bit test))))
   (if test 1 0))

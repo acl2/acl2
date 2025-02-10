@@ -211,10 +211,3 @@
 ;decrement by 1 (possibly 'rolling under' to all 1's)
 (defun bvdec (size x)
   (bvminus size x 1))
-
-
-;;; Conversions between bits and booleans
-
-(defun bit-to-bool (x)
-  (declare (xargs :guard (unsigned-byte-p 1 x)))
-  (if (eql x 0) nil t))

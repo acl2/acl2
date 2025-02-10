@@ -19,6 +19,7 @@
 (include-book "kestrel/crypto/aes/aes-spec" :dir :system)
 (include-book "kestrel/bv-lists/bit-listp" :dir :system)
 (include-book "kestrel/bv-lists/bits-to-bytes" :dir :system)
+(local (include-book "kestrel/bv/bit-to-bool" :dir :system))
 
 (defconst *key-byte-count* 16) ; AES-128 has 128 key bits (= 16 bytes)
 
@@ -28,6 +29,7 @@
 
 (defopeners bytes-to-bits)
 
+;; Converts each of the BITS to a boolean, returning a list of booleans.
 (defund map-bit-to-bool (bits)
   (declare (xargs :guard (bit-listp bits)))
   (if (endp bits)
@@ -37,39 +39,9 @@
 
 (defopeners map-bit-to-bool)
 
-;; The BITNOT is turned into a NOT.
-(defthm bit-to-bool-of-bitnot
-  (implies (unsigned-byte-p 1 x)
-           (equal (bit-to-bool (bitnot x))
-                  (not (bit-to-bool x)))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; The BITNOT is turned into a NOT.
-;; This version has no hyps.
-(defthm bit-to-bool-of-bitnot-strong
-  (equal (bit-to-bool (bitnot x))
-         ;; the getbit here should go away if X is a bit:
-         (not (bit-to-bool (getbit 0 x)))))
-
-;; The BITAND is turned into a BOOLAND (we use BOOLAND because AND in ACL2 is a
-;; macro).
-(defthm bit-to-bool-of-bitand
-  (implies (and (unsigned-byte-p 1 x)
-                (unsigned-byte-p 1 y))
-           (equal (bit-to-bool (bitand x y))
-                  (booland (bit-to-bool x)
-                           (bit-to-bool y)))))
-
-;; The BITAND is turned into a BOOLAND (we use BOOLAND because AND in ACL2 is a
-;; macro).
-;; This version has no hyps.
-(defthm bit-to-bool-of-bitand-strong
-  (equal (bit-to-bool (bitand x y))
-         ;; the getbits here should go away if X is a bit:
-         (booland (bit-to-bool (getbit 0 x))
-                  (bit-to-bool (getbit 0 y)))))
-
-(def-constant-opener bit-to-bool)
-
+;; Converts each of the BOOLS to a bit, returning a list of bits.
 (defund map-bool-to-bit (bools)
   (declare (xargs :guard (boolean-listp bools)))
   (if (endp bools)
@@ -77,69 +49,9 @@
     (cons (bool-to-bit (first bools))
           (map-bool-to-bit (rest bools)))))
 
-;todo: move to library
-(defthm bitor-becomes-bitnot-of-bitand-of-bitnot-and-bitnot
-  (equal (bitor x y)
-         (bitnot (bitand (bitnot x) (bitnot y))))
-  :hints (("Goal" :in-theory (enable bitor bvor BITAND BITAND bitnot))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;todo: move to library
-(defthm bitxor-becomes-bitor-of-bitand-of-bitnot-and-bitand-of-bitnot
-  (equal (bitxor x y)
-         (bitor (bitand x (bitnot y))
-                (bitand (bitnot x) y)))
-  :hints (("Goal" :in-theory (enable bitor bvor bitand bitand bitnot))))
-
-(defthm equal-of-0-and-bitxor-alt
-  (implies (and (unsigned-byte-p 1 x)
-                (unsigned-byte-p 1 y))
-           (equal (equal 0 (bitxor x y))
-                  (boolor (booland (equal x 0) (equal y 0))
-                          (booland (equal x 1) (equal y 1)))))
-  :hints (("Goal" :cases ((equal 0 (getbit 0 x))
-                          (equal 1 (getbit 0 x))))))
-
-;see also EQUAL-OF-BITAND-AND-CONSTANT
-(defthm equal-of-1-and-bitand
-  (implies (and (unsigned-byte-p 1 x)
-                (unsigned-byte-p 1 y))
-           (equal (equal 1 (bitand x y))
-                  (booland (equal x 1) (equal y 1))))
-  :hints (("Goal" :cases ((equal 0 (getbit 0 x))
-                          (equal 1 (getbit 0 x))))))
-
-(defthm equal-of-0-and-bitand
-  (implies (and (unsigned-byte-p 1 x)
-                (unsigned-byte-p 1 y))
-           (equal (equal 0 (bitand x y))
-                  (boolor (equal x 0) (equal y 0))))
-  :hints (("Goal" :cases ((equal 0 (getbit 0 x))
-                          (equal 1 (getbit 0 x))))))
-
-;; commuted variant only needed for axe
-(defthmd equal-of-bitnot-and-1
-  (equal (equal (bitnot x) 1)
-         (equal 0 (getbit 0 x)))
-  :hints (("Goal" :in-theory (enable bitnot))))
-
-;; commuted variant only needed for axe
-(defthmd equal-of-bitnot-and-0
-  (equal (equal (bitnot x) 0)
-         (equal 1 (getbit 0 x)))
-  :hints (("Goal" :in-theory (enable bitnot))))
-
-;; for axe (ACL2 knows this by type reasoning)
-(defthmd integerp-of-bool-to-bit
-   (integerp (bool-to-bit x)))
-
-(defthmd natp-of-bool-to-bit
-   (natp (bool-to-bit x)))
-
-(defthm bool-to-bit-of-bit-to-bool
-  (implies (unsigned-byte-p 1 x)
-           (equal (bool-to-bit (bit-to-bool x))
-                  x)))
-
+;; Creates a list of assumptions asserting that the VARS are all booleans.
 (defun make-booleanp-assumptions (vars)
   (declare (xargs :guard (symbol-listp vars)))
   (if (endp vars)
@@ -184,16 +96,15 @@
                    ;; equal-of-bitnot-and-0
                    ;; equal-of-bitnot-and-1
                    ;; equal-of-1-and-bitand
-                   ;; equal-of-0-and-bitand
+                   ;; equal-of-0-and-bitand-new
                    ;bvif-becomes-bif
-                   UNSIGNED-BYTE-P-1-OF-BOOL-TO-BIT
-                   ;ARRAY-REDUCTION-1-0
+                   unsigned-byte-p-1-of-bool-to-bit
+                   ;array-reduction-1-0
                    integerp-of-bool-to-bit
                    natp-of-bool-to-bit
-                   IFIX-WHEN-INTEGERP ; todo: avoid introducing ifix
-                   BIT-TO-BOOL-OF-BOOL-TO-BIT
-                   BOOL-TO-BIT-of-BIT-TO-BOOL
-                   )
+                   ifix-when-integerp ; todo: avoid introducing ifix
+                   bit-to-bool-of-bool-to-bit
+                   bool-to-bit-of-bit-to-bool)
                  (array-reduction-rules)
                  (core-rules-bv)
                  (type-rules)

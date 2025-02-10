@@ -149,7 +149,7 @@
 ;; Conversions between booleans and bits
 (include-book "bool-to-bit-def")
 (include-book "bool-to-bit")
-(include-book "bit-to-bool")
+(include-book "bit-to-bool-def")
 
 ;; Rules to replace BV ops with more common BV ops and sizes:
 (include-book "idioms")
