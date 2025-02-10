@@ -119,7 +119,6 @@ before including the x86 books:</p>
 
 <code>
 (include-book \"centaur/bigmems/bigmem-asymmetric/bigmem-asymmetric\" :dir :system)
-(include-book \"centaur/bigmems/bigmem/portcullis\" :dir :system)
 (attach-stobj bigmem::mem bigmem-asymmetric::mem)
 </code>")
 
