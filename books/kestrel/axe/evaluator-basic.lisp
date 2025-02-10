@@ -160,6 +160,9 @@
 
     ;; bv-list functions:
     (packbv packbv-unguarded)
+    ;; these can help with blasting arrays:
+    (bvchop-list bvchop-list-unguarded)
+    (getbit-list getbit-list-unguarded)
 
     (every-nth every-nth-unguarded)
     (all-equal$ all-equal$-unguarded)

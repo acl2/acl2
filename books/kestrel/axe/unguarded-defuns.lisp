@@ -45,6 +45,7 @@
 (include-book "kestrel/bv-lists/array-patterns" :dir :system)
 (include-book "kestrel/bv-lists/negated-elems-listp" :dir :system)
 (include-book "kestrel/bv-lists/packbv" :dir :system)
+(include-book "kestrel/bv-lists/getbit-list" :dir :system)
 (include-book "kestrel/alists-light/lookup-equal" :dir :system)
 (include-book "unguarded-built-ins") ; for assoc-equal-unguarded
 (local (include-book "kestrel/lists-light/take" :dir :system))
@@ -823,3 +824,40 @@
   (equal (bool-to-bit-unguarded x)
          (bool-to-bit x))
   :hints (("Goal" :in-theory (enable bool-to-bit-unguarded bool-to-bit))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund bvchop-list-unguarded-exec (size lst)
+  (declare (xargs :guard t))
+  (if (atom lst)
+      nil
+    (cons (bvchop-unguarded size (car lst))
+          (bvchop-list-unguarded-exec size (cdr lst)))))
+
+(defund bvchop-list-unguarded (size lst)
+  (declare (xargs :guard t))
+  (if (unsigned-byte-listp size lst)
+      lst
+    (bvchop-list-unguarded-exec size lst)))
+
+(defthm bvchop-list-unguarded-correct
+  (equal (bvchop-list-unguarded size lst)
+         (bvchop-list size lst))
+  :hints (("Goal" :in-theory (enable bvchop-list-unguarded
+                                     bvchop-list-unguarded-exec
+                                     bvchop-list))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund getbit-list-unguarded (n lst)
+  (declare (xargs :guard t))
+  (if (atom lst)
+      nil
+    (cons (getbit-unguarded n (car lst))
+          (getbit-list-unguarded n (cdr lst)))))
+
+(defthm getbit-list-unguarded-correct
+  (equal (getbit-list-unguarded size lst)
+         (getbit-list size lst))
+  :hints (("Goal" :in-theory (enable getbit-list-unguarded
+                                     getbit-list))))

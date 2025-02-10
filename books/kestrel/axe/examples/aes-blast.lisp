@@ -23,7 +23,6 @@
                    `(aes::aes-128-encrypt ,(bit-blasted-symbolic-byte-list 'in 16) ; 16 bytes of input
                                           ,(bit-blasted-symbolic-byte-list 'key 16)) ; AES-128 has 128 key bits (= 16 bytes)
                    :rules :auto
-                   ;; :interpreted-function-alist (make-interpreted-function-alist '(getbit-list) (w state)) ; todo: build in ;; todo why did this take forever unless done separately?
                    :extra-rules (append (bit-blast-rules3)
                                         (introduce-bv-array-rules)) ; turns nth into bv-array-read
                    )
