@@ -1,7 +1,7 @@
 ; Versions of functions with guards of t
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -36,6 +36,8 @@
 (include-book "kestrel/bv/bvashr" :dir :system)
 (include-book "kestrel/bv/bvequal" :dir :system)
 (include-book "kestrel/bv/bvminus" :dir :system)
+(include-book "kestrel/bv/bit-to-bool-def" :dir :system)
+(include-book "kestrel/bv/bool-to-bit-def" :dir :system)
 (include-book "kestrel/lists-light/reverse-list-def" :dir :system)
 (include-book "kestrel/lists-light/repeat" :dir :system)
 (include-book "kestrel/lists-light/all-equal-dollar" :dir :system)
@@ -799,3 +801,25 @@
          (packbv itemcount itemsize items))
   :hints (("Goal" :in-theory (enable packbv-unguarded
                                      packbv))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund bit-to-bool-unguarded (x)
+  (declare (xargs :guard t))
+  (if (eql x 0) nil t))
+
+(defthm bit-to-bool-unguarded-correct
+  (equal (bit-to-bool-unguarded x)
+         (bit-to-bool x))
+  :hints (("Goal" :in-theory (enable bit-to-bool-unguarded))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund bool-to-bit-unguarded (test)
+  (declare (xargs :guard t))
+  (if test 1 0))
+
+(defthm bool-to-bit-unguarded-correct
+  (equal (bool-to-bit-unguarded x)
+         (bool-to-bit x))
+  :hints (("Goal" :in-theory (enable bool-to-bit-unguarded bool-to-bit))))

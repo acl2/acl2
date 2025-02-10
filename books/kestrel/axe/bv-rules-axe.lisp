@@ -1,7 +1,7 @@
 ; Axe rules about BVs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2021 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -31,6 +31,7 @@
 (include-book "kestrel/bv/leftrotate32" :dir :system) ; add to bv/defs.lisp
 (include-book "kestrel/bv/unsigned-byte-p-forced" :dir :system) ; add to bv/defs.lisp?
 (include-book "kestrel/bv-lists/bv-array-read" :dir :system)
+(include-book "kestrel/bv/bool-to-bit-def" :dir :system)
 (include-book "known-booleans")
 (include-book "kestrel/utilities/def-constant-opener" :dir :system)
 (local (include-book "kestrel/bv/logior-b" :dir :system))
@@ -2306,7 +2307,7 @@
   :hints (("Goal" :use equal-of-bitand-and-constant
            :in-theory (disable equal-of-bitand-and-constant))))
 
-(defthmd equal-of-constanr-and-bitor
+(defthmd equal-of-constant-and-bitor
   (implies (syntaxp (quotep k))
            (equal (equal k (bitor x y))
                   (if (equal 0 k)
@@ -2326,3 +2327,27 @@
   (implies (posp size)
            (equal (equal (logext size x) x)
                   (signed-byte-p size x))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Only needed for Axe (ACL2 knows this by type reasoning).
+(defthmd integerp-of-bool-to-bit
+   (integerp (bool-to-bit x)))
+
+;; Only needed for Axe (ACL2 knows this by type reasoning).
+(defthmd natp-of-bool-to-bit
+   (natp (bool-to-bit x)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; commuted variant only needed for axe
+(defthmd equal-of-bitnot-and-1
+  (equal (equal (bitnot x) 1)
+         (equal 0 (getbit 0 x)))
+  :hints (("Goal" :in-theory (enable bitnot))))
+
+;; commuted variant only needed for axe
+(defthmd equal-of-bitnot-and-0
+  (equal (equal (bitnot x) 0)
+         (equal 1 (getbit 0 x)))
+  :hints (("Goal" :in-theory (enable bitnot))))
