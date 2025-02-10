@@ -5540,6 +5540,12 @@
                   x)))
 
 ;move
+(defthm bool-to-bit-of-bit-to-bool
+  (implies (unsigned-byte-p 1 x)
+           (equal (bool-to-bit (bit-to-bool x))
+                  x)))
+
+;move
 (defthm unsigned-byte-p-1-when-not-0
   (implies (and (not (equal 0 x))
                 (syntaxp (want-to-strengthen (unsigned-byte-p 1 x))))

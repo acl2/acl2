@@ -50,49 +50,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm equal-of-0-and-bitxor-alt
-  (implies (and (unsigned-byte-p 1 x)
-                (unsigned-byte-p 1 y))
-           (equal (equal 0 (bitxor x y))
-                  (boolor (booland (equal x 0) (equal y 0))
-                          (booland (equal x 1) (equal y 1)))))
-  :hints (("Goal" :cases ((equal 0 (getbit 0 x))
-                          (equal 1 (getbit 0 x))))))
-
-;see also EQUAL-OF-BITAND-AND-CONSTANT
-(defthm equal-of-1-and-bitand
-  (implies (and (unsigned-byte-p 1 x)
-                (unsigned-byte-p 1 y))
-           (equal (equal 1 (bitand x y))
-                  (booland (equal x 1) (equal y 1))))
-  :hints (("Goal" :cases ((equal 0 (getbit 0 x))
-                          (equal 1 (getbit 0 x))))))
-
-(defthm equal-of-0-and-bitand
-  (implies (and (unsigned-byte-p 1 x)
-                (unsigned-byte-p 1 y))
-           (equal (equal 0 (bitand x y))
-                  (boolor (equal x 0) (equal y 0))))
-  :hints (("Goal" :cases ((equal 0 (getbit 0 x))
-                          (equal 1 (getbit 0 x))))))
-
-;; commuted variant only needed for axe
-(defthmd equal-of-bitnot-and-1
-  (equal (equal (bitnot x) 1)
-         (equal 0 (getbit 0 x)))
-  :hints (("Goal" :in-theory (enable bitnot))))
-
-;; commuted variant only needed for axe
-(defthmd equal-of-bitnot-and-0
-  (equal (equal (bitnot x) 0)
-         (equal 1 (getbit 0 x)))
-  :hints (("Goal" :in-theory (enable bitnot))))
-
-(defthm bool-to-bit-of-bit-to-bool
-  (implies (unsigned-byte-p 1 x)
-           (equal (bool-to-bit (bit-to-bool x))
-                  x)))
-
 (defun make-booleanp-assumptions (vars)
   (declare (xargs :guard (symbol-listp vars)))
   (if (endp vars)
@@ -137,7 +94,7 @@
                    ;; equal-of-bitnot-and-0
                    ;; equal-of-bitnot-and-1
                    ;; equal-of-1-and-bitand
-                   ;; equal-of-0-and-bitand
+                   ;; equal-of-0-and-bitand-new
                    ;bvif-becomes-bif
                    UNSIGNED-BYTE-P-1-OF-BOOL-TO-BIT
                    ;ARRAY-REDUCTION-1-0

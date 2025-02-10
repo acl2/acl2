@@ -2337,3 +2337,17 @@
 ;; Only needed for Axe (ACL2 knows this by type reasoning).
 (defthmd natp-of-bool-to-bit
    (natp (bool-to-bit x)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; commuted variant only needed for axe
+(defthmd equal-of-bitnot-and-1
+  (equal (equal (bitnot x) 1)
+         (equal 0 (getbit 0 x)))
+  :hints (("Goal" :in-theory (enable bitnot))))
+
+;; commuted variant only needed for axe
+(defthmd equal-of-bitnot-and-0
+  (equal (equal (bitnot x) 0)
+         (equal 1 (getbit 0 x)))
+  :hints (("Goal" :in-theory (enable bitnot))))

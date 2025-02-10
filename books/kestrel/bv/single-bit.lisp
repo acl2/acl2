@@ -16,6 +16,8 @@
 (include-book "bitand")
 (include-book "bitxor")
 (include-book "bitor")
+(include-book "kestrel/booleans/booland" :dir :system)
+(include-book "kestrel/booleans/boolor" :dir :system)
 
 (defthm bitxor-of-bitnot-arg1
   (equal (bitxor (bitnot x) y)
@@ -109,3 +111,39 @@
          (bitor (bitand x (bitnot y))
                 (bitand (bitnot x) y)))
   :hints (("Goal" :in-theory (enable bitor bvor bitand bitand bitnot))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; These depend on the boolXXX functions:
+
+(defthmd equal-of-0-and-bitxor-alt
+  (implies (and (unsigned-byte-p 1 x)
+                (unsigned-byte-p 1 y))
+           (equal (equal 0 (bitxor x y))
+                  (boolor (booland (equal x 0) (equal y 0))
+                          (booland (equal x 1) (equal y 1)))))
+  :hints (("Goal" :cases ((equal 0 (getbit 0 x))
+                          (equal 1 (getbit 0 x))))))
+
+;see also EQUAL-OF-BITAND-AND-CONSTANT
+(defthmd equal-of-1-and-bitand
+  (implies (and (unsigned-byte-p 1 x)
+                (unsigned-byte-p 1 y))
+           (equal (equal 1 (bitand x y))
+                  (booland (equal x 1) (equal y 1))))
+  :hints (("Goal" :cases ((equal 0 (getbit 0 x))
+                          (equal 1 (getbit 0 x))))))
+
+;; this version uses boolor
+(defthmd equal-of-0-and-bitand-new
+  (implies (and (unsigned-byte-p 1 x)
+                (unsigned-byte-p 1 y))
+           (equal (equal 0 (bitand x y))
+                  (boolor (equal x 0) (equal y 0))))
+  :hints (("Goal" :cases ((equal 0 (getbit 0 x))
+                          (equal 1 (getbit 0 x))))))
+
+(defthm equal-of-0-and-bitand
+  (equal (equal 0 (bitand x y))
+         (or (equal 0 (getbit 0 x))
+             (equal 0 (getbit 0 y)))))
