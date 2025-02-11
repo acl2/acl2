@@ -1322,7 +1322,7 @@
 (define simpadd0-gen-proof-for-fun ((term-old "A term.")
                                     (term-new "A term.")
                                     (fun identp))
-  :returns (event acl2::pseudo-event-formp)
+  :returns (event pseudo-event-formp)
   :short "Generate equivalence theorem for a function."
   :long
   (xdoc::topstring
@@ -1460,7 +1460,7 @@
                                  (const-new symbolp)
                                  (proofs booleanp))
   :guard (transunit-ensemble-unambp tunits-old)
-  :returns (mv erp (event acl2::pseudo-event-formp))
+  :returns (mv erp (event pseudo-event-formp))
   :short "Event expansion of the transformation."
   (b* (((reterr) '(_))
        (tunits-new (simpadd0-transunit-ensemble tunits-old))
@@ -1494,7 +1494,7 @@
                                                     const-new
                                                     proofs
                                                     (wrld plist-worldp))
-  :returns (mv erp (event acl2::pseudo-event-formp))
+  :returns (mv erp (event pseudo-event-formp))
   :parents (simpadd0-implementation)
   :short "Process the inputs and generate the events."
   (b* (((reterr) '(_))
@@ -1505,7 +1505,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define simpadd0-fn (const-old const-new proofs (ctx ctxp) state)
-  :returns (mv erp (event acl2::pseudo-event-formp) state)
+  :returns (mv erp (event pseudo-event-formp) state)
   :parents (simpadd0-implementation)
   :short "Event expansion of @(tsee simpadd0)."
   (b* (((mv erp event)
