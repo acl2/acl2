@@ -200,7 +200,6 @@
      because the proposal has no endorsements yet."))
   (b* (((proposal prop) prop)
        (network (get-network-state systate))
-       (dests (address-set-fix dests))
        (msgs (make-proposal-messages prop dests))
        (new-network (set::union network msgs))
        (systate (update-network-state new-network systate))
@@ -258,5 +257,5 @@
   (defret get-network-state-of-propose-next
     (equal (get-network-state new-systate)
            (set::union (get-network-state systate)
-                       (make-proposal-messages prop (address-set-fix dests)))))
+                       (make-proposal-messages prop dests))))
   (in-theory (disable get-network-state-of-propose-next)))

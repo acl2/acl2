@@ -123,7 +123,7 @@
   (b* (((certificate cert) cert)
        ((proposal prop) cert.proposal)
        (network (get-network-state systate))
-       (new-msgs (make-certificate-messages cert (address-set-fix dests)))
+       (new-msgs (make-certificate-messages cert dests))
        ((when (not (set::in prop.author (correct-addresses systate))))
         (b* ((old-msgs (make-endorsement-messages prop cert.endorsers))
              (new-network
@@ -195,11 +195,9 @@
   (defret get-network-state-of-certify-next
     (equal (get-network-state new-systate)
            (if (set::in (certificate->author cert) (correct-addresses systate))
-               (set::union (make-certificate-messages
-                            cert (address-set-fix dests))
+               (set::union (make-certificate-messages cert dests)
                            (get-network-state systate))
-             (set::union (make-certificate-messages
-                          cert (address-set-fix dests))
+             (set::union (make-certificate-messages cert dests)
                          (set::difference (get-network-state systate)
                                           (make-endorsement-messages
                                            (certificate->proposal cert)
