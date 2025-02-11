@@ -1,7 +1,7 @@
 ; Support for using Axe to reason about x86 code
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2024 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -22,6 +22,7 @@
 (include-book "kestrel/x86/assumptions32" :dir :system) ; for return-address-okp
 (include-book "kestrel/x86/conditions" :dir :system) ; for jnl-condition
 (include-book "kestrel/x86/run-until-return" :dir :system)
+(include-book "kestrel/x86/floats" :dir :system)
 (include-book "../axe-syntax")
 (include-book "../known-booleans")
 (include-book "../axe-syntax-functions-bv") ; for term-should-be-trimmed-axe
@@ -66,6 +67,10 @@
 (add-known-boolean x86isa::cr3bits-p$inline)
 (add-known-boolean x86isa::cr4bits-p$inline)
 (add-known-boolean x86isa::cr8bits-p$inline)
+
+(add-known-boolean is-nan)
+(add-known-boolean infp)
+(add-known-boolean rtl::nanp)  ; todo pkg
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -1645,8 +1645,8 @@
      bv-array-read-of-getbit-list
      bv-array-read-numeric-bound
      bv-array-read-non-negative
-     bv-array-read-when-data-isnt-an-all-unsigned-byte-p
-     bv-array-write-when-data-isnt-an-all-unsigned-byte-p
+     bv-array-read-when-data-isnt-an-all-unsigned-byte-p ; requires the evaluator to know about bvchop-list
+     bv-array-write-when-data-isnt-an-all-unsigned-byte-p ; requires the evaluator to know about bvchop-list
      getbit-of-bv-array-read-too-high ; drop?
      ;;getbit-of-bv-array-read-gen ; just blast the array read?
      equal-of-bvchop-of-nth-and-bv-array-read

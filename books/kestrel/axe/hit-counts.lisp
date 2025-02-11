@@ -1,7 +1,7 @@
 ; Counting how many times rewrite rules apply
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -155,6 +155,9 @@
            (count (the (integer 0 *) (+ 1 count)))
            (hit-counts (extend-world 'hit-counts (putprop rule-symbol 'hit-count count hit-counts))))
       hit-counts))
+
+;; NOTE: To debug possible rewrite loops, do:
+;; (trace$ (acl2::increment-hit-count :entry (car acl2::arglist) :exit :done))
 
 (local
   (defthm hit-count-info-worldp-of-increment-hit-count
