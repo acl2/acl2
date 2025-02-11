@@ -1141,8 +1141,7 @@
 (defthm bvlt-when-slice-0-hack
   (implies (and (equal (slice 31 2 x) 0) ;slow?
                 (unsigned-byte-p 32 x))
-           (equal (bvlt 32 3 x)
-                  nil))
+           (not (bvlt 32 3 x)))
   :hints (("Goal" :in-theory (enable bvlt))))
 
 (defthm bvlt-tighten-when-slice-0
@@ -1239,7 +1238,7 @@
                                REWRITE-BV-EQUALITY-WHEN-SIZES-DONT-MATCH-1
                                GETBIT-WHEN-SLICE-IS-KNOWN-CONSTANT))))
 
-(local (in-theory (enable unsigned-byte-p-forced)))
+;(local (in-theory (enable unsigned-byte-p-forced)))
 
 ;can loop?
 (defthmd rewrite-<-when-sizes-dont-match
@@ -1557,10 +1556,6 @@
                   (bvplus 32 k (bvplus 32 x y))))
   :hints (("Goal" :in-theory (enable bvlt))))
 
-(defthm bvlt-bound-hack
-  (bvlt 31 (bvplus 30 x y) 1073741824)
-  :hints (("Goal" :in-theory (enable bvlt))))
-
 (in-theory (disable BVPLUS-30-EXPAND))
 
 (defthmd bvchop-32-split-30-hack2
@@ -1715,8 +1710,7 @@
 (defthm not-usb-rule
   (implies (and (equal 0 (bvchop 2 x))
                 (not (equal 0 x)))
-           (equal (unsigned-byte-p '2 x)
-                  nil))
+           (not (unsigned-byte-p '2 x)))
   :rule-classes ((:rewrite :backchain-limit-lst (1 1))))
 
 (defthm UNSIGNED-BYTE-P-of-expt-minus-x
@@ -1884,8 +1878,7 @@
 ;gen
 (defthm bvlt-false-when-usb
   (implies (unsigned-byte-p 31 x)
-           (equal (bvlt 32 2147483648 x)
-                  nil))
+           (not (bvlt 32 2147483648 x)))
   :hints (("Goal" :in-theory (enable bvlt))))
 
 
@@ -2252,8 +2245,7 @@
 ;(in-theory (disable ERIC-HACK-2001))
 
 (defthm bvlt-k-bvcat-2-3-30
-  (equal (BVLT 32 2147483648 (BVCAT 2 3 30 x))
-         t)
+  (BVLT 32 2147483648 (BVCAT 2 3 30 x))
   :hints (("Goal" :in-theory (enable bvlt))))
 
 ;; (defthm slice-of-minus-30-2
@@ -2332,11 +2324,6 @@
                   (unsigned-byte-p 4 garg0)))
   :hints (("Goal" :in-theory (e/d (bvlt unsigned-byte-p)
                                   (GETBIT-WHEN-BVLT-OF-SMALL-HELPER)))))
-
-(defthm bvlt-of-bvuminus-hack
-  (equal (BVLT 30 (BVUMINUS 2 x) 4)
-         t)
-  :hints (("Goal" :in-theory (enable bvlt unsigned-byte-p))))
 
 (defthm bvplus-of-bvcat-hack
   (equal (BVPLUS 32 4 (BVCAT 2 3 30 x))
@@ -2475,8 +2462,7 @@
   :hints (("Goal" :in-theory (enable bvlt unsigned-byte-p))))
 
 (defthm bvlt-of-slice-hack
-  (equal (BVLT 4 5 (SLICE 3 2 GARG0))
-         nil)
+  (not (BVLT 4 5 (SLICE 3 2 GARG0)))
   :hints (("Goal" :in-theory (enable bvlt unsigned-byte-p slice-bound-lemma-gen2
                                         slice-bound-lemma-gen))))
 
@@ -2487,8 +2473,7 @@
   :hints (("Goal" :in-theory (enable bvlt unsigned-byte-p))))
 
 (defthm bvlt-hack77
-  (equal (BVLT '30 (BVPLUS '29 x y) '1073741822)
-         t)
+  (BVLT '30 (BVPLUS '29 x y) '1073741822)
   :hints (("Goal" :in-theory (enable bvlt unsigned-byte-p))))
 
 (defthm bvlt-hack78
@@ -2507,9 +2492,7 @@
                                         bvchop-when-top-bit-1
                                         rewrite-<-when-sizes-dont-match
                                         rewrite-<-when-sizes-dont-match2)
-                                  (
-
-                                   )))))
+                                  ()))))
 
 (defthm bvlt-of-bvplus-hack300
   (equal (BVLT 29 w (BVPLUS 30 x y))
@@ -9494,15 +9477,6 @@
 ;;                (natp m))
 ;;           (not (equal (getbit n x) (getbit n y))))
 ;;  :hints (("Goal" :in-theory (enable differing-bit))))
-
-(defthm not-0-when-bit-not-0
-  (implies (and (not (equal 0 (getbit free x)))
-                (natp free)
-                )
-           (not (equal 0 x))))
-
-(local (in-theory (enable bvand-1-becomes-bitand
-                           getbit-of-bvand-core)))
 
 (defthm not-equal-of-0-and-bvand
   (implies (and (not (equal 0 (bitand (getbit n x) (getbit n y))))

@@ -15,11 +15,12 @@
 (include-book "events")
 (include-book "initialization")
 (include-book "transitions")
+(include-book "reachability")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ definition
-  :parents (aleobft-stake2)
+  :parents (aleobft-proposals)
   :short "Definition of the AleoBFT labeled state transition system."
   :long
   (xdoc::topstring
@@ -35,4 +36,5 @@
   :order-subtopics (states
                     events
                     initialization
-                    transitions))
+                    transitions
+                    reachability))
