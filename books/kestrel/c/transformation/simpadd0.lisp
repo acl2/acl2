@@ -12,6 +12,7 @@
 
 (include-book "../syntax/abstract-syntax-operations")
 (include-book "../syntax/unambiguity")
+(include-book "../syntax/validation-information")
 (include-book "../syntax/langdef-mapping")
 (include-book "../atc/symbolic-execution-rules/top")
 
@@ -111,12 +112,24 @@
                       that is the value of the constant ~x1 ~
                       must be unambiguous, ~
                       but it is not."
+                     tunits-old const-old)))
+       ((unless (transunit-ensemble-annop tunits-old))
+        (reterr (msg "The translation unit ensemble ~x0 ~
+                      that is the value of the constant ~x1 ~
+                      must contains validation information, ~
+                      but it does not."
                      tunits-old const-old))))
     (retok tunits-old const-old const-new proofs))
+
   ///
+
   (defret transunit-ensemble-unambp-of-simpadd0-process-inputs
     (implies (not erp)
-             (transunit-ensemble-unambp tunits-old))))
+             (transunit-ensemble-unambp tunits-old)))
+
+  (defret transunit-ensemble-annop-of-simpadd0-process-inputs
+    (implies (not erp)
+             (transunit-ensemble-annop tunits-old))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1459,29 +1472,34 @@
                                  (const-old symbolp)
                                  (const-new symbolp)
                                  (proofs booleanp))
-  :guard (transunit-ensemble-unambp tunits-old)
+  :guard (and (transunit-ensemble-unambp tunits-old)
+              (transunit-ensemble-annop tunits-old))
   :returns (mv erp (event pseudo-event-formp))
   :short "Event expansion of the transformation."
   (b* (((reterr) '(_))
        (tunits-new (simpadd0-transunit-ensemble tunits-old))
-       ((unless (or (not proofs)
-                    (b* (((mv erp &) (c$::ldm-transunit-ensemble tunits-old)))
-                      (not erp))))
+       ((mv erp &) (if (not proofs)
+                       (retok :irrelevant)
+                     (c$::ldm-transunit-ensemble tunits-old)))
+       ((when erp)
         (reterr (msg "The old translation unit ensemble ~x0 ~
                       is not within the subset of C ~
                       covered by our formal semantics. ~
+                      ~@1 ~
                       Thus, proofs cannot be generated: ~
                       re-run the transformation with :PROOFS NIL."
-                     tunits-old)))
-       ((unless (or (not proofs)
-                    (b* (((mv erp &) (c$::ldm-transunit-ensemble tunits-new)))
-                      (not erp))))
+                     tunits-old erp)))
+       ((mv erp &) (if (not proofs)
+                       (retok :irrelevant)
+                     (c$::ldm-transunit-ensemble tunits-new)))
+       ((when erp)
         (reterr (msg "The new translation unit ensemble ~x0 ~
                       is not within the subset of C ~
                       covered by our formal semantics. ~
+                      ~@1 ~
                       Thus, proofs cannot be generated: ~
                       re-run the transformation with :PROOFS NIL."
-                     tunits-new)))
+                     tunits-new erp)))
        (thm-events (and proofs
                         (simpadd0-gen-proofs-for-transunit-ensemble
                          const-old const-new tunits-old tunits-new)))
