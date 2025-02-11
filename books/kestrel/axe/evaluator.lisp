@@ -496,7 +496,7 @@
                          (slice slice-unguarded arg1 arg2 arg3)
                          (bvshl bvshl arg1 arg2 arg3)
                          ;; (keep-items-less-than keep-items-less-than-unguarded arg1 arg2 arg3) ;see keep-items-less-than-unguarded-correct
-                         (subrange subrange (nfix arg1) (nfix arg2) arg3)
+                         (subrange subrange-unguarded arg1 arg2 arg3) ; see subrange-unguarded-correct
                          (bvxor-list bvxor-list-unguarded arg1 arg2 arg3))
                        (acons 4
                               '((update-subrange update-subrange arg1 arg2 arg3 arg4) ;new
