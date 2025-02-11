@@ -197,7 +197,7 @@
 
 ;(local (in-theory (disable MOD-X-Y-=-X)))
 
-(defthm logxor-of-logapp
+(defthm logxor-of-logapp-and-logapp
   (implies (and (natp n)
                 (integerp a)
                 (integerp b)
@@ -210,7 +210,7 @@
                           (logxor c d)
                           ))))
 
-(defthm logand-of-logapp
+(defthm logand-of-logapp-and-logapp
   (implies (and (natp n)
                 (integerp a)
                 (integerp b)
@@ -223,7 +223,7 @@
                           (logand c d)
                           ))))
 
-(defthm logior-of-logapp
+(defthm logior-of-logapp-and-logapp
   (implies (and (natp n)
                 (integerp a)
                 (integerp b)
@@ -263,7 +263,7 @@
                                    getbit
                                    slice
                                    bvand)
-                                  (;gen LOGAND-OF-LOGAPP and drop?
+                                  (;gen LOGAND-OF-LOGAPP-and-logapp and drop?
                                    LOGAPP-OF-0-ARG3
 
                                    )))))
