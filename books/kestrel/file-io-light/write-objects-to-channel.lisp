@@ -1,6 +1,6 @@
 ; A function to write a sequence of objects to a channel
 ;
-; Copyright (C) 2017-2024 Kestrel Institute
+; Copyright (C) 2017-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,7 +12,7 @@
 
 ;; See also the function write-list in books/misc/file-io.lisp.
 
-(local (include-book "kestrel/utilities/state" :dir :system))
+;(local (include-book "kestrel/utilities/state" :dir :system))
 (local (include-book "print-object-dollar-fn"))
 (local (include-book "print-object-dollar"))
 (local (include-book "open-output-channel-p"))

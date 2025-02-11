@@ -861,3 +861,15 @@
          (getbit-list size lst))
   :hints (("Goal" :in-theory (enable getbit-list-unguarded
                                      getbit-list))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun subrange-unguarded (start end lst)
+  (declare (xargs :guard t))
+  (nthcdr-unguarded start (take-unguarded (binary-+-unguarded 1 end) lst)))
+
+(defthm subrange-unguarded-correct
+  (equal (subrange-unguarded start end lst)
+         (subrange start end lst))
+  :hints (("Goal" :in-theory (enable subrange-unguarded
+                                     subrange))))
