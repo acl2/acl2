@@ -103,27 +103,25 @@
     "These are the messages broadcasted to the network
      when a proposal is created:
      see @(see transitions-propose)."))
-  (cond ((set::emptyp dests) nil)
+  (cond ((set::emptyp (address-set-fix dests)) nil)
         (t (set::insert (make-message-proposal
                          :proposal prop
                          :destination (set::head dests))
                         (make-proposal-messages prop (set::tail dests)))))
+  :prepwork ((local (in-theory (enable emptyp-of-address-set-fix))))
   :verify-guards :after-returns
+  :hooks (:fix)
 
   ///
 
-  (fty::deffixequiv make-proposal-messages
-    :args ((prop proposalp)))
-
   (defruled in-of-make-proposal-messages
-    (implies (address-setp dests)
-             (equal (set::in msg (make-proposal-messages prop dests))
-                    (and (messagep msg)
-                         (message-case msg :proposal)
-                         (equal (message-proposal->proposal msg)
-                                (proposal-fix prop))
-                         (set::in (message-proposal->destination msg)
-                                  dests))))
+    (equal (set::in msg (make-proposal-messages prop dests))
+           (and (messagep msg)
+                (message-case msg :proposal)
+                (equal (message-proposal->proposal msg)
+                       (proposal-fix prop))
+                (set::in (message-proposal->destination msg)
+                         (address-set-fix dests))))
     :induct t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -142,27 +140,25 @@
     "These are the messages consumed from the network
      when a faulty validator creates a certificate:
      see @(see transitions-certify)."))
-  (cond ((set::emptyp endors) nil)
+  (cond ((set::emptyp (address-set-fix endors)) nil)
         (t (set::insert (make-message-endorsement
                          :proposal prop
                          :endorser (set::head endors))
                         (make-endorsement-messages prop (set::tail endors)))))
+  :prepwork ((local (in-theory (enable emptyp-of-address-set-fix))))
   :verify-guards :after-returns
+  :hooks (:fix)
 
   ///
 
-  (fty::deffixequiv make-endorsement-messages
-    :args ((prop proposalp)))
-
   (defruled in-of-make-endorsement-messages
-    (implies (address-setp endors)
-             (equal (set::in msg (make-endorsement-messages prop endors))
-                    (and (messagep msg)
-                         (message-case msg :endorsement)
-                         (equal (message-endorsement->proposal msg)
-                                (proposal-fix prop))
-                         (set::in (message-endorsement->endorser msg)
-                                  endors))))
+    (equal (set::in msg (make-endorsement-messages prop endors))
+           (and (messagep msg)
+                (message-case msg :endorsement)
+                (equal (message-endorsement->proposal msg)
+                       (proposal-fix prop))
+                (set::in (message-endorsement->endorser msg)
+                         (address-set-fix endors))))
     :induct t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -181,25 +177,23 @@
     "These are the messages broadcasted to the network
      when a certificate is created:
      see @(see transitions-certify)."))
-  (cond ((set::emptyp dests) nil)
+  (cond ((set::emptyp (address-set-fix dests)) nil)
         (t (set::insert (make-message-certificate
                          :certificate cert
                          :destination (set::head dests))
                         (make-certificate-messages cert (set::tail dests)))))
+  :prepwork ((local (in-theory (enable emptyp-of-address-set-fix))))
   :verify-guards :after-returns
+  :hooks (:fix)
 
   ///
 
-  (fty::deffixequiv make-certificate-messages
-    :args ((cert certificatep)))
-
   (defruled in-of-make-certificate-messages
-    (implies (address-setp dests)
-             (equal (set::in msg (make-certificate-messages cert dests))
-                    (and (messagep msg)
-                         (message-case msg :certificate)
-                         (equal (message-certificate->certificate msg)
-                                (certificate-fix cert))
-                         (set::in (message-certificate->destination msg)
-                                  dests))))
+    (equal (set::in msg (make-certificate-messages cert dests))
+           (and (messagep msg)
+                (message-case msg :certificate)
+                (equal (message-certificate->certificate msg)
+                       (certificate-fix cert))
+                (set::in (message-certificate->destination msg)
+                         (address-set-fix dests))))
     :induct t))
