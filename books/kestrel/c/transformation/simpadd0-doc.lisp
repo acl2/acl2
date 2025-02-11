@@ -18,7 +18,7 @@
 
   :parents (transformation-tools)
 
-  :short "A simple transformation to simplify @('x + 0') to @('x')."
+  :short "A simple transformation to simplify @('E + 0') to @('E')."
 
   :long
 
@@ -30,7 +30,7 @@
 
     (xdoc::p
      "This is a very simple proof-of-concept transformation,
-      which replaces expressions of the form @('x + 0') with @('x').
+      which replaces expressions of the form @('E + 0') with @('E').
       Due to C's arithmetic conversions, it is not immediately clear whether
       this transformation always preserves code equivalence,
       but for now we are not concerned about this,
@@ -104,11 +104,11 @@
        the same as the one in @('*old*'), except that:")
      (xdoc::ul
       (xdoc::li
-       "Every occurrence of an expression of the form @('<x> + 0'),
-        where @('<x>') is a variable
+       "Every occurrence of an expression of the form @('<E> + 0'),
+        where @('<E>') is an expression
         and @('0') is the octal constant for zero
         without other leading zeros and without suffixes,
-        into just the expression @('<x>').")
+        into just the expression @('<E>').")
       (xdoc::li
        "Each file path @('<file>.<ext>') in @('*old*')
         is turned into @('<file>.simpadd0.<ext>'),
