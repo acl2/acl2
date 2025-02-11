@@ -252,9 +252,9 @@
                              (bvshl (mv t (bvshl arg1 arg2 arg3)))
                              ;; (keep-items-less-than (mv t (keep-items-less-than-unguarded arg1 arg2 arg3)))
                              (subrange (mv t
-                                           (subrange (nfix arg1)
-                                                     (nfix arg2)
-                                                     arg3)))
+                                           (subrange-unguarded arg1
+                                                               arg2
+                                                               arg3)))
                              (bvxor-list
                                   (mv t
                                       (bvxor-list-unguarded arg1 arg2 arg3)))
@@ -848,9 +848,9 @@
                             (bvshl (mv t (bvshl arg1 arg2 arg3)))
                             ;; (keep-items-less-than (mv t (keep-items-less-than-unguarded arg1 arg2 arg3)))
                             (subrange (mv t
-                                          (subrange (nfix arg1)
-                                                    (nfix arg2)
-                                                    arg3)))
+                                          (subrange-unguarded arg1
+                                                              arg2
+                                                              arg3)))
                             (bvxor-list
                                  (mv t
                                      (bvxor-list-unguarded arg1 arg2 arg3)))
