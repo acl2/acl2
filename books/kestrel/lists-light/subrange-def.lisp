@@ -1,7 +1,7 @@
 ; A function to extract a contiguous segment of a list.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -23,6 +23,5 @@
                               ;; (< end (len lst)) ; uncomment?
                               )
                   :split-types t)
-           (type (integer 0 *) start)
-           (type (integer 0 *) end))
+           (type (integer 0 *) start end))
   (nthcdr start (take (+ 1 end) lst)))
