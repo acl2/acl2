@@ -27,7 +27,6 @@
                                         (introduce-bv-array-rules)) ; turns nth into bv-array-read
                    )
 
-;; todo: convert the bit operations to boolean operations?
 (def-simplified-dag-basic *aes-128-encrypt-spec-dag-bit-blasted*
   *aes-128-encrypt-spec-dag*
   :rules (append '(bv-array-read-blast-one-step-better
@@ -35,7 +34,7 @@
                    bitor-becomes-bitnot-of-bitand-of-bitnot-and-bitnot
                    bitxor-becomes-bitor-of-bitand-of-bitnot-and-bitand-of-bitnot)
                  (core-rules-bv) (type-rules))
-  :interpreted-function-alist (make-interpreted-function-alist '(getbit-list subrange) (w state)))
+  :interpreted-function-alist (make-interpreted-function-alist '(subrange) (w state)))
 
 ;; Now, doing (dag-info *aes-128-encrypt-spec-dag-bit-blasted*) shows that
 ;; almost all the functions are BITAND and BITNOT.  The exceptions are the
