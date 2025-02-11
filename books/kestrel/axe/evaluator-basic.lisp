@@ -70,6 +70,7 @@
     (char-code char-code-unguarded) ; primitive
     (code-char code-char-unguarded) ; primitive
     (nthcdr nthcdr-unguarded)
+    (subrange subrange-unguarded)
     (reverse-list reverse-list-unguarded)
     repeat-tail
     (repeat repeat-unguarded)

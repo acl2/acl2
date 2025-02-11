@@ -33,8 +33,7 @@
                    bif-rewrite ;bif
                    bitor-becomes-bitnot-of-bitand-of-bitnot-and-bitnot
                    bitxor-becomes-bitor-of-bitand-of-bitnot-and-bitand-of-bitnot)
-                 (core-rules-bv) (type-rules))
-  :interpreted-function-alist (make-interpreted-function-alist '(subrange) (w state)))
+                 (core-rules-bv) (type-rules)))
 
 ;; Now, doing (dag-info *aes-128-encrypt-spec-dag-bit-blasted*) shows that
 ;; almost all the functions are BITAND and BITNOT.  The exceptions are the
