@@ -114,39 +114,55 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; quoted-varname is a darg, but we expect it to always be a constant (a quoted symbol)
+;; Returns an alist with one binding that binds the unquoted varname to VAL.
+(defun bind-unquoted-varname (quoted-varname val)
+  (declare (xargs :guard (or (myquotep quoted-varname)
+                             (natp quoted-varname))))
+  (mv-let (erp sym)
+    (if (consp quoted-varname) ; checks for quotep
+        (let ((sym (unquote quoted-varname)))
+          (if (symbolp sym)
+              (mv nil sym)
+            (mv t nil)))
+      (mv t nil))
+    (if erp
+        (er hard? 'bind-unquoted-varname "Unexpected varname argument: ~x0." quoted-varname)
+      (acons sym val nil))))
+
 ;returns an alist that binds VARNAME to the size of the nodenum-or-quotep, if it is a bit vector with a statically known size, or nil to indicate failure.
 ;bozo redo to support different sets of operators <- ??
 ;todo: can we save adding a quote to the returned size?
 ;; todo: consider an option to not count constants as BV terms in this sense
 (defund bind-bv-size-axe (darg quoted-varname dag-array)
-  (declare (xargs :guard (or (myquotep darg)
-                             (and (natp darg)
-                                  (pseudo-dag-arrayp 'dag-array dag-array (+ 1 darg))))))
-  (if (not (and (myquotep quoted-varname) ;todo: just call consp?
-                (symbolp (unquote quoted-varname))))
-      (er hard? 'bind-bv-size-axe "Unexpected varname argument: ~x0." quoted-varname)
-    (if (consp darg) ;test for quotep
-        (let ((val (unquote darg)))
-          (if (natp val)
-              (acons (unquote quoted-varname) (list 'quote (integer-length val)) nil)
+  (declare (xargs :guard (and (or (myquotep darg)
+                                  (and (natp darg)
+                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 darg))))
+                              (or (myquotep quoted-varname)
+                                  (and (natp quoted-varname)
+                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 quoted-varname)))))))
+  (if (consp darg) ;test for quotep
+      (let ((val (unquote darg)))
+        (if (natp val)
+            (bind-unquoted-varname quoted-varname (list 'quote (integer-length val)))
             ;; failure (may be a constant array or a negative number or something else):
-            nil))
-      ;;otherwise, it's a nodenum:
-      (let ((expr (aref1 'dag-array dag-array darg)))
-        (if (not (consp expr))
-            nil ;failure (it's a variable)
-          (let ((fn (ffn-symb expr)))
-            (if (eq 'quote fn)
-                (let ((val (unquote expr)))
-                  (if (natp val)
-                      (acons (unquote quoted-varname) (list 'quote (integer-length val)) nil)
-                    ;; failure (may be a constant array or a negative or something else):
-                    nil))
-              (let ((type (maybe-get-type-of-bv-function-call fn (dargs expr))))
-                (if type
-                    (acons (unquote quoted-varname) (list 'quote (bv-type-width type)) nil) ;could often save this quote since in many operators the size is already quoted
-                  ;;failure:
-                  nil)))))))))
+          nil))
+    ;;otherwise, it's a nodenum:
+    (let ((expr (aref1 'dag-array dag-array darg)))
+      (if (not (consp expr))
+          nil ;; failure (it's a variable)
+        (let ((fn (ffn-symb expr)))
+          (if (eq 'quote fn)
+              (let ((val (unquote expr)))
+                (if (natp val)
+                    (bind-unquoted-varname quoted-varname (list 'quote (integer-length val)))
+                  ;; failure (may be a constant array or a negative or something else):
+                  nil))
+            (let ((type (maybe-get-type-of-bv-function-call fn (dargs expr))))
+              (if type
+                  (bind-unquoted-varname quoted-varname (list 'quote (bv-type-width type))) ;todo: could often save this quote since in many operators the size is already quoted.  would need a function that can return the quoted type
+                ;;failure:
+                nil))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
