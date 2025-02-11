@@ -297,8 +297,8 @@ whose second argument is exactly the variable $path.</p>")
 <p>Examples:</p>
 
 @({
-    (add-untranslate-pattern-function '(1 2 3) *myconst*)
-    (add-untranslate-pattern-function (f$ ?a ?b mystobj) (f a b))
+    (add-untranslate-pattern '(1 2 3) *myconst*)
+    (add-untranslate-pattern (f$ ?a ?b mystobj) (f ?a ?b))
 })
 
 <p>We add a new pattern to the untranslate patterns table.  The target should
