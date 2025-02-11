@@ -191,10 +191,6 @@
                                    ;LOGBITP-TO-GETBIT-EQUAL-1 ;why? need getbit of logtail?
                                    )))))
 
-;; (defthm zbp-times-2
-;;   (equal (zbp (* 2 x))
-;;          (not (equal x 1/2))))
-
 ;(local (in-theory (disable MOD-X-Y-=-X)))
 
 (defthm logxor-of-logapp-and-logapp
@@ -203,12 +199,8 @@
                 (integerp b)
                 (integerp c)
                 (integerp d))
-           (equal (LOGXOR (LOGAPP n A c)
-                          (LOGAPP n B d))
-                  (logapp n
-                          (logxor a b)
-                          (logxor c d)
-                          ))))
+           (equal (logxor (logapp n a c) (logapp n b d))
+                  (logapp n (logxor a b) (logxor c d)))))
 
 (defthm logand-of-logapp-and-logapp
   (implies (and (natp n)
@@ -216,12 +208,8 @@
                 (integerp b)
                 (integerp c)
                 (integerp d))
-           (equal (LOGAND (LOGAPP n A c)
-                          (LOGAPP n B d))
-                  (logapp n
-                          (logand a b)
-                          (logand c d)
-                          ))))
+           (equal (logand (logapp n a c) (logapp n b d))
+                  (logapp n (logand a b) (logand c d)))))
 
 (defthm logior-of-logapp-and-logapp
   (implies (and (natp n)
@@ -229,12 +217,8 @@
                 (integerp b)
                 (integerp c)
                 (integerp d))
-           (equal (LOGIOR (LOGAPP n A c)
-                          (LOGAPP n B d))
-                  (logapp n
-                          (logior a b)
-                          (logior c d)
-                          ))))
+           (equal (logior (logapp n a c) (logapp n b d))
+                  (logapp n (logior a b) (logior c d)))))
 
 (defthm logext-of-logxor
   (implies (and (integerp n)
@@ -244,12 +228,7 @@
            (equal (logext n (logxor a b))
                   (logxor (logext n a)
                           (logext n b))))
-  :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (logext
-                            getbit
-                            slice)
-                           (
-                            )))))
+  :hints (("Goal" :in-theory (enable logext getbit slice))))
 
 (defthm logext-of-logand
   (implies (and (integerp n)
@@ -264,9 +243,7 @@
                                    slice
                                    bvand)
                                   (;gen LOGAND-OF-LOGAPP-and-logapp and drop?
-                                   LOGAPP-OF-0-ARG3
-
-                                   )))))
+                                   LOGAPP-OF-0-ARG3)))))
 
 (defthm logext-of-logior
   (implies (and (integerp n)
@@ -276,9 +253,7 @@
            (equal (logext n (logior a b))
                   (logior (logext n a)
                           (logext n b))))
-  :hints (("Goal" :in-theory (e/d (logext getbit slice) (;LOGAPP-0
-
-                                                         )))))
+  :hints (("Goal" :in-theory (enable logext getbit slice))))
 
 (defthm logext-of-myif
   (equal (logext n (myif test a b))
@@ -706,6 +681,7 @@
                                                       (mod x m)))))))
 
 
+;see rules like bvchop-sum-drop-bvchop
 (defthm bvchop-bvchop-8-32-hack
   (implies (and (integerp x)
                 (integerp y))
