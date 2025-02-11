@@ -60,8 +60,6 @@
       ;; a special type of qnan:
       (equal 'indef val)))
 
-(acl2::add-known-boolean is-nan)
-
 ;; Only needed for Axe.
 (defthmd booleanp-of-is-nan
   (booleanp (is-nan val)))

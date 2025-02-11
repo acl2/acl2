@@ -32,6 +32,7 @@
 (include-book "kestrel/bv/unsigned-byte-p-forced" :dir :system) ; add to bv/defs.lisp?
 (include-book "kestrel/bv-lists/bv-array-read" :dir :system)
 (include-book "kestrel/bv/bool-to-bit-def" :dir :system)
+(include-book "kestrel/bv/bit-to-bool-def" :dir :system)
 (include-book "known-booleans")
 (include-book "kestrel/utilities/def-constant-opener" :dir :system)
 (local (include-book "kestrel/bv/logior-b" :dir :system))
@@ -60,6 +61,7 @@
 (add-known-boolean sbvge)
 (add-known-boolean bvequal)
 (add-known-boolean unsigned-byte-p-forced)
+(add-known-boolean bit-to-bool)
 
 ;justifies adding unsigned-byte-p-forced to the list of known predicates
 (defthmd booleanp-of-unsigned-byte-p-forced
