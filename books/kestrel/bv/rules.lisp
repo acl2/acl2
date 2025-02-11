@@ -6161,3 +6161,25 @@
                   (unsigned-byte-p (- size (lg k)) x)))
   :hints (("Goal" :use (:instance unsigned-byte-p-of-bvmult-of-expt2 (i (lg k)))
            :in-theory (e/d (acl2::power-of-2p lg) (unsigned-byte-p-of-bvmult-of-expt2)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd bvlt-of-constant-when-too-narrow
+  (implies (and (syntaxp (quotep k))
+                (bind-free (bind-var-to-bv-term-size 'xsize x) (xsize))
+                (<= (expt 2 xsize) (bvchop size k))
+                (<= xsize size)
+                (natp size)
+                (unsigned-byte-p-forced xsize x))
+           (bvlt size x k))
+  :hints (("Goal" :in-theory (enable bvlt unsigned-byte-p-forced))))
+
+(defthmd not-bvlt-of-constant-when-too-narrow
+  (implies (and (syntaxp (quotep k))
+                (bind-free (bind-var-to-bv-term-size 'xsize x) (xsize))
+                (<= (+ -1 (expt 2 xsize)) (bvchop size k))
+                (<= xsize size)
+                (natp size)
+                (unsigned-byte-p-forced xsize x))
+           (not (bvlt size k x)))
+  :hints (("Goal" :in-theory (enable bvlt unsigned-byte-p-forced))))

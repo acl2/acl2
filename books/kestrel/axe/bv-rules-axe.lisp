@@ -1107,15 +1107,26 @@
            (not (< x k)))
   :hints (("Goal" :in-theory (enable unsigned-byte-p-forced))))
 
-(defthmd bvlt-of-constant-when-too-narrow
+;prove from the non-axe one?
+(defthmd bvlt-of-constant-when-too-narrow-axe
   (implies (and (syntaxp (quotep k))
                 (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (<= (expt 2 xsize) (bvchop size k))
                 (<= xsize size)
                 (natp size)
-                (unsigned-byte-p-forced xsize x)
-                )
+                (unsigned-byte-p-forced xsize x))
            (bvlt size x k))
+  :hints (("Goal" :in-theory (enable bvlt unsigned-byte-p-forced))))
+
+;prove from the non-axe one?
+(defthmd not-bvlt-of-constant-when-too-narrow-axe
+  (implies (and (syntaxp (quotep k))
+                (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
+                (<= (+ -1 (expt 2 xsize)) (bvchop size k))
+                (<= xsize size)
+                (natp size)
+                (unsigned-byte-p-forced xsize x))
+           (not (bvlt size k x)))
   :hints (("Goal" :in-theory (enable bvlt unsigned-byte-p-forced))))
 
 (defthmd bvlt-when-bound-axe

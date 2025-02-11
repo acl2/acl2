@@ -703,3 +703,9 @@
                   1))
   :hints (("Goal" :use (:instance getbit-when-bound3-helper)
            :in-theory (disable getbit-when-bound3-helper))))
+
+;; x is non-zero when any of its bits is non-zero
+(defthm not-0-when-bit-not-0
+  (implies (and (not (equal 0 (getbit free x)))
+                (natp free))
+           (not (equal 0 x))))
