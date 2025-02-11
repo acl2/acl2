@@ -76,7 +76,7 @@
 
   (defruled round-after-last-p-of-endorse-next
     (implies (round-after-last-p systate)
-             (round-after-last-p (endorse-next prop dests systate)))
+             (round-after-last-p (endorse-next prop endor systate)))
     :enable (round-after-last-p
              round-after-last-p-necc))
 
