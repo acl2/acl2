@@ -23,3 +23,12 @@
 (simpadd0 *old-code* *new-code* :proofs t)
 
 (c$::output-files :const *new-code*)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(c$::input-files :files ("file2.c")
+                 :const *old-code2*)
+
+(simpadd0 *old-code2* *new-code2* :proofs nil)
+
+(c$::output-files :const *new-code2*)
