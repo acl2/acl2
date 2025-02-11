@@ -185,12 +185,14 @@
             :arg (simpadd0-expr expr.arg))
      :binary (b* ((arg1 (simpadd0-expr expr.arg1))
                   (arg2 (simpadd0-expr expr.arg2)))
-               (if (c$::expr-zerop arg2)
+               (if (and (c$::expr-zerop arg2)
+                        (expr-case arg1 :ident)
+                        (b* (((c$::var-info info)
+                              (c$::coerce-var-info
+                               (c$::expr-ident->info arg1))))
+                          (c$::type-case info.type :sint)))
                    arg1
-                 (make-expr-binary
-                  :op expr.op
-                  :arg1 arg1
-                  :arg2 arg2)))
+                 (make-expr-binary :op expr.op :arg1 arg1 :arg2 arg2)))
      :cond (make-expr-cond
             :test (simpadd0-expr expr.test)
             :then (simpadd0-expr-option expr.then)
