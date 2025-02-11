@@ -14,6 +14,8 @@
 (include-book "system-states")
 (include-book "committees")
 
+(local (include-book "kestrel/utilities/nfix" :dir :system))
+
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
@@ -198,7 +200,6 @@
      because the proposal has no endorsements yet."))
   (b* (((proposal prop) prop)
        (network (get-network-state systate))
-       (dests (address-set-fix dests))
        (msgs (make-proposal-messages prop dests))
        (new-network (set::union network msgs))
        (systate (update-network-state new-network systate))
@@ -208,4 +209,53 @@
        (new-vstate (change-validator-state vstate :proposed new-proposed))
        (systate (update-validator-state prop.author new-vstate systate)))
     systate)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret correct-addresses-of-propose-next
+    (equal (correct-addresses new-systate)
+           (correct-addresses systate)))
+
+  (local (in-theory (enable get-validator-state-of-update-validator-state)))
+
+  (defret validator-state->round-of-propose-next
+    (equal (validator-state->round (get-validator-state val new-systate))
+           (validator-state->round (get-validator-state val systate))))
+
+  (defret validator-state->dag-of-propose-next
+    (equal (validator-state->dag (get-validator-state val new-systate))
+           (validator-state->dag (get-validator-state val systate))))
+
+  (defret validator-state->proposed-of-propose-next
+    (equal (validator-state->proposed (get-validator-state val new-systate))
+           (if (and (equal (address-fix val) (proposal->author prop))
+                    (set::in (address-fix val) (correct-addresses systate)))
+               (omap::update (proposal-fix prop)
+                             nil
+                             (validator-state->proposed
+                              (get-validator-state val systate)))
+             (validator-state->proposed (get-validator-state val systate)))))
+  (in-theory (disable validator-state->proposed-of-propose-next))
+
+  (defret validator-state->endorsed-of-propose-next
+    (equal (validator-state->endorsed (get-validator-state val new-systate))
+           (validator-state->endorsed (get-validator-state val systate))))
+
+  (defret validator-state->last-of-propose-next
+    (equal (validator-state->last (get-validator-state val new-systate))
+           (validator-state->last (get-validator-state val systate))))
+
+  (defret validator-state->blockchain-of-propose-next
+    (equal (validator-state->blockchain (get-validator-state val new-systate))
+           (validator-state->blockchain (get-validator-state val systate))))
+
+  (defret validator-state->committed-of-propose-next
+    (equal (validator-state->committed (get-validator-state val new-systate))
+           (validator-state->committed (get-validator-state val systate))))
+
+  (defret get-network-state-of-propose-next
+    (equal (get-network-state new-systate)
+           (set::union (get-network-state systate)
+                       (make-proposal-messages prop dests))))
+  (in-theory (disable get-network-state-of-propose-next)))

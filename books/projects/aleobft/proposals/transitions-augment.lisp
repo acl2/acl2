@@ -13,6 +13,8 @@
 
 (include-book "system-states")
 
+(local (include-book "kestrel/utilities/nfix" :dir :system))
+
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
@@ -106,4 +108,61 @@
        (systate (update-validator-state prop.author new-vstate systate)))
     systate)
   :guard-hints (("Goal" :in-theory (enable augment-possiblep)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret correct-addresses-of-augment-next
+    (equal (correct-addresses new-systate)
+           (correct-addresses systate))
+    :hyp (augment-possiblep prop endor systate)
+    :hints (("Goal" :in-theory (enable augment-possiblep))))
+
+  (local (in-theory (enable get-validator-state-of-update-validator-state)))
+
+  (defret validator-state->round-of-augment-next
+    (equal (validator-state->round (get-validator-state val new-systate))
+           (validator-state->round (get-validator-state val systate))))
+
+  (defret validator-state->dag-of-augment-next
+    (equal (validator-state->dag (get-validator-state val new-systate))
+           (validator-state->dag (get-validator-state val systate))))
+
+  (defret validator-state->proposed-of-augment-next
+    (equal (validator-state->proposed (get-validator-state val new-systate))
+           (if (and (equal (address-fix val) (proposal->author prop))
+                    (set::in (address-fix val) (correct-addresses systate)))
+               (omap::update
+                (proposal-fix prop)
+                (set::insert (address-fix endor)
+                             (omap::lookup
+                              (proposal-fix prop)
+                              (validator-state->proposed
+                               (get-validator-state val systate))))
+                (validator-state->proposed (get-validator-state val systate)))
+             (validator-state->proposed (get-validator-state val systate))))
+    :hyp (augment-possiblep prop endor systate)
+    :hints (("Goal" :in-theory (enable augment-possiblep))))
+  (in-theory (disable validator-state->proposed-of-augment-next))
+
+  (defret validator-state->endorsed-of-augment-next
+    (equal (validator-state->endorsed (get-validator-state val new-systate))
+           (validator-state->endorsed (get-validator-state val systate))))
+
+  (defret validator-state->last-of-augment-next
+    (equal (validator-state->last (get-validator-state val new-systate))
+           (validator-state->last (get-validator-state val systate))))
+
+  (defret validator-state->blockchain-of-augment-next
+    (equal (validator-state->blockchain (get-validator-state val new-systate))
+           (validator-state->blockchain (get-validator-state val systate))))
+
+  (defret validator-state->committed-of-augment-next
+    (equal (validator-state->committed (get-validator-state val new-systate))
+           (validator-state->committed (get-validator-state val systate))))
+
+  (defret get-network-state-of-augment-next
+    (equal (get-network-state new-systate)
+           (set::delete (message-endorsement prop endor)
+                        (get-network-state systate))))
+  (in-theory (disable get-network-state-of-augment-next)))

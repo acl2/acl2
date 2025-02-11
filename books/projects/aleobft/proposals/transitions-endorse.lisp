@@ -14,6 +14,8 @@
 (include-book "system-states")
 (include-book "committees")
 
+(local (include-book "kestrel/utilities/nfix" :dir :system))
+
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
@@ -171,4 +173,53 @@
        (new-vstate (change-validator-state vstate :endorsed new-endorsed))
        (systate (update-validator-state endor new-vstate systate)))
     systate)
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret correct-addresses-of-endorse-next
+    (equal (correct-addresses new-systate)
+           (correct-addresses systate)))
+
+  (local (in-theory (enable get-validator-state-of-update-validator-state)))
+
+  (defret validator-state->round-of-endorse-next
+    (equal (validator-state->round (get-validator-state val new-systate))
+           (validator-state->round (get-validator-state val systate))))
+
+  (defret validator-state->dag-of-endorse-next
+    (equal (validator-state->dag (get-validator-state val new-systate))
+           (validator-state->dag (get-validator-state val systate))))
+
+  (defret validator-state->proposed-of-endorse-next
+    (equal (validator-state->proposed (get-validator-state val new-systate))
+           (validator-state->proposed (get-validator-state val systate))))
+
+  (defret validator-state->endorsed-of-endorse-next
+    (equal (validator-state->endorsed (get-validator-state val new-systate))
+           (if (and (equal (address-fix val) (address-fix endor))
+                    (set::in (address-fix val) (correct-addresses systate)))
+               (set::insert (proposal-fix prop)
+                            (validator-state->endorsed
+                             (get-validator-state val systate)))
+             (validator-state->endorsed (get-validator-state val systate)))))
+  (in-theory (disable validator-state->proposed-of-endorse-next))
+
+  (defret validator-state->last-of-endorse-next
+    (equal (validator-state->last (get-validator-state val new-systate))
+           (validator-state->last (get-validator-state val systate))))
+
+  (defret validator-state->blockchain-of-endorse-next
+    (equal (validator-state->blockchain (get-validator-state val new-systate))
+           (validator-state->blockchain (get-validator-state val systate))))
+
+  (defret validator-state->committed-of-endorse-next
+    (equal (validator-state->committed (get-validator-state val new-systate))
+           (validator-state->committed (get-validator-state val systate))))
+
+  (defret get-network-state-of-endorse-next
+    (equal (get-network-state new-systate)
+           (set::insert (message-endorsement prop endor)
+                        (set::delete (message-proposal prop endor)
+                                     (get-network-state systate)))))
+  (in-theory (disable get-network-state-of-endorse-next)))

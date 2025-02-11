@@ -183,4 +183,88 @@
                        active-committee-at-previous-round-when-at-round
                        active-committee-at-previous3-round-when-at-round
                        certificate->round-of-cert-with-author+round)))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret correct-addresses-of-commit-next
+    (equal (correct-addresses new-systate)
+           (correct-addresses systate))
+    :hyp (commit-possiblep val systate)
+    :hints (("Goal" :in-theory (enable commit-possiblep))))
+
+  (local (in-theory (enable get-validator-state-of-update-validator-state)))
+
+  (defret validator-state->round-of-commit-next
+    (equal (validator-state->round (get-validator-state val1 new-systate))
+           (validator-state->round (get-validator-state val1 systate))))
+
+  (defret validator-state->dag-of-commit-next
+    (equal (validator-state->dag (get-validator-state val1 new-systate))
+           (validator-state->dag (get-validator-state val1 systate))))
+
+  (defret validator-state->proposed-of-commit-next
+    (equal (validator-state->proposed (get-validator-state val1 new-systate))
+           (validator-state->proposed (get-validator-state val1 systate))))
+
+  (defret validator-state->endorsed-of-commit-next
+    (equal (validator-state->endorsed (get-validator-state val1 new-systate))
+           (validator-state->endorsed (get-validator-state val1 systate))))
+
+  (defret validator-state->last-of-commit-next
+    (equal (validator-state->last (get-validator-state val1 new-systate))
+           (if (equal (address-fix val1) (address-fix val))
+               (1- (validator-state->round (get-validator-state val1 systate)))
+             (validator-state->last (get-validator-state val1 systate))))
+    :hints (("Goal" :in-theory (enable nfix))))
+  (in-theory (disable validator-state->last-of-commit-next))
+
+  (defret validator-state->blockchain-of-commit-next
+    (equal (validator-state->blockchain (get-validator-state val1 new-systate))
+           (if (equal (address-fix val1) (address-fix val))
+               (b* (((validator-state vstate)
+                     (get-validator-state val1 systate))
+                    (commit-round (1- vstate.round))
+                    (commtt
+                     (active-committee-at-round commit-round vstate.blockchain))
+                    (leader (leader-at-round commit-round commtt))
+                    (anchor
+                     (cert-with-author+round leader commit-round vstate.dag))
+                    (anchors (collect-anchors anchor
+                                              (- commit-round 2)
+                                              vstate.last
+                                              vstate.dag
+                                              vstate.blockchain)))
+                 (mv-nth 0 (extend-blockchain anchors
+                                              vstate.dag
+                                              vstate.blockchain
+                                              vstate.committed)))
+             (validator-state->blockchain (get-validator-state val1 systate)))))
+  (in-theory (disable validator-state->blockchain-of-commit-next))
+
+  (defret validator-state->committed-of-commit-next
+    (equal (validator-state->committed (get-validator-state val1 new-systate))
+           (if (equal (address-fix val1) (address-fix val))
+               (b* (((validator-state vstate)
+                     (get-validator-state val1 systate))
+                    (commit-round (1- vstate.round))
+                    (commtt
+                     (active-committee-at-round commit-round vstate.blockchain))
+                    (leader (leader-at-round commit-round commtt))
+                    (anchor
+                     (cert-with-author+round leader commit-round vstate.dag))
+                    (anchors (collect-anchors anchor
+                                              (- commit-round 2)
+                                              vstate.last
+                                              vstate.dag
+                                              vstate.blockchain)))
+                 (mv-nth 1 (extend-blockchain anchors
+                                              vstate.dag
+                                              vstate.blockchain
+                                              vstate.committed)))
+             (validator-state->committed (get-validator-state val1 systate)))))
+  (in-theory (disable validator-state->blockchain-of-commit-next))
+
+  (defret get-network-state-of-commit-next
+    (equal (get-network-state new-systate)
+           (get-network-state systate))))

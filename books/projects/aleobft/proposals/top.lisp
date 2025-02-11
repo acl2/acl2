@@ -12,6 +12,7 @@
 (in-package "ALEOBFT-PROPOSALS")
 
 (include-book "definition")
+(include-book "correctness")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -31,6 +32,5 @@
     "This is work in progress:
      the definition of the system is complete,
      but the correctness proofs are not here yet."))
-  :order-subtopics (definition))
-
-; TODO: correctness
+  :order-subtopics (definition
+                    correctness))

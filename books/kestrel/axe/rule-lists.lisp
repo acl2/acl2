@@ -476,6 +476,9 @@
   '(bvchop-convert-arg2-to-bv-axe
     bvplus-convert-arg2-to-bv-axe-restricted ; todo: use the unrestricted ones
     bvplus-convert-arg3-to-bv-axe-restricted
+    bvmult-convert-arg2-to-bv-axe
+    bvmult-convert-arg3-to-bv-axe
+    ;; logext-convert-arg2-to-bv-axe ; todo: try
     ;; bvminus-convert-arg2-to-bv-axe ; these seemed to cause loops
     ;; bvminus-convert-arg3-to-bv-axe
     bvuminus-convert-arg2-to-bv-axe

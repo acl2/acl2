@@ -930,6 +930,7 @@
   (if (zp total)
       0
     (1- (ceiling total 3)))
+  :hooks (:fix)
 
   ///
 
