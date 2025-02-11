@@ -60,6 +60,7 @@
   :short "Check if a system state is reachable from some initial state."
   (exists (from)
           (and (system-statep from)
+               (system-initp from)
                (system-state-reachable-from-p systate from)))
   ///
   (fty::deffixequiv-sk system-state-reachablep
