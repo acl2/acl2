@@ -487,4 +487,8 @@
     filepath-transunit-map-unambp
     transunit-ensemble-unambp
 
+    ;; validation information predicates:
+
+    transunit-ensemble-annop
+
    ))
