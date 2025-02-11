@@ -1611,7 +1611,11 @@
     natp-of-umsk
     natp-of-ftz
     natp-of-daz
-    ))
+
+    x86isa::fp-decode-constant-opener
+    x86isa::fp-to-rat-constant-opener
+    rtl::bias-constant-opener
+    rtl::expw-constant-opener))
 
 ;; Try to introduce is-nan as soon as possible:
 (set-axe-rule-priority is-nan-intro -1)
@@ -4723,10 +4727,6 @@
             acl2::equal-of-if-arg1-when-quotep
             acl2::equal-of-if-arg2-when-quotep
             sse-cmp-special ; scary
-            x86isa::fp-decode-constant-opener
-            x86isa::fp-to-rat-constant-opener
-            rtl::bias-constant-opener
-            rtl::expw-constant-opener
             acl2::bvchop-of-if
             acl2::ifix-of-if
 
@@ -4785,7 +4785,7 @@
             acl2::equal-of-if-constants
             ;; acl2::bvlt-of-bvplus-1-cancel-alt ; optional
             ;x86isa::idiv-spec-32 ; trying
-            acl2::bvchop-when-size-is-not-posp
+            acl2::bvchop-when-size-is-not-posp ; move?
 
             acl2::bvcat-of-if-arg2 ; these just lift the if
             acl2::bvcat-of-if-arg4
@@ -4795,8 +4795,8 @@
             acl2::bvcat-of-slice-of-bvsx-same
             acl2::not-sbvlt-64-of-sbvdiv-64-of-bvsx-64-32-and--2147483648
             acl2::not-sbvlt-64-of-2147483647-and-sbvdiv-64-of-bvsx-64-32
-            acl2::bvplus-commutative-increasing-axe
-            acl2::bvplus-commutative-2-increasing-axe
+            acl2::bvplus-commutative-increasing-axe ; do we really want this?
+            acl2::bvplus-commutative-2-increasing-axe ; do we really want this?
             ;;acl2::equal-same
             ;; bvcat-of-minus-becomes-bvshl ; except stp doesn't support the shift operators
             ;acl2::<-lemma-for-known-operators-axe
@@ -4820,8 +4820,8 @@
             ;; acl2::boolif-x-x-y-becomes-boolor ; introduces boolor
             acl2::boolor-becomes-boolif
             ;; acl2::bvlt-hack-1-gen
-            acl2::bvchop-subst-constant
-            acl2::bvchop-subst-constant-alt
+            acl2::bvchop-subst-constant ; move
+            acl2::bvchop-subst-constant-alt ; move
             acl2::boolif-of-bvlt-strengthen-to-equal
             acl2::bvlt-reduce-when-not-equal-one-less
             ;read-1-of-write-4
