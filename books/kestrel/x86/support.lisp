@@ -1721,6 +1721,7 @@
 
 ;; goes to set-flag instead of exposing details of the flags
 ;; todo: avoid IFs on states here
+;; TODO: See write-user-rflags-rewrite-better !
 (defthm write-user-rflags-rewrite
   (equal (write-user-rflags user-flags-vector undefined-mask x86)
          (b* ((user-flags-vector (n32 user-flags-vector))
@@ -1753,12 +1754,33 @@
            x86))
   :hints (("Goal" :in-theory (enable x::set-flag acl2::getbit))))
 
+(include-book "readers-and-writers")
+;todo: move to a book in the X package
+(defthm write-user-rflags-rewrite-better
+  (equal (write-user-rflags user-flags-vector undefined-mask x86)
+         (b* ((user-flags-vector (n32 user-flags-vector))
+              (undefined-mask (n32 undefined-mask))
+              (x86 (x::set-flag :cf (if (equal (rflagsbits->cf undefined-mask) 1) (acl2::getbit 0 (create-undef (nfix (x::undef x86)))) (rflagsbits->cf user-flags-vector)) x86)) ; todo: simplify?
+              (x86 (x::set-undef (if (equal (rflagsbits->cf undefined-mask) 1) (+ 1 (nfix (undef x86))) (undef x86)) x86))
+              (x86 (x::set-flag :pf (if (equal (rflagsbits->pf undefined-mask) 1) (acl2::getbit 0 (create-undef (nfix (x::undef x86)))) (rflagsbits->pf user-flags-vector)) x86))
+              (x86 (x::set-undef (if (equal (rflagsbits->pf undefined-mask) 1) (+ 1 (nfix (undef x86))) (undef x86)) x86))
+              (x86 (x::set-flag :af (if (equal (rflagsbits->af undefined-mask) 1) (acl2::getbit 0 (create-undef (nfix (x::undef x86)))) (rflagsbits->af user-flags-vector)) x86))
+              (x86 (x::set-undef (if (equal (rflagsbits->af undefined-mask) 1) (+ 1 (nfix (undef x86))) (undef x86)) x86))
+              (x86 (x::set-flag :zf (if (equal (rflagsbits->zf undefined-mask) 1) (acl2::getbit 0 (create-undef (nfix (x::undef x86)))) (rflagsbits->zf user-flags-vector)) x86))
+              (x86 (x::set-undef (if (equal (rflagsbits->zf undefined-mask) 1) (+ 1 (nfix (undef x86))) (undef x86)) x86))
+              (x86 (x::set-flag :sf (if (equal (rflagsbits->sf undefined-mask) 1) (acl2::getbit 0 (create-undef (nfix (x::undef x86)))) (rflagsbits->sf user-flags-vector)) x86))
+              (x86 (x::set-undef (if (equal (rflagsbits->sf undefined-mask) 1) (+ 1 (nfix (undef x86))) (undef x86)) x86))
+              (x86 (x::set-flag :of (if (equal (rflagsbits->of undefined-mask) 1) (acl2::getbit 0 (create-undef (nfix (x::undef x86)))) (rflagsbits->of user-flags-vector)) x86))
+              (x86 (x::set-undef (if (equal (rflagsbits->of undefined-mask) 1) (+ 1 (nfix (undef x86))) (undef x86)) x86)))
+           x86))
+  :hints (("Goal" :in-theory (enable x::set-undef undef))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; This could go into a support64 book:
 
-(defthm add-to-*ip-of-0 ; 0 means 64-bit mode?
-  (equal (x86isa::add-to-*ip 0 x86isa::*ip x86isa::delta x86)
+(defthm add-to-*ip-of-*64-bit-mode*
+  (equal (x86isa::add-to-*ip *64-bit-mode* x86isa::*ip x86isa::delta x86)
          (if (canonical-address-p (+ x86isa::*ip x86isa::delta))
              (mv nil (+ x86isa::*ip x86isa::delta))
            (mv (list :non-canonical-instruction-pointer (+ x86isa::*ip x86isa::delta))

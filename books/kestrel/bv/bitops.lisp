@@ -1,7 +1,7 @@
 ; Rules to convert bitops operations to operations from the Kestrel BV library
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2024 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -18,6 +18,9 @@
 (include-book "getbit-def")
 (include-book "rightrotate")
 (include-book "leftrotate")
+(include-book "bitand")
+(include-book "bitor")
+(include-book "bitxor")
 (local (include-book "rules"))
 (local (include-book "logand-b"))
 (local (include-book "logior-b"))
@@ -324,3 +327,32 @@
                               bvchop-of-logior-becomes-bvor
                               ifix
                               logand-of-bvchop-becomes-bvand-alt))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm logbit-becomes-getbit
+  (equal (logbit pos i)
+         (getbit pos i)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm b-and-becomes-bitand
+  (implies (and (unsigned-byte-p 1 x)
+                (unsigned-byte-p 1 y))
+           (equal (b-and x y)
+                  (bitand x y)))
+  :hints (("Goal" :in-theory (e/d (bitand b-and) (acl2::bvand-1-becomes-bitand)))))
+
+(defthm b-ior-becomes-bitor
+  (implies (and (unsigned-byte-p 1 x)
+                (unsigned-byte-p 1 y))
+           (equal (b-ior x y)
+                  (bitor x y)))
+  :hints (("Goal" :in-theory (e/d (bitor b-ior) (acl2::bvor-1-becomes-bitor)))))
+
+(defthm b-xor-becomes-bitxor
+  (implies (and (unsigned-byte-p 1 x)
+                (unsigned-byte-p 1 y))
+           (equal (b-xor x y)
+                  (bitxor x y)))
+  :hints (("Goal" :in-theory (e/d (bitxor b-xor) (acl2::bvxor-1-becomes-bitxor)))))

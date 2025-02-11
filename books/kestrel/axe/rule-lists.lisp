@@ -469,11 +469,16 @@
     bvsx-of-if-becomes-bvsx-of-bvif-arg3
     repeatbit-of-if-becomes-repeatbit-of-bvif-arg2))
 
-;; These are needed only when operations like logxor or + may appears
+;; These are needed only when operations like logxor or + may appear
+;; Used in the x86/ dir.
 (defun convert-to-bv-rules ()
   (declare (xargs :guard t))
-  '(bvplus-convert-arg2-to-bv-axe-restricted ; todo: use the unrestricted ones
+  '(bvchop-convert-arg2-to-bv-axe
+    bvplus-convert-arg2-to-bv-axe-restricted ; todo: use the unrestricted ones
     bvplus-convert-arg3-to-bv-axe-restricted
+    bvmult-convert-arg2-to-bv-axe
+    bvmult-convert-arg3-to-bv-axe
+    ;; logext-convert-arg2-to-bv-axe ; todo: try
     ;; bvminus-convert-arg2-to-bv-axe ; these seemed to cause loops
     ;; bvminus-convert-arg3-to-bv-axe
     bvuminus-convert-arg2-to-bv-axe
@@ -1642,8 +1647,8 @@
      bv-array-read-of-getbit-list
      bv-array-read-numeric-bound
      bv-array-read-non-negative
-     bv-array-read-when-data-isnt-an-all-unsigned-byte-p
-     bv-array-write-when-data-isnt-an-all-unsigned-byte-p
+     bv-array-read-when-data-isnt-an-all-unsigned-byte-p ; requires the evaluator to know about bvchop-list
+     bv-array-write-when-data-isnt-an-all-unsigned-byte-p ; requires the evaluator to know about bvchop-list
      getbit-of-bv-array-read-too-high ; drop?
      ;;getbit-of-bv-array-read-gen ; just blast the array read?
      equal-of-bvchop-of-nth-and-bv-array-read
@@ -2853,7 +2858,7 @@
   '(update-nth-becomes-update-nth2 ; drop once arraycopy keeps types better?
     ;; update-nth-becomes-update-nth2-extend
     ;; update-nth-becomes-update-nth2-extend-gen
-    update-nth-becomes-update-nth2-extend-new ; drop once arraycopy keeps types better?
+    update-nth-becomes-append ; drop once arraycopy keeps types better?
     ))
 
 ;; todo: get rid of this?
@@ -3495,7 +3500,10 @@
 
              acl2-numberp-of-floor
              integerp-of-myif-strong
-             bvchop-of-minus-trim
+
+             ;bvchop-of-minus-trim
+             ;bvchop-convert-arg2-to-bv-axe ; need the rest of the convert-to-bv-rules...
+
              sha1-hack-a-million
              subrange-of-take
              nthcdr-of-subrange

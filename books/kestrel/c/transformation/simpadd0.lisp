@@ -12,8 +12,12 @@
 
 (include-book "../syntax/abstract-syntax-operations")
 (include-book "../syntax/unambiguity")
+(include-book "../syntax/langdef-mapping")
+(include-book "../atc/symbolic-execution-rules/top")
 
 (include-book "std/lists/index-of" :dir :system)
+(include-book "std/system/constant-value" :dir :system)
+(include-book "std/system/pseudo-event-form-listp" :dir :system)
 
 (local (include-book "std/typed-lists/character-listp" :dir :system))
 
@@ -24,26 +28,35 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ simpadd0
-  :parents (transformation-tools)
-  :short "A transformation to simplify @('x + 0') to @('x')."
+; Temporary additional symbolic execution rule,
+; to support simpadd0's preliminary proof generation capability.
+
+(defruled c::exec-binary-strict-pure-when-add-alt
+  (implies (and (equal c::op (c::binop-add))
+                (equal c::y (c::expr-value->value eval))
+                (equal c::objdes-y (c::expr-value->object eval))
+                (not (equal (c::value-kind c::x) :array))
+                (not (equal (c::value-kind c::y) :array))
+                (equal c::val (c::add-values c::x c::y))
+                (c::valuep c::val))
+           (equal (c::exec-binary-strict-pure
+                   c::op
+                   (c::expr-value c::x c::objdes-x)
+                   eval)
+                  (c::expr-value c::val nil)))
+  :use c::exec-binary-strict-pure-when-add)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc+ simpadd0-implementation
+  :parents (simpadd0)
+  :short "Implementation of @(tsee simpadd0)."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is a very simple proof-of-concept transformation,
-     which replaces expressions of the form @('x + 0') with @('x').
-     Due to C's arithmetic conversions, it is not immediately clear whether
-     this transformation always preserves code equivalence,
-     but for now we are not concerned about this,
-     as the goal of this proof-of-concept transformation
-     is just to show a plausible example of C-to-C transformation;
-     and there are certainly many cases (perhaps all cases) in which
-     this transformation is indeed equivalence-preserving.")
-   (xdoc::p
     "This transformation is implemented as a collection of ACL2 functions
      that operate on the abstract syntax,
-     following the recursion structure of the abstract syntax
-     (similarly to the @(see c$::printer)).
+     following the recursive structure of the abstract syntax.
      This is a typical pattern for C-to-C transformations,
      which we may want to partially automate,
      via things like generalized `folds' over the abstract syntax."))
@@ -1088,7 +1101,7 @@
                                        irr-stmt
                                        irr-block-item)))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define simpadd0-fundef ((fundef fundefp))
   :guard (fundef-unambp fundef)
@@ -1110,7 +1123,7 @@
   (defret fundef-unambp-of-simpadd0-fundef
     (fundef-unambp new-fundef)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define simpadd0-extdecl ((extdecl extdeclp))
   :guard (extdecl-unambp extdecl)
@@ -1129,7 +1142,7 @@
   (defret extdecl-unambp-of-simpadd0-extdecl
     (extdecl-unambp new-extdecl)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define simpadd0-extdecl-list ((extdecls extdecl-listp))
   :guard (extdecl-list-unambp extdecls)
@@ -1146,7 +1159,7 @@
     (extdecl-list-unambp new-extdecls)
     :hints (("Goal" :induct t))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define simpadd0-transunit ((tunit transunitp))
   :guard (transunit-unambp tunit)
@@ -1162,7 +1175,7 @@
   (defret transunit-unambp-of-simpadd0-transunit
     (transunit-unambp new-tunit)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define simpadd0-filepath ((path filepathp))
   :returns (new-path filepathp)
@@ -1204,7 +1217,7 @@
   :hooks (:fix)
   :prepwork ((local (include-book "arithmetic-3/top" :dir :system))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define simpadd0-filepath-transunit-map ((map filepath-transunit-mapp))
   :guard (filepath-transunit-map-unambp map)
@@ -1230,7 +1243,7 @@
     :hyp (filepath-transunit-mapp map)
     :hints (("Goal" :induct t))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define simpadd0-transunit-ensemble ((tunits transunit-ensemblep))
   :guard (transunit-ensemble-unambp tunits)
@@ -1244,3 +1257,188 @@
 
   (defret transunit-ensemble-unambp-of-simpadd0-transunit-ensemble
     (transunit-ensemble-unambp new-tunits)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define simpadd0-gen-proof-for-fun ((term-old "A term.")
+                                    (term-new "A term.")
+                                    (fun identp))
+  :returns (event acl2::pseudo-event-formp)
+  :short "Generate equivalence theorem for a function."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The theorem just says that executing the the function,
+     in the old and new translation unit,
+     returns the same result.
+     We use an arbitrary 1000 as the limit value.
+     Clearly, all of this is very simple and ad hoc."))
+  (b* ((string (ident->unwrap fun))
+       ((unless (stringp string))
+        (raise "Misusage error: function name ~x0 is not a string." string)
+        '(_))
+       (thm-name (acl2::packn-pos (list string '-equivalence) 'c2c))
+       (event
+        `(defruled ,thm-name
+           (equal (c::exec-fun (c::ident ,string)
+                               nil
+                               compst
+                               (c::init-fun-env
+                                (mv-nth 1 (c$::ldm-transunit ,term-old)))
+                               1000)
+                  (c::exec-fun (c::ident ,string)
+                               nil
+                               compst
+                               (c::init-fun-env
+                                (mv-nth 1 (c$::ldm-transunit ,term-new)))
+                               1000))
+           :enable (c::atc-all-rules
+                    c::fun-env-lookup
+                    omap::assoc
+                    c::exec-binary-strict-pure-when-add-alt)
+           :disable ((:e c::ident)))))
+    event)
+  :guard-hints (("Goal" :in-theory (enable atom-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define simpadd0-gen-proofs-for-transunit ((term-old "A term.")
+                                           (term-new "A term.")
+                                           (tunit transunitp))
+  :returns (events acl2::pseudo-event-form-listp)
+  :short "Generate equivalence theorems
+          for all the functions in a translation unit."
+  (simpadd0-gen-proofs-for-transunit-loop term-old
+                                          term-new
+                                          (transunit->decls tunit))
+  :prepwork
+  ((define simpadd0-gen-proofs-for-transunit-loop ((term-old "A term.")
+                                                   (term-new "A term.")
+                                                   (extdecls extdecl-listp))
+     :returns (events acl2::pseudo-event-form-listp)
+     :parents nil
+     (b* (((when (endp extdecls)) nil)
+          (extdecl (car extdecls))
+          ((unless (extdecl-case extdecl :fundef))
+           (simpadd0-gen-proofs-for-transunit-loop term-old
+                                                   term-new
+                                                   (cdr extdecls)))
+          (fundef (extdecl-fundef->unwrap extdecl))
+          (declor (fundef->declor fundef))
+          (dirdeclor (declor->direct declor))
+          ((unless (member-eq (dirdeclor-kind dirdeclor)
+                              '(:function-params :function-names)))
+           (raise "Internal error: ~
+                   direct declarator of function definition ~x0 ~
+                   is not a function declarator."
+                  fundef))
+          ((unless (cond
+                    ((dirdeclor-case dirdeclor :function-params)
+                     (endp (dirdeclor-function-params->params dirdeclor)))
+                    ((dirdeclor-case dirdeclor :function-names)
+                     (endp (dirdeclor-function-names->names dirdeclor)))))
+           (raise "Proof generation is currently supported ~
+                   only for functions with no parameters, ~
+                   but the function definition ~x0 has parameters."
+                  fundef))
+          (fun (declor->ident declor))
+          (event (simpadd0-gen-proof-for-fun term-old
+                                             term-new
+                                             fun))
+          (events (simpadd0-gen-proofs-for-transunit-loop term-old
+                                                          term-new
+                                                          (cdr extdecls))))
+       (cons event events)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define simpadd0-gen-proofs-for-transunit-ensemble
+  ((const-old symbolp)
+   (const-new symbolp)
+   (tunits-old transunit-ensemblep)
+   (tunits-new transunit-ensemblep))
+  :returns (events acl2::pseudo-event-form-listp)
+  :short "Generate equivalence theorems for all functions in
+          a translation unit ensemble."
+  (simpadd0-gen-proofs-for-transunit-ensemble-loop
+   const-old
+   const-new
+   (transunit-ensemble->unwrap tunits-old)
+   (transunit-ensemble->unwrap tunits-new))
+  :prepwork
+  ((define simpadd0-gen-proofs-for-transunit-ensemble-loop
+     ((const-old symbolp)
+      (const-new symbolp)
+      (tunitmap-old filepath-transunit-mapp)
+      (tunitmap-new filepath-transunit-mapp))
+     :returns (events acl2::pseudo-event-form-listp)
+     :parents nil
+     (b* (((when (omap::emptyp tunitmap-old)) nil)
+          ((when (omap::emptyp tunitmap-new))
+           (raise "Internal error: extra translation units ~x0." tunitmap-new))
+          ((mv path-old tunit) (omap::head tunitmap-old))
+          ((mv path-new &) (omap::head tunitmap-new))
+          (term-old `(omap::lookup
+                      ',path-old
+                      (transunit-ensemble->unwrap ,const-old)))
+          (term-new `(omap::lookup
+                      ',path-new
+                      (transunit-ensemble->unwrap ,const-new)))
+          (events (simpadd0-gen-proofs-for-transunit term-old
+                                                     term-new
+                                                     tunit))
+          (more-events (simpadd0-gen-proofs-for-transunit-ensemble-loop
+                        const-old
+                        const-new
+                        (omap::tail tunitmap-old)
+                        (omap::tail tunitmap-new))))
+       (append events more-events)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define simpadd0-fn (const-old const-new proofs (wrld plist-worldp))
+  :returns (event acl2::pseudo-event-formp)
+  :short "Event expansion of the transformation."
+  (b* (((unless (symbolp const-old))
+        (raise "~x0 must be a symbol." const-old)
+        '(_))
+       ((unless (symbolp const-new))
+        (raise "~x0 must be a symbol." const-new)
+        '(_))
+       ((unless (symbolp proofs))
+        (raise "~x0 must be a boolean." proofs)
+        '(_))
+       (tunits-old (acl2::constant-value const-old wrld))
+       ((unless (transunit-ensemblep tunits-old))
+        (raise "~x0 must be a translation unit ensemble.")
+        '(_))
+       ((unless (transunit-ensemble-unambp tunits-old))
+        (raise "~x0 must be an unambiguous translation unit ensemble.")
+        '(_))
+       (tunits-new (simpadd0-transunit-ensemble tunits-old))
+       ((unless (or (not proofs)
+                    (b* (((mv erp &) (c$::ldm-transunit-ensemble tunits-old)))
+                      (not erp))))
+        (raise "The old translation unit ~x0 is not within ~
+                the subset of C covered by our formal semantics."
+               tunits-old)
+        '(_))
+       ((unless (or (not proofs)
+                    (b* (((mv erp &) (c$::ldm-transunit-ensemble tunits-new)))
+                      (not erp))))
+        (raise "The new translation unit ~x0 is not within ~
+                the subset of C covered by our formal semantics."
+               tunits-new)
+        '(_))
+       (thm-events (and proofs
+                        (simpadd0-gen-proofs-for-transunit-ensemble
+                         const-old const-new tunits-old tunits-new)))
+       (const-event `(defconst ,const-new ',tunits-new)))
+    `(progn ,const-event ,@thm-events)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection simpadd0-macro-definition
+  :short "Definition of the @(tsee simpadd0) macro."
+  (defmacro simpadd0 (const-old const-new &key proofs)
+    `(make-event (simpadd0-fn ',const-old ',const-new ,proofs (w state)))))

@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -16,6 +16,7 @@
 (include-book "dynamic/top")
 (include-book "stake/top")
 (include-book "stake2/top")
+(include-book "proposals/top")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -96,12 +97,12 @@
       from certificate receiving events
       to certificate storing events,
       which makes certain aspects of the definitions and proofs simpler.")
-    (xdoc::p
+    (xdoc::li
      "The subdirectory @('stake2') contains a version that is
       a slightly simplified variant of the version in @('stake').
       It omits buffers from validator states,
       and combines certificate receiving and storing events
-      into single certificate accepting events;
+      into single certificate acceptance events;
       this makes the model simpler
       without really affecting its expressiveness.
       Another simplification in this version is that
@@ -111,14 +112,29 @@
       which may nondeterministically take place any time, like the other events.
       While this does not affect the expressiveness of the model
       for the purpose of proving properties like blockchain nonforking
-      (because the simplification makes more execution possible
+      (because the simplification makes more executions possible
       than in a model with more detailed and restrictive
       round advancement logic),
       it could affect the ability to prove certain other properties,
       e.g. because the system may deadlock more easily in this model.
       In addition to the simplifications just described,
       this version also eliminates some invariants
-      that are not needed to prove blockchain nonforking."))
+      that are not needed to prove blockchain nonforking.")
+    (xdoc::li
+     "The subdirectory @('proposals') contains a version that
+      extends the @('stake2') version
+      by explicitly modeling the exchange of proposals and signatures.
+      Certificate creation is no longer an atomic event:
+      there are separate events for
+      creating and broadcasting proposal,
+      endorsing proposals,
+      augmenting proposals with endorsements,
+      and finally creating and broadcasting certificates.
+      The other events, namely
+      certificate acceptance,
+      round advancement, and
+      anchor commitment,
+      are similar to the @('stake2') version."))
    (xdoc::p
     "We plan to add other subdirectories
      for versions that cover additional aspects of AleoBFT,
@@ -158,4 +174,5 @@
                     aleobft-static::aleobft-static
                     aleobft-dynamic::aleobft-dynamic
                     aleobft-stake::aleobft-stake
-                    aleobft-stake2::aleobft-stake2))
+                    aleobft-stake2::aleobft-stake2
+                    aleobft-proposals::aleobft-proposals))

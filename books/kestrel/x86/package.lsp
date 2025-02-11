@@ -27,6 +27,25 @@
     x86isa::x86p
     x86isa::x86$ap
 
+    x86isa::x86rec-get
+    x86isa::x86rec-get1
+    x86isa::x86rec-to-mtr
+    x86isa::x86rec-p
+    x86isa::x86rec-p1
+    x86isa::x86-elem-p-top
+    x86isa::x86-elem-p
+    x86isa::x86-elem-default
+    x86isa::x86-elem-default-top
+    x86isa::tlbp
+    x86isa::tlb-entryp
+    x86isa::good-tlb-key-p
+    x86isa::tlb-key-p
+    x86isa::tlb-key->r-w-x$inline
+    x86isa::tlb-key-fix
+    x86isa::tty-bufferp
+    x86isa::env-alistp
+    x86isa::rip-ret-alistp
+
     x86isa::memi
     x86isa::!memi
     x86isa::memi$a
@@ -366,6 +385,7 @@
     x86isa::sub-zf-spec64
 
     x86isa::ror-spec
+    x86isa::ror-spec$inline ; todo: more like this
     x86isa::ror-spec-8
     x86isa::ror-spec-16
     x86isa::ror-spec-32
@@ -459,10 +479,14 @@
     ;; new stuff after change to x86 model state representation:
 
     x86isa::rflagsbits-fix
+    x86isa::rflagsbits-fix$inline
     x86isa::rflags
+    x86isa::rflags$a
     x86isa::rflagsbits
     x86isa::!rflags
+    x86isa::!rflags$a
     x86isa::change-rflagsbits
+    x86isa::write-user-rflags
 
     x86isa::rflagsbits->cf
     x86isa::rflagsbits->res1
@@ -562,6 +586,7 @@
     x86isa::seg-hidden-basei
     x86isa::seg-visiblei
     x86isa::!rip
+    x86isa::!rip$a
 
     x86isa::ctri
 
@@ -655,8 +680,14 @@
     x86isa::cr8bits->cr8-trpl
 
     x86isa::msri
+    x86isa::msri$a
+    x86isa::!msri
+    x86isa::!msri$a
 
+    x86isa::mxcsr
+    x86isa::mxcsr$a
     x86isa::!mxcsr
+    x86isa::!mxcsr$a
     x86isa::mxcsrbits-fix
 
     x86isa::mxcsrbits->ie$inline
@@ -734,8 +765,8 @@
     x86isa::fp-to-rat
     x86isa::sse-cmp
     x86isa::sse-cmp-special
-    x86isa::mxcsr
-    x86isa::mxcsr$a
+    x86isa::sp-sse-cmp
+    x86isa::dp-sse-cmp
     x86isa::sse-daz
     x86isa::denormal-exception
     x86isa::*OP-UCOMI*
@@ -759,6 +790,8 @@
     x86isa::undef
     x86isa::undef$a
     x86isa::!undef
+    x86isa::!undef$a
+    x86isa::create-undef
 
     x86isa::read-*ip
     x86isa::write-*ip
@@ -978,6 +1011,8 @@
     x86isa::i256$inline
     x86isa::i512$inline
 
+    x86isa::i48p$inline  ;todo: more like this
+
     ;; more like this:
     x86isa::prefixes->lck$inline
     x86isa::prefixes->adr$inline
@@ -1047,7 +1082,7 @@
     x86isa::wx32
     x86isa::wx64
     x86isa::wx128
-        
+
     x86isa::rz32 ; there seem to be only 5 of these
     x86isa::rz64
     x86isa::rz128
@@ -1069,17 +1104,17 @@
     x86isa::wz128
     x86isa::wz256
     x86isa::wz512
-    
+
     x86isa::xmmi-size
     x86isa::xmmi-size$inline
     x86isa::!xmmi-size
     x86isa::!xmmi-size$inline
-    
+
     x86isa::zmmi
     x86isa::zmmi$a
     x86isa::!zmmi
     x86isa::!zmmi$a
-    
+
     x86isa::zmmi-size
     x86isa::zmmi-size$inline
     x86isa::!zmmi-size
@@ -1131,7 +1166,6 @@
     bool-fix
     bool-fix$inline
 
-
     bitxor
     bitnot
     bitand
@@ -1148,6 +1182,9 @@
     rightrotate
     leftrotate32
     rightrotate32
+
+    acl2::bfix$
+    acl2::bfix$inline
 
     binary-logand
     binary-logxor
@@ -1179,6 +1216,7 @@
 
     define
     __function__
+    defrule
 
     defp
 
@@ -1302,12 +1340,18 @@
 
 ;; Ideally, these would all be rewritten to BV ops
 (defconst *symbols-from-bitops*
-  '(bitops::part-install-width-low$inline
+  '(bitops::part-select ; a macro
+    bitops::part-select-low-high
+    bitops::part-select-low-high$inline
+    bitops::part-select-width-low
     bitops::part-select-width-low$inline
+    bitops::part-install ; a macro
+    bitops::part-install-width-low
+    bitops::part-install-width-low$inline
     b-xor ; from ihs, via bitops
-    logbit$inline ; really from ihs
     b-xor$inline ; really from ihs
-    part-select
+    logbit
+    logbit$inline ; really from ihs
     ))
 
 ;; Ideally, these would all be rewritten away

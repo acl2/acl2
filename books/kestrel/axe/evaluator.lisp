@@ -1,7 +1,7 @@
 ; The main (old-style) Axe evaluator
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -202,20 +202,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund bvchop-list-unguarded (size lst)
-  (declare (xargs :guard t))
-  (if (atom lst)
-      nil
-    (cons (bvchop-unguarded size (car lst))
-          (bvchop-list-unguarded size (cdr lst)))))
-
-(defthm bvchop-list-unguarded-correct
-  (equal (bvchop-list-unguarded size lst)
-         (bvchop-list           size lst))
-  :hints (("Goal" :in-theory (enable bvchop-list-unguarded bvchop-list))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defund bvnot-list-unguarded (size lst)
   (declare (xargs :guard t))
   (if (atom lst)
@@ -413,7 +399,7 @@
                   (first-non-member first-non-member arg1 arg2)
                   (booland booland arg1 arg2) ;unguarded
                   (boolor boolor arg1 arg2)   ;unguarded
-                  (getbit-list getbit-list arg1 arg2)
+                  (getbit-list getbit-list-unguarded arg1 arg2) ; see getbit-list-unguarded-correct
                   (set::union set::union arg1 arg2)
                   (leftrotate32 leftrotate32-unguarded arg1 arg2)
 ;                  (list::val list::val arg1 arg2) ;new Tue Jul 17 16:49:17 2012
@@ -510,7 +496,7 @@
                          (slice slice-unguarded arg1 arg2 arg3)
                          (bvshl bvshl arg1 arg2 arg3)
                          ;; (keep-items-less-than keep-items-less-than-unguarded arg1 arg2 arg3) ;see keep-items-less-than-unguarded-correct
-                         (subrange subrange (nfix arg1) (nfix arg2) arg3)
+                         (subrange subrange-unguarded arg1 arg2 arg3) ; see subrange-unguarded-correct
                          (bvxor-list bvxor-list-unguarded arg1 arg2 arg3))
                        (acons 4
                               '((update-subrange update-subrange arg1 arg2 arg3 arg4) ;new

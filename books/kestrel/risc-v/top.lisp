@@ -1,6 +1,6 @@
 ; RISC-V Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,6 +10,7 @@
 
 (in-package "RISCV")
 
+(include-book "features")
 (include-book "instructions")
 (include-book "decoding")
 (include-book "states")
@@ -35,6 +36,7 @@
      (except for
      the @('FENCE'), @('HINT'), @('ECALL') and @('EBREAK') instructions),
      little endian memory access,
+     fully readable and writable address space,
      no alignment checks.
      We plan to extend and improve this library.")
    (xdoc::p

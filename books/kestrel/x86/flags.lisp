@@ -1,7 +1,7 @@
 ; An interface to processor flags
 ;
 ; Copyright (C) 2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2024 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -118,6 +118,13 @@
       (:vip  (rflagsbits->vip  rflags))
       (:id   (rflagsbits->id   rflags))
       (otherwise (er hard 'get-flag "illegal flag keyword: ~x0.~%" flag)))))
+
+;; for any of the *one-bit-flags*
+(defthm unsigned-byte-p-of-get-flag-one-bit
+  (implies (and (member-eq flag *one-bit-flags*)
+                (posp size))
+           (unsigned-byte-p size (get-flag flag x86)))
+  :hints (("Goal" :in-theory (enable get-flag))))
 
 ;;
 ;; Rules to introduce get-flag
@@ -721,6 +728,14 @@
                                      !rflagsbits->vip rflagsbits->vip
                                      !rflagsbits->iopl rflagsbits->iopl
                                      !rflagsbits->intf rflagsbits->intf))))
+
+;; This allows the state terms to differ
+(defthm set-flag-of-get-flag-same-gen
+  (implies (and (equal (get-flag flag x86_2)
+                       (get-flag flag x86))
+                (member-equal flag *flags*))
+           (equal (set-flag flag (get-flag flag x86_2) x86)
+                  x86)))
 
 (defthm if-of-set-flag-and-set-flag
   (equal (if test (set-flag flag val1 x86) (set-flag flag val2 x86))

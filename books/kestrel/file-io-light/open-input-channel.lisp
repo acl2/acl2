@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in function open-input-channel
 ;
-; Copyright (C) 2017-2023 Kestrel Institute
+; Copyright (C) 2017-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,15 +11,15 @@
 (in-package "ACL2")
 
 (local (include-book "kestrel/lists-light/cons" :dir :system))
-(local (include-book "kestrel/lists-light/cdr" :dir :system))
-(local (include-book "kestrel/lists-light/len" :dir :system))
+;(local (include-book "kestrel/lists-light/cdr" :dir :system))
+;(local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/utilities/intern-in-package-of-symbol" :dir :system))
 (local (include-book "kestrel/utilities/coerce" :dir :system))
 (local (include-book "kestrel/utilities/explode-atom" :dir :system))
 (local (include-book "kestrel/utilities/explode-nonnegative-integer" :dir :system))
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
 (local (include-book "kestrel/lists-light/append" :dir :system))
-(local (include-book "kestrel/lists-light/nth" :dir :system))
+;(local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "channels"))
 (local (include-book "kestrel/utilities/state" :dir :system))

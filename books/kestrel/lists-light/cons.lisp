@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function cons.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -42,3 +42,31 @@
   (equal (true-listp (cons a x))
          (true-listp x))
   :hints (("Goal" :cases ((true-listp x)))))
+
+(defthmd equal-cons-cases2
+  (equal (equal (cons a b) c) ;caution! acl2 can match (cons a b) with a constant - that can be bad for big constants
+         (and (consp c)
+              (equal a (car c))
+              (equal b (cdr c)))))
+
+(defthmd equal-cons-cases2-alt
+  (equal (equal c (cons a b)) ;caution! acl2 can match (cons a b) with a constant - that can be bad for big constants
+         (and (consp c)
+              (equal a (car c))
+              (equal b (cdr c)))))
+
+;; (defthm equal-cons-cases2-alt-better
+;;   (implies (syntaxp (not (and (quotep a) ;defeats acl2's over-agressive matching
+;;                               (quotep b))))
+;;            (equal (equal c (cons a b))
+;;                   (and (consp c)
+;;                        (equal a (car c))
+;;                        (equal b (cdr c))))))
+
+;; ;doesn't fire if the "cons" found is just a constant list.
+;; (defthmd equal-cons-cases2-better
+;;   (implies (syntaxp (not (and (quotep a) (quotep b)))) ;the and used to be or
+;;            (equal (equal (cons a b) c)
+;;                   (and (consp c)
+;;                        (equal a (car c))
+;;                        (equal b (cdr c))))))

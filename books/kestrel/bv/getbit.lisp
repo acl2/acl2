@@ -1,7 +1,7 @@
 ; BV Library: getbit
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -209,16 +209,14 @@
              (getbit n x)
            0)))
 
-(defthm logbitp-iff-getbit
-  (iff (logbitp n x)
-       (equal 1 (getbit n x)))
+;; logbitp is built-in to acl2
+(defthm logbitp-to-getbit-equal-1
+  (equal (logbitp n x)
+         (equal 1 (getbit n x)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (e/d (logtail bvchop logbitp getbit slice oddp evenp
-                                     equal-of-0-and-mod)
-                           (;mod-cancel
-                            slice-becomes-bvchop
-                            ;;
-                            )))))
+                                    equal-of-0-and-mod)
+                           (slice-becomes-bvchop)))))
 
 (defthmd getbit-when-equal-of-constant-and-bvchop
   (implies (and (equal free (bvchop size x))

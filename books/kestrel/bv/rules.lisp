@@ -44,7 +44,7 @@
 (include-book "bvshr")
 (include-book "bvshl")
 (include-book "bool-to-bit")
-(include-book "bit-to-bool")
+(include-book "bit-to-bool-def")
 (include-book "kestrel/booleans/boolxor" :dir :system)
 (include-book "kestrel/booleans/booland" :dir :system)
 (include-book "kestrel/booleans/boolif" :dir :system)
@@ -186,9 +186,9 @@
   :hints (("Goal" :in-theory (e/d (slice
                                    ;;why does slice get introduced?
                                    bvchop-of-logtail
-                                   logext LOGBITP-IFF-GETBIT)
+                                   logext LOGBITP-TO-GETBIT-EQUAL-1)
                                   (;hack-6
-                                   ;LOGBITP-IFF-GETBIT ;why? need getbit of logtail?
+                                   ;LOGBITP-TO-GETBIT-EQUAL-1 ;why? need getbit of logtail?
                                    )))))
 
 ;; (defthm zbp-times-2
@@ -303,7 +303,7 @@
 (defthm logbitp-0-of-times-2
   (implies (integerp x)
            (not (LOGBITP 0 (* 2 X))))
-  :hints (("Goal" :in-theory (e/d (LOGBITP oddp) (LOGBITP-IFF-GETBIT)))))
+  :hints (("Goal" :in-theory (e/d (LOGBITP oddp) (LOGBITP-TO-GETBIT-EQUAL-1)))))
 
 (defthm logbitp-of-double
   (implies (and (natp n)
@@ -312,14 +312,14 @@
                   (if (equal 0 n)
                       nil
                     (logbitp (+ -1 n) x))))
-  :hints (("Goal" :in-theory (e/d (logbitp) (LOGBITP-IFF-GETBIT)))))
+  :hints (("Goal" :in-theory (e/d (logbitp) (LOGBITP-TO-GETBIT-EQUAL-1)))))
 
 (defthm logbitp-when-i-is-negative
   (implies (and (< i 0)
                 (Integerp i))
            (equal (LOGBITP i j)
                   (LOGBITP 0 j)))
-  :hints (("Goal" :in-theory (e/d (logbitp) (LOGBITP-IFF-GETBIT)))))
+  :hints (("Goal" :in-theory (e/d (logbitp) (LOGBITP-TO-GETBIT-EQUAL-1)))))
 
 (defthm logext-of-logapp
   (implies (and (integerp x)
@@ -348,7 +348,7 @@
                   (if (equal 0 n)
                       (logbitp 0 x)
                     (logbitp (- n m) x))))
-  :hints (("Goal" :in-theory (e/d (logbitp floor oddp expt-of-+) (LOGBITP-IFF-GETBIT)))))
+  :hints (("Goal" :in-theory (e/d (logbitp floor oddp expt-of-+) (LOGBITP-TO-GETBIT-EQUAL-1)))))
 
 ;(local (in-theory (disable hack-6))) ;bozo
 
@@ -661,7 +661,7 @@
   :hints (("Goal" :in-theory (e/d (;logapp
                                    slice
                                    ;logtail-bvchop
-                                   logext) (logbitp-iff-getbit ;why - need getbit of logapp
+                                   logext) (logbitp-to-getbit-equal-1 ;why - need getbit of logapp
 
                                             logbitp)))))
 
@@ -820,7 +820,7 @@
                                   (logtail-logapp
                                    LOGBITP-LOGTAIL
 
-                                   LOGBITP-IFF-GETBIT)))))
+                                   LOGBITP-TO-GETBIT-EQUAL-1)))))
 
 (theory-invariant (incompatible (:rewrite logtail-of-logext-gen) (:rewrite logext-of-logtail)))
 
@@ -1096,7 +1096,7 @@
                                     ;expt-hack
                                     EXPT-OF-+)
                             (LOGBITP ; for speed
-                             LOGBITP-IFF-GETBIT INTEGERP-OF-EXPT-when-natp)))))
+                             LOGBITP-TO-GETBIT-EQUAL-1 INTEGERP-OF-EXPT-when-natp)))))
 
 (defthm bvcat-of-logext-same
    (implies (and (natp size)
@@ -5537,6 +5537,12 @@
 (defthm bit-to-bool-of-bool-to-bit
   (implies (booleanp x)
            (equal (bit-to-bool (bool-to-bit x))
+                  x)))
+
+;move
+(defthm bool-to-bit-of-bit-to-bool
+  (implies (unsigned-byte-p 1 x)
+           (equal (bool-to-bit (bit-to-bool x))
                   x)))
 
 ;move

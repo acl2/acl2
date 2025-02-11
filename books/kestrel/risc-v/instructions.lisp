@@ -1,6 +1,6 @@
 ; RISC-V Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -87,7 +87,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection op-imm-32-funct
+(fty::deftagsum op-imm-32-funct
   :short "Fixtype of
           names of non-shift instructions with the @('OP-IMM-32') opcode
           [ISA:4.2.1]."
@@ -95,46 +95,8 @@
   (xdoc::topstring
    (xdoc::p
     "This is analogous to @(tsee op-imm-funct),
-     but for the @('OP-IMM-32') opcode.")
-   (xdoc::p
-    "Ideally we would like to use a @(tsee fty::deftagsum) here,
-     even though there is just one summand,
-     for uniformity with other fixtypes that have at least two summands.
-     However, doing so triggers a (broader) issue in XDOC.
-     Until that issue is resolved,
-     we ``manually'' define this fixtype."))
-
-  (define op-imm-32-funct-p (x)
-    :returns (yes/no booleanp)
-    (and (true-listp x)
-         (= (len x) 1)
-         (eq (car x) :addiw))
-    :parents nil)
-
-  (define op-imm-32-funct-addiw ()
-    :returns (x op-imm-32-funct-p)
-    '(:addiw)
-    :parents nil)
-
-  (std::deffixer op-imm-32-funct-fix
-    :pred op-imm-32-funct-p
-    :body-fix (op-imm-32-funct-addiw)
-    :parents nil)
-
-  (fty::deffixtype op-imm-32-funct
-    :pred op-imm-32-funct-p
-    :fix op-imm-32-funct-fix
-    :equiv op-imm-32-funct-equiv
-    :define t
-    :forward t)
-
-  (defmacro op-imm-32-funct-case (target keyword term)
-    (if (and (symbolp target)
-             (eq keyword :addiw))
-        `(let ((,target ,target))
-           (declare (ignore ,target))
-           ,term)
-      nil)))
+     but for the @('OP-IMM-32') opcode."))
+  (:addiw ()))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
