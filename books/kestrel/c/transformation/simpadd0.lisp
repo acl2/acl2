@@ -1336,7 +1336,7 @@
        ((unless (stringp string))
         (raise "Misusage error: function name ~x0 is not a string." string)
         '(_))
-       (thm-name (acl2::packn-pos (list string '-equivalence) 'c2c))
+       (thm-name (packn-pos (list string '-equivalence) 'c2c))
        (event
         `(defruled ,thm-name
            (equal (c::exec-fun (c::ident ,string)
@@ -1364,7 +1364,7 @@
 (define simpadd0-gen-proofs-for-transunit ((term-old "A term.")
                                            (term-new "A term.")
                                            (tunit transunitp))
-  :returns (events acl2::pseudo-event-form-listp)
+  :returns (events pseudo-event-form-listp)
   :short "Generate equivalence theorems
           for all the functions in a translation unit."
   (simpadd0-gen-proofs-for-transunit-loop term-old
@@ -1374,7 +1374,7 @@
   ((define simpadd0-gen-proofs-for-transunit-loop ((term-old "A term.")
                                                    (term-new "A term.")
                                                    (extdecls extdecl-listp))
-     :returns (events acl2::pseudo-event-form-listp)
+     :returns (events pseudo-event-form-listp)
      :parents nil
      (b* (((when (endp extdecls)) nil)
           (extdecl (car extdecls))
@@ -1416,7 +1416,7 @@
    (const-new symbolp)
    (tunits-old transunit-ensemblep)
    (tunits-new transunit-ensemblep))
-  :returns (events acl2::pseudo-event-form-listp)
+  :returns (events pseudo-event-form-listp)
   :short "Generate equivalence theorems for all functions in
           a translation unit ensemble."
   (simpadd0-gen-proofs-for-transunit-ensemble-loop
@@ -1430,7 +1430,7 @@
       (const-new symbolp)
       (tunitmap-old filepath-transunit-mapp)
       (tunitmap-new filepath-transunit-mapp))
-     :returns (events acl2::pseudo-event-form-listp)
+     :returns (events pseudo-event-form-listp)
      :parents nil
      (b* (((when (omap::emptyp tunitmap-old)) nil)
           ((when (omap::emptyp tunitmap-new))
