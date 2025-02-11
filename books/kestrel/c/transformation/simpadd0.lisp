@@ -19,6 +19,7 @@
 (include-book "std/system/constant-value" :dir :system)
 (include-book "std/system/pseudo-event-form-listp" :dir :system)
 
+(local (include-book "std/system/w" :dir :system))
 (local (include-book "std/typed-lists/character-listp" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
@@ -48,22 +49,80 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ simpadd0-implementation
-  :parents (simpadd0)
-  :short "Implementation of @(tsee simpadd0)."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This transformation is implemented as a collection of ACL2 functions
-     that operate on the abstract syntax,
-     following the recursive structure of the abstract syntax.
-     This is a typical pattern for C-to-C transformations,
-     which we may want to partially automate,
-     via things like generalized `folds' over the abstract syntax."))
-  :order-subtopics t
-  :default-parent t)
+(xdoc::evmac-topic-implementation
+
+ simpadd0
+
+ :items
+
+ ((xdoc::evmac-topic-implementation-item-input "const-old")
+
+  (xdoc::evmac-topic-implementation-item-input "const-new")
+
+  (xdoc::evmac-topic-implementation-item-input "proofs"))
+
+ :additional
+
+ ("This transformation is implemented as a collection of ACL2 functions
+   that operate on the abstract syntax,
+   following the recursive structure of the abstract syntax.
+   This is a typical pattern for C-to-C transformations,
+   which we may want to partially automate,
+   via things like generalized `folds' over the abstract syntax."))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(xdoc::evmac-topic-input-processing simpadd0)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define simpadd0-process-inputs (const-old const-new proofs (wrld plist-worldp))
+  :returns (mv erp
+               (tunits-old transunit-ensemblep)
+               (const-old$ symbolp)
+               (const-new$ symbolp)
+               (proofs$ booleanp))
+  :short "Process all the inputs."
+  (b* (((reterr) (c$::irr-transunit-ensemble) nil nil nil)
+       ((unless (symbolp const-old))
+        (reterr (msg "The first input must be a symbol, ~
+                      but it is ~x0 instead."
+                     const-old)))
+       ((unless (symbolp const-new))
+        (reterr (msg "The second input must be a symbol, ~
+                      but it is ~x0 instead."
+                     const-new)))
+       ((unless (booleanp proofs))
+        (reterr (msg "The :PROOFS input must be a boolean, ~
+                      but it is ~x0 instead."
+                     proofs)))
+       ((unless (acl2::constant-symbolp const-old wrld))
+        (reterr (msg "The first input, ~x0, must be a named constant, ~
+                      but it is not."
+                     const-old)))
+       (tunits-old (acl2::constant-value const-old wrld))
+       ((unless (transunit-ensemblep tunits-old))
+        (reterr (msg "The value of the constant ~x0 ~
+                      must be a translation unit ensemble, ~
+                      but it is ~x1 instead."
+                     const-old tunits-old)))
+       ((unless (transunit-ensemble-unambp tunits-old))
+        (reterr (msg "The translation unit ensemble ~x0 ~
+                      that is the value of the constant ~x1 ~
+                      must be unambiguous, ~
+                      but it is not."
+                     tunits-old const-old))))
+    (retok tunits-old const-old const-new proofs))
+  ///
+  (defret transunit-ensemble-unambp-of-simpadd0-process-inputs
+    (implies (not erp)
+             (transunit-ensemble-unambp tunits-old))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(xdoc::evmac-topic-event-generation simpadd0)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defines simpadd0-exprs/decls/stmts
   :short "Transform expressions, declarations, statements,
@@ -1258,7 +1317,7 @@
   (defret transunit-ensemble-unambp-of-simpadd0-transunit-ensemble
     (transunit-ensemble-unambp new-tunits)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define simpadd0-gen-proof-for-fun ((term-old "A term.")
                                     (term-new "A term.")
@@ -1394,51 +1453,74 @@
                         (omap::tail tunitmap-new))))
        (append events more-events)))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define simpadd0-fn (const-old const-new proofs (wrld plist-worldp))
-  :returns (event acl2::pseudo-event-formp)
+(define simpadd0-gen-everything ((tunits-old transunit-ensemblep)
+                                 (const-old symbolp)
+                                 (const-new symbolp)
+                                 (proofs booleanp))
+  :guard (transunit-ensemble-unambp tunits-old)
+  :returns (mv erp (event acl2::pseudo-event-formp))
   :short "Event expansion of the transformation."
-  (b* (((unless (symbolp const-old))
-        (raise "~x0 must be a symbol." const-old)
-        '(_))
-       ((unless (symbolp const-new))
-        (raise "~x0 must be a symbol." const-new)
-        '(_))
-       ((unless (symbolp proofs))
-        (raise "~x0 must be a boolean." proofs)
-        '(_))
-       (tunits-old (acl2::constant-value const-old wrld))
-       ((unless (transunit-ensemblep tunits-old))
-        (raise "~x0 must be a translation unit ensemble.")
-        '(_))
-       ((unless (transunit-ensemble-unambp tunits-old))
-        (raise "~x0 must be an unambiguous translation unit ensemble.")
-        '(_))
+  (b* (((reterr) '(_))
        (tunits-new (simpadd0-transunit-ensemble tunits-old))
        ((unless (or (not proofs)
                     (b* (((mv erp &) (c$::ldm-transunit-ensemble tunits-old)))
                       (not erp))))
-        (raise "The old translation unit ~x0 is not within ~
-                the subset of C covered by our formal semantics."
-               tunits-old)
-        '(_))
+        (reterr (msg "The old translation unit ensemble ~x0 ~
+                      is not within the subset of C ~
+                      covered by our formal semantics. ~
+                      Thus, proofs cannot be generated: ~
+                      re-run the transformation with :PROOFS NIL."
+                     tunits-old)))
        ((unless (or (not proofs)
                     (b* (((mv erp &) (c$::ldm-transunit-ensemble tunits-new)))
                       (not erp))))
-        (raise "The new translation unit ~x0 is not within ~
-                the subset of C covered by our formal semantics."
-               tunits-new)
-        '(_))
+        (reterr (msg "The new translation unit ensemble ~x0 ~
+                      is not within the subset of C ~
+                      covered by our formal semantics. ~
+                      Thus, proofs cannot be generated: ~
+                      re-run the transformation with :PROOFS NIL."
+                     tunits-new)))
        (thm-events (and proofs
                         (simpadd0-gen-proofs-for-transunit-ensemble
                          const-old const-new tunits-old tunits-new)))
        (const-event `(defconst ,const-new ',tunits-new)))
-    `(progn ,const-event ,@thm-events)))
+    (retok `(encapsulate () ,const-event ,@thm-events))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define simpadd0-process-inputs-and-gen-everything (const-old
+                                                    const-new
+                                                    proofs
+                                                    (wrld plist-worldp))
+  :returns (mv erp (event acl2::pseudo-event-formp))
+  :parents (simpadd0-implementation)
+  :short "Process the inputs and generate the events."
+  (b* (((reterr) '(_))
+       ((erp tunits-old const-old const-new proofs)
+        (simpadd0-process-inputs const-old const-new proofs wrld)))
+    (simpadd0-gen-everything tunits-old const-old const-new proofs)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define simpadd0-fn (const-old const-new proofs (ctx ctxp) state)
+  :returns (mv erp (event acl2::pseudo-event-formp) state)
+  :parents (simpadd0-implementation)
+  :short "Event expansion of @(tsee simpadd0)."
+  (b* (((mv erp event)
+        (simpadd0-process-inputs-and-gen-everything const-old
+                                                    const-new
+                                                    proofs
+                                                    (w state)))
+       ((when erp) (er-soft+ ctx t '(_) "~@0" erp)))
+    (value event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection simpadd0-macro-definition
+  :parents (simpadd0-implementation)
   :short "Definition of the @(tsee simpadd0) macro."
   (defmacro simpadd0 (const-old const-new &key proofs)
-    `(make-event (simpadd0-fn ',const-old ',const-new ,proofs (w state)))))
+    `(make-event
+      (simpadd0-fn ',const-old ',const-new ,proofs 'simpadd0 state))))
