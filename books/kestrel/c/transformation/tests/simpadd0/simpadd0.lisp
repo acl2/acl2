@@ -36,10 +36,14 @@
                  nil)))
 
 (defconst *old-transunits*
-  (b* (((mv erp transunits) (c$::parse-fileset *old-fileset* nil)))
-    (if erp
-        (cw "~@0" erp)
-      transunits)))
+  (b* (((mv erp transunits) (c$::parse-fileset *old-fileset* nil))
+       ((when erp) (cw "~@0" erp))
+       ((mv erp transunits) (c$::dimb-transunit-ensemble transunits nil))
+       ((when erp) (cw "~@0" erp))
+       ((mv erp transunits) (c$::valid-transunit-ensemble
+                             transunits nil (c$::ienv-default)))
+       ((when erp) (cw "~@0" erp)))
+    transunits))
 
 (defconst *new-transunits*
   (simpadd0-transunit-ensemble *old-transunits*))
@@ -67,7 +71,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (c$::input-files :files ("file.c")
-                 :process :parse
                  :const *old-code*)
 
 (simpadd0 *old-code* *new-code* :proofs t)
