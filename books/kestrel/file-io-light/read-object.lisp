@@ -1,6 +1,6 @@
 ; A lightweight book about the built-in function read-object.
 ;
-; Copyright (C) 2021-2023 Kestrel Institute
+; Copyright (C) 2021-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,13 +14,13 @@
 (local (include-book "kestrel/utilities/state" :dir :system))
 (local (include-book "channels"))
 (local (include-book "iprint-oracle-updates"))
-(local (include-book "kestrel/lists-light/cdr" :dir :system))
-(local (include-book "kestrel/lists-light/len" :dir :system))
+;(local (include-book "kestrel/lists-light/cdr" :dir :system))
+;(local (include-book "kestrel/lists-light/len" :dir :system))
 
 ;; So the rules in the book fire
 (in-theory (disable mv-nth read-object))
 
-(local (in-theory (enable consp-of-cdr)))
+;(local (in-theory (enable consp-of-cdr)))
 
 (local
  (defthmd assoc-equal-when-not-symbolp-and-open-channels-p
