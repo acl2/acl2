@@ -1,6 +1,6 @@
 ; A function to write a sequence of objects to a file
 ;
-; Copyright (C) 2017-2024 Kestrel Institute
+; Copyright (C) 2017-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,7 +11,7 @@
 (in-package "ACL2")
 
 (include-book "write-objects-to-channel")
-(local (include-book "kestrel/utilities/state" :dir :system))
+;(local (include-book "kestrel/utilities/state" :dir :system))
 (local (include-book "open-output-channel"))
 
 (local (in-theory (disable put-global
