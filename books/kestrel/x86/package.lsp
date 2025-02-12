@@ -1242,12 +1242,13 @@
     axe-quotep
     result-array-stobj
     dag-to-term
-    dag-info
     make-term-into-dag
     ;; simplify-terms-using-each-other
     make-cons-nest
+    dag-info
     dag-fns
     dag-vars
+    dag-size
     make-rule-alist
     make-rule-alist!
     dagify-term
