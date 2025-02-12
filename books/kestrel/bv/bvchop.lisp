@@ -931,3 +931,13 @@
                 (integerp y))
            (equal (bvchop size (+ x y (expt 2 size)))
                   (bvchop size (+ x y)))))
+
+(defthmd mod-becomes-bvchop-when-power-of-2p
+  (implies (and (syntaxp (quotep k))
+                (power-of-2p k)
+                (integerp x))
+           (equal (mod x k)
+                  (bvchop (+ -1 (integer-length k)) x)))
+  :hints (("Goal" :in-theory (enable bvchop power-of-2p))))
+
+(theory-invariant (incompatible (:rewrite mod-becomes-bvchop-when-power-of-2p) (:definition bvchop)))

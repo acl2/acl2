@@ -819,3 +819,31 @@
                               x86)))
   :hints (("Goal" :use (:instance write-bytes-of-write-bytes-same-contained-constants (vals1 (list byte)))
            :in-theory (disable write-bytes-of-write-bytes-same-contained-constants))))
+
+
+;; (thm
+;;  (implies (and (equal 1 (len vals2))
+;;                (equal k+1 (bvplus 1 k)))
+;;           (equal (write-bytes k+1 vals1 (write-bytes k vals2 x86))
+;;                  (write-bytes k+1 (cons (first vals2s)) x86))))
+
+;; (defthm read-of-write-bytes-not-irrel
+;;   (implies (and (< (bvminus 48 addr1 addr2) (len vals))
+;;                 (<= n1 (bvminus 48 addr2 addr1))
+;;                 (natp n1)
+;;                 (integerp addr2)
+;;                 (integerp addr1))
+;;            (equal (read n1 addr1 (write-bytes addr2 vals x86))
+;;                   (read n1 addr1 x86)))
+;;   :hints ( ;("subgoal *1/2" :cases ((equal n1 1)))
+;;           ("Goal" :do-not '(generalize eliminate-destructors)
+;;            :induct (read n1 addr1 x86)
+;;            :in-theory (e/d (bvplus acl2::bvchop-of-sum-cases app-view bvuminus bvminus)
+;;                            (acl2::bvplus-recollapse acl2::bvminus-becomes-bvplus-of-bvuminus
+;;                                                     ACL2::BVCAT-OF-+-HIGH
+;;                                                     )))))
+
+;; (defthm write-bytes-of-281474976710656
+;;   (equal (write-bytes 281474976710656 vals x86)
+;;          (write-bytes 0 vals x86))
+;;   )

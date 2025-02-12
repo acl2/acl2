@@ -13,6 +13,7 @@
 
 (include-book "centaur/bitops/part-install" :dir :system)
 (include-book "centaur/bitops/rotate" :dir :system)
+;(include-book "centaur/bitops/fast-rotate" :dir :system)
 (include-book "bvcat-def")
 (include-book "slice-def")
 (include-book "getbit-def")
@@ -295,7 +296,6 @@
 ;; Introduces the BV function
 (defthm rotate-right-becomes-rightrotate
   (implies (and (natp width)
-                (natp x)
                 (natp places))
            (equal (rotate-right x width places)
                   (rightrotate width places x)))
@@ -313,7 +313,6 @@
 ;; Introduces the BV function
 (defthm rotate-left-becomes-leftrotate
   (implies (and (natp width)
-                (natp x)
                 (natp places))
            (equal (rotate-left x width places)
                   (leftrotate width places x)))
@@ -327,6 +326,15 @@
                               bvchop-of-logior-becomes-bvor
                               ifix
                               logand-of-bvchop-becomes-bvand-alt))))
+
+;; ;; todo: handle more specialized variants of rotate-left.  also handle the variants of rotate-right.
+;; ;; or just open these to expose the non-specialized rotate ops!
+;; (defthm rotate-left-32-becomes-leftrotate
+;;   (implies (and (natp places)
+;;                 (<= places 32) ;gen
+;;                 )
+;;            (equal (bitops::rotate-left-32 x places)
+;;                   (leftrotate 32 places x))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
