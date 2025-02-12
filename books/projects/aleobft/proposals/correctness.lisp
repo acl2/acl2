@@ -12,6 +12,7 @@
 (in-package "ALEOBFT-PROPOSALS")
 
 (include-book "round-after-last")
+(include-book "last-blockchain-round")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -26,6 +27,7 @@
      namely the non-forking of blockchains.")
    (xdoc::p
     "This is work in progress."))
-  :order-subtopics (round-after-last))
+  :order-subtopics (round-after-last
+                    last-blockchain-round))
 
 ; TODO: continue
