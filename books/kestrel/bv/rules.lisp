@@ -5516,6 +5516,26 @@
 
 ;; Lemmas to convert arithmetic operations to bit-vector operations:
 
+(defthmd <-becomes-sbvlt
+  (implies (and (signed-byte-p size x) ; size is a free var
+                (signed-byte-p size y))
+           (equal (< x y)
+                  (sbvlt size x y)))
+  :hints (("Goal" :in-theory (enable sbvlt))))
+
+(defthmd <-of-logext-becomes-sbvlt-arg1
+  (implies (signed-byte-p size y)
+           (equal (< (logext size x) y)
+                  (sbvlt size x y)))
+  :hints (("Goal" :in-theory (enable sbvlt))))
+
+(defthmd <-of-logext-becomes-sbvlt-arg2
+  (implies (signed-byte-p size x)
+           (equal (< x (logext size y))
+                  (sbvlt size x y)))
+  :hints (("Goal" :in-theory (enable sbvlt))))
+
+;todo: drop?
 (defthmd <-to-sbvlt-32
   (implies (and (signed-byte-p 32 x)
                 (signed-byte-p 32 y))
