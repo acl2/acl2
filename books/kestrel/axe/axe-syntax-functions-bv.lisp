@@ -18,7 +18,6 @@
 (include-book "axe-types") ;reduce?  we just need the bv and bv-array stuff
 (include-book "dag-arrays")
 (include-book "kestrel/bv/bv-syntax" :dir :system)
-(include-book "kestrel/typed-lists-light/all-natp" :dir :system)
 (include-book "kestrel/bv-lists/width-of-widest-int" :dir :system)
 (local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
@@ -634,80 +633,75 @@
 ;;       ;;both are nodenums, and the larger nodenums (!) should come first
 ;;       (< term1 term2))))
 
-;; Returns an alist binding VARNAME to the length of the array term represented
-;; by darg, or nil to indicate failure.
-(defund bind-bv-array-length-axe (darg quoted-varname dag-array)
-  (declare (xargs :guard (and ;; (symbolp varname)
-                          (or (myquotep darg)
-                              (and (natp darg)
-                                   (pseudo-dag-arrayp 'dag-array dag-array (+ 1 darg)))))))
-  (if (not (and (myquotep quoted-varname)
-                (symbolp (unquote quoted-varname))))
-      (er hard? 'bind-bv-array-length-axe "Unexpected varname argument: ~x0." quoted-varname)
-    (if (consp darg) ;test for quotep
-        (let ((val (unquote darg))) ;todo: what if length is 0 (may be handled elsewhere)
-          (if (all-natp val)
-              (acons (unquote quoted-varname) (list 'quote (len val)) nil)
-            ;; failure:
-            nil))
-      ;;otherwise, it's a nodenum:
-      (let ((expr (aref1 'dag-array dag-array darg)))
-        (if (not (consp expr))
-            nil ;failure (it's a variable)
-          (let ((fn (ffn-symb expr)))
-            (if (eq 'quote fn)
-                (let ((val (unquote expr)))
-                  (if (all-natp val)
-                      (acons (unquote quoted-varname) (list 'quote (len val)) nil)
-                    nil))
-              (if (eq 'bv-array-write fn)
-                  (and (eql 5 (len (dargs expr))) ;speed up?
-                       (myquotep (second (dargs expr)))
-                       (natp (unquote (second (dargs expr))))
-                       (acons (unquote quoted-varname) (second (dargs expr)) nil))
-                (if (eq 'bv-array-if fn)
-                    (and (eql 5 (len (dargs expr))) ;speed up?
-                         (myquotep (second (dargs expr)))
-                         (natp (unquote (second (dargs expr))))
-                         (acons (unquote quoted-varname) (second (dargs expr)) nil))
-                  nil)))))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns an alist binding VARNAME to the element width of the array term represented
 ;; by darg, or nil to indicate failure.
+;; We expect quoted-varname to always be a quoted symbol, but we cannot require that in the guard.
 (defund bind-bv-array-element-size-axe (darg quoted-varname dag-array)
-  (declare (xargs :guard (and ;;(symbolp varname)
-                          (or (myquotep darg)
-                              (and (natp darg)
-                                   (pseudo-dag-arrayp 'dag-array dag-array (+ 1 darg)))))))
-  (if (not (and (myquotep quoted-varname)
-                (symbolp (unquote quoted-varname))))
-      (er hard? 'bind-bv-array-element-size-axe "Unexpected varname argument: ~x0." quoted-varname)
-    (if (consp darg) ;test for quotep
-        (let ((val (unquote darg))) ;todo: what if length is 0 (may be handled elsewhere)
-          ;; constant array:
-          (if (all-natp val)
-              (acons (unquote quoted-varname) (list 'quote (width-of-widest-int val)) nil)
-            nil))
+  (declare (xargs :guard (and (or (myquotep darg)
+                                  (and (natp darg)
+                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 darg))))
+                              (or (myquotep quoted-varname)
+                                  (and (natp quoted-varname)
+                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 quoted-varname)))))))
+  (if (consp darg) ;test for quotep
+      (let ((val (unquote darg))) ;todo: what if length is 0 (may be handled elsewhere)
+        ;; constant array:
+        (if (nat-listp val)
+            (bind-unquoted-varname quoted-varname (list 'quote (width-of-widest-int val)))
+          nil))
+    ;; otherwise, it's a nodenum:
+    (let ((expr (aref1 'dag-array dag-array darg)))
+      (if (not (consp expr))
+          nil ; failure (it's a variable)
+        (let ((fn (ffn-symb expr)))
+          (case fn
+            (quote (let ((val (unquote expr)))
+                     (if (nat-listp val)
+                         (bind-unquoted-varname quoted-varname (list 'quote (width-of-widest-int val)))
+                       nil)))
+            ;; (bv-array-write element-size len index val data)
+            ;; (bv-array-if    element-size len test array1 array2)
+            ((bv-array-write bv-array-if)
+             (let ((element-size-arg (first (dargs expr))))
+               (and (consp element-size-arg) ; checks for quotep
+                    (natp (unquote element-size-arg))
+                    (bind-unquoted-varname quoted-varname element-size-arg))))
+            (otherwise nil)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Returns an alist binding VARNAME to the length of the array term represented
+;; by darg, or nil to indicate failure.
+;; We expect quoted-varname to always be a quoted symbol, but we cannot require that in the guard.
+(defund bind-bv-array-length-axe (darg quoted-varname dag-array)
+  (declare (xargs :guard (and (or (myquotep darg)
+                                  (and (natp darg)
+                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 darg))))
+                              (or (myquotep quoted-varname)
+                                  (and (natp quoted-varname)
+                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 quoted-varname)))))))
+  (if (consp darg) ;tests for quotep
+      (let ((val (unquote darg))) ;todo: what if length is 0 (may be handled elsewhere)
+        (if (nat-listp val)
+            (bind-unquoted-varname quoted-varname (list 'quote (len val)))
+            ;; failure:
+          nil))
       ;;otherwise, it's a nodenum:
-      (let ((expr (aref1 'dag-array dag-array darg)))
-        (if (not (consp expr))
-            nil ;failure (it's a variable)
-          (let ((fn (ffn-symb expr)))
-            (if (eq 'quote fn)
-                (let ((val (unquote expr)))
-                  (if (all-natp val)
-                      (acons (unquote quoted-varname) (list 'quote (width-of-widest-int val)) nil)
-                    nil))
-              (if (eq 'bv-array-write fn)
-                  (and (eql 5 (len (dargs expr))) ;speed up?
-                       (myquotep (first (dargs expr)))
-                       (natp (unquote (first (dargs expr))))
-                       (acons (unquote quoted-varname) (first (dargs expr)) nil))
-                (if (eq 'bv-array-if fn)
-                    (and (eql 5 (len (dargs expr))) ;speed up?
-                         (myquotep (first (dargs expr)))
-                         (natp (unquote (first (dargs expr))))
-                         (acons (unquote quoted-varname) (first (dargs expr)) nil))
-                  nil)))))))))
+    (let ((expr (aref1 'dag-array dag-array darg)))
+      (if (not (consp expr))
+          nil ;failure (it's a variable)
+        (let ((fn (ffn-symb expr)))
+          (case fn
+            (quote (let ((val (unquote expr)))
+                     (if (nat-listp val)
+                         (bind-unquoted-varname quoted-varname (list 'quote (len val)))
+                       nil)))
+            ;; (bv-array-write element-size len index val data)
+            ;; (bv-array-if    element-size len test array1 array2)
+            ((bv-array-write bv-array-if)
+             (let ((len-arg (second (dargs expr))))
+               (and (consp len-arg) ; tests for quotep
+                    (natp (unquote len-arg))
+                    (bind-unquoted-varname quoted-varname len-arg))))
+            (otherwise nil)))))))
