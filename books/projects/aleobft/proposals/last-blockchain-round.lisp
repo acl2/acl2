@@ -163,21 +163,32 @@
     :enable (event-possiblep
              event-next)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled last-blockchain-round-p-of-events-next
+  :short "Preservation of the invariant by multiple transitions."
+  (implies (and (events-possiblep events systate)
+                (last-blockchain-round-p systate))
+           (last-blockchain-round-p (events-next events systate)))
+  :induct t
+  :enable (events-possiblep
+           events-next))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection last-blockchain-round-p-always
-  :short "The invariant holds in every state
-          reachable from an initial state via a sequence of events."
-
-  (defruled last-blockchain-round-p-of-events-next
-    (implies (and (last-blockchain-round-p systate)
-                  (events-possiblep events systate))
-             (last-blockchain-round-p (events-next events systate)))
-    :induct t
-    :enable (events-possiblep
-             events-next))
-
-  (defruled last-blockchain-round-p-when-reachable
-    (implies (and (system-initp systate)
-                  (events-possiblep events systate))
-             (last-blockchain-round-p (events-next events systate)))))
+(defruled last-blockchain-round-p-when-reachable
+  :short "The invariant holds in every reachable state."
+  (implies (system-state-reachablep systate)
+           (last-blockchain-round-p systate))
+  :enable (system-state-reachablep
+           last-blockchain-round-p-when-init)
+  :prep-lemmas
+  ((defrule lemma
+     (implies (and (system-state-reachable-from-p systate from)
+                   (last-blockchain-round-p from))
+              (last-blockchain-round-p systate))
+     :use (:instance
+           last-blockchain-round-p-of-events-next
+           (events (system-state-reachable-from-p-witness systate from))
+           (systate from))
+     :enable system-state-reachable-from-p)))
