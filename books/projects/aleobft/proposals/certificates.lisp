@@ -297,7 +297,7 @@
 
   ///
 
-  (defruled certificate->author-of-cert-with-author+round
+  (defrule certificate->author-of-cert-with-author+round
     (implies (cert-with-author+round author round certs)
              (equal (certificate->author
                      (cert-with-author+round author round certs))
@@ -309,7 +309,7 @@
                      (certs (certs-with-author+round author round certs))))
     :enable set::cardinality)
 
-  (defruled certificate->round-of-cert-with-author+round
+  (defrule certificate->round-of-cert-with-author+round
     (implies (cert-with-author+round author round certs)
              (equal (certificate->round
                      (cert-with-author+round author round certs))
