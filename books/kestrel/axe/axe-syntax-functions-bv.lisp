@@ -116,6 +116,7 @@
 
 ;; quoted-varname is a darg, but we expect it to always be a constant (a quoted symbol)
 ;; Returns an alist with one binding that binds the unquoted varname to VAL.
+;; TODO: Use this more.
 (defun bind-unquoted-varname (quoted-varname val)
   (declare (xargs :guard (or (myquotep quoted-varname)
                              (natp quoted-varname))))
@@ -373,7 +374,8 @@
 
 ;; Tests that DARG points to a call of one of the *functions-convertible-to-bv*
 ;; but not one of the exclude-fns.  No guard on exclude-fns because the caller
-;; cannot easily establish it.
+;; cannot easily establish it.  TODO: Add a darg guard for the exclude-fns and
+;; it to be a quoted constant, like quoted-varname in other functions?
 (defund term-should-be-converted-to-bvp (darg exclude-fns dag-array)
   (declare (xargs :guard (and (or (myquotep darg)
                                   (and (natp darg)
