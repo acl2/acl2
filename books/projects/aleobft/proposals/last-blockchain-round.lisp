@@ -52,9 +52,19 @@
                          (get-validator-state val systate)))
                      (equal vstate.last
                             (blocks-last-round vstate.blockchain)))))
+
   ///
+
   (fty::deffixequiv-sk last-blockchain-round-p
-    :args ((systate system-statep))))
+    :args ((systate system-statep)))
+
+  (defruled last-blockchain-round-p-necc-with-address-fix
+    (implies (and (last-blockchain-round-p systate)
+                  (set::in (address-fix val) (correct-addresses systate)))
+             (equal (validator-state->last (get-validator-state val systate))
+                    (blocks-last-round (validator-state->blockchain
+                                        (get-validator-state val systate)))))
+    :use (:instance last-blockchain-round-p-necc (val (address-fix val)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -133,8 +143,8 @@
              last-blockchain-round-p-necc))
 
   (defruled last-blockchain-round-p-of-commit-next
-    (implies (and (last-blockchain-round-p systate)
-                  (commit-possiblep val systate))
+    (implies (and (commit-possiblep val systate)
+                  (last-blockchain-round-p systate))
              (last-blockchain-round-p (commit-next val systate)))
     :enable (last-blockchain-round-p
              last-blockchain-round-p-necc
