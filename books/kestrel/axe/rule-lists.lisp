@@ -925,7 +925,8 @@
 ;in case we can't choose which form to prefer (but we should probably choose?)
      equal-of-bvnot-and-bvxor-ones
      equal-of-bvxor-ones-and-bvnot
-     bvlt-of-constant-when-too-narrow
+     bvlt-of-constant-when-too-narrow-axe
+     not-bvlt-of-constant-when-too-narrow-axe
      equal-of-maxint-when-sbvlt ;Sun Oct 26 16:32:40 2014 ; rename
      sbvlt-of-bvplus-of-1       ;Sun Oct 26 16:32:17 2014
 
