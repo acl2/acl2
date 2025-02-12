@@ -129,12 +129,6 @@
            (equal (bvchop 8 (+ x (* 256 y)))
                   (bvchop 8 x))))
 
-(defthmd mod-becomes-bvchop-8
-  (implies (integerp x)
-           (equal (mod x 256)
-                  (bvchop 8 x)))
-  :hints (("Goal" :in-theory (enable bvchop ifix))))
-
 (defthm bvplus-of-*-of-256
   (implies (and (natp size)
                 (<= 8 size)
@@ -180,3 +174,7 @@
 ;;   (equal (< (bvchop size x) 2)
 ;;          (or (equal (bvchop size x) 0)
 ;;              (equal (bvchop size x) 1))))
+
+
+;rewrite: (< (BVCHOP 64 Y) 9223372036854775808)
+;rewrite: (<= (BVCHOP 64 Y) (BVCHOP 63 Y))

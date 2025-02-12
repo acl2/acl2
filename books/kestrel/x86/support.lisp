@@ -24,7 +24,7 @@
 (include-book "kestrel/utilities/defopeners" :dir :system)
 (include-book "kestrel/utilities/polarity" :dir :system)
 ;(local (include-book "kestrel/bv/rules10" :dir :system))
-(include-book "kestrel/bv/rules3" :dir :system)
+(include-book "kestrel/bv/rules3" :dir :system) ; todo?
 (include-book "kestrel/utilities/mv-nth" :dir :system)
 ;(include-book "kestrel/utilities/def-constant-opener" :dir :system)
 (include-book "kestrel/alists-light/lookup" :dir :system)
