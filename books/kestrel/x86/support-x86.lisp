@@ -67,10 +67,6 @@
 ;why needed?
 ;(acl2::defopeners LOAD-PROGRAM-INTO-MEMORY)
 
-;; (acl2::defopeners xr :hyps ((syntaxp (quotep FLD))
-;;                             (syntaxp (quotep index))
-;;                             (syntaxp (quotep x86))))
-
 ;; (defthm xr-xw-intra-simple-field-with-hide
 ;;   (implies (member fld *x86-simple-fields-as-keywords*)
 ;;            (equal (xr fld i (hide (xw fld j v x86)))
@@ -87,11 +83,6 @@
 ;; (acl2::defopeners RGFI* :hyps ((syntaxp (quotep i))
 ;;                                        (syntaxp (quotep x86))))
 
-(acl2::defopeners xr :hyps ((syntaxp (quotep rstobj2::fld))
-                            (syntaxp (quotep rstobj2::index))
-                            (syntaxp (quotep X86ISA::X86$A))))
-;why?
-;(acl2::defopeners x86p :hyps ((syntaxp (quotep x86))))
 
 ;; (defthm RGFI*-of-xw-diff
 ;;   (implies (and (equal :ms fld) ;drop!
@@ -273,6 +264,7 @@
          (and (canonical-address-p a)
               (x86isa::canonical-address-listp x))))
 
+;; or evaulate it, or use a constant opener
 (defthm canonical-address-listp-of-nil
   (x86isa::canonical-address-listp nil))
 
@@ -319,7 +311,7 @@
                             ash
                             ;x86isa::RB-RB-SUBSET
                             natp
-                            acl2::mod-becomes-bvchop-8
+                            acl2::mod-becomes-bvchop-when-power-of-2p
                             ;;acl2::bvchop
                             ;;ACL2::CAR-BECOMES-NTH-OF-0
                             acl2::bvchop-of-logtail-becomes-slice
@@ -334,8 +326,7 @@
 (defthm idiv-64-by-2-no-error
   (equal (mv-nth 0 (x86isa::idiv-spec-64 (acl2::bvsx 128 64 x) 2))
          nil)
-  :hints (("Goal" :in-theory (enable x86isa::idiv-spec-64 truncate
-                                     ))))
+  :hints (("Goal" :in-theory (enable x86isa::idiv-spec-64 truncate))))
 
 ;todo: gen the 2
 (defthm idiv-64-by-2-becomes-sbvdiv
@@ -412,9 +403,6 @@
                                   (acl2::slice-becomes-getbit
                                    acl2::bvchop-1-becomes-getbit
                                    acl2::bvchop-of-logtail-becomes-slice)))))
-
-;rewrite: (< (BVCHOP 64 Y) 9223372036854775808)
-;rewrite: (<= (BVCHOP 64 Y) (BVCHOP 63 Y))
 
 ;; TODO: The original rule should be replaced by this one
 (DEFTHM X86ISA::PROGRAM-AT-XW-IN-APP-VIEW-better
