@@ -252,6 +252,7 @@ tests/env/
 *.ast.lsp
 !*.ref.ast.lsp
 *.cpp.i
+*.pc
 
 # Yacc/Bison generated files
 src/program/parser/lex.yy.cpp
