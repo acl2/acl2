@@ -129,22 +129,24 @@
     "This information consists of:")
    (xdoc::ul
     (xdoc::li
-     "The name of the @('<prefix>-<rulename>-conc-rep-matching')
-      or @('<prefix>-<rulename>-conc<i>-rep-matching') theorem
-      described in @(tsee deftreeops).
-      This is @('nil') if the theorem is not generated.")
-    (xdoc::li
-     "The name of the @('<prefix>-<rulename>-conc-rep')
-      or @('<prefix>-<rulename>-conc<i>-rep') function
+     "The name of the @('<prefix>-<rulename>-conc<i>-rep<j>') function
       described in @(tsee deftreeops).
       This is @('nil') if the function is not generated.")
     (xdoc::li
-     "The name of the @('<prefix>-<rulename>-conc-rep-elem')
-      or @('<prefix>-<rulename>-conc<i>-rep-elem') function
-      describes in @(tsee deftreeops).
+     "The name of the @('<prefix>-<rulename>-conc<i>-rep<j>-matching') theorem
+      described in @(tsee deftreeops).
+      This is @('nil') if the theorem is not generated.")
+    (xdoc::li
+     "The name of the @('<prefix>-<rulename>-conc<i>-rep<j>-len') function
+      described in @(tsee deftreeops).
+      This is @('nil') if the function is not generated.")
+    (xdoc::li
+     "The name of the @('<prefix>-<rulename>-conc<i>-rep<j>-elem') function
+      described in @(tsee deftreeops).
       This is @('nil') if the function is not generated.")))
-  ((matching-thm acl2::symbol)
-   (get-tree-list-fn acl2::symbolp)
+  ((get-tree-list-fn acl2::symbolp)
+   (matching-thm acl2::symbol)
+   (get-len-fn acl2::symbol)
    (get-tree-fn acl2::symbolp))
   :pred deftreeops-rep-infop)
 
@@ -178,24 +180,24 @@
       This is @('nil') if the rule name is defined by
       an alternation of just one concatenation.")
     (xdoc::li
-     "The name of the @('<prefix>-<rulename>-conc-matching')
-      or @('<prefix>-<rulename>-conc<i>-matching') theorem
-      described in @(tsee deftreeops).
-      This is @('nil') if the theorem is not generated.")
-    (xdoc::li
      "The name of the @('<prefix>-<rulename>-conc?-<i>-iff-match-conc') theorem
       described in @(tsee deftreeops).
       This is @('nil') if the theorem is not generated.")
     (xdoc::li
-     "The name of the @('<prefix>-<rulename>-conc')
-      or @('<prefix>-<rulename>-conc<i>') function
+     "The name of the @('<prefix>-<rulename>-conc<i>') function
       described in @(tsee deftreeops).
-      This is @('nil') if the function is not generated.")))
+      This is @('nil') if the function is not generated.")
+    (xdoc::li
+     "The name of the @('<prefix>-<rulename>-conc<i>-matching') theorem
+      described in @(tsee deftreeops).
+      This is @('nil') if the theorem is not generated.")
+    (xdoc::li
+     "The information about the repetitions that form the concatenation.")))
   ((conc concatenationp)
    (discriminant-term "A term.")
-   (matching-thm acl2::symbol)
    (check-conc-fn-equiv-thm acl2::symbol)
    (get-tree-list-list-fn acl2::symbol)
+   (matching-thm acl2::symbol)
    (rep-infos deftreeops-rep-info-list))
   :pred deftreeops-conc-infop)
 
@@ -1047,8 +1049,9 @@
              (or alt-singletonp
                  (element-case (repetition->element rep) :rulename))
              (packn-pos (list get-tree-list-fn '-elem) get-tree-list-fn))))
-    (make-deftreeops-rep-info :matching-thm matching-thm
-                              :get-tree-list-fn get-tree-list-fn
+    (make-deftreeops-rep-info :get-tree-list-fn get-tree-list-fn
+                              :matching-thm matching-thm
+                              :get-len-fn nil
                               :get-tree-fn get-tree-fn)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1117,9 +1120,9 @@
        (info (make-deftreeops-conc-info
               :conc conc
               :discriminant-term discriminant-term
-              :matching-thm matching-thm
               :check-conc-fn-equiv-thm check-conc-fn-equiv-thm
               :get-tree-list-list-fn get-tree-list-list-fn
+              :matching-thm matching-thm
               :rep-infos rep-infos)))
     info))
 
