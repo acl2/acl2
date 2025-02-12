@@ -1651,11 +1651,9 @@
          (write n addr value (set-flag flg val x86)))
   :hints (("Goal" :in-theory (enable set-flag wb write))))
 
-;todo: add theory-invar
-;todo: gen?
 (defthmd write-of-set-flag
-  (equal (write n addr value (set-flag flg val x86))
-         (set-flag flg val (write n addr value x86)))
+  (equal (write n addr val1 (set-flag flg val2 x86))
+         (set-flag flg val2 (write n addr val1 x86)))
   :hints (("Goal" :in-theory (enable set-flag wb write))))
 
 (theory-invariant (incompatible (:rewrite write-of-set-flag) (:rewrite set-flag-of-write)))
