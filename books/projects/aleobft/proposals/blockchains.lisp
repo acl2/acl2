@@ -13,9 +13,6 @@
 
 (include-book "anchors")
 
-;; (local (include-book "arithmetic/top" :dir :system))
-;; (local (include-book "std/lists/top" :dir :system))
-
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
