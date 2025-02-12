@@ -14,7 +14,7 @@
 (include-book "system-states")
 (include-book "blockchains")
 
-(local (include-book "arithmetic-3/top" :dir :system))
+(local (include-book "../library-extensions/arithmetic-theorems"))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -177,9 +177,9 @@
   :guard-hints
   (("Goal"
     :in-theory (enable commit-possiblep
-                       posp
                        natp
-                       evenp
+                       aleobft::evenp-of-1-less-when-not-evenp
+                       aleobft::evenp-of-3-less-when-not-evenp
                        active-committee-at-previous-round-when-at-round
                        active-committee-at-previous3-round-when-at-round
                        certificate->round-of-cert-with-author+round)))
