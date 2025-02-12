@@ -1,6 +1,6 @@
 ; "Read over write" rules for our x86 state readers and writers
 ;
-; Copyright (C) 2016-2023 Kestrel Technology, LLC
+; Copyright (C) 2016-2025 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,6 +14,7 @@
 (include-book "projects/x86isa/machine/modes" :dir :system)
 (include-book "flags")
 (include-book "read-and-write")
+(include-book "read-bytes-and-write-bytes")
 (include-book "readers-and-writers")
 (include-book "support") ;todo: remove (factor out non-32-bit read-over-write stuff like mv-nth-0-of-get-prefixes-of-xw-of-irrel)
 
