@@ -1203,7 +1203,11 @@
     farg4
     check-arities
 
+    lookup-eq
     lookup-eq-safe
+    lookup
+    lookup-safe
+    lookup-equal
 
     want-to-weaken ; for polarity-based reasoning
     want-to-strengthen ; for polarity-based reasoning
@@ -1313,9 +1317,6 @@
     get-vars-from-term
     doublets-to-alist
     translate-terms
-    lookup-eq
-    lookup
-    lookup-safe
     myquotep
     variablep
     empty-alist
