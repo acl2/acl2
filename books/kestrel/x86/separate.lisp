@@ -13,7 +13,7 @@
 
 (include-book "projects/x86isa/proofs/utilities/disjoint" :dir :system) ; for separate
 (include-book "projects/x86isa/machine/application-level-memory" :dir :system) ; for canonical-address-p
-(include-book "kestrel/bv/bvchop" :dir :system)
+(include-book "kestrel/bv/bvchop" :dir :system) ; todo: separate out the stuff that needs this
 
 ;; todo: drop these irrelevant params from separate
 (defthm separate-normalize-r-w-x-1

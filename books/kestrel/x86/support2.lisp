@@ -196,20 +196,6 @@
            (EQUAL (FLOOR X (* (EXPT 2 LOW) (/ (EXPT 2 N))))
                   (FLOOR (* X (EXPT 2 N)) (EXPT 2 LOW)))))
 
-;move
-(defthm rotate-left-becomes-leftrotate
-  (implies (and (natp places)
-                (<= places 32) ;gen
-                )
-           (equal (BITOPS::ROTATE-LEFT-32 x places)
-                  (ACL2::LEFTROTATE 32 places x)))
-  :hints (("Goal" :cases ((integerp x))
-           :in-theory (e/d (ACL2::ROTATE-LEFT ACL2::LEFTROTATE
-                                              acl2::bvchop-of-logtail-becomes-slice)
-                           (;ACL2::EXPONENTS-ADD
-                            ACL2::LOGTAIL-OF-ONE-MORE ;looped?
-                            )))))
-
 ;todo: figure out how to print the hits but not the result of the rewrite
 
 ;; ;; what a mess is bitops::rotate-left-32.
@@ -337,35 +323,4 @@
 ;;                         (* 8 addr1)
 ;;                         val))))
 
-(acl2::defopeners REVAPPEND)
-
-;; ;for axe
-;; (defthm not-stringp-of-cons
-;;   (not (stringp (cons a b))))
-
-;; (thm
-;;  (implies (and (equal 1 (len vals2))
-;;                (equal k+1 (bvplus 1 k)))
-;;           (equal (write-bytes k+1 vals1 (write-bytes k vals2 x86))
-;;                  (write-bytes k+1 (cons (first vals2s)) x86))))
-
-;; (defthm read-of-write-bytes-not-irrel
-;;   (implies (and (< (bvminus 48 addr1 addr2) (len vals))
-;;                 (<= n1 (bvminus 48 addr2 addr1))
-;;                 (natp n1)
-;;                 (integerp addr2)
-;;                 (integerp addr1))
-;;            (equal (read n1 addr1 (write-bytes addr2 vals x86))
-;;                   (read n1 addr1 x86)))
-;;   :hints ( ;("subgoal *1/2" :cases ((equal n1 1)))
-;;           ("Goal" :do-not '(generalize eliminate-destructors)
-;;            :induct (read n1 addr1 x86)
-;;            :in-theory (e/d (bvplus acl2::bvchop-of-sum-cases app-view bvuminus bvminus)
-;;                            (acl2::bvplus-recollapse acl2::bvminus-becomes-bvplus-of-bvuminus
-;;                                                     ACL2::BVCAT-OF-+-HIGH
-;;                                                     )))))
-
-;; (defthm write-bytes-of-281474976710656
-;;   (equal (write-bytes 281474976710656 vals x86)
-;;          (write-bytes 0 vals x86))
-;;   )
+(acl2::defopeners REVAPPEND) ;drop?

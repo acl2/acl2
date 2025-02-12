@@ -382,6 +382,7 @@
 ;;         (acl2::leftrotate32 places x))
 ;;  :hints (("Goal" :in-theory (enable bitops::rotate-left-32 ACL2::ROTATE-LEFT acl2::leftrotate32 acl2::leftrotate))))
 
+;; For use by Axe.  Can't disable since this is in :rule-classes nil.
 (defthm set-flag-of-set-flag-diff-axe
   (implies (and (syntaxp (and (quotep flag1)
                               (quotep flag2)
@@ -397,8 +398,9 @@
            :in-theory (disable set-flag-of-set-flag-diff)))
   :rule-classes nil)
 
+;; For use by Axe.
 ;; todo: package
-(defthm x86isa::idiv-spec-64-trim-arg1-axe-all
+(defthmd x86isa::idiv-spec-64-trim-arg1-axe-all
   (implies (axe-syntaxp (term-should-be-trimmed-axe '128 x 'acl2::all dag-array))
            (equal (idiv-spec-64 x y)
                   (idiv-spec-64 (trim 128 x) y)))
@@ -406,8 +408,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; For use by Axe.
 ;; Only fires when x86 is not an IF/MYIF (to save time).
-(defthm run-until-stack-shorter-than-base-axe
+(defthmd run-until-stack-shorter-than-base-axe
   (implies (and (axe-syntaxp (not (syntactic-call-of 'if x86 dag-array)))
                 ;; (axe-syntaxp (not (syntactic-call-of 'myif x86 dag-array))) ; may be needed someday
                 (stack-shorter-thanp old-rsp x86))
@@ -415,8 +418,9 @@
                   x86))
   :hints (("Goal" :in-theory (enable run-until-stack-shorter-than-base))))
 
+;; For use by Axe.
 ;; Only fires when x86 is not an IF/MYIF (so we don't need IF lifting rules for x86-fetch-decode-execute and its subfunctions).
-(defthm run-until-stack-shorter-than-opener-axe
+(defthmd run-until-stack-shorter-than-opener-axe
   (implies (and (axe-syntaxp (not (syntactic-call-of 'if x86 dag-array)))
                 ;; (axe-syntaxp (not (syntactic-call-of 'myif x86 dag-array))) ; may be needed someday
                 (not (stack-shorter-thanp old-rsp x86)))
@@ -459,7 +463,7 @@
 
 ;; should be faster?
 ;; todo: continue specializing to 64-bit mode
-(defthm x86-fetch-decode-execute-opener-safe-64
+(defthmd x86-fetch-decode-execute-opener-safe-64
   (implies (and (canonical-address-p (x86isa::read-*ip 0 x86)) ; could drop, but this clarifies failures
                 ;; ;; Requires us to be able to read the byte at the RIP:
                 ;; todo: simplify this:
