@@ -1,7 +1,7 @@
 ; Mixed theorems about bit-vectors
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -183,8 +183,7 @@
                 (natp size1)
                 (natp size2)
                 (integerp x)
-                (integerp y)
-                )
+                (integerp y))
            (equal (GETBIT size1 (BVMULT size2 x y))
                   (GETBIT size1 (BVMULT (+ 1 size1) x y))))
   :hints (("Goal" :in-theory (e/d (getbit) ()))))
@@ -203,9 +202,7 @@
                 (integerp k))
            (equal (getbit n (bvmult size k x))
                   (bvand n (getbit n k) x)))
-  :hints (("Goal" :in-theory (disable ;add-bvchop-around-equal ;bozo
-                                      )
-           :cases ((equal x 0)))))
+  :hints (("Goal" :cases ((equal x 0)))))
 
 ;; (thm
 ;;  (IMPLIES (AND (<= SIZE SIZE2)
@@ -278,8 +275,7 @@
                 (integerp x))
            (equal (bvxor size1 (bvif size2 test y z) x)
                   (bvxor size1 (bvif size1 test y z) x)))
-  :hints (("Goal" :in-theory (e/d (bvxor ;bvchop-bvchop
-                                   )
+  :hints (("Goal" :in-theory (e/d (bvxor)
                                   (logxor-bvchop-bvchop)))))
 
 (defthm bvxor-of-bvif-tighten-2
@@ -292,8 +288,7 @@
                 (integerp x))
            (equal (bvxor size1 x (bvif size2 test y z))
                   (bvxor size1 x (bvif size1 test y z))))
-  :hints (("Goal" :in-theory (e/d (bvxor ;bvchop-bvchop
-                                   )
+  :hints (("Goal" :in-theory (e/d (bvxor)
                                   (logxor-bvchop-bvchop)))))
 
 (defthm slice-too-high-of-bvmult-with-usb1
@@ -305,9 +300,7 @@
                 (natp low)
                 (natp high))
            (equal (slice high low (bvmult size k x)) 0))
-  :hints (("Goal" :in-theory (e/d (getbit-too-high)
-                                  (;add-bvchop-around-equal
-                                   ))
+  :hints (("Goal" :in-theory (enable getbit-too-high)
            :cases ((equal 0 x)))))
 
 ;bozo handle this even though the sizes don't match (BVXOR 8 x (bvcat 6 z 1 y))
