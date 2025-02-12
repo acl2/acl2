@@ -1115,6 +1115,7 @@
 (defund bitops-to-bv-rules ()
   (declare (xargs :guard t))
   '(acl2::part-select-width-low-becomes-slice
+
     acl2::slice-of-part-install-width-low ; introduces bvcat
     acl2::bvchop-of-part-install-width-low-becomes-bvcat
     acl2::part-install-width-low-becomes-bvcat ; gets the size of X from an assumption
@@ -1124,13 +1125,14 @@
     acl2::part-install-width-low-becomes-bvcat-128
     acl2::part-install-width-low-becomes-bvcat-256
     acl2::part-install-width-low-becomes-bvcat-512
+    acl2::integerp-of-part-install-width-low$inline ; needed?
+
     acl2::rotate-right-becomes-rightrotate
     acl2::rotate-left-becomes-leftrotate
     acl2::logbit-becomes-getbit
     acl2::b-and-becomes-bitand
     acl2::b-ior-becomes-bitor
-    acl2::b-xor-becomes-bitxor
-    ))
+    acl2::b-xor-becomes-bitxor))
 
 ;; See also bitops-to-bv-rules.
 ;; todo: add more constant openers
@@ -1374,7 +1376,7 @@
     x86isa::sub-sf-spec64-constant-opener
     x86isa::sub-zf-spec64-constant-opener
 
-    acl2::bool->bit$inline-constant-opener
+    ;;acl2::bool->bit$inline-constant-opener
 ;    byte-ify-base
 ;    x86isa::byte-listp-unroll ;todo: improve (the __function__ put in by define makes this gross)
 ;    x86isa::byte-listp-base-1
@@ -1399,8 +1401,8 @@
     x86isa::one-byte-opcode-modr/m-p$inline-constant-opener
     x86isa::two-byte-opcode-modr/m-p$inline-constant-opener
 
-    acl2::logmask$inline-constant-opener
-    acl2::binary-logand-constant-opener
+    acl2::logmask$inline-constant-opener ; add to evaluator?
+    ;acl2::binary-logand-constant-opener
     ))
 
 (defun get-prefixes-openers ()
@@ -1619,7 +1621,11 @@
     natp-of-umsk
     natp-of-ftz
     natp-of-daz
-    ))
+
+    x86isa::fp-decode-constant-opener
+    x86isa::fp-to-rat-constant-opener
+    rtl::bias-constant-opener
+    rtl::expw-constant-opener))
 
 ;; Try to introduce is-nan as soon as possible:
 (set-axe-rule-priority is-nan-intro -1)
@@ -4731,10 +4737,6 @@
             acl2::equal-of-if-arg1-when-quotep
             acl2::equal-of-if-arg2-when-quotep
             sse-cmp-special ; scary
-            x86isa::fp-decode-constant-opener
-            x86isa::fp-to-rat-constant-opener
-            rtl::bias-constant-opener
-            rtl::expw-constant-opener
             acl2::bvchop-of-if
             acl2::ifix-of-if
 
@@ -4748,7 +4750,7 @@
             ;x86isa::if-of-sub-zf-spec32-arg2
             ;;stuff related to flags changes:
 
-            acl2::logand-of-1-becomes-getbit-arg2 ;move
+            ;acl2::logand-of-1-becomes-getbit-arg2 ;move
             ;; acl2::ifix-when-integerp
             of-spec-of-logext-32
             acl2::unsigned-byte-p-of-if
@@ -4781,8 +4783,6 @@
             of-spec64-of-logext-64
             acl2::sbvlt-of-bvsx-arg2
 
-            acl2::integerp-of-part-install-width-low$inline ; needed?
-
             ;; sse-cmp ;todo: limit?
             ;; feature-flag-sse-of-xw
             ;; feature-flag-sse-of-write
@@ -4793,7 +4793,7 @@
             acl2::equal-of-if-constants
             ;; acl2::bvlt-of-bvplus-1-cancel-alt ; optional
             ;x86isa::idiv-spec-32 ; trying
-            acl2::bvchop-when-size-is-not-posp
+            acl2::bvchop-when-size-is-not-posp ; move?
 
             acl2::bvcat-of-if-arg2 ; these just lift the if
             acl2::bvcat-of-if-arg4
@@ -4803,8 +4803,8 @@
             acl2::bvcat-of-slice-of-bvsx-same
             acl2::not-sbvlt-64-of-sbvdiv-64-of-bvsx-64-32-and--2147483648
             acl2::not-sbvlt-64-of-2147483647-and-sbvdiv-64-of-bvsx-64-32
-            acl2::bvplus-commutative-increasing-axe
-            acl2::bvplus-commutative-2-increasing-axe
+            acl2::bvplus-commutative-increasing-axe ; do we really want this?
+            acl2::bvplus-commutative-2-increasing-axe ; do we really want this?
             ;;acl2::equal-same
             ;; bvcat-of-minus-becomes-bvshl ; except stp doesn't support the shift operators
             ;acl2::<-lemma-for-known-operators-axe
@@ -4828,8 +4828,8 @@
             ;; acl2::boolif-x-x-y-becomes-boolor ; introduces boolor
             acl2::boolor-becomes-boolif
             ;; acl2::bvlt-hack-1-gen
-            acl2::bvchop-subst-constant
-            acl2::bvchop-subst-constant-alt
+            acl2::bvchop-subst-constant ; move
+            acl2::bvchop-subst-constant-alt ; move
             acl2::boolif-of-bvlt-strengthen-to-equal
             acl2::bvlt-reduce-when-not-equal-one-less
             ;read-1-of-write-4
