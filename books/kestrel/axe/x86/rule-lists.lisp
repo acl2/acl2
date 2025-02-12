@@ -1139,13 +1139,21 @@
 (defund bitops-rules ()
   (declare (xargs :guard t))
   '(bitops::rotate-left-8$inline ; rewrites to the non-fast rotate
+    bitops::rotate-left-9$inline ; rewrites to the non-fast rotate
     bitops::rotate-left-16$inline ; rewrites to the non-fast rotate
+    bitops::rotate-left-17$inline ; rewrites to the non-fast rotate
     bitops::rotate-left-32$inline ; rewrites to the non-fast rotate
+    bitops::rotate-left-33$inline ; rewrites to the non-fast rotate
     bitops::rotate-left-64$inline ; rewrites to the non-fast rotate
+    bitops::rotate-left-65$inline ; rewrites to the non-fast rotate
     bitops::rotate-right-8$inline ; rewrites to the non-fast rotate
+    bitops::rotate-right-9$inline ; rewrites to the non-fast rotate
     bitops::rotate-right-16$inline ; rewrites to the non-fast rotate
+    bitops::rotate-right-17$inline ; rewrites to the non-fast rotate
     bitops::rotate-right-32$inline ; rewrites to the non-fast rotate
+    bitops::rotate-right-33$inline ; rewrites to the non-fast rotate
     bitops::rotate-right-64$inline ; rewrites to the non-fast rotate
+    bitops::rotate-right-65$inline ; rewrites to the non-fast rotate
     acl2::rotate-left-constant-opener
     acl2::rotate-right-constant-opener))
 

@@ -14,7 +14,12 @@
 (include-book "parsers/top")
 (include-book "tools/top")
 
+;; These could be added to books/projects/x86isa:
 (include-book "linear-memory")
+(include-book "canonical")
+(include-book "state")
+
+
 (include-book "register-readers-and-writers32")
 (include-book "register-readers-and-writers64")
 (include-book "readers-and-writers64")
@@ -22,7 +27,6 @@
 (include-book "conditions")
 
 (include-book "support-bv")
-(include-book "canonical")
 (include-book "support-x86")
 (include-book "support32")
 (include-book "read-over-write-rules")
@@ -32,8 +36,8 @@
 (include-book "read-over-write-rules64")
 (include-book "write-over-write-rules64")
 (include-book "read-and-write")
+(include-book "read-bytes-and-write-bytes")
 (include-book "bytes-loadedp")
-(include-book "support0")
 (include-book "support2")
 
 (include-book "assumptions")
