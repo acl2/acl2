@@ -148,7 +148,8 @@
      (implies (and (system-state-reachable-from-p systate from)
                    (round-after-last-p from))
               (round-after-last-p systate))
-     :use (:instance round-after-last-p-of-events-next
-                     (events (SYSTEM-STATE-REACHABLE-FROM-P-WITNESS SYSTATE FROM))
-                     (systate from))
+     :use (:instance
+           round-after-last-p-of-events-next
+           (events (system-state-reachable-from-p-witness systate from))
+           (systate from))
      :enable system-state-reachable-from-p)))
