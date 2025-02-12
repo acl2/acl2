@@ -1,7 +1,7 @@
 ; BV Library: logand
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -580,16 +580,14 @@
                             ;mod-=-0
                             mod-expt-split)
                            (floor-unique-equal-version
-                            floor-weak-monotone ;hack-6
-                            )))
+                            floor-weak-monotone)))
           ("Goal" :do-not '(generalize eliminate-destructors)
            :induct (induct-floor-and-sub1 x n)
            :expand (logand x (- (expt 2 n)))
            :in-theory (e/d (lognot logand ;fl
                                    expt-of-+
                                    mod-expt-split)
-                           (;hack-6                     ;ffixme
-                            ;EQUAL-OF-EXPT2-AND-CONSTANT ;fixme
+                           (;EQUAL-OF-EXPT2-AND-CONSTANT ;fixme
                             )))))
 
 (defthm logand-of-minus-of-expt-and-lognot
