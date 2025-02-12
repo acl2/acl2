@@ -1,7 +1,7 @@
 ; Bit-vector rules
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -80,9 +80,7 @@
                 (< 0 SIZE)
                 (UNSIGNED-BYTE-P (1- SIZE) I))
            (SIGNED-BYTE-P SIZE I))
-  :HINTS
-  (("Goal" :IN-THEORY (E/d (SIGNED-BYTE-P UNSIGNED-BYTE-P) (;HACK-6
-                                                            )))))
+  :hints (("Goal" :in-theory (enable signed-byte-p unsigned-byte-p))))
 
 ;fixme pretty special purpose
 (defthm bvif-hack

@@ -1203,7 +1203,11 @@
     farg4
     check-arities
 
+    lookup-eq
     lookup-eq-safe
+    lookup
+    lookup-safe
+    lookup-equal
 
     want-to-weaken ; for polarity-based reasoning
     want-to-strengthen ; for polarity-based reasoning
@@ -1242,12 +1246,13 @@
     axe-quotep
     result-array-stobj
     dag-to-term
-    dag-info
     make-term-into-dag
     ;; simplify-terms-using-each-other
     make-cons-nest
+    dag-info
     dag-fns
     dag-vars
+    dag-size
     make-rule-alist
     make-rule-alist!
     dagify-term
@@ -1312,9 +1317,6 @@
     get-vars-from-term
     doublets-to-alist
     translate-terms
-    lookup-eq
-    lookup
-    lookup-safe
     myquotep
     variablep
     empty-alist

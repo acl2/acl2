@@ -278,7 +278,6 @@
                            (MOD-OF-EXPT-OF-2
                             mod-of-expt-of-2-constant-version
                             anti-slice
-                            ;hack-6
                             BVCHOP-OF-LOGTAIL
                             ;; for speed:
                             logtail-1-of-+
@@ -1204,8 +1203,7 @@
                                    bitxor
                                    bvxor
                                    expt-of-+)
-                           (;hack-6 ;yuck!
-                            BVXOR-1-BECOMES-BITXOR
+                           (BVXOR-1-BECOMES-BITXOR
                             BITXOR-OF-UNARY-MINUS-ARG1)))))
 ;bbozo
 (defthm getbit-0-of-bvminus
