@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2024 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -12,7 +12,6 @@
 (in-package "C")
 
 (include-book "centaur/fty/top" :dir :system)
-(include-book "xdoc/defxdoc-plus" :dir :system)
 
 (local (include-book "arithmetic-3/top" :dir :system))
 
@@ -61,8 +60,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Values of the @('unsigned char') type are represented using
-     a pure binary notation [C:6.2.6.1/3],
+    "Values of the @('unsigned char') type are represented
+     using a pure binary notation [C:6.2.6.1/3],
      i.e. where each bit counts for a successive power of 2.
      Footnote 50 says that a byte consists of @('CHAR_BIT') bits,
      and implies that an @('unsigned char') consists of one byte
@@ -140,6 +139,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod char-format
+  :short "Fixtype of formats of @('char') objects."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @('char') type has the same representation as
+     either @('unsigned char') or @('signed char')
+     [C:6.2.5/15].
+     The choice is captured by a boolean."))
+  ((signedp bool))
+  :pred char-formatp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod ienv
   :short "Fixtype of implementation environments."
   :long
@@ -148,7 +161,8 @@
     "For now this only contains a few components,
      but we plan to add more components."))
   ((uchar-format uchar-format)
-   (schar-format schar-format))
+   (schar-format schar-format)
+   (char-format char-format))
   :tag :ienv
   :pred ienvp)
 
@@ -291,3 +305,61 @@
                 -128
               -127))
     :rule-classes ((:linear :trigger-terms ((ienv->schar-min ienv))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->char-max ((ienv ienvp))
+  :returns (max integerp)
+  :short "The ACL2 integer value of @('CHAR_MIN') [C:5.2.4.2.1/1]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As explained in [C:5.2.4.2.1/2],
+     this is either 0 or the same as @('SCHAR_MIN')."))
+  (if (char-format->signedp (ienv->char-format ienv))
+      (ienv->schar-max ienv)
+    (ienv->uchar-max ienv))
+  :hooks (:fix)
+  ///
+
+  (defret ienv->char-max-type-prescription
+    (and (posp max)
+         (> max 1))
+    :rule-classes :type-prescription
+    :hints (("Goal" :in-theory (enable posp))))
+
+  (defret ienv->char-max-lower-bound
+    (>= max 127)
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define ienv->char-min ((ienv ienvp))
+  :returns (min integerp)
+  :short "The ACL2 integer value of @('CHAR_MIN') [C:5.2.4.2.1/1]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "As explained in [C:5.2.4.2.1/2],
+     this is either 0 or the same as @('SCHAR_MIN')."))
+  (if (char-format->signedp (ienv->char-format ienv))
+      (ienv->schar-min ienv)
+    0)
+  :hooks (:fix)
+  ///
+
+  (defret ienv->char-min-type-prescription
+    (and (integerp min)
+         (<= min 0))
+    :rule-classes :type-prescription)
+
+  (defret ienv->char-min-upper-bound
+    (<= min (if (char-format->signedp (ienv->char-format ienv))
+                (if (and (equal (signed-format-kind
+                                 (schar-format->signed (ienv->schar-format ienv)))
+                                :twos-complement)
+                         (not (schar-format->trap (ienv->schar-format ienv))))
+                    -128
+                  -127)
+              0))
+    :rule-classes ((:linear :trigger-terms ((ienv->char-min ienv))))))

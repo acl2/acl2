@@ -17,59 +17,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defconst *old-filepath*
-  (filepath "file.c"))
-
-(defconst *old-filedata*
-  (filedata
-   (acl2::string=>nats
-    "int main() {
-  int x = 5;
-  return x + 0;
-}
-")))
-
-(defconst *old-fileset*
-  (fileset
-   (omap::update *old-filepath*
-                 *old-filedata*
-                 nil)))
-
-(defconst *old-transunits*
-  (b* (((mv erp transunits) (c$::parse-fileset *old-fileset* nil)))
-    (if erp
-        (cw "~@0" erp)
-      transunits)))
-
-(defconst *new-transunits*
-  (simpadd0-transunit-ensemble *old-transunits*))
-
-(defconst *new-fileset*
-  (c$::print-fileset *new-transunits* (c$::default-priopt)))
-
-(defconst *new-filepath*
-  (filepath "file.simpadd0.c"))
-
-(defconst *new-filedata*
-  (omap::lookup *new-filepath*
-                (fileset->unwrap *new-fileset*)))
-
-(assert-event
- (equal
-  (acl2::nats=>string
-   (filedata->unwrap *new-filedata*))
-  "int main() {
-  int x = 5;
-  return x;
-}
-"))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (c$::input-files :files ("file.c")
-                 :process :parse
                  :const *old-code*)
 
 (simpadd0 *old-code* *new-code* :proofs t)
 
 (c$::output-files :const *new-code*)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(c$::input-files :files ("file2.c")
+                 :const *old-code2*)
+
+(simpadd0 *old-code2* *new-code2* :proofs nil)
+
+(c$::output-files :const *new-code2*)

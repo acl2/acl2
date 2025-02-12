@@ -947,11 +947,17 @@
      where the inner declarator is just a name;
      see @(tsee ldm-dirdeclor-fun).
      The parameter declarations must be supported."))
-  (and (dirdeclor-case dirdeclor :function-params)
-       (dirdeclor-case (dirdeclor-function-params->decl dirdeclor) :ident)
-       (ident-formalp (dirdeclor-ident->unwrap
-                       (dirdeclor-function-params->decl dirdeclor)))
-       (paramdecl-list-formalp (dirdeclor-function-params->params dirdeclor)))
+  (dirdeclor-case
+   dirdeclor
+   :function-params
+   (and (dirdeclor-case dirdeclor.decl :ident)
+        (ident-formalp (dirdeclor-ident->unwrap dirdeclor.decl))
+        (paramdecl-list-formalp dirdeclor.params))
+   :function-names
+   (and (dirdeclor-case dirdeclor.decl :ident)
+        (ident-formalp (dirdeclor-ident->unwrap dirdeclor.decl))
+        (endp dirdeclor.names))
+   :otherwise nil)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
