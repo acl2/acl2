@@ -153,4 +153,10 @@
     (cert-list-evenp anchors)
     :hyp (and (evenp (certificate->round current-anchor))
               (evenp previous-round))
-    :hints (("Goal" :induct t :in-theory (enable cert-list-evenp evenp)))))
+    :hints (("Goal" :induct t :in-theory (enable cert-list-evenp evenp))))
+
+  (defret car-of-collect-anchors
+    (equal (car anchors)
+           (certificate-fix current-anchor))
+    :hints (("Goal" :induct t)))
+  (in-theory (disable car-of-collect-anchors)))
