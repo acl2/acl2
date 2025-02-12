@@ -13,21 +13,21 @@
 
 ;; TODO: Organize these rules into simpler books.
 
-(include-book "kestrel/utilities/smaller-termp" :dir :system)
+;(include-book "kestrel/utilities/smaller-termp" :dir :system)
 (include-book "kestrel/typed-lists-light/items-have-len" :dir :system) ; drop
 ;(include-book "repeat" )
 (include-book "all-same" )
-(include-book "memberp" )
+;(include-book "memberp" )
 (include-book "memberp2" )
 (include-book "update-subrange2" )
 (local (include-book "take2" ))
-(include-book "repeat-tail" )
+;(include-book "repeat-tail" )
 ;(include-book "perm" )
 (include-book "subrange" )
-(include-book "reverse-list" )
+;(include-book "reverse-list" )
 (include-book "firstn" )
 (include-book "all-equal-dollar2" )
-(local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
+;(local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "len" ))
 (local (include-book "cons" ))
 (local (include-book "nth" ))

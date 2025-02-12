@@ -68,6 +68,7 @@
 (include-book "kestrel/lists-light/append" :dir :system)
 (include-book "kestrel/lists-light/len" :dir :system)
 (include-book "kestrel/lists-light/nth" :dir :system)
+(include-book "kestrel/lists-light/reverse-list" :dir :system)
 (include-book "kestrel/lists-light/subrange" :dir :system)
 (include-book "kestrel/lists-light/rules2" :dir :system) ; for EQUAL-OF-NTHCDR-AND-CONS-OF-NTH
 (include-book "kestrel/booleans/booleans" :dir :system)
