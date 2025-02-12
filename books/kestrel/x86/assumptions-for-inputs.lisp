@@ -24,6 +24,7 @@
 (local (include-book "kestrel/utilities/doublet-listp" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 
+;; Makes assumptions to introduce a variable for each element of the array, from INDEX up to LEN - 1.
 (defund var-intro-assumptions-for-array-input (index len element-size pointer-name var-name)
   (declare (xargs :guard (and (natp index)
                               (natp len)
