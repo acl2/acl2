@@ -127,6 +127,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled round-after-last-p-of-events-next
+  :short "Preservation of the invariant by multiple transitions."
   (implies (and (events-possiblep events systate)
                 (round-after-last-p systate))
            (round-after-last-p (events-next events systate)))
@@ -137,6 +138,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defruled round-after-last-p-when-reachable
+  :short "The invariant holds in every reachable state."
   (implies (system-state-reachablep systate)
            (round-after-last-p systate))
   :enable (system-state-reachablep
@@ -146,7 +148,8 @@
      (implies (and (system-state-reachable-from-p systate from)
                    (round-after-last-p from))
               (round-after-last-p systate))
-     :use (:instance round-after-last-p-of-events-next
-                     (events (SYSTEM-STATE-REACHABLE-FROM-P-WITNESS SYSTATE FROM))
-                     (systate from))
+     :use (:instance
+           round-after-last-p-of-events-next
+           (events (system-state-reachable-from-p-witness systate from))
+           (systate from))
      :enable system-state-reachable-from-p)))
