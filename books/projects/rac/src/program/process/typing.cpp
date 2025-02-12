@@ -1,5 +1,3 @@
-#include <limits>
-
 #include "returnfalse.h"
 #include "typing.h"
 
@@ -739,8 +737,7 @@ bool TypingAction::VisitSwitchStmt(SwitchStmt *s) {
 bool TypingAction::VisitAssignment(Assignment *s) {
 
   if (auto symRef = dynamic_cast<SymRef *>(s->lval)) {
-    if (isa<MulConstDec *>(symRef->symDec)
-        || isa<ConstDec *>(symRef->symDec)) {
+    if (symRef->get_type()->isConst()) {
       diag_
           .new_error(s->lval->loc(),
                      format("Assignment of read-only variable %s",

@@ -360,26 +360,6 @@ bool RecursiveASTVisitor<Derived>::TraverseVarDec(VarDec *s) {
 }
 
 template <typename Derived>
-bool RecursiveASTVisitor<Derived>::TraverseConstDec(ConstDec *s) {
-
-  if (!derived().postfixTraversal())
-    if (!derived().WalkUpConstDec(s))
-      return false;
-
-  if (!derived().TraverseExpression(s->init))
-    return false;
-
-  if (!derived().TraverseType(s->get_type()))
-    return false;
-
-  if (derived().postfixTraversal())
-    if (!derived().WalkUpConstDec(s))
-      return false;
-
-  return true;
-}
-
-template <typename Derived>
 bool RecursiveASTVisitor<Derived>::TraverseMulVarDec(MulVarDec *s) {
 
   if (!derived().postfixTraversal())
@@ -396,28 +376,6 @@ bool RecursiveASTVisitor<Derived>::TraverseMulVarDec(MulVarDec *s) {
 
   if (derived().postfixTraversal())
     if (!derived().WalkUpMulVarDec(s))
-      return false;
-
-  return true;
-}
-
-template <typename Derived>
-bool RecursiveASTVisitor<Derived>::TraverseMulConstDec(MulConstDec *s) {
-
-  if (!derived().postfixTraversal())
-    if (!derived().WalkUpMulConstDec(s))
-      return false;
-
-  bool b = true;
-  for (auto s : s->decs) {
-    if (b && !derived().TraverseStatement(s))
-      b = false;
-  }
-  if (!b)
-    return false;
-
-  if (derived().postfixTraversal())
-    if (!derived().WalkUpMulConstDec(s))
       return false;
 
   return true;

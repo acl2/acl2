@@ -1,13 +1,12 @@
 #include "ast.h"
 
-#include "expressions.h"
 #include "functions.h"
 #include "statements.h"
 #include "types.h"
 
 AST::AST() {
   typeDefs_.reserve(256);
-  constDecs_.reserve(256);
+  globals_.reserve(256);
   //  templates_.reserve(256);
   funDefs_.reserve(256);
 
@@ -18,7 +17,7 @@ AST::AST() {
 
 AST::AST(AST &&other)
     : typeDefs_(std::move(other.typeDefs_)),
-      constDecs_(std::move(other.constDecs_)),
+      globals_(std::move(other.globals_)),
       //      templates_(std::move(other.templates_)),
       funDefs_(std::move(other.funDefs_)), diag_(std::move(other.diag_)) {}
 
@@ -35,12 +34,12 @@ DefinedType *AST::getType(const std::string &name) {
   return it == typeDefs_.end() ? nullptr : *it;
 }
 
-void AST::registerConstDec(ConstDec *d) { constDecs_.push_back(d); }
+void AST::registerGlobal(VarDec *d) { globals_.push_back(d); }
 
-ConstDec *AST::getConstDec(const std::string &name) {
-  auto it = std::find_if(constDecs_.begin(), constDecs_.end(),
-                         [&](ConstDec *d) { return name == d->getname(); });
-  return it == constDecs_.end() ? nullptr : *it;
+VarDec *AST::getGlobal(const std::string &name) {
+  auto it = std::find_if(globals_.begin(), globals_.end(),
+                         [&](VarDec *d) { return name == d->getname(); });
+  return it == globals_.end() ? nullptr : *it;
 }
 
 Template *AST::getTemplate(const std::string &name) {

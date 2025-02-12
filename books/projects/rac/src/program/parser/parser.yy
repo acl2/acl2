@@ -178,7 +178,7 @@ while (0)
 %start program
 
 %type<mvtype> mv_type;
-%type<type> type_spec typedef_type
+%type<type> type_spec_non_const type_spec typedef_type
 %type<type> primitive_type array_param_type register_type struct_type enum_type
 %type<defined_type> type_dec typedef_dec
 
@@ -200,8 +200,9 @@ while (0)
 %type<tpd> template_param_dec
 %type<tdl> template_param_dec_list nontrivial_template_param_dec_list
 %type<stml> statement_list r_statement_list
-%type<stm> statement r_statement block r_block var_dec const_dec untyped_var_dec untyped_const_dec
-%type<stm> for_statement for_init multiple_var_dec multiple_const_dec null_statement final_statement
+%type<stm> statement r_statement block r_block var_dec param_dec
+%type<stm> untyped_var_dec untyped_param_dec
+%type<stm> for_statement for_init multiple_var_dec null_statement final_statement
 %type<stm> if_statement switch_statement break_statement
 %type<stm> simple_statement assignment multiple_assignment assertion return_statement
 %type<c> case
@@ -237,18 +238,38 @@ program_element
       YYERROR;
   }
 }
-    | const_dec ';'
+    | var_dec ';'
 {
-  ConstDec *cd = static_cast<ConstDec *>($1);
+  auto *cd = static_cast<VarDec *>($1);
+
+  if (!cd->get_type()->isConst()) {
+    yyast.diag()
+          .new_error(cd->loc(), "Global variable must be constant")
+          .context(@$)
+          .note("Consider adding `const` here")
+          .report();
+      YYERROR;
+  }
+
   cd->setGlobal();
-  yyast.registerConstDec(cd);
+  yyast.registerGlobal(cd);
 }
     | func_def
-    | multiple_const_dec ';'
+    | multiple_var_dec ';'
 {
-  for (auto cd : static_cast<MulConstDec *>($1)->decs) {
+  for (auto cd : static_cast<MulVarDec *>($1)->decs) {
+
+      if (!cd->get_type()->isConst()) {
+        yyast.diag()
+              .new_error(cd->loc(), "Global variable must be constant")
+              .context(@$)
+              .note("Consider adding `const` here")
+              .report();
+          YYERROR;
+      }
+
       cd->setGlobal();
-      yyast.registerConstDec(cd);
+      yyast.registerGlobal(cd);
     }
 }
 ;
@@ -300,8 +321,15 @@ typedef_type
   $$ = yyast.getType($1);
 }; // name of a previously declared type
 
-
 type_spec
+    : CONST type_spec_non_const
+{
+  $$ = $2;
+  $$->setConst();
+}
+    | type_spec_non_const;
+
+type_spec_non_const
     : typedef_type // type that can appear in a typedef declaration
     | STRUCT struct_type
 {
@@ -314,11 +342,11 @@ type_spec
 
 
 primitive_type
-    : INT { $$ = &intType; }
-    | UINT { $$ = &uintType; }
-    | INT64 { $$ = &int64Type; }
-    | UINT64 { $$ = &uint64Type; }
-    | BOOL { $$ = &boolType; };
+    : INT { $$ = new PrimType(PrimType::Int()); }
+    | UINT { $$ = new PrimType(PrimType::Uint()); }
+    | INT64 { $$ = new PrimType(PrimType::Int64()); }
+    | UINT64 { $$ = new PrimType(PrimType::Uint64()); }
+    | BOOL { $$ = new PrimType(PrimType::Bool()); };
 
 register_type
     : AC_FIXED
@@ -330,30 +358,7 @@ register_type
 }
     | AC_INT '<' arithmetic_expression ',' arithmetic_expression'>'
 {
-//  if ($3->isStaticallyEvaluable () && $3->isInteger () && $3->evalConst () >= 0)
-//    {
-      $$ = new IntType (@$, $3, $5);
-//    }
-//  else
-//    {
-//      const char *expected = [&]() {
-//        if (!$3->isStaticallyEvaluable ()) {
-//          return "constant";
-//        } else if (!$3->isInteger ()) {
-//          return "an integer";
-//        } else {
-//          return "positive";
-//        }
-//      }();
-//
-//      auto message = format("Illegal parameter of ac_int, expected this to be "
-//                            "%s but is not.", expected);
-//      yyast.diag()
-//          .new_error(@3, message)
-//          .context(@$)
-//          .report();
-//      YYERROR;
-//    }
+  $$ = new IntType (@$, $3, $5);
 };
 
 array_param_type
@@ -787,9 +792,7 @@ r_statement
 
 simple_statement
     : var_dec
-    | const_dec
     | multiple_var_dec
-    | multiple_const_dec
     | break_statement
     | assignment
     | multiple_assignment
@@ -798,6 +801,116 @@ simple_statement
 
 var_dec
     : type_spec untyped_var_dec
+{
+  $$ = $2;
+  // untyped_var_dec is type only if and only if it is an array.
+  Type *t = ((VarDec *)$$)->get_type();
+  if (t)
+    {
+      ((ArrayType *)t)->baseType = $1;
+      // If the base type is const, then we move it to the array.
+      if ($1->isConst()) {
+        t->setConst();
+      }
+    }
+  else
+    {
+      ((VarDec *)$$)->set_type($1);
+    }
+}
+    | type_spec '*' untyped_var_dec
+{
+  yyast.diag()
+      .new_error(@2, "Pointers are forbidden")
+      .report();
+  YYERROR;
+}
+    | type_spec '&' untyped_var_dec
+{
+  yyast.diag()
+      .new_error(@2, "References are forbidden, except if they are used as function parameter")
+      .report();
+  YYERROR;
+}
+;
+
+untyped_var_dec
+    : ID
+{
+  bool error = register_with_new_id(symTab, $1, @1,
+    [&]() {
+      $$ = new VarDec (@1, $1, nullptr);
+      symTab.push ((VarDec *)$$);
+    });
+  if (error) {
+    YYERROR;
+  }
+}
+    | ID '=' expression
+{
+  bool error = register_with_new_id(symTab, $1, @1,
+    [&]() {
+      $$ = new VarDec (@1, $1, nullptr, $3);
+      symTab.push ((VarDec *)$$);
+    });
+  if (error) {
+    YYERROR;
+  }
+}
+    | ID '=' array_or_struct_init
+{
+  bool error = register_with_new_id(symTab, $1, @1,
+    [&]() {
+      $$ = new VarDec (@1, $1, nullptr, $3);
+      symTab.push ((VarDec *)$$);
+    });
+  if (error) {
+    YYERROR;
+  }
+}
+    | ID '[' arithmetic_expression ']'
+{
+  if (!$3->isStaticallyEvaluable () || $3->evalConst () <= 0)
+    {
+      yyast.diag()
+          .new_error(@3, "Invalid array size (it shoud be a constant, stricly "
+                      "positive expression)")
+          .context(@$)
+          .report();
+      YYERROR;
+    }
+  bool error = register_with_new_id(symTab, $1, @1,
+    [&]() {
+      $$ = new VarDec (@$, $1, new ArrayType (@1, $3, nullptr));
+      symTab.push ((VarDec *)$$);
+  });
+  if (error) {
+    YYERROR;
+  }
+}
+    | ID '[' arithmetic_expression ']' '=' array_or_struct_init
+{
+  if (!$3->isStaticallyEvaluable () || $3->evalConst () <= 0)
+    {
+      yyast.diag()
+          .new_error(@3, "Invalid array size (it shoud be a constant,"
+                    "stricly positive expression)")
+          .context(@$)
+          .report();
+      YYERROR;
+    }
+  bool error = register_with_new_id(symTab, $1, @1,
+    [&]() {
+      $$ = new VarDec (@1, $1, new ArrayType (@$, $3, nullptr), $6);
+      symTab.push ((VarDec *)$$);
+    });
+  if (error) {
+    YYERROR;
+  }
+};
+
+param_dec
+    : type_spec untyped_param_dec
 {
   $$ = $2;
   Type *t = ((VarDec *)$$)->get_type();
@@ -809,36 +922,41 @@ var_dec
     {
       ((VarDec *)$$)->set_type($1);
     }
+}
+  | type_spec '*' untyped_param_dec
+{
+  yyast.diag()
+      .new_error(@2, "Pointers are forbidden")
+      .report();
+  YYERROR;
+}
+    | type_spec '&' untyped_param_dec
+{
+  if (!$1->isConst()) {
+    yyast.diag()
+          .new_error(@1, "Reference must be constant")
+          .context(@$)
+          .note("Consider adding `const` here")
+          .note_location(@0)
+          .report();
+      YYERROR;
+  }
+
+  $$ = $3;
+  Type *t = ((VarDec *)$$)->get_type();
+  if (t) {
+      ((ArrayType *)t)->baseType = $1;
+  } else {
+    ((VarDec *)$$)->set_type($1);
+  }
 };
 
-untyped_var_dec
+untyped_param_dec
     : ID
 {
   bool error = register_with_new_id(symTab, $1, @$,
     [&]() {
       $$ = new VarDec (@$, $1, nullptr);
-      symTab.push ((VarDec *)$$);
-    });
-  if (error) {
-    YYERROR;
-  }
-}
-    | ID '=' expression
-{
-  bool error = register_with_new_id(symTab, $1, @$,
-    [&]() {
-      $$ = new VarDec (@$, $1, nullptr, $3);
-      symTab.push ((VarDec *)$$);
-    });
-  if (error) {
-    YYERROR;
-  }
-}
-    | ID '=' array_or_struct_init
-{
-  bool error = register_with_new_id(symTab, $1, @$,
-    [&]() {
-      $$ = new VarDec (@$, $1, nullptr, $3);
       symTab.push ((VarDec *)$$);
     });
   if (error) {
@@ -864,26 +982,6 @@ untyped_var_dec
   if (error) {
     YYERROR;
   }
-}
-    | ID '[' arithmetic_expression ']' '=' array_or_struct_init
-{
-  if (!$3->isStaticallyEvaluable () || $3->evalConst () <= 0)
-    {
-      yyast.diag()
-          .new_error(@3, "Invalid array size (it shoud be a constant,"
-                    "stricly positive expression)")
-          .context(@$)
-          .report();
-      YYERROR;
-    }
-  bool error = register_with_new_id(symTab, $1, @$,
-    [&]() {
-      $$ = new VarDec (@$, $1, new ArrayType (@$, $3, nullptr), $6);
-      symTab.push ((VarDec *)$$);
-    });
-  if (error) {
-    YYERROR;
-  }
 };
 
 array_or_struct_init
@@ -899,67 +997,6 @@ array_or_struct_init
 init_list
     : expression { $$ = new std::vector<Expression *>(); $$->push_back($1); }
     | init_list ',' expression { $$ = $1; $$->push_back($3); };
-
-const_dec
-    : CONST type_spec untyped_const_dec
-{
-  $$ = $3;
-  Type *t = ((ConstDec *)$$)->get_type();
-  if (t)
-    {
-      ((ArrayType *)t)->baseType = $2;
-    }
-  else
-    {
-      ((ConstDec *)$$)->set_type($2);
-    }
-};
-
-untyped_const_dec
-    : ID '=' expression
-{
-  bool error = register_with_new_id(symTab, $1, @1,
-    [&]() {
-      $$ = new ConstDec (@1, $1, nullptr, $3);
-      symTab.push ((ConstDec *)$$);
-    });
-  if (error) {
-    YYERROR;
-  }
-}
-    | ID '=' array_or_struct_init
-{
-  bool error = register_with_new_id(symTab, $1, @1,
-    [&]() {
-      $$ = new ConstDec(@1, $1, nullptr, $3);
-      symTab.push ((ConstDec *)$$);
-    });
-  if (error) {
-    YYERROR;
-  }
-}
-    | ID '[' arithmetic_expression ']' '=' array_or_struct_init
-{
-  if (!$3->isStaticallyEvaluable () || $3->evalConst () <= 0)
-    {
-      yyast.diag()
-          .new_error(@$, "Invalid array size (it shoud be a constant, "
-                     "stricly positive expression)")
-          .report();
-      YYERROR;
-    }
-
-  bool error = register_with_new_id(symTab, $1, @1,
-    [&]() {
-      $$ = new ConstDec (@1, $1, new ArrayType (@1, $3, nullptr), $6);
-      symTab.push ((ConstDec *)$$);
-    });
-  if (error) {
-    YYERROR;
-  }
-
-  symTab.push ((ConstDec *)$$);
-};
 
 multiple_var_dec
     : var_dec ',' untyped_var_dec
@@ -988,35 +1025,6 @@ multiple_var_dec
     }
   $$ = $1;
   ((MulVarDec *)$$)->decs.push_back((VarDec *)$3);
-};
-
-multiple_const_dec
-    : const_dec ',' untyped_const_dec
-{
-  if (((ConstDec *)$3)->get_type())
-    {
-      ((ArrayType *)(((ConstDec *)$3)->get_type()))->baseType
-          = ((ArrayType *)(((ConstDec *)$1)->get_type()))->baseType;
-    }
-  else
-    {
-      ((ConstDec *)$3)->set_type(((ConstDec *)$1)->get_type());
-    }
-  $$ = new MulConstDec (@$, (ConstDec *)$1, (ConstDec *)$3);
-}
-    | multiple_const_dec ',' untyped_const_dec
-{
-  if (((ConstDec *)$3)->get_type())
-    {
-      ((ArrayType *)(((ConstDec *)$3)->get_type()))->baseType
-          = ((ArrayType *)((MulConstDec *)$1)->decs.back()->get_type())->baseType;
-    }
-  else
-    {
-      ((ConstDec *)$3)->set_type(((MulConstDec *)$1)->decs.back()->get_type());
-    }
-  $$ = $1;
-  ((MulConstDec *)$$)->decs.push_back((ConstDec *)$3);
 };
 
 break_statement
@@ -1236,13 +1244,13 @@ param_dec_list
     | nontrivial_param_dec_list;
 
 nontrivial_param_dec_list
-    : var_dec
+    : param_dec
 {
   $$ = new std::vector<VarDec *>();
   $$->reserve(10);
   $$->push_back((VarDec *)$1);
 }
-    | nontrivial_param_dec_list ',' var_dec
+    | nontrivial_param_dec_list ',' param_dec
 {
   $$ = $1;
   $$->push_back((VarDec *)$3);

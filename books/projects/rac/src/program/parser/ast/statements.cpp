@@ -100,7 +100,6 @@ int SymDec::evalConst() {
   return init->evalConst();
 }
 
-bool SymDec::isGlobal() { return false; }
 
 Sexpression *
 SymDec::ACL2SymExpr() { // Sexpression for a reference to this symbol.
@@ -189,24 +188,7 @@ Sexpression *VarDec::ACL2Expr() {
   return new Plist({ &s_declare, sym, val });
 }
 
-Sexpression *VarDec::ACL2SymExpr() { return sym; }
-
-// class ConstDec : public VarDec
-// ------------------------------
-
-ConstDec::ConstDec(Location loc, const char *n, Type *t, Expression *i)
-    : VarDec(idOf(this), loc, n, t, i) {}
-
-void ConstDec::displaySimple(std::ostream &os) {
-  os << "const ";
-  VarDec::displaySimple(os);
-}
-
-bool ConstDec::isStaticallyEvaluable() { return isIntegerType(get_type()); }
-
-bool ConstDec::isGlobal() { return isGlobal_; }
-
-Sexpression *ConstDec::ACL2SymExpr() {
+Sexpression *VarDec::ACL2SymExpr() {
   if (isGlobal()) {
     return new Plist({ sym });
   } else {
@@ -255,40 +237,40 @@ void MulVarDec::displaySimple(std::ostream &os) {
 // class MulConstDec : public SimpleStatement  (multiple constant declaration)
 // ---------------------------------------------------------------------------
 
-MulConstDec::MulConstDec(Location loc, ConstDec *dec1, ConstDec *dec2)
-    : SimpleStatement(idOf(this), loc) {
-  decs.push_back(dec1);
-  decs.push_back(dec2);
-}
-
-MulConstDec::MulConstDec(Location loc, std::vector<ConstDec *> &&d)
-    : SimpleStatement(idOf(this), loc), decs(d) {}
-
-Sexpression *MulConstDec::ACL2Expr() {
-  Plist *result = new Plist({ &s_list });
-  for (auto d : decs) {
-    result->add(d->ACL2Expr());
-  }
-  return result;
-}
-
-// TODO refactore
-void MulConstDec::displaySimple(std::ostream &os) {
-  auto dlist = decs.begin();
-  (*dlist)->get_type()->displayVarType(os);
-  while (dlist != decs.end()) {
-    os << " ";
-    (*dlist)->get_type()->displayVarName((*dlist)->getname(), os);
-    if ((*dlist)->init) {
-      os << " = ";
-      (*dlist)->init->display(os);
-    }
-    ++dlist;
-    if (dlist != decs.end()) {
-      os << ",";
-    }
-  }
-}
+//MulConstDec::MulConstDec(Location loc, ConstDec *dec1, ConstDec *dec2)
+//    : SimpleStatement(idOf(this), loc) {
+//  decs.push_back(dec1);
+//  decs.push_back(dec2);
+//}
+//
+//MulConstDec::MulConstDec(Location loc, std::vector<ConstDec *> &&d)
+//    : SimpleStatement(idOf(this), loc), decs(d) {}
+//
+//Sexpression *MulConstDec::ACL2Expr() {
+//  Plist *result = new Plist({ &s_list });
+//  for (auto d : decs) {
+//    result->add(d->ACL2Expr());
+//  }
+//  return result;
+//}
+//
+//// TODO refactore
+//void MulConstDec::displaySimple(std::ostream &os) {
+//  auto dlist = decs.begin();
+//  (*dlist)->get_type()->displayVarType(os);
+//  while (dlist != decs.end()) {
+//    os << " ";
+//    (*dlist)->get_type()->displayVarName((*dlist)->getname(), os);
+//    if ((*dlist)->init) {
+//      os << " = ";
+//      (*dlist)->init->display(os);
+//    }
+//    ++dlist;
+//    if (dlist != decs.end()) {
+//      os << ",";
+//    }
+//  }
+//}
 
 // class TempParamDec : public VarDec  (template parameter declaration)
 // --------------------------------------------------------------------

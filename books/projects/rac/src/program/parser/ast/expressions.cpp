@@ -4,7 +4,6 @@
 #include "types.h"
 
 #include <algorithm>
-#include <iomanip>
 #include <sstream>
 
 //***********************************************************************************

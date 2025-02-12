@@ -166,3 +166,9 @@
 
 - name: mv-deref
   description: Multiple value return types should be dereferenced for type-checking
+
+- name: assign_as_function_parameter
+  should_report_error: true
+  description: Default values are not supported
+
+- name: const_param

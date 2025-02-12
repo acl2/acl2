@@ -10,9 +10,6 @@
 - name: pointers
   should_report_error: true
 
-- name: references
-  should_report_error: true
-
 - name: c-array-local
 - name: c-array-as-parameter
   stderr_not_empty: true
@@ -101,3 +98,11 @@
   should_report_error: true
 
 - name: typedef-in-composite-types
+
+- name: const_ref_param
+
+- name: non_const_ref_param
+  should_report_error: true
+
+- name: const_ref_body
+  should_report_error: true

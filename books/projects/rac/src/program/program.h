@@ -30,14 +30,14 @@ public:
   bool runAction(Visitor *v) {
     return std::all_of(typeDefs_.begin(), typeDefs_.end(),
                        [&](auto e) { return v->TraverseType(e); })
-           && std::all_of(constDecs_.begin(), constDecs_.end(),
+           && std::all_of(globals_.begin(), globals_.end(),
                           [&](auto e) { return v->TraverseStatement(e); })
            && std::all_of(funDefs_.begin(), funDefs_.end(),
                           [&](auto e) { return v->TraverseStatement(e); });
   }
 
 private:
-  void displayConstDecs(std::ostream &os, DispMode mode) const;
+  void displayGlobals(std::ostream &os, DispMode mode) const;
   void displayTypeDefs(std::ostream &os, DispMode mode) const;
   //  Templates are included in functions
   void displayFunDefs(std::ostream &os, DispMode mode) const;

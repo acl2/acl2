@@ -1,7 +1,7 @@
-initializer-list-mismatch-types.cpp:12 (4-13): Wrong type provided, expected int but got int[3]
+initializer-list-mismatch-types.cpp:12 (4-5): Wrong type provided, expected int but got int[3]
  12 |   S s = { a };
-    |     ^^^^^^^^^
+    |     ^
 
-initializer-list-mismatch-types.cpp:17 (4-16): Too many arguments, expected 1 argument(s) got 2
+initializer-list-mismatch-types.cpp:17 (4-5): Too many arguments, expected 1 argument(s) got 2
  17 |   S s = { 1, 2 };
-    |     ^^^^^^^^^^^^
+    |     ^

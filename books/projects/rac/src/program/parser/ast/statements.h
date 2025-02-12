@@ -3,6 +3,7 @@
 
 #include "fwd.h"
 #include "nodesid.h"
+#include "types.h"
 
 #include "../../sexpressions.h"
 #include "../utils/diagnostics.h"
@@ -51,9 +52,9 @@ public:
 
   const char *getname() const { return sym->getname(); }
   virtual void displaySymDec(std::ostream &os) const;
-  virtual bool isGlobal();
+  virtual bool isGlobal() const { return false; }
 
-  Type *get_type() { return type_; }
+  Type *get_type() const { return type_; }
   void set_type(Type *t) {
     type_ = t;
     if (!original_type_) {
@@ -94,29 +95,18 @@ public:
   void displaySimple(std::ostream &os) override;
   Sexpression *ACL2Expr() override;
   Sexpression *ACL2SymExpr() override;
-};
 
-class ConstDec : public VarDec {
-public:
-  ConstDec(Location loc, const char *n, Type *t, Expression *i);
-  void displaySimple(std::ostream &os) override;
-  bool isStaticallyEvaluable() override;
-  bool isGlobal() override;
-  Sexpression *ACL2SymExpr() override;
+
+  bool isStaticallyEvaluable() const {
+    return get_type()->isConst() && isIntegerType(get_type());
+  }
 
   void setGlobal() { isGlobal_ = true; }
+  bool isGlobal() const override { return isGlobal_; }
+
 
 private:
   bool isGlobal_ = false;
-};
-
-class MulConstDec : public SimpleStatement {
-public:
-  std::vector<ConstDec *> decs;
-  MulConstDec(Location loc, ConstDec *dec1, ConstDec *dec2);
-  MulConstDec(Location loc, std::vector<ConstDec *> &&decs);
-  Sexpression *ACL2Expr() override;
-  void displaySimple(std::ostream &os) override;
 };
 
 class MulVarDec : public SimpleStatement {

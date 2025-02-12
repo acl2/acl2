@@ -75,8 +75,12 @@ public:
 
   NodesId id() const { return id_; }
 
+  void setConst() { isConst_ = true; }
+  bool isConst() const { return isConst_; }
+
 private:
   const NodesId id_;
+  bool isConst_ = false;
 };
 
 class PrimType : public Symbol, public Type {
@@ -122,7 +126,13 @@ public:
   Sexpression *cast(Expression *rval) const override;
 
   virtual void display(std::ostream &os) const override {
+
     if (RACname_) {
+
+      if (isConst()) {
+        os << "const ";
+      }
+
       os << *RACname_;
     } else {
       Symbol::display(os);
@@ -169,6 +179,11 @@ public:
   void display(std::ostream &os) const override { Symbol::display(os); }
 
   void displayVarType(std::ostream &os = std::cout) const override {
+
+    if (isConst()) {
+      os << "const ";
+    }
+
     os << getname();
   }
 

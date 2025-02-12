@@ -8,9 +8,6 @@
 #include "process/returnfalse.h"
 #include "process/typing.h"
 
-#include "parser/ast/functions.h"
-#include "parser/ast/types.h"
-
 #include <algorithm>
 
 std::optional<Program> Program::process(AST &&ast, bool all_warnings) {
@@ -51,12 +48,12 @@ void Program::displayTypeDefs(std::ostream &os, DispMode mode) const {
                   [&os](auto v) { v->displayDef(os); });
 }
 
-void Program::displayConstDecs(std::ostream &os, DispMode mode) const {
+void Program::displayGlobals(std::ostream &os, DispMode mode) const {
   if (mode == DispMode::rac)
-    std::for_each(constDecs_.begin(), constDecs_.end(),
+    std::for_each(globals_.begin(), globals_.end(),
                   [&os](auto v) { v->display(os); });
   else
-    std::for_each(constDecs_.begin(), constDecs_.end(),
+    std::for_each(globals_.begin(), globals_.end(),
                   [&os](auto v) { v->ACL2Expr()->display(os); });
 }
 
@@ -72,7 +69,7 @@ void Program::displayFunDefs(std::ostream &os, DispMode mode) const {
 void Program::display(std::ostream &os, DispMode mode) const {
   displayTypeDefs(os, mode);
   os << '\n';
-  displayConstDecs(os, mode);
+  displayGlobals(os, mode);
   os << '\n';
   displayFunDefs(os, mode);
   os << '\n';

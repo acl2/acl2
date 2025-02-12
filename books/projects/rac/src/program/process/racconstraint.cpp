@@ -187,29 +187,6 @@ bool RACConstraint::VisitMulVarDec(MulVarDec *s) {
     return true;
 }
 
-bool RACConstraint::VisitMulConstDec(MulConstDec *s) {
-
-  if (disable_assignement_check_) {
-    return true;
-  }
-
-  bool sucess = true;
-  for (const auto vd : s->decs) {
-    if (!vd->init) {
-      diag_.new_error(vd->loc(), "variable must be assigned directly")
-          .note("non initialized variable can introduce undefined behavior")
-          .context(vd->loc())
-          .report();
-      sucess = false;
-    }
-  }
-
-  if (!sucess)
-    return error();
-  else
-    return true;
-}
-
 bool RACConstraint::VisitFunDef(FunDef *fd) {
 
   bool b = true;

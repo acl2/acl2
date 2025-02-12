@@ -36,10 +36,19 @@ Type::cast(Expression *rval) const { // virtual (overridden by IntType)
 
 void Type::displayVarType(std::ostream &os) const {
   // How this type is displayed in a variable declaration
+  
+  if (isConst()) {
+    os << "const ";
+  }
+
   display(os);
 }
 
 void Type::displayVarName(const char *name, std::ostream &os) const {
+
+  if (isConst()) {
+    os << "const ";
+  }
   os << name;
 }
 
@@ -258,6 +267,9 @@ IntType *IntType::FromPrimType(const PrimType *t) {
 }
 
 void IntType::display(std::ostream &os) const {
+  if (isConst()) {
+    os << "const ";
+  }
   os << "ac_int<";
   width()->display(os);
   os << (isSigned_->evalConst() ? ", true>" : ", false>");
@@ -390,6 +402,10 @@ bool IntType::canBeImplicitlyCastTo(const Type *target) const {
 // Data members: Type *baseType; Expresion *dim;
 
 void ArrayType::display(std::ostream &os) const {
+
+  if (isConst()) {
+    os << "const ";
+  }
   baseType->display(os);
   os << "[";
   dim->display(os);
@@ -397,6 +413,10 @@ void ArrayType::display(std::ostream &os) const {
 }
 
 void ArrayType::displayVarType(std::ostream &os) const {
+
+  if (isConst()) {
+    os << "const ";
+  }
   baseType->display(os);
 }
 
@@ -448,6 +468,10 @@ StructField::StructField(Type *t, char *n) : sym(new Symbol(n)), type(t) {}
 void StructField::display(std::ostream &os, unsigned indent) const {
   if (indent)
     os << std::setw(indent) << " ";
+
+  if (type->isConst()) {
+    os << "const ";
+  }
   type->display(os);
   os << " " << getname() << ";";
 }
@@ -473,11 +497,18 @@ void StructType::displayFields(std::ostream &os) const {
 }
 
 void StructType::display(std::ostream &os) const {
+  if (isConst()) {
+    os << "const ";
+  }
   os << "struct ";
   this->displayFields(os);
 }
 
 void StructType::makeDef(const char *name, std::ostream &os) const {
+  if (isConst()) {
+    os << "const ";
+  }
+
   os << "\nstruct " << name << " ";
   displayFields(os);
   os << ";";
@@ -544,6 +575,10 @@ void EnumType::displayConsts(std::ostream &os) const {
 }
 
 void EnumType::display(std::ostream &os) const {
+if (isConst()) {
+    os << "const ";
+  }
+
   os << "enum ";
   displayConsts(os);
 }
@@ -563,6 +598,10 @@ Sexpression *EnumType::getEnumVal(Symbol *s) const {
 }
 
 void EnumType::makeDef(const char *name, std::ostream &os) const {
+if (isConst()) {
+    os << "const ";
+  }
+
   os << "\nenum " << name << " ";
   displayConsts(os);
   os << ";";
@@ -604,6 +643,11 @@ namespace priv {
       if (!first) {
         os << ", ";
       }
+
+      if (t->isConst()) {
+        os << "const ";
+      }
+
       t->display(os);
       first = false;
     }

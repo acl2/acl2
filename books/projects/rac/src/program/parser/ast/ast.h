@@ -20,14 +20,14 @@ public:
   // called in the parser. Return false if the registration failed (they is
   // already something with the same name).
   bool registerType(DefinedType *t);
-  void registerConstDec(ConstDec *d);
+  void registerGlobal(VarDec *d);
   void registerTemplate(Template *t);
   void registerFunDef(FunDef *t);
 
   // Get an type/dec/function called `name`. Return nullptr if nothing was
   // registered with this name.
   DefinedType *getType(const std::string &name);
-  ConstDec *getConstDec(const std::string &name);
+  VarDec *getGlobal(const std::string &name);
   Template *getTemplate(const std::string &name);
   FunDef *getFunDef(const std::string &name);
   Builtin *getBuiltin(const std::string &name);
@@ -36,7 +36,7 @@ public:
 
 protected:
   std::vector<DefinedType *> typeDefs_;
-  std::vector<ConstDec *> constDecs_;
+  std::vector<VarDec *> globals_;
   std::vector<FunDef *> funDefs_;
   std::vector<Builtin *> builtins_;
 
