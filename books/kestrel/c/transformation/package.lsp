@@ -30,7 +30,9 @@
                  erp
                  impossible
                  index-of
+                 packn-pos
                  pseudo-event-formp
+                 pseudo-event-form-listp
                  reterr
                  retok
                  std::defret-mutual)))
