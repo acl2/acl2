@@ -69,7 +69,6 @@
                                        (aes::aes-128-encrypt (bits-to-bytes (map-bool-to-bit (list ,@(make-var-names 'in 128))))
                                                              (bits-to-bytes (map-bool-to-bit (list ,@(make-var-names 'key 128)))))))
                    :rules :auto
-                   ;; :interpreted-function-alist (make-interpreted-function-alist '(getbit-list) (w state)) ; todo: build in ;; todo why did this take forever unless done separately?
                    :extra-rules (append (bit-blast-rules3)
                                         (introduce-bv-array-rules)) ; turns nth into bv-array-read
                    :remove-rules '(bit-to-bool bool-to-bit) ; todo, these rules interfer with pushing these functions to do conversions
@@ -109,8 +108,6 @@
                  (core-rules-bv)
                  (type-rules)
                  (list-rules))
-;  :count-hits t
-  :interpreted-function-alist (make-interpreted-function-alist '(getbit-list subrange) (w state))
   :assumptions (append (make-booleanp-assumptions (make-var-names 'in 128))
                        (make-booleanp-assumptions (make-var-names 'key 128))))
 
