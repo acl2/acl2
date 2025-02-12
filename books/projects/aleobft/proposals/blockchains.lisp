@@ -133,4 +133,19 @@
               (cert-list-evenp anchors))
     :hints (("Goal" :in-theory (enable blocks-last-round
                                        consp-of-extend-blockchain))))
-  (in-theory (disable blocks-last-round-of-extend-blockchain)))
+  (in-theory (disable blocks-last-round-of-extend-blockchain))
+
+  (defret blocks-orderedp-of-extend-blockchain
+    (blocks-orderedp new-blockchain)
+    :hyp (and (cert-list-orderedp anchors)
+              (cert-list-evenp anchors)
+              (blocks-orderedp blockchain)
+              (> (certificate->round (car (last anchors)))
+                 (blocks-last-round blockchain)))
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable blocks-orderedp
+                                blocks-last-round
+                                cert-list-orderedp
+                                last))))
+  (in-theory (disable blocks-orderedp-of-extend-blockchain)))
