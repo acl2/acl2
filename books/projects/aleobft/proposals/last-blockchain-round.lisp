@@ -13,7 +13,7 @@
 
 (include-book "reachability")
 
-(local (include-book "arithmetic-3/top" :dir :system))
+(local (include-book "../library-extensions/arithmetic-theorems"))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -143,8 +143,8 @@
              commit-possiblep
              blocks-last-round-of-extend-blockchain
              car-of-collect-anchors
-             evenp
-             posp))
+             aleobft::evenp-of-1-less-when-not-evenp
+             aleobft::evenp-of-3-less-when-not-evenp))
 
   (defruled last-blockchain-round-p-of-event-next
     (implies (and (last-blockchain-round-p systate)
