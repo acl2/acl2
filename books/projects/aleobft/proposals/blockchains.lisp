@@ -118,4 +118,22 @@
        (committed-certs (set::union committed-certs certs-to-commit)))
     (mv blockchain committed-certs))
   :verify-guards :after-returns
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret consp-of-extend-blockchain
+    (equal (consp new-blockchain)
+           (or (consp blockchain)
+               (consp anchors)))
+    :hints (("Goal" :induct t)))
+  (in-theory (disable consp-of-extend-blockchain))
+
+  (defret blocks-last-round-of-extend-blockchain
+    (equal (blocks-last-round new-blockchain)
+           (certificate->round (car anchors)))
+    :hyp (and (consp anchors)
+              (cert-list-evenp anchors))
+    :hints (("Goal" :in-theory (enable blocks-last-round
+                                       consp-of-extend-blockchain))))
+  (in-theory (disable blocks-last-round-of-extend-blockchain)))
