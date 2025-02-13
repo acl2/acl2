@@ -136,6 +136,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defthmd bvuminus-trim-axe
+  (implies (and (axe-syntaxp (term-should-be-trimmed-axe size x 'non-arithmetic dag-array))
+                (posp size) ; gen?
+                )
+           (equal (bvuminus size x)
+                  (bvuminus size (trim size x))))
+  :hints (("Goal" :in-theory (enable trim))))
+
 (defthmd bvuminus-trim-axe-all
   (implies (and (axe-syntaxp (term-should-be-trimmed-axe size x 'all dag-array))
                 (posp size) ; gen?
