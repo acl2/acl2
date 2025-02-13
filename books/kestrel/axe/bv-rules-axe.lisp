@@ -41,6 +41,7 @@
 (local (include-book "kestrel/bv/rules6" :dir :system)) ;for BVMULT-TIGHTEN
 (local (include-book "kestrel/bv/sbvrem-rules" :dir :system))
 (local (include-book "kestrel/bv/sbvdiv" :dir :system))
+(local (include-book "kestrel/bv/leftrotate-rules" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
@@ -624,9 +625,8 @@
                 (natp amt))
            (equal (leftrotate32 amt val)
                   (leftrotate32 (trim 5 amt) val)))
-  :hints (("Goal" :in-theory (e/d (trim) (MOD-OF-EXPT-OF-2-CONSTANT-VERSION ;looped with imod when things were enabled?
-                                          leftrotate32 ;disable globally?
-                                          )))))
+  :hints (("Goal" :use leftrotate32-trim-arg1
+           :in-theory (disable leftrotate32-trim-arg1))))
 
 ;for this not to loop, we must simplify things like (bvchop 5 (bvplus 32 x y))
 (defthmd leftrotate32-trim-arg1-axe-all
@@ -634,13 +634,14 @@
                 (natp amt))
            (equal (leftrotate32 amt val)
                   (leftrotate32 (trim 5 amt) val)))
-  :hints (("Goal" :in-theory (e/d (trim) (MOD-OF-EXPT-OF-2-CONSTANT-VERSION
-                                          leftrotate32 ;disable globally?
-                                          )))))
+  :hints (("Goal" :use leftrotate32-trim-arg1
+           :in-theory (disable leftrotate32-trim-arg1))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;bozo gen
+;rename
+;make 'all variant, like for leftrotate above
 (defthmd rightrotate32-trim-amt-axe
   (implies (and (axe-syntaxp (term-should-be-trimmed-axe '5 amt 'non-arithmetic dag-array))
                 (natp amt))
@@ -901,7 +902,7 @@
                 (unsigned-byte-p-forced ysize y)
                 )
            (equal (sbvlt 32 x y)
-                  ;;could use the max of the sizes? ;
+                  ;;could use the max of the sizes?
                   (bvlt 31 x y)))
   :hints (("Goal" :in-theory (enable ;sbvlt
                               sbvlt-rewrite
