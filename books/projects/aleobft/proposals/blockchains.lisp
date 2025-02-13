@@ -13,9 +13,6 @@
 
 (include-book "anchors")
 
-;; (local (include-book "arithmetic/top" :dir :system))
-;; (local (include-book "std/lists/top" :dir :system))
-
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
@@ -136,4 +133,19 @@
               (cert-list-evenp anchors))
     :hints (("Goal" :in-theory (enable blocks-last-round
                                        consp-of-extend-blockchain))))
-  (in-theory (disable blocks-last-round-of-extend-blockchain)))
+  (in-theory (disable blocks-last-round-of-extend-blockchain))
+
+  (defret blocks-orderedp-of-extend-blockchain
+    (blocks-orderedp new-blockchain)
+    :hyp (and (cert-list-orderedp anchors)
+              (cert-list-evenp anchors)
+              (blocks-orderedp blockchain)
+              (> (certificate->round (car (last anchors)))
+                 (blocks-last-round blockchain)))
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable blocks-orderedp
+                                blocks-last-round
+                                cert-list-orderedp
+                                last))))
+  (in-theory (disable blocks-orderedp-of-extend-blockchain)))

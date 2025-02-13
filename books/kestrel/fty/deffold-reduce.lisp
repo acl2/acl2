@@ -813,7 +813,8 @@
        (thm-events
         `((defruled ,type-suffix-when-emptyp
             (implies (omap::emptyp ,type)
-                     (,type-suffix ,type ,@extra-args-names)))))
+                     (equal (,type-suffix ,type ,@extra-args-names)
+                            ,default)))))
        (ruleset-event
         `(add-to-ruleset ,(deffoldred-gen-ruleset-name suffix)
                          '(,type-suffix-when-emptyp))))

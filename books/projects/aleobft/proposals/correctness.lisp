@@ -13,6 +13,7 @@
 
 (include-book "round-after-last")
 (include-book "last-blockchain-round")
+(include-book "ordered-blockchain")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -28,6 +29,7 @@
    (xdoc::p
     "This is work in progress."))
   :order-subtopics (round-after-last
-                    last-blockchain-round))
+                    last-blockchain-round
+                    ordered-blockchain))
 
 ; TODO: continue

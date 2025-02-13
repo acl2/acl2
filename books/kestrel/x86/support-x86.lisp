@@ -50,6 +50,70 @@
 (local (include-book "kestrel/arithmetic-light/numerator" :dir :system))
 (local (include-book "kestrel/bv/getbit2" :dir :system))
 
+;; some of these are for symbolic execution:
+(in-theory (acl2::enable* x86isa::X86-EFFECTIVE-ADDR-FROM-SIB
+                          x86isa::instruction-decoding-and-spec-rules ;this one is a ruleset
+                          x86isa::jcc/cmovcc/setcc-spec
+                          x86isa::gpr-and-spec-4
+                          x86isa::gpr-xor-spec-4
+                          x86isa::GPR-ADD-SPEC-4
+
+                          x86isa::one-byte-opcode-execute ;; x86isa::one-byte-opcode-execute
+                          ;; !rgfi-size
+                          x86isa::x86-operand-to-reg/mem
+
+                          ;;These appear to eventually call xw (via
+                          ;;!rgfi), so we'll keep them enabled
+                          ;;since xw is our normal form:
+                          x86isa::wr08
+                          x86isa::wr16
+                          x86isa::wr32
+                          x86isa::wr64
+
+                          ;;These appear to eventually call xr (via
+                          ;;rgfi), so we'll keep them enabled
+                          ;;since xw is our normal form:
+                          x86isa::rr08
+                          x86isa::rr16
+                          x86isa::rr32
+                          x86isa::rr64
+
+                          x86isa::wml32
+                          x86isa::wml64
+                          x86isa::riml08
+                          x86isa::riml32
+
+                          x86isa::x86-operand-from-modr/m-and-sib-bytes
+                          x86isa::riml-size
+
+                          x86isa::check-instruction-length
+
+                          x86isa::select-segment-register
+
+                          x86isa::n08-to-i08
+                          x86isa::n16-to-i16
+                          x86isa::n32-to-i32
+                          x86isa::n64-to-i64
+                          x86isa::n128-to-i128
+
+                          x86isa::two-byte-opcode-decode-and-execute
+                          x86isa::x86-effective-addr-when-64-bit-modep
+                          x86isa::x86-effective-addr-32/64
+                          ;; Flags
+                          x86isa::write-user-rflags
+                          x86isa::zf-spec))
+
+;; should some of these be local?
+(in-theory (disable logcount
+                    x86isa::write-user-rflags-and-xw
+                    byte-listp
+                    x86isa::combine-bytes
+                    member-equal
+                    get-prefixes-opener-lemma-zero-cnt ;for speed
+                    x86isa::create-canonical-address-list
+                    (:e x86isa::create-canonical-address-list)
+                    zf-spec))
+
 (defthm unsigned-byte-p-8-of-car-when-byte-listp
   (implies (byte-listp bytes)
            (equal (unsigned-byte-p 8 (car bytes))
@@ -61,8 +125,6 @@
            (equal (integerp (car bytes))
                   (consp bytes)))
   :hints (("Goal" :in-theory (enable byte-listp))))
-
-(in-theory (disable GET-PREFIXES-OPENER-LEMMA-ZERO-CNT)) ;for speed
 
 ;why needed?
 ;(acl2::defopeners LOAD-PROGRAM-INTO-MEMORY)
@@ -98,60 +160,6 @@
 ;;; Set up the theory for symbolic execution (work in progress):
 ;;; Perhaps these should be made into a ruleset.
 
-(in-theory (acl2::enable* x86isa::X86-EFFECTIVE-ADDR-FROM-SIB
-                    x86isa::instruction-decoding-and-spec-rules ;this one is a ruleset
-                    x86isa::jcc/cmovcc/setcc-spec
-                    x86isa::gpr-and-spec-4
-                    x86isa::gpr-xor-spec-4
-                    x86isa::GPR-ADD-SPEC-4
-
-                    x86isa::one-byte-opcode-execute ;; x86isa::one-byte-opcode-execute
-                    ;; !rgfi-size
-                    x86isa::x86-operand-to-reg/mem
-
-                    ;;These appear to eventually call xw (via
-                    ;;!rgfi), so we'll keep them enabled
-                    ;;since xw is our normal form:
-                    x86isa::wr08
-                    x86isa::wr16
-                    x86isa::wr32
-                    x86isa::wr64
-
-                    ;;These appear to eventually call xr (via
-                    ;;rgfi), so we'll keep them enabled
-                    ;;since xw is our normal form:
-                    x86isa::rr08
-                    x86isa::rr16
-                    x86isa::rr32
-                    x86isa::rr64
-
-                    x86isa::wml32
-                    x86isa::wml64
-                    x86isa::riml08
-                    x86isa::riml32
-
-                    x86isa::x86-operand-from-modr/m-and-sib-bytes
-                    x86isa::riml-size
-
-                    x86isa::check-instruction-length
-
-                    x86isa::select-segment-register
-
-                    x86isa::n08-to-i08
-                    x86isa::n16-to-i16
-                    x86isa::n32-to-i32
-                    x86isa::n64-to-i64
-                    x86isa::n128-to-i128
-
-                    x86isa::two-byte-opcode-decode-and-execute
-                    x86isa::x86-effective-addr-when-64-bit-modep
-                    x86isa::x86-effective-addr-32/64
-                    ;; Flags
-                    x86isa::write-user-rflags
-                    x86isa::zf-spec))
-
-(in-theory (disable x86isa::create-canonical-address-list
-                    (:e x86isa::create-canonical-address-list)))
 
 ;; gets rid of the effect of saving and restoring rbp
 ;; (defthm x86isa::xw-xr-same
@@ -197,8 +205,6 @@
              (x86-fetch-decode-execute x86_1)
            (x86-fetch-decode-execute x86_2))))
 
-(in-theory (disable MEMBER-EQUAL))
-
 ;; (defthm !flgi-undefined-of-!flgi-different-concrete-indices
 ;;   (implies (and (syntaxp (quotep i1))
 ;;                 (syntaxp (quotep i2))
@@ -237,11 +243,6 @@
      x86isa::*VIF*
      x86isa::*VIP*
      x86isa::*ID*))))
-
-(in-theory (disable logcount
-                    x86isa::write-user-rflags-and-xw
-                    byte-listp
-                    x86isa::combine-bytes))
 
 (defun nth-of-create-canonical-address-list-induct (n count addr)
   (if (zp count)
@@ -419,10 +420,9 @@
 ;gen
 (local
  (defthm +-of---of-bvchop-of-bvcat-same
-   (equal (+ (- (ACL2::BVCHOP 6 SRC)) (ACL2::BVCAT 1 1 6 SRC))
+   (equal (+ (- (ACL2::BVCHOP 6 x)) (ACL2::BVCAT 1 1 6 x))
           (ACL2::BVCAT 1 1 6 0))
-   :hints (("Goal" :in-theory (e/d (acl2::bvcat acl2::logapp)
-                                   ())))))
+   :hints (("Goal" :in-theory (enable acl2::bvcat acl2::logapp)))))
 
 ;; the normal definition splits with an if!
 ;; well, this one has an if too, but it's perhaps less bad since the shift amount will often be constant
@@ -746,8 +746,6 @@
 ;;                             ACL2::LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE ;loop
 ;;                             ACL2::LOGtail-OF-LOGext ;loop
 ;;                             )))))
-
-(in-theory (disable zf-spec)) ; move?
 
 (defthm xw-of-xw-both
   (implies (syntaxp (acl2::smaller-termp addr2 addr))
