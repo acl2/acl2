@@ -1,7 +1,7 @@
 ; The BV (bit vector) library.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -115,8 +115,10 @@
 (include-book "leftrotate16")
 (include-book "leftrotate32")
 (include-book "leftrotate64")
+(include-book "leftrotate-rules")
 (include-book "rightrotate")
 (include-book "rightrotate32")
+(include-book "rightrotate-rules")
 (include-book "rotate")
 
 ;; Shift operations:
