@@ -13,11 +13,9 @@
 (in-package "ACL2")
 
 (include-book "make-axe-syntaxp-evaluator") ; for bind-fns-to-arities and make-axe-syntaxp-evaluator-cases-for-arities ; todo: reduce?
-(include-book "kestrel/alists-light/symbol-alistp" :dir :system) ;todo: make local to the generated event (but need the :dir to make that convenient)
 
-(local (in-theory (enable rational-listp-when-integer-listp)))
-
-(local (in-theory (enable symbol-listp-of-lookup-equal)))
+(local (in-theory (enable symbol-listp-of-lookup-equal
+                          rational-listp-when-integer-listp)))
 
 (defun make-axe-bind-free-evaluator-fn (suffix fns enables wrld)
   (declare (xargs :guard (and (symbolp suffix)
@@ -35,6 +33,7 @@
        (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
        (local (include-book "kestrel/arithmetic-light/natp" :dir :system))
        (local (include-book "kestrel/lists-light/len" :dir :system))
+       (local (include-book "kestrel/alists-light/symbol-alistp" :dir :system))
 
        (local (in-theory (enable assoc-equal-iff-two
                                  natp-of-lookup-equal-when-darg-listp-of-strip-cdrs-when-member-equal
