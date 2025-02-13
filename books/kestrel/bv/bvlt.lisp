@@ -425,6 +425,7 @@
 
 ;rename to <-of-constant-becomes-bvlt
 ;disabled during library proofs
+;todo: it might be better to look at the size of the constant and see if the other term fits in that many bits.
 (defthmd <-becomes-bvlt
   (implies (and (syntaxp (quotep k))
                 (unsigned-byte-p free x)
@@ -437,6 +438,7 @@
 
 ;disabled during library proofs
 ;rename to <-of-constant-becomes-bvlt-alt
+;todo: it might be better to look at the size of the constant and see if the other term fits in that many bits.
 (defthmd <-becomes-bvlt-alt
   (implies (and (syntaxp (quotep k))
                 (unsigned-byte-p free x)
@@ -446,6 +448,17 @@
                       (bvlt free x k)
                     (not (< k 0)))))
   :hints (("Goal" :in-theory (enable bvlt unsigned-byte-p))))
+
+;do we need this?  make a weak version of <-becomes-bvlt?
+;rename
+(defthmd <-becomes-bvlt-alt-weak
+  (implies (and (syntaxp (quotep k))
+                (unsigned-byte-p free x)
+                (unsigned-byte-p free k))
+           (equal (< x k)
+                  (bvlt free x k)))
+  :hints (("Goal" :use (:instance <-becomes-bvlt-alt)
+           :in-theory (disable <-becomes-bvlt-alt))))
 
 ;disabled during library proofs
 ;could this be expensive?
