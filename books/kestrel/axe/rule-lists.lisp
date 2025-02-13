@@ -2316,7 +2316,7 @@
      bvplus-10-shrink-to-9
 
      ;; bvlt-add-to-both-sides-constant-lemma-no-split ;Wed Feb 24 14:16:05 2010
-     <-becomes-bvlt-alt-dag
+     <-becomes-bvlt-alt-weak
      assoc-equal-of-cons
      bvplus-commutative-axe
      bvplus-commutative-2-axe

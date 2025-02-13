@@ -463,13 +463,3 @@
                       t))))
   :hints (("Goal" :use (:instance <-becomes-bvlt-axe-bind-free-arg1-strong-safe)
            :in-theory (disable <-becomes-bvlt-axe-bind-free-arg1-strong-safe))))
-
-;move and rename
-(defthmd <-becomes-bvlt-alt-dag
-  (implies (and (syntaxp (quotep k))
-                (unsigned-byte-p free x)
-                (unsigned-byte-p free k))
-           (equal (< x k)
-                  (bvlt free x k)))
-  :hints (("Goal" :use (:instance <-becomes-bvlt-alt)
-           :in-theory (disable <-becomes-bvlt-alt))))
