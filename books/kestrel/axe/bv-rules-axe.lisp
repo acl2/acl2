@@ -966,7 +966,7 @@
 (defthmd acl2-numberp-of-logext
   (acl2-numberp (logext size i)))
 
-;fixme more like this for other ops?!
+;todo: more like this for other ops?!
 (defthmd bvxor-tighten-axe-bind-and-bind
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
@@ -1130,11 +1130,12 @@
   :hints (("Goal" :in-theory (enable bvlt unsigned-byte-p-forced))))
 
 (defthmd bvlt-when-bound-axe
-  (implies (and (syntaxp (quotep k))
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep size)))
                 (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
-                (< xsize size)
-                (natp size)
-                (bvle size (expt 2 xsize) k)
+                (< xsize size) ; gets computed
+                (bvle size (expt 2 xsize) k) ; gets computed
+                (natp size) ; gets computed
                 (unsigned-byte-p-forced xsize x))
            (bvlt size x k))
   :hints (("Goal" :use (:instance bvlt-when-bound)
@@ -2112,9 +2113,7 @@
                 (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
                 (< (+ (lg x) ysize) size)
                 (natp size)
-                ;; (force (unsigned-byte-p-forced xsize x))
-                (force (unsigned-byte-p-forced ysize y))
-                )
+                (force (unsigned-byte-p-forced ysize y)))
            (equal (bvmult size x y)
                   (bvmult (+ (lg x) ysize) x y)))
   :hints (("Goal" :use (bvmult-tighten-when-power-of-2p)
