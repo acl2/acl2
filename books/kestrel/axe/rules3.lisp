@@ -3563,17 +3563,6 @@
   (equal (bvchop n (if test a b))
          (if test (bvchop n a) (bvchop n b))))
 
-(defthm bvuminus-trim
-  (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'xsize x))
-                (< (+ 1 n) xsize)
-                (natp n)
-                (integerp xsize))
-           (equal (bvuminus n x)
-                  (bvuminus n (trim n x))))
-  :hints (("Goal" :in-theory (e/d (bvminus bvuminus trim
-                                           bvchop-when-i-is-not-an-integer)
-                                  (BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS)))))
-
 (in-theory (disable BVMINUS-TIGHTEN)) ;trying with this off
 
 ;; can cause case splits:
@@ -4694,17 +4683,6 @@
                                   (PLUS-1-AND-BVCHOP-BECOMES-BVPLUS ;fixme
                                    PLUS-OF-4-AND-BV-BECOMES-BVPLUS
                                    BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS)))))
-
-
-;move
-(defthm leftrotate32-trim
-  (implies (and (bind-free (bind-var-to-bv-term-size-if-trimmable 'xsize x))
-                (< 5 xsize)
-                (integerp xsize)
-                (natp x))
-           (equal (leftrotate32 x y)
-                  (leftrotate32 (trim 5 x) y)))
-  :hints (("Goal" :in-theory (e/d (trim) (leftrotate32)))))
 
 ;; (defthm nth-becomes-bv-array-read2-table
 ;;   (implies (and (bind-free (bind-var-to-list-size-from-table 'free data mfc state))

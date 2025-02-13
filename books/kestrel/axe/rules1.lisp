@@ -1687,6 +1687,8 @@
   :hints (("Goal" :use (:instance bv-array-write-equal-rewrite)
            :in-theory (disable bv-array-write-equal-rewrite))))
 
+;move
+;do we trim array reads?
 (defthm trim-of-bv-array-read
   (equal (trim n (bv-array-read element-size len index data))
          (bv-array-read (min (nfix n) (ifix element-size)) len index data))
