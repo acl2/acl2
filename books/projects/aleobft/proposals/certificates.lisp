@@ -297,7 +297,7 @@
 
   ///
 
-  (defruled certificate->author-of-cert-with-author+round
+  (defrule certificate->author-of-cert-with-author+round
     (implies (cert-with-author+round author round certs)
              (equal (certificate->author
                      (cert-with-author+round author round certs))
@@ -309,7 +309,7 @@
                      (certs (certs-with-author+round author round certs))))
     :enable set::cardinality)
 
-  (defruled certificate->round-of-cert-with-author+round
+  (defrule certificate->round-of-cert-with-author+round
     (implies (cert-with-author+round author round certs)
              (equal (certificate->round
                      (cert-with-author+round author round certs))
@@ -396,3 +396,28 @@
   ///
   (fty::deffixequiv cert-list-evenp
     :args ((x certificate-listp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define cert-list-orderedp ((certs certificate-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a list of certificates has
+          strictly increasing round numbers from right to left."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is analogous to @(tsee blocks-orderedp),
+     but for certificates instead of blocks.
+     The reason for having this predicate on certificates is that
+     blockchains are extended from sequences of anchors,
+     which are lists of certificates;
+     the reason why blocks have strictly increasing round numbers
+     is that the collected lists of anchors also have
+     strictly increasing round numbers."))
+  (b* (((when (endp certs)) t)
+       ((when (endp (cdr certs))) t)
+       ((unless (> (certificate->round (car certs))
+                   (certificate->round (cadr certs))))
+        nil))
+    (cert-list-orderedp (cdr certs)))
+  :hooks (:fix))
