@@ -1,7 +1,7 @@
 ; 32-bit right rotate
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -29,6 +29,20 @@
   (implies (and (<= 32 size)
                 (integerp size))
            (unsigned-byte-p size (rightrotate32 x y)))
+  :hints (("Goal" :in-theory (enable rightrotate32))))
+
+;todo gen the 5 and move
+(defthm rightrotate-32-of-bvchop-5
+  (implies (natp amt)
+           (equal (rightrotate 32 (bvchop 5 amt) val)
+                  (rightrotate 32 (ifix amt) val)))
+  :hints (("Goal" :in-theory (enable bvchop))))
+
+;todo gen the 5
+(defthm rightrotate32-of-bvchop-5
+  (implies (natp amt)
+           (equal (rightrotate32 (bvchop 5 amt) val)
+                  (rightrotate32 amt val)))
   :hints (("Goal" :in-theory (enable rightrotate32))))
 
 ;gen
