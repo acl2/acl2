@@ -52,12 +52,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Creates a list of assumptions asserting that the VARS are all booleans.
-(defun make-booleanp-assumptions (vars)
+(defun boolean-hyps (vars)
   (declare (xargs :guard (symbol-listp vars)))
   (if (endp vars)
       nil
     (cons `(booleanp ,(first vars))
-          (make-booleanp-assumptions (rest vars)))))
+          (boolean-hyps (rest vars)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -108,8 +108,8 @@
                  (core-rules-bv)
                  (type-rules)
                  (list-rules))
-  :assumptions (append (make-booleanp-assumptions (make-var-names 'in 128))
-                       (make-booleanp-assumptions (make-var-names 'key 128))))
+  :assumptions (append (boolean-hyps (make-var-names 'in 128))
+                       (boolean-hyps (make-var-names 'key 128))))
 
 ;; Now, doing (dag-info *AES-128-ENCRYPT-SPEC-DAG-BIT-BLASTED-AS-BOOLEAN*) shows that
 ;; almost all the functions are BOOLAND and NOT.  The exception is CONS, which is
