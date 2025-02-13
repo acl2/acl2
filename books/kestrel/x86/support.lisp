@@ -1127,14 +1127,7 @@
                       (x86isa::combine-bytes tp)
                     (x86isa::combine-bytes ep)))))
 
-;TODO: we could just build this kind of thing into axe..
-(defthm 64-bit-mode-one-byte-opcode-modr/m-p$inline-of-if-when-constants
-  (implies (syntaxp (and (quotep tp)
-                         (quotep ep)))
-           (equal (x86isa::64-bit-mode-one-byte-opcode-modr/m-p$inline (if test tp ep))
-                  (if test
-                      (x86isa::64-bit-mode-one-byte-opcode-modr/m-p$inline tp)
-                    (x86isa::64-bit-mode-one-byte-opcode-modr/m-p$inline ep)))))
+
 
 ;; ;drop?
 ;; (defthm one-byte-opcode-execute-of-if-arg1
