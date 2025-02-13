@@ -55,7 +55,7 @@
          :parents (x86isa)
          :short "Running Linux on the @('x86isa') model."
 
-         :long 
+         :long
          (xdoc::topstring
            "<p>The x86isa model is capable of running a slightly modified
            version of Linux. This version of Linux is modified to add support for

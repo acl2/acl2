@@ -913,7 +913,7 @@
            (equal (bvchop size x)
                   (+ (expt 2 size) x)))
   :hints (("Goal"
-           :use (:instance acl2::bvchop-identity (acl2::size size) (i (+ (expt 2 size) X)))
+           :use (:instance bvchop-identity (size size) (i (+ (expt 2 size) X)))
            :in-theory (enable bvchop unsigned-byte-p))))
 
 (defthmd bvchop-when-signed-byte-p

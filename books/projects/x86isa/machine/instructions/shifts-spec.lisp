@@ -828,7 +828,7 @@ set to the most-significant bit of the original operand.</p>"
                                             :sf sf)
                                           :exec
                                           (the (unsigned-byte 32)
-                                               (!rflagsBits->cf 
+                                               (!rflagsBits->cf
                                                  cf
                                                  (!rflagsBits->pf
                                                    pf

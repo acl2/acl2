@@ -326,12 +326,12 @@
   :modr/m t
 
   :additional-args ((adcx booleanp))
-  
+
   :body
 
   (b* ((p2 (prefixes->seg prefixes))
        (p4? (eql #.*addr-size-override* (prefixes->adr prefixes)))
-       (operand-size (if (logbitp *w* rex-byte) 8 4)) 
+       (operand-size (if (logbitp *w* rex-byte) 8 4))
 
        (G (rgfi-size operand-size
                      (the (unsigned-byte 4)
