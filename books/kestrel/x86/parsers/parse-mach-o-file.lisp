@@ -191,7 +191,7 @@
   (implies (byte-listp bytes)
            (byte-listp (mv-nth 2 (parse-n-bytes-into-string n bytes))))
   :hints (("Goal" :in-theory (enable parse-n-bytes-into-string))))
- 
+
 (defconst *mach-o-header-flags-alist*
   '((#x1 . :MH_NOUNDEFS)
     (#x2 . :MH_INCRLINK)

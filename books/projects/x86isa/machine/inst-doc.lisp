@@ -86,7 +86,7 @@
         ((atom (cdr syms))
          (str::pcat acc (symbol-name (car syms))))
         (t (opcode-print-syms (str::pcat acc (symbol-name (car syms)) ".") (cdr syms)))))
-      
+
 
 ;; examples: EVEX.512.66.0F.W0 6F /r
 ;;           VEX.128.66.0F.WIG 7F /r

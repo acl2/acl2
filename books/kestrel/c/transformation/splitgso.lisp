@@ -4,65 +4,32 @@
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (www.alessandrocoglio.info)
 ; Author: Grant Jurgensen (grant@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "C2C")
 
+(include-book "std/system/constant-value" :dir :system)
+(include-book "std/util/error-value-tuples" :dir :system)
+(include-book "kestrel/fty/string-option" :dir :system)
+
 (include-book "../syntax/abstract-syntax-operations")
 (include-book "../syntax/unambiguity")
 (include-book "../syntax/validation-information")
 (include-book "deftrans")
-(include-book "utilities/free-vars")
-
-(include-book "std/system/constant-value" :dir :system)
-(include-book "std/util/error-value-tuples" :dir :system)
-
-(local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
-(local (include-book "std/system/w" :dir :system))
+(include-book "utilities/collect-idents")
+(include-book "utilities/fresh-ident")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
 (local (acl2::disable-builtin-rewrite-rules-for-defaults))
 (set-induction-depth-limit 0)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defxdoc+ splitgso
-  :parents (transformation-tools)
-  :short "A transformation to split a global struct object."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This transformation targets a global struct object,
-     i.e. a file-scope (i.e. top-level) object (i.e. a global variable),
-     that has a struct type.
-     The transformation splits it into two objects, of two new struct types,
-     each with a subset of the original struct members,
-     which are divided between the two new struct types (and objects).
-     Member access expressions are replaced with new access expressions with
-     the original object replaced with one of the new objects.
-     The transformation will fail if the original object appears in any other
-     sorts of expressions.")
-   (xdoc::p
-    "This transformation expects translation unit ensembles to be annotated
-     with validation information.
-     See the @(see c$::validator).")
-   (xdoc::section
-    "Current Limitations"
-    (xdoc::ul
-     (xdoc::li "Fields in a struct type declaration must not share a type
-                specification (e.g., @('int x, y;') is currently unsupported,
-                where @('int x; int y;') <i>is</i> supported)")
-     (xdoc::li "Similarly, struct object declarations must not share a type
-                specification (e.g. @('struct myStruct foo, bar;') is currently
-                unsupported, while @('struct myStruct foo; struct myStuct
-                bar;') is allowed.)")
-     (xdoc::li "The names of the new struct objects and their types are not yet
-                checked for uniqueness/shadowing."))))
-  :order-subtopics t)
+(local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
+(local (include-book "std/system/w" :dir :system))
+(local (include-book "kestrel/lists-light/len" :dir :system))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -388,39 +355,47 @@
 
 (define dup-split-struct-type-decl
   ((original identp)
-   (new1 identp)
-   (new2 identp)
+   (new1 ident-optionp)
+   (new2 ident-optionp)
+   (blacklist ident-setp)
    (split-members ident-listp)
    (decl declp))
   :returns (mv erp
-               (found booleanp
-                      :rule-classes :type-prescription)
+               (new1$ ident-optionp)
+               (new2$ ident-optionp)
                (decls decl-listp))
-  (b* (((reterr) nil nil))
+  (b* (((reterr) nil nil nil))
     (decl-case
       decl
       :decl
       (b* ((type-spec? (type-spec-from-dec-specs decl.specs))
-           ((erp type-match remanining-struct-decls split-struct-decls)
-            (b* (((reterr) nil nil nil)
+           ((erp type-match new1 new2 remanining-struct-decls split-struct-decls)
+            (b* (((reterr) nil nil nil nil nil)
                  ((unless (and type-spec?
                                (endp decl.init)))
-                  (retok nil nil nil)))
+                  (retok nil nil nil nil nil)))
               (type-spec-case
                 type-spec?
                 :struct (b* (((strunispec strunispec) type-spec?.spec)
                              (match (equal strunispec.name original))
                              ((unless match)
-                              (retok nil nil nil))
+                              (retok nil nil nil nil nil))
                              ((erp remanining-struct-decls split-struct-decls)
                               ;; TODO: also check that split-members are
                               ;;   all in the struct.
-                              (split-structdecl-list split-members strunispec.members)))
-                          (retok t remanining-struct-decls split-struct-decls))
-                :otherwise (retok nil nil nil))))
+                              (split-structdecl-list split-members
+                                                     strunispec.members))
+                             (new1 (or new1 strunispec.name (ident "new_struct")))
+                             (new2 (or new2 strunispec.name (ident "new_struct")))
+                             ((list new1 new2)
+                              (fresh-idents (list new1 new2) blacklist)))
+                          (retok t new1 new2 remanining-struct-decls split-struct-decls))
+                :otherwise (retok nil nil nil nil nil))))
            ((unless type-match)
-            (retok nil (list (decl-fix decl)))))
-        (retok t
+            (retok nil nil (list (decl-fix decl)))))
+        ;; TODO: get struct-type
+        (retok new1
+               new2
                (list (decl-fix decl)
                      (c$::make-decl-decl
                        :specs (list (c$::decl-spec-typespec
@@ -434,7 +409,12 @@
                                         (c$::make-strunispec
                                           :name new2
                                           :members split-struct-decls))))))))
-      :statassert (retok nil (list (decl-fix decl))))))
+      :statassert (retok nil nil (list (decl-fix decl)))))
+  ///
+
+  (defret identp-of-dup-split-struct-type-decl.new2$
+    (equal (identp new2$)
+           (identp new1$))))
 
 (define decl-list-to-extdecl-list
   ((decls decl-listp))
@@ -446,108 +426,159 @@
 
 (define dup-split-struct-type-extdecl
   ((original identp)
-   (new1 identp)
-   (new2 identp)
+   (new1 ident-optionp)
+   (new2 ident-optionp)
+   (blacklist ident-setp)
    (split-members ident-listp)
    (extdecl extdeclp))
   :returns (mv erp
-               (found booleanp
-                      :rule-classes :type-prescription)
+               (new1$ ident-optionp)
+               (new2$ ident-optionp)
                (extdecls extdecl-listp))
-  (b* (((reterr) nil nil))
+  (b* (((reterr) nil nil nil))
     (extdecl-case
       extdecl
-      :fundef (retok nil (list (extdecl-fix extdecl)))
-      :decl (b* (((erp found decls)
+      :fundef (retok nil nil (list (extdecl-fix extdecl)))
+      :decl (b* (((erp new1 new2 decls)
                   (dup-split-struct-type-decl
                     original
                     new1
                     new2
+                    blacklist
                     split-members
                     extdecl.unwrap)))
-              (retok found
+              (retok new1
+                     new2
                      (decl-list-to-extdecl-list decls)))
-      :empty (retok nil (list (extdecl-fix extdecl)))
-      :asm (retok nil (list (extdecl-fix extdecl))))))
+      :empty (retok nil nil (list (extdecl-fix extdecl)))
+      :asm (retok nil nil (list (extdecl-fix extdecl)))))
+  ///
+
+  (defret identp-of-dup-split-struct-type-extdecl.new2$
+    (equal (identp new2$)
+           (identp new1$))))
 
 (define dup-split-struct-type-extdecl-list
   ((original identp)
-   (new1 identp)
-   (new2 identp)
+   (new1 ident-optionp)
+   (new2 ident-optionp)
+   (blacklist ident-setp)
    (split-members ident-listp)
    (extdecls extdecl-listp))
   :returns (mv erp
+               (new1$ ident-optionp)
+               (new2$ ident-optionp)
                (extdecls$ extdecl-listp))
-  (b* (((reterr) nil)
+  (b* (((reterr) nil nil nil)
        ((when (endp extdecls))
-        (retok nil))
-       ((erp found new-extdecls1)
+        (retok nil nil nil))
+       ((erp new1$ new2$ new-extdecls1)
         (dup-split-struct-type-extdecl
           original
           new1
           new2
+          blacklist
           split-members
           (first extdecls)))
-       ((when found)
-        (retok (append new-extdecls1
+       ((when new1$)
+        (retok new1$
+               new2$
+               (append new-extdecls1
                        (extdecl-list-fix (rest extdecls)))))
-       ((erp new-extdecls2)
+       ((erp new1 new2 new-extdecls2)
         (dup-split-struct-type-extdecl-list
           original
           new1
           new2
+          blacklist
           split-members
           (rest extdecls))))
-    (retok (append new-extdecls1 new-extdecls2))))
+    (retok new1 new2 (append new-extdecls1 new-extdecls2)))
+
+  :measure (acl2-count extdecls)
+  ///
+
+  (defret identp-of-dup-split-struct-type-extdecl-list.new2$
+    (equal (identp new2$)
+           (identp new1$))
+    :hints (("Goal" :induct t))))
 
 (define dup-split-struct-type-transunit
   ((original identp)
-   (new1 identp)
-   (new2 identp)
+   (new1 ident-optionp)
+   (new2 ident-optionp)
+   (blacklist ident-setp)
    (split-members ident-listp)
    (tunit transunitp))
   :returns (mv erp
+               (new1$ ident-optionp)
+               (new2$ ident-optionp)
                (tunit$ transunitp))
-  (b* (((reterr) (c$::irr-transunit))
+  (b* (((reterr) nil nil (c$::irr-transunit))
        ((transunit tunit) tunit)
-       ((erp extdecls)
+       ((erp new1 new2 extdecls)
         (dup-split-struct-type-extdecl-list
           original
           new1
           new2
+          blacklist
           split-members
           tunit.decls)))
-    (retok (make-transunit :decls extdecls :info tunit.info))))
+    (retok new1
+           new2
+           (make-transunit :decls extdecls :info tunit.info)))
+    ///
+
+    (defret identp-of-dup-split-struct-type-transunit.new2$
+      (equal (identp new2$)
+             (identp new1$))))
 
 (define dup-split-struct-type-filepath-transunit-map
   ((original identp)
-   (new1 identp)
-   (new2 identp)
+   (new1 ident-optionp)
+   (new2 ident-optionp)
+   (blacklist ident-setp)
    (split-members ident-listp)
    (map filepath-transunit-mapp))
   :returns (mv erp
+               (new1$ ident-optionp)
+               (new2$ ident-optionp)
                (map$ filepath-transunit-mapp))
-  (b* (((reterr) nil)
+  (b* (((reterr) nil nil nil)
        ((when (omap::emptyp map))
-        (retok nil))
-       ((erp tunit)
+        (retok nil nil nil))
+       ((erp new1$ new2$ tunit)
         (dup-split-struct-type-transunit
           original
           new1
           new2
+          blacklist
           split-members
           (omap::head-val map)))
-       ((erp map$)
+       ((erp new1 new2 map$)
         (dup-split-struct-type-filepath-transunit-map
           original
           new1
           new2
+          blacklist
           split-members
-          (omap::tail map))))
-    (retok (omap::update (c$::filepath-fix (omap::head-key map))
+          (omap::tail map)))
+       (new1 (or new1 new1$))
+       (new2 (or new2 new2$)))
+    (retok new1
+           new2
+           (omap::update (c$::filepath-fix (omap::head-key map))
                          tunit
                          map$)))
-  :verify-guards :after-returns)
+
+  :measure (acl2-count map)
+  :verify-guards :after-returns
+  ///
+
+  (defret identp-of-dup-split-struct-type-filepath-transunit-map.new2$
+    (equal (identp new2$)
+           (identp new1$))
+    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -912,12 +943,15 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; replace all instances of `s.field` with `s1.field` or `s2.field`.
+;; Replace all instances of `s.field` with `s1.field` or `s2.field`.
 
+;; Note: we do not handle expressions such as `(s).field`. Instead, such
+;;   expressions are currently considered illegal. In the future, we should try
+;;   to extract/resolve the left expression of the member access and handle it
+;;   appropriately.
 (encapsulate ()
   (local (xdoc::set-default-parents splitgso-implementation))
 
-  ;; TODO: check if replacement struct objects have been shadowed
   (deftrans replace-field-access
     :parents (splitgso-implementation)
     :extra-args
@@ -994,7 +1028,6 @@
                            new1
                            new2
                            split-members))
-        ;; TODO: handle when arg is a paren (and perhaps generic selection?)
         :member (b* ((match
                        (expr-case
                          expr.arg
@@ -1046,15 +1079,33 @@
                             new2
                             split-members)
                    :final-comma expr.final-comma)
-        :unary (make-expr-unary
-                 :op expr.op
-                 :arg (replace-field-access-expr
-                        expr.arg
-                        original
-                        linkage
-                        new1
-                        new2
-                        split-members))
+        ;; TODO: factor out member expr matching
+        :unary (if (and (or (equal expr.op (c$::unop-address))
+                            (equal expr.op (c$::unop-sizeof)))
+                        (expr-case
+                          expr.arg
+                          :member (expr-case
+                                    expr.arg
+                                    :ident (b* (((unless (equal expr.arg.ident original))
+                                                 nil)
+                                                (ident-linkage
+                                                  (c$::var-info->linkage
+                                                    (c$::coerce-var-info expr.arg.info))))
+                                             (equal linkage ident-linkage))
+                                    :otherwise nil)
+                          :otherwise nil))
+                   (raise "Global struct object ~x0 occurs in illegal
+                           expression."
+                          original)
+                 (make-expr-unary
+                   :op expr.op
+                   :arg (replace-field-access-expr
+                          expr.arg
+                          original
+                          linkage
+                          new1
+                          new2
+                          split-members)))
         :sizeof (expr-sizeof (replace-field-access-tyname
                                expr.type
                                original
@@ -1257,15 +1308,17 @@
                   (splitgso-rename-filepaths (omap::tail map))))
   :verify-guards :after-returns)
 
+;; TODO: add `:fragment` argument indicate the map does not represent a
+;;   complete program. In such cases, fail if the gso is external.
 (define splitgso-filepath-transunit-map
   ((struct-type identp)
    (filepath filepathp)
    (linkage c$::linkagep)
    (orig-struct identp)
-   (new-struct1 identp)
-   (new-struct2 identp)
-   (new-struct-type1 identp)
-   (new-struct-type2 identp)
+   (new-struct1 ident-optionp)
+   (new-struct2 ident-optionp)
+   (new-struct-type1 ident-optionp)
+   (new-struct-type2 ident-optionp)
    (split-members ident-listp)
    (map filepath-transunit-mapp))
   :guard (omap::assoc filepath map)
@@ -1275,14 +1328,29 @@
        (map (c$::filepath-transunit-map-fix map))
        ((when (equal linkage (c$::linkage-none)))
         (reterr (msg "Invalid struct object linkage: ~x0" linkage)))
+       (ident-blacklist (filepath-transunit-map-collect-idents map))
+       (new-struct1 (or new-struct1 orig-struct))
+       (new-struct2 (or new-struct2 orig-struct))
        ((when (equal linkage (c$::linkage-external)))
-        (b* (((erp map)
+        (b* (((erp new-struct-type1 new-struct-type2 map)
               (dup-split-struct-type-filepath-transunit-map
                 struct-type
                 new-struct-type1
                 new-struct-type2
+                ident-blacklist
                 split-members
                 map))
+             ((when (or (not new-struct-type1)
+                        (not new-struct-type1)))
+              ;; Shouldn't happen; the AST is validated and the object is in
+              ;; the validation table.
+              (reterr (msg "Could not find struct type.")))
+             (ident-blacklist
+               (insert new-struct-type1 (insert new-struct-type2 ident-blacklist)))
+             ((list new-struct1 new-struct2)
+              (fresh-idents (list new-struct1
+                                  new-struct2)
+                            ident-blacklist))
              ((erp map)
               (split-gso-filepath-transunit-map
                 orig-struct
@@ -1303,13 +1371,25 @@
                  split-members)))
           (retok map)))
        (tunit (omap::lookup filepath map))
-       ((erp tunit)
+       ((erp new-struct-type1 new-struct-type2 tunit)
         (dup-split-struct-type-transunit
           struct-type
           new-struct-type1
           new-struct-type2
+          ident-blacklist
           split-members
           tunit))
+       ((when (or (not new-struct-type1)
+                  (not new-struct-type1)))
+        ;; Shouldn't happen; the AST is validated and the object is in
+        ;; the validation table.
+        (reterr (msg "Could not find struct type.")))
+       (ident-blacklist
+         (insert new-struct-type1 (insert new-struct-type2 ident-blacklist)))
+       ((list new-struct1 new-struct2)
+        (fresh-idents (list new-struct1
+                            new-struct2)
+                      ident-blacklist))
        ((erp tunit)
         (split-gso-transunit
           orig-struct
@@ -1335,10 +1415,10 @@
 (define splitgso-transunit-ensemble
   ((filepath? c$::filepath-optionp)
    (orig-struct identp)
-   (new-struct1 identp)
-   (new-struct2 identp)
-   (new-struct-type1 identp)
-   (new-struct-type2 identp)
+   (new-struct1 ident-optionp)
+   (new-struct2 ident-optionp)
+   (new-struct-type1 ident-optionp)
+   (new-struct-type2 ident-optionp)
    (split-members ident-listp)
    (tunits transunit-ensemblep))
   :guard (c$::transunit-ensemble-annop tunits)
@@ -1369,11 +1449,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Check that const-new is a symbol usable as a new named constant.
-; (At least check that it is a symbol at all.)
-; Return it unchanged, but with type symbolp for further use
-; (or use suitable theorems).
-
 (define ident-map
   ((strings string-listp))
   :returns (idents ident-listp)
@@ -1403,10 +1478,10 @@
                             (c$::transunit-ensemble-annop tunits)))
                (object-ident identp)
                (filepath? c$::filepath-optionp)
-               (new-object1 identp)
-               (new-object2 identp)
-               (new-type1 identp)
-               (new-type2 identp)
+               (new-object1 ident-optionp)
+               (new-object2 ident-optionp)
+               (new-type1 ident-optionp)
+               (new-type2 ident-optionp)
                (split-members ident-listp)
                (const-new$ symbolp))
   :short "Process the inputs."
@@ -1436,20 +1511,24 @@
        ((unless (stringp object-name))
         (reterr (msg "~x0 must be a string" object-name)))
        (object-ident (c$::ident object-name))
-       ((unless (stringp new-object1))
-        (reterr (msg "~x0 must be a string" new-object1)))
-       (new-object1 (c$::ident new-object1))
-       ((unless (stringp new-object2))
-        (reterr (msg "~x0 must be a string" new-object2)))
-       (new-object2 (c$::ident new-object2))
-       ((unless (stringp new-type1))
-        (reterr (msg "~x0 must be a string" new-type1)))
-       (new-type1 (c$::ident new-type1))
-       ((unless (stringp new-type2))
-        (reterr (msg "~x0 must be a string" new-type2)))
-       (new-type2 (c$::ident new-type2))
+       ((unless (or (stringp new-object1)
+                    (not new-object1)))
+        (reterr (msg "~x0 must be a string or @('nil')" new-object1)))
+       (new-object1 (and new-object1 (c$::ident new-object1)))
+       ((unless (or (stringp new-object2)
+                    (not new-object2)))
+        (reterr (msg "~x0 must be a string or @('nil')" new-object2)))
+       (new-object2 (and new-object2 (c$::ident new-object2)))
+       ((unless (or (stringp new-type1)
+                    (not new-type1)))
+        (reterr (msg "~x0 must be a string or @('nil')" new-type1)))
+       (new-type1 (and new-type1 (c$::ident new-type1)))
+       ((unless (or (stringp new-type2)
+                    (not new-type2)))
+        (reterr (msg "~x0 must be a string or @('nil')" new-type2)))
+       (new-type2 (and new-type2 (c$::ident new-type2)))
        ((unless (string-listp split-members))
-        (reterr (msg "~x0 must be a string" split-members)))
+        (reterr (msg "~x0 must be a string list" split-members)))
        (split-members (ident-map split-members))
        ((unless (symbolp const-new))
         (reterr (msg "~x0 must be a symbol" const-new))))
@@ -1473,10 +1552,10 @@
   ((tunits transunit-ensemblep)
    (object-ident identp)
    (filepath? c$::filepath-optionp)
-   (new-object1 identp)
-   (new-object2 identp)
-   (new-type1 identp)
-   (new-type2 identp)
+   (new-object1 ident-optionp)
+   (new-object2 ident-optionp)
+   (new-type1 ident-optionp)
+   (new-type2 ident-optionp)
    (split-members ident-listp)
    (const-new symbolp))
   :guard (c$::transunit-ensemble-annop tunits)

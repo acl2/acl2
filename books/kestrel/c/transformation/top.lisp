@@ -19,6 +19,7 @@
 (include-book "specialize")
 (include-book "split-fn-proofs")
 (include-book "splitgso")
+(include-book "splitgso-doc")
 (include-book "utilities/top")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

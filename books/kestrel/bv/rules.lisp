@@ -3995,7 +3995,7 @@
            (equal (equal (slice high low x) (getbit low x))
                   (equal (slice high (+ 1 low) x) 0)))
   :hints (("Goal" :in-theory (e/d (getbit)
-                                  (acl2::slice-becomes-getbit)))))
+                                  (slice-becomes-getbit)))))
 
 ;move
 (defthm not-equal-when-not-equal-bvchop
@@ -5356,7 +5356,7 @@
   :hints (("Goal" :in-theory (enable slice-becomes-getbit))))
 
 (theory-invariant (incompatible (:rewrite equal-of-bvchops-when-equal-of-getbits-gen)
-                                (:rewrite acl2::bvchop-when-top-bit-not-1-fake-free)))
+                                (:rewrite bvchop-when-top-bit-not-1-fake-free)))
 
 (defthm equal-of-bvchops-when-equal-of-getbits
   (implies (and (syntaxp (want-to-strengthen (equal (bvchop 31 x) (bvchop 31 y))))
@@ -6129,7 +6129,7 @@
 ;improve?
 (defthm unsigned-byte-p-of-bvmult-of-expt2-constant-version
   (implies (and (syntaxp (quotep k))
-                (acl2::power-of-2p k)
+                (power-of-2p k)
                 (unsigned-byte-p (- size2 (lg k)) x) ; we don't shift any bits out the top
                 (<= (lg k) size) ; gen?
                 (natp size)
@@ -6137,7 +6137,7 @@
            (equal (unsigned-byte-p size (bvmult size2 k x))
                   (unsigned-byte-p (- size (lg k)) x)))
   :hints (("Goal" :use (:instance unsigned-byte-p-of-bvmult-of-expt2 (i (lg k)))
-           :in-theory (e/d (acl2::power-of-2p lg) (unsigned-byte-p-of-bvmult-of-expt2)))))
+           :in-theory (e/d (power-of-2p lg) (unsigned-byte-p-of-bvmult-of-expt2)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
