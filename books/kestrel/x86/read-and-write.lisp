@@ -1592,6 +1592,19 @@
                   (write n (bvplus 48 x y) val x86)))
   :hints (("Goal" :in-theory (enable write-when-bvchops-agree))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm mv-nth-0-of-wb-1
+  (implies (and (posp n)
+                (app-view x86)
+                )
+           (equal (mv-nth 0 (wb-1 n addr w value x86))
+                  (if (and (canonical-address-p addr)
+                           (canonical-address-p (+ -1 n addr)))
+                      nil
+                    t)))
+  :hints (("Goal" :in-theory (enable wb-1))))
+
 ;; Introduces WRITE.
 (defthm mv-nth-1-of-wb-1-becomes-write
   (implies (and (app-view x86)
@@ -1600,30 +1613,98 @@
                 (canonical-address-p (+ -1 n addr)) ; not good for n=0
                 ;;)
                 )
-           (equal (mv-nth 1 (wb-1 n addr w val x86))
-                  (write n addr val x86)))
+           (equal (mv-nth 1 (wb-1 n addr w value x86))
+                  (write n addr value x86)))
   :hints (("Subgoal *1/3" :cases ((equal n 1)))
           ("Goal" :in-theory (e/d (wb-1 wvm08 acl2::slice-too-high-is-0-new n48 write write-byte)
                                   ( ;acl2::bvcat-equal-rewrite-alt acl2::bvcat-equal-rewrite
                                    ))
-           :induct (wb-1 n addr w val x86)
-           :expand ((write n addr val x86)
-                    (wb-1 1 addr w val x86)
-                    (write 1 addr val x86))
+           :induct (wb-1 n addr w value x86)
+           :expand ((write n addr value x86)
+                    (wb-1 1 addr w value x86)
+                    (write 1 addr value x86))
            :do-not '(generalize eliminate-destructors))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Introduces WRITE.
 (defthm mv-nth-1-of-wb-becomes-write
-  (implies (and (app-view x86)
+  (implies (and (app-view x86) ; todo: drop
                 (canonical-address-p addr)
                 ;; (implies (posp n)
                 (canonical-address-p (+ -1 n addr)) ; not good for n=0
                 ;;)
                 )
-           (equal (mv-nth 1 (wb n addr w val x86))
-                  (write n addr val x86)))
+           (equal (mv-nth 1 (wb n addr w value x86))
+                  (write n addr value x86)))
   :hints (("Goal" :in-theory (e/d (wb app-view)
                                   (wb-1 write)))))
+
+(defthm mv-nth-0-of-wb-when-app-view
+  (implies (and ;(posp n)
+             (app-view x86) ; todo: drop
+             )
+           (equal (mv-nth 0 (wb n addr w value x86))
+                  (if (or (zp n)
+                          (and (canonical-address-p addr)
+                               (canonical-address-p (+ -1 n addr))))
+                      nil
+                    t)))
+  :hints (("Goal" :in-theory (enable wb))))
+
+;; This alias supports our strategy to move hyps to the RHSes of rules, even when
+;; there is no clear simplification available in the cases where the conditions
+;; do not (all) hold.
+(defun-nx wb-alias (n addr w value x86)
+  (wb n addr w value x86))
+
+(in-theory (disable wb-alias))
+
+(local
+  (defthm wb-when-zp
+    (implies (zp n)
+             (equal (wb n addr w value x86)
+                    (mv nil x86)))
+    :hints (("Goal" :in-theory (enable wb)))))
+
+(local
+  (defthm wb-alias-when-zp
+    (implies (zp n)
+             (equal (wb-alias n addr w value x86)
+                    (mv nil x86)))
+    :hints (("Goal" :in-theory (enable wb-alias)))))
+
+(local
+  (defthm len-of-wb
+    (equal (len (wb n addr w value x86))
+           2)
+    :hints (("Goal" :in-theory (enable wb)))))
+
+(local
+  (defthm cddr-of-wb
+    (equal (cddr (wb n addr w value x86))
+           nil)
+    :hints (("Goal" :in-theory (enable wb)))))
+
+(defthm wb-becomes-write
+  (implies (and (app-view x86) ; drop?
+                (x86p x86) ;drop?
+                )
+           (equal (wb n addr w value x86)
+                  (if (or (zp n)
+                          (and (canonical-address-p addr)
+                               (canonical-address-p (+ -1 n addr))))
+                      (mv nil (write n addr value x86))
+                    ;; this case should not happen:
+                    (mv t (mv-nth 1 (wb-alias n addr w value x86))))))
+  :hints (("Goal" :use (mv-nth-1-of-wb-becomes-write mv-nth-0-of-wb-when-app-view)
+           :expand (mv-nth 1 (wb n addr w value x86))
+           :in-theory (e/d (wb-alias mv-nth)
+                           (mv-nth-0-of-wb-when-app-view ;acl2::equal-of-cons
+                            mv-nth-1-of-wb-becomes-write
+                            x86isa::wb-by-wb-1-for-app-view-induction-rule)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm 64-bit-modep-of-write
   (equal (64-bit-modep (write n addr val x86))
