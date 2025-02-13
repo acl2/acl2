@@ -14,12 +14,12 @@
 
 (include-book "std/util/bstar" :dir :system)
 (include-book "kestrel/alists-light/acons-unique" :dir :system)
-(include-book "kestrel/utilities/world" :dir :system)
+(include-book "kestrel/utilities/world" :dir :system) ; for fn-formals, todo: move that to world-light
 (include-book "kestrel/alists-light/lookup" :dir :system)
 (include-book "kestrel/utilities/pack" :dir :system)
 (include-book "kestrel/terms-light/free-vars-in-term" :dir :system)
 (include-book "axe-syntax-functions") ;for axe-quotep, since we treat it specially here
-(include-book "axe-rules") ;for LIST-OF-VARIABLES-AND-CONSTANTSP, todo: reduce?
+(include-book "axe-rules") ;for list-of-variables-and-constantsp, todo: reduce?
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
