@@ -1241,9 +1241,10 @@
   :hints (("Goal" :use (:instance read-4-blast))))
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm trim-of-read
-  (implies (and (equal 0 (mod numbits 8))
+  (implies (and (equal 0 (mod numbits 8)) ; todo: gen?
                 (natp numbits)
                 (natp numbytes))
            (equal (acl2::trim numbits (read numbytes addr x86))
@@ -1251,6 +1252,8 @@
                       (read (/ numbits 8) addr x86)
                     (read numbytes addr x86))))
   :hints (("Goal" :in-theory (enable acl2::trim))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; where should these go?
 (defthm svblt-of-read-trim-arg2
