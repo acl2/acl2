@@ -2279,7 +2279,7 @@
      inverse-of-+
      bvlt-of-bvplus-of-1-and-same
      ;; <-becomes-bvlt-axe-bind-free-arg1 ;wed feb 24 15:00:17 2010
-     len-when-equal-take
+     ;len-when-equal-take
      car-of-nthcdr
      consp-of-nthcdr
      equal-cons-cases2 ;hope this is ok
