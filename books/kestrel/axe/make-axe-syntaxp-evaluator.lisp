@@ -151,6 +151,7 @@
           (make-axe-syntaxp-evaluator-arg-vals (rest formals) (+ 1 num)))))
 
 ;; also used for axe-bind-free
+;; Returns a list of cases suitable for use in a CASE expression.
 (defund make-axe-syntaxp-evaluator-case-for-arity-aux (arity fns wrld)
   (declare (xargs :guard (and (symbol-listp fns)
                               (natp arity)
@@ -249,7 +250,7 @@
                               (plist-worldp wrld))))
   (b* ((eval-axe-syntaxp-function-application-fn (pack$ 'eval-axe-syntaxp-function-application- suffix))
        (eval-axe-syntaxp-expr-fn (pack$ 'eval-axe-syntaxp-expr- suffix))
-       (arity-alist (bind-fns-to-arities fns wrld nil))
+       (arity-alist (bind-fns-to-arities fns wrld nil)) ; not counting the dag-array formal, if present
        (arity-0-fns (lookup 0 arity-alist))
        ;; (arity-1-fns (lookup 1 arity-alist))
        (arities (strip-cars arity-alist))
