@@ -142,16 +142,16 @@
              (er hard? 'is-the-variablep "Bad fn argument: ~x0." quoted-var)
            (equal var (aref1 'dag-array dag-array darg))))))
 
-;deprecate?  allows an expr to be constant, but that should be very rare
-(defund syntactic-constantp (darg dag-array)
-  (declare (xargs :guard (or (myquotep darg)
-                             (and (natp darg)
-                                  (pseudo-dag-arrayp 'dag-array dag-array (+ 1 darg))))))
-  (if (consp darg) ;checks for quotep
-      t
-    (let ((expr (aref1 'dag-array dag-array darg)))
-      (and (consp expr)
-           (eq 'quote (car expr))))))
+;; ;deprecate?  allows an expr to be constant, but that should be very rare
+;; (defund syntactic-constantp (darg dag-array)
+;;   (declare (xargs :guard (or (myquotep darg)
+;;                              (and (natp darg)
+;;                                   (pseudo-dag-arrayp 'dag-array dag-array (+ 1 darg))))))
+;;   (if (consp darg) ;checks for quotep
+;;       t
+;;     (let ((expr (aref1 'dag-array dag-array darg)))
+;;       (and (consp expr)
+;;            (eq 'quote (car expr))))))
 
 (defund syntactic-variablep (darg dag-array)
   (declare (xargs :guard (or (myquotep darg)
