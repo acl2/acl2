@@ -568,7 +568,7 @@
                             REPEATBIT-OF-1-ARG2
                             NTHCDR-OF-CDR-COMBINE-STRONG NTHCDR-OF-CDR-COMBINE
                             ;LIST::NTH-NTHCDR
-                            NTH-OF-TAKE-GEN
+                            ;NTH-OF-TAKE-GEN
 ;NTH-OF-BVNOT-LIST
 ;BV-ARRAY-READ-OF-TAKE
 ;BV-ARRAY-READ-OF-BVCHOP

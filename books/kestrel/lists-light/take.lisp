@@ -80,6 +80,31 @@
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (enable take nth))))
 
+;todo
+(defthm nth-of-take-2-gen
+  (equal (nth n (take m lst))
+         (if (natp n)
+             (if (natp m)
+                 ;; usual case:
+                 (if (< n m)
+                     (nth n lst)
+                   nil)
+               nil)
+           (if (zp m)
+               nil
+             (car lst))))
+  :hints (("Goal" :use nth-of-take-2
+           :expand (take m lst)
+           :in-theory (disable nth-of-take-2))))
+
+;drop?
+(defthm nth-of-take-too-high
+  (implies (and (<= m n)
+                (natp n)
+                (< 0 m))
+           (equal (nth n (take m data))
+                  nil)))
+
 (defthm nthcdr-of-take
   (equal (nthcdr i (take j x))
          (take (- (nfix j) (nfix i))
@@ -184,31 +209,7 @@
   :hints
   (("Goal" :in-theory (enable TAKE update-nth))))
 
-;todo: drop one or the other
-(defthm nth-of-take-gen
-  (implies (and (natp n)
-                (natp m))
-           (equal (nth n (take m lst))
-                  (if (< n m)
-                      (nth n lst)
-                    nil)))
-  :hints (("Goal" :in-theory (enable))))
 
-;todo
-(defthm nth-of-take-gen2
-  (equal (nth n (take m lst))
-         (if (natp n)
-             (if (natp m)
-                 (if (< n m)
-                     (nth n lst)
-                   nil)
-               nil)
-           (if (zp m)
-               nil
-               (car lst))))
-  :hints (("Goal" :use nth-of-take-gen
-           :expand (take m lst)
-           :in-theory (disable nth-of-take-gen))))
 
 (local
  (defthm nthcdr-of-nil
