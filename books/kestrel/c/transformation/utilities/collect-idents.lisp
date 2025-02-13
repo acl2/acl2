@@ -38,7 +38,7 @@
        not collect identifiers appearing in ambiguous AST nodes.")
     (xdoc::p
       "This utility is expected to be useful for checking for freshness of
-       variable names."))
+       variable names (see @(see fresh-ident-utility))."))
   :order-subtopics t
   :default-parent t)
 

@@ -16,6 +16,7 @@
 (include-book "call-graph")
 (include-book "collect-idents")
 (include-book "free-vars")
+(include-book "fresh-ident")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
