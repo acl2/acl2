@@ -68,7 +68,7 @@
 (define blocks-orderedp ((blocks block-listp))
   :returns (yes/no booleanp)
   :short "Check if a list of blocks is ordered,
-          i.e. it has strictly increasing (right to left) round numbers."
+          i.e. it has strictly increasing round numbers from right to left."
   :long
   (xdoc::topstring
    (xdoc::p

@@ -149,8 +149,37 @@
 
   ///
 
+  (defret car-of-collect-anchors
+    (equal (car anchors)
+           (certificate-fix current-anchor))
+    :hints (("Goal" :induct t)))
+  (in-theory (disable car-of-collect-anchors))
+
   (defret cert-list-evenp-of-collect-anchors
     (cert-list-evenp anchors)
     :hyp (and (evenp (certificate->round current-anchor))
               (evenp previous-round))
-    :hints (("Goal" :induct t :in-theory (enable cert-list-evenp evenp)))))
+    :hints (("Goal" :induct t :in-theory (enable cert-list-evenp evenp))))
+
+  (defret cert-list-orderedp-of-collect-anchors
+    (cert-list-orderedp anchors)
+    :hyp (< previous-round
+            (certificate->round current-anchor))
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable cert-list-orderedp
+                                car-of-collect-anchors
+                                evenp))))
+  (in-theory (disable cert-list-orderedp-of-collect-anchors))
+
+  (defret collect-anchors-above-last-committed-round
+    (> (certificate->round (car (last anchors)))
+       (nfix last-committed-round))
+    :hyp (> (certificate->round current-anchor)
+            (nfix last-committed-round))
+    :rule-classes
+    ((:linear :trigger-terms ((certificate->round (car (last anchors))))))
+    :hints (("Goal"
+             :induct t
+             :in-theory (enable last))))
+  (in-theory (disable collect-anchors-above-last-committed-round)))
