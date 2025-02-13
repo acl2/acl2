@@ -51,16 +51,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Creates a list of assumptions asserting that the VARS are all booleans.
-(defun boolean-hyps (vars)
-  (declare (xargs :guard (symbol-listp vars)))
-  (if (endp vars)
-      nil
-    (cons `(booleanp ,(first vars))
-          (boolean-hyps (rest vars)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ;; Unroll the spec:
 (unroll-spec-basic *aes-128-encrypt-spec-dag*
                    ;; The result here is a list of 128 booleans:
