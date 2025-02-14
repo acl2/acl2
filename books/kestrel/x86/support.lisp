@@ -16,9 +16,9 @@
 ;; This book is for things that mix x86isa notions with our notions.  Pure x86
 ;; theorems should go in support-x86.lisp.
 
-;(include-book "support-x86") ;drop? for stuff about create-canonical-address-list
 (include-book "projects/x86isa/proofs/utilities/app-view/user-level-memory-utils" :dir :system)
 (include-book "projects/x86isa/machine/prefix-modrm-sib-decoding" :dir :system) ; for get-one-byte-prefix-array-code
+(include-book "projects/x86isa/machine/instructions/divide-spec" :dir :system)
 (include-book "flags") ; reduce?
 ;(include-book "projects/x86isa/proofs/utilities/app-view/top" :dir :system)
 (in-theory (disable acl2::nth-when-zp)) ; can cause problems
@@ -26,10 +26,13 @@
 (include-book "kestrel/utilities/defopeners" :dir :system)
 (include-book "kestrel/utilities/polarity" :dir :system)
 ;(local (include-book "kestrel/bv/rules10" :dir :system))
-(include-book "kestrel/bv/rules3" :dir :system) ; todo?
 (include-book "kestrel/utilities/mv-nth" :dir :system)
 ;(include-book "kestrel/utilities/def-constant-opener" :dir :system)
 (include-book "kestrel/alists-light/lookup" :dir :system)
+(include-book "kestrel/bv/bvcat2" :dir :system)
+(include-book "kestrel/bv/sbvdiv" :dir :system)
+(include-book "kestrel/bv/sbvrem" :dir :system)
+(local (include-book "kestrel/bv/rules3" :dir :system)) ;to normalize more
 (local (include-book "linear-memory"))
 (local (include-book "kestrel/bv/logand-b" :dir :system))
 (local (include-book "kestrel/bv/logior-b" :dir :system))
@@ -37,6 +40,12 @@
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
+(local (include-book "kestrel/arithmetic-light/floor" :dir :system))
+;(local (include-book "kestrel/library-wrappers/ihs-quotient-remainder-lemmas" :dir :system)) ;drop, to deal with truncate
+(local (include-book "kestrel/lists-light/nth" :dir :system))
+(local (include-book "kestrel/lists-light/len" :dir :system))
+(local (include-book "kestrel/arithmetic-light/denominator" :dir :system))
+(local (include-book "kestrel/arithmetic-light/numerator" :dir :system))
 (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "kestrel/library-wrappers/ihs-quotient-remainder-lemmas" :dir :system)) ;drop
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
@@ -51,11 +60,13 @@
 ;; ;(local (in-theory (enable LIST::NTH-OF-CONS)))
 
 ;(in-theory (disable ACL2::MEMBER-OF-CONS)) ;potentially bad (matches constants)
-(in-theory (disable ACL2::SMALL-INT-HACK ;slow
-                    ACL2::ZP-WHEN-GT-0   ;slow
+(in-theory (disable ACL2::ZP-WHEN-GT-0   ;slow
                     ACL2::ZP-WHEN-INTEGERP ;slow
                     ACL2::SLICE-TOO-HIGH-IS-0 ;slow
                     mv-nth))
+
+(local (in-theory (disable ACL2::SMALL-INT-HACK ;slow
+                           )))
 
 ;; could expand the bvminus
 (defthmd canonical-address-p-becomes-bvlt-of-bvminus
@@ -342,9 +353,7 @@
 
 (in-theory (disable DEFAULT-<-1))
 
-;(include-book "kestrel/bv/rules3" :dir :system) ;to normalize more
-(in-theory (enable acl2::bvplus-of-unary-minus acl2::bvplus-of-unary-minus-arg2))
-(in-theory (disable ACL2::BOUND-FROM-NATP-FACT)) ;slow
+(local (in-theory (enable acl2::bvplus-of-unary-minus acl2::bvplus-of-unary-minus-arg2)))
 
 ;; (defthm rb-of-nil
 ;;   (equal (rb nil r-w-x x86)
@@ -1204,3 +1213,23 @@
 
 ;; todo: more
 (defthmd n64-becomes-bvchop (equal (x86isa::n64 x) (acl2::bvchop 64 x)))
+
+(local (include-book "kestrel/bv/rules3" :dir :system)) ;drop?
+
+;todo: gen the 2
+(defthm idiv-64-by-2-no-error
+  (equal (mv-nth 0 (x86isa::idiv-spec-64 (acl2::bvsx 128 64 x) 2))
+         nil)
+  :hints (("Goal" :in-theory (enable x86isa::idiv-spec-64 truncate))))
+
+;todo: gen the 2
+(defthm idiv-64-by-2-becomes-sbvdiv
+  (equal (mv-nth 1 (x86isa::idiv-spec-64 (acl2::bvsx 128 64 x) 2))
+         (acl2::sbvdiv 64 x 2))
+  :hints (("Goal" :in-theory (enable x86isa::idiv-spec-64 truncate acl2::sbvdiv))))
+
+;todo: gen the 2
+(defthm idiv-64-by-2-becomes-sbvrem
+  (equal (mv-nth 2 (x86isa::idiv-spec-64 (acl2::bvsx 128 64 x) 2))
+         (acl2::sbvrem 64 x 2))
+  :hints (("Goal" :in-theory (enable x86isa::idiv-spec-64 truncate acl2::sbvrem))))

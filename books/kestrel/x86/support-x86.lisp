@@ -30,7 +30,7 @@
 (include-book "kestrel/utilities/smaller-termp" :dir :system)
 ;(include-book "kestrel/bv/defs-arith" :dir :system) ;for bvplus
 (include-book "kestrel/bv/slice-def" :dir :system)
-(include-book "kestrel/bv/defs" :dir :system) ;for sbvdiv
+;(include-book "kestrel/bv/defs" :dir :system) ;for sbvdiv
 (include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system)
 (include-book "linear-memory") ;drop? but need mv-nth-0-of-rml-size-of-xw-when-app-view
 (include-book "canonical")
@@ -320,26 +320,6 @@
                            (slice-of-combine-bytes)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(local (include-book "kestrel/bv/rules3" :dir :system)) ;drop?
-
-;todo: gen the 2
-(defthm idiv-64-by-2-no-error
-  (equal (mv-nth 0 (x86isa::idiv-spec-64 (acl2::bvsx 128 64 x) 2))
-         nil)
-  :hints (("Goal" :in-theory (enable x86isa::idiv-spec-64 truncate))))
-
-;todo: gen the 2
-(defthm idiv-64-by-2-becomes-sbvdiv
-  (equal (mv-nth 1 (x86isa::idiv-spec-64 (acl2::bvsx 128 64 x) 2))
-         (acl2::sbvdiv 64 x 2))
-  :hints (("Goal" :in-theory (enable x86isa::idiv-spec-64 truncate acl2::sbvdiv))))
-
-;todo: gen the 2
-(defthm idiv-64-by-2-becomes-sbvrem
-  (equal (mv-nth 2 (x86isa::idiv-spec-64 (acl2::bvsx 128 64 x) 2))
-         (acl2::sbvrem 64 x 2))
-  :hints (("Goal" :in-theory (enable x86isa::idiv-spec-64 truncate acl2::sbvrem))))
 
 ;tons of calls of byte-listp were getting memoized, whereas we can just run
 ;all-unsigned-byte-p.
