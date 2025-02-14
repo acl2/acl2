@@ -1,6 +1,6 @@
 ; Asserting that certain bytes are loaded at a certain memory address
 ;
-; Copyright (C) 2024 Kestrel Institute
+; Copyright (C) 2024-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -23,6 +23,7 @@
 ;; Similar to program-at but simpler, and easier to connect to read and read-byte, as this just calls read-byte repeatedly.
 ;; todo: consider making the len a param?
 ;; todo: why does ACL2 guess the wrong measure here?
+;; todo: can we just use (equal (read-byte-list ..) ...) ?
 (defund bytes-loadedp (addr bytes x86)
   (declare (xargs :guard (and (integerp addr) ; usually an unsigned-byte 48
                               (byte-listp bytes) ; max length 2^48?
