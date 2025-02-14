@@ -190,7 +190,6 @@
                                    UNSIGNED-BYTE-P-FROM-BOUNDS
                                    ;;UNSIGNED-BYTE-P-PLUS
                                    ;;UNSIGNED-BYTE-P-WHEN-ZP-CHEAP
-                                   ;;BOUND-FROM-NATP-FACT ;seems bad?
                                    BVCAT-EQUAL-REWRITE-ALT
                                    BVCAT-EQUAL-REWRITE
                                    )))))
@@ -212,7 +211,6 @@
                                    UNSIGNED-BYTE-P-FROM-BOUNDS
                                    ;;UNSIGNED-BYTE-P-PLUS
                                    ;;UNSIGNED-BYTE-P-WHEN-ZP-CHEAP
-                                   ;;BOUND-FROM-NATP-FACT ;seems bad?
                                    BVCAT-EQUAL-REWRITE-ALT
                                    BVCAT-EQUAL-REWRITE
                                    )))))

@@ -1655,9 +1655,10 @@
                     t)))
   :hints (("Goal" :in-theory (enable wb))))
 
-;; This alias supports our strategy to move hyps to the RHSes of rules, even when
-;; there is no clear simplification available in the cases where the conditions
-;; do not (all) hold.
+;; This alias supports our strategy to move hyps to the RHSes of rules, even
+;; when there is no clear simplification available in the cases where the
+;; hyps are not (all) true.  If wb-alias appears in a failed proof/lift,
+;; look for canonical-address-p terms that did not get simplified.
 (defun-nx wb-alias (n addr w value x86)
   (wb n addr w value x86))
 
@@ -1689,6 +1690,9 @@
            nil)
     :hints (("Goal" :in-theory (enable wb)))))
 
+;; This puts the canonical-address-p claims in the RHS.  Since there is not a
+;; convenient way to specify what happens in the other case, we put in the
+;; alias.
 (defthm wb-becomes-write
   (implies (and (app-view x86) ; drop?
                 (x86p x86) ;drop?
@@ -1699,13 +1703,15 @@
                                (canonical-address-p (+ -1 n addr))))
                       (mv nil (write n addr value x86))
                     ;; this case should not happen:
-                    (mv t (mv-nth 1 (wb-alias n addr w value x86))))))
+                    (wb-alias n addr w value x86))))
   :hints (("Goal" :use (mv-nth-1-of-wb-becomes-write mv-nth-0-of-wb-when-app-view)
            :expand (mv-nth 1 (wb n addr w value x86))
            :in-theory (e/d (wb-alias mv-nth)
                            (mv-nth-0-of-wb-when-app-view ;acl2::equal-of-cons
                             mv-nth-1-of-wb-becomes-write
                             x86isa::wb-by-wb-1-for-app-view-induction-rule)))))
+
+(theory-invariant (incompatible (:rewrite wb-becomes-write) (:definition wb-alias)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
