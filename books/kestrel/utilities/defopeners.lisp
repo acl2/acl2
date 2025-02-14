@@ -379,7 +379,7 @@
   :hints (("Goal" :in-theory (enable symbol-term-alistp
                                      remove-trivial-bindings2))))
 
-;returns (mv base-claims unroll-claims)
+;; Returns (mv base-claims unroll-claims), where the claims are terms (TODO: translated or untranslated?).
 (defun make-unroll-and-base-claims-aux (term
                                         fns ;all the functions in the mut-rec nest
                                         fn-call

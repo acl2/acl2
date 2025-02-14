@@ -57,6 +57,64 @@ int main(void) {
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (acl2::must-succeed*
+  (c$::input-files :files ("test1.c")
+                   :const *old*)
+
+  (splitgso *old*
+            *new*
+            :object-name "my"
+            :new-object1 "my"
+            :new-object2 "my"
+            :new-type1 "s"
+            :new-type2 "s"
+            :split-members ("baz"))
+
+  (c$::output-files :const *new*)
+
+  (assert-file-contents
+    :file "test1.SPLITGSO.c"
+    :content "struct myStruct { int foo; _Bool bar; unsigned long int baz; };
+struct s { int foo; _Bool bar; };
+struct s_0 { unsigned long int baz; };
+static struct s my_0;
+static struct s_0 my_1;
+int main(void) {
+  return my_0.foo + (-my_0.bar);
+}
+")
+
+  :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(acl2::must-succeed*
+  (c$::input-files :files ("test1.c")
+                   :const *old*)
+
+  (splitgso *old*
+            *new*
+            :object-name "my"
+            :split-members ("baz"))
+
+  (c$::output-files :const *new*)
+
+  (assert-file-contents
+    :file "test1.SPLITGSO.c"
+    :content "struct myStruct { int foo; _Bool bar; unsigned long int baz; };
+struct myStruct_0 { int foo; _Bool bar; };
+struct myStruct_1 { unsigned long int baz; };
+static struct myStruct_0 my_0;
+static struct myStruct_1 my_1;
+int main(void) {
+  return my_0.foo + (-my_0.bar);
+}
+")
+
+  :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(acl2::must-succeed*
   (c$::input-files :files ("test2.c")
                    :const *old*)
 
@@ -261,6 +319,60 @@ int foo(void) {
     :file "extern-struct.SPLITGSO.c"
     :content "struct S { unsigned int x; unsigned int y; };
 struct S s = {.x = 0};
+")
+
+  :with-output-off nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(acl2::must-succeed*
+  (c$::input-files :files ("static-struct1.c"
+                           "static-struct2.c"
+                           "extern-struct.c")
+                   :const *old*)
+
+  (splitgso *old*
+            *new*
+            :object-name "s"
+            :split-members ("x"))
+
+  (c$::output-files :const *new*)
+
+  (assert-file-contents
+    :file "static-struct1.SPLITGSO.c"
+    :content "struct myStruct { int foo; _Bool bar; unsigned long int baz; };
+static struct myStruct my = {.foo = 0, .bar = 0, .baz = 42};
+int main(void) {
+  int x = my.foo + (-my.baz);
+  struct myStruct my;
+  return my.foo + (-my.baz);
+}
+")
+  (assert-file-contents
+    :file "static-struct2.SPLITGSO.c"
+    :content "struct myStruct { int a; int b; };
+static struct myStruct my = {.a = 0, .b = 0, };
+struct S { int x; };
+struct S_0;
+struct S_1 { int x; };
+struct S_0 s_0;
+struct S_1 s_1;
+int foo(void) {
+  int x = my.a + (-my.b);
+  struct myStruct my;
+  if (s_1.x) {
+    return my.a + (-my.b);
+  }
+  return 0;
+}
+")
+  (assert-file-contents
+    :file "extern-struct.SPLITGSO.c"
+    :content "struct S { unsigned int x; unsigned int y; };
+struct S_0 { unsigned int y; };
+struct S_1 { unsigned int x; };
+struct S_0 s_0;
+struct S_1 s_1 = {.x = 0};
 ")
 
   :with-output-off nil)

@@ -1452,7 +1452,7 @@
   :hints (("Goal"
            :do-not-induct t
            :in-theory (e/d (ia32e-la-to-pa-page-dir-ptr-table
-                             ia32e-pdpte-1gb-pagebits->page) 
+                             ia32e-pdpte-1gb-pagebits->page)
                            (mv-nth-0-paging-entry-no-page-fault-p-and-similar-entries))
            :use (:instance mv-nth-0-paging-entry-no-page-fault-p-and-similar-entries
                            (structure-type 2)

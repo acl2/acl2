@@ -203,7 +203,7 @@
        ((fty::bitstruct tlb-key-structure))
        (tlb-key-formals (acl2::formals 'tlb-key (w state)))
        ((mv & ctor-body) (gen-fast-ctor tlb-key-structure.fields)))
-      `(define tlb-key-fast 
+      `(define tlb-key-fast
          :parents (tlb-key)
          :short "A faster constructor for @(tsee tlb-key)s."
          :long "<p>The @(tsee fty::defbitstruct) book creates a @('tlb-key')
