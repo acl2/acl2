@@ -2978,7 +2978,7 @@
 
 (in-theory (disable bvchop-31-equal-0-extend)) ;looped
 
-(in-theory (disable bound-from-natp-fact
+(in-theory (disable
                     ;;nth-times
                     ))
 
