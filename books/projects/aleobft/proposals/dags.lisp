@@ -297,3 +297,92 @@
   ///
 
   (fty::deffixequiv-mutual cert-causal-history))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define cert-previous-in-dag-p ((cert certificatep) (dag certificate-setp))
+  :returns (yes/no booleanp)
+  :short "Check if all the previous certificates
+          referenced by a given certificate
+          are in a given DAG."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The check succeeds immediately if the certificate's round number is 1.
+     In that case, it is an invariant (proved elsewhere)
+     that certificates in round 1 reference no previous certificates;
+     therefore, the requirement is trivially satisfied.")
+   (xdoc::p
+    "For the more common case in which the certificate's round number is not 1,
+     we retrieve all the certificates from the DAG at the previous round,
+     we obtain their set of authors,
+     and we check that those are a superset of
+     the set of previous certificate authors referenced by the certificate.")
+   (xdoc::p
+    "For a given certificate,
+     this predicate is preserved by extending the DAG,
+     because extending the DAG cannot remove
+     any referenced predecessor certificates.
+     We prove this in @('cert-previous-in-dag-p-when-subset')."))
+  (b* ((round (certificate->round cert))
+       (previous (certificate->previous cert)))
+    (or (= round 1)
+        (set::subset previous
+                     (cert-set->author-set
+                      (certs-with-round (1- round) dag)))))
+  :guard-hints (("Goal" :in-theory (enable posp)))
+  :hooks (:fix)
+
+  ///
+
+  (defruled cert-previous-in-dag-p-when-subset
+    (implies (and (certificate-setp dag)
+                  (certificate-setp dag1)
+                  (set::subset dag dag1)
+                  (cert-previous-in-dag-p cert dag))
+             (cert-previous-in-dag-p cert dag1))
+    :enable (certs-with-round-monotone
+             cert-set->author-set-monotone
+             set::subset-transitive)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define-sk dag-closedp ((dag certificate-setp))
+  :returns (yes/no booleanp)
+  :short "Check if a DAG is backward-closed."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "That is, check if the previous certificates of each certificate in the DAG
+     are all in the DAG.
+     This is an invariant of the DAGs of validators, as proved elsewhere.")
+   (xdoc::p
+    "Adding a certificate whose previous certificates are in the DAG
+     preserves the closure of the DAG;
+     we prove this in @('dag-closedp-of-insert').
+     It might be tempting to try and prove something like")
+   (xdoc::codeblock
+    "(equal (dag-closedp (set::insert cert dag))"
+    "       (and (dag-closedp dag)"
+    "            (cert-previous-in-dag-p cert dag)))")
+   (xdoc::p
+    "but that does not hold, because @('cert') could be
+     a predecessor certificate of some certificate in @('dag').
+     So instead we prove the right-to-left implication."))
+  (forall (cert)
+          (implies (set::in cert dag)
+                   (cert-previous-in-dag-p cert dag)))
+
+  ///
+
+  (defrule dag-closedp-of-nil
+    (dag-closedp nil))
+
+  (defruled dag-closedp-of-insert
+    (implies (and (certificatep cert)
+                  (certificate-setp dag)
+                  (dag-closedp dag)
+                  (cert-previous-in-dag-p cert dag))
+             (dag-closedp (set::insert cert dag)))
+    :enable (cert-previous-in-dag-p-when-subset
+             dag-closedp-necc)))
