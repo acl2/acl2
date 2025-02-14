@@ -461,17 +461,17 @@
       (integerp val)
       :rule-classes :type-prescription)
 
-    (defret rb-1-returns-x86-app-view
+    (defret rb-1-returns-x86
       (implies t ;; (app-view x86)
                (equal new-x86 x86)))
 
     (local
-     (defthm rb-1-returns-no-error-app-view-helper
+     (defthm rb-1-returns-no-error-helper
        (implies t ;; (xr :app-view nil x86)
                 (not (mv-nth 0 (rb-1 1 #.*2^47-1* r-x x86))))
        :hints (("Goal" :expand (rb-1 1 #.*2^47-1* r-x x86)))))
 
-    (defthm rb-1-returns-no-error-app-view
+    (defthm rb-1-returns-no-error
       (implies (and (canonical-address-p addr)
                     (canonical-address-p (+ -1 n addr))
                     ;; (app-view x86)
@@ -806,12 +806,12 @@
       :hints (("Goal" :in-theory (e/d () (x86p)))))
 
     (local
-     (defthm wb-1-returns-no-error-app-view-helper
+     (defthm wb-1-returns-no-error-helper
        (implies t ;; (xr :app-view nil x86)
                 (not (mv-nth 0 (wb-1 1 #.*2^47-1* w value x86))))
        :hints (("Goal" :expand (wb-1 1 #.*2^47-1* w value x86)))))
 
-    (defthm wb-1-returns-no-error-app-view
+    (defthm wb-1-returns-no-error
       (implies (and (canonical-address-p addr)
                     (canonical-address-p (+ -1 n addr))
                     ;; (app-view x86)
