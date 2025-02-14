@@ -85,7 +85,7 @@
        (acc (str::pcat acc "<td>" (str::natstr unimpl) "</td>"))
        (acc (str::pcat acc "<td>" (str::natstr (+ impl unimpl)) "</td></tr>" #\Newline)))
     (create-sdm-subsec-summary-aux (cdr x) acc)))
-           
+
 
 (define create-sdm-subsec-summary ((x sdm-instruction-table-p))
   (b* ((acc nil)
@@ -95,7 +95,7 @@
        (acc (create-sdm-subsec-summary-aux x acc))
        (acc (str::pcat acc "</table>" #\Newline)))
     (str::printtree->str acc)))
-  
+
 
 (define sdm-instruction-entry-xdoc ((topicname symbolp)
                                     (x sdm-instruction-table-entry-p)
@@ -179,6 +179,3 @@ well.</p>"
 
 (xdoc::save "catalogue-manual" :redef-okp t)
 |#
-
-
-

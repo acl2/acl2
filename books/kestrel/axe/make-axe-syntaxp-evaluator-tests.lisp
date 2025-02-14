@@ -1,7 +1,7 @@
 ; Tests of make-axe-syntaxp-evaluator
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -17,7 +17,11 @@
 
 (make-axe-syntaxp-evaluator 'foo '())
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (make-axe-syntaxp-evaluator 'bar '(syntactic-variablep))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (make-axe-syntaxp-evaluator 'baz '(syntactic-variablep
                                    heavier-dag-term
@@ -46,7 +50,8 @@
    (LET
     ((FN (FFN-SYMB EXPR)))
     (CASE
-      FN '(UNQUOTE EXPR)
+      FN
+      '(UNQUOTE EXPR) ; this case for QUOTE prints weirdly
       (IF (IF (EVAL-AXE-SYNTAXP-EXPR-BAZ (FARG1 EXPR)
                                          ALIST DAG-ARRAY)
               (EVAL-AXE-SYNTAXP-EXPR-BAZ (FARG2 EXPR)
@@ -97,9 +102,10 @@
                           (lookup-eq arg0 alist)))
               (ARGS (REST ARGS)))
          (declare (ignorable args arg0 arg0-val))
-        
+
          (IF
              (ATOM ARGS)
+             ;; these are the unary functions (not counting the dag-array argument):
              (CASE FN
                (SYNTACTIC-VARIABLEP (SYNTACTIC-VARIABLEP arg0-val dag-array))
                (t (ER HARD?
@@ -114,6 +120,7 @@
              (DECLARE (IGNORABLE ARGS ARG1 arg1-val))
              (IF
                  (ATOM ARGS)
+                 ;; these are the binary functions (not counting the dag-array argument):
                  (CASE
                    FN
                    (SHOULD-REVERSE-EQUALITY

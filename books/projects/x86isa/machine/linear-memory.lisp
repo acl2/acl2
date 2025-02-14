@@ -1613,7 +1613,7 @@
   :guard (and (canonical-address-p lin-addr)
               (signed-byte-p 8 val))
   :split-types t
-  
+
   (wml08 lin-addr (the (unsigned-byte 8) (n08 val)) x86)
   ///
   (defthm x86p-wiml08
@@ -1895,7 +1895,7 @@
   :guard (and (canonical-address-p lin-addr)
               (signed-byte-p 16 val))
   :split-types t
-  
+
   (wml16 lin-addr (the (unsigned-byte 16) (n16 val)) x86)
   ///
   (defthm x86p-wiml16
@@ -3981,7 +3981,7 @@
   :parents (linear-memory)
   :guard (and (canonical-address-p lin-addr)
               (member-eq r-x '(:r :x)))
-  :split-types t  
+  :split-types t
   :guard-hints (("Goal"
                  :in-theory (e/d (rb-and-rvm256)
                                  (not

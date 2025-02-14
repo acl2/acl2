@@ -804,20 +804,6 @@
 ;;       (list m n lst)
 ;;     (sub1-sub1-cdr-induct (+ -1 m) (+ -1 n) (cdr lst))))
 
-(defthm nth-of-take-too-high
-  (implies (and (<= m n)
-                (natp n)
-                (< 0 m))
-           (equal (nth n (take m data))
-                  nil))
-  :hints (("Goal"
-;           :induct (sub1-sub1-cdr-induct m n data)
-           :in-theory (e/d (take ;list::nth-of-cons
-                            )
-                           (;update-nth-becomes-update-nth2-extend-gen
-                            ;cdr-of-take-becomes-subrange-beter
-                            )))))
-
 (defthm equal-of-constant-and-repeat
   (implies (syntaxp (quotep k))
            (equal (equal k (repeat n val))

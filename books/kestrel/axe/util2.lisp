@@ -1,7 +1,7 @@
 ; Utilities for stating claims to be proved by Axe
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -11,6 +11,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "ACL2")
+
+;; TODO: Give this book a better name
 
 (include-book "kestrel/utilities/make-var-names" :dir :system)
 (include-book "kestrel/lists-light/repeat" :dir :system)
@@ -343,3 +345,13 @@
 ;;   (declare (xargs :guard (and (symbolp base-name)
 ;;                               (natp count))))
 ;;   (int-hyps (make-var-names base-name count)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Creates a list of assumptions asserting that the VARS are all booleans.
+(defun boolean-hyps (vars)
+  (declare (xargs :guard (symbol-listp vars)))
+  (if (endp vars)
+      nil
+    (cons `(booleanp ,(first vars))
+          (boolean-hyps (rest vars)))))

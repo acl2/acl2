@@ -132,7 +132,7 @@
   (implies (xlate-equiv-memory x86-1 x86-2)
            (equal (bool->bit (logbitp 11 (xr :msr *ia32_efer-idx* x86-1)))
                   (bool->bit (logbitp 11 (xr :msr *ia32_efer-idx* x86-2)))))
-  :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory 
+  :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory
                                     xlate-equiv-structures
                                     ia32_eferbits->nxe)
                                    ())))
@@ -159,7 +159,7 @@
 
 (defthm xlate-equiv-memory-and-segment-selectorbits->rpl
   (implies (xlate-equiv-memory x86-1 x86-2)
-           (equal 
+           (equal
             (segment-selectorbits->rpl (xr :seg-visible 1 x86-1))
             (segment-selectorbits->rpl (xr :seg-visible 1 x86-2))))
   :hints (("Goal" :in-theory (e/d* (xlate-equiv-memory
@@ -286,7 +286,7 @@
                                 ia32e-la-to-pa-page-dir-ptr-table
                                 ia32e-pml4ebits->pdpt
                                 cr3bits->pdb)
-                               (bitops::logand-with-negated-bitmask 
+                               (bitops::logand-with-negated-bitmask
                                 accessed-bit
                                 dirty-bit
                                 force (force)

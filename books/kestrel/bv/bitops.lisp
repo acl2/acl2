@@ -190,7 +190,6 @@
                                    UNSIGNED-BYTE-P-FROM-BOUNDS
                                    ;;UNSIGNED-BYTE-P-PLUS
                                    ;;UNSIGNED-BYTE-P-WHEN-ZP-CHEAP
-                                   ;;BOUND-FROM-NATP-FACT ;seems bad?
                                    BVCAT-EQUAL-REWRITE-ALT
                                    BVCAT-EQUAL-REWRITE
                                    )))))
@@ -212,7 +211,6 @@
                                    UNSIGNED-BYTE-P-FROM-BOUNDS
                                    ;;UNSIGNED-BYTE-P-PLUS
                                    ;;UNSIGNED-BYTE-P-WHEN-ZP-CHEAP
-                                   ;;BOUND-FROM-NATP-FACT ;seems bad?
                                    BVCAT-EQUAL-REWRITE-ALT
                                    BVCAT-EQUAL-REWRITE
                                    )))))
@@ -349,18 +347,18 @@
                 (unsigned-byte-p 1 y))
            (equal (b-and x y)
                   (bitand x y)))
-  :hints (("Goal" :in-theory (e/d (bitand b-and) (acl2::bvand-1-becomes-bitand)))))
+  :hints (("Goal" :in-theory (e/d (bitand b-and) (bvand-1-becomes-bitand)))))
 
 (defthm b-ior-becomes-bitor
   (implies (and (unsigned-byte-p 1 x)
                 (unsigned-byte-p 1 y))
            (equal (b-ior x y)
                   (bitor x y)))
-  :hints (("Goal" :in-theory (e/d (bitor b-ior) (acl2::bvor-1-becomes-bitor)))))
+  :hints (("Goal" :in-theory (e/d (bitor b-ior) (bvor-1-becomes-bitor)))))
 
 (defthm b-xor-becomes-bitxor
   (implies (and (unsigned-byte-p 1 x)
                 (unsigned-byte-p 1 y))
            (equal (b-xor x y)
                   (bitxor x y)))
-  :hints (("Goal" :in-theory (e/d (bitxor b-xor) (acl2::bvxor-1-becomes-bitxor)))))
+  :hints (("Goal" :in-theory (e/d (bitxor b-xor) (bvxor-1-becomes-bitxor)))))

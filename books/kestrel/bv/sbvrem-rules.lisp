@@ -30,8 +30,7 @@
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 
-(local (in-theory (disable ;bound-from-natp-fact
-                           bvchop-upper-bound-linear-strong)))
+(local (in-theory (disable bvchop-upper-bound-linear-strong)))
 
 ;TODO: really it's "non-negative"
 ;See also sbvrem-rewrite.

@@ -41,6 +41,7 @@
 (local (include-book "kestrel/bv/rules6" :dir :system)) ;for BVMULT-TIGHTEN
 (local (include-book "kestrel/bv/sbvrem-rules" :dir :system))
 (local (include-book "kestrel/bv/sbvdiv" :dir :system))
+(local (include-book "kestrel/bv/leftrotate-rules" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
@@ -135,6 +136,14 @@
   :hints (("Goal" :in-theory (enable trim))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd bvuminus-trim-axe
+  (implies (and (axe-syntaxp (term-should-be-trimmed-axe size x 'non-arithmetic dag-array))
+                (posp size) ; gen?
+                )
+           (equal (bvuminus size x)
+                  (bvuminus size (trim size x))))
+  :hints (("Goal" :in-theory (enable trim))))
 
 (defthmd bvuminus-trim-axe-all
   (implies (and (axe-syntaxp (term-should-be-trimmed-axe size x 'all dag-array))
@@ -616,9 +625,8 @@
                 (natp amt))
            (equal (leftrotate32 amt val)
                   (leftrotate32 (trim 5 amt) val)))
-  :hints (("Goal" :in-theory (e/d (trim) (MOD-OF-EXPT-OF-2-CONSTANT-VERSION ;looped with imod when things were enabled?
-                                          leftrotate32 ;disable globally?
-                                          )))))
+  :hints (("Goal" :use leftrotate32-trim-arg1
+           :in-theory (disable leftrotate32-trim-arg1))))
 
 ;for this not to loop, we must simplify things like (bvchop 5 (bvplus 32 x y))
 (defthmd leftrotate32-trim-arg1-axe-all
@@ -626,19 +634,30 @@
                 (natp amt))
            (equal (leftrotate32 amt val)
                   (leftrotate32 (trim 5 amt) val)))
-  :hints (("Goal" :in-theory (e/d (trim) (MOD-OF-EXPT-OF-2-CONSTANT-VERSION
-                                          leftrotate32 ;disable globally?
-                                          )))))
+  :hints (("Goal" :use leftrotate32-trim-arg1
+           :in-theory (disable leftrotate32-trim-arg1))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;bozo gen
+;rename
+;make 'all variant, like for leftrotate above
 (defthmd rightrotate32-trim-amt-axe
   (implies (and (axe-syntaxp (term-should-be-trimmed-axe '5 amt 'non-arithmetic dag-array))
                 (natp amt))
            (equal (rightrotate32 amt x)
                   (rightrotate32 (trim 5 amt) x)))
   :hints (("Goal" :in-theory (enable rightrotate32 rightrotate leftrotate trim MOD-OF-EXPT-OF-2-CONSTANT-VERSION))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; still needed?
+(defthmd logext-trim-arg-axe-all
+  (implies (and (axe-syntaxp (term-should-be-trimmed-axe size x 'all dag-array))
+                (posp size))
+           (equal (logext size x)
+                  (logext size (trim size x))))
+  :hints (("Goal" :in-theory (enable trim))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -652,16 +671,6 @@
            (equal (trim size i)
                   i))
   :hints (("Goal" :in-theory (enable trim unsigned-byte-p-forced))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; still needed?
-(defthmd logext-trim-arg-axe-all
-  (implies (and (axe-syntaxp (term-should-be-trimmed-axe size x 'all dag-array))
-                (posp size))
-           (equal (logext size x)
-                  (logext size (trim size x))))
-  :hints (("Goal" :in-theory (enable trim))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -893,7 +902,7 @@
                 (unsigned-byte-p-forced ysize y)
                 )
            (equal (sbvlt 32 x y)
-                  ;;could use the max of the sizes? ;
+                  ;;could use the max of the sizes?
                   (bvlt 31 x y)))
   :hints (("Goal" :in-theory (enable ;sbvlt
                               sbvlt-rewrite
@@ -966,7 +975,7 @@
 (defthmd acl2-numberp-of-logext
   (acl2-numberp (logext size i)))
 
-;fixme more like this for other ops?!
+;todo: more like this for other ops?!
 (defthmd bvxor-tighten-axe-bind-and-bind
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
                 (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
@@ -1130,11 +1139,12 @@
   :hints (("Goal" :in-theory (enable bvlt unsigned-byte-p-forced))))
 
 (defthmd bvlt-when-bound-axe
-  (implies (and (syntaxp (quotep k))
+  (implies (and (syntaxp (and (quotep k)
+                              (quotep size)))
                 (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
-                (< xsize size)
-                (natp size)
-                (bvle size (expt 2 xsize) k)
+                (< xsize size) ; gets computed
+                (bvle size (expt 2 xsize) k) ; gets computed
+                (natp size) ; gets computed
                 (unsigned-byte-p-forced xsize x))
            (bvlt size x k))
   :hints (("Goal" :use (:instance bvlt-when-bound)
@@ -2112,9 +2122,7 @@
                 (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
                 (< (+ (lg x) ysize) size)
                 (natp size)
-                ;; (force (unsigned-byte-p-forced xsize x))
-                (force (unsigned-byte-p-forced ysize y))
-                )
+                (force (unsigned-byte-p-forced ysize y)))
            (equal (bvmult size x y)
                   (bvmult (+ (lg x) ysize) x y)))
   :hints (("Goal" :use (bvmult-tighten-when-power-of-2p)

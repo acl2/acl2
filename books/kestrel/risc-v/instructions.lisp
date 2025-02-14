@@ -10,6 +10,8 @@
 
 (in-package "RISCV")
 
+(include-book "features")
+
 (include-book "kestrel/fty/ubyte5" :dir :system)
 (include-book "kestrel/fty/ubyte6" :dir :system)
 (include-book "kestrel/fty/ubyte12" :dir :system)
@@ -37,7 +39,14 @@
      except for @('FENCE'), @('ECALL'), @('EBREAK'), and @('HINT').
      We also cover the instructions for the M extension [ISA:13].
      We plan to add privileged instructions,
-     as well as instructions for more extensions."))
+     as well as instructions for more extensions.")
+   (xdoc::p
+    "Not all the instructions defined here are valid
+     in every instantiation of the RISC-V ISA.
+     For example, @('ADDIW') is only valid when the base is RV64I or RV64E,
+     and @('MUL') is only valid with the M extension.
+     We define a predicate saying which instructions are valid
+     with respect to given @(see features)."))
   :order-subtopics t
   :default-parent t)
 
@@ -244,17 +253,17 @@
      non-shift instructions use the I-type format;
      shift instructions use a specialization of the I-type format.")
    (xdoc::p
-    "The @('LUI') opcode corresponds to @(':lui').")
+    "The @('LUI') opcode [ISA:2.4.1] [ISA:4.2.1] corresponds to @(':lui').")
    (xdoc::p
-    "The @('AUIPC') opcode corresponds to @(':auipc').")
+    "The @('AUIPC') [ISA:2.4.1] [ISA:4.2.1] opcode corresponds to @(':auipc').")
    (xdoc::p
     "The @('OP') opcode corresponds to @(':op').")
    (xdoc::p
     "The @('OP-32') opcode corresponds to @(':op-32').")
    (xdoc::p
-    "The @('JAL') opcode corresponds to @(':jal').")
+    "The @('JAL') opcode [ISA:2.5.1] corresponds to @(':jal').")
    (xdoc::p
-    "The @('JALR') opcode corresponds to @(':jalr').")
+    "The @('JALR') opcode [ISA:2.5.1] corresponds to @(':jalr').")
    (xdoc::p
     "The @('BRANCH') opcode corresponds to @(':branch').")
    (xdoc::p
@@ -318,3 +327,45 @@
   instr
   :short "Fixtype of optional instructions."
   :pred instr-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define instr-validp ((instr instrp) (feat featp))
+  :returns (yes/no booleanp)
+  :short "Check if an instruction is valid with respect to given features."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Currently our model of features only consists of one bit of information:
+     whether we are in 32-bit mode or in 64-bit mode;
+     more precisely, whether our base is RV32I (or RV32E) or RV64I (or RV64E).
+     For now we implicitly assume that the M extension is present;
+     we plan to add a choice about that in the @(see features)."))
+  (b* (((feat feat) feat))
+    (instr-case instr
+                :op-imm t
+                :op-imms32 (feat-bits-case feat.bits :32)
+                :op-imms64 (feat-bits-case feat.bits :64)
+                :op-imm-32 (feat-bits-case feat.bits :64)
+                :op-imms-32 (feat-bits-case feat.bits :64)
+                :lui t
+                :auipc t
+                :op t
+                :op-32 (feat-bits-case feat.bits :64)
+                :jal t
+                :jalr t
+                :branch t
+                :load (load-funct-case instr.funct
+                                       :lb t
+                                       :lbu t
+                                       :lh t
+                                       :lhu t
+                                       :lw t
+                                       :lwu (feat-bits-case feat.bits :64)
+                                       :ld (feat-bits-case feat.bits :64))
+                :store (store-funct-case instr.funct
+                                         :sb t
+                                         :sh t
+                                         :sw t
+                                         :sd (feat-bits-case feat.bits :64))))
+  :hooks (:fix))

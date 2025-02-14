@@ -149,14 +149,14 @@
               (prog2$ (cw "~s0:~%" file)
                       (cw "~Y01~%" form nil)))
             (show-rules (rest names) wrld))))
-                              
+
 (defun show-rule-group (names wrld)
   (declare (xargs :guard (and (symbol-listp names)
                               (plist-worldp wrld))
                   :mode :program))
   (prog2$ (cw "======================================================================~%")
           (show-rules names wrld)))
-               
+
 (defun show-rule-groups (groups-of-names wrld)
   (declare (xargs :guard (and (symbol-list-listp groups-of-names)
                               (plist-worldp wrld))
@@ -171,7 +171,7 @@
   (declare (xargs :guard (plist-worldp wrld)
                   :mode :program  ; todo
                   ))
-  (let* ((defthm-and-defaxiom-names (defthms-in-world wrld)) 
+  (let* ((defthm-and-defaxiom-names (defthms-in-world wrld))
          (names-and-bodies (names-and-bodies defthm-and-defaxiom-names wrld nil))
          (sorted-names-and-bodies (merge-sort-names-and-bodies names-and-bodies))
          (grouped-names-and-bodies (group-same-body sorted-names-and-bodies nil))

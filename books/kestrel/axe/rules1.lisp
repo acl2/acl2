@@ -568,7 +568,7 @@
                             REPEATBIT-OF-1-ARG2
                             NTHCDR-OF-CDR-COMBINE-STRONG NTHCDR-OF-CDR-COMBINE
                             ;LIST::NTH-NTHCDR
-                            NTH-OF-TAKE-GEN
+                            ;NTH-OF-TAKE-GEN
 ;NTH-OF-BVNOT-LIST
 ;BV-ARRAY-READ-OF-TAKE
 ;BV-ARRAY-READ-OF-BVCHOP
@@ -1687,6 +1687,8 @@
   :hints (("Goal" :use (:instance bv-array-write-equal-rewrite)
            :in-theory (disable bv-array-write-equal-rewrite))))
 
+;move
+;do we trim array reads?
 (defthm trim-of-bv-array-read
   (equal (trim n (bv-array-read element-size len index data))
          (bv-array-read (min (nfix n) (ifix element-size)) len index data))

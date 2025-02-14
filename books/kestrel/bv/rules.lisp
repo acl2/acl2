@@ -3995,7 +3995,7 @@
            (equal (equal (slice high low x) (getbit low x))
                   (equal (slice high (+ 1 low) x) 0)))
   :hints (("Goal" :in-theory (e/d (getbit)
-                                  (acl2::slice-becomes-getbit)))))
+                                  (slice-becomes-getbit)))))
 
 ;move
 (defthm not-equal-when-not-equal-bvchop
@@ -4924,8 +4924,8 @@
   (implies (and (syntaxp (quotep k))
                 (bind-free (bind-var-to-bv-term-size 'xsize x))
                 (< xsize size)
-                (natp size)
                 (bvle size (expt 2 xsize) k)
+                (natp size)
                 (force (unsigned-byte-p-forced xsize x)))
            (bvlt size x k))
   :hints (("Goal" :in-theory (enable bvlt unsigned-byte-p unsigned-byte-p-forced))))
@@ -5356,7 +5356,7 @@
   :hints (("Goal" :in-theory (enable slice-becomes-getbit))))
 
 (theory-invariant (incompatible (:rewrite equal-of-bvchops-when-equal-of-getbits-gen)
-                                (:rewrite acl2::bvchop-when-top-bit-not-1-fake-free)))
+                                (:rewrite bvchop-when-top-bit-not-1-fake-free)))
 
 (defthm equal-of-bvchops-when-equal-of-getbits
   (implies (and (syntaxp (want-to-strengthen (equal (bvchop 31 x) (bvchop 31 y))))
@@ -5473,6 +5473,26 @@
 
 ;; Lemmas to convert arithmetic operations to bit-vector operations:
 
+(defthmd <-becomes-sbvlt
+  (implies (and (signed-byte-p size x) ; size is a free var
+                (signed-byte-p size y))
+           (equal (< x y)
+                  (sbvlt size x y)))
+  :hints (("Goal" :in-theory (enable sbvlt))))
+
+(defthmd <-of-logext-becomes-sbvlt-arg1
+  (implies (signed-byte-p size y)
+           (equal (< (logext size x) y)
+                  (sbvlt size x y)))
+  :hints (("Goal" :in-theory (enable sbvlt))))
+
+(defthmd <-of-logext-becomes-sbvlt-arg2
+  (implies (signed-byte-p size x)
+           (equal (< x (logext size y))
+                  (sbvlt size x y)))
+  :hints (("Goal" :in-theory (enable sbvlt))))
+
+;todo: drop?
 (defthmd <-to-sbvlt-32
   (implies (and (signed-byte-p 32 x)
                 (signed-byte-p 32 y))
@@ -6109,7 +6129,7 @@
 ;improve?
 (defthm unsigned-byte-p-of-bvmult-of-expt2-constant-version
   (implies (and (syntaxp (quotep k))
-                (acl2::power-of-2p k)
+                (power-of-2p k)
                 (unsigned-byte-p (- size2 (lg k)) x) ; we don't shift any bits out the top
                 (<= (lg k) size) ; gen?
                 (natp size)
@@ -6117,7 +6137,7 @@
            (equal (unsigned-byte-p size (bvmult size2 k x))
                   (unsigned-byte-p (- size (lg k)) x)))
   :hints (("Goal" :use (:instance unsigned-byte-p-of-bvmult-of-expt2 (i (lg k)))
-           :in-theory (e/d (acl2::power-of-2p lg) (unsigned-byte-p-of-bvmult-of-expt2)))))
+           :in-theory (e/d (power-of-2p lg) (unsigned-byte-p-of-bvmult-of-expt2)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
