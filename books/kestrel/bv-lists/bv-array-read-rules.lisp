@@ -1,7 +1,7 @@
 ; Rules about bv-array-read
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -33,7 +33,7 @@
                 (integerp i1)
                 (integerp i2))
            (equal (bv-array-read element-size len (* i1 i2) data)
-                  (bv-array-read element-size len (bvmult (acl2::ceiling-of-lg len) i1 i2) data)))
+                  (bv-array-read element-size len (bvmult (ceiling-of-lg len) i1 i2) data)))
   :hints (("Goal" :in-theory (enable bv-array-read bvmult))))
 
 
@@ -44,7 +44,7 @@
                 (integerp i1)
                 (integerp i2))
            (equal (bv-array-read element-size len (+ i1 i2) data)
-                  (bv-array-read element-size len (bvplus (acl2::ceiling-of-lg len) i1 i2) data)))
+                  (bv-array-read element-size len (bvplus (ceiling-of-lg len) i1 i2) data)))
   :hints (("Goal" :in-theory (enable bv-array-read bvplus))))
 
 (defthm bv-array-read-tighten-free
