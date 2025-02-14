@@ -2967,7 +2967,6 @@
 ;and also prove without splitting into cases!
 
 (in-theory (disable bvchop-31-equal-0-extend ;looped
-                    bound-from-natp-fact
                     ;;nth-times
                     ))
 
