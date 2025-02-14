@@ -164,6 +164,19 @@
                 ;;failure:
                 nil))))))))
 
+;; Sanity check (some rules may rely on the size being a constant):
+;; If there is no error, we get a singleton alist that binds the varname to a
+;; quoted natural representing the size:
+(thm
+  (let ((alist (bind-bv-size-axe darg quoted-varname dag-array)))
+    (implies alist
+             (and (alistp alist)
+                  (= 1 (len alist))
+                  (eq (unquote quoted-varname) (car (first alist)))
+                  (quotep (cdr (first alist)))
+                  (natp (unquote (cdr (first alist)))))))
+  :hints (("Goal" :in-theory (enable bind-bv-size-axe))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; todo: inline?
