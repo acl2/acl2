@@ -306,7 +306,7 @@
     x86isa::wml256-when-app-view
     x86isa::wml512-when-app-view
 
-    mv-nth-1-of-wb-becomes-write
+    wb-becomes-write-when-app-view
     ))
 
 ;; (set-axe-rule-priority rb-becomes-read -1) ; get rid of RB immediately
@@ -589,7 +589,7 @@
   '(
     ;x86isa::x86p-set-flag
     force ;todo: think about this, could only open force on a constant arg
-    x86isa::x86p-of-wb ;  wb-returns-x86p ;targets x86p-of-mv-nth-1-of-wb ;drop if WB will always be rewritten to WRITE
+    ;x86isa::x86p-of-wb ;  wb-returns-x86p ;targets x86p-of-mv-nth-1-of-wb ;drop if WB will always be rewritten to WRITE
 
     ;; Flags:
     unsigned-byte-p-of-get-flag-one-bit ; todo: other case
@@ -792,7 +792,7 @@
 ;; ;    x86isa::get-flag-xw
 
 ;    x86isa::get-flag-wb-in-app-view
-    x86isa::xr-wb
+    ;x86isa::xr-wb
     ;;x86isa::xr-ms-mv-nth-1-wb ;new  (see also xr-wb-in-app-view)
 
     acl2::bfix-when-bitp ; move? or drop if we go to unsigned-byte-p
@@ -1893,7 +1893,7 @@
 
             associativity-of-+
             x86isa::integerp-of-xr-rgf ; drop if we always use a different normal form
-            x86isa::wb-returns-no-error-app-view ;targets mv-nth 0 of wb
+            ;x86isa::wb-returns-no-error-app-view ;targets mv-nth 0 of wb
 ;            addr-byte-alistp-create-addr-bytes-alist
 ;            byte-listp-byte-ify
             x86isa::!rip x86isa::!rip$a          ;expose xw ; todo: 32-bit only
@@ -1903,16 +1903,16 @@
             x86isa::xr-of-xw-intra-field
             x86isa::xr-of-xw-inter-field
             x86isa::program-at-xw-in-app-view
-            x86isa::xr-wb
+            ;x86isa::xr-wb
             ;x86isa::xr-app-view-mv-nth-1-wb ;has a hyp of t
-            x86isa::program-at-wb-disjoint ;drop?
+            ;x86isa::program-at-wb-disjoint ;drop?
 ;            strip-cars-of-create-addr-bytes-alist
 ;            x86isa::true-listp-create-canonical-address-list
 ;            x86isa::len-of-create-canonical-address-list
 ;            len-of-byte-ify ;can we drop the integerp hyp?
 
             x86isa::signed-byte-p-64-when-canonical-address-p-cheap ;i guess axe ignores the backchain-limit-lst ;might loop (but maybe not anymore)?
-            x86isa::xr-wb-in-app-view ;targets xr-of-mv-nth-1-of-wb
+            ;x86isa::xr-wb-in-app-view ;targets xr-of-mv-nth-1-of-wb
             x86isa::x86-decode-sib-p               ;restrict to ground terms?
             x86isa::x86-operand-to-reg/mem         ;shilpi leaves this enabled
             x86isa::mv-nth-becomes-nth-when-constants
@@ -1930,7 +1930,7 @@
             x86isa::trunc$inline        ;shilpi leaves this enabled
 
             acl2::backchain-signed-byte-p-to-unsigned-byte-p-non-const
-            x86isa::alignment-checking-enabled-p-and-wb-in-app-view ;targets alignment-checking-enabled-p-of-mv-nth-1-of-wb
+            ;x86isa::alignment-checking-enabled-p-and-wb-in-app-view ;targets alignment-checking-enabled-p-of-mv-nth-1-of-wb
             acl2::unicity-of-0         ;introduces a fix
             acl2::ash-of-0
             ;acl2::fix-when-acl2-numberp
@@ -2041,16 +2041,14 @@
 
             ;;x86isa::rip
             ;;x86isa::rip$a                           ;expose the call to xr
-            ;;app-view$inline         ;expose the call to xr
 
-            x86isa::wb-xw-in-app-view
+            ;x86isa::wb-xw-in-app-view
 
             ;acl2::bvchop-of-bvmult
             acl2::bvchop-of-ash
             acl2::nfix-does-nothing
             acl2::natp-of-+
             acl2::natp-of-nfix
-            ;;introduce-read64 ; does this mess up our normal form? need some rules about it!  also need to apply this to the assumptions if we use it here
             acl2::bvmult-commutative-axe
             acl2::bvmult-of-bvcat-of-0
             acl2::bvmult-of-bvchop-arg3
@@ -2068,7 +2066,7 @@
 ;                    acl2::bvcat-trim-arg4-axe-all
  ;                   acl2::bvcat-trim-arg2-axe-all
 
-            x86isa::64-bit-modep-of-mv-nth-1-of-wb
+            ;x86isa::64-bit-modep-of-mv-nth-1-of-wb
 
             ;;todo: include all of the lifter rules:
             x86isa::canonical-address-p-of-i48
@@ -2410,10 +2408,7 @@
      acl2::get-elf-symbol-address-aux-base-2
      acl2::get-elf-symbol-address-aux-unroll
 
-     ;;     read64
-;     read-becomes-mv-nth-1-of-rb
      acl2::equal-of-0-and-mod ;acl2::mod-=-0 ;yuck
-;     app-view$inline
      rml64
      acl2::mv-nth-of-if
      acl2::mv-nth-of-cons-safe
@@ -4571,6 +4566,7 @@
     ;; mv-nth-1-of-rb-becomes-read
     ;; mv-nth-1-of-rb-1-becomes-read
     ;; x86isa::x86-fetch-decode-execute-base
+    wb-becomes-write-when-app-view
     ))
 
 (defun debug-rules32 ()
@@ -4926,7 +4922,7 @@
      read-of-xw-irrel
      mod-of-plus-reduce-constants
      ;; mv-nth-1-of-rb-becomes-read
-     mv-nth-1-of-wb-becomes-write
+     ;mv-nth-1-of-wb-becomes-write-when-app-view
      read-of-xw-irrel
      read-of-set-flag
      read-of-write-irrel2
