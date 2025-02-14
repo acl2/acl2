@@ -489,7 +489,7 @@
     bvxor-convert-arg2-to-bv-axe
     bvxor-convert-arg3-to-bv-axe
     getbit-convert-arg1-to-bv-axe ; todo: more!
-    ;; logext-convert-arg2-to-bv-axe ; loops with acl2::logext-of-bvplus-64
+    ;; logext-convert-arg2-to-bv-axe ; loops with logext-of-bvplus-64
     ;; keep this list in sync with *functions-convertible-to-bv*:
     trim-of-logand-becomes-bvand
     trim-of-logior-becomes-bvor
