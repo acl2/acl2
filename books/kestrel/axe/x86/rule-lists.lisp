@@ -2041,7 +2041,6 @@
 
             ;;x86isa::rip
             ;;x86isa::rip$a                           ;expose the call to xr
-            ;;app-view$inline         ;expose the call to xr
 
             ;x86isa::wb-xw-in-app-view
 
@@ -2050,7 +2049,6 @@
             acl2::nfix-does-nothing
             acl2::natp-of-+
             acl2::natp-of-nfix
-            ;;introduce-read64 ; does this mess up our normal form? need some rules about it!  also need to apply this to the assumptions if we use it here
             acl2::bvmult-commutative-axe
             acl2::bvmult-of-bvcat-of-0
             acl2::bvmult-of-bvchop-arg3
@@ -2410,10 +2408,7 @@
      acl2::get-elf-symbol-address-aux-base-2
      acl2::get-elf-symbol-address-aux-unroll
 
-     ;;     read64
-;     read-becomes-mv-nth-1-of-rb
      acl2::equal-of-0-and-mod ;acl2::mod-=-0 ;yuck
-;     app-view$inline
      rml64
      acl2::mv-nth-of-if
      acl2::mv-nth-of-cons-safe
