@@ -1,7 +1,7 @@
 ; Rules about BVLT
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -425,6 +425,7 @@
 
 ;rename to <-of-constant-becomes-bvlt
 ;disabled during library proofs
+;todo: it might be better to look at the size of the constant and see if the other term fits in that many bits.
 (defthmd <-becomes-bvlt
   (implies (and (syntaxp (quotep k))
                 (unsigned-byte-p free x)
@@ -437,6 +438,7 @@
 
 ;disabled during library proofs
 ;rename to <-of-constant-becomes-bvlt-alt
+;todo: it might be better to look at the size of the constant and see if the other term fits in that many bits.
 (defthmd <-becomes-bvlt-alt
   (implies (and (syntaxp (quotep k))
                 (unsigned-byte-p free x)
@@ -447,24 +449,35 @@
                     (not (< k 0)))))
   :hints (("Goal" :in-theory (enable bvlt unsigned-byte-p))))
 
+;do we need this?  make a weak version of <-becomes-bvlt?
+;rename
+(defthmd <-becomes-bvlt-alt-weak
+  (implies (and (syntaxp (quotep k))
+                (unsigned-byte-p free x)
+                (unsigned-byte-p free k))
+           (equal (< x k)
+                  (bvlt free x k)))
+  :hints (("Goal" :use (:instance <-becomes-bvlt-alt)
+           :in-theory (disable <-becomes-bvlt-alt))))
+
 ;disabled during library proofs
 ;could this be expensive?
 (defthmd <-becomes-bvlt-free
   (implies (and (unsigned-byte-p free x)
-                (unsigned-byte-p free k))
-           (equal (< x k)
-                  (bvlt free x k)))
-  :hints (("Goal" :use <-becomes-bvlt-alt
+                (unsigned-byte-p free y))
+           (equal (< x y)
+                  (bvlt free x y)))
+  :hints (("Goal" :use (:instance <-becomes-bvlt-alt (k y))
            :in-theory (disable <-becomes-bvlt-alt))))
 
 ;could this be expensive?
 ;disabled during library proofs
 (defthmd <-becomes-bvlt-free-alt
-  (implies (and (unsigned-byte-p free k)
+  (implies (and (unsigned-byte-p free y)
                 (unsigned-byte-p free x))
-           (equal (< x k)
-                  (bvlt free x k)))
-  :hints (("Goal" :use <-becomes-bvlt-alt
+           (equal (< x y)
+                  (bvlt free x y)))
+  :hints (("Goal" :use (:instance <-becomes-bvlt-alt (k y))
            :in-theory (disable <-becomes-bvlt-alt))))
 
 (theory-invariant (incompatible (:definition bvlt) (:rewrite <-becomes-bvlt)))

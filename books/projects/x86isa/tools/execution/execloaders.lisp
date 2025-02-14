@@ -322,17 +322,17 @@
        ((when (or flg
                   (not (canonical-address-p (+ ptr bytes-read 1)))))
         (mv bytes-read x86 state)))
-      (read-channel-into-memory channel 
-                                ptr 
-                                (1+ bytes-read) 
-                                x86 
+      (read-channel-into-memory channel
+                                ptr
+                                (1+ bytes-read)
+                                x86
                                 state))
   ///
   (defthm read-channel-into-memory-leaves-channel-open
           (implies (open-input-channel-p1 channel :byte state)
-                   (open-input-channel-p1 channel 
+                   (open-input-channel-p1 channel
                                           :byte
-                                          (mv-nth 2 (read-channel-into-memory 
+                                          (mv-nth 2 (read-channel-into-memory
                                                       channel ptr bytes-read x86 state))))))
 
 
@@ -348,7 +348,7 @@
                                         (state-p1 state))))
   (b* (((mv channel state) (open-input-channel filename :byte state))
        ((when (not channel)) (mv 0 x86 state))
-       ((mv bytes-read x86 state) 
+       ((mv bytes-read x86 state)
         (read-channel-into-memory channel ptr 0 x86 state))
        (state (close-input-channel channel state)))
       (mv bytes-read x86 state)))
@@ -456,7 +456,7 @@
                     state)
   :prepwork ((local
                (defthm xr-write-bytes-to-memory
-                       (implies 
+                       (implies
                          (and (not (equal fld :mem))
                               (not (equal fld :tlb))
                               (not (equal fld :fault)))
@@ -541,17 +541,17 @@
 
        ((unless (and (> (len kernel-image) #x1F1)
                      (canonical-address-p (+ kernel-ptr (* (nth #x1F1 kernel-image) 512) #x400)))) (mv x86 state))
-       ((mv & x86) (init-x86-state-64 
-                     nil 
+       ((mv & x86) (init-x86-state-64
+                     nil
                      (+ kernel-ptr (* (nth #x1F1 kernel-image) 512) #x400)
                      nil
-                     nil 
-                     nil 
-                     nil 
-                     nil 
-                     nil 
-                     nil 
-                     (rflags x86) 
+                     nil
+                     nil
+                     nil
+                     nil
+                     nil
+                     nil
+                     (rflags x86)
                      nil
                      x86)))
       (mv x86 state)))

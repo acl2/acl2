@@ -1313,7 +1313,7 @@
     len-update-nth ;pretty aggressive
     true-listp-of-update-nth-2
     nthcdr-of-nil
-    nth-of-take-gen2 ;quite aggressive
+    nth-of-take-2-gen ;quite aggressive
     repeat-becomes-repeat-tail
     nthcdr-of-cons
     equal-cons-nth-0-self
@@ -2316,7 +2316,7 @@
      bvplus-10-shrink-to-9
 
      ;; bvlt-add-to-both-sides-constant-lemma-no-split ;Wed Feb 24 14:16:05 2010
-     <-becomes-bvlt-alt-dag
+     <-becomes-bvlt-alt-weak
      assoc-equal-of-cons
      bvplus-commutative-axe
      bvplus-commutative-2-axe
@@ -3836,7 +3836,7 @@
 ;                                <-of-bvplus-becomes-bvlt-arg2 ;wed feb 24 14:59:16 2010
              nth-becomes-bv-array-read2
 ;             bvlt-transitive-free-back ;other rules like this?
-             nth-of-take-gen
+             nth-of-take-2-gen
              nth-of-firstn ;move to list-rules?
              bvlt-when-not-bvlt
              bvlt-when-unsigned-byte-p

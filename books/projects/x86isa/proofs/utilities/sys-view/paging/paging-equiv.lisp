@@ -136,7 +136,7 @@
                                (and (equal (mv-nth 0 (paging-entry-no-page-fault-p
                                                        structure-type lin-addr entry
                                                        u/s-acc r/w-acc x/d-acc
-                                                       wp smep smap ac nxe  implict-supervisor-access r-w-x cpl 
+                                                       wp smep smap ac nxe  implict-supervisor-access r-w-x cpl
                                                        (mv-nth 2 (,la-to-pa-fn
                                                                    lin-addr2 base-addr2
                                                                    ,@(if (equal level 'pml4-table) nil '(us2 rw2 xd2))
@@ -149,7 +149,7 @@
                                     (equal (mv-nth 1 (paging-entry-no-page-fault-p
                                                        structure-type lin-addr entry
                                                        u/s-acc r/w-acc x/d-acc
-                                                       wp smep smap ac nxe  implict-supervisor-access r-w-x cpl 
+                                                       wp smep smap ac nxe  implict-supervisor-access r-w-x cpl
                                                        (mv-nth 2 (,la-to-pa-fn
                                                                    lin-addr2 base-addr2
                                                                    ,@(if (equal level 'pml4-table) nil '(us2 rw2 xd2))
@@ -337,7 +337,7 @@
   (defthm equal-tlb-key-implies-equiv-components
           (equal (equal (tlb-key wp smep smap ac nxe implicit-supervisor-access r-w-x cpl vpn)
                         (tlb-key wp2 smep2 smap2 ac2 nxe2 implicit-supervisor-access2 r-w-x2 cpl2 vpn2))
-                 (and 
+                 (and
                    (bit-equiv wp wp2)
                    (bit-equiv smep smep2)
                    (bit-equiv smap smap2)

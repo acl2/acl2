@@ -14,12 +14,12 @@
 
 (include-book "std/util/bstar" :dir :system)
 (include-book "kestrel/alists-light/acons-unique" :dir :system)
-(include-book "kestrel/utilities/world" :dir :system)
+(include-book "kestrel/utilities/world" :dir :system) ; for fn-formals, todo: move that to world-light
 (include-book "kestrel/alists-light/lookup" :dir :system)
 (include-book "kestrel/utilities/pack" :dir :system)
 (include-book "kestrel/terms-light/free-vars-in-term" :dir :system)
 (include-book "axe-syntax-functions") ;for axe-quotep, since we treat it specially here
-(include-book "axe-rules") ;for LIST-OF-VARIABLES-AND-CONSTANTSP, todo: reduce?
+(include-book "axe-rules") ;for list-of-variables-and-constantsp, todo: reduce?
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
@@ -151,6 +151,7 @@
           (make-axe-syntaxp-evaluator-arg-vals (rest formals) (+ 1 num)))))
 
 ;; also used for axe-bind-free
+;; Returns a list of cases suitable for use in a CASE expression.
 (defund make-axe-syntaxp-evaluator-case-for-arity-aux (arity fns wrld)
   (declare (xargs :guard (and (symbol-listp fns)
                               (natp arity)
@@ -249,7 +250,7 @@
                               (plist-worldp wrld))))
   (b* ((eval-axe-syntaxp-function-application-fn (pack$ 'eval-axe-syntaxp-function-application- suffix))
        (eval-axe-syntaxp-expr-fn (pack$ 'eval-axe-syntaxp-expr- suffix))
-       (arity-alist (bind-fns-to-arities fns wrld nil))
+       (arity-alist (bind-fns-to-arities fns wrld nil)) ; not counting the dag-array formal, if present
        (arity-0-fns (lookup 0 arity-alist))
        ;; (arity-1-fns (lookup 1 arity-alist))
        (arities (strip-cars arity-alist))

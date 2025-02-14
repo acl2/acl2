@@ -841,7 +841,7 @@
                   (<= (* 8 operand-size) w))
              (unsigned-byte-p w (blsi operand-size src-val)))
     :hints(("Goal" :in-theory (enable bitops::ash-is-expt-*-x)))))
-       
+
 
 (def-inst x86-blsi
   ;; VEX.LZ.0F38.W0 F3 /3:  BLSI r32, r/m32
@@ -868,14 +868,14 @@
        ((when badlength?)
         (!!fault-fresh :gp 0 :instruction-length badlength?))
 
-       
+
        (p2 (prefixes->seg prefixes))
        (p4? (equal #.*addr-size-override*
                    (prefixes->adr prefixes)))
 
        (seg-reg (select-segment-register proc-mode p2 p4? mod r/m sib x86))
        (rex-byte (rex-byte-from-vex-prefixes vex-prefixes))
-       
+
        (inst-ac? t)
        ((mv flg0
             src2-val
@@ -902,7 +902,7 @@
                          (!rflagsBits->of 0 input-rflags)))))
        ;; SDM says AF and PF are undefined. Are they really undefined or just preserved?
        (undefined-flags (!rflagsbits->pf 1 (!rflagsbits->af 1 0)))
-       
+
        (x86 (!rgfi-size operand-size src1-index res 1 ;; fake rex-byte
                         x86))
        (x86 (write-user-rflags output-rflags undefined-flags x86))
@@ -939,11 +939,11 @@
                   :in-theory (enable unsigned-byte-p)))))
 
 (def-inst x86-popcnt
-  ;; F3 0F B8 /r       POPCNT r16, r/m16 
+  ;; F3 0F B8 /r       POPCNT r16, r/m16
   ;; F3 0F B8 /r       POPCNT r32, r/m32
-  ;; F3 REX.W 0F B8 /r POPCNT r64, r/m64 
+  ;; F3 REX.W 0F B8 /r POPCNT r64, r/m64
 
-  ;; Note: largely copied from TZCNT 
+  ;; Note: largely copied from TZCNT
   :parents (two-byte-opcodes)
 
   :returns (x86 x86p :hyp (x86p x86))
@@ -998,4 +998,3 @@
        (x86 (write-user-rflags output-rflags 0 x86))
        (x86 (write-*ip proc-mode temp-rip x86)))
     x86))
-

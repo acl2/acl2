@@ -387,15 +387,15 @@
   (b* ((p2 (prefixes->seg prefixes))
        (p4? (equal #.*addr-size-override*
                    (prefixes->adr prefixes)))
-       
+
        (rex-w? (logbitp #.*w* rex-byte))
        (reg-operand-size (if rex-w? 8 4))
        (mem-operand-size (* 2 reg-operand-size))
-       
+
        (*AX (rgfi-size reg-operand-size *rax* rex-byte x86))
        (*DX (rgfi-size reg-operand-size *rdx* rex-byte x86))
        (dx-ax (logapp (* 8 reg-operand-size) *ax *dx))
-       
+
        (*BX (rgfi-size reg-operand-size *rbx* rex-byte x86))
        (*CX (rgfi-size reg-operand-size *rcx* rex-byte x86))
        (cx-bx (logapp (* 8 reg-operand-size) *bx *cx))
@@ -409,7 +409,7 @@
             x86)
         (x86-operand-from-modr/m-and-sib-bytes
          proc-mode
-         #.*xmm-access* ;; actually only accessing memory, this is so the guard is satisfied 
+         #.*xmm-access* ;; actually only accessing memory, this is so the guard is satisfied
          mem-operand-size
          t ;; inst-ac?
          nil ;; Not a memory pointer operand (but irrelevant since this operand size is not 4)
@@ -433,9 +433,9 @@
        ((the (unsigned-byte 32) input-rflags) (rflags x86))
        (output-rflags (!rflagsbits->zf (bool->bit compare) input-rflags))
        (undefined-flags 0)
-       
+
        (x86 (write-user-rflags output-rflags undefined-flags x86))
-       
+
        ((mv flg1 x86)
         (if compare
             ;; cx-bx is stored in the destination operand.

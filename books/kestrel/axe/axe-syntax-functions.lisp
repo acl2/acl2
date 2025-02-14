@@ -1,7 +1,7 @@
 ; General-purpose syntactic tests
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -40,28 +40,28 @@
 (defund heavier-dag-term (x y)
   (declare (xargs :guard (and (dargp x)
                               (dargp y))))
-  (if (quotep x)
-      (if (quotep y)
+  (if (consp x) ; checks for quotep
+      (if (consp y) ; checks for quotep
           (<< (unquote y) (unquote x))
         nil)
-    (if (quotep y)
+    (if (consp y) ; checks for quotep
         t
       ;;both are nodenums
       (< y x))))
 
 ;drop?
-(defun valid-array-indexp (index array-name array)
-  (declare (xargs :guard (array1p array-name array)))
-  (and (natp index)
-       (< index (alen1 array-name array))))
+;; (defun valid-array-indexp (index array-name array)
+;;   (declare (xargs :guard (array1p array-name array)))
+;;   (and (natp index)
+;;        (< index (alen1 array-name array))))
 
-(defun get-expr (nodenum-or-quotep dag-array)
-  (declare (xargs :guard (or (myquotep nodenum-or-quotep)
-                             (and (array1p 'dag-array dag-array) ;could pull out as a top-level conjunct
-                                  (valid-array-indexp nodenum-or-quotep 'DAG-ARRAY DAG-ARRAY)))))
-  (if (integerp nodenum-or-quotep)
-      (aref1 'dag-array dag-array nodenum-or-quotep)
-    nodenum-or-quotep))
+;; (defun get-expr (nodenum-or-quotep dag-array)
+;;   (declare (xargs :guard (or (myquotep nodenum-or-quotep)
+;;                              (and (array1p 'dag-array dag-array) ;could pull out as a top-level conjunct
+;;                                   (valid-array-indexp nodenum-or-quotep 'DAG-ARRAY DAG-ARRAY)))))
+;;   (if (integerp nodenum-or-quotep)
+;;       (aref1 'dag-array dag-array nodenum-or-quotep)
+;;     nodenum-or-quotep))
 
 ;; (skip- proofs
 ;;  (mutual-recursion
@@ -95,9 +95,9 @@
                                        (pseudo-dag-arrayp 'dag-array dag-array (+ 1 y)))))
                   :guard-hints (("Goal" :in-theory (enable array1p))))
            (ignore dag-array))
-  (if (quotep x)
+  (if (consp x) ; checks for quotep
       nil
-    (if (quotep y)
+    (if (consp y) ; checks for quotep
         t
 
       ;;recent change... if we put this back, add a check that the prefered term isn't a superterm of the other term..
@@ -112,49 +112,57 @@
           ;;compare the nodenums - yuck?!  i've seen loops where this put in a gross term for a nice term
           (< y x))))))
 
-(defund syntactic-call-of (quoted-fn nodenum-or-quotep dag-array)
-  (declare (xargs :guard (or (myquotep nodenum-or-quotep)
-                             (and (natp nodenum-or-quotep)
-                                  (pseudo-dag-arrayp 'dag-array dag-array (+ 1 nodenum-or-quotep))))))
-  (and (not (consp nodenum-or-quotep))
-       (if (not (and (myquotep quoted-fn)
-                     (symbolp (unquote quoted-fn))))
-           (er hard? 'syntactic-call-of "Bad fn argument: ~x0." quoted-fn)
-         (let ((fn (unquote quoted-fn)))
-           (call-of fn (aref1 'dag-array dag-array nodenum-or-quotep))))))
+;; We expect quoted-fn to always be a quoted symbol, but we cannot require that in the guard.
+(defund syntactic-call-of (quoted-fn darg dag-array)
+  (declare (xargs :guard (and (or (myquotep quoted-fn)
+                                  (and (natp quoted-fn)
+                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 quoted-fn))))
+                              (or (myquotep darg)
+                                  (and (natp darg)
+                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 darg)))))))
+  (and (not (consp darg)) ; checks for nodenum
+       (consp quoted-fn) ; checks for quotep
+       (let ((fn (unquote quoted-fn)))
+         (if (not (symbolp fn)) ; can we skip this check?
+             (er hard? 'syntactic-call-of "Bad fn argument: ~x0." quoted-fn)
+           (call-of fn (aref1 'dag-array dag-array darg))))))
 
-;deprecate?  allows an expr to be constant, but that should be very rare
-(defund syntactic-constantp (nodenum-or-quotep dag-array)
-  (declare (xargs :guard (or (myquotep nodenum-or-quotep)
-                             (and (natp nodenum-or-quotep)
-                                  (pseudo-dag-arrayp 'dag-array dag-array (+ 1 nodenum-or-quotep))))))
-  (if (consp nodenum-or-quotep) ;check for quotep
-      t
-    (let ((expr (aref1 'dag-array dag-array nodenum-or-quotep)))
-      (and (consp expr)
-           (eq 'quote (car expr))))))
+;; We expect quoted-var to always be a quoted symbol, but we cannot require that in the guard.
+(defund is-the-variablep (quoted-var darg dag-array)
+  (declare (xargs :guard (and (or (myquotep quoted-var)
+                                  (and (natp quoted-var)
+                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 quoted-var))))
+                              (or (myquotep darg)
+                                  (and (natp darg)
+                                       (pseudo-dag-arrayp 'dag-array dag-array (+ 1 darg)))))))
+  (and (not (consp darg)) ; checks for nodenum
+       (consp quoted-var) ; checks for quotep
+       (let ((var (unquote quoted-var)))
+         (if (not (symbolp var)) ; drop this check?
+             (er hard? 'is-the-variablep "Bad fn argument: ~x0." quoted-var)
+           (equal var (aref1 'dag-array dag-array darg))))))
 
-(defund syntactic-variablep (nodenum-or-quotep dag-array)
-  (declare (xargs :guard (or (myquotep nodenum-or-quotep)
-                             (and (natp nodenum-or-quotep)
-                                  (pseudo-dag-arrayp 'dag-array dag-array (+ 1 nodenum-or-quotep))))))
-  (if (consp nodenum-or-quotep) ;check for quotep
+;; ;deprecate?  allows an expr to be constant, but that should be very rare
+;; (defund syntactic-constantp (darg dag-array)
+;;   (declare (xargs :guard (or (myquotep darg)
+;;                              (and (natp darg)
+;;                                   (pseudo-dag-arrayp 'dag-array dag-array (+ 1 darg))))))
+;;   (if (consp darg) ;checks for quotep
+;;       t
+;;     (let ((expr (aref1 'dag-array dag-array darg)))
+;;       (and (consp expr)
+;;            (eq 'quote (car expr))))))
+
+(defund syntactic-variablep (darg dag-array)
+  (declare (xargs :guard (or (myquotep darg)
+                             (and (natp darg)
+                                  (pseudo-dag-arrayp 'dag-array dag-array (+ 1 darg))))))
+  (if (consp darg) ;checks for quotep
       nil
-    (let ((expr (aref1 'dag-array dag-array nodenum-or-quotep)))
+    (let ((expr (aref1 'dag-array dag-array darg)))
       (atom expr))))
 
-(defund is-the-variablep (quoted-var nodenum-or-quotep dag-array)
-  (declare (xargs :guard (and ;; (symbolp (unquote quoted-var)) ; causes problems for caller but should be true
-                          (or (myquotep nodenum-or-quotep)
-                              (and (natp nodenum-or-quotep)
-                                   (pseudo-dag-arrayp 'dag-array dag-array (+ 1 nodenum-or-quotep)))))))
-  (if (consp nodenum-or-quotep) ;check for quotep
-      nil
-    (if (not (and (myquotep quoted-var)
-                  (symbolp (unquote quoted-var))))
-        (er hard? 'is-the-variablep "Bad fn argument: ~x0." quoted-var)
-      (let ((expr (aref1 'dag-array dag-array nodenum-or-quotep)))
-        (equal (unquote quoted-var) expr)))))
+
 
 ;bozo make this a real table?
 ;args are numbered from 1
