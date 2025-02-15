@@ -2049,11 +2049,7 @@
    (b* ((- (cw "(Unsimplified assumptions for lifting: ~x0)~%" assumptions)) ;todo: untranslate these and other things that get printed
         ;; Simplify the assumptions: TODO: Pull this out into the caller?
         ((mv erp rule-alist)  ;todo: include the extra-rules?
-         (make-rule-alist (append '(rip
-                                    rip$a
-                                    ;; app-view ; not needed?
-                                    )
-                                  (reader-and-writer-opener-rules) ; don't use the new normal forms
+         (make-rule-alist (append (old-normal-form-rules) ; don't use the new normal forms
                                   (assumption-simplification-rules))
                           (w state)))
         ((when erp) (mv erp nil nil nil state))

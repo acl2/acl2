@@ -91,8 +91,8 @@
 
 (in-theory (disable str::coerce-to-list-removal)) ;todo
 
-(acl2::ensure-rules-known (lifter-rules32-all))
-(acl2::ensure-rules-known (lifter-rules64-all))
+(acl2::ensure-rules-known (unroller-rules32))
+(acl2::ensure-rules-known (unroller-rules64))
 (acl2::ensure-rules-known (assumption-simplification-rules))
 (acl2::ensure-rules-known (step-opener-rules))
 
@@ -480,12 +480,12 @@
                           total-steps
                           state))))))
 
-(local (in-theory (disable ;; reader-and-writer-intro-rules
-                           ;; (:e reader-and-writer-intro-rules)
+(local (in-theory (disable ;; new-normal-form-rules-common
+                           ;; (:e new-normal-form-rules-common)
                            ;; assumption-simplification-rules
                            ;; (:e assumption-simplification-rules)
-                           ;; lifter-rules64-new
-                           ;; (:e lifter-rules64-new)
+                           ;; new-normal-form-rules64
+                           ;; (:e new-normal-form-rules64)
                     )))
 
 ;; Returns (mv erp assumptions assumption-rules state)
@@ -499,11 +499,11 @@
        ((mv assumption-simp-start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
        ;; todo: optimize):
        (assumption-rules (append extra-assumption-rules
-                                 (reader-and-writer-intro-rules)
+                                 (new-normal-form-rules-common)
                                  (assumption-simplification-rules)
                                  (if 64-bitp
                                      ;; needed to match the normal forms used during lifting:
-                                     (lifter-rules64-new)
+                                     (new-normal-form-rules64)
                                    nil ; todo: why not use (lifter-rules32-new)?
                                    )))
        ((mv erp assumption-rule-alist)
@@ -795,7 +795,7 @@
         (er hard? 'unroll-x86-code-core "Unexpected quotep: ~x0." dag-to-simulate)
         (mv :unexpected-quotep nil nil nil nil state))
        ;; Choose the lifter rules to use:
-       (lifter-rules (if 64-bitp (lifter-rules64-all) (lifter-rules32-all)))
+       (lifter-rules (if 64-bitp (unroller-rules64) (unroller-rules32)))
        ;; Add any extra-rules:
        (- (let ((intersection (intersection-eq extra-rules lifter-rules))) ; todo: optimize (sort and then compare, and also use sorted lists below...)
             (and intersection
@@ -1126,7 +1126,7 @@
          ;; todo: better name?  only for precise pruning:
          (prune "Whether to prune DAGs using precise contexts.  Either t or nil or a natural number representing an (exclusive) limit on the maximum size of the DAG if represented as a term.  This kind of pruning can blow up if attempted for DAGs that represent huge terms.")
          ;; todo: how do these affect assumption simp:
-         (extra-rules "Rules to use in addition to (lifter-rules32-all) or (lifter-rules64-all).")
+         (extra-rules "Rules to use in addition to (unroller-rules32) or (unroller-rules64).")
          (remove-rules "Rules to turn off.")
          (extra-assumption-rules "Extra rules to be used when simplifying assumptions.")
          (step-limit "Limit on the total number of model steps (instruction executions) to allow.")

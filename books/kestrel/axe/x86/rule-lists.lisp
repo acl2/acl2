@@ -371,7 +371,7 @@
     app-view-of-write
     alignment-checking-enabled-p-of-write
     get-flag-of-write
-    ctri-of-write ; may be needed for lifter, which does not use the lifter-rules64-new (todo: move other similar rules here?)
+    ctri-of-write ; may be needed for lifter, which does not use the new-normal-form-rules64 (todo: move other similar rules here?)
     undef-of-write
     mxcsr-of-write
     ms-of-write
@@ -407,8 +407,8 @@
     ;;read-of-write-of-write-of-write-of-set-flag
     read-1-of-write-within-new))
 
-;; These rules get removed for the loop-lifter
-(defund reader-and-writer-intro-rules ()
+;; For both 32-bit and 64-bit
+(defund new-normal-form-rules-common ()
   (declare (xargs :guard t))
   '(xr-becomes-fault
     xr-becomes-ms
@@ -422,17 +422,6 @@
     !ms-becomes-set-ms
     !mxcsr-becomes-set-mxcsr
     !undef-becomes-set-undef))
-
-;; For the loop-lifter
-(defund reader-and-writer-opener-rules ()
-  (declare (xargs :guard t))
-  '(x86isa::undef x86isa::undef$a ; exposes xr
-    x86isa::!undef x86isa::!undef$a ; exposes xw
-    x86isa::ms x86isa::ms$a ; exposes xr
-    x86isa::!ms x86isa::!ms$a ; exposes xw
-    x86isa::fault x86isa::fault$a ; exposes xr
-    x86isa::!fault x86isa::!fault$a ; exposes xw
-    ))
 
 ;; todo: some of these are write-over-write rules
 (defund read-over-write-rules ()
@@ -1701,7 +1690,6 @@
 (defun lifter-rules-common ()
   (declare (xargs :guard t))
   (append (symbolic-execution-rules)
-          (reader-and-writer-intro-rules)
           (read-over-write-rules)
           (shadowed-write-rules) ; requires the x86 rewriter
           (acl2::base-rules)
@@ -2458,6 +2446,8 @@
           ;; acl2::boolif-when-quotep-arg2
           ;; acl2::boolif-when-quotep-arg3)
           ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; todo: move some of these to lifter-rules-common
 (defun lifter-rules32 ()
@@ -3249,12 +3239,15 @@
     write-to-segment-of-write-to-segment-included
     ))
 
-(defund lifter-rules32-all ()
+(defund unroller-rules32 ()
   (declare (xargs :guard t))
   (append (lifter-rules32)
+          (new-normal-form-rules-common)
           (lifter-rules32-new)))
 
-;; do we ever use this without the new rules below?  maybe for the loop lifter...
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Used by the unroller and loop-lifter.
 (defun lifter-rules64 ()
   (declare (xargs :guard t))
   (append (lifter-rules-common)
@@ -3266,7 +3259,7 @@
           '(read-byte-becomes-read) ; (read-byte-rules) ; read-byte can come from read-bytes
           '(len-of-read-bytes nth-of-read-bytes) ; read-bytes can come from an output-extractor
           (acl2::list-to-bv-array-rules) ; for simplifying output-extractors
-          (linear-memory-rules)
+          (linear-memory-rules) ; these introduce read and write
           (get-prefixes-rules64)
           '(;x86isa::x86-fetch-decode-execute-base-new
             x86-fetch-decode-execute-opener-safe-64 ; trying
@@ -3307,7 +3300,7 @@
     xr-becomes-rbp
     ))
 
-(defund lifter-rules64-new ()
+(defund new-normal-form-rules64 ()
   (declare (xargs :guard t))
   (append
    (get-register-intro-rules64)
@@ -4414,10 +4407,13 @@
 
      if-of-set-rip-and-set-rip-same)))
 
-(defund lifter-rules64-all ()
+(defund unroller-rules64 ()
   (declare (xargs :guard t))
   (append (lifter-rules64)
-          (lifter-rules64-new)))
+          (new-normal-form-rules-common)
+          (new-normal-form-rules64)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Try this rule first
 (set-axe-rule-priority read-of-write-irrel -1) ; todo: also below
@@ -4726,7 +4722,7 @@
 ;; beyond what def-unrolled uses
 (defun extra-tester-lifting-rules ()
   (declare (xargs :guard t))
-  (append (lifter-rules64-new) ; todo: drop?  but that caused failures! why?  seemed to involve equality of addresses and separation hyps
+  (append (new-normal-form-rules64) ; todo: drop?  but that caused failures! why?  seemed to involve equality of addresses and separation hyps
           (extra-tester-rules)
           '(<-of-fp-to-rat ; do we want this?
 
@@ -4893,7 +4889,7 @@
           (separate-rules) ; i am seeing some read-over-write reasoning persist into the proof stage
           (float-rules) ; i need booleanp-of-isnan, at least
           (extra-tester-rules)
-          (lifter-rules64-new) ; overkill?
+          (new-normal-form-rules64) ; overkill?
           (acl2::base-rules)
           (acl2::core-rules-bv) ; trying
           (acl2::bv-of-logext-rules)
@@ -4989,21 +4985,40 @@
     xr-of-set-mxcsr-irrel ; maybe this normal form is not used?
     ))
 
+(defund old-normal-form-rules ()
+  (declare (xargs :guard t))
+  '(fault fault$a ; exposes xr
+    !fault !fault$a ; exposes xw
+    ms ms$a ; exposes xr
+    !ms !ms$a ; exposes xw
+    mxcsr mxcsr$a ; exposes xr
+    !mxcsr !mxcsr$a ; exposes xw
+    undef undef$a ; exposes xr
+    !undef !undef$a ; exposes xw
+    ;; app-view ; not needed because we never change it?
+    rip rip$a ; exposes xr
+    ))
+
+;; Can't really use the new, nicer normal forms for readers and writers, since
+;; the loop-lifter expects state terms built from XW, WRITE, and SET-FLAG.
 (defun loop-lifter-rules32 ()
   (declare (xargs :guard t))
   (set-difference-eq
-   (lifter-rules32)
+   (append (lifter-rules32)
+           (old-normal-form-rules))
    ;; We remove the rules that put things into the new normal form:
-   ;; todo: move these rule-lists:  or use reader-and-writer-intro-rules here?
-   '(xr-becomes-undef
-     !undef-becomes-set-undef
-     xw-becomes-set-undef
-     xr-becomes-ms
-     xw-becomes-set-ms
-     !ms-becomes-set-ms
-     xr-becomes-fault
-     xw-becomes-set-fault
-     !fault-becomes-set-fault)))
+   ;; todo: move these rule-lists:  or use new-normal-form-rules-common here?
+   nil
+   ;; '(xr-becomes-undef
+   ;;   !undef-becomes-set-undef
+   ;;   xw-becomes-set-undef
+   ;;   xr-becomes-ms
+   ;;   xw-becomes-set-ms
+   ;;   !ms-becomes-set-ms
+   ;;   xr-becomes-fault
+   ;;   xw-becomes-set-fault
+   ;;   !fault-becomes-set-fault)
+   ))
 
 ;; Can't really use the new, nicer normal forms for readers and writers, since
 ;; the loop-lifter expects state terms built from XW, WRITE, and SET-FLAG.
@@ -5011,13 +5026,12 @@
   (declare (xargs :guard t))
   (set-difference-eq
    (append (lifter-rules64)
-           (append '(x86isa::rip x86isa::rip$a ; todo?
-                     )
-                   (reader-and-writer-opener-rules))
-           ;;(lifter-rules64-new); todo
+           (old-normal-form-rules)
+           ;;(new-normal-form-rules64); todo, but we'd have to change the loop-lifter significantly
            )
    ;; we don't use these usual normal forms:
-   (reader-and-writer-intro-rules)))
+   nil ; (new-normal-form-rules-common)
+   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
