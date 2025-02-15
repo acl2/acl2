@@ -35,11 +35,11 @@
       as opposed to a local variable, which is declared in a block.
       In more technical terms,
       a C translation unit consists of
-      a sequence of external declarations [C:6.9],
+      a sequence of external declarations [C17:6.9],
       where an external declaration is
-      either a function definition [C:6.9.1]
-      or a declaration [C:6.7],
-      where the latter may define an object [C:6.9.2].
+      either a function definition [C17:6.9.1]
+      or a declaration [C17:6.7],
+      where the latter may define an object [C17:6.9.2].
       Thus, a global variable is introduced as
       an external object definition.")
 
@@ -144,7 +144,7 @@
         when the @(':type') input specifies an integer array type."))
      (xdoc::p
       "If this input is not @('nil'),
-       it represents an initializer [C:6.7.9].
+       it represents an initializer [C17:6.7.9].
        If this input is @('nil'),
        the object declaration does not have an initializer.")
      (xdoc::p
@@ -168,7 +168,7 @@
       A pure expression term is an ACL2 term that represent
       a C pure expression that may involve variables.
       A constant expression term is an ACL2 term that represents
-      a C constant expression [C:6.6],
+      a C constant expression [C17:6.6],
       which does not involve variables.
       Since there are no variables involved,
       the notion of constant expression term is defined
@@ -229,7 +229,7 @@
        The guard verification requirement ensures that
        the operator yields a well-defined result.
        These functions cover all the C unary operators
-       (using the nomenclature in [C]).")
+       (using the nomenclature in [C17]).")
      (xdoc::li
       "A call of a function @('<op>-<type1>-<type2>')
        on constant expression terms returning @('U') and @('V'),

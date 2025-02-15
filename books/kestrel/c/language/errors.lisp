@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -31,7 +31,7 @@
      An example is when a run-time check
      in our defensive dynamic semantics fails,
      e.g. due to a value having the wrong type for an operator.
-     Another example is when some static constraint fail,
+     Another example is when some static constraint fails,
      e.g. a variable is referenced in some code without being in scope.")
    (xdoc::p
     "These ACL2 functions return different kinds of values

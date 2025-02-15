@@ -141,7 +141,7 @@
 (define lognot-pointer-value ((val valuep))
   :guard (value-case val :pointer)
   :returns (resval valuep)
-  :short "Apply @('!') to a pointer value [C:6.5.3.3/5]."
+  :short "Apply @('!') to a pointer value [C17:6.5.3.3/5]."
   :long
   (xdoc::topstring
    (xdoc::p

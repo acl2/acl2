@@ -22,7 +22,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These are listed in [C:6.4.1]:")
+    "These are listed in [C17:6.4.1]:")
    (xdoc::codeblock
     "auto       extern     short      while"
     "break      float      signed     _Alignas"

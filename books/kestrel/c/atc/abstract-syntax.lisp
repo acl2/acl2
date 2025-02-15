@@ -71,7 +71,7 @@
       with significant mutual recursion,
       and with many constraints not directly captured by the C grammar.
       For instance, @('typedef') is classified as a storage class specifier,
-      for syntactic convenience apparently [C:6.7.1/5],
+      for syntactic convenience apparently [C17:6.7.1/5],
       even though its role is very different from the others.
       Thus, by differentiating more explicitly, in our ATC abstract syntax,
       among different kinds of declarations and related entities,
@@ -86,7 +86,7 @@
      So long as the language formalization appropriately covers a subset of C,
      there is nothing inherently wrong with that approach.
      However, longer-term, as the language formalization is made more general,
-     in particular covering the translation phases [C:5.1.12] explicitly,
+     in particular covering the translation phases [C17:5.1.12] explicitly,
      we will likely need to differentiate the abstract syntax for ATC
      from the one(s) from the language formalization.
      For proof generation,
@@ -117,7 +117,7 @@
       In the interest of portability, it is our intention to have ATC
       generate identifiers of 31 characters or less
       (which is the minimum of significant characters in (external) identifiers
-      [C:6.4.2.1/5] [C:6.4.2.1/6] [C:5.2.4.1]
+      [C17:6.4.2.1/5] [C17:6.4.2.1/6] [C17:5.2.4.1]
       which may not be a significant limitation.")
     (xdoc::li
      "The fixtype @(tsee iconst) does not capture leading 0s
@@ -147,7 +147,7 @@
       consisting of a function declaration and a body.
       However, even though this would work in abstract syntax,
       in concrete syntax a function declaration has to end with a semicolon
-      (and that is why the grammar rule in [C:6.9.1/1]
+      (and that is why the grammar rule in [C17:6.9.1/1]
       does not use a declaration, but rather its components):
       thus, for the ATC pretty-printer,
       we want to differentiate between

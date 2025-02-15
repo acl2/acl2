@@ -44,7 +44,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum type
-  :short "Fixtype of C types [C:6.2.5]."
+  :short "Fixtype of C types [C17:6.2.5]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -52,49 +52,49 @@
      but only an approximate version of them,
      which still lets us perform some validation.
      We plan to refine the types, and the rest of the validator,
-     to cover exactly all the validity checks prescribed by [C]
+     to cover exactly all the validity checks prescribed by [C17]
      (as well as applicable GCC extensions).")
    (xdoc::p
     "We capture the following types:")
    (xdoc::ul
     (xdoc::li
-     "The @('void') type [C:6.2.5/19].")
+     "The @('void') type [C17:6.2.5/19].")
     (xdoc::li
-     "The plain @('char') type [C:6.2.5/3].")
+     "The plain @('char') type [C17:6.2.5/3].")
     (xdoc::li
-     "The five standard signed integer types [C:6.2.5/4]
-      and the corresponding unsigned integer types [C:6.2.5/6].")
+     "The five standard signed integer types [C17:6.2.5/4]
+      and the corresponding unsigned integer types [C17:6.2.5/6].")
     (xdoc::li
-     "The three real floating point types [C:6.2.5/10].")
+     "The three real floating point types [C17:6.2.5/10].")
     (xdoc::li
-     "The three complex types [C:6.2.5/11].
+     "The three complex types [C17:6.2.5/11].
       These are a conditional feature,
       but they must be included in this fixtype
       because this fixtype consists of all the possible types.")
     (xdoc::li
-     "The @('_Bool') type [C:6.2.5/2].")
+     "The @('_Bool') type [C17:6.2.5/2].")
     (xdoc::li
-     "A collective type for all structure types [C:6.2.5/20].
+     "A collective type for all structure types [C17:6.2.5/20].
       This is an approximation,
       because there are different structure types.")
     (xdoc::li
-     "A collective type for all union types [C:6.2.5/20].
+     "A collective type for all union types [C17:6.2.5/20].
       This is an approximation,
       because there are different union types.")
     (xdoc::li
-     "A collective type for all enumeration types [C:6.2.5/20].
+     "A collective type for all enumeration types [C17:6.2.5/20].
       This is an approximation,
       because there are different enumeration types.")
     (xdoc::li
-     "A collective type for all array types [C:6.2.5/20].
+     "A collective type for all array types [C17:6.2.5/20].
       This is an approximation,
       because there are different array types.")
     (xdoc::li
-     "A collective type for all pointer types [C:6.2.5/20].
+     "A collective type for all pointer types [C17:6.2.5/20].
       This is an approximation,
       because there are different pointer types.")
     (xdoc::li
-     "A collective type for all function types [C:6.2.5/20].
+     "A collective type for all function types [C17:6.2.5/20].
       This is an approximation,
       because there are different function types.")
     (xdoc::li
@@ -114,11 +114,11 @@
       and unknown types are always acceptable."))
    (xdoc::p
     "Besides the approximations noted above,
-     currently we do not capture atomic types [C:6.2.5/20],
+     currently we do not capture atomic types [C17:6.2.5/20],
      which we approximate as the underlying (argument) type.
      We also do not capture @('typedef') names,
      which we approximate as unknown types.
-     Furthermore, we do not capture qualified types [C:6.2.5/26]."))
+     Furthermore, we do not capture qualified types [C17:6.2.5/26]."))
   (:void ())
   (:char ())
   (:schar ())
@@ -211,7 +211,7 @@
 
 (define type-standard-signed-integerp ((type typep))
   :returns (yes/no booleanp)
-  :short "Check if a type is a standard signed integer type [C:6.2.5/4]."
+  :short "Check if a type is a standard signed integer type [C17:6.2.5/4]."
   (and (member-eq (type-kind type) '(:schar :sshort :sint :slong :sllong))
        t)
   :hooks (:fix))
@@ -220,7 +220,7 @@
 
 (define type-signed-integerp ((type typep))
   :returns (yes/no booleanp)
-  :short "Check if a type is a signed integer type [C:6.2.5/4]."
+  :short "Check if a type is a signed integer type [C17:6.2.5/4]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -234,7 +234,7 @@
 
 (define type-standard-unsigned-integerp ((type typep))
   :returns (yes/no booleanp)
-  :short "Check if a type is a standard unsigned integer type [C:6.2.5/6]."
+  :short "Check if a type is a standard unsigned integer type [C17:6.2.5/6]."
   (and (member-eq (type-kind type) '(:bool :uchar :ushort :uint :ulong :ullong))
        t)
   :hooks (:fix))
@@ -243,7 +243,7 @@
 
 (define type-unsigned-integerp ((type typep))
   :returns (yes/no booleanp)
-  :short "Check if a type is an unsigned integer type [C:6.2.5/6]."
+  :short "Check if a type is an unsigned integer type [C17:6.2.5/6]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -257,7 +257,7 @@
 
 (define type-standard-integerp ((type typep))
   :returns (yes/no booleanp)
-  :short "Check if a type is a standard integer type [C:6.2.5/7]."
+  :short "Check if a type is a standard integer type [C17:6.2.5/7]."
   (or (type-standard-signed-integerp type)
       (type-standard-unsigned-integerp type))
   :hooks (:fix))
@@ -266,7 +266,7 @@
 
 (define type-real-floatingp ((type typep))
   :returns (yes/no booleanp)
-  :short "Check if a type is a real floating type [C:6.2.5/10]."
+  :short "Check if a type is a real floating type [C17:6.2.5/10]."
   (and (member-eq (type-kind type) '(:float :double :ldouble))
        t)
   :hooks (:fix))
@@ -275,7 +275,7 @@
 
 (define type-complexp ((type typep))
   :returns (yes/no booleanp)
-  :short "Check if a type is a complex type [C:6.2.5/11]."
+  :short "Check if a type is a complex type [C17:6.2.5/11]."
   (and (member-eq (type-kind type) '(:floatc :doublec :ldoublec))
        t)
   :hooks (:fix))
@@ -284,7 +284,7 @@
 
 (define type-floatingp ((type typep))
   :returns (yes/no booleanp)
-  :short "Check if a type is a floating type [C:6.2.5/11]."
+  :short "Check if a type is a floating type [C17:6.2.5/11]."
   (or (type-real-floatingp type)
       (type-complexp type))
   :hooks (:fix))
@@ -293,7 +293,7 @@
 
 (define type-basicp ((type typep))
   :returns (yes/no booleanp)
-  :short "Check if a type is a basic type [C:6.2.5/14]."
+  :short "Check if a type is a basic type [C17:6.2.5/14]."
   (or (type-case type :char)
       (type-signed-integerp type)
       (type-unsigned-integerp type)
@@ -304,7 +304,7 @@
 
 (define type-characterp ((type typep))
   :returns (yes/no booleanp)
-  :short "Check if a type is a character type [C:6.2.5/15]."
+  :short "Check if a type is a character type [C17:6.2.5/15]."
   (and (member-eq (type-kind type) '(:char :schar :uchar))
        t)
   :hooks (:fix))
@@ -313,7 +313,7 @@
 
 (define type-integerp ((type typep))
   :returns (yes/no booleanp)
-  :short "Check if a type is an integer type [C:6.2.5/17]."
+  :short "Check if a type is an integer type [C17:6.2.5/17]."
   (or (type-case type :char)
       (type-signed-integerp type)
       (type-unsigned-integerp type)
@@ -324,7 +324,7 @@
 
 (define type-realp ((type typep))
   :returns (yes/no booleanp)
-  :short "Check if a type is a real type [C:6.2.5/17]."
+  :short "Check if a type is a real type [C17:6.2.5/17]."
   (or (type-integerp type)
       (type-real-floatingp type))
   :hooks (:fix))
@@ -333,7 +333,7 @@
 
 (define type-arithmeticp ((type typep))
   :returns (yes/no booleanp)
-  :short "Check if a type is an arithmetic type [C:6.2.5/18]."
+  :short "Check if a type is an arithmetic type [C17:6.2.5/18]."
   (or (type-integerp type)
       (type-floatingp type))
   :hooks (:fix)
@@ -355,7 +355,7 @@
 
 (define type-scalarp ((type typep))
   :returns (yes/no booleanp)
-  :short "Check if a type is a scalar type [C:6.2.5/21]."
+  :short "Check if a type is a scalar type [C17:6.2.5/21]."
   (or (type-arithmeticp type)
       (type-case type :pointer))
   :hooks (:fix))
@@ -364,7 +364,7 @@
 
 (define type-aggregatep ((type typep))
   :returns (yes/no booleanp)
-  :short "Check if a type is an aggregate type [C:6.2.5/21]."
+  :short "Check if a type is an aggregate type [C17:6.2.5/21]."
   (or (type-case type :array)
       (type-case type :struct))
   :hooks (:fix)
@@ -403,7 +403,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This performs the conversion in [C:6.3.2.1/3].
+    "This performs the conversion in [C17:6.3.2.1/3].
      It leaves non-array types unchanged.")
    (xdoc::p
     "In our currently approximate type system,
@@ -421,7 +421,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This performs the conversion in [C:6.3.2.1/4].
+    "This performs the conversion in [C17:6.3.2.1/4].
      It leaves non-function types unchanged.")
    (xdoc::p
     "In our currently approximate type system,
@@ -436,7 +436,7 @@
 (define type-promote ((type typep) (ienv ienvp))
   :guard (type-arithmeticp type)
   :returns (new-type typep)
-  :short "Perform integer promotions on an arithmetic type [C:6.3.1.1/2]."
+  :short "Perform integer promotions on an arithmetic type [C17:6.3.1.1/2]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -457,7 +457,7 @@
     "The rank of an enumerated type (which is an integer type)
      is implementation-defined,
      and could even vary based on the program,
-     as mentioned in footnote 131 of [C:6.7.2.2/4].
+     as mentioned in footnote 131 of [C17:6.7.2.2/4].
      Thus, for now we promote the (one) enumerated type to unknown."))
   (type-case
    type
@@ -492,7 +492,7 @@
               (type-promotedp type2))
   :returns (new-type typep)
   :short "Convert two promoted signed integer types to their common type,
-          according to the usual arithmetic conversions [C:6.3.1.8]."
+          according to the usual arithmetic conversions [C17:6.3.1.8]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -519,7 +519,7 @@
               (type-promotedp type2))
   :returns (new-type typep)
   :short "Convert two promoted unsigned integer types to their common type,
-          according to the usual arithmetic conversions [C:6.3.1.8]."
+          according to the usual arithmetic conversions [C17:6.3.1.8]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -550,7 +550,7 @@
   :short "Convert a promoted signed integer type
           and a promoted unsigned integer type
           to their common type,
-          according to the usual arithmetic conversions [C:6.3.1.8]."
+          according to the usual arithmetic conversions [C17:6.3.1.8]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -612,7 +612,7 @@
               (type-arithmeticp type2))
   :returns (new-type typep)
   :short "Perform the usual arithmetic conversions on two arithmetic types
-          [C:6.3.1.8]."
+          [C17:6.3.1.8]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -626,7 +626,7 @@
    (xdoc::p
     "If at least one type is @('long double _Complex'),
      the result is @('long double _Complex');
-     note that [C:6.3.1.8] talks about a corresponding real type,
+     note that [C17:6.3.1.8] talks about a corresponding real type,
      but adds that the result is complex if at least one operand is.
      Otherwise, if at least one type is @('double _Complex'),
      the result is @('double _Complex'),
@@ -639,7 +639,7 @@
    (xdoc::p
     "Otherwise, none of the types is floating,
      and we apply the integer promotions to both types.
-     Then we apply the remaining rules, for integer types, in [C:6.3.1.8],
+     Then we apply the remaining rules, for integer types, in [C17:6.3.1.8],
      via separate functions (see their documentation)."))
   (cond
    ((or (type-case type1 :ldoublec)
@@ -705,7 +705,7 @@
   (xdoc::topstring
    (xdoc::p
     "There are three kinds of linkages: external, internal, and none
-     [C:6.2.2/1]."))
+     [C17:6.2.2/1]."))
   (:external ())
   (:internal ())
   (:none ())
@@ -736,7 +736,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This represents a storage duration [C:6.2.4],
+    "This represents a storage duration [C17:6.2.4],
      but only three kinds, excluding the allocated kind.
      We use the term `liftetime' because it is just one word,
      and also to avoid implying that there are only three storage durations,
@@ -779,7 +779,7 @@
   (xdoc::topstring
    (xdoc::p
     "This applies to objects and functions, which may be
-     undefined, defined, or tentatively defined [C:6.7/5] [C:6.9.2],
+     undefined, defined, or tentatively defined [C17:6.7/5] [C17:6.9.2],
      with the latter actually only applying to objects, not functions."))
   (:undefined ())
   (:tentative ())
@@ -793,17 +793,17 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Ordinary identifiers [C:6.2.3/1] denote
+    "Ordinary identifiers [C17:6.2.3/1] denote
      objects, functions, enumeration constants, and @('typedef') names;
      Ordinary identifiers form their own name space.
-     The other entities denoted by identifiers [C:6.2.1/1]
+     The other entities denoted by identifiers [C17:6.2.1/1]
      are in other name spaces, disjoint from the one of ordinary identifiers.")
    (xdoc::p
     "This fixtype formalizes the information about ordinary identifiers
      tracked by our current validator.
      Since our model of types includes both object and function types,
      the information for both objects and functions includes (different) types;
-     that information also includes the linkage [C:6.2.2],
+     that information also includes the linkage [C17:6.2.2],
      as well as definition status (see @(tsee valid-defstatus)).
      For enumeration constants and for @('typedef') names,
      for now we only track that they are
@@ -832,9 +832,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Identifiers have scopes [C:6.2.1], which the validator tracks.
+    "Identifiers have scopes [C17:6.2.1], which the validator tracks.
      In each scope, for each name space,
-     each identifier must have one meaning (if any) [C:6.2.1/2].
+     each identifier must have one meaning (if any) [C17:6.2.1/2].
      Thus, we use an alist from identifiers
      to the validation information about ordinary identifiers,
      to track each scope in the name space of ordinary identifiers."))
@@ -861,7 +861,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Identifiers have scopes [C:6.2.1], which the validator tracks.
+    "Identifiers have scopes [C17:6.2.1], which the validator tracks.
      This fixtype contains all the information about a scope,
      which currently only considers the name space of ordinary identifiers.
      We will extend this fixtype to contain additional information,
@@ -886,7 +886,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Scopes are treated in a stack-like manner [C:6.2.1].
+    "Scopes are treated in a stack-like manner [C17:6.2.1].
      Thus, we define a validation table as
      containing a list (i.e. stack) of scopes.
      The stack grows from right to left:
@@ -894,7 +894,7 @@
      in other words, in the nesting of scopes in the stack,
      the leftmost scope is the innermost,
      and the rightmost scope is the outermost
-     (i.e. the file scope [C:6.2.1/4].)")
+     (i.e. the file scope [C17:6.2.1/4].)")
    (xdoc::p
     "We wrap the list of scopes into a @(tsee fty::defprod)
      for abstraction and extensibility."))

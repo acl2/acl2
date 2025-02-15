@@ -460,7 +460,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This concept is described in [C:6.6],
+    "This concept is described in [C17:6.6],
      which does not provide a detailed definition,
      but here we define a notion that should be
      at least as strict as that (possibly stricter),

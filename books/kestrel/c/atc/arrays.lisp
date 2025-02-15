@@ -98,9 +98,9 @@
     "We provide a model of arrays of all the integer types
      supported in ATC's model of C,
      i.e. arrays of @('unsigned chars')s, arrays of @('int')s, etc.
-     [C:6.5.2.1/2] explains that array indexing @('a[i]') boils down to
+     [C17:6.5.2.1/2] explains that array indexing @('a[i]') boils down to
      addition between the pointer @('a') and the integer @('i'),
-     and [C:6.5.6/2] allows the integer to have any integer type.
+     and [C17:6.5.6/2] allows the integer to have any integer type.
      This means that, for each possible array type,
      any integer type is allowed as index.
      We define operations that take indices of type @(tsee cinteger),
@@ -120,11 +120,11 @@
     (xdoc::seetopic "representation-of-integers" "integers")
     ".")
    (xdoc::p
-    "[C:6.2.5/20] requires arrays to be non-empty,
+    "[C17:6.2.5/20] requires arrays to be non-empty,
      i.e. to contain at least one element,
      i.e. to have positive length.
      As noted above, arrays are indexed via integers.
-     [C] only provides minimum requirements for the sizes of integer types,
+     [C17] only provides minimum requirements for the sizes of integer types,
      not maximum requirements:
      other than practical considerations,
      nothing, mathematically, prevents some integer types

@@ -197,7 +197,7 @@
   :guard (and (value-integerp val)
               (type-nonchar-integerp type))
   :returns (newval value-resultp)
-  :short "Convert an integer value to an integer type [C:6.3.1.3]."
+  :short "Convert an integer value to an integer type [C17:6.3.1.3]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -205,9 +205,9 @@
      and we attempt to contruct an integer value of the new type from it.
      If the new type is unsigned,
      the mathematical integer is reduced
-     modulo one plus the maximum value of the unsigned type [C:6.3.1.3/2];
+     modulo one plus the maximum value of the unsigned type [C17:6.3.1.3/2];
      this always works, i.e. no error is ever returned.
-     If the new type is signed, there are two cases [C:6.3.1.3/3]:
+     If the new type is signed, there are two cases [C17:6.3.1.3/3]:
      if the mathematical integer fits in the type,
      we return a value of that type with that integer;
      otherwise, we return an error.")
@@ -446,7 +446,7 @@
                          (("Goal"
                            :in-theory
                            (enable promote-value-not-error-lemma))))
-  :short "Apply the integer promotions to a value [C:6.3.1.1/2]."
+  :short "Apply the integer promotions to a value [C17:6.3.1.1/2]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -534,7 +534,7 @@
   :returns (mv (new-val1 valuep)
                (new-val2 valuep))
   :short "Apply the usual arithmetic conversions to two arithmetic values
-          [C:6.3.1.8]."
+          [C17:6.3.1.8]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -677,22 +677,22 @@
     "Operations on unsigned integers are always well-defined,
      because if the exact mathematical result does not fit in the type,
      it is reduced modulo one plus the maximum integer of the type
-     [C:6.2.5/9].
+     [C17:6.2.5/9].
      In contrast, operations on signed integers are not necessarily well-defined
-     when the exact mathematical result does not fit in the type [C:6.5/5].
-     [C] could be clearer on this point,
+     when the exact mathematical result does not fit in the type [C17:6.5/5].
+     [C17] could be clearer on this point,
      but it seems that it allows implementations that silently wrap around
      as well as implementations that trap on overflow,
-     as suggested by the example in [C:5.1.2.3//15],
-     as well as by the wording in [C:H.2.2/1].
-     Note also that [C:3.4.3] says that integer overflow is
+     as suggested by the example in [C17:5.1.2.3//15],
+     as well as by the wording in [C17:H.2.2/1].
+     Note also that [C17:3.4.3] says that integer overflow is
      an example of undefined behavior,
      but this should be taken to mean signed integer overflow,
-     given that [C:6.2.5/9] says that unsigned operations do not overflow
+     given that [C17:6.2.5/9] says that unsigned operations do not overflow
      (due to the modular reduction mentioned above).
      So for now we regard as an error
      the situation of a signed result that does not fit in the type,
-     given that [C] does not prescribe what should happen in this case;
+     given that [C17] does not prescribe what should happen in this case;
      in the future, we may extend our model with a parameterization
      over the specifics of how this situation is handled.")
    (xdoc::p
@@ -703,7 +703,7 @@
      This ACL2 function serves to accomplish the last step.
      The type of the result,
      which is also the type of the operand(s)
-     (after the usual arithmetic conversions [C:6.3.1.8] for binary operations),
+     (after the usual arithmetic conversions [C17:6.3.1.8] for binary operations),
      is passed as argument to this ACL2 function,
      along with the mathematical integer of the result.
      We return a value or an error,
@@ -721,7 +721,7 @@
      or silently wrap around,
      or cause a trap (traps may have to be modeled explicitly).
      Since integer conversions are described separately
-     from other integer operations in [C],
+     from other integer operations in [C17],
      the behavior of integer conversions and other integer operations
      could be parameterized differently."))
   (b* ((mathint (ifix mathint)))
@@ -739,7 +739,7 @@
   :guard (and (value-integerp val)
               (value-promoted-arithmeticp val))
   :returns (resval value-resultp)
-  :short "Apply unary @('+') to an integer value [C:6.5.3.3/2]."
+  :short "Apply unary @('+') to an integer value [C17:6.5.3.3/2]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -760,7 +760,7 @@
   :guard (and (value-integerp val)
               (value-promoted-arithmeticp val))
   :returns (resval value-resultp)
-  :short "Apply unary @('-') to an integer value [C:6.5.3.3/3]."
+  :short "Apply unary @('-') to an integer value [C17:6.5.3.3/3]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -768,7 +768,7 @@
      the value has been already promoted,
      so we put that restriction in the guard.")
    (xdoc::p
-    "The type of the result is the (promoted) type of the operand [C:6.5.3.3/3],
+    "The type of the result is the (promoted) type of the operand [C17:6.5.3.3/3],
      so it is the same type as the input value of this ACL2 function.
      We use @(tsee result-integer-value) to return the resulting value,
      or an error, as documented in that function."))
@@ -785,7 +785,7 @@
   :guard (and (value-integerp val)
               (value-promoted-arithmeticp val))
   :returns (resval value-resultp)
-  :short "Apply @('~') to an integer value [C:6.5.3.3/4]."
+  :short "Apply @('~') to an integer value [C17:6.5.3.3/4]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -794,7 +794,7 @@
      so we put that restriction in the guard.")
    (xdoc::p
     "The result is obtained by complementing each bit of the operand
-     [C:6.5.3.3/4].
+     [C17:6.5.3.3/4].
      Thus, the result must have the same type as the operand.")
    (xdoc::p
     "We calculate the result
@@ -870,7 +870,7 @@
 (define lognot-integer-value ((val valuep))
   :guard (value-integerp val)
   :returns (resval valuep)
-  :short "Apply @('!') to an integer value [C:6.5.3.3/5]."
+  :short "Apply @('!') to an integer value [C17:6.5.3.3/5]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -893,7 +893,7 @@
               (equal (type-of-value val1)
                      (type-of-value val2)))
   :returns (resval value-resultp)
-  :short "Apply binary @('*') to integer values [C:6.5.5/4]."
+  :short "Apply binary @('*') to integer values [C17:6.5.5/4]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -902,7 +902,7 @@
      so they are promoted arithmetic value with the same type.
      We put this condition in the guard.")
    (xdoc::p
-    "The type of the result is the same as the operands [C:6.3.1.8/1].
+    "The type of the result is the same as the operands [C17:6.3.1.8/1].
      We use @(tsee result-integer-value) to return the resulting value,
      or an error, as documented in that function."))
   (b* ((mathint1 (value-integer->get val1))
@@ -925,7 +925,7 @@
               (equal (type-of-value val1)
                      (type-of-value val2)))
   :returns (resval value-resultp)
-  :short "Apply @('/') to integer values [C:6.5.5/5] [C:6.5.5/6]."
+  :short "Apply @('/') to integer values [C17:6.5.5/5] [C17:6.5.5/6]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -934,14 +934,14 @@
      so they are promoted arithmetic value with the same type.
      We put this condition in the guard.")
    (xdoc::p
-    "The type of the result is the same as the operands [C:6.3.1.8/1].
+    "The type of the result is the same as the operands [C17:6.3.1.8/1].
      We use @(tsee result-integer-value) to return the resulting value,
      or an error, as documented in that function.")
    (xdoc::p
-    "It is an error if the divisor is 0 [C:6.5.5/5].")
+    "It is an error if the divisor is 0 [C17:6.5.5/5].")
    (xdoc::p
     "We use @(tsee truncate) because C integer division
-     truncates towards zero [C:6.5.5/6]."))
+     truncates towards zero [C17:6.5.5/6]."))
   (b* ((mathint1 (value-integer->get val1))
        (mathint2 (value-integer->get val2))
        ((when (equal mathint2 0)) (error :division-by-zero))
@@ -963,7 +963,7 @@
               (equal (type-of-value val1)
                      (type-of-value val2)))
   :returns (resval value-resultp)
-  :short "Apply @('%') to integer values [C:6.5.5/5] [C:6.5.5/6]."
+  :short "Apply @('%') to integer values [C17:6.5.5/5] [C17:6.5.5/6]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -972,14 +972,14 @@
      so they are promoted arithmetic value with the same type.
      We put this condition in the guard.")
    (xdoc::p
-    "The type of the result is the same as the operands [C:6.3.1.8/1].
+    "The type of the result is the same as the operands [C17:6.3.1.8/1].
      We use @(tsee result-integer-value) to return the resulting value,
      or an error, as documented in that function.")
    (xdoc::p
-    "It is an error if the divisor is 0 [C:6.5.5/5].")
+    "It is an error if the divisor is 0 [C17:6.5.5/5].")
    (xdoc::p
     "We use @(tsee rem) because it matches the use of @(tsee truncate),
-     in terms of the relationship between quotient and remainder [C:6.5.5/6],
+     in terms of the relationship between quotient and remainder [C17:6.5.5/6],
      in the definition of @('/') in @(tsee rem-integer-values)."))
   (b* ((mathint1 (value-integer->get val1))
        (mathint2 (value-integer->get val2))
@@ -1003,7 +1003,7 @@
               (equal (type-of-value val1)
                      (type-of-value val2)))
   :returns (resval value-resultp)
-  :short "Apply binary @('+') to integer values [C:6.5.6/5]."
+  :short "Apply binary @('+') to integer values [C17:6.5.6/5]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1012,7 +1012,7 @@
      so they are promoted arithmetic value with the same type.
      We put this condition in the guard.")
    (xdoc::p
-    "The type of the result is the same as the operands [C:6.3.1.8/1].
+    "The type of the result is the same as the operands [C17:6.3.1.8/1].
      We use @(tsee result-integer-value) to return the resulting value,
      or an error, as documented in that function."))
   (b* ((mathint1 (value-integer->get val1))
@@ -1035,7 +1035,7 @@
               (equal (type-of-value val1)
                      (type-of-value val2)))
   :returns (resval value-resultp)
-  :short "Apply binary @('-') to integer values [C:6.5.6/6]."
+  :short "Apply binary @('-') to integer values [C17:6.5.6/6]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1044,7 +1044,7 @@
      so they are promoted arithmetic value with the same type.
      We put this condition in the guard.")
    (xdoc::p
-    "The type of the result is the same as the operands [C:6.3.1.8/1].
+    "The type of the result is the same as the operands [C17:6.3.1.8/1].
      We use @(tsee result-integer-value) to return the resulting value,
      or an error, as documented in that function."))
   (b* ((mathint1 (value-integer->get val1))
@@ -1065,7 +1065,7 @@
               (value-promoted-arithmeticp val1)
               (value-promoted-arithmeticp val2))
   :returns (resval value-resultp)
-  :short "Apply @('<<') to integer values [C:6.5.7/3] [C:6.5.7/4]."
+  :short "Apply @('<<') to integer values [C17:6.5.7/3] [C17:6.5.7/4]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1073,7 +1073,7 @@
      the values have already been subjected to the arithmetic promotions.
      We put this condition in the guard.")
    (xdoc::p
-    "The type of the result is the same as the left operand [C:6.5.7/3].
+    "The type of the result is the same as the left operand [C17:6.5.7/3].
      We use @(tsee result-integer-value) to return the resulting value,
      or an error, as documented in that function.
      The left operand must be non-negative,
@@ -1109,7 +1109,7 @@
               (value-promoted-arithmeticp val1)
               (value-promoted-arithmeticp val2))
   :returns (resval value-resultp)
-  :short "Apply @('>>') to integer values [C:6.5.7/3] [C:6.5.7/5]."
+  :short "Apply @('>>') to integer values [C17:6.5.7/3] [C17:6.5.7/5]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1117,7 +1117,7 @@
      the values have already been subjected to the arithmetic promotions.
      We put this condition in the guard.")
    (xdoc::p
-    "The type of the result is the same as the left operand [C:6.5.7/3].
+    "The type of the result is the same as the left operand [C17:6.5.7/3].
      We use @(tsee result-integer-value) to return the resulting value,
      or an error, as documented in that function.
      The left operand must be non-negative,
@@ -1154,7 +1154,7 @@
               (equal (type-of-value val1)
                      (type-of-value val2)))
   :returns (resval valuep)
-  :short "Apply @('<') to integer values [C:6.5.8/6]."
+  :short "Apply @('<') to integer values [C17:6.5.8/6]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1183,7 +1183,7 @@
               (equal (type-of-value val1)
                      (type-of-value val2)))
   :returns (resval valuep)
-  :short "Apply @('>') to integer values [C:6.5.8/6]."
+  :short "Apply @('>') to integer values [C17:6.5.8/6]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1212,7 +1212,7 @@
               (equal (type-of-value val1)
                      (type-of-value val2)))
   :returns (resval valuep)
-  :short "Apply @('<=') to integer values [C:6.5.8/6]."
+  :short "Apply @('<=') to integer values [C17:6.5.8/6]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1241,7 +1241,7 @@
               (equal (type-of-value val1)
                      (type-of-value val2)))
   :returns (resval valuep)
-  :short "Apply @('>=') to integer values [C:6.5.8/6]."
+  :short "Apply @('>=') to integer values [C17:6.5.8/6]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1270,7 +1270,7 @@
               (equal (type-of-value val1)
                      (type-of-value val2)))
   :returns (resval valuep)
-  :short "Apply @('==') to integer values [C:6.5.9/3]."
+  :short "Apply @('==') to integer values [C17:6.5.9/3]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1299,7 +1299,7 @@
               (equal (type-of-value val1)
                      (type-of-value val2)))
   :returns (resval valuep)
-  :short "Apply @('!=') to integer values [C:6.5.9/3]."
+  :short "Apply @('!=') to integer values [C17:6.5.9/3]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1328,7 +1328,7 @@
               (equal (type-of-value val1)
                      (type-of-value val2)))
   :returns (resval valuep)
-  :short "Apply @('&') to integer values [C:6.5.10/4]."
+  :short "Apply @('&') to integer values [C17:6.5.10/4]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1337,7 +1337,7 @@
      so they are promoted arithmetic value with the same type.
      We put this condition in the guard.")
    (xdoc::p
-    "The type of the result is the same as the operands [C:6.3.1.8/1].
+    "The type of the result is the same as the operands [C17:6.3.1.8/1].
      This operation is always well-defined,
      so it always returns a value (never an error).")
    (xdoc::p
@@ -1391,7 +1391,7 @@
               (equal (type-of-value val1)
                      (type-of-value val2)))
   :returns (resval valuep)
-  :short "Apply @('^') to integer values [C:6.5.11/4]."
+  :short "Apply @('^') to integer values [C17:6.5.11/4]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1400,7 +1400,7 @@
      so they are promoted arithmetic value with the same type.
      We put this condition in the guard.")
    (xdoc::p
-    "The type of the result is the same as the operands [C:6.3.1.8/1].
+    "The type of the result is the same as the operands [C17:6.3.1.8/1].
      This operation is always well-defined,
      so it always returns a value (never an error).")
    (xdoc::p
@@ -1444,7 +1444,7 @@
               (equal (type-of-value val1)
                      (type-of-value val2)))
   :returns (resval valuep)
-  :short "Apply @('|') to integer values [C:6.5.12/4]."
+  :short "Apply @('|') to integer values [C17:6.5.12/4]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1453,7 +1453,7 @@
      so they are promoted arithmetic value with the same type.
      We put this condition in the guard.")
    (xdoc::p
-    "The type of the result is the same as the operands [C:6.3.1.8/1].
+    "The type of the result is the same as the operands [C17:6.3.1.8/1].
      This operation is always well-defined,
      so it always returns a value (never an error).")
    (xdoc::p

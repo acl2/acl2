@@ -841,7 +841,7 @@
      Note that functions to generate assignment expressions
      are also under @(see atc-statement-generation),
      since they are top-level expressions
-     (in C terminology, they are full expressions [C:6.8/4]).")
+     (in C terminology, they are full expressions [C17:6.8/4]).")
    (xdoc::p
     "We also return the C type of the expression,
      the transformed term,

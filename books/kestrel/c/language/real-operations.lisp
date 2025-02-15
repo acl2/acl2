@@ -32,7 +32,7 @@
   :guard (and (value-realp val1)
               (value-realp val2))
   :returns (resval valuep)
-  :short "Apply @('<') to real values [C:6.5.8/3] [C:6.5.8/6]."
+  :short "Apply @('<') to real values [C17:6.5.8/3] [C17:6.5.8/6]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -55,7 +55,7 @@
   :guard (and (value-realp val1)
               (value-realp val2))
   :returns (resval valuep)
-  :short "Apply @('>') to real values [C:6.5.8/3] [C:6.5.8/6]."
+  :short "Apply @('>') to real values [C17:6.5.8/3] [C17:6.5.8/6]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -78,7 +78,7 @@
   :guard (and (value-realp val1)
               (value-realp val2))
   :returns (resval valuep)
-  :short "Apply @('<=') to real values [C:6.5.8/3] [C:6.5.8/6]."
+  :short "Apply @('<=') to real values [C17:6.5.8/3] [C17:6.5.8/6]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -101,7 +101,7 @@
   :guard (and (value-realp val1)
               (value-realp val2))
   :returns (resval valuep)
-  :short "Apply @('>=') to real values [C:6.5.8/3] [C:6.5.8/6]."
+  :short "Apply @('>=') to real values [C17:6.5.8/3] [C17:6.5.8/6]."
   :long
   (xdoc::topstring
    (xdoc::p

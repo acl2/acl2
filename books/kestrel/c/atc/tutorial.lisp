@@ -190,7 +190,7 @@
   (xdoc::ul
    (xdoc::li
     "The generated C code satisfies
-     the compile-time constraints prescribed by [C].
+     the compile-time constraints prescribed by [C17].
      In other words, the C code is compilable by compliant compilers.
      This is expressed via a "
     (xdoc::seetopic "static-semantics" "formal static semantics of C")
@@ -224,7 +224,7 @@
   (atc-tutorial-section "C @('int') Type and Operations")
 
   (xdoc::p
-   "According to [C:6.2.5/5] and [C:5.2.4.2.1/1],
+   "According to [C17:6.2.5/5] and [C17:5.2.4.2.1/1],
     the ``plain'' @('int') type consists of
     signed integers in a range from -32767 or less to +32767 or more
     (both numbers are inclusive).
@@ -233,12 +233,12 @@
   (xdoc::p
    "The (C, not ACL2) representation of @('int') values in memory,
     which may be visible to the C code via access as @('unsigned char[]')
-    (as allowed by [C]),
+    (as allowed by [C17]),
     consists of a sign bit, some value bits, and optionally some padding bits
-    [C:6.2.6.2/2].
+    [C17:6.2.6.2/2].
     The signed representation may be
     two's complement, ones' complement, or sign and magnitude
-    [C:6.2.6.2/2].
+    [C17:6.2.6.2/2].
     All these choices are implementation-dependent,
     and determine the range of @('int') values,
     subject to the minimum range requirement stated above.")
@@ -247,12 +247,12 @@
    "Two's complement representations without padding bits seem the most common,
     along with 8-bit bytes
     (the exact number of bits in a byte is also implementation-dependent
-    [C:5.2.4.2.1/1] [C:6.2.6.1/3]).
+    [C17:5.2.4.2.1/1] [C17:6.2.6.1/3]).
     Under these assumptions, @('int') values must consist of at least 16 bits,
     resulting in at least the range from -32768 to +32767.
-    [C:6.2.6.1/4] requires @('int') to take a whole number of bytes,
+    [C17:6.2.6.1/4] requires @('int') to take a whole number of bytes,
     and thus the possible bit sizes are 16, 24, 32, 40, 48, etc.
-    [C:6.2.5/5] states that the size is
+    [C17:6.2.5/5] states that the size is
     the natural one suggested by the architecture of the execution environment.
     For modern Macs and PCs, experiments suggest this to be 32 bits
     (the experiment consists in printing @('sizeof(int)') in a C program),
@@ -267,7 +267,7 @@
     but in this tutorial page we focus on the @('int') type.")
 
   (xdoc::p
-   "C provides the following unary and binary @('int') operations [C:6.5]:")
+   "C provides the following unary and binary @('int') operations [C17:6.5]:")
   (xdoc::ul
    (xdoc::li "@('+') (unary) &mdash; no value change, but mirrors unary @('-')")
    (xdoc::li "@('-') (unary) &mdash; arithmetic negation")
@@ -308,14 +308,14 @@
     as the @('int') values 0 (for false) and 1 (for true),
     and thus the relational and equality operations,
     as well as the logical conjunction and disjunction operations,
-    all return @('int') results [C:6.5.13] [C:6.5.14].")
+    all return @('int') results [C17:6.5.13] [C17:6.5.14].")
 
   (xdoc::p
    "Some of the above operations yield well-defined results,
-    specified by [C], only under certain conditions.
+    specified by [C17], only under certain conditions.
     For instance, the addition operation @('+') on @('int') operands
     is well-defined only if the exact result is representable as an @('int')
-    [C:6.5/5].
+    [C17:6.5/5].
     An implementation may actually add definedness to these operations,
     by relying on the (well-defined) behavior of the underlying hardware,
     e.g. by keeping the low bits of the exact result that fit @('int')
@@ -367,7 +367,7 @@
     that specifies the size of @('int').
     We may also further generalize the representation,
     again via a static parameterization,
-    to cover more of the options allowed by [C].")
+    to cover more of the options allowed by [C17].")
 
   (xdoc::p
    "We also provide ACL2 functions
@@ -408,7 +408,7 @@
   (xdoc::p
    "Some of these functions have additional guard conditions
     that capture the conditions under which
-    the result is well-defined according to the [C].
+    the result is well-defined according to the [C17].
     For instance, the guard of @(tsee add-sint-sint) includes the condition that
     the exact integer result fits in the range of the ACL2 integers
     that are wrapped to form @(tsee sint) values.
@@ -430,7 +430,7 @@
 
   (xdoc::p
    "Besides unary and binary @('int') operations,
-    C includes @('int') constants [C:6.4.4.1]
+    C includes @('int') constants [C17:6.4.4.1]
     (more precisely, integer constants, some of which have type @('int')),
     which may be regarded as (a large number of nullary) @('int') operations.
     Our ACL2 representation in community book
@@ -642,7 +642,7 @@
     are guard-verified (which implies that they must be in logic mode).
     This ensures that the ACL2 functions that represent C operations
     are always applied to values whose result is well-defined
-    according to [C].
+    according to [C17].
     It also ensures that @(tsee sint-dec-const) is always applied
     to a natural number representable as an @('int').")
 
@@ -650,11 +650,11 @@
    "However, this generally requires guards to have additional conditions,
     besides the @(tsee sintp) conjunts discussed above.
     It should be clear that a C function like @('f')
-    does not yield a well-defined [C] result
+    does not yield a well-defined [C17] result
     for every possible value of its arguments.
     For instance, sufficiently large values of @('x') and @('y')
     would make the result of @('x + y') not representable as @('int'),
-    and thus not well-defined according to [C].")
+    and thus not well-defined according to [C17].")
 
   (xdoc::p
    "This should not be surprising.
@@ -849,7 +849,7 @@
     which and how C identifiers are represented in ACL2.")
 
   (xdoc::p
-   "[C:5.2.1] describes two (possibly identical) character sets:
+   "[C17:5.2.1] describes two (possibly identical) character sets:
     one in which the C code is written
     (the source character set),
     and one whose character values are manipulated by the C code
@@ -858,7 +858,7 @@
 
   (xdoc::p
    "The source and execution character sets may be anything,
-    so long as they satisfy the requirements stated in [C:5.2.1];
+    so long as they satisfy the requirements stated in [C17:5.2.1];
     they do not have to be ASCII or Unicode or anything specific.
     However, they are required to contain certain characters
     that have obvious ASCII counterparts.
@@ -950,8 +950,8 @@
     to avoid guards that constrain the ranges of the function parameter.)")
 
   (xdoc::p
-   "[C:6.2.1] disallows forward references among function definitions.
-    Specifically, [C:6.2.1/4] says that an external declaration
+   "[C17:6.2.1] disallows forward references among function definitions.
+    Specifically, [C17:6.2.1/4] says that an external declaration
     (i.e. one that is not inside any block),
     which includes function definitions,
     has a file scope that terminates at the end of the file;
@@ -1017,7 +1017,7 @@
     which must be present.
     The file should have extension @('.c'),
     but ATC does not currently enforce that.
-    In technical terms, the generated C file is a translation unit [C:5.1.1.1].
+    In technical terms, the generated C file is a translation unit [C17:5.1.1.1].
     More precisely, the file is a source file,
     which is read (by a C implementation, e.g. compiler)
     into a preprocessing translation unit,
@@ -1362,9 +1362,9 @@
   (xdoc::p
    "In C, assignments are expressions that may occur at any level,
     i.e. assignments may be subexpressions of other expressions at any depth.
-    ATC only supports assignments that are full expressions [C:6.8/4],
+    ATC only supports assignments that are full expressions [C17:6.8/4],
     i.e. expressions at the top level, not subexpressions of other expressions.
-    Specifically, ATC supports expression statements [C:6.8.3]
+    Specifically, ATC supports expression statements [C17:6.8.3]
     whose expression is an assignment:
     this way, assignments are treated as if they were statements,
     keeping most expressions pure (i.e. side-effect-free)
