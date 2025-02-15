@@ -331,6 +331,7 @@
 ;;     read-byte-of-logext
 ;;     ))
 
+;todo: some are only needed with the new normal forms
 (defun read-rules ()
   (declare (xargs :guard t))
   '(unsigned-byte-p-of-read
@@ -363,6 +364,7 @@
     svblt-of-read-trim-arg2
     svblt-of-read-trim-arg3))
 
+;todo: some are only needed with the new normal forms
 (defund write-rules ()
   (declare (xargs :guard t))
   '(xr-of-write-when-not-mem
@@ -1690,8 +1692,8 @@
 (defun lifter-rules-common ()
   (declare (xargs :guard t))
   (append (symbolic-execution-rules)
-          (read-over-write-rules)
-          (shadowed-write-rules) ; requires the x86 rewriter
+          (read-over-write-rules) ; todo: don't use all these
+          (shadowed-write-rules) ; requires the x86 rewriter ; todo: not needed for 32-bit?
           (acl2::base-rules)
           (acl2::type-rules)
           ;; (acl2::logext-rules) ;;caused problems ;;todo: there are also logext rules below
@@ -5003,35 +5005,16 @@
 ;; the loop-lifter expects state terms built from XW, WRITE, and SET-FLAG.
 (defun loop-lifter-rules32 ()
   (declare (xargs :guard t))
-  (set-difference-eq
-   (append (lifter-rules32)
-           (old-normal-form-rules))
-   ;; We remove the rules that put things into the new normal form:
-   ;; todo: move these rule-lists:  or use new-normal-form-rules-common here?
-   nil
-   ;; '(xr-becomes-undef
-   ;;   !undef-becomes-set-undef
-   ;;   xw-becomes-set-undef
-   ;;   xr-becomes-ms
-   ;;   xw-becomes-set-ms
-   ;;   !ms-becomes-set-ms
-   ;;   xr-becomes-fault
-   ;;   xw-becomes-set-fault
-   ;;   !fault-becomes-set-fault)
-   ))
+  (append (lifter-rules32)
+          (old-normal-form-rules)))
 
 ;; Can't really use the new, nicer normal forms for readers and writers, since
 ;; the loop-lifter expects state terms built from XW, WRITE, and SET-FLAG.
 (defun loop-lifter-rules64 ()
   (declare (xargs :guard t))
-  (set-difference-eq
-   (append (lifter-rules64)
-           (old-normal-form-rules)
-           ;;(new-normal-form-rules64); todo, but we'd have to change the loop-lifter significantly
-           )
-   ;; we don't use these usual normal forms:
-   nil ; (new-normal-form-rules-common)
-   ))
+  (append (lifter-rules64)
+          (old-normal-form-rules) ;;(new-normal-form-rules64); todo, but we'd have to change the loop-lifter significantly
+          ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
