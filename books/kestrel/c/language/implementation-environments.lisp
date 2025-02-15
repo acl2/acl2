@@ -14,6 +14,7 @@
 (include-book "centaur/fty/top" :dir :system)
 
 (local (include-book "arithmetic-3/top" :dir :system))
+(local (include-book "kestrel/utilities/nfix" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -153,13 +154,78 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::deftagsum uinteger-bit-role
+  :short "Fixtype of roles of integer bits in unsigned integers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Each bit in the object representation of unsigned integers [C:6.2.6.2/1]
+     is either a value bit (representing a power of 2) or a padding bit.
+     This fixtype represents these choices,
+     where the natural number in the @(':value') case
+     is the exponent @($i$) of the power @($2^i$).")
+   (xdoc::p
+    "This is similar to @(tsee sinteger-bit-role),
+     without the choice of a sign bit."))
+  (:value ((exp nat)))
+  (:padding ())
+  :pred uinteger-bit-rolep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist uinteger-bit-role-list
+  :short "Fixtype of lists of roles of integer bits in unsigned integers."
+  :elt-type uinteger-bit-role
+  :true-listp t
+  :elementp-of-nil nil
+  :pred uinteger-bit-role-listp
+  :prepwork ((local (in-theory (enable nfix)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deftagsum sinteger-bit-role
+  :short "Fixtype of roles of integer bits in signed integers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Each bit in the object representation of signed integers [C:6.2.6.2/2]
+     is either a value bit (representing a power of 2)
+     or a padding bit
+     or a sign bit.
+     This fixtype represents these choices,
+     where the natural number in the @(':value') case
+     is the exponent @($i$) of the power @($2^i$).")
+   (xdoc::p
+    "This is similar to @(tsee uinteger-bit-role),
+     with the added choice of a sign bit."))
+  (:sign ())
+  (:value ((exp nat)))
+  (:padding ())
+  :pred sinteger-bit-rolep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist sinteger-bit-role-list
+  :short "Fixtype of lists of roles of integer bits in signed integers."
+  :elt-type sinteger-bit-role
+  :true-listp t
+  :elementp-of-nil nil
+  :pred sinteger-bit-role-listp
+  :prepwork ((local (in-theory (enable nfix)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod ienv
   :short "Fixtype of implementation environments."
   :long
   (xdoc::topstring
    (xdoc::p
     "For now this only contains a few components,
-     but we plan to add more components."))
+     but we plan to add more components.
+     In particular, we plan to add components for
+     the formats of other integer types,
+     which will make use of
+     @(tsee uinteger-bit-role) and @(tsee sinteger-bit-role)."))
   ((uchar-format uchar-format)
    (schar-format schar-format)
    (char-format char-format))
