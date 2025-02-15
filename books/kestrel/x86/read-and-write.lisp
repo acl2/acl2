@@ -2719,13 +2719,36 @@
                            (;X86ISA::!MEMI$INLINE
                             )))))
 
+(defthm write-of-write-byte-huge
+  (implies (and (<= (expt 2 48) n) ; every address gets written!
+                (integerp n)
+                (integerp addr)
+                (integerp addr2))
+           (equal (write n addr val1 (write-byte addr2 val2 x86))
+                  (write n addr val1 x86)))
+  :hints (("Goal"
+           :in-theory (enable write))))
+
+(defthm write-of-write-huge
+  (implies (and (<= (expt 2 48) n) ; every address gets written!
+                (integerp n)
+                (integerp addr)
+                (integerp addr2)
+                )
+           (equal (write n addr val1 (write n2 addr2 val2 x86))
+                  (write n addr val1 x86)))
+  :hints (("Goal" :induct  (write n2 addr2 val2 x86)
+           :in-theory (enable write write-of-write-byte))))
+
 (defthm write-of-write-same
-  (implies (and (unsigned-byte-p 48 n) ; drop?
+  (implies (and (unsigned-byte-p 48 n) ; drop, using write-of-write-huge?
                 )
            (equal (write n addr val1 (write n addr val2 x86))
                   (write n addr val1 x86)))
   :hints (("Goal" :use (:instance write-of-write-same-helper (addr (ifix addr)))
            :in-theory (e/d (ifix) (write-of-write-same-helper)))))
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2955,7 +2978,7 @@
 (defthm read-of-write-of-write-irrel-inner
   (implies (and (<= n2 (bvminus 48 addr1 addr2))
                 (<= n1 (bvminus 48 addr2 addr1))
-                (<= outer-n (expt 2 48)) ; todo: if hude, the inner write is also irrel
+                (<= outer-n (expt 2 48)) ; todo: if huge, the inner write is also irrel
                 (integerp outer-n)
                 ;(< n2 (expt 2 48))
                 ;(< n1 (expt 2 48))
