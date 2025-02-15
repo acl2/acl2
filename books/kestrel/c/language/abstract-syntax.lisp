@@ -860,7 +860,7 @@
      where the latter models a list between curly braces
      of initializers consisting of single expressions.
      Note that, since currently we do not model the comma operator,
-     our use of any expressions here
+     our use of any kind of expressions here
      matches the use of assignment expressions in [C]."))
   (:single ((get expr)))
   (:list ((get expr-list)))

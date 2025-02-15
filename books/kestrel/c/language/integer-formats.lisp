@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -34,7 +34,7 @@
     "[C] provides constraints on the formats of the integer types [C:6.2.5],
      but not a complete definition of the formats (unlike Java).
      A general formalization of C should be parameterized over these formats;
-     we plan to do that in our formalization of C.
+     we plan to do that in this formalization of C.
      However, for now we define the formats, but we do so in a way that
      should make it easy to change and swap some aspects of the definitions.")
    (xdoc::p
@@ -58,14 +58,14 @@
      Given the above current choice of no padding bits,
      these numbers of bits have to be multiples of the number of bits in a byte,
      because those integers have to take a whole number of bytes.
-     Recall that each unsigned/signed integer type
-     takes the same storage as the corresponding signed/unsigned type
+     Recall that each signed integer type
+     takes the same storage as the corresponding unsigned integer type
      [C:6.2.5/6].")
    (xdoc::p
     "We prove some theorems about the nullary functions.
      We disable the definitions of the nullary functions,
      including executable counterparts.
-     This way, we minimize the dependencies from the exact definitions,
+     This way, we reduce the dependencies from the exact definitions,
      and we define the integer values, conversions, and operations
      as independently from the exact sizes as possible.
      Thus, it may not be difficult to replace this file

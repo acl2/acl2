@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -42,7 +42,7 @@
      We also include top-level object designators for global variables,
      i.e. objects declared with file scope in static storage.
      We also include top-level object designators for local variables,
-     i.e. objects declarad with block scope in automatic storage.
+     i.e. objects declared with block scope in automatic storage.
      Then we allow object designators
      to include information that selects sub-objects of the top-level objects,
      and sub-sub-objects of those sub-objects,
@@ -51,10 +51,7 @@
      an identifier that is
      the name of a member sub-object of a structure super-object,
      or a natural number that is
-     the index of an element sub-object of an array super-object.")
-   (xdoc::p
-    "This should be eventually extended with
-     designators for objects in automatic storage (i.e. stack)."))
+     the index of an element sub-object of an array super-object."))
   :order-subtopics t
   :default-parent t)
 
