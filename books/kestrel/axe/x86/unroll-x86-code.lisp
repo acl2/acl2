@@ -504,7 +504,7 @@
                                  (if 64-bitp
                                      ;; needed to match the normal forms used during lifting:
                                      (new-normal-form-rules64)
-                                   nil ; todo: why not use (lifter-rules32-new)?
+                                   nil ; todo: why not use (new-normal-form-rules32)?
                                    )))
        ((mv erp assumption-rule-alist)
         (acl2::make-rule-alist assumption-rules (w state)))
