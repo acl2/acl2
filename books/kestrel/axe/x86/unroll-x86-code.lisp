@@ -1,7 +1,7 @@
 ; An unrolling lifter xfor x86 code (based on Axe)
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2024 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -218,7 +218,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; todo: more?
+;; These assumptions get removed during pruning (unlikely to help and lead to
+;; messages about non-known-boolean literals being dropped)
+;; TODO: Add more?
+;; TODO: Include IF?
 (defconst *non-stp-assumption-functions*
   '(canonical-address-p$inline
     program-at
@@ -227,7 +230,7 @@
     cr0bits-p$inline
     cr4bits-p$inline
     alignment-checking-enabled-p
-    ))
+    app-view))
 
 ;move
 ;; ; TODO: Errors about program-only code
@@ -641,6 +644,7 @@
                                                             base-var
                                                             (len (acl2::parsed-elf-bytes parsed-executable))
                                                             nil))
+                      ;; must be :code:
                       (mv nil (acons text-offset-term (len (acl2::get-elf-code parsed-executable)) nil)))))
                  ((when erp)
                   (er hard? 'unroll-x86-code-core "Error generating disjointnes assumptions for inputs: ~x0." erp)
