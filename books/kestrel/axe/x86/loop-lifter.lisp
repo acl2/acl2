@@ -1,7 +1,7 @@
 ; A lifter for x86 code, based on Axe, that can handle (some) code with loops
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2024 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -1549,6 +1549,7 @@
                                              one-rep-term
                                              state-var
                                              ;; assumptions
+                                             ;; todo; add the extra-rules, like we do above, or are they already there?
                                              (acl2::make-rule-alist! (set-difference-eq
                                                                        (append extra-rules (extra-loop-lifter-rules) lifter-rules)
                                                                        remove-rules)
@@ -1946,6 +1947,7 @@
         ((mv erp state-dag)
          (acl2::simplify-dag-x86 dag-to-run
                                  assumptions
+                                 ;; todo: can we do more of this just once?
                                  (acl2::make-rule-alist! (set-difference-eq
                                                            (append (extra-loop-lifter-rules)
                                                                    lifter-rules
@@ -2200,7 +2202,7 @@
                           :skip
                         (doublets-to-alist measures)))
        ;; these should ensure the normal forms are compatible with all the analysis done by this tool:
-       (lifter-rules (if (member-eq executable-type '(:pe-32 :mach-o-32))
+       (lifter-rules (if (member-eq executable-type '(:pe-32 :mach-o-32)) ; todo: what about elf32?
                          (loop-lifter-rules32)
                        (loop-lifter-rules64)))
        (32-bitp (member-eq executable-type *executable-types32*))
