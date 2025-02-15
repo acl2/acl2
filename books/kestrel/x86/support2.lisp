@@ -105,17 +105,7 @@
 ;;         (mv-nth 1 (RB n addr r-x x86)))
 ;;  :hints (("Goal" :in-theory (enable rb))))
 
-(defthm get-one-byte-prefix-array-code-of-if
-  (equal (x86isa::get-one-byte-prefix-array-code (if test b1 b2))
-         (if test
-             (x86isa::get-one-byte-prefix-array-code b1)
-           (x86isa::get-one-byte-prefix-array-code b2))))
 
-(defthm 64-bit-mode-one-byte-opcode-modr/m-p$inline-of-if
-  (equal (x86isa::64-bit-mode-one-byte-opcode-modr/m-p$inline (if test tp ep))
-         (if test
-             (x86isa::64-bit-mode-one-byte-opcode-modr/m-p$inline tp)
-             (x86isa::64-bit-mode-one-byte-opcode-modr/m-p$inline ep))))
 
 ;;todo: need to get the standard 32-bit assumptions gathered up:
 

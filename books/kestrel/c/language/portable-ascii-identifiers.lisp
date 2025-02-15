@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2024 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -47,7 +47,7 @@
    (xdoc::p
     "The rationale behind this notion is the following.")
    (xdoc::p
-    "[C:6.4.2] allows the following characters in identifiers:")
+    "[C17:6.4.2] allows the following characters in identifiers:")
    (xdoc::ol
     (xdoc::li
      "The ten numeric digits (but not in the starting position).")
@@ -68,14 +68,14 @@
      because they are non-ASCII Unicode characters,
      while the basic source character set
      maps naturally to ASCII Unicode characters;
-     we say `presumably' because [C] does not seem to explicitly prohibit
+     we say `presumably' because [C17] does not seem to explicitly prohibit
      the use of non-ASCII Unicode characters in the basic source character set
      (although it seems odd to do that).
      The characters in (4) may or may not be
      part of the basic source character set;
-     [C] imposes no constraints on them.")
+     [C17] imposes no constraints on them.")
    (xdoc::p
-    "Recall that [C] does not require the basic source character set
+    "Recall that [C17] does not require the basic source character set
      to consist of ASCII characters (see @(see source-character-set)).
      If it does consist of ASCII characters, then
      the characters in (1) and (2) above are ASCII,
@@ -99,7 +99,7 @@
     "This leads to our definition of portably ASCII identifiers,
      which consists of ASCII letters and digits and underscore,
      with the first character not a digit.
-     They must also be distinct from keywords [C:6.4.2.1/4]."))
+     They must also be distinct from keywords [C17:6.4.2.1/4]."))
   :order-subtopics t
   :default-parent t)
 

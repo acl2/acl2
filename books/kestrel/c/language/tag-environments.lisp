@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2024 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -50,9 +50,9 @@
      a list of member types (see @(see member-type)).
      This mirrors (the @(':struct') case of) @(tsee tag-declon).")
    (xdoc::p
-    "The members must have unique names [C:6.2.3].
-     There must be at least one member [C:6.2.5/20],
-     or two if the last one is a flexible array member [C:6.7.2.1/18].
+    "The members must have unique names [C17:6.2.3].
+     There must be at least one member [C17:6.2.5/20],
+     or two if the last one is a flexible array member [C17:6.7.2.1/18].
      Currently we do not capture these requirements in this fixtype."))
   (:struct ((members member-type-list)))
   (:union ())
@@ -100,7 +100,7 @@
     "A tag environment is a finite map
      from tags (identifiers)
      to tag information.
-     Since these tags form one name space [C:6.2.3],
+     Since these tags form one name space [C17:6.2.3],
      they must all be distinct,
      e.g. a structure and a union type cannot have the same tag."))
   :key-type ident

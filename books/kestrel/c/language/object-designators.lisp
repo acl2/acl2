@@ -1,11 +1,11 @@
 ; C Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -25,13 +25,13 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "In C, an object is a region of storage that contains a value [C:3.15].
+    "In C, an object is a region of storage that contains a value [C17:3.15].
      This notion of object is not in the sense of object-oriented programming
      (in fact, C is not an object-oriented programming language).
      Here we introduce a notion of object designator,
      as an entity that (potentially) designates an object.
      This is in line with the terminology that defines the notion of lvalue
-     [C:6.3.2/1].")
+     [C17:6.3.2/1].")
    (xdoc::p
     "At a low level, an object designator is an address in memory.
      However, in our model, we introduce
@@ -42,7 +42,7 @@
      We also include top-level object designators for global variables,
      i.e. objects declared with file scope in static storage.
      We also include top-level object designators for local variables,
-     i.e. objects declarad with block scope in automatic storage.
+     i.e. objects declared with block scope in automatic storage.
      Then we allow object designators
      to include information that selects sub-objects of the top-level objects,
      and sub-sub-objects of those sub-objects,
@@ -51,10 +51,7 @@
      an identifier that is
      the name of a member sub-object of a structure super-object,
      or a natural number that is
-     the index of an element sub-object of an array super-object.")
-   (xdoc::p
-    "This should be eventually extended with
-     designators for objects in automatic storage (i.e. stack)."))
+     the index of an element sub-object of an array super-object."))
   :order-subtopics t
   :default-parent t)
 
@@ -65,12 +62,12 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Addresses are mentioned in several places in [C],
-     but there seems to be no specific place in [C] that defines them.
+    "Addresses are mentioned in several places in [C17],
+     but there seems to be no specific place in [C17] that defines them.
      Nonetheless, based on how they are mentioned,
      it is quite clear that an address is essentially a hardware address,
      i.e. a number that identifies a memory location,
-     even though [C] does not prescribe a particular representation.")
+     even though [C17] does not prescribe a particular representation.")
    (xdoc::p
     "For now we treat addresses as essentially abstract entities,
      whose only purpose is to identify objects in memory.

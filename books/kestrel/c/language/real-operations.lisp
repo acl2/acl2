@@ -1,11 +1,11 @@
 ; C Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -32,7 +32,7 @@
   :guard (and (value-realp val1)
               (value-realp val2))
   :returns (resval valuep)
-  :short "Apply @('<') to real values [C:6.5.8/3] [C:6.5.8/6]."
+  :short "Apply @('<') to real values [C17:6.5.8/3] [C17:6.5.8/6]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -55,7 +55,7 @@
   :guard (and (value-realp val1)
               (value-realp val2))
   :returns (resval valuep)
-  :short "Apply @('>') to real values [C:6.5.8/3] [C:6.5.8/6]."
+  :short "Apply @('>') to real values [C17:6.5.8/3] [C17:6.5.8/6]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -78,7 +78,7 @@
   :guard (and (value-realp val1)
               (value-realp val2))
   :returns (resval valuep)
-  :short "Apply @('<=') to real values [C:6.5.8/3] [C:6.5.8/6]."
+  :short "Apply @('<=') to real values [C17:6.5.8/3] [C17:6.5.8/6]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -101,7 +101,7 @@
   :guard (and (value-realp val1)
               (value-realp val2))
   :returns (resval valuep)
-  :short "Apply @('>=') to real values [C:6.5.8/3] [C:6.5.8/6]."
+  :short "Apply @('>=') to real values [C17:6.5.8/3] [C17:6.5.8/6]."
   :long
   (xdoc::topstring
    (xdoc::p

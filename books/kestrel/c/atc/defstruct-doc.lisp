@@ -1,11 +1,11 @@
 ; C Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
-;
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
+
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -80,7 +80,7 @@
       " that is distinct from the @(tsee symbol-name)s of structure types
        introduced by previous successful calls of @('defstruct').")
      (xdoc::p
-      "This symbol name is the tag of the structure type [C:6.7.2.3].")
+      "This symbol name is the tag of the structure type [C17:6.7.2.3].")
      (xdoc::p
       "In the rest of this documentation page,
        let @('<tag>') be the @(tsee symbol-name) of this input."))
@@ -139,7 +139,7 @@
        if present, the positive integer specifies the size of the array type;
        if absent, the array type has unspecified size.
        The positive integer may be absent only if the member is the last one,
-       in which case it represents a flexible array member [C:6.7.2.1/18];
+       in which case it represents a flexible array member [C17:6.7.2.1/18];
        in this case, there must be at least another member.
        The aforementioned upper bound on the size
        is so that the size of the array type

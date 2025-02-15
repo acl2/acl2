@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2024 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -163,8 +163,8 @@
   (xdoc::topstring
    (xdoc::p
     "The heap is the memory area manipulated by @('malloc') and @('free').
-     [C] does not actually use the term `heap';
-     in fact, [C] does not appear to use a specific term for this memory area.
+     [C17] does not actually use the term `heap';
+     in fact, [C17] does not appear to use a specific term for this memory area.
      However, `heap' is sufficiently commonly used
      that it seems adequate to use it here.")
    (xdoc::p
@@ -183,7 +183,7 @@
     "A computation state consists of:")
    (xdoc::ul
     (xdoc::li
-     "A scope for static storage [C:6.2.4].
+     "A scope for static storage [C17:6.2.4].
       Our current C subset only has one translation unit
       (i.e. a single @('.c') file, with an optional @('.h') file;
       together they form a single translation unit, see @(tsee preprocess)),
@@ -192,10 +192,10 @@
       which form a scope.")
     (xdoc::li
      "A stack of frames.
-      The variables there are in automatic storage [C:6.2.4].")
+      The variables there are in automatic storage [C17:6.2.4].")
     (xdoc::li
      "A heap.
-      This is allocated storage [C:6.2.4]."))
+      This is allocated storage [C17:6.2.4]."))
    (xdoc::p
     "More components may be added,
      and some components may be refined,

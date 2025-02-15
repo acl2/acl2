@@ -1445,7 +1445,7 @@
        by the grammar rules for expressions,
        which also define the left vs. right associativity
        of binary operators.
-       For instance, the rules in [C:6.5.5] and [C:6.5.6] tell us that
+       For instance, the rules in [C17:6.5.5] and [C17:6.5.6] tell us that
        (i) @('+') binds tighter than @('*') and
        (ii) @('+') is left-associative:")
      (xdoc::ul
@@ -1498,7 +1498,7 @@
        At the top level, this second argument is
        the priority of top-level expressions,
        i.e. the priority that corresponds to
-       the nonterminal <i>expression</i> [C:6.5.17].
+       the nonterminal <i>expression</i> [C17:6.5.17].
        As we descend into subexpressions,
        the second argument of this function is changed according to
        the grammar rule corresponding to the super-expression.

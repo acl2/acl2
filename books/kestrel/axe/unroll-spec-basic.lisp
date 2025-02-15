@@ -399,7 +399,7 @@ Entries only in DAG: ~X23.  Entries only in :function-params: ~X45."
          (term "The term to simplify.")
          (assumptions "Assumptions to use when unrolling (a list of untranslated terms over the variables in the supplied term, and perhaps additional variables).  Or one of the special symbols :bytes or :bits, meaning to assume that all free variables in the supplied term are bytes or bits, respectively.")
          (interpreted-function-alist "Definitions of non-built-in functions to evaluate, or :auto.")
-         (rules "The basic set of rules to use (a list of symbols), or :standard (meaning to use the standard set), or :auto (meaning to try to open functions until only supported Axe operations [on bit-vectors, booleans, arrays, etc.] remain).")
+         (rules "The basic set of rules to use (a list of symbols), or :standard (meaning to use the standard set), or :auto (meaning to try to open functions until only supported Axe operations [on bit-vectors, booleans, arrays, etc.] remain).  In the case of :auto, defopeners is used to generate opener rules for any recursive functions that are to be opened.")
          (extra-rules "Rules to add to the base set of rules.")
          (remove-rules "Rules to remove from the base set of rules.")
          (memoizep "Whether to memoize during rewriting.")

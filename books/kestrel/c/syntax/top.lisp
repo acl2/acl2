@@ -89,9 +89,9 @@
      motivated by the fact that we want this tool-oriented syntax
      to be neither before nor after preprocessing,
      but to incorporate constructs from both forms of the C code;
-     the grammar in [C] is organized differently,
+     the grammar in [C17] is organized differently,
      with preprocessing being a distinguished translation phase
-     [C:5.1.1.2].")
+     [C17:5.1.1.2].")
    (xdoc::p
     "We have started defining an "
     (xdoc::seetopic "abstraction-mapping" "abstraction mapping")
