@@ -602,7 +602,7 @@
     set-flag-of-set-flag-same
     set-flag-of-get-flag-same-gen ;; set-flag-of-get-flag-same
 
-    x86isa::xw-rgf-of-xr-rgf-same
+    x86isa::xw-rgf-of-xr-rgf-same ; drop since we don't use this normal form?
 
     acl2::expt2$inline-constant-opener
 
@@ -1756,7 +1756,7 @@
             ;; xw-of-rflags-of-xw
             ;; xw-rflags-of-set-flag
 
-            myif ; trying this, so that we only have to deal with if
+            myif ; trying this, so that we only have to deal with if ; todo: remove all other rules aboute myif.  todo: try this first
 
             ;; Reading/writing registers (or parts of registers).  we leave
             ;; these enabled to expose rgfi and !rgfi, which then get rewritten
@@ -1962,7 +1962,6 @@
             acl2::open-ash-positive-constants
             acl2::logext-of-bvchop-same
             acl2::logext-identity
-            ;x86isa::rgfi-is-i64p ;targets signed-byte-of-xr
 ;            x86isa::xw-xr-same
             ;; acl2::bvplus-commutative-axe ;is this based on nodenum or term weight?
 
@@ -2215,7 +2214,7 @@
             acl2::zip-constant-opener ; for flags
 
             x86isa::x86-elem-fix ;new
-            x86isa::elem-p-of-xr-rgf
+            x86isa::elem-p-of-xr-rgf ; drop?
             seg-hidden-attri
             x86isa::seg-hidden-attri$a
             seg-hidden-basei
@@ -2330,6 +2329,27 @@
             54bits-fix
             64bits-fix)))
 
+(defund get-register-intro-rules64 ()
+  (declare (xargs :guard t))
+  '(;; these target xr-of-rgf:
+    xr-becomes-rax
+    xr-becomes-rbx
+    xr-becomes-rcx
+    xr-becomes-rdx
+    xr-becomes-rsi
+    xr-becomes-rdi
+    xr-becomes-r8
+    xr-becomes-r9
+    xr-becomes-r10
+    xr-becomes-r11
+    xr-becomes-r12
+    xr-becomes-r13
+    xr-becomes-r14
+    xr-becomes-r15
+    xr-becomes-rsp
+    xr-becomes-rbp
+    ))
+
 ;; This needs to fire before bvplus-convert-arg3-to-bv-axe-restricted to avoid loops on things like (bvplus 32 k (+ k (esp x86))).
 ;; Note that bvplus-of-constant-and-esp-when-overflow will turn a bvplus into a +.
 (set-axe-rule-priority acl2::bvplus-of-+-combine-constants -1)
@@ -2394,7 +2414,7 @@
      acl2::lookup-pe-symbol-unroll
      acl2::subroutine-address-within-text-section-pe-64
      ;; ELF stuff:
-     acl2::lookup-equal-safe
+     lookup-equal-safe
      acl2::subroutine-address-elf
      acl2::parsed-elf-symbol-table
      acl2::get-elf-section-address
@@ -2410,17 +2430,20 @@
      acl2::get-elf-symbol-address-aux-unroll
 
      acl2::equal-of-0-and-mod ;acl2::mod-=-0 ;yuck
-     rml64
      acl2::mv-nth-of-if
      acl2::mv-nth-of-cons-safe
      x86isa::canonical-address-p-of-if
      the-check
-     acl2::lookup-eq-safe
+     lookup-eq-safe
      eql ; just include base-rules?
      acl2::+-commutative-axe
      unicity-of-0
      ;; all-addreses-of-stack-slots
-     rgfi X86ISA::RGFI$A ;expose xr
+
+     rgfi rgfi$a ;expose xr -- why?  shouldn't we then turn these into get-rax, set-rax, etc?  we could use the (get-register-intro-rules64) but only for the non-loop-lifter
+     x86isa::integerp-of-xr-rgf ; drop if we are not using this normal form?
+     x86isa::fix-of-xr-rgf-4 ; drop if we are not using this normal form?
+
      x86isa::canonical-address-p$inline-constant-opener
      addresses-of-subsequent-stack-slots
      ;; addresses-of-subsequent-stack-slots-aux-base
@@ -2433,8 +2456,6 @@
      acl2::fold-consts-in-+
      x86isa::canonical-address-listp-of-nil
      acl2::integerp-of-+-when-integerp-1-cheap
-     x86isa::integerp-of-xr-rgf
-     x86isa::fix-of-xr-rgf-4
      x86isa::integerp-when-canonical-address-p-cheap ; requires acl2::equal-same
      acl2::fix-when-integerp
      acl2::equal-same)
@@ -3288,7 +3309,8 @@
 
 (defund lifter-rules64-new ()
   (declare (xargs :guard t))
-  '(signed-byte-p-64-of-rax
+  (append
+   '(signed-byte-p-64-of-rax
     signed-byte-p-64-of-rbx
     signed-byte-p-64-of-rcx
     signed-byte-p-64-of-rdx
@@ -3948,24 +3970,6 @@
     xw-becomes-set-rbp
     ;; xw-becomes-set-error
 
-    ;xr-becomes-rip
-    xr-becomes-rax
-    xr-becomes-rbx
-    xr-becomes-rcx
-    xr-becomes-rdx
-    xr-becomes-rsi
-    xr-becomes-rdi
-    xr-becomes-r8
-    xr-becomes-r9
-    xr-becomes-r10
-    xr-becomes-r11
-    xr-becomes-r12
-    xr-becomes-r13
-    xr-becomes-r14
-    xr-becomes-r15
-    xr-becomes-rsp
-    xr-becomes-rbp
-
     ;; Rules about 64-bit-modep
     64-bit-modep-of-set-rip
     64-bit-modep-of-set-rax
@@ -4407,7 +4411,8 @@
     ;; mv-nth-1-of-rme-size-of-set-rsp
     ;; mv-nth-1-of-rme-size-of-set-rbp
 
-    if-of-set-rip-and-set-rip-same))
+     if-of-set-rip-and-set-rip-same)
+   (get-register-intro-rules64)))
 
 (defund lifter-rules64-all ()
   (declare (xargs :guard t))
