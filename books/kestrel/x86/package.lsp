@@ -1208,6 +1208,7 @@
     lookup
     lookup-safe
     lookup-equal
+    lookup-equal-safe
 
     want-to-weaken ; for polarity-based reasoning
     want-to-strengthen ; for polarity-based reasoning
