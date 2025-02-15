@@ -1631,8 +1631,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Introduces WRITE.
-(defthm mv-nth-1-of-wb-becomes-write
-  (implies (and (app-view x86) ; todo: drop
+(defthm mv-nth-1-of-wb-becomes-write-when-app-view
+  (implies (and (app-view x86)
                 (canonical-address-p addr)
                 ;; (implies (posp n)
                 (canonical-address-p (+ -1 n addr)) ; not good for n=0
@@ -1644,9 +1644,7 @@
                                   (wb-1 write)))))
 
 (defthm mv-nth-0-of-wb-when-app-view
-  (implies (and ;(posp n)
-             (app-view x86) ; todo: drop
-             )
+  (implies (app-view x86)
            (equal (mv-nth 0 (wb n addr w value x86))
                   (if (or (zp n)
                           (and (canonical-address-p addr)
@@ -1691,12 +1689,10 @@
     :hints (("Goal" :in-theory (enable wb)))))
 
 ;; This puts the canonical-address-p claims in the RHS.  Since there is not a
-;; convenient way to specify what happens in the other case, we put in the
-;; alias.
-(defthm wb-becomes-write
-  (implies (and (app-view x86) ; drop?
-                (x86p x86) ;drop?
-                )
+;; convenient way to specify what happens in the non-canonical cases, we put in
+;; the alias.
+(defthm wb-becomes-write-when-app-view
+  (implies (app-view x86)
            (equal (wb n addr w value x86)
                   (if (or (zp n)
                           (and (canonical-address-p addr)
@@ -1704,14 +1700,15 @@
                       (mv nil (write n addr value x86))
                     ;; this case should not happen:
                     (wb-alias n addr w value x86))))
-  :hints (("Goal" :use (mv-nth-1-of-wb-becomes-write mv-nth-0-of-wb-when-app-view)
+  :hints (("Goal" :use (mv-nth-1-of-wb-becomes-write-when-app-view
+                        mv-nth-0-of-wb-when-app-view)
            :expand (mv-nth 1 (wb n addr w value x86))
            :in-theory (e/d (wb-alias mv-nth)
                            (mv-nth-0-of-wb-when-app-view ;acl2::equal-of-cons
-                            mv-nth-1-of-wb-becomes-write
+                            mv-nth-1-of-wb-becomes-write-when-app-view
                             x86isa::wb-by-wb-1-for-app-view-induction-rule)))))
 
-(theory-invariant (incompatible (:rewrite wb-becomes-write) (:definition wb-alias)))
+(theory-invariant (incompatible (:rewrite wb-becomes-write-when-app-view) (:definition wb-alias)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
