@@ -30,7 +30,7 @@
    (xdoc::p
     "When a structure with a flexible array member is copied,
      as in most other uses of structures with flexible array members,
-     the flexible array member is ignored [C:6.7.2.1/18].
+     the flexible array member is ignored [C17:6.7.2.1/18].
      This means that, when the structure is copied (e.g. in an assignment),
      the flexible array member is dropped.")
    (xdoc::p

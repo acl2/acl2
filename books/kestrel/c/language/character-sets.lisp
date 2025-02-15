@@ -30,12 +30,12 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "These are described in [C:5.2.1].")
+    "These are described in [C17:5.2.1].")
    (xdoc::p
     "The members of these sets are more abstract entities
-     than the values of the character types [C:6.2.5/15].
+     than the values of the character types [C17:6.2.5/15].
      The assignment of values to the members of the execution character set
-     is implementation-defined [C:5.2.1/1],
+     is implementation-defined [C17:5.2.1/1],
      subject to some constraints.
      The source and execution character sets may be different,
      subject to certain constraints and correspondences.")
@@ -54,23 +54,23 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "[C:5.2.1] prescribes the presence of certain members
+    "[C17:5.2.1] prescribes the presence of certain members
      in the source character set.
      These prescribed members
      form the basic source character set,
      and correspond naturally to certain (ACL2) ASCII characters.
-     However, [C] does not prescribe ASCII,
+     However, [C17] does not prescribe ASCII,
      even though many C implementations may use (some extension of) ASCII.")
    (xdoc::p
     "We formalize the source character set as a constrained ACL2 predicate,
      along with an injection into them from the ASCII characters mentioned above
-     (i.e. the ones that correspond naturally to the ones prescribed by [C]).
+     (i.e. the ones that correspond naturally to the ones prescribed by [C17]).
      The image of the injection is the basic source character set,
      whose members are the basic source characters.
      The whole constrained predicate is the extended source character set,
      whose members that are not basic source characters
      are extended source characters.
-     This is according to the nomenclature in [C:5.2.1].")
+     This is according to the nomenclature in [C17:5.2.1].")
    (xdoc::p
     "Because the extended source character set
      is formalized here as a constrained predicate,
@@ -80,10 +80,10 @@
      from the constrained predicate into the natural numbers:
      this means that each character has a unique associated number,
      which may be used to refer to the character.
-     This second injection and numbering has no counterpart in [C]:
+     This second injection and numbering has no counterpart in [C17]:
      its significance is limited to our ACL2 formalization.")
    (xdoc::p
-    "[C:5.2.1.2] discusses encodings of source characters,
+    "[C17:5.2.1.2] discusses encodings of source characters,
      including a notion of shift states that affect the encodings.
      This encoding provides a way
      to refer to the members of the source characters set;
@@ -93,7 +93,7 @@
      this encoding does not seem the most straightforward way
      to refer to the source character set's members in our formalization.
      This is why we introduce the second injection described above.
-     We plan to formalize the encoding discussed in [C:5.2.1.2] elsewhere."))
+     We plan to formalize the encoding discussed in [C17:5.2.1.2] elsewhere."))
   :order-subtopics t
   :default-parent t)
 
@@ -114,7 +114,7 @@
      horizontal tab,
      vertical tab, and
      form feed
-     [C:5.2.1/3].")
+     [C17:5.2.1/3].")
    (xdoc::p
     "Note that the double quote character and the backslash character
      must be escaped (i.e. preceded by a backslash) in ACL2 strings.
@@ -360,7 +360,7 @@
   (xdoc::topstring
    (xdoc::p
     "The execution character set is analogous to the source character set
-     except that it has a few additional basic characters [C:5.2.1].")
+     except that it has a few additional basic characters [C17:5.2.1].")
    (xdoc::p
     "We formalize the execution characters
      analogously to the source characters,
@@ -389,7 +389,7 @@
      backspace,
      carriage return, and
      new line
-     [C:5.2.1/2-3].")
+     [C17:5.2.1/2-3].")
    (xdoc::p
     "The ACL2 character with ASCII code 0 corresponds to the null character.
      The ACL2 character with ASCII code 7 corresponds to alert.

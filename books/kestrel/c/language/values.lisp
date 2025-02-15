@@ -44,12 +44,12 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Pointers are mentioned in several places in [C],
-     but there seems to be no specific place in [C] that defines them.
+    "Pointers are mentioned in several places in [C17],
+     but there seems to be no specific place in [C17] that defines them.
      Nonetheless, we can get a precise picture from various places.
-     [C:6.2.5/20] says that pointer types describe objects
+     [C17:6.2.5/20] says that pointer types describe objects
      whose values provide references to entities.
-     [C:6.3.2.3] specifies several things about pointers;
+     [C17:6.3.2.3] specifies several things about pointers;
      in particular, it talks about null pointers.
      Thus, the picture is the following:
      a pointer is either an object designator or a null pointer
@@ -108,23 +108,23 @@
        arrays of values of any type,
        and structures of member values of any type.
        Note that plain @('char') values are not
-       standard unsigned or signed integer values [C:6.2.5/7];
+       standard unsigned or signed integer values [C17:6.2.5/7];
        currently we do not cover plain @('char') values.")
      (xdoc::p
       "As mentioned in @(tsee pointer),
        we define a pointer value as consisting of
        a pointer (as defined there) and a type.
-       Note that [C] does not prescribe 0 to represent a null pointer,
-       even though 0 is used in null pointer constants [C:6.3.2.3/3].
+       Note that [C17] does not prescribe 0 to represent a null pointer,
+       even though 0 is used in null pointer constants [C17:6.3.2.3/3].
        The type is not the pointer type, but the referenced type;
        this way, we avoid having to constrain the type to be a pointer type.")
      (xdoc::p
       "Array values are modeled as consisting of
        the element type and a non-empty list of values.
-       [C:6.2.5/20] requires arrays to be non-empty.")
+       [C17:6.2.5/20] requires arrays to be non-empty.")
      (xdoc::p
       "Arrays are indexed via integers
-       [C] only provides minimum requirements for the sizes of integer types,
+       [C17] only provides minimum requirements for the sizes of integer types,
        not maximum requirements.
        Other than practical considerations,
        nothing, mathematically, prevents some integer types
@@ -140,10 +140,10 @@
       "Structures are modeled as consisting of a tag (identifier),
        a non-empty list of member values,
        and a flag saying whether the structure has a flexible array member
-       [C:6.7.2.1/18].
+       [C17:6.7.2.1/18].
        The tag is the one that identifies the structure type;
        we only model structures with non-anonymous types.
-       [C:6.2.5/20] requires at least one member,
+       [C17:6.2.5/20] requires at least one member,
        which we capture with an invariant.
        If the flexible array member flag is set,
        there must be at least two members
@@ -319,7 +319,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "An expression may yield a value or designate an object [C:6.5/1]
+    "An expression may yield a value or designate an object [C17:6.5/1]
      (unless the expression has @('void') type).
      In our model, we have object designators to designate objects;
      see @(tsee objdesign).
@@ -346,7 +346,7 @@
      makes it convenient to access the value,
      without having to read it from the computation state.")
    (xdoc::p
-    "[C] does not provide a specific term to denote
+    "[C17] does not provide a specific term to denote
      something returned by an expression,
      i.e. something that is either a value or an object designator.
      In our model, we formalize that as an expression value,
@@ -528,7 +528,7 @@
 
 (define value-signed-integerp ((val valuep))
   :returns (yes/no booleanp)
-  :short "Check if a value is a signed integer [C:6.2.5/4]."
+  :short "Check if a value is a signed integer [C17:6.2.5/4]."
   (or (value-case val :schar)
       (value-case val :sshort)
       (value-case val :sint)
@@ -540,7 +540,7 @@
 
 (define value-unsigned-integerp ((val valuep))
   :returns (yes/no booleanp)
-  :short "Check if a value is an unsigned integer [C:6.2.5/6]."
+  :short "Check if a value is an unsigned integer [C17:6.2.5/6]."
   (or (value-case val :uchar)
       (value-case val :ushort)
       (value-case val :uint)
@@ -552,7 +552,7 @@
 
 (define value-integerp ((val valuep))
   :returns (yes/no booleanp)
-  :short "Check if a value is an integer [C:6.2.5/17]."
+  :short "Check if a value is an integer [C17:6.2.5/17]."
   (or (value-signed-integerp val)
       (value-unsigned-integerp val))
   :hooks (:fix))
@@ -561,7 +561,7 @@
 
 (define value-realp ((val valuep))
   :returns (yes/no booleanp)
-  :short "Check if a value is a real [C:6.2.5/18]."
+  :short "Check if a value is a real [C17:6.2.5/18]."
   (value-integerp val)
   :hooks (:fix))
 
@@ -569,7 +569,7 @@
 
 (define value-arithmeticp ((val valuep))
   :returns (yes/no booleanp)
-  :short "Check if a value is arithmetic [C:6.2.5/18]."
+  :short "Check if a value is arithmetic [C17:6.2.5/18]."
   (value-realp val)
   :hooks (:fix))
 
@@ -577,7 +577,7 @@
 
 (define value-scalarp ((val valuep))
   :returns (yes/no booleanp)
-  :short "Check if a value is scalar [C:6.2.5/21]."
+  :short "Check if a value is scalar [C17:6.2.5/21]."
   (or (value-arithmeticp val)
       (value-case val :pointer))
   :hooks (:fix))

@@ -51,7 +51,7 @@
   (xdoc::topstring
    (xdoc::p
     "A variable (i.e. object) may be defined by a declaration or not
-     [C:6.7/5] [C:6.9.2];
+     [C17:6.7/5] [C17:6.9.2];
      it may be also tentatively defined,
      in the case of a file-scope variable under certain conditions.
      Thus, a variable may have three possible definition statuses:
@@ -94,15 +94,15 @@
    (xdoc::p
     "A variable table is a symbol table for variables.
      The table (see @(tsee var-table)) is organized as
-     a sequence with one element for each nested scope [C:6.2.1].
+     a sequence with one element for each nested scope [C17:6.2.1].
      This @('var-table-scope') fixtype
      contains information about such a scope.
      The information is organized as a finite map
      from identifiers (variable names) to static information for variables.
      Using a map is adequate because
      all the variables declared in a scope must have different names
-     [C:6.2.1/2].
-     The scope may be a file scope or a block scope [C:6.2.1/4]."))
+     [C17:6.2.1/2].
+     The scope may be a file scope or a block scope [C17:6.2.1/4]."))
   :key-type ident
   :val-type var-sinfo
   :pred var-table-scopep)
@@ -114,7 +114,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This keeps track of all the variables in scope [C:6.2.1],
+    "This keeps track of all the variables in scope [C17:6.2.1],
      organized according to file and block scopes.
      The list has one element for the file scope
      and one element for each nested block scope,
@@ -126,7 +126,7 @@
     "It is possible for two scopes in the list to have overlapping keys,
      when a variable in an inner block scope hides
      one in an outer block or scope in the file scope
-     [C:6.2.1/4]."))
+     [C17:6.2.1/4]."))
   :elt-type var-table-scope
   :true-listp t
   :non-emptyp t
@@ -226,7 +226,7 @@
      If it is found, it must have the same type as the given type,
      otherwise it is an error.
      The given definition status is combined with the one in the table,
-     as follows [C:6.9.2]:")
+     as follows [C17:6.9.2]:")
    (xdoc::ul
     (xdoc::li
      "If the one in the table is undefined,
@@ -251,7 +251,7 @@
     (xdoc::li
      "If the one in the table is defined,
       and the one in the declaration is defined,
-      it is an error, because there cannot be two definitions [C:6.9/5].")))
+      it is an error, because there cannot be two definitions [C17:6.9/5].")))
   (b* ((var (ident-fix var))
        (vartab (var-table-fix vartab))
        (varscope (car vartab))
@@ -305,7 +305,7 @@
      (if it is not used in expressions),
      we are more strict and require every variable to be defined.
      This includes the case of a tentative definition,
-     which is automatically turned into a full definition [C:6.9.2/2].
+     which is automatically turned into a full definition [C17:6.9.2/2].
      So we go through the variables in the (file) scope,
      ensuring that they are defined or tentatively defined."))
   (b* ((varscope (var-table-scope-fix varscope))
@@ -341,7 +341,7 @@
     "This is the information about functions needed for the static semantics.")
    (xdoc::p
     "This static information includes the type of the function.
-     Function types are described in [C:6.2.5/20].
+     Function types are described in [C17:6.2.5/20].
      Eventually these may be integrated into
      a broader formalized notion of C types,
      but for now we use
@@ -352,11 +352,11 @@
     "This static information also includes a flag that says
      whether the function has been defined or not.
      A function may be declared without being defined,
-     via a declaration [C:6.7].
+     via a declaration [C17:6.7].
      A file may have multiple declarations of the same function,
-     via linkage [C:6.2.2/1],
-     and up to one definition of the function [C:6.9/3] [C:6.9/5].
-     The declarations and definition must have compatible types [C:6.7/4],
+     via linkage [C17:6.2.2/1],
+     and up to one definition of the function [C17:6.9/3] [C17:6.9/5].
+     The declarations and definition must have compatible types [C17:6.7/4],
      which in our C subset, for functions,
      means identical input and output types.
      In order to check all of these requirements,
@@ -447,7 +447,7 @@
      If there is no entry in the table for the function,
      we add the information about the function.
      If there is already an entry,
-     it must have the same input and output types [C:6.7/4]
+     it must have the same input and output types [C17:6.7/4]
      (in our C subset, compatible types means equal types);
      otherwise it is an error.
      If the information in the table has the @('definedp') flag @('nil'),
@@ -566,16 +566,16 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Certain C expressions are lvalues [C:6.3.2/1],
-     i.e. they evaluate to object designators rather than values [C:6.5/1].
-     In many cases, lvalue conversion [C:6.3.2/2]
+    "Certain C expressions are lvalues [C17:6.3.2/1],
+     i.e. they evaluate to object designators rather than values [C17:6.5/1].
+     In many cases, lvalue conversion [C17:6.3.2/2]
      turns an object designator into the value of the designated object,
      but some operators (e.g. assignments) require lvalues.
      Thus, the static semantics must calculate, for each expression,
      not only its type, but also whether it is an lvalue or not.
      This information is captured via a type and an lvalue flag.")
    (xdoc::p
-    "Expressions may also evaluate to function designators [C:6.5/1].
+    "Expressions may also evaluate to function designators [C17:6.5/1].
      We do not cover that case for now,
      because our subset of C makes a limited use of functions;
      in particular, it has no function pointers.
@@ -665,7 +665,7 @@
 (define promote-type ((type typep))
   :guard (type-arithmeticp type)
   :returns (promoted-type typep)
-  :short "Apply the integer promotions to an arithmetic type [C:6.3.1.1/2]."
+  :short "Apply the integer promotions to an arithmetic type [C17:6.3.1.1/2]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -761,7 +761,7 @@
               (type-arithmeticp type2))
   :returns (type typep)
   :short "Apply the usual arithmetic conversions to two arithmetic types
-          [C:6.3.1.8]."
+          [C17:6.3.1.8]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -927,7 +927,7 @@
    (xdoc::p
     "Under most circumstances,
      an array is converted to a pointer to the first element of the array
-     [C:6.3.2.1/3];
+     [C17:6.3.2.1/3];
      indeed, arrays are used like pointers most of the time.")
    (xdoc::p
     "This conversion is captured, at the level of types, here.
@@ -968,7 +968,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Function parameter types are subject to an adjustment [C:6.7.6.3/7]:
+    "Function parameter types are subject to an adjustment [C17:6.7.6.3/7]:
      an array type is converted to a pointer type to the element type.
      Since we currently do not model type qualifiers,
      we do not need to take those into account here.
@@ -1013,7 +1013,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is according to [C:6.4.4.1/5]:
+    "This is according to [C17:6.4.4.1/5]:
      based on the suffixes and the base,
      we find the first type that suffices to represent the value,
      in the lists indicated in the table,
@@ -1155,7 +1155,7 @@
      and we continue through the subsequent layers recursively.
      If we find an array layer,
      we ensure that the current type, which is the element type,
-     is complete [C:6.2.5/20].
+     is complete [C17:6.2.5/20].
      If the array size is present,
      we check that it is well-formed and non-zero,
      and we use its value as the array size.
@@ -1212,8 +1212,8 @@
      @('arg-expr') is used just for errors.
      We return the type of the unary expression.")
    (xdoc::p
-    "The operand of the address operator must be an lvalue [C:6.5.3.2/1].
-     The text in [C:6.5.3.2/1] talks about lvalues
+    "The operand of the address operator must be an lvalue [C17:6.5.3.2/1].
+     The text in [C17:6.5.3.2/1] talks about lvalues
      but singles out postfix @('[]') expressions and unary @('*') expressions,
      even though those are just special cases of lvalues;
      perhaps this has to do with the restriction about
@@ -1226,13 +1226,13 @@
      checking the other operators only involves the type.
      If the type of the argument is @('T'),
      the type of the result is pointer to @('T')
-     [C:6.5.3.2/3];
+     [C17:6.5.3.2/3];
      the expression is not an lvalue.")
    (xdoc::p
-    "The operand of the indirection operator must be a pointer [C:6.5.3.2/2].
+    "The operand of the indirection operator must be a pointer [C17:6.5.3.2/2].
      The result has the referenced type,
      and the expression is an lvalue
-     [C:6.5.3.2/4].
+     [C17:6.5.3.2/4].
      We return an expression type, not a type,
      so that we can represent the fact that
      an indirection expression is an lvalue.
@@ -1251,8 +1251,8 @@
      and the result is @('int') -- 0 or 1.")
    (xdoc::p
     "For all operators except @('&'), the argument is subjected to
-     lvalue conversion [C:6.3.2.1/2]
-     and array-to-pointer conversion [C:6.3.2.1/3].
+     lvalue conversion [C17:6.3.2.1/2]
+     and array-to-pointer conversion [C17:6.3.2.1/3].
      In our static semantics, lvalue conversion just amounts to
      ignoring the @('lvalue') flag of the expression type."))
   (case (unop-kind op)
@@ -1439,13 +1439,13 @@
                     (tyname tynamep)
                     (tagenv tag-envp))
   :returns (etype expr-type-resultp)
-  :short "Check a cast expression [C:6.5.4]."
+  :short "Check a cast expression [C17:6.5.4]."
   :long
   (xdoc::topstring
    (xdoc::p
     "A cast is allowed between scalar types.
      The result has the type indicated in the cast.
-     See [C:6.5.4]; note that the additional requirements on the type
+     See [C17:6.5.4]; note that the additional requirements on the type
      do not apply to our currently simplified model of C types.
      We apply lvalue conversion to the operand.
      We also apply array-to-pointer conversion,
@@ -1471,15 +1471,15 @@
                     (then-expr exprp) (then-etype expr-typep)
                     (else-expr exprp) (else-etype expr-typep))
   :returns (etype expr-type-resultp)
-  :short "Check a ternary conditional expression [C:6.5.15]."
+  :short "Check a ternary conditional expression [C17:6.5.15]."
   :long
   (xdoc::topstring
    (xdoc::p
     "The test of a conditional expression must be scalar.
      For now we require the two branches to have arithmetic types.
-     According to [C:6.5.15/3],
+     According to [C17:6.5.15/3],
      in this case the type of the conditional expression
-     is the one resulting from the usual arithmetic conversions [C:6.5.15/5].
+     is the one resulting from the usual arithmetic conversions [C17:6.5.15/5].
      This means that, at run time, in our dynamic semantics of C,
      we need to convert the branch that is executed to that type;
      but at run time we do not have information about
@@ -1542,7 +1542,7 @@
 (define check-arrsub ((arr-expr exprp) (arr-etype expr-typep)
                       (sub-expr exprp) (sub-etype expr-typep))
   :returns (etype expr-type-resultp)
-  :short "Check an array subscripting expression [C:6.5.2.1]."
+  :short "Check an array subscripting expression [C17:6.5.2.1]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1551,9 +1551,9 @@
    (xdoc::p
     "We do lvalue conversion for both operands,
      via @(tsee expr-type->type).
-     According to [C:6.3.2/2],
+     According to [C17:6.3.2/2],
      we should not do this if an operand has an array type;
-     however, according to [C:6.3.2/3],
+     however, according to [C17:6.3.2/3],
      we should convert the array to a pointer
      (which we do via @(tsee apconvert-type)),
      and thus in the end the result is the same:
@@ -1561,15 +1561,15 @@
      if the operand is an array.
      If an operand is an integer, @(tsee apconvert-type) has no effect.")
    (xdoc::p
-    "The first expression must have a pointer type [C:6.5.2.1/1].
-     The second expression must have an integer type [C:6.5.2.1/1].
+    "The first expression must have a pointer type [C17:6.5.2.1/1].
+     The second expression must have an integer type [C17:6.5.2.1/1].
      The type of the array subscripting expression
      is the type referenced by the pointer.
      An array subscripting expression is always an lvalue.")
    (xdoc::p
     "For now we do not allow the roles of the expressions to be swapped,
      i.e. that the second expression is a pointer and the first one an integer;
-     note the symmetry in [C:6.5.2.1/2]."))
+     note the symmetry in [C17:6.5.2.1/2]."))
   (b* ((arr-type (apconvert-type (expr-type->type arr-etype)))
        (sub-type (apconvert-type (expr-type->type sub-etype)))
        ((unless (type-case arr-type :pointer))
@@ -1590,7 +1590,7 @@
                       (name identp)
                       (tagenv tag-envp))
   :returns (etype expr-type-resultp)
-  :short "Check a structure member expression [C:6.5.2.3]."
+  :short "Check a structure member expression [C17:6.5.2.3]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1618,7 +1618,7 @@
                        (name identp)
                        (tagenv tag-envp))
   :returns (etype expr-type-resultp)
-  :short "Check a structure pointer member expression [C:6.5.2.3]."
+  :short "Check a structure pointer member expression [C17:6.5.2.3]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1742,15 +1742,15 @@
      which must be pure (because we restrict them to be so).
      We retrieve the function type from the function table
      and we compare the input types with the argument types;
-     this is more restrictive than allowed in [C],
+     this is more restrictive than allowed in [C17],
      but it is adequate for now.
      Prior to comparing the types,
      we perform array-to-pointer conversions on
      all parameter types:
      this is consistent with the treatment of assignments
      (namely that the left-hand side of assignment
-     is subjected to this conversion [C:6.3.2.1/3]),
-     given that argument passing is treated like assignment [C:6.5.2.2/2].
+     is subjected to this conversion [C17:6.3.2.1/3]),
+     given that argument passing is treated like assignment [C17:6.5.2.2/2].
      Note that @(tsee check-expr-pure-list)
      already applies that conversion to the argument types,
      so there is not need to do it here.
@@ -1817,9 +1817,9 @@
     "For now, we only allow simple assignment expressions.
      The left-hand side expression must be a pure lvalue.
      Before checking that,
-     we perform an array-to-pointer conversion [C:6.3.2.1/3]:
+     we perform an array-to-pointer conversion [C17:6.3.2.1/3]:
      in doing so, we also turn off the lvalue flag of the expression type,
-     as specified in [C:6.3.2.1/3];
+     as specified in [C17:6.3.2.1/3];
      this means that using something of an array type
      as the left-hand side of assignment fails.
      The right-hand side must be a function call or a pure expression;
@@ -1828,14 +1828,14 @@
      we apply array-to-pointer conversion to it as well.")
    (xdoc::p
     "The two sides must have the same type,
-     which is more restrictive than [C:6.5.16.1].
+     which is more restrictive than [C17:6.5.16.1].
      Since it is an invariant (currently not formally proved)
      that variables never have @('void') type,
      the equality of types implies that,
      if the right-hand side is a function call,
      the function must not return @('void').
      We require the left type (and thus the right type)
-     to be arithmetic or structure or pointer [C:6.5.16.1].
+     to be arithmetic or structure or pointer [C17:6.5.16.1].
      We do not return any type information from the assignment because
      an expression statement throws away the expression's value;
      indeed, we are only interested in the side effects of assignment here."))
@@ -1883,7 +1883,7 @@
      We also ensure that it returns @('void'),
      because we apply these checks to
      expressions that form expression statements:
-     while [C] allows function calls that discard values,
+     while [C17] allows function calls that discard values,
      we are more restrictive here for now.")
    (xdoc::p
     "If the expression is not a function call,
@@ -1957,8 +1957,8 @@
     "If the initializer type is a single one,
      we require its type to match the declared type.
      We perform an array-to-pointer type conversion,
-     consistently with assignments for scalars [C:6.7.9/11];
-     for structure types initialized via single expressions [C:6.7.9/13].")
+     consistently with assignments for scalars [C17:6.7.9/11];
+     for structure types initialized via single expressions [C17:6.7.9/13].")
    (xdoc::p
     "If the initializer type is a list,
      we require the declared type to be an array type
@@ -1967,8 +1967,8 @@
      If the array type has a size,
      the length of the initializer list must match the array size.")
    (xdoc::p
-    "Here we are a bit more restrictive than in [C:6.7.9].
-     In particular, [C:6.7.9/11] allows scalars to be initialized with
+    "Here we are a bit more restrictive than in [C17:6.7.9].
+     In particular, [C17:6.7.9/11] allows scalars to be initialized with
      singleton lists of expressions (i.e. single expressions between braces);
      but here we insist on scalars being initialized by single expressions."))
   (init-type-case
@@ -2004,7 +2004,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We ensure that the type is complete [C:6.7/7];
+    "We ensure that the type is complete [C17:6.7/7];
      this is not always necessary in full C,
      but our C subset requires that.
      We also ensure that the initializer type matches the declared type,
@@ -2026,7 +2026,7 @@
      If there is no initializer,
      in our C subset this must be in a file scope;
      since we require no @('extern') storage class specifier for now,
-     in this case this must be a tentative definition [C:6.9.2/2].
+     in this case this must be a tentative definition [C17:6.9.2/2].
      If instead there is an intializer,
      then it is a definition,
      regardless of whether it has file scope or block scope."))
@@ -2108,7 +2108,7 @@
     "For a @('return') statement,
      we require an expression,
      and we return the singleton set with the type of the expression.
-     The type must not be @('void') [C:6.3.2.2].")
+     The type must not be @('void') [C17:6.3.2.2].")
    (xdoc::p
     "For a block item that is a declaration,
      we check the (object) declaration,
@@ -2146,7 +2146,7 @@
      Nonetheless, as explained above,
      we also checking the rest of the block,
      and we consider its possible return types.
-     This is consistent with the fact that [C]
+     This is consistent with the fact that [C17]
      does not say anything any special treatment of this kind of dead code;
      it is also consistent with simple experiments with @('gcc') on Mac,
      which show that code after a @('return') is checked, not ignored."))
@@ -2307,8 +2307,8 @@
      Each parameter is considered defined in the variable table.
      Note that we regard each declaration as defining the variable,
      because no multiple declarations of the same parameter are allowed.
-     We adjust the type [C:6.7.6.3/7].
-     We also ensure that the (adjusted) type is complete [C:6.7.6.3/4].
+     We adjust the type [C17:6.7.6.3/7].
+     We also ensure that the (adjusted) type is complete [C17:6.7.6.3/4].
      If all checks succeed, we return the variable table
      updated with the parameter, with the adjusted type."))
   (b* (((mv var tyname) (param-declon-to-ident+tyname param))
@@ -2384,7 +2384,7 @@
     "We check the type specifier sequence and the declarator.
      We extend the function table with information about the new function.")
    (xdoc::p
-    "We adjust the parameter types [C:6.7.6.3/7]."))
+    "We adjust the parameter types [C17:6.7.6.3/7]."))
   (b* (((fun-declon declon) declon)
        ((mv name params out-tyname)
         (tyspec+declor-to-ident+params+tyname declon.tyspec declon.declor))
@@ -2413,7 +2413,7 @@
      which has the types for the function parameters,
      without creating a new scope for the block (i.e. the compound statement):
      the reason is that the scope of function parameters
-     terminates at the end of the associated block [C:6.2.1/4].")
+     terminates at the end of the associated block [C17:6.2.1/4].")
    (xdoc::p
     "The variable table passed as parameter to this ACL2 function
      always consists of just the current file scope,
@@ -2432,7 +2432,7 @@
      the function is in scope, in its own body.")
    (xdoc::p
     "The scope of a function identifier goes from its declaration
-     to the end of the translation unit [C:6.2.1/4].
+     to the end of the translation unit [C17:6.2.1/4].
      Thus, as we go through
      the function definitions in the translation unit in order,
      we extend the function table."))
@@ -2472,9 +2472,9 @@
      and turn each of them into member types (see @(tsee member-type)).
      We ensure that each member name is well-formed.
      We check that each type is well-formed.
-     We also check that each type either is complete [C:6.7.2.1/9],
+     We also check that each type either is complete [C17:6.7.2.1/9],
      or is an array type of unspecified size in the last member;
-     the latter is a flexible array member [C:6.7.2.1/18].
+     the latter is a flexible array member [C17:6.7.2.1/18].
      By using @(tsee member-type-add-first),
      we ensure that there are no duplicate member names."))
   (b* (((when (endp declons)) nil)
@@ -2522,19 +2522,19 @@
      not union or enumeration type declarations.
      For a structure type declaration, we first check the members,
      obtaining a list of member types if successful.
-     We ensure that there is at least one member [C:6.2.5/20],
+     We ensure that there is at least one member [C17:6.2.5/20],
      or at least two members if the last member is a flexible array member
-     [C:6.2.5/18].
+     [C17:6.2.5/18].
      We use @(tsee tag-env-add) to ensure that there is not already
      another structure or union or enumeration type with the same tag,
-     since these share one name space [C:6.2.3].")
+     since these share one name space [C17:6.2.3].")
    (xdoc::p
     "C allows a form of recursion in structure type declarations,
      namely that a member can be a pointer to the structure:
-     [C:6.2.1/7] says that the scope of the tag starts where it appears,
+     [C17:6.2.1/7] says that the scope of the tag starts where it appears,
      so it includes the members;
-     and [C:6.7.2.1/9] says that a member type must be complete,
-     which pointer types are [C:6:2.5/20].
+     and [C17:6.7.2.1/9] says that a member type must be complete,
+     which pointer types are [C17:6:2.5/20].
      However, we implicitly disallow even this form of recursion for now,
      because we check the member types against the current tag environment,
      which does not include the structure type yet."))
@@ -2575,7 +2575,7 @@
   (xdoc::topstring
    (xdoc::p
     "For object declarations,
-     we require the initializer to be constant if present [C:6.7.9/4],
+     we require the initializer to be constant if present [C17:6.7.9/4],
      without requiring it to be present.")
    (xdoc::p
     "If successful, we return updated
@@ -2645,17 +2645,17 @@
      and discarding the final one (it served its pupose).")
    (xdoc::p
     "We also ensure that there is at leaast one external declaration,
-     according to the grammatical requirement in [C:6.9/1].")
+     according to the grammatical requirement in [C17:6.9/1].")
    (xdoc::p
     "We also check that the external objects and the functions
      have no overlap in their names (identifiers).
-     These are all ordinary identifiers [C:6.2.3/1],
+     These are all ordinary identifiers [C17:6.2.3/1],
      and therefore must be distinct in the same (file) scope.")
    (xdoc::p
     "We also check that all the functions are defined;
      we perform this check on the function table
      that results from checking the external declarations.
-     This is a little stricter than [C:6.9/5],
+     This is a little stricter than [C17:6.9/5],
      which allows a function to remain undefined
      if it is not called in the rest of the program.
      However, as we look at a translation unit in isolation here,
@@ -2686,11 +2686,11 @@
 
 (define preprocess ((fileset filesetp))
   :returns (tunit transunit-resultp)
-  :short "Preprocess a file set [C:5.1.1.2/4]."
+  :short "Preprocess a file set [C17:5.1.1.2/4]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is a very simplified model of C preprocessing [C:6.10].
+    "This is a very simplified model of C preprocessing [C17:6.10].
      If there is no header, this is essentially a no-op:
      the external declarations are unwrapped from the source file
      and re-wrapped into a translation unit.

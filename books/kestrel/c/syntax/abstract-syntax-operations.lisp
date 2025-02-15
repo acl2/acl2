@@ -254,7 +254,7 @@
      <i>additive-expression: multiplicative-expression</i> in the grammar.
      (Here by `subrule' we mean a rule not necessarily in the grammar
      but obtainable by selecting just some of the alternatives in the definiens
-     that are on different lines in [C].)
+     that are on different lines in [C17].)
      The nonterminal <i>additive-expression</i> also has other alternatives,
      but those are not single nonterminals;
      here we are only concerned with single nonterminals as rule definientia."))

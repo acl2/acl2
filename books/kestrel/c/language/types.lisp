@@ -38,7 +38,7 @@
    (xdoc::p
     "Here we define the semantic notion of type,
      which is related to, but distinct from,
-     the syntactic notion of type name [C:6.7.7].
+     the syntactic notion of type name [C17:6.7.7].
      Specifically, different type names may denote the same type,
      if they use syntactically different but equivalent type specifier sequences
      (e.g. @('int') and @('signed int'))."))
@@ -48,7 +48,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum type
-  :short "Fixtype of types [C:6.2.5]."
+  :short "Fixtype of types [C17:6.2.5]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -63,7 +63,7 @@
     "For array sizes, we use optional positive integers.
      The size is absent for an array type of unspecified size.
      If present, the size must not be 0 (this is why we use positive integers),
-     because arrays are never empty in C [C:6.2.5/20]."))
+     because arrays are never empty in C [C17:6.2.5/20]."))
   (:void ())
   (:char ())
   (:schar ())
@@ -158,7 +158,7 @@
   (xdoc::topstring
    (xdoc::p
     "These contain information about
-     the members of structure and union types [C:6.7.2.1].
+     the members of structure and union types [C17:6.7.2.1].
      This information consists of a name and a type, for each member.
      We do not capture bit fields (including anonymous ones)
      and we do not capture static assertions.
@@ -299,7 +299,7 @@
 
 (define type-signed-integerp ((type typep))
   :returns (yes/no booleanp)
-  :short "Check if a type is a signed integer type [C:6.2.5/4]."
+  :short "Check if a type is a signed integer type [C17:6.2.5/4]."
   (and (member-eq (type-kind type)
                   '(:schar :sshort :sint :slong :sllong))
        t)
@@ -309,7 +309,7 @@
 
 (define type-unsigned-integerp ((type typep))
   :returns (yes/no booleanp)
-  :short "Check if a type is an unsigned integer type [C:6.2.5/6]."
+  :short "Check if a type is an unsigned integer type [C17:6.2.5/6]."
   (and (member-eq (type-kind type)
                   '(:uchar :ushort :uint :ulong :ullong))
        t)
@@ -319,7 +319,7 @@
 
 (define type-integerp ((type typep))
   :returns (yes/no booleanp)
-  :short "Check if a type is an integer type [C:6.2.5/17]."
+  :short "Check if a type is an integer type [C17:6.2.5/17]."
   (or (type-case type :char)
       (type-signed-integerp type)
       (type-unsigned-integerp type))
@@ -339,7 +339,7 @@
 
 (define type-realp ((type typep))
   :returns (yes/no booleanp)
-  :short "Check if a type is a real type [C:6.2.5/18]."
+  :short "Check if a type is a real type [C17:6.2.5/18]."
   (type-integerp type)
   :hooks (:fix))
 
@@ -347,7 +347,7 @@
 
 (define type-arithmeticp ((type typep))
   :returns (yes/no booleanp)
-  :short "Check if a type is an arithmetic type [C:6.2.5/18]."
+  :short "Check if a type is an arithmetic type [C17:6.2.5/18]."
   (type-realp type)
   :hooks (:fix))
 
@@ -365,7 +365,7 @@
 
 (define type-scalarp ((type typep))
   :returns (yes/no booleanp)
-  :short "Check if a type is a scalar type [C:6.2.5/21]."
+  :short "Check if a type is a scalar type [C17:6.2.5/21]."
   (or (type-arithmeticp type)
       (type-case type :pointer))
   :hooks (:fix))
@@ -379,7 +379,7 @@
   (xdoc::topstring
    (xdoc::p
     "That is, an arithmetic type that is promoted,
-     in the sense that applying integer promotions [C:6.3.1.1/2] to it
+     in the sense that applying integer promotions [C17:6.3.1.1/2] to it
      would leave the type unchanged.
      This means that the type is not
      a (signed, unsigned, or plain) @('char') type
@@ -433,30 +433,30 @@
 
 (define type-completep ((type typep))
   :returns (yes/no booleanp)
-  :short "Check if a type is complete [C:6.2.5]."
+  :short "Check if a type is complete [C17:6.2.5]."
   :long
   (xdoc::topstring
    (xdoc::p
     "A type is complete when its size is determined,
      otherwise it is incomplete.
-     While [C:6.2.5] cautions that the same type
+     While [C17:6.2.5] cautions that the same type
      may be complete or incomplete in different parts of a program,
      for now we capture the completeness of a type
      independently from where it occurs:
      this is adequate for our C subset and for our use of this predicate.")
    (xdoc::p
-    "The @('void') type is never complete [C:6.2.5/19].
+    "The @('void') type is never complete [C17:6.2.5/19].
      The basic types, which are the integer types in our subset of C,
-     are always complete [C:6.2.5/14].
-     A structure type is complete as soon as its declaration ends [C:6.7.2.1/8];
+     are always complete [C17:6.2.5/14].
+     A structure type is complete as soon as its declaration ends [C17:6.7.2.1/8];
      it is incomplete inside the structure type,
      but we do not use this predicate for the member types.
-     A pointer type is always complete [C:6.2.5/20]
+     A pointer type is always complete [C17:6.2.5/20]
      (regardless of the pointed-to type).
-     An array type needs its element type to be complete [C:6.2.5/20],
+     An array type needs its element type to be complete [C17:6.2.5/20],
      as formalized in @(tsee check-tyname);
      the array type itself is complete if the size is specified,
-     otherwise it is incomplete [C:6.2.5/22]."))
+     otherwise it is incomplete [C17:6.2.5/22]."))
   (cond ((type-case type :void) nil)
         ((type-integerp type) t)
         ((type-case type :struct) t)
@@ -535,7 +535,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "A type name denotes a type [C:6.7.7/2].
+    "A type name denotes a type [C17:6.7.7/2].
      This ACL2 function returns the denoted type.
      As mentioned in @(tsee type),
      a semantic type is an abstraction of a type name:

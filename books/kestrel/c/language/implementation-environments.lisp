@@ -30,10 +30,10 @@
   (xdoc::topstring
    (xdoc::p
     "Some aspects of the syntax and semantics of C are implementation-dependent.
-     [C:5] introduces the notion of translation and execution environments,
+     [C17:5] introduces the notion of translation and execution environments,
      which specify those aspects.
      In our formalization, we introduce a notion of implementation environment,
-     which puts together the translation and execution environments in [C].
+     which puts together the translation and execution environments in [C17].
      That is, an implementation environment
      specifies the implementation-dependent aspects of C.
      We prefer to formalize one (implementation) environment,
@@ -62,15 +62,15 @@
   (xdoc::topstring
    (xdoc::p
     "Values of the @('unsigned char') type are represented
-     using a pure binary notation [C:6.2.6.1/3],
+     using a pure binary notation [C17:6.2.6.1/3],
      i.e. where each bit counts for a successive power of 2.
      Footnote 50 says that a byte consists of @('CHAR_BIT') bits,
      and implies that an @('unsigned char') consists of one byte
-     (as also implied by [C:6.5.3.4/2] and [C:6.5.3.4/4]).")
+     (as also implied by [C17:6.5.3.4/2] and [C17:6.5.3.4/4]).")
    (xdoc::p
     "Thus, the format of @('unsigned char') objects is determined
      by their number of bits, i.e. @('CHAR_BIT').
-     This is required to be at least 8 [C:5.2.4.2.1/1]."))
+     This is required to be at least 8 [C17:5.2.4.2.1/1]."))
   ((bits nat :reqfix (if (>= bits 8) bits 8)))
   :require (>= bits 8)
   :pred uchar-formatp
@@ -83,9 +83,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "[C:6.2.6.2/2] lists three possible ways in which a sign bit equal to 1
+    "[C17:6.2.6.2/2] lists three possible ways in which a sign bit equal to 1
      modifies the value of the integer value whose sign bit is 0.
-     We call these `signed formats', even though [C] does not use this term."))
+     We call these `signed formats', even though [C17] does not use this term."))
   (:sign-magnitude ())
   (:ones-complement ())
   (:twos-complement ())
@@ -147,7 +147,7 @@
    (xdoc::p
     "The @('char') type has the same representation as
      either @('unsigned char') or @('signed char')
-     [C:6.2.5/15].
+     [C17:6.2.5/15].
      The choice is captured by a boolean."))
   ((signedp bool))
   :pred char-formatp)
@@ -159,7 +159,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Each bit in the object representation of unsigned integers [C:6.2.6.2/1]
+    "Each bit in the object representation of unsigned integers [C17:6.2.6.2/1]
      is either a value bit (representing a power of 2) or a padding bit.
      This fixtype represents these choices,
      where the natural number in the @(':value') case
@@ -188,7 +188,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Each bit in the object representation of signed integers [C:6.2.6.2/2]
+    "Each bit in the object representation of signed integers [C17:6.2.6.2/2]
      is either a value bit (representing a power of 2)
      or a padding bit
      or a sign bit.
@@ -236,7 +236,7 @@
 
 (define ienv->char-bits ((ienv ienvp))
   :returns (bits posp)
-  :short "The ACL2 integer value of @('CHAR_BIT') [C:5.2.4.2.1/1]."
+  :short "The ACL2 integer value of @('CHAR_BIT') [C17:5.2.4.2.1/1]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -260,17 +260,17 @@
 
 (define ienv->uchar-max ((ienv ienvp))
   :returns (max posp :hints (("Goal" :in-theory (enable posp))))
-  :short "The ACL2 integer value of @('UCHAR_MAX') [C:5.2.4.2.1/1]."
+  :short "The ACL2 integer value of @('UCHAR_MAX') [C17:5.2.4.2.1/1]."
   :long
   (xdoc::topstring
    (xdoc::p
     "This directly derives from @('CHAR_BIT'),
      as discussed in @(tsee uchar-format),
-     and in footnote 50 of [C:6.2.6.1//3],
+     and in footnote 50 of [C17:6.2.6.1//3],
      which says that @('unsigned char') values
      range from 0 to @($2^{\\mathtt{CHAR\\_BIT}}-1$).")
    (xdoc::p
-    "This is at least 255, as required by [C:5.2.4.2.1/1]."))
+    "This is at least 255, as required by [C17:5.2.4.2.1/1]."))
   (1- (expt 2 (ienv->char-bits ienv)))
   :hooks (:fix)
   ///
@@ -296,7 +296,7 @@
 
 (define ienv->schar-max ((ienv ienvp))
   :returns (max posp :hints (("Goal" :in-theory (enable posp))))
-  :short "The ACL2 integer value of @('SCHAR_MAX') [C:5.2.4.2.1/1]."
+  :short "The ACL2 integer value of @('SCHAR_MAX') [C17:5.2.4.2.1/1]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -328,7 +328,7 @@
 
 (define ienv->schar-min ((ienv ienvp))
   :returns (min integerp)
-  :short "The ACL2 integer value of @('SCHAR_MIN') [C:5.2.4.2.1/1]."
+  :short "The ACL2 integer value of @('SCHAR_MIN') [C17:5.2.4.2.1/1]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -376,11 +376,11 @@
 
 (define ienv->char-max ((ienv ienvp))
   :returns (max integerp)
-  :short "The ACL2 integer value of @('CHAR_MIN') [C:5.2.4.2.1/1]."
+  :short "The ACL2 integer value of @('CHAR_MIN') [C17:5.2.4.2.1/1]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "As explained in [C:5.2.4.2.1/2],
+    "As explained in [C17:5.2.4.2.1/2],
      this is either 0 or the same as @('SCHAR_MIN')."))
   (if (char-format->signedp (ienv->char-format ienv))
       (ienv->schar-max ienv)
@@ -402,11 +402,11 @@
 
 (define ienv->char-min ((ienv ienvp))
   :returns (min integerp)
-  :short "The ACL2 integer value of @('CHAR_MIN') [C:5.2.4.2.1/1]."
+  :short "The ACL2 integer value of @('CHAR_MIN') [C17:5.2.4.2.1/1]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "As explained in [C:5.2.4.2.1/2],
+    "As explained in [C17:5.2.4.2.1/2],
      this is either 0 or the same as @('SCHAR_MIN')."))
   (if (char-format->signedp (ienv->char-format ienv))
       (ienv->schar-min ienv)

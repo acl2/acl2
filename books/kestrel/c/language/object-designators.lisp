@@ -25,13 +25,13 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "In C, an object is a region of storage that contains a value [C:3.15].
+    "In C, an object is a region of storage that contains a value [C17:3.15].
      This notion of object is not in the sense of object-oriented programming
      (in fact, C is not an object-oriented programming language).
      Here we introduce a notion of object designator,
      as an entity that (potentially) designates an object.
      This is in line with the terminology that defines the notion of lvalue
-     [C:6.3.2/1].")
+     [C17:6.3.2/1].")
    (xdoc::p
     "At a low level, an object designator is an address in memory.
      However, in our model, we introduce
@@ -62,12 +62,12 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Addresses are mentioned in several places in [C],
-     but there seems to be no specific place in [C] that defines them.
+    "Addresses are mentioned in several places in [C17],
+     but there seems to be no specific place in [C17] that defines them.
      Nonetheless, based on how they are mentioned,
      it is quite clear that an address is essentially a hardware address,
      i.e. a number that identifies a memory location,
-     even though [C] does not prescribe a particular representation.")
+     even though [C17] does not prescribe a particular representation.")
    (xdoc::p
     "For now we treat addresses as essentially abstract entities,
      whose only purpose is to identify objects in memory.
