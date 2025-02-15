@@ -359,7 +359,7 @@
           (append remove-rules
                   remove-lift-rules)
           ;; extra-assumption-rules:
-          (append ;; (lifter-rules64-new)
+          (append ;; (new-normal-form-rules64)
                   ;; todo: build these in deeper
                   '(section-assumptions-mach-o-64
                     acl2::mach-o-section-presentp-constant-opener
