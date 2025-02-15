@@ -690,13 +690,13 @@
                           (if position-independentp 'text-offset `,(acl2::get-mach-o-code-address parsed-executable))
                         (if (eq :pe-64 executable-type)
                             'text-offset ; todo: match what we do for other executable types
-                          (if (eq :elf-64 executable-type)
-                              (if position-independentp 'text-offset `,(acl2::get-elf-code-address parsed-executable))
+                          (if (or (eq :elf-32 executable-type)
+                                  (eq :elf-64 executable-type))
+                              (if position-independentp 'text-offset `,(acl2::get-elf-code-address parsed-executable)) ; todo: think about the 32-bit case, esp wrt position independence
                             (if (eq :mach-o-32 executable-type)
                                 nil ; todo
                               (if (eq :pe-32 executable-type)
                                   nil ; todo
-                                ;; todo: add support for :elf-32
                                 (er hard? 'unroll-x86-code-core "Unsupported executable type: ~x0.~%" executable-type))))))))
                (code-length
                  (and 64-bitp ; todo
@@ -704,13 +704,13 @@
                           (len (acl2::get-mach-o-code parsed-executable))
                         (if (eq :pe-64 executable-type)
                             10000 ; fixme
-                          (if (eq :elf-64 executable-type)
+                          (if (or (eq :elf-32 executable-type)
+                                  (eq :elf-64 executable-type))
                               (len (acl2::get-elf-code parsed-executable))
                             (if (eq :mach-o-32 executable-type)
                                 nil ; todo
                               (if (eq :pe-32 executable-type)
                                   nil ; todo
-                                ;;todo: add support for :elf-32
                                 (er hard? 'unroll-x86-code-core "Unsupported executable type: ~x0.~%" executable-type))))))))
                (standard-assumptions
                  (if suppress-assumptions
