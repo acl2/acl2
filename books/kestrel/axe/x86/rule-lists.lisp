@@ -271,7 +271,7 @@
     rml256-becomes-read ;; x86isa::rml256-when-app-view ; introduces rb
     rml512-becomes-read ;;
 
-;    rb-becomes-read ; no need to target mv-nth-1-of-rb, etc. since this rewrites the entire rb
+    ;; rb-becomes-read ; could uncomment if RB ever shows up ; no need to target mv-nth-1-of-rb, etc. since this rewrites the entire rb
     ;; These just clarify failures to turn RB into READ: ; TODO: Only use when debugging?
     ;mv-nth-1-of-rb-of-set-rip
     ;mv-nth-1-of-rb-of-set-rax ; could add more like this
@@ -339,6 +339,7 @@
     <-of-read-and-non-positive
     read-of-xw-irrel
     read-of-set-flag
+    read-of-!rflags
     read-of-set-undef
     read-of-set-mxcsr
 
@@ -398,7 +399,7 @@
     read-of-write-same
     ;; read-of-write-within-same-address  ;todo: uncomment but first simplify the assumptions we give about RSP
     read-of-write-irrel
-    read-of-write-irrel2
+    read-of-write-irrel2 ; rename to have separate in the name
     ;; todo: more variants of these:
     ;; todo: uncomment:
     ;;read-of-write-of-set-flag ; these just make terms nicer (todo: these break proofs -- why?)
@@ -3259,7 +3260,7 @@
   (append (lifter-rules-common)
           (if-lowering-rules64)
           (read-rules)
-          (write-rules)
+          (write-rules) ; move to lifter-rules-common?
           (read-and-write-rules)
           (segment-base-and-bounds-rules-64)
           '(read-byte-becomes-read) ; (read-byte-rules) ; read-byte can come from read-bytes
@@ -4655,7 +4656,6 @@
             if-of-set-flag-and-set-flag
             xr-of-!rflags-irrel ; todo: better normal form?
 
-            read-of-!rflags
             acl2::logext-of-+-of-bvplus-same-size
             acl2::logext-of-+-of-+-of-mult-same-size
             acl2::minus-cancellation-on-right ; todo: use an arithmetic-light rule
@@ -4919,14 +4919,13 @@
      acl2::bvchop-numeric-bound
      x86isa::xw-of-rip-and-if
      acl2::if-x-x-y-when-booleanp
-     read-of-xw-irrel
+     read-of-xw-irrel ; drop
      mod-of-plus-reduce-constants
      ;; mv-nth-1-of-rb-becomes-read
      ;mv-nth-1-of-wb-becomes-write-when-app-view
-     read-of-xw-irrel
-     read-of-set-flag
-     read-of-write-irrel2
-     write-of-write-same
+     read-of-set-flag ; drop
+     read-of-write-irrel2 ; drop
+     write-of-write-same ; drop
      ;; read-when-program-at-1-byte ; this is for resolving reads of the program.
      ;; read-when-program-at-4-bytes ; this is for resolving reads of the program.
      ;; read-when-program-at-2-bytes ; this is for resolving reads of the program.
@@ -4989,9 +4988,10 @@
   (declare (xargs :guard t))
   (set-difference-eq
    (lifter-rules32)
-   ;; todo: move these rule-lists:
+   ;; We remove the rules that put things into the new normal form:
+   ;; todo: move these rule-lists:  or use reader-and-writer-intro-rules here?
    '(xr-becomes-undef
-     x86isa::!undef-becomes-set-undef
+     !undef-becomes-set-undef
      xw-becomes-set-undef
      xr-becomes-ms
      xw-becomes-set-ms
@@ -5000,7 +5000,8 @@
      xw-becomes-set-fault
      !fault-becomes-set-fault)))
 
-;; Can't really use the new, nicer normal forms for readers and writers:
+;; Can't really use the new, nicer normal forms for readers and writers, since
+;; the loop-lifter expects state terms built from XW, WRITE, and SET-FLAG.
 (defun loop-lifter-rules64 ()
   (declare (xargs :guard t))
   (set-difference-eq
