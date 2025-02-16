@@ -2574,16 +2574,13 @@ You are using version ~s.~s.~s."
 ; When we tried to put this code under the binding of *readtable* to
 ; *acl2-readtable* above, we got an error from acl2-read-character-string
 ; (called by acl2-character-reader, which is invoked due to the modification of
-; *acl2-readtable* by modify-acl2-readtable), complaining about Null (which is
-; odd, since #\Null isn't defined in GCL, even in GCL 2.7.0 -- maybe it's
-; installed during si::do-recomp?).  When we hacked ACL2 to avoid that problem,
-; we got a similar error about Linefeed.  So we invoke si::do-recomp here using
-; the default GCL *readtable*, which avoids the check in
-; acl2-read-character-string, with the expectation that the resulting compiled
-; code will be the same as if *acl2-readtable* had been used.  We believe that
-; since the purpose of *acl2-readtable* is essentially to install extra checks,
-; not to change behavior when those checks have succeeded (during the original
-; compilation).
+; *acl2-readtable* by modify-acl2-readtable), complaining about Linefeed.  So
+; we invoke si::do-recomp here using the default GCL *readtable*, which avoids
+; the check in acl2-read-character-string, with the expectation that the
+; resulting compiled code will be the same as if *acl2-readtable* had been
+; used.  We believe that since the purpose of *acl2-readtable* is essentially
+; to install extra checks, not to change behavior when those checks have
+; succeeded (during the original compilation).
 
        ((warning (lambda (c)
                    (declare (ignore c))
