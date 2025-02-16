@@ -730,8 +730,6 @@
        (body
         `(cond ((endp ,type)
                 ,default)
-               ((endp (cdr ,type))
-                (,elt-type-suffix (car ,type) ,@extra-args-names))
                (t (,combine (,elt-type-suffix (car ,type) ,@extra-args-names)
                             (,type-suffix (cdr ,type) ,@extra-args-names)))))
        (type-suffix-when-atom
@@ -802,8 +800,6 @@
        (body
         `(cond ((not (mbt (,recog ,type))) ,default)
                ((omap::emptyp ,type) ,default)
-               ((omap::emptyp (omap::tail ,type))
-                (,val-type-suffix (omap::head-val ,type) ,@extra-args-names))
                (t (,combine (,val-type-suffix (omap::head-val ,type)
                                               ,@extra-args-names)
                             (,type-suffix (omap::tail ,type)
