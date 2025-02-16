@@ -1,11 +1,11 @@
 ; C Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -41,7 +41,7 @@
    (xdoc::p
     "We introduce functions @('<type>-<base>-const')
      to construct integer constants.
-     Following [C:6.4.4.1], these have non-negative values
+     Following [C17:6.4.4.1], these have non-negative values
      and may have only certain integer types,
      namely those with the same rank as @('int') or higher.
      Thus we introduce three functions for each integer type in those ranks,
@@ -61,7 +61,7 @@
      to turn ACL2 booleans into the @('int') 0 or 1 (for false and true).
      This function is used in the ACL2 representation of
      non-strict C conjunctions @('&&') and disjunctions @('||'),
-     which always return @('int') 0 or 1 [C:6.5.13/3] [C:6.5.14/3].
+     which always return @('int') 0 or 1 [C17:6.5.13/3] [C17:6.5.14/3].
      We do not need similar functions for other types,
      because the 0 or 1 are always @('int')
      for operations like @('&&') and @('||').")
@@ -78,15 +78,15 @@
      The function takes an argument of that integer type,
      and returns a result of possibly different type.
      For all the unary integer operators except @('!'),
-     C promotes operands [C:6.3.1.1/2] to types of rank @('int') or higher,
+     C promotes operands [C17:6.3.1.1/2] to types of rank @('int') or higher,
      and that is also the result of the operator.
      C does not promote the operand of @('!');
      this operator always returns an @('int').")
    (xdoc::p
     "For all the binary integer operators
      except @('<<'), @('>>'), @('&&'), and @('||'),
-     C subjects the operands to the usual arithmetic conversions [C:6.3.1.8],
-     which involve promoting them [C:6.3.1.1/2]
+     C subjects the operands to the usual arithmetic conversions [C17:6.3.1.8],
+     which involve promoting them [C17:6.3.1.1/2]
      and turning them into a common type of rank @('int') or higher:
      thus, it suffices to define functions for operands
      of the same type of rank @('int') or higher.
@@ -97,15 +97,15 @@
    (xdoc::p
     "When the exact result of an aritmetic operation on signed integers
      is not representable in the signed integer type,
-     the behavior is undefined [C:6.5/5]:
+     the behavior is undefined [C17:6.5/5]:
      our functions for signed integer operations
      have guards requiring the results to be representable.")
    (xdoc::p
-    "Arithmetic on unsigned integers is modular [C:6.2.5/9].")
+    "Arithmetic on unsigned integers is modular [C17:6.2.5/9].")
    (xdoc::p
     "The right operand of a signed shift operator
      must be non-negative and below the bit size of the left operand
-     [C:6.5.7/3].
+     [C17:6.5.7/3].
      The left operand, when signed, must be non-negative.
      These requirements are captured in the guards.")
    (xdoc::p
@@ -119,7 +119,7 @@
     "The bitwise operations assume a two's complement representation,
      which is consistent with "
     (xdoc::seetopic "integer-formats" "our model of integer values")
-    "; these operations depend on the C representation of integers [C:6.5/4]."))
+    "; these operations depend on the C representation of integers [C17:6.5/4]."))
   :order-subtopics t
   :default-parent t)
 
@@ -350,7 +350,7 @@
         :res-type ,<type>p
         :short ,(str::cat "Unary plus of a value of "
                           type1-string
-                          " [C:6.5.3].")
+                          " [C17:6.5.3].")
         :body ,(if samep
                    `(,<type1>-fix x)
                  `(,plus-<type> (,<type>-from-<type1> x))))
@@ -379,7 +379,7 @@
         :res-type ,<type>p
         :short ,(str::cat "Unary minus of a value of "
                           type1-string
-                          " [C:6.5.3].")
+                          " [C17:6.5.3].")
         :body ,(if samep
                    `(,(if signedp
                           <type1>-from-integer
@@ -398,7 +398,7 @@
         :res-type ,<type>p
         :short ,(str::cat "Bitwise complement of a value of "
                           type1-string
-                          " [C:6.5.3].")
+                          " [C17:6.5.3].")
         :body ,(if samep
                    `(,(if signedp
                           <type1>-from-integer
@@ -424,7 +424,7 @@
         :res-type sintp
         :short ,(str::cat "Logical complement of a value of "
                           type1-string
-                          " [C:6.5.3].")
+                          " [C17:6.5.3].")
         :body (sint-from-boolean (= (,integer-from-<type1> x) 0)))
 
        ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -456,7 +456,7 @@
         :res-type ,<type>p
         :short ,(str::cat "Left shift of a value of "
                           type1-string
-                          " by an integer [C:6.5.7].")
+                          " by an integer [C17:6.5.7].")
         :body ,(if samep
                    `(,(if signedp
                           <type1>-from-integer
@@ -497,7 +497,7 @@
         :res-type ,<type>p
         :short ,(str::cat "Right shift of a value of "
                           type1-string
-                          " by an integer [C:6.5.7].")
+                          " by an integer [C17:6.5.7].")
         :body ,(if samep
                    `(,(if signedp
                           <type1>-from-integer
@@ -698,7 +698,7 @@
                           type1-string
                           " and a value of "
                           type2-string
-                          " [C:6.5.6].")
+                          " [C17:6.5.6].")
         :body
         ,(if samep
              `(,(if signedp
@@ -747,7 +747,7 @@
                           type1-string
                           " and a value of "
                           type2-string
-                          " [C:6.5.6].")
+                          " [C17:6.5.6].")
         :body
         ,(if samep
              `(,(if signedp
@@ -796,7 +796,7 @@
                           type1-string
                           " and a value of "
                           type2-string
-                          " [C:6.5.5].")
+                          " [C17:6.5.5].")
         :body
         ,(if samep
              `(,(if signedp
@@ -846,7 +846,7 @@
                           type1-string
                           " and a value of "
                           type2-string
-                          " [C:6.5.5].")
+                          " [C17:6.5.5].")
         :body
         ,(if samep
              `(,(if signedp
@@ -894,7 +894,7 @@
                           type1-string
                           " and a value of "
                           type2-string
-                          " [C:6.5.5].")
+                          " [C17:6.5.5].")
         :body
         ,(if samep
              `(,(if signedp
@@ -935,7 +935,7 @@
                           type1-string
                           " and a value of "
                           type2-string
-                          " [C:6.5.7].")
+                          " [C17:6.5.7].")
         :body (,shl-<type1> x (,integer-from-<type2> y))
         :guard-hints (("Goal" :in-theory (enable ,shl-<type1>-<type2>-okp))))
 
@@ -965,7 +965,7 @@
                           type1-string
                           " and a value of "
                           type2-string
-                          " [C:6.5.7].")
+                          " [C17:6.5.7].")
         :body (,shr-<type1> x (,integer-from-<type2> y))
         :guard-hints (("Goal" :in-theory (enable ,shr-<type1>-<type2>-okp))))
 
@@ -980,7 +980,7 @@
                           type1-string
                           " and a value of "
                           type2-string
-                          " [C:6.5.8].")
+                          " [C17:6.5.8].")
         :body
         ,(if samep
              `(if (< (,integer-from-<type1> x)
@@ -1002,7 +1002,7 @@
                           type1-string
                           " and a value of "
                           type2-string
-                          " [C:6.5.8].")
+                          " [C17:6.5.8].")
         :body
         ,(if samep
              `(if (> (,integer-from-<type1> x)
@@ -1024,7 +1024,7 @@
                           type1-string
                           " and a value of "
                           type2-string
-                          " [C:6.5.8].")
+                          " [C17:6.5.8].")
         :body
         ,(if samep
              `(if (<= (,integer-from-<type1> x)
@@ -1046,7 +1046,7 @@
                           type1-string
                           " and a value of "
                           type2-string
-                          " [C:6.5.8].")
+                          " [C17:6.5.8].")
         :body
         ,(if samep
              `(if (>= (,integer-from-<type1> x)
@@ -1068,7 +1068,7 @@
                           type1-string
                           " and a value of "
                           type2-string
-                          " [C:6.5.9].")
+                          " [C17:6.5.9].")
         :body
         ,(if samep
              `(if (= (,integer-from-<type1> x)
@@ -1090,7 +1090,7 @@
                           type1-string
                           " and a value of "
                           type2-string
-                          " [C:6.5.9].")
+                          " [C17:6.5.9].")
         :body
         ,(if samep
              `(if (/= (,integer-from-<type1> x)
@@ -1112,7 +1112,7 @@
                           type1-string
                           " and a value of "
                           type2-string
-                          " [C:6.5.10].")
+                          " [C17:6.5.10].")
         :body
         ,(if samep
              `(,<type>-from-integer
@@ -1142,7 +1142,7 @@
                           type1-string
                           " and a value of "
                           type2-string
-                          " [C:6.5.11].")
+                          " [C17:6.5.11].")
         :body
         ,(if samep
              `(,<type>-from-integer
@@ -1172,7 +1172,7 @@
                           type1-string
                           " and a value of "
                           type2-string
-                          " [C:6.5.12].")
+                          " [C17:6.5.12].")
         :body
         ,(if samep
              `(,<type>-from-integer

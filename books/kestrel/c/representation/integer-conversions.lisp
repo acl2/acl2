@@ -1,11 +1,11 @@
 ; C Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -35,9 +35,9 @@
     "We define ACL2 functions that convert
      between values of different C integer types.")
    (xdoc::p
-    "Conversions between C types are described in [C:6.3].
+    "Conversions between C types are described in [C17:6.3].
      Here we define conversions among the integer types supported by our model;
-     these conversions are described in [C:6.3.1.3].")
+     these conversions are described in [C17:6.3.1.3].")
    (xdoc::p
     "For the case of a conversion to a signed integer
      that cannot represent the original value,
@@ -50,7 +50,7 @@
      we use @(tsee mod) (via the modular constructor) to make it fit.
      If the original value fits, the @(tsee mod) has no effect.
      Otherwise, the @(tsee mod) corresponds to the
-     repeated addition or subtraction described in [C:6.3.1.3]."))
+     repeated addition or subtraction described in [C17:6.3.1.3]."))
   :order-subtopics t
   :default-parent t)
 

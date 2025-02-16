@@ -1,11 +1,11 @@
 ; C Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -154,7 +154,7 @@
   :short "Pretty-print a decimal constant."
   :long
   (xdoc::topstring-p
-   "According to the grammar [C:6.4.4.1],
+   "According to the grammar [C17:6.4.4.1],
     a `decimal constant' is a sequence of decimal digits
     that does not start with @('0');
     with the optional suffixes, this becomes an integer constant.
@@ -170,7 +170,7 @@
   :short "Pretty-print an octal constant."
   :long
   (xdoc::topstring-p
-   "According to the grammar [C:6.4.4.1],
+   "According to the grammar [C17:6.4.4.1],
     an `octal constant' is a sequence of octal digits starting with @('0');
     with the optional suffixes, this becomes an integer constant.")
   (if (zp n)
@@ -187,7 +187,7 @@
   :short "Pretty-print a hexadecimal constant."
   :long
   (xdoc::topstring-p
-   "According to the grammar [C:6.4.4.1],
+   "According to the grammar [C17:6.4.4.1],
     a `hexadecimal constant' is a sequence of hexadecimal digits
     preceded by @('0x') or @('0X');
     with the optional suffixes, this becomes an integer constant.
@@ -315,7 +315,7 @@
     "Array declarators bind tighter than pointer declarators.
      E.g. @('*x[]') is like @('*(x[])'), not like @('(*x)[]').
      This is because the concrete syntax @('*x[]') must be organized,
-     according to the C grammar [C:6.7.6],
+     according to the C grammar [C17:6.7.6],
      as a <i>pointer</i> and a <i>direct-declarator</i>,
      the latter consisting of
      another <i>direct-declarator</i> for just the identifier @('x')
@@ -497,7 +497,7 @@
      by the C grammar of expressions,
      which also defines the left vs. right associativity
      of binary operators.
-     For instance, the rules in [C:6.5.5] and [C:6.5.6] tell us that
+     For instance, the rules in [C17:6.5.5] and [C17:6.5.6] tell us that
      (i) @('+') binds tighter than @('*') and
      (ii) @('+') is left-associative:")
    (xdoc::ul
@@ -551,7 +551,7 @@
      <i>additive-expression: multiplicative-expression</i> in the grammar.
      (Here by `subrule' we mean a rule not necessarily in the grammar
      but obtainable by selecting just some of the alternatives in the definiens
-     that are on different lines in [C].)
+     that are on different lines in [C17].)
      The nonterminal <i>additive-expression</i> also has other alternatives,
      but those are not single nonterminals;
      here we are only concerned with single nonterminals as rule definientia.
@@ -564,7 +564,7 @@
      At the top level, this second argument is
      the grade of top-level expressions,
      i.e. the grade that corresponds to
-     the nonterminal <i>expression</i> [C:6.5.17].
+     the nonterminal <i>expression</i> [C17:6.5.17].
      As the pretty-printer descends into subexpressions,
      the second argument is changed according to
      the grammar rule corresponding to the super-expressions.
@@ -1100,7 +1100,7 @@
     "If the parameter list is empty,
      we pretty-print @('void') for the parameters instead of nothing,
      which more clearly say that the function takes no parameters
-     [C:6.7.6.3/10] [C:6.7.6.3/14].
+     [C17:6.7.6.3/10] [C17:6.7.6.3/14].
      If the declarator is part of a function definition,
      it does not make a difference,
      but otherwise it makes a difference;

@@ -489,7 +489,7 @@
     bvxor-convert-arg2-to-bv-axe
     bvxor-convert-arg3-to-bv-axe
     getbit-convert-arg1-to-bv-axe ; todo: more!
-    ;; logext-convert-arg2-to-bv-axe ; loops with acl2::logext-of-bvplus-64
+    ;; logext-convert-arg2-to-bv-axe ; loops with logext-of-bvplus-64
     ;; keep this list in sync with *functions-convertible-to-bv*:
     trim-of-logand-becomes-bvand
     trim-of-logior-becomes-bvor
@@ -2279,7 +2279,7 @@
      inverse-of-+
      bvlt-of-bvplus-of-1-and-same
      ;; <-becomes-bvlt-axe-bind-free-arg1 ;wed feb 24 15:00:17 2010
-     len-when-equal-take
+     ;len-when-equal-take
      car-of-nthcdr
      consp-of-nthcdr
      equal-cons-cases2 ;hope this is ok

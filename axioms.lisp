@@ -16288,7 +16288,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
       '(state-global-let* ,bindings ,body)
       (let ((state-global-let*-cleanup-lst
-             (list ,@(state-global-let*-get-globals bindings))))
+             (list$ ,@(state-global-let*-get-globals bindings))))
         ,@(and (null bindings)
                '((declare (ignore state-global-let*-cleanup-lst))))
         (acl2-unwind-protect

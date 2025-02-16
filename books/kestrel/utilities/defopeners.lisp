@@ -727,6 +727,9 @@
                                )
   `(defopeners-names-fn ',fn ',hyps ',disable ',suffix ',verbose state))
 
+;; Returns the defopener events (for recursive functions) and the rule names
+;; (function names for non-recursive functions, and defopener names for
+;; recursive functions) needed to open/unroll the FNS.
 ;; Returns (mv events rule-names).
 ;; TODO: Change this and related fns to take wrld instead of state?
 (defun opener-rules-for-fns (fns disable suffix events-acc rule-names-acc state)
@@ -742,7 +745,7 @@
       (mv (reverse events-acc) (reverse rule-names-acc))
     (let ((fn (first fns)))
       (if (eq 'quote fn)
-          (prog2$ (er hard? 'opener-rules-for-fns "One of the fns give is QUOTE.")
+          (prog2$ (er hard? 'opener-rules-for-fns "One of the fns given is QUOTE.")
                   (mv nil nil))
         (if (recursivep fn nil (w state))
             (opener-rules-for-fns (rest fns)

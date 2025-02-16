@@ -163,6 +163,24 @@
 (theory-invariant (incompatible (:definition rsp) (:rewrite xr-becomes-rsp)))
 (theory-invariant (incompatible (:definition rbp) (:rewrite xr-becomes-rbp)))
 
+;; These go in one step:
+(defthmd rgfi-becomes-rax (equal (rgfi *rax* x86) (rax x86)) :hints (("Goal" :in-theory (enable rax))))
+(defthmd rgfi-becomes-rbx (equal (rgfi *rbx* x86) (rbx x86)) :hints (("Goal" :in-theory (enable rbx))))
+(defthmd rgfi-becomes-rcx (equal (rgfi *rcx* x86) (rcx x86)) :hints (("Goal" :in-theory (enable rcx))))
+(defthmd rgfi-becomes-rdx (equal (rgfi *rdx* x86) (rdx x86)) :hints (("Goal" :in-theory (enable rdx))))
+(defthmd rgfi-becomes-rsi (equal (rgfi *rsi* x86) (rsi x86)) :hints (("Goal" :in-theory (enable rsi))))
+(defthmd rgfi-becomes-rdi (equal (rgfi *rdi* x86) (rdi x86)) :hints (("Goal" :in-theory (enable rdi))))
+(defthmd rgfi-becomes-r8 (equal (rgfi *r8* x86) (r8 x86)) :hints (("Goal" :in-theory (enable r8))))
+(defthmd rgfi-becomes-r9 (equal (rgfi *r9* x86) (r9 x86)) :hints (("Goal" :in-theory (enable r9))))
+(defthmd rgfi-becomes-r10 (equal (rgfi *r10* x86) (r10 x86)) :hints (("Goal" :in-theory (enable r10))))
+(defthmd rgfi-becomes-r11 (equal (rgfi *r11* x86) (r11 x86)) :hints (("Goal" :in-theory (enable r11))))
+(defthmd rgfi-becomes-r12 (equal (rgfi *r12* x86) (r12 x86)) :hints (("Goal" :in-theory (enable r12))))
+(defthmd rgfi-becomes-r13 (equal (rgfi *r13* x86) (r13 x86)) :hints (("Goal" :in-theory (enable r13))))
+(defthmd rgfi-becomes-r14 (equal (rgfi *r14* x86) (r14 x86)) :hints (("Goal" :in-theory (enable r14))))
+(defthmd rgfi-becomes-r15 (equal (rgfi *r15* x86) (r15 x86)) :hints (("Goal" :in-theory (enable r15))))
+(defthmd rgfi-becomes-rsp (equal (rgfi *rsp* x86) (rsp x86)) :hints (("Goal" :in-theory (enable rsp))))
+(defthmd rgfi-becomes-rbp (equal (rgfi *rbp* x86) (rbp x86)) :hints (("Goal" :in-theory (enable rbp))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Introduce the register writers:
@@ -1018,16 +1036,6 @@
   (equal (set-rip val (if test x y))
          (if test (set-rip val x)
            (set-rip val y))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; These go in one step:
-
-;; todo: more like this!
-(defthmd rgfi-becomes-rbp (equal (rgfi *rbp* x86) (rbp x86)) :hints (("Goal" :in-theory (enable rbp))))
-(defthmd rgfi-becomes-rsp (equal (rgfi *rsp* x86) (rsp x86)) :hints (("Goal" :in-theory (enable rsp))))
-(defthmd rgfi-becomes-rax (equal (rgfi *rax* x86) (rax x86)) :hints (("Goal" :in-theory (enable rax))))
-(defthmd rgfi-becomes-rbx (equal (rgfi *rbx* x86) (rbx x86)) :hints (("Goal" :in-theory (enable rbx))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

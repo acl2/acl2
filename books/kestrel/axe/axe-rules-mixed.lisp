@@ -144,6 +144,7 @@
                   (and (unsigned-byte-p free y) ;use unsigned-byte-p-forced in a hyp???
                        (equal x (bvchop free y))))))
 
+;; todo: gen
 (defthmd unsigned-byte-p-of-bvplus-when-both-smaller
   (implies (and (axe-bind-free (bind-bv-size-axe x 'x-size dag-array) '(x-size))
                 (axe-bind-free (bind-bv-size-axe y 'y-size dag-array) '(y-size))

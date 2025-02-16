@@ -287,18 +287,14 @@
           the function is defined to return
           the term specified by the @(':default') input.")
         (xdoc::li
-         "If the list is a singleton,
-          the function is defined to return
-          the result of calling the fold function for the element type
-          on the element of the list.")
-        (xdoc::li
-         "If the list has two or more elements,
+         "If the list is not empty,
           the function is defined to return
           the result of combining,
           via the function specified by the @(':combine') input,
-          the results of applying the corresponding fold functions
-          to the elements, nested to the right
-          (i.e. @('(combine val1 ... (combine valN-1 valN))')).")))
+          the result of applying the element type's fold function
+          to the @(tsee car) of the list
+          with the result of applying to list type's fold function
+          to the @(tsee cdr) of the list.")))
       (xdoc::li
        "If @('<type>') is a @(tsee defoption):"
        (xdoc::ul
@@ -318,19 +314,14 @@
           the function is defined to return
           the term specified by the @(':default') input.")
         (xdoc::li
-        (xdoc::li
-         "If the map is a singleton,
-          the function is defined to return
-          the result of applying the fold function for the value type
-          to the value of the map.")
-        (xdoc::li
-         "If the map has two or more elements,
+         "If the map is not empty,
           the function is defined to return
           the result of combining,
           via the function specified by the @(':combine') input,
-          the results of applying the fold function for the value type
-          to the values of the map, nested to the right
-          (i.e. @('(combine val1 ... (combine valN-1 valN))'))."))))))
+          the result of applying the map value type's fold function
+          to the head value of the map
+          with the result of applying to list type's fold function
+          to the tail of the map.")))))
 
     (xdoc::desc
      "Accompanying list theorems."

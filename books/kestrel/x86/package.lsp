@@ -212,8 +212,6 @@
     x86isa::byte-listp ;todo: compare with unsigned-byte-p-list
     x86isa::alignment-checking-enabled-p
     x86isa::get-prefixes
-    x86isa::!ms
-    x86isa::!ms$inline
     x86isa::x86-fetch-decode-execute
 
     x86isa::64-bit-modep
@@ -448,6 +446,9 @@
 
     x86isa::rip
     x86isa::rip$a
+    x86isa::!rip
+    x86isa::!rip$a
+
     x86isa::x86-run
     x86isa::x86-run-halt
     x86isa::prefixes-slice
@@ -465,11 +466,16 @@
 
     x86isa::increment-*ip ; remove?
     x86isa::one-byte-opcode-execute
+
     x86isa::fault
     x86isa::fault$a
     x86isa::!fault
+    x86isa::!fault$a
     x86isa::ms
     x86isa::ms$a
+    x86isa::!ms
+    x86isa::!ms$a
+
     x86isa::combine-bytes
 
     x86isa::ea-to-la
@@ -585,10 +591,11 @@
     x86isa::seg-hidden-limiti
     x86isa::seg-hidden-basei
     x86isa::seg-visiblei
-    x86isa::!rip
-    x86isa::!rip$a
 
     x86isa::ctri
+    x86isa::ctri$a
+    x86isa::!ctri
+    x86isa::!ctri$a
 
     x86isa::cr0bits-p$inline
     x86isa::cr0bits-p
@@ -1208,6 +1215,7 @@
     lookup
     lookup-safe
     lookup-equal
+    lookup-equal-safe
 
     want-to-weaken ; for polarity-based reasoning
     want-to-strengthen ; for polarity-based reasoning

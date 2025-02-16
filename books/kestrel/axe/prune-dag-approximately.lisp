@@ -562,7 +562,7 @@
                                                           nil ; assumptions
                                                           rule-alist
                                                           nil ; interpreted-function-alist
-                                                          (acl2::known-booleans (w state))
+                                                          (known-booleans (w state))
                                                           nil ; normalize-xors
                                                           nil ; limits
                                                           nil ; memoize
