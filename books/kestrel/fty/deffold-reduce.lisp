@@ -730,8 +730,6 @@
        (body
         `(cond ((endp ,type)
                 ,default)
-               ((endp (cdr ,type))
-                (,elt-type-suffix (car ,type) ,@extra-args-names))
                (t (,combine (,elt-type-suffix (car ,type) ,@extra-args-names)
                             (,type-suffix (cdr ,type) ,@extra-args-names)))))
        (type-suffix-when-atom
@@ -802,8 +800,6 @@
        (body
         `(cond ((not (mbt (,recog ,type))) ,default)
                ((omap::emptyp ,type) ,default)
-               ((omap::emptyp (omap::tail ,type))
-                (,val-type-suffix (omap::head-val ,type) ,@extra-args-names))
                (t (,combine (,val-type-suffix (omap::head-val ,type)
                                               ,@extra-args-names)
                             (,type-suffix (omap::tail ,type)
@@ -1023,7 +1019,7 @@
 (define deffoldred-process-inputs-and-gen-everything ((args true-listp)
                                                       (wrld plist-worldp))
   :returns (mv erp (event acl2::pseudo-event-formp))
-  :parents (deffoldred-implementation)
+  :parents (deffold-reduce-implementation)
   :short "Process the inputs and generate the events."
   (b* (((reterr) '(_))
        (fty-table (acl2::table-alist+ 'flextypes-table wrld))
@@ -1063,7 +1059,7 @@
 
 (define deffoldred-fn ((args true-listp) (ctx ctxp) state)
   :returns (mv erp (event acl2::pseudo-event-formp) state)
-  :parents (deffoldred-implementation)
+  :parents (deffold-reduce-implementation)
   :short "Event expansion of @(tsee deffold-reduce)."
   (b* (((mv erp event)
         (deffoldred-process-inputs-and-gen-everything args (w state)))
@@ -1073,7 +1069,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection deffoldred-macro-definition
-  :parents (deffoldred-implementation)
+  :parents (deffold-reduce-implementation)
   :short "Definition of @(tsee deffold-reduce)."
   (defmacro deffold-reduce (&rest args)
     `(make-event (deffoldred-fn ',args 'deffold-reduce state))))

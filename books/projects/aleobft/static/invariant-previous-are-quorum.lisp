@@ -65,7 +65,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule system-previous-are-quorum-p-when-system-state-initp
+(defruled system-previous-are-quorum-p-when-system-state-initp
   :short "Establishment of the invariant:
           the invariant holds on any initial system state."
   :long
@@ -97,7 +97,7 @@
      which involves considering all certificates, old and new
      (which the prover handles automatically)."))
 
-  (defrule previous-are-quorum-when-create-certificate-possiblep
+  (defruled previous-are-quorum-when-create-certificate-possiblep
     (implies (create-certificate-possiblep cert systate)
              (equal (set::cardinality (certificate->previous cert))
                     (if (equal (certificate->round cert) 1)
@@ -106,7 +106,7 @@
     :enable (create-certificate-possiblep
              set::expensive-rules))
 
-  (defrule system-previous-are-quorum-p-of-create-certificate-next
+  (defruled system-previous-are-quorum-p-of-create-certificate-next
     (implies (and (system-previous-are-quorum-p systate)
                   (create-certificate-possiblep cert systate)
                   (certificatep cert))
@@ -115,12 +115,13 @@
     :expand (system-previous-are-quorum-p
              (create-certificate-next cert systate))
     :enable (system-previous-are-quorum-p-necc
-             certificates-for-validator-of-create-certificate-next)
+             certificates-for-validator-of-create-certificate-next
+             previous-are-quorum-when-create-certificate-possiblep)
     :disable set::cardinality-zero-emptyp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule system-previous-are-quorum-p-of-receive-certificate-next
+(defruled system-previous-are-quorum-p-of-receive-certificate-next
   :short "Preservation of the invariant by @('receive-certificate') events."
   :long
   (xdoc::topstring
@@ -138,7 +139,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule system-previous-are-quorum-p-of-store-certificate-next
+(defruled system-previous-are-quorum-p-of-store-certificate-next
   :short "Preservation of the invariant by @('store-certificate') events."
   :long
   (xdoc::topstring
@@ -156,7 +157,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule system-previous-are-quorum-p-of-advance-round-next
+(defruled system-previous-are-quorum-p-of-advance-round-next
   :short "Preservation of the invariant by @('advance-round') events."
   :long
   (xdoc::topstring
@@ -174,7 +175,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule system-previous-are-quorum-p-of-commit-anchors-next
+(defruled system-previous-are-quorum-p-of-commit-anchors-next
   :short "Preservation of the invariant by @('commit-anchors') events."
   :long
   (xdoc::topstring
@@ -192,7 +193,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule system-previous-are-quorum-p-of-timer-expires-next
+(defruled system-previous-are-quorum-p-of-timer-expires-next
   :short "Preservation of the invariant by @('timer-expires') events."
   :long
   (xdoc::topstring
@@ -210,7 +211,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defrule system-previous-are-quorum-p-of-event-next
+(defruled system-previous-are-quorum-p-of-event-next
   :short "Preservation of the invariant by all events."
   :long
   (xdoc::topstring
