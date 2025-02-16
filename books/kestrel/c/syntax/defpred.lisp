@@ -636,7 +636,8 @@
            `(std::deflist ,type-suffix (x)
               :guard (,recog x)
               (,elt-type-suffix x)
-              :true-listp nil)))
+              :true-listp nil
+              :parents nil)))
        (thm-events (list deflist-event))
        (event
         `(define ,type-suffix ((,type ,recog) ,@extra-args)
