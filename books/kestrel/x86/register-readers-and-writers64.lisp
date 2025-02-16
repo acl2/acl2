@@ -218,6 +218,23 @@
 (theory-invariant (incompatible (:definition set-rsp) (:rewrite xw-becomes-set-rsp)))
 (theory-invariant (incompatible (:definition set-rbp) (:rewrite xw-becomes-set-rbp)))
 
+(defthmd !rgfi-becomes-set-rax (equal (!rgfi *rax* val x86) (set-rax val x86)) :hints (("Goal" :in-theory (enable set-rax))))
+(defthmd !rgfi-becomes-set-rbx (equal (!rgfi *rbx* val x86) (set-rbx val x86)) :hints (("Goal" :in-theory (enable set-rbx))))
+(defthmd !rgfi-becomes-set-rcx (equal (!rgfi *rcx* val x86) (set-rcx val x86)) :hints (("Goal" :in-theory (enable set-rcx))))
+(defthmd !rgfi-becomes-set-rdx (equal (!rgfi *rdx* val x86) (set-rdx val x86)) :hints (("Goal" :in-theory (enable set-rdx))))
+(defthmd !rgfi-becomes-set-rsi (equal (!rgfi *rsi* val x86) (set-rsi val x86)) :hints (("Goal" :in-theory (enable set-rsi))))
+(defthmd !rgfi-becomes-set-rdi (equal (!rgfi *rdi* val x86) (set-rdi val x86)) :hints (("Goal" :in-theory (enable set-rdi))))
+(defthmd !rgfi-becomes-set-r8 (equal (!rgfi *r8* val x86) (set-r8 val x86)) :hints (("Goal" :in-theory (enable set-r8))))
+(defthmd !rgfi-becomes-set-r9 (equal (!rgfi *r9* val x86) (set-r9 val x86)) :hints (("Goal" :in-theory (enable set-r9))))
+(defthmd !rgfi-becomes-set-r10 (equal (!rgfi *r10* val x86) (set-r10 val x86)) :hints (("Goal" :in-theory (enable set-r10))))
+(defthmd !rgfi-becomes-set-r11 (equal (!rgfi *r11* val x86) (set-r11 val x86)) :hints (("Goal" :in-theory (enable set-r11))))
+(defthmd !rgfi-becomes-set-r12 (equal (!rgfi *r12* val x86) (set-r12 val x86)) :hints (("Goal" :in-theory (enable set-r12))))
+(defthmd !rgfi-becomes-set-r13 (equal (!rgfi *r13* val x86) (set-r13 val x86)) :hints (("Goal" :in-theory (enable set-r13))))
+(defthmd !rgfi-becomes-set-r14 (equal (!rgfi *r14* val x86) (set-r14 val x86)) :hints (("Goal" :in-theory (enable set-r14))))
+(defthmd !rgfi-becomes-set-r15 (equal (!rgfi *r15* val x86) (set-r15 val x86)) :hints (("Goal" :in-theory (enable set-r15))))
+(defthmd !rgfi-becomes-set-rsp (equal (!rgfi *rsp* val x86) (set-rsp val x86)) :hints (("Goal" :in-theory (enable set-rsp))))
+(defthmd !rgfi-becomes-set-rbp (equal (!rgfi *rbp* val x86) (set-rbp val x86)) :hints (("Goal" :in-theory (enable set-rbp))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Read-of-write of the same register:
