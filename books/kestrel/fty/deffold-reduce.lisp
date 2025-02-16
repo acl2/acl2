@@ -1019,7 +1019,7 @@
 (define deffoldred-process-inputs-and-gen-everything ((args true-listp)
                                                       (wrld plist-worldp))
   :returns (mv erp (event acl2::pseudo-event-formp))
-  :parents (deffoldred-implementation)
+  :parents (deffold-reduce-implementation)
   :short "Process the inputs and generate the events."
   (b* (((reterr) '(_))
        (fty-table (acl2::table-alist+ 'flextypes-table wrld))
@@ -1059,7 +1059,7 @@
 
 (define deffoldred-fn ((args true-listp) (ctx ctxp) state)
   :returns (mv erp (event acl2::pseudo-event-formp) state)
-  :parents (deffoldred-implementation)
+  :parents (deffold-reduce-implementation)
   :short "Event expansion of @(tsee deffold-reduce)."
   (b* (((mv erp event)
         (deffoldred-process-inputs-and-gen-everything args (w state)))
@@ -1069,7 +1069,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defsection deffoldred-macro-definition
-  :parents (deffoldred-implementation)
+  :parents (deffold-reduce-implementation)
   :short "Definition of @(tsee deffold-reduce)."
   (defmacro deffold-reduce (&rest args)
     `(make-event (deffoldred-fn ',args 'deffold-reduce state))))
