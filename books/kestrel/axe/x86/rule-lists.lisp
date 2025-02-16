@@ -1748,28 +1748,6 @@
 
             myif ; trying this, so that we only have to deal with if ; todo: remove all other rules aboute myif.  todo: try this first
 
-            ;; Reading/writing registers (or parts of registers).  we leave
-            ;; these enabled to expose rgfi and !rgfi, which then get rewritten
-            ;; to xr and xw.  shilpi seems to do the same.
-            rr08$inline
-            rr16$inline
-            rr32$inline
-            rr64$inline
-            wr08$inline
-            wr16$inline
-            wr32$inline
-            wr64$inline
-
-            rgfi rgfi$a ;expose the call to xr ; todo: go directly to the right reader
-            rgfi-size$inline ;dispatches to rr08, etc.
-            !rgfi !rgfi$a ;expose the call to xw ; todo: go directly to the right writer
-            !rgfi-size$inline ; dispatches to wr08, etc.
-
-            ;; rgfi-becomes-rbp ; todo: uncomment these (and comment out the 2 rules above) but only for non-loop lifter
-            ;; rgfi-becomes-rsp
-            ;; rgfi-becomes-rax
-            ;; rgfi-becomes-rbx
-
             ;; These are just logext: ; todo: more!
             x86isa::n08-to-i08$inline
             x86isa::n16-to-i16$inline
@@ -3239,6 +3217,21 @@
     read-stack-dword-of-write-to-segment-diff-segments
     write-to-segment-of-write-byte-to-segment-included
     write-to-segment-of-write-to-segment-included
+
+    ;; Reading/writing registers (or parts of registers). These rules put in xr, which then becomes eax.  TODO: Go directly
+    rgfi-size$inline ;dispatches to rr08, etc.
+    rr08$inline ; exposes rgfi
+    rr16$inline ; exposes rgfi
+    rr32$inline ; exposes rgfi
+    rr64$inline ; exposes rgfi
+    rgfi rgfi$a ;exposes xr ; todo: go directly to the right reader
+
+    !rgfi-size$inline ; dispatches to wr08, etc.
+    wr08$inline ; exposes !rgfi
+    wr16$inline ; exposes !rgfi
+    wr32$inline ; exposes !rgfi
+    wr64$inline ; exposes !rgfi
+    !rgfi !rgfi$a ;exposes xw ; todo: go directly to the right writer
     ))
 
 (defund unroller-rules32 ()
@@ -4405,7 +4398,54 @@
     ;; mv-nth-1-of-rme-size-of-set-rsp
     ;; mv-nth-1-of-rme-size-of-set-rbp
 
-    if-of-set-rip-and-set-rip-same))
+    if-of-set-rip-and-set-rip-same
+
+    ;; Reading/writing registers (or parts of registers). These rules put in xr, which then becomes rax.  TODO: Go directly
+    rgfi-size$inline ;dispatches to rr08, etc.
+    rr08$inline ; exposes rgfi
+    rr16$inline ; exposes rgfi
+    rr32$inline ; exposes rgfi
+    rr64$inline ; exposes rgfi
+;    rgfi rgfi$a ;exposes xr
+    rgfi-becomes-rax
+    rgfi-becomes-rbx
+    rgfi-becomes-rcx
+    rgfi-becomes-rdx
+    rgfi-becomes-rsi
+    rgfi-becomes-rdi
+    rgfi-becomes-r8
+    rgfi-becomes-r9
+    rgfi-becomes-r10
+    rgfi-becomes-r11
+    rgfi-becomes-r12
+    rgfi-becomes-r13
+    rgfi-becomes-r14
+    rgfi-becomes-r15
+    rgfi-becomes-rsp
+    rgfi-becomes-rbp
+
+    !rgfi-size$inline ; dispatches to wr08, etc.
+    wr08$inline ; exposes !rgfi
+    wr16$inline ; exposes !rgfi
+    wr32$inline ; exposes !rgfi
+    wr64$inline ; exposes !rgfi
+    ;; !rgfi !rgfi$a ;exposes xw
+    !rgfi-becomes-set-rax
+    !rgfi-becomes-set-rbx
+    !rgfi-becomes-set-rcx
+    !rgfi-becomes-set-rdx
+    !rgfi-becomes-set-rsi
+    !rgfi-becomes-set-rdi
+    !rgfi-becomes-set-r8
+    !rgfi-becomes-set-r9
+    !rgfi-becomes-set-r10
+    !rgfi-becomes-set-r11
+    !rgfi-becomes-set-r12
+    !rgfi-becomes-set-r13
+    !rgfi-becomes-set-r14
+    !rgfi-becomes-set-r15
+    !rgfi-becomes-set-rsp
+    !rgfi-becomes-set-rbp))
 
 (defund unroller-rules64 ()
   (declare (xargs :guard t))
@@ -4487,6 +4527,25 @@
 
             ;x86isa::rflagsbits->res1$inline
             ;x86isa::rflagsbits->res2$inline
+
+            ;; todo: there are multiple copies of this chunk:
+            ;; Reading/writing registers (or parts of registers).  we leave
+            ;; these enabled to expose rgfi and !rgfi, which then get rewritten
+            ;; to xr and xw.  shilpi seems to do the same.
+            rgfi-size$inline ;dispatches to rr08, etc.
+            rr08$inline ; exposes rgfi
+            rr16$inline ; exposes rgfi
+            rr32$inline ; exposes rgfi
+            rr64$inline ; exposes rgfi
+            rgfi rgfi$a ;exposes xr ; todo: go directly to the right reader
+
+            !rgfi-size$inline ; dispatches to wr08, etc.
+            wr08$inline ; exposes !rgfi
+            wr16$inline ; exposes !rgfi
+            wr32$inline ; exposes !rgfi
+            wr64$inline ; exposes !rgfi
+            !rgfi !rgfi$a ;exposes xw ; todo: go directly to the right writer
+
             )))
 
 ;; some commonly monitored stuff:
@@ -4998,6 +5057,23 @@
     ;; app-view ; not needed because we never change it?
     rip rip$a ; exposes xr
     !rip !rip$a ; exposes xw
+
+    ;; Reading/writing registers (or parts of registers).  we leave
+    ;; these enabled to expose rgfi and !rgfi, which then get rewritten
+    ;; to xr and xw.  shilpi seems to do the same.
+    rgfi-size$inline ;dispatches to rr08, etc.
+    rr08$inline ; exposes rgfi
+    rr16$inline ; exposes rgfi
+    rr32$inline ; exposes rgfi
+    rr64$inline ; exposes rgfi
+    rgfi rgfi$a ;exposes xr ; todo: go directly to the right reader
+
+    !rgfi-size$inline ; dispatches to wr08, etc.
+    wr08$inline ; exposes !rgfi
+    wr16$inline ; exposes !rgfi
+    wr32$inline ; exposes !rgfi
+    wr64$inline ; exposes !rgfi
+    !rgfi !rgfi$a ;exposes xw ; todo: go directly to the right writer
     ))
 
 ;; Can't really use the new, nicer normal forms for readers and writers, since
