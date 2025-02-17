@@ -101,10 +101,27 @@ set -e
 basename=${srcfile%.*}
 cppopts="-D__RAC__ -C -std=c++14 -x c++"
 
-# Preprocess basename.cpp: first we rename assert into __RAC_ASSERT to avoid
-# its expansion (it is a macro) and then we run g++. The echo/cat is there to
-# add the file name otherwise g++ would report error in <STDIN>.
-echo "# 0 \"$basename.cpp\"" | cat - $basename.cpp | sed "s/assert/__RAC_ASSERT/g" | g++ $cppopts $incdirs - -E -o $basename.i;
+# The goals of the pipeline are:
+#  * rename assert into __RAC_ASSERT to avoid their expansion (they are defined
+#    as macro but the parser need to see them as a function call).
+#  * preprocess the file using gcc.
+
+# Add the file name otherwise g++ would report error in <STDIN>.
+echo "# 0 \"$basename.cpp\"" | \
+  # Add the source code to the stream.
+  cat - $basename.cpp | \
+  # Resolve the includes but do not preprocess the macros
+  g++ $cppopts $incdirs -E -fdirectives-only - | \
+  # Remove assert definition and rename asserts. Also remove defition that
+  # raise redefinition warnings.
+  sed "s/#define assert.*//g;
+       s/assert/__RAC_ASSERT/g
+       s/#define __STDC__ 1//g;
+       s/#define __STDC_UTF_16__ 1//g;
+       s/#define __STDC_UTF_32__ 1//g;
+       s/#define __STDC_HOSTED__ 1//g;" | \
+  # And finaly, fully preprocess the file
+  g++ $cppopts $incdirs -E -o $basename.i -;
 
 if [[ -z "$acl2" && -z "$rac" ]]
 then
