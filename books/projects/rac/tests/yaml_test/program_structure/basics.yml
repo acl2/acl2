@@ -47,6 +47,8 @@
 
 - name: comment
 - name: multiline-comment
+- name: multiline-comment-inside-struct-def
+  should_report_error: true
 
 - name: unterminated-comment
   args: ['unterminated-comment.cpp']
