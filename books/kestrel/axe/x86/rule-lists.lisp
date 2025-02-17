@@ -592,8 +592,6 @@
     set-flag-of-set-flag-same
     set-flag-of-get-flag-same-gen ;; set-flag-of-get-flag-same
 
-    x86isa::xw-rgf-of-xr-rgf-same ; drop since we don't use this normal form?
-
     acl2::expt2$inline-constant-opener
 
 ;;     ;; x86isa::get-flag-set-flag ;covers both cases, with a twist for a 2-bit flag
@@ -4402,11 +4400,11 @@
 
     ;; Reading/writing registers (or parts of registers). These rules put in xr, which then becomes rax.  TODO: Go directly
     rgfi-size$inline ;dispatches to rr08, etc.
-    rr08$inline ; exposes rgfi
-    rr16$inline ; exposes rgfi
-    rr32$inline ; exposes rgfi
-    rr64$inline ; exposes rgfi
-;    rgfi rgfi$a ;exposes xr
+    ;; These 4 go directly to the appropriate accessor, e.g., rax:
+    rr08-to-normal-form64 ; rr08$inline ; exposes rgfi
+    rr16-to-normal-form64 ; rr16$inline ; exposes rgfi
+    rr32-to-normal-form64 ; rr32$inline ; exposes rgfi
+    rr64-to-normal-form64 ; rr64$inline ; exposes rgfi
     rgfi-becomes-rax
     rgfi-becomes-rbx
     rgfi-becomes-rcx
@@ -4425,11 +4423,11 @@
     rgfi-becomes-rbp
 
     !rgfi-size$inline ; dispatches to wr08, etc.
-    wr08$inline ; exposes !rgfi
-    wr16$inline ; exposes !rgfi
-    wr32$inline ; exposes !rgfi
-    wr64$inline ; exposes !rgfi
-    ;; !rgfi !rgfi$a ;exposes xw
+    ;; These 4 go directly to the appropriate functions, e.g., set-rax:
+    wr08-to-normal-form64 ; wr08$inline ; exposes !rgfi
+    wr16-to-normal-form64 ; wr16$inline ; exposes !rgfi
+    wr32-to-normal-form64 ; wr32$inline ; exposes !rgfi
+    wr64-to-normal-form64 ; wr64$inline ; exposes !rgfi
     !rgfi-becomes-set-rax
     !rgfi-becomes-set-rbx
     !rgfi-becomes-set-rcx
@@ -5060,20 +5058,22 @@
 
     ;; Reading/writing registers (or parts of registers).  we leave
     ;; these enabled to expose rgfi and !rgfi, which then get rewritten
-    ;; to xr and xw.  shilpi seems to do the same.
+    ;; to xr and xw.
     rgfi-size$inline ;dispatches to rr08, etc.
     rr08$inline ; exposes rgfi
     rr16$inline ; exposes rgfi
     rr32$inline ; exposes rgfi
     rr64$inline ; exposes rgfi
-    rgfi rgfi$a ;exposes xr ; todo: go directly to the right reader
+    rgfi rgfi$a ;exposes xr
 
     !rgfi-size$inline ; dispatches to wr08, etc.
     wr08$inline ; exposes !rgfi
     wr16$inline ; exposes !rgfi
     wr32$inline ; exposes !rgfi
     wr64$inline ; exposes !rgfi
-    !rgfi !rgfi$a ;exposes xw ; todo: go directly to the right writer
+    !rgfi !rgfi$a ;exposes xw
+
+    x86isa::xw-rgf-of-xr-rgf-same ; drop since we don't use this normal form?
     ))
 
 ;; Can't really use the new, nicer normal forms for readers and writers, since
@@ -5213,3 +5213,6 @@
 (set-axe-rule-priority riml-size-of-2-becomes-read -1)
 (set-axe-rule-priority riml-size-of-4-becomes-read -1)
 (set-axe-rule-priority riml-size-of-8-becomes-read -1)
+
+;; This may be the rule that is used the most
+(set-axe-rule-priority acl2::mv-nth-of-cons-safe -1)
