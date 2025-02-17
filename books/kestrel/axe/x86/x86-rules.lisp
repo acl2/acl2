@@ -63,14 +63,14 @@
 
 (add-known-boolean return-address-okp)
 
-(add-known-boolean x86isa::cr0bits-p$inline)
-(add-known-boolean x86isa::cr3bits-p$inline)
-(add-known-boolean x86isa::cr4bits-p$inline)
-(add-known-boolean x86isa::cr8bits-p$inline)
+(add-known-boolean cr0bits-p$inline)
+(add-known-boolean cr3bits-p$inline)
+(add-known-boolean cr4bits-p$inline)
+(add-known-boolean cr8bits-p$inline)
 
 (add-known-boolean is-nan)
 (add-known-boolean infp)
-(add-known-boolean rtl::nanp)  ; todo pkg
+(add-known-boolean nanp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -88,10 +88,10 @@
                 (not (equal :default n))
                 (assoc-equal n l))
            (equal (aref1 name l n)
-                  (acl2::lookup-equal n l)))
-  :hints (("Goal" :in-theory (enable acl2::lookup-equal aref1))))
+                  (lookup-equal n l)))
+  :hints (("Goal" :in-theory (enable lookup-equal aref1))))
 
-(defopeners x86isa::64-bit-mode-two-byte-opcode-modr/m-p
+(defopeners 64-bit-mode-two-byte-opcode-modr/m-p
                   :hyps ((syntaxp (quotep x86isa::opcode))
                          (unsigned-byte-p 8 x86isa::opcode)))
 
@@ -115,7 +115,7 @@
 (def-constant-opener nonnegative-integer-quotient)
 (def-constant-opener evenp)
 
-(def-constant-opener acl2::bool->bit$inline)
+(def-constant-opener bool->bit$inline)
 (def-constant-opener acl2::rotate-left)
 (def-constant-opener acl2::rotate-right)
 
@@ -124,59 +124,59 @@
 ;; functions with the same arguments (dst and src), so either all the args to
 ;; jle-condition get evaluated or none of them do).
 
-(def-constant-opener x86isa::zf-spec$inline)
+(def-constant-opener zf-spec$inline)
 
-(def-constant-opener x86isa::cf-spec8$inline)
-(def-constant-opener x86isa::of-spec8$inline)
-(def-constant-opener x86isa::pf-spec8$inline)
-(def-constant-opener x86isa::sf-spec8$inline)
-(def-constant-opener x86isa::adc-af-spec8$inline)
-(def-constant-opener x86isa::add-af-spec8$inline)
-(def-constant-opener x86isa::sub-af-spec8$inline)
-(def-constant-opener x86isa::sub-cf-spec8) ; todo: make these inline, like the others
-(def-constant-opener x86isa::sub-of-spec8)
-(def-constant-opener x86isa::sub-pf-spec8)
-(def-constant-opener x86isa::sub-sf-spec8)
-(def-constant-opener x86isa::sub-zf-spec8)
+(def-constant-opener cf-spec8$inline)
+(def-constant-opener of-spec8$inline)
+(def-constant-opener pf-spec8$inline)
+(def-constant-opener sf-spec8$inline)
+(def-constant-opener adc-af-spec8$inline)
+(def-constant-opener add-af-spec8$inline)
+(def-constant-opener sub-af-spec8$inline)
+(def-constant-opener sub-cf-spec8) ; todo: make these inline, like the others
+(def-constant-opener sub-of-spec8)
+(def-constant-opener sub-pf-spec8)
+(def-constant-opener sub-sf-spec8)
+(def-constant-opener sub-zf-spec8)
 
-(def-constant-opener x86isa::cf-spec16$inline)
-(def-constant-opener x86isa::of-spec16$inline)
-(def-constant-opener x86isa::pf-spec16$inline)
-(def-constant-opener x86isa::sf-spec16$inline)
-(def-constant-opener x86isa::adc-af-spec16$inline)
-(def-constant-opener x86isa::add-af-spec16$inline)
-(def-constant-opener x86isa::sub-af-spec16$inline)
-(def-constant-opener x86isa::sub-cf-spec16)
-(def-constant-opener x86isa::sub-of-spec16)
-(def-constant-opener x86isa::sub-pf-spec16)
-(def-constant-opener x86isa::sub-sf-spec16)
-(def-constant-opener x86isa::sub-zf-spec16)
+(def-constant-opener cf-spec16$inline)
+(def-constant-opener of-spec16$inline)
+(def-constant-opener pf-spec16$inline)
+(def-constant-opener sf-spec16$inline)
+(def-constant-opener adc-af-spec16$inline)
+(def-constant-opener add-af-spec16$inline)
+(def-constant-opener sub-af-spec16$inline)
+(def-constant-opener sub-cf-spec16)
+(def-constant-opener sub-of-spec16)
+(def-constant-opener sub-pf-spec16)
+(def-constant-opener sub-sf-spec16)
+(def-constant-opener sub-zf-spec16)
 
-(def-constant-opener x86isa::cf-spec32$inline)
-(def-constant-opener x86isa::of-spec32$inline)
-(def-constant-opener x86isa::pf-spec32$inline)
-(def-constant-opener x86isa::sf-spec32$inline)
-(def-constant-opener x86isa::adc-af-spec32$inline)
-(def-constant-opener x86isa::add-af-spec32$inline)
-(def-constant-opener x86isa::sub-af-spec32$inline)
-(def-constant-opener x86isa::sub-cf-spec32)
-(def-constant-opener x86isa::sub-of-spec32)
-(def-constant-opener x86isa::sub-pf-spec32)
-(def-constant-opener x86isa::sub-sf-spec32)
-(def-constant-opener x86isa::sub-zf-spec32)
+(def-constant-opener cf-spec32$inline)
+(def-constant-opener of-spec32$inline)
+(def-constant-opener pf-spec32$inline)
+(def-constant-opener sf-spec32$inline)
+(def-constant-opener adc-af-spec32$inline)
+(def-constant-opener add-af-spec32$inline)
+(def-constant-opener sub-af-spec32$inline)
+(def-constant-opener sub-cf-spec32)
+(def-constant-opener sub-of-spec32)
+(def-constant-opener sub-pf-spec32)
+(def-constant-opener sub-sf-spec32)
+(def-constant-opener sub-zf-spec32)
 
-(def-constant-opener x86isa::cf-spec64$inline)
-(def-constant-opener x86isa::of-spec64$inline)
-(def-constant-opener x86isa::pf-spec64$inline)
-(def-constant-opener x86isa::sf-spec64$inline)
-(def-constant-opener x86isa::adc-af-spec64$inline)
-(def-constant-opener x86isa::add-af-spec64$inline)
-(def-constant-opener x86isa::sub-af-spec64$inline)
-(def-constant-opener x86isa::sub-cf-spec64)
-(def-constant-opener x86isa::sub-of-spec64)
-(def-constant-opener x86isa::sub-pf-spec64)
-(def-constant-opener x86isa::sub-sf-spec64)
-(def-constant-opener x86isa::sub-zf-spec64)
+(def-constant-opener cf-spec64$inline)
+(def-constant-opener of-spec64$inline)
+(def-constant-opener pf-spec64$inline)
+(def-constant-opener sf-spec64$inline)
+(def-constant-opener adc-af-spec64$inline)
+(def-constant-opener add-af-spec64$inline)
+(def-constant-opener sub-af-spec64$inline)
+(def-constant-opener sub-cf-spec64)
+(def-constant-opener sub-of-spec64)
+(def-constant-opener sub-pf-spec64)
+(def-constant-opener sub-sf-spec64)
+(def-constant-opener sub-zf-spec64)
 
 (def-constant-opener x86isa::!rflagsbits->ac$inline)
 (def-constant-opener x86isa::!rflagsbits->af$inline)
@@ -450,13 +450,13 @@
 (defopeners x86-fetch-decode-execute :suffix -new
   :hyps (;(poor-mans-quotep (rip x86))
          ;;(canonical-address-p (rip x86)) ; could drop, but this clarifies failures
-         (canonical-address-p (let ((proc-mode (x86isa::x86-operation-mode x86)))
-                                (x86isa::read-*ip proc-mode x86))) ; could drop, but this clarifies failures
+         (canonical-address-p (let ((proc-mode (x86-operation-mode x86)))
+                                (read-*ip proc-mode x86))) ; could drop, but this clarifies failures
          ;; ;; Requires us to be able to read the byte at the RIP:
-         (poor-mans-quotep (let ((proc-mode (x86isa::x86-operation-mode x86)))
-                             (mv-nth 1 (x86isa::rme08$inline proc-mode (x86isa::read-*ip proc-mode x86) 1 :x x86))))
-         ;; (poor-mans-quotep (let ((proc-mode (x86isa::x86-operation-mode x86)))
-         ;;                     (read 1 (x86isa::read-*ip proc-mode x86) x86)))
+         (poor-mans-quotep (let ((proc-mode (x86-operation-mode x86)))
+                             (mv-nth 1 (x86isa::rme08$inline proc-mode (read-*ip proc-mode x86) 1 :x x86))))
+         ;; (poor-mans-quotep (let ((proc-mode (x86-operation-mode x86)))
+         ;;                     (read 1 (read-*ip proc-mode x86) x86)))
          ;; (poor-mans-quotep (read 1 (rip x86) x86))
          (not (ms x86))
          (not (fault x86))))
@@ -464,12 +464,12 @@
 ;; should be faster?
 ;; todo: continue specializing to 64-bit mode
 (defthmd x86-fetch-decode-execute-opener-safe-64
-  (implies (and (canonical-address-p (x86isa::read-*ip 0 x86)) ; could drop, but this clarifies failures
+  (implies (and (canonical-address-p (read-*ip 0 x86)) ; could drop, but this clarifies failures
                 ;; ;; Requires us to be able to read the byte at the RIP:
                 ;; todo: simplify this:
-                (poor-mans-quotep (mv-nth 1 (x86isa::rme08$inline 0 (x86isa::read-*ip 0 x86) 1 :x x86)))
-                ;; (poor-mans-quotep (let ((proc-mode (x86isa::x86-operation-mode x86)))
-                ;;                     (read 1 (x86isa::read-*ip proc-mode x86) x86)))
+                (poor-mans-quotep (mv-nth 1 (x86isa::rme08$inline 0 (read-*ip 0 x86) 1 :x x86)))
+                ;; (poor-mans-quotep (let ((proc-mode (x86-operation-mode x86)))
+                ;;                     (read 1 (read-*ip proc-mode x86) x86)))
                 ;; (poor-mans-quotep (read 1 (rip x86) x86))
                 (64-bit-modep x86)
                 (app-view x86)
@@ -485,7 +485,7 @@
                            (64-bit-modep t ;
                                          ;(equal proc-mode 0)
                                          )
-                             (start-rip (x86isa::read-*ip proc-mode x86)))
+                             (start-rip (read-*ip proc-mode x86)))
                         (mv-let (flg acl2::|(THE (UNSIGNED-BYTE 52) PREFIXES)|
                                      acl2::|(THE (UNSIGNED-BYTE 8) REX-BYTE)|
                                      x86)
