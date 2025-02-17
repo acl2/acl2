@@ -1126,6 +1126,8 @@
     x86isa::zmmi-size$inline
     x86isa::!zmmi-size
     x86isa::!zmmi-size$inline
+
+    x86isa::64-bit-mode-two-byte-opcode-modr/m-p
     ))
 
 (defconst *symbols-from-acl2-package*
