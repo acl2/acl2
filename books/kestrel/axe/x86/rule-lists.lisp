@@ -566,11 +566,20 @@
     clear-extend-of-write-of-clear-retract
     write-of-clear-retract))
 
+(defund read-write-set-flag-rules ()
+  (declare (xargs :guard t))
+  '(read-of-write-becomes-read-of-write-of-clear-flags-extend-axe
+    clear-flags-extend-of-write-continue-axe
+    clear-flags-extend-of-set-flag-finish
+    clear-flags-extend-of-write-of-clear-flags-retract
+    read-of-write-of-clear-flags-retract))
+
 ;; Rules that require the rewriter-x86, due to axe-syntaxp or axe-bind-free functions.
 ;; To be excluded when pruning (with the non-x86 rewriter)
 (defund x86-rewriter-rules ()
   (declare (xargs :guard t))
-  (shadowed-write-rules))
+  (append (shadowed-write-rules)
+          (read-write-set-flag-rules)))
 
 ;; 'Read Over Write' and similar rules for state components. Our normal form
 ;; (at least for 64-bit code) includes 3 kinds of state changes, namely calls
@@ -1691,6 +1700,7 @@
   (append (symbolic-execution-rules)
           (read-over-write-rules) ; todo: don't use all these
           (shadowed-write-rules) ; requires the x86 rewriter ; todo: not needed for 32-bit?
+          (read-write-set-flag-rules) ; requires the x86 rewriter ; todo: not needed for 32-bit?
           (acl2::base-rules)
           (acl2::type-rules)
           ;; (acl2::logext-rules) ;;caused problems ;;todo: there are also logext rules below
@@ -2522,10 +2532,150 @@
      acl2::bvminus-of-+-arg2
      acl2::bvminus-of-+-arg3)))
 
+(defun new-memory-rules32 ()
+  (declare (xargs :guard t))
+  '(;; Rules to introduce read-from-segment:
+    mv-nth-1-of-rme08-becomes-read-from-segment
+    mv-nth-1-of-rme16-becomes-read-from-segment
+    mv-nth-1-of-rme-size$inline-becomes-read-from-segment
+    mv-nth-1-of-rime-size$inline-becomes-read-from-segment-1
+    mv-nth-1-of-rime-size$inline-becomes-read-from-segment-2
+    mv-nth-1-of-rime-size$inline-becomes-read-from-segment-4
+    mv-nth-1-of-rime-size$inline-becomes-read-from-segment-8
+;    read-of-mv-nth-1-of-ea-to-la-becomes-read-from-segment
+
+    ;; Type rules for read-from-segment:
+    read-from-segment-not-negative
+    unsigned-byte-p-of-read-from-segment
+    integerp-of-read-from-segment
+
+    ;; Read-over-write rules for read-from-segment:
+    read-from-segment-of-write-to-segment-same
+    read-from-segment-of-write-to-segment-irrel
+    read-from-segment-of-write-to-segment-diff-segments
+    read-from-segment-of-set-eip
+    read-from-segment-of-set-eax
+    read-from-segment-of-set-ebx
+    read-from-segment-of-set-ecx
+    read-from-segment-of-set-edx
+    read-from-segment-of-set-esp
+    read-from-segment-of-set-ebp
+    read-from-segment-of-xw
+    read-from-segment-of-set-flag
+    read-from-segment-of-set-undef
+    read-from-segment-of-set-mxcsr
+    ;; read-from-segment-of-set-ms
+
+    read-from-segment-of-1 ;; simplifies to read-byte-from-segment
+
+    write-to-segment-of-write-to-segment-same
+    write-to-segment-of-write-to-segment-diff-axe
+
+    ;; mv-nth-1-of-rme08-of-cs-becomes-read-byte-from-segment
+    ;; mv-nth-1-of-rme08-of-cs-becomes-read-byte-from-segment-gen
+
+    read-byte-from-segment-when-code-segment-assumptions32-for-code
+    read-from-segment-when-code-segment-assumptions32-for-code
+
+    xr-of-write-byte-to-segment
+    xr-of-write-to-segment
+    stack-segment-assumptions32-of-write-to-segment
+
+    ;; Rules about read-byte-list-from-segment
+    read-byte-list-from-segment-of-xw
+    read-byte-list-from-segment-of-write-to-segment-diff-segments
+    read-byte-list-from-segment-of-set-flag
+    ;; read-byte-list-from-segment-of-set-undef
+    ;; read-byte-list-from-segment-of-set-mxcsr
+    ;; read-byte-list-from-segment-of-set-ms
+
+    read-byte-from-segment-of-write-to-segment-diff-segments
+
+    x86p-of-write-to-segment
+
+    segment-is-32-bitsp-of-write-byte-to-segment
+    segment-is-32-bitsp-of-write-to-segment
+
+    32-bit-segment-size-of-write-byte-to-segment
+    32-bit-segment-size-of-write-to-segment
+
+    32-bit-segment-start-of-write-byte-to-segment
+    32-bit-segment-start-of-write-to-segment
+
+    segment-expand-down-bit-of-write-byte-to-segment
+    segment-expand-down-bit-of-write-to-segment
+
+    well-formed-32-bit-segmentp-of-write-byte-to-segment
+    well-formed-32-bit-segmentp-of-write-to-segment
+
+    segments-separate-of-write-byte-to-segment
+    segments-separate-of-write-to-segment
+
+    ;; Rules about code-and-stack-segments-separate (todo: do we need these and the rules about segments-separate?)
+    code-and-stack-segments-separate-of-write-byte-to-segment
+    code-and-stack-segments-separate-of-write-to-segment
+
+    alignment-checking-enabled-p-of-write-byte-to-segment
+    alignment-checking-enabled-p-of-write-to-segment
+
+    64-bit-modep-of-write-bytes-to-segment
+
+    app-view-of-write-to-segment
+
+    code-segment-well-formedp-of-write-to-segment
+
+    code-segment-assumptions32-for-code-of-write-to-segment
+
+    eff-addrs-okp-of-write-to-segment
+
+    set-flag-of-write-to-segment
+    set-flag-of-write-byte-to-segment
+
+    ;; Rules about read-byte-from-segment
+    read-byte-from-segment-of-xw
+    read-byte-from-segment-of-set-eip
+    read-byte-from-segment-of-set-eax
+    read-byte-from-segment-of-set-ebx
+    read-byte-from-segment-of-set-ecx
+    read-byte-from-segment-of-set-edx
+    read-byte-from-segment-of-set-esp
+    read-byte-from-segment-of-set-ebp
+    read-byte-from-segment-of-set-flag
+    read-byte-from-segment-of-set-undef
+    read-byte-from-segment-of-set-mxcsr
+
+    ;; push memory writes inward:
+    write-byte-to-segment-of-xw-rgf
+    write-to-segment-of-xw-rgf
+
+    ;; push undef stuff inward:
+    set-undef-of-write-to-segment
+    set-undef-of-write-byte-to-segment
+
+    write-byte-to-segment-of-set-eax
+    write-byte-to-segment-of-set-ebx
+    write-byte-to-segment-of-set-ecx
+    write-byte-to-segment-of-set-edx ;todo: more?
+    write-byte-to-segment-of-set-esp
+    write-byte-to-segment-of-set-ebp
+
+    write-to-segment-of-set-eax
+    write-to-segment-of-set-ebx
+    write-to-segment-of-set-ecx
+    write-to-segment-of-set-edx
+    write-to-segment-of-set-esp
+    write-to-segment-of-set-ebp
+
+    read-stack-dword-of-write-to-segment-diff-segments
+    write-to-segment-of-write-byte-to-segment-included
+    write-to-segment-of-write-to-segment-included
+    ))
+
 ;; new batch of rules for the more abstract lifter (but move some of these elsewhere):
 ;; todo: restrict this to memory stuff?
 (defun new-normal-form-rules32 ()
   (declare (xargs :guard t))
+  (append
   '(;; Introduce register writers:
     xw-becomes-set-eax
     xw-becomes-set-ebx
@@ -2585,7 +2735,6 @@
 
     ;; Rules about writing:
     not-mv-nth-0-of-wme-size ;gets rid of error branch
-    mv-nth-1-of-wme-size     ;introduces write-to-segment
 
     ;; Rules about reading:
     not-mv-nth-0-of-rme-size$inline ;; gets rid of error branch
@@ -2593,49 +2742,9 @@
     not-mv-nth-0-of-rime-size$inline ;; gets rid of error branch
     mv-nth-2-of-rime-size$inline ;; shows that reading does not change the state
 
-    ;; Rules to introduce read-from-segment:
-    mv-nth-1-of-rme08-becomes-read-from-segment
-    mv-nth-1-of-rme16-becomes-read-from-segment
-    mv-nth-1-of-rme-size$inline-becomes-read-from-segment
-    mv-nth-1-of-rime-size$inline-becomes-read-from-segment-1
-    mv-nth-1-of-rime-size$inline-becomes-read-from-segment-2
-    mv-nth-1-of-rime-size$inline-becomes-read-from-segment-4
-    mv-nth-1-of-rime-size$inline-becomes-read-from-segment-8
-;    read-of-mv-nth-1-of-ea-to-la-becomes-read-from-segment
 
-    ;; Type rules for read-from-segment:
-    read-from-segment-not-negative
-    unsigned-byte-p-of-read-from-segment
-    integerp-of-read-from-segment
-
-    ;; Read-over-write rules for read-from-segment:
-    read-from-segment-of-write-to-segment-same
-    read-from-segment-of-write-to-segment-irrel
-    read-from-segment-of-write-to-segment-diff-segments
-    read-from-segment-of-set-eip
-    read-from-segment-of-set-eax
-    read-from-segment-of-set-ebx
-    read-from-segment-of-set-ecx
-    read-from-segment-of-set-edx
-    read-from-segment-of-set-esp
-    read-from-segment-of-set-ebp
-    read-from-segment-of-xw
-    read-from-segment-of-set-flag
-    read-from-segment-of-set-undef
-    read-from-segment-of-set-mxcsr
-    ;; read-from-segment-of-set-ms
-
-    read-from-segment-of-1 ;; simplifies to read-byte-from-segment
-
-    write-to-segment-of-write-to-segment-same
-    write-to-segment-of-write-to-segment-diff-axe
-
-;    mv-nth-1-of-rme08-of-cs-becomes-read-byte-from-segment
-;   mv-nth-1-of-rme08-of-cs-becomes-read-byte-from-segment-gen
     x86isa::rme08-does-not-affect-state-in-app-view ;; targets mv-nth-2-of-rme08
     x86isa::rme16-does-not-affect-state-in-app-view ;; targets mv-nth-2-of-rme16
-    read-byte-from-segment-when-code-segment-assumptions32-for-code
-    read-from-segment-when-code-segment-assumptions32-for-code
 
     ;; Rules about EIP/SET-EIP:
     xw-of-set-eip-irrel
@@ -2770,18 +2879,6 @@
     natp-of-+-of-esp-lemma
     signed-byte-p-of-+-of-esp
 
-    xr-of-write-byte-to-segment
-    xr-of-write-to-segment
-    stack-segment-assumptions32-of-write-to-segment
-
-    ;; Rules about read-byte-list-from-segment
-    read-byte-list-from-segment-of-xw
-    read-byte-list-from-segment-of-write-to-segment-diff-segments
-    read-byte-list-from-segment-of-set-flag
-    ;; read-byte-list-from-segment-of-set-undef
-    ;; read-byte-list-from-segment-of-set-mxcsr
-    ;; read-byte-list-from-segment-of-set-ms
-
     segment-expand-down-bit-of-cs-when-code-segment-well-formedp
     segment-expand-down-bit-of-ss-when-stack-segment-assumptions32
     ;; segment-is-32-bitsp-intro-1
@@ -2799,7 +2896,6 @@
     eff-addrs-lemma ; rename
     well-formed-32-bit-segmentp-when-stack-segment-assumptions32
 
-    read-byte-from-segment-of-write-to-segment-diff-segments
     eff-addr-okp-when-code-segment-assumptions32-for-code
     eff-addrs-okp-when-code-segment-assumptions32-for-code
     seg-regp-constant-opener ; move?
@@ -2834,7 +2930,6 @@
     eff-addr-okp-of-esp
 
     ;; Rules about x86p
-    x86p-of-write-to-segment
     x86p-of-set-eip
     x86p-of-set-eax
     x86p-of-set-ebx
@@ -2844,8 +2939,6 @@
     x86p-of-set-ebp
 
     ;; Rules about segment-is-32-bitsp
-    segment-is-32-bitsp-of-write-byte-to-segment
-    segment-is-32-bitsp-of-write-to-segment
     segment-is-32-bitsp-of-set-eip
     segment-is-32-bitsp-of-set-eax
     segment-is-32-bitsp-of-set-ebx
@@ -2859,8 +2952,6 @@
     segment-is-32-bitsp-of-xw-irrel
 
     ;;Rules about 32-bit-segment-size
-    32-bit-segment-size-of-write-byte-to-segment
-    32-bit-segment-size-of-write-to-segment
     32-bit-segment-size-of-set-eip
     32-bit-segment-size-of-set-eax
     32-bit-segment-size-of-set-ebx
@@ -2874,8 +2965,6 @@
     32-bit-segment-size-of-xw
 
     ;;Rules about 32-bit-segment-start
-    32-bit-segment-start-of-write-byte-to-segment
-    32-bit-segment-start-of-write-to-segment
     32-bit-segment-start-of-set-eip
     32-bit-segment-start-of-set-eax
     32-bit-segment-start-of-set-ebx
@@ -2889,8 +2978,6 @@
     32-bit-segment-start-of-xw
 
     ;; Rules about segment-expand-down-bit
-    segment-expand-down-bit-of-write-byte-to-segment
-    segment-expand-down-bit-of-write-to-segment
     segment-expand-down-bit-of-set-eip
     segment-expand-down-bit-of-set-eax
     segment-expand-down-bit-of-set-ebx
@@ -2904,8 +2991,6 @@
     segment-expand-down-bit-of-xw-irrel
 
     ;; Rules about well-formed-32-bit-segmentp
-    well-formed-32-bit-segmentp-of-write-byte-to-segment
-    well-formed-32-bit-segmentp-of-write-to-segment
     well-formed-32-bit-segmentp-of-set-eip
     well-formed-32-bit-segmentp-of-set-eax
     well-formed-32-bit-segmentp-of-set-ebx
@@ -2919,8 +3004,6 @@
     well-formed-32-bit-segmentp-of-xw
 
     ;; Rules about segments-separate
-    segments-separate-of-write-byte-to-segment
-    segments-separate-of-write-to-segment
     segments-separate-of-set-eip
     segments-separate-of-set-eax
     segments-separate-of-set-ebx
@@ -2934,8 +3017,6 @@
     segments-separate-of-xw-irrel
 
     ;; Rules about code-and-stack-segments-separate (todo: do we need these and the rules about segments-separate?)
-    code-and-stack-segments-separate-of-write-byte-to-segment
-    code-and-stack-segments-separate-of-write-to-segment
     code-and-stack-segments-separate-of-set-eip
     code-and-stack-segments-separate-of-set-eax
     code-and-stack-segments-separate-of-set-ebx
@@ -2949,8 +3030,6 @@
     code-and-stack-segments-separate-of-xw-irrel
 
     ;; Rules about alignment-checking-enabled-p
-    alignment-checking-enabled-p-of-write-byte-to-segment
-    alignment-checking-enabled-p-of-write-to-segment
     alignment-checking-enabled-p-of-set-eip
     alignment-checking-enabled-p-of-set-eax
     alignment-checking-enabled-p-of-set-ebx
@@ -2998,21 +3077,8 @@
     esp-of-xw-irrel
     natp-of-esp-when-stack-segment-assumptions32
 
-    ;; Rules about read-byte-from-segment
-    read-byte-from-segment-of-xw
-    read-byte-from-segment-of-set-eip
-    read-byte-from-segment-of-set-eax
-    read-byte-from-segment-of-set-ebx
-    read-byte-from-segment-of-set-ecx
-    read-byte-from-segment-of-set-edx
-    read-byte-from-segment-of-set-esp
-    read-byte-from-segment-of-set-ebp
-    read-byte-from-segment-of-set-flag
-    read-byte-from-segment-of-set-undef
-    read-byte-from-segment-of-set-mxcsr
-
     ;; Rules about 64-bit-modep
-    64-bit-modep-of-write-bytes-to-segment
+
     64-bit-modep-of-set-eip
     64-bit-modep-of-set-eax
     64-bit-modep-of-set-ebx
@@ -3022,7 +3088,7 @@
     64-bit-modep-of-set-ebp
 
     ;; Rules about app-view
-    app-view-of-write-to-segment
+
     app-view-of-set-eip
     app-view-of-set-eax
     app-view-of-set-ebx
@@ -3040,14 +3106,12 @@
     code-segment-well-formedp-of-set-edx
     code-segment-well-formedp-of-set-esp
     code-segment-well-formedp-of-set-ebp
-    code-segment-well-formedp-of-write-to-segment
     code-segment-well-formedp-of-set-flag
     code-segment-well-formedp-of-set-undef
     code-segment-well-formedp-of-set-mxcsr
 
     ;; Rules about code-segment-assumptions32-for-code
     code-segment-assumptions32-for-code-of-xw
-    code-segment-assumptions32-for-code-of-write-to-segment
     code-segment-assumptions32-for-code-of-set-eip
     code-segment-assumptions32-for-code-of-set-eax
     code-segment-assumptions32-for-code-of-set-ebx
@@ -3093,7 +3157,6 @@
     eff-addr-okp-of-set-ebp
 
     eff-addrs-okp-of-xw-irrel
-    eff-addrs-okp-of-write-to-segment
     eff-addrs-okp-of-set-flag
     eff-addrs-okp-of-set-undef
     eff-addrs-okp-of-set-mxcsr
@@ -3116,8 +3179,6 @@
     ;; normalizing nests of state updates:
 
     ;; push flag stuff inward:
-    set-flag-of-write-to-segment
-    set-flag-of-write-byte-to-segment
     set-flag-of-set-eip-irrel
     set-flag-of-set-eax
     set-flag-of-set-ebx
@@ -3125,13 +3186,6 @@
     set-flag-of-set-edx
     set-flag-of-set-esp
     set-flag-of-set-ebp
-    ;; push memory writes inward:
-    write-byte-to-segment-of-xw-rgf
-    write-to-segment-of-xw-rgf
-
-    ;; push undef stuff inward:
-    set-undef-of-write-to-segment
-    set-undef-of-write-byte-to-segment
 
     eax-of-set-eax
     ebx-of-set-ebx
@@ -3146,20 +3200,6 @@
     edx-of-set-eip
     ebp-of-set-eip
     ;esp-of-set-eip
-
-    write-byte-to-segment-of-set-eax
-    write-byte-to-segment-of-set-ebx
-    write-byte-to-segment-of-set-ecx
-    write-byte-to-segment-of-set-edx ;todo: more?
-    write-byte-to-segment-of-set-esp
-    write-byte-to-segment-of-set-ebp
-
-    write-to-segment-of-set-eax
-    write-to-segment-of-set-ebx
-    write-to-segment-of-set-ecx
-    write-to-segment-of-set-edx
-    write-to-segment-of-set-esp
-    write-to-segment-of-set-ebp
 
     set-ebx-of-set-eax
     set-ecx-of-set-eax
@@ -3212,10 +3252,6 @@
     bvplus-of-constant-and-esp-when-overflow ; caused loops with turning + into bvplus
     ;;acl2::bvplus-of-constant-when-overflow ;move?  targets things like (BVPLUS 32 4294967280 (ESP X86))
 
-    read-stack-dword-of-write-to-segment-diff-segments
-    write-to-segment-of-write-byte-to-segment-included
-    write-to-segment-of-write-to-segment-included
-
     ;; Reading/writing registers (or parts of registers). These rules put in xr, which then becomes eax.  TODO: Go directly
     rgfi-size$inline ;dispatches to rr08, etc.
     rr08$inline ; exposes rgfi
@@ -3230,7 +3266,11 @@
     wr32$inline ; exposes !rgfi
     wr64$inline ; exposes !rgfi
     !rgfi !rgfi$a ;exposes xw ; todo: go directly to the right writer
-    ))
+
+    mv-nth-1-of-wme-size     ;introduces write-to-segment ; rename!
+
+    )
+  (new-memory-rules32)))
 
 (defund unroller-rules32 ()
   (declare (xargs :guard t))
