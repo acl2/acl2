@@ -2529,24 +2529,27 @@ You are using version ~s.~s.~s."
    (unless (and (probe-file *acl2-status-file*)
                 (with-open-file (str *acl2-status-file*
                                      :direction :input)
-                                (member (read str nil)
+                  (member (read str nil)
 
 ; This check is insufficient to avoid running the check twice, but that's OK.
 ; See the comment about ":CHECKED" in check-suitability-for-acl2.
 
-                                        '(:compiled
-                                          :compile-skipped))))
+                          '(:compiled
+                            :compile-skipped))))
      (check-suitability-for-acl2))
    (when (not *suppress-compile-build-time*)
-     (our-with-compilation-unit
-      (let ((*readtable* *acl2-readtable*)
-            #+gcl
+
+     #+gcl-2.7.0+ (si::do-recomp) ; Recompile acl2-fns.lisp without rebinding *readtable*.
+
+     (let ((*readtable* *acl2-readtable*)
+           #+gcl
 
 ; GCL compiler note stuff.  We have so many tail recursive functions
 ; that the notes about tail recursion optimization are just too much
 ; to take.
 
-            (compiler:*suppress-compiler-notes* t))
+           (compiler:*suppress-compiler-notes* t))
+       (our-with-compilation-unit
         (dolist (name *acl2-files*)
           (or (equal name "defpkgs")
               (let ((source (make-pathname :name name
@@ -2557,36 +2560,15 @@ You are using version ~s.~s.~s."
                       (compile-file source)
                       (load-compiled
                        (make-pathname :name name
-                                      :type *compiled-file-extension*))))))))))
-   #+gcl
-   (when (and (not use-acl2-proclaims)
-              (eq *do-proclaims* :gcl))
-     (compiler::make-all-proclaims "*.fn"))
-   #+gcl-2.7.0+
-   (handler-bind
-
-; Camm Maguire points out that the following call of si::do-recomp will invoke
-; a process that can recompile to avoid signature conflicts.  The handler-bind
-; above is an attempt to avoid warnings during that process.  Note that unlike
-; the calls of compile-file above, the readtable here is the built-in
-; readtable, not *acl2-readtable*.
-
-; When we tried to put this code under the binding of *readtable* to
-; *acl2-readtable* above, we got an error from acl2-read-character-string
-; (called by acl2-character-reader, which is invoked due to the modification of
-; *acl2-readtable* by modify-acl2-readtable), complaining about Linefeed.  So
-; we invoke si::do-recomp here using the default GCL *readtable*, which avoids
-; the check in acl2-read-character-string, with the expectation that the
-; resulting compiled code will be the same as if *acl2-readtable* had been
-; used.  We believe that since the purpose of *acl2-readtable* is essentially
-; to install extra checks, not to change behavior when those checks have
-; succeeded (during the original compilation).
-
-       ((warning (lambda (c)
-                   (declare (ignore c))
-                   (invoke-restart 'muffle-warning))))
-     (si::do-recomp))
-   (note-compile-ok)))
+                                      :type *compiled-file-extension*))))))))
+       #+gcl
+       (when (and (not use-acl2-proclaims)
+                  (eq *do-proclaims* :gcl))
+         (compiler::make-all-proclaims "*.fn"))
+       #+gcl-2.7.0+
+       (si::do-recomp nil "acl2-fns.lisp") ; skip only acl2-fns.lisp
+       ))
+     (note-compile-ok)))
 
 #+gcl
 (defvar user::*fast-acl2-gcl-build* nil)
