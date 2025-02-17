@@ -489,9 +489,10 @@
                     )))
 
 ;; Returns (mv erp assumptions assumption-rules state)
-(defund simplify-assumptions (assumptions extra-assumption-rules 64-bitp count-hits state)
+(defund simplify-assumptions (assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits state)
   (declare (xargs :guard (and (pseudo-term-listp assumptions)
                               (symbol-listp extra-assumption-rules)
+                              (symbol-listp remove-assumption-rules)
                               (booleanp 64-bitp)
                               (acl2::count-hits-argp count-hits)
                               (acl2::ilks-plist-worldp (w state)))
@@ -499,14 +500,16 @@
   (b* ((- (cw "(Simplifying assumptions...~%"))
        ((mv assumption-simp-start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
        ;; todo: optimize):
-       (assumption-rules (append extra-assumption-rules
-                                 (new-normal-form-rules-common)
-                                 (assumption-simplification-rules)
-                                 (if 64-bitp
-                                     ;; needed to match the normal forms used during lifting:
-                                     (new-normal-form-rules64)
-                                   nil ; todo: why not use (new-normal-form-rules32)?
-                                   )))
+       (assumption-rules (set-difference-equal
+                           (append extra-assumption-rules
+                                   (new-normal-form-rules-common)
+                                   (assumption-simplification-rules)
+                                   (if 64-bitp
+                                       ;; needed to match the normal forms used during lifting:
+                                       (new-normal-form-rules64)
+                                     nil ; todo: why not use (new-normal-form-rules32)?
+                                     ))
+                           remove-assumption-rules))
        ((mv erp assumption-rule-alist)
         (acl2::make-rule-alist assumption-rules (w state)))
        ((when erp) (mv erp nil nil state))
@@ -547,6 +550,7 @@
                              extra-rules
                              remove-rules
                              extra-assumption-rules
+                             remove-assumption-rules
                              step-limit
                              step-increment
                              memoizep
@@ -572,6 +576,7 @@
                               (symbol-listp extra-rules)
                               (symbol-listp remove-rules)
                               (symbol-listp extra-assumption-rules)
+                              (symbol-listp remove-assumption-rules)
                               (natp step-limit)
                               (acl2::step-incrementp step-increment)
                               (booleanp memoizep)
@@ -670,7 +675,7 @@
                  ((mv erp assumptions assumption-rules state)
                   (if extra-assumptions
                       ;; If there are extra-assumptions, we need to simplify (e.g., an extra assumption could replace RSP with 10000, and then all assumptions about RSP need to mention 10000 instead):
-                      (simplify-assumptions assumptions extra-assumption-rules 64-bitp count-hits state)
+                      (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules  64-bitp count-hits state)
                     (mv nil assumptions nil state)))
                  ((when erp) (mv erp nil nil nil state)))
               (mv nil assumptions
@@ -774,7 +779,7 @@
                ;; others, because opening things like read64 involves testing
                ;; canonical-addressp (which we know from other assumptions is true):
                ((mv erp assumptions assumption-rules state)
-                (simplify-assumptions assumptions extra-assumption-rules 64-bitp count-hits state))
+                (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits state))
                ((when erp) (mv erp nil nil nil state)))
             (mv nil assumptions assumptions-to-return assumption-rules state))))
        ((when erp)
@@ -850,6 +855,7 @@
                         extra-rules
                         remove-rules
                         extra-assumption-rules
+                        remove-assumption-rules
                         step-limit
                         step-increment
                         memoizep
@@ -882,6 +888,7 @@
                               (symbol-listp extra-rules)
                               (symbol-listp remove-rules)
                               (symbol-listp extra-assumption-rules)
+                              (symbol-listp remove-assumption-rules)
                               (natp step-limit)
                               (acl2::step-incrementp step-increment)
                               (booleanp memoizep)
@@ -918,7 +925,7 @@
        ((mv erp result-dag assumptions lifter-rules-used assumption-rules-used state)
         (unroll-x86-code-core target parsed-executable
           extra-assumptions suppress-assumptions inputs-disjoint-from stack-slots position-independent
-          inputs output use-internal-contextsp prune extra-rules remove-rules extra-assumption-rules
+          inputs output use-internal-contextsp prune extra-rules remove-rules extra-assumption-rules remove-assumption-rules
           step-limit step-increment memoizep monitor count-hits print print-base untranslatep state))
        ((when erp) (mv erp nil state))
        ;; TODO: Fully handle a quotep result here:
@@ -1066,6 +1073,7 @@
                                   (extra-rules 'nil)
                                   (remove-rules 'nil)
                                   (extra-assumption-rules 'nil)
+                                  (remove-assumption-rules 'nil)
                                   (step-limit '1000000)
                                   (step-increment '100)
                                   (memoizep 't)
@@ -1097,6 +1105,7 @@
       ,extra-rules ; gets evaluated since not quoted
       ,remove-rules ; gets evaluated since not quoted
       ,extra-assumption-rules ; gets evaluated since not quoted
+      ,remove-assumption-rules ; gets evaluated since not quoted
       ',step-limit
       ',step-increment
       ',memoizep
@@ -1131,6 +1140,7 @@
          (extra-rules "Rules to use in addition to (unroller-rules32) or (unroller-rules64).")
          (remove-rules "Rules to turn off.")
          (extra-assumption-rules "Extra rules to be used when simplifying assumptions.")
+         (remove-assumption-rules "Rules to be removed when simplifying assumptions.")
          (step-limit "Limit on the total number of model steps (instruction executions) to allow.")
          (step-increment "Number of model steps to allow before pausing to simplify the DAG and remove unused nodes.")
          (memoizep "Whether to memoize during rewriting (when not using contextual information -- as doing both would be unsound).")
