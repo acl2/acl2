@@ -489,10 +489,11 @@
                     )))
 
 ;; Returns (mv erp assumptions assumption-rules state)
-(defund simplify-assumptions (assumptions extra-assumption-rules 64-bitp state)
+(defund simplify-assumptions (assumptions extra-assumption-rules 64-bitp count-hits state)
   (declare (xargs :guard (and (pseudo-term-listp assumptions)
                               (symbol-listp extra-assumption-rules)
                               (booleanp 64-bitp)
+                              (acl2::count-hits-argp count-hits)
                               (acl2::ilks-plist-worldp (w state)))
                   :stobjs state))
   (b* ((- (cw "(Simplifying assumptions...~%"))
@@ -517,7 +518,7 @@
           (acl2::known-booleans (w state))
           nil ;; rules-to-monitor ; do we want to monitor here?  What if some rules are not included?
           nil ; don't memoize (avoids time spent making empty-memoizations)
-          nil ; count-hits
+          count-hits
           t   ; todo: warn just once
           ))
        ((when erp) (mv erp nil nil state))
@@ -669,7 +670,7 @@
                  ((mv erp assumptions assumption-rules state)
                   (if extra-assumptions
                       ;; If there are extra-assumptions, we need to simplify (e.g., an extra assumption could replace RSP with 10000, and then all assumptions about RSP need to mention 10000 instead):
-                      (simplify-assumptions assumptions extra-assumption-rules 64-bitp state)
+                      (simplify-assumptions assumptions extra-assumption-rules 64-bitp count-hits state)
                     (mv nil assumptions nil state)))
                  ((when erp) (mv erp nil nil nil state)))
               (mv nil assumptions
@@ -773,7 +774,7 @@
                ;; others, because opening things like read64 involves testing
                ;; canonical-addressp (which we know from other assumptions is true):
                ((mv erp assumptions assumption-rules state)
-                (simplify-assumptions assumptions extra-assumption-rules 64-bitp state))
+                (simplify-assumptions assumptions extra-assumption-rules 64-bitp count-hits state))
                ((when erp) (mv erp nil nil nil state)))
             (mv nil assumptions assumptions-to-return assumption-rules state))))
        ((when erp)
