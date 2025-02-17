@@ -517,6 +517,7 @@
           (acl2::known-booleans (w state))
           nil ;; rules-to-monitor ; do we want to monitor here?  What if some rules are not included?
           nil ; don't memoize (avoids time spent making empty-memoizations)
+          nil ; count-hits
           t   ; todo: warn just once
           ))
        ((when erp) (mv erp nil nil state))
