@@ -2062,6 +2062,7 @@
         ((mv erp assumptions)
          (acl2::simplify-conjunction-basic assumptions rule-alist (acl2::known-booleans (w state)) rules-to-monitor
                                            nil ; don't memoize (avoids time spent making empty-memoizations)
+                                           nil ; count-hits
                                            t ; todo: do this warning just once?
                                            ))
         ((when erp) (mv erp nil nil nil state))
