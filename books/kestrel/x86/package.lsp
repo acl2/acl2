@@ -1268,6 +1268,11 @@
     axe-syntaxp
     axe-bind-free
     dag-array ; for axe-syntaxp
+    dargs ; for writing axe-syntaxp and axe-bind-free functions
+    darg1
+    darg2
+    darg3
+    darg4
 
     ;; axe-syntaxp and axe-bind-free functions:
     bind-bv-size-axe
