@@ -36,4 +36,5 @@
                                    should-commute-axe-argsp
                                    should-commute-axe-args-increasingp
                                    x::write-with-addr-and-size-presentp-axe
+                                   x::write-nest-with-inner-set-flagp-axe
                                    dargs-equalp))

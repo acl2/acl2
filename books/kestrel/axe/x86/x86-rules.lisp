@@ -692,3 +692,48 @@
            (equal (write n ad val (clear-retract n ad x86))
                   (write n ad val x86)))
   :hints (("Goal" :in-theory (enable clear-retract))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; A scheme for removing set-flag in (read (write ... (write (set-flag ...))))
+
+(defund clear-flags-extend (x86)
+  (declare (xargs :stobjs x86))
+  (!rflags 0 x86))
+
+(defund clear-flags-retract (x86)
+  (declare (xargs :stobjs x86))
+  (!rflags 0 x86))
+
+;; Introduces the clear when there is a set-flag inside the write nest
+;; For Axe only
+(defthmd read-of-write-becomes-read-of-write-of-clear-flags-extend-axe
+  (implies (axe-syntaxp (write-nest-with-inner-set-flagp-axe x86 acl2::dag-array))
+           (equal (read n ad (write n2 ad2 val x86))
+                  (read n ad (write n2 ad2 val (clear-flags-extend x86)))))
+  :hints (("Goal" :in-theory (enable clear-flags-extend))))
+
+;; Copies the clear inside a write that is not its target
+;; For Axe only
+(defthmd clear-flags-extend-of-write-continue-axe
+  (implies (axe-syntaxp (or (syntactic-call-of 'write x86 dag-array) ; avoid loops and undesired patterns
+                            (syntactic-call-of 'set-flag x86 dag-array)))
+           (equal (clear-flags-extend (write n ad val x86))
+                  (clear-flags-extend (write n ad val (clear-flags-extend x86)))))
+  :hints (("Goal" :in-theory (enable clear-flags-extend))))
+
+;; We've found the write to be cleared
+(defthmd clear-flags-extend-of-set-flag-finish
+  (equal (clear-flags-extend (set-flag flag val x86))
+         (clear-flags-retract x86))
+  :hints (("Goal" :in-theory (enable clear-flags-extend clear-flags-retract))))
+
+(defthmd clear-flags-extend-of-write-of-clear-flags-retract
+  (equal (clear-flags-extend (write n ad val (clear-flags-retract x86)))
+         (clear-flags-retract (write n ad val x86)))
+  :hints (("Goal" :in-theory (enable clear-flags-retract clear-flags-extend))))
+
+(defthmd read-of-write-of-clear-flags-retract ; add -same to name
+  (equal (read n ad (write n2 ad2 val (clear-flags-retract x86)))
+         (read n ad (write n2 ad2 val x86)))
+  :hints (("Goal" :in-theory (enable clear-flags-retract))))
