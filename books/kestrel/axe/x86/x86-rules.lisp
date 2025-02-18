@@ -299,13 +299,13 @@
 (def-constant-opener x86isa::evex-byte3->vl/rc$inline)
 (def-constant-opener x86isa::evex-byte3->z$inline)
 
-(def-constant-opener x86isa::vex->vvvv$inline)
-(def-constant-opener x86isa::vex->l$inline)
-(def-constant-opener x86isa::vex->pp$inline)
-(def-constant-opener x86isa::vex->r$inline)
-(def-constant-opener x86isa::vex->w$inline)
-(def-constant-opener x86isa::vex->b$inline)
-(def-constant-opener x86isa::vex->x$inline)
+(def-constant-opener vex->vvvv$inline)
+(def-constant-opener vex->l$inline)
+(def-constant-opener vex->pp$inline)
+(def-constant-opener vex->r$inline)
+(def-constant-opener vex->w$inline)
+(def-constant-opener vex->b$inline)
+(def-constant-opener vex->x$inline)
 
 (def-constant-opener x86isa::vex2-byte1-fix$inline)
 (def-constant-opener x86isa::vex2-byte1->pp$inline)
@@ -336,28 +336,28 @@
 
 (def-constant-opener byte-listp)
 
-(def-constant-opener x86isa::mxcsrbits-fix)
+(def-constant-opener mxcsrbits-fix)
 
 ;; these expose part-select
-(def-constant-opener x86isa::mxcsrbits->ie$inline)
-(def-constant-opener x86isa::mxcsrbits->de$inline)
-(def-constant-opener x86isa::mxcsrbits->ze$inline)
-(def-constant-opener x86isa::mxcsrbits->oe$inline)
-(def-constant-opener x86isa::mxcsrbits->ue$inline)
-(def-constant-opener x86isa::mxcsrbits->pe$inline)
-(def-constant-opener x86isa::mxcsrbits->daz$inline)
-(def-constant-opener x86isa::mxcsrbits->im$inline)
-(def-constant-opener x86isa::mxcsrbits->dm$inline)
-(def-constant-opener x86isa::mxcsrbits->zm$inline)
-(def-constant-opener x86isa::mxcsrbits->om$inline)
-(def-constant-opener x86isa::mxcsrbits->um$inline)
-(def-constant-opener x86isa::mxcsrbits->pm$inline)
-(def-constant-opener x86isa::mxcsrbits->rc$inline)
-(def-constant-opener x86isa::mxcsrbits->ftz$inline)
-(def-constant-opener x86isa::mxcsrbits->reserved$inline)
+(def-constant-opener mxcsrbits->ie$inline)
+(def-constant-opener mxcsrbits->de$inline)
+(def-constant-opener mxcsrbits->ze$inline)
+(def-constant-opener mxcsrbits->oe$inline)
+(def-constant-opener mxcsrbits->ue$inline)
+(def-constant-opener mxcsrbits->pe$inline)
+(def-constant-opener mxcsrbits->daz$inline)
+(def-constant-opener mxcsrbits->im$inline)
+(def-constant-opener mxcsrbits->dm$inline)
+(def-constant-opener mxcsrbits->zm$inline)
+(def-constant-opener mxcsrbits->om$inline)
+(def-constant-opener mxcsrbits->um$inline)
+(def-constant-opener mxcsrbits->pm$inline)
+(def-constant-opener mxcsrbits->rc$inline)
+(def-constant-opener mxcsrbits->ftz$inline)
+(def-constant-opener mxcsrbits->reserved$inline)
 
-(def-constant-opener x86isa::convert-arith-operation-to-rtl-op$inline)
-;(def-constant-opener x86isa::feature-flag) ; keep feature-flag disabled, for clarity
+(def-constant-opener convert-arith-operation-to-rtl-op$inline)
+;(def-constant-opener feature-flag) ; keep feature-flag disabled, for clarity
 ;(def-constant-opener x86isa::cpuid-flag-fn) ; can't do this, it's an encapsulate
 (def-constant-opener rtl::set-flag) ; drop?
 
@@ -370,8 +370,8 @@
 (defopeners acl2::get-pe-section-aux)
 (defopeners acl2::lookup-pe-symbol)
 
-(defopeners x86isa::simd-add-spec)
-(defopeners x86isa::simd-sub-spec)
+(defopeners simd-add-spec)
+(defopeners simd-sub-spec)
 
 ;; ;todo
 ;; (thm
