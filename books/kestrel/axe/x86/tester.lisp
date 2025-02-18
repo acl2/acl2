@@ -377,6 +377,8 @@
                     acl2::elf-section-presentp
                     fix-of-rsp
                     integerp-of-rsp))
+          ;; remove-asumption-rules:
+          nil ; todo: use the remove-lift-rules?
           step-limit
           step-increment
           t ; memoizep (nil allows internal contexts)

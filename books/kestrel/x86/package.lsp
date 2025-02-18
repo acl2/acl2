@@ -1270,6 +1270,11 @@
     axe-syntaxp
     axe-bind-free
     dag-array ; for axe-syntaxp
+    dargs ; for writing axe-syntaxp and axe-bind-free functions
+    darg1
+    darg2
+    darg3
+    darg4
 
     ;; axe-syntaxp and axe-bind-free functions:
     bind-bv-size-axe
@@ -1406,7 +1411,10 @@
   '(x86isa::k
     x86isa::k2
     ;; x86isa::n ; same as in acl2 package
+    x86isa::n1
     x86isa::n2
+    x86isa::n3
+    x86isa::n4
     x86isa::ad1
     x86isa::ad2
     x86isa::ad3
@@ -1460,6 +1468,10 @@
     x86isa::base
 
     x86isa::*ip
+
+    x86isa::reg
+    x86isa::rex
+    x86isa::qword
 ))
 
 ;; TODO: Think about this...
