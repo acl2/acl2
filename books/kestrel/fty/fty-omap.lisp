@@ -245,6 +245,7 @@
        ((mv pre-/// post-///) (std::split-/// name args))
        ((mv kwd-alist rest)
         (extract-keywords name *flexomap-keywords* pre-/// nil))
+       (kwd-alist (append kwd-alist (table-alist 'defomap-defaults (w state))))
        ((when rest)
         (raise "Malformed flexomap: ~x0: after kind should be a keyword/value omap."
                name))

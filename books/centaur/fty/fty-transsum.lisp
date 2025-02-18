@@ -162,6 +162,7 @@
         (raise "Malformed transsum: ~x0: name must be a symbol" x))
        ((mv pre-/// post-///)     (std::split-/// name args))
        ((mv kwd-alist other-args) (extract-keywords name *transsum-keywords* pre-/// nil))
+       (kwd-alist (append kwd-alist (table-alist 'deftranssum-defaults (w state))))
        ((when (atom other-args))
         (raise "Malformed transsum ~x0: no members list." name))
        ((unless (eql (len other-args) 1))

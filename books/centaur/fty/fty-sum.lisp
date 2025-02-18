@@ -211,7 +211,9 @@
        (shape      (getarg :shape t kwd-alist))
        (type-name  (getarg-nonnil! :type-name
                                    (intern-in-package-of-symbol
-                                    (cat (symbol-name sumname) "-" (symbol-name kind))
+                                    (if (getarg :short-names nil sum-kwds)
+                                        (symbol-name kind)
+                                      (cat (symbol-name sumname) "-" (symbol-name kind)))
                                     sumname)
                                    kwd-alist))
        (ctor-name  (getarg-nonnil! :ctor-name type-name kwd-alist))
@@ -307,6 +309,7 @@
     :parents
     :short
     :long
+    :short-names
     :prepwork
     :post-pred-events
     :post-fix-events
@@ -371,13 +374,15 @@
   ((x             "User-level syntax, the whole defflexsum form.")
    (xvar          "The special x variable to use.  BOZO but we infer it?")
    (our-fixtypes  "New fixtypes being defined.")
-   (fixtypes      "Previous fixtypes."))
+   (fixtypes      "Previous fixtypes.")
+   state)
   :returns (flexsum "A flexsum-p.")
   (b* (((cons name args) x)
        ((unless (symbolp name))
         (raise "Malformed flexsum: ~x0: name must be a symbol" x))
        ((mv pre-/// post-///)     (std::split-/// name args))
        ((mv kwd-alist orig-prods) (extract-keywords name *flexsum-keywords* pre-/// nil))
+       (kwd-alist (append kwd-alist (table-alist 'defflexsum-defaults (w state))))
        (pred    (getarg! :pred  (intern-in-package-of-symbol (cat (symbol-name name) "-P") name) kwd-alist))
        (fix     (getarg! :fix   (intern-in-package-of-symbol (cat (symbol-name name) "-FIX") name) kwd-alist))
        (equiv   (getarg! :equiv (intern-in-package-of-symbol (cat (symbol-name name) "-EQUIV") name) kwd-alist))

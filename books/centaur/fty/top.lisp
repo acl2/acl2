@@ -809,7 +809,9 @@ some base types with fixing functions.</p>
   )
  })
 
-<p>Only the name and the @(':elt-type') argument is required.</p>
+<p>Only the name and the @(':elt-type') argument is required. Default values
+for keywords may be set by locally adding pairs to the
+@('fty::deflist-defaults') @(see table).</p>
 
 <p>As part of the event, @('deflist') calls @(see std::deflist) to produce
 several useful theorems about the introduced predicate.</p>
@@ -876,7 +878,9 @@ functions.</p>
  })
 
 <p>The keyword arguments are all optional, although it doesn't make much sense
-to define an alist with neither a key-type nor value-type.</p>
+to define an alist with neither a key-type nor value-type. Default values
+for keyword arguments may be set by locally adding pairs to the
+@('fty::defalist-defaults') @(see table).</p>
 
 <p>The @(':strategy') keyword changes the way the fixing function works; by
 default, every pair in the alist is kept but its key and value are fixed.  With
@@ -969,6 +973,10 @@ comfortable.</p>
     (list-of-fields)
     keyword-options)
  })
+
+
+<p>Default values for keyword arguments may be set by locally adding pairs to
+the @('fty::defprod-defaults') @(see table).</p>
 
 <p>The fields are @(see std::extended-formals), except that the guard must be
 either simply a predicate or the call of a unary predicate on the field name.
@@ -1270,7 +1278,9 @@ a benefit of following a consistent type-fixing convention.</p>
 <h3>Deftagsum Usage and Options</h3>
 
 <p>A @('deftagsum') form consists of the type name, a list of product
-specifiers, and some optional keyword arguments.</p>
+specifiers, and some optional keyword arguments. Default values
+for keyword arguments may be set by locally adding pairs to the
+@('fty::deftagsum-defaults') @(see table).</p>
 
 <h4>Product specifiers</h4>
 
@@ -1306,6 +1316,11 @@ generation of the count function.</li>
 
 <li>@(':measure'): override the measures used to admit the recognizer, fixing
 function, and count function; the default is @('(acl2-count x)').</li>
+
+<li>@(':short-names'): if non-nil, override the default base name for each
+product to be its tag (in the package of the sum name) rather than
+@('sumname-tag'). The user must ensure that these tag names are unique
+enough.</li>
 
 <li>@(':prepwork'): events submitted before</li>
 
@@ -1453,7 +1468,9 @@ to figure out what that proof was and why it failed.</p>
 <h4>@('Defflexsum') top-level arguments</h4>
 
 <p>@('Defflexsum') takes the following keyword arguments, in addition to a list
-of products, which are described further below.</p>
+of products, which are described further below. Default values
+for keyword arguments may be set by locally adding pairs to the
+@('fty::defflexsum-defaults) @(see table).</p>
 
 <ul>
 
