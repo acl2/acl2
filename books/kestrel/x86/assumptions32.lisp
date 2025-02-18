@@ -1,7 +1,7 @@
 ; Assumptions for 32-bit x86 proofs
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2021 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -37,6 +37,7 @@
 ;; segment, must be less than the limit of the code
 (defund return-address-okp (x86)
   (declare (xargs :stobjs x86))
+  ;; todo: use a bv comparison?
   (not (< (seg-hidden-limiti *cs* x86)
           (read-from-segment 4 (esp x86) *ss* x86))))
 
