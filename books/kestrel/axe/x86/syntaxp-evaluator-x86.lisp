@@ -10,7 +10,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ACL2")
+(in-package "ACL2") ; todo: package
 
 (include-book "../axe-syntax-functions-boolean")
 (include-book "../axe-syntax-functions-bv")
@@ -37,4 +37,5 @@
                                    should-commute-axe-args-increasingp
                                    x::write-with-addr-and-size-presentp-axe
                                    x::write-nest-with-inner-set-flagp-axe
-                                   dargs-equalp))
+                                   dargs-equalp
+                                   x::addresses-out-of-orderp))

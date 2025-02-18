@@ -11,6 +11,7 @@
 (in-package "X")
 
 (include-book "../dag-arrays")
+(include-book "../axe-syntax-functions")
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (in-theory (disable aref1 dimensions)))
 
@@ -86,3 +87,69 @@
                                        (acl2::pseudo-dag-arrayp 'dag-array dag-array (+ 1 darg2))))))
            (ignore dag-array))
   (equal darg1 darg2))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(local (include-book "kestrel/lists-light/len" :dir :system))
+
+;; darg1 and darg2 are addresses (such as in calls of write)
+(defund addresses-out-of-orderp (darg1 darg2 dag-array)
+  (declare (xargs :guard (and (or (myquotep darg1)
+                                  (and (natp darg1)
+                                       (acl2::pseudo-dag-arrayp 'dag-array dag-array (+ 1 darg1))))
+                              (or (myquotep darg2)
+                                  (and (natp darg2)
+                                       (acl2::pseudo-dag-arrayp 'dag-array dag-array (+ 1 darg2)))))
+                  ;:guard-hints (("Goal" :in-theory (enable len)))
+
+                  )
+           ;(ignore dag-array)
+           )
+  (if (consp darg1) ;tests for quotep
+      (if (consp darg2) ;tests for quotep
+          ;; both are constants:
+          (let ((val1 (unquote darg1))
+                (val2 (unquote darg2)))
+            (if (not (and (integerp val1) ; might be a negative offset (e.g., from RSP)
+                          (integerp val2)))
+                nil ; be tolerant, so we don't loop
+              (< val2 val1) ; if val2 comes first, they are out-of-order
+              ))
+        ;; only darg1 is a constant:
+        nil)
+    (if (consp darg2) ; tests for quotep
+        ;; only darg2 is a constant:
+        t ; they should be switched to put the constant first
+      ;; they are both nodenums:
+      (let* ((expr1 (aref1 'dag-array dag-array darg1))
+             (expr2 (aref1 'dag-array dag-array darg2)))
+        (mv-let (offset1 base1)
+          (if (not (and (consp expr1)
+                        (eq 'binary-+ (ffn-symb expr1))
+                        (consp (cdr (dargs expr1)))))
+              (mv 0 darg1)
+            (let ((maybe-offset (darg1 expr1)))
+              (if (not (acl2::darg-quoted-integerp maybe-offset))
+                  (mv 0 darg1)
+                ;; (binary-+ '<offset> <base>):
+                (mv (unquote maybe-offset)
+                    (darg2 expr1)))))
+          (mv-let (offset2 base2)
+            (if (not (and (consp expr2)
+                          (eq 'binary-+ (ffn-symb expr2))
+                          (consp (cdr (dargs expr2)))))
+                (mv 0 darg2)
+              (let ((maybe-offset (darg1 expr2)))
+                (if (not (acl2::darg-quoted-integerp maybe-offset))
+                    (mv 0 darg2)
+                  ;; (binary-+ '<offset> <base>):
+                  (mv (unquote maybe-offset)
+                      (darg2 expr2)))))
+            ;; first compare the bases:
+            (if (heavier-dag-term base1 base2)
+                t
+              (if (heavier-dag-term base2 base1)
+                  nil
+                ;; the bases are the same, so check the offsets:
+                (< offset2 offset1) ; todo: add type decl
+                ))))))))
