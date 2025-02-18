@@ -85,3 +85,20 @@
                     :32 32
                     :64 64))
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define feat->xnum ((feat featp))
+  :returns (xnum posp :rule-classes (:rewrite :type-prescription))
+  :short "The number of @('x') registers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These is 32 for the RV32I and RV64I bases,
+     but it is reduced to 16 for the RV32E and RV64E bases [ISA:3].
+     Although our features do not yet model the latter bases,
+     we define this operation so that other code can use it
+     and more easily accommodate the extension for RV32E/RV64E."))
+  (declare (ignore feat))
+  32
+  :hooks (:fix))
