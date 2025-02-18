@@ -31,6 +31,7 @@
                           sbyte32p
                           sbyte64
                           sbyte64p
+                          signed-byte-listp
                           ubyte1
                           ubyte1p
                           ubyte3
@@ -73,4 +74,5 @@
                           ubyte32-listp
                           ubyte64-list
                           ubyte64-listp
+                          unsigned-byte-listp
                           bitops::part-select)))
