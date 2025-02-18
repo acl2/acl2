@@ -99,7 +99,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define feat->xnum ((feat featp))
-  :returns (xnum posp :rule-classes (:rewrite :type-prescription))
+  :returns (xnum posp)
   :short "The number of @('x') registers."
   :long
   (xdoc::topstring
