@@ -55,7 +55,7 @@
   (:64 ())
   :pred feat-bitsp)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod feat
   :short "Fixtype of RISC-V feature choices."
@@ -70,3 +70,45 @@
     "More features will be added later."))
   ((bits feat-bits))
   :pred featp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define feat->xlen ((feat featp))
+  :returns (xlen posp :rule-classes (:rewrite :type-prescription))
+  :short "The @('XLEN') parameter [ISA:1.3]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the register width, depending on the choice of base."))
+  (b* (((feat feat) feat))
+    (feat-bits-case feat.bits
+                    :32 32
+                    :64 64))
+  :hooks (:fix)
+
+  ///
+
+  (defret feat->xlen-when-32-bits
+    (equal xlen 32)
+    :hyp (feat-bits-case (feat->bits feat) :32))
+
+  (defret feat->xlen-when-64-bits
+    (equal xlen 64)
+    :hyp (feat-bits-case (feat->bits feat) :64)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define feat->xnum ((feat featp))
+  :returns (xnum posp)
+  :short "The number of @('x') registers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These is 32 for the RV32I and RV64I bases,
+     but it is reduced to 16 for the RV32E and RV64E bases [ISA:3].
+     Although our features do not yet model the latter bases,
+     we define this operation so that other code can use it
+     and more easily accommodate the extension for RV32E/RV64E."))
+  (declare (ignore feat))
+  32
+  :hooks (:fix))
