@@ -15,6 +15,7 @@
 (include-book "states64")
 
 (local (include-book "kestrel/utilities/nfix" :dir :system))
+(local (include-book "std/typed-lists/nat-listp" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -122,3 +123,46 @@
          (equal (len stat.memory)
                 (expt 2 (feat->xlen feat)))))
   :hooks (:fix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define read-xreg-unsigned ((reg natp) (stat statp) (feat featp))
+  :guard (and (stat-validp stat feat)
+              (< (lnfix reg) (feat->xnum feat)))
+  :returns (val natp :rule-classes (:rewrite :type-prescription))
+  :short "Read an unsigned integer from an @('x') register."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The index must be less than the number @('n') of registers,
+     so that the registers @('x0') to @('x<n>') can be indexed.
+     The result is a natural number in general;
+     additionally, based on @('XLEN'), it consists of either 32 or 64 bits.")
+   (xdoc::p
+    "As explained in @(tsee stat),
+     @('x0') is not modeled explicitly, since it is hardwired to 0.
+     Thus, the 0 index is treated separately;
+     the other cases are handled by decrementing the index by 1."))
+  (declare (ignore feat))
+  (b* ((reg (lnfix reg)))
+    (if (= reg 0)
+        0
+      (lnfix (nth (1- reg) (stat->xregs stat)))))
+  :guard-hints (("Goal" :in-theory (enable feat->xnum stat-validp)))
+  :hooks (:fix)
+
+  ///
+
+  (defret ubyte32p-of-read-xreg-unsigned
+    (ubyte32p val)
+    :hyp (and (feat-bits-case (feat->bits feat) :32)
+              (stat-validp stat feat)
+              (< (lnfix reg) (feat->xnum feat)))
+    :hints (("Goal" :in-theory (enable stat-validp))))
+
+  (defret ubyte64p-of-read-xreg-unsigned
+    (ubyte64p val)
+    :hyp (and (feat-bits-case (feat->bits feat) :64)
+              (stat-validp stat feat)
+              (< (lnfix reg) (feat->xnum feat)))
+    :hints (("Goal" :in-theory (enable stat-validp)))))
