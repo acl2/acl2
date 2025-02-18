@@ -111,10 +111,10 @@
      so we constrain the length of the list to be that."))
   (b* (((stat stat) stat)
        ((feat feat) feat))
-    (and (equal (len stat.xregs) 31)
-         (feat-bits-case feat.bits
+    (and (feat-bits-case feat.bits
                          :32 (ubyte32-listp stat.xregs)
                          :64 (ubyte64-listp stat.xregs))
+         (equal (len stat.xregs) 31)
          (feat-bits-case feat.bits
                          :32 (ubyte32p stat.pc)
                          :64 (ubyte64p stat.pc))
