@@ -2098,6 +2098,21 @@
                               acl2::bvchop-of-sum-cases
                               bvminus))))
 
+(defthm write-of-write-byte-not-within-bv
+  (implies (and ;; ad2 is NOT in the interval [ad1,ad1+n):
+             (not (bvlt 48 (bvminus 48 ad2 ad1) n))
+             (unsigned-byte-p 48 n)
+            (integerp ad1)
+            (integerp ad2)
+            ;(natp n)
+            )
+           (equal (write n ad1 val (write-byte ad2 byte x86))
+                  (write-byte ad2 byte (write n ad1 val x86))))
+  :hints (("Goal" :induct t
+           :in-theory (enable bvlt write
+                              acl2::bvchop-of-sum-cases
+                              bvminus))))
+
 ;; both cases
 (defthm write-of-write-byte
   (implies (and (integerp ad1)
@@ -2756,11 +2771,33 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;move up
+(defthm write-subst-term-arg1
+  (implies (and (equal (bvchop 48 ad) (bvchop 48 free))
+                (syntaxp (acl2::smaller-termp free ad))
+                (integerp ad)
+                (integerp free))
+           (equal (write n ad val x86)
+                  (write n free val x86)))
+  :hints (("Goal" :use ((:instance write-of-bvchop-48 (addr ad))
+                        (:instance write-of-bvchop-48 (addr free)))
+           :in-theory (disable write-of-bvchop-48))))
+
+(defthm write-subst-constant-arg1
+  (implies (and (equal (bvchop 48 ad) k)
+                (syntaxp (quotep k))
+                (integerp ad)
+                (integerp free))
+           (equal (write n ad val x86)
+                  (write n k val x86)))
+  :hints (("Goal" :use ((:instance write-of-bvchop-48 (addr ad))
+                        (:instance write-of-bvchop-48 (addr k)))
+           :in-theory (disable write-of-bvchop-48))))
+
 (defthm write-of-write-combine-constants-1
   (implies (and (syntaxp (quotep val1))
                 (syntaxp (quotep val2))
-                (equal (bvchop 48 ad1)
-                       (+ n2 ad2))
+                (equal (bvchop 48 ad1) (bvplus 48 n2 ad2))
                 (natp n1)
                 (natp n2)
                 (integerp ad1)
@@ -3223,3 +3260,88 @@
            (equal (clear n1 ad1 (write n2 ad2 val (clear n1 ad1 x86)))
                   (clear n1 ad1 (write n2 ad2 val x86))))
   :hints (("Goal" :in-theory (enable clear))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;move up
+(defthm write-of-write-diff-bv
+  (implies (and (syntaxp (acl2::smaller-termp ad2 ad1))
+                (bvle 48 n2 (bvminus 48 ad1 ad2))
+                (bvle 48 n1 (bvminus 48 ad2 ad1))
+                ;;(natp n1)
+                (unsigned-byte-p 48 n2) ;; (natp n2)
+                (unsigned-byte-p 48 n1) ;; (natp n1)
+                (integerp ad2)
+                (integerp ad1))
+           (equal (write n1 ad1 val1 (write n2 ad2 val2 x86))
+                  (write n2 ad2 val2 (write n1 ad1 val1 x86))))
+  :hints (("Goal" :in-theory (enable write ;acl2::bvuminus-of-+
+                                     bvlt bvplus bvuminus bvminus
+                                     acl2::bvchop-of-sum-cases))))
+
+;can loop if enabled
+(defthmd acl2::bvplus-subst-arg2
+  (implies (and (equal (bvchop n x) free)
+                ;(syntaxp (acl2::smaller-termp free x))
+                )
+           (equal (bvplus n x y)
+                  (bvplus n free y)))
+  :hints (("Goal" :use (:instance acl2::bvplus-subst-smaller-term-arg2
+                                  (x y)
+                                  (y x))
+           :in-theory (disable acl2::bvplus-subst-smaller-term-arg2))))
+
+(local
+  (defthmd helper
+    (implies (equal (bvchop 48 ad1) (bvplus 48 ad2 n2))
+             (equal (bvplus 48 ad1 (bvuminus 48 ad2))
+                    (bvchop 48 n2)))))
+
+(local
+  (defthmd helper2
+    (implies (equal (bvchop 48 ad1) (bvplus 48 ad2 n2))
+             (equal (bvplus 48 ad2 (bvuminus 48 ad1))
+                    (bvuminus 48 n2)))))
+
+(local
+  (defthm helper3
+    (implies (and (<= (+ n1 n2) 281474976710656)
+                  (unsigned-byte-p 48 n1)
+                  (unsigned-byte-p 48 n2))
+             (equal (bvlt 48 (bvuminus 48 n2) n1)
+                    (if (equal 0 n2)
+                        (bvlt 48 0 n1)
+                      nil)))
+    :hints (("Goal" :in-theory (enable bvuminus bvlt)))))
+
+;move up
+(defthm write-of-write-combine-constants-2
+  (implies (and (syntaxp (and (quotep val1)
+                              (quotep val2)))
+                (equal (bvchop 48 ad1) (bvplus 48 n2 ad2)) ; ad1 is at the end of the write to ad2
+                (unsigned-byte-p 48 n1) ;(natp n1)
+                (unsigned-byte-p 48 n2) ;(natp n2)
+                (<= (+ n1 n2) (expt 2 48)) ;needed?
+                (integerp ad1)
+                (integerp ad2))
+           (equal (write n2 ad2 val2 (write n1 ad1 val1 x86))
+                  (write (+ n1 n2)
+                         ad2
+                         (bvcat (* 8 n1) val1
+                                (* 8 n2) val2)
+                         x86)))
+  ;; :hints (("Goal" :in-theory (e/d (;write acl2::bvcat-of-logtail-low
+  ;;                              (:i write)
+  ;;                              write-of-1-becomes-write-byte
+  ;;                              )
+  ;;                                 (acl2::getbit-bound-linear
+  ;;                                  acl2::bvplus-when-low-bits-are-zero))
+  ;;          :induct (write n1 ad1 val1 x86) ; causes the wrong first byte to be split off
+  ;;          :expand ((WRITE (+ N1 N2)
+  ;;                          AD2 (BVCAT (* 8 N1) VAL1 (* 8 N2) VAL2)
+  ;;                          X86))))
+  :hints (("Goal" :use (write-of-write-combine-constants-1
+                         (:instance write-of-write-diff-bv))
+           :in-theory (e/d (helper helper2)
+                           (write-of-write-combine-constants-1
+                            write-of-write-diff-bv)))))
