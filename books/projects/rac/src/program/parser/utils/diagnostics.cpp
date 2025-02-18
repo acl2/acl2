@@ -2,7 +2,6 @@
 #include "utils.h"
 
 #include <cassert>
-#include <limits>
 
 std::ostream &operator<<(std::ostream &os, const Location &loc) {
 
@@ -52,6 +51,7 @@ void DiagnosticHandler::show_code_at(const Location &context,
   // ... unless if it is also too big, in that case we only show the first 5
   // lines.
   if (last_line_to_display - first_line_to_display > 5) {
+    std::cerr << "(Too much context, show only the 5 first lines)\n";
     last_line_to_display = first_line_to_display + 5;
   }
 

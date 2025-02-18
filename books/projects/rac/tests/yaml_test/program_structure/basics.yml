@@ -174,3 +174,12 @@
   description: Default values are not supported
 
 - name: const_param
+
+- name: variable-not-initialized
+  should_report_error: true
+
+- name: var-mismatch-case
+  should_report_error: true
+
+- name: very-long-error
+  should_report_error: true

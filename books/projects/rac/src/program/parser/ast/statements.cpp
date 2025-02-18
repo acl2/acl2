@@ -123,14 +123,6 @@ void EnumConstDec::display(std::ostream &os, unsigned) {
 
 bool EnumConstDec::isStaticallyEvaluable() { return true; }
 
-Sexpression *EnumConstDec::ACL2Expr() {
-  if (init) {
-    return new Plist({ sym, init->ACL2Expr() });
-  } else {
-    return sym;
-  }
-}
-
 Sexpression *EnumConstDec::ACL2SymExpr() {
   return always_cast<const EnumType *>(get_type())->getEnumVal(sym);
 }
@@ -149,9 +141,6 @@ void VarDec::displaySimple(std::ostream &os) { displaySymDec(os); }
 Sexpression *VarDec::ACL2Expr() {
 
   const Type *t = get_type();
-  //  if (auto dt = dynamic_cast<const DefinedType *>(t)) {
-  //    t = dt->derefType();
-  //  }
 
   Sexpression *val = nullptr;
   if (isa<const ArrayType *>(t)) {

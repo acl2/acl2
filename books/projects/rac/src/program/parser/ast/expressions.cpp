@@ -53,9 +53,6 @@ Constant::Constant(NodesId id, Location loc, const char *n)
 Constant::Constant(NodesId id, Location loc, std::string &&n)
     : Expression(id, loc), name_(std::move(n)) {}
 
-Constant::Constant(NodesId id, Location loc, int n)
-    : Expression(id, loc), name_(std::to_string(n)) {}
-
 bool Constant::isStaticallyEvaluable() { return true; }
 
 Sexpression *Constant::ACL2Expr() { return new Symbol(name_); }
@@ -367,14 +364,11 @@ void ArrayRef::display(std::ostream &os) const {
 Sexpression *ArrayRef::ACL2Expr() {
   if (isa<const ArrayType *>(array->get_type())) {
     Sexpression *s = nullptr;
-    SymRef *ref = dynamic_cast<SymRef *>(array);
 
+    SymRef *ref = dynamic_cast<SymRef *>(array);
     if (ref && ref->symDec->isGlobal()) {
       s = new Plist(
           { &s_nth, index->ACL2Expr(), new Plist({ ref->symDec->sym }) });
-    } else if (ref && ref->symDec->isGlobal()) {
-      s = new Plist(
-          { &s_ag, index->ACL2Expr(), new Plist({ ref->symDec->sym }) });
     } else {
       s = new Plist({ &s_ag, index->ACL2Expr(), array->ACL2Expr() });
     }
@@ -572,7 +566,20 @@ Sexpression *PrefixExpr::ACL2Expr() {
     return s;
   } else if (op == Op::UnaryMinus) {
     Sexpression *s_val = expr->get_type()->eval(s);
-    return new Plist({ &s_minus, s_val });
+    Sexpression *sexpr = new Plist({ &s_minus, s_val });
+
+    if (auto pt = dynamic_cast<const IntType *>(get_type())) {
+      Sexpression *upper_bound = nullptr;
+      upper_bound = pt->width()->isStaticallyEvaluable()
+        ? Integer(this->loc(), this->ACL2ValWidth() - 1).ACL2Expr()
+        : new Plist(
+            { &s_minus, pt->width()->ACL2Expr(), new Symbol(1) });
+
+      sexpr = new Plist({ &s_bits, sexpr, upper_bound,
+                        Integer::zero_v(this->loc())->ACL2Expr() });
+    }
+
+    return sexpr;
 
   } else if (op == Op::Not) {
     return new Plist({ &s_lognot1, s });

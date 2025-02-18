@@ -24,3 +24,8 @@
 
 - name: compare-op-signed
   description: Compare operations with signed integer
+
+- name: not-an-ac-type
+  should_report_error: true 
+
+- name: prefix-expr

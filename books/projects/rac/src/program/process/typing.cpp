@@ -82,7 +82,7 @@ bool TypingAction::VisitInteger(Integer *e) {
                    "Integer litteral cannot fit in any available types")
         .note("Try some suffix (U or/and L)")
         .report();
-    return false;
+    return error();
   }
   return true;
 }
@@ -266,6 +266,8 @@ bool TypingAction::VisitSubrange(Subrange *e) {
                           e->base->get_type()->to_string().c_str()))
         .context(e->loc())
         .report();
+    e->set_type(new ErrorType());
+    return error();
   }
 
   return true;
@@ -306,7 +308,7 @@ bool TypingAction::VisitPrefixExpr(PrefixExpr *e) {
                               new BinaryExpr(e->loc(), t->width(),
                                              Integer::one_v(e->loc()),
                                              BinaryExpr::Op::Plus),
-                              t->isSigned()));
+                              Boolean::true_v(e->loc())));
       break;
     case PrefixExpr::Op::BitNot:
       // ac_int<W+!S, true>

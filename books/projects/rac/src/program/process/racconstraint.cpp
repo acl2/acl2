@@ -40,7 +40,8 @@ bool RACConstraint::VisitSwitchStmt(SwitchStmt *s) {
   }
 
   unsigned size = s->cases().size();
-  last_case_ = size ? s->cases()[size - 1] : nullptr;
+  assert(size); // s->cases() can never be empty (forbidden by the syntax)
+  last_case_ = s->cases()[size - 1];
 
   return true;
 }
@@ -197,13 +198,16 @@ bool RACConstraint::VisitFunDef(FunDef *fd) {
 
         auto orig = vd->get_original_type();
 
+        std::stringstream ss;
+        at->dim->display(ss);
         diag_
             .new_error(
                 vd->loc(),
                 format("Cannot pass a C array (`%s`) as function parameter",
                        orig->to_string().c_str()))
-            .note(format("use array<%s> instead",
-                         at->baseType->to_string().c_str()))
+            .note(format("use array<%s, %s> instead",
+                         at->baseType->to_string().c_str(),
+                         ss.str().c_str()))
             .context(vd->loc())
             .report();
         b = false;

@@ -84,6 +84,7 @@
   should_report_error: true
 
 - name: initializer-list-tuple
+- name: std-tuple-copy
 
 - name: initializer-list-nested-array
   should_report_error: true
@@ -106,3 +107,18 @@
 
 - name: const_ref_body
   should_report_error: true
+
+- name: array-dim-expr
+  should_report_error: true
+- name: array-dim-expr-invalid
+  should_report_error: true
+
+- name: array-dim-expr-in-param
+- name: array-dim-expr-invalid-in-param
+  should_report_error: true
+
+- name: array-dim-expr-2
+  should_report_error: true
+- name: array-dim-expr-invalid-2
+  should_report_error: true
+

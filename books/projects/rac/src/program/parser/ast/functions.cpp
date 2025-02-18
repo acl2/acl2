@@ -79,7 +79,7 @@ void Template::display(std::ostream &os, unsigned indent) {
   os << "template<";
   bool first = true;
   for (auto p : tempParams_) {
-    if (first) {
+    if (!first) {
       os << ", ";
     }
     first = false;

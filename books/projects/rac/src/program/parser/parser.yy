@@ -536,6 +536,8 @@ funcall
   Template *f;
   if ((f = yyast.getTemplate($1)) == nullptr)
     {
+      // This should be unreachable: to output a TEMPLATEID, the lexer looks if 
+      // the result of yyast.getTemplate().
       yyast.diag()
           .new_error(@$, format("Undefined function template `%s`", $1))
           .report();
@@ -893,7 +895,7 @@ untyped_var_dec
   if (!$3->isStaticallyEvaluable () || $3->evalConst () <= 0)
     {
       yyast.diag()
-          .new_error(@3, "Invalid array size (it shoud be a constant,"
+          .new_error(@3, "Invalid array size (it shoud be a constant, "
                     "stricly positive expression)")
           .context(@$)
           .report();

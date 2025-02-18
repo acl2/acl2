@@ -83,7 +83,9 @@ public:
   void displaySimple(std::ostream &os) override { display(os, 0); }
   bool isStaticallyEvaluable() override;
 
-  Sexpression *ACL2Expr() override;
+  // Enum are not translate to ACL2 (we use directly the underlying values).
+  Sexpression *ACL2Expr() override { UNREACHABLE(); }
+
   Sexpression *ACL2SymExpr() override;
 };
 

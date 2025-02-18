@@ -51,7 +51,7 @@ class Constant : public Expression {
 public:
   Constant(NodesId id, Location loc, const char *n);
   Constant(NodesId id, Location loc, std::string &&n);
-  Constant(NodesId id, Location loc, int n);
+
   bool isStaticallyEvaluable() override;
   bool isInteger() override { return true; }
 

@@ -107,7 +107,7 @@ cppopts="-D__RAC__ -C -std=c++14 -x c++"
 #  * preprocess the file using gcc.
 
 # Add the file name otherwise g++ would report error in <STDIN>.
-echo "# 0 \"$basename.cpp\"" | \
+echo "# 1 \"$basename.cpp\"" | \
   # Add the source code to the stream.
   cat - $basename.cpp | \
   # Resolve the includes but do not preprocess the macros
