@@ -119,7 +119,5 @@
                          :32 (ubyte32p stat.pc)
                          :64 (ubyte64p stat.pc))
          (equal (len stat.memory)
-                (expt 2 (feat-bits-case feat.bits
-                                        :32 32
-                                        :64 64)))))
+                (expt 2 (feat->xlen feat)))))
   :hooks (:fix))
