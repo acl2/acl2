@@ -599,7 +599,7 @@
                 (natp small)
                 (integerp big))
            (<= (bvchop small x) (bvchop big x)))
-  :rule-classes ((:linear))
+  :rule-classes :linear
   :hints (("Goal" :in-theory (enable natp))))
 
 ;; Do not remove: helps justify the correctness of some operations done by Axe.
@@ -913,7 +913,7 @@
            (equal (bvchop size x)
                   (+ (expt 2 size) x)))
   :hints (("Goal"
-           :use (:instance acl2::bvchop-identity (acl2::size size) (i (+ (expt 2 size) X)))
+           :use (:instance bvchop-identity (size size) (i (+ (expt 2 size) X)))
            :in-theory (enable bvchop unsigned-byte-p))))
 
 (defthmd bvchop-when-signed-byte-p
@@ -931,3 +931,13 @@
                 (integerp y))
            (equal (bvchop size (+ x y (expt 2 size)))
                   (bvchop size (+ x y)))))
+
+(defthmd mod-becomes-bvchop-when-power-of-2p
+  (implies (and (syntaxp (quotep k))
+                (power-of-2p k)
+                (integerp x))
+           (equal (mod x k)
+                  (bvchop (+ -1 (integer-length k)) x)))
+  :hints (("Goal" :in-theory (enable bvchop power-of-2p))))
+
+(theory-invariant (incompatible (:rewrite mod-becomes-bvchop-when-power-of-2p) (:definition bvchop)))

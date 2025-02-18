@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -15,7 +15,8 @@
 (include-book "abstraction-mapping")
 (include-book "abstract-syntax-operations")
 (include-book "unambiguity")
-(include-book "annotation")
+(include-book "validation-information")
+(include-book "ascii-identifiers")
 (include-book "defpred")
 (include-book "defpred-doc")
 (include-book "preprocess-file")
@@ -88,9 +89,9 @@
      motivated by the fact that we want this tool-oriented syntax
      to be neither before nor after preprocessing,
      but to incorporate constructs from both forms of the C code;
-     the grammar in [C] is organized differently,
+     the grammar in [C17] is organized differently,
      with preprocessing being a distinguished translation phase
-     [C:5.1.1.2].")
+     [C17:5.1.1.2].")
    (xdoc::p
     "We have started defining an "
     (xdoc::seetopic "abstraction-mapping" "abstraction mapping")
@@ -139,17 +140,28 @@
      as resulting after disambiguation.")
    (xdoc::p
     "We provide a collection of predicates that characterize "
-    (xdoc::seetopic "annotation" "annotated abstract syntax")
+    (xdoc::seetopic "validation-information" "annotated abstract syntax")
     ", i.e. abstract syntax enhanced with
      the information added by the validator.")
    (xdoc::p
+    "We provide a collection of predicates that characterize "
+    (xdoc::seetopic "ascii-identifiers"
+                    "abstract syntax with ASCII identifiers")
+    ", i.e. abstract syntax such that all the identifiers that occur in it
+     are ACL2 strings that start with an ASCII letter,
+     only contain ASCII letters, digits, and underscores,
+     and are distinct from keywords.")
+   (xdoc::p
     "We provide various "
     (xdoc::seetopic "abstract-syntax-operations"
-                    "operations on the abstract syntax")
+                    "other operations on the abstract syntax")
     ".")
    (xdoc::p
     "We provide event macros @(tsee input-files) and @(tsee output-files)
-     to read, preprocess, parse, disambiguate, print, and write files.")
+     to read, preprocess, parse, disambiguate, print, and write files.
+     We also provide programmatic interfaces to both,
+     via the (non-event) macros
+     @(tsee input-files-prog) and @(tsee output-files-prog).")
    (xdoc::p
     "We plan to prove theorems connecting this tool-oriented syntax
      with the formal language definition in @(see c::language).
@@ -180,7 +192,7 @@
                     defpred
                     abstract-syntax-operations
                     unambiguity
-                    annotation
+                    validation-information
                     preprocessing
                     parser
                     disambiguator

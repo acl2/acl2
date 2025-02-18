@@ -27,7 +27,7 @@
 ;   DEALINGS IN THE SOFTWARE.
 ;
 ; Original author: Jared Davis <jared@centtech.com>
-; Contributing author: Alessandro Coglio <coglio@kestrel.edu>
+; Contributing author: Alessandro Coglio (www.alessandrocoglio.info)
 
 (in-package "ACL2")
 
@@ -130,9 +130,73 @@
      of the HOL-ACL2 link from a HOL4 distribution, updating ACL2 aspects of
      that link to work with the latest versions of ACL2.")
 
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "riscv::riscv" "RISC-V ISA Model"))
+
+   (xdoc::p
+    "A preliminary model of RISC-V ISA has been added,
+     which covers unprivileged RV32IM and RV64IM
+     (except for @('FENCE'), @('HINT'), @('ECALL'), and @('EBREAK')),
+     little endian memory access,
+     fully readable and writable address space,
+     and no alignment checks.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Changes to Existing Libraries")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "c::c" "C Library"))
+
+   ;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h5 (xdoc::seetopic "c$::syntax-for-tools" "Tool-Oriented C Syntax"))
+
+   (xdoc::p
+    "We have added a tool, @(tsee c$::defpred),
+     to concisely define predicates over the abstract syntax.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "acl2::fty" "FTY Library"))
+
+   (xdoc::p
+    "A manual page explaining "
+    (xdoc::seetopic "fty::fold" "general folds for fixtypes")
+    " has been added.")
+
+   (xdoc::p
+    "A new event macro @(tsee fty::deffold-reduce) has been added,
+     to generate reducing folds,
+     according to the nomenclature explained in "
+    (xdoc::seetopic "fty::fold" "the page on general folds")
+    ".")
+
+   (xdoc::p
+    "Some utilities have been added to operate on the FTY database:
+     see @(see fty::database).
+     The data structures for the FTY database have been put into
+     guard-verified logic mode.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 "Schroeder-Bernstein Library")
+
+   (xdoc::p
+    "This library has moved from @('[books]/projects/schroder-bernstein') to
+     @('[books]/projects/schroeder-bernstein') in order to reflect the
+     prevailing German convention of printing an @('\"o\"') with umlaut as
+     @('\"oe\"') when umlaut letters are unavailable.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+   (xdoc::h4 (xdoc::seetopic "std/typed-alists"
+                             "Standard Typed Alists Library"))
+
+   (xdoc::p
+    "A theorem has been added.")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

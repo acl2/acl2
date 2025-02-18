@@ -22,9 +22,11 @@
                                      bind-bv-array-element-size-axe
                                      get-stack-height-and-pc-to-step-from-myif-nest ;jvm-specific
                                      choose-state-to-step ;jvm-specific
+                                     bind-low-zero-count-in-bvcat-nest
                                      )
                               :enables '(bind-bv-array-length-axe
                                          bind-bv-array-element-size-axe
                                          bind-bv-size-axe
                                          get-stack-height-and-pc-to-step-from-myif-nest
-                                         choose-state-to-step))
+                                         choose-state-to-step
+                                         symbol-alistp-of-bind-low-zero-count-in-bvcat-nest))

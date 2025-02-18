@@ -209,7 +209,7 @@
   (defthm-unsigned-byte-p n32p-mxcsr-sse-max/min
     :bound 32
     :concl (mv-nth 2 (sse-max/min operation op1 op2 mxcsr exp-width frac-width))
-    :hints (("Goal" :in-theory (e/d* () (unsigned-byte-p))))
+    :hints (("Goal" :in-theory (e/d* (unsigned-byte-p-when-mxcsrbits-p) (unsigned-byte-p))))
     :gen-type t
     :gen-linear t))
 

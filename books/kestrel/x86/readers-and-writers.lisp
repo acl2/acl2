@@ -1,7 +1,7 @@
 ; A theory of x86 state readers and writers (emphasis on readability of terms)
 ;
 ; Copyright (C) 2016-2022 Kestrel Technology, LLC
-; Copyright (C) 2023-2024 Kestrel Institute
+; Copyright (C) 2023-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -18,6 +18,12 @@
 ;(include-book "projects/x86isa/machine/instructions/fp/mxcsr" :dir :system) ; would support integerp-of-mxcsr, but it has a ttag
 (include-book "kestrel/utilities/myif" :dir :system)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm xw-of-xr-same-gen (implies (equal (xr fld index x86) (xr fld index x86_2)) (equal (xw fld index (xr fld index x86) x86_2) x86_2)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (in-theory (disable undef))
 
 ;; Introduces undef
@@ -25,16 +31,6 @@
   (equal (xr :undef nil x86)
          (undef x86))
   :hints (("Goal" :in-theory (enable undef))))
-
-(defthm x86isa::integerp-of-xr-rgf-type
-  (integerp (xr :rgf i x86))
-  :rule-classes :type-prescription
-  :hints (("Goal" :use (:instance x86isa::elem-p-of-xr-rgf (x86isa::x86$a x86))
-           :in-theory (e/d (xr) (x86isa::elem-p-of-xr-rgf)))))
-
-;; For Axe, since ACL2 will use the :type-prescription rule
-(defthmd x86isa::integerp-of-xr-rgf
-  (integerp (xr :rgf i x86)))
 
 (defthm undef-of-xw (implies (not (equal fld :undef)) (equal (undef (xw fld index value x86)) (undef x86))) :hints (("Goal" :in-theory (enable undef))))
 
@@ -50,7 +46,7 @@
   (x86isa::!undef undef x86))
 
 ;; Introduces set-undef
-(defthmd x86isa::!undef-becomes-set-undef
+(defthmd !undef-becomes-set-undef
   (equal (x86isa::!undef undef x86)
          (set-undef undef x86))
   :hints (("Goal" :in-theory (enable set-undef))))
@@ -91,6 +87,8 @@
 (defthm set-undef-of-myif (equal (set-undef val (myif test x y)) (myif test (set-undef val x) (set-undef val y))) :hints (("Goal" :in-theory (enable myif))))
 
 (defthm set-undef-of-if (equal (set-undef val (if test x y)) (if test (set-undef val x) (set-undef val y))))
+
+(defthm set-undef-of-undef-same-gen (implies (equal (undef x86) (undef x86_2)) (equal (set-undef (undef x86) x86_2) x86_2)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -229,7 +227,7 @@
   (x86isa::!mxcsr mxcsr x86))
 
 ;; Introduces set-mxcsr
-(defthmd x86isa::!mxcsr-becomes-set-mxcsr
+(defthmd !mxcsr-becomes-set-mxcsr
   (equal (x86isa::!mxcsr mxcsr x86)
          (set-mxcsr mxcsr x86))
   :hints (("Goal" :in-theory (enable set-mxcsr))))

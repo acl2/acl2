@@ -229,7 +229,6 @@ FX-8350.</p>
   :parents (oct-digit-chars-value)
   ((x oct-digit-char-list*p)
    (val :type unsigned-byte))
-  :guard-debug t
   (if (consp x)
       (oct-digit-chars-value1
        (cdr x)

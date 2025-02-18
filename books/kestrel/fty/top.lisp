@@ -1,6 +1,6 @@
 ; FTY Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -21,6 +21,7 @@
 (include-book "character-list")
 (include-book "character-list-result")
 (include-book "character-result")
+(include-book "database")
 (include-book "dec-digit-char-list")
 (include-book "defbyte")
 (include-book "defbyte-ihs-theorems")
@@ -33,6 +34,8 @@
 (include-book "deffixtype-alias")
 (include-book "defflatsum")
 (include-book "defflatsum-doc")
+(include-book "deffold-reduce")
+(include-book "deffold-reduce-doc")
 (include-book "deflist-of-len")
 (include-book "fty-omap")
 ;(include-book "defomap")
@@ -42,6 +45,7 @@
 (include-book "defsubtype")
 (include-book "defunit")
 (include-book "defunit-doc")
+(include-book "fold")
 (include-book "hex-digit-char-list")
 (include-book "integer-result")
 (include-book "map")

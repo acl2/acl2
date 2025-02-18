@@ -18,9 +18,9 @@
   :mnemonics
   '(MOV
     CMOVE/Z  CMOVNE/NZ  CMOVA/NBE CMOVAE/NB/NC CMOVB/C/NAE
-    CMOVBE/NA CMOVNLE/G CMOVNL/GE  CMOVL/NGE CMOVLE/NG 
+    CMOVBE/NA CMOVNLE/G CMOVNL/GE  CMOVL/NGE CMOVLE/NG
     CMOVP/PE
-    CMOVNP/PO 
+    CMOVNP/PO
     CMOVO CMOVNO CMOVS CMOVNS  XCHG
     BSWAP XADD CMPXCHG CMPXCHG8B PUSH |PUSH CS| |PUSH DS| |PUSH ES| |PUSH FS| |PUSH GS| |PUSH SS|
     POP |POP DS| |POP ES| |POP SS| PUSHA/PUSHAD POPA/POPAD CWD/CDQ/CQO
@@ -579,7 +579,7 @@ these, e.g., the ones listed in 14-2 are instead in fake section @(see
   :mnemonics '(VBROADCASTSS VMASKMOVPS VMASKMOVPD VMASKMOVPS VMASKMOVPD
                             VPERMILPD VPERMILPD VPERMILPS VPERMILPS VTESTPS VTESTPD)
   :features '(and :avx :vex))
-  
+
 (def-sdm-instruction-section "5.13.14.7 Promotion of Legacy SIMD ISA to 128-Bit Non-Arithmetic Intel(R) AVX instruction"
   :mnemonics '(
                VLDMXCSR VSTMXCSR
@@ -646,7 +646,7 @@ these.</p>")
  VPUNPCKHQDQ VPSHUFD VPSHUFHW VPSHUFLW VPCMPEQB VPCMPEQW VPCMPEQD VPSRLW VPSRLD
  VPSRLQ VPADDQ VPMULLW VPMOVMSKB VPSUBUSB VPSUBUSW VPMINUB VPAND VPADDUSB
  VPADDUSW VPMAXUB VPANDN VPAVGB VPSRAW VPSRAD VPAVGW VPMULHUW VPMULHW VPSUBSB
- VPSUBSW VPMINSW VPOR VPADDSB VPADDSW VPMAXSW VPXOR VPSLLW VPSLLD VPSLLQ 
+ VPSUBSW VPMINSW VPOR VPADDSB VPADDSW VPMAXSW VPXOR VPSLLW VPSLLD VPSLLQ
  VPMULUDQ VPMADDWD VPSADBW VPSUBB VPSUBW VPSUBD VPSUBQ VPADDB VPADDW VPADDD
  VPHADDW VPHADDSW VPHADDD VPHSUBW VPHSUBSW VPHSUBD VPMADDUBSW VPALIGNR VPSHUFB
  VPMULHRSW VPSIGNB VPSIGNW VPSIGND VPABSB VPABSW VPABSD VMOVNTDQA VMPSADBW
@@ -790,7 +790,7 @@ the SDM.</p>")
                                      (inst-list->mnemonics (sdm-instruction-table-unimplemented-instructions avx-tables))))
               (missing-with-prev-mnemonics (find-insts-named-str (keep-strings avx-mnemonics) feature-missing)))
            missing-with-prev-mnemonics)))
-         
+
 (def-sdm-instruction-section "5.19.2 AVX-512F instructions that are Intel AVX or AVX2 promotions"
   :instructions (get-promoted-avx512-insts '(5 19 2) :avx512f (table-alist 'sdm-instruction-sect (w state)))
   :mnemonics '(VBROADCASTF32X4
@@ -982,7 +982,7 @@ table in the SDM -- they are not mentioned elsewhere</p>")
  ;; VFNMSUB231SH VFPCLASSPH VFPCLASSSH VGETEXPPH VGETEXPSH VGETMANTPH VGETMANTSH
  ;; VMAXPH VMAXSH VMINPH VMINSH VMOVSH VMOVW VMULPH VMULSH VRCPPH VRCPSH VREDUCEPH
  ;; VREDUCESH VRNDSCALEPH VRNDSCALESH VRSQRTPH VRSQRTSH VSCALEPH VSCALESH VSQRTPH
- ;; VSQRTSH VSUBPH VSUBSH VUCOMISH 
+ ;; VSQRTSH VSUBPH VSUBSH VUCOMISH
                          )
   :doc "<p>As far as I understand we don't yet support EVEX MAP5 or MAP6 encodings -- I
 think we basically need two new opcode maps for these.</p>")
@@ -1069,7 +1069,7 @@ VMFUNC
 (def-sdm-instruction-section "5.25 Intel(R) Software Guard Extensions"
   :mnemonics '(ENCLS ENCLU))
 (def-sdm-instruction-section "5.26 Shadow Stack Management Instructions"
-  :mnemonics nil 
+  :mnemonics nil
   ;; '(CLRSSBSY INCSSP RDSSP RSTORSSP SAVEPREVSSP SETSSBSY WRSS WRUSS)
   :doc "<p>Not yet included in opcode maps</p>")
 

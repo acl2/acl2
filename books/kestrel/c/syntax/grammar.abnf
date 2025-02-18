@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -11,7 +11,7 @@
 ; Purpose
 
 ; This file contains an ABNF grammar for C
-; that is based on the grammar in [C]
+; that is based on the grammar in [C17]
 ; but is meant for use by tools that manipulate C code.
 ; See :doc concrete-syntax-for-tools for more information.
 
@@ -19,8 +19,8 @@
 
 ; Notation
 
-; The ABNF notation can capture well the notation described in [C:6.1].
-; We write ABNF rules that are similar to the syntax rules in [C],
+; The ABNF notation can capture well the notation described in [C17:6.1].
+; We write ABNF rules that are similar to the syntax rules in [C17],
 ; to the extent possible, but the ABNF rules are tailored to our purpose.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -34,7 +34,7 @@
 
 ; Levels
 
-; [C] presents a lexical grammar [C:A.1] and a phrase structure grammar [C:A.2].
+; [C17] presents a lexical grammar [C17:A.1] and a phrase structure grammar [C17:A.2].
 ; This is a typical two-level grammar structure for programming languages:
 ; the first grammar describes how a sequence of characters
 ; is organized into lexical units (identifiers, constants, etc.),
@@ -44,7 +44,7 @@
 ; In C, the lexical organization is a bit more complicated than other languages,
 ; because of preprocessing and other features.
 ; In fact, the complete syntactic (and semantic) processing of code
-; is described as consisting of 8 translation phases [C:5.1.1.2].
+; is described as consisting of 8 translation phases [C17:5.1.1.2].
 
 ; Since our grammar formulation aims at capturing at the same time
 ; the phrase structure of the code and some preprocessing constructs,
@@ -52,25 +52,25 @@
 ; one for the lexical organization
 ; (which therefore includes both tokens and some preprocessing tokens),
 ; and one for a phrase structure that may also include preprocessing constructs
-; (which therefore is an extension of the phrase structure grammar in [C]).
+; (which therefore is an extension of the phrase structure grammar in [C17]).
 
 ; Our ABNF grammar does not consider
-; the trigraph sequences handled in the first phase in [C:5.1.1.2]
-; and the splicing of lines in the second phase in [C:5.1.1.2].
+; the trigraph sequences handled in the first phase in [C17:5.1.1.2]
+; and the splicing of lines in the second phase in [C17:5.1.1.2].
 ; These are simple transformations that can be performed
 ; prior to the processing described by our ABNF grammar,
 ; along with UTF-8 decoding if we start with Unicode files.
 
 ; Our ABNF grammar does not capture the requirement that
-; a non-empty file ends with a new-line character (see phase 3 in [C:5.1.1.2]).
+; a non-empty file ends with a new-line character (see phase 3 in [C17:5.1.1.2]).
 ; This can be easily enforced outside the grammar as well.
 
-; [C:5.1.1.2/6] requires that adjacent string literals are concatenated.
+; [C17:5.1.1.2/6] requires that adjacent string literals are concatenated.
 ; This does not affect the lexing of the code, since string literals are tokens,
 ; but the parser needs to accept adjacent string literals.
 ; In the (phrase structure) grammar, we accommodate this
-; by allowing one or more string literals where the grammar in [C] allows one
-; (the phrase grammar in [C] corresponds to translation phase 7,
+; by allowing one or more string literals where the grammar in [C17] allows one
+; (the phrase grammar in [C17] corresponds to translation phase 7,
 ; which comes after adjacent string literal concatenation in phase 6).
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -96,14 +96,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Characters [C:5.2.1]
+; Characters [C17:5.2.1]
 
-; [C:5.2.1] provides requirements on the source character set,
+; [C17:5.2.1] provides requirements on the source character set,
 ; i.e. the character set used to write the C code,
 ; but the details of this character set are implementation-dependent;
 ; see [books]/kestrel/c/language/character-sets.lisp
-; for a formalization of the requirements in [C:5.2.1].
-; In particular, [C:5.2.1] does not prescribe ASCII or Unicode.
+; for a formalization of the requirements in [C17:5.2.1].
+; In particular, [C17:5.2.1] does not prescribe ASCII or Unicode.
 ; Our grammar assumes Unicode, which is a very general assumption these days.
 
 ; We define the source character set as the union of
@@ -112,10 +112,10 @@
 ; As we define these basic and extended character sets,
 ; we also define subsets of them used in other parts of the grammar.
 
-; The basic characters are defined based on [C:5.2.1].
+; The basic characters are defined based on [C17:5.2.1].
 ; The 'digit' rule name corresponds to
-; the 'digit' nonterminal in [C:A.1.3] [C:6.4.2.1];
-; all the other rule names do not directly correspond to nonterminals in [C].
+; the 'digit' nonterminal in [C17:A.1.3] [C17:6.4.2.1];
+; all the other rule names do not directly correspond to nonterminals in [C17].
 
 uppercase-letter = %x41-5a ; A-Z
 
@@ -123,7 +123,7 @@ lowercase-letter = %x61-7a ; a-z
 
 letter = uppercase-letter / lowercase-letter
 
-digit = %x30-39 ; 0-9 [C:A.1.3] [C:6.4.2.1]
+digit = %x30-39 ; 0-9 [C17:A.1.3] [C17:6.4.2.1]
 
 double-quote = %x22 ; "
 
@@ -173,10 +173,10 @@ safe-nonascii = %x80-2029
 ; the printable ASCII characters that are not basic characters ($ @ `),
 ; line feed, carriage return, and the safe non-ASCII characters defined above.
 ; Line feed and carriage return are needed
-; to express what [C] regards as new-line characters,
+; to express what [C17] regards as new-line characters,
 ; which are, in general, new-line indications that could potentially be
 ; different actual characters, or not even characters.
-; The following rule names do not directly correspond to nonterminals in [C].
+; The following rule names do not directly correspond to nonterminals in [C17].
 
 line-feed = %x0a ; LF
 
@@ -190,7 +190,7 @@ extended-character = %x24 ; $
                    / safe-nonascii
 
 ; This is our initial (source) character set.
-; This rule name has no direct corresponding nonterminal in [C],
+; This rule name has no direct corresponding nonterminal in [C17],
 ; and is not used in the rest of our ABNF grammar,
 ; but it serves to clarify the character set.
 
@@ -203,18 +203,18 @@ character = basic-character
 ; These dangers are similar to Trojan Source,
 ; which is based on Unicode bidirectional format characters,
 ; described above.
-; [C] is silent on the matter; it does not even prescribe ASCII or Unicode.
+; [C17] is silent on the matter; it does not even prescribe ASCII or Unicode.
 ; For now we exclude all those characters, in the definition above;
 ; note that none of the characters defined above exhibits these dangers.
 
-; [C] does not prescribe how lines should be terminated,
-; but assumes a new-line character [C:5.2.1].
+; [C17] does not prescribe how lines should be terminated,
+; but assumes a new-line character [C17:5.2.1].
 ; Given that we commit to ASCII/Unicode,
 ; it seems reasonable to define a new-line character as
 ; line feed, or carriage return, or carriage return and line feed;
 ; this is the same definition as in Java.
 ; Note that this is not necessarily a single character,
-; but it follows the nomenclature of 'new-line character' in [C].
+; but it follows the nomenclature of 'new-line character' in [C17].
 
 new-line = line-feed
          / carriage-return
@@ -225,7 +225,7 @@ new-line = line-feed
 ; but they are included here so they are close to
 ; the structurally similar rules above,
 ; all of which must be updated consistently if we add more extended characters.
-; These rules have no direct counterpart in [C].
+; These rules have no direct counterpart in [C17].
 
 extended-character-not-new-line = %x24 ; $
                                 / %x40 ; @
@@ -319,12 +319,12 @@ character-not-double-quote-or-backslash-or-new-line =
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; White Space [C:6.4/3]
+; White Space [C17:6.4/3]
 
-; [C] designates the following as white-space characters:
+; [C17] designates the following as white-space characters:
 ; space, horizontal tab, vertical tab, form feed, and new line.
 ; It designates white space as not only these characters, but also comments.
-; We introduce an ABNF rule (which has no counterpart grammar rule in [C])
+; We introduce an ABNF rule (which has no counterpart grammar rule in [C17])
 ; for white-space characters (not comments, which are defined separately).
 
 white-space = space
@@ -335,10 +335,10 @@ white-space = space
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Comments [C:6.4.9]
+; Comments [C17:6.4.9]
 
-; [C] does not provide grammar rules for comments;
-; it describes them informally in [C:6.4.9].
+; [C17] does not provide grammar rules for comments;
+; it describes them informally in [C17:6.4.9].
 ; Here we provide ABNF grammar rules that capture the syntax of comments.
 
 comment = block-comment
@@ -359,9 +359,9 @@ line-comment = "//" *character-not-new-line
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Lexical elements [C:A.1.1] [C:6.4]
+; Lexical elements [C17:A.1.1] [C17:6.4]
 
-; In the grammar in [C], tokens and preprocessing tokens overlap,
+; In the grammar in [C17], tokens and preprocessing tokens overlap,
 ; and are meant to describe the language in different translation phases.
 ; However, in this grammar, as explained in 'Purpose' above,
 ; we mix together preprocessing tokens and (non-preprocessing) tokens.
@@ -376,7 +376,7 @@ token = keyword
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Keywords [C:A.1.2] [C:6.4.1]
+; Keywords [C17:A.1.2] [C17:6.4.1]
 
 keyword = %s"auto"
         / %s"break"
@@ -496,16 +496,16 @@ volatile-keyword = %s"volatile" / %s"__volatile" / %s"__volatile__"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Identifiers [C:A.1.3] [C:6.4.2.1]
+; Identifiers [C17:A.1.3] [C17:6.4.2.1]
 
 ; For now we omit universal character names in identifiers.
-; These have requirements specified in [C:D].
+; These have requirements specified in [C17:D].
 ; We could add them in the future if needed.
 
 ; For now we omit other implementation-defined characters from identifiers.
 ; We could add them in the future if needed.
 
-; Our ABNF rule for 'nondigit' is equivalent to the one in [C],
+; Our ABNF rule for 'nondigit' is equivalent to the one in [C17],
 ; but we use our 'letter' (defined above) instead of listing the letters.
 
 identifier = identifier-nondigit
@@ -520,16 +520,16 @@ nondigit = "_"
          / letter
 
 ; During preprocessing, ideniifiers include keywords:
-; see rule for 'preprocessing-token' in [C:A.1.1] [C:6.4].
+; see rule for 'preprocessing-token' in [C17:A.1.1] [C17:6.4].
 ; After preprocessing, identifiers exclude keywords:
-; see rule for 'token' in [C:A.1.1] [C:6.4],
-; and the extra-grammatical requirement in [C:6.4.2.1/4].
-; However, in the rule for 'identifier' in [C:A.1.3] [C:6.4.2.1],
+; see rule for 'token' in [C17:A.1.1] [C17:6.4],
+; and the extra-grammatical requirement in [C17:6.4.2.1/4].
+; However, in the rule for 'identifier' in [C17:A.1.3] [C17:6.4.2.1],
 ; grammatically identifiers include keywords, as does our ABNF grammar rule.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Universal Character Names [C:A.1.4] [C:6.4.3]
+; Universal Character Names [C17:A.1.4] [C17:6.4.3]
 
 universal-character-name = %s"\u" hex-quad
                          / %s"\U" hex-quad hex-quad
@@ -541,7 +541,7 @@ hex-quad =
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Constants [C:A.1.5] [C:6.4.4]
+; Constants [C17:A.1.5] [C17:6.4.4]
 
 ; As a GCC extension, we allow the '\%' escape.
 ; Although we did not find it documented in the GCC manual,
@@ -660,7 +660,7 @@ hexadecimal-escape-sequence = %s"\x" hexadecimal-digit
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; String literals [C:A.1.6] [C:6.4.5]
+; String literals [C17:A.1.6] [C17:6.4.5]
 
 string-literal =
     [ encoding-prefix ] double-quote [ s-char-sequence ] double-quote
@@ -677,7 +677,7 @@ s-char = character-not-double-quote-or-backslash-or-new-line
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Punctuators [C:A.1.7] [C:6.4.6]
+; Punctuators [C17:A.1.7] [C17:6.4.6]
 
 punctuator = "["
            / "]"
@@ -736,13 +736,13 @@ punctuator = "["
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Header names [C:A.1.8] [C:6.4.7]
+; Header names [C17:A.1.8] [C17:6.4.7]
 
 ; We omit these for now, but we will add them to represent #include directives.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Preprocessing numbers [C:A.1.9] [C:6.4.8]
+; Preprocessing numbers [C17:A.1.9] [C17:6.4.8]
 
 ; We omit these, because, as explained in 'Purpose' above,
 ; the goal of this grammar is to represent C code in a form
@@ -761,7 +761,7 @@ punctuator = "["
 ; is to describe a single lexing phase.
 ; Thus, we provide an ABNF grammar rule for lexemes,
 ; i.e. the lexical units that the code is organized into.
-; This rule has no grammar rule counterpart in [C].
+; This rule has no grammar rule counterpart in [C17].
 
 lexeme = token
        / comment
@@ -773,12 +773,12 @@ lexeme = token
 ; The ABNF grammar rules express most of the requirements for this,
 ; but not all, such as the fact that an identifier cannot be a keyword.
 ; An important and general extra-grammatical requirement is that
-; the longest match is always taken [C:6.4/4],
+; the longest match is always taken [C17:6.4/4],
 ; with the exception noted there.
 
 ; The rest of the ABNF grammar rules in this file
 ; describe how lexemes are organized into higher-level constructs,
-; corresponding to the phase structure grammar in [C:A.2].
+; corresponding to the phase structure grammar in [C17:A.2].
 ; Currently we only use tokens,
 ; discarding comments and white-space characters,
 ; but in the future we may retain some information from comments,
@@ -786,7 +786,7 @@ lexeme = token
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Expressions [C:A.2.1]
+; Expressions [C17:A.2.1]
 
 ; As a GCC extension, we include statement expressions,
 ; i.e. expressions that consists of a parenthesized compound statement
@@ -987,7 +987,7 @@ constant-expression = conditional-expression
 ; the GCC documentation mentions
 ; identifiers and reserved words as attribute names,
 ; where 'reserved word' is presumably a synonym of 'keyword',
-; according to the official nomenclature in [C].
+; according to the official nomenclature in [C17].
 
 ; The GCC documentation mentions three kinds of parameters,
 ; where each kind seems to refer to the whole list of parameters
@@ -1089,7 +1089,7 @@ asm-goto-labels = [ identifier *( "," identifier ) ]
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Declarations [C:A.2.2]
+; Declarations [C17:A.2.2]
 
 ; As a GCC extension, we allow the GCC keyword '__extension__'
 ; to occur at the start of a (member) structure declaration
@@ -1162,7 +1162,7 @@ asm-goto-labels = [ identifier *( "," identifier ) ]
 ; see https://gcc.gnu.org/onlinedocs/gcc/Empty-Structures.html.
 
 ; We also allow a lone semicolon as a structure declaration.
-; This is definitely not grammatical according to [C],
+; This is definitely not grammatical according to [C17],
 ; and we did not find it anywhere in the GCC documentation;
 ; nonetheless, we encountered it in practical code.
 ; Presumably, it may make it easier to write certain macros.
@@ -1363,7 +1363,7 @@ static-assert-declaration =
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Statements [C:A.2.3]
+; Statements [C17:A.2.3]
 
 ; As a GCC extension, we allow case ranges
 ; (https://gcc.gnu.org/onlinedocs/gcc/Case-Ranges.html).
@@ -1414,7 +1414,7 @@ jump-statement = %s"goto" identifier ";"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; External definitions [C:A.2.4]
+; External definitions [C17:A.2.4]
 
 ; As a GCC extension, we allow the GCC keyword '__extension__'
 ; to occur at the start of a function definition.
@@ -1424,7 +1424,7 @@ jump-statement = %s"goto" identifier ";"
 ; this is similar to initializer declarators.
 
 ; We also allow a lone semicolon as an external declaration.
-; This is definitely not grammatical according to [C],
+; This is definitely not grammatical according to [C17],
 ; and we did not find it anywhere in the GCC documentation;
 ; nonetheless, we encountered it in practical code.
 ; Presumably, it may make it easier to write certain macros.
@@ -1460,6 +1460,6 @@ declaration-list = declaration
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Preprocessing directives [C:A.3]
+; Preprocessing directives [C17:A.3]
 
 ; We will capture (some forms of) these in the future.

@@ -311,6 +311,55 @@
 	   (equal (flist-scalar-mul (f+ c d) x)
 		  (flist-add (flist-scalar-mul c x) (flist-scalar-mul d x)))))
 
+;; Dot product of 2 lists of field elements of the same length:
+
+(defun fdot (x y)
+  (if (consp x)
+      (f+ (f* (car x) (car y))
+          (fdot (cdr x) (cdr y)))
+    (f0)))
+
+(defthm fp-fdot
+  (implies (and (flistnp x n) (flistnp y n))
+           (fp (fdot x y))))
+
+(defthm fdot-flistn0
+  (implies (and (natp n) (flistnp x n))
+           (equal (fdot (flistn0 n) x)
+	          (f0))))
+
+(defthmd fdot-comm
+  (implies (and (flistnp x n) (flistnp y n))
+           (equal (fdot x y) (fdot y x))))
+
+(defthmd fdot-flist-add
+  (implies (and (flistnp x n) (flistnp y n) (flistnp z n))
+	   (equal (fdot (flist-add x y) z)
+		  (f+ (fdot x z) (fdot y z)))))
+
+(defthmd fdot-flist-add-comm
+  (implies (and (flistnp x n) (flistnp y n) (flistnp z n))
+	   (equal (fdot z (flist-add x y))
+		  (f+ (fdot z x) (fdot z y)))))
+					   
+(defthmd fdot-flist-scalar-mul
+  (implies (and (flistnp x n) (flistnp y n) (fp c))
+	   (equal (fdot (flist-scalar-mul c x) y)
+		  (f* c (fdot x y)))))
+
+;; List of dot products of an flist x with the elements of a list of flists l:
+
+(defun fdot-list (x l)
+  (if (consp l)
+      (cons (fdot x (car l))
+            (fdot-list x (cdr l)))
+    ()))
+
+(defthm nth-fdot-list
+  (implies (and (natp j) (< j (len l)))
+           (equal (nth j (fdot-list x l))
+	          (fdot x (nth j l)))))
+
 
 ;;------------------------------------------
 

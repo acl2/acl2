@@ -1,7 +1,7 @@
 ; A theory of register readers and writers (emphasis on readability of terms)
 ;
 ; Copyright (C) 2016-2022 Kestrel Technology, LLC
-; Copyright (C) 2024 Kestrel Institute
+; Copyright (C) 2024-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -19,12 +19,17 @@
 ;; cost of making proof terms a bit bigger and a bit less readable.
 
 (include-book "projects/x86isa/machine/state" :dir :system) ;for xr
-;(include-book "projects/x86isa/machine/state-field-thms" :dir :system)
 (include-book "kestrel/utilities/myif" :dir :system)
 (include-book "readers-and-writers64") ; drop?
 (include-book "readers-and-writers")
+(include-book "kestrel/bv/logext-def" :dir :system)
+(include-book "kestrel/bv/bvcat-def" :dir :system)
+(include-book "kestrel/bv/slice-def" :dir :system)
 (local (include-book "kestrel/bv/logext" :dir :system))
 (local (include-book "kestrel/bv/signed-byte-p" :dir :system))
+(local (include-book "kestrel/bv/bitops" :dir :system))
+(local (include-book "kestrel/bv/slice" :dir :system))
+(local (include-book "kestrel/bv/bvcat" :dir :system))
 
 (in-theory (disable xw logext))
 
@@ -164,6 +169,24 @@
 (theory-invariant (incompatible (:definition rsp) (:rewrite xr-becomes-rsp)))
 (theory-invariant (incompatible (:definition rbp) (:rewrite xr-becomes-rbp)))
 
+;; These go in one step:
+(defthmd rgfi-becomes-rax (equal (rgfi *rax* x86) (rax x86)) :hints (("Goal" :in-theory (enable rax))))
+(defthmd rgfi-becomes-rbx (equal (rgfi *rbx* x86) (rbx x86)) :hints (("Goal" :in-theory (enable rbx))))
+(defthmd rgfi-becomes-rcx (equal (rgfi *rcx* x86) (rcx x86)) :hints (("Goal" :in-theory (enable rcx))))
+(defthmd rgfi-becomes-rdx (equal (rgfi *rdx* x86) (rdx x86)) :hints (("Goal" :in-theory (enable rdx))))
+(defthmd rgfi-becomes-rsi (equal (rgfi *rsi* x86) (rsi x86)) :hints (("Goal" :in-theory (enable rsi))))
+(defthmd rgfi-becomes-rdi (equal (rgfi *rdi* x86) (rdi x86)) :hints (("Goal" :in-theory (enable rdi))))
+(defthmd rgfi-becomes-r8 (equal (rgfi *r8* x86) (r8 x86)) :hints (("Goal" :in-theory (enable r8))))
+(defthmd rgfi-becomes-r9 (equal (rgfi *r9* x86) (r9 x86)) :hints (("Goal" :in-theory (enable r9))))
+(defthmd rgfi-becomes-r10 (equal (rgfi *r10* x86) (r10 x86)) :hints (("Goal" :in-theory (enable r10))))
+(defthmd rgfi-becomes-r11 (equal (rgfi *r11* x86) (r11 x86)) :hints (("Goal" :in-theory (enable r11))))
+(defthmd rgfi-becomes-r12 (equal (rgfi *r12* x86) (r12 x86)) :hints (("Goal" :in-theory (enable r12))))
+(defthmd rgfi-becomes-r13 (equal (rgfi *r13* x86) (r13 x86)) :hints (("Goal" :in-theory (enable r13))))
+(defthmd rgfi-becomes-r14 (equal (rgfi *r14* x86) (r14 x86)) :hints (("Goal" :in-theory (enable r14))))
+(defthmd rgfi-becomes-r15 (equal (rgfi *r15* x86) (r15 x86)) :hints (("Goal" :in-theory (enable r15))))
+(defthmd rgfi-becomes-rsp (equal (rgfi *rsp* x86) (rsp x86)) :hints (("Goal" :in-theory (enable rsp))))
+(defthmd rgfi-becomes-rbp (equal (rgfi *rbp* x86) (rbp x86)) :hints (("Goal" :in-theory (enable rbp))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Introduce the register writers:
@@ -200,6 +223,23 @@
 (theory-invariant (incompatible (:definition set-r15) (:rewrite xw-becomes-set-r15)))
 (theory-invariant (incompatible (:definition set-rsp) (:rewrite xw-becomes-set-rsp)))
 (theory-invariant (incompatible (:definition set-rbp) (:rewrite xw-becomes-set-rbp)))
+
+(defthmd !rgfi-becomes-set-rax (equal (!rgfi *rax* val x86) (set-rax val x86)) :hints (("Goal" :in-theory (enable set-rax))))
+(defthmd !rgfi-becomes-set-rbx (equal (!rgfi *rbx* val x86) (set-rbx val x86)) :hints (("Goal" :in-theory (enable set-rbx))))
+(defthmd !rgfi-becomes-set-rcx (equal (!rgfi *rcx* val x86) (set-rcx val x86)) :hints (("Goal" :in-theory (enable set-rcx))))
+(defthmd !rgfi-becomes-set-rdx (equal (!rgfi *rdx* val x86) (set-rdx val x86)) :hints (("Goal" :in-theory (enable set-rdx))))
+(defthmd !rgfi-becomes-set-rsi (equal (!rgfi *rsi* val x86) (set-rsi val x86)) :hints (("Goal" :in-theory (enable set-rsi))))
+(defthmd !rgfi-becomes-set-rdi (equal (!rgfi *rdi* val x86) (set-rdi val x86)) :hints (("Goal" :in-theory (enable set-rdi))))
+(defthmd !rgfi-becomes-set-r8 (equal (!rgfi *r8* val x86) (set-r8 val x86)) :hints (("Goal" :in-theory (enable set-r8))))
+(defthmd !rgfi-becomes-set-r9 (equal (!rgfi *r9* val x86) (set-r9 val x86)) :hints (("Goal" :in-theory (enable set-r9))))
+(defthmd !rgfi-becomes-set-r10 (equal (!rgfi *r10* val x86) (set-r10 val x86)) :hints (("Goal" :in-theory (enable set-r10))))
+(defthmd !rgfi-becomes-set-r11 (equal (!rgfi *r11* val x86) (set-r11 val x86)) :hints (("Goal" :in-theory (enable set-r11))))
+(defthmd !rgfi-becomes-set-r12 (equal (!rgfi *r12* val x86) (set-r12 val x86)) :hints (("Goal" :in-theory (enable set-r12))))
+(defthmd !rgfi-becomes-set-r13 (equal (!rgfi *r13* val x86) (set-r13 val x86)) :hints (("Goal" :in-theory (enable set-r13))))
+(defthmd !rgfi-becomes-set-r14 (equal (!rgfi *r14* val x86) (set-r14 val x86)) :hints (("Goal" :in-theory (enable set-r14))))
+(defthmd !rgfi-becomes-set-r15 (equal (!rgfi *r15* val x86) (set-r15 val x86)) :hints (("Goal" :in-theory (enable set-r15))))
+(defthmd !rgfi-becomes-set-rsp (equal (!rgfi *rsp* val x86) (set-rsp val x86)) :hints (("Goal" :in-theory (enable set-rsp))))
+(defthmd !rgfi-becomes-set-rbp (equal (!rgfi *rbp* val x86) (set-rbp val x86)) :hints (("Goal" :in-theory (enable set-rbp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1022,17 +1062,300 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; These go in one step:
-
-;; todo: more like this!
-(defthmd rgfi-becomes-rbp (equal (rgfi *rbp* x86) (rbp x86)) :hints (("Goal" :in-theory (enable rbp))))
-(defthmd rgfi-becomes-rsp (equal (rgfi *rsp* x86) (rsp x86)) :hints (("Goal" :in-theory (enable rsp))))
-(defthmd rgfi-becomes-rax (equal (rgfi *rax* x86) (rax x86)) :hints (("Goal" :in-theory (enable rax))))
-(defthmd rgfi-becomes-rbx (equal (rgfi *rbx* x86) (rbx x86)) :hints (("Goal" :in-theory (enable rbx))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defthmd !rip-becomes-set-rip
   (equal (!rip v x86)
          (set-rip v x86))
   :hints (("Goal" :in-theory (enable set-rip))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(include-book "projects/x86isa/machine/register-readers-and-writers" :dir :system)
+
+;; todo: could enable all these but then we should enable the other rules that introduce the normal form
+
+;; Note that RR08 is more complicated that RR16 ,etc.
+;; Goes directly to RAX, etc. and directly to BVCHOP OR SLICE.
+(defthmd rr08-to-normal-form64
+  (implies (and (syntaxp (and (quotep reg)
+                              (quotep rex)))
+                (unsigned-byte-p 4 reg) ; gets computed
+                )
+           (equal (rr08 reg rex x86)
+                  (let* ((normalp (or (not (eql rex 0)) ;should all get computed
+                                      (< reg 4)))
+                         (reg (if normalp reg (- reg 4))) ; should get computed
+                         (val (case reg
+                                ;; The case should be resolved since REG is a constant
+                                (#.*rax* (rax x86))
+                                (#.*rcx* (rcx x86))
+                                (#.*rdx* (rdx x86))
+                                (#.*rbx* (rbx x86))
+                                (#.*rsp* (rsp x86))
+                                (#.*rbp* (rbp x86))
+                                (#.*rsi* (rsi x86))
+                                (#.*rdi* (rdi x86))
+                                (#.*r8* (r8 x86))
+                                (#.*r9* (r9 x86))
+                                (#.*r10* (r10 x86))
+                                (#.*r11* (r11 x86))
+                                (#.*r12* (r12 x86))
+                                (#.*r13* (r13 x86))
+                                (#.*r14* (r14 x86))
+                                (otherwise ;#.*r15*
+                                  (r15 x86)))))
+                    (if normalp
+                        (bvchop 8 val)
+                      (slice 15 8 val)))))
+  :hints (("Goal" :in-theory (enable rr08 rax rcx rdx rbx rsp rbp rsi rdi r8 r9 r10 r11 r12 r13 r14 r15 bvchop loghead slice unsigned-byte-p))))
+
+;; Goes directly to RAX, etc. and directly to BVCHOP.
+(defthmd rr16-to-normal-form64
+  (implies (and (syntaxp (quotep reg))
+                (unsigned-byte-p 4 reg) ; gets computed
+                )
+           (equal (rr16 reg x86)
+                  (bvchop 16 (case reg
+                               ;; The case should be resolved since REG is a constant
+                               (#.*rax* (rax x86))
+                               (#.*rcx* (rcx x86))
+                               (#.*rdx* (rdx x86))
+                               (#.*rbx* (rbx x86))
+                               (#.*rsp* (rsp x86))
+                               (#.*rbp* (rbp x86))
+                               (#.*rsi* (rsi x86))
+                               (#.*rdi* (rdi x86))
+                               (#.*r8* (r8 x86))
+                               (#.*r9* (r9 x86))
+                               (#.*r10* (r10 x86))
+                               (#.*r11* (r11 x86))
+                               (#.*r12* (r12 x86))
+                               (#.*r13* (r13 x86))
+                               (#.*r14* (r14 x86))
+                               (otherwise ;#.*r15*
+                                 (r15 x86))))))
+  :hints (("Goal" :in-theory (enable rr16 rax rcx rdx rbx rsp rbp rsi rdi r8 r9 r10 r11 r12 r13 r14 r15 bvchop loghead))))
+
+;; Goes directly to RAX, etc. and directly to BVCHOP.
+(defthmd rr32-to-normal-form64
+  (implies (and (syntaxp (quotep reg))
+                (unsigned-byte-p 4 reg) ; gets computed
+                )
+           (equal (rr32 reg x86)
+                  (bvchop 32 (case reg
+                               ;; The case should be resolved since REG is a constant
+                               (#.*rax* (rax x86))
+                               (#.*rcx* (rcx x86))
+                               (#.*rdx* (rdx x86))
+                               (#.*rbx* (rbx x86))
+                               (#.*rsp* (rsp x86))
+                               (#.*rbp* (rbp x86))
+                               (#.*rsi* (rsi x86))
+                               (#.*rdi* (rdi x86))
+                               (#.*r8* (r8 x86))
+                               (#.*r9* (r9 x86))
+                               (#.*r10* (r10 x86))
+                               (#.*r11* (r11 x86))
+                               (#.*r12* (r12 x86))
+                               (#.*r13* (r13 x86))
+                               (#.*r14* (r14 x86))
+                               (otherwise ;#.*r15*
+                                 (r15 x86))))))
+  :hints (("Goal" :in-theory (enable rr32 rax rcx rdx rbx rsp rbp rsi rdi r8 r9 r10 r11 r12 r13 r14 r15 bvchop loghead))))
+
+(defthmd rr64-to-normal-form64
+  (implies (and (syntaxp (quotep reg))
+                (unsigned-byte-p 4 reg) ; gets computed
+                )
+           (equal (rr64 reg x86)
+                  (bvchop 64 (case reg
+                               ;; The case should be resolved since REG is a constant
+                               (#.*rax* (rax x86))
+                               (#.*rcx* (rcx x86))
+                               (#.*rdx* (rdx x86))
+                               (#.*rbx* (rbx x86))
+                               (#.*rsp* (rsp x86))
+                               (#.*rbp* (rbp x86))
+                               (#.*rsi* (rsi x86))
+                               (#.*rdi* (rdi x86))
+                               (#.*r8* (r8 x86))
+                               (#.*r9* (r9 x86))
+                               (#.*r10* (r10 x86))
+                               (#.*r11* (r11 x86))
+                               (#.*r12* (r12 x86))
+                               (#.*r13* (r13 x86))
+                               (#.*r14* (r14 x86))
+                               (otherwise ;#.*r15*
+                                 (r15 x86))))))
+  :hints (("Goal" :in-theory (enable rr64 rax rcx rdx rbx rsp rbp rsi rdi r8 r9 r10 r11 r12 r13 r14 r15 bvchop loghead))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthmd wr08-to-normal-form64
+  (implies (and (syntaxp (quotep reg))
+                (unsigned-byte-p 4 reg) ; gets computed
+                )
+           (equal (wr08 reg rex val x86)
+                  (let* ((normalp (or (not (eql rex 0)) ;normalp should get computed
+                                      (< reg 4)))
+                         (reg (if normalp reg (- reg 4))) ; reg should get computed
+                         (old-val (case reg
+                                    ;; The case should be resolved since REG is a constant
+                                    (#.*rax* (rax x86))
+                                    (#.*rcx* (rcx x86))
+                                    (#.*rdx* (rdx x86))
+                                    (#.*rbx* (rbx x86))
+                                    (#.*rsp* (rsp x86))
+                                    (#.*rbp* (rbp x86))
+                                    (#.*rsi* (rsi x86))
+                                    (#.*rdi* (rdi x86))
+                                    (#.*r8* (r8 x86))
+                                    (#.*r9* (r9 x86))
+                                    (#.*r10* (r10 x86))
+                                    (#.*r11* (r11 x86))
+                                    (#.*r12* (r12 x86))
+                                    (#.*r13* (r13 x86))
+                                    (#.*r14* (r14 x86))
+                                    (otherwise ; #.*r15*
+                                      (r15 x86))))
+                         (new-val (if normalp
+                                      (logext 64 (bvcat 56 (slice 63 8 old-val) 8 val))
+                                    (logext 64 (bvcat 48 (slice 63 16 old-val) 16 (bvcat 8 val 8 (bvchop 8 old-val)))))))
+                    (case reg
+                      ;; The case should be resolved since REG is a constant
+                      (#.*rax* (set-rax new-val x86))
+                      (#.*rcx* (set-rcx new-val x86))
+                      (#.*rdx* (set-rdx new-val x86))
+                      (#.*rbx* (set-rbx new-val x86))
+                      (#.*rsp* (set-rsp new-val x86))
+                      (#.*rbp* (set-rbp new-val x86))
+                      (#.*rsi* (set-rsi new-val x86))
+                      (#.*rdi* (set-rdi new-val x86))
+                      (#.*r8* (set-r8 new-val x86))
+                      (#.*r9* (set-r9 new-val x86))
+                      (#.*r10* (set-r10 new-val x86))
+                      (#.*r11* (set-r11 new-val x86))
+                      (#.*r12* (set-r12 new-val x86))
+                      (#.*r13* (set-r13 new-val x86))
+                      (#.*r14* (set-r14 new-val x86))
+                      (otherwise ; #.*r15*
+                        (set-r15 new-val x86))))))
+  :hints (("Goal" :in-theory (e/d (wr08
+                                   set-rax set-rcx set-rdx set-rbx set-rsp set-rbp set-rsi set-rdi set-r8 set-r9 set-r10 set-r11 set-r12 set-r13 set-r14 set-r15
+                                   rax rcx rdx rbx rsp rbp rsi rdi r8 r9 r10 r11 r12 r13 r14 r15
+                                   unsigned-byte-p)
+                                  (acl2::part-install-width-low-becomes-bvcat-512 ; todo
+                                   acl2::part-install-width-low-becomes-bvcat-256
+                                   acl2::part-install-width-low-becomes-bvcat-128
+                                   )))))
+
+;; Goes directly to SET-RAX, etc. and directly to BVCHOP.
+(defthmd wr16-to-normal-form64
+  (implies (and (syntaxp (quotep reg))
+                (unsigned-byte-p 4 reg) ; gets computed
+                )
+           (equal (wr16 reg val x86)
+                  (let* ((old-val (case reg
+                                    ;; The case should be resolved since REG is a constant
+                                    (#.*rax* (rax x86))
+                                    (#.*rcx* (rcx x86))
+                                    (#.*rdx* (rdx x86))
+                                    (#.*rbx* (rbx x86))
+                                    (#.*rsp* (rsp x86))
+                                    (#.*rbp* (rbp x86))
+                                    (#.*rsi* (rsi x86))
+                                    (#.*rdi* (rdi x86))
+                                    (#.*r8* (r8 x86))
+                                    (#.*r9* (r9 x86))
+                                    (#.*r10* (r10 x86))
+                                    (#.*r11* (r11 x86))
+                                    (#.*r12* (r12 x86))
+                                    (#.*r13* (r13 x86))
+                                    (#.*r14* (r14 x86))
+                                    (otherwise ; #.*r15*
+                                      (r15 x86))))
+                         (new-val (logext 64 (bvcat 48 (slice 63 16 old-val) 16 val))))
+                    (case reg
+                      ;; The case should be resolved since REG is a constant
+                      (#.*rax* (set-rax new-val x86))
+                      (#.*rcx* (set-rcx new-val x86))
+                      (#.*rdx* (set-rdx new-val x86))
+                      (#.*rbx* (set-rbx new-val x86))
+                      (#.*rsp* (set-rsp new-val x86))
+                      (#.*rbp* (set-rbp new-val x86))
+                      (#.*rsi* (set-rsi new-val x86))
+                      (#.*rdi* (set-rdi new-val x86))
+                      (#.*r8* (set-r8 new-val x86))
+                      (#.*r9* (set-r9 new-val x86))
+                      (#.*r10* (set-r10 new-val x86))
+                      (#.*r11* (set-r11 new-val x86))
+                      (#.*r12* (set-r12 new-val x86))
+                      (#.*r13* (set-r13 new-val x86))
+                      (#.*r14* (set-r14 new-val x86))
+                      (otherwise ; #.*r15*
+                        (set-r15 new-val x86))))))
+  :hints (("Goal" :in-theory (e/d (wr16
+                                   set-rax set-rcx set-rdx set-rbx set-rsp set-rbp set-rsi set-rdi set-r8 set-r9 set-r10 set-r11 set-r12 set-r13 set-r14 set-r15
+                                    rax rcx rdx rbx rsp rbp rsi rdi r8 r9 r10 r11 r12 r13 r14 r15)
+                                  (acl2::part-install-width-low-becomes-bvcat-512 ; todo
+                                   acl2::part-install-width-low-becomes-bvcat-256
+                                   acl2::part-install-width-low-becomes-bvcat-128
+                                   )))))
+
+;; Goes directly to SET-RAX, etc. and directly to BVCHOP.
+(defthmd wr32-to-normal-form64
+  (implies (and (syntaxp (quotep reg))
+                (unsigned-byte-p 4 reg) ; gets computed
+                )
+           (equal (wr32 reg val x86)
+                  (let ((val (bvchop 32 val)))
+                    (case reg
+                      ;; The case should be resolved since REG is a constant
+                      (#.*rax* (set-rax val x86))
+                      (#.*rcx* (set-rcx val x86))
+                      (#.*rdx* (set-rdx val x86))
+                      (#.*rbx* (set-rbx val x86))
+                      (#.*rsp* (set-rsp val x86))
+                      (#.*rbp* (set-rbp val x86))
+                      (#.*rsi* (set-rsi val x86))
+                      (#.*rdi* (set-rdi val x86))
+                      (#.*r8* (set-r8 val x86))
+                      (#.*r9* (set-r9 val x86))
+                      (#.*r10* (set-r10 val x86))
+                      (#.*r11* (set-r11 val x86))
+                      (#.*r12* (set-r12 val x86))
+                      (#.*r13* (set-r13 val x86))
+                      (#.*r14* (set-r14 val x86))
+                      (otherwise ; #.*r15*
+                        (set-r15 val x86))))))
+  :hints (("Goal" :in-theory (enable wr32
+                                     set-rax set-rcx set-rdx set-rbx set-rsp set-rbp set-rsi set-rdi set-r8 set-r9 set-r10 set-r11 set-r12 set-r13 set-r14 set-r15
+                                     rax rcx rdx rbx rsp rbp rsi rdi r8 r9 r10 r11 r12 r13 r14 r15 bvchop loghead))))
+
+(defthmd wr64-to-normal-form64
+  (implies (and (syntaxp (quotep reg))
+                (unsigned-byte-p 4 reg) ; gets computed
+                )
+           (equal (wr64 reg val x86)
+                  (let ((val (logext 64 val)))
+                    (case reg
+                      ;; The case should be resolved since REG is a constant
+                      (#.*rax* (set-rax val x86))
+                      (#.*rcx* (set-rcx val x86))
+                      (#.*rdx* (set-rdx val x86))
+                      (#.*rbx* (set-rbx val x86))
+                      (#.*rsp* (set-rsp val x86))
+                      (#.*rbp* (set-rbp val x86))
+                      (#.*rsi* (set-rsi val x86))
+                      (#.*rdi* (set-rdi val x86))
+                      (#.*r8* (set-r8 val x86))
+                      (#.*r9* (set-r9 val x86))
+                      (#.*r10* (set-r10 val x86))
+                      (#.*r11* (set-r11 val x86))
+                      (#.*r12* (set-r12 val x86))
+                      (#.*r13* (set-r13 val x86))
+                      (#.*r14* (set-r14 val x86))
+                      (otherwise ; #.*r15*
+                        (set-r15 val x86))))))
+  :hints (("Goal" :in-theory (enable wr64
+                                     set-rax set-rcx set-rdx set-rbx set-rsp set-rbp set-rsi set-rdi set-r8 set-r9 set-r10 set-r11 set-r12 set-r13 set-r14 set-r15
+                                     rax rcx rdx rbx rsp rbp rsi rdi r8 r9 r10 r11 r12 r13 r14 r15 bvchop loghead))))

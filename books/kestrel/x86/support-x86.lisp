@@ -15,22 +15,22 @@
 ;; model itself.
 
 ;(include-book "projects/x86isa/proofs/utilities/app-view/top" :dir :system) ;reduce? needed for the big enable below
-(include-book "projects/x86isa/proofs/utilities/general-memory-utils" :dir :system) ; so we can disable questionable rule X86ISA::X86P-!RIP-WHEN-VAL-IS-CANONICAL-ADDRESS-P
+;(include-book "projects/x86isa/proofs/utilities/general-memory-utils" :dir :system) ; drop?
 (include-book "projects/x86isa/proofs/utilities/row-wow-thms" :dir :system) ; for X86ISA::WRITE-USER-RFLAGS-AND-XW
 (include-book "projects/x86isa/proofs/utilities/app-view/user-level-memory-utils" :dir :system) ; for rb-rb-subset
-(include-book "projects/x86isa/machine/state" :dir :system)
-(include-book "projects/x86isa/machine/x86" :dir :system) ; for ONE-BYTE-OPCODE-EXECUTE, etc.
-(include-book "projects/x86isa/machine/get-prefixes" :dir :system)
+;(include-book "projects/x86isa/machine/state" :dir :system)
+(include-book "projects/x86isa/machine/x86" :dir :system) ; for x86-fetch-decode-execute, ONE-BYTE-OPCODE-EXECUTE, etc.
+;(include-book "projects/x86isa/machine/get-prefixes" :dir :system)
 ;(include-book "projects/x86isa/machine/state-field-thms" :dir :system)
-(include-book "projects/x86isa/machine/application-level-memory" :dir :system) ;for canonical-address-p
+;(include-book "projects/x86isa/machine/application-level-memory" :dir :system) ;for canonical-address-p
 (include-book "kestrel/utilities/defopeners" :dir :system)
 ;(include-book "kestrel/utilities/def-constant-opener" :dir :system)
+;; todo: ideally, this book should not include non-x86isa books, like these:
 (include-book "kestrel/utilities/polarity" :dir :system) ; for want-to-weaken
 (include-book "kestrel/utilities/smaller-termp" :dir :system)
-(include-book "kestrel/bv/defs-arith" :dir :system) ;for bvplus
+;(include-book "kestrel/bv/defs-arith" :dir :system) ;for bvplus
 (include-book "kestrel/bv/slice-def" :dir :system)
-(include-book "kestrel/bv/bvashr-def" :dir :system)
-(include-book "kestrel/bv/defs" :dir :system) ;for sbvdiv
+;(include-book "kestrel/bv/defs" :dir :system) ;for sbvdiv
 (include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system)
 (include-book "linear-memory") ;drop? but need mv-nth-0-of-rml-size-of-xw-when-app-view
 (include-book "canonical")
@@ -50,6 +50,70 @@
 (local (include-book "kestrel/arithmetic-light/numerator" :dir :system))
 (local (include-book "kestrel/bv/getbit2" :dir :system))
 
+;; some of these are for symbolic execution:
+(in-theory (acl2::enable* x86isa::X86-EFFECTIVE-ADDR-FROM-SIB
+                          x86isa::instruction-decoding-and-spec-rules ;this one is a ruleset
+                          x86isa::jcc/cmovcc/setcc-spec
+                          x86isa::gpr-and-spec-4
+                          x86isa::gpr-xor-spec-4
+                          x86isa::GPR-ADD-SPEC-4
+
+                          x86isa::one-byte-opcode-execute ;; x86isa::one-byte-opcode-execute
+                          ;; !rgfi-size
+                          x86isa::x86-operand-to-reg/mem
+
+                          ;;These appear to eventually call xw (via
+                          ;;!rgfi), so we'll keep them enabled
+                          ;;since xw is our normal form:
+                          x86isa::wr08
+                          x86isa::wr16
+                          x86isa::wr32
+                          x86isa::wr64
+
+                          ;;These appear to eventually call xr (via
+                          ;;rgfi), so we'll keep them enabled
+                          ;;since xw is our normal form:
+                          x86isa::rr08
+                          x86isa::rr16
+                          x86isa::rr32
+                          x86isa::rr64
+
+                          x86isa::wml32
+                          x86isa::wml64
+                          x86isa::riml08
+                          x86isa::riml32
+
+                          x86isa::x86-operand-from-modr/m-and-sib-bytes
+                          x86isa::riml-size
+
+                          x86isa::check-instruction-length
+
+                          x86isa::select-segment-register
+
+                          x86isa::n08-to-i08
+                          x86isa::n16-to-i16
+                          x86isa::n32-to-i32
+                          x86isa::n64-to-i64
+                          x86isa::n128-to-i128
+
+                          x86isa::two-byte-opcode-decode-and-execute
+                          x86isa::x86-effective-addr-when-64-bit-modep
+                          x86isa::x86-effective-addr-32/64
+                          ;; Flags
+                          x86isa::write-user-rflags
+                          x86isa::zf-spec))
+
+;; should some of these be local?
+(in-theory (disable logcount
+                    x86isa::write-user-rflags-and-xw
+                    byte-listp
+                    x86isa::combine-bytes
+                    member-equal
+                    get-prefixes-opener-lemma-zero-cnt ;for speed
+                    x86isa::create-canonical-address-list
+                    (:e x86isa::create-canonical-address-list)
+                    zf-spec))
+
 (defthm unsigned-byte-p-8-of-car-when-byte-listp
   (implies (byte-listp bytes)
            (equal (unsigned-byte-p 8 (car bytes))
@@ -62,38 +126,8 @@
                   (consp bytes)))
   :hints (("Goal" :in-theory (enable byte-listp))))
 
-(in-theory (disable GET-PREFIXES-OPENER-LEMMA-ZERO-CNT)) ;for speed
-
-(defthm x86isa::x86p-xw-unforced
-  (implies (x86p x86)
-           (x86p (xw x86isa::fld x86isa::index value x86))))
-
-(in-theory (disable x86isa::x86p-xw
-                    ;x86isa::x86p-!rip-when-val-is-canonical-address-p ;todo: remove this rule altogether since it is subsumed by x86p-xw  ;does forcing, which causes problems in various places
-                    ))
-
-(defthm rflags-is-n32p-unforced
-  (implies (x86p x86)
-           (unsigned-byte-p 32 (xr :rflags i x86)))
-  :rule-classes ((:rewrite :corollary (implies (x86p x86)
-                                               (unsigned-byte-p 32 (xr :rflags i x86)))
-                           :hints (("GOAL" :in-theory (enable rflags x86p))))
-                 (:type-prescription :corollary (implies (x86p x86)
-                                                         (natp (xr :rflags i x86)))
-                                     :hints (("GOAL" :in-theory (enable rflags x86p))))
-                 (:linear :corollary (implies (x86p x86)
-                                              (< (xr :rflags i x86) 4294967296))
-                          :hints (("GOAL" :in-theory (enable rflags x86p))))))
-
-;(in-theory (disable rflags-is-n32p)) ;disable the forced version
-
-
 ;why needed?
 ;(acl2::defopeners LOAD-PROGRAM-INTO-MEMORY)
-
-;; (acl2::defopeners xr :hyps ((syntaxp (quotep FLD))
-;;                             (syntaxp (quotep index))
-;;                             (syntaxp (quotep x86))))
 
 ;; (defthm xr-xw-intra-simple-field-with-hide
 ;;   (implies (member fld *x86-simple-fields-as-keywords*)
@@ -111,11 +145,6 @@
 ;; (acl2::defopeners RGFI* :hyps ((syntaxp (quotep i))
 ;;                                        (syntaxp (quotep x86))))
 
-(acl2::defopeners xr :hyps ((syntaxp (quotep rstobj2::fld))
-                            (syntaxp (quotep rstobj2::index))
-                            (syntaxp (quotep X86ISA::X86$A))))
-;why?
-;(acl2::defopeners x86p :hyps ((syntaxp (quotep x86))))
 
 ;; (defthm RGFI*-of-xw-diff
 ;;   (implies (and (equal :ms fld) ;drop!
@@ -131,60 +160,6 @@
 ;;; Set up the theory for symbolic execution (work in progress):
 ;;; Perhaps these should be made into a ruleset.
 
-(in-theory (acl2::enable* x86isa::X86-EFFECTIVE-ADDR-FROM-SIB
-                    x86isa::instruction-decoding-and-spec-rules ;this one is a ruleset
-                    x86isa::jcc/cmovcc/setcc-spec
-                    x86isa::gpr-and-spec-4
-                    x86isa::gpr-xor-spec-4
-                    x86isa::GPR-ADD-SPEC-4
-
-                    x86isa::one-byte-opcode-execute ;; x86isa::one-byte-opcode-execute
-                    ;; !rgfi-size
-                    x86isa::x86-operand-to-reg/mem
-
-                    ;;These appear to eventually call xw (via
-                    ;;!rgfi), so we'll keep them enabled
-                    ;;since xw is our normal form:
-                    x86isa::wr08
-                    x86isa::wr16
-                    x86isa::wr32
-                    x86isa::wr64
-
-                    ;;These appear to eventually call xr (via
-                    ;;rgfi), so we'll keep them enabled
-                    ;;since xw is our normal form:
-                    x86isa::rr08
-                    x86isa::rr16
-                    x86isa::rr32
-                    x86isa::rr64
-
-                    x86isa::wml32
-                    x86isa::wml64
-                    x86isa::riml08
-                    x86isa::riml32
-
-                    x86isa::x86-operand-from-modr/m-and-sib-bytes
-                    x86isa::riml-size
-
-                    x86isa::check-instruction-length
-
-                    x86isa::select-segment-register
-
-                    x86isa::n08-to-i08
-                    x86isa::n16-to-i16
-                    x86isa::n32-to-i32
-                    x86isa::n64-to-i64
-                    x86isa::n128-to-i128
-
-                    x86isa::two-byte-opcode-decode-and-execute
-                    x86isa::x86-effective-addr-when-64-bit-modep
-                    x86isa::x86-effective-addr-32/64
-                    ;; Flags
-                    x86isa::write-user-rflags
-                    x86isa::zf-spec))
-
-(in-theory (disable x86isa::create-canonical-address-list
-                    (:e x86isa::create-canonical-address-list)))
 
 ;; gets rid of the effect of saving and restoring rbp
 ;; (defthm x86isa::xw-xr-same
@@ -230,8 +205,6 @@
              (x86-fetch-decode-execute x86_1)
            (x86-fetch-decode-execute x86_2))))
 
-(in-theory (disable MEMBER-EQUAL))
-
 ;; (defthm !flgi-undefined-of-!flgi-different-concrete-indices
 ;;   (implies (and (syntaxp (quotep i1))
 ;;                 (syntaxp (quotep i2))
@@ -271,11 +244,6 @@
      x86isa::*VIP*
      x86isa::*ID*))))
 
-(in-theory (disable logcount
-                    x86isa::write-user-rflags-and-xw
-                    byte-listp
-                    x86isa::combine-bytes))
-
 (defun nth-of-create-canonical-address-list-induct (n count addr)
   (if (zp count)
       (list n count addr)
@@ -297,6 +265,7 @@
          (and (canonical-address-p a)
               (x86isa::canonical-address-listp x))))
 
+;; or evaulate it, or use a constant opener
 (defthm canonical-address-listp-of-nil
   (x86isa::canonical-address-listp nil))
 
@@ -343,7 +312,7 @@
                             ash
                             ;x86isa::RB-RB-SUBSET
                             natp
-                            acl2::mod-becomes-bvchop-8
+                            acl2::mod-becomes-bvchop-when-power-of-2p
                             ;;acl2::bvchop
                             ;;ACL2::CAR-BECOMES-NTH-OF-0
                             acl2::bvchop-of-logtail-becomes-slice
@@ -351,27 +320,6 @@
                            (slice-of-combine-bytes)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(local (include-book "kestrel/bv/rules3" :dir :system)) ;drop?
-
-;todo: gen the 2
-(defthm idiv-64-by-2-no-error
-  (equal (mv-nth 0 (x86isa::idiv-spec-64 (acl2::bvsx 128 64 x) 2))
-         nil)
-  :hints (("Goal" :in-theory (enable x86isa::idiv-spec-64 truncate
-                                     ))))
-
-;todo: gen the 2
-(defthm idiv-64-by-2-becomes-sbvdiv
-  (equal (mv-nth 1 (x86isa::idiv-spec-64 (acl2::bvsx 128 64 x) 2))
-         (acl2::sbvdiv 64 x 2))
-  :hints (("Goal" :in-theory (enable x86isa::idiv-spec-64 truncate acl2::sbvdiv))))
-
-;todo: gen the 2
-(defthm idiv-64-by-2-becomes-sbvrem
-  (equal (mv-nth 2 (x86isa::idiv-spec-64 (acl2::bvsx 128 64 x) 2))
-         (acl2::sbvrem 64 x 2))
-  :hints (("Goal" :in-theory (enable x86isa::idiv-spec-64 truncate acl2::sbvrem))))
 
 ;tons of calls of byte-listp were getting memoized, whereas we can just run
 ;all-unsigned-byte-p.
@@ -405,11 +353,6 @@
                                                              ;; X86ISA::SEG-HIDDEN-ATTRI-IS-N16P
                                                              )))))
 
-(defthm memi-of-xw
-  (implies (not (equal :mem fld))
-           (equal (memi i (xw fld index val x86))
-                  (memi i x86)))
-  :hints (("Goal" :in-theory (enable memi))))
 
 (defthm unsigned-byte-p-of-bfix
   (implies (posp n)
@@ -423,7 +366,7 @@
                 (natp n)
                 (< n 16)
                 (x86p x86-2))
-           (equal (xw ':rgf n (xr :rgf n x86) x86-2)
+           (equal (xw :rgf n (xr :rgf n x86) x86-2)
                   x86-2))
   :hints (("Goal" :in-theory (enable ;x86isa::xw-xr-rgf
                               ))))
@@ -442,32 +385,6 @@
                                    acl2::bvchop-1-becomes-getbit
                                    acl2::bvchop-of-logtail-becomes-slice)))))
 
-;rewrite: (< (BVCHOP 64 Y) 9223372036854775808)
-;rewrite: (<= (BVCHOP 64 Y) (BVCHOP 63 Y))
-
-;; each of the 2 branches in the RHS has a clear RIP
-(defthm xw-rip-of-if-arg3
-  (equal (xw :rip nil (if test rip1 rip2) x86)
-         (if test
-             (xw :rip nil rip1 x86)
-           (xw :rip nil rip2 x86))))
-
-; not strictly necessary since not-mv-nth-0-of-rme-size$inline should fire, but this can get rid of irrelevant stuff
-(defthm mv-nth-0-of-rme-size-of-xw-when-app-view
-  (implies (and (not (equal fld :mem))
-                (not (equal fld :app-view))
-                (not (equal fld :seg-hidden-attr))
-                (not (equal fld :seg-hidden-base))
-                (not (equal fld :seg-hidden-limit))
-                (not (equal fld :seg-visible))
-                (not (equal fld :msr))
-                (app-view x86))
-           (equal (mv-nth 0 (x86isa::rme-size$inline proc-mode nbytes eff-addr seg-reg r-x check-alignment? (xw fld index val x86) mem-ptr?))
-                  (mv-nth 0 (x86isa::rme-size$inline proc-mode nbytes eff-addr seg-reg r-x check-alignment? x86 mem-ptr?))))
-  :hints (("Goal" :in-theory (e/d (x86isa::rme-size) (ea-to-la$inline
-                                                      x86isa::rml-size$inline
-                                                      x86isa::ea-to-la-is-i48p-when-no-error)))))
-
 ;; TODO: The original rule should be replaced by this one
 (DEFTHM X86ISA::PROGRAM-AT-XW-IN-APP-VIEW-better
   (IMPLIES (AND (NOT (EQUAL X86ISA::FLD :MEM))
@@ -480,400 +397,12 @@
 
 (in-theory (disable X86ISA::PROGRAM-AT-XW-IN-APP-VIEW))
 
-(defthm memi-of-!memi-diff
-  (implies (and (unsigned-byte-p 48 addr)
-                (unsigned-byte-p 48 addr2)
-                (not (equal addr addr2)))
-           (equal (memi addr (!memi addr2 val x86))
-                  (memi addr x86)))
-  :hints (("Goal" :in-theory (enable memi))))
-
-(defthm memi-of-!memi-both
-  (implies (and (unsigned-byte-p 48 addr)
-                (unsigned-byte-p 48 addr2))
-           (equal (memi addr (!memi addr2 val x86))
-                  (if (equal addr addr2)
-                      (acl2::bvchop 8 val)
-                    (memi addr x86))))
-  :hints (("Goal" :in-theory (enable memi))))
-
-(defthm memi-of-xw-same
-  (implies (unsigned-byte-p 48 addr)
-           (equal (memi addr (xw :mem addr val x86))
-                  (acl2::bvchop 8 val)))
-  :hints (("Goal" :in-theory (enable memi))))
-
 ;gen
 (local
  (defthm +-of---of-bvchop-of-bvcat-same
-   (equal (+ (- (ACL2::BVCHOP 6 SRC)) (ACL2::BVCAT 1 1 6 SRC))
+   (equal (+ (- (ACL2::BVCHOP 6 x)) (ACL2::BVCAT 1 1 6 x))
           (ACL2::BVCAT 1 1 6 0))
-   :hints (("Goal" :in-theory (e/d (acl2::bvcat acl2::logapp)
-                                   ())))))
-
-;; the normal definition splits with an if!
-;; well, this one has an if too, but it's perhaps less bad since the shift amount will often be constant
-;;maybe improve bvashr
-;; (defthm SAR-SPEC-32-nice
-;;   (equal (SAR-SPEC-32 DST SRC INPUT-RFLAGS)
-;;          (B* ((DST (MBE :LOGIC (N-SIZE 32 DST)
-;;                         :EXEC DST))
-;;               (SRC (MBE :LOGIC (N-SIZE 6 SRC)
-;;                         :EXEC SRC))
-;;               (INPUT-RFLAGS
-;;                (MBE :LOGIC (N32 INPUT-RFLAGS)
-;;                     :EXEC INPUT-RFLAGS))
-;;               (RESULT
-;;                (if (<= 32 (ACL2::BVCHOP 6 SRC))
-;;                    (if (EQUAL 1 (ACL2::GETBIT 31 DST))
-;;                        (+ -1 (expt 2 32))
-;;                      0)
-;;                  (acl2::bvashr 32 dst SRC)))
-;;               ((MV (THE (UNSIGNED-BYTE 32)
-;;                         OUTPUT-RFLAGS)
-;;                    (THE (UNSIGNED-BYTE 32)
-;;                         UNDEFINED-FLAGS))
-;;                (CASE
-;;                  SRC
-;;                  (0 (MV INPUT-RFLAGS 0))
-;;                  (1
-;;                   (B*
-;;                       ((CF
-;;                         (MBE
-;;                          :LOGIC (ACL2::PART-SELECT DST
-;;                                                    :LOW 0
-;;                                                    :WIDTH 1)
-;;                          :EXEC
-;;                          (THE
-;;                           (UNSIGNED-BYTE 1)
-;;                           (LOGAND 1
-;;                                   (THE (UNSIGNED-BYTE 32) DST)))))
-;;                        (PF (GENERAL-PF-SPEC 32 RESULT))
-;;                        (ZF (ZF-SPEC RESULT))
-;;                        (SF
-;;                         (GENERAL-SF-SPEC 32 RESULT))
-;;                        (OF 0)
-;;                        (OUTPUT-RFLAGS
-;;                         (MBE
-;;                          :LOGIC
-;;                          (CHANGE-RFLAGSBITS INPUT-RFLAGS
-;;                                             :CF CF
-;;                                             :PF PF
-;;                                             :ZF ZF
-;;                                             :SF SF
-;;                                             :OF OF)
-;;                          :EXEC
-;;                          (THE
-;;                           (UNSIGNED-BYTE 32)
-;;                           (!RFLAGSBITS->CF
-;;                            CF
-;;                            (!RFLAGSBITS->PF
-;;                             PF
-;;                             (!RFLAGSBITS->ZF
-;;                              ZF
-;;                              (!RFLAGSBITS->SF
-;;                               SF
-;;                               (!RFLAGSBITS->OF
-;;                                OF INPUT-RFLAGS))))))))
-;;                        (UNDEFINED-FLAGS
-;;                         (THE (UNSIGNED-BYTE 32)
-;;                              (!RFLAGSBITS->AF 1 0))))
-;;                     (MV OUTPUT-RFLAGS
-;;                         UNDEFINED-FLAGS)))
-;;                  (OTHERWISE
-;;                   (IF
-;;                    (<= 32 SRC)
-;;                    (B*
-;;                        ((PF (GENERAL-PF-SPEC 32 RESULT))
-;;                         (ZF (ZF-SPEC RESULT))
-;;                         (SF
-;;                          (GENERAL-SF-SPEC 32 RESULT))
-;;                         (OUTPUT-RFLAGS
-;;                          (MBE
-;;                           :LOGIC
-;;                           (CHANGE-RFLAGSBITS INPUT-RFLAGS
-;;                                              :PF PF
-;;                                              :ZF ZF
-;;                                              :SF SF)
-;;                           :EXEC
-;;                           (THE
-;;                            (UNSIGNED-BYTE 32)
-;;                            (!RFLAGSBITS->PF
-;;                             PF
-;;                             (!RFLAGSBITS->ZF
-;;                              ZF
-;;                              (!RFLAGSBITS->SF
-;;                               SF INPUT-RFLAGS))))))
-;;                         (UNDEFINED-FLAGS
-;;                          (MBE
-;;                           :LOGIC (CHANGE-RFLAGSBITS 0
-;;                                                     :CF 1
-;;                                                     :AF 1
-;;                                                     :OF 1)
-;;                           :EXEC
-;;                           (THE
-;;                            (UNSIGNED-BYTE 32)
-;;                            (!RFLAGSBITS->CF
-;;                             1
-;;                             (!RFLAGSBITS->AF
-;;                              1 (!RFLAGSBITS->OF 1 0)))))))
-;;                      (MV OUTPUT-RFLAGS
-;;                          UNDEFINED-FLAGS))
-;;                    (B*
-;;                        ((CF
-;;                          (MBE
-;;                           :LOGIC (ACL2::PART-SELECT DST
-;;                                                     :LOW (1- SRC)
-;;                                                     :WIDTH 1)
-;;                           :EXEC
-;;                           (LET*
-;;                            ((SHFT
-;;                              (THE
-;;                               (SIGNED-BYTE 32)
-;;                               (- 1
-;;                                  (THE (UNSIGNED-BYTE 32) SRC)))))
-;;                            (THE
-;;                             (UNSIGNED-BYTE 1)
-;;                             (LOGAND
-;;                              1
-;;                              (THE (UNSIGNED-BYTE 32)
-;;                                   (ASH (THE (UNSIGNED-BYTE 32) DST)
-;;                                        (THE (SIGNED-BYTE 32)
-;;                                             SHFT))))))))
-;;                         (PF (GENERAL-PF-SPEC 32 RESULT))
-;;                         (ZF (ZF-SPEC RESULT))
-;;                         (SF
-;;                          (GENERAL-SF-SPEC 32 RESULT))
-;;                         (OUTPUT-RFLAGS
-;;                          (MBE
-;;                           :LOGIC
-;;                           (CHANGE-RFLAGSBITS INPUT-RFLAGS
-;;                                              :CF CF
-;;                                              :PF PF
-;;                                              :ZF ZF
-;;                                              :SF SF)
-;;                           :EXEC
-;;                           (THE
-;;                            (UNSIGNED-BYTE 32)
-;;                            (!RFLAGSBITS->CF
-;;                             CF
-;;                             (!RFLAGSBITS->PF
-;;                              PF
-;;                              (!RFLAGSBITS->ZF
-;;                               ZF
-;;                               (!RFLAGSBITS->SF
-;;                                SF INPUT-RFLAGS)))))))
-;;                         (UNDEFINED-FLAGS
-;;                          (MBE :LOGIC (CHANGE-RFLAGSBITS 0
-;;                                                         :AF 1
-;;                                                         :OF 1)
-;;                               :EXEC (!RFLAGSBITS->AF
-;;                                      1 (!RFLAGSBITS->OF 1 0)))))
-;;                      (MV OUTPUT-RFLAGS
-;;                          UNDEFINED-FLAGS))))))
-;;               (OUTPUT-RFLAGS
-;;                (MBE :LOGIC (N32 OUTPUT-RFLAGS)
-;;                     :EXEC OUTPUT-RFLAGS))
-;;               (UNDEFINED-FLAGS
-;;                (MBE :LOGIC (N32 UNDEFINED-FLAGS)
-;;                     :EXEC UNDEFINED-FLAGS)))
-;;            (MV RESULT OUTPUT-RFLAGS
-;;                UNDEFINED-FLAGS)))
-;;   :otf-flg t
-;;   :hints (("Goal" :in-theory (e/d (acl2::bvashr
-;;                                    ;;acl2::bvsx
-;;                                    SAR-SPEC-32 ACL2::BVSHR
-;;                                    ;;ACL2::LOGEXT-CASES
-;;                                    acl2::bvchop-of-logtail-becomes-slice
-;;                                    acl2::<-of-bvchop-and-2
-;;                                    acl2::slice-alt-def
-;;                                    )
-;;                                   ( ;ACL2::BVCAT-EQUAL-REWRITE ACL2::BVCAT-EQUAL-REWRITE-ALT
-;;                                    acl2::BVCHOP-WHEN-TOP-BIT-NOT-1-FAKE-FREE
-;;                                    )))))
-;; (DEFthm SAR-SPEC-64-nice
-;;   (equal (SAR-SPEC-64 DST SRC INPUT-RFLAGS)
-;;          (B*
-;;              ((DST (MBE :LOGIC (N-SIZE 64 DST) :EXEC DST))
-;;               (SRC (MBE :LOGIC (N-SIZE 6 SRC) :EXEC SRC))
-;;               (INPUT-RFLAGS (MBE :LOGIC (N32 INPUT-RFLAGS)
-;;                                  :EXEC INPUT-RFLAGS))
-;;               (RESULT
-;;                (if (<= 64 (ACL2::BVCHOP 7 SRC))
-;;                    (if (EQUAL 1 (ACL2::GETBIT 63 DST))
-;;                        (+ -1 (expt 2 64))
-;;                      0)
-;;                  (acl2::bvashr 64 dst SRC)))
-;;               ((MV (THE (UNSIGNED-BYTE 32) OUTPUT-RFLAGS)
-;;                    (THE (UNSIGNED-BYTE 32)
-;;                         UNDEFINED-FLAGS))
-;;                (CASE
-;;                  SRC (0 (MV INPUT-RFLAGS 0))
-;;                  (1
-;;                   (B*
-;;                       ((CF
-;;                         (MBE :LOGIC (PART-SELECT DST :LOW 0 :WIDTH 1)
-;;                              :EXEC
-;;                              (THE (UNSIGNED-BYTE 1)
-;;                                   (LOGAND 1 (THE (UNSIGNED-BYTE 64) DST)))))
-;;                        (PF (GENERAL-PF-SPEC 64 RESULT))
-;;                        (ZF (ZF-SPEC RESULT))
-;;                        (SF (GENERAL-SF-SPEC 64 RESULT))
-;;                        (OF 0)
-;;                        (OUTPUT-RFLAGS
-;;                         (MBE
-;;                          :LOGIC (CHANGE-RFLAGSBITS INPUT-RFLAGS
-;;                                                    :CF CF
-;;                                                    :PF PF
-;;                                                    :ZF ZF
-;;                                                    :SF SF
-;;                                                    :OF OF)
-;;                          :EXEC
-;;                          (THE
-;;                           (UNSIGNED-BYTE 32)
-;;                           (!RFLAGSBITS->CF
-;;                            CF
-;;                            (!RFLAGSBITS->PF
-;;                             PF
-;;                             (!RFLAGSBITS->ZF
-;;                              ZF
-;;                              (!RFLAGSBITS->SF
-;;                               SF
-;;                               (!RFLAGSBITS->OF OF INPUT-RFLAGS))))))))
-;;                        (UNDEFINED-FLAGS (THE (UNSIGNED-BYTE 32)
-;;                                              (!RFLAGSBITS->AF 1 0))))
-;;                     (MV OUTPUT-RFLAGS UNDEFINED-FLAGS)))
-;;                  (OTHERWISE
-;;                   (IF
-;;                    (<= 64 SRC)
-;;                    (B*
-;;                        ((PF (GENERAL-PF-SPEC 64 RESULT))
-;;                         (ZF (ZF-SPEC RESULT))
-;;                         (SF (GENERAL-SF-SPEC 64 RESULT))
-;;                         (OUTPUT-RFLAGS
-;;                          (MBE
-;;                           :LOGIC (CHANGE-RFLAGSBITS INPUT-RFLAGS
-;;                                                     :PF PF
-;;                                                     :ZF ZF
-;;                                                     :SF SF)
-;;                           :EXEC
-;;                           (THE
-;;                            (UNSIGNED-BYTE 32)
-;;                            (!RFLAGSBITS->PF
-;;                             PF
-;;                             (!RFLAGSBITS->ZF
-;;                              ZF
-;;                              (!RFLAGSBITS->SF SF INPUT-RFLAGS))))))
-;;                         (UNDEFINED-FLAGS
-;;                          (MBE
-;;                           :LOGIC (CHANGE-RFLAGSBITS 0 :CF 1 :AF 1 :OF 1)
-;;                           :EXEC
-;;                           (THE
-;;                            (UNSIGNED-BYTE 32)
-;;                            (!RFLAGSBITS->CF
-;;                             1
-;;                             (!RFLAGSBITS->AF 1 (!RFLAGSBITS->OF 1 0)))))))
-;;                      (MV OUTPUT-RFLAGS UNDEFINED-FLAGS))
-;;                    (B*
-;;                        ((CF
-;;                          (MBE
-;;                           :LOGIC (PART-SELECT DST :LOW (1- SRC) :WIDTH 1)
-;;                           :EXEC
-;;                           (LET*
-;;                            ((SHFT (THE (SIGNED-BYTE 64)
-;;                                        (- 1 (THE (UNSIGNED-BYTE 64) SRC)))))
-;;                            (THE
-;;                             (UNSIGNED-BYTE 1)
-;;                             (LOGAND
-;;                              1
-;;                              (THE (UNSIGNED-BYTE 64)
-;;                                   (ASH (THE (UNSIGNED-BYTE 64) DST)
-;;                                        (THE (SIGNED-BYTE 64) SHFT))))))))
-;;                         (PF (GENERAL-PF-SPEC 64 RESULT))
-;;                         (ZF (ZF-SPEC RESULT))
-;;                         (SF (GENERAL-SF-SPEC 64 RESULT))
-;;                         (OUTPUT-RFLAGS
-;;                          (MBE
-;;                           :LOGIC (CHANGE-RFLAGSBITS INPUT-RFLAGS
-;;                                                     :CF CF
-;;                                                     :PF PF
-;;                                                     :ZF ZF
-;;                                                     :SF SF)
-;;                           :EXEC
-;;                           (THE
-;;                            (UNSIGNED-BYTE 32)
-;;                            (!RFLAGSBITS->CF
-;;                             CF
-;;                             (!RFLAGSBITS->PF
-;;                              PF
-;;                              (!RFLAGSBITS->ZF
-;;                               ZF
-;;                               (!RFLAGSBITS->SF SF INPUT-RFLAGS)))))))
-;;                         (UNDEFINED-FLAGS
-;;                          (MBE
-;;                           :LOGIC (CHANGE-RFLAGSBITS 0 :AF 1 :OF 1)
-;;                           :EXEC (!RFLAGSBITS->AF 1 (!RFLAGSBITS->OF 1 0)))))
-;;                      (MV OUTPUT-RFLAGS UNDEFINED-FLAGS))))))
-;;               (OUTPUT-RFLAGS (MBE :LOGIC (N32 OUTPUT-RFLAGS)
-;;                                   :EXEC OUTPUT-RFLAGS))
-;;               (UNDEFINED-FLAGS (MBE :LOGIC (N32 UNDEFINED-FLAGS)
-;;                                     :EXEC UNDEFINED-FLAGS)))
-;;            (MV RESULT OUTPUT-RFLAGS UNDEFINED-FLAGS)))
-;;   :otf-flg t
-;;   :hints (("Goal" :expand ()
-;;            :in-theory (e/d (acl2::bvashr ;acl2::bvsx
-;;                             SAR-SPEC-64 ACL2::BVSHR
-;;                                         ;;ACL2::LOGEXT-CASES
-;;                             acl2::bvchop-of-logtail-becomes-slice
-;;                             acl2::<-of-bvchop-and-2
-;;                             acl2::slice-alt-def
-;;                             )
-;;                            ( ;ACL2::BVCAT-EQUAL-REWRITE ACL2::BVCAT-EQUAL-REWRITE-ALT
-;;                             acl2::BVCHOP-WHEN-TOP-BIT-NOT-1-FAKE-FREE
-;;                             ACL2::LOGEXT-OF-LOGTAIL-BECOMES-LOGEXT-OF-SLICE ;loop
-;;                             ACL2::LOGtail-OF-LOGext ;loop
-;;                             )))))
-
-(in-theory (disable zf-spec)) ; move?
-
-;gen?
-(defthm integerp-of-xr-rgf-4
-  (implies (x86p x86)
-           (integerp (xr ':rgf '4 x86))))
-
-;gen?
-(defthm fix-of-xr-rgf-4
-  (equal (fix (xr ':rgf '4 x86))
-         (xr ':rgf '4 x86)))
-
-;gen
-(defthm xr-app-view-of-!memi
-  (equal (xr :app-view nil (!memi addr val x86))
-         (xr :app-view nil x86))
-  :hints (("Goal" :in-theory (enable !memi))))
-
-(defthm app-view-of-!memi
-  (equal (app-view (!memi addr val x86))
-         (app-view x86))
-  :hints (("Goal" :in-theory (enable !memi))))
-
-(defthm x86p-of-!memi
-  (implies (and (x86p x86)
-                (INTEGERP ADDR)
-                (UNSIGNED-BYTE-P 8 VAL))
-           (x86p (!memi addr val x86)))
-  :hints (("Goal" :in-theory (enable !memi))))
-
-;rename
-(defthm memi-of-!memi
-  (implies (unsigned-byte-p 48 addr)
-           (equal (memi addr (!memi addr val x86))
-                  (acl2::bvchop 8 val)))
-  :hints (("Goal" :in-theory (enable memi))))
-
-(defthm !memi-of-!memi-same
-  (equal (!memi addr val (!memi addr val2 x86))
-         (!memi addr val x86)))
+   :hints (("Goal" :in-theory (enable acl2::bvcat acl2::logapp)))))
 
 (defthm xw-of-xw-both
   (implies (syntaxp (acl2::smaller-termp addr2 addr))
@@ -889,14 +418,6 @@
            (equal (xw :mem addr val (xw :mem addr2 val2 x86))
                   (xw :mem addr2 val2 (xw :mem addr val x86))))
   :hints (("Goal" :in-theory (enable xw))))
-
-(defthm memi-of-xw-irrel
-  (implies (not (equal fld :mem))
-           (equal (memi addr (xw fld index val x86))
-                  (memi addr x86)))
-  :hints (("Goal" :in-theory (e/d (memi)
-                                  (;x86isa::memi-is-n08p ;does forcing
-                                   )))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -928,6 +449,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Most uses of rme-XXX are for 32-bit mode, but this is for 64-bit mode.
 ;; This version has (canonical-address-p eff-addr) in the conclusion
 (defthm x86isa::rme-size-when-64-bit-modep-and-not-fs/gs-strong
   (implies (and (not (equal seg-reg 4))
@@ -939,6 +461,7 @@
                       (rml-size nbytes eff-addr x86isa::r-x x86)
                     (list (list :non-canonical-address eff-addr) 0 x86)))))
 
+;; Most uses of rme-XXX are for 32-bit mode, but this is for 64-bit mode.
 ;; This version has (canonical-address-p eff-addr) in the conclusion
 (defthm x86isa::wme-size-when-64-bit-modep-and-not-fs/gs-strong
   (implies (and (not (equal seg-reg 4))
@@ -967,3 +490,637 @@
            (equal (feature-flags features)
                   1))
   :hints (("Goal" :in-theory (enable feature-flags))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm get-one-byte-prefix-array-code-of-if
+  (equal (get-one-byte-prefix-array-code (if test b1 b2))
+         (if test
+             (get-one-byte-prefix-array-code b1)
+           (get-one-byte-prefix-array-code b2))))
+
+(defthm 64-bit-mode-one-byte-opcode-modr/m-p$inline-of-if
+  (equal (64-bit-mode-one-byte-opcode-modr/m-p$inline (if test tp ep))
+         (if test
+             (64-bit-mode-one-byte-opcode-modr/m-p$inline tp)
+             (64-bit-mode-one-byte-opcode-modr/m-p$inline ep))))
+
+;TODO: we could just build this kind of thing into axe..
+(defthm 64-bit-mode-one-byte-opcode-modr/m-p$inline-of-if-when-constants
+  (implies (syntaxp (and (quotep tp)
+                         (quotep ep)))
+           (equal (64-bit-mode-one-byte-opcode-modr/m-p$inline (if test tp ep))
+                  (if test
+                      (64-bit-mode-one-byte-opcode-modr/m-p$inline tp)
+                    (64-bit-mode-one-byte-opcode-modr/m-p$inline ep)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm canonical-address-p-of-nth
+  (implies (and (x86isa::canonical-address-listp addresses)
+                (natp n)
+                (< n (len addresses)))
+           (canonical-address-p (nth n addresses)))
+  :hints (("Goal" :in-theory (e/d (nth) (acl2::nth-of-cdr)))))
+
+(defthm nth-of-pos
+  (implies (x86isa::member-p item list)
+           (equal (nth (x86isa::pos item list) list)
+                  item))
+  :hints (("Goal" :in-theory (e/d (nth x86isa::pos) (acl2::nth-of-cdr)))))
+
+;this is the byte-listp in X86ISA
+(defthm byte-listp-of-true-list-fix
+  (implies (byte-listp bytes)
+           (byte-listp (acl2::true-list-fix bytes))))
+
+; better than x86isa::size-of-rb-1
+(defthm unsigned-byte-p-of-mv-nth-1-of-rb-1
+  (implies (and (<= (* 8 n) m)
+                (natp m)
+                (x86p x86))
+           (unsigned-byte-p m (mv-nth 1 (rb-1 n addr r-x x86))))
+  :hints (("Goal" :use (:instance x86isa::size-of-rb-1
+                                  (X86ISA::ADDR addr)
+                                  (X86ISA::R-X r-x)
+                                  (m (* 8 n)))
+           :in-theory (e/d (ash rb-1 ifix)
+                           (x86isa::size-of-rb-1)))))
+
+(defthm combine-bytes-when-singleton
+  (implies (equal 1 (len lst))
+           (equal (x86isa::combine-bytes lst)
+                  (if (unsigned-byte-p 8 (car lst))
+                      (car lst)
+                    0))) ;yikes.  combine-bytes should chop its arg?
+  :hints (("Goal" :expand (x86isa::combine-bytes lst)
+           :in-theory (enable x86isa::combine-bytes))))
+
+(acl2::defopeners get-prefixes)
+
+;; ;; A version of X86ISA::GET-PREFIXES-OPENER-LEMMA-GROUP-1-PREFIX.
+;; ;; simplified hyps should work better with axe
+;; (DEFTHM GET-PREFIXES-OPENER-LEMMA-GROUP-1-PREFIX-simple
+;;   (IMPLIES
+;;    (b* (((MV FLG BYTE X86)
+;;          (RME08 PROC-MODE START-RIP *CS* :X X86))
+;;         (PREFIX-BYTE-GROUP-CODE
+;;          (GET-ONE-BYTE-PREFIX-ARRAY-CODE BYTE)))
+;;      (AND (OR (APP-VIEW X86)
+;;               (NOT (MARKING-VIEW X86)))
+;;           (NOT FLG)
+;;           (EQUAL PREFIX-BYTE-GROUP-CODE 1)
+;;           (NOT (ZP CNT))
+;;           (NOT (MV-NTH 0
+;;                        (ADD-TO-*IP PROC-MODE START-RIP 1 X86)))))
+;;    (EQUAL
+;;     (B* (((MV FLG BYTE X86)
+;;           (RME08 PROC-MODE START-RIP *CS* :X X86)))
+;;       (GET-PREFIXES PROC-MODE START-RIP PREFIXES CNT X86))
+;;     (b* (((MV FLG BYTE X86)
+;;           (RME08 PROC-MODE START-RIP *CS* :X X86)))
+;;       (LET
+;;        ((PREFIXES
+;;          (IF (EQUAL BYTE 240)
+;;              (!PREFIXES-SLICE
+;;               :LCK BYTE
+;;               (!PREFIXES-SLICE :LAST-PREFIX 1 PREFIXES))
+;;              (!PREFIXES-SLICE
+;;               :REP BYTE
+;;               (!PREFIXES-SLICE :LAST-PREFIX 2 PREFIXES)))))
+;;        (GET-PREFIXES PROC-MODE (1+ START-RIP)
+;;                      PREFIXES (1- CNT)
+;;                      X86))))))
+
+;; (DEFTHM GET-PREFIXES-OPENER-LEMMA-GROUP-1-PREFIX-simple
+;;   (IMPLIES (AND (APP-VIEW X86)
+;;                 (64-BIT-MODEP x86)
+;;                 (LET* ((FLG (MV-NTH 0 (RME08 START-RIP *CS* :X X86)))
+;;                        (PREFIX-BYTE-GROUP-CODE
+;;                         (GET-ONE-BYTE-PREFIX-ARRAY-CODE (MV-NTH 1 (RME08 START-RIP *CS* :X X86)))))
+;;                       (AND (NOT FLG)
+;;                            (EQUAL PREFIX-BYTE-GROUP-CODE 1)))
+;;                 (NOT (ZP CNT))
+;;                 (CANONICAL-ADDRESS-P (1+ START-RIP))
+;;                 )
+;;            (EQUAL
+;;             (GET-PREFIXES START-RIP PREFIXES CNT X86)
+;;             (LET ((PREFIXES
+;;                    (IF (EQUAL (MV-NTH 1 (RML08 START-RIP :X X86)) 240)
+;;                        (!PREFIXES-SLICE
+;;                         :LCK (MV-NTH 1 (RML08 START-RIP :X X86))
+;;                         (!PREFIXES-SLICE
+;;                          :LAST-PREFIX 1 PREFIXES))
+;;                        (!PREFIXES-SLICE
+;;                         :REP (MV-NTH 1 (RML08 START-RIP :X X86))
+;;                         (!PREFIXES-SLICE
+;;                          :LAST-PREFIX 2 PREFIXES)))))
+;;                  (GET-PREFIXES (1+ START-RIP)
+;;                                PREFIXES (1- CNT)
+;;                                X86))))
+;;   :hints (("Goal" :expand (GET-PREFIXES START-RIP PREFIXES CNT X86))))
+
+;; ;; A version of X86ISA::GET-PREFIXES-OPENER-LEMMA-GROUP-2-PREFIX.
+;; ;; simplified hyps should work better with axe
+;; (DEFTHM GET-PREFIXES-OPENER-LEMMA-GROUP-2-PREFIX-simple
+;;   (IMPLIES (AND (APP-VIEW X86)
+;;                 (64-BIT-MODEP x86)
+;;                 (LET* ((FLG (MV-NTH 0 (X86ISA::RME08 START-RIP *CS*
+;;                                                   :X X86)))
+;;                        (PREFIX-BYTE-GROUP-CODE
+;;                         (x86isa::GET-ONE-BYTE-PREFIX-ARRAY-CODE
+;;                          (MV-NTH 1 (X86ISA::RME08 START-RIP *CS*
+;;                                                   :X X86)))))
+;;                       (AND (NOT FLG)
+;;                            (EQUAL PREFIX-BYTE-GROUP-CODE 2)))
+;;                 (CANONICAL-ADDRESS-P (1+ START-RIP))
+;;                 (NOT (ZP CNT)))
+;;            (EQUAL
+;;             (GET-PREFIXES START-RIP PREFIXES CNT X86)
+;;             (GET-PREFIXES
+;;                            (1+ START-RIP)
+;;                            (X86ISA::!PREFIXES-SLICE
+;;                                 :SEG
+;;                                 (MV-NTH 1
+;;                                         (X86ISA::RME08 START-RIP *CS*
+;;                                                        :X X86))
+;;                                 (X86ISA::!PREFIXES-SLICE
+;;                                      :LAST-PREFIX 3 PREFIXES))
+;;                            (1- CNT)
+;;                            X86))))
+
+;; ;; a version of x86isa::GET-PREFIXES-OPENER-LEMMA-GROUP-3-PREFIX
+;; ;; simplified hyps should work better with axe
+;; (DEFTHM GET-PREFIXES-OPENER-LEMMA-GROUP-3-PREFIX-simple
+;;   (IMPLIES (AND (APP-VIEW X86)
+;;                 (64-BIT-MODEP x86)
+;;                 (LET* ((FLG (MV-NTH 0 (X86ISA::RME08 START-RIP *CS*
+;;                                                   :X X86)))
+;;                        (PREFIX-BYTE-GROUP-CODE
+;;                         (x86isa::GET-ONE-BYTE-PREFIX-ARRAY-CODE
+;;                          (MV-NTH 1 (X86ISA::RME08 START-RIP *CS*
+;;                                                   :X X86)))))
+;;                       (AND (NOT FLG)
+;;                            (EQUAL PREFIX-BYTE-GROUP-CODE 3)))
+;;                 (CANONICAL-ADDRESS-P (1+ START-RIP))
+;;                 (NOT (ZP CNT)))
+;;            (EQUAL
+;;             (GET-PREFIXES START-RIP PREFIXES CNT X86)
+;;             (GET-PREFIXES
+;;                            (1+ START-RIP)
+;;                            (X86ISA::!PREFIXES-SLICE
+;;                                 :OPR
+;;                                 (MV-NTH 1
+;;                                         (X86ISA::RME08 START-RIP *CS*
+;;                                                        :X X86))
+;;                                 (X86ISA::!PREFIXES-SLICE
+;;                                      :LAST-PREFIX 4 PREFIXES))
+;;                            (1- CNT)
+;;                            X86))))
+
+;; ;; a version of x86isa::GET-PREFIXES-OPENER-LEMMA-GROUP-4-PREFIX
+;; ;; simplified hyps should work better with axe
+;; (DEFTHM GET-PREFIXES-OPENER-LEMMA-GROUP-4-PREFIX-simple
+;;   (IMPLIES (AND (APP-VIEW X86)
+;;                 (64-BIT-MODEP x86)
+;;                 (LET* ((FLG (MV-NTH 0 (X86ISA::RME08 START-RIP *CS*
+;;                                                      :X X86)))
+;;                        (PREFIX-BYTE-GROUP-CODE
+;;                         (x86isa::GET-ONE-BYTE-PREFIX-ARRAY-CODE
+;;                          (MV-NTH 1 (X86ISA::RME08 START-RIP *CS*
+;;                                                   :X X86)))))
+;;                       (AND (NOT FLG)
+;;                            (EQUAL PREFIX-BYTE-GROUP-CODE 4)))
+;;                 (CANONICAL-ADDRESS-P (1+ START-RIP))
+;;                 (NOT (ZP CNT)))
+;;            (EQUAL
+;;             (GET-PREFIXES START-RIP PREFIXES CNT X86)
+;;             (GET-PREFIXES
+;;              (1+ START-RIP)
+;;              (X86ISA::!PREFIXES-SLICE
+;;               :ADR
+;;               (MV-NTH 1
+;;                       (X86ISA::RME08 START-RIP *CS*
+;;                                      :X X86))
+;;               (X86ISA::!PREFIXES-SLICE
+;;                :LAST-PREFIX 5 PREFIXES))
+;;              (1- CNT)
+;;              X86))))
+
+
+;; We will leave X86-FETCH-DECODE-EXECUTE enabled (the ACL2 rule has
+;; binding hyps that Axe doesn't yet handle).  Note that it opens up
+;; to a call of ONE-BYTE-OPCODE-EXECUTE.  To prevent a huge case
+;; split, we will keep ONE-BYTE-OPCODE-EXECUTE disabled but allow it
+;; to open when everything but the RIP arguments is constant (that is,
+;; when we managed to resolve the instruction).
+
+;todo: make defopeners use the untranslated body
+;todo: make defopeners check for redundancy
+;todo: make defopeners suppress printing
+(acl2::defopeners one-byte-opcode-execute :hyps ((syntaxp (and (quotep x86isa::prefixes)
+                                                               (quotep x86isa::rex-byte)
+                                                               (quotep x86isa::opcode)
+                                                               (quotep x86isa::modr/m)
+                                                               (quotep x86isa::sib)))))
+
+(in-theory (disable x86isa::one-byte-opcode-execute))
+
+;gen the 1?
+(defthm unsigned-byte-p-of-bool->bit
+  (unsigned-byte-p 1 (acl2::bool->bit x)))
+
+;looped?
+(defthmd not-member-p-canonical-address-listp-when-disjoint-p-alt
+  (implies (and (x86isa::disjoint-p (x86isa::create-canonical-address-list m addr)
+                                    (x86isa::create-canonical-address-list n prog-addr))
+                (x86isa::member-p e (x86isa::create-canonical-address-list m addr)))
+           (equal (x86isa::member-p e (x86isa::create-canonical-address-list n prog-addr))
+                  nil)))
+
+;helps us show that code read from the text section is independent of
+;stuff from the stack, given an assumption about a larger region of
+;the stack being independent from the text section
+(defthm not-memberp-of-+-when-disjoint-from-larger-chunk
+  (implies (and (syntaxp (and (quotep stack-slots)
+                              (quotep neg-stack-offset)))
+                (<= neg-stack-offset (- stack-slots))
+                (integerp neg-stack-offset) ;should be negative
+                (disjoint-p (x86isa::create-canonical-address-list text-len text-offset)
+                            (x86isa::create-canonical-address-list total-stack-slots (+ neg-total-stack-offset (xr ':rgf '4 x86))))
+                (syntaxp (and (quotep total-stack-slots)
+                              (quotep neg-total-stack-offset)))
+                (equal neg-total-stack-offset (- total-stack-slots)) ;could gen but maybe no need to
+                ;(<= stack-slots total-stack-slots)
+                (<= neg-total-stack-offset neg-stack-offset)
+                (canonical-address-p$inline text-offset)
+                (canonical-address-p$inline (+ (+ -1 text-len) text-offset))
+                (canonical-address-p$inline (+ neg-total-stack-offset (xr ':rgf '4 x86)))
+                (canonical-address-p$inline (xr ':rgf '4 x86))
+                (natp n)
+                (< n text-len)
+                (natp text-len)
+                (natp stack-slots)
+                (posp total-stack-slots)
+                )
+           (not (x86isa::MEMBER-P (+ n TEXT-OFFSET)
+                          ; we take some number of stack items (like 4), starting at some address below the stack pointer (like rsp-24)
+                          (CREATE-CANONICAL-ADDRESS-LIST stack-slots (+ neg-stack-offset (XR ':RGF '4 X86))))))
+  :hints (("Goal" :use ((:instance x86isa::NOT-MEMBER-P-CANONICAL-ADDRESS-LISTP-WHEN-DISJOINT-P
+                                   (e (+ n TEXT-OFFSET))
+                                   (n total-stack-slots)
+                                   (PROG-ADDR (+ neg-total-stack-offset (XR ':RGF '4 X86)))
+                                   (m text-len)
+                                   (addr text-offset))
+                        (:instance x86isa::NOT-MEMBER-P-OF-SUPERSET-IS-NOT-MEMBER-P-OF-SUBSET
+                                   (e (+ n TEXT-OFFSET))
+                                   (x (CREATE-CANONICAL-ADDRESS-LIST stack-slots (+ neg-stack-offset (XR :RGF *RSP* X86))))
+                                   (y (CREATE-CANONICAL-ADDRESS-LIST total-stack-slots (+ neg-total-stack-offset (XR :RGF *RSP* X86))))))
+
+           :in-theory (e/d (x86isa::DISJOINT-P-COMMUTATIVE
+                            ;;NOT-MEMBER-P-OF-SUPERSET-IS-NOT-MEMBER-P-OF-SUBSET
+                            )
+                           (x86isa::NOT-MEMBER-P-CANONICAL-ADDRESS-LISTP-WHEN-DISJOINT-P
+                            x86isa::NOT-MEMBER-P-WHEN-DISJOINT-P)))))
+
+(defthm disjoint-of-CREATE-CANONICAL-ADDRESS-LIST-and-CREATE-CANONICAL-ADDRESS-LIST-stack-and-text
+  (implies (and (syntaxp (and (quotep stack-slots)
+                              (quotep neg-stack-offset)))
+                (<= neg-stack-offset (- stack-slots))
+                (integerp neg-stack-offset) ;should be negative
+                (disjoint-p (create-canonical-address-list text-len text-offset)
+                            (create-canonical-address-list total-stack-slots (+ neg-total-stack-offset (xr ':rgf '4 x86))))
+                (syntaxp (and (quotep total-stack-slots)
+                              (quotep neg-total-stack-offset)))
+                (equal neg-total-stack-offset (- total-stack-slots)) ;could gen but maybe no need to
+                (<= neg-total-stack-offset neg-stack-offset)
+                (canonical-address-p$inline text-offset)
+                (canonical-address-p$inline (+ (+ -1 text-len) text-offset))
+                (canonical-address-p$inline (+ neg-total-stack-offset (xr ':rgf '4 x86)))
+                (canonical-address-p$inline (xr ':rgf '4 x86))
+                (natp n)
+                (<= (+ n text-bytes) text-len)
+                (natp text-len)
+                (natp text-bytes)
+                (natp stack-slots)
+                (posp total-stack-slots)
+                )
+           (disjoint-p (CREATE-CANONICAL-ADDRESS-LIST text-bytes (+ n TEXT-OFFSET))
+                       ;; we take some number of stack items (like 4), starting at some address below the stack pointer (like rsp-24)
+                       (CREATE-CANONICAL-ADDRESS-LIST stack-slots (+ neg-stack-offset (XR ':RGF '4 X86)))))
+  :hints (("Goal" :use ()
+           :in-theory (e/d (x86isa::DISJOINT-P-COMMUTATIVE
+                            ;;NOT-MEMBER-P-OF-SUPERSET-IS-NOT-MEMBER-P-OF-SUBSET
+                            )
+                           (x86isa::NOT-MEMBER-P-CANONICAL-ADDRESS-LISTP-WHEN-DISJOINT-P
+                            x86isa::NOT-MEMBER-P-WHEN-DISJOINT-P)))))
+
+;special case for n=0
+(defthm disjoint-of-CREATE-CANONICAL-ADDRESS-LIST-and-CREATE-CANONICAL-ADDRESS-LIST-stack-and-text-special
+  (implies (and (syntaxp (and (quotep stack-slots)
+                              (quotep neg-stack-offset)))
+                (<= neg-stack-offset (- stack-slots))
+                (integerp neg-stack-offset) ;should be negative
+                (disjoint-p (create-canonical-address-list text-len text-offset)
+                            (create-canonical-address-list total-stack-slots (+ neg-total-stack-offset (xr ':rgf '4 x86))))
+                (syntaxp (and (quotep total-stack-slots)
+                              (quotep neg-total-stack-offset)))
+                (equal neg-total-stack-offset (- total-stack-slots)) ;could gen but maybe no need to
+                (<= neg-total-stack-offset neg-stack-offset)
+                (canonical-address-p$inline text-offset)
+                (canonical-address-p$inline (+ (+ -1 text-len) text-offset))
+                (canonical-address-p$inline (+ neg-total-stack-offset (xr ':rgf '4 x86)))
+                (canonical-address-p$inline (xr ':rgf '4 x86))
+;                (natp n)
+                (<= text-bytes text-len) ;(<= (+ n text-bytes) text-len)
+                (natp text-len)
+                (natp text-bytes)
+                (natp stack-slots)
+                (posp total-stack-slots)
+                )
+           (disjoint-p (CREATE-CANONICAL-ADDRESS-LIST text-bytes TEXT-OFFSET)
+                       ;; we take some number of stack items (like 4), starting at some address below the stack pointer (like rsp-24)
+                       (CREATE-CANONICAL-ADDRESS-LIST stack-slots (+ neg-stack-offset (XR ':RGF '4 X86)))))
+  :hints (("Goal" :use ()
+           :in-theory (e/d (x86isa::DISJOINT-P-COMMUTATIVE
+                            ;;NOT-MEMBER-P-OF-SUPERSET-IS-NOT-MEMBER-P-OF-SUBSET
+                            )
+                           (x86isa::NOT-MEMBER-P-CANONICAL-ADDRESS-LISTP-WHEN-DISJOINT-P
+                            x86isa::NOT-MEMBER-P-WHEN-DISJOINT-P)))))
+
+;dup
+;why did this cause loops?
+(defthm canonical-address-listp-of-cdr
+  (implies (x86isa::canonical-address-listp lst)
+           (x86isa::canonical-address-listp (cdr lst))))
+
+;dup
+(acl2::defopeners x86isa::COMBINE-BYTES :hyps ((syntaxp (quotep x86isa::bytes))))
+
+;This is kind of a hack.  It's needed because the assumption is not
+;obviously a boolean.  TODO: add a backchain limit (or poor man's
+;backchain limit)?  TODO: Generalize to any if test?
+(defthm if-of-xr-app-view
+  (implies (app-view x86)
+           (equal (if (app-view x86) tp ep)
+                  tp)))
+
+;helps get rid of irrelevant stuff (even though we expect to not really need this)
+(defthm mv-nth-0-of-get-prefixes-of-xw-of-irrel
+  (implies (or (eq :rgf field)
+               (eq :rip field)
+               (eq :undef field)) ;gen
+           (equal (mv-nth 0 (get-prefixes proc-mode start-rip prefixes rex-byte cnt (xw field index value x86)))
+                  (mv-nth 0 (get-prefixes proc-mode start-rip prefixes rex-byte cnt x86))))
+  :hints (("Goal" :induct (GET-PREFIXES proc-mode START-RIP PREFIXES rex-byte CNT X86)
+           :in-theory (e/d ( ;xw
+                            add-to-*ip
+                            get-prefixes)
+                           (acl2::unsigned-byte-p-from-bounds
+                            ;acl2::bvchop-identity
+                            ;x86isa::part-install-width-low-becomes-bvcat-32
+                            ;for speed:
+                            ;CANONICAL-ADDRESS-P-BETWEEN
+                            ;x86isa::PART-SELECT-WIDTH-LOW-BECOMES-SLICE
+                            ;x86isa::SLICE-OF-PART-INSTALL-WIDTH-LOW
+                            ;acl2::MV-NTH-OF-IF
+                            x86isa::GET-PREFIXES-OPENER-LEMMA-NO-PREFIX-BYTE
+                            )))))
+
+(defthm mv-nth-1-of-get-prefixes-of-xw-of-irrel
+  (implies (or (eq :rgf field)
+               (eq :rip field)
+               (eq :undef field)) ;gen
+           (equal (mv-nth 1
+                          (get-prefixes proc-mode start-rip prefixes rex-byte
+                                        cnt (xw field index value x86)))
+                  (mv-nth 1
+                          (get-prefixes proc-mode start-rip prefixes rex-byte cnt x86))))
+  :hints (("Goal" :induct (get-prefixes proc-mode start-rip prefixes rex-byte cnt x86)
+           :in-theory (e/d (get-prefixes
+                            add-to-*ip)
+                                  (acl2::unsigned-byte-p-from-bounds
+                                   ;acl2::bvchop-identity
+                                   ;x86isa::part-install-width-low-becomes-bvcat-32
+                                   combine-bytes-when-singleton ;for speed
+                                   x86isa::get-prefixes-opener-lemma-no-prefix-byte ;for speed
+                                   ;x86isa::part-select-width-low-becomes-slice ;for speed
+                                   ACL2::ZP-OPEN
+                                   ;acl2::MV-NTH-OF-IF
+                                   )))))
+
+;maybe only needed for PE files?
+;helps us show that code read from the text section is independent of stuff
+;from the stack (the 32-byte shadow region), given an assumption about a larger
+;region of the stack being independent from the text section
+(defthm not-memberp-of-+-when-disjoint-from-larger-chunk-pos
+  (implies (and (syntaxp (and (quotep stack-slots)
+                              (quotep pos-stack-offset)))
+                ;; free vars here:
+                (disjoint-p (create-canonical-address-list text-len text-offset)
+                            (create-canonical-address-list total-stack-slots (xr ':rgf '4 x86)))
+                (syntaxp (quotep total-stack-slots))
+
+                (natp pos-stack-offset)
+                (natp stack-slots)
+                (integerp total-stack-slots)
+                (<= (+ stack-slots pos-stack-offset) total-stack-slots)
+                (canonical-address-p$inline text-offset)
+                (canonical-address-p$inline (+ (+ -1 text-len) text-offset))
+                (canonical-address-p$inline (+ (+ -1 total-stack-slots) (xr ':rgf '4 x86)))
+                (canonical-address-p$inline (xr ':rgf '4 x86))
+                (natp n)
+                (< n text-len)
+                (natp text-len))
+           (not (MEMBER-P (+ n TEXT-OFFSET)
+                          ;; we take some number of stack items (like 4), starting at some address above the stack pointer (like rsp+8)
+                          (CREATE-CANONICAL-ADDRESS-LIST stack-slots (+ pos-stack-offset (XR ':RGF '4 X86))))))
+  :hints (("Goal" :use ((:instance x86isa::NOT-MEMBER-P-CANONICAL-ADDRESS-LISTP-WHEN-DISJOINT-P
+                                   (e (+ n TEXT-OFFSET))
+                                   (n stack-slots)
+                                   (PROG-ADDR (+ pos-stack-offset (XR ':RGF '4 X86)))
+                                   (m text-len)
+                                   (addr text-offset))
+                        (:instance x86isa::DISJOINT-P-SUBSET-P
+                                   (a (CREATE-CANONICAL-ADDRESS-LIST TEXT-LEN TEXT-OFFSET))
+                                   (b (CREATE-CANONICAL-ADDRESS-LIST
+                        STACK-SLOTS
+                        (+ POS-STACK-OFFSET (XR :RGF *RSP* X86))))
+                                   (x (CREATE-CANONICAL-ADDRESS-LIST TEXT-LEN TEXT-OFFSET))
+                                   (y (CREATE-CANONICAL-ADDRESS-LIST TOTAL-STACK-SLOTS (XR :RGF *RSP* X86))))
+                        )
+
+           :in-theory (e/d (x86isa::DISJOINT-P-COMMUTATIVE
+                            ;;NOT-MEMBER-P-OF-SUPERSET-IS-NOT-MEMBER-P-OF-SUBSET
+                            )
+                           (x86isa::NOT-MEMBER-P-CANONICAL-ADDRESS-LISTP-WHEN-DISJOINT-P
+                            x86isa::NOT-MEMBER-P-WHEN-DISJOINT-P
+                            x86isa::DISJOINT-P-SUBSET-P)))))
+
+;tell shilpi
+(defthm disjoint-p-two-create-canonical-address-lists-thm-0-gen
+  (implies (<= (+ i x) y)
+           (disjoint-p (create-canonical-address-list i x)
+                       (create-canonical-address-list j y)))
+  :hints (("Goal" :in-theory (e/d (disjoint-p member-p create-canonical-address-list)
+                                  nil))))
+
+;tell shilpi
+(defthm disjoint-p-two-create-canonical-address-lists-thm-1-gen
+  (implies (<= (+ j y) x)
+           (disjoint-p (create-canonical-address-list i x)
+                       (create-canonical-address-list j y)))
+  :hints (("Goal" :in-theory (e/d (disjoint-p member-p create-canonical-address-list)
+                                  nil))))
+
+(defthm combine-bytes-of-if-when-constants
+  (implies (syntaxp (and (quotep tp)
+                         (quotep ep)))
+           (equal (x86isa::combine-bytes (if test tp ep))
+                  (if test
+                      (x86isa::combine-bytes tp)
+                    (x86isa::combine-bytes ep)))))
+
+(defthm rb-wb-disjoint-eric
+  (implies (and (separate r-x n-1 addr-1 w n-2 addr-2)
+                (app-view x86))
+           (equal (mv-nth 1
+                          (rb n-1 addr-1 r-x
+                              (mv-nth 1 (wb n-2 addr-2 w val x86))))
+                  (mv-nth 1 (rb n-1 addr-1 r-x x86)))))
+
+(defthm rb-of-if-arg2
+  (equal (rb n (if test addr1 addr2) rx x86)
+         (if test
+             (rb n addr1 rx x86)
+           (rb n addr2 rx x86))))
+
+;; ;see also !flgi-and-wb-in-app-view (but that seems like a bad rule -- reuse of val -- tell shilpi)
+;; (defthm !flgi-of-mv-nth-1-of-wb
+;;   (implies (app-view x86)
+;;            (equal (!flgi flg val (mv-nth '1 (wb n addr w value x86)))
+;;                   (mv-nth '1 (wb n addr w value (!flgi flg val x86)))))
+;;   :hints (("Goal" :in-theory (enable !flgi wb))))
+
+(acl2::defopeners x86-fetch-decode-execute :hyps ((not (ms x86)) (not (x86isa::fault x86))))
+(in-theory (disable x86isa::x86-fetch-decode-execute-base)) ;disable because for ACL2 reasoning there is an opener rule
+
+(defthm unsigned-byte-p-of-mv-nth-1-of-rvm08
+  (implies (and (<= 8 size)
+                (app-view x86)
+                (canonical-address-p base-addr)
+                (x86p x86))
+           (equal (unsigned-byte-p size
+                                   (mv-nth 1 (rvm08 base-addr x86)))
+                  (natp size)))
+  :hints (("Goal" :in-theory (enable rvm08 MEMI))))
+
+(defthm address-aligned-p-of-8-and-nil
+  (equal (x86isa::address-aligned-p addr 8 nil)
+         (equal (acl2::bvchop 3 addr) 0))
+  :hints (("Goal" :cases ((integerp addr)) ;because of the force in acl2::logand-with-mask
+           :in-theory (enable x86isa::address-aligned-p))))
+
+(defthm address-aligned-p-of-4-and-nil
+  (equal (x86isa::address-aligned-p addr 4 nil)
+         (equal (acl2::bvchop 2 addr) 0))
+  :hints (("Goal" :cases ((integerp addr)) ;because of the force in acl2::logand-with-mask
+           :in-theory (enable x86isa::address-aligned-p))))
+
+
+(defthm x86isa::rflagsbits->of$inline-of-if-safe
+  (implies (syntaxp (if (quotep tp)
+                        t
+                      (quotep ep)))
+           (equal (x86isa::rflagsbits->of$inline (if test tp ep))
+                  (if test (x86isa::rflagsbits->of$inline tp) (x86isa::rflagsbits->of$inline ep)))))
+
+(defthm x86isa::rflagsbits->sf$inline-of-if-safe
+  (implies (syntaxp (if (quotep tp)
+                        t
+                      (quotep ep)))
+           (equal (x86isa::rflagsbits->sf$inline (if test tp ep))
+                  (if test (x86isa::rflagsbits->sf$inline tp) (x86isa::rflagsbits->sf$inline ep)))))
+
+(defthm x86isa::rflagsbits->cf$inline-of-if-safe
+  (implies (syntaxp (if (quotep tp)
+                        t
+                      (quotep ep)))
+           (equal (x86isa::rflagsbits->cf$inline (if test tp ep))
+                  (if test (x86isa::rflagsbits->cf$inline tp) (x86isa::rflagsbits->cf$inline ep)))))
+
+(defthm x86isa::rflagsbits->af$inline-of-if-safe
+  (implies (syntaxp (if (quotep tp)
+                        t
+                      (quotep ep)))
+           (equal (x86isa::rflagsbits->af$inline (if test tp ep))
+                  (if test (x86isa::rflagsbits->af$inline tp) (x86isa::rflagsbits->af$inline ep)))))
+
+(defthm x86isa::rflagsbits->zf$inline-of-if-safe
+  (implies (syntaxp (if (quotep tp)
+                        t
+                      (quotep ep)))
+           (equal (x86isa::rflagsbits->zf$inline (if test tp ep))
+                  (if test (x86isa::rflagsbits->zf$inline tp) (x86isa::rflagsbits->zf$inline ep)))))
+
+(defthm x86isa::rflagsbits->pf$inline-of-if-safe
+  (implies (syntaxp (if (quotep tp)
+                        t
+                      (quotep ep)))
+           (equal (x86isa::rflagsbits->pf$inline (if test tp ep))
+                  (if test (x86isa::rflagsbits->pf$inline tp) (x86isa::rflagsbits->pf$inline ep)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm x86isa::rflagsbits->of$inline-of-if
+  (equal (rflagsbits->of$inline (if test tp ep))
+         (if test (rflagsbits->of$inline tp) (rflagsbits->of$inline ep))))
+
+(defthm x86isa::rflagsbits->sf$inline-of-if
+  (equal (rflagsbits->sf$inline (if test tp ep))
+                  (if test (rflagsbits->sf$inline tp) (rflagsbits->sf$inline ep))))
+
+(defthm x86isa::rflagsbits->cf$inline-of-if
+  (equal (rflagsbits->cf$inline (if test tp ep))
+         (if test (rflagsbits->cf$inline tp) (rflagsbits->cf$inline ep))))
+
+(defthm x86isa::rflagsbits->af$inline-of-if
+  (equal (rflagsbits->af$inline (if test tp ep))
+         (if test (rflagsbits->af$inline tp) (rflagsbits->af$inline ep))))
+
+(defthm x86isa::rflagsbits->zf$inline-of-if
+  (equal (rflagsbits->zf$inline (if test tp ep))
+         (if test (rflagsbits->zf$inline tp) (rflagsbits->zf$inline ep))))
+
+(defthm x86isa::rflagsbits->pf$inline-of-if
+  (equal (rflagsbits->pf$inline (if test tp ep))
+         (if test (rflagsbits->pf$inline tp) (rflagsbits->pf$inline ep))))
+
+
+(defthm unsigned-byte-p-1-of-rflagsbits->cf$inline (unsigned-byte-p 1 (x86isa::rflagsbits->cf$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->res1$inline (unsigned-byte-p 1 (x86isa::rflagsbits->res1$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->pf$inline (unsigned-byte-p 1 (x86isa::rflagsbits->pf$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->ID$inline (unsigned-byte-p 1 (x86isa::rflagsbits->ID$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->VIP$inline (unsigned-byte-p 1 (x86isa::rflagsbits->VIP$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->VIF$inline (unsigned-byte-p 1 (x86isa::rflagsbits->VIF$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->AC$inline (unsigned-byte-p 1 (x86isa::rflagsbits->AC$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->VM$inline (unsigned-byte-p 1 (x86isa::rflagsbits->VM$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->RF$inline (unsigned-byte-p 1 (x86isa::rflagsbits->RF$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->RES4$inline (unsigned-byte-p 1 (x86isa::rflagsbits->RES4$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->NT$inline (unsigned-byte-p 1 (x86isa::rflagsbits->NT$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->OF$inline (unsigned-byte-p 1 (x86isa::rflagsbits->OF$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->DF$inline (unsigned-byte-p 1 (x86isa::rflagsbits->DF$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->INTF$inline (unsigned-byte-p 1 (x86isa::rflagsbits->INTF$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->TF$inline (unsigned-byte-p 1 (x86isa::rflagsbits->TF$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->SF$inline (unsigned-byte-p 1 (x86isa::rflagsbits->SF$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->ZF$inline (unsigned-byte-p 1 (x86isa::rflagsbits->ZF$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->RES3$inline (unsigned-byte-p 1 (x86isa::rflagsbits->RES3$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->AF$inline (unsigned-byte-p 1 (x86isa::rflagsbits->AF$inline rflags)))
+(defthm unsigned-byte-p-1-of-rflagsbits->RES2$inline (unsigned-byte-p 1 (x86isa::rflagsbits->RES2$inline rflags)))
+(defthm unsigned-byte-p-2-of-rflagsbits->iopl$inline (unsigned-byte-p 2 (x86isa::rflagsbits->iopl$inline rflags)))
+
+
+
+
+;seems needed - todo
+(in-theory (enable x86isa::GPR-SUB-SPEC-8$INLINE))

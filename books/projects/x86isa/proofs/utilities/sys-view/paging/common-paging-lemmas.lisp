@@ -46,6 +46,7 @@
 
 (local (include-book "centaur/bitops/ihs-extensions" :dir :system))
 (local (include-book "centaur/bitops/signed-byte-p" :dir :system))
+(local (include-book "../gl-lemmas"))
 
 (local (in-theory (e/d () (unsigned-byte-p signed-byte-p))))
 
@@ -453,7 +454,7 @@
                          (mv-nth 0 (ia32e-la-to-pa-without-tlb lin-addr r-w-x (double-rewrite x86))))
                   (equal (mv-nth 1 (ia32e-la-to-pa-without-tlb lin-addr r-w-x (xw :mem index value x86)))
                          (mv-nth 1 (ia32e-la-to-pa-without-tlb lin-addr r-w-x (double-rewrite x86))))))
-    :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-without-tlb) (xlation-governing-entries-paddrs-for-pml4-table)))))  
+    :hints (("Goal" :in-theory (e/d* (ia32e-la-to-pa-without-tlb) (xlation-governing-entries-paddrs-for-pml4-table)))))
 
   (defthm xlation-governing-entries-paddrs-and-write-to-physical-memory-disjoint
     (implies (and (disjoint-p (xlation-governing-entries-paddrs lin-addr (double-rewrite x86)) p-addrs)
@@ -853,7 +854,7 @@
                            :in-theory (e/d* (,(acl2::packn (list 'ia32e-la-to-pa- level)))
                                             (mv-nth-2-paging-entry-no-page-fault-p-does-not-modify-x86-if-no-fault))))))))
 
-      (make-event 
+      (make-event
         `(progn
            ,@(loop$ for level in *paging-levels*
                     collect

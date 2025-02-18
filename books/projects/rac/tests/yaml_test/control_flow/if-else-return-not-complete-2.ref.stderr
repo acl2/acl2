@@ -1,3 +1,3 @@
 if-else-return-not-complete-2.cpp:8 (4-10): syntax error, unexpected RETURN
-  8 |     return 1;
-    |     ^^^^^^
+ 8 |     return 1;
+   |     ^^^^^^

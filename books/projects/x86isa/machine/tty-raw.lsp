@@ -58,7 +58,8 @@
 
 (let* ((socket (ccl::make-socket :connect :passive ;; Listen
                                  :local-host "localhost"
-                                 :local-port 6444))
+                                 :local-port 6444
+                                 :reuse-address (ccl::getenv "TTY_DEBUG")))
        (stream (ccl::accept-connection socket))
        (tty-read-proc (ccl::make-process "tty-read")))
   (setf *console-stream* stream)

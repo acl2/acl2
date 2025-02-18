@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -47,7 +47,7 @@
                                     (acl2::string=>nats ,input)
                                     ,gcc))
          ((mv erp2 ast) (dimb-transunit ast ,gcc))
-         ((mv erp3 ?ast &) (valid-transunit ast ,gcc ienv)))
+         ((mv erp3 ?ast) (valid-transunit ast ,gcc ienv)))
       (cond (erp1 (cw "~%PARSER ERROR: ~@0~%" erp1))
             (erp2 (cw "~%DISAMBIGUATOR ERROR: ~@0~%" erp2))
             (erp3 (cw "~%VALIDATOR ERROR: ~@0~%" erp3))
@@ -74,7 +74,7 @@
                                     (acl2::string=>nats ,input)
                                     ,gcc))
          ((mv erp2 ast) (dimb-transunit ast ,gcc))
-         ((mv erp3 & &) (valid-transunit ast ,gcc ienv)))
+         ((mv erp3 &) (valid-transunit ast ,gcc ienv)))
       (cond (erp1 (not (cw "~%PARSER ERROR: ~@0~%" erp1)))
             (erp2 (not (cw "~%DISAMBIGUATOR ERROR: ~@0~%" erp2)))
             (erp3 (not (cw "~%VALIDATOR ERROR: ~@0~%" erp3)))
@@ -133,7 +133,8 @@
             (expr-x (expr-paren->inner expr-xp)))
          (and (expr-case expr-x :ident)
               (equal (expr-ident->info expr-x)
-                     (type-sint)))))
+                     (make-var-info :type (type-sint)
+                                    :linkage (linkage-external))))))
 
 (test-valid
  "typedef char x;
@@ -384,3 +385,35 @@ __bswap_16 (__uint16_t __bsx)
  "typedef unsigned char uint8_t;
 static uint8_t g_2[2][1][1] = {{{0UL}},{{0UL}}};
 ")
+
+(test-valid
+ "__int128 x;
+"
+ :gcc t)
+
+(test-valid
+ "unsigned __int128 x;
+__int128 unsigned y;
+"
+ :gcc t)
+
+(test-valid
+ "__int128 x;
+signed __int128 y;
+__int128 signed z;
+"
+ :gcc t)
+
+(test-valid
+ "__int128 x;
+__signed __int128 y;
+__int128 __signed z;
+"
+ :gcc t)
+
+(test-valid
+ "__int128 x;
+__signed__ __int128 y;
+__int128 __signed__ z;
+"
+ :gcc t)

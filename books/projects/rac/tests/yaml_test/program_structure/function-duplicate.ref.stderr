@@ -1,6 +1,6 @@
 function-duplicate.cpp:8 (0-9): Duplicate identifier declaration (could be an enum, a variable template parameter or function) `foo`
-  8 | int foo()
-    | ^^^^^^^^^
+ 8 | int foo()
+   | ^^^^^^^^^
 note: first defined here
-  3 | int foo()
-    | ^^^^^^^^^
+ 3 | int foo()
+   | ^^^^^^^^^

@@ -318,6 +318,55 @@
 	   (equal (rlist-scalar-mul (r+ c d) x)
 		  (rlist-add (rlist-scalar-mul c x) (rlist-scalar-mul d x)))))
 
+;; Dot product of 2 rlists of the same length:
+
+(defun rdot (x y)
+  (if (consp x)
+      (r+ (r* (car x) (car y))
+          (rdot (cdr x) (cdr y)))
+    (r0)))
+
+(defthm rp-rdot
+  (implies (and (rlistnp x n) (rlistnp y n))
+           (rp (rdot x y))))
+
+(defthm rdot-rlistn0
+  (implies (and (natp n) (rlistnp x n))
+           (equal (rdot (rlistn0 n) x)
+	          (r0))))
+
+(defthmd rdot-comm
+  (implies (and (rlistnp x n) (rlistnp y n))
+           (equal (rdot x y) (rdot y x))))
+
+(defthmd rdot-rlist-add
+  (implies (and (rlistnp x n) (rlistnp y n) (rlistnp z n))
+	   (equal (rdot (rlist-add x y) z)
+		  (r+ (rdot x z) (rdot y z)))))
+
+(defthmd rdot-rlist-add-comm
+  (implies (and (rlistnp x n) (rlistnp y n) (rlistnp z n))
+	   (equal (rdot z (rlist-add x y))
+		  (r+ (rdot z x) (rdot z y)))))
+					   
+(defthmd rdot-rlist-scalar-mul
+  (implies (and (rlistnp x n) (rlistnp y n) (rp c))
+	   (equal (rdot (rlist-scalar-mul c x) y)
+		  (r* c (rdot x y)))))
+
+;; List of dot products of an rlist x with the members of a list of rlists l:
+
+(defun rdot-list (x l)
+  (if (consp l)
+      (cons (rdot x (car l))
+            (rdot-list x (cdr l)))
+    ()))
+
+(defthm nth-rdot-list
+  (implies (and (natp j) (< j (len l)))
+           (equal (nth j (rdot-list x l))
+	          (rdot x (nth j l)))))
+
 
 ;;------------------------------------------
 
@@ -360,8 +409,7 @@
 (defthmd rval-sum-append
   (implies (and (rarg-listp l) (rarg-listp m))
            (equal (rval-sum (append l m))
-	          (r+ (rval-sum l) (rval-sum m))))
-  :hints (("Subgoal *1/3" :use ((:instance r+assoc (x (rval (car l))) (y (rval-sum (cdr l))) (z (rval-sum m)))))))
+	          (r+ (rval-sum l) (rval-sum m)))))
 
 ;; (rval-sum l) is invariant under permutation of l:
 

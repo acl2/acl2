@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -1805,7 +1805,8 @@
    '((tunit transunitp))
    extra-args
    `(b* (((transunit tunit) tunit))
-      (transunit (,(cdr (assoc-eq 'extdecl-list names)) tunit.decls ,@extra-args-names)))
+      (make-transunit :decls (,(cdr (assoc-eq 'extdecl-list names)) tunit.decls ,@extra-args-names)
+                      :info tunit.info))
    '(:returns (new-tunit transunitp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

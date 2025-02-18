@@ -15,7 +15,6 @@
 ;; RB-1, RML-size, and RML-<xx> where <xx> is 08/16/32/48/64/80/128.
 
 (include-book "projects/x86isa/machine/linear-memory" :dir :system)
-(include-book "projects/x86isa/machine/top-level-memory" :dir :system) ; for rme-size
 (include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system) ; todo: use byte-listp instead below?
 (include-book "kestrel/bv/bvcat" :dir :system)
 (local (include-book "support-bv"))
@@ -251,13 +250,6 @@
                                   (;acl2::nth-of-cdr
                                    )))))
 
-;; where should this go?
-(defthm mv-nth-2-of-rme-size-when-app-view
-  (implies (app-view x86)
-           (equal (mv-nth 2 (rme-size p n e s r c x86))
-                  x86))
-  :hints (("Goal" :in-theory (enable rme-size))))
-
 ;; generalize to multi-byte read
 ;; See also x86isa::rb-returns-no-error-app-view
 (defthmd mv-nth-0-of-rb-of-1
@@ -271,11 +263,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; These have much simpler RHSes than the definitions:
-;; TODO: try enabling these
+;; TODO: try enabling these.  But see rules like rml512-becomes-read instead!
 
 ;; for some reason the 128 and 256 functions are not as nice as the others
 ;; we assume app-view here to be able to get a nice, simple RHS
-;; also simplified the MBEs/MBTs and remove the THEs
+;; also simplified the MBEs/MBTs and removed the THEs
 (defthmd rml128-when-app-view
   (implies (app-view x86)
            (equal (rml128 lin-addr r-x x86)
@@ -284,7 +276,6 @@
                         (if (canonical-address-p 15+lin-addr)
                             (rb 16 lin-addr r-x x86)
                           (mv 'rml128 0 x86)))
-
                     (mv 'rml128 0 x86))))
   :hints (("Goal" :in-theory (enable rml128))))
 
@@ -299,6 +290,19 @@
                     (mv 'rml256 0 x86))))
   :hints (("Goal" :in-theory (enable rml256))))
 
+;todo: simplify rhs (of this and others)
+(defthmd rml512-when-app-view
+  (implies (app-view x86)
+           (equal (rml512 lin-addr r-x x86)
+                  (if (canonical-address-p lin-addr)
+                      (let* ((63+lin-addr (+ 63 lin-addr)))
+                        (if (canonical-address-p 63+lin-addr)
+                            (rb 64 lin-addr r-x x86)
+                          (mv 'rml512 0 x86)))
+                    (mv 'rml512 0 x86))))
+  :hints (("Goal" :in-theory (enable rml512))))
+
+;todo: simplify rhs
 (defthmd wml128-when-app-view
   (implies (app-view x86)
            (equal (wml128 lin-addr val x86)
@@ -310,6 +314,7 @@
                     (mv 'wml128 x86))))
   :hints (("Goal" :in-theory (enable wml128))))
 
+;todo: simplify rhs
 (defthmd wml256-when-app-view
   (implies (app-view x86)
            (equal (wml256 lin-addr val x86)
@@ -320,3 +325,12 @@
                           (mv 'wml256 x86)))
                     (mv 'wml256 x86))))
   :hints (("Goal" :in-theory (enable wml256))))
+
+(defthmd wml512-when-app-view
+  (implies (app-view x86)
+           (equal (wml512 lin-addr val x86)
+                  (if (and (canonical-address-p lin-addr)
+                           (canonical-address-p (+ 63 lin-addr)))
+                      (wb 64 lin-addr :w val x86)
+                    (mv 'wml512 x86))))
+  :hints (("Goal" :in-theory (enable wml512))))

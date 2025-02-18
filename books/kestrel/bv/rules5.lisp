@@ -1,7 +1,7 @@
 ; Mixed theorems about bit-vector operations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -318,9 +318,9 @@
                                   (y (bvchop sizeplusone y))
                                   )
            :in-theory (e/d (sbvlt-rewrite)
-                           ( unsigned-byte-p-of-bvplus-of-bvuminus-one-bigger-alt ;todo in dagrulesmore0.lisp
-                             ;UNSIGNED-BYTE-P-OF-BVPLUS-TIGHTEN
-                             )))))
+                           (unsigned-byte-p-of-bvplus-of-bvuminus-one-bigger-alt ;todo in dagrulesmore0.lisp
+                            ;; UNSIGNED-BYTE-P-OF-BVPLUS-TIGHTEN
+                            )))))
 
 ;for overflow to happen (bvuminus size k2) must be positive, so k2 must be negative...
 ;rename
@@ -341,7 +341,8 @@
                                   ;;unsigned-byte-p-when-not-bvlt-tighten
                                   ;bvlt-when-unsigned-byte-p-better-non-constant
                                   ;bvlt-tighten-free
-                                  bvlt-tighten-when-getbit-0-alt)))))
+                                  bvlt-tighten-when-getbit-0-alt
+                                  getbit-when-<-of-bvchop-and-constant-high)))))
 
 ;for underflow to happen, (bvuminus 32 k2) must be negative, so k2 must be positive
 ;rename

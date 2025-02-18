@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -166,7 +166,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to <i>token</i> in the grammar in [C:A.1.1] [C:6.4].")
+    "This corresponds to <i>token</i> in the grammar in [C17:A.1.1] [C17:6.4].")
    (xdoc::p
     "This is used by the parser.
      It is not part of the abstract syntax in @(see abstract-syntax),
@@ -350,7 +350,7 @@
     "A position within a file is normally specified by
      a combination of a line number and column number.
      We number lines from 1,
-     which is consistent with [C:6.10.4/2]:
+     which is consistent with [C17:6.10.4/2]:
      since the characters in the first line
      have 0 preceding new-line characters,
      the number of the first line is 1 plus 0, i.e. 1.
@@ -1531,7 +1531,7 @@
      if it does, we consume two bytes instead of one,
      but we return just a line feed,
      since we only really need one new-line character
-     (also in line with [C:5.2.1/3]);
+     (also in line with [C17:5.2.1/3]);
      if it does not, we just consume the carriage return,
      but return a line feed,
      again for normalizing the new-line character.
@@ -3436,21 +3436,21 @@
   (xdoc::topstring
    (xdoc::p
     "In C, integer and floating constants are not lexed ``directly''
-     according to their grammar rules in [C].
+     according to their grammar rules in [C17].
      First, preprocessing tokens must be recognized,
-     defined by <i>preprocessing-token</i> in [C:6.4] [C:A.1.1].
+     defined by <i>preprocessing-token</i> in [C17:6.4] [C17:A.1.1].
      These include preprocessing numbers,
-     defined by <i>pp-number</i> in [C:6.4.8] [C:A.1.9],
+     defined by <i>pp-number</i> in [C17:6.4.8] [C17:A.1.9],
      which start with a digit, optionally preceded by a dot,
      and are followed by identifier characters (including digits and letter),
      as well as plus and minus signs immediately preceded by exponent letters,
      as well as periods
-     [C:6.4.8/2].
+     [C17:6.4.8/2].
      Thus, preprocessing numbers lexically include
-     all integer and floating constants [C:6.4.8/3],
+     all integer and floating constants [C17:6.4.8/3],
      and much more, e.g. @('638xyyy.e+E-').")
    (xdoc::p
-    "As part of translation phase 7 [C:5.1.1.2],
+    "As part of translation phase 7 [C17:5.1.1.2],
      preprocessing tokens are converted to tokens.
      This includes converting preprocessing numbers
      to integer and floating constants,
@@ -3488,7 +3488,7 @@
      but the last character of the integer or floating constant just read
      (before calling this function)
      is @('e') or @('E'):
-     in that case, according to the grammar rule of <i>pp-number</i> in [C],
+     in that case, according to the grammar rule of <i>pp-number</i> in [C17],
      the @('e+') or @('e-') or @('-E+') or @('E-')
      would be part of the preprocessing number,
      and thus it would cause an error:
@@ -4539,7 +4539,7 @@
       it could be a prefix of a character constant or string literal.
       We must try this possibility before trying an identifier or keyword,
       because we always need to lex the longest possible sequence of characters
-      [C:6.4/4]:
+      [C17:6.4/4]:
       if we tried identifiers or keywords first,
       for example
       we would erroneously lex the character constant @('u\'a\'')
@@ -10479,8 +10479,8 @@
        To resolve this ambiguity,
        we exploit the fact that
        a list of declaration specifiers must contain
-       at least one type specifier [C:6.7.2/2]
-       and only the multisets listed in [C:6.7.2/2].
+       at least one type specifier [C17:6.7.2/2]
+       and only the multisets listed in [C17:6.7.2/2].
        One of those multisets is a single identifier (a @('typedef') name).
        So we carry around a flag saying whether
        we have encountered at least one type specifier in the list or not.
@@ -13821,7 +13821,7 @@
      (xdoc::p
       "The well-known dangling-else grammatical ambiguity is dealt with
        by associating the @('else') with the closest @('if'),
-       as required in [C:6.8.4/3].")
+       as required in [C17:6.8.4/3].")
      (xdoc::p
       "There is a syntactic overlap between the two kinds of @('for') loops,
        the one with an expression and the one with a declaration.
@@ -16570,7 +16570,7 @@
      consistently with the grammar.")
    (xdoc::p
     "We also ensure that the file ends in new-line,
-     as prescribed in [C:5.1.1.2/2].
+     as prescribed in [C17:5.1.1.2/2].
      We check that the end-of-file position,
      returned by @(tsee parse-external-declaration-list),
      is at column 0:
@@ -16582,7 +16582,7 @@
         (parse-external-declaration-list parstate))
        ((unless (= (position->column eof-pos) 0))
         (reterr (msg "The file does not end in new-line."))))
-    (retok (transunit extdecls) parstate))
+    (retok (make-transunit :decls extdecls :info nil) parstate))
 
   ///
 

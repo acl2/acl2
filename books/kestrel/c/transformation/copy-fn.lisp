@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -18,7 +18,6 @@
 
 (include-book "../syntax/abstract-syntax-operations")
 (include-book "deftrans")
-(include-book "utilities/free-vars")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -192,7 +191,7 @@
       fundef.declor.direct
       :function-params
       (if (equal target-fn
-                 (dirdeclor-get-ident fundef.declor.direct.decl))
+                 (c$::dirdeclor->ident fundef.declor.direct.decl))
           ;; Return
           (make-fundef
             :extension fundef.extension
@@ -255,7 +254,8 @@
   :short "Transform a translation unit."
   :returns (new-tunit transunitp)
   (b* (((transunit tunit) tunit))
-    (transunit (copy-fn-extdecl-list tunit.decls target-fn new-fn))))
+    (make-transunit :decls (copy-fn-extdecl-list tunit.decls target-fn new-fn)
+                    :info tunit.info)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

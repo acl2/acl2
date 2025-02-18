@@ -1,7 +1,7 @@
 ; Rules to convert bitops operations to operations from the Kestrel BV library
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2024 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,11 +13,15 @@
 
 (include-book "centaur/bitops/part-install" :dir :system)
 (include-book "centaur/bitops/rotate" :dir :system)
+;(include-book "centaur/bitops/fast-rotate" :dir :system)
 (include-book "bvcat-def")
 (include-book "slice-def")
 (include-book "getbit-def")
 (include-book "rightrotate")
 (include-book "leftrotate")
+(include-book "bitand")
+(include-book "bitor")
+(include-book "bitxor")
 (local (include-book "rules"))
 (local (include-book "logand-b"))
 (local (include-book "logior-b"))
@@ -186,7 +190,6 @@
                                    UNSIGNED-BYTE-P-FROM-BOUNDS
                                    ;;UNSIGNED-BYTE-P-PLUS
                                    ;;UNSIGNED-BYTE-P-WHEN-ZP-CHEAP
-                                   ;;BOUND-FROM-NATP-FACT ;seems bad?
                                    BVCAT-EQUAL-REWRITE-ALT
                                    BVCAT-EQUAL-REWRITE
                                    )))))
@@ -208,7 +211,6 @@
                                    UNSIGNED-BYTE-P-FROM-BOUNDS
                                    ;;UNSIGNED-BYTE-P-PLUS
                                    ;;UNSIGNED-BYTE-P-WHEN-ZP-CHEAP
-                                   ;;BOUND-FROM-NATP-FACT ;seems bad?
                                    BVCAT-EQUAL-REWRITE-ALT
                                    BVCAT-EQUAL-REWRITE
                                    )))))
@@ -292,7 +294,6 @@
 ;; Introduces the BV function
 (defthm rotate-right-becomes-rightrotate
   (implies (and (natp width)
-                (natp x)
                 (natp places))
            (equal (rotate-right x width places)
                   (rightrotate width places x)))
@@ -310,7 +311,6 @@
 ;; Introduces the BV function
 (defthm rotate-left-becomes-leftrotate
   (implies (and (natp width)
-                (natp x)
                 (natp places))
            (equal (rotate-left x width places)
                   (leftrotate width places x)))
@@ -324,3 +324,41 @@
                               bvchop-of-logior-becomes-bvor
                               ifix
                               logand-of-bvchop-becomes-bvand-alt))))
+
+;; ;; todo: handle more specialized variants of rotate-left.  also handle the variants of rotate-right.
+;; ;; or just open these to expose the non-specialized rotate ops!
+;; (defthm rotate-left-32-becomes-leftrotate
+;;   (implies (and (natp places)
+;;                 (<= places 32) ;gen
+;;                 )
+;;            (equal (bitops::rotate-left-32 x places)
+;;                   (leftrotate 32 places x))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm logbit-becomes-getbit
+  (equal (logbit pos i)
+         (getbit pos i)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm b-and-becomes-bitand
+  (implies (and (unsigned-byte-p 1 x)
+                (unsigned-byte-p 1 y))
+           (equal (b-and x y)
+                  (bitand x y)))
+  :hints (("Goal" :in-theory (e/d (bitand b-and) (bvand-1-becomes-bitand)))))
+
+(defthm b-ior-becomes-bitor
+  (implies (and (unsigned-byte-p 1 x)
+                (unsigned-byte-p 1 y))
+           (equal (b-ior x y)
+                  (bitor x y)))
+  :hints (("Goal" :in-theory (e/d (bitor b-ior) (bvor-1-becomes-bitor)))))
+
+(defthm b-xor-becomes-bitxor
+  (implies (and (unsigned-byte-p 1 x)
+                (unsigned-byte-p 1 y))
+           (equal (b-xor x y)
+                  (bitxor x y)))
+  :hints (("Goal" :in-theory (e/d (bitxor b-xor) (bvxor-1-becomes-bitxor)))))

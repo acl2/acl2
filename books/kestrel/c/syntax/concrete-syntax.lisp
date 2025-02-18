@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -30,13 +30,13 @@
    (xdoc::p
     "See @(see syntax-for-tools) for background.")
    (xdoc::p
-    "The concrete syntax of C is defined in [C].
+    "The concrete syntax of C is defined in [C17].
      Here we provide a formulation of the concrete syntax of C
      that is tailored to tools that manipulate C code,
      and in particular that matches the abstract syntax
      defined in @(see abstract-syntax).")
    (xdoc::p
-    "We start with an ABNF grammar that is based on the grammar in [C],
+    "We start with an ABNF grammar that is based on the grammar in [C17],
      but is not identical to that grammar because its purpose is
      to capture constructs both before and after preprocessing at the same time.
      Initially it actually only captures preprocessed code,
@@ -47,13 +47,13 @@
      that specify additional constraints on the grammar,
      leading to a precise definition of the concrete syntax.")
    (xdoc::p
-    "Note that this and [C] are just two different formulations
+    "Note that this and [C17] are just two different formulations
      (each formulation consisting of a grammar
      and of extra-grammatical requirements)
      of the same unique concrete syntax of C.
      We are not defining a different concrete syntax of C here.
      However, we are instantiating certain aspects of the concrete syntax
-     which [C] leaves open, such as the exact character set used.")
+     which [C17] leaves open, such as the exact character set used.")
    (xdoc::p
     "We plan to add a parser and a pretty-printer."))
   :order-subtopics t

@@ -1,7 +1,7 @@
 ; A general-purpose Axe Rewriter
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -42,6 +42,7 @@
                                        known-booleans
                                        monitored-symbols
                                        memoizep
+                                       count-hits
                                        warn-missingp
                                        againp)
   (declare (xargs :guard (and (pseudo-term-listp conjuncts)
@@ -50,6 +51,7 @@
                               (symbol-listp known-booleans)
                               (symbol-listp monitored-symbols)
                               (booleanp memoizep)
+                              (count-hits-argp count-hits)
                               (booleanp warn-missingp)
                               (booleanp againp))
                   :measure (len conjuncts)))
@@ -62,18 +64,24 @@
                            (append (rest conjuncts) done-conjuncts) ; the assumptions; note that we don't use the term to simplify itself!
                            rule-alist
                            nil ; interpreted-function-alist
-                           known-booleans nil nil
+                           known-booleans
+                           nil ; normalize-xors
+                           nil ; limits
                            memoizep
-                           nil nil monitored-symbols nil))
+                           count-hits
+                           nil ; print
+                           monitored-symbols
+                           nil ; fns-to-elide
+                           ))
          ((when erp) (mv erp nil nil))
          )
       (if (equal result-term term) ;; no change: ; todo: flatten, as we do below?
-          (simplify-conjuncts-once-basic (rest conjuncts) (cons term done-conjuncts) rule-alist known-booleans monitored-symbols memoizep warn-missingp againp)
+          (simplify-conjuncts-once-basic (rest conjuncts) (cons term done-conjuncts) rule-alist known-booleans monitored-symbols memoizep count-hits warn-missingp againp)
         (if (equal *t* result-term) ;todo: also check for *nil*?
             ;; if the term became t, drop it:
-            (simplify-conjuncts-once-basic (rest conjuncts) done-conjuncts rule-alist known-booleans monitored-symbols memoizep warn-missingp againp) ; we don't set againp here since the term got dropped and won't support further simplifications
+            (simplify-conjuncts-once-basic (rest conjuncts) done-conjuncts rule-alist known-booleans monitored-symbols memoizep count-hits warn-missingp againp) ; we don't set againp here since the term got dropped and won't support further simplifications
           (let ((new-conjuncts (get-conjuncts-of-term2 result-term))) ;flatten any conjunction returned (some conjuncts may be needed to simplify others)
-            (simplify-conjuncts-once-basic (rest conjuncts) (append new-conjuncts done-conjuncts) rule-alist known-booleans monitored-symbols memoizep warn-missingp t)))))))
+            (simplify-conjuncts-once-basic (rest conjuncts) (append new-conjuncts done-conjuncts) rule-alist known-booleans monitored-symbols memoizep count-hits warn-missingp t)))))))
 
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local
@@ -93,28 +101,32 @@
                                                                          known-booleans
                                                                          monitored-symbols
                                                                          memoizep
+                                                                         count-hits
                                                                          warn-missingp
                                                                          againp))))
     :hints (("Goal" :in-theory (enable simplify-conjuncts-once-basic)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns (mv erp new-conjuncts) where NEW-CONJUNCTS is a set of conjuncts
 ;; whose conjunction is equal to the conjunction of the CONJUNCTS.
-(defun simplify-conjunction-basic-aux (passes-left conjuncts rule-alist known-booleans monitored-symbols memoizep warn-missingp)
+(defun simplify-conjunction-basic-aux (passes-left conjuncts rule-alist known-booleans monitored-symbols memoizep count-hits warn-missingp)
   (declare (xargs :guard (and (natp passes-left)
                               (pseudo-term-listp conjuncts)
                               (rule-alistp rule-alist)
                               (symbol-listp monitored-symbols)
                               (booleanp memoizep)
+                              (count-hits-argp count-hits)
                               (booleanp warn-missingp)
                               (symbol-listp known-booleans))))
   (if (zp passes-left)
       (prog2$ (cw "NOTE: Limit reached when simplifying conjuncts repeatedly.~%")
               (mv (erp-nil) conjuncts))
     (b* (((mv erp new-conjuncts againp)
-          (simplify-conjuncts-once-basic conjuncts nil rule-alist known-booleans monitored-symbols memoizep warn-missingp nil))
+          (simplify-conjuncts-once-basic conjuncts nil rule-alist known-booleans monitored-symbols memoizep count-hits warn-missingp nil))
          ((when erp) (mv erp nil)))
       (if againp
-          (simplify-conjunction-basic-aux (+ -1 passes-left) new-conjuncts rule-alist known-booleans monitored-symbols memoizep warn-missingp)
+          (simplify-conjunction-basic-aux (+ -1 passes-left) new-conjuncts rule-alist known-booleans monitored-symbols memoizep count-hits warn-missingp)
         (mv (erp-nil) new-conjuncts)))))
 
 (local
@@ -126,15 +138,19 @@
                   (booleanp memoizep)
                   (booleanp warn-missingp)
                   (symbol-listp known-booleans))
-             (pseudo-term-listp (mv-nth 1 (simplify-conjunction-basic-aux passes-left conjuncts rule-alist known-booleans monitored-symbols memoizep warn-missingp))))))
+             (pseudo-term-listp (mv-nth 1 (simplify-conjunction-basic-aux passes-left conjuncts rule-alist known-booleans monitored-symbols memoizep count-hits warn-missingp))))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Repeatedly simplifies the CONJUNCTS.
 ;; Returns (mv erp new-conjuncts) where NEW-CONJUNCTS is a set of conjuncts
 ;; whose conjunction is equal to the conjunction of the CONJUNCTS.
-(defund simplify-conjunction-basic (conjuncts rule-alist known-booleans monitored-symbols memoizep warn-missingp)
+(defund simplify-conjunction-basic (conjuncts rule-alist known-booleans monitored-symbols memoizep count-hits warn-missingp)
   (declare (xargs :guard (and (pseudo-term-listp conjuncts)
                               (rule-alistp rule-alist)
                               (symbol-listp monitored-symbols)
                               (booleanp memoizep)
+                              (count-hits-argp count-hits)
                               (booleanp warn-missingp)
                               (symbol-listp known-booleans))))
   (progn$ (and monitored-symbols (cw "(Monitoring: ~x0)~%" monitored-symbols)) ; todo: make optional
@@ -142,7 +158,7 @@
           (let ((len (len conjuncts)))
             ;; We add 1 so that if len=1 we get at least 2 passes:
             (simplify-conjunction-basic-aux (+ 1 (* len len)) conjuncts rule-alist known-booleans
-                                            monitored-symbols memoizep
+                                            monitored-symbols memoizep count-hits
                                             nil ; don't warn again about missing monitored rules
                                             ))))
 
@@ -153,5 +169,5 @@
                 (booleanp memoizep)
                 (booleanp warn-missingp)
                 (symbol-listp known-booleans))
-           (pseudo-term-listp (mv-nth 1 (simplify-conjunction-basic conjuncts rule-alist known-booleans monitored-symbols memoizep warn-missingp))))
+           (pseudo-term-listp (mv-nth 1 (simplify-conjunction-basic conjuncts rule-alist known-booleans monitored-symbols memoizep count-hits warn-missingp))))
   :hints (("Goal" :in-theory (enable simplify-conjunction-basic))))

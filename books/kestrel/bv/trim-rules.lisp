@@ -1,7 +1,7 @@
 ; Rules about trim
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -22,6 +22,7 @@
 (include-book "bvor")
 (include-book "bvxor")
 (include-book "bvif")
+(include-book "bvshl")
 (local (include-book "bvcat-rules"))
 (local (include-book "repeatbit2"))
 (local (include-book "getbit"))
@@ -196,3 +197,24 @@
            (equal (trim size1 (bvif size2 test x y))
                   (bvif size1 test x y)))
   :hints (("Goal" :in-theory (enable trim))))
+
+(defthm trim-of-bvshl
+  (implies (and (<= size1 size2)
+                (natp size1)
+                (natp size2))
+           (equal (trim size1 (bvshl size2 x shift-amount))
+                  (bvshl size1 x shift-amount)))
+  :hints (("Goal" :in-theory (enable trim
+                                     bvshl ; todo
+                                     ))))
+
+;; ;; not true
+;; (defthm trim-of-bvshr
+;;   (implies (and (<= size1 size2)
+;;                 (natp size1)
+;;                 (natp size2))
+;;            (equal (trim size1 (bvshr size2 x shift-amount))
+;;                   (bvshr size1 x shift-amount)))
+;;   :hints (("Goal" :in-theory (enable trim
+;;                                      bvshr
+;;                                      ))))

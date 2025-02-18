@@ -1,7 +1,7 @@
 ; An unrolling lifter xfor x86 code (based on Axe)
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2024 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -72,7 +72,6 @@
 (include-book "kestrel/lists-light/append" :dir :system)
 (include-book "kestrel/arithmetic-light/less-than" :dir :system)
 (include-book "kestrel/arithmetic-light/fix" :dir :system)
-(include-book "kestrel/bv/arith" :dir :system) ;reduce?
 (include-book "kestrel/bv/intro" :dir :system)
 (include-book "kestrel/bv/rtl" :dir :system)
 (include-book "kestrel/bv/convert-to-bv-rules" :dir :system)
@@ -92,8 +91,8 @@
 
 (in-theory (disable str::coerce-to-list-removal)) ;todo
 
-(acl2::ensure-rules-known (lifter-rules32-all))
-(acl2::ensure-rules-known (lifter-rules64-all))
+(acl2::ensure-rules-known (unroller-rules32))
+(acl2::ensure-rules-known (unroller-rules64))
 (acl2::ensure-rules-known (assumption-simplification-rules))
 (acl2::ensure-rules-known (step-opener-rules))
 
@@ -219,7 +218,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; todo: more?
+;; These assumptions get removed during pruning (unlikely to help and lead to
+;; messages about non-known-boolean literals being dropped)
+;; TODO: Add more?
+;; TODO: Include IF?
 (defconst *non-stp-assumption-functions*
   '(canonical-address-p$inline
     program-at
@@ -228,7 +230,7 @@
     cr0bits-p$inline
     cr4bits-p$inline
     alignment-checking-enabled-p
-    ))
+    app-view))
 
 ;move
 ;; ; TODO: Errors about program-only code
@@ -478,32 +480,36 @@
                           total-steps
                           state))))))
 
-(local (in-theory (disable ;; reader-and-writer-intro-rules
-                           ;; (:e reader-and-writer-intro-rules)
+(local (in-theory (disable ;; new-normal-form-rules-common
+                           ;; (:e new-normal-form-rules-common)
                            ;; assumption-simplification-rules
                            ;; (:e assumption-simplification-rules)
-                           ;; lifter-rules64-new
-                           ;; (:e lifter-rules64-new)
+                           ;; new-normal-form-rules64
+                           ;; (:e new-normal-form-rules64)
                     )))
 
 ;; Returns (mv erp assumptions assumption-rules state)
-(defund simplify-assumptions (assumptions extra-assumption-rules 64-bitp state)
+(defund simplify-assumptions (assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits state)
   (declare (xargs :guard (and (pseudo-term-listp assumptions)
                               (symbol-listp extra-assumption-rules)
+                              (symbol-listp remove-assumption-rules)
                               (booleanp 64-bitp)
+                              (acl2::count-hits-argp count-hits)
                               (acl2::ilks-plist-worldp (w state)))
                   :stobjs state))
   (b* ((- (cw "(Simplifying assumptions...~%"))
        ((mv assumption-simp-start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
        ;; todo: optimize):
-       (assumption-rules (append extra-assumption-rules
-                                 (reader-and-writer-intro-rules)
-                                 (assumption-simplification-rules)
-                                 (if 64-bitp
-                                     ;; needed to match the normal forms used during lifting:
-                                     (lifter-rules64-new)
-                                   nil ; todo: why not use (lifter-rules32-new)?
-                                   )))
+       (assumption-rules (set-difference-equal
+                           (append extra-assumption-rules
+                                   (new-normal-form-rules-common)
+                                   (assumption-simplification-rules)
+                                   (if 64-bitp
+                                       ;; needed to match the normal forms used during lifting:
+                                       (new-normal-form-rules64)
+                                     nil ; todo: why not use (new-normal-form-rules32)?
+                                     ))
+                           remove-assumption-rules))
        ((mv erp assumption-rule-alist)
         (acl2::make-rule-alist assumption-rules (w state)))
        ((when erp) (mv erp nil nil state))
@@ -515,6 +521,7 @@
           (acl2::known-booleans (w state))
           nil ;; rules-to-monitor ; do we want to monitor here?  What if some rules are not included?
           nil ; don't memoize (avoids time spent making empty-memoizations)
+          count-hits
           t   ; todo: warn just once
           ))
        ((when erp) (mv erp nil nil state))
@@ -543,6 +550,7 @@
                              extra-rules
                              remove-rules
                              extra-assumption-rules
+                             remove-assumption-rules
                              step-limit
                              step-increment
                              memoizep
@@ -568,6 +576,7 @@
                               (symbol-listp extra-rules)
                               (symbol-listp remove-rules)
                               (symbol-listp extra-assumption-rules)
+                              (symbol-listp remove-assumption-rules)
                               (natp step-limit)
                               (acl2::step-incrementp step-increment)
                               (booleanp memoizep)
@@ -642,6 +651,7 @@
                                                             base-var
                                                             (len (acl2::parsed-elf-bytes parsed-executable))
                                                             nil))
+                      ;; must be :code:
                       (mv nil (acons text-offset-term (len (acl2::get-elf-code parsed-executable)) nil)))))
                  ((when erp)
                   (er hard? 'unroll-x86-code-core "Error generating disjointnes assumptions for inputs: ~x0." erp)
@@ -665,7 +675,7 @@
                  ((mv erp assumptions assumption-rules state)
                   (if extra-assumptions
                       ;; If there are extra-assumptions, we need to simplify (e.g., an extra assumption could replace RSP with 10000, and then all assumptions about RSP need to mention 10000 instead):
-                      (simplify-assumptions assumptions extra-assumption-rules 64-bitp state)
+                      (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules  64-bitp count-hits state)
                     (mv nil assumptions nil state)))
                  ((when erp) (mv erp nil nil nil state)))
               (mv nil assumptions
@@ -687,13 +697,13 @@
                           (if position-independentp 'text-offset `,(acl2::get-mach-o-code-address parsed-executable))
                         (if (eq :pe-64 executable-type)
                             'text-offset ; todo: match what we do for other executable types
-                          (if (eq :elf-64 executable-type)
-                              (if position-independentp 'text-offset `,(acl2::get-elf-code-address parsed-executable))
+                          (if (or (eq :elf-32 executable-type)
+                                  (eq :elf-64 executable-type))
+                              (if position-independentp 'text-offset `,(acl2::get-elf-code-address parsed-executable)) ; todo: think about the 32-bit case, esp wrt position independence
                             (if (eq :mach-o-32 executable-type)
                                 nil ; todo
                               (if (eq :pe-32 executable-type)
                                   nil ; todo
-                                ;; todo: add support for :elf-32
                                 (er hard? 'unroll-x86-code-core "Unsupported executable type: ~x0.~%" executable-type))))))))
                (code-length
                  (and 64-bitp ; todo
@@ -701,13 +711,13 @@
                           (len (acl2::get-mach-o-code parsed-executable))
                         (if (eq :pe-64 executable-type)
                             10000 ; fixme
-                          (if (eq :elf-64 executable-type)
+                          (if (or (eq :elf-32 executable-type)
+                                  (eq :elf-64 executable-type))
                               (len (acl2::get-elf-code parsed-executable))
                             (if (eq :mach-o-32 executable-type)
                                 nil ; todo
                               (if (eq :pe-32 executable-type)
                                   nil ; todo
-                                ;;todo: add support for :elf-32
                                 (er hard? 'unroll-x86-code-core "Unsupported executable type: ~x0.~%" executable-type))))))))
                (standard-assumptions
                  (if suppress-assumptions
@@ -769,7 +779,7 @@
                ;; others, because opening things like read64 involves testing
                ;; canonical-addressp (which we know from other assumptions is true):
                ((mv erp assumptions assumption-rules state)
-                (simplify-assumptions assumptions extra-assumption-rules 64-bitp state))
+                (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits state))
                ((when erp) (mv erp nil nil nil state)))
             (mv nil assumptions assumptions-to-return assumption-rules state))))
        ((when erp)
@@ -792,7 +802,7 @@
         (er hard? 'unroll-x86-code-core "Unexpected quotep: ~x0." dag-to-simulate)
         (mv :unexpected-quotep nil nil nil nil state))
        ;; Choose the lifter rules to use:
-       (lifter-rules (if 64-bitp (lifter-rules64-all) (lifter-rules32-all)))
+       (lifter-rules (if 64-bitp (unroller-rules64) (unroller-rules32)))
        ;; Add any extra-rules:
        (- (let ((intersection (intersection-eq extra-rules lifter-rules))) ; todo: optimize (sort and then compare, and also use sorted lists below...)
             (and intersection
@@ -845,6 +855,7 @@
                         extra-rules
                         remove-rules
                         extra-assumption-rules
+                        remove-assumption-rules
                         step-limit
                         step-increment
                         memoizep
@@ -877,6 +888,7 @@
                               (symbol-listp extra-rules)
                               (symbol-listp remove-rules)
                               (symbol-listp extra-assumption-rules)
+                              (symbol-listp remove-assumption-rules)
                               (natp step-limit)
                               (acl2::step-incrementp step-increment)
                               (booleanp memoizep)
@@ -913,7 +925,7 @@
        ((mv erp result-dag assumptions lifter-rules-used assumption-rules-used state)
         (unroll-x86-code-core target parsed-executable
           extra-assumptions suppress-assumptions inputs-disjoint-from stack-slots position-independent
-          inputs output use-internal-contextsp prune extra-rules remove-rules extra-assumption-rules
+          inputs output use-internal-contextsp prune extra-rules remove-rules extra-assumption-rules remove-assumption-rules
           step-limit step-increment memoizep monitor count-hits print print-base untranslatep state))
        ((when erp) (mv erp nil state))
        ;; TODO: Fully handle a quotep result here:
@@ -985,7 +997,7 @@
                (function-body-retranslated (acl2::translate-term function-body-untranslated 'def-unrolled-fn (w state)))
                ;; TODO: I've seen this check fail when (if x y t) got turned into (if (not x) (not x) y):
                ((when (not (equal function-body function-body-retranslated))) ;todo: make a safe-untranslate that does this check?
-                (er hard? 'lifter "Problem with function body.  Untranslating and then re-translating did not give original body.  Body was ~X01" function-body nil)
+                (er hard? 'lifter "Problem with function body.  Untranslating and then re-translating did not give original body.  Body was ~X01.  Re-translated body was ~X23" function-body nil function-body-retranslated nil)
                 (mv :problem-with-function-body nil))
                ;;(- (cw "Runes used: ~x0" runes)) ;TODO: Have Axe return these?
                ;;use defun-nx by default because stobj updates are not all let-bound to x86
@@ -1061,6 +1073,7 @@
                                   (extra-rules 'nil)
                                   (remove-rules 'nil)
                                   (extra-assumption-rules 'nil)
+                                  (remove-assumption-rules 'nil)
                                   (step-limit '1000000)
                                   (step-increment '100)
                                   (memoizep 't)
@@ -1092,6 +1105,7 @@
       ,extra-rules ; gets evaluated since not quoted
       ,remove-rules ; gets evaluated since not quoted
       ,extra-assumption-rules ; gets evaluated since not quoted
+      ,remove-assumption-rules ; gets evaluated since not quoted
       ',step-limit
       ',step-increment
       ',memoizep
@@ -1123,9 +1137,10 @@
          ;; todo: better name?  only for precise pruning:
          (prune "Whether to prune DAGs using precise contexts.  Either t or nil or a natural number representing an (exclusive) limit on the maximum size of the DAG if represented as a term.  This kind of pruning can blow up if attempted for DAGs that represent huge terms.")
          ;; todo: how do these affect assumption simp:
-         (extra-rules "Rules to use in addition to (lifter-rules32-all) or (lifter-rules64-all).")
+         (extra-rules "Rules to use in addition to (unroller-rules32) or (unroller-rules64).")
          (remove-rules "Rules to turn off.")
          (extra-assumption-rules "Extra rules to be used when simplifying assumptions.")
+         (remove-assumption-rules "Rules to be removed when simplifying assumptions.")
          (step-limit "Limit on the total number of model steps (instruction executions) to allow.")
          (step-increment "Number of model steps to allow before pausing to simplify the DAG and remove unused nodes.")
          (memoizep "Whether to memoize during rewriting (when not using contextual information -- as doing both would be unsound).")

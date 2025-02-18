@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -259,7 +259,7 @@
      "This function preprocesses a @(see filepath-setp). See @(see
       preprocess-file) for a similar utility which operates on individuals
       files."))
-  (b* (((reterr) (fileset nil) state)
+  (b* (((reterr) (irr-fileset) state)
        ((when (emptyp files))
         (retok (fileset nil) state))
        (out (and out-dir

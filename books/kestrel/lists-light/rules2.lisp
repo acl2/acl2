@@ -13,21 +13,21 @@
 
 ;; TODO: Organize these rules into simpler books.
 
-(include-book "kestrel/utilities/smaller-termp" :dir :system)
+;(include-book "kestrel/utilities/smaller-termp" :dir :system)
 (include-book "kestrel/typed-lists-light/items-have-len" :dir :system) ; drop
 ;(include-book "repeat" )
 (include-book "all-same" )
-(include-book "memberp" )
+;(include-book "memberp" )
 (include-book "memberp2" )
 (include-book "update-subrange2" )
-(include-book "take2" )
-(include-book "repeat-tail" )
+(local (include-book "take2" ))
+;(include-book "repeat-tail" )
 ;(include-book "perm" )
 (include-book "subrange" )
-(include-book "reverse-list" )
+;(include-book "reverse-list" )
 (include-book "firstn" )
 (include-book "all-equal-dollar2" )
-(local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
+;(local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 (local (include-book "len" ))
 (local (include-book "cons" ))
 (local (include-book "nth" ))
@@ -46,7 +46,7 @@
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 
-(in-theory (disable take))
+(in-theory (disable take)) ; drop?
 
 ;; todo: consider putting back the stuff with finalcdr
 
@@ -79,26 +79,6 @@
 ;;  :hints (("Goal" :in-theory (enable firstn nth)
 ;;           :induct t
 ;;           :do-not '(generalize eliminate-destructors))))
-
-;bozo maybe want to go the other way?
-;prove from a lemma about firstn
-(defthm subrange-equality-lengthen
-  (implies (and (equal (nth n lst1)
-                       (nth n lst2)
-                       )
-                (< n (len lst1))
-                (< n (len lst2))
-;                (< 0 n)
-                (integerp n))
-           (equal (EQUAL (SUBRANGE 0 (+ -1 n) lst1)
-                         (SUBRANGE 0 (+ -1 n) lst2))
-                  (EQUAL (SUBRANGE 0 n lst1)
-                         (SUBRANGE 0 n lst2))))
-  :hints (("Goal" :in-theory (e/d (SUBRANGE ;firstn
-                                     nth
-                                     ) (NTH-OF-CDR
-                                        TAKE-OF-CDR)))))
-
 
 ;bozo gen!
 (defthm subrange-of-update-nth-hack
@@ -178,13 +158,6 @@
            (memberp a x))
   :hints (("Goal" :in-theory (enable UPDATE-NTH))))
 
-;disabled Tue Apr 13 15:37:50 2010
-;todo: drop.  just use nth-of-0
-(defthmd nth-when-n-is-zp
-  (implies (zp n)
-           (equal (nth n lst)
-                  (car lst))))
-
 (local (in-theory (disable NTH-OF-CDR)))
 
 (defthmd memberp-nth-and-cdr-safe
@@ -215,6 +188,7 @@
 ;;  (equal (MEMBERP (CAR LST) (BAG::REMOVE-1 (NTH N LST) LST))
 
 ;can loop with nth-of-cdr
+;rename
 (defthmd nth-equal-car
   (implies (and (< n (len lst))
                 (<= 0 n) ;not logically necessary
@@ -315,8 +289,6 @@
                   (nthcdr (+ n -1 (- start end)) lst)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (enable take subrange nthcdr-of-cdr-combine-strong))))
-
-;(include-book "../library-wrappers/bags") ;fixme break dependency on bags?
 
 (defthm append-nthcdr-subrange
   (implies (and (equal n (+ 1 end))
@@ -434,34 +406,6 @@
   :hints (("Goal" :in-theory (e/d (nthcdr) (cons-nth-onto-nthcdr))
            :use (:instance cons-nth-onto-nthcdr (n 0) (n+1 1))
            )))
-
-(defthmd equal-cons-cases2
-  (equal (equal (cons a b) c) ;caution! acl2 can match (cons a b) with a constant - that can be bad for big constants
-         (and (consp c)
-              (equal a (car c))
-              (equal b (cdr c)))))
-
-(defthmd equal-cons-cases2-alt
-  (equal (equal c (cons a b)) ;caution! acl2 can match (cons a b) with a constant - that can be bad for big constants
-         (and (consp c)
-              (equal a (car c))
-              (equal b (cdr c)))))
-
-;; (defthm equal-cons-cases2-alt-better
-;;   (implies (syntaxp (not (and (quotep a) ;defeats acl2's over-agressive matching
-;;                               (quotep b))))
-;;            (equal (equal c (cons a b))
-;;                   (and (consp c)
-;;                        (equal a (car c))
-;;                        (equal b (cdr c))))))
-
-;; ;doesn't fire if the "cons" found is just a constant list.
-;; (defthmd equal-cons-cases2-better
-;;   (implies (syntaxp (not (and (quotep a) (quotep b)))) ;the and used to be or
-;;            (equal (equal (cons a b) c)
-;;                   (and (consp c)
-;;                        (equal a (car c))
-;;                        (equal b (cdr c))))))
 
 ;gross because it introduces perm
 (defthmd len-less-than-2-rewrite
@@ -597,7 +541,6 @@
 (defthm update-nth-0-cdr
   (equal (update-nth 0 val (cdr lst))
          (cons val (cddr lst))))
-
 
 (defthm cons-nth-1-onto-cddr
   (implies (<= 2 (len x))
@@ -860,20 +803,6 @@
 ;;   (if (zp n)
 ;;       (list m n lst)
 ;;     (sub1-sub1-cdr-induct (+ -1 m) (+ -1 n) (cdr lst))))
-
-(defthm nth-of-take-too-high
-  (implies (and (<= m n)
-                (natp n)
-                (< 0 m))
-           (equal (nth n (take m data))
-                  nil))
-  :hints (("Goal"
-;           :induct (sub1-sub1-cdr-induct m n data)
-           :in-theory (e/d (take ;list::nth-of-cons
-                            )
-                           (;update-nth-becomes-update-nth2-extend-gen
-                            ;cdr-of-take-becomes-subrange-beter
-                            )))))
 
 (defthm equal-of-constant-and-repeat
   (implies (syntaxp (quotep k))

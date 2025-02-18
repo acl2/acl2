@@ -1,7 +1,7 @@
 ; A book about the sign-extending operation logext
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -97,7 +97,7 @@
 ;;                             oddp
 ;;                             INTEGERP-OF-*-OF-/-BECOMES-EQUAL-OF-0-AND-MOD
 ;;                             )
-;;                            (LOGBITP-IFF-GETBIT
+;;                            (LOGBITP-TO-GETBIT-EQUAL-1
 ;;                             EQUAL-OF-*-2-OF-FLOOR-OF-2-SAME)))))
 
 (defthm bvchop-of-*-of-logapp
@@ -226,14 +226,14 @@
   (implies (posp size)
            (equal (equal x (logext size x))
                   (signed-byte-p size x)))
-  :hints (("Goal" :in-theory (e/d (logext logbitp logtail unsigned-byte-p) (LOGBITP-IFF-GETBIT)))))
+  :hints (("Goal" :in-theory (e/d (logext logbitp logtail unsigned-byte-p) (LOGBITP-TO-GETBIT-EQUAL-1)))))
 
 ;; See also logext-identity
 (defthm logext-when-signed-byte-p
   (implies (signed-byte-p size x)
            (equal (logext size x)
                   x))
-  :hints (("Goal" :in-theory (e/d (logext logbitp logtail unsigned-byte-p) (LOGBITP-IFF-GETBIT)))))
+  :hints (("Goal" :in-theory (e/d (logext logbitp logtail unsigned-byte-p) (LOGBITP-TO-GETBIT-EQUAL-1)))))
 
 ;hope the new hyps are okay
 (defthm bvchop-of-logext

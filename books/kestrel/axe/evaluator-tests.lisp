@@ -147,7 +147,7 @@
                                 (mv t (first-non-member arg1 arg2)))
                            (booland (mv t (booland arg1 arg2)))
                            (boolor (mv t (boolor arg1 arg2)))
-                           (getbit-list (mv t (getbit-list arg1 arg2)))
+                           (getbit-list (mv t (getbit-list-unguarded arg1 arg2)))
                            (set::union (mv t (set::union arg1 arg2)))
                            (leftrotate32
                                 (mv t (leftrotate32-unguarded arg1 arg2)))
@@ -252,9 +252,9 @@
                              (bvshl (mv t (bvshl arg1 arg2 arg3)))
                              ;; (keep-items-less-than (mv t (keep-items-less-than-unguarded arg1 arg2 arg3)))
                              (subrange (mv t
-                                           (subrange (nfix arg1)
-                                                     (nfix arg2)
-                                                     arg3)))
+                                           (subrange-unguarded arg1
+                                                               arg2
+                                                               arg3)))
                              (bvxor-list
                                   (mv t
                                       (bvxor-list-unguarded arg1 arg2 arg3)))
@@ -746,7 +746,7 @@
                                 (mv t (first-non-member arg1 arg2)))
                            (booland (mv t (booland arg1 arg2)))
                            (boolor (mv t (boolor arg1 arg2)))
-                           (getbit-list (mv t (getbit-list arg1 arg2)))
+                           (getbit-list (mv t (getbit-list-unguarded arg1 arg2)))
                            (set::union (mv t (set::union arg1 arg2)))
                            (leftrotate32
                                 (mv t (leftrotate32-unguarded arg1 arg2)))
@@ -848,9 +848,9 @@
                             (bvshl (mv t (bvshl arg1 arg2 arg3)))
                             ;; (keep-items-less-than (mv t (keep-items-less-than-unguarded arg1 arg2 arg3)))
                             (subrange (mv t
-                                          (subrange (nfix arg1)
-                                                    (nfix arg2)
-                                                    arg3)))
+                                          (subrange-unguarded arg1
+                                                              arg2
+                                                              arg3)))
                             (bvxor-list
                                  (mv t
                                      (bvxor-list-unguarded arg1 arg2 arg3)))

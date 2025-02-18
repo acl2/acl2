@@ -1,8 +1,8 @@
 arity.cpp:8 (19-26): Expected 1 argument(s), got 0.
-  8 | int bar() { return foo<>(); }
-    |                    ^^^^^^^
+ 8 | int bar() { return foo<>(); }
+   |                    ^^^^^^^
 note: Defined here: 
-  3 | template <int a>
-    | ^^^^^^^^^^^^^^^^^
-  4 | int foo() {
-    | ^^^^^^^^^
+ 3 | template <int a>
+   | ^^^^^^^^^^^^^^^^^
+ 4 | int foo() {
+   | ^^^^^^^^^

@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -141,7 +141,8 @@
              validator-state->blockchain-of-create-certificate-next
              last-anchor-in-dag
              certificate-list-pathp-of-committed-anchors
-             committed-anchors-of-create-certificate-next)
+             committed-anchors-of-create-certificate-next
+             system-unequivocal-certificates-p-of-create-certificate-next)
     :use (:instance calculate-blockchain-of-unequivocal-dag-superset
                     (dag (validator-state->dag
                           (get-validator-state val systate)))
@@ -243,7 +244,8 @@
              validator-state->blockchain-of-store-certificate-next
              last-anchor-in-dag
              certificate-list-pathp-of-committed-anchors
-             committed-anchors-of-store-certificate-next)
+             committed-anchors-of-store-certificate-next
+             system-unequivocal-certificates-p-of-store-certificate-next)
     :use (:instance calculate-blockchain-of-unequivocal-dag-superset
                     (dag (validator-state->dag
                           (get-validator-state val systate)))

@@ -55,8 +55,6 @@
 
 (include-book "centaur/bitops/ihsext-basics" :dir :system)
 (include-book "std/strings/pretty" :dir :system)
-(include-book "hacking/hacker" :dir :system)
-(include-book "tools/include-raw" :dir :system)
 
 (include-book "tlb")
 (include-book "tty")
@@ -121,7 +119,6 @@ before including the x86 books:</p>
 
 <code>
 (include-book \"centaur/bigmems/bigmem-asymmetric/bigmem-asymmetric\" :dir :system)
-(include-book \"centaur/bigmems/bigmem/portcullis\" :dir :system)
 (attach-stobj bigmem::mem bigmem-asymmetric::mem)
 </code>")
 
@@ -788,6 +785,20 @@ before including the x86 books:</p>
   :bound 8
   :concl (xr :mem i x86)
   :gen-rewrite nil ; already done by defrstobj
+  :gen-linear t
+  :gen-type t)
+
+(defthm-unsigned-byte-p n64p-xr-msr
+  :hyp t
+  :bound 64
+  :concl (xr :msr i x86)
+  :gen-linear t
+  :gen-type t)
+
+(defthm-signed-byte-p i48p-xr-rip
+  :hyp t
+  :bound 48
+  :concl (xr :rip i x86)
   :gen-linear t
   :gen-type t)
 

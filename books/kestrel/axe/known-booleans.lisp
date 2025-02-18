@@ -146,3 +146,6 @@
 (add-known-boolean no-duplicatesp-equal)
 (add-known-boolean subsetp-equal)
 (add-known-boolean keywordp)
+(add-known-boolean character-listp)
+(add-known-boolean integer-listp)
+(add-known-boolean nat-listp)

@@ -1,11 +1,11 @@
 ; C Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -27,9 +27,9 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "A byte [C:3.6] consists of
-     @('CHAR_BIT') bits [C:6.2.6.1/3, Footnote 50],
-     which must be at least 8 [C:5.2.4.2.1].")
+    "A byte [C17:3.6] consists of
+     @('CHAR_BIT') bits [C17:6.2.6.1/3, Footnote 50],
+     which must be at least 8 [C17:5.2.4.2.1].")
    (xdoc::p
     "Our C formalization is parameterized
      over the specific value of @('CHAR_BIT')."))

@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -26,9 +26,13 @@
                                   '())
                c$::*abstract-syntax-symbols*
                '(defxdoc+
+                 er-soft+
                  erp
                  impossible
                  index-of
+                 packn-pos
+                 pseudo-event-formp
+                 pseudo-event-form-listp
                  reterr
                  retok
                  std::defret-mutual)))

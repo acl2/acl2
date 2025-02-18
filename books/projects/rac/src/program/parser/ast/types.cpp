@@ -11,6 +11,8 @@
 // class Type
 //***********************************************************************************
 
+static bool disable_optimizations = std::getenv("RAC_DISABLE_OPTIMIZATIONS");
+
 std::string Type::to_string() const {
   std::stringstream ss;
 
@@ -136,22 +138,24 @@ Sexpression *PrimType::cast(Expression *rval) const {
   // destination (sign and width).
   bool src_fit_inside_dst = false;
 
-  if (are_static) {
-    // Always true (implied by `are_static`) but makes gcc and clang happy by
-    // removing a -Wmaybe-uninitialized error.
-    assert(s_src_val);
-    assert(w_src_val);
-    if (*s_src_val == signed_ && w_dst >= *w_src_val) {
-      src_fit_inside_dst = true;
-    }
+  if (!disable_optimizations) {
+    if (are_static) {
+      // Always true (implied by `are_static`) but makes gcc and clang happy by
+      // removing a -Wmaybe-uninitialized error.
+      assert(s_src_val);
+      assert(w_src_val);
+      if (*s_src_val == signed_ && w_dst >= *w_src_val) {
+        src_fit_inside_dst = true;
+      }
 
-    if (signed_ && !(*s_src_val) && w_dst > *w_src_val) {
-      src_fit_inside_dst = true;
+      if (signed_ && !(*s_src_val) && w_dst > *w_src_val) {
+        src_fit_inside_dst = true;
+      }
     }
+    // else:
+    // If the source value is signed and the destination unsigned we always
+    // need a cast.
   }
-  // else:
-  // If the source value is signed and the destination unsigned we always
-  // need a cast.
 
   Sexpression *res = value;
   if (!src_fit_inside_dst) {
@@ -266,46 +270,54 @@ unsigned IntType::ACL2ValWidth() const {
 
 Sexpression *IntType::cast(Expression *rval) const {
 
-  Sexpression *sexpr = rval->ACL2Expr();
-
   // Try to figure out if the bits/si are really necessary.
   const Type *rval_type = rval->get_type();
-  // The size must be known.
-  if (this->width()->isStaticallyEvaluable()) {
-    unsigned w_dst = this->ACL2ValWidth();
 
-    // If rval is a constant we are able to make optimize based on its value
-    // rather its type. The constant should not be signed.
-    if (this->isSigned()->isStaticallyEvaluable()) {
-      bool s = this->isSigned()->evalConst();
-      if (!s) {
-        if (auto c = dynamic_cast<Constant *>(rval)) {
-          if (c->fitInside(s, w_dst)) {
-            return sexpr;
+  if (rval_type->isEqual(this)) {
+    return rval->ACL2Expr();
+  }
+
+  if (!disable_optimizations) {
+    // The size must be known.
+    if (this->width()->isStaticallyEvaluable()) {
+      unsigned w_dst = this->ACL2ValWidth();
+
+      // If rval is a constant we are able to make optimize based on its value
+      // rather its type. The constant should not be signed.
+      if (this->isSigned()->isStaticallyEvaluable()) {
+        bool s = this->isSigned()->evalConst();
+        if (!s) {
+          if (auto c = dynamic_cast<Constant *>(rval)) {
+            if (c->fitInside(s, w_dst)) {
+              return rval->ACL2Expr();
+            }
+          }
+
+          // Check if a register fit inside another.
+          if (auto p = dynamic_cast<const IntType *>(rval_type)) {
+            if (p->width()->isStaticallyEvaluable()
+                && p->isSigned()->isStaticallyEvaluable()
+                && !p->isSigned()->evalConst()
+                && rval_type->ACL2ValWidth() <= w_dst) {
+              return rval->ACL2Expr();
+            }
           }
         }
       }
-    }
 
-    // Checks if a PrimType does not needs to be converted from a signed
-    // value to its binnary represenation and if it fits inside this.
-    if (auto p = dynamic_cast<const PrimType *>(rval_type)) {
-      if (!p->signed_ && p->ACL2ValWidth() <= w_dst) {
-        return sexpr;
-      }
-    }
-
-    // Check if a register fit inside another. We don't need to look at the
-    // sign since we are only modifying the bit vector.
-    if (auto p = dynamic_cast<const IntType *>(rval_type)) {
-      if (p->width()->isStaticallyEvaluable()
-          && rval_type->ACL2ValWidth() <= w_dst) {
-        return sexpr;
+      // Checks if a PrimType does not needs to be converted from a signed
+      // value to its binnary represenation and if it fits inside this.
+      if (auto p = dynamic_cast<const PrimType *>(rval_type)) {
+        if (!p->signed_ && p->ACL2ValWidth() <= w_dst) {
+          return rval->ACL2Expr();
+        }
       }
     }
   }
 
   Location loc = Location::dummy();
+
+  Sexpression *sexpr = rval_type->eval(rval->ACL2Expr());
 
   Sexpression *upper_bound = nullptr;
   upper_bound = this->width()->isStaticallyEvaluable()
@@ -343,8 +355,14 @@ bool IntType::isEqual(const Type *other) const {
   }
 
   if (auto o = dynamic_cast<const IntType *>(other)) {
-    return width_->evalConst() == o->width_->evalConst()
-           && isSigned_->evalConst() == o->isSigned_->evalConst();
+    if (width_->isStaticallyEvaluable() && o->width_->isStaticallyEvaluable()
+        && isSigned_->isStaticallyEvaluable()
+        && o->isSigned_->isStaticallyEvaluable()) {
+      return width_->evalConst() == o->width_->evalConst()
+             && isSigned_->evalConst() == o->isSigned_->evalConst();
+    } else {
+      return false;
+    }
   } else {
     return false;
   }

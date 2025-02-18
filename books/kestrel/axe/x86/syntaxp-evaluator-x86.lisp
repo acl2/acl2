@@ -1,7 +1,7 @@
 ; An axe-syntaxp evaluator for x86 lifting
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -10,7 +10,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-package "ACL2")
+(in-package "ACL2") ; todo: package
 
 (include-book "../axe-syntax-functions-boolean")
 (include-book "../axe-syntax-functions-bv")
@@ -23,7 +23,7 @@
                                    is-a-myif
                                    syntactic-booleanp
                                    syntactic-call-of
-                                   syntactic-constantp
+                                   ;; syntactic-constantp
                                    ;; syntactic-variablep ; maybe add this
                                    ;; is-the-variablep ; maybe add this
                                    should-reverse-equality
@@ -36,4 +36,6 @@
                                    should-commute-axe-argsp
                                    should-commute-axe-args-increasingp
                                    x::write-with-addr-and-size-presentp-axe
-                                   dargs-equalp))
+                                   x::write-nest-with-inner-set-flagp-axe
+                                   dargs-equalp
+                                   x::addresses-out-of-orderp))

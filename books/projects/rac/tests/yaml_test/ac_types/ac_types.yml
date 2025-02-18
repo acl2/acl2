@@ -19,4 +19,8 @@
   should_report_error: true
 
 - name: signed
+- name: signed2
 - name: signed_ternary
+
+- name: compare-op-signed
+  description: Compare operations with signed integer

@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -36,4 +36,15 @@
     (implies (and (integerp x)
                   (not (evenp x)))
              (evenp (- x 3)))
-    :enable evenp))
+    :enable evenp)
+
+  (defruled lt-to-2+le-when-both-evenp
+    (implies (and (rationalp x)
+                  (rationalp y)
+                  (evenp x)
+                  (evenp y))
+             (equal (< x y)
+                    (<= (+ 2 x) y)))
+    :instructions
+    ((s-prop)
+     (prove :hints (("Goal" :in-theory (enable evenp)))))))

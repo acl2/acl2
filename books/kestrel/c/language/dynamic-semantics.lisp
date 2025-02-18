@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2024 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -68,13 +68,13 @@
 
 (define apconvert-expr-value ((eval expr-valuep))
   :returns (eval1 expr-value-resultp)
-  :short "Array-to-pointer conversion [C:6.3.2.1/3] on expression values."
+  :short "Array-to-pointer conversion [C17:6.3.2.1/3] on expression values."
   :long
   (xdoc::topstring
    (xdoc::p
     "Under most circumstances,
      an array is converted to a pointer to the first element of the array
-     [C:6.3.2.1/3];
+     [C17:6.3.2.1/3];
      indeed, arrays are used like pointers most of the time.")
    (xdoc::p
     "This cannot be formalized on values: we need expression values,
@@ -83,7 +83,7 @@
      so that we can construct a pointer to it.
      Non-array expression values are left unchanged.
      If the array has no object designator, we return an error;
-     this should only happen for arrays with temporary lifetime [C:6.2.4/8],
+     this should only happen for arrays with temporary lifetime [C17:6.2.4/8],
      which are currently not part of our C subset.")
    (xdoc::p
     "We make a slight approximation for now:
@@ -116,7 +116,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is according to [C:6.4.4.1/5]:
+    "This is according to [C17:6.4.4.1/5]:
      based on the suffixes and the base,
      we find the first type that suffices to represent the value,
      in the lists indicated in the table,
@@ -224,12 +224,12 @@
 
 (define exec-address ((arg expr-valuep))
   :returns (eval expr-value-resultp)
-  :short "Execute @('&') on an expression value [C:6.5.3.2/1] [C:6.5.3.2/3]."
+  :short "Execute @('&') on an expression value [C17:6.5.3.2/1] [C17:6.5.3.2/3]."
   :long
   (xdoc::topstring
    (xdoc::p
     "The expression that the operator @('&') is applied to
-     must be an lvalue [C:6.5.3.2/1],
+     must be an lvalue [C17:6.5.3.2/1],
      which in our formalization means that
      we apply this operator to an expression value (returned by the lvalue).
      The expression value must contain an object designator,
@@ -243,7 +243,7 @@
      to the expression value returned by an expression.
      We do not formalize here the fact that @('&*E') is the same as @('E')
      in the sense in that case neither @('*') nor @('&') are evaluated
-     [C:6.5.3.2/4], whether the @('*') is explicit or implied by @('[]');
+     [C17:6.5.3.2/4], whether the @('*') is explicit or implied by @('[]');
      we formalize that elsewhere,
      while here we assume that the argument expression of @('&')
      has been evaluated (because the special cases above do not hold),
@@ -251,7 +251,7 @@
    (xdoc::p
     "We perform no array-to-pointer conversion,
      because that conversion is not performed for the operand of @('&')
-     [C:6.3.2.1/3]."))
+     [C17:6.3.2.1/3]."))
   (b* ((objdes (expr-value->object arg))
        ((unless objdes)
         (error (list :not-lvalue-result (expr-value-fix arg))))
@@ -266,11 +266,11 @@
 
 (define exec-indir ((arg expr-valuep) (compst compustatep))
   :returns (eval expr-value-resultp)
-  :short "Execute @('*') on an expression value [C:6.5.3.2/2] [C:6.5.3.2/4]."
+  :short "Execute @('*') on an expression value [C17:6.5.3.2/2] [C17:6.5.3.2/4]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "First we perform array-to-pointer conversion [C:5.3.2.1/3].
+    "First we perform array-to-pointer conversion [C17:5.3.2.1/3].
      The value must be a pointer.
      If the pointer is not valid, it is an error.
      Otherwise, we read the object designated by the object designator,
@@ -325,7 +325,7 @@
      as factored in @(tsee eval-unary).")
    (xdoc::p
     "Before calling @(tsee eval-unary),
-     we perform array-to-pointer conversion [C:5.3.2.1/3].
+     we perform array-to-pointer conversion [C17:5.3.2.1/3].
      The functions handle @('&') and @('*')
      perform that conversion as needed
      (specifically, @('&') does not, while @('*') does)."))
@@ -384,7 +384,7 @@
     "This ACL2 function wraps @(tsee eval-binary-strict-pure)
      to take and return expression values.")
    (xdoc::p
-    "First we perform array-to-pointer conversion [C:5.3.2.1/3],
+    "First we perform array-to-pointer conversion [C17:5.3.2.1/3],
      on both operands."))
   (b* ((arg1 (apconvert-expr-value arg1))
        ((when (errorp arg1)) arg1)
@@ -409,7 +409,7 @@
      None involving pointers.")
    (xdoc::p
     "We reject casts to @('void'),
-     because a scalar type is required [C:6.5.4/2]."))
+     because a scalar type is required [C17:6.5.4/2]."))
   (b* ((type (tyname-to-type tyname))
        ((unless (type-nonchar-integerp type))
         (error (list :cast-not-supported :to type)))
@@ -429,7 +429,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We perform array-to-pointer conversion [C:5.3.2.1/3] on the operand."))
+    "We perform array-to-pointer conversion [C17:5.3.2.1/3] on the operand."))
   (b* ((arg (apconvert-expr-value arg))
        ((when (errorp arg)) arg)
        (val (eval-cast tyname (expr-value->value arg)))
@@ -445,7 +445,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "We perform array-to-pointer conversion [C:5.3.2.1/3]
+    "We perform array-to-pointer conversion [C17:5.3.2.1/3]
      on both operands.")
    (xdoc::p
     "The first operand must be a valid pointer to an array;
@@ -476,7 +476,7 @@
      except for this case, and for the case of an argument to @('sizeof'),
      as well as for string literals (currently not in our C subset),
      an array is always converted to a pointer to its first element
-     [C:6.3.2.1/3].")
+     [C17:6.3.2.1/3].")
    (xdoc::p
     "In any case, we plan to make our formal semantics
      more consistent with full C in the treatment of arrays."))
@@ -526,7 +526,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is for the @('.') operator.
-     We perform array-to-pointer conversion [C:6.3.2.1/3] on the operand.
+     We perform array-to-pointer conversion [C17:6.3.2.1/3] on the operand.
      The resulting operand must be a structure
      (it actually makes no difference whether we make this check
      before or after the array-to-pointer conversion,
@@ -564,7 +564,7 @@
   (xdoc::topstring
    (xdoc::p
     "This is for the @('->') operator.
-     We perform array-to-pointer conversion [C:6.3.2.1/3] on the operand.
+     We perform array-to-pointer conversion [C17:6.3.2.1/3] on the operand.
      The resulting operand must be a valid pointer to a structure
      of type consistent with the structure.
      The named member must be in the structure.
@@ -620,7 +620,7 @@
      we drop any object designators
      from the second or third expression's execution,
      because ternary expressions are not lvalues
-     [C:6.5.15/4, footnote 113].")
+     [C17:6.5.15/4, footnote 113].")
    (xdoc::p
     "Recall that our C abstract syntax does not cover
      all the possible C expressions yet.
@@ -756,7 +756,7 @@
      Thus, we just return lists of values here.")
    (xdoc::p
     "In the situations in which this ACL2 function is used,
-     we also need to perform array-to-pointer conversion [C:6.3.2.1/3]."))
+     we also need to perform array-to-pointer conversion [C17:6.3.2.1/3]."))
   (b* (((when (endp es)) nil)
        (eval (exec-expr-pure (car es) compst))
        ((when (errorp eval)) eval)
@@ -973,10 +973,10 @@
        then we allow the right-hand side to be also a function call.")
      (xdoc::p
       "The just mentioned restrictions on the subexpressions
-       are motivated by the fact that [C] does not prescribe
+       are motivated by the fact that [C17] does not prescribe
        the order of evaluation of left-hand side and right-hand side
        of assignment expressions, just like for any other binary operator;
-       there are no sequence points [C:5.1.2.3] within assignments.
+       there are no sequence points [C17:5.1.2.3] within assignments.
        Thus, if both sides are pure, the order of evaluation does not matter,
        and we can evaluate them in any order.
        The case of a left-hand side that is an identifier (i.e. variable)
@@ -1006,7 +1006,7 @@
        i.e. not @('nil'), i.e. the function cannot return @('void').")
      (xdoc::p
       "We allow these assignment expressions
-       as the full expressions [C:6.8/4] of expression statements.
+       as the full expressions [C17:6.8/4] of expression statements.
        Thus, we discard the value of the assignment
        (which is the value written to the variable);
        this ACL2 function just returns an updated computation state."))

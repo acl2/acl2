@@ -1,7 +1,7 @@
 ; Utilities in support of reasoning about / lifting 32-bit code.
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2024 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,7 +13,9 @@
 
 (include-book "projects/x86isa/machine/segmentation" :dir :system)
 (include-book "projects/x86isa/machine/decoding-and-spec-utils" :dir :system) ; for x86isa::read-*ip
-(include-book "support-x86") ; drop? for unsigned-byte-p-of-xr-of-mem
+(include-book "projects/x86isa/proofs/utilities/app-view/user-level-memory-utils" :dir :system) ; for rb-rb-subset
+;(include-book "support-x86") ; drop? for unsigned-byte-p-of-xr-of-mem
+(include-book "state")
 (include-book "linear-memory")
 (include-book "state")
 (include-book "flags")
@@ -24,6 +26,7 @@
 (include-book "kestrel/lists-light/reverse-list-def" :dir :system)
 (include-book "kestrel/lists-light/firstn" :dir :system)
 (include-book "kestrel/bv/rules10" :dir :system) ; drop or make local
+(include-book "kestrel/utilities/defopeners" :dir :system)
 (local (include-book "support-bv"))
 (local (include-book "kestrel/bv/logior-b" :dir :system))
 (local (include-book "kestrel/bv-lists/packbv-theorems" :dir :system))
@@ -738,11 +741,6 @@
            (equal (x86isa::read-*ip *compatibility-mode* x86)
                   (bvchop 32 (eip x86))))
   :hints (("Goal" :in-theory (enable x86isa::read-*ip bvchop))))
-
-;; Introduces eip.
-(defthmd xr-becomes-eip
-  (equal (xr :rip nil x86)
-         (eip x86)))
 
 ;; Converting a valid effective address in the code segment to a linear address returns no error:
 (defthm not-mv-nth-0-of-ea-to-la-of-cs
@@ -3011,8 +3009,6 @@
            (equal (read-from-segment n1 eff-addr1 seg-reg (write-to-segment n2 eff-addr2 seg-reg val x86))
                   (read-from-segment n1 eff-addr1 seg-reg x86))))
 
-(local (include-book "kestrel/axe/rules2" :dir :system)) ;why?
-
 ;same segment (we don't know how other segmentes are laid out)
 (defthm read-from-segment-of-write-to-segment-irrel
   (implies (and (sep-eff-addr-ranges eff-addr1 n1 eff-addr2 n2)
@@ -3146,6 +3142,22 @@
   (implies (code-and-stack-segments-separate x86)
            (segments-separate *cs* *ss* x86))
   :hints (("Goal" :in-theory (enable code-and-stack-segments-separate))))
+
+; not strictly necessary since not-mv-nth-0-of-rme-size$inline should fire, but this can get rid of irrelevant stuff
+(defthm x86isa::mv-nth-0-of-rme-size-of-xw-when-app-view
+  (implies (and (not (equal fld :mem))
+                (not (equal fld :app-view))
+                (not (equal fld :seg-hidden-attr))
+                (not (equal fld :seg-hidden-base))
+                (not (equal fld :seg-hidden-limit))
+                (not (equal fld :seg-visible))
+                (not (equal fld :msr))
+                (app-view x86))
+           (equal (mv-nth 0 (x86isa::rme-size$inline proc-mode nbytes eff-addr seg-reg r-x check-alignment? (xw fld index val x86) mem-ptr?))
+                  (mv-nth 0 (x86isa::rme-size$inline proc-mode nbytes eff-addr seg-reg r-x check-alignment? x86 mem-ptr?))))
+  :hints (("Goal" :in-theory (e/d (x86isa::rme-size) (ea-to-la$inline
+                                                      x86isa::rml-size$inline
+                                                      x86isa::ea-to-la-is-i48p-when-no-error)))))
 
 (defthm not-mv-nth-0-of-rme-size$inline
   (implies (and (eff-addrs-okp nbytes eff-addr seg-reg x86)
@@ -4168,8 +4180,8 @@
                                    ifix
                                    ea-to-la
                                    acl2::bvchop-identity)
-                                  (
-                                   x86isa::xw-of-xw-both)))))
+                                  (;x86isa::xw-of-xw-both
+                                   )))))
 
 (defthm mv-nth-1-of-wml128-of-mv-nth-1-of-ea-to-la
   (implies (and (segment-is-32-bitsp seg-reg x86)
@@ -4204,8 +4216,8 @@
                                    ifix
                                    ea-to-la
                                    acl2::bvchop-identity)
-                                  (
-                                   x86isa::xw-of-xw-both)))))
+                                  (;x86isa::xw-of-xw-both
+                                   )))))
 
 (defthm mv-nth-1-of-wml256-of-mv-nth-1-of-ea-to-la
   (implies (and (segment-is-32-bitsp seg-reg x86)
@@ -4240,8 +4252,8 @@
                                    ifix
                                    ea-to-la
                                    acl2::bvchop-identity)
-                                  (
-                                   x86isa::xw-of-xw-both)))))
+                                  (;x86isa::xw-of-xw-both
+                                   )))))
 
 (defthm mv-nth-1-of-wb-of-mv-nth-1-of-ea-to-la
   (implies (and (segment-is-32-bitsp seg-reg x86)
@@ -4865,3 +4877,10 @@
                   (+ (- (- (expt 2 32) k)) ;gets computed
                      (esp x86))))
   :hints (("Goal" :use (:instance acl2::bvplus-of-constant-when-overflow (x (esp x86))))))
+
+;; where should this go?
+(defthm x86isa::mv-nth-2-of-rme-size-when-app-view
+  (implies (app-view x86)
+           (equal (mv-nth 2 (rme-size p n e s r c x86))
+                  x86))
+  :hints (("Goal" :in-theory (enable rme-size))))

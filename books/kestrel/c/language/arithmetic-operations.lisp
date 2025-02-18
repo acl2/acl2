@@ -1,11 +1,11 @@
 ; C Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2023 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
-; Author: Alessandro Coglio (coglio@kestrel.edu)
+; Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -31,7 +31,7 @@
 (define plus-arithmetic-value ((val valuep))
   :guard (value-arithmeticp val)
   :returns (resval value-resultp)
-  :short "Apply unary @('+') to an arithmetic value [C:6.5.3.3/2]."
+  :short "Apply unary @('+') to an arithmetic value [C17:6.5.3.3/2]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -52,7 +52,7 @@
 (define minus-arithmetic-value ((val valuep))
   :guard (value-arithmeticp val)
   :returns (resval value-resultp)
-  :short "Apply unary @('-') to an arithmetic value [C:6.5.3.3/3]."
+  :short "Apply unary @('-') to an arithmetic value [C17:6.5.3.3/3]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -74,7 +74,7 @@
   :guard (and (value-arithmeticp val1)
               (value-arithmeticp val2))
   :returns (resval value-resultp)
-  :short "Apply binary @('*') to arithmetic values [C:6.5.5/3] [C:6.5.5/4]."
+  :short "Apply binary @('*') to arithmetic values [C17:6.5.5/3] [C17:6.5.5/4]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -98,7 +98,7 @@
               (value-arithmeticp val2))
   :returns (resval value-resultp)
   :short "Apply @('/') to arithmetic values
-          [C:6.5.5/3] [C:6.5.5/5] [C:6.5.5/6]."
+          [C17:6.5.5/3] [C17:6.5.5/5] [C17:6.5.5/6]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -122,7 +122,7 @@
               (value-arithmeticp val2))
   :returns (resval value-resultp)
   :short "Apply @('%') to arithmetic values
-          [C:6.5.5/3] [C:6.5.5/5] [C:6.5.5/6]."
+          [C17:6.5.5/3] [C17:6.5.5/5] [C17:6.5.5/6]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -145,7 +145,7 @@
   :guard (and (value-arithmeticp val1)
               (value-arithmeticp val2))
   :returns (resval value-resultp)
-  :short "Apply binary @('+') to arithmetic values [C:6.5.6/4] [C:6.5.6/5]."
+  :short "Apply binary @('+') to arithmetic values [C17:6.5.6/4] [C17:6.5.6/5]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -168,7 +168,7 @@
   :guard (and (value-arithmeticp val1)
               (value-arithmeticp val2))
   :returns (resval value-resultp)
-  :short "Apply binary @('-') to arithmetic values [C:6.5.6/4] [C:6.5.6/6]."
+  :short "Apply binary @('-') to arithmetic values [C17:6.5.6/4] [C17:6.5.6/6]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -191,7 +191,7 @@
   :guard (and (value-arithmeticp val1)
               (value-arithmeticp val2))
   :returns (resval value-resultp)
-  :short "Apply @('==') to arithmetic values [C:6.5.9/3] [C:6.5.9/4]."
+  :short "Apply @('==') to arithmetic values [C17:6.5.9/3] [C17:6.5.9/4]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -214,7 +214,7 @@
   :guard (and (value-arithmeticp val1)
               (value-arithmeticp val2))
   :returns (resval value-resultp)
-  :short "Apply @('!=') to arithmetic values [C:6.5.9/3] [C:6.5.9/4]."
+  :short "Apply @('!=') to arithmetic values [C17:6.5.9/3] [C17:6.5.9/4]."
   :long
   (xdoc::topstring
    (xdoc::p

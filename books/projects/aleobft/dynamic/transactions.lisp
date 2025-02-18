@@ -1,6 +1,6 @@
 ; AleoBFT Library
 ;
-; Copyright (C) 2024 Provable Inc.
+; Copyright (C) 2025 Provable Inc.
 ;
 ; License: See the LICENSE file distributed with this library.
 ;
@@ -60,7 +60,7 @@
      bond a validator,
      unbond a validator,
      and something else that does not bond or unbond validators;
-     we leave the details of third third kind open.")
+     we leave the details of third kind open.")
    (xdoc::p
     "We do not model stake,
      so the bonding and unbonding transactions

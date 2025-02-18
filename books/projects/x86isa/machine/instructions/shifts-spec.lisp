@@ -46,6 +46,7 @@
 
 (in-package "X86ISA")
 
+(include-book "structures" :dir :utils)
 (include-book "../rflags-spec"
               :ttags (:undef-flg))
 (include-book "centaur/bitops/fast-rotate" :dir :system)
@@ -827,7 +828,7 @@ set to the most-significant bit of the original operand.</p>"
                                             :sf sf)
                                           :exec
                                           (the (unsigned-byte 32)
-                                               (!rflagsBits->cf 
+                                               (!rflagsBits->cf
                                                  cf
                                                  (!rflagsBits->pf
                                                    pf
@@ -1143,6 +1144,7 @@ most-significant bit of the original operand.</p>"
        (defthm-unsigned-byte-p ,(mk-name "N" size "-MV-NTH-0-" fn-name)
          :bound ,size
          :concl (mv-nth 0 (,fn-name dst src cnt input-rflags))
+         :hints (("Goal" :in-theory (enable bool->bit)))
          :gen-type t
          :gen-linear t)
 

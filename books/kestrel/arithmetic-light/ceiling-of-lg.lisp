@@ -1,7 +1,7 @@
 ; Base-2 logarithm (rounded up)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -111,3 +111,11 @@
                       0
                     (+ i (ceiling-of-lg n)))))
   :hints (("Goal" :in-theory (enable expt))))
+
+(defthm ceiling-of-lg-of-*-of-1/2
+  (implies (and (evenp n)
+                (posp n))
+           (equal (ceiling-of-lg (* 1/2 n))
+                  (+ -1 (ceiling-of-lg n))))
+  :hints (("Goal"
+           :in-theory (e/d (integer-length-of-+-of--1 ceiling-of-lg expt-of-+) ()))))

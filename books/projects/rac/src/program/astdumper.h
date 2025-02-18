@@ -8,7 +8,7 @@
 #include <vector>
 
 // Display the AST as a dot graph (https://graphviz.org/). This is mainly use
-// for debuging.
+// for debuging. The adress of the node is used as identifier.
 class ASTDumperAction final : public RecursiveASTVisitor<ASTDumperAction> {
 public:
   // With the constructor and destructor, we write the top scope of the
@@ -35,7 +35,7 @@ public:
 
 private:
   using base_t = RecursiveASTVisitor;
-  // We don't need type info, the address is enough.
+  // We don't need type info, the adress is enough.
   std::vector<void *> parents_;
 
   // Keep track of the already declared edges to avoid multiple edge between

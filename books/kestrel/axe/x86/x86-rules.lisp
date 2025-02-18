@@ -1,7 +1,7 @@
 ; Support for using Axe to reason about x86 code
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2024 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -22,6 +22,7 @@
 (include-book "kestrel/x86/assumptions32" :dir :system) ; for return-address-okp
 (include-book "kestrel/x86/conditions" :dir :system) ; for jnl-condition
 (include-book "kestrel/x86/run-until-return" :dir :system)
+(include-book "kestrel/x86/floats" :dir :system)
 (include-book "../axe-syntax")
 (include-book "../known-booleans")
 (include-book "../axe-syntax-functions-bv") ; for term-should-be-trimmed-axe
@@ -62,10 +63,14 @@
 
 (add-known-boolean return-address-okp)
 
-(add-known-boolean x86isa::cr0bits-p$inline)
-(add-known-boolean x86isa::cr3bits-p$inline)
-(add-known-boolean x86isa::cr4bits-p$inline)
-(add-known-boolean x86isa::cr8bits-p$inline)
+(add-known-boolean cr0bits-p$inline)
+(add-known-boolean cr3bits-p$inline)
+(add-known-boolean cr4bits-p$inline)
+(add-known-boolean cr8bits-p$inline)
+
+(add-known-boolean is-nan)
+(add-known-boolean infp)
+(add-known-boolean nanp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -83,10 +88,10 @@
                 (not (equal :default n))
                 (assoc-equal n l))
            (equal (aref1 name l n)
-                  (acl2::lookup-equal n l)))
-  :hints (("Goal" :in-theory (enable acl2::lookup-equal aref1))))
+                  (lookup-equal n l)))
+  :hints (("Goal" :in-theory (enable lookup-equal aref1))))
 
-(defopeners x86isa::64-bit-mode-two-byte-opcode-modr/m-p
+(defopeners 64-bit-mode-two-byte-opcode-modr/m-p
                   :hyps ((syntaxp (quotep x86isa::opcode))
                          (unsigned-byte-p 8 x86isa::opcode)))
 
@@ -110,7 +115,7 @@
 (def-constant-opener nonnegative-integer-quotient)
 (def-constant-opener evenp)
 
-(def-constant-opener acl2::bool->bit$inline)
+(def-constant-opener bool->bit$inline)
 (def-constant-opener acl2::rotate-left)
 (def-constant-opener acl2::rotate-right)
 
@@ -119,59 +124,59 @@
 ;; functions with the same arguments (dst and src), so either all the args to
 ;; jle-condition get evaluated or none of them do).
 
-(def-constant-opener x86isa::zf-spec$inline)
+(def-constant-opener zf-spec$inline)
 
-(def-constant-opener x86isa::cf-spec8$inline)
-(def-constant-opener x86isa::of-spec8$inline)
-(def-constant-opener x86isa::pf-spec8$inline)
-(def-constant-opener x86isa::sf-spec8$inline)
-(def-constant-opener x86isa::adc-af-spec8$inline)
-(def-constant-opener x86isa::add-af-spec8$inline)
-(def-constant-opener x86isa::sub-af-spec8$inline)
-(def-constant-opener x86isa::sub-cf-spec8) ; todo: make these inline, like the others
-(def-constant-opener x86isa::sub-of-spec8)
-(def-constant-opener x86isa::sub-pf-spec8)
-(def-constant-opener x86isa::sub-sf-spec8)
-(def-constant-opener x86isa::sub-zf-spec8)
+(def-constant-opener cf-spec8$inline)
+(def-constant-opener of-spec8$inline)
+(def-constant-opener pf-spec8$inline)
+(def-constant-opener sf-spec8$inline)
+(def-constant-opener adc-af-spec8$inline)
+(def-constant-opener add-af-spec8$inline)
+(def-constant-opener sub-af-spec8$inline)
+(def-constant-opener sub-cf-spec8) ; todo: make these inline, like the others
+(def-constant-opener sub-of-spec8)
+(def-constant-opener sub-pf-spec8)
+(def-constant-opener sub-sf-spec8)
+(def-constant-opener sub-zf-spec8)
 
-(def-constant-opener x86isa::cf-spec16$inline)
-(def-constant-opener x86isa::of-spec16$inline)
-(def-constant-opener x86isa::pf-spec16$inline)
-(def-constant-opener x86isa::sf-spec16$inline)
-(def-constant-opener x86isa::adc-af-spec16$inline)
-(def-constant-opener x86isa::add-af-spec16$inline)
-(def-constant-opener x86isa::sub-af-spec16$inline)
-(def-constant-opener x86isa::sub-cf-spec16)
-(def-constant-opener x86isa::sub-of-spec16)
-(def-constant-opener x86isa::sub-pf-spec16)
-(def-constant-opener x86isa::sub-sf-spec16)
-(def-constant-opener x86isa::sub-zf-spec16)
+(def-constant-opener cf-spec16$inline)
+(def-constant-opener of-spec16$inline)
+(def-constant-opener pf-spec16$inline)
+(def-constant-opener sf-spec16$inline)
+(def-constant-opener adc-af-spec16$inline)
+(def-constant-opener add-af-spec16$inline)
+(def-constant-opener sub-af-spec16$inline)
+(def-constant-opener sub-cf-spec16)
+(def-constant-opener sub-of-spec16)
+(def-constant-opener sub-pf-spec16)
+(def-constant-opener sub-sf-spec16)
+(def-constant-opener sub-zf-spec16)
 
-(def-constant-opener x86isa::cf-spec32$inline)
-(def-constant-opener x86isa::of-spec32$inline)
-(def-constant-opener x86isa::pf-spec32$inline)
-(def-constant-opener x86isa::sf-spec32$inline)
-(def-constant-opener x86isa::adc-af-spec32$inline)
-(def-constant-opener x86isa::add-af-spec32$inline)
-(def-constant-opener x86isa::sub-af-spec32$inline)
-(def-constant-opener x86isa::sub-cf-spec32)
-(def-constant-opener x86isa::sub-of-spec32)
-(def-constant-opener x86isa::sub-pf-spec32)
-(def-constant-opener x86isa::sub-sf-spec32)
-(def-constant-opener x86isa::sub-zf-spec32)
+(def-constant-opener cf-spec32$inline)
+(def-constant-opener of-spec32$inline)
+(def-constant-opener pf-spec32$inline)
+(def-constant-opener sf-spec32$inline)
+(def-constant-opener adc-af-spec32$inline)
+(def-constant-opener add-af-spec32$inline)
+(def-constant-opener sub-af-spec32$inline)
+(def-constant-opener sub-cf-spec32)
+(def-constant-opener sub-of-spec32)
+(def-constant-opener sub-pf-spec32)
+(def-constant-opener sub-sf-spec32)
+(def-constant-opener sub-zf-spec32)
 
-(def-constant-opener x86isa::cf-spec64$inline)
-(def-constant-opener x86isa::of-spec64$inline)
-(def-constant-opener x86isa::pf-spec64$inline)
-(def-constant-opener x86isa::sf-spec64$inline)
-(def-constant-opener x86isa::adc-af-spec64$inline)
-(def-constant-opener x86isa::add-af-spec64$inline)
-(def-constant-opener x86isa::sub-af-spec64$inline)
-(def-constant-opener x86isa::sub-cf-spec64)
-(def-constant-opener x86isa::sub-of-spec64)
-(def-constant-opener x86isa::sub-pf-spec64)
-(def-constant-opener x86isa::sub-sf-spec64)
-(def-constant-opener x86isa::sub-zf-spec64)
+(def-constant-opener cf-spec64$inline)
+(def-constant-opener of-spec64$inline)
+(def-constant-opener pf-spec64$inline)
+(def-constant-opener sf-spec64$inline)
+(def-constant-opener adc-af-spec64$inline)
+(def-constant-opener add-af-spec64$inline)
+(def-constant-opener sub-af-spec64$inline)
+(def-constant-opener sub-cf-spec64)
+(def-constant-opener sub-of-spec64)
+(def-constant-opener sub-pf-spec64)
+(def-constant-opener sub-sf-spec64)
+(def-constant-opener sub-zf-spec64)
 
 (def-constant-opener x86isa::!rflagsbits->ac$inline)
 (def-constant-opener x86isa::!rflagsbits->af$inline)
@@ -377,6 +382,7 @@
 ;;         (acl2::leftrotate32 places x))
 ;;  :hints (("Goal" :in-theory (enable bitops::rotate-left-32 ACL2::ROTATE-LEFT acl2::leftrotate32 acl2::leftrotate))))
 
+;; For use by Axe.  Can't disable since this is in :rule-classes nil.
 (defthm set-flag-of-set-flag-diff-axe
   (implies (and (syntaxp (and (quotep flag1)
                               (quotep flag2)
@@ -392,8 +398,9 @@
            :in-theory (disable set-flag-of-set-flag-diff)))
   :rule-classes nil)
 
+;; For use by Axe.
 ;; todo: package
-(defthm x86isa::idiv-spec-64-trim-arg1-axe-all
+(defthmd x86isa::idiv-spec-64-trim-arg1-axe-all
   (implies (axe-syntaxp (term-should-be-trimmed-axe '128 x 'acl2::all dag-array))
            (equal (idiv-spec-64 x y)
                   (idiv-spec-64 (trim 128 x) y)))
@@ -401,8 +408,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; For use by Axe.
 ;; Only fires when x86 is not an IF/MYIF (to save time).
-(defthm run-until-stack-shorter-than-base-axe
+(defthmd run-until-stack-shorter-than-base-axe
   (implies (and (axe-syntaxp (not (syntactic-call-of 'if x86 dag-array)))
                 ;; (axe-syntaxp (not (syntactic-call-of 'myif x86 dag-array))) ; may be needed someday
                 (stack-shorter-thanp old-rsp x86))
@@ -410,8 +418,9 @@
                   x86))
   :hints (("Goal" :in-theory (enable run-until-stack-shorter-than-base))))
 
+;; For use by Axe.
 ;; Only fires when x86 is not an IF/MYIF (so we don't need IF lifting rules for x86-fetch-decode-execute and its subfunctions).
-(defthm run-until-stack-shorter-than-opener-axe
+(defthmd run-until-stack-shorter-than-opener-axe
   (implies (and (axe-syntaxp (not (syntactic-call-of 'if x86 dag-array)))
                 ;; (axe-syntaxp (not (syntactic-call-of 'myif x86 dag-array))) ; may be needed someday
                 (not (stack-shorter-thanp old-rsp x86)))
@@ -441,26 +450,26 @@
 (defopeners x86-fetch-decode-execute :suffix -new
   :hyps (;(poor-mans-quotep (rip x86))
          ;;(canonical-address-p (rip x86)) ; could drop, but this clarifies failures
-         (canonical-address-p (let ((proc-mode (x86isa::x86-operation-mode x86)))
-                                (x86isa::read-*ip proc-mode x86))) ; could drop, but this clarifies failures
+         (canonical-address-p (let ((proc-mode (x86-operation-mode x86)))
+                                (read-*ip proc-mode x86))) ; could drop, but this clarifies failures
          ;; ;; Requires us to be able to read the byte at the RIP:
-         (poor-mans-quotep (let ((proc-mode (x86isa::x86-operation-mode x86)))
-                             (mv-nth 1 (x86isa::rme08$inline proc-mode (x86isa::read-*ip proc-mode x86) 1 :x x86))))
-         ;; (poor-mans-quotep (let ((proc-mode (x86isa::x86-operation-mode x86)))
-         ;;                     (read 1 (x86isa::read-*ip proc-mode x86) x86)))
+         (poor-mans-quotep (let ((proc-mode (x86-operation-mode x86)))
+                             (mv-nth 1 (x86isa::rme08$inline proc-mode (read-*ip proc-mode x86) 1 :x x86))))
+         ;; (poor-mans-quotep (let ((proc-mode (x86-operation-mode x86)))
+         ;;                     (read 1 (read-*ip proc-mode x86) x86)))
          ;; (poor-mans-quotep (read 1 (rip x86) x86))
          (not (ms x86))
          (not (fault x86))))
 
 ;; should be faster?
 ;; todo: continue specializing to 64-bit mode
-(defthm x86-fetch-decode-execute-opener-safe-64
-  (implies (and (canonical-address-p (x86isa::read-*ip 0 x86)) ; could drop, but this clarifies failures
+(defthmd x86-fetch-decode-execute-opener-safe-64
+  (implies (and (canonical-address-p (read-*ip 0 x86)) ; could drop, but this clarifies failures
                 ;; ;; Requires us to be able to read the byte at the RIP:
                 ;; todo: simplify this:
-                (poor-mans-quotep (mv-nth 1 (x86isa::rme08$inline 0 (x86isa::read-*ip 0 x86) 1 :x x86)))
-                ;; (poor-mans-quotep (let ((proc-mode (x86isa::x86-operation-mode x86)))
-                ;;                     (read 1 (x86isa::read-*ip proc-mode x86) x86)))
+                (poor-mans-quotep (mv-nth 1 (x86isa::rme08$inline 0 (read-*ip 0 x86) 1 :x x86)))
+                ;; (poor-mans-quotep (let ((proc-mode (x86-operation-mode x86)))
+                ;;                     (read 1 (read-*ip proc-mode x86) x86)))
                 ;; (poor-mans-quotep (read 1 (rip x86) x86))
                 (64-bit-modep x86)
                 (app-view x86)
@@ -476,7 +485,7 @@
                            (64-bit-modep t ;
                                          ;(equal proc-mode 0)
                                          )
-                             (start-rip (x86isa::read-*ip proc-mode x86)))
+                             (start-rip (read-*ip proc-mode x86)))
                         (mv-let (flg acl2::|(THE (UNSIGNED-BYTE 52) PREFIXES)|
                                      acl2::|(THE (UNSIGNED-BYTE 8) REX-BYTE)|
                                      x86)
@@ -683,3 +692,64 @@
            (equal (write n ad val (clear-retract n ad x86))
                   (write n ad val x86)))
   :hints (("Goal" :in-theory (enable clear-retract))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; A scheme for removing set-flag in (read (write ... (write (set-flag ...))))
+
+(defund clear-flags-extend (x86)
+  (declare (xargs :stobjs x86))
+  (!rflags 0 x86))
+
+(defund clear-flags-retract (x86)
+  (declare (xargs :stobjs x86))
+  (!rflags 0 x86))
+
+;; Introduces the clear when there is a set-flag inside the write nest
+;; For Axe only
+(defthmd read-of-write-becomes-read-of-write-of-clear-flags-extend-axe
+  (implies (axe-syntaxp (write-nest-with-inner-set-flagp-axe x86 acl2::dag-array))
+           (equal (read n ad (write n2 ad2 val x86))
+                  (read n ad (write n2 ad2 val (clear-flags-extend x86)))))
+  :hints (("Goal" :in-theory (enable clear-flags-extend))))
+
+;; Copies the clear inside a write that is not its target
+;; For Axe only
+(defthmd clear-flags-extend-of-write-continue-axe
+  (implies (axe-syntaxp (or (syntactic-call-of 'write x86 dag-array) ; avoid loops and undesired patterns
+                            (syntactic-call-of 'set-flag x86 dag-array)))
+           (equal (clear-flags-extend (write n ad val x86))
+                  (clear-flags-extend (write n ad val (clear-flags-extend x86)))))
+  :hints (("Goal" :in-theory (enable clear-flags-extend))))
+
+;; We've found the write to be cleared
+(defthmd clear-flags-extend-of-set-flag-finish
+  (equal (clear-flags-extend (set-flag flag val x86))
+         (clear-flags-retract x86))
+  :hints (("Goal" :in-theory (enable clear-flags-extend clear-flags-retract))))
+
+(defthmd clear-flags-extend-of-write-of-clear-flags-retract
+  (equal (clear-flags-extend (write n ad val (clear-flags-retract x86)))
+         (clear-flags-retract (write n ad val x86)))
+  :hints (("Goal" :in-theory (enable clear-flags-retract clear-flags-extend))))
+
+(defthmd read-of-write-of-clear-flags-retract ; add -same to name
+  (equal (read n ad (write n2 ad2 val (clear-flags-retract x86)))
+         (read n ad (write n2 ad2 val x86)))
+  :hints (("Goal" :in-theory (enable clear-flags-retract))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Reorders writes to try to bring adjacent writes together:
+(defthm write-of-write-diff-bv-axe
+  (implies (and (axe-syntaxp (addresses-out-of-orderp ad1 ad2 dag-array))
+                (bvle 48 n2 (bvminus 48 ad1 ad2))
+                (bvle 48 n1 (bvminus 48 ad2 ad1))
+                (unsigned-byte-p 48 n2) ;; (natp n2)
+                (unsigned-byte-p 48 n1) ;; (natp n1)
+                (integerp ad2)
+                (integerp ad1))
+           (equal (write n1 ad1 val1 (write n2 ad2 val2 x86))
+                  (write n2 ad2 val2 (write n1 ad1 val1 x86))))
+  :hints (("Goal" :use write-of-write-diff-bv
+           :in-theory (disable write-of-write-diff-bv))))

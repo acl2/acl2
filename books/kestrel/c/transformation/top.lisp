@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,12 +10,16 @@
 
 (in-package "C2C")
 
+(include-book "constant-propagation")
 (include-book "copy-fn")
 (include-book "deftrans")
 (include-book "rename")
-(include-book "simpadd0-proofs")
+(include-book "simpadd0")
+(include-book "simpadd0-doc")
 (include-book "specialize")
 (include-book "split-fn-proofs")
+(include-book "splitgso")
+(include-book "splitgso-doc")
 (include-book "utilities/top")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

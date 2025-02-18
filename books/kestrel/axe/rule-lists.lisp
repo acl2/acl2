@@ -1,7 +1,7 @@
 ; Lists of rule names (general purpose)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -195,10 +195,10 @@
             eq ; introduces EQUAL
             /= ; "not equal"
 
-            null ; opens to EQ, which opens to EQUAL
-            zerop ; opens to EQL, which opens to EQUAL
+            null ; opens to EQ, which opens to EQUAL (todo: go directly)
+            zerop ; opens to EQL, which opens to EQUAL (todo: go directly)
 
-            double-rewrite
+            double-rewrite ; todo: or remove these when we make the axe-rules
             return-last
 
             not-stringp-of-cons)
@@ -469,11 +469,16 @@
     bvsx-of-if-becomes-bvsx-of-bvif-arg3
     repeatbit-of-if-becomes-repeatbit-of-bvif-arg2))
 
-;; These are needed only when operations like logxor or + may appears
+;; These are needed only when operations like logxor or + may appear
+;; Used in the x86/ dir.
 (defun convert-to-bv-rules ()
   (declare (xargs :guard t))
-  '(bvplus-convert-arg2-to-bv-axe-restricted ; todo: use the unrestricted ones
+  '(bvchop-convert-arg2-to-bv-axe
+    bvplus-convert-arg2-to-bv-axe-restricted ; todo: use the unrestricted ones
     bvplus-convert-arg3-to-bv-axe-restricted
+    bvmult-convert-arg2-to-bv-axe
+    bvmult-convert-arg3-to-bv-axe
+    ;; logext-convert-arg2-to-bv-axe ; todo: try
     ;; bvminus-convert-arg2-to-bv-axe ; these seemed to cause loops
     ;; bvminus-convert-arg3-to-bv-axe
     bvuminus-convert-arg2-to-bv-axe
@@ -484,11 +489,14 @@
     bvxor-convert-arg2-to-bv-axe
     bvxor-convert-arg3-to-bv-axe
     getbit-convert-arg1-to-bv-axe ; todo: more!
+    ;; logext-convert-arg2-to-bv-axe ; loops with logext-of-bvplus-64
+    ;; keep this list in sync with *functions-convertible-to-bv*:
     trim-of-logand-becomes-bvand
     trim-of-logior-becomes-bvor
     trim-of-logxor-becomes-bvxor
     trim-of-lognot-becomes-bvnot
     trim-of-+-becomes-bvplus ; fixme: loop on (bvplus 32 x (+ -4 (rsp x86))) involving bvplus-of-constant-when-overflow?
+    trim-of-unary---becomes-bvuminus
     ))
 
 ;; TODO: Consider also the analogous rules about getbit?
@@ -795,8 +803,9 @@
      slice-subst-in-constant
      slice-subst-in-constant-alt
      slice-when-bvchop-known    ;new
-     bvplus-of-bvshl              ;new ; rename or drop
-     bvplus-of-bvshl-becomes-bvcat ;new
+     ;bvplus-of-bvshl              ;new ; rename or drop
+     bvplus-of-bvshl-becomes-bvcat-arg2
+     bvplus-of-bvshl-becomes-bvcat-arg3
      bvuminus-of-bvcat-of-0-16-8 ;new!
 
      bvplus-of-bvchop-and-bvshl ;new
@@ -918,7 +927,8 @@
 ;in case we can't choose which form to prefer (but we should probably choose?)
      equal-of-bvnot-and-bvxor-ones
      equal-of-bvxor-ones-and-bvnot
-     bvlt-of-constant-when-too-narrow
+     bvlt-of-constant-when-too-narrow-axe
+     not-bvlt-of-constant-when-too-narrow-axe
      equal-of-maxint-when-sbvlt ;Sun Oct 26 16:32:40 2014 ; rename
      sbvlt-of-bvplus-of-1       ;Sun Oct 26 16:32:17 2014
 
@@ -1082,7 +1092,16 @@
      putbits
 
      unsigned-byte-p-of-bvmult-of-expt2-constant-version
-     unsigned-byte-p-of-bvchop-becomes-bvlt)))
+     unsigned-byte-p-of-bvchop-becomes-bvlt
+
+     ;; These recognize idioms for bvcat (these are probably not fully general;
+     ;; need to support bvcats with 0 anywhere and other args with 1s only in
+     ;; the 0 region):
+     ;; bvor-disjoint-ones-arg1-gen
+     ;; bvor-disjoint-ones-arg2-gen
+     bvor-of-bvcat-becomes-bvcat-arg2
+     bvor-of-bvcat-becomes-bvcat-arg3
+     )))
 
 ;todo combine this with core-rules-bv
 ;todo: some of these are not bv rules?
@@ -1104,8 +1123,8 @@
 
     bound-when-usb2 ;uses the dag assumptions - huh? (expensive?)
 
-    bvplus-disjoint-ones-arg1-gen-better
-    bvplus-disjoint-ones-arg2-gen-better
+    bvplus-disjoint-ones-arg1-gen
+    bvplus-disjoint-ones-arg2-gen
     bvplus-disjoint-ones-2-alt
     bvplus-disjoint-ones-2
 
@@ -1294,7 +1313,7 @@
     len-update-nth ;pretty aggressive
     true-listp-of-update-nth-2
     nthcdr-of-nil
-    nth-of-take-gen2 ;quite aggressive
+    nth-of-take-2-gen ;quite aggressive
     repeat-becomes-repeat-tail
     nthcdr-of-cons
     equal-cons-nth-0-self
@@ -1631,8 +1650,8 @@
      bv-array-read-of-getbit-list
      bv-array-read-numeric-bound
      bv-array-read-non-negative
-     bv-array-read-when-data-isnt-an-all-unsigned-byte-p
-     bv-array-write-when-data-isnt-an-all-unsigned-byte-p
+     bv-array-read-when-data-isnt-an-all-unsigned-byte-p ; requires the evaluator to know about bvchop-list
+     bv-array-write-when-data-isnt-an-all-unsigned-byte-p ; requires the evaluator to know about bvchop-list
      getbit-of-bv-array-read-too-high ; drop?
      ;;getbit-of-bv-array-read-gen ; just blast the array read?
      equal-of-bvchop-of-nth-and-bv-array-read
@@ -1829,7 +1848,7 @@
     trim-of-bvchop
     trim-of-bvcat
     trim-of-1-and-leftrotate ; todo: add full trim support for rotate ops
-    trim-does-nothing-axe ; should not be needed?
+    ;; trim-does-nothing-axe ; should not be needed?
     )))
 
 (defun all-trim-rules ()
@@ -1926,11 +1945,7 @@
 ;for specs:
             ;; nth2-becomes-bvnth-for-natps-dag
 
-            ;; bvor-disjoint-ones-arg1-gen
-            ;; bvor-disjoint-ones-arg2-gen
-
             myif-of-myif-x-x-t
-
             myif-myif-myif-1
             myif-myif-myif-2
 
@@ -2264,7 +2279,7 @@
      inverse-of-+
      bvlt-of-bvplus-of-1-and-same
      ;; <-becomes-bvlt-axe-bind-free-arg1 ;wed feb 24 15:00:17 2010
-     len-when-equal-take
+     ;len-when-equal-take
      car-of-nthcdr
      consp-of-nthcdr
      equal-cons-cases2 ;hope this is ok
@@ -2301,7 +2316,7 @@
      bvplus-10-shrink-to-9
 
      ;; bvlt-add-to-both-sides-constant-lemma-no-split ;Wed Feb 24 14:16:05 2010
-     <-becomes-bvlt-alt-dag
+     <-becomes-bvlt-alt-weak
      assoc-equal-of-cons
      bvplus-commutative-axe
      bvplus-commutative-2-axe
@@ -2846,11 +2861,10 @@
   '(update-nth-becomes-update-nth2 ; drop once arraycopy keeps types better?
     ;; update-nth-becomes-update-nth2-extend
     ;; update-nth-becomes-update-nth2-extend-gen
-    update-nth-becomes-update-nth2-extend-new ; drop once arraycopy keeps types better?
+    update-nth-becomes-append ; drop once arraycopy keeps types better?
     ))
 
 ;; todo: get rid of this?
-;; many of these are list rules
 (defun jvm-rules-unfiled-misc ()
   (declare (xargs :guard t))
   (append '(equal-nil-of-myif
@@ -2864,7 +2878,6 @@
 ;    true-listp-of-logext-list
 ;    logext-list-equal-nil-rewrite2
 ;    logext-list-equal-nil-rewrite
-
 ;    iushr-constant-opener
 ;            usbp8-implies-sbp32-2 ;fixme do we still need this?
             integerp-of-nth-when-all-integerp
@@ -2901,9 +2914,8 @@
             map-packbv-constant-opener)))
 
 ;todo: rename?  Maybe to miter-rules?
-;fixme build this from smaller lists of rules?
+;todo: build this from smaller lists of rules?
 ;GETBIT-OF-BVXOR-ERIC ;seemed to be bad for dag prover Tue Jan 12 06:24:08 2010
-;todo: move this out of this jvm-specific file?
 (defun axe-rules ()
   (declare (xargs :guard t))
   (set-difference-equal
@@ -3320,6 +3332,8 @@
              move-negative-addend-1
              unicity-of-0
              collect-constants-over-<
+             collect-constants-over-<-2
+
              natp
 
              rationalp-when-bv-operator
@@ -3489,7 +3503,10 @@
 
              acl2-numberp-of-floor
              integerp-of-myif-strong
-             bvchop-of-minus-trim
+
+             ;bvchop-of-minus-trim
+             ;bvchop-convert-arg2-to-bv-axe ; need the rest of the convert-to-bv-rules...
+
              sha1-hack-a-million
              subrange-of-take
              nthcdr-of-subrange
@@ -3807,8 +3824,6 @@
 ;             natp ;loops with not-<-of-0-when-natp
 ;natp-when-integerp
 
-             collect-constants-over-<-2
-
              equal-of-cons
 ;             bv-array-write-with-index-and-len-same ;mon jul 19 21:06:14 2010
 ;             bvxor-associative ;i can't believe this was missing!
@@ -3821,7 +3836,7 @@
 ;                                <-of-bvplus-becomes-bvlt-arg2 ;wed feb 24 14:59:16 2010
              nth-becomes-bv-array-read2
 ;             bvlt-transitive-free-back ;other rules like this?
-             nth-of-take-gen
+             nth-of-take-2-gen
              nth-of-firstn ;move to list-rules?
              bvlt-when-not-bvlt
              bvlt-when-unsigned-byte-p
@@ -3908,7 +3923,7 @@
           (introduce-bv-array-rules)  ;todo: duplicated above!
           ))
 
-;outside-in rules.  Only used un rewriter-alt.lisp.
+;outside-in rules.  Only used in rewriter-alt.lisp.
 (defun oi-rules ()
   (declare (xargs :guard t))
   '(if-when-nil

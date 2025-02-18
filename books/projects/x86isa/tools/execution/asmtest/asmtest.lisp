@@ -252,7 +252,7 @@ language?</p>
                            (channel symbolp)
                            state)
   :returns (mv eofp
-               (bytes byte-listp) 
+               (bytes byte-listp)
                (new-state
                 (implies (open-input-channel-p1 channel :byte state)
                          (open-input-channel-p1 channel :byte state))))
@@ -284,7 +284,7 @@ language?</p>
     (<= (acl2::file-measure chan new-state)
         (acl2::file-measure chan state))
     :rule-classes :linear)
-  
+
   (defret file-measure-of-<fn>-strong
     (implies (and (not eofp)
                   (not (zp n)))
@@ -321,8 +321,8 @@ language?</p>
         ((atom y) (byte-list-fix x))
         (t (cons (n08-fix (logxor (car x) (car y)))
                  (byte-list-xor (cdr x) (cdr y))))))
-    
-  
+
+
 
 (defprod snippet-mismatch
   ((input-bytes my-byte-listp)

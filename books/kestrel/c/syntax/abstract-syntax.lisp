@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -31,7 +31,7 @@
     "See @(see syntax-for-tools) for background.")
    (xdoc::p
     "We define fixtypes for constructs that closely correspond to
-     the grammar in [C], which is summarized in [C:A].
+     the grammar in [C17], which is summarized in [C17:A].
      For now we cover all the constructs after preprocessing,
      but we plan to add some preprocessing constructs.")
    (xdoc::p
@@ -46,7 +46,7 @@
     "We try and pick short yet clear names for these fixtypes,
      so that code that manipulates these fixtypes
      can be a bit more more compact.
-     While the grammar in [C]
+     While the grammar in [C17]
      uses the `hexadecimal' and `binary' qualifications
      for certain hexadecimal and binary entities
      but uses no qualifications for certain decimal entities,
@@ -55,13 +55,13 @@
      for certain ``parallel'' entities.")
    (xdoc::p
     "Some library fixtypes already correspond to
-     certain nonterminals in the grammar in [C]
+     certain nonterminals in the grammar in [C17]
      and are thus not defined here, but just used.
      Examples are fixtypes for digits (in different bases), and lists thereof.")
    (xdoc::p
     "The @('...-list') fixtypes are slightly more general than
      the <i>...-sequence</i> and <i>...-list</i> nonterminals
-     in the grammar in [C],
+     in the grammar in [C17],
      because the former include the empty list,
      while the latter only include non-empty sequences/lists.
      Including empty lists in our fixtypes makes things a bit simpler,
@@ -73,12 +73,12 @@
      to be more general than the concrete syntax.
      Restrictions on well-formed code can be formulated
      via separate predicates on the abstract syntax.
-     The grammar in [C] does not capture many static constraints anyhow.")
+     The grammar in [C17] does not capture many static constraints anyhow.")
    (xdoc::p
     "The use of natural numbers to represent <i>c-char</i> and <i>s-char</i>
      in character constants and string literals is motivated by
      the fact that we commit to Unicode characters,
-     even though [C] prescribes no specific source character set [C:5.2.1].
+     even though [C17] prescribes no specific source character set [C17:5.2.1].
      These days, Unicode should be sufficiently general;
      note that ASCII is a subset of Unicode.
      Thus, the natural numbers represent Unicode code points,
@@ -138,11 +138,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod ident
-  :short "Fixtype of identifiers [C:6.4.2] [C:A.1.3]."
+  :short "Fixtype of identifiers [C17:6.4.2] [C17:A.1.3]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to <i>identifier</i> in the grammar in [C].
+    "This corresponds to <i>identifier</i> in the grammar in [C17].
      In this abstract syntax, we allow any ACL2 values as C identifiers.
      We wrap these arbitrary values into a one-component product fixtype
      so that we can more easily distinguish identifiers from other things.")
@@ -157,8 +157,8 @@
      predicates that restrict identifiers to certain forms,
      used for parsing, printing, transformations, etc.
      Restrictions are needed to print this abstract syntax
-     into a form where identifiers respect the restrictions in [C];
-     in addition, parsing code compliant to [C]
+     into a form where identifiers respect the restrictions in [C17];
+     in addition, parsing code compliant to [C17]
      will result in specific forms of identifiers."))
   ((unwrap any))
   :pred identp)
@@ -214,14 +214,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum lsuffix
-  :short "Fixtype of length suffixes [C:6.4.4.1] [C:A.1.5]."
+  :short "Fixtype of length suffixes [C17:6.4.4.1] [C17:A.1.5]."
   :long
   (xdoc::topstring
    (xdoc::p
     "This corresponds to <i>long-suffix</i> and <i>long-long-suffix</i>
-     in the grammar in [C].
+     in the grammar in [C17].
      We use the term `length suffix' here,
-     but the grammar in [C] does not use that term,
+     but the grammar in [C17] does not use that term,
      although it is arguably a good term to denote
      both long and long-long suffixes.
      This captures the four possible suffixes
@@ -235,11 +235,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum usuffix
-  :short "Fixtype of unsigned suffixes [C:6.4.41] [C:A.1.5]."
+  :short "Fixtype of unsigned suffixes [C17:6.4.41] [C17:A.1.5]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to <i>unsigned-suffix</i> in the grammar in [C].
+    "This corresponds to <i>unsigned-suffix</i> in the grammar in [C17].
      This captures the two possible suffixes @('u') and @('U')."))
   (:locase-u ())
   (:upcase-u ())
@@ -248,11 +248,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum isuffix
-  :short "Fixtype of integer suffixes [C:6.4.4.1] [C:A.1.5]."
+  :short "Fixtype of integer suffixes [C17:6.4.4.1] [C17:A.1.5]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to <i>integer-suffix</i> in the grammar in [C].
+    "This corresponds to <i>integer-suffix</i> in the grammar in [C17].
      This captures the four possibilities of
      (i) just an unsigned suffix,
      (ii) just a length suffix,
@@ -280,11 +280,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum hprefix
-  :short "Fixtype of hexadecimal prefixes [C:6.4.4.1] [C:A.1.5]."
+  :short "Fixtype of hexadecimal prefixes [C17:6.4.4.1] [C17:A.1.5]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to <i>hexadecimal-prefix</i> in the grammar in [C].
+    "This corresponds to <i>hexadecimal-prefix</i> in the grammar in [C17].
      This captures the two possible prefixes @('0x') and @('0X')."))
   (:locase-0x ())
   (:upcase-0x ())
@@ -294,7 +294,7 @@
 
 (fty::deftagsum dec/oct/hex-const
   :short "Fixtype of decimal, octal, and hexadecimal constants
-          [C:6.4.4.1] [C:A.1.5]."
+          [C17:6.4.4.1] [C17:A.1.5]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -302,7 +302,7 @@
      <i>decimal-constant</i>,
      <i>octal-constant</i>, and
      <i>hexadecimal-constant</i>
-     in the grammar in [C].
+     in the grammar in [C17].
      The grammar does not have a nonterminal
      that directly corresponds to this fixtype:
      the three alternatives are given in
@@ -330,7 +330,7 @@
     "A hexadecimal constant consists of a prefix
      and a list of digits (which should be non-empty).
      The fixtype @(tsee hex-digit-char-list)
-     corresponds, in the grammar in [C],
+     corresponds, in the grammar in [C17],
      to <i>hexadecimal-constant</i> without <i>hexadecimal-prefix</i>.
      The non-decimal hexadecimal digits may be uppercase and lowercase,
      so in order to capture all the information from the abstract syntax
@@ -346,11 +346,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod iconst
-  :short "Fixtype of integer constants [C:6.4.4.1] [C:A.1.5]."
+  :short "Fixtype of integer constants [C17:6.4.4.1] [C17:A.1.5]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to <i>integer-constant</i> in the grammar in [C].
+    "This corresponds to <i>integer-constant</i> in the grammar in [C17].
      As mentioned in @(tsee dec/oct/hex-const),
      our fixtypes are factored slightly differently.
      An integer constant consists of a decimal, octal, or hexadecimal constant,
@@ -373,11 +373,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum fsuffix
-  :short "Fixtype of floating suffixes [C:6.4.4.2] [C:A.1.5]."
+  :short "Fixtype of floating suffixes [C17:6.4.4.2] [C17:A.1.5]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to <i>floating-suffix</i> in the grammar in [C].
+    "This corresponds to <i>floating-suffix</i> in the grammar in [C17].
      This captures the four possible suffixes
      @('f'), @('F'), @('l'), and @('L')."))
   (:locase-f ())
@@ -400,11 +400,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum sign
-  :short "Fixtype of signs [C:6.4.4.2] [C:A.1.5]."
+  :short "Fixtype of signs [C17:6.4.4.2] [C17:A.1.5]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to <i>sign</i> in the grammar in [C].
+    "This corresponds to <i>sign</i> in the grammar in [C17].
      This captures the two possible signs @('+') and @('-')
      used in the exponents of floating constants."))
   (:plus ())
@@ -425,12 +425,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum dec-expo-prefix
-  :short "Fixtype of decimal exponent prefixes [C:6.4.4.2] [C:A.1.5]."
+  :short "Fixtype of decimal exponent prefixes [C17:6.4.4.2] [C17:A.1.5]."
   :long
   (xdoc::topstring
    (xdoc::p
     "This captures the @('e') or @('E') prefix
-     in <i>exponent-part</i> in the grammar in [C]."))
+     in <i>exponent-part</i> in the grammar in [C17]."))
   (:locase-e ())
   (:upcase-e ())
   :pred dec-expo-prefixp)
@@ -438,12 +438,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum bin-expo-prefix
-  :short "Fixtype of binary exponent prefixes [C:6.4.4.2] [C:A.1.5]."
+  :short "Fixtype of binary exponent prefixes [C17:6.4.4.2] [C17:A.1.5]."
   :long
   (xdoc::topstring
    (xdoc::p
     "This captures the @('p') or @('P') prefix
-     in <i>binary-exponent-part</i> in the grammar in [C]."))
+     in <i>binary-exponent-part</i> in the grammar in [C17]."))
   (:locase-p ())
   (:upcase-p ())
   :pred bin-expo-prefixp)
@@ -451,11 +451,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod dec-expo
-  :short "Fixtype of decimal exponents [C:6.4.4.2] [C:A.1.5]."
+  :short "Fixtype of decimal exponents [C17:6.4.4.2] [C17:A.1.5]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to <i>exponent-part</i> in the grammar in [C].
+    "This corresponds to <i>exponent-part</i> in the grammar in [C17].
      It consists of a prefix,
      an optional sign,
      and a list of (decimal) digits (which should be non-empty)."))
@@ -478,16 +478,16 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod bin-expo
-  :short "Fixtype of binary exponents [C:6.4.4.2] [C:A.1.5]."
+  :short "Fixtype of binary exponents [C17:6.4.4.2] [C17:A.1.5]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to <i>binary-exponent-part</i> in the grammar in [C].
+    "This corresponds to <i>binary-exponent-part</i> in the grammar in [C17].
      It consists of a prefix,
      an optional sign,
      and a list of (decimal) digits (which should be non-empty).
      The digits are decimal, not binary or hexadecimal;
-     but the implicit base of the exponent is binary [C:6.4.4.2/3]."))
+     but the implicit base of the exponent is binary [C17:6.4.4.2/3]."))
   ((prefix bin-expo-prefix)
    (sign? sign-option)
    (digits dec-digit-char-list))
@@ -496,18 +496,18 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod dec-frac-const
-  :short "Fixtype of decimal fractional constants [C:6.4.4.2] [C:A.1.5]."
+  :short "Fixtype of decimal fractional constants [C17:6.4.4.2] [C17:A.1.5]."
   :long
   (xdoc::topstring
    (xdoc::p
     "This corresponds to <i>fractional-constant</i>
-     in the grammar in [C].
+     in the grammar in [C17].
      It consists of the digits before and after the point.
      Thus, it covers the three possibilities of
      (i) the point in the middle (with a left and right digit sequence),
      (ii) the point at the start (with just a right digit sequence), and
      (iii) the point at the end (with just a left digit sequence);
-     it also covers a fourth possibility, disalowed in the grammar in [C],
+     it also covers a fourth possibility, disalowed in the grammar in [C17],
      namely when there are no digits before or after the point.
      This fourth possibilty makes the definition of this fixtype simpler,
      and can be ruled out by predicates over this abstract syntax."))
@@ -518,18 +518,18 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod hex-frac-const
-  :short "Fixtype of hexadecimal fractional constants [C:6.4.4.2] [C:A.1.5]."
+  :short "Fixtype of hexadecimal fractional constants [C17:6.4.4.2] [C17:A.1.5]."
   :long
   (xdoc::topstring
    (xdoc::p
     "This corresponds to <i>hexadecimal-fractional-constant</i>
-     in the grammar in [C].
+     in the grammar in [C17].
      It consists of the digits before and after the point.
      Thus, it covers the three possibilities of
      (i) the point in the middle (with a left and right digit sequence),
      (ii) the point at the start (with just a right digit sequence), and
      (iii) the point at the end (with just a left digit sequence);
-     it also covers a fourth possibility, disalowed in the grammar in [C],
+     it also covers a fourth possibility, disalowed in the grammar in [C17],
      namely when there are no digits before or after the point.
      This fourth possibilty makes the definition of this fixtype simpler,
      and can be ruled out by predicates over this abstract syntax."))
@@ -540,12 +540,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum dec-core-fconst
-  :short "Fixtype of decimal core floating constants [C:6.4.4.2] [C:A.1.5]."
+  :short "Fixtype of decimal core floating constants [C17:6.4.4.2] [C17:A.1.5]."
   :long
   (xdoc::topstring
    (xdoc::p
     "This corresponds to <i>decimal-floating-constant</i>
-     in the grammar in [C], but without the optional suffix,
+     in the grammar in [C17], but without the optional suffix,
      which is what we mean by `core' in the name of this fixtype
      (we factor things slightly differently in our fixtypes;
      see @(tsee fconst)).
@@ -564,12 +564,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum hex-core-fconst
-  :short "Fixtype of hexadecimal core floating constants [C:6.4.4.2] [C:A.1.5]."
+  :short "Fixtype of hexadecimal core floating constants [C17:6.4.4.2] [C17:A.1.5]."
   :long
   (xdoc::topstring
    (xdoc::p
     "This corresponds to <i>hexadecimal-floating-constant</i>
-     in the grammar in [C], but without the prefix and the optional suffix,
+     in the grammar in [C17], but without the prefix and the optional suffix,
      which is what we mean by `core' in the name of this fixtype
      (we factor things slightly differently in our fixtypes;
      see @(tsee fconst)).
@@ -585,11 +585,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum fconst
-  :short "Fixtype of floating constants [C:6.4.4.2] [C:A.1.5]."
+  :short "Fixtype of floating constants [C17:6.4.4.2] [C17:A.1.5]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to <i>floating-constant</i> in the grammar in [C].
+    "This corresponds to <i>floating-constant</i> in the grammar in [C17].
      As mentioned in @(tsee dec-core-fconst) and @(tsee hex-core-fconst),
      we factor things a bit differently in our fixtypes,
      so here we add the prefixes and suffixes as appropriate."))
@@ -603,11 +603,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum simple-escape
-  :short "Fixtype of simple escape sequences [C:6.4.4.4] [C:A.1.5]."
+  :short "Fixtype of simple escape sequences [C17:6.4.4.4] [C17:A.1.5]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to <i>simple-escape-sequence</i> in the grammar in [C].
+    "This corresponds to <i>simple-escape-sequence</i> in the grammar in [C17].
      A simple escape sequence consists of
      a backslash (implicit in this fixtype definition)
      followed by another character (indicated by the fixtype constructor):
@@ -640,11 +640,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum oct-escape
-  :short "Fixtype of octal escape sequences [C:6.4.4.4] [C:A.1.5]."
+  :short "Fixtype of octal escape sequences [C17:6.4.4.4] [C17:A.1.5]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to <i>octal-escape-sequence</i> in the grammar in [C].
+    "This corresponds to <i>octal-escape-sequence</i> in the grammar in [C17].
      An octal escape sequence consists of
      a backslash (implicit in this fixtype definition)
      followed by one, two, or three octal digits."))
@@ -659,11 +659,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod hex-quad
-  :short "Fixtype of quadruples of hexadecimal digits [C:6.4.3] [C:A.1.4]."
+  :short "Fixtype of quadruples of hexadecimal digits [C17:6.4.3] [C17:A.1.4]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to <i>hex-quad</i> in the grammar in [C]."))
+    "This corresponds to <i>hex-quad</i> in the grammar in [C17]."))
   ((1st hex-digit-char)
    (2nd hex-digit-char)
    (3rd hex-digit-char)
@@ -673,12 +673,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum univ-char-name
-  :short "Fixtype of universal character names [C:6.4.3] [C:A.1.4]."
+  :short "Fixtype of universal character names [C17:6.4.3] [C17:A.1.4]."
   :long
   (xdoc::topstring
    (xdoc::p
     "This corresponds to <i>universal-character-name</i>
-     in the grammar in [C].
+     in the grammar in [C17].
      The two cases of this fixtype correspond to
      @('\\uXXXX') and @('\\UXXXXYYYY')."))
   (:locase-u ((quad hex-quad)))
@@ -689,11 +689,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum escape
-  :short "Fixtype of escape sequences [C:6.4.4.4] [C:A.1.5]."
+  :short "Fixtype of escape sequences [C17:6.4.4.4] [C17:A.1.5]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to <i>escape-sequence</i> in the grammar in [C].
+    "This corresponds to <i>escape-sequence</i> in the grammar in [C17].
      For a hexadecimal escape sequence,
      we use lists of hexadecimal digit characters,
      which correspond to <i>hexadecimal-escape-sequence</i>
@@ -708,11 +708,11 @@
 
 (fty::deftagsum c-char
   :short "Fixtype of characters and escape sequences
-          usable in character constants [C:6.4.4.4] [C:A.1.5]."
+          usable in character constants [C17:6.4.4.4] [C17:A.1.5]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to <i>c-char</i> in the grammar in [C].")
+    "This corresponds to <i>c-char</i> in the grammar in [C17].")
    (xdoc::p
     "As explained in @(see abstract-syntax),
      the natural numbers represent Unicode code points.
@@ -726,7 +726,7 @@
 
 (fty::deflist c-char-list
   :short "Fixtype of lists of characters and escape sequences
-          usable in character constants [C:6.4.4.4] [C:A.1.5]."
+          usable in character constants [C17:6.4.4.4] [C17:A.1.5]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -740,12 +740,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum cprefix
-  :short "Fixtype of prefixes of character constants [C:6.4.4.4] [C:A.1.5]."
+  :short "Fixtype of prefixes of character constants [C17:6.4.4.4] [C17:A.1.5]."
   :long
   (xdoc::topstring
    (xdoc::p
     "These are the @('L'), @('u'), and @('U') prefixes
-     in <i>character-constant</i> in the grammar in [C]."))
+     in <i>character-constant</i> in the grammar in [C17]."))
   (:upcase-l ())
   (:locase-u ())
   (:upcase-u ())
@@ -765,11 +765,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod cconst
-  :short "Fixtype of character constants [C:6.4.4.4] [C:A.1.5]."
+  :short "Fixtype of character constants [C17:6.4.4.4] [C17:A.1.5]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to <i>character-constant</i> in the grammar in [C]."))
+    "This corresponds to <i>character-constant</i> in the grammar in [C17]."))
   ((prefix? cprefix-option)
    (cchars c-char-list))
   :pred cconstp)
@@ -777,7 +777,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum const
-  :short "Fixtype of constants [C:6.4.4] [C:A.1.5]."
+  :short "Fixtype of constants [C17:6.4.4] [C17:A.1.5]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -803,11 +803,11 @@
 
 (fty::deftagsum s-char
   :short "Fixtype of characters and escape sequences
-          usable in string literals [C:6.4.5] [C:A.1.6]."
+          usable in string literals [C17:6.4.5] [C17:A.1.6]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to <i>s-char</i> in the grammar in [C].")
+    "This corresponds to <i>s-char</i> in the grammar in [C17].")
    (xdoc::p
     "As explained in @(see abstract-syntax),
      the natural numbers represent Unicode code points.
@@ -821,7 +821,7 @@
 
 (fty::deflist s-char-list
   :short "Fixtype of lists of characters and escape sequences
-          usable in string literals [C:6.4.5] [C:A.1.6]."
+          usable in string literals [C17:6.4.5] [C17:A.1.6]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -835,11 +835,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum eprefix
-  :short "Fixtype of encoding prefixes [C:6.4.5] [C:A.1.6]."
+  :short "Fixtype of encoding prefixes [C17:6.4.5] [C17:A.1.6]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to <i>encoding-prexif</i> in the grammar in [C]."))
+    "This corresponds to <i>encoding-prexif</i> in the grammar in [C17]."))
   (:locase-u8 ())
   (:locase-u ())
   (:upcase-u ())
@@ -874,11 +874,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod stringlit
-  :short "Fixtype of string literals [C:6.4.5] [C:A.1.6]."
+  :short "Fixtype of string literals [C17:6.4.5] [C17:A.1.6]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to <i>string-literal</i> in the grammar in [C]."))
+    "This corresponds to <i>string-literal</i> in the grammar in [C17]."))
   ((prefix? eprefix-option)
    (schars s-char-list))
   :pred stringlitp)
@@ -900,15 +900,15 @@
 
 (fty::deftagsum unop
   :short "Fixtype of unary operators
-          [C:6.5.3] [C:6.5.2] [C:A.2.1]."
+          [C17:6.5.3] [C17:6.5.2] [C17:A.2.1]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to <i>unary-operator</i> in the grammar in [C],
+    "This corresponds to <i>unary-operator</i> in the grammar in [C17],
      but it also includes one-argument operators
      used in <i>unary-expression</i> and <i>postfix-expression</i>,
      which can therefore be reasonably regarded as unary operators,
-     although the grammar in [C] reserves the term to only some of them.
+     although the grammar in [C17] reserves the term to only some of them.
      From the standpoint of our abstract syntax,
      including the additional operators under this definition of unary operators
      makes things more factored and orthogonal.
@@ -943,11 +943,11 @@
 
 (fty::deftagsum binop
   :short "Fixtype of binary operators
-          [C:6.5.5-14] [C:6.5.16] [C:A.2.1]."
+          [C17:6.5.5-14] [C17:6.5.16] [C17:A.2.1]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The grammar in [C] does not have a nonterminal for binary operators.
+    "The grammar in [C17] does not have a nonterminal for binary operators.
      Instead, it has nonterminals for various kinds of binary expressions,
      used to capture certain precedence rules in the grammar itself.
      In our abstract syntax, for better factoring and orthogonality,
@@ -1018,7 +1018,7 @@
 
 (fty::deftagsum inc/dec-op
   :short "Fixtype of increment and decrement operators
-          [C:6.5.3] [C:6.5.2] [C:A.2.1]."
+          [C17:6.5.3] [C17:6.5.2] [C17:A.2.1]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1069,11 +1069,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum stor-spec
-  :short "Fixtype of storage class specifiers [C:6.7.1] [C:A.2.2]."
+  :short "Fixtype of storage class specifiers [C17:6.7.1] [C17:A.2.2]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to <i>storage-class-specifier</i> in the grammar in [C].
+    "This corresponds to <i>storage-class-specifier</i> in the grammar in [C17].
      The storage class specifiers are
      @('typedef'),
      @('extern'),
@@ -1105,11 +1105,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum type-qual
-  :short "Fixtype of type qualifiers [C:6.7.3] [C:A.2.2]."
+  :short "Fixtype of type qualifiers [C17:6.7.3] [C17:A.2.2]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to <i>type-qualifier</i> in the grammar in [C].
+    "This corresponds to <i>type-qualifier</i> in the grammar in [C17].
      The type qualifiers are
      @('const'),
      @('restrict'),
@@ -1136,11 +1136,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum fun-spec
-  :short "Fixtype of function specifiers [C:6.7.4] [C:A.2.2]."
+  :short "Fixtype of function specifiers [C17:6.7.4] [C17:A.2.2]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to <i>function-specifier</i> in the grammar in [C].
+    "This corresponds to <i>function-specifier</i> in the grammar in [C17].
      The function specifiers are @('inline') and @('_Noreturn').")
    (xdoc::p
     "We also include the GCC extension variants
@@ -1164,7 +1164,7 @@
                  "construct to specify assembler names")
     ". It consists of the keyword @('asm') or @('__asm') or @('__asm__')
      and a parenthesized string literal.
-     Since adjacent string literals may be concatenated [C:5.1.1.2/6],
+     Since adjacent string literals may be concatenated [C17:5.1.1.2/6],
      we allow a list of string literals here;
      this way, we preserve the fact that there were adjacent string literals.
      Indeed, we have observed multiple (two, to be precise)
@@ -1268,11 +1268,11 @@
 (fty::deftypes exprs/decls/stmts
   :short "Fixtypes of expressions, declarations, statements,
           and related entities
-          [C:6.5] [C:6.6] [C:6.7] [C:6.8] [C:A.2.1] [C:A.2.2] [C:A.2.3]."
+          [C17:6.5] [C17:6.6] [C17:6.7] [C17:6.8] [C17:A.2.1] [C17:A.2.2] [C17:A.2.3]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "The grammar in [C] defines expressions and declarations
+    "The grammar in [C17] defines expressions and declarations
      via a large and complex collection of mutually recursive rules;
      statements are not mutualy recursive with expressions and declarations.
      However, GCC extensions include statement expressions,
@@ -1331,19 +1331,19 @@
 
   (fty::deftagsum expr
     :parents (abstract-syntax exprs/decls/stmts)
-    :short "Fixtype of expressions [C:6.5] [C:A.2.1]."
+    :short "Fixtype of expressions [C17:6.5] [C17:A.2.1]."
     :long
     (xdoc::topstring
      (xdoc::p
-      "This corresponds to <i>expression</i> in the grammar in [C].")
+      "This corresponds to <i>expression</i> in the grammar in [C17].")
      (xdoc::p
       "Given that the abstract syntax is tree-structured,
        we do not explicitly introduce the various kinds of binary expressions
-       defined in the grammar in [C],
+       defined in the grammar in [C17],
        and instead use a single kind of binary expression
        consisting of two sub-expressions and a binary operator.
        Furthermore, we always use the general fixtype for expressions
-       as components of other constructs where the grammar in [C]
+       as components of other constructs where the grammar in [C17]
        uses more specific kinds of expressions,
        like <i>assignment-expression</i> in <i>generic-selection</i>.
        This means that our fixtypes are a bit more general,
@@ -1404,7 +1404,7 @@
       "For compound literals, we also capture
        the presence of absence of the final comma
        just after the <i>initializer-list</i>.
-       We formalize <i>initializer-list</i> [C:6.7.9] [C:A.2.2]
+       We formalize <i>initializer-list</i> [C17:6.7.9] [C17:A.2.2]
        as a list (which should be non-empty, unless GCC extensions are enabled)
        of pairs each consisting of
        some designators and an initializer (see @(tsee desiniter).")
@@ -1473,7 +1473,7 @@
        but that still looks like a function call,
        with multiple arguments:
        see the isomorphism between the grammar rules for
-       <i>argument-expression-list</i> and <i>expression</i> in [C].
+       <i>argument-expression-list</i> and <i>expression</i> in [C17].
        The two situations cannot be disambiguated purely syntactically.
        So the @(':cast/call-ambig') case of this fixtype
        captures this ambiguous situation:
@@ -1676,11 +1676,11 @@
 
   (fty::defprod const-expr
     :parents (abstract-syntax exprs/decls/stmts)
-    :short "Fixtype of constant expressions [C:6.6] [C:A.2.1]."
+    :short "Fixtype of constant expressions [C17:6.6] [C17:A.2.1]."
     :long
     (xdoc::topstring
      (xdoc::p
-      "This corresponds to <i>constant-expression</i> in the grammar in [C].
+      "This corresponds to <i>constant-expression</i> in the grammar in [C17].
        As in that grammar,
        it does not actually constrain the expression to be constant,
        but it may be useful to mark expressions to be constant,
@@ -1706,11 +1706,11 @@
 
   (fty::deftagsum genassoc
     :parents (abstract-syntax exprs/decls/stmts)
-    :short "Fixtype of generic associations [C:6.5.1.1] [C:A.2.1]."
+    :short "Fixtype of generic associations [C17:6.5.1.1] [C17:A.2.1]."
     :long
     (xdoc::topstring
      (xdoc::p
-      "This corresponds to <i>generic-association</i> in the grammar in [C]."))
+      "This corresponds to <i>generic-association</i> in the grammar in [C17]."))
     (:type ((type tyname)
             (expr expr)))
     (:default ((expr expr)))
@@ -1729,7 +1729,7 @@
       "Generic associations are defined in @(tsee genassoc).")
      (xdoc::p
       "This fixtype corresponds to <i>generic-assoc-list</i>
-     in the grammar in [C]."))
+     in the grammar in [C17]."))
     :elt-type genassoc
     :true-listp t
     :elementp-of-nil nil
@@ -1759,11 +1759,11 @@
 
   (fty::deftagsum type-spec
     :parents (abstract-syntax exprs/decls/stmts)
-    :short "Fixtype of type specifiers [C:6.7.3] [C:A.2.2]."
+    :short "Fixtype of type specifiers [C17:6.7.3] [C17:A.2.2]."
     :long
     (xdoc::topstring
      (xdoc::p
-      "This captures <i>type-specifier</i> in the grammar in [C].")
+      "This captures <i>type-specifier</i> in the grammar in [C17].")
      (xdoc::p
       "We model <i>atomic-type-specifier</i>
        by inlining the type name into the @(':atomic') case of this fixtype.")
@@ -1857,12 +1857,12 @@
   (fty::deftagsum spec/qual
     :parents (abstract-syntax exprs/decls/stmts)
     :short "Fixtype of specifiers and qualifiers
-            [C:6.7.2.1] [C:A.2.2]."
+            [C17:6.7.2.1] [C17:A.2.2]."
     :long
     (xdoc::topstring
      (xdoc::p
       "This does not correspond directly
-       to any nonterminal in the grammar in [C],
+       to any nonterminal in the grammar in [C17],
        but it is useful to define <i>specifier-qualifier-list</i>:
        see @(tsee spec/qual-list).")
      (xdoc::p
@@ -1897,11 +1897,11 @@
 
   (fty::deftagsum align-spec
     :parents (abstract-syntax exprs/decls/stmts)
-    :short "Fixtype of alignment specifiers [C:6.7.5] [C:A.2.2]."
+    :short "Fixtype of alignment specifiers [C17:6.7.5] [C17:A.2.2]."
     :long
     (xdoc::topstring
      (xdoc::p
-      "This corresponds to <i>alignment-specifier</i> in the grammar in [C].
+      "This corresponds to <i>alignment-specifier</i> in the grammar in [C17].
        The first two cases of this fixtype correspond to
        the two forms of @('_Alignas'),
        one for type names and one for constant expressions.
@@ -1923,12 +1923,12 @@
 
   (fty::deftagsum decl-spec
     :parents (abstract-syntax exprs/decls/stmts)
-    :short "Fixtype of declaration specifiers [C:6.7] [C:A.2.2]."
+    :short "Fixtype of declaration specifiers [C17:6.7] [C17:A.2.2]."
     :long
     (xdoc::topstring
      (xdoc::p
       "This does not directly correspond to
-       any nonterminal in the grammar in [C],
+       any nonterminal in the grammar in [C17],
        but it is useful to define <i>declaration-specifiers</i>
        (see @(tsee decl-spec-list)).")
      (xdoc::p
@@ -1959,7 +1959,7 @@
       "The fixtype of declaration specifiers is defined in @(tsee decl-spec).")
      (xdoc::p
       "This fixtype corresponds to <i>declaration-specifiers</i>
-       in the grammar in [C]."))
+       in the grammar in [C17]."))
     :elt-type decl-spec
     :true-listp t
     :elementp-of-nil nil
@@ -2013,11 +2013,11 @@
 
   (fty::deftagsum initer
     :parents (abstract-syntax exprs/decls/stmts)
-    :short "Fixtype of initializers [C:6.7.9] [C:A.2.2]."
+    :short "Fixtype of initializers [C17:6.7.9] [C17:A.2.2]."
     :long
     (xdoc::topstring
      (xdoc::p
-      "This corresponds to <i>initializer</i> in the grammar in [C].
+      "This corresponds to <i>initializer</i> in the grammar in [C17].
        The <i>initializer-list</i> is captured as
        a list (which should be non-empty) of initializers with designations
        (see @(tsee desiniter))."))
@@ -2045,14 +2045,14 @@
 
   (fty::defprod desiniter
     :short "Fixtype of initializers with optional designations
-            [C:6.7.9] [C:A.2.2]."
+            [C17:6.7.9] [C17:A.2.2]."
     :long
     (xdoc::topstring
      (xdoc::p
-      "This has no direct corresponding nonterminal in the grammar in [C],
+      "This has no direct corresponding nonterminal in the grammar in [C17],
        but it is useful to define <i>initializer-list</i>,
        which is a non-empty sequence of initializers with designations.
-       An optional <i>designation</i> [C:6.7.9] [C:A.2.2] is captured here
+       An optional <i>designation</i> [C17:6.7.9] [C17:A.2.2] is captured here
        as a list of designators (see @(tsee designor)),
        where the empty list means that the designation is absent,
        while a non-empty list captures the designation,
@@ -2074,7 +2074,7 @@
       "Initializers with designations are defined in @(tsee desiniter).")
      (xdoc::p
       "This fixtype corresponds to <i>initializer-list</i>
-       in the grammar in [C]."))
+       in the grammar in [C17]."))
     :elt-type desiniter
     :true-listp t
     :elementp-of-nil nil
@@ -2085,11 +2085,11 @@
 
   (fty::deftagsum designor
     :parents (abstract-syntax exprs/decls/stmts)
-    :short "Fixtype of designators [C:6.7.9] [C:A.2.2]."
+    :short "Fixtype of designators [C17:6.7.9] [C17:A.2.2]."
     :long
     (xdoc::topstring
      (xdoc::p
-      "This corresponds to <i>designator</i> in the grammar in [C]."))
+      "This corresponds to <i>designator</i> in the grammar in [C17]."))
     (:sub ((index const-expr)))
     (:dot ((name ident)))
     :pred designorp
@@ -2114,11 +2114,11 @@
 
   (fty::defprod declor
     :parents (abstract-syntax exprs/decls/stmts)
-    :short "Fixtype of declarators [C:6.7.6] [C:A.2.2]."
+    :short "Fixtype of declarators [C17:6.7.6] [C17:A.2.2]."
     :long
     (xdoc::topstring
      (xdoc::p
-      "This corresponds to <i>declarator</i> in the grammar in [C].
+      "This corresponds to <i>declarator</i> in the grammar in [C17].
        The optional <i>pointer</i> that precedes the <i>direct-declarator</i>
        is a sequence of stars each optionally followed by
        an optional sequence of type qualifiers and attribute specifiers.
@@ -2150,11 +2150,11 @@
 
   (fty::deftagsum dirdeclor
     :parents (abstract-syntax exprs/decls/stmts)
-    :short "Fixtype of direct declarators [C:6.7.6] [C:A.2.2]."
+    :short "Fixtype of direct declarators [C17:6.7.6] [C17:A.2.2]."
     :long
     (xdoc::topstring
      (xdoc::p
-      "This corresponds to <i>direct-declarator</i> in the grammar in [C].")
+      "This corresponds to <i>direct-declarator</i> in the grammar in [C17].")
      (xdoc::p
       "The base case is the identifier.")
      (xdoc::p
@@ -2208,11 +2208,11 @@
 
   (fty::defprod absdeclor
     :parents (abstract-syntax exprs/decls/stmts)
-    :short "Fixtype of abstract declarators [C:6.7.7] [C:A.2.2]."
+    :short "Fixtype of abstract declarators [C17:6.7.7] [C17:A.2.2]."
     :long
     (xdoc::topstring
      (xdoc::p
-      "This corresponds to <i>abstract-declarator</i> in the grammar in [C].
+      "This corresponds to <i>abstract-declarator</i> in the grammar in [C17].
        This fixtype is similar to @(tsee declor)
        (see that fixtype's documentation in particular
        for an explanation of the modeling of the <i>pointer</i> part),
@@ -2232,7 +2232,7 @@
   (fty::defoption absdeclor-option
     absdeclor
     :parents (abstract-syntax exprs/decls/stmts)
-    :short "Fixtype of optional abstract declarators [C:6.7.7] [C:A.2.2]."
+    :short "Fixtype of optional abstract declarators [C17:6.7.7] [C17:A.2.2]."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -2244,12 +2244,12 @@
 
   (fty::deftagsum dirabsdeclor
     :parents (abstract-syntax exprs/decls/stmts)
-    :short "Fixtype of direct abstract declarators [C:6.7.7] [C:A.2.2]."
+    :short "Fixtype of direct abstract declarators [C17:6.7.7] [C17:A.2.2]."
     :long
     (xdoc::topstring
      (xdoc::p
       "This corresponds to <i>direct-abstract-declarator</i>
-       in the grammar in [C].
+       in the grammar in [C17].
        This fixtype is similar to @(tsee dirdeclor),
        with the differences that
        the nested direct abstract declarators are optional,
@@ -2292,11 +2292,11 @@
 
   (fty::defprod paramdecl
     :parents (abstract-syntax exprs/decls/stmts)
-    :short "Fixtype of parameter declarations [C:6.7.6] [C:A.2.2]."
+    :short "Fixtype of parameter declarations [C17:6.7.6] [C17:A.2.2]."
     :long
     (xdoc::topstring
      (xdoc::p
-      "This corresponds to <i>parameter-declaration</i> in the grammar in [C].
+      "This corresponds to <i>parameter-declaration</i> in the grammar in [C17].
        In our abstract syntax, this is defined as consisting of
        declaration specifiers followed by a parameter declarator;
        see @(tsee paramdeclor) for a description and motivation
@@ -2316,7 +2316,7 @@
      (xdoc::p
       "Parameter declarations are defined in @(tsee paramdecl).
        This fixtype corresponds to <i>parameter-list</i>
-       in the grammar in [C]."))
+       in the grammar in [C17]."))
     :elt-type paramdecl
     :true-listp t
     :elementp-of-nil nil
@@ -2327,15 +2327,15 @@
 
   (fty::deftagsum paramdeclor
     :parents (abstract-syntax exprs/decls/stmts)
-    :short "Fixtype of parameter declarators [C:6.7.6] [C:A.2.2]."
+    :short "Fixtype of parameter declarators [C17:6.7.6] [C17:A.2.2]."
     :long
     (xdoc::topstring
      (xdoc::p
-      "There is actually no notion of `parameter declarator' in [C],
+      "There is actually no notion of `parameter declarator' in [C17],
        but it is convenient to introduce in our abstract syntax,
        to factor it better.
        Our notion of parameter declarator is analogous to
-       the notions of various kinds of declarators in [C],
+       the notions of various kinds of declarators in [C17],
        which, when preceded by declaration specifiers,
        form declarations.")
      (xdoc::p
@@ -2354,11 +2354,11 @@
 
   (fty::defprod tyname
     :parents (abstract-syntax exprs/decls/stmts)
-    :short "Fixtype of type names [C:6.7.7] [C:A.2.2]."
+    :short "Fixtype of type names [C17:6.7.7] [C17:A.2.2]."
     :long
     (xdoc::topstring
      (xdoc::p
-      "This corresponds to <i>type-name</i> in the grammar in [C]."))
+      "This corresponds to <i>type-name</i> in the grammar in [C17]."))
     ((specqual spec/qual-list)
      (decl? absdeclor-option))
     :pred tynamep
@@ -2368,12 +2368,12 @@
 
   (fty::defprod strunispec
     :parents (abstract-syntax exprs/decls/stmts)
-    :short "Fixtype of structure or union specifiers [C:6.7.2.1] [C:A.2.2]."
+    :short "Fixtype of structure or union specifiers [C17:6.7.2.1] [C17:A.2.2]."
     :long
     (xdoc::topstring
      (xdoc::p
       "This corresponds to <i>struct-or-union-specifier</i>
-       in the grammar in [C], but without the initial <i>struct-or-union</i>.
+       in the grammar in [C17], but without the initial <i>struct-or-union</i>.
        The only use of this fixtype is in @(tsee type-spec),
        where we have two separate cases for structures and unions.")
      (xdoc::p
@@ -2395,11 +2395,11 @@
 
   (fty::deftagsum structdecl
     :parents (abstract-syntax exprs/decls/stmts)
-    :short "Fixtype of structure declarations [C:6.7.2.1] [C:A.2.2]."
+    :short "Fixtype of structure declarations [C17:6.7.2.1] [C17:A.2.2]."
     :long
     (xdoc::topstring
      (xdoc::p
-      "This corresponds to <i>struct-declaration</i> in the grammar of [C].
+      "This corresponds to <i>struct-declaration</i> in the grammar of [C17].
        Despite its name in the grammar and in this fixtype,
        this applies to both structures and unions;
        in fact, it is not a declaration of a structure,
@@ -2440,7 +2440,7 @@
      (xdoc::p
       "Structure declarations are defined in @(tsee structdecl).
        This fixtype corresponds to <i>struct-declaration-list</i>
-       in the grammar in [C]."))
+       in the grammar in [C17]."))
     :elt-type structdecl
     :true-listp t
     :elementp-of-nil nil
@@ -2451,11 +2451,11 @@
 
   (fty::defprod structdeclor
     :parents (abstract-syntax exprs/decls/stmts)
-    :short "Fixtype of structure declarators [C:6.7.2.1] [C:A.2.2]."
+    :short "Fixtype of structure declarators [C17:6.7.2.1] [C17:A.2.2]."
     :long
     (xdoc::topstring
      (xdoc::p
-      "This corresponds to <i>struct-declarator</i> in the grammar in [C].
+      "This corresponds to <i>struct-declarator</i> in the grammar in [C17].
        This is part of structure declarations,
        so as discussed in @(tsee structdecl)
        arguably a better name would be `member declarators'.")
@@ -2478,7 +2478,7 @@
      (xdoc::p
       "Structure declarators are defined in @(tsee structdeclor).
        This fixtype corresponds to <i>struct-declarator-list</i>
-       in the grammar in [C]."))
+       in the grammar in [C17]."))
     :elt-type structdeclor
     :true-listp t
     :elementp-of-nil nil
@@ -2489,11 +2489,11 @@
 
   (fty::defprod enumspec
     :parents (abstract-syntax exprs/decls/stmts)
-    :short "Fixtype of enumeration specifiers [C:6.7.2.2] [C:A.2.2]."
+    :short "Fixtype of enumeration specifiers [C17:6.7.2.2] [C17:A.2.2]."
     :long
     (xdoc::topstring
      (xdoc::p
-      "This corresponds to <i>enum-specifier</i> in the grammar in [C].")
+      "This corresponds to <i>enum-specifier</i> in the grammar in [C17].")
      (xdoc::p
       "To make this definition simpler,
        we allow an absent name and no enumerators,
@@ -2508,11 +2508,11 @@
 
   (fty::defprod enumer
     :parents (abstract-syntax exprs/decls/stmts)
-    :short "Fixtype of enumerators [C:6.7.2.2] [C:A.2.2]."
+    :short "Fixtype of enumerators [C17:6.7.2.2] [C17:A.2.2]."
     :long
     (xdoc::topstring
      (xdoc::p
-      "This corresponds to <i>enumerator</i> in the grammar in [C]."))
+      "This corresponds to <i>enumerator</i> in the grammar in [C17]."))
     ((name ident)
      (value const-expr-option))
     :pred enumerp
@@ -2528,7 +2528,7 @@
      (xdoc::p
       "Enumerators are defined in @(tsee enumer).
        This fixtype corresponds to <i>enumerator-list</i>
-       in the grammar in [C]."))
+       in the grammar in [C17]."))
     :elt-type enumer
     :true-listp t
     :elementp-of-nil nil
@@ -2539,12 +2539,12 @@
 
   (fty::defprod statassert
     :parents (abstract-syntax exprs/decls/stmts)
-    :short "Fixtype of static assertion declarations [C:6.7.10] [C:A.2.2]."
+    :short "Fixtype of static assertion declarations [C17:6.7.10] [C17:A.2.2]."
     :long
     (xdoc::topstring
      (xdoc::p
       "This corresponds to <i>static_assert-declaration</i>
-       in the grammar in [C].")
+       in the grammar in [C17].")
      (xdoc::p
       "We use a list of string literals,
        which should be non-empty, but we do not capture this constraint.
@@ -2658,7 +2658,7 @@
 
   (fty::defprod initdeclor
     :parents (abstract-syntax exprs/decls/stmts)
-    :short "Fixtype of initializer declarators [C:6.7] [C:A.2.2]."
+    :short "Fixtype of initializer declarators [C17:6.7] [C17:A.2.2]."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -2683,7 +2683,7 @@
      (xdoc::p
       "Initializer declarators are defined in @(tsee initdeclor).
        This fixtype corresponds to <i>init-declarator-list</i>
-       in the grammar in [C]."))
+       in the grammar in [C17]."))
     :elt-type initdeclor
     :true-listp t
     :elementp-of-nil nil
@@ -2694,7 +2694,7 @@
 
   (fty::deftagsum decl
     :parents (abstract-syntax exprs/decls/stmts)
-    :short "Fixtype of declarations [C:6.7] [C:A.2.2]."
+    :short "Fixtype of declarations [C17:6.7] [C17:A.2.2]."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -2721,8 +2721,8 @@
      (xdoc::p
       "Declarations are defined in @(tsee decl).
        This fixtype corresponds to <i>declaration-list</i>
-       in the grammar in [C],
-       which is under external definitions [C:6.9.1] [C:A.2.4]."))
+       in the grammar in [C17],
+       which is under external definitions [C17:6.9.1] [C17:A.2.4]."))
     :elt-type decl
     :true-listp t
     :elementp-of-nil nil
@@ -2733,12 +2733,12 @@
 
   (fty::deftagsum label
     :parents (abstract-syntax exprs/decls/stmts)
-    :short "Fixtype of labels [C:6.8.1] [C:A.2.3]."
+    :short "Fixtype of labels [C17:6.8.1] [C17:A.2.3]."
     :long
     (xdoc::topstring
      (xdoc::p
       "This does not directly correspond to
-       any nonterminal in the grammar in [C],
+       any nonterminal in the grammar in [C17],
        but it captures the three initial portions of
        the grammar rule for <i>labeled-statement</i>.
        There are three possible kinds of labels:
@@ -2857,11 +2857,11 @@
 
   (fty::deftagsum stmt
     :parents (abstract-syntax exprs/decls/stmts)
-    :short "Fixtype of statements [C:6.8] [C:A.2.3]."
+    :short "Fixtype of statements [C17:6.8] [C17:A.2.3]."
     :long
     (xdoc::topstring
      (xdoc::p
-      "This corresponds to <i>statement</i> in the grammar in [C].")
+      "This corresponds to <i>statement</i> in the grammar in [C17].")
      (xdoc::p
       "We inline
        <i>labeled-stament</i>,
@@ -2926,11 +2926,11 @@
 
   (fty::deftagsum block-item
     :parents (abstract-syntax exprs/decls/stmts)
-    :short "Fixtype of block items [C:6.8.2] [C:A.2.3]."
+    :short "Fixtype of block items [C17:6.8.2] [C17:A.2.3]."
     :long
     (xdoc::topstring
      (xdoc::p
-      "This corresponds to <i>block-item</i> in the grammar in [C].")
+      "This corresponds to <i>block-item</i> in the grammar in [C17].")
      (xdoc::p
       "We also include a case for an ambiguous declaration or statement;
        see @(tsee amb-decl/stmt)."))
@@ -2951,7 +2951,7 @@
      (xdoc::p
       "Block items are defined in @(tsee block-item).
        This fixtype corresponds to <i>block-item-list</i>
-       in the grammar in [C]."))
+       in the grammar in [C17]."))
     :elt-type block-item
     :true-listp t
     :elementp-of-nil nil
@@ -3085,6 +3085,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defoption type-spec-option
+  type-spec
+  :short "Fixtype of optional type specifiers."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Type specifiers are defined in @(tsee type-spec)."))
+  :pred type-spec-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deflist type-spec-list
   :parents (abstract-syntax)
   :short "Fixtype of lists of type specifiers."
@@ -3190,11 +3201,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod fundef
-  :short "Fixtype of function definitions [C:6.9.1] [C:A.2.4]."
+  :short "Fixtype of function definitions [C17:6.9.1] [C17:A.2.4]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to <i>function-definition</i> in the grammar in [C].
+    "This corresponds to <i>function-definition</i> in the grammar in [C17].
      Unlike that grammar, we do not constrain the function body
      to be a compound statement in this fixtype.")
    (xdoc::p
@@ -3231,11 +3242,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum extdecl
-  :short "Fixtype of external declarations [C:6.9] [C:A.2.4]."
+  :short "Fixtype of external declarations [C17:6.9] [C17:A.2.4]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to <i>external-declaration</i> in the grammar in [C].")
+    "This corresponds to <i>external-declaration</i> in the grammar in [C17].")
    (xdoc::p
     "As explained in our ABNF grammar,
      we also include an empty external declaration,
@@ -3258,7 +3269,7 @@
    (xdoc::p
     "External declarations are defined in @(tsee extdecl).
      This fixtype corresponds to <i>external-declaration-list</i>
-     in the grammar in [C]."))
+     in the grammar in [C17]."))
   :elt-type extdecl
   :true-listp t
   :elementp-of-nil nil
@@ -3267,15 +3278,16 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod transunit
-  :short "Fixtype of translation units [C:6.9] [C:A.2.4]."
+  :short "Fixtype of translation units [C17:6.9] [C17:A.2.4]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "This corresponds to <i>translation-unit</i> in the grammar in [C].")
+    "This corresponds to <i>translation-unit</i> in the grammar in [C17].")
    (xdoc::p
-    "We wrap the list of external declarations in this fixtype
-     to maintain a conceptual separation with translation units."))
-  ((decls extdecl-list))
+    "A translation unit consists of a list of external declarations.
+     We also add a slot with additional information, e.g. from validation."))
+  ((decls extdecl-list)
+   (info any))
   :pred transunitp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3300,7 +3312,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This notion has no explicit counterpart in [C],
+    "This notion has no explicit counterpart in [C17],
      but it is useful to represent, in the abstract syntax,
      a collection of translation units that form
      a C program or library or other component.
@@ -3314,7 +3326,7 @@
    (xdoc::p
     "Currently we do not model preprocessing constructs in our abstract syntax,
      and so a translation unit as formalized in @(tsee transunit)
-     corresponds exactly to the notion of translation unit in [C].
+     corresponds exactly to the notion of translation unit in [C17].
      As we add support for preprocessing constructs,
      our translation units will be more like something in between
      proper traslation units and preprocessing translation units.

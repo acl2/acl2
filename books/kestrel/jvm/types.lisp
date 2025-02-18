@@ -1,7 +1,7 @@
 ; Types in the JVM
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2021 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -280,11 +280,6 @@
 (defthm array-typep-forward-to-typep
   (implies (array-typep type)
            (typep type))
-  :rule-classes :forward-chaining)
-
-(defthm is-array-typep-forward-to-typep
-  (implies (is-array-typep type)
-           (consp type))
   :rule-classes :forward-chaining)
 
 (defund return-typep (type)

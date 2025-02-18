@@ -85,10 +85,11 @@
 ;fixme make sure all callers of this handle nil okay (would it ever be better to throw an error?)?
 ;what if the number of arguments is wrong?
 ;; TODO: Consider adding support for constant arrays
-;; TODO: Exclude FN from being 'QUOTE?  todo: but require it to be a symbol?
+;; TODO: Exclude FN from being 'QUOTE?
 ;; TODO: Are there other functions like this to deprecate?
 (defund maybe-get-type-of-function-call (fn dargs)
-  (declare (xargs :guard (darg-listp dargs)))
+  (declare (xargs :guard (and (symbolp fn)
+                              (darg-listp dargs))))
   (or (maybe-get-type-of-bv-function-call fn dargs)
       (cond
        ;; Functions that return bv-arrays:

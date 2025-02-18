@@ -1,7 +1,7 @@
 unterminated-comment.cpp.i:7 (0-2): Unterminated comment
-  7 | /*
-    | ^^
+ 7 | /*
+   | ^^
 
-unterminated-comment.cpp.i:7 (0-2): syntax error, unexpected $undefined
-  7 | /*
-    | ^^
+unterminated-comment.cpp.i:7 (0-2): syntax error, unexpected invalid token
+ 7 | /*
+   | ^^

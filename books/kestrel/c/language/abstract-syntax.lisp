@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2024 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -32,7 +32,7 @@
     "This abstract syntax is preliminary in the sense that
      it is neither general nor complete.
      It is not general because it assumes the use of ASCII characters.
-     which is not necessarily the case according to [C].
+     which is not necessarily the case according to [C17].
      It is not complete because it does not cover all the C constructs.
      Nonetheless, it covers a useful and interesting subset of C,
      with the ASCII assumption being largely supported
@@ -62,14 +62,14 @@
      we plan to change it to capture
      just the constructs after preprocessing,
      and more broadly we plan to formalize
-     the translation phases [C:5.1.1.2] in detail."))
+     the translation phases [C17:5.1.1.2] in detail."))
   :order-subtopics t
   :default-parent t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod ident
-  :short "Fixtype of identifiers [C:6.4.2]."
+  :short "Fixtype of identifiers [C17:6.4.2]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -84,7 +84,7 @@
    (xdoc::p
     "A C implementation may limit
      the number of significant characters in identifiers
-     [C:6.4.2.1/5] [C:6.4.2.1/6] [C:5.2.4.1],
+     [C17:6.4.2.1/5] [C17:6.4.2.1/6] [C17:5.2.4.1],
      to 31 for external identifiers and 63 for internal identifiers.
      In the future, we may add this constraint to this fixtype."))
   ((name string))
@@ -112,7 +112,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum iconst-base
-  :short "Fixtype of bases of integer constants [C:6.4.4.1]."
+  :short "Fixtype of bases of integer constants [C17:6.4.4.1]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -127,7 +127,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum iconst-length
-  :short "Fixtype of lengths of integer constants [C:6.4.4.1]."
+  :short "Fixtype of lengths of integer constants [C17:6.4.4.1]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -141,7 +141,7 @@
      it could be argued that one should always use the uppercase variants,
      as recommended in the Java language specification for Java).")
    (xdoc::p
-    "Since the grammar in [C] refers to these as
+    "Since the grammar in [C17] refers to these as
      <i>long-suffix</i> and <i>long-long-suffix</i>,
      it seems appropriate to call these the `length' of an integer constant,
      which justifies the name of this fixtype."))
@@ -153,7 +153,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod iconst
-  :short "Fixtype of integer constants [C:6.4.4.1]."
+  :short "Fixtype of integer constants [C17:6.4.4.1]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -203,15 +203,15 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum const
-  :short "Fixtype of constants [C:6.4.4]."
+  :short "Fixtype of constants [C17:6.4.4]."
   :long
   (xdoc::topstring
    (xdoc::p
     "For now we only capture integer and enumeration constants,
      but we include placeholders for floating and character constants.")
    (xdoc::p
-    "The C grammar for enumeration constants [C:6.4.4.3/1] [C:6.4.4/1]
-     is actually ambiguous in expressions [C:6.5.1/1]:
+    "The C grammar for enumeration constants [C17:6.4.4.3/1] [C17:6.4.4/1]
+     is actually ambiguous in expressions [C17:6.5.1/1]:
      an identifier that appears where an expression is expected
      could be either a primary expression identifier (e.g. denoting an object)
      or an enumeration constant.
@@ -238,13 +238,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum tyspecseq
-  :short "Fixtype of type specifier sequences [C:6.7.2]."
+  :short "Fixtype of type specifier sequences [C17:6.7.2]."
   :long
   (xdoc::topstring
    (xdoc::p
     "A sequence of one or more type specifiers in a declaration
      specifies a type.
-     The allowed sequences are described in [C:6.7.2].
+     The allowed sequences are described in [C17:6.7.2].
      This fixtype captures some of these sequences.")
    (xdoc::p
     "We capture type specifier sequences for
@@ -260,7 +260,7 @@
      but they can be used only if supported.")
    (xdoc::p
     "The form of structure, union, and enumeration types is limited
-     to the case of a single identifier (i.e. tag) [C:6.7.2.1] [C:6.7.2.2],
+     to the case of a single identifier (i.e. tag) [C17:6.7.2.1] [C17:6.7.2.2],
      without members or enumerators.
      Syntactically, declarations that define
      (members of) structure and union types
@@ -283,7 +283,7 @@
      until we actually need atomic type specifiers.")
    (xdoc::p
     "This @('tyspecseq') fixtype has one constructor
-     for each item in the list in [C:6.7.2/2],
+     for each item in the list in [C17:6.7.2/2],
      where different items are different types
      (only syntactically speaking;
      more generally, type definition names may be also equal to other types).
@@ -298,16 +298,16 @@
      However, we do not capture
      different sequentializations of the same multiset,
      e.g. we capture @('signed short') but not @('short signed').
-     We capture the sequences listed in [C:6.7.2/2]
+     We capture the sequences listed in [C17:6.7.2/2]
      that represent the multiset.
      Arguably, those are the sequences that should always be used,
      despite other equivalent sequences being allowed.")
    (xdoc::p
     "The type specifiers in a declaration
-     may be intermixed with other declaration specifiers [C:6.7/1] [C:6.7.2/2]
+     may be intermixed with other declaration specifiers [C17:6.7/1] [C17:6.7.2/2]
      (e.g. one could write @('unsigned auto int x = 1;')),
      so long as their sequence (ignoring any intermixed non-type specifiers)
-     is valid according to [C:6.7.2/2].
+     is valid according to [C17:6.7.2/2].
      This intermixing is probably best avoided,
      so our abstract syntax does not allow it:
      our type specifier sequences are meant to be contiguous."))
@@ -358,7 +358,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum scspecseq
-  :short "Fixtype of storage class specifier sequences [C:6.7.1]."
+  :short "Fixtype of storage class specifier sequences [C17:6.7.1]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -373,12 +373,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum obj-declor
-  :short "Fixtype of object declarators [C:6.7.6]."
+  :short "Fixtype of object declarators [C17:6.7.6]."
   :long
   (xdoc::topstring
    (xdoc::p
     "These are declarators for objects.
-     [C] does not have a separate syntactic category for them
+     [C17] does not have a separate syntactic category for them
      (it just has declarators, for objects and other things),
      but in our abstract syntax for now
      we differentiate them from other kinds of declarators.")
@@ -393,7 +393,7 @@
      and the array notation @('[]') with
      either nothing in it (i.e. unspecified size)
      or an integer constant in it (i.e. specified size).
-     Using an integer constant as size is less general than [C] allows,
+     Using an integer constant as size is less general than [C17] allows,
      but it suffices for now.")
    (xdoc::p
     "Note that we can represent sequences of pointer notations @('* ... *')
@@ -411,12 +411,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum obj-adeclor
-  :short "Fixtype of abstract object declarators [C:6.7.7]."
+  :short "Fixtype of abstract object declarators [C17:6.7.7]."
   :long
   (xdoc::topstring
    (xdoc::p
     "These are abstract declarators for objects.
-     [C] does not have a separate syntactic category for them
+     [C17] does not have a separate syntactic category for them
      (it just has abstract declarators, for objects and other things),
      but in our abstract syntax it is useful
      to differentiate them from other kinds of abstract declarators.")
@@ -426,7 +426,7 @@
      captured in @(tsee obj-declor):
      an abstract declarator is like a declarator without the identifier.
      Abstract declarators are used in type names,
-     which are like declarations without identifiers [C:6.7.7/2].")
+     which are like declarations without identifiers [C17:6.7.7/2].")
    (xdoc::p
     "From a point of view,
      it may seem strange to have an explicit value, in this fixtype,
@@ -444,7 +444,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod tyname
-  :short "Fixtype of type names [C:6.7.7]."
+  :short "Fixtype of type names [C17:6.7.7]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -469,7 +469,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum unop
-  :short "Fixtype of unary operators [C:6.5.3]."
+  :short "Fixtype of unary operators [C17:6.5.3]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -482,11 +482,11 @@
      and logical negation/complement.")
    (xdoc::p
     "Note that preincrement @('++') and predecrement @('--')
-     are not considered unary operators in the C grammar [C:6.5.3/1],
+     are not considered unary operators in the C grammar [C17:6.5.3/1],
      even though preincrement and predecrement expressions
      are considered unary expressions,
      along with others with the @('sizeof') and @('_Alignof') operators,
-     and even though the title of [C:6.5.3] is `Unary Operators'.
+     and even though the title of [C17:6.5.3] is `Unary Operators'.
      We may include all those operators into this fixtype in the future,
      since it makes sense from the point of view of the abstract syntax."))
   (:address ())
@@ -510,13 +510,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum binop
-  :short "Fixtype of binary operators [C:6.5.5-14] [C:6.5.16]."
+  :short "Fixtype of binary operators [C17:6.5.5-14] [C17:6.5.16]."
   :long
   (xdoc::topstring
    (xdoc::p
     "We capture all of them.
      The C grammar does not have a nonterminal for binary operators
-     (it has one for unary operators [C:6.5.3]),
+     (it has one for unary operators [C17:6.5.3]),
      but the grammar rules for binary operations implicitly describe them.")
    (xdoc::p
     "These are
@@ -584,18 +584,18 @@
 
   (fty::deftagsum expr
     :parents (abstract-syntax expr-fixtypes)
-    :short "Fixtype of expressions [C:6.5]."
+    :short "Fixtype of expressions [C17:6.5]."
     :long
     (xdoc::topstring
      (xdoc::p
-      "For now, we only cover some of the primary expressions [C:6.5.1],
+      "For now, we only cover some of the primary expressions [C17:6.5.1],
        namely identifiers and constants.
        String literals are not covered.
        Generic selections are not covered.
        Parenthesized expression are implicitly covered in the abstract syntax,
        whose structure provides grouping.")
      (xdoc::p
-      "Of the postfix expressions [C:6.5.2],
+      "Of the postfix expressions [C17:6.5.2],
        for now we only cover
        array subscripting,
        function calls (where we limit the function to be an identifier),
@@ -608,10 +608,10 @@
        are not covered.
        Compound literals are not covered.")
      (xdoc::p
-      "Of the unary expressions [C:6.5.3],
+      "Of the unary expressions [C17:6.5.3],
        for now we only cover pre-increment/decrement,
        and the ones built with the unary operators.
-       Note that the grammar in [C] does not define as unary operators
+       Note that the grammar in [C17] does not define as unary operators
        all the operators of unary expressions,
        e.g. @('++') is not a unary operator grammatically.
        We follow that here, but use @(':unary') as the tag for
@@ -623,19 +623,19 @@
        captured by @(tsee tyname).")
      (xdoc::p
       "We use a general notion of binary expression to represent
-       multiplicative [C:6.5.5],
-       additive [C:6.5.6],
-       shift [C:6.5.7],
-       relational [C:6.5.8],
-       equality [C:6.5.9],
-       bitwise conjunction [C:6.5.10],
-       bitwise exclusive disjunction [C:6.5.11],
-       bitwise inclusive disjunction [C:6.5.12],
-       logical conjunction [C:6.5.13],
-       logical disjunction [C:6.5.14], and
-       assigment [C:6.5.16]
+       multiplicative [C17:6.5.5],
+       additive [C17:6.5.6],
+       shift [C17:6.5.7],
+       relational [C17:6.5.8],
+       equality [C17:6.5.9],
+       bitwise conjunction [C17:6.5.10],
+       bitwise exclusive disjunction [C17:6.5.11],
+       bitwise inclusive disjunction [C17:6.5.12],
+       logical conjunction [C17:6.5.13],
+       logical disjunction [C17:6.5.14], and
+       assigment [C17:6.5.16]
        expressions.
-       The grammar in [C] classifies these as different kinds of expressions
+       The grammar in [C17] classifies these as different kinds of expressions
        also in order to capture the precedences among the various operators;
        however, in an abstract syntax, this is not necessary.")
      (xdoc::p
@@ -690,14 +690,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod struct-declon
-  :short "Fixtype of structure declarations [C:6.7.2.1]."
+  :short "Fixtype of structure declarations [C17:6.7.2.1]."
   :long
   (xdoc::topstring
    (xdoc::p
     "These are used inside structure and union specifiers:
      they do not declare structure types, but rather their members.
      (A better name for these could be `member declarations',
-     but we follow [C] of course.)")
+     but we follow [C17] of course.)")
    (xdoc::p
     "For now we only capture structure declarations that consist of
      a type specifier sequence
@@ -723,14 +723,14 @@
 
 (fty::deftagsum tag-declon
   :short "Fixtype of declarations of structure, union, and enumeration types
-          [C:6.7.2.1] [C:6.7.2.2]."
+          [C17:6.7.2.1] [C17:6.7.2.2]."
   :long
   (xdoc::topstring
    (xdoc::p
     "These are declarations that consists of
      single structure, union, and enumeration specifiers,
      which introduce structure, union, and enumeration types.
-     These kinds of types are all identified by tags [C:6.2.3],
+     These kinds of types are all identified by tags [C17:6.2.3],
      which justifies our choice of name for this fixtype.")
    (xdoc::p
     "These are declarations that include
@@ -752,7 +752,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod param-declon
-  :short "Fixtype of parameter declarations [C:6.7.6]."
+  :short "Fixtype of parameter declarations [C17:6.7.6]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -787,11 +787,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum fun-declor
-  :short "Fixtype of function declarators [C:6.7.6]."
+  :short "Fixtype of function declarators [C17:6.7.6]."
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we only model function declarators [C:6.7.6.3]
+    "For now we only model function declarators [C17:6.7.6.3]
      consisting of an identifier as the direct declarator
      and a (parenthesized) list of parameter declarations,
      preceded by zero or more pointer designations (i.e. @('*')).
@@ -802,7 +802,7 @@
      except that there is an identifier and a list of parameters
      instead of just an identifier (for the base case of the fixtype),
      and except that there is no array designation possible.
-     The latter is because functions cannot return array types [C:6.7.6.3/1]."))
+     The latter is because functions cannot return array types [C17:6.7.6.3/1]."))
   (:base ((name ident)
           (params param-declon-list)))
   (:pointer ((decl fun-declor)))
@@ -811,7 +811,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum fun-adeclor
-  :short "Fixtype of abstract function declarators [C:6.7.7]."
+  :short "Fixtype of abstract function declarators [C17:6.7.7]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -826,7 +826,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod fun-declon
-  :short "Fixtype of function declarations [C:6.7]."
+  :short "Fixtype of function declarations [C17:6.7]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -851,7 +851,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum initer
-  :short "Fixtype of initializers [C:6.7.9]."
+  :short "Fixtype of initializers [C17:6.7.9]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -860,8 +860,8 @@
      where the latter models a list between curly braces
      of initializers consisting of single expressions.
      Note that, since currently we do not model the comma operator,
-     our use of any expressions here
-     matches the use of assignment expressions in [C]."))
+     our use of any kind of expressions here
+     matches the use of assignment expressions in [C17]."))
   (:single ((get expr)))
   (:list ((get expr-list)))
   :pred initerp)
@@ -876,12 +876,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod obj-declon
-  :short "Fixtype of object declarations [C:6.7]."
+  :short "Fixtype of object declarations [C17:6.7]."
   :long
   (xdoc::topstring
    (xdoc::p
     "These are declarations for objects.
-     [C] does not have a separate syntactic category for them
+     [C17] does not have a separate syntactic category for them
      (it just has declarations, for objects and other things),
      but in our abstract syntax it is useful
      to differentiate them from other kinds of declarators.")
@@ -913,7 +913,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum label
-  :short "Fixtype of labels of labeled statements [C:6.8.1]."
+  :short "Fixtype of labels of labeled statements [C17:6.8.1]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -939,19 +939,19 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum stmt
-    :short "Fixtype of statements [C:6.8]."
+    :short "Fixtype of statements [C17:6.8]."
     :long
     (xdoc::topstring
      (xdoc::p
       "We capture almost all the statements:
-       labeled [C:6.8.1],
-       compound [C:6.8.2],
-       expression and null [C:6.8.3],
-       selection [C:6.8.4],
-       iteration [C:6.8.5]
+       labeled [C17:6.8.1],
+       compound [C17:6.8.2],
+       expression and null [C17:6.8.3],
+       selection [C17:6.8.4],
+       iteration [C17:6.8.5]
        (except for @('for') statements
        whose initialization part is a declaration),
-       and jump [C:6.8.6]."))
+       and jump [C17:6.8.6]."))
     (:labeled ((label label)
                (body stmt)))
     (:compound ((items block-item-list)))
@@ -981,7 +981,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   (fty::deftagsum block-item
-    :short "Fixtype of block items [C:6.8.2]."
+    :short "Fixtype of block items [C17:6.8.2]."
     :long
     (xdoc::topstring
      (xdoc::p
@@ -1015,7 +1015,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod fundef
-  :short "Fixtype of function definitions [C:6.9.1]."
+  :short "Fixtype of function definitions [C17:6.9.1]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1023,7 +1023,7 @@
      a type specifier sequence,
      a function declarator,
      and a body.
-     With respect to [C:6.9.1/1],
+     With respect to [C17:6.9.1/1],
      the type specifier sequence are the declaration specifiers,
      the function declarator is the declarator,
      and the body is the compound statement.
@@ -1040,7 +1040,7 @@
      a product fixtype of a function declaration and a body.
      However, even though this would work in abstract syntax,
      in concrete syntax a function declaration has to end with a semicolon
-     (and that is why the grammar rule in [C:6.9.1/1]
+     (and that is why the grammar rule in [C17:6.9.1/1]
      does not use a declaration, but rather its components)."))
   ((tyspec tyspecseq)
    (declor fun-declor)
@@ -1061,7 +1061,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum ext-declon
-  :short "Fixtype of external declarations [C:6.9]."
+  :short "Fixtype of external declarations [C17:6.9]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -1089,12 +1089,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod transunit
-  :short "Fixtype of translation units [C:6.9]."
+  :short "Fixtype of translation units [C17:6.9]."
   :long
   (xdoc::topstring
    (xdoc::p
     "This consists of a list of external declarations
-     (which should be non-empty according to the grammar in [C],
+     (which should be non-empty according to the grammar in [C17],
      but we will capture this constraint later or elsewhere).
      We create this one-field product fixtype
      so that in the future it may be easier to extend this fixtype
@@ -1117,12 +1117,12 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The grammar in [C] does not quite define files in the form we want here.
+    "The grammar in [C17] does not quite define files in the form we want here.
      The closest things are
-     preprocessing files [C:6.10/1]
-     and translation units [C:6.9/1].
+     preprocessing files [C17:6.10/1]
+     and translation units [C17:6.9/1].
      However, the grammar rule for preprocessing files
-     describes their content before preprocessing [C:5.1.1.1/1] [C:5.1.1.2/3],
+     describes their content before preprocessing [C17:5.1.1.1/1] [C17:5.1.1.2/3],
      and the grammar rule for translation units
      describes their contents after preprocessing
      (which may involve copying contents of included files).
@@ -1160,18 +1160,18 @@
   (xdoc::topstring
    (xdoc::p
     "A file set is a collection of related files.
-     This is not an explicit notion in [C],
+     This is not an explicit notion in [C17],
      but it is a useful one in a language formalization:
      a program, or a portion of a program,
      is contained in a set of related files.
      This notion is not quite the same as that of C program,
-     which, according to [C], is a complete executable application:
+     which, according to [C17], is a complete executable application:
      a library would not qualify as a program in this sense.")
    (xdoc::p
     "For now, a file set consists of one or two files (see @(tsee file)),
      namely an optional header and a source file,
      which have the same name except for the extension.
-     (The preceding sentence uses the terminology in [C:5.1.1/1],
+     (The preceding sentence uses the terminology in [C17:5.1.1/1],
      which appears to call `headers' the @('.h') files
      and `source files' the @('.c') files.)
      The idea is that for now we model (portions of) programs

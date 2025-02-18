@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -16,7 +16,7 @@
 (include-book "xdoc/defxdoc-plus" :dir :system)
 (include-book "xdoc/constructors" :dir :system)
 
-(include-book "../../syntax/abstract-syntax")
+(include-book "../../syntax/abstract-syntax-operations")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -39,35 +39,6 @@
        named language constructs, such as @('typedef') type names."))
   :order-subtopics t
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defines declor/dirdeclor-get-ident
-  (define declor-get-ident
-    ((declor declorp))
-    :short "Get the identifier described by a declarator."
-    :returns (ident? ident-optionp)
-    (b* (((declor declor) declor))
-      (dirdeclor-get-ident declor.direct))
-    :measure (declor-count declor))
-
-  (define dirdeclor-get-ident
-    :short "Get the identifier described by a direct declarator."
-    ((dirdeclor dirdeclorp))
-    :returns (ident? ident-optionp)
-    (dirdeclor-case
-     dirdeclor
-     :ident dirdeclor.unwrap
-     :paren (declor-get-ident dirdeclor.unwrap)
-     :array (dirdeclor-get-ident dirdeclor.decl)
-     :array-static1 (dirdeclor-get-ident dirdeclor.decl)
-     :array-static2 (dirdeclor-get-ident dirdeclor.decl)
-     :array-star (dirdeclor-get-ident dirdeclor.decl)
-     :function-params (dirdeclor-get-ident dirdeclor.decl)
-     :function-names (dirdeclor-get-ident dirdeclor.decl))
-    :measure (dirdeclor-count dirdeclor))
-
-  :hints (("Goal" :in-theory (enable o< o-finp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -203,7 +174,7 @@
                (bound-vars ident-setp))
   (b* ((bound-vars (ident-set-fix bound-vars))
        ((initdeclor initdeclor) initdeclor)
-       (ident (declor-get-ident initdeclor.declor)))
+       (ident (declor->ident initdeclor.declor)))
     (mv (free-vars-initer-option initdeclor.init? bound-vars)
         (if ident
             (insert (ident-fix ident) bound-vars)

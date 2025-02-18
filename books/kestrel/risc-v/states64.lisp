@@ -47,11 +47,12 @@
      We model the content of each register as an unsigned 64-bit integer,
      which can be interpreted in different ways (see operations on states).")
    (xdoc::p
-    "We are not yet modeling the fact that @('x0') is always 0;
-     we may do so by shortening this list to 31 registers,
-     namely @('x1') to @('x31'), leaving @('x0') implicit."))
+    "The @('x0') register is always 0; writing to it is a no-op.
+     We build this invariant into this fixtype
+     by only modeling 31 registers, namely @('x1') to @('x31'),
+     and leaving @('x0') implicit."))
   :list-type ubyte64-list
-  :length 32
+  :length 31
   :pred xregfile64p)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -109,6 +110,10 @@
 
   ///
 
+  (defrule len-of-state64->xregfile
+    (equal (len (state64->xregfile stat))
+           31))
+
   (defrule len-of-state64->mem
     (equal (len (state64->mem stat))
            *mem64-size*)))
@@ -123,9 +128,14 @@
   (xdoc::topstring
    (xdoc::p
     "The register index consists of 5 bits.
-     We read the whole register, which is unsigned."))
-  (nth (ubyte5-fix reg)
-       (state64->xregfile stat))
+     If the index is 0, we return 0,
+     because @('x0') is always (implicitly) 0.
+     Otherwise, we read the whole register (decreasing the index by 1),
+     which is unsigned."))
+  (b* ((reg (ubyte5-fix reg)))
+    (if (= reg 0)
+        0
+      (nth (1- reg) (state64->xregfile stat))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -182,7 +192,9 @@
    (xdoc::p
     "The register index consists of 5 bits.
      If it is 0, there is no change, because @('x0') is always 0,
-     and it is a no-op to write to it.")
+     and it is a no-op to write to it.
+     If the index is not 0, we decrease it by 1,
+     since the register file represents registers @('x1') to @('x31').")
    (xdoc::p
     "The value to write is actually any integer, signed or unsigned,
      of which we only write the low 64 bits into the register,
@@ -191,11 +203,12 @@
     "The fact that the value to write is any integer is handy for callers,
      who can just pass the integer (e.g. the exact result of an operation)
      and let this writer function convert the integer for the register."))
-  (if (ubyte5-equiv reg 0)
-      (state64-fix stat)
-    (change-state64 stat :xregfile (update-nth (ubyte5-fix reg)
-                                               (loghead 64 val)
-                                               (state64->xregfile stat))))
+  (b* ((reg (ubyte5-fix reg)))
+    (if (= reg 0)
+        (state64-fix stat)
+      (change-state64 stat :xregfile (update-nth (1- reg)
+                                                 (loghead 64 val)
+                                                 (state64->xregfile stat)))))
   :guard-hints (("Goal" :in-theory (enable xregfile64p
                                            state64p
                                            state64->xregfile

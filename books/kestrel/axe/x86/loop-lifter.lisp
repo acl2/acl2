@@ -1,7 +1,7 @@
 ; A lifter for x86 code, based on Axe, that can handle (some) code with loops
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2024 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -38,8 +38,6 @@
 
 ;; TODO: Allow the :monitor option to be or include :debug, as we do for other tools.
 
-;; TODO: Switch to using a simpler rewriter, that doesn't depend on skip-proofs
-
 ;; TODO: Consider updating this to use the new normal forms, at least for 64-bit mode
 
 (include-book "misc/defp" :dir :system)
@@ -51,15 +49,17 @@
 (include-book "../logops-rules-axe")
 ;(include-book "../rules2") ;for BACKCHAIN-SIGNED-BYTE-P-TO-UNSIGNED-BYTE-P-NON-CONST
 ;(include-book "../basic-rules")
-(include-book "../rewriter") ; todo: for acl2::simplify-terms-repeatedly ?
+(include-book "../rewriter-basic") ; for simplify-conjunction-basic
 (include-book "rewriter-x86")
 (include-book "../rules-in-rule-lists")
+(include-book "../dagify0") ; for compose-dags
 ;(include-book "../rules1") ;for ACL2::FORCE-OF-NON-NIL, etc.
 (include-book "../dags2") ; for compose-term-and-dags
 (include-book "../arithmetic-rules-axe")
 ;(include-book "kestrel/x86/if-lowering" :dir :system)
 (include-book "kestrel/utilities/get-vars-from-term" :dir :system)
 (include-book "kestrel/utilities/defconst-computed" :dir :system)
+(include-book "kestrel/utilities/submit-events" :dir :system)
 (include-book "kestrel/x86/readers-and-writers64" :dir :system)
 (include-book "kestrel/x86/read-over-write-rules" :dir :system)
 (include-book "kestrel/x86/read-over-write-rules32" :dir :system)
@@ -86,7 +86,6 @@
 (include-book "kestrel/utilities/if" :dir :system)
 (include-book "kestrel/utilities/if-rules" :dir :system)
 (include-book "kestrel/booleans/booleans" :dir :system)
-(include-book "kestrel/bv/arith" :dir :system) ;todo
 (include-book "kestrel/bv/intro" :dir :system)
 (include-book "kestrel/bv/rtl" :dir :system)
 (include-book "kestrel/bv/convert-to-bv-rules" :dir :system)
@@ -1121,7 +1120,6 @@
          (term-to-prove (acl2::sublis-var-simple (acons state-var one-rep-term nil) invariant))
          (- (and (acl2::print-level-at-least-tp print) (cw "(Term to prove: ~x0.)~%" term-to-prove)))
          (- (and (acl2::print-level-at-least-tp print) (cw "(Assumptions to use: ~x0.)~%" assumptions)))
-
          ;; Try to prove the invariant by rewriting:
          ((mv erp simplified-invariant)
           (acl2::simp-term-x86 term-to-prove assumptions rule-alist nil (acl2::known-booleans (w state)) nil nil nil
@@ -1551,6 +1549,7 @@
                                              one-rep-term
                                              state-var
                                              ;; assumptions
+                                             ;; todo; add the extra-rules, like we do above, or are they already there?
                                              (acl2::make-rule-alist! (set-difference-eq
                                                                        (append extra-rules (extra-loop-lifter-rules) lifter-rules)
                                                                        remove-rules)
@@ -1945,10 +1944,10 @@
         ;; Perform the symbolic execution:
         ;; TODO: Suppress printing of result here?:
         ;; TODO: Add support for printing a combined summary at the end of all rewrite phases...
-        ;; TODO: Use the x86 rewriter!
         ((mv erp state-dag)
          (acl2::simplify-dag-x86 dag-to-run
                                  assumptions
+                                 ;; todo: can we do more of this just once?
                                  (acl2::make-rule-alist! (set-difference-eq
                                                            (append (extra-loop-lifter-rules)
                                                                    lifter-rules
@@ -2050,20 +2049,22 @@
    (b* ((- (cw "(Unsimplified assumptions for lifting: ~x0)~%" assumptions)) ;todo: untranslate these and other things that get printed
         ;; Simplify the assumptions: TODO: Pull this out into the caller?
         ((mv erp rule-alist)  ;todo: include the extra-rules?
-         (make-rule-alist (append '(rip
-                                    rip$a
-                                    ;; app-view ; not needed?
-                                    )
-                                  (reader-and-writer-opener-rules) ; don't use the new normal forms
+         (make-rule-alist (append (old-normal-form-rules) ; don't use the new normal forms
                                   (assumption-simplification-rules))
                           (w state)))
         ((when erp) (mv erp nil nil nil state))
-        ((mv erp assumptions state)
-         ;; (acl2::simplify-terms-using-each-other assumptions rule-alist)
-         (acl2::simplify-terms-repeatedly assumptions rule-alist rules-to-monitor
-                                          nil ; don't memoize (avoids time spent making empty-memoizations)
-                                          t ; todo: do this warning just once?
-                                          state))
+        ;; ((mv erp assumptions state)
+        ;;  ;; (acl2::simplify-terms-using-each-other assumptions rule-alist)
+        ;;  (acl2::simplify-terms-repeatedly assumptions rule-alist rules-to-monitor
+        ;;                                   nil ; don't memoize (avoids time spent making empty-memoizations)
+        ;;                                   t ; todo: do this warning just once?
+        ;;                                   state))
+        ((mv erp assumptions)
+         (acl2::simplify-conjunction-basic assumptions rule-alist (acl2::known-booleans (w state)) rules-to-monitor
+                                           nil ; don't memoize (avoids time spent making empty-memoizations)
+                                           nil ; count-hits
+                                           t ; todo: do this warning just once?
+                                           ))
         ((when erp) (mv erp nil nil nil state))
         (- (cw "(Simplified assumptions for lifting: ~x0)~%" assumptions))
         (state-var (pack-in-package-of-symbol 'x86 'x86_ loop-depth))
@@ -2198,7 +2199,7 @@
                           :skip
                         (doublets-to-alist measures)))
        ;; these should ensure the normal forms are compatible with all the analysis done by this tool:
-       (lifter-rules (if (member-eq executable-type '(:pe-32 :mach-o-32))
+       (lifter-rules (if (member-eq executable-type '(:pe-32 :mach-o-32)) ; todo: what about elf32?
                          (loop-lifter-rules32)
                        (loop-lifter-rules64)))
        (32-bitp (member-eq executable-type *executable-types32*))

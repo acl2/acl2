@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -15,6 +15,8 @@
 (include-book "std/util/error-value-tuples" :dir :system)
 
 (local (include-book "std/alists/top" :dir :system))
+
+(local (in-theory (enable* abstract-syntax-unambp-rules)))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -211,9 +213,9 @@
     "A disambiguation table associates kinds to identifiers,
      with the mapping organized into scopes.
      Starting from the outer scope,
-     i.e. the file scope [C:6.2.1/4],
+     i.e. the file scope [C17:6.2.1/4],
      traversing the code enters and exits
-     block scopes and prototype scopes [C:6.2.1/4],
+     block scopes and prototype scopes [C17:6.2.1/4],
      in a stack-like fashion.
      So we represent a disambiguation table as
      a list of disambiguation scopes.")
@@ -293,7 +295,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "According the visibility and hiding rules [C:6.2.1/2],
+    "According the visibility and hiding rules [C17:6.2.1/2],
      we look up the identifier starting from the innermost scope.
      We stop as soon as we find a match.
      We return @('nil') if we reach the outermost scope
@@ -1014,7 +1016,7 @@
    (xdoc::p
     "The second kind is allowed to be non-empty only if
      the function declarator is part of a function definition
-     [C:6.7.6.3/3].
+     [C17:6.7.6.3/3].
      This is indicated by the flag @('fundefp') passed to this ACL2 function.")
    (xdoc::p
     "The parser always creates the first kind,
@@ -1037,7 +1039,7 @@
      one of which is a @('typedef') name but the other one is not,
      the re-classification to names fails;
      one @('typedef') name suffices to re-classify the parameters to names.
-     [C:6.7.6.3/11] says that @('typedef') names have priority,
+     [C17:6.7.6.3/11] says that @('typedef') names have priority,
      but strictly speaking it mentions only parameter declarations,
      not also identifier lists;
      nonetheless, some simple experiments with GCC show that
@@ -1977,7 +1979,7 @@
        for the reason explained below.
        If we cannot turn the @(':function-params') into @(':function-names'),
        we disambiguate it (into another @(':function-params')) as follows.
-       We push a new scope for the function prototype [C:6.2.1/2] [C:6.2.1/4].
+       We push a new scope for the function prototype [C17:6.2.1/2] [C17:6.2.1/4].
        We call a separate function to disambiguate each parameter declaration.
        Then, based on the @('fundefp') flag,
        we pop the scope (if the flag is @('nil')),
@@ -2206,7 +2208,7 @@
        when we call that function, we initialize the kind to @(':objfun'),
        and if the code is valid that will be also the returned kind.
        Then we call a separate function to disambiguate the parameter declarator
-       (which is a notion in our abstract syntax, not in [C]);
+       (which is a notion in our abstract syntax, not in [C17]);
        see @(tsee paramdeclor))."))
     (b* (((reterr) (irr-paramdecl) (irr-dimb-table))
          ((paramdecl paramdecl) paramdecl)
@@ -2424,7 +2426,7 @@
       "This also extends the disambiguation table
        with the names of the enumerators (i.e. enumeration constants).
        The scope of an enumeration constant starts
-       just after the appearance of its enumerator [C:6.2.1/7].
+       just after the appearance of its enumerator [C17:6.2.1/7].
        The extension of the table is actually done by
        the function that disambiguates the enumerators."))
     (b* (((reterr) (irr-enumspec) (irr-dimb-table))
@@ -2630,10 +2632,10 @@
        which we pop after the block.")
      (xdoc::p
       "A selection statement forms a new scope, as do its sub-statements
-       [C:6.8.4/3].")
+       [C17:6.8.4/3].")
      (xdoc::p
       "An iteration statement forms a new scope, as do its sub-statements
-       [C:6.8.5/5]."))
+       [C17:6.8.5/5]."))
     (b* (((reterr) (irr-stmt) (irr-dimb-table)))
       (stmt-case
        stmt
@@ -2901,7 +2903,7 @@
        but if a @('typedef') for @('x') is in scope,
        it could be also an abstract function declarator,
        where @('x') is the type of the (inner) parameter.
-       [C:6.7.6.3/11] says that in this case
+       [C17:6.7.6.3/11] says that in this case
        the @('typedef') interpretation takes priority.
        Thus, in general,
        if both attempted disambiguations
@@ -3043,7 +3045,7 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  (defret-mutual dimb-exprs/decls
+  (defret-mutual unambp-of-dimb-exprs/decls/stmts
     (defret expr-unambp-of-dimb-expr
       (implies (not erp)
                (expr-unambp new-expr))
@@ -3288,7 +3290,7 @@
      so that it can be referenced from the body, in a recursive call.")
    (xdoc::p
     "We extend the disambiguation table with the identifier @('__func__')
-     [C:6.4.2.2].")
+     [C17:6.4.2.2].")
    (xdoc::p
     "After all of that, we disambiguate the body of the function definition,
      which is a block (i.e. compound statement) in valid code.
@@ -3495,7 +3497,7 @@
               table)
            table))
        ((erp new-edecls &) (dimb-extdecl-list edecls table)))
-    (retok (transunit new-edecls)))
+    (retok (make-transunit :decls new-edecls :info nil)))
   :hooks (:fix)
 
   ///

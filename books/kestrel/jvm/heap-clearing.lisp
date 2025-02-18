@@ -1,7 +1,7 @@
 ; Material on clearing parts of a heap
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -50,7 +50,7 @@
                   (equal pair1 pair2))
              (clear-field ref1 pair1 heap)
            (set-field ref2 pair2 value (clear-field ref1 pair1 heap))))
-  :hints (("Goal" :in-theory (enable clear-field set-field ))))
+  :hints (("Goal" :in-theory (enable clear-field set-field s-becomes-clr))))
 
 (defthm clear-field-of-set-field-diff
   (implies (not (and (equal ref1 ref2)
@@ -71,10 +71,12 @@
                   (get-class ref heap)))
   :hints (("Goal" :in-theory (enable get-class clear-field))))
 
-(defthm clear-field-of-s
+(defthmd clear-field-of-s
   (equal (clear-field ad pair (s ad obj heap))
          (s ad (clr pair obj) heap))
   :hints (("Goal" :in-theory (enable clear-field))))
+
+(theory-invariant (incompatible (:rewrite clear-field-of-s) (:rewrite s-of-clr)))
 
 ;more theorems needed about clr?
 

@@ -1,6 +1,6 @@
 ; Yul Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -27,13 +27,14 @@
    (xdoc::p
     "We introduce an abstract syntax of Yul based on its "
     (xdoc::seetopic "concrete-syntax" "concrete syntax")
-    "; more precisely, on the new grammar.")
+    "; more precisely, on the new grammar (see description there).")
    (xdoc::p
-    "The abstract syntax defined here is fairly close to the concrete syntax,
-     more precisely to the grammar,
-     which already omits lexical entities like whitespace.
-     The reason for this closeness is that we want to keep
-     as much information as possible in the abstract syntax.
+    "The abstract syntax defined here is fairly close to the concrete syntax.
+     The reason for this closeness is to reduce incidental differences
+     between the code before and after a transformation,
+     to facilitate inspection and debugging.
+     (Although our formalization of Yul stands on its own,
+     a major motivation for it is to formalize and verify Yul transformations.)
      In some cases our abstract syntax may be broader than the concrete syntax,
      to keep the definition of the abstract syntax slightly simpler;
      the important thing is that all the concrete syntax
@@ -95,60 +96,56 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defset identifier-set
-  :short "Fixtype of osets of identifiers."
+  :short "Fixtype of sets of identifiers."
   :elt-type identifier
   :elementp-of-nil nil
-  :pred identifier-setp)
+  :pred identifier-setp
 
-;;;;;;;;;;;;;;;;;;;;
+  ///
 
-(defrule identifier-setp-of-mergesort
-  (implies (true-listp x)
-           (equal (identifier-setp (set::mergesort x))
-                  (identifier-listp x)))
-  :enable set::mergesort)
+  (defrule identifier-setp-of-mergesort
+    (implies (true-listp x)
+             (equal (identifier-setp (set::mergesort x))
+                    (identifier-listp x)))
+    :enable set::mergesort)
 
-;;;;;;;;;;;;;;;;;;;;
-
-(defrule identifier-setp-of-list-insert
-  (implies (and (identifier-listp list)
-                (identifier-setp set))
-           (identifier-setp (set::list-insert list set)))
-  :enable set::list-insert)
+  (defrule identifier-setp-of-list-insert
+    (implies (and (identifier-listp list)
+                  (identifier-setp set))
+             (identifier-setp (set::list-insert list set)))
+    :enable set::list-insert))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defresult identifier-set-result
-  :short "Fixtype of errors and osets of identifiers."
+  :short "Fixtype of errors and sets of identifiers."
   :ok identifier-set
   :pred identifier-set-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defomap identifier-identifier-map
-  :short "Fixtype of omaps from identifiers to identifiers."
+  :short "Fixtype of maps from identifiers to identifiers."
   :key-type identifier
   :val-type identifier
-  :pred identifier-identifier-mapp)
+  :pred identifier-identifier-mapp
 
-;;;;;;;;;;;;;;;;;;;;
+  ///
 
-(defrule identifier-setp-of-keys-when-identifier-identifier-mapp
-  (implies (identifier-identifier-mapp m)
-           (identifier-setp (omap::keys m)))
-  :enable omap::keys)
+  (defrule identifier-setp-of-keys-when-identifier-identifier-mapp
+    (implies (identifier-identifier-mapp m)
+             (identifier-setp (omap::keys m)))
+    :enable omap::keys)
 
-;;;;;;;;;;;;;;;;;;;;
-
-(defrule identifier-setp-of-values-when-identifier-identifier-mapp
-  (implies (identifier-identifier-mapp m)
-           (identifier-setp (omap::values m)))
-  :enable omap::values)
+  (defrule identifier-setp-of-values-when-identifier-identifier-mapp
+    (implies (identifier-identifier-mapp m)
+             (identifier-setp (omap::values m)))
+    :enable omap::values))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defresult identifier-identifier-map-result
-  :short "Fixtype of errors and omaps from identifiers to identifiers."
+  :short "Fixtype of errors and maps from identifiers to identifiers."
   :ok identifier-identifier-map
   :pred identifier-identifier-map-resultp)
 
@@ -161,19 +158,17 @@
   :true-listp t
   :keyp-of-nil nil
   :valp-of-nil nil
-  :pred identifier-identifier-alistp)
+  :pred identifier-identifier-alistp
 
-;;;;;;;;;;;;;;;;;;;;
+  ///
 
-(defruled identifier-listp-of-strip-cars-when-identifier-identifier-alistp
-  (implies (identifier-identifier-alistp alist)
-           (identifier-listp (strip-cars alist))))
+  (defruled identifier-listp-of-strip-cars-when-identifier-identifier-alistp
+    (implies (identifier-identifier-alistp alist)
+             (identifier-listp (strip-cars alist))))
 
-;;;;;;;;;;;;;;;;;;;;
-
-(defruled identifier-listp-of-strip-cdrs-when-identifier-identifier-alistp
-  (implies (identifier-identifier-alistp alist)
-           (identifier-listp (strip-cdrs alist))))
+  (defruled identifier-listp-of-strip-cdrs-when-identifier-identifier-alistp
+    (implies (identifier-identifier-alistp alist)
+             (identifier-listp (strip-cdrs alist)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -256,22 +251,6 @@
    (2nd hex-digit))
   :tag :hex-pair
   :pred hex-pairp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist hex-pair-list
-  :short "Fixtype of lists of hex pairs."
-  :elt-type hex-pair
-  :true-listp t
-  :elementp-of-nil nil
-  :pred hex-pair-listp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defresult hex-pair-list-result
-  :short "Fixtype of errors and lists of hex pairs."
-  :ok hex-pair-list
-  :pred hex-pair-list-resultp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -384,16 +363,72 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defprod hex-string-rest-element
+  :short "Fixtype of elements of hex strings after the first one."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The grammar defines the content of a hex string
+     as consisting of zero or more pairs of hex digits,
+     where the pairs may be optionally separated by single underscores.
+     In order to retain that concrete syntax information in the abstract syntax,
+     this fixtype captures the notion of
+     something of the form @('_hh') or @('hh'),
+     where each @('h') is a (potentially different) hex digit.
+     A value of this fixtype represents an element of a hex string,
+     but not the first element, which may not be preceded by underscore."))
+  ((uscorep bool)
+   (pair hex-pair))
+  :tag :hex-string-rest-element
+  :pred hex-string-rest-elementp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deflist hex-string-rest-element-list
+  :short "Fixtype of lists of elements of hex strings after the first one."
+  :elt-type hex-string-rest-element
+  :true-listp t
+  :elementp-of-nil nil
+  :pred hex-string-rest-element-listp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defprod hex-string-content
+  :short "Fixtype of contents of hex strings."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If a hex string is not empty,
+     it contains one or more pairs of hex digits,
+     optionally separated by single underscores.
+     This fixtype captures this non-empty content:
+     it consists of the starting pair of hex digit,
+     and the list of zero or more remaining pairs of hex digits,
+     each of which is optionally preceded by underscore."))
+  ((first hex-pair)
+   (rest hex-string-rest-element-list))
+  :tag :hex-string-content
+  :pred hex-string-contentp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption hex-string-content-option
+  hex-string-content
+  :short "Fixtype of optional contents of hex strings."
+  :pred hex-string-content-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::defprod hex-string
   :short "Fixtype of hex strings."
   :long
   (xdoc::topstring
    (xdoc::p
-    "We represent a hex string as a list of hex pairs,
-     plus a flag saying whether
-     the surrounding quotes are double or not (i.e. single).
-     We do not capture the optional underscores for now."))
-  ((content hex-pair-list)
+    "We represent a hex string as consisting of
+     an optional content (absent if the string is empty)
+     and a boolean flag saying whether
+     the surrounding quotes are double or not (i.e. single)."))
+  ((content hex-string-content-option)
    (double-quote-p bool))
   :tag :hex-string
   :pred hex-stringp)
@@ -532,7 +567,7 @@
     (:variable-single ((name identifier)
                        (init expression-option)))
     (:variable-multi ((names identifier-list)
-                      (init funcall-optionp)))
+                      (init funcall-option)))
     (:assign-single ((target path)
                      (value expression)))
     (:assign-multi ((targets path-list)

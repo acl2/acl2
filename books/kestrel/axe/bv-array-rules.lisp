@@ -1,7 +1,7 @@
 ; bv-array rules
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -15,7 +15,7 @@
 ;; todo: move these out of axe
 
 (include-book "kestrel/bv-lists/bv-array-clear" :dir :system)
-(include-book "rules1")
+(include-book "rules1") ; todo
 
 ;; (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 ;; ;(local (include-book "arithmetic/equalities" :dir :system))
@@ -32,166 +32,11 @@
 (local (include-book "kestrel/lists-light/subrange" :dir :system))
 (local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
 ;; (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
-;; (local (include-book "kestrel/arithmetic-light/floor-and-expt" :dir :system))
 ;; (local (include-book "kestrel/bv/floor-mod-expt" :dir :system))
 ;; (local (include-book "kestrel/bv/trim-rules" :dir :system))
 (local (include-book "kestrel/bv-lists/all-unsigned-byte-p2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length2" :dir :system))
-;(local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
-;(local (include-book "kestrel/arithmetic-light/times" :dir :system))
-;(local (include-book "kestrel/arithmetic-light/plus-and-times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
-;(local (include-book "kestrel/arithmetic-light/minus" :dir :system))
-;(local (include-book "kestrel/arithmetic-light/mod2" :dir :system))
-;(local (include-book "kestrel/arithmetic-light/rem" :dir :system))
-;; (local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
-;; (local (include-book "kestrel/arithmetic-light/ceiling" :dir :system))
-;; (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
-;; (local (include-book "kestrel/library-wrappers/ihs-quotient-remainder-lemmas" :dir :system)) ;drop
-;; (local (include-book "kestrel/library-wrappers/ihs-logops-lemmas" :dir :system)) ;drop
-
-;gross to mix theories?
-(defthm bv-array-clear-of-cons
-  (implies (and (< i len)
-                (equal (+ -1 len) (len x))
-                (natp i)
-                (true-listp x) ;move to conclusion
-                (natp len)
-                (natp size)
-                )
-           (equal (bv-array-clear size len i (cons a x))
-                  (if (zp i)
-                      (cons 0 (bvchop-list size x))
-                    (cons (bvchop size a) (bv-array-clear size (+ -1 len) (+ -1 i) x)))))
-  :hints (("Goal" :in-theory (e/d (bv-array-clear bv-array-write update-nth2 ceiling-of-lg)
-                                  (;UNSIGNED-BYTE-P-OF-+-OF-MINUS-ALT
-                                   ;UNSIGNED-BYTE-P-OF-+-OF-MINUS
-                                   ;;update-nth-becomes-update-nth2-extend-gen
-                                   )))))
-
-;;todo clear-nth becomes bv-array-clear?
-
-(defthm nth-of-bv-array-clear-range-contained
-  (implies (and (<= low index)
-                (<= index high)
-                (< high len)
-                (natp low)
-                (natp len)
-                (natp high)
-                (natp index))
-           (equal (nth index (bv-array-clear-range size len low high data))
-                  0))
-  :hints (("Goal" :in-theory (enable bv-array-clear-range
-                                     bv-array-clear))))
-
-(defthm bv-array-clear-of-0-arg2
-  (equal (bv-array-clear size 0 index data)
-         nil)
-  :hints (("Goal" :in-theory (enable bv-array-clear))))
-
-;; (DEFTHM BV-ARRAY-CLEAR-OF-BV-ARRAY-CLEAR-DIFF-gen
-;;   (IMPLIES
-;;    (AND (SYNTAXP (SMALLER-TERMP INDEX2 INDEX1))
-;;         (<= ELEMENT-SIZE2 ELEMENT-SIZE1)
-;; ;        (< INDEX1 LEN)
-;;  ;       (< INDEX2 LEN)
-;;         (NATP INDEX1)
-;;         (NATP INDEX2)
-;;         (NATP LEN)
-;;         (NATP ELEMENT-SIZE1)
-;;         (NATP ELEMENT-SIZE2))
-;;    (EQUAL (BV-ARRAY-CLEAR
-;;            ELEMENT-SIZE1 LEN INDEX1
-;;            (BV-ARRAY-CLEAR ELEMENT-SIZE2 LEN INDEX2 LST))
-;;           (BV-ARRAY-CLEAR
-;;            ELEMENT-SIZE2 LEN INDEX2
-;;            (BV-ARRAY-CLEAR ELEMENT-SIZE2 LEN INDEX1 LST))))
-;;   :hints (("Goal" :use (:instance BV-ARRAY-CLEAR-OF-BV-ARRAY-CLEAR-DIFF)
-;;            :in-theory (e/d (BV-ARRAY-CLEAR)
-;;                            ( BV-ARRAY-CLEAR-OF-BV-ARRAY-CLEAR-DIFF)))))
-
-(defthm bv-array-clear-of-bv-array-clear-range
-  (implies (and (< index len)
-                (< high len)
-                (< low len)
-                (natp len)
-                (natp low)
-                (natp high)
-                (natp size)
-                (natp index))
-           (equal (bv-array-clear size len index (bv-array-clear-range size len low high data))
-                  (bv-array-clear-range size len low high (bv-array-clear size len index data))))
-  :hints (("Goal"
-           ;;:induct (clear-ind index high data)
-           :induct t
-           :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (bv-array-clear-range)
-                           (;bv-array-clear-range-same
-                            ;update-nth-becomes-update-nth2-extend-gen
-                            )))))
-
-(defthm bv-array-clear-range-of-bv-array-write-contained
-  (implies (and (<= low index)
-                (<= index high)
-                (< high len)
-                (equal len (len data))
-                (natp len)
-                (natp low)
-                (natp high)
-                (natp size)
-                (natp index))
-           (equal (bv-array-clear-range size len low high (bv-array-write size len index val data))
-                  (bv-array-clear-range size len low high data)))
-  :hints (("Subgoal *1/2" :cases ((< high (+ 1 index))))
-          ("Goal"
-;:induct (clear-ind index high data)
-           :induct t
-           :do-not '(generalize eliminate-destructors)
-           :expand ((BV-ARRAY-CLEAR-RANGE SIZE (LEN DATA)
-                                          LOW HIGH
-                                          (BV-ARRAY-WRITE SIZE (LEN DATA)
-                                                          HIGH VAL DATA))
-                    (BV-ARRAY-CLEAR-RANGE SIZE (LEN DATA)
-                                          (+ 1 HIGH)
-                                          HIGH
-                                          (BV-ARRAY-WRITE SIZE (LEN DATA)
-                                                          HIGH VAL DATA))
-                    (BV-ARRAY-CLEAR-RANGE SIZE (LEN DATA)
-                                          HIGH HIGH
-                                          (BV-ARRAY-WRITE SIZE (LEN DATA)
-                                                          HIGH VAL DATA))
-                    (BV-ARRAY-CLEAR-RANGE SIZE (LEN DATA)
-                                          (+ 1 HIGH)
-                                          HIGH DATA)
-                    (BV-ARRAY-CLEAR-RANGE SIZE (LEN DATA)
-                                          LOW HIGH DATA)
-                    (BV-ARRAY-CLEAR-RANGE SIZE (LEN DATA)
-                                          LOW HIGH
-                                          (BV-ARRAY-WRITE SIZE (LEN DATA)
-                                                          INDEX VAL DATA))
-                    (BV-ARRAY-CLEAR-RANGE SIZE (LEN DATA)
-                                          INDEX HIGH DATA)
-                    (BV-ARRAY-CLEAR-RANGE SIZE (LEN DATA)
-                                          INDEX HIGH
-                                          (BV-ARRAY-WRITE SIZE (LEN DATA)
-                                                          INDEX VAL DATA)))
-
-           :in-theory (e/d ((:induction bv-array-clear-range)
-;bv-array-write UPDATE-NTH2
-                            )
-                           (BV-ARRAY-CLEAR-RANGE-OF-BV-ARRAY-CLEAR
-                            bv-array-clear-range-same
-                            BV-ARRAY-CLEAR-RANGE-OF-BV-ARRAY-CLEAR-ADJACENT2
-;                           BV-ARRAY-CLEAR-OF-BV-ARRAY-CLEAR-RANGE
-                            BV-ARRAY-CLEAR-OF-BV-ARRAY-CLEAR-RANGE-ADJACENT1
-                            BV-ARRAY-CLEAR-RANGE-OF-BV-ARRAY-CLEAR-ADJACENT1
-                            UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN)))))
-
-(defthm bv-array-clear-of-0-and-cons
-  (implies (syntaxp (not (quotep a)))
-           (equal (bv-array-clear size len 0 (cons a b))
-                  (bv-array-clear size len 0 (cons 0 b))))
-  :hints (("Goal" :in-theory (e/d (bv-array-clear bv-array-write update-nth2) (update-nth-becomes-update-nth2-extend-gen)))))
 
 (defthm bv-array-clear-range-of-cons
   (implies (and (syntaxp (not (quotep a))) ;ffixme we really want to do it for anything but 0? add support for equal to make-axe-rules
@@ -227,61 +72,6 @@
   :hints (("Goal" :in-theory (enable ;list::nth-of-cons
                               natp subrange-of-cons))))
 
-(defthm bv-array-clear-range-of-bv-array-write-too-high
-  (implies (and (< high index)
-                (< index len)
-                (< high len)
-                (<= alow high) ;"alow" comes alphabetically first
-                (equal len (len data))
-                (natp len)
-                (natp alow)
-                (natp high)
-                (natp size)
-                (natp index))
-           (equal (bv-array-clear-range size len alow high (bv-array-write size len index val data))
-                  (bv-array-write size len index val (bv-array-clear-range size len alow high data))))
-  :hints (("Goal" :in-theory (e/d (BV-ARRAY-CLEAR-RANGE)
-                                  (BV-ARRAY-CLEAR-OF-BV-ARRAY-CLEAR-RANGE ;looped
-                                   ;; BV-ARRAY-CLEAR-OF-BV-ARRAY-CLEAR-DIFF
-                                   )))))
-
-(defthmd array-write-of-0
-  (equal (bv-array-write elem-size len index1 0 lst)
-         (bv-array-clear elem-size len index1 lst))
-  :hints (("Goal" :in-theory (enable bv-array-clear))))
-
-(DEFTHM BV-ARRAY-CLEAR-RANGE-OF-BV-ARRAY-write-of-0-ADJACENT1
-  (IMPLIES (AND (EQUAL LOWINDEX (+ 1 INDEX1))
-                (< INDEX1 LEN)
-                (< LOWINDEX LEN)
-                (< HIGHINDEX LEN)
-                (<= LOWINDEX HIGHINDEX)
-                (NATP ELEM-SIZE)
-                (NATP LEN)
-                (NATP INDEX1)
-                (NATP LOWINDEX)
-                (NATP HIGHINDEX))
-           (EQUAL
-            (BV-ARRAY-CLEAR-RANGE ELEM-SIZE LEN LOWINDEX HIGHINDEX (BV-ARRAY-write ELEM-SIZE LEN INDEX1 0 LST))
-            (BV-ARRAY-CLEAR-RANGE ELEM-SIZE LEN INDEX1 HIGHINDEX LST)))
-  :hints (("Goal" :in-theory (enable ARRAY-WRITE-of-0))))
-
-(DEFTHM BV-ARRAY-CLEAR-RANGE-OF-BV-ARRAY-write-of-0-ADJACENT2
-  (IMPLIES (AND (EQUAL INDEX1 (+ 1 HIGHINDEX))
-                (< INDEX1 LEN)
-                (< LOWINDEX LEN)
-                (< HIGHINDEX LEN)
-                (<= LOWINDEX HIGHINDEX)
-                (NATP ELEM-SIZE)
-                (NATP LEN)
-                (NATP INDEX1)
-                (NATP LOWINDEX)
-                (NATP HIGHINDEX))
-           (EQUAL
-            (BV-ARRAY-CLEAR-RANGE ELEM-SIZE LEN LOWINDEX HIGHINDEX (BV-ARRAY-write ELEM-SIZE LEN INDEX1 0 LST))
-            (BV-ARRAY-CLEAR-RANGE ELEM-SIZE LEN LOWINDEX INDEX1 LST)))
-  :hints (("Goal" :in-theory (enable ARRAY-WRITE-of-0))))
-
 ;gen!
 (defthm bv-array-clear-range-of-append-one-more
   (implies (and (syntaxp (quotep z))
@@ -289,8 +79,7 @@
                 (< index (+ -1 (len z))) ;to prevent loops
                 (< (len z) len)
                 (natp index)
-                (natp len)
-                )
+                (natp len))
            (equal (bv-array-clear-range 32 len 0 index (binary-append z x))
                   (bv-array-clear-range 32 len 0 (+ -1 (len z)) (binary-append z x))))
   :hints (("Goal" :in-theory (e/d (equal-of-append nthcdr-of-cdr-combine-strong) (;EQUAL-OF-REPEAT-OF-LEN-SAME
@@ -382,36 +171,17 @@
                                    ;LIST::LEN-POS-REWRITE
                                    )))))
 
-(DEFTHM BV-ARRAY-CLEAR-RANGE-OF-BV-ARRAY-WRITE-TOO-low
-  (IMPLIES (AND (< INDEX alow)
-                (< INDEX LEN)
-                (< HIGH LEN)
-                (<= ALOW HIGH)
-                (EQUAL LEN (LEN DATA))
-                (NATP LEN)
-                (NATP ALOW)
-                (NATP HIGH)
-                (NATP SIZE)
-                (NATP INDEX))
-           (EQUAL (BV-ARRAY-CLEAR-RANGE SIZE LEN ALOW HIGH (BV-ARRAY-WRITE SIZE LEN INDEX VAL DATA))
-                  (BV-ARRAY-WRITE SIZE LEN INDEX VAL (BV-ARRAY-CLEAR-RANGE SIZE LEN ALOW HIGH DATA))))
-  :HINTS
-  (("Goal"
-    :IN-THEORY (E/D (BV-ARRAY-CLEAR-RANGE)
-                    (BV-ARRAY-CLEAR-OF-BV-ARRAY-CLEAR-RANGE)))))
+(defthmd cons-becomes-bv-array-write-size-1
+  (implies (unsigned-byte-p 1 a)
+           (equal (cons a nil)
+                  (bv-array-write 1 1 0 a (list 0))))
+  :hints (("Goal" :in-theory (enable update-nth2 bv-array-write))))
 
-(defthm bv-array-clear-of-bv-array-write-both
-  (implies (and (natp esize)
-                (natp key1)
-                (< key1 len)
-                (natp key2)
-                (< key2 len)
-                (natp len)
-                (equal len (len lst)))
-           (equal (bv-array-clear esize len key1 (bv-array-write esize len key2 val lst))
-                  (if (equal key1 key2)
-                      (bv-array-clear esize len key1 lst)
-                    (bv-array-write esize len key2 val (bv-array-clear esize len key1 lst))))))
+(defthmd cons-becomes-bv-array-write-size-4
+  (implies (unsigned-byte-p 4 a)
+           (equal (cons a nil)
+                  (bv-array-write 4 1 0 a (list 0))))
+  :hints (("Goal" :in-theory (enable update-nth2 bv-array-write))))
 
 ;gross
  ;might be expensive
@@ -483,19 +253,37 @@
 
 (theory-invariant (incompatible (:definition bv-array-read) (:rewrite bvchop-of-nth-becomes-bv-array-read2)))
 
-(defthm bv-array-clear-range-of-bv-array-write-both
-  (implies (and (< high len)
-                (equal len (len data))
-                (natp len)
-                (natp low)
-                (natp high)
-                (natp size)
-                (<= low high)
-                (< index (len data))
-                (natp index))
-           (equal (bv-array-clear-range size len low high (bv-array-write size len index val data))
-                  (if (and (<= low index)
-                           (<= index high))
-                      (bv-array-clear-range size len low high data)
-                    (bv-array-write size len index val (bv-array-clear-range size len low high data)))))
-  :hints (("Goal" :in-theory (disable BV-ARRAY-WRITE-EQUAL-REWRITE-ALT BV-ARRAY-WRITE-EQUAL-REWRITE))))
+
+(defthm equal-of-bv-array-write-same
+  (implies (and (natp width)
+                (natp index)
+                (< index len)
+                (integerp len))
+           (equal (equal x (bv-array-write width len index val x))
+                  (and (equal len (len x))
+                       (true-listp x)
+                       (all-unsigned-byte-p width x)
+                       (equal (bvchop width val)
+                              (bv-array-read width len index x)))))
+  :hints (("Goal" :cases ((equal len (len x))))))
+
+(defthm equal-of-bv-array-write-and-bv-array-write-same
+  (implies (and (natp width)
+                (natp index)
+                (natp index2)
+                (< index len)
+                (< index2 len)
+                (integerp len)
+                (true-listp data)
+                (all-unsigned-byte-p width data)
+                (equal len (len data)))
+           (equal (equal (bv-array-write width len index2 val2 data)
+                         (bv-array-write width len index val data))
+                  (if (equal index index2)
+                      (equal (bvchop width val)
+                             (bvchop width val2))
+                    (and (equal (bvchop width val2)
+                                (bv-array-read width len index2 data))
+                         (equal (bvchop width val)
+                                (bv-array-read width len index data))))))
+  :hints (("Goal" :in-theory (e/d (bv-array-read-of-bv-array-write-both) (BV-ARRAY-READ-OF-BV-ARRAY-WRITE)))))

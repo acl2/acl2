@@ -1,7 +1,7 @@
 ; A variant of update-nth that does some fixing
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -137,3 +137,39 @@
   :hints (("Goal"
            :in-theory (enable update-nth2 ;LIST::UPDATE-NTH-UPDATE-NTH-DIFF
                               ))))
+
+;; todo: consolidate these
+;maybe this won't happen for arrays, since they start out initialized to their final length?
+(defthmd update-nth-becomes-update-nth2-extend
+  (implies (and (true-listp lst)
+                (equal key (len lst))
+                (natp key))
+           (equal (update-nth key val lst)
+                  (update-nth2 (+ 1 (len lst))
+                               key
+                               val lst)))
+  :hints (("Goal" :in-theory (enable update-nth2 true-listp))))
+
+(defthmd update-nth-becomes-update-nth2-extend-gen
+  (implies (and (true-listp lst)
+                (>= key (len lst))
+                (natp key))
+           (equal (update-nth key val lst)
+                  (update-nth2 (+ 1 key)
+                               key
+                               val
+                               lst)))
+  :hints (("Goal" :in-theory (enable update-nth2))))
+
+(theory-invariant (incompatible (:definition update-nth2) (:rewrite update-nth-becomes-update-nth2-extend-gen)))
+
+;; (defthm cdr-of-update-nth2
+;;   (implies (and (posp len)
+;;                 (< n len))
+;;            (equal (cdr (update-nth2 len n val list))
+;;                   (if (zp len)
+;;                       nil
+;;                     (if (zp n)
+;;                         (take (+ -1 len) (cdr list))
+;;                         (update-nth2 len (+ -1 n) val (cdr list))))))
+;;   :hints (("Goal" :in-theory (e/d (update-nth2 posp) (update-nth-becomes-update-nth2-extend-gen)))))

@@ -1,6 +1,6 @@
 ; A simple JSON parser
 ;
-; Copyright (C) 2019-2023 Kestrel Institute
+; Copyright (C) 2019-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -78,7 +78,7 @@
 ;; true as the symbol :TRUE.
 (defund parse-json-true-literal (chars)
   (declare (xargs :guard (character-listp chars)))
-  (if (prefixp '(#\t #\r #\u #\e) chars)
+  (if (prefixp '(#\t #\r #\u #\e) chars) ; todo: consider a variant of prefixp that uses eql as the test
       (mv nil :true (nthcdr 4 chars))
     (mv :bad-true-literal nil chars)))
 
@@ -195,8 +195,8 @@
             ;; Need to parse the upcoming low surrogate and combine:
             (if (not (consp (cdr chars)))
                 (mv :not-enough-bytes-for-low-surrogate nil chars)
-              (if (not (and (equal #\\ (first chars))
-                            (equal #\u (second chars))))
+              (if (not (and (eql #\\ (first chars))
+                            (eql #\u (second chars))))
                   (mv :ill-formed-low-surrogate-escape nil chars)
                 (let ((chars (rest (rest chars)))) ; skip the \u
                   (mv-let (erp second-code-point chars)
@@ -279,23 +279,23 @@
                 nil
                 chars)
           (let ((char-after-backslash (first rest-chars)))
-            (cond ((equal char-after-backslash #\") ;quotation mark
+            (cond ((eql char-after-backslash #\") ;quotation mark
                    (mv nil (list #\") (rest rest-chars)))
-                  ((equal char-after-backslash #\\) ;reverse solidus
+                  ((eql char-after-backslash #\\) ;reverse solidus
                    (mv nil (list #\\) (rest rest-chars)))
-                  ((equal char-after-backslash #\/) ;solidus
+                  ((eql char-after-backslash #\/) ;solidus
                    (mv nil (list #\/) (rest rest-chars)))
-                  ((equal char-after-backslash #\b) ;backspace
+                  ((eql char-after-backslash #\b) ;backspace
                    (mv nil (list (code-char #x8)) (rest rest-chars)))
-                  ((equal char-after-backslash #\f) ;form feed
+                  ((eql char-after-backslash #\f) ;form feed
                    (mv nil (list (code-char #xC)) (rest rest-chars)))
-                  ((equal char-after-backslash #\n) ;line feed
+                  ((eql char-after-backslash #\n) ;line feed
                    (mv nil (list (code-char #xA)) (rest rest-chars)))
-                  ((equal char-after-backslash #\r) ;carriage return
+                  ((eql char-after-backslash #\r) ;carriage return
                    (mv nil (list (code-char #xD)) (rest rest-chars)))
-                  ((equal char-after-backslash #\t) ;character tabulation
+                  ((eql char-after-backslash #\t) ;character tabulation
                    (mv nil (list (code-char #x9)) (rest rest-chars)))
-                  ((equal char-after-backslash #\u) ;a unicode char
+                  ((eql char-after-backslash #\u) ;a unicode char
                    ;; May consume up to 12 characters:
                    (parse-unicode-escape (rest rest-chars)))
                   (t
@@ -430,12 +430,12 @@
 
 (defthm natp-of-mv-nth-1-of-parse-json-digits
   (natp (mv-nth 1 (parse-json-digits chars)))
-  :rule-classes (:type-prescription)
+  :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable parse-json-digits))))
 
 (defthm natp-of-mv-nth-0-of-parse-json-digits
   (natp (mv-nth 0 (parse-json-digits chars)))
-  :rule-classes (:type-prescription)
+  :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable parse-json-digits member-equal))))
 
 (verify-guards parse-json-digits)

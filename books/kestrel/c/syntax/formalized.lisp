@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,7 +10,6 @@
 
 (in-package "C$")
 
-(include-book "abstract-syntax-operations")
 (include-book "unambiguity")
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
@@ -948,11 +947,17 @@
      where the inner declarator is just a name;
      see @(tsee ldm-dirdeclor-fun).
      The parameter declarations must be supported."))
-  (and (dirdeclor-case dirdeclor :function-params)
-       (dirdeclor-case (dirdeclor-function-params->decl dirdeclor) :ident)
-       (ident-formalp (dirdeclor-ident->unwrap
-                       (dirdeclor-function-params->decl dirdeclor)))
-       (paramdecl-list-formalp (dirdeclor-function-params->params dirdeclor)))
+  (dirdeclor-case
+   dirdeclor
+   :function-params
+   (and (dirdeclor-case dirdeclor.decl :ident)
+        (ident-formalp (dirdeclor-ident->unwrap dirdeclor.decl))
+        (paramdecl-list-formalp dirdeclor.params))
+   :function-names
+   (and (dirdeclor-case dirdeclor.decl :ident)
+        (ident-formalp (dirdeclor-ident->unwrap dirdeclor.decl))
+        (endp dirdeclor.names))
+   :otherwise nil)
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

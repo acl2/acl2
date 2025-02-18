@@ -1,7 +1,7 @@
 ; Rules (theorems) relied upon by the Formal Unit Tester
 ;
 ; Copyright (C) 2016-2023 Kestrel Technology, LLC
-; Copyright (C) 2024 Kestrel Institute
+; Copyright (C) 2024-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,7 +14,7 @@
 ;; STATUS: IN-PROGRESS
 
 (include-book "kestrel/x86/portcullis" :dir :system)
-(include-book "kestrel/axe/known-booleans" :dir :system)
+(include-book "kestrel/axe/known-booleans" :dir :system) ; so we can call add-known-boolean (todo: move that to axe dir)
 (include-book "kestrel/axe/axe-syntax" :dir :system) ; todo: split out such rules
 (include-book "kestrel/axe/axe-syntax-functions" :dir :system) ; todo: split out such rules
 (include-book "projects/x86isa/utils/fp-structures" :dir :system)
@@ -59,8 +59,6 @@
       (equal 'qnan val)
       ;; a special type of qnan:
       (equal 'indef val)))
-
-(acl2::add-known-boolean is-nan)
 
 ;; Only needed for Axe.
 (defthmd booleanp-of-is-nan
@@ -173,7 +171,7 @@
   (defthm mxcsrbits->reserved-of-bvif (implies (and (<= 32 size) (natp size)) (equal (mxcsrbits->reserved (bvif size test x y)) (bvif 16 test (mxcsrbits->reserved x) (mxcsrbits->reserved y))))))
 
 (encapsulate ()
-  (local (in-theory (e/d (mxcsrbits-fix acl2::b-ior) (acl2::loghead-becomes-bvchop acl2::logbitp-iff-getbit))))
+  (local (in-theory (e/d (mxcsrbits-fix acl2::b-ior) (acl2::loghead-becomes-bvchop acl2::logbitp-to-getbit-equal-1))))
   (defthm mxcsrbits->ie-of-logior (equal (mxcsrbits->ie (logior x y)) (logior (mxcsrbits->ie x) (mxcsrbits->ie y))) :hints (("Goal" :in-theory (enable mxcsrbits->ie))))
   (defthm mxcsrbits->de-of-logior (equal (mxcsrbits->de (logior x y)) (logior (mxcsrbits->de x) (mxcsrbits->de y))) :hints (("Goal" :in-theory (enable mxcsrbits->de))))
   (defthm mxcsrbits->ze-of-logior (equal (mxcsrbits->ze (logior x y)) (logior (mxcsrbits->ze x) (mxcsrbits->ze y))) :hints (("Goal" :in-theory (enable mxcsrbits->ze))))
@@ -378,7 +376,6 @@
 ;; todo: move some of these:
 
 ;drop!
-(include-book "kestrel/booleans/boolif" :dir :system)
 (include-book "kestrel/utilities/myif" :dir :system)
 ;drop!
 (defthm boolif-of-myif-arg1-true
@@ -522,10 +519,12 @@
   (integerp (!MXCSRBITS->IE$INLINE bit mxcsr)))
 
 (defthm unsigned-byte-p-32-of-!MXCSRBITS->IE
-  (unsigned-byte-p 32 (!MXCSRBITS->IE$INLINE bit mxcsr)))
+  (unsigned-byte-p 32 (!MXCSRBITS->IE$INLINE bit mxcsr))
+  :hints (("Goal" :in-theory (enable x86isa::unsigned-byte-p-when-mxcsrbits-p))))
 
 (defthm unsigned-byte-p-32-of-!MXCSRBITS->DE
-  (unsigned-byte-p 32 (!MXCSRBITS->DE$INLINE bit mxcsr)))
+  (unsigned-byte-p 32 (!MXCSRBITS->DE$INLINE bit mxcsr))
+  :hints (("Goal" :in-theory (enable x86isa::unsigned-byte-p-when-mxcsrbits-p))))
 
 (defthm integerp-of-!MXCSRBITS->DE
   (integerp (!MXCSRBITS->DE$INLINE bit mxcsr)))

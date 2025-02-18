@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -129,6 +129,8 @@
     make-type-spec-typeof-expr
     make-type-spec-typeof-type
     irr-type-spec
+
+    type-spec-optionp
 
     spec/qual-p
     spec/qual-fix
@@ -406,6 +408,7 @@
 
     transunitp
     transunit
+    make-transunit
     transunit->decls
 
     filepath-transunit-mapp
@@ -483,5 +486,9 @@
     transunit-unambp
     filepath-transunit-map-unambp
     transunit-ensemble-unambp
+
+    ;; validation information predicates:
+
+    transunit-ensemble-annop
 
    ))

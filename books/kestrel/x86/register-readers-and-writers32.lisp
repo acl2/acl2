@@ -1,7 +1,7 @@
 ; A theory of register readers and writers (emphasis on readability of terms)
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2024 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -19,7 +19,6 @@
 ;; cost of making proof terms a bit bigger and a bit less readable.
 
 (include-book "projects/x86isa/machine/state" :dir :system) ;for xr
-;(include-book "projects/x86isa/machine/state-field-thms" :dir :system)
 (include-book "projects/x86isa/portcullis/sharp-dot-constants" :dir :system)
 (include-book "kestrel/bv/bvchop-def" :dir :system)
 (local (include-book "kestrel/bv/logext" :dir :system))
@@ -35,10 +34,26 @@
 (defund ebp (x86) (declare (xargs :stobjs x86)) (rgfi *rbp* x86))
 ;; todo: esi and edi!
 
-;; Get the 32-bit instruction pointer:
+;; Gets the 32-bit instruction pointer:
 (defun eip (x86)
   (declare (xargs :stobjs x86))
   (rip x86))
+
+(defthmd xr-becomes-eip
+  (equal (xr :rip nil x86) (eip x86))
+  :hints (("Goal" :in-theory (enable eip rip))))
+
+(defthmd rip-becomes-eip
+  (equal (rip x86) (eip x86))
+  :hints (("Goal" :in-theory (enable eip))))
+
+;; not quite true
+;; (defthm read-*ip-of-*compatibility-mode*-becomes-eip
+;;   (equal (read-*ip *compatibility-mode* x86) (eip x86))
+;;   :hints (("Goal" :in-theory (enable read-*ip))))
+
+(theory-invariant (incompatible (:rewrite rip-becomes-eip) (:definition eip)))
+(theory-invariant (incompatible (:rewrite xr-becomes-eip) (:definition eip)))
 
 ;; Register writers
 (defund set-eax (val x86) (declare (xargs :stobjs x86 :guard (unsigned-byte-p 32 val))) (!rgfi *rax* val x86))
@@ -51,12 +66,19 @@
 (defun set-eip (eip x86)
   (declare (xargs :stobjs x86
                   :guard (signed-byte-p 48 eip))) ;todo: tighten?
-  (x86isa::!rip eip x86))
+  (!rip eip x86))
 
 ;; This introduces set-eip, if we want to.  We probably only want this for 32-bits!
 (defthmd xw-becomes-set-eip
   (equal (xw :rip nil eip x86)
          (set-eip eip x86)))
+
+(defthmd !rip-becomes-set-eip
+  (equal (!rip eip x86)
+         (set-eip eip x86)))
+
+(theory-invariant (incompatible (:rewrite !rip-becomes-set-eip) (:definition set-eip)))
+(theory-invariant (incompatible (:rewrite xw-becomes-set-eip) (:definition set-eip)))
 
 (defthm eip-of-set-eip
   (equal (eip (set-eip eip x86))

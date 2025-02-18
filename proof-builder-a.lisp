@@ -1,5 +1,5 @@
 ; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2024, Regents of the University of Texas
+; Copyright (C) 2025, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -733,7 +733,7 @@
 (defun cl-set-to-implications (cl-set)
   (if (null cl-set)
       nil
-      (cons (make-implication (butlast (car cl-set) 1)
+      (cons (make-implication (dumb-negate-lit-lst (butlast (car cl-set) 1))
                               (car (last (car cl-set))))
             (cl-set-to-implications (cdr cl-set)))))
 
@@ -961,6 +961,16 @@
                                   (cl-set-to-implications cl-set))
                                  (forced-goals
                                   (make-new-goals-fixed-hyps
+
+; We discovered, when fixing a bug in cl-set-to-implications in January 2025,
+; that this call may be a bit odd: it already includes hyps even though cl-set
+; (hence also termlist) incorporates information deduced from
+; extract-and-clausify-assumptions (via pc-process-assumptions).  So hyps
+; appears to be redundant here.  It might be better to keep hyps, and then add
+; new hypotheses for each clause in cl-set to the end of the hypotheses that
+; are not already in hyps.  But it seems harmless and simple to keep things as
+; is.
+
                                    termlist hyps goal-name depends-on))
                                  (new-goals
                                   (add-assumptions-to-top-goal

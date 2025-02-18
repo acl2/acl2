@@ -1,3 +1,13 @@
+; Finding failed books by searching .cert.out files.
+;
+; Copyright (C) 2023-2025 Kestrel Institute
+;
+; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
+;
+; Author: Eric Smith (eric.smith@kestrel.edu)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (in-package "ACL2")
 
 (include-book "centaur/misc/tshell" :dir :system)
@@ -31,14 +41,14 @@
    (mv-let (status failed-lines state)
      (tshell-call-fn "find . -name \"*.cert.out\" -exec grep -Hl 'ACL2 Error \\[.*] in (CERTIFY-BOOK' {} \\;" nil t state)
      (if (not (= 0 status))
-         (mv (er hard? 'find-failed-books "Error (~x0) finding failed books.")
+         (mv (er hard? 'find-failed-books "Error (~x0) finding failed books." status)
              state)
        ;; Attempt to identify interrupted books (we will avoid looking for repairs for them):
        (mv-let (status interrupted-lines state)
          ;; TODO: This may not find interrupts of the proof checker (try interrupting books/projects/apply-model-2/apply-prim)?:
          (tshell-call-fn "find . -name \"*.cert.out\" -exec grep -Hl 'cause an explicit interrupt' {} \\;" nil t state)
          (if (not (= 0 status))
-             (mv (er hard? 'find-failed-books "Error (~x0) finding interrupted books.")
+             (mv (er hard? 'find-failed-books "Error (~x0) finding interrupted books." status)
                  state)
            (let ((failed-books (strip-suffix-from-strings ".cert.out" failed-lines))
                  (interrupted-books (strip-suffix-from-strings ".cert.out" interrupted-lines)))

@@ -328,6 +328,80 @@
 				(:instance r*comm (x (r+ c d)) (y (car x)))
 				(:instance rdist (x (car x)) (y c) (z d))))))
 
+;; Dot product of 2 lists of ring elements of the same length:
+
+(defun rdot (x y)
+  (if (consp x)
+      (r+ (r* (car x) (car y))
+          (rdot (cdr x) (cdr y)))
+    (r0)))
+
+(in-theory (disable (rdot)))
+
+(defthm rp-rdot
+  (implies (and (rlistnp x n) (rlistnp y n))
+           (rp (rdot x y)))
+  :hints (("Goal" :in-theory (disable (rdot)))))
+
+(defthm rdot-rlistn0
+  (implies (and (natp n) (rlistnp x n))
+           (equal (rdot (rlistn0 n) x)
+	          (r0)))
+  :hints (("Goal" :in-theory (disable (rdot)))))
+
+(defthmd rdot-comm
+  (implies (and (rlistnp x n) (rlistnp y n))
+           (equal (rdot x y) (rdot y x)))
+  :hints (("Subgoal *1/1" :use ((:instance r*comm (x (car x)) (y (car y)))))
+          ("Subgoal *1/3" :use ((:instance r*comm (x (car x)) (y (car y)))))))
+
+(defthmd rdot-rlist-add
+  (implies (and (rlistnp x n) (rlistnp y n) (rlistnp z n))
+	   (equal (rdot (rlist-add x y) z)
+		  (r+ (rdot x z) (rdot y z))))
+  :hints (("Subgoal *1/4" :use ((:instance r+assoc (x (R* (CAR X) (CAR Z)))
+					           (y (RDOT (CDR X) (CDR Z)))
+					           (z (R+ (R* (CAR Y) (CAR Z)) (RDOT (CDR Y) (CDR Z)))))
+				(:instance r+assoc (x (RDOT (CDR X) (CDR Z)))
+					           (y (R* (CAR Y) (CAR Z)))
+						   (z (RDOT (CDR Y) (CDR Z))))
+				(:instance r+comm (x (R* (CAR Y) (CAR Z)))
+				                  (y (RDOT (CDR X) (CDR Z))))
+				(:instance r+assoc (x (R* (CAR Y) (CAR Z)))
+				                   (y (RDOT (CDR X) (CDR Z)))
+						   (z (RDOT (CDR Y) (CDR Z))))
+				(:instance r+assoc (x (R* (CAR X) (CAR Z)))
+				                   (y (R* (CAR Y) (CAR Z)))
+						   (z (RDOT (RLIST-ADD (CDR X) (CDR Y)) (CDR Z))))))))
+
+(defthmd rdot-rlist-add-comm
+  (implies (and (rlistnp x n) (rlistnp y n) (rlistnp z n))
+	   (equal (rdot z (rlist-add x y))
+		  (r+ (rdot z x) (rdot z y))))
+  :hints (("Goal" :use (rdot-rlist-add
+                        (:instance rdot-comm (y z))
+			(:instance rdot-comm (x z))
+			(:instance rdot-comm (x z) (y (rlist-add x y)))))))
+					   
+(defthmd rdot-rlist-scalar-mul
+  (implies (and (rlistnp x n) (rlistnp y n) (rp c))
+	   (equal (rdot (rlist-scalar-mul c x) y)
+		  (r* c (rdot x y))))
+  :hints (("Goal" :in-theory (enable r*assoc))))
+
+;; List of dot products of an rlist x with the elements of a list of rlists l:
+
+(defun rdot-list (x l)
+  (if (consp l)
+      (cons (rdot x (car l))
+            (rdot-list x (cdr l)))
+    ()))
+
+(defthm nth-rdot-list
+  (implies (and (natp j) (< j (len l)))
+           (equal (nth j (rdot-list x l))
+	          (rdot x (nth j l)))))
+
 
 ;;------------------------------------------
 

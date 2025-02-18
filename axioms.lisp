@@ -1,5 +1,5 @@
 ; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2024, Regents of the University of Texas
+; Copyright (C) 2025, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -16288,7 +16288,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
       '(state-global-let* ,bindings ,body)
       (let ((state-global-let*-cleanup-lst
-             (list ,@(state-global-let*-get-globals bindings))))
+             (list$ ,@(state-global-let*-get-globals bindings))))
         ,@(and (null bindings)
                '((declare (ignore state-global-let*-cleanup-lst))))
         (acl2-unwind-protect

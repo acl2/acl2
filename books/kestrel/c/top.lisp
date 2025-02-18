@@ -1,7 +1,7 @@
 ; C Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
-; Copyright (C) 2024 Kestrel Technology LLC (http://kestreltechnology.com)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Technology LLC (http://kestreltechnology.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -43,32 +43,50 @@
    (xdoc::p
     "The library is work in progress.")
    (xdoc::p
-    "This library is based on the "
-    (xdoc::ahref "https://www.iso.org/standard/74528.html"
-                 "ISO/IEC 9899:2018 specification of C")
-    ", i.e. the C17 standard.
-     In the documentation of this library,
-     this standard is referenced as `[C]';
+    "This library is based on:")
+   (xdoc::ul
+    (xdoc::li
+     (xdoc::ahref "https://www.iso.org/standard/82075.html"
+                  "ISO/IEC 9899:2024")
+     ", i.e. the C23 standard.")
+    (xdoc::li
+     (xdoc::ahref "https://www.iso.org/standard/74528.html"
+                  "ISO/IEC 9899:2018")
+     ", i.e. the C17 standard.")
+    (xdoc::li
+     "The "
+     (xdoc::ahref "https://gcc.gnu.org/onlinedocs/gcc/"
+                  "GCC Manual for the current development")
+     "."))
+   (xdoc::p
+    "In the documentation of this library,
+     these source are referenced as `[C23]', `[C17]', and `[GCC];
      sections are referenced
      by appending their designations separated by colon,
-     e.g. `[C:6.2.6]' references Section 6.2.6;
+     e.g. `[C17:6.2.6]' references Section 6.2.6 of [C17];
      paragraphs are referenced
      by further appending their numbers separated by slash,
-     e.g. `[C:6.2.5/2]' references Paragraph 2 of Section 6.2.5.
+     e.g. `[C17:6.2.5/2]' references Paragraph 2 of Section 6.2.5 of [C17].
      These square-bracketed references may be used
-     as nouns or parenthetically.")
-   (xdoc::p
-    "This library is also based on the documentation of "
-    (xdoc::ahref "https://gcc.gnu.org" "GCC")
-    ", particularly the "
+     as nouns or parenthetically.
+     In the case of [GCC], we also give URL links,
+     which, given their form, may be useful to locate
+     documentation that has moved or otherwise changed,
+     given that [GCC] is a live document;
+     an example is "
     (xdoc::ahref "https://gcc.gnu.org/onlinedocs/gcc/C-Extensions.html"
-                 "extensions to the C language family")
-    ". Although these are extensions to the standard,
-     they are sufficiently prevalent and import that
-     we need to take them into account when developing practical tools for C.
+                 "[GCC:6]")
+    ", which currently refers to Section 6,
+     titled `Extensions to the C Language Family',
+     and whose URL includes @('C-Extensions.html').")
+   (xdoc::p
+    "Although GCC provides extensions to the ISO/IEC standard,
+     they are sufficiently prevalent and important that
+     we need to take them into account
+     for our library of C to be of practical use.
      But in the documentation of this ACL2 library,
-     we are always careful to distinguish
-     the C standard from the GCC extensions."))
+     we always clearly distinguish between
+     standard C and GCC extensions."))
   :order-subtopics (language
                     representation
                     atc

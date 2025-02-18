@@ -677,7 +677,7 @@
    (xdoc::p
     "Adding a certificate whose previous certificates are in the DAG
      preserves the closure of the DAG;
-     we prove this in @('dag-previous-in-dag-p-of-insert').
+     we prove this in @('dag-closedp-of-insert').
      It might be tempting to try and prove something like")
    (xdoc::codeblock
     "(equal (dag-closedp (set::insert cert dag))"

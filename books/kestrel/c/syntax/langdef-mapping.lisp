@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,7 +10,6 @@
 
 (in-package "C$")
 
-(include-book "abstract-syntax-operations")
 (include-book "unambiguity")
 
 (include-book "../language/abstract-syntax")
@@ -980,7 +979,8 @@
      does not have a separate type for direct function declarators,
      so we return a function declarator here.
      The input direct declarator must be an identifier
-     followed by a single parenthesized list of parameter declarations.")
+     followed by a single parenthesized list of parameter declarations,
+     or an empty list of parameter names.")
    (xdoc::p
     "This function will always result in a @(tsee c::fun-declor)
      of the @(':base') kind;
@@ -989,11 +989,17 @@
     "This function is called when we expect a function declarator,
      not an object declarator, for which we have a separate function."))
   (b* (((reterr) (c::fun-declor-base (c::ident "irrelevant") nil))
-       ((unless (dirdeclor-case dirdeclor :function-params))
+       ((unless (or (dirdeclor-case dirdeclor :function-params)
+                    (and (dirdeclor-case dirdeclor :function-names)
+                         (endp (dirdeclor-function-names->names dirdeclor)))))
         (reterr (msg "Unsupported direct declarator ~x0 for function."
                      (dirdeclor-fix dirdeclor))))
-       (inner-dirdeclor (dirdeclor-function-params->decl dirdeclor))
-       (params (dirdeclor-function-params->params dirdeclor))
+       ((mv inner-dirdeclor params)
+        (if (dirdeclor-case dirdeclor :function-params)
+            (mv (dirdeclor-function-params->decl dirdeclor)
+                (dirdeclor-function-params->params dirdeclor))
+          (mv (dirdeclor-function-names->decl dirdeclor)
+              nil)))
        ((unless (dirdeclor-case inner-dirdeclor :ident))
         (reterr (msg "Unsupported direct declarator ~x0 for function."
                      (dirdeclor-fix dirdeclor))))

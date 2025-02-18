@@ -279,7 +279,8 @@
                  ((not (mbt (,(case type (:s= '<) (:w= '<=))
                              (len (vl-tokstream->tokens))
                              (len !!!tokens))))
-                  (prog2$ (er hard? "SEQ count failed for (~x0 ~x1.)~%"
+                  (prog2$ (er hard? 'seq-process-bind
+                              "SEQ count failed for (~x0 ~x1.)~%"
                               ',type ',action)
                           (mv (make-vl-warning :type :vl-seq-fail
                                                :msg "SEQ count failure."
@@ -494,4 +495,3 @@
 
 (defmacro seq-backtrack (stream &rest blocks)
   (seq-backtrack-fn stream blocks))
-

@@ -1,5 +1,5 @@
 ; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2024, Regents of the University of Texas
+; Copyright (C) 2025, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -1877,10 +1877,10 @@ ACL2 from scratch.")
 ; https://github.com/Clozure/ccl/pull/384
 ; says:  "xrme merged commit 110c230 into Clozure:master  on Sep 27, 2021".
 
-    (error "This Lisp may be unsuitable for ACL2, because it does not ~%~
-            specify support for IEEE floating point, that is, feature ~%~
-            :ieee-floating-point is missing from *features*.  This may ~%~
-            be easily fixed with an environment variable; see :DOC fp."))
+    (error "This Lisp may be unsuitable for ACL2 because feature~%~
+            :ieee-floating-point is missing.  This is easily fixed~%~
+            by setting environment variable ACL2_FP_OK to t, but at~%~
+            some risk of unsoundness; see :DOC fp."))
 
 (or (equal (rational (float 0 0.0D0))
            0)
@@ -2529,24 +2529,27 @@ You are using version ~s.~s.~s."
    (unless (and (probe-file *acl2-status-file*)
                 (with-open-file (str *acl2-status-file*
                                      :direction :input)
-                                (member (read str nil)
+                  (member (read str nil)
 
 ; This check is insufficient to avoid running the check twice, but that's OK.
 ; See the comment about ":CHECKED" in check-suitability-for-acl2.
 
-                                        '(:compiled
-                                          :compile-skipped))))
+                          '(:compiled
+                            :compile-skipped))))
      (check-suitability-for-acl2))
    (when (not *suppress-compile-build-time*)
-     (our-with-compilation-unit
-      (let ((*readtable* *acl2-readtable*)
-            #+gcl
+
+     #+gcl-2.7.0+ (si::do-recomp) ; Recompile acl2-fns.lisp without rebinding *readtable*.
+
+     (let ((*readtable* *acl2-readtable*)
+           #+gcl
 
 ; GCL compiler note stuff.  We have so many tail recursive functions
 ; that the notes about tail recursion optimization are just too much
 ; to take.
 
-            (compiler:*suppress-compiler-notes* t))
+           (compiler:*suppress-compiler-notes* t))
+       (our-with-compilation-unit
         (dolist (name *acl2-files*)
           (or (equal name "defpkgs")
               (let ((source (make-pathname :name name
@@ -2557,23 +2560,15 @@ You are using version ~s.~s.~s."
                       (compile-file source)
                       (load-compiled
                        (make-pathname :name name
-                                      :type *compiled-file-extension*))))))))))
-   #+gcl
-   (when (and (not use-acl2-proclaims)
-              (eq *do-proclaims* :gcl))
-     (compiler::make-all-proclaims "*.fn"))
-   #+gcl-2.7.0+
-
-; Camm Maguire points out that the following call of si::do-recomp will
-; invoke a process that can recompile to avoid signature conflicts.  The
-; handler-bind is an attempt to avoid warnings in that process.
-
-   (handler-bind
-       ((warning (lambda (c)
-                   (declare (ignore c))
-                   (invoke-restart 'muffle-warning))))
-     (si::do-recomp))
-   (note-compile-ok)))
+                                      :type *compiled-file-extension*))))))))
+       #+gcl
+       (when (and (not use-acl2-proclaims)
+                  (eq *do-proclaims* :gcl))
+         (compiler::make-all-proclaims "*.fn"))
+       #+gcl-2.7.0+
+       (si::do-recomp nil "acl2-fns.lisp") ; skip only acl2-fns.lisp
+       ))
+     (note-compile-ok)))
 
 #+gcl
 (defvar user::*fast-acl2-gcl-build* nil)

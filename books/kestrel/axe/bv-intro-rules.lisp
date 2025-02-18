@@ -1,7 +1,7 @@
 ; Axe rules about BVs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2021 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -77,6 +77,7 @@
                   (bvif (max xsize ysize) test x y)))
   :hints (("Goal" :in-theory (enable bvif unsigned-byte-p-forced))))
 
+;todo: not an axe rule, so move and rename
 (defthmd if-becomes-bvif-4-axe
   (implies (and (unsigned-byte-p xsize x) ; xsize is a free variable
                 (unsigned-byte-p ysize y) ; ysize is a free variable
@@ -112,6 +113,7 @@
                   (bvif (max xsize ysize) test x y)))
   :hints (("Goal" :in-theory (enable bvif myif unsigned-byte-p-forced))))
 
+;todo: not an axe rule, so move and rename
 (defthmd myif-becomes-bvif-4-axe
   (implies (and (unsigned-byte-p xsize x) ; xsize is a free variable
                 (unsigned-byte-p ysize y) ; ysize is a free variable
@@ -204,7 +206,6 @@
 
 (defthmd logand-becomes-bvand-arg1-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
-                (natp y)
                 (unsigned-byte-p-forced xsize x))
            (equal (logand x y)
                   (bvand xsize x y)))
@@ -213,7 +214,6 @@
 
 (defthmd logand-becomes-bvand-arg2-axe
   (implies (and (axe-bind-free (bind-bv-size-axe x 'xsize dag-array) '(xsize))
-                (natp y)
                 (unsigned-byte-p-forced xsize x))
            (equal (logand y x)
                   (bvand xsize y x)))
@@ -463,13 +463,3 @@
                       t))))
   :hints (("Goal" :use (:instance <-becomes-bvlt-axe-bind-free-arg1-strong-safe)
            :in-theory (disable <-becomes-bvlt-axe-bind-free-arg1-strong-safe))))
-
-;move
-(defthmd <-becomes-bvlt-alt-dag
-  (implies (and (syntaxp (quotep k))
-                (unsigned-byte-p free x)
-                (unsigned-byte-p free k))
-           (equal (< x k)
-                  (bvlt free x k)))
-  :hints (("Goal" :use (:instance <-becomes-bvlt-alt)
-           :in-theory (disable <-becomes-bvlt-alt))))

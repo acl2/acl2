@@ -87,6 +87,23 @@
             (flist-scalar-mul c (cdr x)))
     ()))
 
+;; Dot product of 2 lists of field elements of the same length:
+
+(defun fdot (x y)
+  (if (consp x)
+      (f+ (f* (car x) (car y))
+          (fdot (cdr x) (cdr y)))
+    (f0)))
+
+;; List of dot products of an flist x with the elements of a list of flists l:
+
+(defun fdot-list (x l)
+  (if (consp l)
+      (cons (fdot x (car l))
+            (fdot-list x (cdr l)))
+    ()))
+
+
 ;;----------------------------------------------------------------------------------------
 ;; Matrices of Field Elements
 ;;----------------------------------------------------------------------------------------
@@ -175,22 +192,6 @@
 ;; Matrix Multiplication
 ;;----------------------------------------------------------------------------------------
 
-;; Dot product of 2 lists of field elements of the same length:
-
-(defun fdot (x y)
-  (if (consp x)
-      (f+ (f* (car x) (car y))
-          (fdot (cdr x) (cdr y)))
-    (f0)))
-
-;; List of dot products of an flist x with the elements of a list of flists l:
-
-(defun fdot-list (x l)
-  (if (consp l)
-      (cons (fdot x (car l))
-            (fdot-list x (cdr l)))
-    ()))
-
 ;; Product of mxn matrix a and nxp matrix b:
 
 (defund fmat* (a b)
@@ -252,6 +253,85 @@
 
 (defund fdet (a n)
   (fdet-sum a (slist n) n))
+
+;; The proof of uniqueness of the determinant involves a constrained function fdet0,
+;; which we replace here with fdet:
+
+(defun fdet0 (a n) (fdet a n))
+
+;; The proof of fdet-unique is based on lists of k-tuples of natural numbers less than n,
+;; where k <= n:
+
+(defun tuplep (x k n)
+  (if (zp k)
+      (null x)
+    (and (consp x)
+         (natp (car x))
+         (< (car x) n)
+	 (tuplep (cdr x) (1- k) n))))
+
+(defun tuple-list-p (l k n)
+  (if (consp l)
+      (and (tuplep (car l) k n)
+           (tuple-list-p (cdr l) k n))
+    (null l)))
+
+;; We recursively define a dlist containing all such k-tuples:
+
+(defun extend-tuple-aux (x m) 
+  (if (consp m)
+      (cons (append x (list (car m)))
+            (extend-tuple-aux x (cdr m)))
+    ()))
+
+(defund extend-tuple (x n)
+  (extend-tuple-aux x (ninit n)))
+
+(defun extend-tuples (l n)
+  (if (consp l)
+      (append (extend-tuple (car l) n)
+              (extend-tuples (cdr l) n))
+    ()))
+
+(defun all-tuples (k n)
+  (if (zp k)
+      (list ())
+    (extend-tuples (all-tuples (1- k) n) n)))
+
+;; Let a be a fixed nxn matrix.  We associate a value with a k-tuple x as follows:
+
+(defun extract-entries (x a)
+  (if (consp x)
+      (cons (nth (car x) (car a))
+            (extract-entries (cdr x) (cdr a)))
+    ()))
+
+(defun funits (x n)
+  (if (consp x)
+      (cons (funit (car x) n)
+            (funits (cdr x) n))
+    ()))
+
+(defun feval-tuple (x k a n)
+  (f* (flist-prod (extract-entries x a))
+      (fdet0 (append (funits x n) (nthcdr k a)) n)))
+
+;; The sum of the values of a list of k-tuples: 
+
+(defun fsum-tuples (l k a n)
+  (if (consp l)
+      (f+ (feval-tuple (car l) k a n)
+	  (fsum-tuples (cdr l) k a n))
+    (f0)))
+
+;; If (flistnp r n), We may think of r as a sum of multiples of unit vectors.  Given a sublist l of (ninit n),
+;; (fsum-select l r n) is the sum of the subset of these multiples corresponding to the members of l:
+
+(defun fsum-select (l r n)
+  (if (consp l)
+      (flist-add (flist-scalar-mul (nth (car l) r) (funit (car l) n))
+                 (fsum-select (cdr l) r n))
+    (flistn0 n)))
 
 
 ;;-------------------------------------------------------------------------------------------------------

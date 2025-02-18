@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -10,13 +10,14 @@
 
 (in-package "C$")
 
-(include-book "abstract-syntax-operations")
-(include-book "implementation-environments")
 (include-book "unambiguity")
+(include-book "validation-information")
 
 (include-book "std/util/error-value-tuples" :dir :system)
 
 (local (include-book "std/alists/top" :dir :system))
+
+(local (in-theory (enable* abstract-syntax-unambp-rules)))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -43,8 +44,7 @@
      i.e. to check whether the C code is valid and compilable.")
    (xdoc::p
     "If successful, the validator adds information to the abstract syntax,
-     Thus,
-     ")
+     which downstream tools (e.g. C-to-C transformations) can make use of.")
    (xdoc::p
     "We start with an approximate validator
      that should accept all valid C code
@@ -80,873 +80,6 @@
     "This validator is work in progress."))
   :order-subtopics t
   :default-parent t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deftagsum type
-  :short "Fixtype of C types [C:6.2.5]."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Currently we do not model all the C types in detail,
-     but only an approximate version of them,
-     which still lets us perform some validation.
-     We plan to refine the types, and the rest of the validator,
-     to cover exactly all the validity checks prescribed by [C]
-     (as well as applicable GCC extensions).")
-   (xdoc::p
-    "We capture the following types:")
-   (xdoc::ul
-    (xdoc::li
-     "The @('void') type [C:6.2.5/19].")
-    (xdoc::li
-     "The plain @('char') type [C:6.2.5/3].")
-    (xdoc::li
-     "The five standard signed integer types [C:6.2.5/4]
-      and the corresponding unsigned integer types [C:6.2.5/6].")
-    (xdoc::li
-     "The three real floating point types [C:6.2.5/10].")
-    (xdoc::li
-     "The three complex types [C:6.2.5/11].
-      These are a conditional feature,
-      but they must be included in this fixtype
-      because this fixtype consists of all the possible types.")
-    (xdoc::li
-     "The @('_Bool') type [C:6.2.5/2].")
-    (xdoc::li
-     "A collective type for all structure types [C:6.2.5/20].
-      This is an approximation,
-      because there are different structure types.")
-    (xdoc::li
-     "A collective type for all union types [C:6.2.5/20].
-      This is an approximation,
-      because there are different union types.")
-    (xdoc::li
-     "A collective type for all enumeration types [C:6.2.5/20].
-      This is an approximation,
-      because there are different enumeration types.")
-    (xdoc::li
-     "A collective type for all array types [C:6.2.5/20].
-      This is an approximation,
-      because there are different array types.")
-    (xdoc::li
-     "A collective type for all pointer types [C:6.2.5/20].
-      This is an approximation,
-      because there are different pointer types.")
-    (xdoc::li
-     "A collective type for all function types [C:6.2.5/20].
-      This is an approximation,
-      because there are different function types.")
-    (xdoc::li
-     "An ``unknown'' type that we need due to our current approximation.
-      Our validator must not reject valid code.
-      But due to our approximate treatment of types,
-      we cannot always calculate a type,
-      e.g. for a member expression of the form @('s.m')
-      where @('s') is an expression with structure type.
-      Since our approximate type for all structure types
-      has no information about the members,
-      we cannot calculate any actual type for @('s.m');
-      but if the expression is used elsewhere,
-      we need to accept it, because it could have the right type.
-      We use this unknown type for this purpose:
-      the expression @('s.m') has unknown type,
-      and unknown types are always acceptable."))
-   (xdoc::p
-    "Besides the approximations noted above,
-     currently we do not capture atomic types [C:6.2.5/20],
-     which we approximate as the underlying (argument) type.
-     We also do not capture @('typedef') names,
-     which we approximate as unknown types.
-     Furthermore, we do not capture qualified types [C:6.2.5/26]."))
-  (:void ())
-  (:char ())
-  (:schar ())
-  (:uchar ())
-  (:sshort ())
-  (:ushort ())
-  (:sint ())
-  (:uint ())
-  (:slong ())
-  (:ulong ())
-  (:sllong ())
-  (:ullong ())
-  (:float ())
-  (:double ())
-  (:ldouble ())
-  (:floatc ())
-  (:doublec ())
-  (:ldoublec ())
-  (:bool ())
-  (:struct ())
-  (:union ())
-  (:enum ())
-  (:array ())
-  (:pointer ())
-  (:function ())
-  (:unknown ())
-  :pred typep)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-type
-  :short "An irrelevant type."
-  :type typep
-  :body (type-void))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defoption type-option
-  type
-  :short "Fixtype of optional types."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Types are defined in @(tsee type)."))
-  :pred type-optionp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist type-list
-  :short "Fixtype of lists of types."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Types are defined in @(tsee type)."))
-  :elt-type type
-  :true-listp t
-  :elementp-of-nil nil
-  :pred type-listp
-  :prepwork ((local (in-theory (enable nfix)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defset type-set
-  :short "Fixtype of sets of types."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Types are defined in @(tsee type)."))
-  :elt-type type
-  :elementp-of-nil nil
-  :pred type-setp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defalist type-option-type-alist
-  :short "Fixtype of alists from optional types to types."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Types are defined in @(tsee type)."))
-  :key-type type-option
-  :val-type type
-  :true-listp t
-  :keyp-of-nil t
-  :valp-of-nil nil
-  :pred type-option-type-alistp
-  :prepwork ((set-induction-depth-limit 1)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-standard-signed-integerp ((type typep))
-  :returns (yes/no booleanp)
-  :short "Check if a type is a standard signed integer type [C:6.2.5/4]."
-  (and (member-eq (type-kind type) '(:schar :sshort :sint :slong :sllong))
-       t)
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-signed-integerp ((type typep))
-  :returns (yes/no booleanp)
-  :short "Check if a type is a signed integer type [C:6.2.5/4]."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "For now we do not model any extended signed integer types,
-     so the signed integer types coincide with
-     the standard signed integer types."))
-  (type-standard-signed-integerp type)
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-standard-unsigned-integerp ((type typep))
-  :returns (yes/no booleanp)
-  :short "Check if a type is a standard unsigned integer type [C:6.2.5/6]."
-  (and (member-eq (type-kind type) '(:bool :uchar :ushort :uint :ulong :ullong))
-       t)
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-unsigned-integerp ((type typep))
-  :returns (yes/no booleanp)
-  :short "Check if a type is an unsigned integer type [C:6.2.5/6]."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "For now we do not model any extended unsigned integer types,
-     so the unsigned integer types coincide with
-     the standard unsigned integer types."))
-  (type-standard-unsigned-integerp type)
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-standard-integerp ((type typep))
-  :returns (yes/no booleanp)
-  :short "Check if a type is a standard integer type [C:6.2.5/7]."
-  (or (type-standard-signed-integerp type)
-      (type-standard-unsigned-integerp type))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-real-floatingp ((type typep))
-  :returns (yes/no booleanp)
-  :short "Check if a type is a real floating type [C:6.2.5/10]."
-  (and (member-eq (type-kind type) '(:float :double :ldouble))
-       t)
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-complexp ((type typep))
-  :returns (yes/no booleanp)
-  :short "Check if a type is a complex type [C:6.2.5/11]."
-  (and (member-eq (type-kind type) '(:floatc :doublec :ldoublec))
-       t)
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-floatingp ((type typep))
-  :returns (yes/no booleanp)
-  :short "Check if a type is a floating type [C:6.2.5/11]."
-  (or (type-real-floatingp type)
-      (type-complexp type))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-basicp ((type typep))
-  :returns (yes/no booleanp)
-  :short "Check if a type is a basic type [C:6.2.5/14]."
-  (or (type-case type :char)
-      (type-signed-integerp type)
-      (type-unsigned-integerp type)
-      (type-floatingp type))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-characterp ((type typep))
-  :returns (yes/no booleanp)
-  :short "Check if a type is a character type [C:6.2.5/15]."
-  (and (member-eq (type-kind type) '(:char :schar :uchar))
-       t)
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-integerp ((type typep))
-  :returns (yes/no booleanp)
-  :short "Check if a type is an integer type [C:6.2.5/17]."
-  (or (type-case type :char)
-      (type-signed-integerp type)
-      (type-unsigned-integerp type)
-      (type-case type :enum))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-realp ((type typep))
-  :returns (yes/no booleanp)
-  :short "Check if a type is a real type [C:6.2.5/17]."
-  (or (type-integerp type)
-      (type-real-floatingp type))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-arithmeticp ((type typep))
-  :returns (yes/no booleanp)
-  :short "Check if a type is an arithmetic type [C:6.2.5/18]."
-  (or (type-integerp type)
-      (type-floatingp type))
-  :hooks (:fix)
-
-  ///
-
-  (defrule type-arithmeticp-when-type-integerp
-    (implies (type-integerp type)
-             (type-arithmeticp type)))
-
-  (defrule type-arithmeticp-when-bool
-    (implies (type-case type :bool)
-             (type-arithmeticp type))
-    :enable (type-integerp
-             type-unsigned-integerp
-             type-standard-unsigned-integerp)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-scalarp ((type typep))
-  :returns (yes/no booleanp)
-  :short "Check if a type is a scalar type [C:6.2.5/21]."
-  (or (type-arithmeticp type)
-      (type-case type :pointer))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-aggregatep ((type typep))
-  :returns (yes/no booleanp)
-  :short "Check if a type is an aggregate type [C:6.2.5/21]."
-  (or (type-case type :array)
-      (type-case type :struct))
-  :hooks (:fix)
-
-  ///
-
-  (defrule type-aggregatep-when-array
-    (implies (type-case type :array)
-             (type-aggregatep type)))
-
-  (defrule type-aggregatep-when-struct
-    (implies (type-case type :struct)
-             (type-aggregatep type))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-promotedp ((type typep))
-  :guard (type-arithmeticp type)
-  :returns (yes/no booleanp)
-  :short "Check if an arithmetic type is a promoted one."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "That is, check if it is a possible result of @(tsee type-promote).
-     This holds for all types except
-     the integer ones with rank below @('int')."))
-  (not (member-eq (type-kind type)
-                  '(:bool :char :schar :uchar :sshort :ushort :enum)))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-apconvert ((type typep))
-  :returns (new-type typep)
-  :short "Convert array types to pointer types."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This performs the conversion in [C:6.3.2.1/3].
-     It leaves non-array types unchanged.")
-   (xdoc::p
-    "In our currently approximate type system,
-     there is just one type for arrays and one type for pointers."))
-  (if (type-case type :array)
-      (type-pointer)
-    (type-fix type))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-fpconvert ((type typep))
-  :returns (new-type typep)
-  :short "Convert function types to pointer types."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This performs the conversion in [C:6.3.2.1/4].
-     It leaves non-function types unchanged.")
-   (xdoc::p
-    "In our currently approximate type system,
-     there is just one type for functions and one type for pointers."))
-  (if (type-case type :function)
-      (type-pointer)
-    (type-fix type))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-promote ((type typep) (ienv ienvp))
-  :guard (type-arithmeticp type)
-  :returns (new-type typep)
-  :short "Perform integer promotions on an arithmetic type [C:6.3.1.1/2]."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This only changes integer types of rank lower than @('int');
-     the other types are left unchanged.
-     We need the implementation environment
-     because the new type may depend on
-     the relative range of the initial type and @('signed int').
-     The range of @('_Bool') always fits within @('signed int'),
-     and so do @('signed char') and @('signed short').
-     For @('unsigned char') and @('unsigned short'),
-     as well as for @('char')
-     (which may have the same range as @('unsigned char')),
-     we need to compare the maxima,
-     and return either @('signed int') or @('unsigned int')
-     as the promoted type.")
-   (xdoc::p
-    "The rank of an enumerated type (which is an integer type)
-     is implementation-defined,
-     and could even vary based on the program,
-     as mentioned in footnote 131 of [C:6.7.2.2/4].
-     Thus, for now we promote the (one) enumerated type to unknown."))
-  (type-case
-   type
-   :bool (type-sint)
-   :char (if (<= (char-max ienv) (sint-max ienv))
-             (type-sint)
-           (type-uint))
-   :schar (type-sint)
-   :uchar (if (<= (uchar-max) (sint-max ienv))
-              (type-sint)
-            (type-uint))
-   :sshort (type-sint)
-   :ushort (if (<= (ushort-max ienv) (sint-max ienv))
-               (type-sint)
-             (type-uint))
-   :enum (type-unknown)
-   :otherwise (type-fix type))
-  :hooks (:fix)
-
-  ///
-
-  (more-returns
-   (new-type type-promotedp
-             :hints (("Goal" :in-theory (enable type-promotedp))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define type-uaconvert-signed ((type1 typep) (type2 typep))
-  :guard (and (type-signed-integerp type1)
-              (type-signed-integerp type2)
-              (type-promotedp type1)
-              (type-promotedp type2))
-  :returns (new-type typep)
-  :short "Convert two promoted signed integer types to their common type,
-          according to the usual arithmetic conversions [C:6.3.1.8]."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "When the two promoted operands have (different) signed integer types,
-     the common type is the one with highest rank."))
-  (cond
-   ((or (type-case type1 :sllong)
-        (type-case type2 :sllong))
-    (type-sllong))
-   ((or (type-case type1 :slong)
-        (type-case type2 :slong))
-    (type-slong))
-   (t (type-sint)))
-  :guard-hints (("Goal" :in-theory (enable type-arithmeticp
-                                           type-integerp)))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define type-uaconvert-unsigned ((type1 typep) (type2 typep))
-  :guard (and (type-unsigned-integerp type1)
-              (type-unsigned-integerp type2)
-              (type-promotedp type1)
-              (type-promotedp type2))
-  :returns (new-type typep)
-  :short "Convert two promoted unsigned integer types to their common type,
-          according to the usual arithmetic conversions [C:6.3.1.8]."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "When the two promoted operands have (different) unsigned integer types,
-     the common type is the one with highest rank."))
-  (cond
-   ((or (type-case type1 :ullong)
-        (type-case type2 :ullong))
-    (type-ullong))
-   ((or (type-case type1 :ulong)
-        (type-case type2 :ulong))
-    (type-ulong))
-   (t (type-uint)))
-  :guard-hints (("Goal" :in-theory (enable type-arithmeticp
-                                           type-integerp)))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define type-uaconvert-signed-unsigned ((type1 typep)
-                                        (type2 typep)
-                                        (ienv ienvp))
-  :guard (and (type-signed-integerp type1)
-              (type-unsigned-integerp type2)
-              (type-promotedp type1)
-              (type-promotedp type2))
-  :returns (new-type typep)
-  :short "Convert a promoted signed integer type
-          and a promoted unsigned integer type
-          to their common type,
-          according to the usual arithmetic conversions [C:6.3.1.8]."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "If the unsigned type is @('unsigned long long int'),
-     its rank is always greater than or equal to
-     the rank of the signed integer type,
-     and thus the result is @('unsigned long long int').")
-   (xdoc::p
-    "If the unsigned type is @('unsigned long int'), there are two cases.
-     If the signed type is @('signed long long int'),
-     its rank is higher than the unsigned type, and we have two sub-cases:
-     if the signed type can represent the whole range of the unsigned type,
-     the result is the signed type;
-     otherwise, the result is the unsigned type
-     corresponding to the signed type, i.e. @('unsigned long long int').
-     If instead the signed type is not @('signed long long int'),
-     then its rank is less than or equal to @('unsigned long int'),
-     which is therefore the result.")
-   (xdoc::p
-    "If the unsigned type is @('unsigned int'),
-     there are three cases to consider instead of two as just above,
-     but the overall logic is similar to just above.")
-   (xdoc::p
-    "The unsigned type cannot be anything else,
-     so we have covered all the cases."))
-  (cond
-   ((type-case type2 :ullong)
-    (type-ullong))
-   ((type-case type2 :ulong)
-    (cond ((type-case type1 :sllong)
-           (if (<= (ulong-max ienv) (sllong-max ienv))
-               (type-sllong)
-             (type-ullong)))
-          (t (type-ulong))))
-   ((type-case type2 :uint)
-    (cond ((type-case type1 :sllong)
-           (if (<= (uint-max ienv) (sllong-max ienv))
-               (type-sllong)
-             (type-ullong)))
-          ((type-case type1 :slong)
-           (if (<= (uint-max ienv) (slong-max ienv))
-               (type-slong)
-             (type-ulong)))
-          (t (type-uint))))
-   (t (prog2$ (impossible) (irr-type))))
-  :guard-hints (("Goal" :in-theory (enable type-arithmeticp
-                                           type-integerp
-                                           type-promotedp
-                                           type-unsigned-integerp
-                                           type-signed-integerp
-                                           type-standard-unsigned-integerp
-                                           type-standard-signed-integerp)))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define type-uaconvert ((type1 typep) (type2 typep) (ienv ienvp))
-  :guard (and (type-arithmeticp type1)
-              (type-arithmeticp type2))
-  :returns (new-type typep)
-  :short "Perform the usual arithmetic conversions on two arithmetic types
-          [C:6.3.1.8]."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This returns the common type to which the operands are converted,
-     which is normally also the type of
-     the result of the arithmetic operation.")
-   (xdoc::p
-    "If either type is unkwnon, the result is the unkwnon type too.
-     This case will eventually go away,
-     once we have a full type system in our validator.")
-   (xdoc::p
-    "If at least one type is @('long double _Complex'),
-     the result is @('long double _Complex');
-     note that [C:6.3.1.8] talks about a corresponding real type,
-     but adds that the result is complex if at least one operand is.
-     Otherwise, if at least one type is @('double _Complex'),
-     the result is @('double _Complex'),
-     according to analogous reasoning.
-     Otherwise, the same is the case for @('float _Complex').")
-   (xdoc::p
-    "Otherwise, none of the types is complex,
-     and we have three analogous cases for
-     @('long double'), @('double'), and @('float').")
-   (xdoc::p
-    "Otherwise, none of the types is floating,
-     and we apply the integer promotions to both types.
-     Then we apply the remaining rules, for integer types, in [C:6.3.1.8],
-     via separate functions (see their documentation)."))
-  (cond
-   ((or (type-case type1 :ldoublec)
-        (type-case type2 :ldoublec))
-    (type-ldoublec))
-   ((or (type-case type1 :doublec)
-        (type-case type2 :doublec))
-    (type-doublec))
-   ((or (type-case type1 :floatc)
-        (type-case type2 :floatc))
-    (type-floatc))
-   ((or (type-case type1 :ldouble)
-        (type-case type2 :ldouble))
-    (type-ldouble))
-   ((or (type-case type1 :double)
-        (type-case type2 :double))
-    (type-double))
-   ((or (type-case type1 :float)
-        (type-case type2 :float))
-    (type-float))
-   (t (b* ((type1 (type-promote type1 ienv))
-           (type2 (type-promote type2 ienv)))
-        (cond
-         ((or (type-case type1 :unknown)
-              (type-case type2 :unknown))
-          (type-unknown))
-         ((equal type1 type2)
-          type1)
-         ((and (type-signed-integerp type1)
-               (type-signed-integerp type2))
-          (type-uaconvert-signed type1 type2))
-         ((and (type-unsigned-integerp type1)
-               (type-unsigned-integerp type2))
-          (type-uaconvert-unsigned type1 type2))
-         ((and (type-signed-integerp type1)
-               (type-unsigned-integerp type2))
-          (type-uaconvert-signed-unsigned type1 type2 ienv))
-         ((and (type-unsigned-integerp type1)
-               (type-signed-integerp type2))
-          (type-uaconvert-signed-unsigned type2 type1 ienv))
-         (t (prog2$ (impossible) (irr-type)))))))
-  :guard-hints (("Goal"
-                 :do-not '(preprocess)
-                 :in-theory (e/d (type-arithmeticp
-                                  type-integerp
-                                  type-unsigned-integerp
-                                  type-signed-integerp
-                                  type-standard-unsigned-integerp
-                                  type-standard-signed-integerp
-                                  type-promote
-                                  type-promotedp
-                                  type-floatingp
-                                  type-real-floatingp
-                                  type-complexp)
-                                 ((:e tau-system)))))
-  :hooks (:fix))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deftagsum linkage
-  :short "Fixtype of linkages."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "There are three kinds of linkages: external, internal, and none
-     [C:6.2.2/1]."))
-  (:external ())
-  (:internal ())
-  (:none ())
-  :pred linkagep)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-linkage
-  :short "An irrelevant linkage."
-  :type linkagep
-  :body (linkage-none))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defoption linkage-option
-  linkage
-  :short "Fixtype of optional linkages."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Linkages are defined in @(tsee linkage)."))
-  :pred linkage-optionp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deftagsum lifetime
-  :short "Fixtype of lifetimes."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This represents a storage duration [C:6.2.4],
-     but only three kinds, excluding the allocated kind.
-     We use the term `liftetime' because it is just one word,
-     and also to avoid implying that there are only three storage durations,
-     when there are in fact four.
-     Since a storage duration defines the kind of lifetime of an object,
-     one could argue that there are four kinds of lifetimes too;
-     however, for practicality, we need a fixtype for
-     only these three kinds of lifetimes (or storage durations),
-     and so we use the term `lifetime'.
-     This must be though as the possible kinds of lifetime of declared objects;
-     allocated objects are not declared, but just created via library calls."))
-  (:static ())
-  (:thread ())
-  (:auto ())
-  :pred lifetimep)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-lifetime
-  :short "An irrelevant lifetime."
-  :type lifetimep
-  :body (lifetime-auto))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defoption lifetime-option
-  lifetime
-  :short "Fixtype of optional lifetimes."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Lifetimes are defined in @(tsee lifetime)."))
-  :pred lifetime-optionp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deftagsum valid-defstatus
-  :short "Fixtype of definition statuses for validation."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This applies to objects and functions, which may be
-     undefined, defined, or tentatively defined [C:6.7/5] [C:6.9.2],
-     with the latter actually only applying to objects, not functions."))
-  (:undefined ())
-  (:tentative ())
-  (:defined ())
-  :pred valid-defstatusp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::deftagsum valid-ord-info
-  :short "Fixtype of validation information about ordinary identifiers."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Ordinary identifiers [C:6.2.3/1] denote
-     objects, functions, enumeration constants, and @('typedef') names;
-     Ordinary identifiers form their own name space.
-     The other entities denoted by identifiers [C:6.2.1/1]
-     are in other name spaces, disjoint from the one of ordinary identifiers.")
-   (xdoc::p
-    "This fixtype formalizes the information about ordinary identifiers
-     tracked by our current validator.
-     Since our model of types includes both object and function types,
-     the information for both objects and functions includes (different) types;
-     that information also includes the linkage [C:6.2.2],
-     as well as definition status (see @(tsee valid-defstatus)).
-     For enumeration constants and for @('typedef') names,
-     for now we only track that they are
-     enumeration constants and @('typedef') names.")
-   (xdoc::p
-    "We will refine this fixtype as we refine our validator."))
-  (:objfun ((type type)
-            (linkage linkage)
-            (defstatus valid-defstatus)))
-  (:enumconst ())
-  (:typedef ())
-  :pred valid-ord-infop)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(fty::defoption valid-ord-info-option
-  valid-ord-info
-  :short "Fixtype of
-          optional validation information about ordinary identifiers."
-  :pred valid-ord-info-optionp)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defalist valid-ord-scope
-  :short "Fixtype of validation scopes of ordinary identifiers."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Identifiers have scopes [C:6.2.1], which the validator tracks.
-     In each scope, for each name space,
-     each identifier must have one meaning (if any) [C:6.2.1/2].
-     Thus, we use an alist from identifiers
-     to the validation information about ordinary identifiers,
-     to track each scope in the name space of ordinary identifiers."))
-  :key-type ident
-  :val-type valid-ord-info
-  :true-listp t
-  :keyp-of-nil nil
-  :valp-of-nil nil
-  :pred valid-ord-scopep
-  :prepwork ((set-induction-depth-limit 1))
-  ///
-
-  (defrule valid-ord-infop-of-cdr-assoc-when-valid-ord-scopep
-    (implies (and (valid-ord-scopep scope)
-                  (assoc-equal ident scope))
-             (valid-ord-infop (cdr (assoc-equal ident scope))))
-    :induct t
-    :enable (valid-ord-scopep assoc-equal)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod valid-scope
-  :short "Fixtype of validation scopes."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Identifiers have scopes [C:6.2.1], which the validator tracks.
-     This fixtype contains all the information about a scope,
-     which currently only considers the name space of ordinary identifiers.
-     We will extend this fixtype to contain additional information,
-     particularly about tag of structure, union, and enumeration types."))
-  ((ord valid-ord-scope))
-  :pred valid-scopep)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(fty::deflist valid-scope-list
-  :short "Fixtype of lists of validation scopes."
-  :elt-type valid-scope
-  :true-listp t
-  :elementp-of-nil nil
-  :pred valid-scope-listp
-  :prepwork ((local (in-theory (enable nfix)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(fty::defprod valid-table
-  :short "Fixtype of validation tables."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Scopes are treated in a stack-like manner [C:6.2.1].
-     Thus, we define a validation table as
-     containing a list (i.e. stack) of scopes.
-     The stack grows from right to left:
-     the leftmost scope is the top, and the rightmost scope is the bottom;
-     in other words, in the nesting of scopes in the stack,
-     the leftmost scope is the innermost,
-     and the rightmost scope is the outermost
-     (i.e. the file scope [C:6.2.1/4].)")
-   (xdoc::p
-    "We wrap the list of scopes into a @(tsee fty::defprod)
-     for abstraction and extensibility."))
-  ((scopes valid-scope-list))
-  :pred valid-tablep)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-valid-table
-  :short "An irrelevant validation table."
-  :type valid-tablep
-  :body (valid-table nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1033,7 +166,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "According to the visibility and hiding rules [C:6.2.1/2],
+    "According to the visibility and hiding rules [C17:6.2.1/2],
      we look up the identifier starting from the innermost scope.
      We stop as soon as we find a match.
      We return @('nil') if we reach the outermost scope
@@ -1191,7 +324,7 @@
   (xdoc::topstring
    (xdoc::p
     "An integer constant is valid iff
-     it has a type according to the table in [C:6.4.4.1/5].
+     it has a type according to the table in [C17:6.4.4.1/5].
      We formalize that table here, and we return the type of the constant.
      If the constant is too large,
      it does not have a type, and it is invalid."))
@@ -1276,14 +409,14 @@
   (xdoc::topstring
    (xdoc::p
     "A floating constant is always valid:
-     [C:6.4.4.2] states no restrictions,
+     [C17:6.4.4.2] states no restrictions,
      except for a recommended practice
      to provide a diagnostic message in certain cases,
      which also instructs to proceed with compilation nonetheless,
      suggesting that it should be only a warning, not an error.")
    (xdoc::p
     "The type is determined solely by the suffix, including its absence
-     [C:6.4.4.2/4]."))
+     [C17:6.4.4.2/4]."))
   (b* ((suffix? (fconst-case fconst
                              :dec fconst.suffix?
                              :hex fconst.suffix?)))
@@ -1307,8 +440,8 @@
    (xdoc::p
     "If validation is successful, we return the numeric code of the character.")
    (xdoc::p
-    "[C:6.4.3/2] states some restriction on the character code.
-     [C:6.4.4.4/4] and (implicitly) [C:6.4.5/4]
+    "[C17:6.4.3/2] states some restriction on the character code.
+     [C17:6.4.4.4/4] and (implicitly) [C17:6.4.5/4]
      state type-based restrictions on
      the character codes of octal and hexadecimal escapes,
      based on the (possibly absent) prefix of
@@ -1364,7 +497,7 @@
     "Simple escapes are always valid.
      This function returns their ASCII codes.
      Note that these always fit in any of the types
-     mentioned in [C:6.4.4.4/4].
+     mentioned in [C17:6.4.4.4/4].
      The GCC escape @('\\%') is like the character @('%')."))
   (simple-escape-case
    esc
@@ -1390,11 +523,11 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "[C:6.4.4.4/9] states restrictions on
+    "[C17:6.4.4.4/9] states restrictions on
      the numeric value of an octal escape used in a character constant,
      based on the prefix of the character constant;
      similarly restrictions apply to octal escapes in string literals
-     [C:6.4.5/4].
+     [C17:6.4.5/4].
      This ACL2 function is used to check
      both octal escapes in character constants
      and octal escapes in string literals:
@@ -1434,9 +567,9 @@
      we use separate validation functions.
      For a hexadecimal escape, we calculate the numeric value,
      and we subject them to same restrictions as octal escapes
-     [C:6.4.4.4/9] [C:6.4.5/4].")
+     [C17:6.4.4.4/9] [C17:6.4.5/4].")
    (xdoc::p
-    "Although [C] does not seem to state that explicitly,
+    "Although [C17] does not seem to state that explicitly,
      it seems reasonable that the same restriction applies to
      universal character names;
      we will revise this if that turns out to be not the case."))
@@ -1469,7 +602,7 @@
    (xdoc::p
     "If validation succeeds, we return the character code.")
    (xdoc::p
-    "The grammar [C:6.4.4.4/1] excludes (direct) character codes
+    "The grammar [C17:6.4.4.4/1] excludes (direct) character codes
      for single quote and new-line.
      For the latter, we check both line feed and carriage return.
      Note that our lexer normalizes both to line feed,
@@ -1478,7 +611,7 @@
      but in the future we could make that
      an invariant in the abstract syntax.")
    (xdoc::p
-    "[C:6.4.4.4/4] says that, based on the (possibly absent) prefix
+    "[C17:6.4.4.4/4] says that, based on the (possibly absent) prefix
      of the character constant of which this character is part,
      the character code of an octal or hexadecimal escape must fit in
      @('unsigned char'), or
@@ -1539,9 +672,9 @@
     "We check the characters that form the constant,
      with respect to the prefix (if any).
      If validation is successful, we return the type of the constant.
-     According to [C:6.4.4.4/10],
+     According to [C17:6.4.4.4/10],
      a character constant without prefix has type @('int').
-     According to [C:6.4.4.4/11],
+     According to [C17:6.4.4.4/11],
      a character constant with a prefix has type
      @('wchar_t'), @('char16_t'), or @('char32_t');
      since for now we do not model these,
@@ -1573,7 +706,7 @@
     "Here we validate an enumeration constant that occurs as an expression.
      Thus, the validation table must include that (ordinary) identifier,
      with the information of being an enumeration constant.
-     Its type is always @('int') [C:6.7.2.2/3],
+     Its type is always @('int') [C17:6.7.2.2/3],
      so this function always returns that type if validation succeeds;
      so we could have this function return nothing if there's no error,
      but we have it return the @('int') type for uniformity and simplicity."))
@@ -1617,12 +750,12 @@
   (xdoc::topstring
    (xdoc::p
     "If validation succeeds, we return the character code.
-     [C:6.4.5/4] says that the same restrictions that apply
+     [C17:6.4.5/4] says that the same restrictions that apply
      to @('c-char')s in character constants
      also apply to @('s-char')s in string literals.
      So this function is similar to @(tsee valid-c-char),
      except that we prohibit double quote instead of single quote,
-     based on the grammar in [C:6.4.5/1]."))
+     based on the grammar in [C17:6.4.5/1]."))
   (b* (((reterr) 0)
        (max (if prefix?
                 #x10ffff
@@ -1670,7 +803,7 @@
     "We check the characters that form the string literal,
      with respect to the prefix (if any).
      If validation is successful, we return the type of the string literal,
-     which according to [C:6.4.5/6], is an array type
+     which according to [C17:6.4.5/6], is an array type
      of @('char') or @('wchar_t') or @('char16_t') or @('char32_t').
      In our current approximate type system,
      we just have a single type for arrays, so we return that."))
@@ -1689,7 +822,7 @@
   (xdoc::topstring
    (xdoc::p
     "Our abstract syntax preserves information about
-     adjacent string literals [C:5.1.1.2/6],
+     adjacent string literals [C17:5.1.1.2/6],
      by using lists of string literals, instead of single string literals,
      in various places.
      So the validator also operates on such lists of string literals.")
@@ -1700,15 +833,15 @@
      but for now we put that as a check in the validator.")
    (xdoc::p
     "Another requirement is that
-     there cannot be both UTF-8 and wide prefixes [C:6.4.5/2],
-     where these kinds of prefixes are defined in [C:6.4.5/3].
+     there cannot be both UTF-8 and wide prefixes [C17:6.4.5/2],
+     where these kinds of prefixes are defined in [C17:6.4.5/3].
      We check that by projecting the optional prefixes
      and checking for incompatible occurrences.")
    (xdoc::p
     "Whether string literals with different prefixes
      (satisfying the requirement just mentioned)
      can be concatenated, and what their combined type is,
-     is implementation-defined [C:6.4.5/5].
+     is implementation-defined [C17:6.4.5/5].
      We plan to extend our implementation environments
      with information about how to treat those cases,
      but for now we allow all concatenations,
@@ -1730,7 +863,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define valid-var ((var identp) (table valid-tablep))
-  :returns (mv erp (type typep))
+  :returns (mv erp (type typep) (linkage linkagep))
   :short "Validate a variable."
   :long
   (xdoc::topstring
@@ -1745,9 +878,9 @@
     "A variable (i.e. identifier) is valid if
      it is found in the validation table,
      recorded as denoting an object or function
-     [C:6.5.1/2].
-     The type is obtained from the table."))
-  (b* (((reterr) (irr-type))
+     [C17:6.5.1/2].
+     The type and the linkage are obtained from the table."))
+  (b* (((reterr) (irr-type) (irr-linkage))
        ((mv info &) (valid-lookup-ord var table))
        ((unless info)
         (reterr (msg "The variable ~x0 is not in scope." (ident-fix var))))
@@ -1756,7 +889,8 @@
                       is in scope, but does not denote ~
                       an object or function."
                      (ident-fix var)))))
-    (retok (valid-ord-info-objfun->type info)))
+    (retok (valid-ord-info-objfun->type info)
+           (valid-ord-info-objfun->linkage info)))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1771,7 +905,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "For now we do not perform any of the checks prescribed in [C:6.5.1.1/2].
+    "For now we do not perform any of the checks prescribed in [C17:6.5.1.1/2].
      We will perform them later, when we refine our validator.
      We return the unknown type."))
   (declare (ignore expr type type-alist))
@@ -1791,7 +925,7 @@
     "After converting array types to pointer types,
      one sub-expression must have pointer type,
      and the other sub-expression must have integer type
-     [C:6.5.2.1/1].
+     [C17:6.5.2.1/1].
      The expression should have the type referenced by the pointer type,
      but since for now we model just one pointer type,
      the type of the expression is unknown.")
@@ -1799,7 +933,7 @@
     "There is no need to perform function-to-pointer conversion,
      because that would result in a pointer to function,
      which is disallowed,
-     as it has to be a pointer to a complete object type [C:6.5.2.1/1].
+     as it has to be a pointer to a complete object type [C17:6.5.2.1/1].
      So by leaving function types as such, we automatically disallow them."))
   (b* (((reterr) (irr-type))
        ((when (or (type-case type-arg1 :unknown)
@@ -1831,18 +965,18 @@
   (xdoc::topstring
    (xdoc::p
     "After converting function types to pointer types,
-     the first sub-expression must have pointer type [C:6.5.2.2/1];
+     the first sub-expression must have pointer type [C17:6.5.2.2/1];
      since we currently have just one pointer type,
      we cannot check that it is a pointer to a function.
      For the same reason,
-     we do not check the argument types against the function type [C:6.5.2.2/2].
+     we do not check the argument types against the function type [C17:6.5.2.2/2].
      Also for the same reason,
      we return the unknown type,
      because we do not have information about the result type.")
    (xdoc::p
     "There is no need to perform array-to-pointer conversion,
      because array types cannot have function element types,
-     but only (complete) object element types [C:6.2.5/20].
+     but only (complete) object element types [C17:6.2.5/20].
      Thus, the conversion could never result into a pointer to a function."))
   (b* (((reterr) (irr-type))
        ((when (or (type-case type-fun :unknown)
@@ -1867,7 +1001,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The argument type must be a structure or union type [C:6.5.2.3/1].
+    "The argument type must be a structure or union type [C17:6.5.2.3/1].
      Since a pointer type is not allowed here,
      there is no need to convert arrays or functions to pointers.")
    (xdoc::p
@@ -1898,7 +1032,7 @@
      calculated (recursively) by @(tsee valid-expr).")
    (xdoc::p
     "The argument type must be a pointer to a structure or union type
-     [C:6.5.2.3/2].
+     [C17:6.5.2.3/2].
      We need to convert arrays to pointers,
      and then we just check that we have the (one) pointer type;
      we will refine this when we refine our type system.
@@ -1931,58 +1065,58 @@
   (xdoc::topstring
    (xdoc::p
     "The @('&') operator requires an lvalue of any type as operand
-     [C:6.5.3.2/1] [C:6.5.3.2/3],
+     [C17:6.5.3.2/1] [C17:6.5.3.2/3],
      but we are not yet distinguishing lvalues from non-lvalues,
      so we allow any type of operand, and we return the (one) pointer type.")
    (xdoc::p
     "The @('*') unary operator requires an operand of a pointer type
-     [C:6.5.3.2/2],
+     [C17:6.5.3.2/2],
      after array-to-pointer and function-to-pointer conversions;
      as always, we also need to allow the unknown type.
      Since we only have one type for pointers for now,
      the resulting type is unknown.")
    (xdoc::p
     "The @('+') and @('-') unary operators
-     require an operand of an arithmetic type [C:6.5.3.3/1],
-     and the result has the promoted type [C:6.5.3.3/2].
+     require an operand of an arithmetic type [C17:6.5.3.3/1],
+     and the result has the promoted type [C17:6.5.3.3/2].
      There is no need for array-to-pointer and function-to-pointer conversions,
      because they never result in arithmetic types.")
    (xdoc::p
-    "The @('~') operator requires an operand of an integer type [C:6.5.3.3/1],
-     and the result has the promoted type [C:.6.5.3.3/4].
+    "The @('~') operator requires an operand of an integer type [C17:6.5.3.3/1],
+     and the result has the promoted type [C17:.6.5.3.3/4].
      There is no need for array-to-pointer and function-to-pointer conversions,
      because they never result in arithmetic types.")
    (xdoc::p
-    "The @('!') operator requires an operand of a scalar type [C:6.5.3.3/1],
-     and result is always @('signed int') [C:6.5.3.3/5].
+    "The @('!') operator requires an operand of a scalar type [C17:6.5.3.3/1],
+     and result is always @('signed int') [C17:6.5.3.3/5].
      Since pointers may be involved, we perform
      array-to-pointer and function-to-pointer conversions.")
    (xdoc::p
     "The @('sizeof') operator applied to an expression
-     requires a non-function complete type [C:6.5.3.4/1].
+     requires a non-function complete type [C17:6.5.3.4/1].
      In our current approximate type system,
      we just exclude function types,
      but we do not have a notion of complete types yet.
-     The result has type @('size_t') [C:6.5.3.4/5],
+     The result has type @('size_t') [C17:6.5.3.4/5],
      whose definition is implementation-defined,
      so for now we just return the unknown type;
      we will need to extend implementation environments
      with information about the definition of @('size_t').")
    (xdoc::p
     "The @('++') pre-increment and @('--') pre-decrement operators
-     require a real or pointer operand [C:6.5.3.1/1].
+     require a real or pointer operand [C17:6.5.3.1/1].
      Since these expressions are equivalent to assignments
-     [C:6.5.3.1/2] [C:6.5.3.1/3],
+     [C17:6.5.3.1/2] [C17:6.5.3.1/3],
      the type of the result must be the type of the operand.
      We do not perform array-to-pointer or function-to-pointer conversions,
-     because those result in pointers, not lvalues as required [C:6.5.3.1/1].")
+     because those result in pointers, not lvalues as required [C17:6.5.3.1/1].")
    (xdoc::p
     "The @('++') post-increment and @('--') post-decrement operators
-     require a real or pointer operand [C:6.5.2.4/1].
+     require a real or pointer operand [C17:6.5.2.4/1].
      The type of the result is the same as the operand
-     [C:6.5.2.4/2] [C:6.5.2.4/3].
+     [C17:6.5.2.4/2] [C17:6.5.2.4/3].
      We do not perform array-to-pointer or function-to-pointer conversions,
-     because those result in pointers, not lvalues as required [C:6.5.2.4/1]."))
+     because those result in pointers, not lvalues as required [C17:6.5.2.4/1]."))
   (b* (((reterr) (irr-type))
        ((when (type-case type-arg :unknown))
         (retok (type-unknown)))
@@ -2031,23 +1165,23 @@
   (xdoc::topstring
    (xdoc::p
     "The @('*') binary and @('/') operators
-     require arithmetic operands [C:6.5.5/2].
+     require arithmetic operands [C17:6.5.5/2].
      The result is the common type according to
-     the usual arithmetic conversions [C:6.5.5/3].
+     the usual arithmetic conversions [C17:6.5.5/3].
      There is no need for array-to-pointer or function-to-pointer conversions
      because those never produce arithmetic types.")
    (xdoc::p
-    "The @('%') operator requires integer operands [C:6.5.5/2].
-     The result is from the usual arithmetic conversions [C:6.5.5/3].
+    "The @('%') operator requires integer operands [C17:6.5.5/2].
+     The result is from the usual arithmetic conversions [C17:6.5.5/3].
      No array-to-pointer or function-to-pointer conversions are needed.")
    (xdoc::p
     "The @('+') binary operator requires
      either two arithmetic operands
      or an integer and a pointer operand
-     [C:6.5.6/2].
+     [C17:6.5.6/2].
      In the first case, the result is from the usual arithmetic conversions
-     [C:6.5.6/4].
-     In the second case, the result is the pointer type [C:6.5.6/8].
+     [C17:6.5.6/4].
+     In the second case, the result is the pointer type [C17:6.5.6/8].
      Because of that second case, which involves pointers,
      we perform array-to-pointer conversion.
      We not perform function-to-pointer conversion,
@@ -2058,28 +1192,28 @@
      either two arithmetic operands,
      or two pointer operands,
      or a pointer first operand and an integer second operand
-     [C:6.5.6/3].
+     [C17:6.5.6/3].
      In the first case, the result is from the usual arithmetic conversions
-     [C:6.5.6/4].
-     In the second case, the result has type @('ptrdiff_t') [C:6.5.6/9],
+     [C17:6.5.6/4].
+     In the second case, the result has type @('ptrdiff_t') [C17:6.5.6/9],
      which has an implementation-specific definition,
      and so we return the unknown type in this case.
-     In the third case, the result has the pointer type [C:6.5.6/8].
+     In the third case, the result has the pointer type [C17:6.5.6/8].
      Because of the second and third cases, which involve pointers,
      we perform array-to-pointer conversion.
      We not perform function-to-pointer conversion,
      because that would result in a pointer to function,
      while a pointer to complete object type is required.")
    (xdoc::p
-    "The @('<<') and @('>>') operators require integer operands [C:6.5.7/2].
+    "The @('<<') and @('>>') operators require integer operands [C17:6.5.7/2].
      The type of the result is the type of the promoted left operand
-     [C:6.5.7/3].
+     [C17:6.5.7/3].
      There is no need for
      array-to-pointer or function-to-pointer conversions.")
    (xdoc::p
     "The @('<'), @('>'), @('<='), and @('>=') operators
-     require real types or pointer types [C:6.5.8/2].
-     The result is always @('signed int') [C:6.5.8/6].
+     require real types or pointer types [C17:6.5.8/2].
+     The result is always @('signed int') [C17:6.5.8/6].
      Since pointers may be involved,
      we perform array-to-pointer conversion.
      We not perform function-to-pointer conversion,
@@ -2087,59 +1221,59 @@
      while a pointer to object type is required.")
    (xdoc::p
     "The @('==') and @('!=') operators require
-     arithmetic types or pointer types [C:6.5.9/2];
+     arithmetic types or pointer types [C17:6.5.9/2];
      since we currently have just one type for pointers,
      the distinctions between the three cases involving pointers
      reduce to just the simple case of two pointers for us for now.
-     The result is always @('signed int') [C:6.5.9/3].
+     The result is always @('signed int') [C17:6.5.9/3].
      Since pointers may be involved,
      we perform array-to-pointer and function-to-pointer conversions.")
    (xdoc::p
     "The @('&'), @('^'), and @('|') operators require integer operands
-     [C:6.5.10/2] [C:6.5.11/2] [C:6.5.12/2].
+     [C17:6.5.10/2] [C17:6.5.11/2] [C17:6.5.12/2].
      The result has the type from the usual arithmetic conversions
-     [C:6.5.10/3] [C:6.5.11/3] [C:6.5.12/3].
+     [C17:6.5.10/3] [C17:6.5.11/3] [C17:6.5.12/3].
      No array-to-pointer or function-to-pointer conversion is needed.")
    (xdoc::p
     "The @('&&') and @('||') operators require scalar types
-     [C:6.5.13/2] [C:6.5.14/2].
-     The result has type @('signed int') [C:6.5.13/3] [C:6.5.14/3].
+     [C17:6.5.13/2] [C17:6.5.14/2].
+     The result has type @('signed int') [C17:6.5.13/3] [C17:6.5.14/3].
      Since pointers may be involved, we need to perform
      array-to-pointer and function-to-pointer conversions.")
    (xdoc::p
     "The @('=') simple assignment operator requires
-     an lvalue as left operand [C:6.5.16/2],
+     an lvalue as left operand [C17:6.5.16/2],
      but currently we do not check that.
      In our currently approximate type system,
-     the requirements in [C:6.5.16.1/1] reduce to the two operands having
+     the requirements in [C17:6.5.16.1/1] reduce to the two operands having
      both arithmetic types,
      or both the structure type,
      or both the union type,
      or both pointer types.
      We do not perform array-to-pointer or function-to-pointer conversion
      on the left operand, because the result would not be an lvalue.
-     The type of the result is the type of the left operand [C:6.5.16/3].")
+     The type of the result is the type of the left operand [C17:6.5.16/3].")
    (xdoc::p
     "The @('*=') and @('/=') operators require arithmetic operands
-     [C:6.5.16.2/2],
-     and the result has the type of the first operand [C:6.5.16/3].
+     [C17:6.5.16.2/2],
+     and the result has the type of the first operand [C17:6.5.16/3].
      No array-to-pointer or function-to-pointer conversions are needed.")
    (xdoc::p
-    "The @('%=') operator requires integer operands [C:6.5.16.2/2],
-     and the result has the type of the first operand [C:6.5.16/3].
+    "The @('%=') operator requires integer operands [C17:6.5.16.2/2],
+     and the result has the type of the first operand [C17:6.5.16/3].
      No array-to-pointer or function-to-pointer conversions are needed.")
    (xdoc::p
     "The @('+=') and @('-=') operands require
      either arithmetic operands
      or a first pointer operand and a second integer operand
-     [C:6.5.16.2/1].
-     The result has the type of the first operand [C:6.5.16/3].
+     [C17:6.5.16.2/1].
+     The result has the type of the first operand [C17:6.5.16/3].
      Since pointers may be involved,
      we perform array-to-pointer and function-to-pointer conversions.")
    (xdoc::p
     "The @('<<='), @('>>='), @('&='), @('^='), and @('|=') operators
-     require integer operands [C:6.5.13.2/2].
-     The result has the type of the first operand [C:6.5.13/3].
+     require integer operands [C17:6.5.13.2/2].
+     The result has the type of the first operand [C17:6.5.13/3].
      No array-to-pointer or function-to-pointer conversions are needed."))
   (b* (((reterr) (irr-type))
        ((when (or (type-case type-arg1 :unknown)
@@ -2268,11 +1402,11 @@
   (xdoc::topstring
    (xdoc::p
     "The @('sizeof') operator applied to an type name
-     requires a non-function complete type [C:6.5.3.4/1].
+     requires a non-function complete type [C17:6.5.3.4/1].
      In our current approximate type system,
      we just exclude function types,
      but we do not have a notion of complete types yet.
-     The result has type @('size_t') [C:6.5.3.4/5],
+     The result has type @('size_t') [C17:6.5.3.4/5],
      whose definition is implementation-defined,
      so for now we just return the unknown type;
      we will need to extend implementation environments
@@ -2301,8 +1435,8 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The type name must denote the void type or a scalar type [C:6.5.4/2].
-     The expression must have scalar type [C:6.5.4/2].
+    "The type name must denote the void type or a scalar type [C17:6.5.4/2].
+     The expression must have scalar type [C17:6.5.4/2].
      Since scalar types involve pointers,
      we perform array-to-pointer and function-to-pointer conversions.
      The result is the type denoted by the type name."))
@@ -2337,7 +1471,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The first operand must have scalar type [C:6.5.15/2].
+    "The first operand must have scalar type [C17:6.5.15/2].
      In our currently approximate type system,
      the other two operands must have
      both arithmetic type,
@@ -2345,12 +1479,12 @@
      or both the union type,
      or both the void type,
      or both the pointer type
-     [C:6.5.15/3].
+     [C17:6.5.15/3].
      The type of the result is
      the one from the usual arithmetic converions
      in the first case,
      and the common type in the other cases
-     [C:6.5.15/5].
+     [C17:6.5.15/5].
      Since pointers may be involved, we need to perform
      array-to-pointer and function-to-pointer conversions."))
   (b* (((reterr) (irr-type))
@@ -2420,9 +1554,19 @@
      which are in fact all the ones occurring as sub-sequence,
      but to the fact that we perform the ``residual'' validation.")
    (xdoc::p
-    "Here we accept all the lists of type specifiers in [C:6.7.2/2]
+    "Here we accept all the lists of type specifiers in [C17:6.7.2/2]
      except for those that are singletons determining a type
-     and that may not be part of longer sequences."))
+     and that may not be part of longer sequences.")
+   (xdoc::p
+    "The GCC documentation says that @('__int128')
+     can be used alone for signed,
+     or accompanied by @('unsigned') for unsigned.
+     But we also found it accompanied by @('signed')
+     (and its underscore variations)
+     in practical code,
+     which seems indeed consistent with other types like @('signed int');
+     so we accept all three variants.
+     But for now we map all of them to the unknown type."))
   (b* (((reterr) (irr-type)))
     (cond
      ((type-spec-list-char-p tyspecs)
@@ -2474,6 +1618,11 @@
       (retok (type-doublec)))
      ((type-spec-list-long-double-complex-p tyspecs)
       (retok (type-ldoublec)))
+     ((or (type-spec-list-int128-p tyspecs)
+          (type-spec-list-signed-int128-p tyspecs))
+      (retok (type-unknown)))
+     ((type-spec-list-unsigned-int128-p tyspecs)
+      (retok (type-unknown)))
      (t (reterr (msg "The type specifier sequence ~x0 is invalid."
                      (type-spec-list-fix tyspecs))))))
   :hooks (:fix))
@@ -2497,11 +1646,11 @@
      of a list of declaration specifiers,
      after determining the identifier being declared and its type,
      which are both passed as input to this function,
-     along with the current validation table..")
+     along with the current validation table.")
    (xdoc::p
-    "Only a few sequences of storage class specifiers are allowed [C:6.7.1/2],
+    "Only a few sequences of storage class specifiers are allowed [C17:6.7.1/2],
      also depending on whether the declaration is in a block or file scope
-     [C:6.7.1/3],
+     [C17:6.7.1/3],
      which we can see from the validation table.
      Each allowed sequence of storage class specifiers may determine
      that a @('typedef') name is being declared,
@@ -2521,8 +1670,8 @@
      in all other cases, that result is @('nil'),
      because in all other cases we are not declaring a @('typedef') name.
      A @('typedef') name (which is an identifier) has no linkage
-     [C:6.2.2/1] [C:6.2.2/6].
-     Since lifetime (i.e. storage duration) only applies to objects [C:6.2.4/1],
+     [C17:6.2.2/1] [C17:6.2.2/6].
+     Since lifetime (i.e. storage duration) only applies to objects [C17:6.2.4/1],
      we return @('nil') as lifetime, i.e. no lifetime.")
    (xdoc::p
     "If the storage class specifier sequence is @('extern'),
@@ -2530,7 +1679,7 @@
      based on whether there is already
      a declaration of the same identifiers in scope or not
      and whether that previous declaration specifies a linkage or not
-     [C:6.2.2/4].
+     [C17:6.2.2/4].
      So we look up the identifier in the validation table.
      If nothing is found, then the linkage is external.
      If an object or function is found with external or internal linkage,
@@ -2540,53 +1689,53 @@
      but we check elsewhere that the two declarations
      are consistent with each other.
      If an object or function is found with no linkage,
-     or a @('typedef') is found (which has no linkage [C:6.2.2/6]),
-     or an enumeration constant is found (which has no linkage [C:6.2.2/6]),
+     or a @('typedef') is found (which has no linkage [C17:6.2.2/6]),
+     or an enumeration constant is found (which has no linkage [C17:6.2.2/6]),
      then the linkage of the new declaration is external;
      the two declarations must refer to different entities.
      In any case, the linkage is always either internal or external.
      If the type is that of a function,
-     there is no lifetime, which only applies to objects [C:6.2.4/1].
+     there is no lifetime, which only applies to objects [C17:6.2.4/1].
      If the type is that of an object,
-     the lifetime is static [C:6.2.4/3],
+     the lifetime is static [C17:6.2.4/3],
      because as mentioned above the linkage is always internal or external.")
    (xdoc::p
     "If the storage class specifier sequence is
      @('extern _Thread_local') or @('_Thread_local extern'),
-     then the type must not be that of a function [C:6.7.1/4].
-     The lifetime is thread [C:6.2.4/4],
+     then the type must not be that of a function [C17:6.7.1/4].
+     The lifetime is thread [C17:6.2.4/4],
      while the linkage is determined as in the @('extern') case above.")
    (xdoc::p
     "If the storage class specifier sequence is @('static'),
      things differ whether the identifier is declared
      in the file scope or in a block scope.
-     If we are in the file scope, the linkage is internal [C:6.2.2/3].
+     If we are in the file scope, the linkage is internal [C17:6.2.2/3].
      If we are in a block scope, it depends on whether
      we are declaring an object or a function.
-     If it is an object, it has no linkage [C:6.2.2/6],
+     If it is an object, it has no linkage [C17:6.2.2/6],
      because it does not have @('extern').
-     If it is a function it is an error [C:6.7.1/7].
+     If it is a function it is an error [C17:6.7.1/7].
      The lifetime is absent (i.e. @('nil')) for a function,
-     since lifetimes only apply to objects [C:6.2.4/1];
-     it is static otherwise [C:6.2.4/3].")
+     since lifetimes only apply to objects [C17:6.2.4/1];
+     it is static otherwise [C17:6.2.4/3].")
    (xdoc::p
     "If the storage class specifier sequence is
      @('static _Thread_local') or @('_Thread_local static'),
-     then the type must not be that of a function [C:6.7.1/4].
+     then the type must not be that of a function [C17:6.7.1/4].
      Linkage is determined as in the previous case.
      The lifetime is thread.")
    (xdoc::p
     "If the storage class specifier sequence is @('_Thread_local'),
-     the type must not be one of a function [C:6.7.1/4].
+     the type must not be one of a function [C17:6.7.1/4].
      Since we must have an object, the lifetime is thread.
      If we are in a block scope, it is an error,
      because in that case there must also be @('extern') or @('static')
-     [C:6.7.1/3].
+     [C17:6.7.1/3].
      Since we cannot be in a block scope, we must be in the file scope.
-     [C:6.2.2] does not seem to specify the linkage for this case,
+     [C17:6.2.2] does not seem to specify the linkage for this case,
      perhaps because @('_Thread_local') was added at some point,
-     but [C:6.2.2] was not updated accordingly:
-     [C:6.2.2/5] specifies external linkage
+     but [C17:6.2.2] was not updated accordingly:
+     [C17:6.2.2/5] specifies external linkage
      for the case of an object in a file scope without storage class specifiers,
      but this should be probably interpreted as
      including the @('_Thread_local') case,
@@ -2594,31 +1743,33 @@
      in the newly released C23 standard.")
    (xdoc::p
     "If the storage class specifier sequence is @('auto') or @('register'),
-     we must not be in a file scope [C:6.9/2];
+     we must not be in a file scope [C17:6.9/2];
      so we must be in a block scope.
      The type must not be one of a function.
-     Thus, it has no linkage [C:6.2.2/6].
-     The lifetime is automatic [C:6.2.4/5].")
+     Thus, it has no linkage [C17:6.2.2/6].
+     The lifetime is automatic [C17:6.2.4/5].")
    (xdoc::p
     "If there are no storage class specifiers (i.e. the sequence is empty),
      things differ based on
      whether the identifier declares an object or a function,
      and whether we are in the file scope or a block scope.
      If the type is that of a function,
-     linkage is determined as if it had the @('extern') specifier [C:6.2.2/5];
+     linkage is determined as if it had the @('extern') specifier [C17:6.2.2/5];
      in this case, there is no lifetime.
      For an object with file scope,
-     the linkage is external [C:6.2.2/5],
-     and thus the lifetime is static [C:6.2.4/3].
-     For an object block scope, there is no linkage [C:6.2.2/6],
-     and the lifetime is automatic [C:6.2.4/5].")
+     the linkage is external [C17:6.2.2/5],
+     and thus the lifetime is static [C17:6.2.4/3].
+     For an object block scope, there is no linkage [C17:6.2.2/6],
+     and the lifetime is automatic [C17:6.2.4/5].")
    (xdoc::p
     "We prove that if @('typedefp') is @('t')
      then @('lifetime?') is @('nil') and there is no linkage.
      We prove that if a function is being declared,
      then the linkage is always external or internal,
      and that the only possible sequences of storage class specifiers
-     are @('extern'), @('static'), and nothing.")
+     are @('extern'), @('static'), and nothing.
+     We prove that if an object is declared in the file scope,
+     then the linkage is always external or internal.")
    (xdoc::p
     "The @('fundefp') input is @('t') when this function is called on
      the storage class specifiers of a function definition.
@@ -2766,6 +1917,14 @@
              (not (equal (linkage-kind linkage)
                          :none))))
 
+  (defret ext/int-linkage-of-valid-stor-spec-list-when-file-object
+    (implies (and (not erp)
+                  (not typedefp)
+                  (not (type-case type :function))
+                  (equal (valid-table-num-scopes table) 1))
+             (not (equal (linkage-kind linkage)
+                         :none))))
+
   (defret lifetime-of-valid-stor-spec-when-object
     (implies (and (not erp)
                   (not typedefp)
@@ -2834,7 +1993,7 @@
        that is the type of the identifier expression,
        calculated by the validator.")
      (xdoc::p
-      "For now we do not distinguish lvalues [C:6.3.2.1/1].
+      "For now we do not distinguish lvalues [C17:6.3.2.1/1].
        To do that, we will introduce a richer notion of expression type
        that includes a type and also
        an indication of whether the expression is an lvalue;
@@ -2865,7 +2024,7 @@
        the storage duration (i.e. lifetime) of the object,
        which is either static or automatic,
        based on whether the compound literal occurs
-       outside or inside the body of a function [C:6.5.2.5/5],
+       outside or inside the body of a function [C17:6.5.2.5/5],
        which we can see based on whether
        the number of scopes in the validation table is 1 or not
        (recall that this number is never 0).")
@@ -2879,7 +2038,7 @@
      (xdoc::p
       "For the comma operator, we validate both sub-expressions,
        and the resulting type is the one of the second sub-expression
-       [C:6.5.17/2].")
+       [C17:6.5.17/2].")
      (xdoc::p
       "For a statement expression, we validate the block items.
        If a type is returned, that is the type of the expression.
@@ -2895,15 +2054,17 @@
        its component type names and expressions (if any),
        but without checking that the member designators are valid;
        for that, we need a more refined type system.
-       The result has type @('size_t') [C:7.19],
+       The result has type @('size_t') [C17:7.19],
        whose definition is implementation-dependent,
        and thus for now we return the unknown type."))
     (b* (((reterr) (irr-expr) (irr-type) nil (irr-valid-table)))
       (expr-case
        expr
-       :ident (b* (((erp type) (valid-var expr.ident table)))
+       :ident (b* (((erp type linkage) (valid-var expr.ident table))
+                   (info (make-var-info :type type
+                                        :linkage linkage)))
                 (retok (make-expr-ident :ident expr.ident
-                                        :info type)
+                                        :info info)
                        type
                        nil
                        (valid-table-fix table)))
@@ -3151,7 +2312,7 @@
     (xdoc::topstring
      (xdoc::p
       "Besides being valid expressions,
-       constant expression must satisfy other requirements [C:6.6].
+       constant expression must satisfy other requirements [C17:6.6].
        Fow now we do not check these requirements,
        but when we do we may need to extend this validation function
        to return not only a type but also a value,
@@ -3320,7 +2481,7 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "Type specifiers are used to specify types, as described in [C:6.7.2/2].
+      "Type specifiers are used to specify types, as described in [C17:6.7.2/2].
        Certain type specifiers individually specify a type,
        and there cannot be other type specifiers;
        an example is @('void').
@@ -3376,7 +2537,14 @@
        all the type specifiers that are GCC extensions
        to determine the unknown type;
        except for an empty structure type specifier,
-       which determines the structure type."))
+       which determines the structure type.
+       The @('__int128') may be preceded by @('unsigned'),
+       according to the GCC documentation;
+       we found, in practical code,
+       that it can also be preceded by @('signed') and its underscore variants;
+       so @('__int128') alone does not determine a type,
+       and we use @(tsee valid-type-spec-list-residual)
+       to determine the type, if any, as done in other cases."))
     (b* (((reterr) (irr-type-spec) nil nil nil (irr-valid-table))
          ((when type?)
           (reterr (msg "Since the type ~x0 has been determined, ~
@@ -3446,13 +2614,7 @@
                            nil
                            same-table)
                   (reterr msg-bad-preceding))
-       :int128 (if (endp tyspecs)
-                   (retok (type-spec-int128)
-                          (type-unknown)
-                          nil
-                          nil
-                          same-table)
-                 (reterr msg-bad-preceding))
+       :int128 (retok (type-spec-int128) nil ext-tyspecs nil same-table)
        :float32 (if (endp tyspecs)
                     (retok (type-spec-float32)
                            (type-unknown)
@@ -3568,7 +2730,7 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "For now we ignore type qualifiers [C:6.7.3],
+      "For now we ignore type qualifiers [C17:6.7.3],
        as they do not have any impact on our approximate type system.
        We validate alignment specifiers (in a separate validation function),
        but make no use of them in our approximate type system.
@@ -3659,7 +2821,7 @@
        we look at the collected type specifiers and determine the type,
        via a separate validation function.
        If there are no type specifiers, but no type has been determined,
-       it means that there were no type specifiers at all [C:6.7.2/2]."))
+       it means that there were no type specifiers at all [C17:6.7.2/2]."))
     (b* (((reterr) nil (irr-type) nil (irr-valid-table))
          ((when (endp specquals))
           (cond
@@ -3699,10 +2861,10 @@
       "For now we just validate the type name or expression,
        possibly extending the validation table,
        but we do not check whether the alignment specifier
-       is appropriate for the place where it occurs [C:6.7.5].")
+       is appropriate for the place where it occurs [C17:6.7.5].")
      (xdoc::p
       "In the version with the expression,
-       the latter must have integer type [C:6.7.5/3].
+       the latter must have integer type [C17:6.7.5/3].
        The version with the type name
        is equivalent to @('_Alignas(_Alignof(typename))'),
        and thus we perform the same checks as in
@@ -3933,18 +3095,18 @@
      (xdoc::p
       "The target type passed as input is
        the type of the object being initialized,
-       which must not be a function or void type [C:6.7.9/3].
+       which must not be a function or void type [C17:6.7.9/3].
        The lifetime kind passed as input is
        the one of the object being initialized.")
      (xdoc::p
       "If the target type is a scalar,
        the initializer must be either a single expression,
        or a singleton initializer list without designators
-       [C:6.7.9/11].
+       [C17:6.7.9/11].
        The latter is an expression enclosed in braces;
        experiments show that the final comma is allowed.
        The same constraints as in assignments apply here
-       [C:6.7.9/11] [C:6.5.16.1/1].
+       [C17:6.7.9/11] [C17:6.5.16.1/1].
        We perform array-to-pointer and function-to-pointer conversions
        on the expression, as pointers may be required.")
      (xdoc::p
@@ -3952,11 +3114,11 @@
        the initializer is a single expression,
        and the object has automatic storage duration,
        that expression must also have the structure or union type
-       [C:6.7.9/13].")
+       [C17:6.7.9/13].")
      (xdoc::p
       "If the target type is an array of characters (of various types),
        the initializer may be a single string literal,
-       subject to some constraints [C:6.7.9/14] [C:6.7.9/15].
+       subject to some constraints [C17:6.7.9/14] [C17:6.7.9/15].
        In our currently approximated type system,
        we must allow any kind of string literal with any array target type.")
      (xdoc::p
@@ -3964,7 +3126,7 @@
        and the initializer is a brace-enclosed list,
        then we process the elements of the list,
        via a separate validation function
-       [C:6.7.9/16] [C:6.7.9/17] [C:6.7.9/18].")
+       [C17:6.7.9/16] [C17:6.7.9/17] [C17:6.7.9/18].")
      (xdoc::p
       "If none of the case above holds, validation fails."))
     (b* (((reterr) (irr-initer) nil (irr-valid-table)))
@@ -4113,7 +3275,7 @@
       "The guard on the target type is weakened,
        compared to @(tsee valid-initer):
        if there is no initializer, the type can be anything,
-       because the restriction applies only to initializers [C:6.7.9/3]."))
+       because the restriction applies only to initializers [C17:6.7.9/3]."))
     (b* (((reterr) nil nil (irr-valid-table)))
       (initer-option-case
        initer?
@@ -4214,13 +3376,13 @@
        the one that the designator must apply to;
        the target type returned as result is
        the one that results from applying the designator to it.
-       The target type is the type of the current object [C:6.7.9/17].
+       The target type is the type of the current object [C17:6.7.9/17].
        A subscript designator requires an array target type,
-       and must have an integer expression [C:6.7.9/6];
+       and must have an integer expression [C17:6.7.9/6];
        the result is the unknown type,
        because currently we have just one array type
        without information about the element type.
-       A dotted designator requires a struct or union type [C:6.7.9/7];
+       A dotted designator requires a struct or union type [C17:6.7.9/7];
        the result is the unknown type,
        because currently we do not have information about the members."))
     (b* (((reterr) (irr-designor) (irr-type) nil (irr-valid-table)))
@@ -4356,7 +3518,7 @@
        we do not validate type qualifiers, or attributes.
        So the only role of the @('pointers') component of @(tsee declor)
        is to refine the type passed as input into the pointer type
-       [C:6.7.6.1/1].
+       [C17:6.7.6.1/1].
        This resulting type is then passed to
        the function to validate the direct declarator that follows.")
      (xdoc::p
@@ -4454,21 +3616,21 @@
        we recursively validate the declarator.")
      (xdoc::p
       "If the direct declarator is one of the array kinds,
-       we refine the type to the array type [C:6.7.6.2/3]
+       we refine the type to the array type [C17:6.7.6.2/3]
        (so in our currently approximate type system
        the input type is effectively ignored),
        and we recursively validate the enclosed direct declarator.
        Then we validate the index expression (if present),
        ensuring that it has integer type.
        For now we do not check that, if these expressions are constant,
-       their values are greater than 0 [C:6.7.6.2/1].
+       their values are greater than 0 [C17:6.7.6.2/1].
        Currently we do not need to do anything
        with type qualifiers and attributes.
        The @('fundef-params-p') flag is threaded through.")
      (xdoc::p
       "If the direct declarator is one of the function kinds,
        we ensure that the input type, which is the function return type,
-       is not a function or array type [C:6.7.6.3/1].
+       is not a function or array type [C17:6.7.6.3/1].
        We refine the input type to a function type
        (which in our current type system means we override it),
        and we validate the declarator.
@@ -4512,15 +3674,15 @@
        so that when we later validate the function body,
        we already have the top-level scope for the body.
        If instead @('fundef-params-p') is @('nil'),
-       the parameters form a function prototype scope [C:6.2.1/4],
+       the parameters form a function prototype scope [C17:6.2.1/4],
        which is therefore popped.")
      (xdoc::p
       "For the function declarator with a parameter type list,
-       we handle the special case of a single @('void') [C:6.7.6.3/10]
+       we handle the special case of a single @('void') [C17:6.7.6.3/10]
        before calling a separate function to validate the parameters.")
      (xdoc::p
       "A function declarator with a non-empty name list can only occur
-       as the parameters of a function being defined [C:6.7.6.3/3]
+       as the parameters of a function being defined [C17:6.7.6.3/3]
        Thus, unless the list is empty,
        we raise an error unless @('fundef-params-p') is @('t'),
        i.e. unless we are validating the parameters of a defined function.
@@ -4947,21 +4109,21 @@
        a list of storage class specifiers,
        and a possibly updated table.
        We ensure that the list of storage class specifiers
-       is either empty or the singleton @('register') [C:6.7.6.3/2].")
+       is either empty or the singleton @('register') [C17:6.7.6.3/2].")
      (xdoc::p
       "We validate the parameter declarator,
        ensuring that it has an identifier if @('fundef-params-p') is @('t')
-       [C:6.9.1/5].
-       We adjust the type if necessary [C:6.7.6.3/7] [C:6.7.6.3/8].
+       [C17:6.9.1/5].
+       We adjust the type if necessary [C17:6.7.6.3/7] [C17:6.7.6.3/8].
        If the parameter declarator has an identifier,
        we extend the validation table with it,
        unless there is already an ordinary identifier
        with the same name in the same (i.e. current) scope;
-       since parameters have no linkage [C:6.2.2/6],
-       they can be only declared once in the same scope [C:6.7/3].
-       Parameters of function declarations have no linkage [C:6.2.2/6].
+       since parameters have no linkage [C17:6.2.2/6],
+       they can be only declared once in the same scope [C17:6.7/3].
+       Parameters of function declarations have no linkage [C17:6.2.2/6].
        Since storage is allocated for them when the function is called,
-       they are considered defined [C:6.7/5]."))
+       they are considered defined [C17:6.7/5]."))
     (b* (((reterr) (irr-paramdecl) nil (irr-valid-table))
          ((paramdecl paramdecl) paramdecl)
          ((erp new-spec type storspecs types table)
@@ -5146,7 +4308,7 @@
     (xdoc::topstring
      (xdoc::p
       "We check that there is at least a name or a list of members
-       [C:6.7.2.1/2].")
+       [C17:6.7.2.1/2].")
      (xdoc::p
       "For now our validation tables include
        no information about structure and union tags,
@@ -5300,8 +4462,8 @@
        after ensuring that it is not already there.
        If there is a constant expression, we validate it,
        but for now we do not perform any checks related to its value
-       [C:6.7.2.1/4];
-       we also do not constrain the types of bit fields [C:6.7.2.1/5],
+       [C17:6.7.2.1/4];
+       we also do not constrain the types of bit fields [C17:6.7.2.1/5],
        but we ensure that the constant expression, if present, is integer."))
     (b* (((reterr) (irr-structdeclor) nil nil (irr-valid-table))
          ((structdeclor structdeclor) structdeclor)
@@ -5428,15 +4590,15 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "The enumeration constant is added to the validation table [C:6.2.1/7],
+      "The enumeration constant is added to the validation table [C17:6.2.1/7],
        unless there is already an ordinary identifier
        with the same name and in the same (i.e. current) scope;
-       since enumeration constants have no linkage [C:6.2.2/6],
-       they can be only declared once in the same scope [C:6.7/3].
+       since enumeration constants have no linkage [C17:6.2.2/6],
+       they can be only declared once in the same scope [C17:6.7/3].
        If there is a constant expression,
        we validate it and check that it has integer type,
        but for now we do not check that the value
-       is representable as @('int') [C:6.7.2.2/2]."))
+       is representable as @('int') [C17:6.7.2.2/2]."))
     (b* (((reterr) (irr-enumer) nil (irr-valid-table))
          ((enumer enumer) enumer)
          ((mv info? currentp) (valid-lookup-ord enumer.name table))
@@ -5496,7 +4658,7 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "We validate the constant expression, which must be integer [C:6.7.10/3],
+      "We validate the constant expression, which must be integer [C17:6.7.10/3],
        and we validate the string literal(s)."))
     (b* (((reterr) (irr-statassert) nil (irr-valid-table))
          ((statassert statassert) statassert)
@@ -5531,7 +4693,7 @@
     :long
     (xdoc::topstring
      (xdoc::p
-      "Initializer declarators [C:6.7/1]
+      "Initializer declarators [C17:6.7/1]
        appear in declarations, after declaration specifiers.
        The latter determine a type, passed as input,
        which an initializer declarator may refine.
@@ -5552,7 +4714,7 @@
        there must be no initializer,
        because we are not declaring an object.
        In this case, we add the @('typedef') to the validation table.
-       The same @('typedef') is allowed in the same scope [C:6.7/3],
+       The same @('typedef') is allowed in the same scope [C17:6.7/3],
        under certain conditions that are inexpressible
        in our current approximate type system,
        but since our validation tables currently carry limited information
@@ -5567,7 +4729,7 @@
        the type is not that of a function,
        because initializers only apply to objects,
        and the type is not void,
-       because the type must be complete [C:6.7.9/3].
+       because the type must be complete [C17:6.7.9/3].
        We validate the initializer if present;
        we pass the type of the identifier,
        so the initializer is checked against that.")
@@ -5581,11 +4743,11 @@
        (because it refers to some external entity from the block),
        while it is defined otherwise
        (because the declaration allocates storage for the object).
-       If we are in a file scope, we follow [C:6.9.2/1] and [C:6.9.2/2]:
+       If we are in a file scope, we follow [C17:6.9.2/1] and [C17:6.9.2/2]:
        an initializer makes the status defined;
        otherwise, the presence of @('extern') makes the status undefined
        and its absence makes the status defined.
-       This is slightly different from what [C:6.9.2/2] says,
+       This is slightly different from what [C17:6.9.2/2] says,
        which mentions no storage class specifier or @('static'),
        but it seems clear that this neglects to consider @('_Thread_local');
        in fact, the wording in the newly released C23 standard is clearer.")
@@ -5599,7 +4761,7 @@
        being for a @('typedef') or an enumeration constant),
        the two must denote different entities,
        and thus we ensure that the one in the table
-       is not in the same (i.e. current) scope [C:6.2.1/4] [C:6.7/3];
+       is not in the same (i.e. current) scope [C17:6.2.1/4] [C17:6.7/3];
        if the checks pass, we add the identifier to the table.
        If instead both have internal or external linkage,
        they must refer to the same entity,
@@ -5800,7 +4962,7 @@
        We ensure that the list of initializer declarators is not empty
        (i.e. there is at least a declarator),
        or the declaration specifiers declare a tag,
-       as required in [C:6.7/2].
+       as required in [C17:6.7/2].
        We ignore the GCC extension for now."))
     (b* (((reterr) (irr-decl) nil (irr-valid-table)))
       (decl-case
@@ -5865,11 +5027,11 @@
      (xdoc::p
       "For now this just amounts to validating the constant expression(s),
        for the case of a @('case') label,
-       and ensuring it/they has/have integer type [C:6.8.4.2/3];
+       and ensuring it/they has/have integer type [C17:6.8.4.2/3];
        in the future, we should collect labels in the validation table
        so that we can check that referenced labels are in scope.
        Also, for now we do not check that @('case') and @('default') labels
-       only appear in @('switch') statements [C:6.8.1/2]."))
+       only appear in @('switch') statements [C17:6.8.1/2]."))
     (b* (((reterr) (irr-label) nil (irr-valid-table)))
       (label-case
        label
@@ -5945,7 +5107,7 @@
        We return the union of the return types,
        and the optional type from the statement.
        For now we do not check the requirements in
-       [C:6.8.1/2] and [C:6.8.1/3].")
+       [C17:6.8.1/2] and [C17:6.8.1/3].")
      (xdoc::p
       "To validate a compound statement,
        we push a new scope for the block,
@@ -5959,15 +5121,15 @@
        this is @('nil') if there is no expression.
        The return types are the same as the ones of the expression.")
      (xdoc::p
-      "A selection statement and its sub-statements are blocks [C:6.8.4/3],
+      "A selection statement and its sub-statements are blocks [C17:6.8.4/3],
        so we push and pop scopes accordingly.
-       We check that the test of @('if') has scalar type [C:6.8.4.1/1]
-       and that the target of @('switch') has integer type [C:6.8.4.2/1].
+       We check that the test of @('if') has scalar type [C17:6.8.4.1/1]
+       and that the target of @('switch') has integer type [C17:6.8.4.2/1].
        No type is returned as the @('last-expr-type?') result,
        because a selection statement is not an expression statement
        (see criterion above for that result of this validation function).")
      (xdoc::p
-      "An iteration statement and its sub-statements are blocks [C:6.8.5/5],
+      "An iteration statement and its sub-statements are blocks [C17:6.8.5/5],
        so we push and pop scopes accordingly.
        We check that the test expression has scalar type.
        No type is returned as the @('last-expr-type?') result,
@@ -5977,14 +5139,14 @@
        only uses the storage class specifiers @('auto') and @('register').")
      (xdoc::p
       "For now we do not check constraints on
-       the label of a @('goto') [C:6.8.6.1/1],
-       the occurrence of @('continue') [C:6.8.6.2/2],
-       and the occurrence of @('break') [C:6.8.6.3/1].")
+       the label of a @('goto') [C17:6.8.6.1/1],
+       the occurrence of @('continue') [C17:6.8.6.2/2],
+       and the occurrence of @('break') [C17:6.8.6.3/1].")
      (xdoc::p
       "A @('return') statement explicitly adds a type to the return types,
        either the type of the expression,
        or @('void') is there is no expression.
-       We check the constraints on occurrences [C:6.8.6.4/1]
+       We check the constraints on occurrences [C17:6.8.6.4/1]
        in the validation function for function definitions.")
      (xdoc::p
       "For now we do not check any constraints on assembler statements."))
@@ -6266,7 +5428,265 @@
 
   (verify-guards valid-expr)
 
-  (fty::deffixequiv-mutual valid-exprs/decls/stmts))
+  (fty::deffixequiv-mutual valid-exprs/decls/stmts)
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+  (defret-mutual valid-exprs/decls/stmts
+    (defret expr-unambp-of-valid-expr
+      (implies (not erp)
+               (expr-unambp new-expr))
+      :hyp (expr-unambp expr)
+      :fn valid-expr)
+    (defret expr-list-unambp-of-valid-expr-list
+      (implies (not erp)
+               (expr-list-unambp new-exprs))
+      :hyp (expr-list-unambp exprs)
+      :fn valid-expr-list)
+    (defret expr-option-unambp-of-valid-expr-option
+      (implies (not erp)
+               (expr-option-unambp new-expr?))
+      :hyp (expr-option-unambp expr?)
+      :fn valid-expr-option)
+    (defret const-expr-unambp-of-valid-const-expr
+      (implies (not erp)
+               (const-expr-unambp new-cexpr))
+      :hyp (const-expr-unambp cexpr)
+      :fn valid-const-expr)
+    (defret const-expr-option-unambp-of-valid-const-expr-option
+      (implies (not erp)
+               (const-expr-option-unambp new-cexpr?))
+      :hyp (const-expr-option-unambp cexpr?)
+      :fn valid-const-expr-option)
+    (defret genassoc-unambp-of-valid-genassoc
+      (implies (not erp)
+               (genassoc-unambp new-genassoc))
+      :hyp (genassoc-unambp genassoc)
+      :fn valid-genassoc)
+    (defret genassoc-list-unambp-of-valid-genassoc-list
+      (implies (not erp)
+               (genassoc-list-unambp new-genassocs))
+      :hyp (genassoc-list-unambp genassocs)
+      :fn valid-genassoc-list)
+    (defret member-designor-unambp-of-valid-member-designor
+      (implies (not erp)
+               (member-designor-unambp new-memdesign))
+      :hyp (member-designor-unambp memdesign)
+      :fn valid-member-designor)
+    (defret type-spec-unambp-of-valid-type-spec
+      (implies (not erp)
+               (and (type-spec-unambp new-tyspec)
+                    (type-spec-list-unambp new-tyspecs)))
+      :hyp (and (type-spec-unambp tyspec)
+                (type-spec-list-unambp tyspecs))
+      :fn valid-type-spec)
+    (defret spec/qual-unambp-of-valid-spec/qual
+      (implies (not erp)
+               (and (spec/qual-unambp new-specqual)
+                    (type-spec-list-unambp new-tyspecs)))
+      :hyp (and (spec/qual-unambp specqual)
+                (type-spec-list-unambp tyspecs))
+      :fn valid-spec/qual)
+    (defret spec/qual-list-unambp-of-valid-spec/qual-list
+      (implies (not erp)
+               (spec/qual-list-unambp new-specquals))
+      :hyp (and (spec/qual-list-unambp specquals)
+                (type-spec-list-unambp tyspecs))
+      :fn valid-spec/qual-list)
+    (defret align-spec-unambp-of-valid-align-spec
+      (implies (not erp)
+               (align-spec-unambp new-align))
+      :hyp (align-spec-unambp align)
+      :fn valid-align-spec)
+    (defret decl-spec-unambp-of-valid-decl-spec
+      (implies (not erp)
+               (and (decl-spec-unambp new-declspec)
+                    (type-spec-list-unambp new-tyspecs)))
+      :hyp (and (decl-spec-unambp declspec)
+                (type-spec-list-unambp tyspecs))
+      :fn valid-decl-spec)
+    (defret decl-spec-list-unambp-of-valid-decl-spec-list
+      (implies (not erp)
+               (decl-spec-list-unambp new-declspecs))
+      :hyp (and (decl-spec-list-unambp declspecs)
+                (type-spec-list-unambp tyspecs))
+      :fn valid-decl-spec-list)
+    (defret initer-unambp-of-valid-initer
+      (implies (not erp)
+               (initer-unambp new-initer))
+      :hyp (initer-unambp initer)
+      :fn valid-initer)
+    (defret initer-option-unambp-of-valid-initer-option
+      (implies (not erp)
+               (initer-option-unambp new-initer?))
+      :hyp (initer-option-unambp initer?)
+      :fn valid-initer-option)
+    (defret desiniter-unambp-of-valid-desiniter
+      (implies (not erp)
+               (desiniter-unambp new-desiniter))
+      :hyp (desiniter-unambp desiniter)
+      :fn valid-desiniter)
+    (defret desiniter-list-unambp-of-valid-desiniter-list
+      (implies (not erp)
+               (desiniter-list-unambp new-desiniters))
+      :hyp (desiniter-list-unambp desiniters)
+      :fn valid-desiniter-list)
+    (defret designor-unambp-of-valid-designor
+      (implies (not erp)
+               (designor-unambp new-designor))
+      :hyp (designor-unambp designor)
+      :fn valid-designor)
+    (defret designor-list-unambp-of-valid-designor-list
+      (implies (not erp)
+               (designor-list-unambp new-designors))
+      :hyp (designor-list-unambp designors)
+      :fn valid-designor-list)
+    (defret declor-unambp-of-valid-declor
+      (implies (not erp)
+               (declor-unambp new-declor))
+      :hyp (declor-unambp declor)
+      :fn valid-declor)
+    (defret declor-option-unambp-of-valid-declor-option
+      (implies (not erp)
+               (declor-option-unambp new-declor?))
+      :hyp (declor-option-unambp declor?)
+      :fn valid-declor-option)
+    (defret dirdeclor-unambp-of-valid-dirdeclor
+      (implies (not erp)
+               (dirdeclor-unambp new-dirdeclor))
+      :hyp (dirdeclor-unambp dirdeclor)
+      :fn valid-dirdeclor)
+    (defret absdeclor-unambp-of-valid-absdeclor
+      (implies (not erp)
+               (absdeclor-unambp new-absdeclor))
+      :hyp (absdeclor-unambp absdeclor)
+      :fn valid-absdeclor)
+    (defret absdeclor-option-unambp-of-valid-absdeclor-option
+      (implies (not erp)
+               (absdeclor-option-unambp new-absdeclor?))
+      :hyp (absdeclor-option-unambp absdeclor?)
+      :fn valid-absdeclor-option)
+    (defret dirabsdeclor-unambp-of-valid-dirabsdeclor
+      (implies (not erp)
+               (dirabsdeclor-unambp new-dirabsdeclor))
+      :hyp (dirabsdeclor-unambp dirabsdeclor)
+      :fn valid-dirabsdeclor)
+    (defret dirabsdeclor-option-unambp-of-valid-dirabsdeclor-option
+      (implies (not erp)
+               (dirabsdeclor-option-unambp new-dirabsdeclor?))
+      :hyp (dirabsdeclor-option-unambp dirabsdeclor?)
+      :fn valid-dirabsdeclor-option)
+    (defret paramdecl-unambp-of-valid-paramdecl
+      (implies (not erp)
+               (paramdecl-unambp new-paramdecl))
+      :hyp (paramdecl-unambp paramdecl)
+      :fn valid-paramdecl)
+    (defret paramdecl-list-unambp-of-valid-paramdecl-list
+      (implies (not erp)
+               (paramdecl-list-unambp new-paramdecls))
+      :hyp (paramdecl-list-unambp paramdecls)
+      :fn valid-paramdecl-list)
+    (defret paramdeclor-unambp-of-valid-paramdeclor
+      (implies (not erp)
+               (paramdeclor-unambp new-paramdeclor))
+      :hyp (paramdeclor-unambp paramdeclor)
+      :fn valid-paramdeclor)
+    (defret tyname-unambp-of-valid-tyname
+      (implies (not erp)
+               (tyname-unambp new-tyname))
+      :hyp (tyname-unambp tyname)
+      :fn valid-tyname)
+    (defret strunispec-unambp-of-valid-strunispec
+      (implies (not erp)
+               (strunispec-unambp new-strunispec))
+      :hyp (strunispec-unambp strunispec)
+      :fn valid-strunispec)
+    (defret structdecl-unambp-of-valid-structdecl
+      (implies (not erp)
+               (structdecl-unambp new-structdecl))
+      :hyp (structdecl-unambp structdecl)
+      :fn valid-structdecl)
+    (defret structdecl-list-unambp-of-valid-structdecl-list
+      (implies (not erp)
+               (structdecl-list-unambp new-structdecls))
+      :hyp (structdecl-list-unambp structdecls)
+      :fn valid-structdecl-list)
+    (defret structdeclor-unambp-of-valid-structdeclor
+      (implies (not erp)
+               (structdeclor-unambp new-structdeclor))
+      :hyp (structdeclor-unambp structdeclor)
+      :fn valid-structdeclor)
+    (defret structdeclor-list-unambp-of-valid-structdeclor-list
+      (implies (not erp)
+               (structdeclor-list-unambp new-structdeclors))
+      :hyp (structdeclor-list-unambp structdeclors)
+      :fn valid-structdeclor-list)
+    (defret enumspec-unambp-of-valid-enumspec
+      (implies (not erp)
+               (enumspec-unambp new-enumspec))
+      :hyp (enumspec-unambp enumspec)
+      :fn valid-enumspec)
+    (defret enumer-unambp-of-valid-enumer
+      (implies (not erp)
+               (enumer-unambp new-enumer))
+      :hyp (enumer-unambp enumer)
+      :fn valid-enumer)
+    (defret enumer-list-unambp-of-valid-enumer-list
+      (implies (not erp)
+               (enumer-list-unambp new-enumers))
+      :hyp (enumer-list-unambp enumers)
+      :fn valid-enumer-list)
+    (defret statassert-unambp-of-valid-statassert
+      (implies (not erp)
+               (statassert-unambp new-statassert))
+      :hyp (statassert-unambp statassert)
+      :fn valid-statassert)
+    (defret initdeclor-unambp-of-valid-initdeclor
+      (implies (not erp)
+               (initdeclor-unambp new-initdeclor))
+      :hyp (initdeclor-unambp initdeclor)
+      :fn valid-initdeclor)
+    (defret initdeclor-list-unambp-of-valid-initdeclor-list
+      (implies (not erp)
+               (initdeclor-list-unambp new-initdeclors))
+      :hyp (initdeclor-list-unambp initdeclors)
+      :fn valid-initdeclor-list)
+    (defret decl-unambp-of-valid-decl
+      (implies (not erp)
+               (decl-unambp new-decl))
+      :hyp (decl-unambp decl)
+      :fn valid-decl)
+    (defret decl-list-unambp-of-valid-decl-list
+      (implies (not erp)
+               (decl-list-unambp new-decls))
+      :hyp (decl-list-unambp decls)
+      :fn valid-decl-list)
+    (defret label-unambp-of-valid-label
+      (implies (not erp)
+               (label-unambp new-label))
+      :hyp (label-unambp label)
+      :fn valid-label)
+    (defret stmt-unambp-of-valid-stmt
+      (implies (not erp)
+               (stmt-unambp new-stmt))
+      :hyp (stmt-unambp stmt)
+      :fn valid-stmt)
+    (defret block-item-unambp-of-valid-block-item
+      (implies (not erp)
+               (block-item-unambp new-item))
+      :hyp (block-item-unambp item)
+      :fn valid-block-item)
+    (defret block-item-list-unambp-of-valid-block-item-list
+      (implies (not erp)
+               (block-item-list-unambp new-items))
+      :hyp (block-item-list-unambp items)
+      :fn valid-block-item-list)
+    ;; These hints only enable VALID-DECL-SPEC-LIST
+    ;; in the cases involving that function.
+    ;; Without this, the proof seems to hang, or at least take a very long time.
+    :hints (("Goal" :in-theory (disable valid-decl-spec-list))
+            (and (acl2::occur-lst '(acl2::flag-is 'valid-decl-spec-list) clause)
+                 '(:in-theory (enable valid-decl-spec-list))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -6288,7 +5708,7 @@
      which can only happen inside a function's body.
      We validate the storage class specifiers.
      It is an error if the declaration is for a @('typedef').
-     We also ensure that the type is the function type [C:6.9.1/2].")
+     We also ensure that the type is the function type [C17:6.9.1/2].")
    (xdoc::p
     "As with declarations, the scope of the function name
      starts just after its declarator;
@@ -6322,7 +5742,7 @@
     "The declarations between declarator and body should be present
      if and only if the function declarator has a list of identifiers,
      and there should be exactly one declaration per identifier
-     [C:6.9.1/5] [C:6.9.1/6].
+     [C17:6.9.1/5] [C17:6.9.1/6].
      For now we do not check those constraints,
      but we validate any declarations
      (ensuring they return no types),
@@ -6336,7 +5756,7 @@
      the function type alone does not give us enough information
      to check the types returned by the body
      against the return type of the function,
-     to enforce the constraints in [C:6.8.6.4/1];
+     to enforce the constraints in [C17:6.8.6.4/1];
      so for now we discard the set of return types
      obtained by validating the body.")
    (xdoc::p
@@ -6430,7 +5850,14 @@
                         :body (stmt-compound new-items))
            table))
   :guard-hints (("Goal" :in-theory (disable (:e tau-system)))) ; for speed
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret fundef-unambp-of-valid-fundef
+    (implies (not erp)
+             (fundef-unambp new-fundef))
+    :hyp (fundef-unambp fundef)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -6461,7 +5888,14 @@
              (retok (extdecl-decl new-decl) table))
      :empty (retok (extdecl-empty) (valid-table-fix table))
      :asm (retok (extdecl-fix edecl) (valid-table-fix table))))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret extdecl-unambp-of-valid-extdecl
+    (implies (not erp)
+             (extdecl-unambp new-edecl))
+    :hyp (extdecl-unambp edecl)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -6470,7 +5904,7 @@
                             (ienv ienvp))
   :guard (extdecl-list-unambp edecls)
   :returns (mv erp
-               (new-decls extdecl-listp)
+               (new-edecls extdecl-listp)
                (new-table valid-tablep))
   :short "Validate a list of external declarations."
   :long
@@ -6482,15 +5916,21 @@
        ((erp new-edecl table) (valid-extdecl (car edecls) table ienv))
        ((erp new-edecls table) (valid-extdecl-list (cdr edecls) table ienv)))
     (retok (cons new-edecl new-edecls) table))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret extdecl-list-unambp-of-valid-extdecl-list
+    (implies (not erp)
+             (extdecl-list-unambp new-edecls))
+    :hyp (extdecl-list-unambp edecls)
+    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define valid-transunit ((tunit transunitp) (gcc booleanp) (ienv ienvp))
   :guard (transunit-unambp tunit)
-  :returns (mv erp
-               (new-tunit transunitp)
-               (table valid-tablep))
+  :returns (mv erp (new-tunit transunitp))
   :short "Validate a translation unit."
   :long
   (xdoc::topstring
@@ -6509,14 +5949,10 @@
      all the referenced names must be declared in the translation unit,
      so it is appropriate to start with the initial validation table.")
    (xdoc::p
-    "If validation is successful, we return the final validation table.
-     For now we do no make any use of the returned table,
-     but in the future we should use it to validate
-     the externally linked identifiers across
-     different translation units of a translation unit ensemble.
-     In fact, we should probably extend this validation function
-     to trim the returned validation table
-     so it only has entries for identifiers with external linkage.")
+    "If validation is successful,
+     we add the final validation table to
+     the information slot of the translation unit,
+     i.e. we annotate the translation unit with its final validation table.")
    (xdoc::p
     "For each GCC function, the associated information consists of
      the function type, external linkage, and defined status.
@@ -6526,7 +5962,7 @@
      For each GCC object, the associated information consists of
      the unknown type, external linkage, and defined status;
      the rationale for the latter two is the same as for functions."))
-  (b* (((reterr) (irr-transunit) (irr-valid-table))
+  (b* (((reterr) (irr-transunit))
        (table (valid-init-table))
        (table
          (if gcc
@@ -6700,9 +6136,17 @@
                table)
            table))
        ((erp new-edecls table)
-        (valid-extdecl-list (transunit->decls tunit) table ienv)))
-    (retok (transunit new-edecls) table))
-  :hooks (:fix))
+        (valid-extdecl-list (transunit->decls tunit) table ienv))
+       (info (make-transunit-info :table table)))
+    (retok (make-transunit :decls new-edecls :info info)))
+  :hooks (:fix)
+
+  ///
+
+  (defret transunit-unambp-of-valid-transunit
+    (implies (not erp)
+             (transunit-unambp new-tunit))
+    :hyp (transunit-unambp tunit)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -6717,17 +6161,17 @@
    (xdoc::p
     "We validate each translation unit.
      As mentioned in @(tsee valid-transunit),
-     for now we discard the result validation tables,
-     but in the future we should cross-check them.")
-   (xdoc::p
-    "If validation is successful, we return no information (@('nil')).
-     Otherwise, we return an error message,
-     which a caller can show to the user in an event macro."))
+     we annotate the translation unit with the finval validation table.
+     For now we do no make any use of the returned table,
+     but in the future we should use it to validate
+     the externally linked identifiers across
+     different translation units of a translation unit ensemble."))
   (b* (((reterr) (irr-transunit-ensemble))
        ((erp new-map)
         (valid-transunit-ensemble-loop
          (transunit-ensemble->unwrap tunits) gcc ienv)))
     (retok (transunit-ensemble new-map)))
+
   :prepwork
   ((define valid-transunit-ensemble-loop ((map filepath-transunit-mapp)
                                           (gcc booleanp)
@@ -6740,12 +6184,29 @@
      (b* (((reterr) nil)
           ((when (omap::emptyp map)) (retok nil))
           (path (omap::head-key map))
-          ((erp new-tunit &) (valid-transunit (omap::head-val map) gcc ienv))
+          ((erp new-tunit) (valid-transunit (omap::head-val map) gcc ienv))
           ((erp new-map)
            (valid-transunit-ensemble-loop (omap::tail map) gcc ienv)))
        (retok (omap::update path new-tunit new-map)))
      :verify-guards :after-returns
+
      ///
+
      (fty::deffixequiv valid-transunit-ensemble-loop
-       :args ((gcc booleanp) (ienv ienvp)))))
-  :hooks (:fix))
+       :args ((gcc booleanp) (ienv ienvp)))
+
+     (defret filepath-transunit-map-unambp-of-valid-transunit-ensemble-loop
+       (implies (not erp)
+                (filepath-transunit-map-unambp new-map))
+       :hyp (and (filepath-transunit-mapp map)
+                 (filepath-transunit-map-unambp map))
+       :hints (("Goal" :induct t)))))
+
+  :hooks (:fix)
+
+  ///
+
+  (defret transunit-ensemble-unambp-of-valid-transunit-ensemble
+    (implies (not erp)
+             (transunit-ensemble-unambp new-tunits))
+    :hyp (transunit-ensemble-unambp tunits)))

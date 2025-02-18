@@ -359,7 +359,7 @@
           (append remove-rules
                   remove-lift-rules)
           ;; extra-assumption-rules:
-          (append ;; (lifter-rules64-new)
+          (append ;; (new-normal-form-rules64)
                   ;; todo: build these in deeper
                   '(section-assumptions-mach-o-64
                     acl2::mach-o-section-presentp-constant-opener
@@ -377,6 +377,8 @@
                     acl2::elf-section-presentp
                     fix-of-rsp
                     integerp-of-rsp))
+          ;; remove-asumption-rules:
+          nil ; todo: use the remove-lift-rules?
           step-limit
           step-increment
           t ; memoizep (nil allows internal contexts)

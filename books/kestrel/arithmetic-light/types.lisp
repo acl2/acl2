@@ -1,6 +1,6 @@
 ; A lightweight book about the various numeric types
 ;
-; Copyright (C) 2021 Kestrel Institute
+; Copyright (C) 2021-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,6 +12,8 @@
 
 ;; Simple rules about arithmetic types.  Since these could be expensive, we
 ;; keep them disabled.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;; These establish acl2-numberp:
 
@@ -28,7 +30,9 @@
   (implies (rationalp x)
            (acl2-numberp x)))
 
-;;; These establish rationalp
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;; These establish rationalp:
 
 (defthmd rationalp-when-natp
   (implies (natp x)
@@ -38,7 +42,9 @@
   (implies (integerp x)
            (rationalp x)))
 
-;;; These establish integerp
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;; These establish integerp:
 
 (defthmd integerp-when-natp
   (implies (natp x)
@@ -48,7 +54,9 @@
 ;; (theory-invariant (incompatible (:rewrite integerp-when-natp)
 ;;                                 (:definition natp)))
 
-;;; These establish >=0
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;; These establish >= 0
 
 (defthmd <=-of-0-when-natp
   (implies (natp x)

@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -52,6 +52,12 @@
 (defxdoc+ input-files-implementation
   :parents (input-files)
   :short "Implementation of @(tsee input-files)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This also implements the programmatic interface @(tsee input-files-prog).
+     The flag @('progp'), passed to some of the implementation functions below,
+     says whether the programmatic interface has been called."))
   :order-subtopics t
   :default-parent t)
 
@@ -61,12 +67,9 @@
   :short "Keyword options accepted by @(tsee input-files)."
   (list :files
         :preprocess
+        :preprocess-args
         :process
         :const
-        :const-files
-        :const-preproc
-        :const-parsed
-        :const-disamb
         :gcc
         :short-bytes
         :int-bytes
@@ -101,7 +104,7 @@
 (define input-files-process-inputp (x)
   :returns (yes/no booleanp)
   :short "Recognize valid values of the @(':process') input."
-  (and (member-eq x '(:read :parse :disambiguate :validate)) t))
+  (and (member-eq x '(:parse :disambiguate :validate)) t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -151,42 +154,84 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define input-files-process-preprocess-args ((options symbol-alistp)
+                                             (preprocessor string-optionp))
+  :returns (mv erp
+               (preprocess-args-presentp booleanp)
+               (preprocess-extra-args string-listp))
+  :short "Process the @(':preprocess-args') input."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @('preprocessor') input to this function
+     is the result of processing the @(':preprocess') input.")
+   (xdoc::p
+    "If processing of the @(':preprocess-args') input is successful,
+     we return a boolean saying whether the input was present or not,
+     and the list of strings that it consists of (@('nil') if absent);
+     the latter are passed as the @(':extra-args') input
+     of @(tsee preprocess-files), which justifies the name of the result."))
+  (b* (((reterr) nil nil)
+       (preprocess-args-option (assoc-eq :preprocess-args options))
+       ((when (not preprocess-args-option))
+        (retok nil nil))
+       (preprocess-args (cdr preprocess-args-option))
+       ((when (not preprocessor))
+        (reterr (msg "Since the :PREPROCESS input is NIL, ~
+                      the :PREPROCESS-ARGS input must be absent, ~
+                      but it is ~x0 instead."
+                     preprocess-args)))
+       ((unless (string-listp preprocess-args))
+        (reterr (msg "The :PREPROCESS-ARGS input must a list of strings, ~
+                      but it is ~x0 instead."
+                     preprocess-args))))
+    (retok t preprocess-args)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define input-files-process-process ((options symbol-alistp))
   :returns (mv erp (process input-files-process-inputp))
   :short "Process the @(':process') input."
-  (b* (((reterr) :read)
+  (b* (((reterr) :parse)
        (process-option (assoc-eq :process options))
        (process (if process-option
                     (cdr process-option)
                   :validate))
        ((unless (input-files-process-inputp process))
         (reterr (msg "The :PROCESS input must be ~
-                      :READ, :PARSE, :DISAMBIGUATE, or :VALIDATE ~
+                      :PARSE, :DISAMBIGUATE, or :VALIDATE ~
                       but it is ~x0 instead."
                      process))))
-    (retok process)))
+    (retok process))
+
+  ///
+
+  (defret input-files-process-process-to-cdr-assoc-options
+    (implies (not erp)
+             (equal process
+                    (if (assoc-equal :process options)
+                        (cdr (assoc-equal :process options))
+                      :validate))))
+  (in-theory (disable input-files-process-process-to-cdr-assoc-options)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define input-files-process-const-inputs ((options symbol-alistp)
-                                          (preprocess string-optionp)
-                                          (process input-files-process-inputp))
-  :returns (mv erp
-               (const symbolp)
-               (const-files symbolp)
-               (const-preproc symbolp)
-               (const-parsed symbolp)
-               (const-disamb symbolp))
-  :short "Process the
-          @(':const'),
-          @(':const-files'),
-          @(':const-preproc'),
-          @(':const-parsed'), and
-          @(':const-disamb')
-          inputs."
-  (b* (((reterr) nil nil nil nil nil)
-       ;; Process :CONST input.
+(define input-files-process-const ((options symbol-alistp)
+                                   (progp booleanp))
+  :returns (mv erp (const symbolp))
+  :short "Process the @(':const') inputs."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the programmatic interface has been called, this input must be absent.
+     In this case, we return @('nil') as result."))
+  (b* (((reterr) nil)
        (const-option (assoc-eq :const options))
+       ((when progp)
+        (b* (((when const-option)
+              (reterr (msg "The :CONST input must not be supplied ~
+                            to the programmatic interface."))))
+          (retok nil)))
        ((unless const-option)
         (reterr (msg "The :CONST input must be supplied, ~
                       but it was not supplied.")))
@@ -194,81 +239,8 @@
        ((unless (symbolp const))
         (reterr (msg "The :CONST input must be a symbol, ~
                       but it is ~x0 instead."
-                     const)))
-       ;; Process :CONST-FILES input.
-       (const-files-option (assoc-eq :const-files options))
-       (const-files (if const-files-option
-                        (cdr const-files-option)
-                      nil))
-       ((unless (symbolp const-files))
-        (reterr (msg "The :CONST-FILES input must be a symbol, ~
-                      but it is ~x0 instead."
-                     const-files)))
-       ((when (and const-files
-                   (not preprocess)
-                   (eq process :read)))
-        (reterr (msg "The :CONST-FILES input must be NIL ~
-                      if the :PREPROCESS input is NIL ~
-                      and the :PROCESS input is :READ, ~
-                      which is the case in this call of INPUT-FILES.")))
-       ;; Process :CONST-PREPROC input.
-       (const-preproc-option (assoc-eq :const-preproc options))
-       (const-preproc (if const-preproc-option
-                          (cdr const-preproc-option)
-                        nil))
-       ((unless (symbolp const-preproc))
-        (reterr (msg "The :CONST-PREPROC input must be a symbol, ~
-                      but it is ~x0 instead."
-                     const-preproc)))
-       ((when (and const-preproc
-                   (not preprocess)))
-        (reterr (msg "The :CONST-PREPROC input must be NIL ~
-                      if the :PREPROCESS input is NIL, ~
-                      which is the case in this call of INPUT-FILES.")))
-       ;; Process :CONST-PARSED input.
-       (const-parsed-option (assoc-eq :const-parsed options))
-       (const-parsed (if const-parsed-option
-                         (cdr const-parsed-option)
-                       nil))
-       ((unless (symbolp const-parsed))
-        (reterr (msg "The :CONST-PARSED input must be a symbol, ~
-                      but it is ~x0 instead."
-                     const-parsed)))
-       ((when (and const-parsed
-                   (eq process :read)))
-        (reterr (msg "The :CONST-PARSED input must be NIL ~
-                      if the :PROCESS input is :READ, ~
-                      which is the case in this call of INPUT-FILES.")))
-       ((when (and const-parsed
-                   (eq process :parse)))
-        (reterr (msg "The :CONST-PARSED input must be NIL ~
-                      if the :PROCESS input is :PARSE, ~
-                      which is the case in this call of INPUT-FILES.")))
-       ;; Process :CONST-DISAMB input.
-       (const-disamb-option (assoc-eq :const-disamb options))
-       (const-disamb (if const-disamb-option
-                         (cdr const-disamb-option)
-                       nil))
-       ((unless (symbolp const-disamb))
-        (reterr (msg "The :CONST-DISAMB input must be a symbol, ~
-                      but it is ~x0 instead."
-                     const-disamb)))
-       ((when (and const-disamb
-                   (eq process :read)))
-        (reterr (msg "The :CONST-DISAMB input must be NIL ~
-                      if the :PROCESS input is :READ, ~
-                      which is the case in this call of INPUT-FILES.")))
-       ((when (and const-disamb
-                   (eq process :parse)))
-        (reterr (msg "The :CONST-DISAMB input must be NIL ~
-                      if the :PROCESS input is :PARSE, ~
-                      which is the case in this call of INPUT-FILES.")))
-       ((when (and const-disamb
-                   (eq process :disambiguate)))
-        (reterr (msg "The :CONST-DISAMB input must be NIL ~
-                      if the :PROCESS input is :DISAMBIGUATE, ~
-                      which is the case in this call of INPUT-FILES."))))
-    (retok const const-files const-preproc const-parsed const-disamb)))
+                     const))))
+    (retok const)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -375,16 +347,14 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define input-files-process-inputs ((args true-listp))
+(define input-files-process-inputs ((args true-listp) (progp booleanp))
   :returns (mv erp
                (paths filepath-setp)
                (preprocessor string-optionp)
+               (preprocess-args-presentp booleanp)
+               (preprocess-extra-args string-listp)
                (process input-files-process-inputp)
                (const symbolp)
-               (const-files symbolp)
-               (const-preproc symbolp)
-               (const-parsed symbolp)
-               (const-disamb symbolp)
                (gcc booleanp)
                (ienv ienvp))
   :short "Process the inputs."
@@ -401,8 +371,8 @@
     "The other results of this function are the homonymous inputs,
      except that the last five inputs are combined into
      an implementation environment result."))
-  (b* (((reterr) nil nil :read nil nil nil nil nil nil (ienv-default))
-       ;; Check and obtain options.
+  (b* (((reterr) nil nil nil nil :parse nil nil (ienv-default))
+       ;; Check and obtain inputs.
        ((mv erp extra options)
         (partition-rest-and-keyword-args
          args *input-files-allowed-options*))
@@ -419,22 +389,37 @@
        ;; Process the inputs.
        ((erp paths) (input-files-process-files options))
        ((erp preprocessor) (input-files-process-preprocess options))
+       ((erp preprocess-args-presentp preprocess-extra-args)
+        (input-files-process-preprocess-args options preprocessor))
        ((erp process) (input-files-process-process options))
-       ((erp const const-files const-preproc const-parsed const-disamb)
-        (input-files-process-const-inputs options preprocessor process))
+       ((erp const) (input-files-process-const options progp))
        ((erp gcc) (input-files-process-gcc options))
        ((erp ienv) (input-files-process-ienv options)))
     (retok paths
            preprocessor
+           preprocess-args-presentp
+           preprocess-extra-args
            process
            const
-           const-files
-           const-preproc
-           const-parsed
-           const-disamb
            gcc
            ienv))
-  :guard-hints (("Goal" :in-theory (enable acl2::alistp-when-symbol-alistp))))
+  :guard-hints (("Goal" :in-theory (enable acl2::alistp-when-symbol-alistp)))
+
+  ///
+
+  (defret input-files-process-inputs.process-to-cdr-assoc-args
+    (implies (not erp)
+             (equal process
+                    (b* (((mv & & options)
+                          (partition-rest-and-keyword-args
+                           args *input-files-allowed-options*)))
+                      (if (assoc-equal :process options)
+                          (cdr (assoc-equal :process options))
+                        :validate))))
+    :hints
+    (("Goal"
+      :in-theory (enable input-files-process-process-to-cdr-assoc-options))))
+  (in-theory (disable input-files-process-inputs.process-to-cdr-assoc-args)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -447,7 +432,7 @@
     "We go through each path,
      and we attempt to read the file at each path,
      constructing the file set along the way."))
-  (b* (((reterr) (fileset nil) state)
+  (b* (((reterr) (irr-fileset) state)
        ((when (set::emptyp paths)) (retok (fileset nil) state))
        (path (set::head paths))
        (path-string (filepath->unwrap path))
@@ -469,110 +454,145 @@
 
 (define input-files-gen-events ((paths filepath-setp)
                                 (preprocessor string-optionp)
+                                (preprocess-args-presentp booleanp)
+                                (preprocess-extra-args string-listp)
                                 (process input-files-process-inputp)
                                 (const symbolp)
-                                (const-files symbolp)
-                                (const-preproc symbolp)
-                                (const-parsed symbolp)
-                                (const-disamb symbolp)
                                 (gcc booleanp)
                                 (ienv ienvp)
+                                (progp booleanp)
                                 state)
-  :returns (mv erp (events pseudo-event-form-listp) state)
+  :returns (mv erp
+               (events pseudo-event-form-listp)
+               (tunits transunit-ensemblep)
+               state)
   :short "Generate the events."
   :long
   (xdoc::topstring
    (xdoc::p
-    "Also perform all the necessary preprocessing and processing."))
-  (b* (((reterr) nil state)
+    "We perform all the necessary preprocessing and processing.
+     Besides the events, we also return the translation unit ensemble
+     resulting from processing the (possibly preprocessed) files.
+     If the programmatic interface is being used,
+     no events are actually generated."))
+  (b* (((reterr) nil (irr-transunit-ensemble) state)
        ;; Initialize list of generated events.
        (events nil)
-       ;; Read files from file system.
-       ((erp files state) (input-files-read-files paths state))
-       ;; Generate :CONST-FILE constant if required.
-       (events (if const-files
-                   (rcons `(defconst ,const-files ',files) events)
-                 events))
-       ;; Preprocess if required;
-       ;; either way, after this, FILES contains the files to process.
+       ;; Preprocess if required, or read files from file system.
        ((erp files state) (if preprocessor
-                              (preprocess-files paths
-                                                :preprocessor preprocessor)
-                            (retok files state)))
-       ;; Generate :CONST-PREPROC if required.
-       (events (if const-preproc
-                   (rcons `(defconst ,const-preproc ',files) events)
-                 events))
-       ;; If no processing is required, we are done;
-       ;; generate :CONST constant with the files.
-       ((when (eq process :read))
-        (b* ((events (rcons `(defconst ,const ',files) events)))
-          (retok events state)))
-       ;; At least parsing is required.
-       ((erp parsed) (parse-fileset files gcc))
-       ;; Generate :CONST-PARSED constant if required.
-       (events (if const-parsed
-                   (rcons `(defconst ,const-parsed ',parsed) events)
-                 events))
+                              (if preprocess-args-presentp
+                                  (preprocess-files
+                                   paths
+                                   :preprocessor preprocessor
+                                   :extra-args preprocess-extra-args)
+                                (preprocess-files
+                                 paths
+                                 :preprocessor preprocessor))
+                            (input-files-read-files paths state)))
+       ;; Parsing is always required.
+       ((erp tunits) (parse-fileset files gcc))
        ;; If only parsing is required, we are done;
        ;; generate :CONST constant with the parsed translation units.
        ((when (eq process :parse))
-        (b* ((events (rcons `(defconst ,const ',parsed) events)))
-          (retok events state)))
-       ;; Disambiguation is required.
-       ((erp disamb) (dimb-transunit-ensemble parsed gcc))
-       ;; Generate :CONST-DISAMB constant if required.
-       (events (if const-disamb
-                   (rcons `(defconst ,const-disamb ',disamb) events)
-                 events))
+        (b* ((events (if (not progp)
+                         (rcons `(defconst ,const ',tunits) events)
+                       events)))
+          (retok events tunits state)))
+       ;; Disambiguation is required, if we get here.
+       ((erp tunits) (dimb-transunit-ensemble tunits gcc))
        ;; If no validation is required, we are done;
        ;; generate :CONST constant with the disambiguated translation unit.
        ((when (eq process :disambiguate))
-        (b* ((events (rcons `(defconst ,const ',disamb) events)))
-          (retok events state)))
-       ;; Validation is required.
-       ((erp valid) (valid-transunit-ensemble disamb gcc ienv))
+        (b* ((events (if (not progp)
+                         (rcons `(defconst ,const ',tunits) events)
+                       events)))
+          (retok events tunits state)))
+       ;; Validation is required, if we get here.
+       ((erp tunits) (valid-transunit-ensemble tunits gcc ienv))
        ;; Generate :CONST constant with the validated translation unit.
-       (events (rcons `(defconst ,const ',valid) events)))
-    (retok events state)))
+       (events (if (not progp)
+                   (rcons `(defconst ,const ',tunits) events)
+                 events)))
+    (retok events tunits state))
+
+  ///
+
+  (defret transunit-ensemble-unambp-of-input-files-gen-events
+    (implies (not erp)
+             (transunit-ensemble-unambp tunits))
+    :hyp (or (equal process :disambiguate)
+             (equal process :validate))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define input-files-process-inputs-and-gen-events ((args true-listp) state)
-  :returns (mv erp (event pseudo-event-formp) state)
+(define input-files-process-inputs-and-gen-events ((args true-listp)
+                                                   (progp booleanp)
+                                                   state)
+  :returns (mv erp
+               (event pseudo-event-formp)
+               (tunits transunit-ensemblep)
+               state)
   :short "Process the inputs and generate the events."
-  (b* (((reterr) '(_) state)
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The event is an empty @(tsee progn) if
+     this is called via the programmatic interface.
+     We also return the translation unit ensemble
+     resulting from processing the (possibly preprocessed) files."))
+  (b* (((reterr) '(_) (irr-transunit-ensemble) state)
        ((erp paths
              preprocessor
+             preprocess-args-presentp
+             preprocess-extra-args
              process
              const
-             const-files
-             const-preproc
-             const-parsed
-             const-disamb
              gcc
              ienv)
-        (input-files-process-inputs args))
-       ((erp events state) (input-files-gen-events paths
-                                                   preprocessor
-                                                   process
-                                                   const
-                                                   const-files
-                                                   const-preproc
-                                                   const-parsed
-                                                   const-disamb
-                                                   gcc
-                                                   ienv
-                                                   state)))
-    (retok `(progn ,@events) state)))
+        (input-files-process-inputs args progp))
+       ((erp events tunits state)
+        (input-files-gen-events paths
+                                preprocessor
+                                preprocess-args-presentp
+                                preprocess-extra-args
+                                process
+                                const
+                                gcc
+                                ienv
+                                progp
+                                state)))
+    (retok `(progn ,@events) tunits state))
+
+  ///
+
+  (defret transunit-ensemble-unambp-of-input-files-process-inputs-and-gen-events
+    (implies (not erp)
+             (transunit-ensemble-unambp tunits))
+    :hyp (b* (((mv & & options)
+               (partition-rest-and-keyword-args
+                args *input-files-allowed-options*))
+              (process (if (assoc-equal :process options)
+                           (cdr (assoc-equal :process options))
+                         :validate)))
+           (or (equal process :disambiguate)
+               (equal process :validate)))
+    :hints
+    (("Goal"
+      :in-theory
+      (enable input-files-process-inputs.process-to-cdr-assoc-args)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define input-files-fn ((args true-listp) (ctx ctxp) state)
   :returns (mv erp (event pseudo-event-formp) state)
   :short "Event expansion of @(tsee input-files) from the inputs."
-  (b* (((mv erp event state)
-        (input-files-process-inputs-and-gen-events args state))
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We set the flag @('progp) for the programmatic interface to @('nil').
+     We ignore the artifacts returned as additional results."))
+  (b* (((mv erp event & state)
+        (input-files-process-inputs-and-gen-events args nil state))
        ((when erp) (er-soft+ ctx t '(_) "~@0" erp)))
     (value event)))
 
@@ -583,3 +603,91 @@
   (defmacro input-files (&rest args)
     `(make-event-terse
       (input-files-fn ',args 'input-files state))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defxdoc+ input-files-prog
+  :parents (input-files)
+  :short "Programmatic interface to @(tsee input-files)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This (non-event) macro provides
+     a programmatic interface to the functionality of @(tsee input-files).
+     It has the form:")
+   (xdoc::codeblock
+    "(input-files-prog :files             ...  ; no default"
+    "                  :preprocess        ...  ; default nil"
+    "                  :preprocess-args   ...  ; no default"
+    "                  :process           ...  ; default :validate"
+    "                  :gcc               ...  ; default nil"
+    "                  :short-bytes       ...  ; default 2"
+    "                  :int-bytes         ...  ; default 4"
+    "                  :long-bytes        ...  ; default 8"
+    "                  :long-long-bytes   ...  ; default 8"
+    "                  :plain-char-signed ...  ; default nil"
+    "  )")
+   (xdoc::p
+    "This is the same as @(tsee input-files),
+     except that there is no @(':const') input,
+     because this macro does not generate any events.
+     Instead, it returns an "
+    (xdoc::seetopic "acl2::error-value-tuples" "error-value tuple")
+    " consisting of the value that @(tsee input-files)
+     would assign to the generated named constant.
+     These are the results of the error-value tuple, in order:")
+   (xdoc::ul
+    (xdoc::li
+     "@('tunits'):
+      the translation unit ensemble
+      (a value of type @(tsee transunit-ensemble))
+      resulting from processing, according to the @(':process') input,
+      the files read from the paths specified by @(':files')
+      (if @(':preprocess') is @('nil'))
+      or the files resulting from their preprocessing
+      (if @(':preprocess') is not @('nil').")
+    (xdoc::li
+     "@('state'):
+      the ACL2 @(see state)."))
+   (xdoc::p
+    "Note that the macro implicitly takes @(tsee state),
+     so it must be used in a context where @(tsee state) is available."))
+  :order-subtopics t
+  :default-parent t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define input-files-prog-fn ((args true-listp) state)
+  :returns (mv erp (tunits transunit-ensemblep) state)
+  :short "Implementation of @(tsee input-files-prog)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We set the flag @('progp') for the programmatic interface to @('t').
+     We ignore the event returned as result,
+     and just return the artifacts."))
+  (b* (((reterr) (irr-transunit-ensemble) state)
+       ((erp & tunits state)
+        (input-files-process-inputs-and-gen-events args t state)))
+    (retok tunits state))
+
+  ///
+
+  (defret transunit-ensemble-unambp-of-input-files-prog-fn
+    (implies (not erp)
+             (transunit-ensemble-unambp tunits))
+    :hyp (b* (((mv & & options)
+               (partition-rest-and-keyword-args
+                args *input-files-allowed-options*))
+              (process (if (assoc-equal :process options)
+                           (cdr (assoc-equal :process options))
+                         :validate)))
+           (or (equal process :disambiguate)
+               (equal process :validate)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defsection input-files-prog-definition
+  :short "Definition of the @(tsee input-files-prog) macro."
+  (defmacro input-files-prog (&rest args)
+    `(input-files-prog-fn ',args state)))

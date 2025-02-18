@@ -1,7 +1,7 @@
 ; A tool to simplify a term and store the resulting DAG in a constant
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -26,9 +26,10 @@
 (include-book "choose-rules")
 ;(include-book "rules-in-rule-lists")
 ;; The rest of these include-books are to bring in everything included in def-simplified-rules below:
-(include-book "rules1") ; for force-of-non-nil
+(include-book "rules1") ; for BV-ARRAY-CLEAR-OF-BV-ARRAY-CLEAR-SAME
 (include-book "basic-rules") ;for equal-same
 (include-book "boolean-rules-axe") ;for MYIF-BECOMES-BOOLIF-AXE
+(include-book "list-rules") ; for EQUAL-CONS-NTH-0-SELF
 (include-book "list-rules-axe") ;for BOOLEANP-OF-ITEMS-HAVE-LEN
 (include-book "bv-rules-axe0")
 (include-book "bv-rules-axe") ;for BVPLUS-COMMUTATIVE-AXE, etc
@@ -52,6 +53,7 @@
 (include-book "rules2") ;for LOOKUP-OF-BVIF -- drop?
 (include-book "kestrel/bv-lists/bv-array-conversions" :dir :system) ; for LIST-TO-BV-ARRAY
 (include-book "kestrel/bv-lists/array-patterns" :dir :system)
+(include-book "kestrel/bv-lists/bv-array-clear" :dir :system)
 (include-book "kestrel/utilities/mv-nth" :dir :system) ; for MV-NTH-OF-CONS-SAFE
 (include-book "kestrel/utilities/fix" :dir :system)
 (include-book "kestrel/arithmetic-light/less-than" :dir :system)
@@ -66,6 +68,7 @@
 (include-book "kestrel/lists-light/append" :dir :system)
 (include-book "kestrel/lists-light/len" :dir :system)
 (include-book "kestrel/lists-light/nth" :dir :system)
+(include-book "kestrel/lists-light/reverse-list" :dir :system)
 (include-book "kestrel/lists-light/subrange" :dir :system)
 (include-book "kestrel/lists-light/rules2" :dir :system) ; for EQUAL-OF-NTHCDR-AND-CONS-OF-NTH
 (include-book "kestrel/booleans/booleans" :dir :system)

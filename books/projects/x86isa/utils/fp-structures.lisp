@@ -38,7 +38,6 @@
 
 (in-package "X86ISA")
 
-(include-book "utilities")
 (include-book "basic-structs")
 
 ;; We do these once, here, to avoid each defbitstruct below doing them locally:
@@ -83,6 +82,8 @@
         (unsigned-byte-p 16 x))
    :rule-classes nil))
 
+(in-theory (disable unsigned-byte-p-when-fp-statusbits-p))
+
 (defbitstruct mxcsrBits
   :short "The MXCSR Control and Status Register."
   :long "<p>Source: Intel Manual, Dec-23, Vol. 1, Section 10.2.3.</p>"
@@ -117,5 +118,7 @@
    (iff (mxcsrBits-p x)
         (unsigned-byte-p 32 x))
    :rule-classes nil))
+
+(in-theory (disable unsigned-byte-p-when-mxcsrbits-p))
 
 ;; ----------------------------------------------------------------------

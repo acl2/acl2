@@ -1,6 +1,6 @@
 ; Rules about the ACL2 state
 ;
-; Copyright (C) 2021-2023 Kestrel Institute
+; Copyright (C) 2021-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,8 +15,6 @@
 ;; TODO: Add missing theorems here
 
 ;; See also books/system/update-state.lisp.
-
-(local (include-book "kestrel/lists-light/len" :dir :system))
 
 ;move?
 (defthm written-files-p-of-cons
@@ -147,7 +145,11 @@
                   (len state)))
   :hints (("Goal" :in-theory (enable update-written-files state-p1))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Conjuncts of state-p
+
+;; TODO: Think about the rule-classes for these:
 
 (defthm read-files-p-of-read-files
   (implies (state-p1 state)

@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -70,7 +70,7 @@
      see that topic for more information,
      also on the allowed ranges and relative constraints.
      We also need a flag saying whether the plain @('char') type
-     has the same range as @('signed char') or not [C:6.2.5/15];
+     has the same range as @('signed char') or not [C17:6.2.5/15];
      if the flag is false, it has the same range as @('unsigned char')."))
   ((short-bytes pos
                 :reqfix (if (and (<= short-bytes int-bytes)

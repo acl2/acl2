@@ -1,6 +1,6 @@
 ; Top-level book for Kestrel x86 library
 ;
-; Copyright (C) 2021-2024 Kestrel Institute
+; Copyright (C) 2021-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,7 +14,12 @@
 (include-book "parsers/top")
 (include-book "tools/top")
 
+;; These could be added to books/projects/x86isa:
 (include-book "linear-memory")
+(include-book "canonical")
+(include-book "state")
+
+
 (include-book "register-readers-and-writers32")
 (include-book "register-readers-and-writers64")
 (include-book "readers-and-writers64")
@@ -22,8 +27,8 @@
 (include-book "conditions")
 
 (include-book "support-bv")
-(include-book "canonical")
 (include-book "support-x86")
+(include-book "x86-changes")
 (include-book "support32")
 (include-book "read-over-write-rules")
 (include-book "write-over-write-rules")
@@ -32,8 +37,8 @@
 (include-book "read-over-write-rules64")
 (include-book "write-over-write-rules64")
 (include-book "read-and-write")
+(include-book "read-bytes-and-write-bytes")
 (include-book "bytes-loadedp")
-(include-book "support0")
 (include-book "support2")
 
 (include-book "assumptions")
@@ -43,3 +48,5 @@
 (include-book "run-until-return")
 (include-book "separate")
 (include-book "support")
+
+(include-book "disjoint")

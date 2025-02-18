@@ -1,6 +1,6 @@
 ; C Library
 ;
-; Copyright (C) 2024 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2025 Kestrel Institute (http://www.kestrel.edu)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -107,7 +107,7 @@
   (b* (((paramdecl paramdecl) paramdecl))
     (paramdeclor-case
       paramdecl.decl
-      :declor (omap::update (declor-get-ident paramdecl.decl.unwrap)
+      :declor (omap::update (declor->ident paramdecl.decl.unwrap)
                             (paramdecl-fix paramdecl)
                             nil)
       :otherwise nil)))
@@ -160,14 +160,12 @@
      (b* (((when (endp initdeclors))
            nil)
           ((initdeclor initdeclor) (first initdeclors))
-          (ident? (declor-get-ident initdeclor.declor)))
-       (if ident?
-           (omap::update
-             ident?
-             (make-paramdecl
-               :spec declspecs
-               :decl (paramdeclor-declor initdeclor.declor))
-             (decl-to-ident-paramdecl-map0 declspecs (rest initdeclors)))
+          (ident (declor->ident initdeclor.declor)))
+       (omap::update
+         ident
+         (make-paramdecl
+           :spec declspecs
+           :decl (paramdeclor-declor initdeclor.declor))
          (decl-to-ident-paramdecl-map0 declspecs (rest initdeclors))))
      :verify-guards :after-returns)))
 
@@ -329,7 +327,7 @@
       (dirdeclor-case
         fundef.declor.direct
         :function-params
-        (b* (((unless (equal target-fn (dirdeclor-get-ident fundef.declor.direct.decl)))
+        (b* (((unless (equal target-fn (c$::dirdeclor->ident fundef.declor.direct.decl)))
               (retok (fundef-fix fundef) nil))
              ((erp new-fn truncated-items)
               (split-fn-block-item-list
@@ -410,7 +408,7 @@
   (b* (((transunit tunit) tunit)
        ((mv er extdecls)
         (split-fn-extdecl-list target-fn new-fn-name tunit.decls split-point)))
-    (mv er (transunit extdecls))))
+    (mv er (make-transunit :decls extdecls :info tunit.info))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
