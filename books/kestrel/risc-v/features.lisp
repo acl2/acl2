@@ -55,7 +55,7 @@
   (:64 ())
   :pred feat-bitsp)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defprod feat
   :short "Fixtype of RISC-V feature choices."
@@ -70,3 +70,18 @@
     "More features will be added later."))
   ((bits feat-bits))
   :pred featp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define feat->xlen ((feat featp))
+  :returns (xlen posp :rule-classes (:rewrite :type-prescription))
+  :short "The @('XLEN') parameter [ISA:1.3]."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the register width, depending on the choice of base."))
+  (b* (((feat feat) feat))
+    (feat-bits-case feat.bits
+                    :32 32
+                    :64 64))
+  :hooks (:fix))
