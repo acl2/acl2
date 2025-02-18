@@ -822,12 +822,16 @@
     x86isa::vex->pp$inline
     x86isa::vex->r$inline
     x86isa::vex->w$inline
+    x86isa::vex->b$inline
+    x86isa::vex->x$inline
 
     x86isa::vex->vvvv
     x86isa::vex->l
     x86isa::vex->pp
     x86isa::vex->r
     x86isa::vex->w
+    x86isa::vex->b
+    x86isa::vex->x
 
     x86isa::x86-illegal-instruction
     x86isa::x86-step-unimplemented
@@ -1132,8 +1136,10 @@
 
     x86isa::64-bit-mode-two-byte-opcode-modr/m-p
 
-    x86isa::simd-sub-spec
     x86isa::simd-add-spec
+    x86isa::simd-sub-spec
+
+    x86isa::convert-arith-operation-to-rtl-op$inline
     ))
 
 (defconst *symbols-from-acl2-package*
