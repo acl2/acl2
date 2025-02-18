@@ -74,5 +74,6 @@
                           ubyte32-listp
                           ubyte64-list
                           ubyte64-listp
+                          unsigned-byte-fix
                           unsigned-byte-listp
                           bitops::part-select)))
