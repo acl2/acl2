@@ -22,6 +22,7 @@
                         '(bool
                           defxdoc+
                           impossible
+                          lnfix
                           logext
                           loghead
                           nat
