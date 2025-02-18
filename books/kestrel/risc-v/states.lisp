@@ -49,18 +49,17 @@
      Restrictions based on features are formalized in @(see stat-validp).")
    (xdoc::p
     "The processor state always includes the @('x<i>') registers,
-     whose number and size depends on the choice of base:
-     for RV32I, there are 32 registers of 32 bits each [ISA:2.1];
-     for RV64I, there are 32 registers of 64 bits each [ISA:4.1];
-     for RV32E, there are 16 registers of 32 bits each [ISA:3.1];
-     for RV64E, there are 16 registers of 64 bits each [ISA:3.1];
-     and for the upcoming RV128I, the registers are 128-bit [ISA:5].
+     whose number and size depends on the choice of base.
+     The size in bits is @('XLEN') [ISA:1.3],
+     which is 32 in RV32I/RV32E, or 64 in RV64I/RV64E;
+     it is 128 in the upcoming RV128I [ISA:5].
+     The number is 32 or 16,
+     based on whether the base is RV32I/RV64I or RV32R/RV64E.
      Thus, here we generically define the @('x') register file
-     as a list of natural numbers.
-     In [ISA], @('XLEN') refers to the size of the registers in bits.")
+     as a list of natural numbers.")
    (xdoc::p
-    "The program counter @('pc') has the same size as the @('x') registers,
-     based on the choice of base.
+    "The program counter @('pc') has the same size @('XLEN')
+     as the @('x') registers.
      Thus, we generically define it as a natural number here.")
    (xdoc::p
     "The memory component models the whole addressable space,
