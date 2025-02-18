@@ -84,7 +84,17 @@
     (feat-bits-case feat.bits
                     :32 32
                     :64 64))
-  :hooks (:fix))
+  :hooks (:fix)
+
+  ///
+
+  (defret feat->xlen-when-32-bits
+    (equal xlen 32)
+    :hyp (feat-bits-case (feat->bits feat) :32))
+
+  (defret feat->xlen-when-64-bits
+    (equal xlen 64)
+    :hyp (feat-bits-case (feat->bits feat) :64)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
