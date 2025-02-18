@@ -14,6 +14,8 @@
 (include-book "states32")
 (include-book "states64")
 
+(include-book "kestrel/utilities/unsigned-byte-fixing" :dir :system)
+
 (local (include-book "kestrel/utilities/nfix" :dir :system))
 (local (include-book "std/typed-lists/nat-listp" :dir :system))
 
@@ -117,25 +119,77 @@
     "The size of the memory is @('2^XLEN'),
      so we constrain the length of the list to be that."))
   (b* (((stat stat) stat)
-       ((feat feat) feat))
-    (and (feat-bits-case feat.bits
-                         :32 (ubyte32-listp stat.xregs)
-                         :64 (ubyte64-listp stat.xregs))
-         (equal (len stat.xregs)
-                (1- (feat->xnum feat)))
-         (feat-bits-case feat.bits
-                         :32 (ubyte32p stat.pc)
-                         :64 (ubyte64p stat.pc))
-         (equal (len stat.memory)
-                (expt 2 (feat->xlen feat)))))
-  :hooks (:fix))
+       (xlen (feat->xlen feat))
+       (xnum (feat->xnum feat)))
+    (and (unsigned-byte-listp xlen stat.xregs)
+         (equal (len stat.xregs) xnum)
+         (unsigned-byte-p xlen stat.pc)
+         (equal (len stat.memory) (expt 2 xlen))))
+  :hooks (:fix)
+
+  ///
+
+  (defrule unsigned-byte-listp-of-stat->xregs
+    (implies (stat-validp stat feat)
+             (unsigned-byte-listp (feat->xlen feat)
+                                  (stat->xregs stat))))
+
+  (defrule true-listp-of-stat->xregs
+    (implies (stat-validp stat feat)
+             (true-listp (stat->xregs stat)))
+    :rule-classes :type-prescription)
+
+  (defrule ubyte32-listp-of-stat->xregs
+    (implies (and (stat-validp stat feat)
+                  (feat-bits-case (feat->bits feat) :32))
+             (ubyte32-listp (stat->xregs stat)))
+    :hints
+    (("Goal"
+      :in-theory (enable acl2::ubyte32-listp-rewrite-unsigned-byte-listp))))
+
+  (defrule ubyte64-listp-of-stat->xregs
+    (implies (and (stat-validp stat feat)
+                  (feat-bits-case (feat->bits feat) :64))
+             (ubyte64-listp (stat->xregs stat)))
+    :hints
+    (("Goal"
+      :in-theory (enable acl2::ubyte64-listp-rewrite-unsigned-byte-listp))))
+
+  (defrule len-of-stat->xregs
+    (implies (stat-validp stat feat)
+             (equal (len (stat->xregs stat))
+                    (feat->xnum feat)))
+    :hints (("Goal" :in-theory (enable feat->xnum))))
+
+  (defrule unsigned-byte-p-of-stat->pc
+    (implies (stat-validp stat feat)
+             (unsigned-byte-p (feat->xlen feat)
+                              (stat->pc stat))))
+
+  (defrule ubyte32p-of-stat->pc
+    (implies (and (stat-validp stat feat)
+                  (feat-bits-case (feat->bits feat) :32))
+             (ubyte32p (stat->pc stat)))
+    :hints (("Goal" :in-theory (enable ubyte32p))))
+
+  (defrule ubyte64p-of-stat->pc
+    (implies (and (stat-validp stat feat)
+                  (feat-bits-case (feat->bits feat) :64))
+             (ubyte64p (stat->pc stat)))
+    :hints (("Goal" :in-theory (enable ubyte64p))))
+
+  (defrule len-of-stat->memory
+    (implies (stat-validp stat feat)
+             (equal (len (stat->memory stat))
+                    (expt 2 (feat->xlen feat))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define read-xreg-unsigned ((reg natp) (stat statp) (feat featp))
   :guard (and (stat-validp stat feat)
               (< (lnfix reg) (feat->xnum feat)))
-  :returns (val natp :rule-classes (:rewrite :type-prescription))
+  :returns (val (unsigned-byte-p (feat->xlen feat) val)
+                :hints (("Goal" :in-theory (enable feat->xlen))))
   :short "Read an unsigned integer from an @('x') register."
   :long
   (xdoc::topstring
@@ -149,26 +203,23 @@
      @('x0') is not modeled explicitly, since it is hardwired to 0.
      Thus, the 0 index is treated separately;
      the other cases are handled by decrementing the index by 1."))
-  (declare (ignore feat))
   (b* ((reg (lnfix reg)))
     (if (= reg 0)
         0
-      (lnfix (nth (1- reg) (stat->xregs stat)))))
-  :guard-hints (("Goal" :in-theory (enable feat->xnum stat-validp)))
+      (acl2::unsigned-byte-fix (feat->xlen feat)
+                               (nth (1- reg) (stat->xregs stat)))))
   :hooks (:fix)
 
   ///
 
   (defret ubyte32p-of-read-xreg-unsigned
     (ubyte32p val)
-    :hyp (and (feat-bits-case (feat->bits feat) :32)
-              (stat-validp stat feat)
-              (< (lnfix reg) (feat->xnum feat)))
-    :hints (("Goal" :in-theory (enable stat-validp))))
+    :hyp (and (stat-validp stat feat)
+              (feat-bits-case (feat->bits feat) :32)
+              (< (lnfix reg) (feat->xnum feat))))
 
   (defret ubyte64p-of-read-xreg-unsigned
     (ubyte64p val)
-    :hyp (and (feat-bits-case (feat->bits feat) :64)
-              (stat-validp stat feat)
-              (< (lnfix reg) (feat->xnum feat)))
-    :hints (("Goal" :in-theory (enable stat-validp)))))
+    :hyp (and (stat-validp stat feat)
+              (feat-bits-case (feat->bits feat) :64)
+              (< (lnfix reg) (feat->xnum feat)))))
