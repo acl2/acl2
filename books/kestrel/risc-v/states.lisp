@@ -97,12 +97,12 @@
      whether the base is RV32I or RV64I.
      This dictates the size @('XLEN') of the registers, either 32 or 64 bits;
      so we use contrain them to form a list of 32-bit or 64-bit unsigned values.
-     Since we do not model RV32E or RV64E yet,
-     the number of registers is always 32.
+     The number of registers is @(tsee feat->xnum).
      However, since @('x0') is hardwired to 0 [ISA:2.1],
      we do not model that register explicitly:
      we only model @('x1'), @('x2'), etc.;
-     so we constrain the length of the list to be 31.")
+     so we constrain the length of the list to be
+     one less than the number of registers.")
    (xdoc::p
     "Based on @('XLEN'), we constrain the program counter
      to be either 32 or 64 bits.")
@@ -114,7 +114,8 @@
     (and (feat-bits-case feat.bits
                          :32 (ubyte32-listp stat.xregs)
                          :64 (ubyte64-listp stat.xregs))
-         (equal (len stat.xregs) 31)
+         (equal (len stat.xregs)
+                (1- (feat->xnum feat)))
          (feat-bits-case feat.bits
                          :32 (ubyte32p stat.pc)
                          :64 (ubyte64p stat.pc))
