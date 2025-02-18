@@ -54,18 +54,24 @@
      The size in bits is @('XLEN') [ISA:1.3],
      which is 32 in RV32I/RV32E, or 64 in RV64I/RV64E;
      it is 128 in the upcoming RV128I [ISA:5].
-     The number is 32 or 16,
+     The number of registers is 32 or 16,
      based on whether the base is RV32I/RV64I or RV32R/RV64E.
-     Thus, here we generically define the @('x') register file
-     as a list of natural numbers.")
+     In @(tsee stat-validp),
+     we constrain this state component to be
+     a list of appropriate type and appropriate length;
+     thus, here we do not need to constrain it at all.")
    (xdoc::p
     "The program counter @('pc') has the same size @('XLEN')
      as the @('x') registers.
-     Thus, we generically define it as a natural number here.")
+     In @(tsee stat-validp),
+     we constrain this state component to be
+     an integer in the appropriate range;
+     thus, here we do not need to constrain it at all.")
    (xdoc::p
     "The memory component models the whole addressable space,
      which consists of @('2^XLEN') bytes [ISA:1.4].
-     We generically define it as a list of bytes here.")
+     We generically define it as a list of bytes here;
+     in @(tsee stat-validp), we constrain its length.")
    (xdoc::p
     "RISC-V extensions may require the extension of this fixtype,
      with more components that support those extensions.
@@ -76,8 +82,8 @@
      This does not exist in the real machine;
      it is just a modeling convenience.
      We may refine this boolean flag into some richer data type."))
-  ((xregs nat-list)
-   (pc nat)
+  ((xregs)
+   (pc)
    (memory ubyte8-list)
    (error bool))
   :pred statp)
