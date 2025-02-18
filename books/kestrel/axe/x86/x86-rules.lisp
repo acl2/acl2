@@ -178,43 +178,42 @@
 (def-constant-opener sub-sf-spec64)
 (def-constant-opener sub-zf-spec64)
 
-(def-constant-opener x86isa::!rflagsbits->ac$inline)
-(def-constant-opener x86isa::!rflagsbits->af$inline)
-(def-constant-opener x86isa::!rflagsbits->cf$inline)
-(def-constant-opener x86isa::!rflagsbits->of$inline)
-(def-constant-opener x86isa::!rflagsbits->pf$inline)
-(def-constant-opener x86isa::!rflagsbits->sf$inline)
-(def-constant-opener x86isa::!rflagsbits->zf$inline)
+(def-constant-opener !rflagsbits->ac$inline)
+(def-constant-opener !rflagsbits->af$inline)
+(def-constant-opener !rflagsbits->cf$inline)
+(def-constant-opener !rflagsbits->of$inline)
+(def-constant-opener !rflagsbits->pf$inline)
+(def-constant-opener !rflagsbits->sf$inline)
+(def-constant-opener !rflagsbits->zf$inline)
 
-(def-constant-opener x86isa::one-byte-opcode-modr/m-p$inline)
-(def-constant-opener x86isa::two-byte-opcode-modr/m-p$inline)
+(def-constant-opener one-byte-opcode-modr/m-p$inline)
+(def-constant-opener two-byte-opcode-modr/m-p$inline)
 
-(def-constant-opener x86isa::rflagsbits->ac$inline)
-(def-constant-opener x86isa::rflagsbits->af$inline)
-(def-constant-opener x86isa::rflagsbits->cf$inline)
-(def-constant-opener x86isa::rflagsbits->of$inline)
-(def-constant-opener x86isa::rflagsbits->pf$inline)
-(def-constant-opener x86isa::rflagsbits->sf$inline)
-(def-constant-opener x86isa::rflagsbits->zf$inline)
-(def-constant-opener x86isa::rflagsbits->res1$inline)
-(def-constant-opener x86isa::rflagsbits->res2$inline)
-(def-constant-opener x86isa::rflagsbits->res3$inline)
+(def-constant-opener rflagsbits->ac$inline)
+(def-constant-opener rflagsbits->af$inline)
+(def-constant-opener rflagsbits->cf$inline)
+(def-constant-opener rflagsbits->of$inline)
+(def-constant-opener rflagsbits->pf$inline)
+(def-constant-opener rflagsbits->sf$inline)
+(def-constant-opener rflagsbits->zf$inline)
+(def-constant-opener rflagsbits->res1$inline)
+(def-constant-opener rflagsbits->res2$inline)
+(def-constant-opener rflagsbits->res3$inline)
+(def-constant-opener rflagsbits->tf$inline)
+(def-constant-opener rflagsbits->intf$inline)
+(def-constant-opener rflagsbits->df$inline)
+(def-constant-opener rflagsbits->iopl$inline)
+(def-constant-opener rflagsbits->nt$inline)
+(def-constant-opener rflagsbits->res4$inline)
+(def-constant-opener rflagsbits->rf$inline)
+(def-constant-opener rflagsbits->vm$inline)
+(def-constant-opener rflagsbits->vif$inline)
+(def-constant-opener rflagsbits->vip$inline)
+(def-constant-opener rflagsbits->id$inline)
+(def-constant-opener rflagsbits->res5$inline)
 
-(def-constant-opener x86isa::rflagsbits->tf$inline)
-(def-constant-opener x86isa::rflagsbits->intf$inline)
-(def-constant-opener x86isa::rflagsbits->df$inline)
-(def-constant-opener x86isa::rflagsbits->iopl$inline)
-(def-constant-opener x86isa::rflagsbits->nt$inline)
-(def-constant-opener x86isa::rflagsbits->res4$inline)
-(def-constant-opener x86isa::rflagsbits->rf$inline)
-(def-constant-opener x86isa::rflagsbits->vm$inline)
-(def-constant-opener x86isa::rflagsbits->vif$inline)
-(def-constant-opener x86isa::rflagsbits->vip$inline)
-(def-constant-opener x86isa::rflagsbits->id$inline)
-(def-constant-opener x86isa::rflagsbits->res5$inline)
-(def-constant-opener x86isa::rflagsbits$inline)
-
-(def-constant-opener x86isa::!rflagsbits->af$inline)
+(def-constant-opener rflagsbits$inline)
+(def-constant-opener rflagsbits-fix$inline)
 
 ;; For now, I'm trying just always opening these:
 ;; See books/projects/x86isa/utils/basic-structs.lisp
@@ -242,14 +241,12 @@
 ;; (def-constant-opener x86isa::54bits-fix)
 ;; (def-constant-opener x86isa::64bits-fix)
 
-(def-constant-opener acl2::expt2$inline)
+(def-constant-opener expt2$inline)
 
-(def-constant-opener X86ISA::RFLAGSBITS-FIX$INLINE)
+(def-constant-opener feature-flags); needed?
 
-(def-constant-opener x86isa::feature-flags); needed?
-
-(def-constant-opener x86isa::32-bit-mode-two-byte-opcode-modr/m-p)
-(def-constant-opener x86isa::32-bit-compute-mandatory-prefix-for-two-byte-opcode$inline)
+(def-constant-opener 32-bit-mode-two-byte-opcode-modr/m-p)
+(def-constant-opener 32-bit-compute-mandatory-prefix-for-two-byte-opcode$inline)
 
 ;; TODO: Think about whether to use regular rules, constant opener rules, or build into the evaluator.
 
@@ -454,7 +451,7 @@
                                 (read-*ip proc-mode x86))) ; could drop, but this clarifies failures
          ;; ;; Requires us to be able to read the byte at the RIP:
          (poor-mans-quotep (let ((proc-mode (x86-operation-mode x86)))
-                             (mv-nth 1 (x86isa::rme08$inline proc-mode (read-*ip proc-mode x86) 1 :x x86))))
+                             (mv-nth 1 (rme08$inline proc-mode (read-*ip proc-mode x86) 1 :x x86))))
          ;; (poor-mans-quotep (let ((proc-mode (x86-operation-mode x86)))
          ;;                     (read 1 (read-*ip proc-mode x86) x86)))
          ;; (poor-mans-quotep (read 1 (rip x86) x86))
@@ -467,7 +464,7 @@
   (implies (and (canonical-address-p (read-*ip 0 x86)) ; could drop, but this clarifies failures
                 ;; ;; Requires us to be able to read the byte at the RIP:
                 ;; todo: simplify this:
-                (poor-mans-quotep (mv-nth 1 (x86isa::rme08$inline 0 (read-*ip 0 x86) 1 :x x86)))
+                (poor-mans-quotep (mv-nth 1 (rme08$inline 0 (read-*ip 0 x86) 1 :x x86)))
                 ;; (poor-mans-quotep (let ((proc-mode (x86-operation-mode x86)))
                 ;;                     (read 1 (read-*ip proc-mode x86) x86)))
                 ;; (poor-mans-quotep (read 1 (rip x86) x86))
