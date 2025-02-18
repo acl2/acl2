@@ -412,8 +412,10 @@
     x86isa::idiv-spec-32
     x86isa::idiv-spec-64
 
-    ;; do we want to include stuff like this?
-    x86isa::x86-one-byte-opcode-modr/m-p$inline
+    x86isa::one-byte-opcode-modr/m-p$inline
+    x86isa::two-byte-opcode-modr/m-p$inline
+    x86isa::32-bit-mode-two-byte-opcode-modr/m-p
+    x86isa::32-bit-compute-mandatory-prefix-for-two-byte-opcode$inline
 
     ;; my x86 stuff (what package should this stuff be in?)
     x86isa::lift-subroutine
@@ -516,6 +518,7 @@
     x86isa::rflagsbits->vip
     x86isa::rflagsbits->id
     x86isa::rflagsbits->res5
+    x86isa::rflagsbits$inline
 
     x86isa::rflagsbits->cf$inline
     x86isa::rflagsbits->res1$inline
@@ -1128,6 +1131,9 @@
     x86isa::!zmmi-size$inline
 
     x86isa::64-bit-mode-two-byte-opcode-modr/m-p
+
+    x86isa::simd-sub-spec
+    x86isa::simd-add-spec
     ))
 
 (defconst *symbols-from-acl2-package*
@@ -1135,6 +1141,8 @@
     loghead$inline
     logapp
     logmask
+
+    expt2$inline ; from IHS
 
     bvchop
     logext
