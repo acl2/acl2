@@ -734,3 +734,19 @@
   (equal (read n ad (write n2 ad2 val (clear-flags-retract x86)))
          (read n ad (write n2 ad2 val x86)))
   :hints (("Goal" :in-theory (enable clear-flags-retract))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Reorders writes to try to bring adjacent writes together:
+(defthm write-of-write-diff-bv-axe
+  (implies (and (axe-syntaxp (addresses-out-of-orderp ad1 ad2 dag-array))
+                (bvle 48 n2 (bvminus 48 ad1 ad2))
+                (bvle 48 n1 (bvminus 48 ad2 ad1))
+                (unsigned-byte-p 48 n2) ;; (natp n2)
+                (unsigned-byte-p 48 n1) ;; (natp n1)
+                (integerp ad2)
+                (integerp ad1))
+           (equal (write n1 ad1 val1 (write n2 ad2 val2 x86))
+                  (write n2 ad2 val2 (write n1 ad1 val1 x86))))
+  :hints (("Goal" :use write-of-write-diff-bv
+           :in-theory (disable write-of-write-diff-bv))))

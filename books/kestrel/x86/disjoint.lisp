@@ -15,9 +15,9 @@
 ;(include-book "projects/x86isa/proofs/utilities/general-memory-utils" :dir :system) ; reduce?  and get rid of ttags
 (include-book "kestrel/bv/bvlt" :dir :system)
 
-;; Defines it means for AD to be in the region of size LEN starting at
+;; Defines what it means for AD to be in the region of size LEN starting at
 ;; START-AD.  Note that the region may wrap around the end of the address
-;; space, so AD may be in the region even if it is less that START-AD.
+;; space, so AD may be in the region even if it is less than START-AD.
 (defund in-regionp (ad len start-ad)
   (declare (xargs :guard (and (unsigned-byte-p 48 ad)
                               (unsigned-byte-p 48 len) ; can't be 2^48 as the len gets chopped to 48 bits
