@@ -892,14 +892,15 @@
 
 ;    x86isa::next-byte-fix
 ;    x86isa::opr-fix
-    x86isa::modr/m->mod$inline
-    x86isa::modr/m->reg$inline
-    x86isa::modr/m->r/m$inline
-    x86isa::modr/m-fix$inline
-    x86isa::sib->scale$inline
-    x86isa::sib->base$inline
-    x86isa::sib->index$inline
-    x86isa::sib-fix$inline
+    ;; todo: just use constant openers for these?
+    modr/m-fix$inline
+    modr/m->mod$inline
+    modr/m->reg$inline
+    modr/m->r/m$inline
+    sib-fix$inline
+    sib->scale$inline
+    sib->base$inline
+    sib->index$inline
 
     x86isa::vex-opcode-modr/m-p$inline-constant-opener
     x86isa::vex-prefixes-map-p$inline-constant-opener
