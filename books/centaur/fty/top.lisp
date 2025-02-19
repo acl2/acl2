@@ -1471,7 +1471,7 @@ to figure out what that proof was and why it failed.</p>
 <p>@('Defflexsum') takes the following keyword arguments, in addition to a list
 of products, which are described further below. Default values
 for keyword arguments may be set by locally adding pairs to the
-@('fty::defflexsum-defaults) @(see table).</p>
+@('fty::defflexsum-defaults') @(see table).</p>
 
 <ul>
 
