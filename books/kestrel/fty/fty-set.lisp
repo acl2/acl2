@@ -232,6 +232,7 @@
        ((mv pre-/// post-///) (std::split-/// name args))
        ((mv kwd-alist rest)
         (extract-keywords name *flexset-keywords* pre-/// nil))
+       (kwd-alist (append kwd-alist (table-alist 'defset-defaults (w state))))
        ((when rest)
         (raise "Malformed flexset: ~x0: after kind should be a keyword/value set."
                name))

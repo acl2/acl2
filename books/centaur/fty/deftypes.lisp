@@ -216,10 +216,10 @@
   (if (atom x)
       nil
     (cons (case (caar x)
-            (defflexsum  (parse-flexsum (cdar x) xvar our-fixtypes fixtypes))
-            (defprod     (parse-defprod (cdar x) xvar our-fixtypes fixtypes))
-            (deftagsum   (parse-tagsum (cdar x) xvar our-fixtypes fixtypes))
-            (defoption   (parse-option (cdar x) xvar our-fixtypes fixtypes))
+            (defflexsum  (parse-flexsum (cdar x) xvar our-fixtypes fixtypes state))
+            (defprod     (parse-defprod (cdar x) xvar our-fixtypes fixtypes state))
+            (deftagsum   (parse-tagsum (cdar x) xvar our-fixtypes fixtypes state))
+            (defoption   (parse-option (cdar x) xvar our-fixtypes fixtypes state))
             (deftranssum (parse-transsum (cdar x) xvar our-fixtypes fixtypes state))
             (deflist     (parse-flexlist (cdar x) xvar our-fixtypes fixtypes state))
             (defalist    (parse-flexalist (cdar x) xvar our-fixtypes fixtypes state))
@@ -972,7 +972,7 @@
   (b* ((our-fixtypes (list (flextype-form->fixtype whole)))
        (fixtype-al (append our-fixtypes
                            (get-fixtypes-alist (w state))))
-       (x (parse-flexsum (cdr whole) nil our-fixtypes fixtype-al))
+       (x (parse-flexsum (cdr whole) nil our-fixtypes fixtype-al state))
        (x (if (or (flexsum->recp x)
                   (member :count (cdr whole)))
               x
@@ -1058,7 +1058,7 @@
   (b* ((fixtype (flextype-form->fixtype whole))
        (fixtype-al (cons fixtype
                          (get-fixtypes-alist (w state))))
-       (x (parse-tagsum (cdr whole) nil (list fixtype) fixtype-al))
+       (x (parse-tagsum (cdr whole) nil (list fixtype) fixtype-al state))
        (x (if (or (flexsum->recp x)
                   (member :count (cdr whole)))
               x
@@ -1080,7 +1080,7 @@
   (b* ((fixtype (flextype-form->fixtype whole))
        (fixtype-al (cons fixtype
                          (get-fixtypes-alist (w state))))
-       (x (parse-option (cdr whole) nil (list fixtype) fixtype-al))
+       (x (parse-option (cdr whole) nil (list fixtype) fixtype-al state))
        (x (if (or (flexsum->recp x)
                   (member :count (cdr whole)))
               x
@@ -1130,7 +1130,7 @@
   (b* ((fixtype (flextype-form->fixtype whole))
        (fixtype-al (cons fixtype
                          (get-fixtypes-alist (w state))))
-       (x (parse-defprod (cdr whole) nil (list fixtype) fixtype-al))
+       (x (parse-defprod (cdr whole) nil (list fixtype) fixtype-al state))
        (x (if (member :count (cdr whole))
               x
             (change-flexsum x :count nil))) ;; no count for a single product

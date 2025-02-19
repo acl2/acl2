@@ -65,6 +65,7 @@
        ((mv pre-/// post-///) (std::split-/// name args))
        ((mv kwd-alist rest)
         (extract-keywords name *flexlist-keywords* pre-/// nil))
+       (kwd-alist (append kwd-alist (table-alist 'deflist-defaults (w state))))
        ((when rest)
         (raise "Malformed flexlist: ~x0: after kind should be a keyword/value list."
                name))

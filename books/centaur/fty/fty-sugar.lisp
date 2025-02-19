@@ -398,6 +398,7 @@
     :layout ;; :list, :tree, :fulltree, :alist
     :case
     :base-case-override
+    :short-names
     :prepwork
     :post-pred-events
     :post-fix-events
@@ -460,12 +461,13 @@
                                            ,tag-of-foo-fix)))))
 
 
-(define parse-tagsum (x xvar these-fixtypes fixtypes)
+(define parse-tagsum (x xvar these-fixtypes fixtypes state)
   (b* (((cons name args) x)
        ((unless (symbolp name))
         (raise "Malformed tagsum: ~x0: name must be a symbol" x))
        ((mv pre-/// post-///)     (std::split-/// name args))
        ((mv kwd-alist orig-prods) (extract-keywords name *tagsum-keywords* pre-/// nil))
+       (kwd-alist (append kwd-alist (table-alist 'deftagsum-defaults (w state))))
        (pred   (getarg! :pred  (intern-in-package-of-symbol (cat (symbol-name name) "-P") name) kwd-alist))
        (fix    (getarg! :fix   (intern-in-package-of-symbol (cat (symbol-name name) "-FIX") name) kwd-alist))
        (equiv  (getarg! :equiv (intern-in-package-of-symbol (cat (symbol-name name) "-EQUIV") name) kwd-alist))
@@ -634,13 +636,14 @@
         :hints (("goal" :in-theory (enable ,name tag))))
       (add-to-ruleset std::tag-reasoning '(,tag-of-foo)))))
 
-(define parse-defprod (x xvar our-fixtypes fixtypes)
+(define parse-defprod (x xvar our-fixtypes fixtypes state)
   (b* (((cons name args) x)
        ((unless (symbolp name))
         (raise "Malformed defprod: ~x0: name must be a symbol" x))
        ((mv pre-/// post-///) (std::split-/// name args))
        ((mv kwd-alist fields)
         (extract-keywords name *defprod-keywords* pre-/// nil))
+       (kwd-alist (append kwd-alist (table-alist 'defprod-defaults (w state))))
        ((when (atom fields))
         (raise "In defprod ~x0: List of fields is missing~%" name))
        ((when (consp (cdr fields)))
@@ -767,7 +770,7 @@
                 (and stable-under-simplificationp
                      '(:in-theory (enable ,base.equiv))))))))
 
-(define parse-option (x xvar these-fixtypes fixtypes)
+(define parse-option (x xvar these-fixtypes fixtypes state)
   (b* (((list* name basetype args) x)
        ((unless (symbolp name))
         (raise "Malformed option: ~x0: name must be a symbol" x))
@@ -778,6 +781,7 @@
                          (find-fixtype basetype fixtypes)))
        ((mv pre-/// post-///)     (std::split-/// name args))
        ((mv kwd-alist orig-prods) (extract-keywords name *option-keywords* pre-/// nil))
+       (kwd-alist (append kwd-alist (table-alist 'defoption-defaults (w state))))
        (pred   (getarg! :pred  (intern-in-package-of-symbol (cat (symbol-name name) "-P") name) kwd-alist))
        (fix    (getarg! :fix   (intern-in-package-of-symbol (cat (symbol-name name) "-FIX") name) kwd-alist))
        (equiv  (getarg! :equiv (intern-in-package-of-symbol (cat (symbol-name name) "-EQUIV") name) kwd-alist))
