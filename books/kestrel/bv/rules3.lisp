@@ -93,28 +93,6 @@
                           (<= low newsize))
            :in-theory (e/d (slice UNSIGNED-BYTE-P-FORCED) (anti-slice)))))
 
-;move or drop?
-(defun bind-newsize-to-constant-size (x)
-  (declare (xargs :guard (and (quotep x)
-                              (pseudo-termp x)
-                              (natp (unquote x)))))
-  (acons 'newsize
-         (list 'quote (integer-length (unquote x)))
-         nil))
-
-(defthm bvand-of-constant-tighten
-   (implies (and (syntaxp (and (quotep k)
-                               (< (integer-length (unquote k))
-                                  (unquote size))))
-                 (bind-free (bind-newsize-to-constant-size k) (newsize))
-                 (unsigned-byte-p newsize k)
-                 (< newsize size)
-                 (natp size)
-                 (natp newsize))
-            (equal (bvand size k x)
-                   (bvand newsize k x)))
-   :hints (("Goal" :in-theory (enable bvand-tighten-1))))
-
 ;fixme change to go to bvif?
 (defthmd getbit-of-if
   (equal (getbit n (if test a b))

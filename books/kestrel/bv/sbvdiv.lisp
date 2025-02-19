@@ -74,11 +74,6 @@
          (sbvdiv n x y))
   :hints (("Goal" :in-theory (enable SBVDIV sbvdiv-total truncate))))
 
-(defthm truncate-of-0
-  (equal (truncate i 0)
-         0)
-  :hints (("Goal" :in-theory (enable truncate))))
-
 ;do not remove (helps justify the translation to STP)
 (defthm sbvdiv-of-0-arg1
   (equal (sbvdiv 0 x y)

@@ -1,7 +1,7 @@
 ; New method of generating assumptions for x86 lifting
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2024 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,6 +15,7 @@
 (include-book "assumptions-for-inputs")
 (include-book "assumptions64")  ; reduce?
 (include-book "parsers/elf-tools")
+(include-book "kestrel/utilities/quote" :dir :system)
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/bv-lists/all-unsigned-byte-p2" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
