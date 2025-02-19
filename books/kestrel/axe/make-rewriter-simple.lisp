@@ -661,7 +661,7 @@
                                                    rewrite-stobj (+ -1 count))
                         (prog2$ (and (member-eq rule-symbol (get-monitored-symbols rewrite-stobj))
                                      ;;is it worth printing in this case?
-                                     (progn$ (cw "(Failed to relieve axe-syntaxp hyp: ~x0 for ~x1.)~%" hyp rule-symbol)
+                                     (progn$ (cw "(Failed to relieve axe-syntaxp hyp ~x0 for ~x1.)~%" syntaxp-expr rule-symbol)
                                              ;; (cw "(Alist: ~x0)~%" alist)
                                              ;; (cw "(DAG:~%")
                                              ;; (print-array 'dag-array dag-array (get-dag-len rewrite-stobj2))
@@ -690,7 +690,7 @@
                                                          rewrite-stobj (+ -1 count))))
                           ;; failed to relieve the axe-bind-free hyp:
                           (prog2$ (and (member-eq rule-symbol (get-monitored-symbols rewrite-stobj))
-                                       (cw "(Failed to relieve axe-bind-free hyp: ~x0 for ~x1.)~%" hyp rule-symbol))
+                                       (cw "(Failed to relieve axe-bind-free hyp ~x0 for ~x1.)~%" bind-free-expr rule-symbol))
                                   (mv (erp-nil) nil alist rewrite-stobj2 memoization hit-counts tries limits node-replacement-array))))
                     (if (eq :free-vars fn) ;can't be a work-hard since there are free vars
                         (b* (;; Partially instantiate the hyp (the free vars will remain free):

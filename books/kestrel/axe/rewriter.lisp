@@ -208,8 +208,8 @@
                   (cw "Relieving hyp: ~x0 with alist ~x1.~%" hyp alist))))
        ;; todo: consider using CASE here:
        (if (eq :axe-syntaxp fn)
-           (let* ((syntax-expr (cdr hyp)) ;; strip off the AXE-SYNTAXP
-                  (result (eval-axe-syntaxp-expr-jvm syntax-expr alist dag-array)))
+           (let* ((syntaxp-expr (cdr hyp)) ;; strip off the AXE-SYNTAXP
+                  (result (eval-axe-syntaxp-expr-jvm syntaxp-expr alist dag-array)))
              (if result
                  ;;this hyp counts as relieved
                  (relieve-rule-hyps (rest hyps) (+ 1 hyp-num) alist rule-symbol
@@ -218,7 +218,7 @@
                                     memoization hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state)
                (prog2$ (and (member-eq rule-symbol monitored-symbols)
                             ;;is it worth printing in this case?
-                            (progn$ (cw "(Failed to relieve axe-syntaxp hyp: ~x0 for ~x1.)~%" hyp rule-symbol)
+                            (progn$ (cw "(Failed to relieve axe-syntaxp hyp ~x0 for ~x1.)~%" syntaxp-expr rule-symbol)
                                     ;; (cw "(Alist: ~x0)~%" alist)
                                     ;; (cw "(DAG:~%")
                                     ;; (print-array 'dag-array dag-array dag-len)
@@ -246,7 +246,7 @@
                                           memoization hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth work-hard-when-instructedp tag limits state)))
                  ;; failed to relieve the axe-bind-free hyp:
                  (prog2$ (and (member-eq rule-symbol monitored-symbols)
-                              (cw "(Failed to relieve axe-bind-free hyp: ~x0 for ~x1.)~%" hyp rule-symbol))
+                              (cw "(Failed to relieve axe-bind-free hyp ~x0 for ~x1.)~%" bind-free-expr rule-symbol))
                          (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries memoization limits state))))
            (if (eq :free-vars fn) ;can't be a work-hard
                (b* (((mv instantiated-hyp &)

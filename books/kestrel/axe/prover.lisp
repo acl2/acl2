@@ -292,8 +292,8 @@
             (fn (ffn-symb hyp))
             (- (and (eq :verbose print) (cw " Relieving hyp: ~x0 with alist ~x1.~%" hyp alist))))
          (if (eq :axe-syntaxp fn)
-             (let* ((syntax-expr (cdr hyp)) ;; strip off the AXE-SYNTAXP
-                    (result (eval-axe-syntaxp-expr-basic syntax-expr alist dag-array)))
+             (let* ((syntaxp-expr (cdr hyp)) ;; strip off the AXE-SYNTAXP
+                    (result (eval-axe-syntaxp-expr-basic syntaxp-expr alist dag-array)))
                (if result
                    (relieve-rule-hyps-for-axe-prover
                     (rest hyps) (+ 1 hyp-num) alist rule-symbol ;alist may have been extended by a hyp with free vars
@@ -301,7 +301,7 @@
                     equiv-alist rule-alist nodenums-to-assume-false print hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator
                     work-hard-when-instructedp prover-depth options (+ -1 count) state)
                  (prog2$ (and (member-eq rule-symbol monitored-symbols)
-                              (cw "(Failed. Reason: Failed to relieve axe-syntaxp hyp (number ~x0): ~x1 for ~x2.)~%" hyp-num hyp rule-symbol))
+                              (cw "(Failed. Reason: Failed to relieve axe-syntaxp hyp ~x0 for ~x1.)~%" syntaxp-expr rule-symbol))
                          (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state))))
            (if (eq :axe-bind-free fn)
                (let* ((bind-free-expr (cadr hyp)) ;; strip off the AXE-BIND-FREE
@@ -321,7 +321,7 @@
                                                            work-hard-when-instructedp prover-depth options (+ -1 count) state)))
                    ;; failed to relieve the axe-bind-free hyp:
                    (prog2$ (and (member-eq rule-symbol monitored-symbols)
-                                (cw "(Failed.  Reason: Failed to relieve axe-bind-free hyp (number ~x0): ~x1 for ~x2.)~%" hyp-num hyp rule-symbol))
+                                (cw "(Failed.  Reason: Failed to relieve axe-bind-free hyp ~x0 for ~x1.)~%" bind-free-expr rule-symbol))
                            (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state))))
              (if (eq :free-vars fn) ;can't be a work-hard since there are free vars
                  (b* ((instantiated-hyp (instantiate-hyp-basic-free-vars (cdr hyp) ;strip the :free-vars
