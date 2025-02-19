@@ -243,7 +243,8 @@
            (equal (SBVDIV 32 (BVCAT 2 x 2 2) 4)
                   (bvchop 2 x)))
   :hints (("Goal" :in-theory (e/d (sbvdiv ;bvdiv
-                                          bvcat logapp bvchop-of-logtail-becomes-slice)
+                                   bvcat logapp bvchop-of-logtail-becomes-slice
+                                   truncate-4-hack)
                                   (usb-plus-from-bounds
                                    bvplus-of-*-arg2
                                    times-2-of-bvplus-becomes-bvmult-of-bvplus
@@ -402,21 +403,6 @@
 ;; (defthm <-of-plus-swap-minuses
 ;;   (equal (< (+ (- x) y) (- z))
 ;;          (< (+ z y) x)))
-
-;move up
-(defthmd truncate-becomes-floor-gen4-better-better
-  (implies (and (rationalp i) (rationalp j))
-           (equal (truncate i j)
-                  (if (equal 0 j)
-                      0
-                    (if (equal 0 (mod i j))
-                        (floor i j)
-                      (if (or (and (<= 0 i) (<= 0 j))
-                              (and (< i 0) (< j 0)))
-                          (floor i j)
-                        (+ 1 (floor i j)))))))
-  :hints (("Goal" ;:cases ((equal 0 j))
-           :in-theory (enable mod-=-0 truncate-becomes-floor-gen))))
 
 (defthmd tighten-multiple-of-4
   (implies (and (syntaxp (quotep high))
