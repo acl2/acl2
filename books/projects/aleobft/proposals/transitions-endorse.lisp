@@ -203,7 +203,7 @@
                             (validator-state->endorsed
                              (get-validator-state val systate)))
              (validator-state->endorsed (get-validator-state val systate)))))
-  (in-theory (disable validator-state->proposed-of-endorse-next))
+  (in-theory (disable validator-state->endorsed-of-endorse-next))
 
   (defret validator-state->last-of-endorse-next
     (equal (validator-state->last (get-validator-state val new-systate))
