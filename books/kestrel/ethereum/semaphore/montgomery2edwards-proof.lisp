@@ -17,6 +17,7 @@
 (include-book "std/util/defrule" :dir :system)
 
 (local (include-book "kestrel/prime-fields/prime-fields-rules" :dir :system))
+(local (include-book "kestrel/alists-light/lookup-equal" :dir :system))
 
 ; (depends-on "json/montgomery2edwards.json")
 

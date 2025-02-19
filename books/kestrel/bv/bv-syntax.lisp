@@ -12,7 +12,7 @@
 (in-package "ACL2")
 
 (include-book "kestrel/utilities/forms" :dir :system)
-(include-book "kestrel/utilities/quote" :dir :system) ;reduce?
+(include-book "kestrel/utilities/myquotep" :dir :system) ;reduce?
 
 ;;TODO: Add support here for the rotate ops: leftrotate32 rightrotate32 leftrotate rightrotate.
 

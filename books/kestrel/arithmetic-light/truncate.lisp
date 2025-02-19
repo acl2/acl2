@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function truncate
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,9 +12,10 @@
 (in-package "ACL2")
 
 ;; Note that truncate is less well supported for reasonong than floor, so
-;; consider enabling truncate-becomes-floor.
+;; consider enabling one of the truncate-becomes-floor rules.
 
 (local (include-book "floor"))
+(local (include-book "mod"))
 (local (include-book "numerator"))
 (local (include-book "times"))
 (local (include-book "plus"))
@@ -168,6 +169,22 @@
   :hints (("Goal" :in-theory (enable truncate-becomes-floor-gen1
                                      truncate-becomes-floor-gen2
                                      truncate-becomes-floor-gen3))))
+
+;; This one mentions mod
+;; todo: rename (why the 4?)
+(defthmd truncate-becomes-floor-gen4-better-better
+  (implies (and (rationalp i)
+                (rationalp j))
+           (equal (truncate i j)
+                  (if (equal 0 j)
+                      0
+                    (if (equal 0 (mod i j))
+                        (floor i j)
+                      (if (or (and (<= 0 i) (<= 0 j))
+                              (and (< i 0) (< j 0)))
+                          (floor i j)
+                        (+ 1 (floor i j)))))))
+  :hints (("Goal" :in-theory (enable truncate-becomes-floor-gen))))
 
 (defthm equal-of-truncate-same
   (implies (and (natp i) ;gen

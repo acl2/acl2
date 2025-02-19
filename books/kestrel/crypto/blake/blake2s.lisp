@@ -1,6 +1,6 @@
 ; Formal specification of BLAKE2s
 ;
-; Copyright (C) 2020 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -133,7 +133,7 @@
   (bytes-to-words bytes))
 
 (defthm blockp-of-bytes-to-block
-  (implies (= 64 (len bytes))
+  (implies (= *bb* (len bytes))
            (blockp (bytes-to-block bytes)))
   :hints (("Goal" :in-theory (enable blockp bytes-to-block))))
 
@@ -173,7 +173,7 @@
            (all-unsigned-byte-p 8 (pad-data-bytes data-bytes)))
   :hints (("Goal" :in-theory (enable pad-data-bytes))))
 
-(defthm len-of-data-bytes
+(defthm len-of-pad-data-bytes
   (equal (len (pad-data-bytes data-bytes))
          (let ((ll (len data-bytes)))
            (* *bb* (ceiling ll *bb*))))

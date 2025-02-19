@@ -68,7 +68,7 @@
 (local (include-book "kestrel/arithmetic-light/floor-and-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor-mod-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/even-and-odd" :dir :system))
-(local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
+;(local (include-book "kestrel/arithmetic-light/truncate" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
 (local (include-book "kestrel/arithmetic-light/nonnegative-integer-quotient" :dir :system))
@@ -2170,7 +2170,7 @@
 
 ;logapp-equal-rewrite and equal-*-/-2 seemed to loop
 ;bozo gen
-(defthm truncate-4-hack
+(defthmd truncate-4-hack
   (implies (natp x)
            (equal (truncate x 4)
                   (logtail 2 x)))

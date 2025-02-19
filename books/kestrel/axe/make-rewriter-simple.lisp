@@ -848,7 +848,7 @@
                 (mv (erp-nil) nil rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)
               (b* ((stored-rule (first stored-rules))
                    (print (get-print rewrite-stobj))
-                   ((when (and limits (limit-reachedp stored-rule limits print))) ; todo: just pass in the rule-symbol (extraced below)?
+                   ((when (and limits (limit-reachedp stored-rule limits print))) ; todo: just pass in the rule-symbol (extracted below)?
                     ;; the limit for this rule is reached, so try the next rule:
                     (,try-to-apply-rules-name (rest stored-rules)
                                               args-to-match rewrite-stobj2 memoization hit-counts tries limits node-replacement-array node-replacement-count refined-assumption-alist rewrite-stobj (+ -1 count)))
@@ -5544,9 +5544,8 @@
                :hints (("Goal" :use ,(pack$ simplify-dag-core-name '-return-type)
                :in-theory (e/d (car-of-car-when-pseudo-dagp-cheap) (,(pack$ simplify-dag-core-name '-return-type))))))
 
-    ;; Returns (mv erp dag-or-quotep).
+    ;; Returns (mv erp dag-or-quotep limits).
     ;; TODO: Make a version that returns an array (call crunch-dag instead of drop-non-supporters-array-with-name)?
-    ;; TODO: Return the limits?
     ;; Only the first 5 arguments affect soundness.
     (defund ,simplify-dag-name (dag
                                 assumptions
@@ -5588,9 +5587,9 @@
                                                      (natp))))))
       (b* ((top-nodenum (top-nodenum dag))
            ((when (not (< top-nodenum *max-1d-array-length*)))
-            (mv :dag-too-big nil))
+            (mv :dag-too-big nil limits))
            ;; If we are to memoize, start with a rewrite that memoizes but does not use internal contexts (for soundness):
-           ;; This may be critical to performance.
+           ;; This step (with memoization) may be critical to performance.  This steps may return a reduced LIMITS value.
            ((mv erp dag-or-quotep limits)
             (if (not memoizep)
                 (mv (erp-nil) dag limits)
@@ -5607,15 +5606,15 @@
                    (- (and print (cw ")~%"))) ; balances "(Simplifying DAG with memoization ..."
                    )
                 (mv (erp-nil) dag-or-quotep limits))))
-           ((when erp) (mv erp nil))
-           ((when (myquotep dag-or-quotep)) (mv (erp-nil) dag-or-quotep))
+           ((when erp) (mv erp nil limits))
+           ((when (myquotep dag-or-quotep)) (mv (erp-nil) dag-or-quotep limits))
            (dag dag-or-quotep) ; it was not a quotep, so we rename it
            )
         ;; Continue (usually) with a pass that does use contexts (and does not memoize):
         (if (and memoizep ; means we already simplified above
                  (not (dag-has-internal-contextsp dag)) ; no context info to use
                  )
-            (mv (erp-nil) dag)
+            (mv (erp-nil) dag limits)
           (b* ((top-nodenum (top-nodenum dag))
                (dag-len (+ 1 top-nodenum))
                (- (and print (cw "(Simplifying DAG with internal contexts and no memoization (~x0 nodes, ~x1 assumptions):~%" dag-len (len assumptions))))
@@ -5627,16 +5626,14 @@
                 (make-dag-indices 'dag-array dag-array 'dag-parent-array dag-len))
                (internal-context-array (make-full-context-array-with-parents 'dag-array dag-array dag-len dag-parent-array))
                ;; Do the rewriting:
-               ((mv erp dag-or-quotep
-                    & ;limits
-                    )
+               ((mv erp dag-or-quotep limits)
                 (,simplify-dag-core-name dag assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist internal-context-array rule-alist interpreted-function-alist known-booleans normalize-xors limits
                                          nil ;memoizep (would be unsound)
                                          count-hits print monitored-symbols fns-to-elide))
-               ((when erp) (mv erp nil))
+               ((when erp) (mv erp nil limits))
                (- (and print (cw ")~%"))) ; balances "(Simplifying DAG with internal contexts ..."
                )
-            (mv (erp-nil) dag-or-quotep)))))
+            (mv (erp-nil) dag-or-quotep limits)))))
 
     (defthm ,(pack$ simplify-dag-name '-return-type)
       (implies (and (not (myquotep (mv-nth 1 ,call-of-simplify-dag)))
@@ -5656,6 +5653,7 @@
                (and (pseudo-dagp (mv-nth 1 ,call-of-simplify-dag))
                     (<= (len (mv-nth 1 ,call-of-simplify-dag))
                         *max-1d-array-length*) ;; todo
+                    (rule-limitsp (mv-nth 2 ,call-of-simplify-dag))
                     ))
       :hints (("Goal" :do-not '(generalize eliminate-destructors)
                :in-theory (e/d (,simplify-dag-name
@@ -6123,7 +6121,8 @@
            ((mv erp rule-alist) (make-rule-alist rules (w state)))
            ((when erp) (mv erp nil state))
            ;; Simplify the DAG:
-           ((mv erp dag-or-quotep) ,call-of-simplify-dag)
+           ((mv erp dag-or-quotep &) ; todo: use the limits?
+            ,call-of-simplify-dag)
            ((when erp) (mv erp nil state)))
         (mv (erp-nil)
             `(progn (defconst ,name ',dag-or-quotep)

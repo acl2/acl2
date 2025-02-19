@@ -1,7 +1,7 @@
 ; Limiting how many times a rule can fire
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -11,6 +11,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "ACL2")
+
+;; TODO: Consider using a property list world for this
 
 (include-book "stored-rules")
 (include-book "kestrel/typed-lists-light/all-integerp" :dir :system)
@@ -99,12 +101,12 @@
   (let* ((rule-symbol (stored-rule-symbol stored-rule))
          (res (assoc-eq rule-symbol limits)))
     (if (not res)
-        limits
+        limits ; no limit for this rule
       (let ((limit (cdr res)))
         ;; We use acons-unique here, to keep the LIMITS from growing.  Note
         ;; that limit-reachedp may be called many times, so we want to keep the
         ;; LIMITS small.
-        (acons-unique rule-symbol (+ -1 limit) limits)))))
+        (acons-unique rule-symbol (+ -1 (the integer limit)) limits)))))
 
 (defthm rule-limitsp-of-decrement-rule-limit
   (implies (and (rule-limitsp limits)

@@ -1203,10 +1203,11 @@
 
 (defthm add-to-*ip-of-*64-bit-mode*
   (equal (x86isa::add-to-*ip *64-bit-mode* x86isa::*ip x86isa::delta x86)
-         (if (canonical-address-p (+ x86isa::*ip x86isa::delta))
-             (mv nil (+ x86isa::*ip x86isa::delta))
-           (mv (list :non-canonical-instruction-pointer (+ x86isa::*ip x86isa::delta))
-               0)))
+         (let ((sum (+ x86isa::*ip x86isa::delta)))
+           (if (canonical-address-p sum)
+               (mv nil sum)
+             (mv (list :non-canonical-instruction-pointer sum)
+                 0))))
   :hints (("Goal" :in-theory (enable x86isa::add-to-*ip))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

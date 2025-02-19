@@ -94,7 +94,8 @@
 (acl2::ensure-rules-known (unroller-rules32))
 (acl2::ensure-rules-known (unroller-rules64))
 (acl2::ensure-rules-known (assumption-simplification-rules))
-(acl2::ensure-rules-known (step-opener-rules))
+(acl2::ensure-rules-known (step-opener-rules32))
+(acl2::ensure-rules-known (step-opener-rules64))
 
 ;move
 ;; We often want these for ACL2 proofs, but not for 64-bit examples
@@ -281,13 +282,14 @@
 ;; STEP-INCREMENT steps at a time, until the run finishes, STEPS-LEFT is
 ;; reduced to 0, or a loop or an unsupported instruction is detected.
 ;; Returns (mv erp result-dag-or-quotep state).
-(defun repeatedly-run (steps-left step-increment dag rule-alist pruning-rule-alist assumptions rules-to-monitor use-internal-contextsp prune count-hits print print-base untranslatep memoizep total-steps state)
+(defun repeatedly-run (steps-left step-increment dag rule-alist pruning-rule-alist assumptions 64-bitp rules-to-monitor use-internal-contextsp prune  count-hits print print-base untranslatep memoizep total-steps state)
   (declare (xargs :guard (and (natp steps-left)
                               (acl2::step-incrementp step-increment)
                               (acl2::pseudo-dagp dag)
                               (acl2::rule-alistp rule-alist)
                               (acl2::rule-alistp pruning-rule-alist)
                               (pseudo-term-listp assumptions)
+                              (booleanp 64-bitp)
                               (symbol-listp rules-to-monitor)
                               (booleanp use-internal-contextsp)
                               (or (eq nil prune)
@@ -317,7 +319,12 @@
          ;;                       (cw "~X01" dag nil)
          ;;                       (cw ")~%"))))
          (limits nil) ; todo: call this empty-rule-limits?
-         (limits (acl2::add-limit-for-rules (step-opener-rules) steps-for-this-iteration limits)) ; don't recompute for each small run?
+
+         (limits (acl2::add-limit-for-rules (if 64-bitp
+                                                (step-opener-rules64)
+                                              (step-opener-rules32))
+                                            steps-for-this-iteration
+                                            limits)) ; don't recompute for each small run?
          ((mv erp dag-or-quote state)
           ;; (if (eq :legacy rewriter)
           ;;     (acl2::simp-dag dag ; todo: call the basic rewriter, but it needs to support :use-internal-contextsp
@@ -333,7 +340,7 @@
           ;;                     :limits limits
           ;;                     :memoizep memoizep
           ;;                     :check-inputs nil)
-            (mv-let (erp result)
+            (mv-let (erp result limits)
               (acl2::simplify-dag-x86 dag
                                       assumptions
                                       rule-alist
@@ -347,6 +354,7 @@
                                       rules-to-monitor
                                       '(program-at) ; fns-to-elide
                                       )
+              (declare (ignore limits)) ; todo: use the limits!
               (mv erp result state))
             ;)
             )
@@ -426,7 +434,7 @@
                 ;;                     :limits limits
                 ;;                     :memoizep memoizep
                 ;;                     :check-inputs nil)
-                  (mv-let (erp result)
+                  (mv-let (erp result limits)
                     (acl2::simplify-dag-x86 dag
                                             assumptions
                                             rule-alist
@@ -440,6 +448,7 @@
                                             rules-to-monitor
                                             '(program-at code-segment-assumptions32-for-code) ; fns-to-elide
                                             )
+                    (declare (ignore limits)) ; todo: use the limits?
                     (mv erp result state))
                   ;)
                   )
@@ -476,7 +485,7 @@
                    state)))
           (repeatedly-run (- steps-left steps-for-this-iteration)
                           step-increment
-                          dag rule-alist pruning-rule-alist assumptions rules-to-monitor use-internal-contextsp prune count-hits print print-base untranslatep memoizep
+                          dag rule-alist pruning-rule-alist assumptions 64-bitp rules-to-monitor use-internal-contextsp prune count-hits print print-base untranslatep memoizep
                           total-steps
                           state))))))
 
@@ -489,9 +498,10 @@
                     )))
 
 ;; Returns (mv erp assumptions assumption-rules state)
-(defund simplify-assumptions (assumptions extra-assumption-rules 64-bitp count-hits state)
+(defund simplify-assumptions (assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits state)
   (declare (xargs :guard (and (pseudo-term-listp assumptions)
                               (symbol-listp extra-assumption-rules)
+                              (symbol-listp remove-assumption-rules)
                               (booleanp 64-bitp)
                               (acl2::count-hits-argp count-hits)
                               (acl2::ilks-plist-worldp (w state)))
@@ -499,14 +509,16 @@
   (b* ((- (cw "(Simplifying assumptions...~%"))
        ((mv assumption-simp-start-real-time state) (get-real-time state)) ; we use wall-clock time so that time in STP is counted
        ;; todo: optimize):
-       (assumption-rules (append extra-assumption-rules
-                                 (new-normal-form-rules-common)
-                                 (assumption-simplification-rules)
-                                 (if 64-bitp
-                                     ;; needed to match the normal forms used during lifting:
-                                     (new-normal-form-rules64)
-                                   nil ; todo: why not use (new-normal-form-rules32)?
-                                   )))
+       (assumption-rules (set-difference-equal
+                           (append extra-assumption-rules
+                                   (new-normal-form-rules-common)
+                                   (assumption-simplification-rules)
+                                   (if 64-bitp
+                                       ;; needed to match the normal forms used during lifting:
+                                       (new-normal-form-rules64)
+                                     nil ; todo: why not use (new-normal-form-rules32)?
+                                     ))
+                           remove-assumption-rules))
        ((mv erp assumption-rule-alist)
         (acl2::make-rule-alist assumption-rules (w state)))
        ((when erp) (mv erp nil nil state))
@@ -547,6 +559,7 @@
                              extra-rules
                              remove-rules
                              extra-assumption-rules
+                             remove-assumption-rules
                              step-limit
                              step-increment
                              memoizep
@@ -572,6 +585,7 @@
                               (symbol-listp extra-rules)
                               (symbol-listp remove-rules)
                               (symbol-listp extra-assumption-rules)
+                              (symbol-listp remove-assumption-rules)
                               (natp step-limit)
                               (acl2::step-incrementp step-increment)
                               (booleanp memoizep)
@@ -670,7 +684,7 @@
                  ((mv erp assumptions assumption-rules state)
                   (if extra-assumptions
                       ;; If there are extra-assumptions, we need to simplify (e.g., an extra assumption could replace RSP with 10000, and then all assumptions about RSP need to mention 10000 instead):
-                      (simplify-assumptions assumptions extra-assumption-rules 64-bitp count-hits state)
+                      (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules  64-bitp count-hits state)
                     (mv nil assumptions nil state)))
                  ((when erp) (mv erp nil nil nil state)))
               (mv nil assumptions
@@ -747,7 +761,7 @@
                (input-assumptions (if (and 64-bitp ; todo
                                            (not (equal inputs :skip)) ; really means generate no assumptions
                                            )
-                                      (assumptions-for-inputs inputs
+                                      (assumptions-for-inputs inputs ; these are names-and-types
                                                               ;; todo: handle zmm regs and values passed on the stack?!:
                                                               ;; handle structs that fit in 2 registers?
                                                               ;; See the System V AMD64 ABI
@@ -774,7 +788,7 @@
                ;; others, because opening things like read64 involves testing
                ;; canonical-addressp (which we know from other assumptions is true):
                ((mv erp assumptions assumption-rules state)
-                (simplify-assumptions assumptions extra-assumption-rules 64-bitp count-hits state))
+                (simplify-assumptions assumptions extra-assumption-rules remove-assumption-rules 64-bitp count-hits state))
                ((when erp) (mv erp nil nil nil state)))
             (mv nil assumptions assumptions-to-return assumption-rules state))))
        ((when erp)
@@ -818,7 +832,7 @@
        ((when erp) (mv erp nil nil nil nil state))
        ;; Do the symbolic execution:
        ((mv erp result-dag-or-quotep state)
-        (repeatedly-run step-limit step-increment dag-to-simulate lifter-rule-alist pruning-rule-alist assumptions rules-to-monitor use-internal-contextsp prune count-hits print print-base untranslatep memoizep 0 state))
+        (repeatedly-run step-limit step-increment dag-to-simulate lifter-rule-alist pruning-rule-alist assumptions 64-bitp rules-to-monitor use-internal-contextsp prune count-hits print print-base untranslatep memoizep 0 state))
        ((when erp) (mv erp nil nil nil nil state))
        (state (acl2::unwiden-margins state))
        ((mv elapsed state) (acl2::real-time-since start-real-time state))
@@ -850,6 +864,7 @@
                         extra-rules
                         remove-rules
                         extra-assumption-rules
+                        remove-assumption-rules
                         step-limit
                         step-increment
                         memoizep
@@ -882,6 +897,7 @@
                               (symbol-listp extra-rules)
                               (symbol-listp remove-rules)
                               (symbol-listp extra-assumption-rules)
+                              (symbol-listp remove-assumption-rules)
                               (natp step-limit)
                               (acl2::step-incrementp step-increment)
                               (booleanp memoizep)
@@ -918,7 +934,7 @@
        ((mv erp result-dag assumptions lifter-rules-used assumption-rules-used state)
         (unroll-x86-code-core target parsed-executable
           extra-assumptions suppress-assumptions inputs-disjoint-from stack-slots position-independent
-          inputs output use-internal-contextsp prune extra-rules remove-rules extra-assumption-rules
+          inputs output use-internal-contextsp prune extra-rules remove-rules extra-assumption-rules remove-assumption-rules
           step-limit step-increment memoizep monitor count-hits print print-base untranslatep state))
        ((when erp) (mv erp nil state))
        ;; TODO: Fully handle a quotep result here:
@@ -1066,6 +1082,7 @@
                                   (extra-rules 'nil)
                                   (remove-rules 'nil)
                                   (extra-assumption-rules 'nil)
+                                  (remove-assumption-rules 'nil)
                                   (step-limit '1000000)
                                   (step-increment '100)
                                   (memoizep 't)
@@ -1097,6 +1114,7 @@
       ,extra-rules ; gets evaluated since not quoted
       ,remove-rules ; gets evaluated since not quoted
       ,extra-assumption-rules ; gets evaluated since not quoted
+      ,remove-assumption-rules ; gets evaluated since not quoted
       ',step-limit
       ',step-increment
       ',memoizep
@@ -1131,6 +1149,7 @@
          (extra-rules "Rules to use in addition to (unroller-rules32) or (unroller-rules64).")
          (remove-rules "Rules to turn off.")
          (extra-assumption-rules "Extra rules to be used when simplifying assumptions.")
+         (remove-assumption-rules "Rules to be removed when simplifying assumptions.")
          (step-limit "Limit on the total number of model steps (instruction executions) to allow.")
          (step-increment "Number of model steps to allow before pausing to simplify the DAG and remove unused nodes.")
          (memoizep "Whether to memoize during rewriting (when not using contextual information -- as doing both would be unsound).")

@@ -1,6 +1,6 @@
 ; Valuations (maps from vars to field elements)
 ;
-; Copyright (C) 2019-2023 Kestrel Institute
+; Copyright (C) 2019-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -12,6 +12,7 @@
 
 (include-book "kestrel/prime-fields/fe-listp" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
+(local (include-book "kestrel/alists-light/lookup-equal" :dir :system))
 
 ;; A true list of variables, with no duplicates
 (defun var-listp (vars)
