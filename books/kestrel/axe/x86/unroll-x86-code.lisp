@@ -752,7 +752,7 @@
                (input-assumptions (if (and 64-bitp ; todo
                                            (not (equal inputs :skip)) ; really means generate no assumptions
                                            )
-                                      (assumptions-for-inputs inputs
+                                      (assumptions-for-inputs inputs ; these are names-and-types
                                                               ;; todo: handle zmm regs and values passed on the stack?!:
                                                               ;; handle structs that fit in 2 registers?
                                                               ;; See the System V AMD64 ABI

@@ -848,7 +848,7 @@
                 (mv (erp-nil) nil rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)
               (b* ((stored-rule (first stored-rules))
                    (print (get-print rewrite-stobj))
-                   ((when (and limits (limit-reachedp stored-rule limits print))) ; todo: just pass in the rule-symbol (extraced below)?
+                   ((when (and limits (limit-reachedp stored-rule limits print))) ; todo: just pass in the rule-symbol (extracted below)?
                     ;; the limit for this rule is reached, so try the next rule:
                     (,try-to-apply-rules-name (rest stored-rules)
                                               args-to-match rewrite-stobj2 memoization hit-counts tries limits node-replacement-array node-replacement-count refined-assumption-alist rewrite-stobj (+ -1 count)))
