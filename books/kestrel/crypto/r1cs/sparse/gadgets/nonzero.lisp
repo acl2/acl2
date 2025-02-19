@@ -1,6 +1,6 @@
 ; An R1CS gadget for asserting that a value is non-zero.
 ;
-; Copyright (C) 2020-2021 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,6 +15,7 @@
 ;(local (include-book "kestrel/prime-fields/bind-free-rules" :dir :system))
 (local (include-book "kestrel/crypto/r1cs/sparse/rules" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
+(local (include-book "kestrel/alists-light/lookup-equal" :dir :system))
 
 ;; Make an R1CS constraint (in sparse form) that asserts that a is non-zero.
 ;; This is done by exhibiting a multiplicative inverse of a.  If a were zero,

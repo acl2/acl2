@@ -1,7 +1,7 @@
 ; Classes in the JV, including the class-info structure
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -18,6 +18,7 @@
 
 (include-book "methods")
 (include-book "kestrel/sequences/defforall" :dir :system) ; reduce?
+(local (include-book "kestrel/alists-light/lookup-equal" :dir :system))
 
 ;move
 (defthm keyword-listp-forward-to-true-listp
