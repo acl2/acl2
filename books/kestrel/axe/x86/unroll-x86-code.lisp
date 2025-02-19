@@ -319,6 +319,7 @@
          ;;                       (cw "~X01" dag nil)
          ;;                       (cw ")~%"))))
          (limits nil) ; todo: call this empty-rule-limits?
+
          (limits (acl2::add-limit-for-rules (if 64-bitp
                                                 (step-opener-rules64)
                                               (step-opener-rules32))
@@ -339,7 +340,7 @@
           ;;                     :limits limits
           ;;                     :memoizep memoizep
           ;;                     :check-inputs nil)
-            (mv-let (erp result)
+            (mv-let (erp result limits)
               (acl2::simplify-dag-x86 dag
                                       assumptions
                                       rule-alist
@@ -353,6 +354,7 @@
                                       rules-to-monitor
                                       '(program-at) ; fns-to-elide
                                       )
+              (declare (ignore limits)) ; todo: use the limits!
               (mv erp result state))
             ;)
             )
@@ -432,7 +434,7 @@
                 ;;                     :limits limits
                 ;;                     :memoizep memoizep
                 ;;                     :check-inputs nil)
-                  (mv-let (erp result)
+                  (mv-let (erp result limits)
                     (acl2::simplify-dag-x86 dag
                                             assumptions
                                             rule-alist
@@ -446,6 +448,7 @@
                                             rules-to-monitor
                                             '(program-at code-segment-assumptions32-for-code) ; fns-to-elide
                                             )
+                    (declare (ignore limits)) ; todo: use the limits?
                     (mv erp result state))
                   ;)
                   )
@@ -758,7 +761,7 @@
                (input-assumptions (if (and 64-bitp ; todo
                                            (not (equal inputs :skip)) ; really means generate no assumptions
                                            )
-                                      (assumptions-for-inputs inputs
+                                      (assumptions-for-inputs inputs ; these are names-and-types
                                                               ;; todo: handle zmm regs and values passed on the stack?!:
                                                               ;; handle structs that fit in 2 registers?
                                                               ;; See the System V AMD64 ABI

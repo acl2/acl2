@@ -240,7 +240,7 @@
                   :normalize-xors normalize-xors
                   :print print
                   :check-inputs nil))
-       ;; ((mv erp new-dag)
+       ;; ((mv erp new-dag limits)
        ;;  (simplify-dag-basic dag
        ;;                      assumptions
        ;;                      rule-alist
@@ -528,7 +528,8 @@
        ((when erp)
         (er hard? 'apply-tactic-stp "ERROR making pre-stp rule-alist.~%")
         (mv *error* nil state))
-       ((mv erp dag) ; todo: call dag dag-or-quotep
+       ((mv erp dag & ;limits
+            ) ; todo: call dag dag-or-quotep
         (simplify-dag-basic dag
                             assumptions
                             rule-alist
