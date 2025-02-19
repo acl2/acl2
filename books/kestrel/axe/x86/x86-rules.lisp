@@ -442,6 +442,8 @@
 (defund poor-mans-quotep (x) (declare (ignore x)) t)
 (def-constant-opener poor-mans-quotep)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Only opens x86-fetch-decode-execute if we can resolve the (first byte of) the current instruction to a constant
 ;; Creates x86-fetch-decode-execute-base-new.
 ;; We tried just testing whether RIP is a constant, but sometimes RIP can be the variable TEXT-OFFSET.
@@ -467,7 +469,7 @@
   (implies (and (canonical-address-p (read-*ip 0 x86)) ; could drop, but this clarifies failures
                 ;; ;; Requires us to be able to read the byte at the RIP:
                 ;; todo: simplify this:
-                (poor-mans-quotep (mv-nth 1 (x86isa::rme08$inline 0 (read-*ip 0 x86) 1 :x x86)))
+                (poor-mans-quotep (mv-nth 1 (x86isa::rme08$inline 0 (read-*ip 0 x86) 1 :x x86))) ;  todo: use a binding hyp?
                 ;; (poor-mans-quotep (let ((proc-mode (x86-operation-mode x86)))
                 ;;                     (read 1 (read-*ip proc-mode x86) x86)))
                 ;; (poor-mans-quotep (read 1 (rip x86) x86))
