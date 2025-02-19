@@ -317,7 +317,7 @@
          ;;                       (cw "~X01" dag nil)
          ;;                       (cw ")~%"))))
          (limits nil) ; todo: call this empty-rule-limits?
-         (limits (acl2::add-limit-for-rules (step-opener-rules) steps-for-this-iteration limits)) ; don't recompute for each small run?
+         (limits (acl2::add-limit-for-rules (step-opener-rules) steps-for-this-iteration limits)) ; don't recompute for each small run? ;todo: don't limit the base rule
          ((mv erp dag-or-quote state)
           ;; (if (eq :legacy rewriter)
           ;;     (acl2::simp-dag dag ; todo: call the basic rewriter, but it needs to support :use-internal-contextsp
@@ -333,7 +333,7 @@
           ;;                     :limits limits
           ;;                     :memoizep memoizep
           ;;                     :check-inputs nil)
-            (mv-let (erp result)
+            (mv-let (erp result limits)
               (acl2::simplify-dag-x86 dag
                                       assumptions
                                       rule-alist
@@ -347,6 +347,7 @@
                                       rules-to-monitor
                                       '(program-at) ; fns-to-elide
                                       )
+              (declare (ignore limits)) ; todo: use the limits!
               (mv erp result state))
             ;)
             )
@@ -426,7 +427,7 @@
                 ;;                     :limits limits
                 ;;                     :memoizep memoizep
                 ;;                     :check-inputs nil)
-                  (mv-let (erp result)
+                  (mv-let (erp result limits)
                     (acl2::simplify-dag-x86 dag
                                             assumptions
                                             rule-alist
@@ -440,6 +441,7 @@
                                             rules-to-monitor
                                             '(program-at code-segment-assumptions32-for-code) ; fns-to-elide
                                             )
+                    (declare (ignore limits)) ; todo: use the limits?
                     (mv erp result state))
                   ;)
                   )
