@@ -401,6 +401,10 @@ struct_field
     : type_spec ID ';'
 {
   $$ = new StructField ($1, $2);
+}
+    | type_spec ID '=' expression ';'
+{
+  $$ = new StructField ($1, $2, $4);
 };
 
 enum_type

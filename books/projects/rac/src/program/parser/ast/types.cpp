@@ -463,16 +463,17 @@ bool ArrayType::isEqual(const Type *other) const {
 
 // Data members:  Symbol *sym; Type *type;
 
-StructField::StructField(Type *t, char *n) : sym(new Symbol(n)), type(t) {}
+StructField::StructField(Type *t, char *n) : sym_(new Symbol(n)), type_(t), default_value_() {}
+StructField::StructField(Type *t, char *n, Expression *default_value) : sym_(new Symbol(n)), type_(t), default_value_(default_value) {}
 
 void StructField::display(std::ostream &os, unsigned indent) const {
   if (indent)
     os << std::setw(indent) << " ";
 
-  if (type->isConst()) {
+  if (type_->isConst()) {
     os << "const ";
   }
-  type->display(os);
+  type_->display(os);
   os << " " << getname() << ";";
 }
 

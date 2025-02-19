@@ -153,11 +153,14 @@ Sexpression *VarDec::ACL2Expr() {
     } else {
       val = init->ACL2Expr();
     }
-  } else if (isa<const StructType *>(t)) {
+  } else if (auto struct_type = dynamic_cast<const StructType *>(t)) {
     if (!init) {
-      val = new Plist();
+//      std::cerr << "ashdiaosdi\n";
+      Initializer i(Location::dummy(), {});
+      val = i.ACL2StructExpr(struct_type->fields());
+//      val = new Plist();
     } else if (Initializer *i = dynamic_cast<Initializer *>(init)) {
-      val = i->ACL2StructExpr(always_cast<const StructType *>(t)->fields());
+      val = i->ACL2StructExpr(struct_type->fields());
     } else {
       val = init->ACL2Expr();
     }

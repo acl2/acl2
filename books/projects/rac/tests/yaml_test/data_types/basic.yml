@@ -75,8 +75,19 @@
   should_report_error: true
 
 - name: initializer-list
+
 - name: std-array-initializer-diff-size
+  description: >
+              This is correct since "ag" of a missing element returns 0 (the
+              default value for int).
+
 - name: std-array-initializer-incomplete
+  description: >
+              Same as above.
+
+- name: initializer-struct-not-enough-args
+  bug: true
+  description: crash
 
 - name: overflow
 
@@ -122,3 +133,10 @@
 - name: array-dim-expr-invalid-2
   should_report_error: true
 
+- name: struct-id-redeclared
+  bug: true
+  description: This should be an error
+  disabled-checks:
+    - generated_code
+
+- name: struct-default-values

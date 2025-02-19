@@ -294,16 +294,26 @@ private:
 
 class StructField {
 public:
-  Symbol *sym;
-  Type *type;
+
   StructField(Type *t, char *n);
-  const char *getname() const { return sym->getname(); }
+  StructField(Type *t, char *n, Expression *default_value);
+
+  const char *getname() const { return sym_->getname(); }
+  Symbol *get_sym() const { return sym_; } 
+  Type *get_type() const { return type_; } 
+  std::optional<Expression *> get_default_value() const { return default_value_; } 
+
   void display(std::ostream &os, unsigned indent = 0) const;
 
   bool operator==(const StructField &other) const {
-    return strcmp(sym->getname(), other.getname())
-           && type->isEqual(other.type);
+    return strcmp(sym_->getname(), other.getname())
+           && type_->isEqual(other.type_);
   }
+
+private:
+  Symbol *sym_;
+  Type *type_;
+  std::optional<Expression *> default_value_;
 };
 
 class StructType : public Type {

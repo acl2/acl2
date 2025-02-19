@@ -325,17 +325,30 @@ Sexpression *Initializer::ACL2TupleExpr() {
 Sexpression *
 Initializer::ACL2StructExpr(const std::vector<StructField *> &fields) {
 
-  if (vals.size() == 0)
-    return new Plist();
+  //if (vals.size() == 0)
+  //  return new Plist();
 
   Sexpression *result = new Plist();
 
   auto v = vals.begin();
 
   for (auto f : fields) {
-    result = new Plist(
-        { &s_as, new Plist({ &s_quote, f->sym }), (*v)->ACL2Expr(), result });
-    ++v;
+
+    if (v != vals.end()) {
+      result = new Plist(
+          { &s_as, new Plist({ &s_quote, f->get_sym() }), (*v)->ACL2Expr(), result });
+      ++v;
+    } else if (f->get_default_value()) {
+//      std::cerr << "default value: ";
+//      (*f->get_default_value())->display(std::cerr);
+//      std::cerr << '\n';
+      result = new Plist(
+          { &s_as, new Plist({ &s_quote, f->get_sym() }), (*f->get_default_value())->ACL2Expr(), result });
+    } else {
+      // TODO not correct if it is not an int
+      result = new Plist(
+          { &s_as, new Plist({ &s_quote, f->get_sym() }), Integer::zero_v(this->loc())->ACL2Expr(), result });
+    }
   }
 
   return result;
@@ -422,7 +435,7 @@ void StructRef::display(std::ostream &os) const {
 Sexpression *StructRef::ACL2Expr() {
   Symbol *sym = always_cast<const StructType *>(base->get_type())
                     ->getField(field)
-                    ->sym;
+                    ->get_sym();
 
   Sexpression *s
       = new Plist({ &s_ag, new Plist({ &s_quote, sym }), base->ACL2Expr() });
@@ -433,7 +446,7 @@ Sexpression *StructRef::ACL2Expr() {
 Sexpression *StructRef::ACL2Assign(Sexpression *rval) {
   Symbol *sym = always_cast<const StructType *>(base->get_type())
                     ->getField(field)
-                    ->sym;
+                    ->get_sym();
 
   return base->ACL2Assign(new Plist(
       { &s_as, new Plist({ &s_quote, sym }), rval, base->ACL2Expr() }));

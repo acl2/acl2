@@ -250,7 +250,7 @@ bool TypingAction::VisitArrayRef(ArrayRef *e) {
 
 bool TypingAction::VisitStructRef(StructRef *e) {
   const StructType *t = always_cast<const StructType *>(e->base->get_type());
-  e->set_type(deref(t->getField(e->field)->type));
+  e->set_type(deref(t->getField(e->field)->get_type()));
   return true;
 }
 
@@ -891,7 +891,7 @@ bool TypingAction::check_assignement(const Location &where, const Type *left,
       unsigned i = 0;
       auto is_correct = std::all_of(
           t->types().begin(), t->types().end(), [&](const Type *t) {
-            Type *field_type = struct_->fields()[i]->type;
+            Type *field_type = struct_->fields()[i]->get_type();
             if (!t->canBeImplicitlyCastTo(deref(field_type))) {
               diag_
                   .new_error(
