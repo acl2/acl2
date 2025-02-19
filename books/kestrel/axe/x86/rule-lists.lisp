@@ -1800,11 +1800,6 @@
 
 ;            x86isa::set-flag-of-mv-nth-1-of-wb
 
-            ;; x86-fetch-decode-execute-opener ; this had binding hyps
-            ;; x86-fetch-decode-execute ; this splits into too many cases when things can't be resolved
-            ;; x86isa::x86-fetch-decode-execute-base ; even this can introduce confusing cases when things can't be resolved
-            ;; todo: support using this one only when debugging:
-            ;;x86isa::x86-fetch-decode-execute-base-new ; prevents opening when we can't resolve the pc
             poor-mans-quotep-constant-opener
 
             booleanp-of-canonical-address-p
@@ -2434,6 +2429,26 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Used to add limits
+(defund step-opener-rules32 ()
+  (declare (xargs :guard t))
+  '(;; x86-fetch-decode-execute-opener ; this had binding hyps
+    ;; x86-fetch-decode-execute ; this splits into too many cases when things can't be resolved
+    ;; x86isa::x86-fetch-decode-execute-base ; even this can introduce confusing cases when things can't be resolved
+    ;; todo: support using this one only when debugging:
+    ;;x86isa::x86-fetch-decode-execute-base-new ; prevents opening when we can't resolve the pc
+    ;; just use one of these 2:
+    ;; x86isa::x86-fetch-decode-execute-base
+    x86isa::x86-fetch-decode-execute-base-new ; todo: make a faster version, like we do for 64 bit
+    ))
+
+;; Used to add limits
+(defund step-opener-rules64 ()
+  (declare (xargs :guard t))
+  '(x86-fetch-decode-execute-opener-safe-64))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; todo: move some of these to lifter-rules-common
 (defun lifter-rules32 ()
   (declare (xargs :guard t))
@@ -2441,8 +2456,8 @@
    (append (lifter-rules-common)
            (read-over-write-rules32)
            (segment-base-and-bounds-rules-32)
-          '(x86isa::x86-fetch-decode-execute-base-new ; todo: make a faster version, like we do for 64 bit
-            ;; x86isa::get-prefixes-opener-lemma-group-1-prefix-simple-32
+           (step-opener-rules32)
+          '(;; x86isa::get-prefixes-opener-lemma-group-1-prefix-simple-32
             ;; x86isa::get-prefixes-opener-lemma-group-2-prefix-simple-32
             ;; x86isa::get-prefixes-opener-lemma-group-3-prefix-simple-32
             ;; x86isa::get-prefixes-opener-lemma-group-4-prefix-simple-32
@@ -3295,10 +3310,8 @@
           '(read-byte-becomes-read ; (read-byte-rules) ; read-byte can come from read-bytes
             len-of-read-bytes nth-of-read-bytes) ; read-bytes can come from an output-extractor
           (get-prefixes-rules64)
-          '(;x86isa::x86-fetch-decode-execute-base-new
-            x86-fetch-decode-execute-opener-safe-64 ; trying
-
-            ;; todo move these to the new-normal-form lists:
+          (step-opener-rules64)
+          '(;; todo move these to the new-normal-form lists:
             ;; instruction pointer:
             x86isa::read-*ip-when-64-bit-modep ; goes to rip
             ;; x86isa::mv-nth-0-of-add-to-*ip-when-64-bit-modep ; subsumed by add-to-*ip-of-*64-bit-mode*
@@ -4649,15 +4662,6 @@
 ;; ;;             code-segment-assumptions32-of-write-to-segment-of-ss
 ;;             )
 
-;; Used to add limits
-(defund step-opener-rules ()
-  (declare (xargs :guard t))
-  '(;; todo: just use one of these 2:
-    ;; x86isa::x86-fetch-decode-execute-base
-    x86isa::x86-fetch-decode-execute-base-new
-    x86-fetch-decode-execute-opener-safe-64
-    ))
-
 (defun debug-rules-common ()
   (declare (xargs :guard t))
   '(run-until-stack-shorter-than-opener
@@ -4665,27 +4669,27 @@
     mv-nth-1-of-wme-size     ;introduces write-to-segment
     ;; mv-nth-1-of-rb-becomes-read
     ;; mv-nth-1-of-rb-1-becomes-read
-    ;; x86isa::x86-fetch-decode-execute-base
     wb-becomes-write-when-app-view
     ))
 
 (defun debug-rules32 ()
   (declare (xargs :guard t))
   (append (debug-rules-common)
+          (step-opener-rules32)
           '(not-mv-nth-0-of-add-to-*sp-gen
             mv-nth-1-of-add-to-*sp-gen
-            x86isa::x86-fetch-decode-execute-base-new)))
+            )))
 
 (defun debug-rules64 ()
   (declare (xargs :guard t))
   (append (debug-rules-common)
+          (step-opener-rules64)
           (get-prefixes-openers)
           ;; todo: flesh out this list:
           '(x86isa::rme-size-when-64-bit-modep-and-not-fs/gs-strong
             x86isa::wme-size-when-64-bit-modep-and-not-fs/gs-strong
             ;; could consider things like these:
             ;; READ-OF-WRITE-IRREL2
-            x86-fetch-decode-execute-opener-safe-64
             )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

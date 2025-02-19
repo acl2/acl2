@@ -94,7 +94,8 @@
 (acl2::ensure-rules-known (unroller-rules32))
 (acl2::ensure-rules-known (unroller-rules64))
 (acl2::ensure-rules-known (assumption-simplification-rules))
-(acl2::ensure-rules-known (step-opener-rules))
+(acl2::ensure-rules-known (step-opener-rules32))
+(acl2::ensure-rules-known (step-opener-rules64))
 
 ;move
 ;; We often want these for ACL2 proofs, but not for 64-bit examples
@@ -281,13 +282,14 @@
 ;; STEP-INCREMENT steps at a time, until the run finishes, STEPS-LEFT is
 ;; reduced to 0, or a loop or an unsupported instruction is detected.
 ;; Returns (mv erp result-dag-or-quotep state).
-(defun repeatedly-run (steps-left step-increment dag rule-alist pruning-rule-alist assumptions rules-to-monitor use-internal-contextsp prune count-hits print print-base untranslatep memoizep total-steps state)
+(defun repeatedly-run (steps-left step-increment dag rule-alist pruning-rule-alist assumptions 64-bitp rules-to-monitor use-internal-contextsp prune  count-hits print print-base untranslatep memoizep total-steps state)
   (declare (xargs :guard (and (natp steps-left)
                               (acl2::step-incrementp step-increment)
                               (acl2::pseudo-dagp dag)
                               (acl2::rule-alistp rule-alist)
                               (acl2::rule-alistp pruning-rule-alist)
                               (pseudo-term-listp assumptions)
+                              (booleanp 64-bitp)
                               (symbol-listp rules-to-monitor)
                               (booleanp use-internal-contextsp)
                               (or (eq nil prune)
@@ -317,7 +319,11 @@
          ;;                       (cw "~X01" dag nil)
          ;;                       (cw ")~%"))))
          (limits nil) ; todo: call this empty-rule-limits?
-         (limits (acl2::add-limit-for-rules (step-opener-rules) steps-for-this-iteration limits)) ; don't recompute for each small run?
+         (limits (acl2::add-limit-for-rules (if 64-bitp
+                                                (step-opener-rules64)
+                                              (step-opener-rules32))
+                                            steps-for-this-iteration
+                                            limits)) ; don't recompute for each small run?
          ((mv erp dag-or-quote state)
           ;; (if (eq :legacy rewriter)
           ;;     (acl2::simp-dag dag ; todo: call the basic rewriter, but it needs to support :use-internal-contextsp
@@ -476,7 +482,7 @@
                    state)))
           (repeatedly-run (- steps-left steps-for-this-iteration)
                           step-increment
-                          dag rule-alist pruning-rule-alist assumptions rules-to-monitor use-internal-contextsp prune count-hits print print-base untranslatep memoizep
+                          dag rule-alist pruning-rule-alist assumptions 64-bitp rules-to-monitor use-internal-contextsp prune count-hits print print-base untranslatep memoizep
                           total-steps
                           state))))))
 
@@ -823,7 +829,7 @@
        ((when erp) (mv erp nil nil nil nil state))
        ;; Do the symbolic execution:
        ((mv erp result-dag-or-quotep state)
-        (repeatedly-run step-limit step-increment dag-to-simulate lifter-rule-alist pruning-rule-alist assumptions rules-to-monitor use-internal-contextsp prune count-hits print print-base untranslatep memoizep 0 state))
+        (repeatedly-run step-limit step-increment dag-to-simulate lifter-rule-alist pruning-rule-alist assumptions 64-bitp rules-to-monitor use-internal-contextsp prune count-hits print print-base untranslatep memoizep 0 state))
        ((when erp) (mv erp nil nil nil nil state))
        (state (acl2::unwiden-margins state))
        ((mv elapsed state) (acl2::real-time-since start-real-time state))
