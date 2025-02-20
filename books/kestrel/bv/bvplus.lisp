@@ -1,7 +1,7 @@
 ; BV Library: bvplus
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -11,17 +11,12 @@
 
 (in-package "ACL2")
 
-(include-book "bvchop")
+(include-book "bvplus-def")
 (include-book "getbit")
 (include-book "kestrel/utilities/smaller-termp" :dir :system)
 (local (include-book "slice"))
 (local (include-book "../arithmetic-light/expt2"))
 (local (include-book "unsigned-byte-p"))
-
-;; Compute the sum of X and Y, chopped down to SIZE bits.
-(defund bvplus (size x y)
-  (declare (type (integer 0 *) size))
-  (bvchop size (+ (ifix x) (ifix y))))
 
 (defthm bvplus-associative
   (equal (bvplus size (bvplus size x y) z)
