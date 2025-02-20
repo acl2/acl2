@@ -15,7 +15,7 @@
 (include-book "kestrel/jvm/method-indicators" :dir :system)
 (include-book "rule-lists-jvm")
 (include-book "rules-in-rule-lists-jvm")
-(include-book "../util2") ;; for bit-blasted-symbolic-array
+(include-book "../util2") ;; for symbolic-array and bit-blasted-symbolic-array
 (include-book "../math-rules")
 (include-book "lifter-utilities") ; for field-pair-okayp, etc
 (include-book "../step-increments")
@@ -172,25 +172,25 @@
                                       ;; array-refp hyp for the local and a
                                       ;; hyp to replace a lookup of the
                                       ;; contents with a symbolic array term
+                                      ;; One-dimensional array of BVS:
                                       (if maybe-len
                                           ;; One-dimensional array of BVS of known (constant) length:
-                                          (append (if (eq :bits vars-for-array-elements)  ;fixme: what about arrays of floats and doubles!  ;todo: what if the element type is not blastable?
+                                          (append (if (eq t vars-for-array-elements)
+                                                      ;; Puts in a var for each element (byte, int, etc.) of the array:
                                                       `((equal ,contents-term
-                                                               ,(let ((element-size (jvm::size-of-array-element component-type)))
-                                                                  (if (= 1 element-size)
-                                                                      ;; todo: think about this case?  how are the booleans stored?
-                                                                      (symbolic-array parameter-name maybe-len element-size)
-                                                                    (bit-blasted-symbolic-array parameter-name maybe-len element-size)))))
-                                                    (if (eq t vars-for-array-elements)
-                                                        ;; Puts in a var for each byte of the array:
+                                                               ,(symbolic-array parameter-name maybe-len (jvm::size-of-array-element component-type))))
+                                                    (if (eq :bits vars-for-array-elements)
+                                                        ;; Puts in a var for each bit of each element (byte, int, etc.) of the array:
                                                         `((equal ,contents-term
-                                                                 ,(symbolic-array parameter-name maybe-len (jvm::size-of-array-element component-type))))
-                                                      ;; vars-for-array-elements is ni:
-                                                      ;; Puts in a var for the entire aray (not individual vars for array elements):
-                                                      `((equal ,contents-term
-                                                               ,parameter-name)
-                                                        (equal (len ,parameter-name)
-                                                               ',maybe-len)
+                                                                 ,(let ((element-size (jvm::size-of-array-element component-type)))
+                                                                    (if (= 1 element-size)
+                                                                        ;; todo: think about this case?  how are the booleans stored?
+                                                                        (symbolic-array parameter-name maybe-len element-size)
+                                                                      (bit-blasted-symbolic-array parameter-name maybe-len element-size)))))
+                                                      ;; vars-for-array-elements is nil:
+                                                      ;; Puts in a var for the entire array (not individual vars for array elements):
+                                                      `((equal ,contents-term ,parameter-name)
+                                                        (equal (len ,parameter-name) ',maybe-len)
                                                         ;; TODO: Should we also put in an all-unsigned-byte-p claim here, to support STP translation?
                                                         (true-listp ,parameter-name))))
                                                   ;;todo: what about type assumptions for individual vars?:
