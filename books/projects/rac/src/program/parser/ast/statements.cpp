@@ -141,45 +141,12 @@ void VarDec::displaySimple(std::ostream &os) { displaySymDec(os); }
 Sexpression *VarDec::ACL2Expr() {
 
   const Type *t = get_type();
-
-//  if (init) {
-//    val = t->get_default_initializer();
-//  } else {
-//    t->cast(init->ACL2Expr());
-//  }
-
   Sexpression *val = nullptr;
-  if (isa<const ArrayType *>(t)) {
-    if (!init) {
-      val = new Plist();
-    } else if (isGlobal()) {
-      val = new Plist({ &s_quote, init->ACL2Expr() });
-    } else if (Initializer *i = dynamic_cast<Initializer *>(init)) {
-      val = i->ACL2ArrayExpr();
-    } else {
-      val = init->ACL2Expr();
-    }
-  } else if (auto struct_type = dynamic_cast<const StructType *>(t)) {
-    if (!init) {
-      Initializer i(Location::dummy(), {});
-      val = i.ACL2StructExpr(struct_type->fields());
-    } else if (Initializer *i = dynamic_cast<Initializer *>(init)) {
-      val = i->ACL2StructExpr(struct_type->fields());
-    } else {
-      val = init->ACL2Expr();
-    }
-  } else if (isa<const MvType *>(t)) {
-    if (Initializer *i = dynamic_cast<Initializer *>(init)) {
-      val = i->ACL2TupleExpr();
-    } else {
-      val = init->ACL2Expr();
-    }
+
+  if (init) {
+    val = t->cast(init);
   } else {
-    if (init) {
-      val = t->cast(init);
-    } else {
-      val = Integer::zero_v(loc_)->ACL2Expr();
-    }
+    val = t->default_initializer_value();
   }
   return new Plist({ &s_declare, sym, val });
 }

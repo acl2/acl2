@@ -218,9 +218,12 @@ public:
   std::vector<Expression *> vals;
   Initializer(Location loc, std::vector<Expression *> v);
   void display(std::ostream &os) const override;
-  Sexpression *ACL2Expr() override;
 
-  Sexpression *ACL2ArrayExpr();
+  // Initializer does not make sense on their own: they must be cast to an
+  // actual type.
+  Sexpression *ACL2Expr() override { UNREACHABLE(); }
+
+  Sexpression *ACL2ArrayExpr(bool output_optmized_const);
   Sexpression *ACL2TupleExpr();
   Sexpression *ACL2StructExpr(const std::vector<StructField *> &fields);
 };

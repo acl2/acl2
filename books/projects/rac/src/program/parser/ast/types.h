@@ -78,6 +78,10 @@ public:
   void setConst() { isConst_ = true; }
   bool isConst() const { return isConst_; }
 
+  virtual Sexpression *default_initializer_value() const = 0;
+
+  Location get_original_location() const;
+
 private:
   const NodesId id_;
   bool isConst_ = false;
@@ -160,6 +164,9 @@ public:
   static Type *usual_conversions(const PrimType *t1, const PrimType *t2,
                                  bool integer_promotion = true);
 
+
+  Sexpression *default_initializer_value() const override;
+
   const std::optional<std::string> RACname_;
   Rank rank_;
   bool signed_;
@@ -231,6 +238,10 @@ public:
     return derefType()->canBeImplicitlyCastTo(target);
   }
 
+  Sexpression *default_initializer_value() const override {
+    return def_->default_initializer_value();
+  }
+
 private:
   Type *def_;
 };
@@ -255,6 +266,8 @@ public:
 
   bool isEqual(const Type *other) const override;
   bool canBeImplicitlyCastTo(const Type *target) const override;
+
+  Sexpression *default_initializer_value() const override;
 
 private:
   Expression *width_;
@@ -285,8 +298,12 @@ public:
     return false;
   }
 
+  virtual Sexpression *cast(Expression *rval) const override;
+
   inline void setSTDArray() { isSTDarray_ = true; }
   inline bool isSTDArray() const { return isSTDarray_; }
+
+  Sexpression *default_initializer_value() const override;
 
 private:
   bool isSTDarray_ = false;
@@ -335,6 +352,10 @@ public:
     return false;
   }
 
+  virtual Sexpression *cast(Expression *rval) const override;
+
+  Sexpression *default_initializer_value() const override;
+
 private:
   std::vector<StructField *> fields_;
 };
@@ -360,6 +381,8 @@ public:
   bool isEqual(const Type *) const override;
 
   const std::vector<EnumConstDec *> &values() { return vals_; }
+
+  Sexpression *default_initializer_value() const override;
 
 private:
   std::vector<EnumConstDec *> vals_;
@@ -394,12 +417,21 @@ class MvType final : public priv::CompositeType {
 public:
   MvType(origin_t loc, std::vector<Type *> &&t)
       : CompositeType(loc, idOf(this), std::move(t)) {}
+
+  Sexpression *cast(Expression *rval) const override;
+
+
+  Sexpression *default_initializer_value() const override;
 };
 
 class InitializerType final : public priv::CompositeType {
 public:
   InitializerType(origin_t loc, std::vector<Type *> &&t)
       : CompositeType(loc, idOf(this), std::move(t)) {}
+
+  Sexpression *default_initializer_value() const override {
+    UNREACHABLE();
+  }
 };
 
 // Type used to recover from error during the type pass.
@@ -435,6 +467,10 @@ public:
   bool canBeImplicitlyCastTo([
       [maybe_unused]] const Type *target) const override {
     return true;
+  }
+
+  Sexpression *default_initializer_value() const override {
+    return new Symbol("ErrorTypeValue");
   }
 };
 

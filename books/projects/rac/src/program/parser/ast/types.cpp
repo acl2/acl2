@@ -60,6 +60,17 @@ void Type::makeDef([[maybe_unused]] const char *name, std::ostream &os) const {
   os << " " << name << ";";
 }
 
+Location Type::get_original_location() const {
+
+  auto cur = origin_;
+  while (std::holds_alternative<const DefinedType *>(cur)) {
+    auto dt = std::get<const DefinedType *>(cur);
+    cur = dt->origin_;
+  }
+
+  return std::get<Location>(cur);
+}
+
 // class PrimType : public Symbol, public Type (Primitive type)
 // ------------------------------------------------------------
 
@@ -257,6 +268,11 @@ bool PrimType::canBeImplicitlyCastTo(const Type *target) const {
   return false;
 }
 
+Sexpression *PrimType::default_initializer_value() const {
+  // TODO location
+  return Integer::zero_v(Location::dummy())->ACL2Expr();
+}
+
 // class IntType : public Type
 // -------------------------------
 
@@ -396,6 +412,11 @@ bool IntType::canBeImplicitlyCastTo(const Type *target) const {
   return isa<const IntType *>(target);
 }
 
+Sexpression *IntType::default_initializer_value() const {
+  // TODO location
+  return Integer::zero_v(get_original_location())->ACL2Expr();
+}
+
 // class ArrayType : public Type
 // -----------------------------
 
@@ -456,6 +477,30 @@ bool ArrayType::isEqual(const Type *other) const {
   } else {
     return false;
   }
+}
+
+Sexpression *ArrayType::cast(Expression *rval) const {
+
+  if (auto init = dynamic_cast<Initializer *>(rval)) {
+    return init->ACL2ArrayExpr(isConst());
+  } else {
+    return rval->ACL2Expr();
+  }
+}
+
+Sexpression *ArrayType::default_initializer_value() const {
+
+  Plist *result = new Plist({});
+
+  // TODO do not support template
+  assert(dim->isStaticallyEvaluable());
+
+  for (int i = 0; i < dim->evalConst(); ++i) {
+    result->add(new Cons(Integer(get_original_location(), i).ACL2Expr(),
+                         baseType->default_initializer_value()));
+  }
+
+  return result;
 }
 
 // class StructField
@@ -542,6 +587,32 @@ bool StructType::isEqual(const Type *other) const {
   }
 
   return false;
+}
+
+Sexpression *StructType::cast(Expression *rval) const {
+
+  if (auto init = dynamic_cast<Initializer *>(rval)) {
+    return init->ACL2StructExpr(fields_);
+  } else {
+    return rval->ACL2Expr();
+  }
+}
+
+Sexpression *StructType::default_initializer_value() const {
+
+  Plist *result = new Plist({});
+
+  for (const auto& f : fields_) {
+    if (f->get_default_value()) {
+      result = new Plist(
+          { &s_as, new Plist({ &s_quote, f->get_sym() }), (*f->get_default_value())->ACL2Expr(), result });
+    } else {
+      result = new Plist(
+          { &s_as, new Plist({ &s_quote, f->get_sym() }), f->get_type()->default_initializer_value(), result });
+    }
+  }
+
+  return result;
 }
 
 // class EnumType : public Type
@@ -632,6 +703,10 @@ bool EnumType::isEqual(const Type *other) const {
   return false;
 }
 
+Sexpression *EnumType::default_initializer_value() const {
+  return Integer::zero_v(get_original_location())->ACL2Expr();
+}
+
 namespace priv {
   // class CompositeType : public Type (multiple-value type)
   // -------------------------------------------
@@ -676,4 +751,21 @@ namespace priv {
 
     return false;
   }
+}
+
+Sexpression *MvType::cast(Expression *rval) const {
+  if (auto init = dynamic_cast<Initializer *>(rval)) {
+    return init->ACL2TupleExpr();
+  } else {
+    return rval->ACL2Expr();
+  }
+}
+
+Sexpression *MvType::default_initializer_value() const {
+
+  Plist *res = new Plist({ &s_mv });
+  for (unsigned i = 0; i < size(); ++i) {
+    res->add(get(i)->default_initializer_value());
+  }
+  return res;
 }

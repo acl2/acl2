@@ -142,6 +142,11 @@
 - name: struct-default-values
 - name: struct-default-values-partially-init
 
+- name: struct-default-values-no-init-list
+  env: {RAC_BYPASS_ERROR: 'true'} # Bypass pedantic error
+  disabled-checks:
+    - stderr
+
 - name: global-arrays
 
 - name: const-arrays

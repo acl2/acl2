@@ -284,36 +284,31 @@ void Initializer::display(std::ostream &os) const {
   os << '}';
 }
 
-Sexpression *Initializer::ACL2Expr() {
+Sexpression *Initializer::ACL2ArrayExpr(bool output_optmized_const) {
 
   Plist *res = new Plist();
 
-  for (auto c : vals) {
-    res->add(c->ACL2Expr());
+  if (output_optmized_const) {
+
+    for (auto c : vals) {
+      res->add(c->ACL2Expr());
+    }
+  } else {
+    // TODO wrong should do default initializer explicitly. Its works beause if
+    // ag does not find the element, it returns 0.
+
+    if (vals.size() == 0) {
+      return res;
+    }
+
+    unsigned i = 0;
+    for (auto c : vals) {
+      res->add(new Cons(Integer(loc_, i).ACL2Expr(), c->ACL2Expr()));
+      i++;
+    }
   }
 
-  return res;
-}
-
-Sexpression *Initializer::ACL2ArrayExpr() {
-
-  // TODO wrong should do default initializer explicitly. Its works beause if
-  // ag does not find the element, it returns 0.
-
-  if (vals.size() == 0)
-    return new Plist();
-
-  Plist *res = new Plist();
-
-  unsigned i = 0;
-  for (auto c : vals) {
-    res->add(new Cons(Integer(loc_, i).ACL2Expr(), c->ACL2Expr()));
-    i++;
-  }
-
-  res = new Plist({ &s_quote, res });
-
-  return res;
+  return  new Plist({ &s_quote, res });
 }
 
 Sexpression *Initializer::ACL2TupleExpr() {
@@ -342,9 +337,6 @@ Initializer::ACL2StructExpr(const std::vector<StructField *> &fields) {
           { &s_as, new Plist({ &s_quote, f->get_sym() }), (*v)->ACL2Expr(), result });
       ++v;
     } else if (f->get_default_value()) {
-//      std::cerr << "default value: ";
-//      (*f->get_default_value())->display(std::cerr);
-//      std::cerr << '\n';
       result = new Plist(
           { &s_as, new Plist({ &s_quote, f->get_sym() }), (*f->get_default_value())->ACL2Expr(), result });
     } else {
@@ -382,7 +374,7 @@ Sexpression *ArrayRef::ACL2Expr() {
     Sexpression *s = nullptr;
 
     SymRef *ref = dynamic_cast<SymRef *>(array);
-    if (ref && ref->symDec->isGlobal()) {
+    if (ref && ref->symDec->get_type()->isConst()) {
       s = new Plist(
           { &s_nth, index->ACL2Expr(), new Plist({ ref->symDec->sym }) });
     } else {
