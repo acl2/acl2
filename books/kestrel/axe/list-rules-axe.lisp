@@ -192,3 +192,15 @@
 ;could then use a rule that len is not equal to an impossible constant
 (defthmd one-plus-len-hack
   (not (equal (+ 1 (len x)) 0)))
+
+;; Can show that bv-array field is not nil
+(defthm not-equal-nil-when-equal-of-len-arg1
+  (implies (and (equal free (len x))
+                (not (equal 0 free)))
+           (not (equal x nil))))
+
+;; Can show that bv-array field is not nil
+(defthm not-equal-nil-when-equal-of-len-arg2
+  (implies (and (equal free (len x))
+                (not (equal 0 free)))
+           (not (equal nil x))))
