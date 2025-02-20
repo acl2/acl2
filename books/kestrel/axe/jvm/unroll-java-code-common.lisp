@@ -174,34 +174,41 @@
                                       ;; contents with a symbolic array term
                                       (if maybe-len
                                           ;; One-dimensional array of BVS of known (constant) length:
-                                          (append (if vars-for-array-elements ;fixme: what about arrays of floats and doubles!
+                                          (append (if (eq :bits vars-for-array-elements)  ;fixme: what about arrays of floats and doubles!  ;todo: what if the element type is not blastable?
                                                       `((equal ,contents-term
-                                                               ,(if (eq :bits vars-for-array-elements) ;todo: what if the element type is not blastable?
-                                                                    (let ((element-size (jvm::size-of-array-element component-type)))
-                                                                      (if (= 1 element-size)
-                                                                          ;; todo: think about this case?  how are the booleans stored?
-                                                                          (symbolic-array parameter-name maybe-len element-size)
-                                                                        (bit-blasted-symbolic-array parameter-name maybe-len element-size)))
-                                                                  (symbolic-array parameter-name maybe-len (jvm::size-of-array-element component-type)))))
-                                                    ;; Don't put in individual vars for array elements:
-                                                    `((equal ,contents-term
-                                                             ,parameter-name)
-                                                      (equal (len ,parameter-name)
-                                                             ',maybe-len)
-                                                      ;; TODO: Should we also put in an all-unsigned-byte-p claim here, to support STP translation?
-                                                      (true-listp ,parameter-name)))
+                                                               ,(let ((element-size (jvm::size-of-array-element component-type)))
+                                                                  (if (= 1 element-size)
+                                                                      ;; todo: think about this case?  how are the booleans stored?
+                                                                      (symbolic-array parameter-name maybe-len element-size)
+                                                                    (bit-blasted-symbolic-array parameter-name maybe-len element-size)))))
+                                                    (if (eq t vars-for-array-elements)
+                                                        ;; Puts in a var for each byte of the array:
+                                                        `((equal ,contents-term
+                                                                 ,(symbolic-array parameter-name maybe-len (jvm::size-of-array-element component-type))))
+                                                      ;; vars-for-array-elements is ni:
+                                                      ;; Puts in a var for the entire aray (not individual vars for array elements):
+                                                      `((equal ,contents-term
+                                                               ,parameter-name)
+                                                        (equal (len ,parameter-name)
+                                                               ',maybe-len)
+                                                        ;; TODO: Should we also put in an all-unsigned-byte-p claim here, to support STP translation?
+                                                        (true-listp ,parameter-name))))
                                                   ;;todo: what about type assumptions for individual vars?:
                                                   `((array-refp ,local-term
                                                                 (cons ',maybe-len 'nil) ;; here we use the constant known length
                                                                 ',component-type
                                                                 ,heap-term)))
                                         ;; One-dimensional array of BVS of unknown length:
-                                        `((equal ,contents-term ,parameter-name) ;; replaces the array contents with the var
-                                          (true-listp ,parameter-name) ;todo: add all-unsigned-byte-p ?
-                                          (array-refp ,local-term
-                                                      (cons (len ,parameter-name) 'nil) ;; no constant length to use here
-                                                      ',component-type
-                                                      ,heap-term)))
+                                        (prog2$
+                                          (and vars-for-array-elements
+                                               (cw "Warning: Array parameter ~x0 has unknown length.  Not making individual vars (:vars-for-array-elements is ~x1)." parameter-name vars-for-array-elements))
+                                          ;; todo: error here id vars-for-array-elements is not nil?
+                                          `((equal ,contents-term ,parameter-name) ;; replaces the array contents with the var
+                                            (true-listp ,parameter-name) ;todo: add all-unsigned-byte-p ?
+                                            (array-refp ,local-term
+                                                        (cons (len ,parameter-name) 'nil) ;; no constant length to use here
+                                                        ',component-type
+                                                        ,heap-term))))
                                     (if (member-eq component-type '(:float :double))
                                         ;; One-dimensional array of floats/doubles:
                                         (if maybe-len
