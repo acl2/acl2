@@ -779,3 +779,33 @@
                   (write n2 ad2 val2 (write n1 ad1 val1 x86))))
   :hints (("Goal" :use write-of-write-diff-bv
            :in-theory (disable write-of-write-diff-bv))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; this puts the syntactically smaller op first
+(defthmd equal-of-0-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder-axe
+  (implies (and (axe-syntaxp (acl2::heavier-dag-term op1 op2))
+                (equal (mxcsrbits->daz$inline mxcsr) 0)
+                (equal (mxcsrbits->im$inline mxcsr) 1)
+                (equal (mxcsrbits->dm$inline mxcsr) 1))
+           (equal (equal 0 (mv-nth 1 (sse-cmp *op-ucomi* op1 op2 mxcsr exp-width frac-width)))
+                  (equal 1 (mv-nth 1 (sse-cmp *op-ucomi* op2 op1 mxcsr exp-width frac-width)))))
+  :hints (("Goal" :in-theory (enable sse-cmp sse-cmp-special))))
+
+;; this puts the syntactically smaller op first
+(defthmd equal-of-1-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder-axe
+  (implies (and (axe-syntaxp (acl2::heavier-dag-term op1 op2))
+                (equal (mxcsrbits->daz$inline mxcsr) 0)
+                (equal (mxcsrbits->im$inline mxcsr) 1)
+                (equal (mxcsrbits->dm$inline mxcsr) 1))
+           (equal (equal 1 (mv-nth 1 (sse-cmp *op-ucomi* op1 op2 mxcsr exp-width frac-width)))
+                  (equal 0 (mv-nth 1 (sse-cmp *op-ucomi* op2 op1 mxcsr exp-width frac-width)))))
+  :hints (("Goal" :use equal-of-1-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder)))
+
+;; this puts the syntactically smaller op first
+(defthmd equal-of-7-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder-axe
+  (implies (axe-syntaxp (acl2::heavier-dag-term op1 op2))
+           (equal (equal 7 (mv-nth 1 (sse-cmp *op-ucomi* op1 op2 mxcsr exp-width frac-width)))
+                  (equal 7 (mv-nth 1 (sse-cmp *op-ucomi* op2 op1 mxcsr exp-width frac-width)))))
+  :hints (("Goal" :use equal-of-7-and-mv-nth-1-of-sse-cmp-of-ucomi
+           :in-theory (disable equal-of-7-and-mv-nth-1-of-sse-cmp-of-ucomi))))
