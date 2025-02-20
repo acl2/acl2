@@ -33,7 +33,7 @@
 (include-book "kestrel/bv/intro" :dir :system) ; for BVCHOP-OF-LOGXOR-BECOMES-BVXOR
 (include-book "rule-lists")
 (include-book "../bv-array-rules")
-(include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system) ; for minus-cancellation-on-right
+;(include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system) ; for minus-cancellation-on-right
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/character-listp" :dir :system))
 (local (include-book "kestrel/utilities/get-real-time" :dir :system))

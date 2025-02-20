@@ -4761,7 +4761,7 @@
 
             acl2::logext-of-+-of-bvplus-same-size
             acl2::logext-of-+-of-+-of-mult-same-size
-            acl2::minus-cancellation-on-right ; todo: use an arithmetic-light rule
+            ;acl2::minus-cancellation-on-right ; todo: use an arithmetic-light rule
             acl2::bvchop-of-nth-becomes-bv-array-read2 ; needed for stp to see the array op
             acl2::bv-array-read-of-*-arg3 ; introduces bvmult for the index
             acl2::bv-array-read-of-+-arg3 ; introduces bvplus for the index
