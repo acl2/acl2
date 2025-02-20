@@ -75,6 +75,7 @@
 (include-book "bitxnor")
 
 ;; Arithmetic operations:
+(include-book "bvplus-def")
 (include-book "bvplus")
 (include-book "bvminus")
 (include-book "bvminus-rules")
