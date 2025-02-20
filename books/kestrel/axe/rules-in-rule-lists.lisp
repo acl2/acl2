@@ -79,7 +79,6 @@
 (include-book "kestrel/utilities/mv-nth" :dir :system)
 (include-book "kestrel/utilities/fix" :dir :system)
 (include-book "kestrel/utilities/ensure-rules-known" :dir :system)
-(include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system) ; why?
 
 ;;todo: add more like this:
 (ensure-rules-known (lookup-rules))
