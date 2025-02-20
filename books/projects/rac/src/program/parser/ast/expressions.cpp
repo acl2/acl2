@@ -297,6 +297,9 @@ Sexpression *Initializer::ACL2Expr() {
 
 Sexpression *Initializer::ACL2ArrayExpr() {
 
+  // TODO wrong should do default initializer explicitly. Its works beause if
+  // ag does not find the element, it returns 0.
+
   if (vals.size() == 0)
     return new Plist();
 

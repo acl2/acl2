@@ -142,6 +142,12 @@ Sexpression *VarDec::ACL2Expr() {
 
   const Type *t = get_type();
 
+//  if (init) {
+//    val = t->get_default_initializer();
+//  } else {
+//    t->cast(init->ACL2Expr());
+//  }
+
   Sexpression *val = nullptr;
   if (isa<const ArrayType *>(t)) {
     if (!init) {
@@ -155,10 +161,8 @@ Sexpression *VarDec::ACL2Expr() {
     }
   } else if (auto struct_type = dynamic_cast<const StructType *>(t)) {
     if (!init) {
-//      std::cerr << "ashdiaosdi\n";
       Initializer i(Location::dummy(), {});
       val = i.ACL2StructExpr(struct_type->fields());
-//      val = new Plist();
     } else if (Initializer *i = dynamic_cast<Initializer *>(init)) {
       val = i->ACL2StructExpr(struct_type->fields());
     } else {

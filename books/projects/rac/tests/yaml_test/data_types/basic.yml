@@ -140,3 +140,8 @@
     - generated_code
 
 - name: struct-default-values
+- name: struct-default-values-partially-init
+
+- name: global-arrays
+
+- name: const-arrays

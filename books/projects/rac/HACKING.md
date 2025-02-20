@@ -1,6 +1,34 @@
 Lisp translation of C++ common expressions
 ==========================================
 
+* Arrays can be represented in two ways: simple list or using association list.
+  Global constant arrays are translated using simple lists and "nth" as accessor.
+  This is the most efficient way of storing large read-only values. Local arrays
+  are translated using an alist (with "ag" and "as" used to translate the
+  reading/writing). 
+
+  ```
+  // RAC
+  const int global_array[2] = {1, 2};
+  int foo() { return global_array[1]; }
+
+  // Translation
+  (DEFUND GLOBAL_ARRAY NIL '(1 2))
+  (DEFUND FOO NIL (NTH 1 (GLOBAL_ARRAY)))
+
+  // RAC
+  int bar() {
+    const int local_array[2] = {3, 5};
+    return local_array[1];
+  }
+
+  // Translation
+  (DEFUND BAR NIL
+  (LET ((LOCAL_ARRAY '((0 . 3) (1 . 5))))
+    (AG 1 LOCAL_ARRAY)))
+  ```
+
+
 General
 =======
   The tanslation of a RAC is done in three steps:
