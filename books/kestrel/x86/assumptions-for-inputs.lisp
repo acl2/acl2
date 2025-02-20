@@ -24,25 +24,28 @@
 (local (include-book "kestrel/utilities/doublet-listp" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 
-;; Makes assumptions to introduce a variable for each element of the array, from INDEX up to LEN - 1.
-(defund var-intro-assumptions-for-array-input (index len element-size pointer-name var-name)
+;; Makes assumptions to introduce a variable for each element of the array, from INDEX up to ELEMENT-COUNT - 1.
+;; TODO: Support expressing bytes in terms of single bit-vars
+;; TODO: Support expressing the whole array as a single value (a byte-list)
+(defund var-intro-assumptions-for-array-input (index element-count bytes-per-element pointer-name var-name-base)
   (declare (xargs :guard (and (natp index)
-                              (natp len)
-                              (posp element-size)
+                              (natp element-count)
+                              (posp bytes-per-element)
                               (symbolp pointer-name)
-                              (symbolp var-name))
-                  :measure (nfix (+ 1 (- len index)))))
-  (if (or (not (mbt (and (natp len)
+                              (symbolp var-name-base))
+                  :measure (nfix (+ 1 (- element-count index)))))
+  (if (or (not (mbt (and (natp element-count)
                          (natp index))))
-          (<= len index))
+          (<= element-count index))
       nil
-    (cons `(equal (read ,element-size
-                        ,(if (posp index)
-                            `(+ ,(* index element-size) ,pointer-name)
-                          pointer-name)
+    (cons `(equal (read ,bytes-per-element
+                        ,(if (= 0 index)
+                             pointer-name ; special case (offset of 0)
+                           `(+ ,(* index bytes-per-element) ,pointer-name) ; todo: option to use bvplus here?
+                           )
                         x86)
-                  ,(acl2::pack-in-package "X" var-name index))
-          (var-intro-assumptions-for-array-input (+ 1 index) len element-size pointer-name var-name))))
+                  ,(acl2::pack-in-package "X" var-name-base index))
+          (var-intro-assumptions-for-array-input (+ 1 index) element-count bytes-per-element pointer-name var-name-base))))
 
 ;; (var-intro-assumptions-for-array-input '0 '6 '4 'foo-ptr 'foo)
 
@@ -146,6 +149,21 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; todo: strengthen: what are the allowed types?  todo: Allow float types?
+(defun names-and-typesp (names-and-types)
+  (declare (xargs :guard t))
+  (and (doublet-listp names-and-types)
+       (let ((names (strip-cars names-and-types))
+             (types (strip-cadrs names-and-types)))
+         (and (symbol-listp names)
+              ;; Can't use the same name as a register (would make the output-indicator ambiguous):
+              ;; todo: print a message when this check fails:
+              (not (intersection-equal (acl2::map-symbol-name names) '("RAX" "EAX" "ZMM0" "YMM0" "XMM0"))) ; todo: keep in sync with normal-output-indicatorp
+              ;; Types are symbols, e.g., u8[64]:
+              (symbol-listp types)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Returns a list of assumptions.
 (defund assumptions-for-input (input-name
                                input-type ;; examples: u32 or u32* or u32[4]
@@ -168,19 +186,20 @@
           `((equal ,state-component ,input-name))
         (let ((stack-byte-count (* 8 stack-slots))) ; each stack element is 64-bits
           (if (call-of :pointer type)
-              (if (not (stringp (farg1 type))) ; for guards? ; todo: what about a pointer to something else?)
-                  ;; TODO: Handle point to array, or struct, or pointer
+              (if (not (stringp (farg1 type))) ; for guards? ; todo: what about a pointer to something else? ; todo: give this check a name, e.g., scalar-typep
+                  ;; TODO: Handle pointer to array, or struct, or pointer
                   (er hard? 'assumptions-for-input "Unsupported input type: ~x0." type)
                 (let* ((base-type (farg1 type))
                        (numbytes (bytes-in-scalar-type base-type))
                        (pointer-name (acl2::pack-in-package "X" input-name '_ptr)) ;todo: watch for clashes; todo: should this be the main name and the other the "contents"?
                        )
-                  `((equal ,state-component ,pointer-name)
+                  `(;; Rewriting will replace the state component with the pointer's name:
+                    (equal ,state-component ,pointer-name)
                     ;; todo: what about reading individual bytes?:  don't trim down reads?
                     (equal (read ,numbytes ,pointer-name x86) ,input-name)
                     (canonical-address-p ,pointer-name) ; first address
-                    (canonical-address-p (+ ,(- numbytes 1) ,pointer-name)) ; last address
-                    ;; The input is disjount from the space into which the stack will grow:
+                    (canonical-address-p (+ ,(- numbytes 1) ,pointer-name)) ; last address (size of a scalar type can't be 0)
+                    ;; The input is disjoint from the space into which the stack will grow:
                     (separate :r ,numbytes ,pointer-name
                               :r ,stack-byte-count
                               (+ ,(- stack-byte-count) (rsp x86)))
@@ -190,22 +209,23 @@
                     ;; todo: reorder args?
                     (separate :r 8 (rsp x86)
                               :r ,numbytes ,pointer-name))))
-            (if (and (call-of :array type)
-                     (stringp (farg1 type)) ; for guards?
-                     (natp (farg2 type))    ; for guards
+            (if (and (call-of :array type) ; (:array <base-type> <element-count>)
+                     (stringp (farg1 type)) ; for guards? ; todo name this ; todo relax this
+                     (natp (farg2 type))    ; for guards ; todo: must be true?
                      )
-                ;; must be an :array type:  ; TODO: What if the whole array fits in a register?
+                ;; TODO: What if the whole array fits in a register?
                 (b* ((base-type (farg1 type))
-                     (element-count (farg2 type))
-                     (element-size (bytes-in-scalar-type base-type))
-                     (numbytes (* element-count element-size))
+                     (element-count (farg2 type)) ; todo: consider 0
+                     (bytes-per-element (bytes-in-scalar-type base-type))
+                     (numbytes (* element-count bytes-per-element))
                      (pointer-name (acl2::pack-in-package "X" input-name '_ptr)) ;todo: watch for clashes; todo: should this be the main name and the other the "contents"?
                      )
-                  (append (var-intro-assumptions-for-array-input 0 element-count element-size pointer-name input-name)
-                          `((equal ,state-component ,pointer-name)
+                  (append (var-intro-assumptions-for-array-input 0 element-count bytes-per-element pointer-name input-name)
+                          `(;; Rewriting will replace the state component with the pointer's name:
+                            (equal ,state-component ,pointer-name)
                             (canonical-address-p$inline ,pointer-name) ; first address
-                            (canonical-address-p (+ ,(- numbytes 1) ,pointer-name)) ; last address
-                            ;; The input is disjount from the space into which the stack will grow:
+                            (canonical-address-p (+ ,(- numbytes 1) ,pointer-name)) ; last address (todo: consider numbytes=0)
+                            ;; The input is disjoint from the space into which the stack will grow:
                             (separate :r ,numbytes ,pointer-name
                                       :r ,stack-byte-count
                                       (+ ,(- stack-byte-count) (rsp x86)))
@@ -218,17 +238,6 @@
               (er hard? 'assumptions-for-input "Bad type: ~x0." type))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; todo: strengthen: what are the allowed types?  todo: Allow float types?
-(defun names-and-typesp (names-and-types)
-  (declare (xargs :guard t))
-  (and (doublet-listp names-and-types)
-       (let ((names (strip-cars names-and-types))
-             (types (acl2::strip-cadrs names-and-types)))
-         (and (symbol-listp names)
-              ;; Can't use the same name as a register (would make the output-indicator ambiguous):
-              (not (intersection-equal (acl2::map-symbol-name names) '("RAX" "EAX" "ZMM0" "YMM0" "XMM0"))) ; todo: keep in sync with normal-output-indicatorp
-              (symbol-listp types)))))
 
 ;; might have extra, unneeded items in state-components
 (defun assumptions-for-inputs (input-names-and-types state-components stack-slots disjoint-chunk-addresses-and-lens)

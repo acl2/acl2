@@ -1503,6 +1503,7 @@
     submit-event
     must-be-redundant
     must-fail
+    strip-cadrs
 
     ;; x86 stuff (move to x package?):
     elf-info

@@ -1,6 +1,6 @@
 ; BLAKE package
 ;
-; Copyright (C) 2019-2020 Kestrel Institute
+; Copyright (C) 2019-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -26,6 +26,7 @@
             bvcat2
             bvplus
             bvshr
+            bvshl
             and32
             xor32
             not32

@@ -1216,7 +1216,7 @@
                               equiv-alist rule-alist nodenums-to-assume-false1 nodenums-to-assume-false2 assumption-array assumption-array-num-valid-nodes print hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator
                               prover-depth options (+ -1 count))
                            (prog2$ (and (member-eq rule-symbol monitored-symbols)
-                                        (cw "(Failed. Reason: Failed to relieve axe-syntaxp hyp (number ~x0): ~x1 for ~x2.)~%" hyp-num hyp rule-symbol))
+                                        (cw "(Failed. Reason: Failed to relieve axe-syntaxp hyp ~x0 for ~x1.)~%" syntaxp-expr rule-symbol))
                                    (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries))))
                      (if (eq :axe-bind-free fn)
                          (let* ((bind-free-expr (cadr hyp)) ;; strip off the :AXE-BIND-FREE
@@ -1237,7 +1237,7 @@
                                                             prover-depth options (+ -1 count))))
                              ;; failed to relieve the axe-bind-free hyp:
                              (prog2$ (and (member-eq rule-symbol monitored-symbols)
-                                          (cw "(Failed.  Reason: Failed to relieve axe-bind-free hyp (number ~x0): ~x1 for ~x2.)~%" hyp-num hyp rule-symbol))
+                                          (cw "(Failed.  Reason: Failed to relieve axe-bind-free hyp ~x0 for ~x1.)~%" bind-free-expr rule-symbol))
                                      (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries))))
                        (if (eq :free-vars fn)
                            ;; HYP has free vars (also, any work-hard has been dropped):

@@ -406,8 +406,10 @@
 
 ;; essentialy, this puts in < instead of > -- todo make better named normal forms for such things
 ;non-axe
+;; this puts the syntactically smaller op first
 (defthmd equal-of-0-and-mv-nth-1-of-sse-cmp-of-ucomi
-  (implies (and (equal (mxcsrbits->daz$inline mxcsr) 0)
+  (implies (and (syntaxp (acl2::smaller-termp op2 op1))
+                (equal (mxcsrbits->daz$inline mxcsr) 0)
                 (equal (mxcsrbits->im$inline mxcsr) 1)
                 (equal (mxcsrbits->dm$inline mxcsr) 1))
            (equal (equal 0 (mv-nth 1 (sse-cmp *op-ucomi* op1 op2 mxcsr exp-width frac-width)))
@@ -426,7 +428,7 @@
 
 ;; this puts the syntactically smaller op first
 (defthmd equal-of-1-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder
-  (implies (and (axe-syntaxp (acl2::smaller-termp op1 op2))
+  (implies (and (syntaxp (acl2::smaller-termp op2 op1))
                 (equal (mxcsrbits->daz$inline mxcsr) 0)
                 (equal (mxcsrbits->im$inline mxcsr) 1)
                 (equal (mxcsrbits->dm$inline mxcsr) 1))
@@ -446,7 +448,7 @@
 
 ;non-axe
 (defthmd equal-of-7-and-mv-nth-1-of-sse-cmp-of-ucomi
-  (implies (syntaxp (acl2::smaller-termp op1 op2))
+  (implies (syntaxp (acl2::smaller-termp op2 op1))
            (equal (equal 7 (mv-nth 1 (sse-cmp *op-ucomi* op1 op2 mxcsr exp-width frac-width)))
                   (equal 7 (mv-nth 1 (sse-cmp *op-ucomi* op2 op1 mxcsr exp-width frac-width)))))
   :rule-classes ((:rewrite :loop-stopper nil))

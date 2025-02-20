@@ -65,9 +65,9 @@ the behavior of the ACL2 predicate signed-byte-p.)"))
  ((bvchop "Chop a value down to the given size."))
  (bv))
 
-;; (depends-on "bvplus.lisp")
+;; (depends-on "bvplus-def.lisp")
 (gen-xdoc-for-file
- "bvplus.lisp"
+ "bvplus-def.lisp"
  ((bvplus "Bit-vector sum."))
  (bv))
 
