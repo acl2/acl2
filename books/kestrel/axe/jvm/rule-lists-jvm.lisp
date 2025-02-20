@@ -1233,6 +1233,8 @@
             primitive-array-contents-okp-of-double
 
             jvm::skip-invokestatic-instruction
+            not-equal-nil-when-equal-of-len-arg1
+            not-equal-nil-when-equal-of-len-arg2
             )))
 
 ;; all rules needed to simplify JVM expressions (but not to actually do symbolic execution)
