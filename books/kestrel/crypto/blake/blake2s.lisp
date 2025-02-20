@@ -15,12 +15,12 @@
 ;; See blake2s-tests.lisp
 
 (include-book "blake-common-32")
-(include-book "kestrel/lists-light/repeat" :dir :system)
+(include-book "kestrel/lists-light/repeat-def" :dir :system)
 (include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system)
 (include-book "kestrel/bv/bvcat2" :dir :system)
 (include-book "kestrel/bv/bvshl-def" :dir :system)
 (include-book "kestrel/bv/bvshr-def" :dir :system)
-(include-book "kestrel/bv/bvplus" :dir :system)
+(include-book "kestrel/bv/bvplus-def" :dir :system)
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
@@ -33,9 +33,11 @@
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
+(local (include-book "kestrel/lists-light/repeat" :dir :system))
 (local (include-book "kestrel/bv-lists/all-unsigned-byte-p2" :dir :system))
 ;(local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/bv/bvcat" :dir :system))
+(local (include-book "kestrel/bv/bvplus" :dir :system))
 
 (local (in-theory (disable len true-listp nth update-nth expt))) ;; prevent inductions
 
