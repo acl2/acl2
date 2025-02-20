@@ -14,6 +14,7 @@
 (include-book "round-after-last")
 (include-book "last-blockchain-round")
 (include-book "ordered-blockchain")
+(include-book "proposal-author-self")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -30,6 +31,7 @@
     "This is work in progress."))
   :order-subtopics (round-after-last
                     last-blockchain-round
-                    ordered-blockchain))
+                    ordered-blockchain
+                    proposal-author-self))
 
 ; TODO: continue
