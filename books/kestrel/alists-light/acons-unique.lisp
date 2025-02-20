@@ -1,7 +1,7 @@
 ; A variant of ACONS that can keep the alist smaller
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -51,3 +51,22 @@
   (implies (true-listp alist)
            (true-listp (acons-unique key val alist)))
   :hints (("Goal" :in-theory (enable acons-unique))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund acons-unique-eq (key val alist)
+  (declare (xargs :guard (if (symbolp key)
+                             (alistp alist)
+                           (symbol-alistp alist))))
+  (if (endp alist)
+      (cons (cons key val) nil)
+    (let ((entry (car alist)))
+      (if (eq key (car entry)) ;we found the binding
+          (cons (cons key val) (cdr alist))
+        (cons entry (acons-unique-eq key val (cdr alist)))))))
+
+(defthm acons-unique-eq-becomes-acons-unique
+  (equal (acons-unique-eq key val alist)
+         (acons-unique key val alist))
+  :hints (("Goal" :in-theory (enable acons-unique-eq
+                                     acons-unique))))
