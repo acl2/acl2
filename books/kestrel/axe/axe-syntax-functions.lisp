@@ -34,20 +34,20 @@
 
 ;;TODO: Change these to never compare nodenums (can cause simplification to loop if things keep getting commuted due to different nodenums?)
 
-; Check whether x is 'heavier' than y.  Helps us decide when to reorder terms
+; Check whether x is 'lighter' than y.  Helps us decide when to reorder terms
 ; (e.g., to put 'light' terms first).  x and y are either quoteps or nodenums.
-;; todo: rename heavier-darg?
-(defund heavier-dag-term (x y)
+(defund lighter-dargp (x y)
   (declare (xargs :guard (and (dargp x)
                               (dargp y))))
   (if (consp x) ; checks for quotep
       (if (consp y) ; checks for quotep
-          (<< (unquote y) (unquote x))
-        nil)
-    (if (consp y) ; checks for quotep
-        t
-      ;;both are nodenums
-      (< y x))))
+          (<< (unquote x) (unquote y))
+        t ; x is a constant but y isn't, so x is "lighter"
+        )
+    (if (consp y)
+        nil ; x is not a constant but y is, so x is not "lighter"
+      ;; both are nodenums:
+      (< x y))))
 
 ;drop?
 ;; (defun valid-array-indexp (index array-name array)

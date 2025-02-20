@@ -411,7 +411,7 @@
   (implies (and (syntaxp (and (quotep flag1)
                               (quotep flag2)
                               ))
-                (axe-syntaxp (heavier-dag-term flag1 flag2))
+                (axe-syntaxp (lighter-dargp flag2 flag1))
                 (not (equal flag1 flag2))
                 (member-eq flag1 *flags*)
                 (member-eq flag2 *flags*)
@@ -784,17 +784,17 @@
 
 ;; this puts the syntactically smaller op first
 (defthmd equal-of-0-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder-axe
-  (implies (and (axe-syntaxp (acl2::heavier-dag-term op1 op2))
+  (implies (and (axe-syntaxp (acl2::lighter-dargp op2 op1))
                 (equal (mxcsrbits->daz$inline mxcsr) 0)
                 (equal (mxcsrbits->im$inline mxcsr) 1)
                 (equal (mxcsrbits->dm$inline mxcsr) 1))
            (equal (equal 0 (mv-nth 1 (sse-cmp *op-ucomi* op1 op2 mxcsr exp-width frac-width)))
                   (equal 1 (mv-nth 1 (sse-cmp *op-ucomi* op2 op1 mxcsr exp-width frac-width)))))
-  :hints (("Goal" :in-theory (enable sse-cmp sse-cmp-special))))
+  :hints (("Goal" :use equal-of-0-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder)))
 
 ;; this puts the syntactically smaller op first
 (defthmd equal-of-1-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder-axe
-  (implies (and (axe-syntaxp (acl2::heavier-dag-term op1 op2))
+  (implies (and (axe-syntaxp (acl2::lighter-dargp op2 op1))
                 (equal (mxcsrbits->daz$inline mxcsr) 0)
                 (equal (mxcsrbits->im$inline mxcsr) 1)
                 (equal (mxcsrbits->dm$inline mxcsr) 1))
@@ -804,8 +804,7 @@
 
 ;; this puts the syntactically smaller op first
 (defthmd equal-of-7-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder-axe
-  (implies (axe-syntaxp (acl2::heavier-dag-term op1 op2))
+  (implies (axe-syntaxp (acl2::lighter-dargp op2 op1))
            (equal (equal 7 (mv-nth 1 (sse-cmp *op-ucomi* op1 op2 mxcsr exp-width frac-width)))
                   (equal 7 (mv-nth 1 (sse-cmp *op-ucomi* op2 op1 mxcsr exp-width frac-width)))))
-  :hints (("Goal" :use equal-of-7-and-mv-nth-1-of-sse-cmp-of-ucomi
-           :in-theory (disable equal-of-7-and-mv-nth-1-of-sse-cmp-of-ucomi))))
+  :hints (("Goal" :use equal-of-7-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder)))
