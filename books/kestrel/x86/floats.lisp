@@ -405,7 +405,7 @@
 
 ;; this puts the syntactically smaller op first
 ;; See also the Axe version of this rule.
-(defthmd equal-of-0-and-mv-nth-1-of-sse-cmp-of-ucomi
+(defthmd equal-of-0-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder
   (implies (and (syntaxp (acl2::smaller-termp op2 op1))
                 (equal (mxcsrbits->daz$inline mxcsr) 0)
                 (equal (mxcsrbits->im$inline mxcsr) 1)
@@ -427,7 +427,7 @@
 
 ;; this puts the syntactically smaller op first
 ;; See also the Axe version of this rule.
-(defthmd equal-of-7-and-mv-nth-1-of-sse-cmp-of-ucomi
+(defthmd equal-of-7-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder
   (implies (syntaxp (acl2::smaller-termp op2 op1))
            (equal (equal 7 (mv-nth 1 (sse-cmp *op-ucomi* op1 op2 mxcsr exp-width frac-width)))
                   (equal 7 (mv-nth 1 (sse-cmp *op-ucomi* op2 op1 mxcsr exp-width frac-width)))))
