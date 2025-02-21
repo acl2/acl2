@@ -3079,7 +3079,7 @@
                    (:rewrite ,(pack$ 'simplify-tree-and-add-to-dag- suffix '-of-0))
                    (:rewrite ,(pack$ 'simplify-trees-and-add-to-dag- suffix '-of-0))
                    (:rewrite stored-axe-rule-listp-of-cdr)
-                   (:rewrite stored-axe-rule-listp-of-get-rules-for-fn-when-rule-alistp)
+                   (:rewrite stored-axe-rule-listp-of-get-rules-for-fn)
                    (:rewrite stored-axe-rulep-of-car)
                    (:rewrite strip-cdrs-of-acons)
                    (:rewrite strip-cdrs-of-append)

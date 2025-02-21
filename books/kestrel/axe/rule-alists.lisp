@@ -26,8 +26,9 @@
 
 ;; A rule-alist is a database of rules used by Axe.  It is a list of entries,
 ;; where each entry maps a function symbol to a list of stored-rules that can
-;; rewrite calls of that function.  (All rules must have a topmost function
-;; symbol; the LHS of a rule can't be a constant or variable).
+;; rewrite calls of that function.  (Every Axe rules must have a topmost function
+;; symbol that can be used as a key for this alist; that is, the LHS of a rule
+;; can't be a constant or a variable.)
 (defund rule-alistp (alist)
   (declare (xargs :guard t))
   (if (atom alist)
@@ -91,12 +92,12 @@
                               (rule-alistp rule-alist))))
   (lookup-eq fn rule-alist))
 
-(defthmd true-listp-of-get-rules-for-fn-when-rule-alistp
-  (implies (rule-alistp alist)
-           (true-listp (get-rules-for-fn key alist)))
-  :hints (("Goal" :in-theory (enable get-rules-for-fn lookup-equal assoc-equal rule-alistp))))
+;; (defthmd true-listp-of-get-rules-for-fn-when-rule-alistp
+;;   (implies (rule-alistp alist)
+;;            (true-listp (get-rules-for-fn key alist)))
+;;   :hints (("Goal" :in-theory (enable get-rules-for-fn lookup-equal assoc-equal rule-alistp))))
 
-(defthm stored-axe-rule-listp-of-get-rules-for-fn-when-rule-alistp
+(defthm stored-axe-rule-listp-of-get-rules-for-fn
   (implies (rule-alistp alist)
            (stored-axe-rule-listp (get-rules-for-fn key alist)))
   :hints (("Goal" :in-theory (enable get-rules-for-fn lookup-equal assoc-equal rule-alistp))))
