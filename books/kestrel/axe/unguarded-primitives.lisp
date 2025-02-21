@@ -151,3 +151,19 @@
   (equal (intern-in-package-of-symbol-unguarded str sym)
          (intern-in-package-of-symbol str sym))
   :hints (("Goal" :in-theory (enable intern-in-package-of-symbol-unguarded))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund coerce-unguarded (x y)
+  (declare (xargs :guard t))
+  (cond ((equal y 'list)
+         (if (stringp x)
+             (coerce x 'list)
+           nil))
+        (t (coerce (make-character-list x) 'string))))
+
+(defthm coerce-unguarded-correct
+  (equal (coerce-unguarded x y)
+         (coerce x y))
+  :hints (("Goal" :in-theory (enable coerce-unguarded)
+           :use (:instance completion-of-coerce))))
