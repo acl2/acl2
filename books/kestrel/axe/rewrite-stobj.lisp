@@ -1,6 +1,6 @@
-; A stobj to gather parameters used in rewriting
+; A stobj to gather data structures used in rewriting
 ;
-; Copyright (C) 2022-2024 Kestrel Institute
+; Copyright (C) 2022-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,10 +15,13 @@
 (include-book "interpreted-function-alistp")
 (include-book "rule-alists")
 
-;; TODO: Consider adding more things to this.
-;; We could also add things like memoization, info, tries, and limits,
-;; but then the stobj would have to be returned from each function
-;; in the main clique.
+;; Note that none of the information in the rewrite-stobj changes during
+;; rewriting, so the stobj does not have to be returned by the functions in the
+;; main rewriter clique.
+
+;; See also rewrite-stobj2.lisp, for a stobj that includes fields that do change.
+
+;; TODO: Consider adding more things to this?
 
 (defstobj+ rewrite-stobj
   ;; Functions that are known to be boolean in the current world:
@@ -30,13 +33,16 @@
   ;; Whether to use our special-purpose code to normalize nests of XORs:
   (normalize-xors :type (satisfies booleanp) :initially nil)
   ;; Definitions of functions not built into the evaluator:
-  ;; TODO: Require alist this to be complete?
+  ;; TODO: Require this alist to be complete?
   (interpreted-function-alist :type (satisfies interpreted-function-alistp) :initially nil)
-  ;; Rules to be applied when rewriting, stored as a rule-alist:
-  (rule-alist :type (satisfies rule-alistp) :initially nil)
-  ;; Functions to elide when printing failure info (e.g., the refined-assumption-alist) for monitored rules:
+  ;; Rules to be applied when rewriting, analogous to a rule-alist:
+  (rule-db :type (hash-table eq 1024 (satisfies stored-axe-rule-listp)) :initially nil) ; size=1024 is just a hint
+  ;; Functions to elide when printing failure info for monitored rules (e.g.,
+  ;; when printing the refined-assumption-alist, which can include large
+  ;; terms):
   (fns-to-elide :type (satisfies symbol-listp) :initially nil)
   :inline t
+  ;; Changes the names to be get-XXX and put-XXX:
   :renaming ((known-booleans get-known-booleans)
              (update-known-booleans put-known-booleans)
              (monitored-symbols get-monitored-symbols)
@@ -49,11 +55,38 @@
              (interpreted-function-alistp interpreted-function-alist-fieldp) ; since interpreted-function-alistp is already used!  can we suppress the recognizer in this case?
              (interpreted-function-alist get-interpreted-function-alist)
              (update-interpreted-function-alist put-interpreted-function-alist)
-             (rule-alistp rule-alist-fieldp) ; since rule-alistp is already used!  can we suppress the recognizer in this case?
-             (rule-alist get-rule-alist)
-             (update-rule-alist put-rule-alist)
+             ;; (rule-alistp rule-alist-fieldp) ; since rule-alistp is already used!  can we suppress the recognizer in this case?
+             ;; (rule-db get-rule-db)
+             ;; (update-rule-db put-rule-db)
              (fns-to-elide get-fns-to-elide)
              (update-fns-to-elide put-fns-to-elide)))
+
+(in-theory (disable rule-db-get rule-db-put rule-db-clear)) ; todo: defstobj+ should do this
+
+;; todo defstobj+ should do this
+(local
+  (defthm rule-dbp-of-cons-of-cons
+    (equal (rule-dbp (cons (cons k v) rule-db))
+           (and (stored-axe-rule-listp v)
+                (rule-dbp rule-db)))
+    :hints (("Goal" :in-theory (enable rule-dbp)))))
+
+;; todo defstobj+ should do this
+(local
+  (defthm rewrite-stobjp-of-rule-db-put
+    (implies (and (symbolp k)
+                  (stored-axe-rule-listp v)
+                  (rewrite-stobjp rewrite-stobj))
+             (rewrite-stobjp (rule-db-put k v rewrite-stobj)))
+    :hints (("Goal" :in-theory (enable rule-db-put rewrite-stobjp)))))
+
+(local
+  (defthm rewrite-stobjp-of-rule-db-clear
+    (implies (rewrite-stobjp rewrite-stobj)
+             (rewrite-stobjp (rule-db-clear rewrite-stobj)))
+    :hints (("Goal" :in-theory (enable rule-db-clear rewrite-stobjp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; In case we turn off tau.
 (defthm true-listp-of-get-monitored-symbols
@@ -61,3 +94,52 @@
            (true-listp (get-monitored-symbols rewrite-stobj)))
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable rewrite-stobjp get-monitored-symbols))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(local
+  (defthm stored-axe-rule-listp-of-cdr-of-hons-assoc-equal
+    (implies (rule-dbp rule-db)
+             (stored-axe-rule-listp (cdr (hons-assoc-equal fn rule-db))))
+    :hints (("Goal" :in-theory (enable rule-dbp hons-assoc-equal)))))
+
+(defthm stored-axe-rule-listp-of-rule-db-get
+  (implies (rewrite-stobjp rewrite-stobj)
+           (stored-axe-rule-listp (rule-db-get fn rewrite-stobj)))
+  :hints (("Goal" :in-theory (enable rewrite-stobjp rule-db-get))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund load-rule-db-aux (rule-alist rewrite-stobj)
+  (declare (xargs :guard (rule-alistp rule-alist)
+                  :stobjs rewrite-stobj
+                  :guard-hints (("Goal" :in-theory (enable rule-alistp)))))
+  (if (endp rule-alist)
+      rewrite-stobj
+    (let* ((entry (first rule-alist))
+           (fn (car entry))
+           (stored-rules (cdr entry))
+           (rewrite-stobj (rule-db-put fn stored-rules rewrite-stobj)))
+      (load-rule-db-aux (rest rule-alist) rewrite-stobj))))
+
+(local
+  (defthm rewrite-stobjp-of-load-rule-db-aux
+    (implies (and (rule-alistp rule-alist)
+                  (rewrite-stobjp rewrite-stobj))
+             (rewrite-stobjp (load-rule-db-aux rule-alist rewrite-stobj)))
+    :hints (("Goal" :in-theory (enable load-rule-db-aux rule-alistp)))))
+
+;; Loads the RULE-ALIST into the stobj.
+;; The clearing may not always be needed.
+(defund load-rule-db (rule-alist rewrite-stobj)
+  (declare (xargs :guard (rule-alistp rule-alist)
+                  :stobjs rewrite-stobj))
+  (let* ((rewrite-stobj (rule-db-clear rewrite-stobj))
+         (rewrite-stobj (load-rule-db-aux rule-alist rewrite-stobj)))
+    rewrite-stobj))
+
+(defthm rewrite-stobjp-of-load-rule-db
+  (implies (and (rule-alistp rule-alist)
+                (rewrite-stobjp rewrite-stobj))
+           (rewrite-stobjp (load-rule-db rule-alist rewrite-stobj)))
+  :hints (("Goal" :in-theory (enable load-rule-db))))

@@ -106,7 +106,7 @@
         ;; We use acons-unique here, to keep the LIMITS from growing.  Note
         ;; that limit-reachedp may be called many times, so we want to keep the
         ;; LIMITS small.
-        (acons-unique rule-symbol (+ -1 (the integer limit)) limits)))))
+        (acons-unique-eq rule-symbol (+ -1 (the integer limit)) limits)))))
 
 (defthm rule-limitsp-of-decrement-rule-limit
   (implies (and (rule-limitsp limits)
@@ -127,7 +127,7 @@
                   ))
   (if (endp rule-names)
       limits
-    (add-limit-for-rules (rest rule-names) limit (acons-unique (first rule-names) limit limits))))
+    (add-limit-for-rules (rest rule-names) limit (acons-unique-eq (first rule-names) limit limits))))
 
 (defthm rule-limitsp-of-add-limit-for-rules
   (implies (and (symbol-listp rule-names)
