@@ -1,6 +1,6 @@
-; A stobj to gather parameters used in rewriting
+; A stobj to gather data structures used in rewriting
 ;
-; Copyright (C) 2022-2024 Kestrel Institute
+; Copyright (C) 2022-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,10 +15,13 @@
 (include-book "interpreted-function-alistp")
 (include-book "rule-alists")
 
-;; TODO: Consider adding more things to this.
-;; We could also add things like memoization, info, tries, and limits,
-;; but then the stobj would have to be returned from each function
-;; in the main clique.
+;; Note that none of the information in the rewrite-stobj changes during
+;; rewriting, so the stobj does not have to be returned by the functions in the
+;; main rewriter clique.
+
+;; See also rewrite-stobj2.lisp, for a stobj that includes fields that do change.
+
+;; TODO: Consider adding more things to this?
 
 (defstobj+ rewrite-stobj
   ;; Functions that are known to be boolean in the current world:
@@ -30,13 +33,16 @@
   ;; Whether to use our special-purpose code to normalize nests of XORs:
   (normalize-xors :type (satisfies booleanp) :initially nil)
   ;; Definitions of functions not built into the evaluator:
-  ;; TODO: Require alist this to be complete?
+  ;; TODO: Require this alist to be complete?
   (interpreted-function-alist :type (satisfies interpreted-function-alistp) :initially nil)
   ;; Rules to be applied when rewriting, stored as a rule-alist:
   (rule-alist :type (satisfies rule-alistp) :initially nil)
-  ;; Functions to elide when printing failure info (e.g., the refined-assumption-alist) for monitored rules:
+  ;; Functions to elide when printing failure info for monitored rules (e.g.,
+  ;; when printing the refined-assumption-alist, which can include large
+  ;; terms):
   (fns-to-elide :type (satisfies symbol-listp) :initially nil)
   :inline t
+  ;; Changes the names to be get-XXX and put-XXX:
   :renaming ((known-booleans get-known-booleans)
              (update-known-booleans put-known-booleans)
              (monitored-symbols get-monitored-symbols)
