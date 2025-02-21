@@ -301,8 +301,8 @@
                             (cw "(Failed (rewrite-objective is ~x0) for hyp ~x1 of ~x2.)~%" rewrite-objective hyp rule-symbol))
                        (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state result-array-stobj))))
          (if (eq :axe-syntaxp fn)
-             (let* ((syntax-expr (cdr hyp)) ;; strip off the AXE-SYNTAXP
-                    (result (eval-axe-syntaxp-expr-jvm syntax-expr alist dag-array)))
+             (let* ((syntaxp-expr (cdr hyp)) ;; strip off the AXE-SYNTAXP
+                    (result (eval-axe-syntaxp-expr-jvm syntaxp-expr alist dag-array)))
                (if result
                    ;;this hyp counts as relieved:
                    (relieve-rewrite-rule-hyps (rest hyps) (+ 1 hyp-num) rewrite-objective alist rule-symbol
@@ -311,7 +311,7 @@
                  ;;failed to relieve the axe-syntaxp hyp:
                  (progn$ (and (member-eq rule-symbol monitored-symbols)
                               ;;is it worth printing in this case?
-                              (progn$ (cw "(Failed to relieve axe-syntaxp hyp: ~x0 for ~x1.)~%" hyp rule-symbol)
+                              (progn$ (cw "(Failed to relieve axe-syntaxp hyp ~x0 for ~x1.)~%" syntaxp-expr rule-symbol)
                                       ;; (cw "(DAG:~%")
                                       ;; (print-array 'dag-array dag-array dag-len)
                                       ;; (cw ")~%")
@@ -338,7 +338,7 @@
                                                     interpreted-function-alist rule-alist oi-rule-alist refined-assumption-alist equality-array print monitored-symbols hit-counts tries normalize-xors state result-array-stobj)))
                    ;; failed to relieve the axe-bind-free hyp:
                    (prog2$ (and (member-eq rule-symbol monitored-symbols)
-                                (cw "(Failed to relieve axe-bind-free hyp: ~x0 for ~x1.)~%" hyp rule-symbol))
+                                (cw "(Failed to relieve axe-bind-free hyp ~x0 for ~x1.)~%" bind-free-expr rule-symbol))
                            (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries state result-array-stobj))))
              (if (eq :free-vars fn) ;can't be a work-hard since there are free vars
                  ;; First, we substitute in for all the vars in HYP that are bound in ALIST (inefficient?)

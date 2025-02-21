@@ -4452,13 +4452,13 @@
 
     if-of-set-rip-and-set-rip-same
 
-    ;; Reading/writing registers (or parts of registers). These rules put in xr, which then becomes rax.  TODO: Go directly
-    rgfi-size$inline ;dispatches to rr08, etc.
+    ;; Reading/writing registers (or parts of registers).
+    rgfi-size$inline ; dispatches to rr08, etc.
     ;; These 4 go directly to the appropriate accessor, e.g., rax:
-    rr08-to-normal-form64 ; rr08$inline ; exposes rgfi
-    rr16-to-normal-form64 ; rr16$inline ; exposes rgfi
-    rr32-to-normal-form64 ; rr32$inline ; exposes rgfi
-    rr64-to-normal-form64 ; rr64$inline ; exposes rgfi
+    rr08-to-normal-form64
+    rr16-to-normal-form64
+    rr32-to-normal-form64
+    rr64-to-normal-form64
     rgfi-becomes-rax
     rgfi-becomes-rbx
     rgfi-becomes-rcx
@@ -4478,10 +4478,10 @@
 
     !rgfi-size$inline ; dispatches to wr08, etc.
     ;; These 4 go directly to the appropriate functions, e.g., set-rax:
-    wr08-to-normal-form64 ; wr08$inline ; exposes !rgfi
-    wr16-to-normal-form64 ; wr16$inline ; exposes !rgfi
-    wr32-to-normal-form64 ; wr32$inline ; exposes !rgfi
-    wr64-to-normal-form64 ; wr64$inline ; exposes !rgfi
+    wr08-to-normal-form64
+    wr16-to-normal-form64
+    wr32-to-normal-form64
+    wr64-to-normal-form64
     !rgfi-becomes-set-rax
     !rgfi-becomes-set-rbx
     !rgfi-becomes-set-rcx
@@ -4761,7 +4761,7 @@
 
             acl2::logext-of-+-of-bvplus-same-size
             acl2::logext-of-+-of-+-of-mult-same-size
-            acl2::minus-cancellation-on-right ; todo: use an arithmetic-light rule
+            ;acl2::minus-cancellation-on-right ; todo: use an arithmetic-light rule
             acl2::bvchop-of-nth-becomes-bv-array-read2 ; needed for stp to see the array op
             acl2::bv-array-read-of-*-arg3 ; introduces bvmult for the index
             acl2::bv-array-read-of-+-arg3 ; introduces bvplus for the index

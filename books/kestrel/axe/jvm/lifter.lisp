@@ -70,6 +70,7 @@
 (include-book "kestrel/bv-lists/bv-array-conversions" :dir :system)
 (include-book "kestrel/event-macros/cw-event" :dir :system)
 (include-book "kestrel/typed-lists-light/nat-list-listp" :dir :system)
+(include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system) ; for right-cancellation-for-+
 (local (include-book "kestrel/utilities/acl2-count" :dir :system))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 

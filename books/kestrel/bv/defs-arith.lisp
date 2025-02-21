@@ -13,9 +13,7 @@
 
 (include-book "bvchop-def")
 
-(defund bvplus (size x y)
-  (declare (type (integer 0 *) size))
-  (bvchop size (+ (ifix x) (ifix y))))
+;; See also bvplus-def.lisp
 
 (defund bvminus (size x y)
   (declare (type (integer 0 *) size))

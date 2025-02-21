@@ -1,7 +1,7 @@
 ; Cherry-pick the definitions of the BV functions
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -26,6 +26,7 @@
 (include-book "bvshr-def")
 (include-book "bvshl-def")
 (include-book "bvlt-def")
+(include-book "bvplus-def")
 (include-book "defs-arith")
 (include-book "leftrotate") ; todo: split out defs
 (include-book "rightrotate") ; todo: split out defs

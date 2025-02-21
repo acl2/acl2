@@ -184,35 +184,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund nthcdr-unguarded (n l)
-  (declare (xargs :guard t))
-  (if (or (not (natp n))
-          (<= n 0))
-      l
-    (if (consp l)
-        (nthcdr-unguarded (+ n -1) (cdr l))
-      nil)))
-
-(defthm nthcdr-unguarded-correct
-  (equal (nthcdr-unguarded n l)
-         (nthcdr n l))
-  :hints (("Goal" :in-theory (enable nthcdr-unguarded))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund take-unguarded (n lst)
-  (declare (xargs :guard t))
-  (if (true-listp lst)
-      (take (nfix n) lst)
-    (take (nfix n) (true-list-fix lst))))
-
-(defthm take-unguarded-correct
-  (equal (take-unguarded n lst)
-         (take n lst))
-  :hints (("Goal" :in-theory (enable take-unguarded take))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defund reverse-list-unguarded (x)
   (declare (xargs :guard t))
   (if (true-listp x)
@@ -390,22 +361,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defund coerce-unguarded (x y)
-  (declare (xargs :guard t))
-  (cond ((equal y 'list)
-         (if (stringp x)
-             (coerce x 'list)
-           nil))
-        (t (coerce (make-character-list x) 'string))))
-
-(defthm coerce-unguarded-correct
-  (equal (coerce-unguarded x y)
-         (coerce x y))
-  :hints (("Goal" :in-theory (enable coerce-unguarded)
-           :use (:instance completion-of-coerce))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defund lg-unguarded (x)
   (declare (xargs :guard t))
   (+ -1 (integer-length-unguarded x)))
@@ -554,41 +509,6 @@
   (equal (bvdiv-unguarded size x y)
          (bvdiv size x y))
   :hints (("Goal" :in-theory (enable bvdiv bvdiv-unguarded))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund eql-unguarded (x y)
-  (declare (xargs :guard t))
-  (equal x y))
-
-(defthm eql-unguarded-correct
-  (equal (eql-unguarded x y)
-         (eql x y))
-  :hints (("Goal" :in-theory (enable eql-unguarded eql))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund eq-unguarded (x y)
-  (declare (xargs :guard t))
-  (equal x y))
-
-(defthm eq-unguarded-correct
-  (equal (eq-unguarded x y)
-         (eq x y))
-  :hints (("Goal" :in-theory (enable eq-unguarded eq))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defund member-equal-unguarded (x lst)
-  (declare (xargs :guard t))
-  (cond ((atom lst) nil)
-        ((equal x (car lst)) lst)
-        (t (member-equal-unguarded x (cdr lst)))))
-
-(defthm member-equal-unguarded-correct
-  (equal (member-equal-unguarded x y)
-         (member-equal x y))
-  :hints (("Goal" :in-theory (enable member-equal-unguarded member-equal))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

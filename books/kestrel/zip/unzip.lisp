@@ -30,6 +30,7 @@
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cars" :dir :system))
 (local (include-book "kestrel/alists-light/strip-cdrs" :dir :system))
+(local (include-book "kestrel/alists-light/lookup-equal" :dir :system))
 (local (include-book "kestrel/typed-lists-light/string-listp" :dir :system))
 
 (local (in-theory (disable mv-nth natp true-listp

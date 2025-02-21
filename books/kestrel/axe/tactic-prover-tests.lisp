@@ -1,7 +1,7 @@
 ; Tests of the tactic prover
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -18,6 +18,7 @@
 (include-book "kestrel/utilities/deftest" :dir :system)
 (include-book "tactic-prover")
 (include-book "rules-in-rule-lists") ;for equal-same, etc
+(include-book "kestrel/library-wrappers/arithmetic-inequalities" :dir :system) ; for minus-cancellation-on-left
 
 ;A simple test
 (deftest

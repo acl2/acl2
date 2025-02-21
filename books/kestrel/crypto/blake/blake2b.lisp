@@ -1,4 +1,4 @@
-; Formal specification of BLAKE2s
+; Formal specification of BLAKE2b
 ;
 ; Copyright (C) 2020-2025 Kestrel Institute
 ;
@@ -12,9 +12,9 @@
 
 ;; Written from https://tools.ietf.org/rfc/rfc7693.txt.
 
-;; See blake2s-tests.lisp
+;; See blake2b-tests.lisp
 
-(include-book "blake-common-32")
+(include-book "blake-common-64")
 (include-book "kestrel/lists-light/repeat-def" :dir :system)
 (include-book "kestrel/bv-lists/all-unsigned-byte-p" :dir :system)
 (include-book "kestrel/bv/bvcat2" :dir :system)
@@ -59,24 +59,24 @@
 
 ;; Sec 2.1
 
-;; Note that *w* (bits in word) is defined in blake-common-32.lisp.
+;; Note that *w* (bits in word) is defined in blake-common-64.lisp.
 
-(defconst *r* 10) ;; number of rounds in F
+(defconst *r* 12) ;; number of rounds in F
 
-(defconst *bb* 64)  ;; number of bytes in a block
+(defconst *bb* 128)  ;; number of bytes in a block
 
-(defconst *max-hash-bytes* 32)
+(defconst *max-hash-bytes* 64)
 
-(defconst *max-key-bytes* 32)
+(defconst *max-key-bytes* 64)
 
 ;; This one is exclusive, so we call it a limit, not a max.
-(defconst *blake2s-max-data-byte-length* (expt 2 64)) ; todo: rename this to *input-bytes-limit*
+(defconst *blake2b-max-data-byte-length* (expt 2 128)) ; todo: rename this to *input-bytes-limit*
 
 ;; G rotation constants:
-(defconst *r1* 16)
-(defconst *r2* 12)
-(defconst *r3* 8)
-(defconst *r4* 7)
+(defconst *r1* 32)
+(defconst *r2* 24)
+(defconst *r3* 16)
+(defconst *r4* 63)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -110,12 +110,16 @@
 
 (defconst *bytes-per-word* (/ *w* 8)) ; since *w* is bits-per-word
 
-;; Convert a list of 4 bytes into a word, in little endian fashion.
+;; Convert a list of 8 bytes into a word, in little endian fashion.
 (defund bytes-to-word (bytes)
   (declare (xargs :guard (and (true-listp bytes)
                               (= *bytes-per-word* (len bytes))
                               (all-unsigned-byte-p 8 bytes))))
-  (acl2::bvcat2 8 (nth 3 bytes) ;most significant byte
+  (acl2::bvcat2 8 (nth 7 bytes) ;most significant byte
+                8 (nth 6 bytes)
+                8 (nth 5 bytes)
+                8 (nth 4 bytes)
+                8 (nth 3 bytes)
                 8 (nth 2 bytes)
                 8 (nth 1 bytes)
                 8 (nth 0 bytes)))
@@ -153,7 +157,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Convert a list of 64 bytes into a block
+;; Convert a list of 128 bytes into a block
 (defund bytes-to-block (bytes)
   (declare (xargs :guard (and (true-listp bytes)
                               (= *bb* (len bytes))
@@ -218,7 +222,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Pad a non-empty key up to 64 bytes and convert into a block
+;; Pad a non-empty key up to 128 bytes and convert into a block
 (defund padded-key-block (key-bytes)
   (declare (xargs :guard (and (all-unsigned-byte-p 8 key-bytes)
                               (true-listp key-bytes)
@@ -450,12 +454,11 @@
                               (= 8 (len h))
                               (true-listp d)
                               (all-blockp d)
-                              (<= (len d) (/ *blake2s-max-data-byte-length* 64)) ;todo: think about this
+                              (<= (len d) (/ *blake2b-max-data-byte-length* 128)) ;todo: think about this
                               )
                   :measure (nfix (+ 1 (- bound i)))
                   :hints (("Goal" :in-theory (enable natp)))
-                  :guard-hints (("Goal" :in-theory (enable unsigned-byte-p)))
-                  ))
+                  :guard-hints (("Goal" :in-theory (enable unsigned-byte-p)))))
   (if (or (> i bound)
           (not (mbt (natp i)))
           (not (mbt (natp bound))))
@@ -482,14 +485,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Convert a 32-bit word into a list of 4 bytes, in little endian fashion.
+;; Convert a 64-bit word into a list of 8 bytes, in little endian fashion.
 ;; todo: prove inversion
 (defund word-to-bytes (word)
   (declare (xargs :guard (wordp word)))
   (list (slice 7 0 word)
         (slice 15 8 word)
         (slice 23 16 word)
-        (slice 31 24 word) ;; most significant byte
+        (slice 31 24 word)
+        (slice 39 32 word)
+        (slice 47 40 word)
+        (slice 55 48 word)
+        (slice 63 56 word) ;; most significant byte
         ))
 
 (defthm len-of-word-to-bytes
@@ -501,7 +508,7 @@
   (all-unsigned-byte-p 8 (word-to-bytes word))
   :hints (("Goal" :in-theory (enable word-to-bytes))))
 
-;; Convert a list of 32-bit words into a list of bytes, in little endian fashion.
+;; Convert a list of 64-bit words into a list of bytes, in little endian fashion.
 (defund words-to-bytes (words)
   (declare (xargs :guard (and (true-listp words)
                               (all-wordp words))))
@@ -524,15 +531,15 @@
 (local (in-theory (disable (:e expt))))
 
 ;; See the function BLAKE2 in RFC 7693 Sec 3.3.
-;;TODO: Consider the case when ll is the max.  Then (+ ll *bb*) is > 2^64, contrary to the documentation of f.
-(defund blake2s-main (d ll kk nn)
+;;TODO: Consider the case when ll is the max.  Then (+ ll *bb*) is > 2^128, contrary to the documentation of f.
+(defund blake2b-main (d ll kk nn)
   (declare (xargs :guard (and (true-listp d)
                               (all-blockp d)
                               (< 0 (len d))
-                              (<= (len d) (/ *blake2s-max-data-byte-length* 64)) ;think about this
+                              (<= (len d) (/ *blake2b-max-data-byte-length* 128)) ;think about this
                               (natp ll)
-                              ;; (< ll (- *blake2s-max-data-byte-length* 64))
-                              (< ll *blake2s-max-data-byte-length*)
+                              ;; (< ll (- *blake2b-max-data-byte-length* 128))
+                              (< ll *blake2b-max-data-byte-length*)
                               (natp kk)
                               (<= kk *max-key-bytes*)
                               (posp nn)
@@ -558,35 +565,35 @@
                  t))))
     (take nn (words-to-bytes h))))
 
-(defthm len-of-blake2s-main
+(defthm len-of-blake2b-main
   (implies (and (posp nn)
                 (<= nn *max-hash-bytes*))
-           (equal (len (blake2s-main d ll kk nn))
+           (equal (len (blake2b-main d ll kk nn))
                   nn))
-  :hints (("Goal" :in-theory (enable blake2s-main))))
+  :hints (("Goal" :in-theory (enable blake2b-main))))
 
-(defthm all-unsigned-byte-p-of-blake2s-main
+(defthm all-unsigned-byte-p-of-blake2b-main
   (implies (<= nn *max-hash-bytes*)
-           (all-unsigned-byte-p 8 (blake2s-main d ll kk nn)))
-  :hints (("Goal" :in-theory (enable blake2s-main))))
+           (all-unsigned-byte-p 8 (blake2b-main d ll kk nn)))
+  :hints (("Goal" :in-theory (enable blake2b-main))))
 
 ;; TODO: Think about the case where we have a max length message and a key
 
 ;; Returns the hash, as list of bytes of length NN.
-(defund blake2s (data-bytes
+(defund blake2b (data-bytes
                  key-bytes
                  nn ;; number of hash bytes to produce
                  )
   (declare (xargs :guard (and (all-unsigned-byte-p 8 data-bytes)
                               (true-listp data-bytes)
                               ;; TODO I want to say this:
-                              ;; (< (len data-bytes) *blake2s-max-data-byte-length*)
+                              ;; (< (len data-bytes) *blake2b-max-data-byte-length*)
                               ;; But there are two potential issues related to
                               ;; very long messages: Adding the key block can
                               ;; make the length of d greater than expected,
-                              ;; and the expression (+ ll *bb*) in blake2s-main
+                              ;; and the expression (+ ll *bb*) in blake2b-main
                               ;; can overflow.
-                              (< (len data-bytes) (- *blake2s-max-data-byte-length* 64)) ; todo: think about this
+                              (< (len data-bytes) (- *blake2b-max-data-byte-length* 128)) ; todo: think about this
                               (all-unsigned-byte-p 8 key-bytes)
                               (true-listp key-bytes)
                               (<= (len key-bytes) *max-key-bytes*)
@@ -595,18 +602,16 @@
   (let* ((d (d-blocks data-bytes key-bytes))
          (ll (len data-bytes))
          (kk (len key-bytes)))
-    (blake2s-main d ll kk nn)))
+    (blake2b-main d ll kk nn)))
 
-(defthm len-of-blake2s
+(defthm len-of-blake2b
   (implies (and (posp nn)
                 (<= nn *max-hash-bytes*))
-           (equal (len (blake2s data-bytes key-bytes nn))
+           (equal (len (blake2b data-bytes key-bytes nn))
                   nn))
-  :hints (("Goal" :in-theory (enable blake2s))))
+  :hints (("Goal" :in-theory (enable blake2b))))
 
-(defthm all-unsigned-byte-p-of-blake2s
+(defthm all-unsigned-byte-p-of-blake2b
   (implies (<= nn *max-hash-bytes*)
-           (all-unsigned-byte-p 8 (blake2s data-bytes key-bytes nn)))
-  :hints (("Goal" :in-theory (enable blake2s))))
-
-;; (assert-equal (blake2s (list (char-code #\a) (char-code #\b) (char-code #\c)) 32) '(#x50 #x8C #x5E #x8C #x32 #x7C #x14 #xE2 #xE1 #xA7 #x2B #xA3 #x4E #xEB #x45 #x2F #x37 #x45 #x8B #x20 #x9E #xD6 #x3A #x29 #x4D #x99 #x9B #x4C #x86 #x67 #x59 #x82))
+           (all-unsigned-byte-p 8 (blake2b data-bytes key-bytes nn)))
+  :hints (("Goal" :in-theory (enable blake2b))))

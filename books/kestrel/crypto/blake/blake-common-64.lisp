@@ -1,4 +1,4 @@
-; Common material for versions of BLAKE that use 32-bit words.
+; Common material for versions of BLAKE that use 64-bit words.
 ;
 ; Copyright (C) 2020-2025 Kestrel Institute
 ;
@@ -23,7 +23,7 @@
 (local (in-theory (disable nth update-nth)))
 
 ;; number of bits in a word
-(defconst *w* 32)
+(defconst *w* 64)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -189,14 +189,14 @@
 ;; initialization vector, a list of 8 words
 (defun iv ()
   (declare (xargs :guard t))
-  '(#x6a09e667
-    #xbb67ae85
-    #x3c6ef372
-    #xa54ff53a
-    #x510e527f
-    #x9b05688c
-    #x1f83d9ab
-    #x5be0cd19))
+  '(#x6a09e667f3bcc908
+    #xbb67ae8584caa73b
+    #x3c6ef372fe94f82b
+    #xa54ff53a5f1d36f1
+    #x510e527fade682d1
+    #x9b05688c2b3e6c1f
+    #x1f83d9abfb41bd6b
+    #x5be0cd19137e2179))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
