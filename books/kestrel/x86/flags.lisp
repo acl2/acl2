@@ -266,6 +266,11 @@
                   (get-flag flag x86)))
   :hints (("Goal" :in-theory (enable get-flag))))
 
+(defthm get-flag-of-!memi
+  (equal (get-flag flg (!memi i v x86))
+         (get-flag flg x86))
+  :hints (("Goal" :in-theory (enable !memi))))
+
 (defthm xr-of-set-flag
   (implies (not (equal fld :rflags))
            (equal (xr fld index (set-flag flag val x86))
@@ -829,3 +834,8 @@
   (equal (xw :rflags nil rflags (set-flag flag val x86))
          (xw :rflags nil rflags x86))
   :hints (("Goal" :in-theory (enable !rflags set-flag))))
+
+(defthm memi-of-set-flag
+  (equal (memi addr (set-flag flag val x86))
+         (memi addr x86))
+  :hints (("Goal" :in-theory (enable memi set-flag))))

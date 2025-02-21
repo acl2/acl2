@@ -1,7 +1,7 @@
 ; The "stored form" of Axe's rewrite rules
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -283,18 +283,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;rename.
-(defun rules-from-stored-axe-rules (stored-rules)
+(defun stored-rule-names (stored-rules)
   (declare (xargs :guard (stored-axe-rule-listp stored-rules)
                   :guard-hints (("Goal" :in-theory (enable stored-axe-rule-listp stored-axe-rulep)))))
   (if (endp stored-rules)
       nil
     (cons (stored-rule-symbol (first stored-rules))
-          (rules-from-stored-axe-rules (rest stored-rules)))))
+          (stored-rule-names (rest stored-rules)))))
 
-(defthm symbol-listp-of-rules-from-stored-axe-rules
+(defthm symbol-listp-of-stored-rule-names
   (implies (stored-axe-rule-listp rules)
-           (symbol-listp (rules-from-stored-axe-rules rules)))
+           (symbol-listp (stored-rule-names rules)))
   :hints (("Goal" :in-theory (enable stored-axe-rule-listp stored-axe-rulep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -1,6 +1,6 @@
 ; A stobj to gather parameters used in rewriting
 ;
-; Copyright (C) 2022-2024 Kestrel Institute
+; Copyright (C) 2022-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,7 +10,11 @@
 
 (in-package "ACL2")
 
-;; Unlike rewrite-stobj, this includes values, such as the DAG, that change during rewriting.  So it has to be returned by most functions.
+;; Unlike rewrite-stobj, this includes values, such as the DAG, that change
+;; during rewriting.  So it has to be returned by most functions.
+
+;; TODO: Consider adding more things to this, like the memoization, info,
+;; tries, and limits.
 
 (include-book "kestrel/utilities/defstobj-plus" :dir :system)
 

@@ -14,7 +14,7 @@
 
 ;; These rules call the axe-syntax functions.
 
-(include-book "../axe-syntax-functions") ; for heavier-dag-term
+(include-book "../axe-syntax-functions") ; for lighter-dargp
 (include-book "kestrel/jvm/execution-common" :dir :system) ; for TH
 (include-book "kestrel/jvm/jvm-rules" :dir :system)
 (include-book "kestrel/jvm/int-subtypes" :dir :system)
@@ -60,14 +60,14 @@
 
 ;Not really a JVM rule.
 (defthmd s-diff-s-axe
-  (implies (and (axe-syntaxp (heavier-dag-term b a))
+  (implies (and (axe-syntaxp (lighter-dargp a b))
                 (not (equal a b)))
            (equal (s b y (s a x r))
                   (s a x (s b y r)))))
 
 ;perhaps oddly we move the set-fields with heavier ads to the front (they will be more likely to be referenced again soon)
 (defthmd set-field-of-set-field-reorder
-  (implies (and (axe-syntaxp (heavier-dag-term ref2 ref1))
+  (implies (and (axe-syntaxp (lighter-dargp ref1 ref2))
                 (not (equal ref1 ref2)))
            (equal (set-field ref1 pair1 value1
                              (set-field ref2 pair2 value2 heap))
@@ -76,14 +76,14 @@
 
 ;; For the same ref, sort by pairs:
 (defthmd set-field-of-set-field-reorder-pairs
-  (implies (and (axe-syntaxp (heavier-dag-term pair2 pair1))
+  (implies (and (axe-syntaxp (lighter-dargp pair1 pair2))
                 (not (equal pair1 pair2)))
            (equal (set-field ref pair1 value1 (set-field ref pair2 value2 heap))
                   (set-field ref pair2 value2 (set-field ref pair1 value1 heap)))))
 
 ;; We sort first by class name
 (defthm set-static-field-of-set-static-field-diff-class-axe
-  (implies (and (axe-syntaxp (heavier-dag-term class-name1 class-name2))
+  (implies (and (axe-syntaxp (lighter-dargp class-name2 class-name1))
                 (not (equal class-name1 class-name2)))
            (equal (jvm::set-static-field class-name1 field-name1 value1 (jvm::set-static-field class-name2 field-name2 value2 static-field-map))
                   (jvm::set-static-field class-name2 field-name2 value2 (jvm::set-static-field class-name1 field-name1 value1 static-field-map))))
@@ -92,7 +92,7 @@
 
 ;; We sort second by field name (so here the class names must be the same)
 (defthm set-static-field-of-set-static-field-diff-field-axe
-  (implies (and (axe-syntaxp (heavier-dag-term field-name1 field-name2))
+  (implies (and (axe-syntaxp (lighter-dargp field-name2 field-name1))
                 (not (equal field-name1 field-name2)))
            (equal (jvm::set-static-field class-name field-name1 value1 (jvm::set-static-field class-name field-name2 value2 static-field-map))
                   (jvm::set-static-field class-name field-name2 value2 (jvm::set-static-field class-name field-name1 value1 static-field-map))))

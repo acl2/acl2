@@ -1443,7 +1443,7 @@
 
     syntactic-call-of
     term-should-be-trimmed-axe
-    heavier-dag-term
+    lighter-dargp
 
     prove-equivalence
     prove-equal-with-tactics
@@ -1503,6 +1503,7 @@
     submit-event
     must-be-redundant
     must-fail
+    strip-cadrs
 
     ;; x86 stuff (move to x package?):
     elf-info

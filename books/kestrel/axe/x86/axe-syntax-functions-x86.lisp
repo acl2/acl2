@@ -146,9 +146,9 @@
                   (mv (unquote maybe-offset)
                       (darg2 expr2)))))
             ;; first compare the bases:
-            (if (heavier-dag-term base1 base2)
+            (if (lighter-dargp base2 base1)
                 t
-              (if (heavier-dag-term base2 base1)
+              (if (lighter-dargp base1 base2)
                   nil
                 ;; the bases are the same, so check the offsets:
                 (< offset2 offset1) ; todo: add type decl

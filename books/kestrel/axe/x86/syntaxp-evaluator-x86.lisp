@@ -18,7 +18,7 @@
 (include-book "axe-syntax-functions-x86")
 
 ;; todo: what order should these be in?
-(make-axe-syntaxp-evaluator 'x86 '(heavier-dag-term
+(make-axe-syntaxp-evaluator 'x86 '(lighter-dargp
                                    ;; bv-term-syntaxp
                                    is-a-myif
                                    syntactic-booleanp
