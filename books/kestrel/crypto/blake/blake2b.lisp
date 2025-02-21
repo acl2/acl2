@@ -508,6 +508,8 @@
   (all-unsigned-byte-p 8 (word-to-bytes word))
   :hints (("Goal" :in-theory (enable word-to-bytes))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Convert a list of 64-bit words into a list of bytes, in little endian fashion.
 (defund words-to-bytes (words)
   (declare (xargs :guard (and (true-listp words)
@@ -525,6 +527,8 @@
 (defthm all-unsigned-byte-p-of-words-to-bytes
   (all-unsigned-byte-p 8 (words-to-bytes words))
   :hints (("Goal" :in-theory (enable words-to-bytes))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; Matt K. mod 7/31/2023 to accommodate evaluation inside lambda bodies when
 ; generating guard conjectures.
@@ -576,6 +580,8 @@
   (implies (<= nn *max-hash-bytes*)
            (all-unsigned-byte-p 8 (blake2b-main d ll kk nn)))
   :hints (("Goal" :in-theory (enable blake2b-main))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; TODO: Think about the case where we have a max length message and a key
 
