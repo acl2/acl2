@@ -827,7 +827,7 @@
                                           rewrite-stobj count)
           (declare (xargs :guard (and (wf-rewrite-stobj2 rewrite-stobj2)
                                       (stored-axe-rule-listp stored-rules)
-                                                                            (bounded-darg-listp args-to-match (get-dag-len rewrite-stobj2)) ;todo: combine with the next one
+                                      (bounded-darg-listp args-to-match (get-dag-len rewrite-stobj2)) ;todo: combine with the next one
                                       (maybe-bounded-memoizationp memoization (get-dag-len rewrite-stobj2))
                                       (hit-countsp hit-counts)
                                       (triesp tries)
@@ -2433,7 +2433,7 @@
                             (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
                             (stored-axe-rule-listp stored-rules)
                             (rewrite-stobjp rewrite-stobj)
-0                            (rewrite-stobj2p rewrite-stobj2)
+                            (rewrite-stobj2p rewrite-stobj2)
                             (bounded-refined-assumption-alistp refined-assumption-alist (get-dag-len rewrite-stobj2)))
                        (and (rewrite-stobj2p new-rewrite-stobj2)
                             (axe-treep instantiated-rhs-or-nil)
