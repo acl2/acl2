@@ -291,7 +291,7 @@ Sexpression *Initializer::ACL2ArrayExpr(const ArrayType *t, bool output_optmized
   if (output_optmized_const) {
 
     for (auto c : vals) {
-      res->add(c->ACL2Expr());
+      res->add(t->baseType->cast(c));
     }
   } else {
     // TODO do not support template
@@ -301,7 +301,7 @@ Sexpression *Initializer::ACL2ArrayExpr(const ArrayType *t, bool output_optmized
     for (unsigned i = 0; i < size; ++i) {
 
       if (i < vals.size()) {
-        res->add(new Cons(Integer(loc_, i).ACL2Expr(), vals[i]->ACL2Expr()));
+        res->add(new Cons(Integer(loc_, i).ACL2Expr(), t->baseType->cast(vals[i])));
       } else {
 
         res->add(new Cons(Integer(t->get_original_location(), i).ACL2Expr(),
@@ -313,17 +313,16 @@ Sexpression *Initializer::ACL2ArrayExpr(const ArrayType *t, bool output_optmized
   return  new Plist({ &s_quote, res });
 }
 
-Sexpression *Initializer::ACL2TupleExpr(const MvType *) {
+Sexpression *Initializer::ACL2TupleExpr(const MvType *t) {
 
   Plist *res = new Plist({ &s_mv });
-  for (auto c : vals) {
-    res->add(c->ACL2Expr());
+  for (unsigned i = 0; i < t->size(); ++i) {
+    res->add(t->get(i)->cast(vals[i]));
   }
   return res;
 }
 
-Sexpression *
-Initializer::ACL2StructExpr(const StructType *t) {
+Sexpression *Initializer::ACL2StructExpr(const StructType *t) {
 
   Sexpression *result = new Plist();
 
@@ -333,11 +332,11 @@ Initializer::ACL2StructExpr(const StructType *t) {
 
     if (v != vals.end()) {
       result = new Plist(
-          { &s_as, new Plist({ &s_quote, f->get_sym() }), (*v)->ACL2Expr(), result });
+          { &s_as, new Plist({ &s_quote, f->get_sym() }), f->get_type()->cast(*v), result });
       ++v;
     } else if (f->get_default_value()) {
       result = new Plist(
-          { &s_as, new Plist({ &s_quote, f->get_sym() }), (*f->get_default_value())->ACL2Expr(), result });
+          { &s_as, new Plist({ &s_quote, f->get_sym() }), f->get_type()->cast(*f->get_default_value()), result });
     } else {
       result = new Plist(
           { &s_as, new Plist({ &s_quote, f->get_sym() }), f->get_type()->default_initializer_value(), result });

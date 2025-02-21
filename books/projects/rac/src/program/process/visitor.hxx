@@ -761,7 +761,15 @@ bool RecursiveASTVisitor<Derived>::TraverseStructType(StructType *t) {
       return false;
 
   if (!std::all_of(t->fields().begin(), t->fields().end(), [&](StructField *sf)
-        { return derived().TraverseType(sf->get_type()); }))
+        { 
+          if (!derived().TraverseType(sf->get_type()))
+            return false;
+
+          if (auto val = sf->get_default_value()) {
+            return derived().TraverseExpression(*val);
+          }
+          return true;
+        }))
     return false;
 
   if (derived().postfixTraversal())

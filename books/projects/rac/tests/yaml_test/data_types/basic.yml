@@ -99,9 +99,12 @@
   bug: true
 
 - name: initializer-list-mismatch-types
+  # We only verify the error messages (there are two errors). An assert should
+  # fails while generating the output.
   env: {RAC_BYPASS_ERROR: 'true'}
   disabled-checks:
     - generated_code
+    - should_report_error
 
 - name: const-assign
   should_report_error: true
@@ -151,5 +154,12 @@
     - stderr
 
 - name: array-in-struct-2
+
+- name: array-in-struct-with-default-value
+  env: {RAC_BYPASS_ERROR: 'true'} # Bypass pedantic error
+  disabled-checks:
+    - stderr
+
+
 
 - name: defined-type-const-and-not

@@ -605,8 +605,12 @@ Sexpression *StructType::default_initializer_value() const {
 
   for (const auto& f : fields_) {
     if (f->get_default_value()) {
+      auto default_value = *f->get_default_value();
+      assert(f->get_type());
+      assert(default_value);
+      auto val = f->get_type()->cast(default_value);
       result = new Plist(
-          { &s_as, new Plist({ &s_quote, f->get_sym() }), (*f->get_default_value())->ACL2Expr(), result });
+          { &s_as, new Plist({ &s_quote, f->get_sym() }), val, result });
     } else {
       result = new Plist(
           { &s_as, new Plist({ &s_quote, f->get_sym() }), f->get_type()->default_initializer_value(), result });
