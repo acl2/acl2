@@ -938,7 +938,7 @@
                     node-replacement-array))
                ;; Next, try to apply rules:
                ((mv erp rhs-or-nil rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)
-                (,try-to-apply-rules-name (get-rules-for-fn fn (get-rule-alist rewrite-stobj))
+                (,try-to-apply-rules-name (rule-db-get fn rewrite-stobj) ;;(get-rules-for-fn fn (get-rule-alist rewrite-stobj))
                                           args
                                           rewrite-stobj2 memoization hit-counts tries limits
                                           node-replacement-array node-replacement-count refined-assumption-alist
@@ -3065,7 +3065,8 @@
                    (:rewrite rewrite-stobj2p-of-put-dag-len)
                    (:rewrite rewrite-stobj2p-of-put-dag-parent-array)
                    (:rewrite rewrite-stobj2p-of-put-dag-variable-alist)
-                   (:rewrite rule-alistp-of-get-rule-alist)
+                   ;; (:rewrite rule-alistp-of-get-rule-alist)
+                   (:rewrite stored-axe-rule-listp-of-rule-db-get)
                    (:rewrite ,(pack$ 'simplify-boolif-tree-and-add-to-dag- suffix '-of-0))
                    (:rewrite ,(pack$ 'simplify-bvif-tree-and-add-to-dag- suffix '-of-0))
                    (:rewrite ,(pack$ 'simplify-bvif-tree-and-add-to-dag1- suffix '-of-0))
@@ -5437,7 +5438,8 @@
                 (rewrite-stobj (put-known-booleans known-booleans rewrite-stobj))
                 (rewrite-stobj (put-normalize-xors normalize-xors rewrite-stobj))
                 (rewrite-stobj (put-interpreted-function-alist interpreted-function-alist rewrite-stobj))
-                (rewrite-stobj (put-rule-alist rule-alist rewrite-stobj))
+                ;; (rewrite-stobj (put-rule-alist rule-alist rewrite-stobj))
+                (rewrite-stobj (load-rule-db rule-alist rewrite-stobj))
                 (rewrite-stobj (put-print print rewrite-stobj))
                 ;; Initialize rewrite-stobj2:
                 (rewrite-stobj2 (put-dag-array dag-array rewrite-stobj2))
@@ -5822,7 +5824,8 @@
                                                           rewrite-stobj))
                        (rewrite-stobj (put-normalize-xors normalize-xors rewrite-stobj))
                        (rewrite-stobj (put-interpreted-function-alist interpreted-function-alist rewrite-stobj))
-                       (rewrite-stobj (put-rule-alist rule-alist rewrite-stobj))
+                       ;; (rewrite-stobj (put-rule-alist rule-alist rewrite-stobj))
+                       (rewrite-stobj (load-rule-db rule-alist rewrite-stobj))
                        (rewrite-stobj (put-print print rewrite-stobj))
                        ;; Initialize rewrite-stobj2:
                        (rewrite-stobj2 (put-dag-array dag-array rewrite-stobj2))
