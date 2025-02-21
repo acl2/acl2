@@ -21,6 +21,7 @@
 (include-book "kestrel/x86/assumptions64" :dir :system) ;for ADDRESSES-OF-SUBSEQUENT-STACK-SLOTS-AUX
 (include-book "kestrel/x86/assumptions32" :dir :system) ; for return-address-okp
 (include-book "kestrel/x86/conditions" :dir :system) ; for jnl-condition
+(include-book "kestrel/x86/write-over-write-rules64" :dir :system)
 (include-book "kestrel/x86/run-until-return" :dir :system)
 (include-book "kestrel/x86/floats" :dir :system)
 (include-book "../axe-syntax")
@@ -737,7 +738,7 @@
   (implies (axe-syntaxp (write-nest-with-inner-set-flagp-axe x86 acl2::dag-array))
            (equal (read n ad (write n2 ad2 val x86))
                   (read n ad (write n2 ad2 val (clear-flags-extend x86)))))
-  :hints (("Goal" :in-theory (enable clear-flags-extend))))
+  :hints (("Goal" :in-theory (e/d (clear-flags-extend write-of-!rflags) (!rflags !rflags-of-write)))))
 
 ;; Copies the clear inside a write that is not its target
 ;; For Axe only

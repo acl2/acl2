@@ -1,6 +1,6 @@
 ; "Write over write" rules for our x86-64 state writers
 ;
-; Copyright (C) 2016-2022 Kestrel Technology, LLC
+; Copyright (C) 2016-2025 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,7 +13,68 @@
 (include-book "register-readers-and-writers64")
 (include-book "flags")
 (include-book "read-and-write")
+(include-book "read-bytes-and-write-bytes")
 (include-book "readers-and-writers")
+(include-book "read-over-write-rules64") ; to support mixed rules like read-of-write-of-set-flag
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm write-byte-of-xw-irrel
+  (implies (not (equal :mem fld))
+           (equal (write-byte addr byte (xw fld index val x86))
+                  (xw fld index val (write-byte addr byte x86))))
+  :hints (("Goal" :in-theory (enable write-byte !memi))))
+
+(defthm set-flag-of-write-byte
+  (equal (set-flag flg val (write-byte addr byte x86))
+         (write-byte addr byte (set-flag flg val x86)))
+  :hints (("Goal" :in-theory (enable set-flag wb write-byte !memi))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm write-of-xw-irrel
+  (implies (not (equal :mem fld))
+           (equal (write n addr value (xw fld index val x86))
+                  (xw fld index val (write n addr value x86))))
+  :hints (("Goal" :in-theory (enable write))))
+
+(defthm !rflags-of-write
+  (equal (!rflags rflags (write n addr val x86))
+         (write n addr val (!rflags rflags x86)))
+  :hints (("Goal" :in-theory (enable !rflags))))
+
+(defthmd write-of-!rflags
+  (equal (write n addr val (!rflags rflags x86))
+         (!rflags rflags (write n addr val x86))))
+
+(theory-invariant (incompatible (:rewrite !rflags-of-write) (:rewrite write-of-!rflags)))
+
+(defthm set-flag-of-write
+  (equal (set-flag flg val (write n addr value x86))
+         (write n addr value (set-flag flg val x86)))
+  :hints (("Goal" :in-theory (enable set-flag wb write))))
+
+(defthmd write-of-set-flag
+  (equal (write n addr val1 (set-flag flg val2 x86))
+         (set-flag flg val2 (write n addr val1 x86)))
+  :hints (("Goal" :in-theory (enable set-flag wb write))))
+
+(theory-invariant (incompatible (:rewrite write-of-set-flag) (:rewrite set-flag-of-write)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm write-bytes-of-xw-irrel
+  (implies (not (equal :mem fld))
+           (equal (write-bytes addr values (xw fld index val x86))
+                  (xw fld index val (write-bytes addr values x86))))
+  :hints (("Goal" :in-theory (enable write-bytes))))
+
+(defthm set-flag-of-write-bytes
+  (equal (set-flag flg val (write-bytes addr values x86))
+         (write-bytes addr values (set-flag flg val x86)))
+  :hints (("Goal" :in-theory (enable set-flag wb write-bytes))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; These push write-byte inward:
 (defthm write-byte-of-set-rip (equal (write-byte base-addr byte (set-rip rip x86)) (set-rip rip (write-byte base-addr byte x86))) :hints (("Goal" :in-theory (enable write-byte))))
@@ -165,3 +226,21 @@
 (defthm !rflags-of-set-r15 (equal (!rflags flags (set-r15 r15 x86)) (set-r15 r15 (!rflags flags x86))) :hints (("Goal" :in-theory (enable !rflags set-r15))))
 (defthm !rflags-of-set-rsp (equal (!rflags flags (set-rsp rsp x86)) (set-rsp rsp (!rflags flags x86))) :hints (("Goal" :in-theory (enable !rflags set-rsp))))
 (defthm !rflags-of-set-rbp (equal (!rflags flags (set-rbp rbp x86)) (set-rbp rbp (!rflags flags x86))) :hints (("Goal" :in-theory (enable !rflags set-rbp))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; These just make the terms nicer (todo: just use the general scheme?)
+(defthm read-of-write-of-set-flag
+  (equal (read n addr (write n1 addr1 val1 (set-flag flag val x86)))
+         (read n addr (write n1 addr1 val1 x86)))
+  :hints (("Goal" :in-theory (e/d (write-of-set-flag) (set-flag-of-write)))))
+
+(defthm read-of-write-of-write-of-set-flag
+  (equal (read n addr (write n1 addr1 val1 (write n2 addr2 val2 (set-flag flag val x86))))
+         (read n addr (write n1 addr1 val1 (write n2 addr2 val2 x86))))
+  :hints (("Goal" :in-theory (e/d (write-of-set-flag) (set-flag-of-write)))))
+
+(defthm read-of-write-of-write-of-write-of-set-flag
+  (equal (read n addr (write n1 addr1 val1 (write n2 addr2 val2 (write n3 addr3 val3 (set-flag flag val x86)))))
+         (read n addr (write n1 addr1 val1 (write n2 addr2 val2 (write n3 addr3 val3 x86)))))
+  :hints (("Goal" :in-theory (e/d (write-of-set-flag) (set-flag-of-write)))))

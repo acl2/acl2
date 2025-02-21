@@ -28,6 +28,92 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defthm read-byte-of-xw-irrel
+  (implies (not (equal fld :mem))
+           (equal (read-byte addr (xw fld index val x86))
+                  (read-byte addr x86)))
+  :hints (("Goal" :in-theory (enable read-byte))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm xr-of-write-byte-when-not-mem
+  (implies (not (equal :mem fld))
+           (equal (xr fld index (write-byte addr byte x86))
+                  (xr fld index x86)))
+  :hints (("Goal" :in-theory (enable write-byte))))
+
+(defthm 64-bit-modep-of-write-byte
+  (equal (64-bit-modep (write-byte addr byte x86))
+         (64-bit-modep x86))
+  :hints (("Goal" :in-theory (enable write-byte))))
+
+(defthm app-view-of-write-byte
+  (equal (app-view (write-byte addr byte x86))
+         (app-view x86))
+  :hints (("Goal" :in-theory (enable write-byte))))
+
+(defthm alignment-checking-enabled-p-of-write-byte
+  (equal (alignment-checking-enabled-p (write-byte addr byte x86))
+         (alignment-checking-enabled-p x86))
+  :hints (("Goal" :in-theory (enable write-byte))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm read-of-xw-irrel
+  (implies (not (equal fld :mem))
+           (equal (read n addr (xw fld index val x86))
+                  (read n addr x86)))
+  :hints (("Goal" :in-theory (enable read memi))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; todo: name -irrel
+(defthm xr-of-write-when-not-mem
+  (implies (not (equal :mem fld))
+           (equal (xr fld index (write n addr val x86))
+                  (xr fld index x86)))
+  :hints (("Goal" :in-theory (enable write))))
+
+(defthm 64-bit-modep-of-write
+  (equal (64-bit-modep (write n addr val x86))
+         (64-bit-modep x86))
+  :hints (("Goal" :in-theory (enable write))))
+
+(defthm app-view-of-write
+  (equal (app-view (write n addr val x86))
+         (app-view x86))
+  :hints (("Goal" :in-theory (enable write))))
+
+(defthm alignment-checking-enabled-p-of-write
+  (equal (alignment-checking-enabled-p (write n addr val x86))
+         (alignment-checking-enabled-p x86))
+  :hints (("Goal" :in-theory (enable write))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm xr-of-write-bytes
+  (implies (not (equal :mem fld))
+           (equal (xr fld index (write-bytes addr vals x86))
+                  (xr fld index x86)))
+  :hints (("Goal" :in-theory (enable write-bytes))))
+
+(defthm 64-bit-modep-of-write-bytes
+  (equal (64-bit-modep (write-bytes addr vals x86))
+         (64-bit-modep x86))
+  :hints (("Goal" :in-theory (enable write-bytes))))
+
+(defthm app-view-of-write-bytes
+  (equal (app-view (write-bytes addr vals x86))
+         (app-view x86))
+  :hints (("Goal" :in-theory (enable write-bytes))))
+
+(defthm alignment-checking-enabled-p-of-write-bytes
+  (equal (alignment-checking-enabled-p (write-bytes addr vals x86))
+         (alignment-checking-enabled-p x86))
+  :hints (("Goal" :in-theory (enable write-bytes))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; This section contains rules for the 17 register readers (including RIP)
 ;; applied after various writers, organized by writer.
 
@@ -1210,3 +1296,30 @@
   :hints (("Goal" :in-theory (enable rb set-rax))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm read-byte-of-set-flag
+  (equal (read-byte addr (set-flag flag val x86))
+         (read-byte addr x86))
+  :hints (("Goal" :in-theory (enable read-byte))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defthm read-of-set-flag
+  (equal (read n addr (set-flag flag val x86))
+         (read n addr x86))
+  :hints (("Goal" :in-theory (enable read memi))))
+
+(defthm get-flag-of-write-byte
+  (equal (get-flag flg (write-byte addr byte x86))
+         (get-flag flg x86))
+  :hints (("Goal" :in-theory (enable write-byte))))
+
+(defthm get-flag-of-write
+  (equal (get-flag flg (write n addr value x86))
+         (get-flag flg x86))
+  :hints (("Goal" :in-theory (enable write wb))))
+
+(defthm get-flag-of-write-bytes
+  (equal (get-flag flg (write-bytes addr values x86))
+         (get-flag flg x86))
+  :hints (("Goal" :in-theory (enable write-bytes))))
