@@ -151,3 +151,5 @@
     - stderr
 
 - name: array-in-struct-2
+
+- name: defined-type-const-and-not

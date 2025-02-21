@@ -318,7 +318,7 @@ typedef_type
     | mv_type { $$ = static_cast<Type *>($1); }       // instantiation of mv class template
     | TYPEID
 {
-  $$ = yyast.getType($1);
+  $$ = yyast.getType($1)->deep_copy();
 }; // name of a previously declared type
 
 type_spec
@@ -407,6 +407,7 @@ struct_field
     static_cast<ArrayType *>(t)->baseType = $1;
     // If the base type is const, then we move it to the array.
     if ($1->isConst()) {
+      std::cerr << "parser.yy\n";
       t->setConst();
     }
   }

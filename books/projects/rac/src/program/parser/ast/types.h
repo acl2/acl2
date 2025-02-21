@@ -36,6 +36,8 @@ public:
 
   Type(origin_t loc, NodesId id) : origin_(loc), id_(id) {}
 
+  virtual Type *deep_copy() const = 0;
+
   // Display the type (but not it is not the C++ representation).
   virtual void display(std::ostream &os = std::cout) const = 0;
   std::string to_string() const;
@@ -183,6 +185,12 @@ public:
   DefinedType(origin_t loc, const char *s, Type *t)
       : Symbol(s), Type(loc, idOf(this)), def_(t) {}
 
+  Type *deep_copy() const override {
+    auto tmp = new DefinedType(*this);
+    tmp->def_ = def_->deep_copy();
+    return tmp;
+  }
+
   void display(std::ostream &os) const override { Symbol::display(os); }
 
   void displayVarType(std::ostream &os = std::cout) const override {
@@ -251,6 +259,11 @@ public:
   IntType(origin_t loc, Expression *w, Expression *s)
       : Type(loc, idOf(this)), width_(w), isSigned_(s) {}
 
+  Type *deep_copy() const override {
+    // TODO
+    return new IntType(*this);
+  }
+
   // Return an ac_int of the same sign and width as t.
   static IntType *FromPrimType(const PrimType *t);
 
@@ -281,6 +294,12 @@ public:
 
   ArrayType(origin_t loc, Expression *d, Type *t)
       : Type(loc, idOf(this)), baseType(t), dim(d) {}
+
+  Type *deep_copy() const override {
+    auto tmp = new ArrayType(*this);
+    tmp->baseType = baseType->deep_copy();
+    return tmp;
+  }
 
   Type *getBaseType() { return baseType; }
   const Type *getBaseType() const { return baseType; }
@@ -336,6 +355,10 @@ private:
 class StructType : public Type {
 public:
   StructType(origin_t loc, std::vector<StructField *> f);
+
+  Type *deep_copy() const override {
+    return new StructType(*this);
+  }
 
   void displayFields(std::ostream &os) const;
   void display(std::ostream &os) const override;
@@ -418,8 +441,16 @@ public:
   MvType(origin_t loc, std::vector<Type *> &&t)
       : CompositeType(loc, idOf(this), std::move(t)) {}
 
-  Sexpression *cast(Expression *rval) const override;
+  Type *deep_copy() const override {
 
+    std::vector<Type *> tmp;
+    for (unsigned i = 0; i < size(); ++i) {
+      tmp.push_back(get(i)->deep_copy());
+    }
+    return new MvType(loc(), std::move(tmp));
+  }
+
+  Sexpression *cast(Expression *rval) const override;
 
   Sexpression *default_initializer_value() const override;
 };
@@ -428,6 +459,15 @@ class InitializerType final : public priv::CompositeType {
 public:
   InitializerType(origin_t loc, std::vector<Type *> &&t)
       : CompositeType(loc, idOf(this), std::move(t)) {}
+
+  Type *deep_copy() const override {
+
+    std::vector<Type *> tmp;
+    for (unsigned i = 0; i < size(); ++i) {
+      tmp.push_back(get(i)->deep_copy());
+    }
+    return new InitializerType(loc(), std::move(tmp));
+  }
 
   Sexpression *default_initializer_value() const override {
     UNREACHABLE();
@@ -438,6 +478,10 @@ public:
 class ErrorType final : public Type {
 public:
   ErrorType() : Type(Location::dummy(), idOf(this)) {}
+
+  Type *deep_copy() const override {
+    return new ErrorType(*this);
+  }
 
   void display(std::ostream &os = std::cout) const override {
     os << "error_type";
