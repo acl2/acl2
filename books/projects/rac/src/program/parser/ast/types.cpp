@@ -482,7 +482,7 @@ bool ArrayType::isEqual(const Type *other) const {
 Sexpression *ArrayType::cast(Expression *rval) const {
 
   if (auto init = dynamic_cast<Initializer *>(rval)) {
-    return init->ACL2ArrayExpr(isConst());
+    return init->ACL2ArrayExpr(this, isConst());
   } else {
     return rval->ACL2Expr();
   }
@@ -495,12 +495,13 @@ Sexpression *ArrayType::default_initializer_value() const {
   // TODO do not support template
   assert(dim->isStaticallyEvaluable());
 
-  for (int i = 0; i < dim->evalConst(); ++i) {
+  unsigned size = dim->evalConst();
+  for (unsigned i = 0; i < size; ++i) {
     result->add(new Cons(Integer(get_original_location(), i).ACL2Expr(),
                          baseType->default_initializer_value()));
   }
 
-  return result;
+  return new Plist({&s_quote, result });
 }
 
 // class StructField
@@ -508,8 +509,8 @@ Sexpression *ArrayType::default_initializer_value() const {
 
 // Data members:  Symbol *sym; Type *type;
 
-StructField::StructField(Type *t, char *n) : sym_(new Symbol(n)), type_(t), default_value_() {}
-StructField::StructField(Type *t, char *n, Expression *default_value) : sym_(new Symbol(n)), type_(t), default_value_(default_value) {}
+StructField::StructField(Type *t, const char *n) : sym_(new Symbol(n)), type_(t), default_value_() {}
+StructField::StructField(Type *t, const char *n, Expression *default_value) : sym_(new Symbol(n)), type_(t), default_value_(default_value) {}
 
 void StructField::display(std::ostream &os, unsigned indent) const {
   if (indent)
@@ -592,7 +593,7 @@ bool StructType::isEqual(const Type *other) const {
 Sexpression *StructType::cast(Expression *rval) const {
 
   if (auto init = dynamic_cast<Initializer *>(rval)) {
-    return init->ACL2StructExpr(fields_);
+    return init->ACL2StructExpr(this);
   } else {
     return rval->ACL2Expr();
   }
@@ -755,7 +756,7 @@ namespace priv {
 
 Sexpression *MvType::cast(Expression *rval) const {
   if (auto init = dynamic_cast<Initializer *>(rval)) {
-    return init->ACL2TupleExpr();
+    return init->ACL2TupleExpr(this);
   } else {
     return rval->ACL2Expr();
   }

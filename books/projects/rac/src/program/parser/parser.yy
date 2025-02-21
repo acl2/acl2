@@ -381,9 +381,10 @@ array_param_type
 };
 
 struct_type
-    : '{' struct_field_list '}'
+    : '{' { symTab.pushFrame(); } struct_field_list '}'
 {
-  $$ = new StructType (@$, *$2);
+  symTab.popFrame();
+  $$ = new StructType (@$, *$3);
 };
 
 struct_field_list
@@ -398,13 +399,26 @@ struct_field_list
 };
 
 struct_field
-    : type_spec ID ';'
+    : type_spec untyped_var_dec ';'
 {
-  $$ = new StructField ($1, $2);
-}
-    | type_spec ID '=' expression ';'
-{
-  $$ = new StructField ($1, $2, $4);
+  VarDec *tmp = static_cast<VarDec *>($2);
+  // untyped_var_dec is typed only if and only if it is an array.
+  if (Type *t = tmp->get_type()) {
+    static_cast<ArrayType *>(t)->baseType = $1;
+    // If the base type is const, then we move it to the array.
+    if ($1->isConst()) {
+      t->setConst();
+    }
+  }
+  else {
+    tmp->set_type($1);
+  }
+
+  if (tmp->init) {
+    $$ = new StructField (tmp->get_type(), tmp->getname(), tmp->init);
+  } else {
+    $$ = new StructField (tmp->get_type(), tmp->getname());
+  }
 };
 
 enum_type
@@ -809,7 +823,7 @@ var_dec
     : type_spec untyped_var_dec
 {
   $$ = $2;
-  // untyped_var_dec is type only if and only if it is an array.
+  // untyped_var_dec is typed only if and only if it is an array.
   Type *t = ((VarDec *)$$)->get_type();
   if (t)
     {

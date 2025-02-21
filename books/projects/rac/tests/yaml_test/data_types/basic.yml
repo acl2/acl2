@@ -77,9 +77,6 @@
 - name: initializer-list
 
 - name: std-array-initializer-diff-size
-  description: >
-              This is correct since "ag" of a missing element returns 0 (the
-              default value for int).
 
 - name: std-array-initializer-incomplete
   description: >
@@ -134,10 +131,7 @@
   should_report_error: true
 
 - name: struct-id-redeclared
-  bug: true
-  description: This should be an error
-  disabled-checks:
-    - generated_code
+  should_report_error: true
 
 - name: struct-default-values
 - name: struct-default-values-partially-init
@@ -150,3 +144,10 @@
 - name: global-arrays
 
 - name: const-arrays
+
+- name: array-in-struct
+  env: {RAC_BYPASS_ERROR: 'true'} # Bypass pedantic error
+  disabled-checks:
+    - stderr
+
+- name: array-in-struct-2

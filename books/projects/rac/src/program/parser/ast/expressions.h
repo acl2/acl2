@@ -223,9 +223,9 @@ public:
   // actual type.
   Sexpression *ACL2Expr() override { UNREACHABLE(); }
 
-  Sexpression *ACL2ArrayExpr(bool output_optmized_const);
-  Sexpression *ACL2TupleExpr();
-  Sexpression *ACL2StructExpr(const std::vector<StructField *> &fields);
+  Sexpression *ACL2ArrayExpr(const ArrayType *t, bool output_optmized_const);
+  Sexpression *ACL2TupleExpr(const MvType *t);
+  Sexpression *ACL2StructExpr(const StructType *t);
 };
 
 class ArrayRef final : public Expression {

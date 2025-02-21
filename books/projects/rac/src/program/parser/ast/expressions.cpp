@@ -284,7 +284,7 @@ void Initializer::display(std::ostream &os) const {
   os << '}';
 }
 
-Sexpression *Initializer::ACL2ArrayExpr(bool output_optmized_const) {
+Sexpression *Initializer::ACL2ArrayExpr(const ArrayType *t, bool output_optmized_const) {
 
   Plist *res = new Plist();
 
@@ -294,24 +294,26 @@ Sexpression *Initializer::ACL2ArrayExpr(bool output_optmized_const) {
       res->add(c->ACL2Expr());
     }
   } else {
-    // TODO wrong should do default initializer explicitly. Its works beause if
-    // ag does not find the element, it returns 0.
+    // TODO do not support template
+    assert(t->dim->isStaticallyEvaluable());
 
-    if (vals.size() == 0) {
-      return res;
-    }
+    unsigned size = t->dim->evalConst();
+    for (unsigned i = 0; i < size; ++i) {
 
-    unsigned i = 0;
-    for (auto c : vals) {
-      res->add(new Cons(Integer(loc_, i).ACL2Expr(), c->ACL2Expr()));
-      i++;
+      if (i < vals.size()) {
+        res->add(new Cons(Integer(loc_, i).ACL2Expr(), vals[i]->ACL2Expr()));
+      } else {
+
+        res->add(new Cons(Integer(t->get_original_location(), i).ACL2Expr(),
+              t->baseType->default_initializer_value()));
+      }
     }
   }
 
   return  new Plist({ &s_quote, res });
 }
 
-Sexpression *Initializer::ACL2TupleExpr() {
+Sexpression *Initializer::ACL2TupleExpr(const MvType *) {
 
   Plist *res = new Plist({ &s_mv });
   for (auto c : vals) {
@@ -321,16 +323,13 @@ Sexpression *Initializer::ACL2TupleExpr() {
 }
 
 Sexpression *
-Initializer::ACL2StructExpr(const std::vector<StructField *> &fields) {
-
-  //if (vals.size() == 0)
-  //  return new Plist();
+Initializer::ACL2StructExpr(const StructType *t) {
 
   Sexpression *result = new Plist();
 
   auto v = vals.begin();
 
-  for (auto f : fields) {
+  for (auto f : t->fields()) {
 
     if (v != vals.end()) {
       result = new Plist(
@@ -340,9 +339,8 @@ Initializer::ACL2StructExpr(const std::vector<StructField *> &fields) {
       result = new Plist(
           { &s_as, new Plist({ &s_quote, f->get_sym() }), (*f->get_default_value())->ACL2Expr(), result });
     } else {
-      // TODO not correct if it is not an int
       result = new Plist(
-          { &s_as, new Plist({ &s_quote, f->get_sym() }), Integer::zero_v(this->loc())->ACL2Expr(), result });
+          { &s_as, new Plist({ &s_quote, f->get_sym() }), f->get_type()->default_initializer_value(), result });
     }
   }
 

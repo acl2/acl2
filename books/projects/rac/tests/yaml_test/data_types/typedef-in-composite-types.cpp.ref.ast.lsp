@@ -1,3 +1,3 @@
 
 
-(funcdef main () (block (declare f (as (quote bar) 0 ())) (declare a (quote ((0 . 0)))) (return 0)))
+(funcdef main () (block (declare f (as (quote bar) 2 ())) (declare a (quote ((0 . 2) (1 . 0) (2 . 0) (3 . 0)))) (return 0)))

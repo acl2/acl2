@@ -312,8 +312,8 @@ private:
 class StructField {
 public:
 
-  StructField(Type *t, char *n);
-  StructField(Type *t, char *n, Expression *default_value);
+  StructField(Type *t, const char *n);
+  StructField(Type *t, const char *n, Expression *default_value);
 
   const char *getname() const { return sym_->getname(); }
   Symbol *get_sym() const { return sym_; } 
