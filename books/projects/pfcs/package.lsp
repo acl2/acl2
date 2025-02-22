@@ -1,7 +1,7 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-; Copyright (C) 2024 Kestrel Institute (https://www.kestrel.edu)
-; modifications Copyright (C) 2024 Provable Inc. (https://www.provable.com)
+; Copyright (C) 2025 Kestrel Institute (https://www.kestrel.edu)
+; Copyright (C) 2025 Provable Inc. (https://www.provable.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -22,8 +22,7 @@
 (defpkg "PFCS" (append (set-difference-eq *std-pkg-symbols*
                                           '(eval
                                             proof-tree))
-                       '(
-                         boolean-resultp
+                       '(boolean-resultp
                          character-list-resultp
                          character-resultp
                          define-sk

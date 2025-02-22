@@ -1,6 +1,6 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-;; Copyright (C) 2024 Provable Inc. (https://www.provable.com)
+;; Copyright (C) 2025 Provable Inc. (https://www.provable.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -57,7 +57,7 @@
      @('pfcs-string'), when converted to codes, is required to be valid
      UTF-8."))
   (b* ((tokens (tokenize-pfcs pfcs-string))
-       ((when (reserrp tokens)) 
+       ((when (reserrp tokens))
         tokens)
        ((mv top-object next-token rest-tokens) (parse-system tokens))
        ((when (reserrp top-object))
@@ -82,7 +82,7 @@
 boolean_and(w0, w1, w2)")))
    (and (not (reserrp cst))
         (abnf::treep cst)
-        (check-tree-nonleaf-1-1 cst "system"))))
+        (abnf::check-tree-nonleaf-1-1 cst "system"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -181,4 +181,3 @@ boolean_and(w0, w1, w2)")))
             (PARA "x" "y" "z")
             (BODY (:EQUAL (:MUL (:VAR "x") (:VAR "y"))
                    (:VAR "z")))))))
-

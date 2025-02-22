@@ -1,6 +1,6 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-; Copyright (C) 2022,2024 Provable Inc. (https://www.provable.com)
+; Copyright (C) 2022,2025 Provable Inc. (https://www.provable.com)
 ;
 ; Authors: Alessandro Coglio (www.alessandrocoglio.info)
 ;          Eric McCarthy (bendyarm on GitHub)
@@ -12,8 +12,6 @@
 (include-book "grammar")
 (include-book "abstract-syntax")
 
-(include-book "abnf-tree-utilities")
-
 (include-book "kestrel/fty/character-result" :dir :system)
 (include-book "kestrel/fty/character-list-result" :dir :system)
 (include-book "kestrel/fty/integer-result" :dir :system)
@@ -24,6 +22,7 @@
 (include-book "kestrel/fty/natoption-natoptionlist-result" :dir :system)
 (include-book "kestrel/fty/string-result" :dir :system)
 (include-book "kestrel/fty/string-list-result" :dir :system)
+(include-book "projects/abnf/tree-utilities" :dir :system)
 (include-book "std/strings/letter-chars" :dir :system)
 (include-book "std/strings/letter-digit-uscore-chars" :dir :system)
 (include-book "std/strings/ucletter-chars" :dir :system)
@@ -83,13 +82,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define check-?-comma ((tree abnf::treep))
-  :returns (pass pass-resultp)
+  :returns (pass abnf::pass-resultp)
   :short "Check if a tree is @('[ \",\" ]')."
-  (b* (((okf treess) (check-tree-nonleaf tree nil))
+  (b* (((okf treess) (abnf::check-tree-nonleaf tree nil))
        ((when (endp treess)) :pass)
-       ((okf trees) (check-tree-list-list-1 treess))
-       ((okf tree) (check-tree-list-1 trees)))
-    (check-tree-ichars tree ","))
+       ((okf trees) (abnf::check-tree-list-list-1 treess))
+       ((okf tree) (abnf::check-tree-list-1 trees)))
+    (abnf::check-tree-ichars tree ","))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -98,7 +97,7 @@
 (define abs-decimal-digit-to-nat ((tree abnf::treep))
   :returns (nat nat-resultp)
   :short "Abstract a @('digit') to a natural number."
-  (b* (((okf nat) (check-tree-nonleaf-num-range tree "digit" #x30 #x39)))
+  (b* (((okf nat) (abnf::check-tree-nonleaf-num-range tree "digit" #x30 #x39)))
     (- nat #x30))
   :hooks (:fix)
   ///
@@ -146,7 +145,7 @@
 (define abs-decimal-digit-to-char ((tree abnf::treep))
   :returns (char character-resultp)
   :short "Abstract a @('digit') to an ACL2 character."
-  (b* (((okf nat) (check-tree-nonleaf-num-range tree "digit" #x30 #x39)))
+  (b* (((okf nat) (abnf::check-tree-nonleaf-num-range tree "digit" #x30 #x39)))
     (code-char nat))
   :hooks (:fix)
   ///
@@ -162,7 +161,7 @@
   :returns (char character-resultp)
   :short "Abstract an @('uppercase-letter') to an ACL2 character."
   (b* (((okf nat)
-        (check-tree-nonleaf-num-range tree "uppercase-letter" #x41 #x5a)))
+        (abnf::check-tree-nonleaf-num-range tree "uppercase-letter" #x41 #x5a)))
     (code-char nat))
   :hooks (:fix)
   ///
@@ -178,7 +177,7 @@
   :returns (char character-resultp)
   :short "Abstract a @('lowercase-letter') to an ACL2 character."
   (b* (((okf nat)
-        (check-tree-nonleaf-num-range tree "lowercase-letter" #x61 #x7a)))
+        (abnf::check-tree-nonleaf-num-range tree "lowercase-letter" #x61 #x7a)))
     (code-char nat))
   :hooks (:fix)
   ///
@@ -193,12 +192,12 @@
 (define abs-letter ((tree abnf::treep))
   :returns (char character-resultp)
   :short "Abstract a @('letter') to an ACL2 character."
-  (b* (((okf tree) (check-tree-nonleaf-1-1 tree "letter"))
+  (b* (((okf tree) (abnf::check-tree-nonleaf-1-1 tree "letter"))
        (char (abs-uppercase-letter tree))
        ((when (not (reserrp char))) char)
        (char (abs-lowercase-letter tree))
        ((when (not (reserrp char))) char))
-    (reserrf (list :found-subtree (tree-info-for-error tree))))
+    (reserrf (list :found-subtree (abnf::tree-info-for-error tree))))
   :hooks (:fix)
   ///
 
@@ -213,14 +212,14 @@
   :returns (char character-resultp)
   :short "Abstract a @('( letter / decimal-digit / \"_\" )')
           to an ACL2 character."
-  (b* (((okf tree) (check-tree-nonleaf-1-1 tree nil))
+  (b* (((okf tree) (abnf::check-tree-nonleaf-1-1 tree nil))
        (char (abs-letter tree))
        ((when (not (reserrp char))) char)
        (char (abs-decimal-digit-to-char tree))
        ((when (not (reserrp char))) char)
-       (pass (check-tree-ichars tree "_"))
+       (pass (abnf::check-tree-ichars tree "_"))
        ((when (not (reserrp pass))) #\_))
-    (reserrf (list :found-subtree (tree-info-for-error tree))))
+    (reserrf (list :found-subtree (abnf::tree-info-for-error tree))))
   :hooks (:fix)
   ///
 
@@ -263,8 +262,8 @@
   :returns (id string-resultp)
   :short "Abstract an @('identifier') to an identifier."
   (b* (((okf (abnf::tree-list-tuple2 sub))
-        (check-tree-nonleaf-2 tree "identifier"))
-       ((okf letter-tree) (check-tree-list-1 sub.1st))
+        (abnf::check-tree-nonleaf-2 tree "identifier"))
+       ((okf letter-tree) (abnf::check-tree-list-1 sub.1st))
        ((okf char) (abs-letter letter-tree))
        ((okf chars) (abs-*-letter/decimaldigit/underscore sub.2nd))
        (string (str::implode (cons char chars)))
@@ -279,10 +278,10 @@
 (define abs-comma-identifier ((tree abnf::treep))
   :returns (id string-resultp)
   :short "Abstract a @('( \",\" identifier )') to a string."
-  (b* (((okf (abnf::tree-list-tuple2 sub)) (check-tree-nonleaf-2 tree nil))
-       ((okf tree) (check-tree-list-1 sub.1st))
-       ((okf &) (check-tree-ichars tree ","))
-       ((okf tree) (check-tree-list-1 sub.2nd)))
+  (b* (((okf (abnf::tree-list-tuple2 sub)) (abnf::check-tree-nonleaf-2 tree nil))
+       ((okf tree) (abnf::check-tree-list-1 sub.1st))
+       ((okf &) (abnf::check-tree-ichars tree ","))
+       ((okf tree) (abnf::check-tree-list-1 sub.2nd)))
     (abs-identifier tree))
   :hooks (:fix))
 
@@ -320,10 +319,10 @@
       acl2::string-listp-when-string-list-resultp-and-not-reserrp))))
   :short "Abstract a @('[ identifier *( \",\" identifier ) ]')
             to a list of identifiers (strings)."
-  (b* (((okf treess) (check-tree-nonleaf tree nil))
+  (b* (((okf treess) (abnf::check-tree-nonleaf tree nil))
        ((when (endp treess)) nil)
-       ((okf (abnf::tree-list-tuple2 sub)) (check-tree-list-list-2 treess))
-       ((okf tree) (check-tree-list-1 sub.1st))
+       ((okf (abnf::tree-list-tuple2 sub)) (abnf::check-tree-list-list-2 treess))
+       ((okf tree) (abnf::check-tree-list-1 sub.1st))
        ((okf id) (abs-identifier tree))
        ((okf ids) (abs-*-comma-identifier sub.2nd)))
     (cons id ids))
@@ -339,7 +338,7 @@
 (define abs-numeral ((tree abnf::treep))
   :returns (nat nat-resultp)
   :short "Abstract a @('numeral') to a natural number."
-  (b* (((okf sub) (check-tree-nonleaf-1 tree "numeral"))
+  (b* (((okf sub) (abnf::check-tree-nonleaf-1 tree "numeral"))
        ((unless (consp sub)) (reserrf (list :empty-numeral))))
     (abs-*-decimal-digit-to-nat sub))
   :hooks (:fix))
@@ -349,11 +348,11 @@
 (define check-optional-minus-sign-p ((tree abnf::treep))
   :returns (ret boolean-resultp)
   :short "Check if a tree is @('[ \"-\" ]')."
-  (b* (((okf treess) (check-tree-nonleaf tree nil))
+  (b* (((okf treess) (abnf::check-tree-nonleaf tree nil))
        ((when (endp treess)) nil) ; empty optional tree
-       ((okf trees) (check-tree-list-list-1 treess))
-       ((okf tree) (check-tree-list-1 trees))
-       (pass (check-tree-ichars tree "-"))
+       ((okf trees) (abnf::check-tree-list-list-1 treess))
+       ((okf tree) (abnf::check-tree-list-1 trees))
+       (pass (abnf::check-tree-ichars tree "-"))
        ((when (reserrp pass)) pass))
     t)
   :hooks (:fix))
@@ -364,11 +363,11 @@
   :returns (int integer-resultp)
   :short "Abstract an @('integer') to an ACL2 int."
   (b* (((okf (abnf::tree-list-tuple2 sub))
-        (check-tree-nonleaf-2 tree "integer"))
-       ((okf optional-minus-tree) (check-tree-list-1 sub.1st))
+        (abnf::check-tree-nonleaf-2 tree "integer"))
+       ((okf optional-minus-tree) (abnf::check-tree-list-1 sub.1st))
        ((okf has-minus-sign?) (check-optional-minus-sign-p
                                optional-minus-tree))
-       ((okf numeral-tree) (check-tree-list-1 sub.2nd))
+       ((okf numeral-tree) (abnf::check-tree-list-1 sub.2nd))
        ((okf nat-value) (abs-numeral numeral-tree)))
     (if has-minus-sign?
         (- nat-value)
@@ -384,10 +383,10 @@
   (define abs-primary-expression ((tree abnf::treep))
     :returns (expr-or-err expression-resultp)
     :short "Abstract a @('primary-expression')."
-    (b* (((okf treess) (check-tree-nonleaf tree "primary-expression")))
+    (b* (((okf treess) (abnf::check-tree-nonleaf tree "primary-expression")))
       (case (len treess)
-        (1 (b* (((okf tree) (check-tree-nonleaf-1-1 tree "primary-expression"))
-                ((okf rulename?) (check-tree-nonleaf? tree)))
+        (1 (b* (((okf tree) (abnf::check-tree-nonleaf-1-1 tree "primary-expression"))
+                ((okf rulename?) (abnf::check-tree-nonleaf? tree)))
              (cond ((equal rulename? "identifier")
                     (let ((id-or-err (abs-identifier tree)))
                       (if (stringp id-or-err)
@@ -399,18 +398,18 @@
                           (make-expression-const :value int-or-err)
                           int-or-err)))
                    (t (reserrf (list :found-subtree
-                                     (tree-info-for-error tree)))))))
+                                     (abnf::tree-info-for-error tree)))))))
         (3 (b* (((okf (abnf::tree-list-tuple3 sub))
-                 (check-tree-list-list-3 treess))
-                ((okf tree) (check-tree-list-1 sub.1st))
-                ((okf &) (check-tree-schars tree "("))
-                ((okf tree) (check-tree-list-1 sub.2nd))
+                 (abnf::check-tree-list-list-3 treess))
+                ((okf tree) (abnf::check-tree-list-1 sub.1st))
+                ((okf &) (abnf::check-tree-schars tree "("))
+                ((okf tree) (abnf::check-tree-list-1 sub.2nd))
                 ((okf parenthesized-expr) (abs-expression tree))
-                ((okf tree) (check-tree-list-1 sub.3rd))
-                ((okf &) (check-tree-schars tree ")")))
+                ((okf tree) (abnf::check-tree-list-1 sub.3rd))
+                ((okf &) (abnf::check-tree-schars tree ")")))
              parenthesized-expr))
-        (otherwise (reserrf (list :found-subtree 
-                                  (tree-info-for-error tree))))))
+        (otherwise (reserrf (list :found-subtree
+                                  (abnf::tree-info-for-error tree))))))
     :measure (abnf::tree-count tree))
 
   ;; multiplication-expression
@@ -420,22 +419,22 @@
   (define abs-multiplication-expression ((tree abnf::treep))
     :returns (expr-or-err expression-resultp)
     :short "Abstract a @('multiplication-expression')."
-    (b* (((okf treess) (check-tree-nonleaf tree "multiplication-expression")))
+    (b* (((okf treess) (abnf::check-tree-nonleaf tree "multiplication-expression")))
       (case (len treess)
-        (1 (b* (((okf trees) (check-tree-list-list-1 treess))
-                ((okf tree) (check-tree-list-1 trees))
+        (1 (b* (((okf trees) (abnf::check-tree-list-list-1 treess))
+                ((okf tree) (abnf::check-tree-list-1 trees))
                 ((okf primary) (abs-primary-expression tree)))
              primary))
         (3 (b* (((okf (abnf::tree-list-tuple3 sub))
-                 (check-tree-list-list-3 treess))
-                ((okf tree) (check-tree-list-1 sub.1st))
+                 (abnf::check-tree-list-list-3 treess))
+                ((okf tree) (abnf::check-tree-list-1 sub.1st))
                 ((okf sub-mul) (abs-multiplication-expression tree))
-                ((okf tree) (check-tree-list-1 sub.2nd))
-                ((okf &) (check-tree-schars tree "*"))
-                ((okf tree) (check-tree-list-1 sub.3rd))
+                ((okf tree) (abnf::check-tree-list-1 sub.2nd))
+                ((okf &) (abnf::check-tree-schars tree "*"))
+                ((okf tree) (abnf::check-tree-list-1 sub.3rd))
                 ((okf sub-prim) (abs-primary-expression tree)))
              (make-expression-mul :arg1 sub-mul :arg2 sub-prim)))
-        (otherwise (reserrf (list :found-subtree (tree-info-for-error tree))))))
+        (otherwise (reserrf (list :found-subtree (abnf::tree-info-for-error tree))))))
     :measure (abnf::tree-count tree))
 
   ;; addition-expression = multiplication-expression
@@ -444,22 +443,22 @@
   (define abs-addition-expression ((tree abnf::treep))
     :returns (expr-or-err expression-resultp)
     :short "Abstract a @('addition-expression')."
-    (b* (((okf treess) (check-tree-nonleaf tree "addition-expression")))
+    (b* (((okf treess) (abnf::check-tree-nonleaf tree "addition-expression")))
       (case (len treess)
-        (1 (b* (((okf trees) (check-tree-list-list-1 treess))
-                ((okf tree) (check-tree-list-1 trees))
+        (1 (b* (((okf trees) (abnf::check-tree-list-list-1 treess))
+                ((okf tree) (abnf::check-tree-list-1 trees))
                 ((okf mult) (abs-multiplication-expression tree)))
              mult))
         (3 (b* (((okf (abnf::tree-list-tuple3 sub))
-                 (check-tree-list-list-3 treess))
-                ((okf tree) (check-tree-list-1 sub.1st))
+                 (abnf::check-tree-list-list-3 treess))
+                ((okf tree) (abnf::check-tree-list-1 sub.1st))
                 ((okf sub-add) (abs-addition-expression tree))
-                ((okf tree) (check-tree-list-1 sub.2nd))
-                ((okf &) (check-tree-schars tree "+"))
-                ((okf tree) (check-tree-list-1 sub.3rd))
+                ((okf tree) (abnf::check-tree-list-1 sub.2nd))
+                ((okf &) (abnf::check-tree-schars tree "+"))
+                ((okf tree) (abnf::check-tree-list-1 sub.3rd))
                 ((okf sub-mult) (abs-multiplication-expression tree)))
              (make-expression-add :arg1 sub-add :arg2 sub-mult)))
-        (otherwise (reserrf (list :found-subtree (tree-info-for-error tree))))))
+        (otherwise (reserrf (list :found-subtree (abnf::tree-info-for-error tree))))))
     :measure (abnf::tree-count tree))
 
   ;; expression = addition-expression
@@ -467,12 +466,12 @@
   (define abs-expression ((tree abnf::treep))
     :returns (expr expression-resultp)
     :short "Abstract an @('expression') to an expression."
-    (b* (((okf tree) (check-tree-nonleaf-1-1 tree "expression")))
+    (b* (((okf tree) (abnf::check-tree-nonleaf-1-1 tree "expression")))
       (abs-addition-expression tree))
     :measure (abnf::tree-count tree))
 
   :ruler-extenders :all
-  
+
   :prepwork
   ((local
     (in-theory
@@ -495,10 +494,10 @@
 (define abs-comma-expression ((tree abnf::treep))
   :returns (expr expression-resultp)
   :short "Abstract a @('( \",\" expression )') to an expression."
-  (b* (((okf (abnf::tree-list-tuple2 sub)) (check-tree-nonleaf-2 tree nil))
-       ((okf tree) (check-tree-list-1 sub.1st))
-       ((okf &) (check-tree-ichars tree ","))
-       ((okf tree) (check-tree-list-1 sub.2nd)))
+  (b* (((okf (abnf::tree-list-tuple2 sub)) (abnf::check-tree-nonleaf-2 tree nil))
+       ((okf tree) (abnf::check-tree-list-1 sub.1st))
+       ((okf &) (abnf::check-tree-ichars tree ","))
+       ((okf tree) (abnf::check-tree-list-1 sub.2nd)))
     (abs-expression tree))
   :hooks (:fix))
 
@@ -539,10 +538,10 @@
       expression-listp-when-expression-list-resultp-and-not-reserrp))))
   :short "Abstract a @('[ expression *( \",\" expression ) ]')
             to a list of expressions."
-  (b* (((okf treess) (check-tree-nonleaf tree nil))
+  (b* (((okf treess) (abnf::check-tree-nonleaf tree nil))
        ((when (endp treess)) nil)
-       ((okf (abnf::tree-list-tuple2 sub)) (check-tree-list-list-2 treess))
-       ((okf tree) (check-tree-list-1 sub.1st))
+       ((okf (abnf::tree-list-tuple2 sub)) (abnf::check-tree-list-list-2 treess))
+       ((okf tree) (abnf::check-tree-list-1 sub.1st))
        ((okf expr) (abs-expression tree))
        ((okf exprs) (abs-*-comma-expression sub.2nd)))
     (cons expr exprs))
@@ -561,15 +560,15 @@
   :returns (c constraint-resultp)
   :short "Abstract an @('equality-constraint') to a constraint."
   (b* (((okf (abnf::tree-list-tuple3 sub))
-        (check-tree-nonleaf-3 tree "equality-constraint"))
+        (abnf::check-tree-nonleaf-3 tree "equality-constraint"))
 
-       ((okf tree) (check-tree-list-1 sub.1st))
+       ((okf tree) (abnf::check-tree-list-1 sub.1st))
        ((okf lhs) (abs-expression tree))
 
-       ((okf tree) (check-tree-list-1 sub.2nd))
-       ((okf &) (check-tree-schars tree "=="))
+       ((okf tree) (abnf::check-tree-list-1 sub.2nd))
+       ((okf &) (abnf::check-tree-schars tree "=="))
 
-       ((okf tree) (check-tree-list-1 sub.3rd))
+       ((okf tree) (abnf::check-tree-list-1 sub.3rd))
        ((okf rhs) (abs-expression tree)))
 
     (make-constraint-equal :left lhs
@@ -582,19 +581,19 @@
   :returns (c constraint-resultp)
   :short "Abstract a @('relation-constraint') to a constraint."
   (b* (((okf (abnf::tree-list-tuple4 sub))
-        (check-tree-nonleaf-4 tree "relation-constraint"))
+        (abnf::check-tree-nonleaf-4 tree "relation-constraint"))
 
-       ((okf tree) (check-tree-list-1 sub.1st))
+       ((okf tree) (abnf::check-tree-list-1 sub.1st))
        ((okf id) (abs-identifier tree))
 
-       ((okf tree) (check-tree-list-1 sub.2nd))
-       ((okf &) (check-tree-schars tree "("))
+       ((okf tree) (abnf::check-tree-list-1 sub.2nd))
+       ((okf &) (abnf::check-tree-schars tree "("))
 
-       ((okf tree) (check-tree-list-1 sub.3rd))
+       ((okf tree) (abnf::check-tree-list-1 sub.3rd))
        ((okf expressions) (abs-?-expression-*-comma-expression tree))
 
-       ((okf tree) (check-tree-list-1 sub.4th))
-       ((okf &) (check-tree-schars tree ")")))
+       ((okf tree) (abnf::check-tree-list-1 sub.4th))
+       ((okf &) (abnf::check-tree-schars tree ")")))
 
     (make-constraint-relation :name id
                               :args expressions))
@@ -605,13 +604,13 @@
 (define abs-constraint ((tree abnf::treep))
   :returns (lit constraint-resultp)
   :short "Abstract a @('constraint') to a constraint."
-  (b* (((okf tree) (check-tree-nonleaf-1-1 tree "constraint"))
-       ((okf rulename?) (check-tree-nonleaf? tree)))
+  (b* (((okf tree) (abnf::check-tree-nonleaf-1-1 tree "constraint"))
+       ((okf rulename?) (abnf::check-tree-nonleaf? tree)))
     (cond ((equal rulename? "equality-constraint")
            (abs-equality-constraint tree))
           ((equal rulename? "relation-constraint")
            (abs-relation-constraint tree))
-          (t (reserrf (list :found-subtree (tree-info-for-error tree))))))
+          (t (reserrf (list :found-subtree (abnf::tree-info-for-error tree))))))
   :hooks (:fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -646,10 +645,10 @@
 (define abs-comma-constraint ((tree abnf::treep))
   :returns (expr constraint-resultp)
   :short "Abstract a @('( \",\" constraint )') to an constraint."
-  (b* (((okf (abnf::tree-list-tuple2 sub)) (check-tree-nonleaf-2 tree nil))
-       ((okf tree) (check-tree-list-1 sub.1st))
-       ((okf &) (check-tree-ichars tree ","))
-       ((okf tree) (check-tree-list-1 sub.2nd)))
+  (b* (((okf (abnf::tree-list-tuple2 sub)) (abnf::check-tree-nonleaf-2 tree nil))
+       ((okf tree) (abnf::check-tree-list-1 sub.1st))
+       ((okf &) (abnf::check-tree-ichars tree ","))
+       ((okf tree) (abnf::check-tree-list-1 sub.2nd)))
     (abs-constraint tree))
   :hooks (:fix))
 
@@ -690,10 +689,10 @@
       constraint-listp-when-constraint-list-resultp-and-not-reserrp))))
   :short "Abstract a @('[ constraint *( \",\" constraint ) ]')
             to a list of constraints."
-  (b* (((okf treess) (check-tree-nonleaf tree nil))
+  (b* (((okf treess) (abnf::check-tree-nonleaf tree nil))
        ((when (endp treess)) nil)
-       ((okf (abnf::tree-list-tuple2 sub)) (check-tree-list-list-2 treess))
-       ((okf tree) (check-tree-list-1 sub.1st))
+       ((okf (abnf::tree-list-tuple2 sub)) (abnf::check-tree-list-list-2 treess))
+       ((okf tree) (abnf::check-tree-list-1 sub.1st))
        ((okf constraint) (abs-constraint tree))
        ((okf constraints) (abs-*-comma-constraint sub.2nd)))
     (cons constraint constraints))
@@ -710,31 +709,31 @@
   :returns (def definition-resultp)
   :short "Abstract a @('definition') CST to a definition AST."
   (b* (((okf (abnf::tree-list-tuple8 sub))
-        (check-tree-nonleaf-8 tree "definition"))
+        (abnf::check-tree-nonleaf-8 tree "definition"))
 
-       ((okf tree) (check-tree-list-1 sub.1st))
+       ((okf tree) (abnf::check-tree-list-1 sub.1st))
        ((okf id) (abs-identifier tree))
 
-       ((okf tree) (check-tree-list-1 sub.2nd))
-       ((okf &) (check-tree-schars tree "("))
+       ((okf tree) (abnf::check-tree-list-1 sub.2nd))
+       ((okf &) (abnf::check-tree-schars tree "("))
 
-       ((okf tree) (check-tree-list-1 sub.3rd))
+       ((okf tree) (abnf::check-tree-list-1 sub.3rd))
        ((okf params) (abs-?-identifier-*-comma-identifier tree))
 
-       ((okf tree) (check-tree-list-1 sub.4th))
-       ((okf &) (check-tree-schars tree ")"))
+       ((okf tree) (abnf::check-tree-list-1 sub.4th))
+       ((okf &) (abnf::check-tree-schars tree ")"))
 
-       ((okf tree) (check-tree-list-1 sub.5th))
-       ((okf &) (check-tree-schars tree ":="))
+       ((okf tree) (abnf::check-tree-list-1 sub.5th))
+       ((okf &) (abnf::check-tree-schars tree ":="))
 
-       ((okf tree) (check-tree-list-1 sub.6th))
-       ((okf &) (check-tree-schars tree "{"))
+       ((okf tree) (abnf::check-tree-list-1 sub.6th))
+       ((okf &) (abnf::check-tree-schars tree "{"))
 
-       ((okf tree) (check-tree-list-1 sub.7th))
+       ((okf tree) (abnf::check-tree-list-1 sub.7th))
        ((okf constraints) (abs-?-constraint-*-comma-constraint tree))
 
-       ((okf tree) (check-tree-list-1 sub.8th))
-       ((okf &) (check-tree-schars tree "}")))
+       ((okf tree) (abnf::check-tree-list-1 sub.8th))
+       ((okf &) (abnf::check-tree-schars tree "}")))
 
     (make-definition :name id
                      :para params
@@ -774,7 +773,7 @@
   :returns (sys system-resultp)
   :short "Abstract a @('system') CST to a system AST."
   (b* (((okf (abnf::tree-list-tuple2 sub))
-        (check-tree-nonleaf-2 tree "system"))
+        (abnf::check-tree-nonleaf-2 tree "system"))
 
        ((okf defs) (abs-*-definition sub.1st))
        ((okf constraints) (abs-*-constraint sub.2nd)))
