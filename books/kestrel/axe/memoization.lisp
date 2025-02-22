@@ -1,7 +1,7 @@
 ; Memoizing the DAG nodes that Axe trees rewrote to.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -26,7 +26,6 @@
 (include-book "bounded-darg-listp")
 (include-book "kestrel/acl2-arrays/typed-acl2-arrays" :dir :system)
 (local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
-(local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system)) ;todo
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
 (local (include-book "kestrel/bv/logand" :dir :system))
 
@@ -42,7 +41,7 @@
 
 ;maybe we should think of the memoization as part of the dag (it is just a list of equalities which mention nodenums from the dag)
 
-(local (in-theory (disable mod natp)))
+(local (in-theory (disable natp)))
 
 (local (in-theory (enable integerp-when-natp
                            <=-of-0-when-natp)))
@@ -164,11 +163,6 @@
            (dargp-less-than (lookup-equal tree alist) bound))
   :hints (("Goal" :in-theory (e/d (lookup-equal) (dargp-less-than)))))
 
-(local
- (defthm mod-bound-special
-   (implies (integerp x)
-            (not (< '1048575 (mod x '1048576))))))
-
 (defconst *memoization-size* 1048576) ;todo: allow this to vary (may be best to keep it a power of 2)
 
 ;; TODO: Do something better, to spread out the values more?
@@ -180,7 +174,7 @@
                   :split-types t)
            (type (integer 0 1152921504606846973) val)
            (type (integer 0 1048575) acc))
-  (logand 1048575 ; a mask of 20 ones
+  (logand 1048575 ; a mask of 20 ones, to chop down to 20 bits
           (+ val (* 3 acc))))
 
 (local
@@ -303,7 +297,6 @@
 
 ;bozo eventually pass in the memoization length?
 ;this is the index into the memo array
-;todo: use logand with a mask instead of mod?
 (defund axe-tree-hash (tree)
   (declare (xargs :guard (tree-to-memoizep tree)
                   :guard-hints (("Goal" :in-theory (enable tree-to-memoizep)))))
