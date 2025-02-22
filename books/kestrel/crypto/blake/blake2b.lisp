@@ -183,7 +183,7 @@
           (bytes-to-blocks (nthcdr *bb* bytes)))))
 
 (defthm all-blockp-of-bytes-to-blocks
-  (all-blockp (bytes-to-blocks data-bytes))
+  (all-blockp (bytes-to-blocks bytes))
   :hints (("Goal" :in-theory (enable blockp bytes-to-blocks all-blockp))))
 
 (defthm len-of-bytes-to-blocks
@@ -195,31 +195,31 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns a list of bytes
-(defund pad-data-bytes (data-bytes)
-  (declare (xargs :guard (and (all-unsigned-byte-p 8 data-bytes)
-                              (true-listp data-bytes))))
-  (let* ((ll (len data-bytes))
+(defund pad-input-bytes (input-bytes)
+  (declare (xargs :guard (and (all-unsigned-byte-p 8 input-bytes)
+                              (true-listp input-bytes))))
+  (let* ((ll (len input-bytes))
          (bytes-in-last-block (mod ll *bb*))
          (num-padding-bytes (if (= 0 bytes-in-last-block)
                                 0 ;; ll is an exact multiple of the block size
                               (- *bb* bytes-in-last-block))))
-    (append data-bytes (acl2::repeat num-padding-bytes 0))))
+    (append input-bytes (acl2::repeat num-padding-bytes 0))))
 
-(defthm all-unsigned-byte-p-of-pad-data-bytes
-  (implies (all-unsigned-byte-p 8 data-bytes)
-           (all-unsigned-byte-p 8 (pad-data-bytes data-bytes)))
-  :hints (("Goal" :in-theory (enable pad-data-bytes))))
+(defthm all-unsigned-byte-p-of-pad-input-bytes
+  (implies (all-unsigned-byte-p 8 input-bytes)
+           (all-unsigned-byte-p 8 (pad-input-bytes input-bytes)))
+  :hints (("Goal" :in-theory (enable pad-input-bytes))))
 
-(defthm len-of-pad-data-bytes
-  (equal (len (pad-data-bytes data-bytes))
-         (let ((ll (len data-bytes)))
+(defthm len-of-pad-input-bytes
+  (equal (len (pad-input-bytes input-bytes))
+         (let ((ll (len input-bytes)))
            (* *bb* (ceiling ll *bb*))))
   :hints (("Goal" :use (:instance mod
-                                  (x (len data-bytes))
+                                  (x (len input-bytes))
                                   (y *bb*))
            :in-theory (enable acl2::ceiling-in-terms-of-floor
                               acl2::floor-of---arg1
-                              pad-data-bytes))))
+                              pad-input-bytes))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -242,31 +242,31 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; See RFC 7693 Sec 3.3 (Padding Data ...)
-(defund d-blocks (data-bytes key-bytes)
-  (declare (xargs :guard (and (all-unsigned-byte-p 8 data-bytes)
-                              (true-listp data-bytes)
+(defund d-blocks (input-bytes key-bytes)
+  (declare (xargs :guard (and (all-unsigned-byte-p 8 input-bytes)
+                              (true-listp input-bytes)
                               (all-unsigned-byte-p 8 key-bytes)
                               (true-listp key-bytes)
                               (<= (len key-bytes) *max-key-bytes*))))
-  (if (and (not (consp data-bytes))
+  (if (and (not (consp input-bytes))
            (not (consp key-bytes)))
       ;; special case for unkeyed empty message: d contains a single block of
       ;; all 0s:
       (list (repeat 16 0)) ; a block is 16 words
-    (let* ((padded-data-bytes (pad-data-bytes data-bytes)))
+    (let* ((padded-input-bytes (pad-input-bytes input-bytes)))
       (if (consp key-bytes)
           (cons (padded-key-block key-bytes)
-                (bytes-to-blocks padded-data-bytes))
-        (bytes-to-blocks padded-data-bytes)))))
+                (bytes-to-blocks padded-input-bytes))
+        (bytes-to-blocks padded-input-bytes)))))
 
 (defthm consp-of-d-blocks
-  (consp (d-blocks data-bytes key-bytes))
+  (consp (d-blocks input-bytes key-bytes))
   :hints (("Goal" :in-theory (e/d (d-blocks) (len-of-bytes-to-blocks))
-           :use (:instance len-of-bytes-to-blocks (bytes (pad-data-bytes data-bytes))))))
+           :use (:instance len-of-bytes-to-blocks (bytes (pad-input-bytes input-bytes))))))
 
 (defthm all-blockp-of-d-blocks
   (implies (<= (len key-bytes) *max-key-bytes*)
-           (all-blockp (d-blocks data-bytes key-bytes)))
+           (all-blockp (d-blocks input-bytes key-bytes)))
   :hints (("Goal" :in-theory (enable d-blocks))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -286,8 +286,8 @@
 ;; Shows that dd is correct
 (defthm len-of-d-blocks
   (implies (<= (len key-bytes) *max-key-bytes*)
-           (equal (len (d-blocks data-bytes key-bytes))
-                  (dd (len key-bytes) (len data-bytes))))
+           (equal (len (d-blocks input-bytes key-bytes))
+                  (dd (len key-bytes) (len input-bytes))))
   :hints (("Goal" :in-theory (enable d-blocks
                                      acl2::ceiling-in-terms-of-floor
                                      acl2::floor-of---arg1))))
@@ -549,18 +549,18 @@
 
 ;; The function BLAKE2 (Sec 3.3).
 ;; Returns the hash, as list of bytes of length NN.
-(defund blake2b (data-bytes
+(defund blake2b (input-bytes
                  key-bytes
                  nn ;; number of hash bytes to produce
                  )
-  (declare (xargs :guard (and (all-unsigned-byte-p 8 data-bytes)
-                              (true-listp data-bytes)
+  (declare (xargs :guard (and (all-unsigned-byte-p 8 input-bytes)
+                              (true-listp input-bytes)
                               ;; NOTE: We would like to say:
-                              ;; (<= (len data-bytes) *max-input-bytes*)
+                              ;; (<= (len input-bytes) *max-input-bytes*)
                               ;; but that would allow potential overflows in
                               ;; the second call of F below and in the call of
                               ;; F in LOOP1 above.
-                              (<= (len data-bytes)
+                              (<= (len input-bytes)
                                   (if (= 0 (len key-bytes))
                                       *max-input-bytes*
                                     ;; Prevents overflows in the calls of f
@@ -572,9 +572,9 @@
                               (posp nn)
                               (<= nn *max-hash-bytes*))
                   :guard-hints (("Goal" :in-theory (enable wordp natp unsigned-byte-p)))))
-  (let* ((ll (len data-bytes))
+  (let* ((ll (len input-bytes))
          (kk (len key-bytes))
-         (d (d-blocks data-bytes key-bytes))
+         (d (d-blocks input-bytes key-bytes))
          (dd (len d))
          (h (iv)) ; initialization vector
          ;; XOR in the parameter block:
@@ -602,11 +602,11 @@
 (defthm len-of-blake2b
   (implies (and (posp nn)
                 (<= nn *max-hash-bytes*))
-           (equal (len (blake2b data-bytes key-bytes nn))
+           (equal (len (blake2b input-bytes key-bytes nn))
                   nn))
   :hints (("Goal" :in-theory (enable blake2b))))
 
 (defthm all-unsigned-byte-p-of-blake2b
   (implies (<= nn *max-hash-bytes*)
-           (all-unsigned-byte-p 8 (blake2b data-bytes key-bytes nn)))
+           (all-unsigned-byte-p 8 (blake2b input-bytes key-bytes nn)))
   :hints (("Goal" :in-theory (enable blake2b))))
