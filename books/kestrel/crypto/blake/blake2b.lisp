@@ -38,6 +38,7 @@
 ;(local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/bv/bvcat" :dir :system))
 (local (include-book "kestrel/bv/bvplus" :dir :system))
+(local (include-book "kestrel/bv/bvshl" :dir :system))
 
 (local (in-theory (disable len true-listp nth update-nth expt))) ;; prevent inductions
 
@@ -69,8 +70,8 @@
 
 (defconst *max-key-bytes* 64)
 
-;; This one is exclusive, so we call it a limit, not a max.
-(defconst *blake2b-max-data-byte-length* (expt 2 128)) ; todo: rename this to *input-bytes-limit*
+;; Since ll < 2^128
+(defconst *max-input-bytes* (+ -1 (expt 2 128)))
 
 ;; G rotation constants:
 (defconst *r1* 32)
@@ -275,7 +276,7 @@
   (declare (xargs :guard (and (natp kk)
                               (<= kk *max-key-bytes*)
                               (natp ll)
-                              (< ll *blake2b-max-data-byte-length*))))
+                              (<= ll *max-input-bytes*))))
   (if (and (= kk 0)
            (= ll 0))
       1 ; special case for unkeyed empty message
@@ -291,9 +292,10 @@
                                      acl2::ceiling-in-terms-of-floor
                                      acl2::floor-of---arg1))))
 
+;; Not actually allowed (see NOTES below).
 (defconst *max-number-of-blocks*
   ;; Calls dd with maximum values for both arguments:
-  (dd *max-key-bytes* (+ -1 *blake2b-max-data-byte-length*)))
+  (dd *max-key-bytes* *max-input-bytes*))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -459,7 +461,7 @@
 ;; Formalization of the FOR loop in function BLAKE2 (RFC 7693 Sec 3.3).
 (defund loop1 (i bound h d)
   (declare (xargs :guard (and (natp i)
-                              (natp bound)
+                              (natp bound) ; always dd - 2
                               (<= i (+ 1 bound))
                               (equal bound (- (len d) 2))
                               (true-listp h)
@@ -467,8 +469,10 @@
                               (= 8 (len h))
                               (true-listp d)
                               (all-blockp d)
-                              (<= (len d) (/ *blake2b-max-data-byte-length* 128)) ;todo: think about this
-                              )
+                              ;; NOTE: We must exclude d = *max-number-of-blocks*,
+                              ;; since then the third agument of the call to f here
+                              ;; would be too large.
+                              (< (len d) *max-number-of-blocks*))
                   :measure (nfix (+ 1 (- bound i)))
                   :hints (("Goal" :in-theory (enable natp)))
                   :guard-hints (("Goal" :in-theory (enable unsigned-byte-p)))))
@@ -543,61 +547,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Matt K. mod 7/31/2023 to accommodate evaluation inside lambda bodies when
-; generating guard conjectures.
-(local (in-theory (disable (:e expt))))
-
-;; See the function BLAKE2 in RFC 7693 Sec 3.3.
-;;TODO: Consider the case when ll is the max.  Then (+ ll *bb*) is > 2^128, contrary to the documentation of f.
-(defund blake2b-main (d ll kk nn)
-  (declare (xargs :guard (and (true-listp d)
-                              (all-blockp d)
-                              (< 0 (len d))
-                              (<= (len d) (/ *blake2b-max-data-byte-length* 128)) ;think about this
-                              (natp ll)
-                              ;; (< ll (- *blake2b-max-data-byte-length* 128))
-                              (< ll *blake2b-max-data-byte-length*)
-                              (natp kk)
-                              (<= kk *max-key-bytes*)
-                              (posp nn)
-                              (<= nn *max-hash-bytes*))
-                  :guard-hints (("Goal" :expand ((wordp nn))
-                                 :in-theory (enable natp)))))
-  (let* ((h (iv))
-         (h (update-nth 0
-                        (wordxor (nth 0 h)
-                                 (wordxor #x01010000
-                                          (wordxor (bvshl *w* kk 8)
-                                                   nn)))
-                        h))
-         (dd (len d))
-         (h (if (> dd 1)
-                (loop1 0 (- dd 2) h d)
-              h))
-         (h (if (= kk 0)
-                (f h (nth (- dd 1) d) ll t)
-              (f h
-                 (nth (- dd 1) d)
-                 (mod (+ ll *bb*) (expt 2 (* 2 *w*)))
-                 t))))
-    (take nn (words-to-bytes h))))
-
-(defthm len-of-blake2b-main
-  (implies (and (posp nn)
-                (<= nn *max-hash-bytes*))
-           (equal (len (blake2b-main d ll kk nn))
-                  nn))
-  :hints (("Goal" :in-theory (enable blake2b-main))))
-
-(defthm all-unsigned-byte-p-of-blake2b-main
-  (implies (<= nn *max-hash-bytes*)
-           (all-unsigned-byte-p 8 (blake2b-main d ll kk nn)))
-  :hints (("Goal" :in-theory (enable blake2b-main))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; TODO: Think about the case where we have a max length message and a key
-
+;; The function BLAKE2 (Sec 3.3).
 ;; Returns the hash, as list of bytes of length NN.
 (defund blake2b (data-bytes
                  key-bytes
@@ -605,23 +555,49 @@
                  )
   (declare (xargs :guard (and (all-unsigned-byte-p 8 data-bytes)
                               (true-listp data-bytes)
-                              ;; TODO I want to say this:
-                              ;; (< (len data-bytes) *blake2b-max-data-byte-length*)
-                              ;; But there are two potential issues related to
-                              ;; very long messages: Adding the key block can
-                              ;; make the length of d greater than expected,
-                              ;; and the expression (+ ll *bb*) in blake2b-main
-                              ;; can overflow.
-                              (< (len data-bytes) (- *blake2b-max-data-byte-length* 128)) ; todo: think about this
+                              ;; NOTE: We would like to say:
+                              ;; (<= (len data-bytes) *max-input-bytes*)
+                              ;; but that would allow potential overflows in
+                              ;; the second call of F below and in the call of
+                              ;; F in LOOP1 above.
+                              (<= (len data-bytes)
+                                  (if (= 0 (len key-bytes))
+                                      *max-input-bytes*
+                                    ;; Prevents overflows in the calls of f
+                                    ;; below:
+                                    (- *max-input-bytes* *bb*)))
                               (all-unsigned-byte-p 8 key-bytes)
                               (true-listp key-bytes)
                               (<= (len key-bytes) *max-key-bytes*)
                               (posp nn)
-                              (<= nn *max-hash-bytes*))))
-  (let* ((d (d-blocks data-bytes key-bytes))
-         (ll (len data-bytes))
-         (kk (len key-bytes)))
-    (blake2b-main d ll kk nn)))
+                              (<= nn *max-hash-bytes*))
+                  :guard-hints (("Goal" :in-theory (enable wordp natp unsigned-byte-p)))))
+  (let* ((ll (len data-bytes))
+         (kk (len key-bytes))
+         (d (d-blocks data-bytes key-bytes))
+         (dd (len d))
+         (h (iv)) ; initialization vector
+         ;; XOR in the parameter block:
+         (h (update-nth 0
+                        (wordxor (nth 0 h)
+                                 (wordxor #x01010000
+                                          (wordxor (bvshl *w* kk 8)
+                                                   nn)))
+                        h))
+         ;; Process padded key and data blocks:
+         (h (if (> dd 1)
+                ;; The FOR loop:
+                (loop1 0 (- dd 2) h d)
+              h))
+         ;; Final block:
+         (h (if (= kk 0)
+                (f h (nth (- dd 1) d) ll t)
+              (f h
+                 (nth (- dd 1) d)
+                 (+ ll *bb*)
+                 t))))
+    ;; Extract first nn bytes to form the returned hash:
+    (take nn (words-to-bytes h))))
 
 (defthm len-of-blake2b
   (implies (and (posp nn)

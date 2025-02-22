@@ -1,6 +1,6 @@
 ; Tests for BLAKE2s
 ;
-; Copyright (C) 2020 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -41,23 +41,26 @@
                     :error)
                    ((mv erp in-bytes) (acl2::hex-string-to-bytes in))
                    ((when erp) :error)
-                   ((when (not (< (len in-bytes) (- *blake2s-max-data-byte-length* 64)) ;todo
-                               ))
-                    (cw "ERROR: Test input too long.")
-                    :error)
                    ((mv erp key-bytes) (acl2::hex-string-to-bytes key))
                    ((when erp) :error)
+                   ;; See comment on the guard of function blake2s:
+                   ((when (not (<= (len in-bytes)
+                                   (if (= 0 (len key-bytes))
+                                       *max-input-bytes*
+                                     (+ -128 *max-input-bytes*)))))
+                    (cw "ERROR: Test input too long.")
+                    :error)
                    ((mv erp out-bytes) (acl2::hex-string-to-bytes out))
                    ((when erp) :error)
                    (kk (len key-bytes))
-                   ((when (< 32 kk))
+                   ((when (< *max-key-bytes* kk))
                     (cw "ERROR: Key input too long.")
                     :error)
                    (nn (len out-bytes)) ;desired length of hash
                    ((when (< nn 1))
                     (cw "ERROR: Test output too short.")
                     :error)
-                   ((when (< 32 nn))
+                   ((when (< *max-hash-bytes* nn))
                     (cw "ERROR: Test output too long.")
                     :error)
                    (test-result (blake2s in-bytes key-bytes nn)))
