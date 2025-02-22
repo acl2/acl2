@@ -17,7 +17,8 @@
 (include-book "kestrel/utilities/split-list-fast" :dir :system)
 (local (include-book "kestrel/lists-light/len" :dir :system))
 
-;these are what are stored in rule-alists
+;; Stored-rules are what is stored in rule-alists / rule-dbs.
+
 (defund make-stored-rule (lhs-args hyps rule-symbol rhs)
   (declare (xargs :guard (and (pseudo-term-listp lhs-args) ;should be lambda-free
                               (axe-rule-hyp-listp hyps)
@@ -175,19 +176,21 @@
                                    priorities))))
 
 ;drop?
-(defthm true-listp-of-merge-by-rule-priority
-  (implies (and (true-listp l1)
-                (true-listp l2)
-                (true-listp acc))
-           (true-listp (merge-by-rule-priority l1 l2 acc priorities)))
-  :hints (("Goal" :in-theory (enable merge-by-rule-priority))))
+(local
+  (defthm true-listp-of-merge-by-rule-priority
+    (implies (and (true-listp l1)
+                  (true-listp l2)
+                  (true-listp acc))
+             (true-listp (merge-by-rule-priority l1 l2 acc priorities)))
+    :hints (("Goal" :in-theory (enable merge-by-rule-priority)))))
 
-(defthm stored-axe-rule-listp-of-merge-by-rule-priority
-  (implies (and (stored-axe-rule-listp l1)
-                (stored-axe-rule-listp l2)
-                (stored-axe-rule-listp acc))
-           (stored-axe-rule-listp (merge-by-rule-priority l1 l2 acc priorities)))
-  :hints (("Goal" :in-theory (enable merge-by-rule-priority))))
+(local
+  (defthm stored-axe-rule-listp-of-merge-by-rule-priority
+    (implies (and (stored-axe-rule-listp l1)
+                  (stored-axe-rule-listp l2)
+                  (stored-axe-rule-listp acc))
+             (stored-axe-rule-listp (merge-by-rule-priority l1 l2 acc priorities)))
+    :hints (("Goal" :in-theory (enable merge-by-rule-priority)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -215,25 +218,29 @@
 
 ;; make these local?:
 ;defforall could do these too?
-(defthm stored-axe-rule-listp-of-mv-nth-0-of-split-list-fast-aux
-  (implies (and (stored-axe-rule-listp lst)
-                (stored-axe-rule-listp acc)
-                (<= (len tail) (len lst)))
-           (stored-axe-rule-listp (mv-nth 0 (split-list-fast-aux lst tail acc)))))
+(local
+  (defthm stored-axe-rule-listp-of-mv-nth-0-of-split-list-fast-aux
+    (implies (and (stored-axe-rule-listp lst)
+                  (stored-axe-rule-listp acc)
+                  (<= (len tail) (len lst)))
+             (stored-axe-rule-listp (mv-nth 0 (split-list-fast-aux lst tail acc))))))
 
-(defthm stored-axe-rule-listp-of-mv-nth-0-of-split-list-fast
-  (implies (stored-axe-rule-listp lst)
-           (stored-axe-rule-listp (mv-nth 0 (split-list-fast lst))))
-  :hints (("Goal" :in-theory (enable split-list-fast))))
+(local
+  (defthm stored-axe-rule-listp-of-mv-nth-0-of-split-list-fast
+    (implies (stored-axe-rule-listp lst)
+             (stored-axe-rule-listp (mv-nth 0 (split-list-fast lst))))
+    :hints (("Goal" :in-theory (enable split-list-fast)))))
 
-(defthm stored-axe-rule-listp-of-mv-nth-1-of-split-list-fast-aux
-  (implies (stored-axe-rule-listp lst)
-           (stored-axe-rule-listp (mv-nth 1 (split-list-fast-aux lst tail acc)))))
+(local
+  (defthm stored-axe-rule-listp-of-mv-nth-1-of-split-list-fast-aux
+    (implies (stored-axe-rule-listp lst)
+             (stored-axe-rule-listp (mv-nth 1 (split-list-fast-aux lst tail acc))))))
 
-(defthm stored-axe-rule-listp-of-mv-nth-1-split-list-fast
-  (implies (stored-axe-rule-listp lst)
-           (stored-axe-rule-listp (mv-nth 1 (split-list-fast lst))))
-  :hints (("Goal" :in-theory (enable split-list-fast))))
+(local
+  (defthm stored-axe-rule-listp-of-mv-nth-1-split-list-fast
+    (implies (stored-axe-rule-listp lst)
+             (stored-axe-rule-listp (mv-nth 1 (split-list-fast lst))))
+    :hints (("Goal" :in-theory (enable split-list-fast)))))
 
 (verify-guards merge-sort-by-rule-priority
   :hints (("Goal" :induct (merge-sort-by-rule-priority stored-rules priorities))))
@@ -243,6 +250,7 @@
            (stored-axe-rule-listp (merge-sort-by-rule-priority stored-rules priorities)))
   :hints (("Goal" :in-theory (enable merge-sort-by-rule-priority))))
 
+;drop?
 (defthm true-listp-of-merge-sort-by-rule-priority
   (implies (true-listp stored-rules)
            (true-listp (merge-sort-by-rule-priority stored-rules priorities)))
