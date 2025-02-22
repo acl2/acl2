@@ -1,7 +1,7 @@
-; Left shift
+; Bit-vector Left shift
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,6 +15,7 @@
 (include-book "bvshl-def")
 (local (include-book "bvcat"))
 (local (include-book "unsigned-byte-p"))
+(local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 
 (defthm bvshl-of-0-arg1
   (implies (natp amt)
@@ -71,6 +72,15 @@
                 (natp size))
            (unsigned-byte-p n (bvshl size x amt)))
   :hints (("Goal" :in-theory (enable bvshl))))
+
+(defthm bvshl-upper-bound-linear-strong
+  (implies (natp size)
+           (<= (bvshl size x amt) (+ -1 (expt 2 size))))
+  :rule-classes :linear
+  :hints (("Goal" :use unsigned-byte-p-of-bvshl
+           :in-theory (e/d (unsigned-byte-p)
+                           (unsigned-byte-p-of-bvshl
+                            unsigned-byte-p-of-bvshl-gen)))))
 
 ; a version that puts a bvchop around x to help us simplify stuff
 (defthmd bvshl-rewrite-with-bvchop
