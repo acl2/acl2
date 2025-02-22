@@ -1,7 +1,7 @@
 ; A utility to update part of a list
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -92,9 +92,9 @@
                 (natp n))
            (equal (nth n (update-subrange start end vals lst))
                   (nth (- n start) vals)))
-  :hints (("subgoal *1/2" :expand  (UPDATE-SUBRANGE N END VALS LST))
-          ("Goal" :in-theory (e/d (update-subrange ;nth
-                                   ) (UPDATE-NTH-OF-UPDATE-SUBRANGE-DIFF)))))
+  :hints (("subgoal *1/2" :expand (update-subrange n end vals lst))
+          ("Goal" :in-theory (e/d (update-subrange)
+                                  (update-nth-of-update-subrange-diff)))))
 
 (defthmd nth-of-update-subrange-diff-1
   (implies (and (< n start)
@@ -254,9 +254,7 @@
            (equal (nthcdr n (update-subrange start end vals lst))
                   (nthcdr n lst)))
   :hints (("Goal" :in-theory (e/d (update-subrange update-nth-of-update-subrange-diff-back)
-                                  (update-nth-of-update-subrange-diff
-                                    ;;take-of-nthcdr-becomes-subrange
-                                   )))))
+                                  (update-nth-of-update-subrange-diff)))))
 
 (defthm UPDATE-SUBRANGE-out-of-order
   (implies (> START END)
