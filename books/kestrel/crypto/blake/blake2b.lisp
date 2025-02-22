@@ -10,7 +10,8 @@
 
 (in-package "BLAKE")
 
-;; Written from https://tools.ietf.org/rfc/rfc7693.txt.
+;; Written from https://tools.ietf.org/rfc/rfc7693.txt.  Section references
+;; below refer to that document.
 
 ;; See blake2b-tests.lisp
 
@@ -35,26 +36,13 @@
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/repeat" :dir :system))
 (local (include-book "kestrel/bv-lists/all-unsigned-byte-p2" :dir :system))
-;(local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/bv/bvcat" :dir :system))
 (local (include-book "kestrel/bv/bvplus" :dir :system))
 (local (include-book "kestrel/bv/bvshl" :dir :system))
 
-(local (in-theory (disable len true-listp nth update-nth expt))) ;; prevent inductions
-
-(local (in-theory (disable acl2::mod-sum-cases nth-update-nth))) ;; prevent case splits
-
-;move
-(local
- (DEFTHM
-   INTEGERP-OF-SMALL-HELPER-2
-   (IMPLIES (AND (< X N) (NATP X) (POSP N))
-            (EQUAL (INTEGERP (* (/ N) X))
-                   (EQUAL 0 (* (/ N) X))))
-   :RULE-CLASSES ((:REWRITE :BACKCHAIN-LIMIT-LST (0 NIL NIL)))
-   :HINTS (("Goal" :IN-THEORY (ENABLE acl2::INTEGERP-SQUEEZE)
-            :CASES ((< (* (/ N) X) 0)
-                    (<= 1 (* (/ N) X)))))))
+(local (in-theory (disable len true-listp nth update-nth expt ;; prevent inductions
+                           acl2::mod-sum-cases nth-update-nth ;; prevent case splits
+                           acl2::mod-by-4-becomes-bvchop)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -128,10 +116,6 @@
 (defthm wordp-of-bytes-to-word
   (wordp (bytes-to-word bytes))
   :hints (("Goal" :in-theory (enable bytes-to-word wordp))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(local (in-theory (disable acl2::mod-by-4-becomes-bvchop)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -241,7 +225,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; See RFC 7693 Sec 3.3 (Padding Data ...)
+;; See Sec 3.3 (Padding Data ...)
 (defund d-blocks (input-bytes key-bytes)
   (declare (xargs :guard (and (all-unsigned-byte-p 8 input-bytes)
                               (true-listp input-bytes)
@@ -271,7 +255,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; number of blocks (Sec 3.3)
+;; number of blocks (see Sec 3.3)
 (defun dd (kk ll)
   (declare (xargs :guard (and (natp kk)
                               (<= kk *max-key-bytes*)
@@ -300,16 +284,15 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (local
+ ;; This speeds up the guard proof for g
  (defthm bvplus-intro
-  (implies (and (integerp x)
-                (integerp y))
-           (equal (mod (+ x y) *word-limit*)
-                  (bvplus *w* x y)))
-  :hints (("Goal" :in-theory (enable bvplus bvchop)))))
+   (implies (and (integerp x)
+                 (integerp y))
+            (equal (mod (+ x y) *word-limit*)
+                   (bvplus *w* x y)))
+   :hints (("Goal" :in-theory (enable bvplus bvchop)))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; See RFC 7693 Sec 3.1 (Mixing Function G)
+;; Mixing Function G (See Sec 3.1)
 (defund g (v a b c d x y)
   (declare (xargs :guard (and (blockp v)
                               (natp a)
@@ -349,10 +332,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(local (in-theory (disable natp)))
-
-;; Formalization of the first FOR loop in the compression function F (RFC 7693
-;; Sec 3.2).
+;; Formalization of the first FOR loop in the compression function F (see Sec
+;; 3.2).
 (defund f-loop-1 (i v m)
   (declare (xargs :guard (and (natp i)
                               (<= i *r*)
@@ -383,8 +364,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Formalization of the second FOR loop in the compression function F (RFC 7693
-;; Sec 3.2).
+;; Formalization of the second FOR loop in the compression function F (see Sec
+;; 3.2).
 (defund f-loop-2 (i h v)
   (declare (xargs :guard (and (natp i)
                               (<= i 8)
@@ -419,7 +400,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; See RFC 7693 Sec 3.2 (Compression Function F)
+;; Compression Function F (see Sec 3.2)
 (defund f (h m tvar f)
   (declare (xargs :guard (and (true-listp h)
                               (all-wordp h)
@@ -458,7 +439,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Formalization of the FOR loop in function BLAKE2 (RFC 7693 Sec 3.3).
+;; Formalization of the FOR loop in function BLAKE2 (see Sec 3.3).
 (defund loop1 (i bound h d)
   (declare (xargs :guard (and (natp i)
                               (natp bound) ; always dd - 2
@@ -547,7 +528,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; The function BLAKE2 (Sec 3.3).
+;; The function BLAKE2 (see Sec 3.3).
 ;; Returns the hash, as list of bytes of length NN.
 (defund blake2b (input-bytes
                  key-bytes
