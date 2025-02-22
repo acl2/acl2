@@ -263,24 +263,37 @@
   :hints (("Goal" :in-theory (e/d (d-blocks) (len-of-bytes-to-blocks))
            :use (:instance len-of-bytes-to-blocks (bytes (pad-data-bytes data-bytes))))))
 
-;; dd = ceil(kk / bb) + ceil(ll / bb)
-(defthm len-of-d-blocks
-  (implies (<= (len key-bytes) *max-key-bytes*)
-           (equal (len (d-blocks data-bytes key-bytes))
-                  (if (consp data-bytes) ;;exclude special case
-                      (let ((ll (len data-bytes))
-                            (kk (len key-bytes)))
-                        (+ (ceiling kk *bb*)
-                           (ceiling ll *bb*)))
-                    1)))
-  :hints (("Goal" :in-theory (enable d-blocks
-                                     acl2::ceiling-in-terms-of-floor
-                                     acl2::floor-of---arg1))))
-
 (defthm all-blockp-of-d-blocks
   (implies (<= (len key-bytes) *max-key-bytes*)
            (all-blockp (d-blocks data-bytes key-bytes)))
   :hints (("Goal" :in-theory (enable d-blocks))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; number of blocks (Sec 3.3)
+(defun dd (kk ll)
+  (declare (xargs :guard (and (natp kk)
+                              (<= kk *max-key-bytes*)
+                              (natp ll)
+                              (< ll *blake2b-max-data-byte-length*))))
+  (if (and (= kk 0)
+           (= ll 0))
+      1 ; special case for unkeyed empty message
+    (+ (ceiling kk *bb*)
+       (ceiling ll *bb*))))
+
+;; Shows that dd is correct
+(defthm len-of-d-blocks
+  (implies (<= (len key-bytes) *max-key-bytes*)
+           (equal (len (d-blocks data-bytes key-bytes))
+                  (dd (len key-bytes) (len data-bytes))))
+  :hints (("Goal" :in-theory (enable d-blocks
+                                     acl2::ceiling-in-terms-of-floor
+                                     acl2::floor-of---arg1))))
+
+(defconst *max-number-of-blocks*
+  ;; Calls dd with maximum values for both arguments:
+  (dd *max-key-bytes* (+ -1 *blake2b-max-data-byte-length*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
