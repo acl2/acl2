@@ -21,7 +21,7 @@
                                     var-less-than-unquoted-keyp
                                     var-not-less-than-unquoted-keyp
                                     ;; same stuff as in the "basic" version:
-                                    heavier-dag-term
+                                    lighter-dargp
                                     ;; bv-term-syntaxp
                                     is-a-myif
                                     syntactic-booleanp

@@ -24,7 +24,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (make-axe-syntaxp-evaluator 'baz '(syntactic-variablep
-                                   heavier-dag-term
+                                   lighter-dargp
                                    should-reverse-equality ;this one uses the dag-array
                                    ))
 
@@ -131,9 +131,9 @@
                        arg0-val arg1-val
                        ;; this one takes the dag-array too, which we pass around separately:
                        DAG-ARRAY))
-                   (HEAVIER-DAG-TERM
+                   (LIGHTER-DARGP
                      ;; this one does not take a dag-array param:
-                     (HEAVIER-DAG-TERM arg0-val arg1-val))
+                     (LIGHTER-DARGP arg0-val arg1-val))
                    (T
                      (ER HARD?
                          'EVAL-AXE-SYNTAXP-FUNCTION-APPLICATION-BAZ

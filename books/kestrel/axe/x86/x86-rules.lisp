@@ -21,6 +21,7 @@
 (include-book "kestrel/x86/assumptions64" :dir :system) ;for ADDRESSES-OF-SUBSEQUENT-STACK-SLOTS-AUX
 (include-book "kestrel/x86/assumptions32" :dir :system) ; for return-address-okp
 (include-book "kestrel/x86/conditions" :dir :system) ; for jnl-condition
+(include-book "kestrel/x86/write-over-write-rules64" :dir :system)
 (include-book "kestrel/x86/run-until-return" :dir :system)
 (include-book "kestrel/x86/floats" :dir :system)
 (include-book "../axe-syntax")
@@ -411,7 +412,7 @@
   (implies (and (syntaxp (and (quotep flag1)
                               (quotep flag2)
                               ))
-                (axe-syntaxp (heavier-dag-term flag1 flag2))
+                (axe-syntaxp (lighter-dargp flag2 flag1))
                 (not (equal flag1 flag2))
                 (member-eq flag1 *flags*)
                 (member-eq flag2 *flags*)
@@ -737,7 +738,7 @@
   (implies (axe-syntaxp (write-nest-with-inner-set-flagp-axe x86 acl2::dag-array))
            (equal (read n ad (write n2 ad2 val x86))
                   (read n ad (write n2 ad2 val (clear-flags-extend x86)))))
-  :hints (("Goal" :in-theory (enable clear-flags-extend))))
+  :hints (("Goal" :in-theory (e/d (clear-flags-extend write-of-!rflags) (!rflags !rflags-of-write)))))
 
 ;; Copies the clear inside a write that is not its target
 ;; For Axe only
@@ -779,3 +780,32 @@
                   (write n2 ad2 val2 (write n1 ad1 val1 x86))))
   :hints (("Goal" :use write-of-write-diff-bv
            :in-theory (disable write-of-write-diff-bv))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; this puts the syntactically smaller op first
+(defthmd equal-of-0-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder-axe
+  (implies (and (axe-syntaxp (acl2::lighter-dargp op2 op1))
+                (equal (mxcsrbits->daz$inline mxcsr) 0)
+                (equal (mxcsrbits->im$inline mxcsr) 1)
+                (equal (mxcsrbits->dm$inline mxcsr) 1))
+           (equal (equal 0 (mv-nth 1 (sse-cmp *op-ucomi* op1 op2 mxcsr exp-width frac-width)))
+                  (equal 1 (mv-nth 1 (sse-cmp *op-ucomi* op2 op1 mxcsr exp-width frac-width)))))
+  :hints (("Goal" :use equal-of-0-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder)))
+
+;; this puts the syntactically smaller op first
+(defthmd equal-of-1-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder-axe
+  (implies (and (axe-syntaxp (acl2::lighter-dargp op2 op1))
+                (equal (mxcsrbits->daz$inline mxcsr) 0)
+                (equal (mxcsrbits->im$inline mxcsr) 1)
+                (equal (mxcsrbits->dm$inline mxcsr) 1))
+           (equal (equal 1 (mv-nth 1 (sse-cmp *op-ucomi* op1 op2 mxcsr exp-width frac-width)))
+                  (equal 0 (mv-nth 1 (sse-cmp *op-ucomi* op2 op1 mxcsr exp-width frac-width)))))
+  :hints (("Goal" :use equal-of-1-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder)))
+
+;; this puts the syntactically smaller op first
+(defthmd equal-of-7-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder-axe
+  (implies (axe-syntaxp (acl2::lighter-dargp op2 op1))
+           (equal (equal 7 (mv-nth 1 (sse-cmp *op-ucomi* op1 op2 mxcsr exp-width frac-width)))
+                  (equal 7 (mv-nth 1 (sse-cmp *op-ucomi* op2 op1 mxcsr exp-width frac-width)))))
+  :hints (("Goal" :use equal-of-7-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder)))

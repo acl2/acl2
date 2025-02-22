@@ -914,9 +914,9 @@
                (msg "The call ~x0 affects ~x1, ~
                      but it should affect ~x2 instead."
                     term gin.affect affect)))
-             ((erp (pexprs-gout args))
+             ((erp (exprs-gout args))
               (atc-gen-expr-pure-list arg-terms
-                                      (make-pexprs-gin
+                                      (make-exprs-gin
                                        :context gin.context
                                        :inscope gin.inscope
                                        :prec-tags gin.prec-tags
@@ -5043,9 +5043,9 @@
                which differs from the variables ~x3 ~
                being affected here."
               gin.fn called-fn affect gin.affect)))
-       ((erp (pexprs-gout args))
+       ((erp (exprs-gout args))
         (atc-gen-expr-pure-list arg-terms
-                                (make-pexprs-gin
+                                (make-exprs-gin
                                  :context gin.context
                                  :inscope gin.inscope
                                  :prec-tags gin.prec-tags

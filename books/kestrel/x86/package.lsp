@@ -1443,7 +1443,7 @@
 
     syntactic-call-of
     term-should-be-trimmed-axe
-    heavier-dag-term
+    lighter-dargp
 
     prove-equivalence
     prove-equal-with-tactics

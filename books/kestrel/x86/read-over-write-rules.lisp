@@ -1,6 +1,6 @@
 ; "Read over write" rules for our x86 state readers and writers
 ;
-; Copyright (C) 2016-2023 Kestrel Technology, LLC
+; Copyright (C) 2016-2025 Kestrel Technology, LLC
 ; Copyright (C) 2024 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -18,12 +18,22 @@
 ;; We avoid using rules about set-ms and set-fault since execution should just stop is either of those is set.
 
 (include-book "projects/x86isa/machine/state" :dir :system)
-(include-book "projects/x86isa/machine/modes" :dir :system)
+(include-book "projects/x86isa/machine/modes" :dir :system) ; for 64-bit-modep
 (include-book "projects/x86isa/machine/decoding-and-spec-utils" :dir :system) ; for alignment-checking-enabled-p
 (include-book "readers-and-writers")
 (include-book "flags")
 (local (include-book "linear-memory"))
 (local (include-book "kestrel/bv/logapp" :dir :system)) ; why? for acl2::loghead-becomes-bvchop
+
+(defthm 64-bit-modep-of-!memi
+  (equal (64-bit-modep (!memi i v x86))
+         (64-bit-modep x86))
+  :hints (("Goal" :in-theory (enable !memi))))
+
+(defthm alignment-checking-enabled-p-of-!memi
+  (equal (alignment-checking-enabled-p (!memi i v x86))
+         (alignment-checking-enabled-p x86))
+  :hints (("Goal" :in-theory (enable !memi))))
 
 (defthm program-at-of-set-flag
   (implies (app-view x86)
