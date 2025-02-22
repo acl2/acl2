@@ -2854,7 +2854,7 @@
 ;;                 (<= len end))
 ;;            (equal (SUBRANGE start end x)
 ;;                   (SUBRANGE start (+ -1 len) x)))
-;;   :hints (("Goal" :in-theory (e/d (SUBRANGE) (TAKE-OF-NTHCDR-BECOMES-SUBRANGE)))))
+;;   :hints (("Goal" :in-theory (e/d (SUBRANGE) ()))))
 
 (defthm drop-linear-hyps1
   (implies (and (< (+ free x) y)
@@ -3022,7 +3022,7 @@
 ;;                 (natp start))
 ;;            (equal (subrange start end (byte-fix-list lst))
 ;;                   (byte-fix-list (subrange start end lst))))
-;;   :hints (("Goal" :in-theory (e/d (subrange) (take-of-nthcdr-becomes-subrange
+;;   :hints (("Goal" :in-theory (e/d (subrange) (
 ;;                                               anti-subrange
 ;;                                               )))))
 
