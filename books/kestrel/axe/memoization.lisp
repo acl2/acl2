@@ -39,6 +39,9 @@
 ;; TODO: Consider memoizing only destructor trees, not constructor trees
 ;; NOTE: For anything we won't memoize, we should avoid consing it onto trees-equal-to-tree in the rewriter.
 
+;; todo also: consider JVM::UPDATE-NTH-LOCAL JVM::MAKE-FRAME
+;; (defconst *fns-not-to-memoize* '(step-state-with-pc-and-call-stack-height get-field))
+
 ;maybe we should think of the memoization as part of the dag (it is just a list of equalities which mention nodenums from the dag)
 
 (local (in-theory (disable natp)))
@@ -337,14 +340,7 @@
     :hints (("Goal" :in-theory (enable axe-tree-hash
                                        tree-to-memoizep)))))
 
-;;fixme gross to have this hard-coded
-;;fixme - use this?
-;;todo: consider JVM::UPDATE-NTH-LOCAL JVM::MAKE-FRAME
-;(defconst *fns-not-to-memoize* '(step-state-with-pc-and-call-stack-height get-field))
-
-;;;
-;;; memo-alistp
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Maps trees (that can be memoized) to the nodenums/quoteps to which they rewrote.
 (defund memo-alistp (alist)
@@ -378,19 +374,19 @@
             (trees-to-memoizep (strip-cars alist)))
    :hints (("Goal" :in-theory (enable memo-alistp)))))
 
-;;;
-;;; memoizationp
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-typed-acl2-array2 array-of-memo-alistsp (memo-alistp val))
 
-;; Maps tree hashes to memo-alists.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The memoization is implemented as an array that maps tree hashes to memo-alists.
 (defund memoizationp (memoization)
   (declare (xargs :guard t))
   (and (array-of-memo-alistsp 'memoization memoization)
        (equal (alen1 'memoization memoization) *memoization-size*)))
 
-;; This allows us to use nil to mean "no memoization".
+;; This justifies using nil to mean "no memoization".
 (defthmd not-memoizationp-of-nil
   (not (memoizationp nil)))
 
@@ -462,9 +458,7 @@
                               (dargp result)
                               (memoizationp memoization))
                   :guard-hints (("Goal" :in-theory (enable memoizationp
-                                                           axe-treep-when-tree-to-memoizep
-                                                           ;;TREES-TO-MEMOIZEP
-                                                           )))))
+                                                           axe-treep-when-tree-to-memoizep)))))
   (if (endp trees)
       memoization
     (add-pairs-to-memoization (rest trees)
@@ -476,9 +470,7 @@
                 (dargp result)
                 (trees-to-memoizep trees))
            (memoizationp (add-pairs-to-memoization trees result memoization)))
-  :hints (("Goal" :in-theory (e/d (add-pairs-to-memoization memoizationp trees-to-memoizep
-                                                            ;;tree-to-memoizep
-                                                            )
+  :hints (("Goal" :in-theory (e/d (add-pairs-to-memoization memoizationp trees-to-memoizep)
                                   (dargp natp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -498,7 +490,7 @@
     (progn$ ;; (and res (cw "(Memo hit for ~x0.)~%" tree))
             res)))
 
-(defthm dargp-of-lookup-in-memoization-when-memoizationp
+(defthm dargp-of-lookup-in-memoization
   (implies (and (memoizationp memoization)
                 (lookup-in-memoization tree memoization) ;there is a match
                 (tree-to-memoizep tree))
@@ -672,8 +664,7 @@
                 (<= bound2 bound)
                 (integerp n))
            (array-of-bounded-memo-alistsp-aux array-name array n bound))
-  :hints
-  (("Goal" :in-theory (enable array-of-bounded-memo-alistsp-aux))))
+  :hints (("Goal" :in-theory (enable array-of-bounded-memo-alistsp-aux))))
 
 (defthm bounded-memoizationp-monotone
   (implies (and (bounded-memoizationp memoization bound2)
