@@ -752,64 +752,63 @@
     (symbol-listp (head-function-symbols terms))
     :hints (("Goal" :in-theory (enable head-function-symbols)))))
 
-;; TODO: Print the average number of items in the occupied buckets
-;; todo: rename "slot" to "bucket"
-(defund print-memo-stats-aux (n memoization total-items longest-slot longest-slot-len last-filled-slot filled-slots memo-count-world)
+(defund print-memo-stats-aux (n memoization total-items longest-bucket longest-bucket-len last-filled-bucket filled-buckets memo-count-world)
   (declare (xargs :measure (nfix (- *memoization-size* n))
                   :hints (("Goal" :in-theory (enable natp)))
                   :guard (and (memoizationp memoization)
                               (natp n)
                               (natp total-items)
-                              (natp longest-slot-len)
-                              (natp longest-slot)
-                              (< longest-slot *memoization-size*)
-                              (natp filled-slots)
+                              (natp longest-bucket-len)
+                              (natp longest-bucket)
+                              (< longest-bucket *memoization-size*)
+                              (natp filled-buckets)
                               (symbol-count-worldp memo-count-world))
                   :guard-hints (("Goal" :in-theory (enable memoizationp)))))
   (if (or (not (mbt (natp n)))
           (<= *memoization-size* n))
-      (let* ((contents-of-slot-0 (aref1 'memoization memoization 0)) ;; where ground terms go
-             (len-of-slot0 (len contents-of-slot-0))
-             (contents-of-longest-slot (aref1 'memoization memoization longest-slot))
-             (len-of-longest-slot (len contents-of-longest-slot)))
+      (let* ((contents-of-bucket-0 (aref1 'memoization memoization 0)) ;; where ground terms go
+             (len-of-bucket-0 (len contents-of-bucket-0))
+             (contents-of-longest-bucket (aref1 'memoization memoization longest-bucket))
+             (len-of-longest-bucket (len contents-of-longest-bucket)))
         (progn$ (cw "~%(Memo stats:~%")
                 (cw "Memo items: ~x0.~%" total-items)
-                (cw "Memo slots used: ~x0.~%" filled-slots)
-                (cw "Index with the most items : ~x0 (~x1 items)~%" longest-slot longest-slot-len)
-                (cw "Last used index: ~x0.~%" last-filled-slot)
-                (cw "Items at index 0: ~x0.~%" len-of-slot0)
-                (cw "First few items at index 0: ~x0~%" (if (< 20 len-of-slot0)
-                                                            (take 20 (true-list-fix contents-of-slot-0))
-                                                          contents-of-slot-0))
-                (cw "First few items at index ~x0: ~x1~%" longest-slot
-                    (if (< 20 len-of-longest-slot)
-                        (take 20 (true-list-fix contents-of-longest-slot))
-                      contents-of-longest-slot))
-                (cw "Last few items at index ~x0: ~x1~%" longest-slot
-                    (nthcdr (if (< 20 len-of-longest-slot) (- len-of-longest-slot 20) 0)
-                            (true-list-fix contents-of-longest-slot)))
+                (cw "Memo buckets used: ~x0.~%" filled-buckets)
+                (and (posp filled-buckets) (cw "Items per used bucket: ~x0." (floor total-items filled-buckets)))
+                (cw "Index with the most items : ~x0 (~x1 items)~%" longest-bucket longest-bucket-len)
+                (cw "Last used index: ~x0.~%" last-filled-bucket)
+                (cw "Items at index 0: ~x0.~%" len-of-bucket-0)
+                (cw "First few items at index 0: ~x0~%" (if (< 20 len-of-bucket-0)
+                                                            (take 20 (true-list-fix contents-of-bucket-0))
+                                                          contents-of-bucket-0))
+                (cw "First few items at index ~x0: ~x1~%" longest-bucket
+                    (if (< 20 len-of-longest-bucket)
+                        (take 20 (true-list-fix contents-of-longest-bucket))
+                      contents-of-longest-bucket))
+                (cw "Last few items at index ~x0: ~x1~%" longest-bucket
+                    (nthcdr (if (< 20 len-of-longest-bucket) (- len-of-longest-bucket 20) 0)
+                            (true-list-fix contents-of-longest-bucket)))
                 (cw "Head symbol counts in memoization:~%")
                 (cw "~X01" (summarize-symbol-count-world memo-count-world) nil)
-                ;; (cw "(Longest slot entries: ~X01)~%" (and (natp longest-slot)
-                ;;                                           (< longest-slot *memoization-size*) ;for guards
-                ;;                                           (aref1 'memoization memoization longest-slot))
+                ;; (cw "(Longest bucket entries: ~X01)~%" (and (natp longest-bucket)
+                ;;                                           (< longest-bucket *memoization-size*) ;for guards
+                ;;                                           (aref1 'memoization memoization longest-bucket))
                 ;;     nil)
                 (cw ")~%")))
-    (let* ((slot-items (aref1 'memoization memoization n))
-           (num-items (len slot-items)))
+    (let* ((bucket-items (aref1 'memoization memoization n))
+           (num-items (len bucket-items)))
       (print-memo-stats-aux (+ 1 n)
                             memoization
                             (+ total-items num-items)
-                            (if (< longest-slot-len num-items)
+                            (if (< longest-bucket-len num-items)
                                 n
-                              longest-slot)
-                            (max num-items longest-slot-len)
+                              longest-bucket)
+                            (max num-items longest-bucket-len)
                             (if (< 0 num-items)
                                 n
-                              last-filled-slot)
-                            (if (< 0 num-items) (+ 1 filled-slots) filled-slots)
+                              last-filled-bucket)
+                            (if (< 0 num-items) (+ 1 filled-buckets) filled-buckets)
                             ;; todo: avoid the strip-cars:
-                            (increment-counts-in-symbol-count-world (head-function-symbols (strip-cars slot-items)) 'memo-count-world memo-count-world)))))
+                            (increment-counts-in-symbol-count-world (head-function-symbols (strip-cars bucket-items)) 'memo-count-world memo-count-world)))))
 
 ;; Gather and print statistics about the contents of the memoization.
 ;; Logically returns nil.
@@ -819,16 +818,16 @@
                                                            memoizationp)))))
   (if (eq nil memoization)
       (cw "(There is no memoization to print.)~%")
-    (let* ((contents-of-slot-0 (aref1 'memoization memoization 0)) ;; where ground terms go
-           (len-of-slot0 (len contents-of-slot-0))
+    (let* ((contents-of-bucket-0 (aref1 'memoization memoization 0)) ;; where ground terms go
+           (len-of-bucket-0 (len contents-of-bucket-0))
            (memo-count-world (empty-symbol-count-world 'memo-count-world)))
       (print-memo-stats-aux 1
                             memoization
-                            len-of-slot0 ; total-items
-                            0            ; longest-slot
-                            len-of-slot0 ; longest-slot-len
-                            (if contents-of-slot-0 0 -1)
-                            (if contents-of-slot-0 1 0) ; filled-slots
-                            (increment-counts-in-symbol-count-world (head-function-symbols (strip-cars contents-of-slot-0))
+                            len-of-bucket-0 ; total-items
+                            0            ; longest-bucket
+                            len-of-bucket-0 ; longest-bucket-len
+                            (if contents-of-bucket-0 0 -1) ; last-filled-bucket
+                            (if contents-of-bucket-0 1 0) ; filled-buckets
+                            (increment-counts-in-symbol-count-world (head-function-symbols (strip-cars contents-of-bucket-0))
                                                                     'memo-count-world
                                                                     memo-count-world)))))
