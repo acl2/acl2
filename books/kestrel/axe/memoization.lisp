@@ -17,7 +17,6 @@
 ;; where the hash of a tree is the sum of the nodenums in the object modulo
 ;; *memoization-size*.
 
-(include-book "tools/flag" :dir :system)
 ;(include-book "arrays-of-alists")
 (include-book "kestrel/alists-light/lookup-equal" :dir :system)
 (include-book "axe-trees")
@@ -25,6 +24,7 @@
 (include-book "darg-listp")
 (include-book "bounded-darg-listp")
 (include-book "kestrel/acl2-arrays/typed-acl2-arrays" :dir :system)
+(local (include-book "tools/flag" :dir :system))
 (local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
 (local (include-book "kestrel/bv/logand" :dir :system))
@@ -45,6 +45,8 @@
 
 (local (in-theory (enable integerp-when-natp
                            <=-of-0-when-natp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Recognize an axe-tree that is a cons
 ;; TODO: Restrict to bounded-axe-trees?
@@ -123,6 +125,8 @@
 ;;                   (and (consp tree))))
 ;;   :hints (("Goal" :in-theory (e/d (tree-to-memoizep) (axe-treep)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Recognize a true-list of axe-trees that are conses
 (defund trees-to-memoizep (trees)
   (declare (xargs :guard t))
@@ -149,6 +153,8 @@
            (tree-to-memoizep (car trees)))
   :hints (("Goal" :in-theory (enable trees-to-memoizep))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defthm dargp-of-lookup-equal-alt ;name clash
   (implies (and ;(alistp alist)
                 (darg-listp (strip-cdrs alist))
@@ -163,7 +169,11 @@
            (dargp-less-than (lookup-equal tree alist) bound))
   :hints (("Goal" :in-theory (e/d (lookup-equal) (dargp-less-than)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defconst *memoization-size* 1048576) ;todo: allow this to vary (may be best to keep it a power of 2)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; TODO: Do something better, to spread out the values more?
 (defund combine-value-into-hash (val acc)
@@ -251,7 +261,7 @@
        acc
      (axe-tree-hash-aux-lst (cdr trees) (combine-value-into-hash 555 (axe-tree-hash-aux (car trees) acc))))))
 
-(make-flag axe-tree-hash-aux)
+(local (make-flag axe-tree-hash-aux))
 
 ;; (defthm-flag-axe-tree-hash-aux
 ;;   (defthm integerp-of-axe-tree-hash-aux-lst
@@ -265,35 +275,39 @@
 ;;              (integerp (axe-tree-hash-aux tree acc)))
 ;;     :flag axe-tree-hash-aux))
 
-(defthm-flag-axe-tree-hash-aux
-  (defthm natp-of-axe-tree-hash-aux-lst
-    (implies (and (natp acc)
-                  (axe-tree-listp trees))
-             (natp (axe-tree-hash-aux-lst trees acc)))
-    :flag axe-tree-hash-aux-lst)
-  (defthm natp-of-axe-tree-hash-aux
-    (implies (and (natp acc)
-                  (axe-treep tree))
-             (natp (axe-tree-hash-aux tree acc)))
-    :flag axe-tree-hash-aux))
+(local
+  (defthm-flag-axe-tree-hash-aux
+    (defthm natp-of-axe-tree-hash-aux-lst
+      (implies (and (natp acc)
+                    (axe-tree-listp trees))
+               (natp (axe-tree-hash-aux-lst trees acc)))
+      :flag axe-tree-hash-aux-lst)
+    (defthm natp-of-axe-tree-hash-aux
+      (implies (and (natp acc)
+                    (axe-treep tree))
+               (natp (axe-tree-hash-aux tree acc)))
+      :flag axe-tree-hash-aux)))
 
-(defthm-flag-axe-tree-hash-aux
-  (defthm <=-of-axe-tree-hash-aux-lst
-    (implies (and (natp acc)
-                  (<= ACC 1048575)
-                  (axe-tree-listp trees))
-             (<= (axe-tree-hash-aux-lst trees acc) 1048575))
-    :rule-classes (:rewrite :linear)
-    :flag axe-tree-hash-aux-lst)
-  (defthm <=-of-axe-tree-hash-aux
-    (implies (and (natp acc)
-                  (<= ACC 1048575)
-                  (axe-treep tree))
-             (<= (axe-tree-hash-aux tree acc) 1048575))
-    :rule-classes (:rewrite :linear)
-    :flag axe-tree-hash-aux))
+(local
+  (defthm-flag-axe-tree-hash-aux
+    (defthm <=-of-axe-tree-hash-aux-lst
+      (implies (and (natp acc)
+                    (<= ACC 1048575)
+                    (axe-tree-listp trees))
+               (<= (axe-tree-hash-aux-lst trees acc) 1048575))
+      :rule-classes (:rewrite :linear)
+      :flag axe-tree-hash-aux-lst)
+    (defthm <=-of-axe-tree-hash-aux
+      (implies (and (natp acc)
+                    (<= ACC 1048575)
+                    (axe-treep tree))
+               (<= (axe-tree-hash-aux tree acc) 1048575))
+      :rule-classes (:rewrite :linear)
+      :flag axe-tree-hash-aux)))
 
 (verify-guards axe-tree-hash-aux :hints (("Goal" :in-theory (e/d (axe-tree-listp bounded-axe-tree-listp) (natp)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;bozo eventually pass in the memoization length?
 ;this is the index into the memo array
@@ -382,6 +396,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Create an empty memoization structure
 (defund empty-memoization ()
   (declare (xargs :guard t))
   (make-empty-array 'memoization *memoization-size*))
@@ -528,6 +543,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Recognizes an alist whose cdrs are bounded-dargs
 (defund bounded-memo-alistp (alist bound)
   (declare (xargs :guard (natp bound)))
   (and (memo-alistp alist)
@@ -709,6 +725,8 @@
            (maybe-bounded-memoizationp memoization bound))
   :hints (("Goal" :in-theory (enable maybe-bounded-memoizationp))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;;;
 ;;; print-memo-stats
 ;;;
@@ -729,9 +747,10 @@
                   :lambda)
                 (head-function-symbols (rest terms))))))))
 
-(defthm symbol-listp-of-head-function-symbols
-  (symbol-listp (head-function-symbols terms))
-  :hints (("Goal" :in-theory (enable head-function-symbols))))
+(local
+  (defthm symbol-listp-of-head-function-symbols
+    (symbol-listp (head-function-symbols terms))
+    :hints (("Goal" :in-theory (enable head-function-symbols)))))
 
 ;; TODO: Print the average number of items in the occupied buckets
 ;; todo: rename "slot" to "bucket"
