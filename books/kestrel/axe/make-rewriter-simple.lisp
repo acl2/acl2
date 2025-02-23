@@ -1673,7 +1673,7 @@
                             node-replacement-array)
                       ;; Handle NOT and the various kinds of IF:
                       (case fn
-                        (not
+                        (not ; could perhaps delay special handling for NOT until after the args are simplified
                          (,simplify-not-tree-and-add-to-dag-name tree trees-equal-to-tree
                                                                  rewrite-stobj2 memoization hit-counts tries limits
                                                                  node-replacement-array node-replacement-count refined-assumption-alist

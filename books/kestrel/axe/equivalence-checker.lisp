@@ -78,9 +78,6 @@
 ;(include-book "kestrel/lists-light/cdr" :dir :system) ;for cdr-iff
 (include-book "kestrel/utilities/make-tuple" :dir :system)
 (include-book "kestrel/lists-light/all-same-eql" :dir :system)
-;(include-book "coi/lists/nth-and-update-nth" :dir :system) ;drop?
-;; (in-theory (disable LIST::UPDATE-NTH-EQUAL-REWRITE
-;;                     LIST::FIX-OF-NTHCDR))
 (local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "kestrel/alists-light/alistp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/rational-listp" :dir :system))
