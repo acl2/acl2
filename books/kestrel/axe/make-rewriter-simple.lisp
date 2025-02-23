@@ -500,7 +500,7 @@
                           ;;consp-to-len-bound-for-make-rewriter-simple
                           ;;len-of-cdr-better-for-make-rewriter-simple
                           myquotep-when-dag-exprp-and-quote
-                          rationalp-of-sub-tries
+                          rationalp-of-subtract-tries
                           append-nodenum-dargs-becomes-append-of-keep-nodenum-dargs
                           dargp-of-mv-nth-1-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr)))
 
@@ -729,7 +729,7 @@
                                                              node-replacement-array node-replacement-count refined-assumption-alist
                                                              rewrite-stobj (+ -1 count)))
                         ((when erp) (mv erp nil alist rewrite-stobj2 memoization hit-counts tries limits node-replacement-array))
-                        (- (and old-try-count (let ((try-diff (sub-tries tries old-try-count)))
+                        (- (and old-try-count (let ((try-diff (subtract-tries tries old-try-count)))
                                                 (and (< *used-try-print-threshold* try-diff)
                                                      (cw " (~x0 tries used ~x1:~x2 (binding hyp).)~%" try-diff rule-symbol hyp-num))))))
                      ;; A binding hyp always counts as relieved:
@@ -808,7 +808,7 @@
                          ((when erp) (mv erp nil alist rewrite-stobj2 memoization hit-counts tries limits node-replacement-array))
                          ;; todo: handle monitored rules once, here?  but may need to know whether the hyp rewrote to nil
                          (- (and old-try-count ; todo: pull this out into a subroutine?:
-                                 (let ((try-diff (sub-tries tries old-try-count)))
+                                 (let ((try-diff (subtract-tries tries old-try-count)))
                                    (if relievedp
                                        (and (< *used-try-print-threshold* try-diff)
                                             (cw " (~x0 tries used ~x1:~x2 (succeeded).)~%" try-diff rule-symbol hyp-num))
