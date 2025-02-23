@@ -500,7 +500,7 @@
                           ;;consp-to-len-bound-for-make-rewriter-simple
                           ;;len-of-cdr-better-for-make-rewriter-simple
                           myquotep-when-dag-exprp-and-quote
-                          rationalp-of-sub-tries
+                          rationalp-of-subtract-tries
                           append-nodenum-dargs-becomes-append-of-keep-nodenum-dargs
                           dargp-of-mv-nth-1-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr)))
 
@@ -729,7 +729,7 @@
                                                              node-replacement-array node-replacement-count refined-assumption-alist
                                                              rewrite-stobj (+ -1 count)))
                         ((when erp) (mv erp nil alist rewrite-stobj2 memoization hit-counts tries limits node-replacement-array))
-                        (- (and old-try-count (let ((try-diff (sub-tries tries old-try-count)))
+                        (- (and old-try-count (let ((try-diff (subtract-tries tries old-try-count)))
                                                 (and (< *used-try-print-threshold* try-diff)
                                                      (cw " (~x0 tries used ~x1:~x2 (binding hyp).)~%" try-diff rule-symbol hyp-num))))))
                      ;; A binding hyp always counts as relieved:
@@ -808,7 +808,7 @@
                          ((when erp) (mv erp nil alist rewrite-stobj2 memoization hit-counts tries limits node-replacement-array))
                          ;; todo: handle monitored rules once, here?  but may need to know whether the hyp rewrote to nil
                          (- (and old-try-count ; todo: pull this out into a subroutine?:
-                                 (let ((try-diff (sub-tries tries old-try-count)))
+                                 (let ((try-diff (subtract-tries tries old-try-count)))
                                    (if relievedp
                                        (and (< *used-try-print-threshold* try-diff)
                                             (cw " (~x0 tries used ~x1:~x2 (succeeded).)~%" try-diff rule-symbol hyp-num))
@@ -847,36 +847,35 @@
             (if (endp stored-rules) ;no rule fired
                 (mv (erp-nil) nil rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)
               (b* ((stored-rule (first stored-rules))
+                   (tries (increment-tries tries)) ; does nothing if not counting tries (this adds a try even if the rule-limit will cause us to fail below -- may be ok)
+                   ;; Try to match the args-to-match with the args of the LHS of the rule (we want to fail fast, and most rules don't match, so we try matching right away):
+                   (alist-or-fail (unify-terms-and-dag-items-fast (stored-rule-lhs-args stored-rule) args-to-match (get-dag-array rewrite-stobj2) (get-dag-len rewrite-stobj2)))
+                   ((when (eq :fail alist-or-fail))
+                    ;; the rule didn't match, so try the next rule:
+                    (,try-to-apply-rules-name (rest stored-rules)
+                                              args-to-match rewrite-stobj2 memoization hit-counts tries limits node-replacement-array node-replacement-count refined-assumption-alist rewrite-stobj (+ -1 count)))
+                   ;; The rule matched, but we need to check whether we've hit the limit for it (rare):
                    (print (get-print rewrite-stobj))
                    ((when (and limits (limit-reachedp stored-rule limits print))) ; todo: just pass in the rule-symbol (extracted below)?
                     ;; the limit for this rule is reached, so try the next rule:
                     (,try-to-apply-rules-name (rest stored-rules)
                                               args-to-match rewrite-stobj2 memoization hit-counts tries limits node-replacement-array node-replacement-count refined-assumption-alist rewrite-stobj (+ -1 count)))
-                   ;; Limit not reached, so we will try this rule:
-                   (tries (increment-tries tries)) ; does nothing if not counting tries
-                   ;; Try to match the args-to-match with the args of the LHS of the rule:
-                   (alist-or-fail (unify-terms-and-dag-items-fast (stored-rule-lhs-args stored-rule) args-to-match (get-dag-array rewrite-stobj2) (get-dag-len rewrite-stobj2))))
-                (if (eq :fail alist-or-fail)
-                    ;; the rule didn't match, so try the next rule:
-                    (,try-to-apply-rules-name (rest stored-rules)
-                                              args-to-match rewrite-stobj2 memoization hit-counts tries limits node-replacement-array node-replacement-count refined-assumption-alist rewrite-stobj (+ -1 count))
-                  ;; The rule matched, so try to relieve its hyps:
-                  (b* ((- (and (eq print :verbose!)
-                               (cw "(Trying to apply ~x0.~%" (stored-rule-symbol stored-rule))))
-                       (hyps (stored-rule-hyps stored-rule))
-                       ((mv erp hyps-relievedp alist ; may get extended by the binding of free vars
-                            rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)
-                        (if hyps
-                            (let ((rule-symbol (stored-rule-symbol stored-rule)))
-                              (,relieve-rule-hyps-name hyps
-                                                       1 ;initial hyp number
-                                                       alist-or-fail
-                                                       rule-symbol
-                                                       rewrite-stobj2 memoization hit-counts tries limits node-replacement-array node-replacement-count refined-assumption-alist rewrite-stobj (+ -1 count)))
-                          ;;if there are no hyps, don't even bother: BOZO inefficient?:
-                          (mv (erp-nil) t alist-or-fail rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)))
-                       ((when erp) (mv erp nil rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)))
-                    (if hyps-relievedp
+                   ;; Limit not reached, so try to relieve the rule's hyps:
+                   (- (and (eq print :verbose!) (cw "(Trying to apply ~x0.~%" (stored-rule-symbol stored-rule))))
+                   (hyps (stored-rule-hyps stored-rule))
+                   ((mv erp hyps-relievedp alist ; alist may get extended by the binding of free vars
+                        rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)
+                    (if hyps
+                        (let ((rule-symbol (stored-rule-symbol stored-rule)))
+                          (,relieve-rule-hyps-name hyps
+                                                   1 ;initial hyp number
+                                                   alist-or-fail
+                                                   rule-symbol
+                                                   rewrite-stobj2 memoization hit-counts tries limits node-replacement-array node-replacement-count refined-assumption-alist rewrite-stobj (+ -1 count)))
+                      ;;if there are no hyps, don't even bother: todo: inefficient?:
+                      (mv (erp-nil) t alist-or-fail rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)))
+                   ((when erp) (mv erp nil rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)))
+                (if hyps-relievedp
                         ;; the hyps were relieved, so instantiate the RHS:
                         (prog2$ (and (eq print :verbose!)
                                      (cw "Rewriting with ~x0.)~%" (stored-rule-symbol stored-rule)))
@@ -894,7 +893,7 @@
                       (prog2$ (and (eq print :verbose!)
                                    (cw "Failed to apply rule ~x0.)~%" (stored-rule-symbol stored-rule)))
                               (,try-to-apply-rules-name (rest stored-rules)
-                                                        args-to-match rewrite-stobj2 memoization hit-counts tries limits node-replacement-array node-replacement-count refined-assumption-alist rewrite-stobj (+ -1 count))))))))))
+                                                        args-to-match rewrite-stobj2 memoization hit-counts tries limits node-replacement-array node-replacement-count refined-assumption-alist rewrite-stobj (+ -1 count))))))))
 
         ;; Simplifies the application of FN to the ARGS where FN is a symbol and the ARGS are simplified.
         ;; Returns (mv erp new-nodenum-or-quotep rewrite-stobj2 memoization hit-counts tries limits node-replacement-array).
