@@ -1,6 +1,6 @@
 ; A datatype for counting rewrite attempts (aka, "tries").
 ;
-; Copyright (C) 2019-2024 Kestrel Institute
+; Copyright (C) 2019-2025 Kestrel Institute
 ; Copyright (C) 2019-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -48,9 +48,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;rename
 ;; todo: consider dropping this and making a version that we only call if tries is non-nil?
-(defund-inline sub-tries (tries1 tries2)
+(defund-inline subtract-tries (tries1 tries2)
   (declare (xargs :guard (and (triesp tries1)
                               (triesp tries2))))
 
@@ -59,21 +58,21 @@
       (- tries1 tries2)
     0))
 
-(defthm integerp-of-sub-tries-type
+(defthm integerp-of-subtract-tries-type
   (implies (and (triesp tries1)
                 (triesp tries2))
-           (integerp (sub-tries tries1 tries2)))
+           (integerp (subtract-tries tries1 tries2)))
   :rule-classes :type-prescription
-  :hints (("Goal" :in-theory (enable sub-tries))))
+  :hints (("Goal" :in-theory (enable subtract-tries))))
 
-(defthmd integerp-of-sub-tries
+(defthmd integerp-of-subtract-tries
   (implies (and (triesp tries1)
                 (triesp tries2))
-           (integerp (sub-tries tries1 tries2)))
-  :hints (("Goal" :in-theory (enable sub-tries))))
+           (integerp (subtract-tries tries1 tries2)))
+  :hints (("Goal" :in-theory (enable subtract-tries))))
 
-(defthmd rationalp-of-sub-tries
+(defthmd rationalp-of-subtract-tries
   (implies (and (triesp tries1)
                 (triesp tries2))
-           (rationalp (sub-tries tries1 tries2)))
-  :hints (("Goal" :in-theory (enable sub-tries))))
+           (rationalp (subtract-tries tries1 tries2)))
+  :hints (("Goal" :in-theory (enable subtract-tries))))
