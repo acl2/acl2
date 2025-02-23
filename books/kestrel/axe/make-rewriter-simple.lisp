@@ -929,16 +929,13 @@
                ;;Try looking it up in the memoization (note that the args are now simplified):
                (memo-match (and memoization (lookup-in-memoization expr memoization))) ; todo: use a more specialized version of lookup-in-memoization, since we know the shape of expr (also avoid the cons for expr here)?
                ((when memo-match)
-                (mv (erp-nil) memo-match
-                    rewrite-stobj2
-                    (add-pairs-to-memoization trees-equal-to-tree
-                                              memo-match ;the nodenum or quotep they are all equal to
-                                              memoization)
-                    hit-counts tries limits
-                    node-replacement-array))
+                (let ((memoization (add-pairs-to-memoization trees-equal-to-tree
+                                                             memo-match ;the nodenum or quotep they are all equal to
+                                                             memoization)))
+                  (mv (erp-nil) memo-match rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)))
                ;; Next, try to apply rules:
                ((mv erp rhs-or-nil rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)
-                (,try-to-apply-rules-name (rule-db-get fn rewrite-stobj) ;;(get-rules-for-fn fn (get-rule-alist rewrite-stobj))
+                (,try-to-apply-rules-name (rule-db-get fn rewrite-stobj) ;; (get-rules-for-fn fn (get-rule-alist rewrite-stobj))
                                           args
                                           rewrite-stobj2 memoization hit-counts tries limits
                                           node-replacement-array node-replacement-count refined-assumption-alist
