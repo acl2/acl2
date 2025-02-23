@@ -464,12 +464,11 @@
 ;;   :hints (("Goal" :in-theory (enable all-integerp))))
 
 (defthmd nth-sum-when-nthcdr-known ; can loop?
-  (implies (and (EQUAL vals2 (NTHCDR m VALS))
+  (implies (and (equal vals2 (nthcdr m vals))
                 (natp n)
                 (natp m))
-           (equal (NTH (+ m n) VALS)
-                  (NTH n VALS2)
-                  )))
+           (equal (nth (+ m n) vals)
+                  (nth n vals2))))
 
 ;; (defthm nth-of-bitnot-list
 ;;   (implies (and (natp n)
@@ -521,6 +520,7 @@
 ;;                   t)))
 
 ;newly disabled
+;rename!
 (defthmd gross-hack
   (IMPLIES (AND ;(UNSIGNED-BYTE-P ELEM-SIZE (NTH (EXPT 2 N) VALS))
             (EQUAL (BVNOT-LIST ELEM-SIZE (TAKE (EXPT 2 N) VALS))
@@ -600,7 +600,7 @@
                 )
            (equal (equal (nthcdr n array) (subrange n (+ -1 len) array))
                   (equal len (len array))))
-  :hints (("Goal" :in-theory (e/d (subrange) (;take-of-nthcdr-becomes-subrange
+  :hints (("Goal" :in-theory (e/d (subrange) (
                                               ;nthcdr-of-take-becomes-subrange
                                               )))))
 
@@ -652,7 +652,7 @@
                             SUBRANGE ;prove an nthcdr=subrange rule
                             )
                            (array-reduction-when-top-bit-is-xored-in-helper ;TAKE-WHEN-<-OF-LEN
-                                                                            ;TAKE-OF-NTHCDR-BECOMES-SUBRANGE
+
                                                                             ;NTHCDR-OF-TAKE-BECOMES-SUBRANGE
                                                                             ))
            :use (:instance array-reduction-when-top-bit-is-xored-in-helper
@@ -1381,10 +1381,7 @@
 ;;                             NTHCDR-OF-CDR-COMBINE-STRONG
 ;;                             TAKE-OF-CDR-BECOMES-SUBRANGE
 ;;                             NTHCDR-OF-TAKE-BECOMES-SUBRANGE
-;;                             TAKE-OF-NTHCDR-BECOMES-SUBRANGE
 ;;                             SUBRANGE-TO-END-BECOMES-NTHCDR)))))
-
-
 
 ;; ;should we keep pushing it, or stop? might as well keep pushing it?
 ;; (defthm push-bvchop-list-of-logext-list
@@ -1429,8 +1426,7 @@
                   (bv-array-read width2 len index (bv-array-write width2 len index2 val lst))))
   :hints (("Goal" :in-theory (e/d (bv-array-read bv-array-write
                                                  BVCHOP-WHEN-I-IS-NOT-AN-INTEGER)
-                                  (
-                                   ;BVCHOP-LIST-OF-TAKE
+                                  (;BVCHOP-LIST-OF-TAKE
                                    )))))
 
 ;(local (in-theory (disable LIST::UPDATE-NTH-EQUAL-REWRITE)))
@@ -1448,7 +1444,6 @@
                                                          ;;take
                                                          <-of-if-arg1)
                                   (;bvchop-list-of-take
-                                   ;;TAKE-OF-NTHCDR-BECOMES-SUBRANGE
                                    )))))
 
 (defthm bv-array-read-of-bvchop-list-tighten
@@ -1462,8 +1457,7 @@
                 )
            (equal (bv-array-read width1 len index (bvchop-list width2 lst))
                   (bv-array-read width2 len index lst)))
-  :hints (("Goal" :in-theory (e/d (bv-array-read bvchop-when-i-is-not-an-integer)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bv-array-read bvchop-when-i-is-not-an-integer))))
 
 (in-theory (disable size-non-negative-when-unsigned-byte-p-free)) ;this caused problems..
 
@@ -1487,8 +1481,7 @@
 (defthm bv-array-read-of-getbit-when-len-is-2
   (equal (bv-array-read element-size 2 (getbit 0 x) lst)
          (bv-array-read element-size 2 x lst))
-  :hints (("Goal" :in-theory (e/d (bv-array-read bvchop-when-i-is-not-an-integer getbit-when-val-is-not-an-integer getbit)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bv-array-read bvchop-when-i-is-not-an-integer getbit-when-val-is-not-an-integer getbit))))
 
 ;; (defthm take-of-logext-list
 ;;   (implies (and (<= n (len lst)) (natp n))
@@ -1614,8 +1607,7 @@
            :in-theory (e/d (BV-ARRAY-CLEAR bv-array-write BV-ARRAY-READ update-nth2
                                            UPDATE-NTH-WHEN-EQUAL-OF-NTH
                                            equal-of-update-nth-new)
-                           (
-                            UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN)))))
+                           (UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN)))))
 
 ;; (defthm bv-array-write-equal-rewrite
 ;;   (implies (and (natp esize)
@@ -1693,8 +1685,7 @@
   (equal (trim n (bv-array-read element-size len index data))
          (bv-array-read (min (nfix n) (ifix element-size)) len index data))
   :hints (("Goal" :in-theory (e/d (trim natp bvchop-of-bv-array-read)
-                                  (;list::nth-of-cons
-                                   )))))
+                                  ()))))
 
 ;; (thm
 ;;  (IMPLIES (and (EQUAL free (BVCHOP 5 X))
@@ -1812,7 +1803,7 @@
                             NTHCDR-OF-TAKE
                             NTHCDR-OF-BVCHOP-LIST
                             NTHCDR-OF-BVCHOP-LIST-better
-                            ;TAKE-OF-NTHCDR-BECOMES-SUBRANGE
+
                             ;CDR-OF-TAKE-BECOMES-SUBRANGE-BETtER ;bozo ;also bozo on the non better
                             UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN)))))
 
@@ -1833,7 +1824,6 @@
                             subrange ;bozo?
                             )
                            (;anti-subrange
-                            ;TAKE-OF-NTHCDR-BECOMES-SUBRANGE
                             UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN)))))
 
 ;includes both irrel cases
@@ -1866,7 +1856,6 @@
                                    subrange ;bozo?
                                    )
                                   (;anti-subrange
-                                   ;TAKE-OF-NTHCDR-BECOMES-SUBRANGE
                                    ;CDR-OF-TAKE-BECOMES-SUBRANGE ;bozo
                                    UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN)))))
 
@@ -1938,8 +1927,7 @@
                 )
            (equal (equal (nth n x) (bv-array-read size len n x))
                   t))
-  :hints (("Goal" :in-theory (e/d (bv-array-read-opener)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bv-array-read-opener))))
 
 (defthm equal-of-nth-and-bv-array-read-alt
   (implies (and (<= len (len x))
@@ -1960,8 +1948,7 @@
                 (natp n))
            (equal (equal (bvchop size (nth n x)) (bv-array-read size len n x))
                   t))
-  :hints (("Goal" :in-theory (e/d (bv-array-read-opener ;LIST::NTH-WITH-LARGE-INDEX
-                                   ) ()))))
+  :hints (("Goal" :in-theory (enable bv-array-read-opener))))
 
 (defthm equal-of-bvchop-of-nth-and-bv-array-read
   (implies (and (equal len (len x)) ;relax?
@@ -1972,8 +1959,7 @@
                       t
                     (equal 0 (bv-array-read size len n x)))))
   :hints (("Goal" :use (:instance equal-of-bvchop-of-nth-and-bv-array-read-helper)
-           :in-theory (e/d (;LIST::NTH-WITH-LARGE-INDEX
-                            )( equal-of-bvchop-of-nth-and-bv-array-read-helper)))))
+           :in-theory (disable equal-of-bvchop-of-nth-and-bv-array-read-helper))))
 
 (defthm equal-of-bvchop-of-nth-and-bv-array-read-alt
   (implies (and (equal len (len x))
@@ -2039,7 +2025,6 @@
     :IN-THEORY (E/d (BV-ARRAY-READ BV-ARRAY-WRITE update-nth2
                      BVCHOP-WHEN-I-IS-NOT-AN-INTEGER)
                     (;BVCHOP-OF-NTH-BECOMES-BV-ARRAY-READ
-
                      UPDATE-NTH-BECOMES-UPDATE-NTH2-EXTEND-GEN
                      )))))
 
@@ -2089,7 +2074,6 @@
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
            :in-theory (e/d (bv-array-clear-range nthcdr) (NTHCDR-OF-CDR-COMBINE
                                                           NTHCDR-OF-CDR-COMBINE-strong
-                                                          ;TAKE-OF-NTHCDR-BECOMES-SUBRANGE
                                                           ;NTHCDR-OF-TAKE-BECOMES-SUBRANGE
                                                           )))))
 
@@ -2195,7 +2179,6 @@
                                             BV-ARRAY-CLEAR-RANGE)
                                   (cdr-of-take
                                    ;NTHCDR-OF-TAKE-BECOMES-SUBRANGE
-                                   ;TAKE-OF-NTHCDR-BECOMES-SUBRANGE
                                    ;;TAKE-OF-CDR-BECOMES-SUBRANGE
                                    )))))
 

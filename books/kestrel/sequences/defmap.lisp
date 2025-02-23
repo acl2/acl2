@@ -1,7 +1,7 @@
 ; Utility to make a function that applies a function to each item in a list
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -26,7 +26,6 @@
 (include-book "../utilities/fresh-names")
 (include-book "kestrel/utilities/make-or" :dir :system)
 (include-book "kestrel/utilities/user-interface" :dir :system) ;for manage-screen-output (TODO: reduce the stuff included in this book)
-;(local (include-book "coi/lists/memberp" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/firstn" :dir :system))
 
