@@ -10,10 +10,11 @@
 
 (in-package "ACL2")
 
-;; Unlike rewrite-stobj, this includes values, such as the DAG, that change
-;; during rewriting.  So it has to be returned by most functions.
+;; Unlike rewrite-stobj, this includes values that change during rewriting
+;; (such as the DAG).  So rewrite-stobj2 has to be returned by the functions in
+;; the main rewriter clique.
 
-;; TODO: Consider adding more things to this, like the memoization, info,
+;; TODO: Consider adding more things to this, like the memoization, hit-counts,
 ;; tries, and limits.
 
 (include-book "kestrel/utilities/defstobj-plus" :dir :system)

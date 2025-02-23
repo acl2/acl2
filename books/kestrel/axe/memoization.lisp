@@ -1,7 +1,7 @@
 ; Memoizing the DAG nodes that Axe trees rewrote to.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -17,7 +17,6 @@
 ;; where the hash of a tree is the sum of the nodenums in the object modulo
 ;; *memoization-size*.
 
-(include-book "tools/flag" :dir :system)
 ;(include-book "arrays-of-alists")
 (include-book "kestrel/alists-light/lookup-equal" :dir :system)
 (include-book "axe-trees")
@@ -25,8 +24,8 @@
 (include-book "darg-listp")
 (include-book "bounded-darg-listp")
 (include-book "kestrel/acl2-arrays/typed-acl2-arrays" :dir :system)
+(local (include-book "tools/flag" :dir :system))
 (local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
-(local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system)) ;todo
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
 (local (include-book "kestrel/bv/logand" :dir :system))
 
@@ -40,12 +39,17 @@
 ;; TODO: Consider memoizing only destructor trees, not constructor trees
 ;; NOTE: For anything we won't memoize, we should avoid consing it onto trees-equal-to-tree in the rewriter.
 
+;; todo also: consider JVM::UPDATE-NTH-LOCAL JVM::MAKE-FRAME
+;; (defconst *fns-not-to-memoize* '(step-state-with-pc-and-call-stack-height get-field))
+
 ;maybe we should think of the memoization as part of the dag (it is just a list of equalities which mention nodenums from the dag)
 
-(local (in-theory (disable mod natp)))
+(local (in-theory (disable natp)))
 
 (local (in-theory (enable integerp-when-natp
                            <=-of-0-when-natp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Recognize an axe-tree that is a cons
 ;; TODO: Restrict to bounded-axe-trees?
@@ -124,6 +128,8 @@
 ;;                   (and (consp tree))))
 ;;   :hints (("Goal" :in-theory (e/d (tree-to-memoizep) (axe-treep)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Recognize a true-list of axe-trees that are conses
 (defund trees-to-memoizep (trees)
   (declare (xargs :guard t))
@@ -150,6 +156,8 @@
            (tree-to-memoizep (car trees)))
   :hints (("Goal" :in-theory (enable trees-to-memoizep))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defthm dargp-of-lookup-equal-alt ;name clash
   (implies (and ;(alistp alist)
                 (darg-listp (strip-cdrs alist))
@@ -164,12 +172,11 @@
            (dargp-less-than (lookup-equal tree alist) bound))
   :hints (("Goal" :in-theory (e/d (lookup-equal) (dargp-less-than)))))
 
-(local
- (defthm mod-bound-special
-   (implies (integerp x)
-            (not (< '1048575 (mod x '1048576))))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defconst *memoization-size* 1048576) ;todo: allow this to vary (may be best to keep it a power of 2)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; TODO: Do something better, to spread out the values more?
 (defund combine-value-into-hash (val acc)
@@ -180,7 +187,7 @@
                   :split-types t)
            (type (integer 0 1152921504606846973) val)
            (type (integer 0 1048575) acc))
-  (logand 1048575 ; a mask of 20 ones
+  (logand 1048575 ; a mask of 20 ones, to chop down to 20 bits
           (+ val (* 3 acc))))
 
 (local
@@ -257,7 +264,7 @@
        acc
      (axe-tree-hash-aux-lst (cdr trees) (combine-value-into-hash 555 (axe-tree-hash-aux (car trees) acc))))))
 
-(make-flag axe-tree-hash-aux)
+(local (make-flag axe-tree-hash-aux))
 
 ;; (defthm-flag-axe-tree-hash-aux
 ;;   (defthm integerp-of-axe-tree-hash-aux-lst
@@ -271,39 +278,42 @@
 ;;              (integerp (axe-tree-hash-aux tree acc)))
 ;;     :flag axe-tree-hash-aux))
 
-(defthm-flag-axe-tree-hash-aux
-  (defthm natp-of-axe-tree-hash-aux-lst
-    (implies (and (natp acc)
-                  (axe-tree-listp trees))
-             (natp (axe-tree-hash-aux-lst trees acc)))
-    :flag axe-tree-hash-aux-lst)
-  (defthm natp-of-axe-tree-hash-aux
-    (implies (and (natp acc)
-                  (axe-treep tree))
-             (natp (axe-tree-hash-aux tree acc)))
-    :flag axe-tree-hash-aux))
+(local
+  (defthm-flag-axe-tree-hash-aux
+    (defthm natp-of-axe-tree-hash-aux-lst
+      (implies (and (natp acc)
+                    (axe-tree-listp trees))
+               (natp (axe-tree-hash-aux-lst trees acc)))
+      :flag axe-tree-hash-aux-lst)
+    (defthm natp-of-axe-tree-hash-aux
+      (implies (and (natp acc)
+                    (axe-treep tree))
+               (natp (axe-tree-hash-aux tree acc)))
+      :flag axe-tree-hash-aux)))
 
-(defthm-flag-axe-tree-hash-aux
-  (defthm <=-of-axe-tree-hash-aux-lst
-    (implies (and (natp acc)
-                  (<= ACC 1048575)
-                  (axe-tree-listp trees))
-             (<= (axe-tree-hash-aux-lst trees acc) 1048575))
-    :rule-classes (:rewrite :linear)
-    :flag axe-tree-hash-aux-lst)
-  (defthm <=-of-axe-tree-hash-aux
-    (implies (and (natp acc)
-                  (<= ACC 1048575)
-                  (axe-treep tree))
-             (<= (axe-tree-hash-aux tree acc) 1048575))
-    :rule-classes (:rewrite :linear)
-    :flag axe-tree-hash-aux))
+(local
+  (defthm-flag-axe-tree-hash-aux
+    (defthm <=-of-axe-tree-hash-aux-lst
+      (implies (and (natp acc)
+                    (<= ACC 1048575)
+                    (axe-tree-listp trees))
+               (<= (axe-tree-hash-aux-lst trees acc) 1048575))
+      :rule-classes (:rewrite :linear)
+      :flag axe-tree-hash-aux-lst)
+    (defthm <=-of-axe-tree-hash-aux
+      (implies (and (natp acc)
+                    (<= ACC 1048575)
+                    (axe-treep tree))
+               (<= (axe-tree-hash-aux tree acc) 1048575))
+      :rule-classes (:rewrite :linear)
+      :flag axe-tree-hash-aux)))
 
 (verify-guards axe-tree-hash-aux :hints (("Goal" :in-theory (e/d (axe-tree-listp bounded-axe-tree-listp) (natp)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;bozo eventually pass in the memoization length?
 ;this is the index into the memo array
-;todo: use logand with a mask instead of mod?
 (defund axe-tree-hash (tree)
   (declare (xargs :guard (tree-to-memoizep tree)
                   :guard-hints (("Goal" :in-theory (enable tree-to-memoizep)))))
@@ -330,14 +340,7 @@
     :hints (("Goal" :in-theory (enable axe-tree-hash
                                        tree-to-memoizep)))))
 
-;;fixme gross to have this hard-coded
-;;fixme - use this?
-;;todo: consider JVM::UPDATE-NTH-LOCAL JVM::MAKE-FRAME
-;(defconst *fns-not-to-memoize* '(step-state-with-pc-and-call-stack-height get-field))
-
-;;;
-;;; memo-alistp
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Maps trees (that can be memoized) to the nodenums/quoteps to which they rewrote.
 (defund memo-alistp (alist)
@@ -371,24 +374,25 @@
             (trees-to-memoizep (strip-cars alist)))
    :hints (("Goal" :in-theory (enable memo-alistp)))))
 
-;;;
-;;; memoizationp
-;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def-typed-acl2-array2 array-of-memo-alistsp (memo-alistp val))
 
-;; Maps tree hashes to memo-alists.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The memoization is implemented as an array that maps tree hashes to memo-alists.
 (defund memoizationp (memoization)
   (declare (xargs :guard t))
   (and (array-of-memo-alistsp 'memoization memoization)
        (equal (alen1 'memoization memoization) *memoization-size*)))
 
-;; This allows us to use nil to mean "no memoization".
+;; This justifies using nil to mean "no memoization".
 (defthmd not-memoizationp-of-nil
   (not (memoizationp nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Create an empty memoization structure
 (defund empty-memoization ()
   (declare (xargs :guard t))
   (make-empty-array 'memoization *memoization-size*))
@@ -454,9 +458,7 @@
                               (dargp result)
                               (memoizationp memoization))
                   :guard-hints (("Goal" :in-theory (enable memoizationp
-                                                           axe-treep-when-tree-to-memoizep
-                                                           ;;TREES-TO-MEMOIZEP
-                                                           )))))
+                                                           axe-treep-when-tree-to-memoizep)))))
   (if (endp trees)
       memoization
     (add-pairs-to-memoization (rest trees)
@@ -468,9 +470,7 @@
                 (dargp result)
                 (trees-to-memoizep trees))
            (memoizationp (add-pairs-to-memoization trees result memoization)))
-  :hints (("Goal" :in-theory (e/d (add-pairs-to-memoization memoizationp trees-to-memoizep
-                                                            ;;tree-to-memoizep
-                                                            )
+  :hints (("Goal" :in-theory (e/d (add-pairs-to-memoization memoizationp trees-to-memoizep)
                                   (dargp natp)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -490,7 +490,7 @@
     (progn$ ;; (and res (cw "(Memo hit for ~x0.)~%" tree))
             res)))
 
-(defthm dargp-of-lookup-in-memoization-when-memoizationp
+(defthm dargp-of-lookup-in-memoization
   (implies (and (memoizationp memoization)
                 (lookup-in-memoization tree memoization) ;there is a match
                 (tree-to-memoizep tree))
@@ -535,6 +535,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Recognizes an alist whose cdrs are bounded-dargs
 (defund bounded-memo-alistp (alist bound)
   (declare (xargs :guard (natp bound)))
   (and (memo-alistp alist)
@@ -663,8 +664,7 @@
                 (<= bound2 bound)
                 (integerp n))
            (array-of-bounded-memo-alistsp-aux array-name array n bound))
-  :hints
-  (("Goal" :in-theory (enable array-of-bounded-memo-alistsp-aux))))
+  :hints (("Goal" :in-theory (enable array-of-bounded-memo-alistsp-aux))))
 
 (defthm bounded-memoizationp-monotone
   (implies (and (bounded-memoizationp memoization bound2)
@@ -716,6 +716,8 @@
            (maybe-bounded-memoizationp memoization bound))
   :hints (("Goal" :in-theory (enable maybe-bounded-memoizationp))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;;;
 ;;; print-memo-stats
 ;;;
@@ -736,68 +738,68 @@
                   :lambda)
                 (head-function-symbols (rest terms))))))))
 
-(defthm symbol-listp-of-head-function-symbols
-  (symbol-listp (head-function-symbols terms))
-  :hints (("Goal" :in-theory (enable head-function-symbols))))
+(local
+  (defthm symbol-listp-of-head-function-symbols
+    (symbol-listp (head-function-symbols terms))
+    :hints (("Goal" :in-theory (enable head-function-symbols)))))
 
-;; TODO: Print the average number of items in the occupied buckets
-;; todo: rename "slot" to "bucket"
-(defund print-memo-stats-aux (n memoization total-items longest-slot longest-slot-len last-filled-slot filled-slots memo-count-world)
+(defund print-memo-stats-aux (n memoization total-items longest-bucket longest-bucket-len last-filled-bucket filled-buckets memo-count-world)
   (declare (xargs :measure (nfix (- *memoization-size* n))
                   :hints (("Goal" :in-theory (enable natp)))
                   :guard (and (memoizationp memoization)
                               (natp n)
                               (natp total-items)
-                              (natp longest-slot-len)
-                              (natp longest-slot)
-                              (< longest-slot *memoization-size*)
-                              (natp filled-slots)
+                              (natp longest-bucket-len)
+                              (natp longest-bucket)
+                              (< longest-bucket *memoization-size*)
+                              (natp filled-buckets)
                               (symbol-count-worldp memo-count-world))
                   :guard-hints (("Goal" :in-theory (enable memoizationp)))))
   (if (or (not (mbt (natp n)))
           (<= *memoization-size* n))
-      (let* ((contents-of-slot-0 (aref1 'memoization memoization 0)) ;; where ground terms go
-             (len-of-slot0 (len contents-of-slot-0))
-             (contents-of-longest-slot (aref1 'memoization memoization longest-slot))
-             (len-of-longest-slot (len contents-of-longest-slot)))
+      (let* ((contents-of-bucket-0 (aref1 'memoization memoization 0)) ;; where ground terms go
+             (len-of-bucket-0 (len contents-of-bucket-0))
+             (contents-of-longest-bucket (aref1 'memoization memoization longest-bucket))
+             (len-of-longest-bucket (len contents-of-longest-bucket)))
         (progn$ (cw "~%(Memo stats:~%")
                 (cw "Memo items: ~x0.~%" total-items)
-                (cw "Memo slots used: ~x0.~%" filled-slots)
-                (cw "Index with the most items : ~x0 (~x1 items)~%" longest-slot longest-slot-len)
-                (cw "Last used index: ~x0.~%" last-filled-slot)
-                (cw "Items at index 0: ~x0.~%" len-of-slot0)
-                (cw "First few items at index 0: ~x0~%" (if (< 20 len-of-slot0)
-                                                            (take 20 (true-list-fix contents-of-slot-0))
-                                                          contents-of-slot-0))
-                (cw "First few items at index ~x0: ~x1~%" longest-slot
-                    (if (< 20 len-of-longest-slot)
-                        (take 20 (true-list-fix contents-of-longest-slot))
-                      contents-of-longest-slot))
-                (cw "Last few items at index ~x0: ~x1~%" longest-slot
-                    (nthcdr (if (< 20 len-of-longest-slot) (- len-of-longest-slot 20) 0)
-                            (true-list-fix contents-of-longest-slot)))
+                (cw "Memo buckets used: ~x0.~%" filled-buckets)
+                (and (posp filled-buckets) (cw "Items per used bucket: ~x0." (floor total-items filled-buckets)))
+                (cw "Index with the most items : ~x0 (~x1 items)~%" longest-bucket longest-bucket-len)
+                (cw "Last used index: ~x0.~%" last-filled-bucket)
+                (cw "Items at index 0: ~x0.~%" len-of-bucket-0)
+                (cw "First few items at index 0: ~x0~%" (if (< 20 len-of-bucket-0)
+                                                            (take 20 (true-list-fix contents-of-bucket-0))
+                                                          contents-of-bucket-0))
+                (cw "First few items at index ~x0: ~x1~%" longest-bucket
+                    (if (< 20 len-of-longest-bucket)
+                        (take 20 (true-list-fix contents-of-longest-bucket))
+                      contents-of-longest-bucket))
+                (cw "Last few items at index ~x0: ~x1~%" longest-bucket
+                    (nthcdr (if (< 20 len-of-longest-bucket) (- len-of-longest-bucket 20) 0)
+                            (true-list-fix contents-of-longest-bucket)))
                 (cw "Head symbol counts in memoization:~%")
                 (cw "~X01" (summarize-symbol-count-world memo-count-world) nil)
-                ;; (cw "(Longest slot entries: ~X01)~%" (and (natp longest-slot)
-                ;;                                           (< longest-slot *memoization-size*) ;for guards
-                ;;                                           (aref1 'memoization memoization longest-slot))
+                ;; (cw "(Longest bucket entries: ~X01)~%" (and (natp longest-bucket)
+                ;;                                           (< longest-bucket *memoization-size*) ;for guards
+                ;;                                           (aref1 'memoization memoization longest-bucket))
                 ;;     nil)
                 (cw ")~%")))
-    (let* ((slot-items (aref1 'memoization memoization n))
-           (num-items (len slot-items)))
+    (let* ((bucket-items (aref1 'memoization memoization n))
+           (num-items (len bucket-items)))
       (print-memo-stats-aux (+ 1 n)
                             memoization
                             (+ total-items num-items)
-                            (if (< longest-slot-len num-items)
+                            (if (< longest-bucket-len num-items)
                                 n
-                              longest-slot)
-                            (max num-items longest-slot-len)
+                              longest-bucket)
+                            (max num-items longest-bucket-len)
                             (if (< 0 num-items)
                                 n
-                              last-filled-slot)
-                            (if (< 0 num-items) (+ 1 filled-slots) filled-slots)
+                              last-filled-bucket)
+                            (if (< 0 num-items) (+ 1 filled-buckets) filled-buckets)
                             ;; todo: avoid the strip-cars:
-                            (increment-counts-in-symbol-count-world (head-function-symbols (strip-cars slot-items)) 'memo-count-world memo-count-world)))))
+                            (increment-counts-in-symbol-count-world (head-function-symbols (strip-cars bucket-items)) 'memo-count-world memo-count-world)))))
 
 ;; Gather and print statistics about the contents of the memoization.
 ;; Logically returns nil.
@@ -807,16 +809,16 @@
                                                            memoizationp)))))
   (if (eq nil memoization)
       (cw "(There is no memoization to print.)~%")
-    (let* ((contents-of-slot-0 (aref1 'memoization memoization 0)) ;; where ground terms go
-           (len-of-slot0 (len contents-of-slot-0))
+    (let* ((contents-of-bucket-0 (aref1 'memoization memoization 0)) ;; where ground terms go
+           (len-of-bucket-0 (len contents-of-bucket-0))
            (memo-count-world (empty-symbol-count-world 'memo-count-world)))
       (print-memo-stats-aux 1
                             memoization
-                            len-of-slot0 ; total-items
-                            0            ; longest-slot
-                            len-of-slot0 ; longest-slot-len
-                            (if contents-of-slot-0 0 -1)
-                            (if contents-of-slot-0 1 0) ; filled-slots
-                            (increment-counts-in-symbol-count-world (head-function-symbols (strip-cars contents-of-slot-0))
+                            len-of-bucket-0 ; total-items
+                            0            ; longest-bucket
+                            len-of-bucket-0 ; longest-bucket-len
+                            (if contents-of-bucket-0 0 -1) ; last-filled-bucket
+                            (if contents-of-bucket-0 1 0) ; filled-buckets
+                            (increment-counts-in-symbol-count-world (head-function-symbols (strip-cars contents-of-bucket-0))
                                                                     'memo-count-world
                                                                     memo-count-world)))))
