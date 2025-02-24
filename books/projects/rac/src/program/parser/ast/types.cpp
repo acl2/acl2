@@ -109,7 +109,7 @@ Sexpression *PrimType::cast(Expression *rval) const {
     //  });
   }
 
-  Location loc = Location::dummy();
+  Location loc = get_original_location();
 
   // Get type's informations (we may not the value if the type is templated):
   Expression *w_src = nullptr;
@@ -183,8 +183,8 @@ Sexpression *PrimType::cast(Expression *rval) const {
         {&s_bits, res, upper_bound, Integer::zero_v(loc)->ACL2Expr()});
 
     if (signed_) {
-      res =
-          new Plist({&s_si, res, Integer(Location::dummy(), w_dst).ACL2Expr()});
+      res = new Plist(
+          {&s_si, res, Integer(get_original_location(), w_dst).ACL2Expr()});
     }
   }
 
@@ -268,17 +268,16 @@ bool PrimType::canBeImplicitlyCastTo(const Type *target) const {
 }
 
 Sexpression *PrimType::default_initializer_value() const {
-  // TODO location
-  return Integer::zero_v(Location::dummy())->ACL2Expr();
+  return Integer::zero_v(Location::builtin())->ACL2Expr();
 }
 
 // class IntType : public Type
 // -------------------------------
 
 IntType *IntType::FromPrimType(const PrimType *t) {
-  return new IntType({t->loc()},
-                     new Integer(Location::dummy(), static_cast<int>(t->rank_)),
-                     new Boolean(Location::dummy(), t->signed_));
+  auto loc = t->get_original_location();
+  return new IntType({t->loc()}, new Integer(loc, static_cast<int>(t->rank_)),
+                     new Boolean(loc, t->signed_));
 }
 
 void IntType::display(std::ostream &os) const {
@@ -342,7 +341,7 @@ Sexpression *IntType::cast(Expression *rval) const {
     }
   }
 
-  Location loc = Location::dummy();
+  Location loc = get_original_location();
 
   Sexpression *sexpr = rval_type->eval(rval->ACL2Expr());
 
@@ -360,11 +359,10 @@ Sexpression *IntType::cast(Expression *rval) const {
 
 Sexpression *IntType::eval(Sexpression *sexpr) const {
 
-  //  auto s = isSigned_->evalConst();
   if (isSigned_->isStaticallyEvaluable()) {
     if (isSigned_->evalConst()) {
       auto w = width_->isStaticallyEvaluable()
-                   ? new Integer(Location::dummy(), width_->evalConst())
+                   ? new Integer(get_original_location(), width_->evalConst())
                    : width_;
       return new Plist({&s_si, sexpr, w->ACL2Expr()});
     } else {
@@ -657,7 +655,7 @@ Sexpression *EnumType::getEnumVal(Symbol *s) const {
     if (d->init)
       count = d->init->evalConst();
     if (d->sym == s)
-      return Integer(Location::dummy(), count).ACL2Expr();
+      return Integer(get_original_location(), count).ACL2Expr();
     else
       count++;
   }

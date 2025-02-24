@@ -76,7 +76,8 @@ void SimpleStatement::display(std::ostream &os, unsigned indent) {
 
 // Data members: Symbol* sym; Type *type; Expression *init; (init is optional)
 
-SymDec::SymDec(NodesId id, Location loc, const char *n, const Type *t, Expression *i)
+SymDec::SymDec(NodesId id, Location loc, const char *n, const Type *t,
+               Expression *i)
     : SimpleStatement(id, loc), sym(new Symbol(n)), init(i), type_(t),
       original_type_(t) {}
 

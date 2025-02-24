@@ -306,12 +306,11 @@ public:
   const Type *type;
 
   CastExpr(Location loc, Expression *e, const Type *t)
-    : Expression(idOf(this), loc)
-    , expr(e)
-    , type(t)
-  {}
+      : Expression(idOf(this), loc), expr(e), type(t) {}
 
-  bool isStaticallyEvaluable() override { return expr->isStaticallyEvaluable(); }
+  bool isStaticallyEvaluable() override {
+    return expr->isStaticallyEvaluable();
+  }
 
   int evalConst() override { return expr->evalConst(); }
 

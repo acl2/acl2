@@ -11,8 +11,8 @@ AST::AST() {
   funDefs_.reserve(256);
 
   builtins_.push_back(
-      new Builtin(Location::dummy(), "abs", &intType,
-                  {new VarDec(Location::dummy(), "", &intType)}));
+      new Builtin(Location::builtin(), "abs", &intType,
+                  {new VarDec(Location::builtin(), "", &intType)}));
 }
 
 AST::AST(AST &&other)

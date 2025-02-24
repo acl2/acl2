@@ -39,8 +39,6 @@ public:
   virtual Type *deep_copy() const = 0;
   virtual bool isEqual(const Type *other) const = 0;
 
-
-
   NodesId id() const { return id_; }
 
   const origin_t &loc() const { return origin_; }
@@ -48,8 +46,6 @@ public:
 
   void setConst() { isConst_ = true; }
   bool isConst() const { return isConst_; }
-
-
 
   // Display the type (but not it is not the C++ representation).
   virtual void display(std::ostream &os = std::cout) const = 0;
@@ -64,7 +60,6 @@ public:
   // enum or struct definition).
   virtual void makeDef([[maybe_unused]] const char *name,
                        std::ostream &os = std::cout) const;
-
 
   // overridden by IntType
   // Convert rval to an S-expression to be assigned to an object of this
@@ -81,7 +76,6 @@ public:
     // Used to avoid unnecessary call to bits.
     return 0;
   }
-
 
   // TODO
   mutable origin_t origin_;
@@ -116,19 +110,19 @@ public:
   virtual PrimType *deep_copy() const override { return new PrimType(*this); }
 
   static PrimType Bool() {
-    return PrimType(Location::dummy(), "bool", nullptr, Rank::Bool, false);
+    return PrimType(Location::builtin(), "bool", nullptr, Rank::Bool, false);
   }
   static PrimType Int() {
-    return PrimType(Location::dummy(), "int", nullptr, Rank::Int, true);
+    return PrimType(Location::builtin(), "int", nullptr, Rank::Int, true);
   }
   static PrimType Uint() {
-    return PrimType(Location::dummy(), "uint", nullptr, Rank::Int, false);
+    return PrimType(Location::builtin(), "uint", nullptr, Rank::Int, false);
   }
   static PrimType Int64() {
-    return PrimType(Location::dummy(), "int64", "int64", Rank::Long, true);
+    return PrimType(Location::builtin(), "int64", "int64", Rank::Long, true);
   }
   static PrimType Uint64() {
-    return PrimType(Location::dummy(), "uint64", "uint64", Rank::Long, false);
+    return PrimType(Location::builtin(), "uint64", "uint64", Rank::Long, false);
   }
 
   Sexpression *cast(Expression *rval) const override;
@@ -504,7 +498,7 @@ public:
 // Type used to recover from error during the type pass.
 class ErrorType final : public Type {
 public:
-  ErrorType() : Type(Location::dummy(), idOf(this)) {}
+  ErrorType() : Type(Location::builtin(), idOf(this)) {}
   ~ErrorType() {}
 
   Type *deep_copy() const override { return new ErrorType(*this); }

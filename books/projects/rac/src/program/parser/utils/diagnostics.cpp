@@ -5,6 +5,10 @@
 
 std::ostream &operator<<(std::ostream &os, const Location &loc) {
 
+  if (loc.is_builtin) {
+    return os << "<builtin>:";
+  }
+
   os << loc.file_name << ':';
 
   os << loc.first_line;
@@ -22,6 +26,12 @@ void DiagnosticHandler::show_code_at(const Location &context,
   assert(file_ &&
          "DiagnosticHandler::setup should be called before with a valid "
          "pointer");
+
+  // No code to show if it is built in.
+  if (context.is_builtin) {
+    std::cerr << "<builtin>\n";
+    return;
+  }
 
   long saved_pos = std::ftell(file_);
 

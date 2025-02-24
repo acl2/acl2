@@ -20,12 +20,17 @@ struct Location {
     return Location{-1, -1, -1, -1, -1, -1, ""};
   }
 
+  inline static Location builtin() {
+    return Location{-1, -1, -1, -1, -1, -1, "", true};
+  }
+
   int first_line, last_line, first_column, last_column;
   // Position relative to the begining of the file.
   long f_pos, f_pos_end;
 
-  // TODO replace this by the string view ?
   std::string file_name;
+
+  bool is_builtin = false;
 
   friend std::ostream &operator<<(std::ostream &os, const Location &loc);
 };

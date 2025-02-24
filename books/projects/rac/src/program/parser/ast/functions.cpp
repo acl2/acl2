@@ -14,8 +14,8 @@ FunDef::FunDef(Location loc, std::string name, const Type *returnType,
     : Statement(idOf(this), loc), name_(std::move(name)),
       returnType_(returnType), params_(std::move(p)), body_(b) {}
 
-FunDef::FunDef(NodesId id, Location loc, std::string name, const Type *returnType,
-               std::vector<VarDec *> p, Block *b)
+FunDef::FunDef(NodesId id, Location loc, std::string name,
+               const Type *returnType, std::vector<VarDec *> p, Block *b)
     : Statement(id, loc), name_(std::move(name)), returnType_(returnType),
       params_(std::move(p)), body_(b) {}
 

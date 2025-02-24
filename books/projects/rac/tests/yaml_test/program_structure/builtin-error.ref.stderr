@@ -1,0 +1,5 @@
+builtin-error.cpp:7 (13-14): Expected `int`, got `int[3]`
+ 7 |   return abs(a);
+   |              ^
+note: Defined here: 
+<builtin>
