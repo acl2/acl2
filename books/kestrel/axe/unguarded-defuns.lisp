@@ -211,12 +211,22 @@
 
 (defund bv-array-read-unguarded (element-size len index data)
   (declare (xargs :guard t))
-  (bv-array-read (nfix element-size) (nfix len) (ifix index) (true-list-fix data)))
+  (let* ((len (nfix len))
+         (index (ifix index))
+         (numbits (ceiling-of-lg len))
+         (index (bvchop numbits index)))
+    (if (< index len)
+        (bvchop (nfix element-size) (ifix (nth-unguarded-aux index data)))
+      0)))
 
 (defthm bv-array-read-unguarded-correct
   (equal (bv-array-read-unguarded element-size len index data)
          (bv-array-read element-size len index data))
-  :hints (("Goal" :in-theory (enable bv-array-read-unguarded bv-array-read))))
+  :hints (("Goal" :use (:instance nth-unguarded-correct
+                                  (n (bvchop (ceiling-of-lg (nfix len)) (ifix index)))
+                                  (l data))
+           :in-theory (e/d (bv-array-read-unguarded bv-array-read nth-unguarded)
+                           (nth nth-unguarded-correct)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

@@ -147,10 +147,10 @@
             (bind-unquoted-varname quoted-varname (list 'quote (integer-length val)))
             ;; failure (may be a constant array or a negative number or something else):
           nil))
-    ;;otherwise, it's a nodenum:
+    ;; darg is a nodenum:
     (let ((expr (aref1 'dag-array dag-array darg)))
       (if (not (consp expr))
-          nil ;; failure (it's a variable)
+          nil ;; fail (can't tell the bv size of a variable)
         (let ((fn (ffn-symb expr)))
           (if (eq 'quote fn)
               (let ((val (unquote expr)))
