@@ -100,21 +100,23 @@
 
 ;move
 ; can help when backchaining
-(defthmd <-of-+-of-1-when-integerp
-  (implies (and (integerp x)
-                (integerp y))
-           (equal (< x (+ 1 y))
-                  (<= x y))))
+;dup?
+;; (defthmd <-of-+-of-1-when-integerp
+;;   (implies (and (integerp x)
+;;                 (integerp y))
+;;            (equal (< x (+ 1 y))
+;;                   (<= x y))))
 
-(defthm consp-of-nth-forward-to-consp
-  (implies (consp (nth n x))
-           (consp x))
-  :rule-classes :forward-chaining)
+;; (defthmd consp-of-nth-forward-to-consp
+;;   (implies (consp (nth n x))
+;;            (consp x))
+;;   :rule-classes :forward-chaining)
 
-;move
-(defthm <-of-maxelem-and-maxelem-of-cdr
+;move?
+(local
+ (defthm <-of-maxelem-and-maxelem-of-cdr
   (implies (consp (cdr x))
-           (not (< (maxelem x) (maxelem (cdr x))))))
+           (not (< (maxelem x) (maxelem (cdr x)))))))
 
 ;defforall could do these too?
 (defthm all-integerp-of-mv-nth-0-of-split-list-fast-aux
