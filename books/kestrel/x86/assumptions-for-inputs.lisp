@@ -23,29 +23,50 @@
 (include-book "kestrel/strings-light/parse-decimal-digits" :dir :system)
 (local (include-book "kestrel/utilities/doublet-listp" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
+(local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
 
+(in-theory (disable mv-nth))
+
+;; Returns (mv assumptions input-assumption-vars-rev) where the input-assumption-vars-rev are in reverse order.
 ;; Makes assumptions to introduce a variable for each element of the array, from INDEX up to ELEMENT-COUNT - 1.
 ;; TODO: Support expressing bytes in terms of single bit-vars
 ;; TODO: Support expressing the whole array as a single value (a byte-list)
-(defund var-intro-assumptions-for-array-input (index element-count bytes-per-element pointer-name var-name-base)
+(defund var-intro-assumptions-for-array-input (index element-count bytes-per-element pointer-name var-name-base assumptions-acc vars-acc)
   (declare (xargs :guard (and (natp index)
                               (natp element-count)
                               (posp bytes-per-element)
                               (symbolp pointer-name)
-                              (symbolp var-name-base))
+                              (symbolp var-name-base)
+                              (true-listp assumptions-acc)
+                              (symbol-listp vars-acc))
                   :measure (nfix (+ 1 (- element-count index)))))
   (if (or (not (mbt (and (natp element-count)
                          (natp index))))
           (<= element-count index))
-      nil
-    (cons `(equal (read ,bytes-per-element
-                        ,(if (= 0 index)
-                             pointer-name ; special case (offset of 0)
-                           `(+ ,(* index bytes-per-element) ,pointer-name) ; todo: option to use bvplus here?
-                           )
-                        x86)
-                  ,(acl2::pack-in-package "X" var-name-base index))
-          (var-intro-assumptions-for-array-input (+ 1 index) element-count bytes-per-element pointer-name var-name-base))))
+      (mv assumptions-acc vars-acc) ; will be reversed later
+    (let ((var (acl2::pack-in-package "X" var-name-base index)))
+      (var-intro-assumptions-for-array-input (+ 1 index) element-count bytes-per-element pointer-name var-name-base
+                                             (cons `(equal (read ,bytes-per-element
+                                                                 ,(if (= 0 index)
+                                                                      pointer-name ; special case (offset of 0)
+                                                                    `(+ ,(* index bytes-per-element) ,pointer-name) ; todo: option to use bvplus here?
+                                                                    )
+                                                                 x86)
+                                                           ,var)
+                                                   assumptions-acc)
+                                             (cons var vars-acc)))))
+
+(local
+  (defthm true-listp-of-mv-nth-0-of-var-intro-assumptions-for-array-input
+    (implies (true-listp assumptions-acc)
+             (true-listp (mv-nth 0 (var-intro-assumptions-for-array-input index element-count bytes-per-element pointer-name var-name-base assumptions-acc vars-acc))))
+    :hints (("Goal" :in-theory (enable var-intro-assumptions-for-array-input)))))
+
+(local
+  (defthm symbol-listp-of-mv-nth-1-of-var-intro-assumptions-for-array-input
+    (implies (symbol-listp vars-acc)
+             (symbol-listp (mv-nth 1 (var-intro-assumptions-for-array-input index element-count bytes-per-element pointer-name var-name-base assumptions-acc vars-acc))))
+    :hints (("Goal" :in-theory (enable var-intro-assumptions-for-array-input)))))
 
 ;; (var-intro-assumptions-for-array-input '0 '6 '4 'foo-ptr 'foo)
 
@@ -164,7 +185,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Returns a list of assumptions.
+;; Returns (mv assumptions input-assumption-vars-rev) where the input-assumption-vars-rev are in reverse order.
+;; todo: check for repeated vars, or prove they can't occur
 (defund assumptions-for-input (input-name
                                input-type ;; examples: u32 or u32* or u32[4]
                                state-component
@@ -178,37 +200,42 @@
                               (nat-listp (strip-cdrs disjoint-chunk-addresses-and-lens)))))
   (let ((type (parse-type input-type)))
     (if (eq :error type)
-        (er hard? 'assumptions-for-input "Bad input type: ~x0." type)
+        (prog2$ (er hard? 'assumptions-for-input "Bad input type: ~x0." type)
+                (mv nil nil))
       (if (atom type) ; scalar (e.g., "U32")
           ;; just put in the var name for the state component:
           ;; todo: what about signed/unsigned?
           ;; todo: add type hyps for the var?
-          `((equal ,state-component ,input-name))
+          (mv `((equal ,state-component ,input-name))
+              `(,input-name))
         (let ((stack-byte-count (* 8 stack-slots))) ; each stack element is 64-bits
           (if (call-of :pointer type)
               (if (not (stringp (farg1 type))) ; for guards? ; todo: what about a pointer to something else? ; todo: give this check a name, e.g., scalar-typep
                   ;; TODO: Handle pointer to array, or struct, or pointer
-                  (er hard? 'assumptions-for-input "Unsupported input type: ~x0." type)
+                  (prog2$ (er hard? 'assumptions-for-input "Unsupported input type: ~x0." type)
+                          (mv nil nil))
                 (let* ((base-type (farg1 type))
                        (numbytes (bytes-in-scalar-type base-type))
                        (pointer-name (acl2::pack-in-package "X" input-name '_ptr)) ;todo: watch for clashes; todo: should this be the main name and the other the "contents"?
                        )
-                  `(;; Rewriting will replace the state component with the pointer's name:
-                    (equal ,state-component ,pointer-name)
-                    ;; todo: what about reading individual bytes?:  don't trim down reads?
-                    (equal (read ,numbytes ,pointer-name x86) ,input-name)
-                    (canonical-address-p ,pointer-name) ; first address
-                    (canonical-address-p (+ ,(- numbytes 1) ,pointer-name)) ; last address (size of a scalar type can't be 0)
-                    ;; The input is disjoint from the space into which the stack will grow:
-                    (separate :r ,numbytes ,pointer-name
-                              :r ,stack-byte-count
-                              (+ ,(- stack-byte-count) (rsp x86)))
-                    ;; The input is disjoint from the code:
-                    ,@(make-separate-claims pointer-name numbytes disjoint-chunk-addresses-and-lens)
-                    ;; The input is disjoint from the saved return address:
-                    ;; todo: reorder args?
-                    (separate :r 8 (rsp x86)
-                              :r ,numbytes ,pointer-name))))
+                  (mv `(;; Rewriting will replace the state component with the pointer's name:
+                        (equal ,state-component ,pointer-name)
+                        ;; todo: what about reading individual bytes?:  don't trim down reads?
+                        (equal (read ,numbytes ,pointer-name x86) ,input-name)
+                        (canonical-address-p ,pointer-name) ; first address
+                        (canonical-address-p (+ ,(- numbytes 1) ,pointer-name)) ; last address (size of a scalar type can't be 0)
+                        ;; The input is disjoint from the space into which the stack will grow:
+                        (separate :r ,numbytes ,pointer-name
+                                  :r ,stack-byte-count
+                                  (+ ,(- stack-byte-count) (rsp x86)))
+                        ;; The input is disjoint from the code:
+                        ,@(make-separate-claims pointer-name numbytes disjoint-chunk-addresses-and-lens)
+                        ;; The input is disjoint from the saved return address:
+                        ;; todo: reorder args?
+                        (separate :r 8 (rsp x86)
+                                  :r ,numbytes ,pointer-name))
+                      ;; will be reversed later:
+                      (list input-name pointer-name))))
             (if (and (call-of :array type) ; (:array <base-type> <element-count>)
                      (stringp (farg1 type)) ; for guards? ; todo name this ; todo relax this
                      (natp (farg2 type))    ; for guards ; todo: must be true?
@@ -219,41 +246,68 @@
                      (bytes-per-element (bytes-in-scalar-type base-type))
                      (numbytes (* element-count bytes-per-element))
                      (pointer-name (acl2::pack-in-package "X" input-name '_ptr)) ;todo: watch for clashes; todo: should this be the main name and the other the "contents"?
-                     )
-                  (append (var-intro-assumptions-for-array-input 0 element-count bytes-per-element pointer-name input-name)
-                          `(;; Rewriting will replace the state component with the pointer's name:
-                            (equal ,state-component ,pointer-name)
-                            (canonical-address-p$inline ,pointer-name) ; first address
-                            (canonical-address-p (+ ,(- numbytes 1) ,pointer-name)) ; last address (todo: consider numbytes=0)
-                            ;; The input is disjoint from the space into which the stack will grow:
-                            (separate :r ,numbytes ,pointer-name
-                                      :r ,stack-byte-count
-                                      (+ ,(- stack-byte-count) (rsp x86)))
-                            ;; The input is disjoint from the code:
-                            ,@(make-separate-claims pointer-name numbytes disjoint-chunk-addresses-and-lens)
-                            ;; The input is disjoint from the saved return address:
-                            ;; todo: reorder args?
-                            (separate :r 8 (rsp x86)
-                                      :r ,numbytes ,pointer-name))))
-              (er hard? 'assumptions-for-input "Bad type: ~x0." type))))))))
+                     ((mv assumptions input-assumption-vars-rev)
+                      (var-intro-assumptions-for-array-input 0 element-count bytes-per-element pointer-name input-name nil nil)))
+                  (mv ;;todo: think about the order here (it will be reversed!):
+                    (append assumptions
+                              `(;; Rewriting will replace the state component with the pointer's name:
+                                (equal ,state-component ,pointer-name)
+                                (canonical-address-p$inline ,pointer-name) ; first address
+                                (canonical-address-p (+ ,(- numbytes 1) ,pointer-name)) ; last address (todo: consider numbytes=0)
+                                ;; The input is disjoint from the space into which the stack will grow:
+                                (separate :r ,numbytes ,pointer-name
+                                          :r ,stack-byte-count
+                                          (+ ,(- stack-byte-count) (rsp x86)))
+                                ;; The input is disjoint from the code:
+                                ,@(make-separate-claims pointer-name numbytes disjoint-chunk-addresses-and-lens)
+                                ;; The input is disjoint from the saved return address:
+                                ;; todo: reorder args?
+                                (separate :r 8 (rsp x86)
+                                          :r ,numbytes ,pointer-name)))
+                      ;; will be reversed later:
+                      (append input-assumption-vars-rev (list pointer-name))))
+              (prog2$ (er hard? 'assumptions-for-input "Bad type: ~x0." type)
+                      (mv nil nil)))))))))
+
+(local
+  (defthm true-listp-of-mv-nth-0-of-assumptions-for-input
+    (implies (true-listp assumptions-acc)
+             (true-listp (mv-nth 0 (assumptions-for-input input-name input-type state-component stack-slots disjoint-chunk-addresses-and-lens))))
+    :hints (("Goal" :in-theory (enable assumptions-for-input)))))
+
+(local
+  (defthm symbol-listp-of-mv-nth-1-of-assumptions-for-input
+    (implies (and (symbol-listp vars-acc)
+                  (symbolp input-name))
+             (symbol-listp (mv-nth 1 (assumptions-for-input input-name input-type state-component stack-slots disjoint-chunk-addresses-and-lens))))
+    :hints (("Goal" :in-theory (enable assumptions-for-input)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; Returns (mv assumptions input-assumption-vars).
 ;; might have extra, unneeded items in state-components
-(defun assumptions-for-inputs (input-names-and-types state-components stack-slots disjoint-chunk-addresses-and-lens)
+(defun input-assumptions-and-vars (input-names-and-types state-components stack-slots disjoint-chunk-addresses-and-lens assumptions-acc vars-acc)
   (declare (xargs :guard (and (names-and-typesp input-names-and-types)
                               (true-listp state-components)
                               (natp stack-slots)
                               (alistp disjoint-chunk-addresses-and-lens) ; cars are terms
-                              (nat-listp (strip-cdrs disjoint-chunk-addresses-and-lens)))))
+                              (nat-listp (strip-cdrs disjoint-chunk-addresses-and-lens))
+                              (true-listp assumptions-acc)
+                              (symbol-listp vars-acc))
+                  :guard-hints (("Goal" :in-theory (enable acl2::true-listp-when-symbol-listp-rewrite-unlimited)))))
   (if (endp input-names-and-types)
-      nil
-    (let* ((name-and-type (first input-names-and-types))
-           (input-name (first name-and-type))
-           (input-type (second name-and-type))
-           (state-component (first state-components))
-           )
-      (append (assumptions-for-input input-name input-type state-component stack-slots disjoint-chunk-addresses-and-lens)
-              (assumptions-for-inputs (rest input-names-and-types) (rest state-components) stack-slots disjoint-chunk-addresses-and-lens)))))
+      (mv (reverse assumptions-acc)
+          (reverse vars-acc))
+    (b* ((name-and-type (first input-names-and-types))
+         (input-name (first name-and-type))
+         (input-type (second name-and-type))
+         (state-component (first state-components))
+         ((mv assumptions-for-first vars-for-first-rev)
+          (assumptions-for-input input-name input-type state-component stack-slots disjoint-chunk-addresses-and-lens)))
+      (input-assumptions-and-vars (rest input-names-and-types)
+                                  (rest state-components) stack-slots disjoint-chunk-addresses-and-lens
+                                  (append assumptions-for-first assumptions-acc)
+                                  (append vars-for-first-rev vars-acc) ; todo: check for dups
+                                  ))))
 
-;; Example: (assumptions-for-inputs '((v1 :u32*) (v2 :u32*)) '((rdi x86) (rsi x86)))
+;; Example: (input-assumptions-and-vars '((v1 :u32*) (v2 :u32*)) '((rdi x86) (rsi x86)))
