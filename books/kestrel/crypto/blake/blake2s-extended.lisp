@@ -109,20 +109,20 @@
 ;; This function replaces the function blake2s.
 ;; Returns the hash, as a list of bytes of length NN.
 ;; TODO: Think about the case where we have a max length message and a key
-(defund blake2s-extended (data-bytes
+(defund blake2s-extended (input-bytes
                           key-bytes
                           salt ; a list of 8 bytes, or nil for no salt
                           personalization ; a list of 8 bytes, or nil for no personalization
                           nn ;; number of hash bytes to produce
                           )
-  (declare (xargs :guard (and (all-unsigned-byte-p 8 data-bytes)
-                              (true-listp data-bytes)
+  (declare (xargs :guard (and (all-unsigned-byte-p 8 input-bytes)
+                              (true-listp input-bytes)
                               ;; NOTE: We would like to say:
-                              ;; (<= (len data-bytes) *max-input-bytes*)
+                              ;; (<= (len input-bytes) *max-input-bytes*)
                               ;; but that would allow potential overflows in
                               ;; the second call of F below and in the call of
                               ;; F in LOOP1 above.
-                              (<= (len data-bytes)
+                              (<= (len input-bytes)
                                   (if (= 0 (len key-bytes))
                                       *max-input-bytes*
                                     ;; Prevents overflows in the calls of f
@@ -142,12 +142,12 @@
                               (posp nn)
                               (<= nn *max-hash-bytes*))
                   :guard-hints (("Goal" :in-theory (enable wordp natp unsigned-byte-p)))))
-  (let* ((ll (len data-bytes))
+  (let* ((ll (len input-bytes))
          (kk (len key-bytes))
          (salt (if salt salt (repeat 8 0)))
          (personalization (if personalization personalization (repeat 8 0)))
          (parameter-block (parameter-block nn kk salt personalization))
-         (d (d-blocks data-bytes key-bytes))
+         (d (d-blocks input-bytes key-bytes))
          (dd (len d))
          ;; XOR in the parameter block:
          (h (xor-words (iv) parameter-block)) ; this is what differs from the version in blake2s.lisp
@@ -169,11 +169,11 @@
 (defthm len-of-blake2s-extended
   (implies (and (posp nn)
                 (<= nn *max-hash-bytes*))
-           (equal (len (blake2s-extended data-bytes key-bytes salt personalization nn))
+           (equal (len (blake2s-extended input-bytes key-bytes salt personalization nn))
                   nn))
   :hints (("Goal" :in-theory (enable blake2s-extended))))
 
 (defthm all-unsigned-byte-p-of-blake2s-extended
   (implies (<= nn *max-hash-bytes*)
-           (all-unsigned-byte-p 8 (blake2s-extended data-bytes key-bytes salt personalization nn)))
+           (all-unsigned-byte-p 8 (blake2s-extended input-bytes key-bytes salt personalization nn)))
   :hints (("Goal" :in-theory (enable blake2s-extended))))
