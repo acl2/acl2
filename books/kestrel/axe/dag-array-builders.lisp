@@ -123,10 +123,10 @@
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable add-variable-to-dag-array))))
 
-(defthm integerp-of-mv-nth-3-of-add-variable-to-dag-array
-  (implies (natp dag-len)
-           (integerp (mv-nth 3 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-variable-alist))))
-  :hints (("Goal" :in-theory (enable add-variable-to-dag-array))))
+;; (defthm integerp-of-mv-nth-3-of-add-variable-to-dag-array
+;;   (implies (natp dag-len)
+;;            (integerp (mv-nth 3 (add-variable-to-dag-array var dag-array dag-len dag-parent-array dag-variable-alist))))
+;;   :hints (("Goal" :in-theory (enable add-variable-to-dag-array))))
 
 ;; If no error is signaled, the new size is acceptable
 (defthm <=-of-mv-nth-3-of-add-variable-to-dag-array-and-max-1d-array-length
@@ -328,8 +328,7 @@
 ;; Returns (mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist).
 ; Expands the array if needed.
 (defund add-function-call-expr-to-dag-array (fn args dag-array dag-len dag-parent-array dag-constant-alist)
-  (declare (type (integer 0 1152921504606846974) dag-len)
-           (xargs :guard (and (symbolp fn)
+  (declare (xargs :guard (and (symbolp fn)
                               (not (eq 'quote fn))
                               (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                               (bounded-darg-listp args dag-len)
@@ -339,8 +338,9 @@
                                      (alen1 'dag-parent-array dag-parent-array)))
                   :split-types t
                   :guard-hints (("Goal" :do-not-induct t
-                                 :in-theory (enable <-of-+-of-minus1-arith-hack dargp-when-natp)))))
-  (if (all-consp args) ;; A function call all of whose children are quoteps is the "constant" case.  includes calls of 0-ary functions
+                                 :in-theory (enable <-of-+-of-minus1-arith-hack dargp-when-natp))))
+           (type (integer 0 1152921504606846974) dag-len))
+  (if (all-consp args) ;; A function call all of whose children are quoteps is the "constant" case (can't use the "parent trick").  includes calls of 0-ary functions.
       (let* ((expr (cons fn args)) ;todo: avoid this cons?
              (possible-index (lookup-equal expr dag-constant-alist))) ; todo: consider using a fast alist (but this case is rare)
         (if possible-index
@@ -391,6 +391,7 @@
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable add-function-call-expr-to-dag-array))))
 
+;drop?
 (defthm integerp-of-mv-nth-1-of-add-function-call-expr-to-dag-array
   (implies (and (dag-constant-alistp dag-constant-alist)
                 (natp dag-len)
@@ -406,8 +407,8 @@
 (defthm not-consp-of-mv-nth-1-of-add-function-call-expr-to-dag-array
   (implies (and (dag-constant-alistp dag-constant-alist)
                 (natp dag-len)
-                (symbolp fn)
-                (not (equal 'quote fn))
+                ;(symbolp fn)
+                ;(not (equal 'quote fn))
                 (darg-listp args)
                 ;; (true-listp args)
                 (dag-parent-arrayp 'dag-parent-array dag-parent-array))
@@ -461,17 +462,12 @@
   :rule-classes :type-prescription
   :hints (("Goal" :in-theory (enable add-function-call-expr-to-dag-array))))
 
-(defthm integerp-of-mv-nth-3-of-add-function-call-expr-to-dag-array-type
-  (implies (integerp dag-len)
-           (integerp (mv-nth 3 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist))))
-  :rule-classes :type-prescription
-  :hints (("Goal" :in-theory (enable add-function-call-expr-to-dag-array))))
-
 (defthm natp-of-mv-nth-3-of-add-function-call-expr-to-dag-array
   (implies (natp dag-len)
            (natp (mv-nth 3 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist)))))
 
-(defthm integerp-of-mv-nth-3-of-add-function-call-expr-to-dag-array
+;drop?
+(defthmd integerp-of-mv-nth-3-of-add-function-call-expr-to-dag-array
   (implies (natp dag-len) ; todo: or say integerp here?
            (integerp (mv-nth 3 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist)))))
 
@@ -544,7 +540,7 @@
   :hints (("Goal" :in-theory (enable add-function-call-expr-to-dag-array bounded-dag-constant-alistp))))
 
 (defthm bound-on-mv-nth-3-and-mv-nth-1-of-add-function-call-expr-to-dag-array-alt
-  (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+  (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist) ; dag-variable-alist is a free var
                 (bounded-darg-listp args (alen1 'dag-array dag-array))
                 (not (mv-nth 0 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist))))
            (< (mv-nth 1 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist))
@@ -554,7 +550,7 @@
   :hints (("Goal" :in-theory (enable add-function-call-expr-to-dag-array bounded-dag-constant-alistp))))
 
 (defthm bound-on-mv-nth-3-and-mv-nth-1-of-add-function-call-expr-to-dag-array-alt-strong
-  (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+  (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist) ; dag-variable-alist is a free var
                 (bounded-darg-listp args (alen1 'dag-array dag-array))
                 (not (mv-nth 0 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist))))
            (<= (+ 1 (mv-nth 1 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist)))
@@ -566,7 +562,7 @@
 ;; shows that the new dag is good up through the returne node, at least
 ;; move up, but this depends on some rules about (mv-nth 3 ..).
 (defthm pseudo-dag-arrayp-of-mv-nth-2-of-add-function-call-expr-to-dag-array-other
-  (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+  (implies (and (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist) ; dag-variable-alist is a free var
                 (not (mv-nth 0 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist)))
                 (bounded-darg-listp args dag-len)
                 (symbolp fn)
@@ -720,7 +716,7 @@
 ;; this one uses wf-dagp
 (defthm dargp-less-than-of-mv-nth-1-of-add-function-call-expr-to-dag-array-gen-alt
   (implies (and (<= (mv-nth 3 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist)) bound)
-                (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist)
+                (wf-dagp 'dag-array dag-array dag-len 'dag-parent-array dag-parent-array dag-constant-alist dag-variable-alist) ; dag-variable-alist is a free var
                 (symbolp fn)
                 (not (equal 'quote fn))
                 (bounded-darg-listp args (alen1 'dag-array dag-array))
@@ -776,8 +772,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist).
-;; The dag-len returned is always 0.
 ;; TODO: Use this more?
+;; Despite the name, this returns all 5 components of the DAG, not just the dag-array.
 (defund empty-dag-array (slack-amount)
   (declare (xargs :guard (and (posp slack-amount)
                               (<= slack-amount *max-1d-array-length*))))
@@ -787,6 +783,7 @@
       nil ; empty-dag-constant-alist ; todo: name that notion
       (empty-dag-variable-alist)))
 
+;; The dag-len returned is always 0.
 (defthm mv-nth-1-of-empty-dag-array
   (equal (mv-nth 1 (empty-dag-array slack-amount))
          0)

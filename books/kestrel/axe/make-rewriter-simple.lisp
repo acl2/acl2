@@ -3131,7 +3131,7 @@
                    (:type-prescription dag-parent-arrayp)
                    (:type-prescription dag-variable-alistp)
                    (:type-prescription dargp-less-than)
-                   (:type-prescription integerp-of-mv-nth-3-of-add-function-call-expr-to-dag-array-type)
+                   ;; (:type-prescription integerp-of-mv-nth-3-of-add-function-call-expr-to-dag-array-type)
                    (:type-prescription lambda-free-termp)
                    (:type-prescription len)
                    (:type-prescription limit-reachedp)

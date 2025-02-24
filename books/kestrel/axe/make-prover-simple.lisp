@@ -748,12 +748,20 @@
   :rule-classes (:rewrite :linear)
   :hints (("Goal" :in-theory (e/d (apply-axe-use-instances) (pseudo-termp)))))
 
-(defthmd integerp-mv-nth-3-of-apply-axe-use-instances
-  (implies (integerp dag-len)
-           (integerp (mv-nth 3 (apply-axe-use-instances axe-use-instances dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist clause-vars wrld new-nodenums-acc))))
-  :hints (("Goal" :in-theory (e/d (apply-axe-use-instances integerp-when-natp) (pseudo-termp
-                                                                                perm-implies-equal-subsetp-equal-1 ; why?
-                                                                                )))))
+;; (defthmd integerp-mv-nth-3-of-apply-axe-use-instances
+;;   (implies (integerp dag-len)
+;;            (integerp (mv-nth 3 (apply-axe-use-instances axe-use-instances dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist clause-vars wrld new-nodenums-acc))))
+;;   :hints (("Goal" :in-theory (e/d (apply-axe-use-instances integerp-when-natp) (pseudo-termp
+;;                                                                                 perm-implies-equal-subsetp-equal-1 ; why?
+;;                                                                                 )))))
+
+(defthmd natp-mv-nth-3-of-apply-axe-use-instances
+  (implies (natp dag-len)
+           (natp (mv-nth 3 (apply-axe-use-instances axe-use-instances dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist clause-vars wrld new-nodenums-acc))))
+  :hints (("Goal" :in-theory (e/d (apply-axe-use-instances)
+                                  (pseudo-termp
+                                   perm-implies-equal-subsetp-equal-1 ; why?
+                                   )))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1009,7 +1017,7 @@
                                    apply-axe-use-instances-return-type
 ;apply-axe-use-instances-bound
                                    <=-of-mv-nth-3-of-apply-axe-use-instances
-                                   integerp-mv-nth-3-of-apply-axe-use-instances)))
+                                   natp-mv-nth-3-of-apply-axe-use-instances)))
 
          ;; Make versions of sublis-var-and-eval and subcor-var-and-eval:
          (make-sublis-var-and-eval-simple ,suffix ,evaluator-base-name)
@@ -3066,8 +3074,10 @@
                                  integerp-when-natp
                                  pseudo-dag-arrayp-of-mv-nth-2-of-add-function-call-expr-to-dag-array-other
                                  integerp-of-maxelem2
-                                 integerp-of-mv-nth-3-of-add-function-call-expr-to-dag-array
-                                 integerp-of-mv-nth-3-of-add-function-call-expr-to-dag-array-type
+                                 ;integerp-of-mv-nth-3-of-add-function-call-expr-to-dag-array
+                                 natp-of-mv-nth-3-of-add-function-call-expr-to-dag-array-type
+                                 natp-of-mv-nth-3-of-add-function-call-expr-to-dag-array
+                                 ;; integerp-of-mv-nth-3-of-add-function-call-expr-to-dag-array-type
                                  <-of-maxelem-when-all-<
                                  ,(pack$ relieve-free-var-hyp-and-all-others-name '-return-type)
                                  ,(pack$ relieve-rule-hyps-name '-return-type)
