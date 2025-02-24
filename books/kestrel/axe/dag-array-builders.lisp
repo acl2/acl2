@@ -1,7 +1,7 @@
 ; Functions to create and extend dag-arrays
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -391,19 +391,6 @@
   :rule-classes (:rewrite :type-prescription)
   :hints (("Goal" :in-theory (enable add-function-call-expr-to-dag-array))))
 
-;drop?
-(defthm integerp-of-mv-nth-1-of-add-function-call-expr-to-dag-array
-  (implies (and (dag-constant-alistp dag-constant-alist)
-                (natp dag-len)
-                ;(symbolp fn)
-                ;(not (equal 'quote fn))
-                (darg-listp args)
-                ;; (true-listp args)
-                (dag-parent-arrayp 'dag-parent-array dag-parent-array))
-           (integerp (mv-nth 1 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist))))
-  :rule-classes (:rewrite :type-prescription)
-  :hints (("Goal" :in-theory (enable add-function-call-expr-to-dag-array))))
-
 (defthm not-consp-of-mv-nth-1-of-add-function-call-expr-to-dag-array
   (implies (and (dag-constant-alistp dag-constant-alist)
                 (natp dag-len)
@@ -465,11 +452,6 @@
 (defthm natp-of-mv-nth-3-of-add-function-call-expr-to-dag-array
   (implies (natp dag-len)
            (natp (mv-nth 3 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist)))))
-
-;drop?
-(defthmd integerp-of-mv-nth-3-of-add-function-call-expr-to-dag-array
-  (implies (natp dag-len) ; todo: or say integerp here?
-           (integerp (mv-nth 3 (add-function-call-expr-to-dag-array fn args dag-array dag-len dag-parent-array dag-constant-alist)))))
 
 (defthm bound-on-mv-nth-3-of-add-function-call-expr-to-dag-array
   (implies (and (natp dag-len)

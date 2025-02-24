@@ -400,7 +400,6 @@
     (:REWRITE HIT-COUNTSP-OF-maybe-INCREMENT-HIT-COUNT)
     (:REWRITE INTEGER-LISTP-WHEN-ALL-NATP)
     (:REWRITE INTEGER-LISTP-WHEN-nat-listp)
-    (:REWRITE INTEGERP-OF-MV-NTH-1-OF-ADD-FUNCTION-CALL-EXPR-TO-DAG-ARRAY)
     (:REWRITE LEN-OF-CDR)
     (:REWRITE LEN-OF-CONS)
     (:REWRITE LEN-OF-LAMBDA-FORMALS-WHEN-AXE-TREEP)
@@ -3074,10 +3073,8 @@
                                  integerp-when-natp
                                  pseudo-dag-arrayp-of-mv-nth-2-of-add-function-call-expr-to-dag-array-other
                                  integerp-of-maxelem2
-                                 ;integerp-of-mv-nth-3-of-add-function-call-expr-to-dag-array
                                  natp-of-mv-nth-3-of-add-function-call-expr-to-dag-array-type
                                  natp-of-mv-nth-3-of-add-function-call-expr-to-dag-array
-                                 ;; integerp-of-mv-nth-3-of-add-function-call-expr-to-dag-array-type
                                  <-of-maxelem-when-all-<
                                  ,(pack$ relieve-free-var-hyp-and-all-others-name '-return-type)
                                  ,(pack$ relieve-rule-hyps-name '-return-type)
