@@ -1,4 +1,4 @@
-; Definitions of arithmetic operations on bvs
+; BV Library: Definition of bvmult
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
 ; Copyright (C) 2013-2025 Kestrel Institute
@@ -13,13 +13,8 @@
 
 (include-book "bvchop-def")
 
-;; See also bvplus-def.lisp
-;; See also bvmult-def.lisp
-
-(defund bvminus (size x y)
-  (declare (type (integer 0 *) size))
-  (bvchop size (- (ifix x) (ifix y))))
-
-(defun bvuminus (size x)
-  (declare (type (integer 0 *) size))
-  (bvchop size (- (ifix x))))
+;;this should probably nfix its arguments (at least ifix them) or chop them?
+(defund bvmult (size x y)
+  (declare (type integer x y)
+           (type (integer 0 *) size))
+  (bvchop size (* (ifix x) (ifix y))))
