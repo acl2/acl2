@@ -14,12 +14,12 @@ std::optional<Program> Program::process(AST &&ast, bool all_warnings) {
 
   Program processed_ast(std::move(ast));
 
-#define RUNPASS(ACTION)                                                       \
-  {                                                                           \
-    ACTION a(processed_ast.diag_);                                            \
-    if (!processed_ast.runAction(&a) && !bypass_errors()) {                   \
-      return {};                                                              \
-    }                                                                         \
+#define RUNPASS(ACTION)                                                        \
+  {                                                                            \
+    ACTION a(processed_ast.diag_);                                             \
+    if (!processed_ast.runAction(&a) && !bypass_errors()) {                    \
+      return {};                                                               \
+    }                                                                          \
   }
 
   RUNPASS(TypingAction);
@@ -31,7 +31,7 @@ std::optional<Program> Program::process(AST &&ast, bool all_warnings) {
 
   RUNPASS(MarkAssertionAction);
 
-  return { std::move(processed_ast) };
+  return {std::move(processed_ast)};
 }
 
 void Program::dumpAsDot() {

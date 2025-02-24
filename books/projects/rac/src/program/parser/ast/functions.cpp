@@ -1,23 +1,20 @@
-#include "../../sexpressions.h"
-#include "../utils/utils.h"
-#include "expressions.h"
 #include "functions.h"
+#include "../../sexpressions.h"
+#include "expressions.h"
 #include "types.h"
 
-#include <algorithm>
 #include <iomanip>
-#include <sstream>
 
 //***********************************************************************************
 // class FunDef
 //***********************************************************************************
 
-FunDef::FunDef(Location loc, std::string name, Type *returnType,
+FunDef::FunDef(Location loc, std::string name, const Type *returnType,
                std::vector<VarDec *> p, Block *b)
     : Statement(idOf(this), loc), name_(std::move(name)),
       returnType_(returnType), params_(std::move(p)), body_(b) {}
 
-FunDef::FunDef(NodesId id, Location loc, std::string name, Type *returnType,
+FunDef::FunDef(NodesId id, Location loc, std::string name, const Type *returnType,
                std::vector<VarDec *> p, Block *b)
     : Statement(id, loc), name_(std::move(name)), returnType_(returnType),
       params_(std::move(p)), body_(b) {}
@@ -59,14 +56,14 @@ Sexpression *FunDef::ACL2Expr() {
     sparams->add(v->sym);
   }
 
-  return new Plist({ &s_funcdef, new Symbol(name_), sparams,
-                     body_->blockify()->ACL2Expr() });
+  return new Plist(
+      {&s_funcdef, new Symbol(name_), sparams, body_->blockify()->ACL2Expr()});
 }
 
 // class Template : public FunDef
 // -----------------------------
 
-Template::Template(Location loc, const char *n, Type *t,
+Template::Template(Location loc, const char *n, const Type *t,
                    std::vector<VarDec *> p, Block *b,
                    std::vector<TempParamDec *> tp)
     : FunDef(idOf(this), loc, n, t, p, b), tempParams_(tp) {}
@@ -117,8 +114,8 @@ Sexpression *Template::ACL2Expr() {
     sparams->add(v->sym);
   }
 
-  auto res = new Plist({ &s_funcdef, new Symbol(name_), sparams,
-                         body_->blockify()->ACL2Expr() });
+  auto res = new Plist(
+      {&s_funcdef, new Symbol(name_), sparams, body_->blockify()->ACL2Expr()});
 
   return res;
 }

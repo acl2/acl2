@@ -7,10 +7,14 @@ bool RecursiveASTVisitor<Derived>::dispatchTraverse(AbstractBase *e) {
   switch (e->id()) {
 #define APPLY(CLASS, _)                                                       \
   case NodesId::CLASS:                                                        \
-    if constexpr (std::is_base_of_v<AbstractBase, CLASS>)                     \
-      return derived().Traverse##CLASS(static_cast<CLASS *>(e));              \
-    else                                                                      \
-      UNREACHABLE();
+    if constexpr (std::is_base_of_v<AbstractBase, CLASS>) {                   \
+        if constexpr (std::is_same_v<AbstractBase, const Type>) {                     \
+          return derived().Traverse##CLASS(static_cast<const CLASS *>(e));    \
+        } else {                                                              \
+          return derived().Traverse##CLASS(static_cast<CLASS *>(e));          \
+        } \
+    } else {                                                                      \
+      UNREACHABLE(); }
 #include "../parser/ast/astnodes.def"
 #include "../parser/ast/types.def"
 #undef APPLY
@@ -42,7 +46,7 @@ bool RecursiveASTVisitor<Derived>::TraverseSimpleStatement(
 }
 
 template <typename Derived>
-bool RecursiveASTVisitor<Derived>::TraverseType(Type *t) {
+bool RecursiveASTVisitor<Derived>::TraverseType(const Type *t) {
   return dispatchTraverse(t);
 }
 
@@ -692,12 +696,12 @@ bool RecursiveASTVisitor<Derived>::TraverseTemplate(Template *s) {
 }
 
 template <typename Derived>
-bool RecursiveASTVisitor<Derived>::TraversePrimType(PrimType *t) {
+bool RecursiveASTVisitor<Derived>::TraversePrimType(const PrimType *t) {
   return derived().WalkUpPrimType(t);
 }
 
 template <typename Derived>
-bool RecursiveASTVisitor<Derived>::TraverseDefinedType(DefinedType *t) {
+bool RecursiveASTVisitor<Derived>::TraverseDefinedType(const DefinedType *t) {
 
   if (!derived().postfixTraversal())
     if (!derived().WalkUpDefinedType(t))
@@ -714,7 +718,7 @@ bool RecursiveASTVisitor<Derived>::TraverseDefinedType(DefinedType *t) {
 }
 
 template <typename Derived>
-bool RecursiveASTVisitor<Derived>::TraverseIntType(IntType *t) {
+bool RecursiveASTVisitor<Derived>::TraverseIntType(const IntType *t) {
 
   if (!derived().postfixTraversal())
     if (!derived().WalkUpIntType(t))
@@ -734,7 +738,7 @@ bool RecursiveASTVisitor<Derived>::TraverseIntType(IntType *t) {
 }
 
 template <typename Derived>
-bool RecursiveASTVisitor<Derived>::TraverseArrayType(ArrayType *t) {
+bool RecursiveASTVisitor<Derived>::TraverseArrayType(const ArrayType *t) {
 
   if (!derived().postfixTraversal())
     if (!derived().WalkUpArrayType(t))
@@ -754,7 +758,7 @@ bool RecursiveASTVisitor<Derived>::TraverseArrayType(ArrayType *t) {
 }
 
 template <typename Derived>
-bool RecursiveASTVisitor<Derived>::TraverseStructType(StructType *t) {
+bool RecursiveASTVisitor<Derived>::TraverseStructType(const StructType *t) {
 
   if (!derived().postfixTraversal())
     if (!derived().WalkUpStructType(t))
@@ -780,7 +784,7 @@ bool RecursiveASTVisitor<Derived>::TraverseStructType(StructType *t) {
 }
 
 template <typename Derived>
-bool RecursiveASTVisitor<Derived>::TraverseEnumType(EnumType *t) {
+bool RecursiveASTVisitor<Derived>::TraverseEnumType(const EnumType *t) {
 
   if (!derived().postfixTraversal())
     if (!derived().WalkUpEnumType(t))
@@ -798,13 +802,13 @@ bool RecursiveASTVisitor<Derived>::TraverseEnumType(EnumType *t) {
 }
 
 template <typename Derived>
-bool RecursiveASTVisitor<Derived>::TraverseMvType(MvType *t) {
+bool RecursiveASTVisitor<Derived>::TraverseMvType(const MvType *t) {
 
   if (!derived().postfixTraversal())
     if (!derived().WalkUpMvType(t))
       return false;
 
-  if (!std::all_of(t->types().begin(), t->types().end(), [&](Type *t)
+  if (!std::all_of(t->types().begin(), t->types().end(), [&](const Type *t)
         { return derived().TraverseType(t); }))
     return false;
 
@@ -816,13 +820,13 @@ bool RecursiveASTVisitor<Derived>::TraverseMvType(MvType *t) {
 }
 
 template <typename Derived>
-bool RecursiveASTVisitor<Derived>::TraverseInitializerType(InitializerType *t) {
+bool RecursiveASTVisitor<Derived>::TraverseInitializerType(const InitializerType *t) {
 
   if (!derived().postfixTraversal())
     if (!derived().WalkUpInitializerType(t))
       return false;
 
-  if (!std::all_of(t->types().begin(), t->types().end(), [&](Type *t)
+  if (!std::all_of(t->types().begin(), t->types().end(), [&](const Type *t)
         { return derived().TraverseType(t); }))
     return false;
 
@@ -834,7 +838,7 @@ bool RecursiveASTVisitor<Derived>::TraverseInitializerType(InitializerType *t) {
 }
 
 template <typename Derived>
-bool RecursiveASTVisitor<Derived>::TraverseErrorType(ErrorType *t) {
+bool RecursiveASTVisitor<Derived>::TraverseErrorType(const ErrorType *t) {
   return derived().WalkUpErrorType(t);
 }
 
@@ -849,7 +853,7 @@ bool RecursiveASTVisitor<Derived>::WalkUpStatement(Statement *s) {
 }
 
 template <typename Derived>
-bool RecursiveASTVisitor<Derived>::WalkUpType(Type *t) {
+bool RecursiveASTVisitor<Derived>::WalkUpType(const Type *t) {
   return derived().VisitType(t);
 }
 
@@ -861,6 +865,15 @@ bool RecursiveASTVisitor<Derived>::WalkUpType(Type *t) {
     return derived().Visit##CLASS(c);                                         \
   }
 #include "../parser/ast/astnodes.def"
+#undef APPLY
+
+#define APPLY(CLASS, PARENT)                                                  \
+  template <typename Derived>                                                 \
+  bool RecursiveASTVisitor<Derived>::WalkUp##CLASS(const CLASS *c) {                \
+    if (!derived().WalkUp##PARENT(c))                                         \
+      return false;                                                           \
+    return derived().Visit##CLASS(c);                                         \
+  }
 #include "../parser/ast/types.def"
 #undef APPLY
 
@@ -875,7 +888,7 @@ bool RecursiveASTVisitor<Derived>::VisitStatement(Statement *) {
 }
 
 template <typename Derived>
-bool RecursiveASTVisitor<Derived>::VisitType(Type *) {
+bool RecursiveASTVisitor<Derived>::VisitType(const Type *) {
   return true;
 }
 
@@ -885,5 +898,12 @@ bool RecursiveASTVisitor<Derived>::VisitType(Type *) {
     return true;                                                              \
   }
 #include "../parser/ast/astnodes.def"
+#undef APPLY
+
+#define APPLY(CLASS, PARENT)                                                  \
+  template <typename Derived>                                                 \
+  bool RecursiveASTVisitor<Derived>::Visit##CLASS(const CLASS *) {                  \
+    return true;                                                              \
+  }
 #include "../parser/ast/types.def"
 #undef APPLY

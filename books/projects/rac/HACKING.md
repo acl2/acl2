@@ -5,7 +5,7 @@ Lisp translation of C++ common expressions
   Global constant arrays are translated using simple lists and "nth" as accessor.
   This is the most efficient way of storing large read-only values. Local arrays
   are translated using an alist (with "ag" and "as" used to translate the
-  reading/writing). 
+  reading/writing).
 
   ```
   // RAC
@@ -88,22 +88,20 @@ Expression                        Statement
   |   +--Boolean                    |    |    |
   |                                 |    |    +--EnumConstDec
   +--Parenthesis                    |    |    +--VarDec
-  +--SymRef                         |    |    +--ConstDec
-  +--FunCall                        |    |    +--TempParamDec
+  +--SymRef                         |    |    +--TempParamDec
+  +--FunCall                        |    |
   |    |                            |    |
   |    +--TempCall                  |    +--MulVarDec
-  |                                 |    +--MulConstDec
-  +--Initializer                    |    +--BreakStmt
-  +--ArrayRef                       |    +--ReturnStmt
-  +--StructRef                      |    +--NullStmt
-  +--Subrange                       |    +--Assertion
-  +--PrefixExpr                     |    +--Assignment
-  +--CastExpr                       |    +--MultipleAssignment
-  +--BinaryExpr                     |
-  +--CondExpr                       +--Block
-  +--MultipleValue                  +--IfStmt
-                                    +--ForStmt
-                                    +--CaseSwitchStmt
+  |                                 |    +--BreakStmt
+  +--Initializer                    |    +--ReturnStmt
+  +--ArrayRef                       |    +--NullStmt
+  +--StructRef                      |    +--Assertion
+  +--Subrange                       |    +--Assignment
+  +--PrefixExpr                     |    +--MultipleAssignment
+  +--CastExpr                       +--Block
+  +--BinaryExpr                     +--IfStmt
+  +--CondExpr                       +--ForStmt
+  +--MultipleValue                  +--CaseSwitchStmt
                                     +--FunDef
                                          |
                                          +--Builtin
@@ -122,7 +120,7 @@ Appart from basic parsing (done by bison) and some very specific work, most of
 the translation and checks should be implemented in separate passes using the
 vistor provided (program/process/process/visitor.h).
 
-To create to new pass, the documentation in visitor.h, and the assertions.h and 
+To create to new pass, the documentation in visitor.h, and the assertions.h and
 astdumper.h/cpp examples can be useful references. This visitor is greatly
 inspired by Clang's RecursiveASTVisitor, and as such Clang's documentation
 [3][4] can be useful as well. After all this reading, the next step to

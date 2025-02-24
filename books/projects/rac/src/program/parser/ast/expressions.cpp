@@ -109,7 +109,7 @@ Sexpression *Integer::ACL2Expr() {
     std::string new_name(getname() + 1);
     new_name[0] = '#';
     Symbol *result = new Symbol(std::move(new_name));
-    return new Plist({ &s_minus, result });
+    return new Plist({&s_minus, result});
 
   } else {
     return new Symbol(to_string(val_));
@@ -128,7 +128,7 @@ void Boolean::display(std::ostream &os) const {
 }
 
 Sexpression *Boolean::ACL2Expr() {
-  return new Plist({ value_ ? &s_true : &s_false });
+  return new Plist({value_ ? &s_true : &s_false});
 }
 
 // class SymRef : public Expression
@@ -143,9 +143,7 @@ SymRef::SymRef(Location loc, SymDec *s) : Expression(idOf(this), loc) {
   symDec = s;
 }
 
-bool SymRef::isStaticallyEvaluable() {
-  return symDec->isStaticallyEvaluable();
-}
+bool SymRef::isStaticallyEvaluable() { return symDec->isStaticallyEvaluable(); }
 
 int SymRef::evalConst() {
   if (this->isStaticallyEvaluable()) {
@@ -167,7 +165,7 @@ Sexpression *SymRef::ACL2Expr() {
 }
 
 Sexpression *SymRef::ACL2Assign(Sexpression *rval) {
-  return new Plist({ &s_assign, symDec->sym, rval });
+  return new Plist({&s_assign, symDec->sym, rval});
 }
 
 // class FunCall : public Expression (function call)
@@ -198,7 +196,7 @@ void FunCall::display(std::ostream &os) const {
 
 Sexpression *FunCall::ACL2Expr() {
 
-  Plist *result = new Plist({ new Symbol(func->getname()) });
+  Plist *result = new Plist({new Symbol(func->getname())});
 
   auto it = func->params().begin();
   for (Expression *a : args) {
@@ -247,7 +245,7 @@ Sexpression *TempCall::ACL2Expr() {
   auto template_func = always_cast<Template *>(func);
   template_func->bindParams(params);
 
-  Plist *result = new Plist({ new Symbol(func->getname()) });
+  Plist *result = new Plist({new Symbol(func->getname())});
 
   auto paramsDec = template_func->tempParams();
   for (unsigned i = 0; i < paramsDec.size(); ++i) {
@@ -284,7 +282,8 @@ void Initializer::display(std::ostream &os) const {
   os << '}';
 }
 
-Sexpression *Initializer::ACL2ArrayExpr(const ArrayType *t, bool output_optmized_const) {
+Sexpression *Initializer::ACL2ArrayExpr(const ArrayType *t,
+                                        bool output_optmized_const) {
 
   Plist *res = new Plist();
 
@@ -301,21 +300,22 @@ Sexpression *Initializer::ACL2ArrayExpr(const ArrayType *t, bool output_optmized
     for (unsigned i = 0; i < size; ++i) {
 
       if (i < vals.size()) {
-        res->add(new Cons(Integer(loc_, i).ACL2Expr(), t->baseType->cast(vals[i])));
+        res->add(
+            new Cons(Integer(loc_, i).ACL2Expr(), t->baseType->cast(vals[i])));
       } else {
 
         res->add(new Cons(Integer(t->get_original_location(), i).ACL2Expr(),
-              t->baseType->default_initializer_value()));
+                          t->baseType->default_initializer_value()));
       }
     }
   }
 
-  return  new Plist({ &s_quote, res });
+  return new Plist({&s_quote, res});
 }
 
 Sexpression *Initializer::ACL2TupleExpr(const MvType *t) {
 
-  Plist *res = new Plist({ &s_mv });
+  Plist *res = new Plist({&s_mv});
   for (unsigned i = 0; i < t->size(); ++i) {
     res->add(t->get(i)->cast(vals[i]));
   }
@@ -331,15 +331,16 @@ Sexpression *Initializer::ACL2StructExpr(const StructType *t) {
   for (auto f : t->fields()) {
 
     if (v != vals.end()) {
-      result = new Plist(
-          { &s_as, new Plist({ &s_quote, f->get_sym() }), f->get_type()->cast(*v), result });
+      result = new Plist({&s_as, new Plist({&s_quote, f->get_sym()}),
+                          f->get_type()->cast(*v), result});
       ++v;
     } else if (f->get_default_value()) {
-      result = new Plist(
-          { &s_as, new Plist({ &s_quote, f->get_sym() }), f->get_type()->cast(*f->get_default_value()), result });
+      result =
+          new Plist({&s_as, new Plist({&s_quote, f->get_sym()}),
+                     f->get_type()->cast(*f->get_default_value()), result});
     } else {
-      result = new Plist(
-          { &s_as, new Plist({ &s_quote, f->get_sym() }), f->get_type()->default_initializer_value(), result });
+      result = new Plist({&s_as, new Plist({&s_quote, f->get_sym()}),
+                          f->get_type()->default_initializer_value(), result});
     }
   }
 
@@ -372,10 +373,9 @@ Sexpression *ArrayRef::ACL2Expr() {
 
     SymRef *ref = dynamic_cast<SymRef *>(array);
     if (ref && ref->symDec->get_type()->isConst()) {
-      s = new Plist(
-          { &s_nth, index->ACL2Expr(), new Plist({ ref->symDec->sym }) });
+      s = new Plist({&s_nth, index->ACL2Expr(), new Plist({ref->symDec->sym})});
     } else {
-      s = new Plist({ &s_ag, index->ACL2Expr(), array->ACL2Expr() });
+      s = new Plist({&s_ag, index->ACL2Expr(), array->ACL2Expr()});
     }
     return s;
   } else {
@@ -383,14 +383,14 @@ Sexpression *ArrayRef::ACL2Expr() {
     Sexpression *b = array->ACL2Expr();
     Sexpression *i = index->ACL2Expr();
 
-    return new Plist({ &s_bitn, b, i });
+    return new Plist({&s_bitn, b, i});
   }
 }
 
 Sexpression *ArrayRef::ACL2Assign(Sexpression *rval) {
   if (isa<const ArrayType *>(array->get_type())) {
     return array->ACL2Assign(
-        new Plist({ &s_as, index->ACL2Expr(), rval, array->ACL2Expr() }));
+        new Plist({&s_as, index->ACL2Expr(), rval, array->ACL2Expr()}));
   } else {
     Sexpression *b = array->ACL2Expr();
     Sexpression *i = index->ACL2Expr();
@@ -400,7 +400,7 @@ Sexpression *ArrayRef::ACL2Assign(Sexpression *rval) {
     unsigned n = t->width()->evalConst();
 
     Sexpression *s = Integer(loc_, n).ACL2Expr();
-    Sexpression *val = new Plist({ &s_setbitn, b, s, i, rval });
+    Sexpression *val = new Plist({&s_setbitn, b, s, i, rval});
 
     return array->ACL2Assign(val);
   }
@@ -429,8 +429,8 @@ Sexpression *StructRef::ACL2Expr() {
                     ->getField(field)
                     ->get_sym();
 
-  Sexpression *s
-      = new Plist({ &s_ag, new Plist({ &s_quote, sym }), base->ACL2Expr() });
+  Sexpression *s =
+      new Plist({&s_ag, new Plist({&s_quote, sym}), base->ACL2Expr()});
 
   return s;
 }
@@ -440,8 +440,8 @@ Sexpression *StructRef::ACL2Assign(Sexpression *rval) {
                     ->getField(field)
                     ->get_sym();
 
-  return base->ACL2Assign(new Plist(
-      { &s_as, new Plist({ &s_quote, sym }), rval, base->ACL2Expr() }));
+  return base->ACL2Assign(
+      new Plist({&s_as, new Plist({&s_quote, sym}), rval, base->ACL2Expr()}));
 }
 
 // class Subrange : public Expression
@@ -476,7 +476,7 @@ Sexpression *Subrange::ACL2Expr() {
   Sexpression *hi = high->ACL2Expr();
   Sexpression *lo = low->ACL2Expr();
 
-  return new Plist({ &s_bits, b, hi, lo });
+  return new Plist({&s_bits, b, hi, lo});
 }
 
 Sexpression *Subrange::ACL2Assign(Sexpression *rval) {
@@ -488,7 +488,7 @@ Sexpression *Subrange::ACL2Assign(Sexpression *rval) {
   const IntType *t = always_cast<const IntType *>(base->get_type());
 
   Sexpression *s = t->width()->ACL2Expr();
-  Sexpression *val = new Plist({ &s_setbits, b, s, hi, lo, rval });
+  Sexpression *val = new Plist({&s_setbits, b, s, hi, lo, rval});
 
   return base->ACL2Assign(val);
 }
@@ -541,8 +541,8 @@ std::ostream &operator<<(std::ostream &os, PrefixExpr::Op op) {
   switch (op) {
 #define APPLY_BINARY_OP(NAME, OP)
 #define APPLY_ASSIGN_OP(_, __)
-#define APPLY_UNARY_OP(NAME, OP)                                              \
-  case PrefixExpr::Op::NAME:                                                  \
+#define APPLY_UNARY_OP(NAME, OP)                                               \
+  case PrefixExpr::Op::NAME:                                                   \
     return os << #OP;
 #include "operators.def"
 #undef APPLY_BINARY_OP
@@ -571,38 +571,37 @@ Sexpression *PrefixExpr::ACL2Expr() {
     return s;
   } else if (op == Op::UnaryMinus) {
     Sexpression *s_val = expr->get_type()->eval(s);
-    Sexpression *sexpr = new Plist({ &s_minus, s_val });
+    Sexpression *sexpr = new Plist({&s_minus, s_val});
 
     if (auto pt = dynamic_cast<const IntType *>(get_type())) {
       Sexpression *upper_bound = nullptr;
-      upper_bound = pt->width()->isStaticallyEvaluable()
-        ? Integer(this->loc(), this->ACL2ValWidth() - 1).ACL2Expr()
-        : new Plist(
-            { &s_minus, pt->width()->ACL2Expr(), new Symbol(1) });
+      upper_bound =
+          pt->width()->isStaticallyEvaluable()
+              ? Integer(this->loc(), this->ACL2ValWidth() - 1).ACL2Expr()
+              : new Plist({&s_minus, pt->width()->ACL2Expr(), new Symbol(1)});
 
-      sexpr = new Plist({ &s_bits, sexpr, upper_bound,
-                        Integer::zero_v(this->loc())->ACL2Expr() });
+      sexpr = new Plist({&s_bits, sexpr, upper_bound,
+                         Integer::zero_v(this->loc())->ACL2Expr()});
     }
 
     return sexpr;
 
   } else if (op == Op::Not) {
-    return new Plist({ &s_lognot1, s });
+    return new Plist({&s_lognot1, s});
 
   } else if (op == Op::BitNot) {
 
-    Plist *val = new Plist({ &s_lognot, expr->ACL2Expr() });
+    Plist *val = new Plist({&s_lognot, expr->ACL2Expr()});
 
     if (auto pt = dynamic_cast<const IntType *>(get_type())) {
       Sexpression *upper_bound = nullptr;
-      upper_bound
-          = pt->width()->isStaticallyEvaluable()
-                ? Integer(this->loc(), this->ACL2ValWidth() - 1).ACL2Expr()
-                : new Plist(
-                    { &s_minus, pt->width()->ACL2Expr(), new Symbol(1) });
+      upper_bound =
+          pt->width()->isStaticallyEvaluable()
+              ? Integer(this->loc(), this->ACL2ValWidth() - 1).ACL2Expr()
+              : new Plist({&s_minus, pt->width()->ACL2Expr(), new Symbol(1)});
 
-      val = new Plist({ &s_bits, val, upper_bound,
-                        Integer::zero_v(this->loc())->ACL2Expr() });
+      val = new Plist({&s_bits, val, upper_bound,
+                       Integer::zero_v(this->loc())->ACL2Expr()});
     }
 
     return val;
@@ -614,22 +613,6 @@ Sexpression *PrefixExpr::ACL2Expr() {
 // ----------------------------------
 
 // Data members: Expression *expr; Type *type;
-
-CastExpr::CastExpr(Location loc, Expression *e, Type *t)
-    : Expression(idOf(this), loc) {
-  expr = e;
-  type = t;
-}
-
-bool CastExpr::isStaticallyEvaluable() {
-  return expr->isStaticallyEvaluable();
-}
-
-int CastExpr::evalConst() { return expr->evalConst(); }
-
-bool CastExpr::isInteger() { return expr->isInteger(); }
-
-void CastExpr::display(std::ostream &os) const { expr->display(os); }
 
 Sexpression *CastExpr::ACL2Expr() { return type->cast(expr); }
 
@@ -665,8 +648,8 @@ int BinaryExpr::evalConst() {
   int val2 = expr2->evalConst();
 
   switch (op) {
-#define APPLY_BINARY_OP(NAME, OP)                                             \
-  case Op::NAME:                                                              \
+#define APPLY_BINARY_OP(NAME, OP)                                              \
+  case Op::NAME:                                                               \
     return val1 OP val2;
 #define APPLY_ASSIGN_OP(_, __)
 #define APPLY_UNARY_OP(_, __)
@@ -681,8 +664,8 @@ int BinaryExpr::evalConst() {
 
 std::ostream &operator<<(std::ostream &os, BinaryExpr::Op op) {
   switch (op) {
-#define APPLY_BINARY_OP(NAME, OP)                                             \
-  case BinaryExpr::Op::NAME:                                                  \
+#define APPLY_BINARY_OP(NAME, OP)                                              \
+  case BinaryExpr::Op::NAME:                                                   \
     return os << #OP;
 #define APPLY_ASSIGN_OP(_, __)
 #define APPLY_UNARY_OP(_, __)
@@ -760,22 +743,21 @@ Sexpression *BinaryExpr::ACL2Expr() {
     need_narrowing = !isa<const IntType *>(get_type());
     break;
   case Op::Divide: {
-    Sexpression *val = new Plist(
-        { &s_truncate, new Plist({ &s_slash, sexpr1_val, sexpr2_val }),
-          Integer::one_v(loc_)->ACL2Expr() });
+    Sexpression *val =
+        new Plist({&s_truncate, new Plist({&s_slash, sexpr1_val, sexpr2_val}),
+                   Integer::one_v(loc_)->ACL2Expr()});
     if (auto pt = dynamic_cast<const PrimType *>(get_type())) {
       (void)pt;
       // For now, we ingore primitive type overflows.
     } else if (auto pt = dynamic_cast<const IntType *>(get_type())) {
       Sexpression *upper_bound = nullptr;
-      upper_bound
-          = pt->width()->isStaticallyEvaluable()
-                ? Integer(this->loc(), this->ACL2ValWidth() - 1).ACL2Expr()
-                : new Plist(
-                    { &s_minus, pt->width()->ACL2Expr(), new Symbol(1) });
+      upper_bound =
+          pt->width()->isStaticallyEvaluable()
+              ? Integer(this->loc(), this->ACL2ValWidth() - 1).ACL2Expr()
+              : new Plist({&s_minus, pt->width()->ACL2Expr(), new Symbol(1)});
 
-      val = new Plist({ &s_bits, val, upper_bound,
-                        Integer::zero_v(this->loc())->ACL2Expr() });
+      val = new Plist({&s_bits, val, upper_bound,
+                       Integer::zero_v(this->loc())->ACL2Expr()});
     }
     return val;
   }
@@ -789,7 +771,7 @@ Sexpression *BinaryExpr::ACL2Expr() {
     break;
   case Op::RShift:
     ptr = &s_ash;
-    sexpr2 = new Plist({ &s_minus, sexpr2 });
+    sexpr2 = new Plist({&s_minus, sexpr2});
     break;
   case Op::BitAnd:
     ptr = &s_logand;
@@ -858,12 +840,12 @@ Sexpression *BinaryExpr::ACL2Expr() {
   //  }
   Sexpression *val = nullptr;
   if (isOpShift(op) || isOpBitwise(op)) {
-    val = new Plist({ ptr, sexpr1, sexpr2 });
+    val = new Plist({ptr, sexpr1, sexpr2});
   } else {
-    val = new Plist({ ptr, sexpr1_val, sexpr2_val });
+    val = new Plist({ptr, sexpr1_val, sexpr2_val});
   }
 
-  Type *t = get_type();
+  const Type *t = get_type();
 
   if (auto it = dynamic_cast<const IntType *>(t)) {
     if (it->isSigned()->isStaticallyEvaluable()) {
@@ -881,14 +863,13 @@ Sexpression *BinaryExpr::ACL2Expr() {
       // For now, we ingore primitive type overflows.
     } else if (auto pt = dynamic_cast<const IntType *>(t)) {
       Sexpression *upper_bound = nullptr;
-      upper_bound
-          = pt->width()->isStaticallyEvaluable()
-                ? Integer(this->loc(), this->ACL2ValWidth() - 1).ACL2Expr()
-                : new Plist(
-                    { &s_minus, pt->width()->ACL2Expr(), new Symbol(1) });
+      upper_bound =
+          pt->width()->isStaticallyEvaluable()
+              ? Integer(this->loc(), this->ACL2ValWidth() - 1).ACL2Expr()
+              : new Plist({&s_minus, pt->width()->ACL2Expr(), new Symbol(1)});
 
-      val = new Plist({ &s_bits, val, upper_bound,
-                        Integer::zero_v(this->loc())->ACL2Expr() });
+      val = new Plist({&s_bits, val, upper_bound,
+                       Integer::zero_v(this->loc())->ACL2Expr()});
     }
   }
 
@@ -919,7 +900,7 @@ void CondExpr::display(std::ostream &os) const {
 
 Sexpression *CondExpr::ACL2Expr() {
   return new Plist(
-      { &s_if1, test->ACL2Expr(), expr1->ACL2Expr(), expr2->ACL2Expr() });
+      {&s_if1, test->ACL2Expr(), expr1->ACL2Expr(), expr2->ACL2Expr()});
 }
 
 int CondExpr::evalConst() {
@@ -929,8 +910,7 @@ int CondExpr::evalConst() {
 // class MultipleValue : public Expression
 // ---------------------------------------
 
-// Data members: MvType *type; Expression *expr[8];
-MultipleValue::MultipleValue(Location loc, MvType *t,
+MultipleValue::MultipleValue(Location loc, const MvType *t,
                              std::vector<Expression *> &&e)
     : Expression(idOf(this), loc), expr_(e) {
   set_type(t);
@@ -952,9 +932,9 @@ void MultipleValue::display(std::ostream &os) const {
 
 Sexpression *MultipleValue::ACL2Expr() {
 
-  Plist *result = new Plist({ &s_mv });
+  Plist *result = new Plist({&s_mv});
 
-  MvType *t = static_cast<MvType *>(get_type());
+  const MvType *t = static_cast<const MvType *>(get_type());
   auto types_and_expr = Zip(t->types(), expr_);
   std::for_each(types_and_expr.begin(), types_and_expr.end(),
                 [&](const auto &p) {

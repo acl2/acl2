@@ -60,7 +60,7 @@ public:
           help();
           return std::nullopt;
         }
-        res.file = { arg };
+        res.file = {arg};
       }
     }
 

@@ -32,7 +32,7 @@ bool RACConstraint::VisitSwitchStmt(SwitchStmt *s) {
 
         return error();
       } else {
-        first_default_loc = { c.loc() };
+        first_default_loc = {c.loc()};
       }
     }
 
@@ -86,7 +86,7 @@ bool RACConstraint::VisitBreakStmt(BreakStmt *s) {
     return error();
   }
 
-  previous_break_loc_ = { s->loc() };
+  previous_break_loc_ = {s->loc()};
   return true;
 }
 
@@ -193,7 +193,7 @@ bool RACConstraint::VisitFunDef(FunDef *fd) {
   bool b = true;
   for (auto vd : fd->params()) {
 
-    if (auto at = dynamic_cast<ArrayType *>(vd->get_type())) {
+    if (auto at = dynamic_cast<const ArrayType *>(vd->get_type())) {
       if (!at->isSTDArray()) {
 
         auto orig = vd->get_original_type();
@@ -206,8 +206,7 @@ bool RACConstraint::VisitFunDef(FunDef *fd) {
                 format("Cannot pass a C array (`%s`) as function parameter",
                        orig->to_string().c_str()))
             .note(format("use array<%s, %s> instead",
-                         at->baseType->to_string().c_str(),
-                         ss.str().c_str()))
+                         at->baseType->to_string().c_str(), ss.str().c_str()))
             .context(vd->loc())
             .report();
         b = false;
@@ -225,7 +224,7 @@ bool RACConstraint::VisitTemplate(Template *f) {
 
   bool b = true;
   for (auto p : f->tempParams()) {
-    if (!isa<PrimType *>(p->get_type())) {
+    if (!isa<const PrimType *>(p->get_type())) {
       b = false;
       diag_
           .new_error(

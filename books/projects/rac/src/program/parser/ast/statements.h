@@ -47,21 +47,21 @@ public:
   Symbol *sym;
 
   Expression *init;
-  SymDec(NodesId id, Location loc, const char *n, Type *t,
+  SymDec(NodesId id, Location loc, const char *n, const Type *t,
          Expression *i = nullptr);
 
   const char *getname() const { return sym->getname(); }
   virtual void displaySymDec(std::ostream &os) const;
   virtual bool isGlobal() const { return false; }
 
-  Type *get_type() const { return type_; }
-  void set_type(Type *t) {
+  const Type *get_type() const { return type_; }
+  void set_type(const Type *t) {
     type_ = t;
     if (!original_type_) {
       original_type_ = t;
     }
   }
-  Type *get_original_type() { return original_type_; }
+  const Type *get_original_type() { return original_type_; }
 
   virtual bool isStaticallyEvaluable();
   int evalConst();
@@ -69,10 +69,10 @@ public:
   virtual Sexpression *ACL2SymExpr();
 
 private:
-  Type *type_;
-  // Used to report the error with the original typedef (type will be
-  // dereferenced later).
-  Type *original_type_;
+  const Type *type_;
+  // Used to display in RAC the original typedef (type will be dereferenced
+  // later).
+  const Type *original_type_;
 };
 
 class EnumConstDec final : public SymDec {
@@ -98,14 +98,12 @@ public:
   Sexpression *ACL2Expr() override;
   Sexpression *ACL2SymExpr() override;
 
-
   bool isStaticallyEvaluable() const {
     return get_type()->isConst() && isIntegerType(get_type());
   }
 
   void setGlobal() { isGlobal_ = true; }
   bool isGlobal() const override { return isGlobal_; }
-
 
 private:
   bool isGlobal_ = false;
@@ -122,13 +120,13 @@ public:
 
 class TempParamDec final : public SymDec {
 public:
-  TempParamDec(Location loc, const char *n, Type *t);
+  TempParamDec(Location loc, const char *n, const Type *t);
   bool isStaticallyEvaluable() override;
   Sexpression *ACL2SymExpr() override;
 
   // TODO
-  void display(std::ostream &, unsigned) override{};
-  void displaySimple(std::ostream &) override{};
+  void display(std::ostream &, unsigned) override {};
+  void displaySimple(std::ostream &) override {};
 
   Sexpression *ACL2Expr() override {
     assert(false);
@@ -146,7 +144,7 @@ public:
 class ReturnStmt final : public SimpleStatement {
 public:
   Expression *value;
-  Type *returnType = nullptr;
+  const Type *returnType = nullptr;
   ReturnStmt(Location loc, Expression *v);
   void displaySimple(std::ostream &os) override;
   Sexpression *ACL2Expr() override;

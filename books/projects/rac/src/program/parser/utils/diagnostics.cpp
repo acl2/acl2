@@ -19,9 +19,9 @@ std::ostream &operator<<(std::ostream &os, const Location &loc) {
 void DiagnosticHandler::show_code_at(const Location &context,
                                      const Location &error) {
 
-  assert(file_
-         && "DiagnosticHandler::setup should be called before with a valid "
-            "pointer");
+  assert(file_ &&
+         "DiagnosticHandler::setup should be called before with a valid "
+         "pointer");
 
   long saved_pos = std::ftell(file_);
 
@@ -55,8 +55,7 @@ void DiagnosticHandler::show_code_at(const Location &context,
     last_line_to_display = first_line_to_display + 5;
   }
 
-  for (int line = first_line_to_display; line <= last_line_to_display;
-       ++line) {
+  for (int line = first_line_to_display; line <= last_line_to_display; ++line) {
     // Display the code.
     size = getline(&buffer, &size, file_);
     cur_pos += size;

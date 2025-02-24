@@ -36,7 +36,7 @@ Type::cast(Expression *rval) const { // virtual (overridden by IntType)
 
 void Type::displayVarType(std::ostream &os) const {
   // How this type is displayed in a variable declaration
-  
+
   if (isConst()) {
     os << "const ";
   }
@@ -85,7 +85,7 @@ Sexpression *PrimType::cast(Expression *rval) const {
   const Type *rval_type = rval->get_type();
   Sexpression *sexpr = rval->ACL2Expr();
 
-  int w_dst = static_cast<std::underlying_type_t<PrimType::Rank> >(rank_);
+  int w_dst = static_cast<std::underlying_type_t<PrimType::Rank>>(rank_);
 
   // If they are the same no conversion needed.
   if (rval_type->isEqual(this)) {
@@ -116,7 +116,7 @@ Sexpression *PrimType::cast(Expression *rval) const {
   Expression *s_src = nullptr;
 
   if (auto pt = dynamic_cast<const PrimType *>(rval_type)) {
-    int val = static_cast<std::underlying_type_t<PrimType::Rank> >(pt->rank_);
+    int val = static_cast<std::underlying_type_t<PrimType::Rank>>(pt->rank_);
     w_src = new Integer(loc, val);
     s_src = new Boolean(loc, pt->signed_);
   } else {
@@ -125,16 +125,16 @@ Sexpression *PrimType::cast(Expression *rval) const {
     s_src = rt->isSigned();
   }
 
-  bool are_static
-      = w_src->isStaticallyEvaluable() && s_src->isStaticallyEvaluable();
+  bool are_static =
+      w_src->isStaticallyEvaluable() && s_src->isStaticallyEvaluable();
 
   std::optional<int> w_src_val = w_src->isStaticallyEvaluable()
-                                     ? std::optional{ w_src->evalConst() }
+                                     ? std::optional{w_src->evalConst()}
                                      : std::nullopt;
-  std::optional<bool> s_src_val
-      = s_src->isStaticallyEvaluable()
-            ? std::optional(static_cast<bool>(s_src->evalConst()))
-            : std::nullopt;
+  std::optional<bool> s_src_val =
+      s_src->isStaticallyEvaluable()
+          ? std::optional(static_cast<bool>(s_src->evalConst()))
+          : std::nullopt;
 
   // First, we need to get the value begin the type: if it is a PrimType or an
   // unsigned register, we have nothing to do since they already have their
@@ -144,14 +144,13 @@ Sexpression *PrimType::cast(Expression *rval) const {
   // Known at compile time.
   if (s_src_val) {
     if (isa<const IntType *>(rval_type) && *s_src_val) {
-      value = new Plist({ &s_si, sexpr, w_src->ACL2Expr() });
+      value = new Plist({&s_si, sexpr, w_src->ACL2Expr()});
     } else {
       value = sexpr;
     }
   } else {
-    value
-        = new Plist({ &s_if, s_src->ACL2Expr(),
-                      new Plist({ &s_si, sexpr, w_src->ACL2Expr() }), sexpr });
+    value = new Plist({&s_if, s_src->ACL2Expr(),
+                       new Plist({&s_si, sexpr, w_src->ACL2Expr()}), sexpr});
   }
 
   // Check if we need to do some conversion to fit the source into the
@@ -181,11 +180,11 @@ Sexpression *PrimType::cast(Expression *rval) const {
   if (!src_fit_inside_dst) {
     Sexpression *upper_bound = Integer(loc, w_dst - 1).ACL2Expr();
     res = new Plist(
-        { &s_bits, res, upper_bound, Integer::zero_v(loc)->ACL2Expr() });
+        {&s_bits, res, upper_bound, Integer::zero_v(loc)->ACL2Expr()});
 
     if (signed_) {
-      res = new Plist(
-          { &s_si, res, Integer(Location::dummy(), w_dst).ACL2Expr() });
+      res =
+          new Plist({&s_si, res, Integer(Location::dummy(), w_dst).ACL2Expr()});
     }
   }
 
@@ -277,9 +276,9 @@ Sexpression *PrimType::default_initializer_value() const {
 // -------------------------------
 
 IntType *IntType::FromPrimType(const PrimType *t) {
-  return new IntType(
-      { t->loc() }, new Integer(Location::dummy(), static_cast<int>(t->rank_)),
-      new Boolean(Location::dummy(), t->signed_));
+  return new IntType({t->loc()},
+                     new Integer(Location::dummy(), static_cast<int>(t->rank_)),
+                     new Boolean(Location::dummy(), t->signed_));
 }
 
 void IntType::display(std::ostream &os) const {
@@ -323,10 +322,10 @@ Sexpression *IntType::cast(Expression *rval) const {
 
           // Check if a register fit inside another.
           if (auto p = dynamic_cast<const IntType *>(rval_type)) {
-            if (p->width()->isStaticallyEvaluable()
-                && p->isSigned()->isStaticallyEvaluable()
-                && !p->isSigned()->evalConst()
-                && rval_type->ACL2ValWidth() <= w_dst) {
+            if (p->width()->isStaticallyEvaluable() &&
+                p->isSigned()->isStaticallyEvaluable() &&
+                !p->isSigned()->evalConst() &&
+                rval_type->ACL2ValWidth() <= w_dst) {
               return rval->ACL2Expr();
             }
           }
@@ -348,13 +347,13 @@ Sexpression *IntType::cast(Expression *rval) const {
   Sexpression *sexpr = rval_type->eval(rval->ACL2Expr());
 
   Sexpression *upper_bound = nullptr;
-  upper_bound = this->width()->isStaticallyEvaluable()
-                    ? Integer(loc, this->ACL2ValWidth() - 1).ACL2Expr()
-                    : new Plist({ &s_minus, this->width()->ACL2Expr(),
-                                  new Symbol(1) });
+  upper_bound =
+      this->width()->isStaticallyEvaluable()
+          ? Integer(loc, this->ACL2ValWidth() - 1).ACL2Expr()
+          : new Plist({&s_minus, this->width()->ACL2Expr(), new Symbol(1)});
 
   Sexpression *res = new Plist(
-      { &s_bits, sexpr, upper_bound, Integer::zero_v(loc)->ACL2Expr() });
+      {&s_bits, sexpr, upper_bound, Integer::zero_v(loc)->ACL2Expr()});
 
   return res;
 }
@@ -367,14 +366,14 @@ Sexpression *IntType::eval(Sexpression *sexpr) const {
       auto w = width_->isStaticallyEvaluable()
                    ? new Integer(Location::dummy(), width_->evalConst())
                    : width_;
-      return new Plist({ &s_si, sexpr, w->ACL2Expr() });
+      return new Plist({&s_si, sexpr, w->ACL2Expr()});
     } else {
       return sexpr;
     }
   }
 
-  return new Plist({ &s_if1, isSigned_->ACL2Expr(),
-                     new Plist({ &s_si, sexpr, width_->ACL2Expr() }), sexpr });
+  return new Plist({&s_if1, isSigned_->ACL2Expr(),
+                    new Plist({&s_si, sexpr, width_->ACL2Expr()}), sexpr});
 }
 
 bool IntType::isEqual(const Type *other) const {
@@ -383,11 +382,11 @@ bool IntType::isEqual(const Type *other) const {
   }
 
   if (auto o = dynamic_cast<const IntType *>(other)) {
-    if (width_->isStaticallyEvaluable() && o->width_->isStaticallyEvaluable()
-        && isSigned_->isStaticallyEvaluable()
-        && o->isSigned_->isStaticallyEvaluable()) {
-      return width_->evalConst() == o->width_->evalConst()
-             && isSigned_->evalConst() == o->isSigned_->evalConst();
+    if (width_->isStaticallyEvaluable() && o->width_->isStaticallyEvaluable() &&
+        isSigned_->isStaticallyEvaluable() &&
+        o->isSigned_->isStaticallyEvaluable()) {
+      return width_->evalConst() == o->width_->evalConst() &&
+             isSigned_->evalConst() == o->isSigned_->evalConst();
     } else {
       return false;
     }
@@ -472,8 +471,8 @@ bool ArrayType::isEqual(const Type *other) const {
   }
 
   if (auto o = dynamic_cast<const ArrayType *>(other)) {
-    return dim->evalConst() == o->dim->evalConst()
-           && baseType->isEqual(o->baseType);
+    return dim->evalConst() == o->dim->evalConst() &&
+           baseType->isEqual(o->baseType);
   } else {
     return false;
   }
@@ -501,16 +500,11 @@ Sexpression *ArrayType::default_initializer_value() const {
                          baseType->default_initializer_value()));
   }
 
-  return new Plist({&s_quote, result });
+  return new Plist({&s_quote, result});
 }
 
 // class StructField
 // -----------------
-
-// Data members:  Symbol *sym; Type *type;
-
-StructField::StructField(Type *t, const char *n) : sym_(new Symbol(n)), type_(t), default_value_() {}
-StructField::StructField(Type *t, const char *n, Expression *default_value) : sym_(new Symbol(n)), type_(t), default_value_(default_value) {}
 
 void StructField::display(std::ostream &os, unsigned indent) const {
   if (indent)
@@ -527,9 +521,6 @@ void StructField::display(std::ostream &os, unsigned indent) const {
 // ------------------------------
 
 // Data member:  List<StructField> *fields;
-
-StructType::StructType(origin_t loc, std::vector<StructField *> f)
-    : Type(loc, idOf(this)), fields_(f) {}
 
 void StructType::displayFields(std::ostream &os) const {
   os << "{";
@@ -603,17 +594,17 @@ Sexpression *StructType::default_initializer_value() const {
 
   Plist *result = new Plist({});
 
-  for (const auto& f : fields_) {
+  for (const auto &f : fields_) {
     if (f->get_default_value()) {
       auto default_value = *f->get_default_value();
       assert(f->get_type());
       assert(default_value);
       auto val = f->get_type()->cast(default_value);
-      result = new Plist(
-          { &s_as, new Plist({ &s_quote, f->get_sym() }), val, result });
+      result =
+          new Plist({&s_as, new Plist({&s_quote, f->get_sym()}), val, result});
     } else {
-      result = new Plist(
-          { &s_as, new Plist({ &s_quote, f->get_sym() }), f->get_type()->default_initializer_value(), result });
+      result = new Plist({&s_as, new Plist({&s_quote, f->get_sym()}),
+                          f->get_type()->default_initializer_value(), result});
     }
   }
 
@@ -652,7 +643,7 @@ void EnumType::displayConsts(std::ostream &os) const {
 }
 
 void EnumType::display(std::ostream &os) const {
-if (isConst()) {
+  if (isConst()) {
     os << "const ";
   }
 
@@ -675,7 +666,7 @@ Sexpression *EnumType::getEnumVal(Symbol *s) const {
 }
 
 void EnumType::makeDef(const char *name, std::ostream &os) const {
-if (isConst()) {
+  if (isConst()) {
     os << "const ";
   }
 
@@ -713,50 +704,50 @@ Sexpression *EnumType::default_initializer_value() const {
 }
 
 namespace priv {
-  // class CompositeType : public Type (multiple-value type)
-  // -------------------------------------------
+// class CompositeType : public Type (multiple-value type)
+// -------------------------------------------
 
-  void CompositeType::display(std::ostream &os) const {
+void CompositeType::display(std::ostream &os) const {
 
-    os << "<";
-    bool first = true;
-    for (const auto t : types_) {
-      if (!first) {
-        os << ", ";
-      }
-
-      if (t->isConst()) {
-        os << "const ";
-      }
-
-      t->display(os);
-      first = false;
+  os << "<";
+  bool first = true;
+  for (const auto t : types_) {
+    if (!first) {
+      os << ", ";
     }
-    os << ">";
+
+    if (t->isConst()) {
+      os << "const ";
+    }
+
+    t->display(os);
+    first = false;
+  }
+  os << ">";
+}
+
+bool CompositeType::isEqual(const Type *other) const {
+
+  if (auto o = dynamic_cast<const DefinedType *>(other)) {
+    other = o->derefType();
   }
 
-  bool CompositeType::isEqual(const Type *other) const {
-
-    if (auto o = dynamic_cast<const DefinedType *>(other)) {
-      other = o->derefType();
+  if (auto o = dynamic_cast<const CompositeType *>(other)) {
+    if (types_.size() != o->types_.size()) {
+      return false;
     }
 
-    if (auto o = dynamic_cast<const CompositeType *>(other)) {
-      if (types_.size() != o->types_.size()) {
+    for (unsigned i = 0; i < types_.size(); ++i) {
+      if (!types_[i]->isEqual(o->types_[i])) {
         return false;
       }
-
-      for (unsigned i = 0; i < types_.size(); ++i) {
-        if (!types_[i]->isEqual(o->types_[i])) {
-          return false;
-        }
-      }
-      return true;
     }
-
-    return false;
+    return true;
   }
+
+  return false;
 }
+} // namespace priv
 
 Sexpression *MvType::cast(Expression *rval) const {
   if (auto init = dynamic_cast<Initializer *>(rval)) {
@@ -768,7 +759,7 @@ Sexpression *MvType::cast(Expression *rval) const {
 
 Sexpression *MvType::default_initializer_value() const {
 
-  Plist *res = new Plist({ &s_mv });
+  Plist *res = new Plist({&s_mv});
   for (unsigned i = 0; i < size(); ++i) {
     res->add(get(i)->default_initializer_value());
   }

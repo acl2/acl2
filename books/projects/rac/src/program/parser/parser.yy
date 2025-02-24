@@ -133,15 +133,15 @@ while (0)
 %union {
   Boolean *b;
   Case *c;
-  DefinedType *defined_type;
+  const DefinedType *defined_type;
   EnumConstDec *ecd;
   Expression *exp;
   FunDef *fd;
-  MvType *mvtype;
+  const MvType *mvtype;
   Statement *stm;
   StructField *sf;
   TempParamDec *tpd;
-  Type *type;
+  const Type *type;
   VarDec *vd;
   char *s;
   std::vector<Case *> *cl;
@@ -150,7 +150,7 @@ while (0)
   std::vector<Statement *> *stml;
   std::vector<StructField *> *sfl;
   std::vector<TempParamDec *> *tdl;
-  std::vector<Type *> *vl;
+  std::vector<const Type *> *vl;
   std::vector<VarDec *> *vvd;
 }
 
@@ -315,7 +315,7 @@ typedef_type
     : primitive_type   // name of a primitive C numerical type
     | register_type    // Algorithmic C register class
     | array_param_type // instantiation of array class template
-    | mv_type { $$ = static_cast<Type *>($1); }       // instantiation of mv class template
+    | mv_type { $$ = static_cast<const Type *>($1); }       // instantiation of mv class template
     | TYPEID
 {
   $$ = yyast.getType($1)->deep_copy();
@@ -324,8 +324,9 @@ typedef_type
 type_spec
     : CONST type_spec_non_const
 {
-  $$ = $2;
-  $$->setConst();
+  Type *t = $2->deep_copy();
+  t->setConst();
+  $$ = t;
 }
     | type_spec_non_const;
 
@@ -403,13 +404,15 @@ struct_field
 {
   VarDec *tmp = static_cast<VarDec *>($2);
   // untyped_var_dec is typed only if and only if it is an array.
-  if (Type *t = tmp->get_type()) {
-    static_cast<ArrayType *>(t)->baseType = $1;
+  if (const Type *t = tmp->get_type()) {
+    ArrayType *array = static_cast<ArrayType *>(t->deep_copy());
+    delete t;
+    array->baseType = $1;
     // If the base type is const, then we move it to the array.
     if ($1->isConst()) {
-      std::cerr << "parser.yy\n";
-      t->setConst();
+      array->setConst();
     }
+    tmp->set_type(array);
   }
   else {
     tmp->set_type($1);
@@ -474,7 +477,7 @@ mv_type
 mv_type_rest
     : '>'
 {
-  $$ = new std::vector<Type *>();
+  $$ = new std::vector<const Type *>();
 }
     | ',' type_spec mv_type_rest
 {
@@ -825,14 +828,16 @@ var_dec
 {
   $$ = $2;
   // untyped_var_dec is typed only if and only if it is an array.
-  Type *t = ((VarDec *)$$)->get_type();
-  if (t)
+  if (const Type *t = ((VarDec *)$$)->get_type())
     {
-      ((ArrayType *)t)->baseType = $1;
+      ArrayType *array = static_cast<ArrayType *>(t->deep_copy());
+      delete t;
+      array->baseType = $1;
       // If the base type is const, then we move it to the array.
       if ($1->isConst()) {
-        t->setConst();
+        array->setConst();
       }
+      ((VarDec *)$$)->set_type(array);
     }
   else
     {
@@ -934,10 +939,12 @@ param_dec
     : type_spec untyped_param_dec
 {
   $$ = $2;
-  Type *t = ((VarDec *)$$)->get_type();
-  if (t)
+  if (const Type *t = ((VarDec *)$$)->get_type())
     {
-      ((ArrayType *)t)->baseType = $1;
+      ArrayType *array = static_cast<ArrayType *>(t->deep_copy());
+      delete t;
+      array->baseType = $1;
+      static_cast<VarDec *>($$)->set_type(array);
     }
   else
     {
@@ -963,13 +970,18 @@ param_dec
       YYERROR;
   }
 
-  $$ = $3;
-  Type *t = ((VarDec *)$$)->get_type();
-  if (t) {
-      ((ArrayType *)t)->baseType = $1;
+  VarDec *vd = static_cast<VarDec *>($3);
+
+  if (const Type *t = vd->get_type()) {
+    ArrayType *array = static_cast<ArrayType *>(t->deep_copy());
+    delete t;
+    array->baseType = $1;
+    vd->set_type(array);
   } else {
-    ((VarDec *)$$)->set_type($1);
+    vd->set_type($1);
   }
+
+  $$ = vd;
 };
 
 untyped_param_dec

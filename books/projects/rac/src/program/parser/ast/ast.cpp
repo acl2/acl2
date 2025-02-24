@@ -12,7 +12,7 @@ AST::AST() {
 
   builtins_.push_back(
       new Builtin(Location::dummy(), "abs", &intType,
-                  { new VarDec(Location::dummy(), "", &intType) }));
+                  {new VarDec(Location::dummy(), "", &intType)}));
 }
 
 AST::AST(AST &&other)
@@ -21,16 +21,17 @@ AST::AST(AST &&other)
       //      templates_(std::move(other.templates_)),
       funDefs_(std::move(other.funDefs_)), diag_(std::move(other.diag_)) {}
 
-bool AST::registerType(DefinedType *t) {
+bool AST::registerType(const DefinedType *t) {
   if (getType(t->getname()))
     return false;
   typeDefs_.push_back(t);
   return true;
 }
 
-DefinedType *AST::getType(const std::string &name) {
-  auto it = std::find_if(typeDefs_.begin(), typeDefs_.end(),
-                         [&](DefinedType *t) { return name == t->getname(); });
+const DefinedType *AST::getType(const std::string &name) {
+  auto it =
+      std::find_if(typeDefs_.begin(), typeDefs_.end(),
+                   [&](const DefinedType *t) { return name == t->getname(); });
   return it == typeDefs_.end() ? nullptr : *it;
 }
 
