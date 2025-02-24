@@ -1,7 +1,7 @@
-; Right shift
+; Bit-vector Right shift
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -14,6 +14,7 @@
 (include-book "bvshr-def")
 (local (include-book "slice"))
 (local (include-book "unsigned-byte-p"))
+(local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 
 (defthm integerp-of-bvshr
   (integerp (bvshr width x shift-amount)))
@@ -53,6 +54,15 @@
                 )
            (unsigned-byte-p size2 (bvshr size x amt)))
   :hints (("Goal" :in-theory (enable bvshr))))
+
+(defthm bvshr-upper-bound-linear-strong
+  (implies (natp size)
+           (<= (bvshr size x amt) (+ -1 (expt 2 size))))
+  :rule-classes :linear
+  :hints (("Goal" :use unsigned-byte-p-of-bvshr
+           :in-theory (e/d (unsigned-byte-p)
+                           (unsigned-byte-p-of-bvshr
+                            unsigned-byte-p-of-bvshr-gen)))))
 
 (defthm bvchop-of-bvshr-same
   (implies (and (natp width)

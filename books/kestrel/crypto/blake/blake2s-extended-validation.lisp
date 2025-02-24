@@ -52,7 +52,6 @@
                                     nn)
                   (blake2s data-bytes key-bytes nn)))
   :hints (("Goal" :in-theory (enable blake2s-extended
-                                     blake2s-extended-main
                                      parameter-block
                                      bytes-to-words
                                      bytes-to-word
@@ -60,8 +59,7 @@
                                      wordxor
                                      xor-words
                                      acl2::bvshl
-                                     blake2s
-                                     blake2s-main))))
+                                     blake2s))))
 
 ;; Shows that blake2s-extended, when called with zeros for the salt and
 ;; personalization, is identical to blake2s.
@@ -76,7 +74,6 @@
                                     nn)
                   (blake2s data-bytes key-bytes nn)))
   :hints (("Goal" :in-theory (enable blake2s-extended
-                                     blake2s-extended-main
                                      parameter-block
                                      bytes-to-words
                                      bytes-to-word
@@ -84,5 +81,4 @@
                                      wordxor
                                      xor-words
                                      acl2::bvshl
-                                     blake2s
-                                     blake2s-main))))
+                                     blake2s))))
