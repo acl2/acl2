@@ -10,9 +10,12 @@
 
 (in-package "BLAKE")
 
-;; Written from https://tools.ietf.org/rfc/rfc7693.txt.
+;; Written from https://tools.ietf.org/rfc/rfc7693.txt.  Section references
+;; below refer to that document.
 
 ;; See blake2s-tests.lisp
+
+;; See also blake2s-extended.lisp
 
 (include-book "blake-common-32")
 (include-book "kestrel/lists-light/repeat-def" :dir :system)
@@ -35,25 +38,13 @@
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/repeat" :dir :system))
 (local (include-book "kestrel/bv-lists/all-unsigned-byte-p2" :dir :system))
-;(local (include-book "kestrel/lists-light/nth" :dir :system))
 (local (include-book "kestrel/bv/bvcat" :dir :system))
 (local (include-book "kestrel/bv/bvplus" :dir :system))
+(local (include-book "kestrel/bv/bvshl" :dir :system))
 
-(local (in-theory (disable len true-listp nth update-nth expt))) ;; prevent inductions
-
-(local (in-theory (disable acl2::mod-sum-cases nth-update-nth))) ;; prevent case splits
-
-;move
-(local
- (DEFTHM
-   INTEGERP-OF-SMALL-HELPER-2
-   (IMPLIES (AND (< X N) (NATP X) (POSP N))
-            (EQUAL (INTEGERP (* (/ N) X))
-                   (EQUAL 0 (* (/ N) X))))
-   :RULE-CLASSES ((:REWRITE :BACKCHAIN-LIMIT-LST (0 NIL NIL)))
-   :HINTS (("Goal" :IN-THEORY (ENABLE acl2::INTEGERP-SQUEEZE)
-            :CASES ((< (* (/ N) X) 0)
-                    (<= 1 (* (/ N) X)))))))
+(local (in-theory (disable len true-listp nth update-nth expt ;; prevent inductions
+                           acl2::mod-sum-cases nth-update-nth ;; prevent case splits
+                           acl2::mod-by-4-becomes-bvchop)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -69,8 +60,8 @@
 
 (defconst *max-key-bytes* 32)
 
-;; This one is exclusive, so we call it a limit, not a max.
-(defconst *blake2s-max-data-byte-length* (expt 2 64)) ; todo: rename this to *input-bytes-limit*
+;; Since ll < 2^64
+(defconst *max-input-bytes* (+ -1 (expt 2 64)))
 
 ;; G rotation constants:
 (defconst *r1* 16)
@@ -126,10 +117,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(local (in-theory (disable acl2::mod-by-4-becomes-bvchop)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ;; Convert a list of bytes into a list of words, in little endian fashion.
 (defund bytes-to-words (bytes)
   (declare (xargs :guard (and (true-listp bytes)
@@ -178,7 +165,7 @@
           (bytes-to-blocks (nthcdr *bb* bytes)))))
 
 (defthm all-blockp-of-bytes-to-blocks
-  (all-blockp (bytes-to-blocks data-bytes))
+  (all-blockp (bytes-to-blocks bytes))
   :hints (("Goal" :in-theory (enable blockp bytes-to-blocks all-blockp))))
 
 (defthm len-of-bytes-to-blocks
@@ -190,31 +177,31 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns a list of bytes
-(defund pad-data-bytes (data-bytes)
-  (declare (xargs :guard (and (all-unsigned-byte-p 8 data-bytes)
-                              (true-listp data-bytes))))
-  (let* ((ll (len data-bytes))
+(defund pad-input-bytes (input-bytes)
+  (declare (xargs :guard (and (all-unsigned-byte-p 8 input-bytes)
+                              (true-listp input-bytes))))
+  (let* ((ll (len input-bytes))
          (bytes-in-last-block (mod ll *bb*))
          (num-padding-bytes (if (= 0 bytes-in-last-block)
                                 0 ;; ll is an exact multiple of the block size
                               (- *bb* bytes-in-last-block))))
-    (append data-bytes (acl2::repeat num-padding-bytes 0))))
+    (append input-bytes (acl2::repeat num-padding-bytes 0))))
 
-(defthm all-unsigned-byte-p-of-pad-data-bytes
-  (implies (all-unsigned-byte-p 8 data-bytes)
-           (all-unsigned-byte-p 8 (pad-data-bytes data-bytes)))
-  :hints (("Goal" :in-theory (enable pad-data-bytes))))
+(defthm all-unsigned-byte-p-of-pad-input-bytes
+  (implies (all-unsigned-byte-p 8 input-bytes)
+           (all-unsigned-byte-p 8 (pad-input-bytes input-bytes)))
+  :hints (("Goal" :in-theory (enable pad-input-bytes))))
 
-(defthm len-of-pad-data-bytes
-  (equal (len (pad-data-bytes data-bytes))
-         (let ((ll (len data-bytes)))
+(defthm len-of-pad-input-bytes
+  (equal (len (pad-input-bytes input-bytes))
+         (let ((ll (len input-bytes)))
            (* *bb* (ceiling ll *bb*))))
   :hints (("Goal" :use (:instance mod
-                                  (x (len data-bytes))
+                                  (x (len input-bytes))
                                   (y *bb*))
            :in-theory (enable acl2::ceiling-in-terms-of-floor
                               acl2::floor-of---arg1
-                              pad-data-bytes))))
+                              pad-input-bytes))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -236,61 +223,74 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; See RFC 7693 Sec 3.3 (Padding Data ...)
-(defund d-blocks (data-bytes key-bytes)
-  (declare (xargs :guard (and (all-unsigned-byte-p 8 data-bytes)
-                              (true-listp data-bytes)
+;; See Sec 3.3 (Padding Data ...)
+(defund d-blocks (input-bytes key-bytes)
+  (declare (xargs :guard (and (all-unsigned-byte-p 8 input-bytes)
+                              (true-listp input-bytes)
                               (all-unsigned-byte-p 8 key-bytes)
                               (true-listp key-bytes)
                               (<= (len key-bytes) *max-key-bytes*))))
-  (if (and (not (consp data-bytes))
+  (if (and (not (consp input-bytes))
            (not (consp key-bytes)))
       ;; special case for unkeyed empty message: d contains a single block of
       ;; all 0s:
       (list (repeat 16 0)) ; a block is 16 words
-    (let* ((padded-data-bytes (pad-data-bytes data-bytes)))
+    (let* ((padded-input-bytes (pad-input-bytes input-bytes)))
       (if (consp key-bytes)
           (cons (padded-key-block key-bytes)
-                (bytes-to-blocks padded-data-bytes))
-        (bytes-to-blocks padded-data-bytes)))))
+                (bytes-to-blocks padded-input-bytes))
+        (bytes-to-blocks padded-input-bytes)))))
 
 (defthm consp-of-d-blocks
-  (consp (d-blocks data-bytes key-bytes))
+  (consp (d-blocks input-bytes key-bytes))
   :hints (("Goal" :in-theory (e/d (d-blocks) (len-of-bytes-to-blocks))
-           :use (:instance len-of-bytes-to-blocks (bytes (pad-data-bytes data-bytes))))))
-
-;; dd = ceil(kk / bb) + ceil(ll / bb)
-(defthm len-of-d-blocks
-  (implies (<= (len key-bytes) *max-key-bytes*)
-           (equal (len (d-blocks data-bytes key-bytes))
-                  (if (consp data-bytes) ;;exclude special case
-                      (let ((ll (len data-bytes))
-                            (kk (len key-bytes)))
-                        (+ (ceiling kk *bb*)
-                           (ceiling ll *bb*)))
-                    1)))
-  :hints (("Goal" :in-theory (enable d-blocks
-                                     acl2::ceiling-in-terms-of-floor
-                                     acl2::floor-of---arg1))))
+           :use (:instance len-of-bytes-to-blocks (bytes (pad-input-bytes input-bytes))))))
 
 (defthm all-blockp-of-d-blocks
   (implies (<= (len key-bytes) *max-key-bytes*)
-           (all-blockp (d-blocks data-bytes key-bytes)))
+           (all-blockp (d-blocks input-bytes key-bytes)))
   :hints (("Goal" :in-theory (enable d-blocks))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(local
- (defthm bvplus-intro
-  (implies (and (integerp x)
-                (integerp y))
-           (equal (mod (+ x y) *word-limit*)
-                  (bvplus *w* x y)))
-  :hints (("Goal" :in-theory (enable bvplus bvchop)))))
+;; number of blocks (see Sec 3.3)
+(defun dd (kk ll)
+  (declare (xargs :guard (and (natp kk)
+                              (<= kk *max-key-bytes*)
+                              (natp ll)
+                              (<= ll *max-input-bytes*))))
+  (if (and (= kk 0)
+           (= ll 0))
+      1 ; special case for unkeyed empty message
+    (+ (ceiling kk *bb*)
+       (ceiling ll *bb*))))
+
+;; Shows that dd is correct
+(defthm len-of-d-blocks
+  (implies (<= (len key-bytes) *max-key-bytes*)
+           (equal (len (d-blocks input-bytes key-bytes))
+                  (dd (len key-bytes) (len input-bytes))))
+  :hints (("Goal" :in-theory (enable d-blocks
+                                     acl2::ceiling-in-terms-of-floor
+                                     acl2::floor-of---arg1))))
+
+;; Not actually allowed (see NOTES below).
+(defconst *max-number-of-blocks*
+  ;; Calls dd with maximum values for both arguments:
+  (dd *max-key-bytes* *max-input-bytes*))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; See RFC 7693 Sec 3.1 (Mixing Function G)
+(local
+ ;; This speeds up the guard proof for g
+ (defthm bvplus-intro
+   (implies (and (integerp x)
+                 (integerp y))
+            (equal (mod (+ x y) *word-limit*)
+                   (bvplus *w* x y)))
+   :hints (("Goal" :in-theory (enable bvplus bvchop)))))
+
+;; Mixing Function G (See Sec 3.1)
 (defund g (v a b c d x y)
   (declare (xargs :guard (and (blockp v)
                               (natp a)
@@ -330,10 +330,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(local (in-theory (disable natp)))
-
-;; Formalization of the first FOR loop in the compression function F (RFC 7693
-;; Sec 3.2).
+;; Formalization of the first FOR loop in the compression function F (see Sec
+;; 3.2).
 (defund f-loop-1 (i v m)
   (declare (xargs :guard (and (natp i)
                               (<= i *r*)
@@ -364,8 +362,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Formalization of the second FOR loop in the compression function F (RFC 7693
-;; Sec 3.2).
+;; Formalization of the second FOR loop in the compression function F (see Sec
+;; 3.2).
 (defund f-loop-2 (i h v)
   (declare (xargs :guard (and (natp i)
                               (<= i 8)
@@ -400,7 +398,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; See RFC 7693 Sec 3.2 (Compression Function F)
+;; Compression Function F (see Sec 3.2)
 (defund f (h m tvar f)
   (declare (xargs :guard (and (true-listp h)
                               (all-wordp h)
@@ -439,10 +437,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Formalization of the FOR loop in function BLAKE2 (RFC 7693 Sec 3.3).
+;; Formalization of the FOR loop in function BLAKE2 (see Sec 3.3).
 (defund loop1 (i bound h d)
   (declare (xargs :guard (and (natp i)
-                              (natp bound)
+                              (natp bound) ; always dd - 2
                               (<= i (+ 1 bound))
                               (equal bound (- (len d) 2))
                               (true-listp h)
@@ -450,12 +448,13 @@
                               (= 8 (len h))
                               (true-listp d)
                               (all-blockp d)
-                              (<= (len d) (/ *blake2s-max-data-byte-length* 64)) ;todo: think about this
-                              )
+                              ;; NOTE: We must exclude d = *max-number-of-blocks*,
+                              ;; since then the third agument of the call to f here
+                              ;; would be too large.
+                              (< (len d) *max-number-of-blocks*))
                   :measure (nfix (+ 1 (- bound i)))
                   :hints (("Goal" :in-theory (enable natp)))
-                  :guard-hints (("Goal" :in-theory (enable unsigned-byte-p)))
-                  ))
+                  :guard-hints (("Goal" :in-theory (enable unsigned-byte-p)))))
   (if (or (> i bound)
           (not (mbt (natp i)))
           (not (mbt (natp bound))))
@@ -501,6 +500,8 @@
   (all-unsigned-byte-p 8 (word-to-bytes word))
   :hints (("Goal" :in-theory (enable word-to-bytes))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Convert a list of 32-bit words into a list of bytes, in little endian fashion.
 (defund words-to-bytes (words)
   (declare (xargs :guard (and (true-listp words)
@@ -519,94 +520,80 @@
   (all-unsigned-byte-p 8 (words-to-bytes words))
   :hints (("Goal" :in-theory (enable words-to-bytes))))
 
-; Matt K. mod 7/31/2023 to accommodate evaluation inside lambda bodies when
-; generating guard conjectures.
-(local (in-theory (disable (:e expt))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; See the function BLAKE2 in RFC 7693 Sec 3.3.
-;;TODO: Consider the case when ll is the max.  Then (+ ll *bb*) is > 2^64, contrary to the documentation of f.
-(defund blake2s-main (d ll kk nn)
-  (declare (xargs :guard (and (true-listp d)
-                              (all-blockp d)
-                              (< 0 (len d))
-                              (<= (len d) (/ *blake2s-max-data-byte-length* 64)) ;think about this
-                              (natp ll)
-                              ;; (< ll (- *blake2s-max-data-byte-length* 64))
-                              (< ll *blake2s-max-data-byte-length*)
-                              (natp kk)
-                              (<= kk *max-key-bytes*)
+;; The function BLAKE2 (see Sec 3.3).
+;; Returns the hash, as list of bytes of length NN.
+(defund blake2s (input-bytes
+                 key-bytes
+                 nn ;; number of hash bytes to produce
+                 )
+  (declare (xargs :guard (and (all-unsigned-byte-p 8 input-bytes)
+                              (true-listp input-bytes)
+                              ;; NOTE: We would like to say:
+                              ;; (<= (len input-bytes) *max-input-bytes*)
+                              ;; but that would allow potential overflows in
+                              ;; the second call of F below and in the call of
+                              ;; F in LOOP1 above.
+                              (<= (len input-bytes)
+                                  (if (= 0 (len key-bytes))
+                                      *max-input-bytes*
+                                    ;; Prevents overflows in the calls of f
+                                    ;; below:
+                                    (- *max-input-bytes* *bb*)))
+                              (all-unsigned-byte-p 8 key-bytes)
+                              (true-listp key-bytes)
+                              (<= (len key-bytes) *max-key-bytes*)
                               (posp nn)
                               (<= nn *max-hash-bytes*))
-                  :guard-hints (("Goal" :expand ((wordp nn))
-                                 :in-theory (enable natp)))))
-  (let* ((h (iv))
+                  :guard-hints (("Goal" :in-theory (enable wordp natp unsigned-byte-p)))))
+  (let* ((ll (len input-bytes))
+         (kk (len key-bytes))
+         (d (d-blocks input-bytes key-bytes))
+         (dd (len d))
+         (h (iv)) ; initialization vector
+         ;; XOR in the parameter block:
          (h (update-nth 0
                         (wordxor (nth 0 h)
                                  (wordxor #x01010000
                                           (wordxor (bvshl *w* kk 8)
                                                    nn)))
                         h))
-         (dd (len d))
+         ;; Process padded key and data blocks:
          (h (if (> dd 1)
+                ;; The FOR loop:
                 (loop1 0 (- dd 2) h d)
               h))
+         ;; Final block:
          (h (if (= kk 0)
                 (f h (nth (- dd 1) d) ll t)
               (f h
                  (nth (- dd 1) d)
-                 (mod (+ ll *bb*) (expt 2 (* 2 *w*)))
+                 (+ ll *bb*)
                  t))))
+    ;; Extract first nn bytes to form the returned hash:
     (take nn (words-to-bytes h))))
-
-(defthm len-of-blake2s-main
-  (implies (and (posp nn)
-                (<= nn *max-hash-bytes*))
-           (equal (len (blake2s-main d ll kk nn))
-                  nn))
-  :hints (("Goal" :in-theory (enable blake2s-main))))
-
-(defthm all-unsigned-byte-p-of-blake2s-main
-  (implies (<= nn *max-hash-bytes*)
-           (all-unsigned-byte-p 8 (blake2s-main d ll kk nn)))
-  :hints (("Goal" :in-theory (enable blake2s-main))))
-
-;; TODO: Think about the case where we have a max length message and a key
-
-;; Returns the hash, as list of bytes of length NN.
-(defund blake2s (data-bytes
-                 key-bytes
-                 nn ;; number of hash bytes to produce
-                 )
-  (declare (xargs :guard (and (all-unsigned-byte-p 8 data-bytes)
-                              (true-listp data-bytes)
-                              ;; TODO I want to say this:
-                              ;; (< (len data-bytes) *blake2s-max-data-byte-length*)
-                              ;; But there are two potential issues related to
-                              ;; very long messages: Adding the key block can
-                              ;; make the length of d greater than expected,
-                              ;; and the expression (+ ll *bb*) in blake2s-main
-                              ;; can overflow.
-                              (< (len data-bytes) (- *blake2s-max-data-byte-length* 64)) ; todo: think about this
-                              (all-unsigned-byte-p 8 key-bytes)
-                              (true-listp key-bytes)
-                              (<= (len key-bytes) *max-key-bytes*)
-                              (posp nn)
-                              (<= nn *max-hash-bytes*))))
-  (let* ((d (d-blocks data-bytes key-bytes))
-         (ll (len data-bytes))
-         (kk (len key-bytes)))
-    (blake2s-main d ll kk nn)))
 
 (defthm len-of-blake2s
   (implies (and (posp nn)
                 (<= nn *max-hash-bytes*))
-           (equal (len (blake2s data-bytes key-bytes nn))
+           (equal (len (blake2s input-bytes key-bytes nn))
                   nn))
   :hints (("Goal" :in-theory (enable blake2s))))
 
 (defthm all-unsigned-byte-p-of-blake2s
   (implies (<= nn *max-hash-bytes*)
-           (all-unsigned-byte-p 8 (blake2s data-bytes key-bytes nn)))
+           (all-unsigned-byte-p 8 (blake2s input-bytes key-bytes nn)))
   :hints (("Goal" :in-theory (enable blake2s))))
 
-;; (assert-equal (blake2s (list (char-code #\a) (char-code #\b) (char-code #\c)) 32) '(#x50 #x8C #x5E #x8C #x32 #x7C #x14 #xE2 #xE1 #xA7 #x2B #xA3 #x4E #xEB #x45 #x2F #x37 #x45 #x8B #x20 #x9E #xD6 #x3A #x29 #x4D #x99 #x9B #x4C #x86 #x67 #x59 #x82))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; A quick test (more tests in blake2s-tests.lisp).
+(include-book "std/testing/assert-equal" :dir :system)
+
+(acl2::assert-equal (blake2s (list (char-code #\a) (char-code #\b) (char-code #\c)) ; input
+                             nil ; no key
+                             32 ; number of hash bytes to produce
+                             )
+                    ;; Expected hash:
+                    '(#x50 #x8C #x5E #x8C #x32 #x7C #x14 #xE2 #xE1 #xA7 #x2B #xA3 #x4E #xEB #x45 #x2F #x37 #x45 #x8B #x20 #x9E #xD6 #x3A #x29 #x4D #x99 #x9B #x4C #x86 #x67 #x59 #x82))
