@@ -13,14 +13,9 @@
 
 (include-book "bvchop")
 (include-book "getbit")
+(include-book "bvmult-def")
 (local (include-book "slice"))
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
-
-;;this should probably nfix its arguments (at least ifix them) or chop them
-(defund bvmult (size x y)
-  (declare (type integer x y)
-           (type (integer 0 *) size))
-  (bvchop size (* (ifix x) (ifix y))))
 
 (defthm integerp-of-bvmult
   (integerp (bvmult size x y)))
