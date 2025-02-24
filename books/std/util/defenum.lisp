@@ -199,8 +199,12 @@ fast alist or other schemes, based on the elements it is given.</p>")
                         '(acl2::undocumented)))))
        (short (cdr (assoc :short kwd-alist)))
        (long  (cdr (assoc :long kwd-alist)))
-       (default (cdr (assoc :default kwd-alist)))
-       (defaultp  (consp (assoc :default kwd-alist)))
+
+       (default-look (assoc :default kwd-alist))
+       (defaultp (consp default-look))
+       (default (if defaultp
+                    (cdr default-look)
+                  (car (last members))))
 
        (?mksym-package-symbol name)
        (x (intern-in-package-of-symbol "X" name))
@@ -279,7 +283,7 @@ fast alist or other schemes, based on the elements it is given.</p>")
                (mbe :logic
                     (if (,name ,x)
                         ,x
-                      ',(if defaultp default (car (last members))))
+                      ',default)
                     :exec
                     ,x)))
 
@@ -320,6 +324,11 @@ fast alist or other schemes, based on the elements it is given.</p>")
 
        ,fix-id
 
+       (table defenum-table ',name ',(list (cons :members members)
+                                           (cons :fix fixname)
+                                           (cons :equiv equivname)
+                                           (cons :mode mode)
+                                           (cons :default default)))
        (local (in-theory (disable ,fixname)))
        (fty::deffixtype ,name
          :pred ,name

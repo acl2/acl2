@@ -78,7 +78,8 @@
 (defun kind-casemacro-cases (var cases kwd-alist)
   (declare (xargs :guard (kind-casemacro-casespecs-p cases)))
   (b* (((when (atom kwd-alist)) nil)
-       ((when (eq (caar kwd-alist) :otherwise))
+       ((when (or (eq (caar kwd-alist) :otherwise)
+                  (eq (caar kwd-alist) :otherwise*)))
         `((otherwise ,(cdar kwd-alist))))
        (kind (caar kwd-alist))
        (case-spec (cdr (assoc kind cases)))
@@ -100,6 +101,8 @@
       (cons (caar cases) (kind-casemacro-prod-kinds (cdr cases))))))
 
 (defun kind-casemacro-check-prod-kinds-covered (cases keys seen)
+  ;; Throws an error if something's wrong. Returns NIL generally but T in the
+  ;; case where there's an :OTHERWISE* that needs removing.
   (declare (xargs :guard (kind-casemacro-casespecs-p cases)))
   (b* (((when (atom keys))
         ;; Check whether we covered all the prod-kinds.
@@ -108,11 +111,15 @@
                (er hard? 'kind-casemacro-fn "No case covers product kinds ~x0~%"
                    (remove-duplicates-eq diff)))))
        (kind (car keys))
-       ((when (eq kind :otherwise))
+       ((when (or (eq kind :otherwise)
+                  (eq kind :otherwise*)))
         ;; Check whether there are any remaining cases.
         (let ((diff (set-difference-eq (kind-casemacro-prod-kinds cases) seen)))
           (and (not diff)
-               (er hard? 'kind-casemacro-fn "Redundant :otherwise entry.~%"))))
+               (if (eq kind :otherwise)
+                   (er hard? 'kind-casemacro-fn "Redundant :otherwise entry.~%")
+                 ;; Redundant otherwise* case
+                 t))))
        (case-spec (cdr (assoc kind cases)))
        (prods (if (consp (car case-spec)) (car case-spec) (list kind)))
        ((when (subsetp prods seen))
@@ -154,8 +161,8 @@
         (er hard? macro-name "Expected a variable, rather than: ~x0" var-or-expr))
        (var var-or-expr)
 
-       (allowed-keywordlist-keys (append case-kinds '(:otherwise)))
-       (allowed-parenthesized-keys (append case-kinds '(acl2::otherwise :otherwise acl2::&)))
+       (allowed-keywordlist-keys (append case-kinds '(:otherwise :otherwise*)))
+       (allowed-parenthesized-keys (append case-kinds '(acl2::otherwise :otherwise :otherwise* acl2::&)))
                      
        ((mv kwd-alist rest)
         (extract-keywords macro-name
@@ -189,22 +196,28 @@
                  (strip-cdrs kwd-alist)
                (pairlis$ (make-list (len rest) :initial-element 'progn$)
                          (strip-cdrs rest))))
-       ((unless (<= (len (member :otherwise keys)) 1))
+       ((unless (and (<= (len (member :otherwise keys)) 1)
+                     (<= (len (member :otherwise* keys)) 1)))
         ;; otherwise must be last or not exist
         (er hard? macro-name "Otherwise case must be last"))
-       (- (kind-casemacro-check-prod-kinds-covered case-specs keys nil))
+       (redundant-otherwise* (kind-casemacro-check-prod-kinds-covered case-specs keys nil))
 
        (kind-kwd-alist (or kwd-alist (pairlis$ keys vals)))
+       (kind-kwd-alist (if redundant-otherwise*
+                           (remove-assoc-eq :otherwise* kind-kwd-alist)
+                         kind-kwd-alist))
                    
        (body
-        (let ((var.kind (intern-in-package-of-symbol
-                         (concatenate 'string (symbol-name var) ".KIND")
-                         (if (equal (symbol-package-name var) "COMMON-LISP")
-                             'acl2::acl2
-                           var))))
-          `(let* ((,var.kind (,kind-fn ,var)))
-             (case ,var.kind
-               . ,(kind-casemacro-cases var case-specs kind-kwd-alist))))))
+        (if (eq (caar kind-kwd-alist) :otherwise*)
+            (cdar kind-kwd-alist)
+          (let ((var.kind (intern-in-package-of-symbol
+                           (concatenate 'string (symbol-name var) ".KIND")
+                           (if (equal (symbol-package-name var) "COMMON-LISP")
+                               'acl2::acl2
+                             var))))
+            `(let* ((,var.kind (,kind-fn ,var)))
+               (case ,var.kind
+                 . ,(kind-casemacro-cases var case-specs kind-kwd-alist)))))))
     body))
 
 
