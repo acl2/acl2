@@ -41,12 +41,15 @@
                     :error)
                    ((mv erp in-bytes) (acl2::hex-string-to-bytes in))
                    ((when erp) :error)
-                   ((when (not (< (len in-bytes) (- *blake2b-max-data-byte-length* 128)) ;todo
-                               ))
-                    (cw "ERROR: Test input too long.")
-                    :error)
                    ((mv erp key-bytes) (acl2::hex-string-to-bytes key))
                    ((when erp) :error)
+                   ;; See comment on the guard of function blake2b:
+                   ((when (not (<= (len in-bytes)
+                                   (if (= 0 (len key-bytes))
+                                       *max-input-bytes*
+                                     (+ -128 *max-input-bytes*)))))
+                    (cw "ERROR: Test input too long.")
+                    :error)
                    ((mv erp out-bytes) (acl2::hex-string-to-bytes out))
                    ((when erp) :error)
                    (kk (len key-bytes))
