@@ -19,6 +19,79 @@
 
 ;; Stored-rules are what is stored in rule-alists / rule-dbs.
 
+;; todo: the guards of these should be stored-axe-rulep:
+
+;; See also axe-rulep.  A stored rule has the form (lhs-args hyps rule-symbol
+;; . rhs).  The top function symbol of the LHS is not stored.
+(defund stored-axe-rulep (item)
+  (declare (xargs :guard t))
+  (and (<= 3 (len item)) ;the final cdr is the rhs
+       (let ((lhs-args (first ;stored-rule-lhs-args
+                         item))
+             (hyps (second ;stored-rule-hyps
+                     item))
+             (rhs (cdddr ;stored-rule-rhs
+                    item))
+             (rule-symbol (third ;stored-rule-symbol
+                            item)))
+         (and (pseudo-term-listp lhs-args) ;should be lambda-free
+              (axe-rule-hyp-listp hyps)
+              (bound-vars-suitable-for-hypsp (free-vars-in-terms lhs-args) hyps)
+              (pseudo-termp rhs)
+              (subsetp-equal (free-vars-in-term rhs)
+                             (bound-vars-after-hyps (free-vars-in-terms lhs-args) hyps))
+              (symbolp rule-symbol)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund-inline stored-rule-lhs-args (stored-axe-rule)
+  (declare (xargs :guard (stored-axe-rulep stored-axe-rule)
+                  :guard-hints (("Goal" :in-theory (enable stored-axe-rulep)))))
+  (first stored-axe-rule))
+
+(defund-inline stored-rule-hyps (stored-axe-rule)
+  (declare (xargs :guard (stored-axe-rulep stored-axe-rule)
+                  :guard-hints (("Goal" :in-theory (enable stored-axe-rulep)))))
+  (second stored-axe-rule))
+
+(defund-inline stored-rule-symbol (stored-axe-rule)
+  (declare (xargs :guard (stored-axe-rulep stored-axe-rule)
+                  :guard-hints (("Goal" :in-theory (enable stored-axe-rulep)))))
+  (third stored-axe-rule))
+
+(defund-inline stored-rule-rhs (stored-axe-rule)
+  (declare (xargs :guard (stored-axe-rulep stored-axe-rule)
+                  :guard-hints (("Goal" :in-theory (enable stored-axe-rulep)))))
+  (cdddr stored-axe-rule))
+
+(defthm pseudo-term-listp-of-stored-rule-lhs-args
+  (implies (stored-axe-rulep rule)
+           (pseudo-term-listp (stored-rule-lhs-args rule)))
+  :hints (("Goal" :in-theory (enable stored-axe-rulep stored-rule-lhs-args))))
+
+(defthm axe-rule-hyp-listp-of-stored-rule-hyps
+  (implies (stored-axe-rulep rule)
+           (axe-rule-hyp-listp (stored-rule-hyps rule)))
+  :hints (("Goal" :in-theory (enable stored-axe-rulep stored-rule-hyps))))
+
+(defthm symbolp-of-stored-rule-symbol
+  (implies (stored-axe-rulep item)
+           (symbolp (stored-rule-symbol item)))
+  :hints (("Goal" :in-theory (enable stored-axe-rulep stored-rule-symbol))))
+
+(defthm pseudo-termp-of-stored-rule-rhs
+  (implies (stored-axe-rulep item)
+           (pseudo-termp (stored-rule-rhs item)))
+  :hints (("Goal" :in-theory (enable stored-axe-rulep stored-rule-rhs))))
+
+(defthm bound-vars-suitable-for-hypsp-of-var-in-terms-of-stored-rule-lhs-args-and-stored-rule-hyps
+  (implies (stored-axe-rulep stored-rule)
+           (bound-vars-suitable-for-hypsp (free-vars-in-terms (stored-rule-lhs-args stored-rule))
+                                          (stored-rule-hyps stored-rule)))
+  :hints (("Goal" :in-theory (enable stored-axe-rulep stored-rule-hyps stored-rule-lhs-args))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defund make-stored-rule (lhs-args hyps rule-symbol rhs)
   (declare (xargs :guard (and (pseudo-term-listp lhs-args) ;should be lambda-free
                               (axe-rule-hyp-listp hyps)
@@ -28,41 +101,6 @@
          hyps     ;hyps are the next-most-frequenty-accessed part of the rule
          rule-symbol
          rhs))
-
-;; todo: the guards of these should be stored-axe-rulep:
-
-(defund-inline stored-rule-lhs-args (stored-axe-rule)
-  (declare (xargs :guard (<= 3 (len stored-axe-rule))))
-  (first stored-axe-rule))
-
-(defund-inline stored-rule-hyps (stored-axe-rule)
-  (declare (xargs :guard (<= 3 (len stored-axe-rule))))
-  (second stored-axe-rule))
-
-(defund-inline stored-rule-symbol (stored-axe-rule)
-  (declare (xargs :guard (<= 3 (len stored-axe-rule))))
-  (third stored-axe-rule))
-
-(defund-inline stored-rule-rhs (stored-axe-rule)
-  (declare (xargs :guard (<= 3 (len stored-axe-rule))))
-  (cdddr stored-axe-rule))
-
-;; See also axe-rulep.  A stored rule has the form (lhs-args hyps rule-symbol
-;; . rhs).  The top function symbol of the LHS is not stored.
-(defund stored-axe-rulep (item)
-  (declare (xargs :guard t))
-  (and (<= 3 (len item)) ;the final cdr is the rhs
-       (let ((lhs-args (stored-rule-lhs-args item))
-             (hyps (stored-rule-hyps item))
-             (rhs (stored-rule-rhs item))
-             (rule-symbol (stored-rule-symbol item)))
-         (and (pseudo-term-listp lhs-args) ;should be lambda-free
-              (axe-rule-hyp-listp hyps)
-              (bound-vars-suitable-for-hypsp (free-vars-in-terms lhs-args) hyps)
-              (pseudo-termp rhs)
-              (subsetp-equal (free-vars-in-term rhs)
-                             (bound-vars-after-hyps (free-vars-in-terms lhs-args) hyps))
-              (symbolp rule-symbol)))))
 
 (defthm stored-axe-rulep-of-make-stored-rule
   (equal (stored-axe-rulep (make-stored-rule lhs-args hyps rule-symbol rhs))
@@ -79,32 +117,6 @@
                                      stored-rule-rhs
                                      stored-rule-symbol
                                      stored-rule-hyps))))
-
-(defthm pseudo-term-listp-of-stored-rule-lhs-args
-  (implies (stored-axe-rulep rule)
-           (pseudo-term-listp (stored-rule-lhs-args rule)))
-  :hints (("Goal" :in-theory (enable stored-axe-rulep stored-rule-lhs-args))))
-
-(defthm axe-rule-hyp-listp-of-stored-rule-hyps
-  (implies (stored-axe-rulep rule)
-           (axe-rule-hyp-listp (stored-rule-hyps rule)))
-  :hints (("Goal" :in-theory (enable stored-axe-rulep stored-rule-hyps))))
-
-(defthm symbolp-of-stored-rule-symbol
-  (implies (stored-axe-rulep item)
-           (symbolp (stored-rule-symbol item)))
-  :hints (("Goal" :in-theory (enable stored-axe-rulep))))
-
-(defthm pseudo-termp-of-stored-rule-rhs
-  (implies (stored-axe-rulep item)
-           (pseudo-termp (stored-rule-rhs item)))
-  :hints (("Goal" :in-theory (enable stored-axe-rulep))))
-
-(defthm bound-vars-suitable-for-hypsp-of-var-in-terms-of-stored-rule-lhs-args-and-stored-rule-hyps
-  (implies (stored-axe-rulep stored-rule)
-           (bound-vars-suitable-for-hypsp (free-vars-in-terms (stored-rule-lhs-args stored-rule))
-                                          (stored-rule-hyps stored-rule)))
-  :hints (("Goal" :in-theory (enable stored-axe-rulep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -198,6 +210,7 @@
 
 ;todo: use defmergesort?
 ;; TODO: For stability, consider comparing the rule names if there priorities are the same.
+;todo: add stored-rules to the name
 (defun merge-sort-by-rule-priority (stored-rules priorities)
   (declare (xargs :measure (len stored-rules)
                   :hints (("Goal" :in-theory (disable len)))
@@ -251,13 +264,14 @@
   :hints (("Goal" :in-theory (enable merge-sort-by-rule-priority))))
 
 ;drop?
-(defthm true-listp-of-merge-sort-by-rule-priority
+(defthmd true-listp-of-merge-sort-by-rule-priority
   (implies (true-listp stored-rules)
            (true-listp (merge-sort-by-rule-priority stored-rules priorities)))
   :hints (("Goal" :in-theory (enable merge-sort-by-rule-priority))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;rename stored-rule-is-presentp?
 (defund rule-is-presentp (rule-symbol stored-axe-rules)
   (declare (xargs :guard (and (stored-axe-rule-listp stored-axe-rules)
                               (symbolp rule-symbol))
@@ -302,14 +316,4 @@
 (defthm symbol-listp-of-stored-rule-names
   (implies (stored-axe-rule-listp rules)
            (symbol-listp (stored-rule-names rules)))
-  :hints (("Goal" :in-theory (enable stored-axe-rule-listp stored-axe-rulep))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;todo: drop once the guards of the accessors are changed
-(defthm <=-of-len-of-car-when-stored-axe-rule-listp
-  (implies (and (stored-axe-rule-listp stored-rules)
-                (consp stored-rules))
-           (<= 3 (len (car stored-rules))))
-  :rule-classes ((:rewrite :backchain-limit-lst (0 nil)))
   :hints (("Goal" :in-theory (enable stored-axe-rule-listp stored-axe-rulep))))
