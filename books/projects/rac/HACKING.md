@@ -229,6 +229,14 @@ more details, see bison documentation. [5]
 Also, the diagnostics (program/parser/utils/diagnostics.h) can be really
 usefull to know which parts of the input code cause a bug.
 
+Coding style
+------------
+
+This project mostly follows GNU's coding style. Under src, a clang-format file
+define those rules. To automatically format the C++ code (not the bison files),
+run:
+`cd src/ && clang-format -i (find -name '*.cpp' -or -name '*.h')`
+
 Version
 -------
 
