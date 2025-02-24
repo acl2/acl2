@@ -647,7 +647,7 @@
                 (natp amt))
            (equal (rightrotate32 amt x)
                   (rightrotate32 (trim 5 amt) x)))
-  :hints (("Goal" :in-theory (enable rightrotate32 rightrotate leftrotate trim MOD-OF-EXPT-OF-2-CONSTANT-VERSION))))
+  :hints (("Goal" :in-theory (enable rightrotate32 rightrotate leftrotate trim mod-becomes-bvchop-when-power-of-2p))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

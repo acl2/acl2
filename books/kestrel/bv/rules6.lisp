@@ -135,8 +135,7 @@
            :in-theory (e/d (logand*
                             logcdr ;fl
                             expt-of-+ mod-expt-split)
-                           (MOD-OF-EXPT-OF-2-CONSTANT-VERSION ;why?
-                            ))
+                           ())
            :induct (sub1-logcdr-induction-1 n a))))
 
 ;drop these special cases:
