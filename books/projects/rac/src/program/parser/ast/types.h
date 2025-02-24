@@ -109,20 +109,20 @@ public:
 
   virtual PrimType *deep_copy() const override { return new PrimType(*this); }
 
-  static PrimType Bool() {
-    return PrimType(Location::builtin(), "bool", nullptr, Rank::Bool, false);
+  static PrimType *Bool() {
+    return new PrimType(Location::builtin(), "bool", nullptr, Rank::Bool, false);
   }
-  static PrimType Int() {
-    return PrimType(Location::builtin(), "int", nullptr, Rank::Int, true);
+  static PrimType *Int() {
+    return new PrimType(Location::builtin(), "int", nullptr, Rank::Int, true);
   }
-  static PrimType Uint() {
-    return PrimType(Location::builtin(), "uint", nullptr, Rank::Int, false);
+  static PrimType *Uint() {
+    return new PrimType(Location::builtin(), "uint", nullptr, Rank::Int, false);
   }
-  static PrimType Int64() {
-    return PrimType(Location::builtin(), "int64", "int64", Rank::Long, true);
+  static PrimType *Int64() {
+    return new PrimType(Location::builtin(), "int64", "int64", Rank::Long, true);
   }
-  static PrimType Uint64() {
-    return PrimType(Location::builtin(), "uint64", "uint64", Rank::Long, false);
+  static PrimType *Uint64() {
+    return new PrimType(Location::builtin(), "uint64", "uint64", Rank::Long, false);
   }
 
   Sexpression *cast(Expression *rval) const override;

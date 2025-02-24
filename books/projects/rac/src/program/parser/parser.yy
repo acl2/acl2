@@ -343,11 +343,11 @@ type_spec_non_const
 
 
 primitive_type
-    : INT { $$ = new PrimType(PrimType::Int()); }
-    | UINT { $$ = new PrimType(PrimType::Uint()); }
-    | INT64 { $$ = new PrimType(PrimType::Int64()); }
-    | UINT64 { $$ = new PrimType(PrimType::Uint64()); }
-    | BOOL { $$ = new PrimType(PrimType::Bool()); };
+    : INT { $$ = PrimType::Int(); }
+    | UINT { $$ = PrimType::Uint(); }
+    | INT64 { $$ = PrimType::Int64(); }
+    | UINT64 { $$ = PrimType::Uint64(); }
+    | BOOL { $$ = PrimType::Bool(); };
 
 register_type
     : AC_FIXED
