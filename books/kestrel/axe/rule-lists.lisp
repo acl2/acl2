@@ -2111,7 +2111,7 @@
     acl2-numberp-of-unary--
     fix
     integerp-of-+-when-integerp-1-cheap
-    mod-of-expt-of-2-constant-version
+    mod-becomes-bvchop-when-power-of-2p
     bvlt-of-bvmult-6-5-20 ;which one of these helps?
     bvlt-of-bvmult-6-5-20-alt
     bvlt-trim-arg1-axe-all
