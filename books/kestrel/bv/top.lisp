@@ -80,6 +80,7 @@
 (include-book "bvminus")
 (include-book "bvminus-rules")
 (include-book "bvuminus")
+(include-book "bvmult-def")
 (include-book "bvmult")
 (include-book "bvmult-rules")
 (include-book "bvmod")
