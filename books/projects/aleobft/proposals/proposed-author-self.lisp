@@ -128,7 +128,7 @@
                   (proposed-author-self-p systate))
              (proposed-author-self-p (advance-next val systate)))
     :expand (proposed-author-self-p (advance-next val systate))
-    :enable (proposed-author-self-p-necc))
+    :enable proposed-author-self-p-necc)
 
   (defruled proposed-author-self-p-of-commit-next
     (implies (and (commit-possiblep val systate)
@@ -141,7 +141,8 @@
     (implies (and (event-possiblep event systate)
                   (proposed-author-self-p systate))
              (proposed-author-self-p (event-next event systate)))
-    :enable (event-possiblep event-next)))
+    :enable (event-possiblep
+             event-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
