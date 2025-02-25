@@ -20,7 +20,7 @@
 (include-book "std/basic/two-nats-measure" :dir :system)
 
 (include-book "../../syntax/abstract-syntax-operations")
-(include-book "../../syntax/validation-information")
+(include-book "../../syntax/validator")
 
 (local (include-book "kestrel/alists-light/assoc-equal" :dir :system))
 
@@ -204,31 +204,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define valid-table-global-lookup
-  ((ident identp)
-   (valid-table c$::valid-tablep))
-  :returns (info? c$::valid-ord-info-optionp)
-  (b* ((scopes
-         (c$::valid-table->scopes valid-table))
-       ((when (endp scopes))
-        (raise "Ill-formed validation table: no scope found"))
-       ((unless (endp (rest scopes)))
-        (raise "Ill-formed validation table: more than one scope found"))
-       (scope (first scopes))
-       (ord (c$::valid-scope->ord scope))
-       (lookup (assoc-equal ident ord)))
-    (if lookup
-        (cdr lookup)
-      nil)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define qualify-ident
   ((filepath filepathp)
    (valid-table c$::valid-tablep)
    (ident identp))
   :returns (qualified-ident qualified-identp)
-  (b* ((info? (valid-table-global-lookup ident valid-table))
+  (b* ((info? (c$::valid-lookup-ord-file-scope ident valid-table))
        (is-internal
          (and info?
               (c$::valid-ord-info-case
@@ -239,6 +220,20 @@
     (if is-internal
         (internal-ident filepath ident)
       (external-ident ident))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define direct-fun-refp
+  ((ident identp)
+   (valid-table c$::valid-tablep))
+  (declare (xargs :type-prescription
+                  (booleanp (direct-fun-refp ident valid-table))))
+  (b* ((info? (c$::valid-lookup-ord-file-scope ident valid-table)))
+    (and info?
+         (c$::valid-ord-info-case
+           info?
+           :objfun t
+           :otherwise nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -266,17 +261,22 @@
                  filepath
                  valid-table
                  call-graph))
-     ;; TODO: need to look at expr.args as well, recurse
+     ;; TODO: add a test of function calls appearing in function call arguments
      :funcall (b* ((qualified-ident?
                      (expr-case
                        expr.fun
-                       :ident (qualify-ident filepath
-                                             valid-table
-                                             expr.fun.ident)
+                       :ident (and (direct-fun-refp expr.fun.ident valid-table)
+                                   (qualify-ident filepath
+                                                  valid-table
+                                                  expr.fun.ident))
                        :otherwise nil)))
-                (call-graph-update fn-name
-                                   qualified-ident?
-                                   call-graph))
+                (call-graph-expr-list expr.args
+                                      fn-name
+                                      filepath
+                                      valid-table
+                                      (call-graph-update fn-name
+                                                         qualified-ident?
+                                                         call-graph)))
      :member (call-graph-expr
                expr.arg
                fn-name
@@ -348,6 +348,26 @@
      ;; TODO: error on ambiguous constructs
      :otherwise (call-graph-fix call-graph))
     :measure (expr-count expr))
+
+  (define call-graph-expr-list
+    ((exprs expr-listp)
+     (fn-name qualified-identp)
+     (filepath filepathp)
+     (valid-table c$::valid-tablep)
+     (call-graph call-graphp))
+    :returns (call-graph$ call-graphp)
+    (if (endp exprs)
+        (call-graph-fix call-graph)
+      (call-graph-expr-list (rest exprs)
+                            fn-name
+                            filepath
+                            valid-table
+                            (call-graph-expr (first exprs)
+                                             fn-name
+                                             filepath
+                                             valid-table
+                                             call-graph)))
+    :measure (expr-list-count exprs))
 
   (define call-graph-expr-option
     ((expr? expr-optionp)
