@@ -235,6 +235,29 @@
                 (subsetp-equal x2 x))
            (member-equal a x)))
 
+(defthm alist-suitable-for-hypsp-after-matching-2-special
+  (implies (and (alist-suitable-for-hyp-args-and-hypsp alist hyp-args hyps)
+                (bounded-darg-listp arg-list (get-dag-len rewrite-stobj2))
+                (not (equal :fail (unify-trees-with-dag-nodes hyp-args arg-list (get-dag-array rewrite-stobj2) alist)))
+                (pseudo-dag-arrayp 'dag-array (get-dag-array rewrite-stobj2) (get-dag-len rewrite-stobj2))
+                (axe-tree-listp hyp-args)
+                (symbol-alistp alist))
+           (alist-suitable-for-hypsp (unify-trees-with-dag-nodes hyp-args arg-list (get-dag-array rewrite-stobj2) alist)
+                                     hyps))
+  :hints (("Goal" :use (:instance alist-suitable-for-hypsp-after-matching-2
+                                  (dag-len (get-dag-len rewrite-stobj2))
+                                  (dag-array (get-dag-array rewrite-stobj2)))
+           :in-theory (disable alist-suitable-for-hypsp-after-matching-2))))
+
+(defthm <-of-largest-non-quotep2
+  (implies (and (bounded-darg-listp args nodenum)
+                (natp nodenum) ; not this
+                )
+           (< (largest-non-quotep args) nodenum))
+  :rule-classes (:rewrite :linear)
+  :hints (("Goal" :in-theory (enable largest-non-quotep
+                                     bounded-darg-listp))))
+
 ;; ;loops with LEN-WHEN-DARGP-LESS-THAN?
 ;; (defthmd consp-to-len-bound-for-make-rewriter-simple
 ;;   (equal (consp x) (< 0 (len x)))
@@ -502,7 +525,8 @@
                           myquotep-when-dag-exprp-and-quote
                           rationalp-of-subtract-tries
                           append-nodenum-dargs-becomes-append-of-keep-nodenum-dargs
-                          dargp-of-mv-nth-1-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr)))
+                          ;; dargp-of-mv-nth-1-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr
+                          )))
 
        ;todo: dup!
        (local
@@ -955,21 +979,9 @@
                                                     node-replacement-array node-replacement-count refined-assumption-alist
                                                     rewrite-stobj (+ -1 count))
               ;; No rule fired, so no simplification can be done.  Add the expression to the dag, but perhaps normalize nests of certain functions:
-              (b* (((mv erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-                    (if (get-normalize-xors rewrite-stobj)
-                        (add-and-normalize-expr fn args ; can we often save consing FN onto ARGS in this?
-                                                (get-dag-array rewrite-stobj2) (get-dag-len rewrite-stobj2) (get-dag-parent-array rewrite-stobj2) (get-dag-constant-alist rewrite-stobj2) (get-dag-variable-alist rewrite-stobj2))
-                      (mv-let (erp nodenum dag-array dag-len dag-parent-array dag-constant-alist)
-                        (add-function-call-expr-to-dag-array fn args ;(if any-arg-was-simplifiedp (cons fn args) tree) ;could put back the any-arg-was-simplifiedp trick to save this cons
-                                                             (get-dag-array rewrite-stobj2) (get-dag-len rewrite-stobj2) (get-dag-parent-array rewrite-stobj2) (get-dag-constant-alist rewrite-stobj2))
-                        (mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist (get-dag-variable-alist rewrite-stobj2)))))
-                   ;; todo: optimize this stuf by building versions of the dag-builders that traffic in the rewrite-stobj2
+              (b* (((mv erp nodenum-or-quotep rewrite-stobj2)
+                    (add-and-maybe-normalize-expr fn args rewrite-stobj rewrite-stobj2))
                    ((when erp) (mv erp nodenum-or-quotep rewrite-stobj2 memoization hit-counts tries limits node-replacement-array))
-                   (rewrite-stobj2 (put-dag-array dag-array rewrite-stobj2))
-                   (rewrite-stobj2 (put-dag-len dag-len rewrite-stobj2))
-                   (rewrite-stobj2 (put-dag-parent-array dag-parent-array rewrite-stobj2))
-                   (rewrite-stobj2 (put-dag-constant-alist dag-constant-alist rewrite-stobj2))
-                   (rewrite-stobj2 (put-dag-variable-alist dag-variable-alist rewrite-stobj2))
                    ;; See if the nodenum returned is equated to anything:
                    ;; Result is not rewritten (we could rewrite all such items (that replacements can introduce) outside the main clique)
                    (new-nodenum-or-quotep (if (consp nodenum-or-quotep) ; check for constant (e.g., if all xors cancelled)
@@ -2377,8 +2389,7 @@
                           (bounded-darg-listp (strip-cdrs alist) (get-dag-len rewrite-stobj2))
                           (bounded-darg-list-listp assumption-arg-lists (get-dag-len rewrite-stobj2)))
                      (and (rewrite-stobj2p new-rewrite-stobj2)
-                          (wf-dagp 'dag-array (get-dag-array new-rewrite-stobj2) (get-dag-len new-rewrite-stobj2) 'dag-parent-array (get-dag-parent-array new-rewrite-stobj2) (get-dag-constant-alist new-rewrite-stobj2) (get-dag-variable-alist new-rewrite-stobj2))
-
+                          (wf-rewrite-stobj2 new-rewrite-stobj2)
                           (<= (get-dag-len rewrite-stobj2) (get-dag-len new-rewrite-stobj2))
                           (maybe-bounded-memoizationp new-memoization (get-dag-len new-rewrite-stobj2))
                           (iff new-memoization memoization)
@@ -2409,7 +2420,7 @@
                           (symbol-alistp alist)
                           (bounded-darg-listp (strip-cdrs alist) (get-dag-len rewrite-stobj2)))
                      (and (rewrite-stobj2p new-rewrite-stobj2)
-                          (wf-dagp 'dag-array (get-dag-array new-rewrite-stobj2) (get-dag-len new-rewrite-stobj2) 'dag-parent-array (get-dag-parent-array new-rewrite-stobj2) (get-dag-constant-alist new-rewrite-stobj2) (get-dag-variable-alist new-rewrite-stobj2))
+                          (wf-rewrite-stobj2 new-rewrite-stobj2)
                           (<= (get-dag-len rewrite-stobj2) (get-dag-len new-rewrite-stobj2))
                           (maybe-bounded-memoizationp new-memoization (get-dag-len new-rewrite-stobj2))
                           (iff new-memoization memoization)
@@ -2437,7 +2448,7 @@
                        (and (rewrite-stobj2p new-rewrite-stobj2)
                             (axe-treep instantiated-rhs-or-nil)
                             (bounded-axe-treep instantiated-rhs-or-nil (get-dag-len new-rewrite-stobj2))
-                            (wf-dagp 'dag-array (get-dag-array new-rewrite-stobj2) (get-dag-len new-rewrite-stobj2) 'dag-parent-array (get-dag-parent-array new-rewrite-stobj2) (get-dag-constant-alist new-rewrite-stobj2) (get-dag-variable-alist new-rewrite-stobj2))
+                            (wf-rewrite-stobj2 new-rewrite-stobj2)
                             (<= (get-dag-len rewrite-stobj2) (get-dag-len new-rewrite-stobj2))
                             (maybe-bounded-memoizationp new-memoization (get-dag-len new-rewrite-stobj2))
                             (iff new-memoization memoization)
@@ -2460,7 +2471,7 @@
                             (rewrite-stobj2p rewrite-stobj2)
                             (bounded-refined-assumption-alistp refined-assumption-alist (get-dag-len rewrite-stobj2)))
                        (and (rewrite-stobj2p new-rewrite-stobj2)
-                            (wf-dagp 'dag-array (get-dag-array new-rewrite-stobj2) (get-dag-len new-rewrite-stobj2) 'dag-parent-array (get-dag-parent-array new-rewrite-stobj2) (get-dag-constant-alist new-rewrite-stobj2) (get-dag-variable-alist new-rewrite-stobj2))
+                            (wf-rewrite-stobj2 new-rewrite-stobj2)
                             (true-listp nodenums-or-quoteps)
                             (bounded-darg-listp nodenums-or-quoteps (get-dag-len new-rewrite-stobj2))
                         ;; implied by the above
@@ -2498,7 +2509,7 @@
                             (rewrite-stobj2p rewrite-stobj2)
                             (bounded-refined-assumption-alistp refined-assumption-alist (get-dag-len rewrite-stobj2)))
                        (and (rewrite-stobj2p new-rewrite-stobj2)
-                            (wf-dagp 'dag-array (get-dag-array new-rewrite-stobj2) (get-dag-len new-rewrite-stobj2) 'dag-parent-array (get-dag-parent-array new-rewrite-stobj2) (get-dag-constant-alist new-rewrite-stobj2) (get-dag-variable-alist new-rewrite-stobj2))
+                            (wf-rewrite-stobj2 new-rewrite-stobj2)
                             (dargp-less-than new-nodenum-or-quotep (get-dag-len new-rewrite-stobj2))
                             (<= (get-dag-len rewrite-stobj2) (get-dag-len new-rewrite-stobj2))
                             (maybe-bounded-memoizationp new-memoization (get-dag-len new-rewrite-stobj2))
@@ -2533,7 +2544,7 @@
                             (rewrite-stobj2p rewrite-stobj2)
                             (bounded-refined-assumption-alistp refined-assumption-alist (get-dag-len rewrite-stobj2)))
                        (and (rewrite-stobj2p new-rewrite-stobj2)
-                            (wf-dagp 'dag-array (get-dag-array new-rewrite-stobj2) (get-dag-len new-rewrite-stobj2) 'dag-parent-array (get-dag-parent-array new-rewrite-stobj2) (get-dag-constant-alist new-rewrite-stobj2) (get-dag-variable-alist new-rewrite-stobj2))
+                            (wf-rewrite-stobj2 new-rewrite-stobj2)
                             (dargp-less-than new-nodenum-or-quotep (get-dag-len new-rewrite-stobj2))
                             (<= (get-dag-len rewrite-stobj2) (get-dag-len new-rewrite-stobj2))
                             (maybe-bounded-memoizationp new-memoization (get-dag-len new-rewrite-stobj2))
@@ -2562,7 +2573,7 @@
                             (rewrite-stobj2p rewrite-stobj2)
                             (bounded-refined-assumption-alistp refined-assumption-alist (get-dag-len rewrite-stobj2)))
                        (and (rewrite-stobj2p new-rewrite-stobj2)
-                            (wf-dagp 'dag-array (get-dag-array new-rewrite-stobj2) (get-dag-len new-rewrite-stobj2) 'dag-parent-array (get-dag-parent-array new-rewrite-stobj2) (get-dag-constant-alist new-rewrite-stobj2) (get-dag-variable-alist new-rewrite-stobj2))
+                            (wf-rewrite-stobj2 new-rewrite-stobj2)
                             (dargp-less-than new-nodenum-or-quotep (get-dag-len new-rewrite-stobj2))
                             (<= (get-dag-len rewrite-stobj2) (get-dag-len new-rewrite-stobj2))
                             (maybe-bounded-memoizationp new-memoization (get-dag-len new-rewrite-stobj2))
@@ -2590,7 +2601,7 @@
                             (rewrite-stobj2p rewrite-stobj2)
                             (bounded-refined-assumption-alistp refined-assumption-alist (get-dag-len rewrite-stobj2)))
                        (and (rewrite-stobj2p new-rewrite-stobj2)
-                            (wf-dagp 'dag-array (get-dag-array new-rewrite-stobj2) (get-dag-len new-rewrite-stobj2) 'dag-parent-array (get-dag-parent-array new-rewrite-stobj2) (get-dag-constant-alist new-rewrite-stobj2) (get-dag-variable-alist new-rewrite-stobj2))
+                            (wf-rewrite-stobj2 new-rewrite-stobj2)
                             (dargp-less-than new-nodenum-or-quotep (get-dag-len new-rewrite-stobj2))
                             (<= (get-dag-len rewrite-stobj2) (get-dag-len new-rewrite-stobj2))
                             (maybe-bounded-memoizationp new-memoization (get-dag-len new-rewrite-stobj2))
@@ -2618,7 +2629,7 @@
                             (rewrite-stobj2p rewrite-stobj2)
                             (bounded-refined-assumption-alistp refined-assumption-alist (get-dag-len rewrite-stobj2)))
                        (and (rewrite-stobj2p new-rewrite-stobj2)
-                            (wf-dagp 'dag-array (get-dag-array new-rewrite-stobj2) (get-dag-len new-rewrite-stobj2) 'dag-parent-array (get-dag-parent-array new-rewrite-stobj2) (get-dag-constant-alist new-rewrite-stobj2) (get-dag-variable-alist new-rewrite-stobj2))
+                            (wf-rewrite-stobj2 new-rewrite-stobj2)
                             (dargp-less-than new-nodenum-or-quotep (get-dag-len new-rewrite-stobj2))
                             (<= (get-dag-len rewrite-stobj2) (get-dag-len new-rewrite-stobj2))
                             (maybe-bounded-memoizationp new-memoization (get-dag-len new-rewrite-stobj2))
@@ -2650,7 +2661,7 @@
                             (rewrite-stobj2p rewrite-stobj2)
                             (bounded-refined-assumption-alistp refined-assumption-alist (get-dag-len rewrite-stobj2)))
                        (and (rewrite-stobj2p new-rewrite-stobj2)
-                            (wf-dagp 'dag-array (get-dag-array new-rewrite-stobj2) (get-dag-len new-rewrite-stobj2) 'dag-parent-array (get-dag-parent-array new-rewrite-stobj2) (get-dag-constant-alist new-rewrite-stobj2) (get-dag-variable-alist new-rewrite-stobj2))
+                            (wf-rewrite-stobj2 new-rewrite-stobj2)
                             (dargp-less-than new-nodenum-or-quotep (get-dag-len new-rewrite-stobj2))
                             (<= (get-dag-len rewrite-stobj2) (get-dag-len new-rewrite-stobj2))
                             (maybe-bounded-memoizationp new-memoization (get-dag-len new-rewrite-stobj2))
@@ -2683,7 +2694,7 @@
                             (rewrite-stobj2p rewrite-stobj2)
                             (bounded-refined-assumption-alistp refined-assumption-alist (get-dag-len rewrite-stobj2)))
                        (and (rewrite-stobj2p new-rewrite-stobj2)
-                            (wf-dagp 'dag-array (get-dag-array new-rewrite-stobj2) (get-dag-len new-rewrite-stobj2) 'dag-parent-array (get-dag-parent-array new-rewrite-stobj2) (get-dag-constant-alist new-rewrite-stobj2) (get-dag-variable-alist new-rewrite-stobj2))
+                            (wf-rewrite-stobj2 new-rewrite-stobj2)
                             (dargp-less-than new-nodenum-or-quotep (get-dag-len new-rewrite-stobj2))
                             (<= (get-dag-len rewrite-stobj2) (get-dag-len new-rewrite-stobj2))
                             (maybe-bounded-memoizationp new-memoization (get-dag-len new-rewrite-stobj2))
@@ -2717,7 +2728,7 @@
                             (rewrite-stobj2p rewrite-stobj2)
                             (bounded-refined-assumption-alistp refined-assumption-alist (get-dag-len rewrite-stobj2)))
                        (and (rewrite-stobj2p new-rewrite-stobj2)
-                            (wf-dagp 'dag-array (get-dag-array new-rewrite-stobj2) (get-dag-len new-rewrite-stobj2) 'dag-parent-array (get-dag-parent-array new-rewrite-stobj2) (get-dag-constant-alist new-rewrite-stobj2) (get-dag-variable-alist new-rewrite-stobj2))
+                            (wf-rewrite-stobj2 new-rewrite-stobj2)
                             (dargp-less-than new-nodenum-or-quotep (get-dag-len new-rewrite-stobj2))
                             (<= (get-dag-len rewrite-stobj2) (get-dag-len new-rewrite-stobj2))
                             (maybe-bounded-memoizationp new-memoization (get-dag-len new-rewrite-stobj2))
@@ -2745,7 +2756,7 @@
                             (rewrite-stobj2p rewrite-stobj2)
                             (bounded-refined-assumption-alistp refined-assumption-alist (get-dag-len rewrite-stobj2)))
                        (and (rewrite-stobj2p new-rewrite-stobj2)
-                            (wf-dagp 'dag-array (get-dag-array new-rewrite-stobj2) (get-dag-len new-rewrite-stobj2) 'dag-parent-array (get-dag-parent-array new-rewrite-stobj2) (get-dag-constant-alist new-rewrite-stobj2) (get-dag-variable-alist new-rewrite-stobj2))
+                            (wf-rewrite-stobj2 new-rewrite-stobj2)
                             (dargp-less-than new-nodenum-or-quotep (get-dag-len new-rewrite-stobj2))
                             (<= (get-dag-len rewrite-stobj2) (get-dag-len new-rewrite-stobj2))
                             (maybe-bounded-memoizationp new-memoization (get-dag-len new-rewrite-stobj2))
@@ -2771,7 +2782,7 @@
                             (rewrite-stobj2p rewrite-stobj2)
                             (bounded-refined-assumption-alistp refined-assumption-alist (get-dag-len rewrite-stobj2)))
                        (and (rewrite-stobj2p new-rewrite-stobj2)
-                            (wf-dagp 'dag-array (get-dag-array new-rewrite-stobj2) (get-dag-len new-rewrite-stobj2) 'dag-parent-array (get-dag-parent-array new-rewrite-stobj2) (get-dag-constant-alist new-rewrite-stobj2) (get-dag-variable-alist new-rewrite-stobj2))
+                            (wf-rewrite-stobj2 new-rewrite-stobj2)
                             (dargp-less-than new-nodenum-or-quotep (get-dag-len new-rewrite-stobj2))
                             (<= (get-dag-len rewrite-stobj2) (get-dag-len new-rewrite-stobj2))
                             (maybe-bounded-memoizationp new-memoization (get-dag-len new-rewrite-stobj2))
@@ -2798,7 +2809,7 @@
                             (rewrite-stobj2p rewrite-stobj2)
                             (bounded-refined-assumption-alistp refined-assumption-alist (get-dag-len rewrite-stobj2)))
                        (and (rewrite-stobj2p new-rewrite-stobj2)
-                            (wf-dagp 'dag-array (get-dag-array new-rewrite-stobj2) (get-dag-len new-rewrite-stobj2) 'dag-parent-array (get-dag-parent-array new-rewrite-stobj2) (get-dag-constant-alist new-rewrite-stobj2) (get-dag-variable-alist new-rewrite-stobj2))
+                            (wf-rewrite-stobj2 new-rewrite-stobj2)
                             (DARGP-LESS-THAN new-nodenum-or-quotep (get-dag-len new-rewrite-stobj2))
                             (DARGP new-nodenum-or-quotep) ; follows from the above but no free vars
                             (<= (get-dag-len rewrite-stobj2) (get-dag-len new-rewrite-stobj2))
@@ -2832,7 +2843,9 @@
                    (:compound-recognizer axe-treep-compound-recognizer)
                    (:compound-recognizer natp-compound-recognizer)
                    (:congruence iff-implies-equal-not)
-                   (:definition add-variable-to-dag-array-in-stobj)
+                   ; (:definition add-variable-to-dag-array-in-stobj)
+                   (:rewrite add-variable-to-dag-array-in-stobj-return-type)
+                   (:rewrite add-variable-to-dag-array-in-stobj-return-type-2)
 ;                   (:definition alistp)
                    (:definition axe-rule-hyp-listp)
                    (:definition eq)
@@ -2856,7 +2869,9 @@
                    (:definition ,simplify-trees-and-add-to-dag-name)
                    (:definition synp)
                    (:definition ,try-to-apply-rules-name)
-                   (:definition wf-rewrite-stobj2)
+                   ;; (:definition wf-rewrite-stobj2)
+                   (:rewrite wf-rewrite-stobj2-conjuncts)
+                   (:linear wf-rewrite-stobj2-conjuncts2)
                    (:executable-counterpart all-natp)
                    (:executable-counterpart axe-rule-hyp-listp)
                    (:executable-counterpart axe-tree-listp)
@@ -2908,11 +2923,11 @@
                    (:induction ,(pack$ 'flag-simplify-tree-and-add-to-dag- suffix))
                    (:linear bound-on-mv-nth-3-and-mv-nth-1-of-add-function-call-expr-to-dag-array-alt-strong)
                    (:linear bound-on-mv-nth-3-and-mv-nth-1-of-add-variable-to-dag-array)
-                   (:linear bound-on-mv-nth-3-of-add-and-normalize-expr-3)
+                   ;; (:linear bound-on-mv-nth-3-of-add-and-normalize-expr-3)
                    (:linear bound-on-mv-nth-3-of-add-function-call-expr-to-dag-array-3)
                    (:linear bound-on-mv-nth-3-of-add-variable-to-dag-array-3)
                    (:rewrite <-of-apply-node-replacement-array-bool-to-darg)
-                   (:rewrite <-of-mv-nth-1-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr)
+                   ;; (:rewrite <-of-mv-nth-1-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr)
                    (:rewrite <-trans)
                    (:rewrite <-when-bounded-axe-treep)
                    (:rewrite <=-transitive-1)
@@ -2925,6 +2940,8 @@
                    (:rewrite alist-suitable-for-hypsp-of-unify-terms-and-dag-items-fast-when-stored-axe-rulep)
                    (:rewrite alist-suitable-for-hypsp-when-axe-sytaxp-car)
                    (:rewrite alist-suitable-for-hypsp-of-append-and-cdr-when-axe-binding-hyp)
+                   ;(:rewrite ALIST-SUITABLE-FOR-HYPSP-AFTER-MATCHING-2)
+                   (:rewrite ALIST-SUITABLE-FOR-HYPSP-AFTER-MATCHING-2-special)
                    (:rewrite subsetp-equal-of-free-vars-in-terms-of-fargs-of-cadr-of-car-when-axe-binding-hyp)
                    (:rewrite alistp-of-cdr)
                    (:rewrite alistp-of-for-unify-trees-with-dag-nodes)
@@ -2981,10 +2998,10 @@
                    (:rewrite bounded-refined-assumption-alistp-of-extend-refined-assumption-alist-assuming-negation-of-node-gen)
                    (:rewrite bounded-refined-assumption-alistp-of-extend-refined-assumption-alist-assuming-node-gen)
                    (:rewrite bounded-undo-pairsp-of-nil)
-                   (:rewrite dag-constant-alistp-mv-nth-5-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr)
+                   ;; (:rewrite dag-constant-alistp-mv-nth-5-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr)
                    (:rewrite dag-constant-alistp-of-get-dag-constant-alist)
                    (:rewrite dag-constant-alistp-of-mv-nth-5-of-add-function-call-expr-to-dag-array)
-                   (:rewrite dag-variable-alistp-mv-nth-6-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr)
+                   ;; (:rewrite dag-variable-alistp-mv-nth-6-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr)
                    (:rewrite dag-variable-alistp-of-get-dag-variable-alist)
                    (:rewrite dag-variable-alistp-of-mv-nth-5-of-add-variable-to-dag-array)
                    (:rewrite darg-listp-of-cons)
@@ -2996,14 +3013,14 @@
                    (:rewrite dargp-less-than-of-apply-node-replacement-array-bool-to-darg)
                    (:rewrite dargp-less-than-of-list-of-quote)
                    (:rewrite dargp-less-than-of-lookup-in-memoization-when-bounded-memoizationp)
-                   (:rewrite dargp-less-than-of-mv-nth-1-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr-gen)
+                   ;; (:rewrite dargp-less-than-of-mv-nth-1-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr-gen)
                    (:rewrite dargp-less-than-of-mv-nth-1-of-add-function-call-expr-to-dag-array-gen-alt)
                    (:rewrite dargp-less-than-when-consp-cheap)
                    (:rewrite dargp-less-than-when-myquotep-cheap)
                    (:rewrite dargp-less-than-when-natp-cheap)
                    (:rewrite dargp-less-than-when-not-consp-cheap)
                    (:rewrite dargp-of-apply-node-replacement-array)
-                   (:rewrite dargp-of-mv-nth-1-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr)
+                   ;; (:rewrite dargp-of-mv-nth-1-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr)
                    (:rewrite dargp-of-mv-nth-1-of-add-function-call-expr-to-dag-array)
                    (:rewrite dargp-when-consp-cheap)
                    (:rewrite dargp-when-dargp-less-than)
@@ -3035,7 +3052,7 @@
                    (:rewrite mv-nth-of-if)
                    (:rewrite natp-of-apply-node-replacement-array-bool-to-darg)
                    (:rewrite natp-of-get-dag-len)
-                   (:rewrite natp-of-mv-nth-1-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr)
+                   ;; (:rewrite natp-of-mv-nth-1-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr)
                    (:rewrite natp-of-mv-nth-1-of-add-function-call-expr-to-dag-array)
                    (:rewrite natp-of-mv-nth-3-of-add-variable-to-dag-array)
                    (:rewrite node-replacement-arrayp-when-bounded-node-replacement-arrayp)
@@ -3100,7 +3117,8 @@
                    (:rewrite trees-to-memoizep-of-cons-if-not-equal-car)
                    (:rewrite true-list-fix-when-true-listp)
                    (:rewrite ,(pack$ 'try-to-apply-rules- suffix '-of-0))
-                   (:rewrite type-of-add-and-normalize-expr)
+                   ;; (:rewrite type-of-add-and-normalize-expr)
+                   (:rewrite add-and-maybe-normalize-expr-return-type)
                    (:rewrite undo-writes-to-node-replacement-array-return-type)
                    (:rewrite update-node-replacement-array-for-assuming-negation-of-node-return-type)
                    (:rewrite update-node-replacement-array-for-assuming-negation-of-node-return-type-alen1-corollary)
@@ -3142,7 +3160,7 @@
                    (:type-prescription member-equal)
                    (:type-prescription myquotep)
                    (:type-prescription natp-of-mv-nth-1-of-add-variable-to-dag-array)
-                   (:type-prescription natp-of-mv-nth-3-of-add-and-normalize-expr)
+                   ;; (:type-prescription natp-of-mv-nth-3-of-add-and-normalize-expr)
                    (:type-prescription natp-of-mv-nth-3-of-add-function-call-expr-to-dag-array-type)
                    (:type-prescription natp-of-mv-nth-3-of-add-variable-to-dag-array)
                    (:type-prescription posp-of-alen1)
@@ -3291,9 +3309,8 @@
                        (symbol-alistp alist)
                        (bounded-darg-listp (strip-cdrs alist) (get-dag-len rewrite-stobj2))
                        (<= x (get-dag-len rewrite-stobj2)))
-                  (and
-                   (<= x (get-dag-len (mv-nth 3 ,call-of-relieve-rule-hyps)))
-                   (darg-listp (strip-cdrs (mv-nth 2 ,call-of-relieve-rule-hyps)))))
+                  (and (<= x (get-dag-len (mv-nth 3 ,call-of-relieve-rule-hyps)))
+                       (darg-listp (strip-cdrs (mv-nth 2 ,call-of-relieve-rule-hyps)))))
          :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-relieve-rule-hyps- suffix))
                   :in-theory (disable ,(pack$ 'theorem-for-relieve-rule-hyps- suffix)))))
 
@@ -3330,6 +3347,7 @@
          :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-try-to-apply-rules- suffix))
                   :in-theory (disable ,(pack$ 'theorem-for-try-to-apply-rules- suffix)))))
 
+       ;; do we still need this?
        (defthm ,(pack$ 'corollary-theorem-for-try-to-apply-rules- suffix)
          (implies (and (wf-rewrite-stobj2 rewrite-stobj2)
                        (bounded-darg-listp args-to-match (get-dag-len rewrite-stobj2))
@@ -3353,7 +3371,9 @@
                                           (get-dag-array (mv-nth 2 ,call-of-try-to-apply-rules))
                                           (get-dag-len (mv-nth 2 ,call-of-try-to-apply-rules)))))
          :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-try-to-apply-rules- suffix))
-                  :in-theory (disable ,(pack$ 'theorem-for-try-to-apply-rules- suffix)))))
+                  :in-theory (e/d (wf-rewrite-stobj2)
+                                  (,(pack$ 'theorem-for-try-to-apply-rules- suffix)
+                                   wf-rewrite-stobj2-conjuncts)))))
 
        (defthm ,(pack$ 'pseudo-dag-arrayp-of-mv-nth-2-of-try-to-apply-rules- suffix)
          (implies (and (<= n (get-dag-len (mv-nth 2 ,call-of-try-to-apply-rules)))
@@ -3368,11 +3388,13 @@
                        (rewrite-stobjp rewrite-stobj)
                        (rewrite-stobj2p rewrite-stobj2)
                        (bounded-refined-assumption-alistp refined-assumption-alist (get-dag-len rewrite-stobj2)))
-                  (PSEUDO-DAG-ARRAYP 'DAG-ARRAY
-                                     (get-dag-array (MV-NTH 2 ,call-of-try-to-apply-rules))
+                  (pseudo-dag-arrayp 'dag-array
+                                     (get-dag-array (mv-nth 2 ,call-of-try-to-apply-rules))
                                      n))
          :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-try-to-apply-rules- suffix))
-                  :in-theory (disable ,(pack$ 'theorem-for-try-to-apply-rules- suffix)))))
+                  :in-theory (e/d (wf-rewrite-stobj2)
+                                  (,(pack$ 'theorem-for-try-to-apply-rules- suffix)
+                                   wf-rewrite-stobj2-conjuncts)))))
 
        (defthm ,(pack$ 'bound-theorem-for-simplify-trees-and-add-to-dag- suffix)
          (implies (and (<= x (get-dag-len rewrite-stobj2))
@@ -3384,8 +3406,7 @@
                        (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
                        (rewrite-stobjp rewrite-stobj)
                        (rewrite-stobj2p rewrite-stobj2)
-                       (bounded-refined-assumption-alistp refined-assumption-alist (get-dag-len rewrite-stobj2))
-                       )
+                       (bounded-refined-assumption-alistp refined-assumption-alist (get-dag-len rewrite-stobj2)))
                   (<= x
                       (get-dag-len (mv-nth 2 ,call-of-simplify-trees-and-add-to-dag))))
          :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-simplify-trees-and-add-to-dag- suffix))
@@ -3630,7 +3651,9 @@
                        (maybe-memoizationp (mv-nth 3 ,call-of-simplify-tree-and-add-to-dag))
                        (dargp (mv-nth 1 ,call-of-simplify-tree-and-add-to-dag))))
          :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-simplify-tree-and-add-to-dag- suffix))
-                  :in-theory (disable ,(pack$ 'theorem-for-simplify-tree-and-add-to-dag- suffix)))))
+                  :in-theory (e/d (wf-rewrite-stobj2)
+                                  (,(pack$ 'theorem-for-simplify-tree-and-add-to-dag- suffix)
+                                   wf-rewrite-stobj2-conjuncts)))))
 
        (defthm ,(pack$ 'pseudo-dag-arrayp-of-mv-nth-2-of- simplify-tree-and-add-to-dag-name)
          (implies (and (natp len)
@@ -3646,9 +3669,11 @@
                        (rewrite-stobjp rewrite-stobj)
                        (rewrite-stobj2p rewrite-stobj2)
                        (bounded-refined-assumption-alistp refined-assumption-alist (get-dag-len rewrite-stobj2)))
-                  (PSEUDO-DAG-ARRAYP 'DAG-ARRAY (get-dag-array (MV-NTH '2 ,call-of-simplify-tree-and-add-to-dag)) len))
+                  (pseudo-dag-arrayp 'dag-array (get-dag-array (mv-nth '2 ,call-of-simplify-tree-and-add-to-dag)) len))
          :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-simplify-tree-and-add-to-dag- suffix))
-                  :in-theory (disable ,(pack$ 'theorem-for-simplify-tree-and-add-to-dag- suffix)))))
+                  :in-theory (e/d (wf-rewrite-stobj2)
+                                  (,(pack$ 'theorem-for-simplify-tree-and-add-to-dag- suffix)
+                                   wf-rewrite-stobj2-conjuncts)))))
 
        (defthm ,(pack$ '<-of-mv-nth-1-of- simplify-tree-and-add-to-dag-name)
          (implies (and ;(natp bound)
@@ -4865,7 +4890,7 @@
                                           renumbering-stobj)
                  (implies (not erp)
                           (and (rewrite-stobj2p new-rewrite-stobj2)
-                               (wf-dagp 'dag-array (get-dag-array new-rewrite-stobj2) (get-dag-len new-rewrite-stobj2) 'dag-parent-array (get-dag-parent-array new-rewrite-stobj2) (get-dag-constant-alist new-rewrite-stobj2) (get-dag-variable-alist new-rewrite-stobj2))
+                               (wf-rewrite-stobj2 new-rewrite-stobj2)
                                (dargp-less-than new-nodenum-or-quotep (get-dag-len new-rewrite-stobj2))
                                (dargp new-nodenum-or-quotep) ; implied by dargp-less-than (just above) but matches better
                                (<= (get-dag-len rewrite-stobj2) (get-dag-len new-rewrite-stobj2))
@@ -5115,7 +5140,7 @@
                  (declare (ignore tries node-replacement-array))
                  (implies (not erp)
                           (and (rewrite-stobj2p new-rewrite-stobj2)
-                               (wf-dagp 'dag-array (get-dag-array new-rewrite-stobj2) (get-dag-len new-rewrite-stobj2) 'dag-parent-array (get-dag-parent-array new-rewrite-stobj2) (get-dag-constant-alist new-rewrite-stobj2) (get-dag-variable-alist new-rewrite-stobj2))
+                               (wf-rewrite-stobj2 new-rewrite-stobj2)
                                (hit-countsp new-hit-counts)
                                (maybe-memoizationp new-memoization)
                                (iff new-memoization memoization)
@@ -5397,8 +5422,9 @@
                                                       integerp-of-renumberingi
                                                       natp-of-renumberingi
                                                       len-when-pseudo-dagp
-                                                      car-of-nth-when-pseudo-dagp)
-                                                     (natp))))))
+                                                      car-of-nth-when-pseudo-dagp
+                                                      wf-rewrite-stobj2)
+                                                     (natp wf-rewrite-stobj2-conjuncts))))))
       (b* (;; The guard excludes the error here, but this is critical to soundness, so we check it
            ;; in case this function is called from non-guard-verified code:
            ((when (and memoizep
@@ -5517,8 +5543,9 @@
                                 integerp-of-renumberingi
                                 <-of-+-of-1-when-integers
                                 len-when-pseudo-dagp
-                                car-of-nth-when-pseudo-dagp)
-                               (myquotep natp)))))
+                                car-of-nth-when-pseudo-dagp
+                                wf-rewrite-stobj2)
+                               (myquotep natp wf-rewrite-stobj2-conjuncts)))))
 
     (defthm ,(pack$ simplify-dag-core-name '-return-type-corollary-linear)
       (implies (and (not (myquotep (mv-nth 1 ,call-of-simplify-dag-core)))
@@ -5770,10 +5797,11 @@
                                                              ;; integerp-when-dargp ;caused problems when natp is known
                                                              axe-treep-when-pseudo-termp
                                                              dargp-when-natp
-                                                             <-of-if-arg2-axe)
+                                                             <-of-if-arg2-axe
+                                                             wf-rewrite-stobj2)
                                                             (natp
                                                              NATP-WHEN-DARGP ;caused problems when natp is known
-                                                             ))))))
+                                                             wf-rewrite-stobj2-conjuncts))))))
       (b* (;; Create an empty dag-array:
            (slack-amount 1000000) ;todo: make this adjustable
            ((mv dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
@@ -5892,8 +5920,9 @@
                                        ;max-key-hack-2
                                        <-OF-+-OF-1-WHEN-INTEGERS
                                        integerp-when-natp-disabled
-                                       <-of-if-arg2-axe)
-                                      (natp)))))
+                                       <-of-if-arg2-axe
+                                       wf-rewrite-stobj2)
+                                      (natp  wf-rewrite-stobj2-conjuncts)))))
 
     (defthm ,(pack$ 'consp-of-cdr-of-mv-nth-1-of- simplify-term-name '-when-quotep)
       (implies (and (equal 'quote (car (mv-nth 1 ,call-of-simplify-term)))
