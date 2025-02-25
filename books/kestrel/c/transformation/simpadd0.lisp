@@ -312,7 +312,9 @@
      for modularity and to facilitate extension.
      Additionally, the transformation take the ACL2 state as input,
      but this is not part of this structure for obvious reasons."))
-  ((thm-index pos
+  ((const-new symbolp
+              "The @(':const-new') input of the transformation.")
+   (thm-index pos
               "Index used to generate unique theorem names
                that include increasing numeric indices.")
    (names-to-avoid symbol-list
@@ -556,7 +558,8 @@
              (b* ((var-name (c$::ident->unwrap
                              (c$::expr-ident->ident new-arg1)))
                   (thm-name
-                   (packn-pos (list 'simpadd0-thm- gin.thm-index) 'c2c))
+                   (packn-pos (list gin.const-new '-thm- gin.thm-index)
+                              gin.const-new))
                   (thm-index (1+ gout-arg2.thm-index))
                   (thm-event
                    `(defruled ,thm-name
@@ -3259,7 +3262,8 @@
   :returns (mv erp (event pseudo-event-formp))
   :short "Event expansion of the transformation."
   (b* (((reterr) '(_))
-       (gin (make-simpadd0-gin :thm-index 1
+       (gin (make-simpadd0-gin :const-new const-new
+                               :thm-index 1
                                :names-to-avoid nil))
        ((mv tunits-new (simpadd0-gout gout))
         (simpadd0-transunit-ensemble tunits-old gin state))
