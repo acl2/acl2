@@ -22,7 +22,9 @@
 (include-book "std/system/pseudo-event-form-listp" :dir :system)
 
 (local (include-book "std/system/w" :dir :system))
+(local (include-book "std/typed-lists/atom-listp" :dir :system))
 (local (include-book "std/typed-lists/character-listp" :dir :system))
+(local (include-book "std/typed-lists/symbol-listp" :dir :system))
 
 (local (include-book "kestrel/built-ins/disable" :dir :system))
 (local (acl2::disable-most-builtin-logic-defuns))
@@ -534,12 +536,81 @@
                         (c$::coerce-var-info
                          (c$::expr-ident->info new-arg1))))
                     (c$::type-case info.type :sint)))
-             (mv new-arg1
-                 (make-simpadd0-gout
-                  :events (append gout-arg1.events gout-arg2.events)
-                  :thm-name nil
-                  :thm-index gout-arg2.thm-index
-                  :names-to-avoid gout-arg2.names-to-avoid))
+             ;; Transform the expression and generate a theorem.
+             (b* ((var-name (c$::ident->unwrap
+                             (c$::expr-ident->ident new-arg1)))
+                  (thm-name
+                   (packn-pos (list 'simpadd0-thm- gin.thm-index) 'c2c))
+                  (thm-index (1+ gout-arg2.thm-index))
+                  (thm-event
+                   `(defruled ,thm-name
+                      (b* ((expr-var (c$::expr-ident (c$::ident,var-name) nil))
+                           (expr-zero (c$::expr-const
+                                       (c$::const-int
+                                        (c$::make-iconst
+                                         :core (c$::make-dec/oct/hex-const-oct
+                                                :leading-zeros 1
+                                                :value 0)
+                                         :suffix? nil))))
+                           (expr-var+zero (c$::make-expr-binary
+                                           :op (c$::binop-add)
+                                           :arg1 expr-var
+                                           :arg2 expr-zero))
+                           (var (mv-nth 1 (c$::ldm-ident
+                                           (c$::ident ,var-name))))
+                           (val (c::read-object
+                                 (c::objdesign-of-var var compst) compst)))
+                        (and (not (mv-nth 0 (c$::ldm-expr expr-var+zero)))
+                             (not (mv-nth 0 (c$::ldm-expr expr-var)))
+                             (not (mv-nth 0 (c$::ldm-ident
+                                             (c$::ident ,var-name))))
+                             (implies
+                              (and (c::objdesign-of-var var compst)
+                                   (c::valuep val)
+                                   (c::value-case val :sint))
+                              (equal (c::expr-value->value
+                                      (c::exec-expr-pure
+                                       (mv-nth 1 (c$::ldm-expr expr-var+zero))
+                                       compst))
+                                     (c::expr-value->value
+                                      (c::exec-expr-pure
+                                       (mv-nth 1 (c$::ldm-expr expr-var))
+                                       compst))))))
+                      :in-theory '((:e c::expr-binary)
+                                   (:e c::expr-ident)
+                                   (:e c::binop-add)
+                                   (:e c$::binop-add)
+                                   (:e c$::const-int)
+                                   (:e c$::dec/oct/hex-const-oct)
+                                   (:e c$::expr-binary)
+                                   (:e c$::expr-const)
+                                   (:e c$::expr-ident)
+                                   (:e c$::expr-zerop)
+                                   (:e c$::iconst)
+                                   (:e c$::ident)
+                                   (:e c$::ldm-expr)
+                                   (:e c$::ldm-ident))
+                      :use (:instance exec-of-var+zero-to-exec-var
+                                      (var (mv-nth 1 (c$::ldm-ident
+                                                      (c$::ident ,var-name))))
+                                      (zero (c$::expr-const
+                                             (c$::const-int
+                                              (c$::make-iconst
+                                               :core
+                                               (c$::make-dec/oct/hex-const-oct
+                                                :leading-zeros 1
+                                                :value 0)
+                                               :suffix? nil))))))))
+               (mv new-arg1
+                   (make-simpadd0-gout
+                    :events (append gout-arg1.events
+                                    gout-arg2.events
+                                    (list thm-event))
+                    :thm-name thm-name
+                    :thm-index thm-index
+                    :names-to-avoid (append gout-arg2.names-to-avoid
+                                            (list thm-name)))))
+           ;; Do not transform the expression.
            (mv (make-expr-binary :op expr.op :arg1 new-arg1 :arg2 new-arg2)
                (make-simpadd0-gout
                 :events (append gout-arg1.events gout-arg2.events)
@@ -3174,7 +3245,7 @@
   (b* (((reterr) '(_))
        (gin (make-simpadd0-gin :thm-index 1
                                :names-to-avoid nil))
-       ((mv tunits-new &)
+       ((mv tunits-new (simpadd0-gout gout))
         (simpadd0-transunit-ensemble tunits-old gin state))
        ((mv erp &) (if (not proofs)
                        (retok :irrelevant)
@@ -3199,8 +3270,9 @@
                       re-run the transformation with :PROOFS NIL."
                      tunits-new erp)))
        (thm-events (and proofs
-                        (simpadd0-gen-proofs-for-transunit-ensemble
-                         const-old const-new tunits-old tunits-new)))
+                        (append gout.events
+                                (simpadd0-gen-proofs-for-transunit-ensemble
+                                 const-old const-new tunits-old tunits-new))))
        (const-event `(defconst ,const-new ',tunits-new)))
     (retok `(encapsulate () ,const-event ,@thm-events))))
 
