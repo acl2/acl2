@@ -25,7 +25,9 @@
                (set-difference-eq *std-pkg-symbols*
                                   '())
                c$::*abstract-syntax-symbols*
-               '(defirrelevant
+               '(constant-symbolp
+                 constant-value
+                 defirrelevant
                  defxdoc+
                  er-soft+
                  erp
@@ -36,6 +38,7 @@
                  pseudo-event-form-list
                  pseudo-event-form-listp
                  pos
+                 pos-fix
                  reterr
                  retok
                  symbol-list

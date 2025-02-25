@@ -2803,10 +2803,7 @@
            (equal (equal x y)
                   (equal (logtail 1 x) (logtail 1 y))))
   :rule-classes ((:rewrite :backchain-limit-lst (nil 1 1 nil nil)))
-  :hints (("Goal" :in-theory (e/d (logtail getbit bvchop) (
-                                                            ;mod-of-expt-of-2-constant-version
-                                                            mod-of-expt-of-2
-                                                            )))))
+  :hints (("Goal" :in-theory (e/d (logtail getbit bvchop) (mod-of-expt-of-2)))))
 
 
 ;should always bit blast as a last resort?
@@ -4052,8 +4049,7 @@
                       (bitnot (getbit n x))
                     (getbit n x))))
   :hints (("Goal" :in-theory (e/d (getbit bvchop slice logtail bitnot mod-sum-cases)
-                                  (MOD-OF-EXPT-OF-2 ;mod-of-expt-of-2-constant-version
-                                                      anti-slice)))))
+                                  (MOD-OF-EXPT-OF-2 anti-slice)))))
 
 (DEFTHM bvchop-when-getbit-and-bvchop-known
   (IMPLIES (and (equal (getbit m x) k1)
