@@ -2803,7 +2803,7 @@
            (equal (equal x y)
                   (equal (logtail 1 x) (logtail 1 y))))
   :rule-classes ((:rewrite :backchain-limit-lst (nil 1 1 nil nil)))
-  :hints (("Goal" :in-theory (e/d (logtail getbit bvchop) (mod-of-expt-of-2)))))
+  :hints (("Goal" :in-theory (e/d (logtail getbit bvchop) ()))))
 
 
 ;should always bit blast as a last resort?
@@ -4039,7 +4039,7 @@
   :hints (("Goal"
            :use (:instance FLOOR-PEEL-OFF-CONSTANT (k (+ -1 (expt 2 n))) (n x) (y (expt 2 n)))
 
-           :in-theory (e/d (logtail bvchop) (FLOOR-PEEL-OFF-CONSTANT MOD-OF-EXPT-OF-2)))))
+           :in-theory (e/d (logtail bvchop) (FLOOR-PEEL-OFF-CONSTANT )))))
 
 (defthm getbit-of-one-less
   (implies (and (integerp x)
@@ -4049,7 +4049,7 @@
                       (bitnot (getbit n x))
                     (getbit n x))))
   :hints (("Goal" :in-theory (e/d (getbit bvchop slice logtail bitnot mod-sum-cases)
-                                  (MOD-OF-EXPT-OF-2 anti-slice)))))
+                                  ( anti-slice)))))
 
 (DEFTHM bvchop-when-getbit-and-bvchop-known
   (IMPLIES (and (equal (getbit m x) k1)
@@ -4110,7 +4110,7 @@
                          (BVCHOP N (- FREE)))
                   (EQUAL (BVCHOP N X)
                          (BVCHOP N FREE))))
-  :hints (("Goal" :in-theory (e/d (bvchop) (MOD-OF-EXPT-OF-2)))))
+  :hints (("Goal" :in-theory (e/d (bvchop) ()))))
 
 ;do we need this?
 (DEFTHMd BVCHOP-SUM-SUBST-minus
@@ -4460,7 +4460,7 @@
                   (if (equal (bvchop size n) (+ -1 (expt 2 size)))
                       0
                     (+ 1 (bvchop size n)))))
-  :hints (("Goal" :in-theory (e/d (bvchop mod-sum-cases) (MOD-OF-EXPT-OF-2)))))
+  :hints (("Goal" :in-theory (e/d (bvchop mod-sum-cases) ()))))
 
 (defthm bvchop-reduce-when-all-but-top-bit-known
   (implies (and (equal (bvchop 31 x) free)
@@ -4522,7 +4522,7 @@
                                          expt-of-+ ;;EXPONENTS-ADD-unrestricted
                                          )
                                   (
-                                   MOD-OF-EXPT-OF-2)))))
+                                   )))))
 
 
 
@@ -5590,10 +5590,7 @@
                   (and (unsigned-byte-p (+ -1 n) k)
                        (natp n))))
   :hints (("Goal" :in-theory (e/d (signed-byte-p getbit slice bvchop-of-logtail logtail bvchop UNSIGNED-BYTE-P)
-                                  (MOD-OF-EXPT-OF-2
-
-                                   logtail-becomes-slice-bind-free
-                                   )))))
+                                  (logtail-becomes-slice-bind-free)))))
 
 (defthm signed-byte-p-when-top-bit-1
   (implies (and (signed-byte-p n k)
@@ -5605,11 +5602,8 @@
   :rule-classes nil
   :hints (("Goal" :cases ((< k 0)(< 0 k))
            :in-theory (e/d (signed-byte-p getbit slice bvchop-of-logtail logtail bvchop UNSIGNED-BYTE-P)
-                                  (MOD-EXPT-SPLIT
-                                   MOD-OF-EXPT-OF-2
-
-                                   logtail-becomes-slice-bind-free
-                                   )))))
+                           (MOD-EXPT-SPLIT
+                            logtail-becomes-slice-bind-free)))))
 
 (defthm bvsx-too-high-syntactic
   (implies (and (bind-free (bind-var-to-bv-term-size 'xsize x) (xsize))

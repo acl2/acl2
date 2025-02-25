@@ -100,7 +100,7 @@
                                    ifix)
                                   (
 
-                                   MOD-OF-EXPT-OF-2)))))
+                                   )))))
 
 
 (defthm UNSIGNED-BYTE-P-shift-lemma
@@ -399,7 +399,7 @@
   (equal (mod (bvchop 63 x) 2)
          (getbit 0 x))
   :hints (("Goal" :in-theory (e/d (bvchop getbit)
-                                  (mod-of-expt-of-2)))))
+                                  ()))))
 
 ;move to an arith library
 (defthm <-of-constant-when-<-of-constant-integer

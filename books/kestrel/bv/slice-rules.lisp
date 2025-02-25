@@ -1,7 +1,7 @@
 ; Mixed theorems about slice
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2023 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -37,7 +37,7 @@
   :hints (("Goal" :in-theory (e/d (logtail floor-of-sum bvchop ;bvplus
                                            ;;mod-cancel
                                            )
-                                  (mod-of-expt-of-2)))))
+                                  ()))))
 
 (defthmd logtail-of-plus
   (implies (and (integerp x)
@@ -88,7 +88,7 @@
                     (+ -1 (- (logtail size x))))))
   :hints (("Goal" :in-theory (e/d (logtail bvchop FLOOR-of---ARG1
                                            EQUAL-OF-0-AND-MOD)
-                                  (MOD-OF-EXPT-OF-2)))))
+                                  ()))))
 
 (defthm slice-of-minus
   (implies (and (integerp x)
