@@ -22,7 +22,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defxdoc+ proposal-author-self
+(defxdoc+ proposed-author-self
   :parents (correctness)
   :short "Invariant that the author of a pending proposal
           in each validator state
@@ -40,7 +40,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define-sk proposal-author-self-p ((systate system-statep))
+(define-sk proposed-author-self-p ((systate system-statep))
   :returns (yes/no booleanp)
   :short "Definition of the invariant."
   (forall (val prop)
@@ -54,121 +54,121 @@
   (("Goal"
     :in-theory (enable proposal-setp-of-keys-when-proposal-address-set-mapp)))
   ///
-  (fty::deffixequiv-sk proposal-author-self-p
+  (fty::deffixequiv-sk proposed-author-self-p
     :args ((systate system-statep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled proposal-author-self-p-when-init
+(defruled proposed-author-self-p-when-init
   :short "Establishment of the invariant in the initial states."
   (implies (system-initp systate)
-           (proposal-author-self-p systate))
-  :enable (proposal-author-self-p
+           (proposed-author-self-p systate))
+  :enable (proposed-author-self-p
            system-initp
            system-validators-initp-necc
            validator-init))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defsection proposal-author-self-p-of-next
+(defsection proposed-author-self-p-of-next
   :short "Preservation of the invariant by single transitions."
   :long
   (xdoc::topstring
    (xdoc::p
     "The reason why use the @(':expand') hint,
-     instead of just enabling @(tsee proposal-author-self-p),
+     instead of just enabling @(tsee proposed-author-self-p),
      is that, if we do the latter,
-     the @('proposal-author-self-p-necc') rule does not fire,
+     the @('proposed-author-self-p-necc') rule does not fire,
      because it cannot instantiate the free variable @('systate').
      With the @(':expand') hint,
-     only the call of @(tsee proposal-author-self-p)
+     only the call of @(tsee proposed-author-self-p)
      in the conclusion of the theorems is expanded,
      leaving the call in the hypothesis unexpanded,
      so it can be used to provide an instantiation for
-     the free variable @('systate') in @('proposal-author-self-p-necc')."))
+     the free variable @('systate') in @('proposed-author-self-p-necc')."))
 
-  (defruled proposal-author-self-p-of-propose-next
-    (implies (proposal-author-self-p systate)
-             (proposal-author-self-p (propose-next prop dests systate)))
-    :expand (proposal-author-self-p (propose-next prop dests systate))
-    :enable (proposal-author-self-p-necc
+  (defruled proposed-author-self-p-of-propose-next
+    (implies (proposed-author-self-p systate)
+             (proposed-author-self-p (propose-next prop dests systate)))
+    :expand (proposed-author-self-p (propose-next prop dests systate))
+    :enable (proposed-author-self-p-necc
              validator-state->proposed-of-propose-next))
 
-  (defruled proposal-author-self-p-of-endorse-next
-    (implies (proposal-author-self-p systate)
-             (proposal-author-self-p (endorse-next prop endor systate)))
-    :expand (proposal-author-self-p (endorse-next prop endor systate))
-    :enable proposal-author-self-p-necc)
+  (defruled proposed-author-self-p-of-endorse-next
+    (implies (proposed-author-self-p systate)
+             (proposed-author-self-p (endorse-next prop endor systate)))
+    :expand (proposed-author-self-p (endorse-next prop endor systate))
+    :enable proposed-author-self-p-necc)
 
-  (defruled proposal-author-self-p-of-augment-next
+  (defruled proposed-author-self-p-of-augment-next
     (implies (and (augment-possiblep prop endor systate)
-                  (proposal-author-self-p systate))
-             (proposal-author-self-p (augment-next prop endor systate)))
-    :expand (proposal-author-self-p (augment-next prop endor systate))
-    :enable (proposal-author-self-p-necc
+                  (proposed-author-self-p systate))
+             (proposed-author-self-p (augment-next prop endor systate)))
+    :expand (proposed-author-self-p (augment-next prop endor systate))
+    :enable (proposed-author-self-p-necc
              validator-state->proposed-of-augment-next))
 
-  (defruled proposal-author-self-p-of-certify-next
-    (implies (proposal-author-self-p systate)
-             (proposal-author-self-p (certify-next cert dests systate)))
-    :expand (proposal-author-self-p (certify-next cert dests systate))
-    :enable (proposal-author-self-p-necc
+  (defruled proposed-author-self-p-of-certify-next
+    (implies (proposed-author-self-p systate)
+             (proposed-author-self-p (certify-next cert dests systate)))
+    :expand (proposed-author-self-p (certify-next cert dests systate))
+    :enable (proposed-author-self-p-necc
              validator-state->proposed-of-certify-next
              omap::keys-of-delete))
 
-  (defruled proposal-author-self-p-of-accept-next
+  (defruled proposed-author-self-p-of-accept-next
     (implies (and (accept-possiblep val cert systate)
-                  (proposal-author-self-p systate))
-             (proposal-author-self-p (accept-next val cert systate)))
-    :expand (proposal-author-self-p (accept-next val cert systate))
-    :enable proposal-author-self-p-necc)
+                  (proposed-author-self-p systate))
+             (proposed-author-self-p (accept-next val cert systate)))
+    :expand (proposed-author-self-p (accept-next val cert systate))
+    :enable proposed-author-self-p-necc)
 
-  (defruled proposal-author-self-p-of-advance-next
+  (defruled proposed-author-self-p-of-advance-next
     (implies (and (advance-possiblep val systate)
-                  (proposal-author-self-p systate))
-             (proposal-author-self-p (advance-next val systate)))
-    :expand (proposal-author-self-p (advance-next val systate))
-    :enable (proposal-author-self-p-necc))
+                  (proposed-author-self-p systate))
+             (proposed-author-self-p (advance-next val systate)))
+    :expand (proposed-author-self-p (advance-next val systate))
+    :enable (proposed-author-self-p-necc))
 
-  (defruled proposal-author-self-p-of-commit-next
+  (defruled proposed-author-self-p-of-commit-next
     (implies (and (commit-possiblep val systate)
-                  (proposal-author-self-p systate))
-             (proposal-author-self-p (commit-next val systate)))
-    :expand (proposal-author-self-p (commit-next val systate))
-    :enable proposal-author-self-p-necc)
+                  (proposed-author-self-p systate))
+             (proposed-author-self-p (commit-next val systate)))
+    :expand (proposed-author-self-p (commit-next val systate))
+    :enable proposed-author-self-p-necc)
 
-  (defruled proposal-author-self-p-of-event-next
+  (defruled proposed-author-self-p-of-event-next
     (implies (and (event-possiblep event systate)
-                  (proposal-author-self-p systate))
-             (proposal-author-self-p (event-next event systate)))
+                  (proposed-author-self-p systate))
+             (proposed-author-self-p (event-next event systate)))
     :enable (event-possiblep event-next)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled proposal-author-self-p-of-events-next
+(defruled proposed-author-self-p-of-events-next
   :short "Preservation of the invariant by multiple transitions."
   (implies (and (events-possiblep events systate)
-                (proposal-author-self-p systate))
-           (proposal-author-self-p (events-next events systate)))
+                (proposed-author-self-p systate))
+           (proposed-author-self-p (events-next events systate)))
   :induct t
   :enable (events-possiblep
            events-next))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defruled proposal-author-self-p-when-reachable
+(defruled proposed-author-self-p-when-reachable
   :short "The invariant holds in every reachable state."
   (implies (system-state-reachablep systate)
-           (proposal-author-self-p systate))
+           (proposed-author-self-p systate))
   :enable (system-state-reachablep
-           proposal-author-self-p-when-init)
+           proposed-author-self-p-when-init)
   :prep-lemmas
   ((defrule lemma
      (implies (and (system-state-reachable-from-p systate from)
-                   (proposal-author-self-p from))
-              (proposal-author-self-p systate))
+                   (proposed-author-self-p from))
+              (proposed-author-self-p systate))
      :use (:instance
-           proposal-author-self-p-of-events-next
+           proposed-author-self-p-of-events-next
            (events (system-state-reachable-from-p-witness systate from))
            (systate from))
      :enable system-state-reachable-from-p)))
