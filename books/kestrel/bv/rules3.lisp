@@ -110,7 +110,7 @@
            (equal (* 2 (BVCHOP (+ -1 N) x))
                   (bvchop n (* 2 x))))
   :hints (("Goal" :in-theory (e/d (bvchop mod-expt-split)
-                                  (MOD-OF-EXPT-OF-2)))))
+                                  ()))))
 
 (defthmd split-when-low-bit-1
   (implies (and (INTEGERP X)
@@ -119,7 +119,7 @@
            (equal (+ 1 (* 2 (floor x 2)))
                   x))
   :hints (("Goal" :in-theory (e/d (bvchop mod)
-                                  (mod-of-expt-of-2
+                                  (
                                                  ;;MOD-RECOLLAPSE-LEMMA2
                                                  ;;MOD-RECOLLAPSE-LEMMA
                                    )))))
@@ -130,7 +130,7 @@
                 (EQUAL 0 (BVCHOP 1 X)))
            (equal (* 2 (floor x 2))
                   x))
-  :hints (("Goal" :in-theory (e/d (bvchop mod) (MOD-OF-EXPT-OF-2
+  :hints (("Goal" :in-theory (e/d (bvchop mod) (
                                                  ;;MOD-RECOLLAPSE-LEMMA2
                                                  ;;MOD-RECOLLAPSE-LEMMA
                                                  )))))
@@ -251,7 +251,7 @@
                                    SLICE-WHEN-VAL-IS-NOT-AN-INTEGER
                                    GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
                                    BITXOR-SPLIT)
-                           (MOD-OF-EXPT-OF-2
+                           (
                             anti-slice
                             BVCHOP-OF-LOGTAIL
                             ;; for speed:
@@ -1886,8 +1886,7 @@
   :hints (("Goal"
            :use (:instance FLOOR-PEEL-OFF-CONSTANT (k (+ -1 (expt 2 n))) (n x) (y (expt 2 n)))
            :in-theory (e/d (logtail bvchop floor-of-sum)
-                           (mod-of-expt-of-2
-                            floor-peel-off-constant)))))
+                           (floor-peel-off-constant)))))
 
 (defthm getbit-of-one-more
   (implies (integerp x)
