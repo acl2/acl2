@@ -28,6 +28,7 @@
   (xdoc::topstring
    (xdoc::p
     "Initially there is no (proposal or other kind of) message in the network.
+     Proposal messages are only created when proposals are created.
      When a correct validator creates a proposal,
      it does not send the proposal messages to itself.
      Faulty validators may send proposal messages to themselves,
