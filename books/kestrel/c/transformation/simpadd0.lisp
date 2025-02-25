@@ -3267,6 +3267,13 @@
               (transunit-ensemble-annop tunits-old))
   :returns (mv erp (event pseudo-event-formp))
   :short "Event expansion of the transformation."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The modular bottom-up theorems in @(tsee simpadd0-gout)
+     are always generated, because they are never expected to fail.
+     The function equivalence theorems, which are brittle,
+     are generated only if @(':proofs') is @('t')."))
   (b* (((reterr) '(_))
        (gin (make-simpadd0-gin :const-new const-new
                                :thm-index 1
@@ -3295,8 +3302,8 @@
                       Thus, proofs cannot be generated: ~
                       re-run the transformation with :PROOFS NIL."
                      tunits-new erp)))
-       (thm-events (and proofs
-                        (append gout.events
+       (thm-events (append gout.events
+                           (and proofs
                                 (simpadd0-gen-proofs-for-transunit-ensemble
                                  const-old const-new tunits-old tunits-new))))
        (const-event `(defconst ,const-new ',tunits-new)))
