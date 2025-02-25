@@ -1,7 +1,7 @@
 ; Bit-vector rotations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -326,7 +326,7 @@
                                      leftrotate32
                                      leftrotate
                                      rightrotate
-                                     mod-of-expt-of-2-constant-version))))
+                                     mod-becomes-bvchop-when-power-of-2p))))
 
 (defthm leftrotate32-of-leftrotate32
   (implies (and (natp k1)
