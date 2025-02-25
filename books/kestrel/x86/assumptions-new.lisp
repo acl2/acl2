@@ -1,7 +1,7 @@
 ; New method of generating assumptions for x86 lifting
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2024 Kestrel Institute
+; Copyright (C) 2020-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -15,6 +15,7 @@
 (include-book "assumptions-for-inputs")
 (include-book "assumptions64")  ; reduce?
 (include-book "parsers/elf-tools")
+(include-book "kestrel/utilities/quote" :dir :system)
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/bv-lists/all-unsigned-byte-p2" :dir :system))
 (local (include-book "kestrel/lists-light/nthcdr" :dir :system))
@@ -248,7 +249,7 @@
 (local (in-theory (disable assoc-equal symbol-alistp))) ;todo
 
 ;; Generate all the assumptions for an ELF64 file, whether relative or
-;; absolute.  Returns (mv erp assumptions) where assumptions is a list of terms.
+;; absolute.  Returns (mv erp assumptions assumption-vars) where assumptions is a list of terms.
 ;; Do not inclue assumptions about the inputs.  TODO: Should it?
 (defun assumptions-elf64-new (target
                               relp ; rename position-independentp?
@@ -270,7 +271,7 @@
                   :guard-hints (("Goal" :in-theory (enable acl2::parsed-elfp acl2::true-listp-when-pseudo-term-listp-2)))))
   (b* ((file-type (acl2::parsed-elf-type parsed-elf))
        ((when (not (member-eq file-type '(:rel :dyn :exec))))
-        (mv (cons :unknown-file-type file-type) nil))
+        (mv (cons :unknown-file-type file-type) nil nil))
        ;; Decide whether to treat addresses as relative or absolute:
        ;; (relp (if (eq :auto relp)
        ;;           (if (member-eq file-type '(:rel :dyn)) t nil) ; :exec means absolute
@@ -296,15 +297,25 @@
                                                 relp stack-slots-needed state-var base-var parsed-elf nil)
           ;;todo: check that there is at least one LOAD section:
           (assumptions-for-elf64-segments program-header-table relp state-var base-var stack-slots-needed bytes (len bytes) nil)))
-       ((when erp) (mv erp nil))
+       ((when erp) (mv erp nil nil))
        ;; currently, we only assume the inputs are disjoint from the text section (an input might very well be in a data section!):
        (code-address (acl2::get-elf-code-address parsed-elf)) ; todo: what if there are segments but no sections?!
        ((when (not (natp code-address))) ; impossible
-        (mv :bad-code-addres nil))
+        (mv :bad-code-addres nil nil))
        ;; (text-offset (if relp
        ;;                  (symbolic-add-constant code-address base-var) ; todo clean up base-var handling -- done?
        ;;                code-address))
-       )
+       ((mv input-assumptions input-assumption-vars)
+        (if (equal inputs :skip)
+            (mv nil nil)
+          (input-assumptions-and-vars inputs
+                                      ;; todo: handle zmm regs and values passed on the stack?!:
+                                      ;; handle structs that fit in 2 registers?
+                                      ;; See the System V AMD64 ABI
+                                      '((rdi x86) (rsi x86) (rdx x86) (rcx x86) (r8 x86) (r9 x86))
+                                      stack-slots-needed
+                                      disjoint-chunk-addresses-and-lens ; (acons text-offset (len (acl2::get-elf-code parsed-elf)) nil) ; todo: could there be extra zeros?
+                                      nil nil))))
     (mv nil
         (append ;; can't use this: not in normal form: (make-standard-state-assumptions-64-fn state-var) ; todo: put back, but these are untranslated!  should all the assumptions be generated untranslated (for presentation) and then translated?
           (make-standard-state-assumptions-fn state-var)
@@ -343,16 +354,8 @@
                 )
             nil)
           segment-or-section-assumptions
-          (if (equal inputs :skip)
-              nil
-            (assumptions-for-inputs inputs
-                                    ;; todo: handle zmm regs and values passed on the stack?!:
-                                    ;; handle structs that fit in 2 registers?
-                                    ;; See the System V AMD64 ABI
-                                    '((rdi x86) (rsi x86) (rdx x86) (rcx x86) (r8 x86) (r9 x86))
-                                    stack-slots-needed
-                                    disjoint-chunk-addresses-and-lens ; (acons text-offset (len (acl2::get-elf-code parsed-elf)) nil) ; todo: could there be extra zeros?
-                                    ))))))
+          input-assumptions)
+        input-assumption-vars)))
 
 ;; not true due to make-standard-state-assumptions-64-fn
 ;; (thm

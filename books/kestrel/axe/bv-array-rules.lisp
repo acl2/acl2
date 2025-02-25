@@ -146,7 +146,6 @@
                             cons-onto-repeat
                             nthcdr-of-take-becomes-subrange
                             cdr-of-take-becomes-subrange-better
-                            take-of-nthcdr-becomes-subrange
                             take-of-cdr-becomes-subrange ;looped and no theory invar
                             )))))
 

@@ -18,7 +18,7 @@
 
 ;; todo: what order should these be in?
 ;; todo: could axe order this after analyzing its rules?
-(make-axe-syntaxp-evaluator 'basic '(heavier-dag-term
+(make-axe-syntaxp-evaluator 'basic '(lighter-dargp
                                      ;; bv-term-syntaxp
                                      is-a-myif
                                      syntactic-booleanp

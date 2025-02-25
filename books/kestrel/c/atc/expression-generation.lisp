@@ -2528,7 +2528,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod pexprs-gin
+(fty::defprod exprs-gin
   :short "Inputs for C pure expression list generation."
   :long
   (xdoc::topstring
@@ -2560,11 +2560,11 @@
             should continue or not.
             This will be eliminated when modular proof generation
             will cover all of the ATC-generated code."))
-  :pred pexprs-ginp)
+  :pred exprs-ginp)
 
 ;;;;;;;;;;;;;;;;;;;;
 
-(fty::defprod pexprs-gout
+(fty::defprod exprs-gout
   :short "Outputs for C pure expression list generation."
   ((exprs expr-list
           "Expressions generated from the term.")
@@ -2587,27 +2587,27 @@
               "Described in @(see atc-implementation).")
    (names-to-avoid symbol-list
                    "Described in @(see atc-implementation)."))
-  :pred pexprs-goutp)
+  :pred exprs-goutp)
 
 ;;;;;;;;;;
 
-(defirrelevant irr-pexprs-gout
+(defirrelevant irr-exprs-gout
   :short "An irrelevant output for C pure expression list generation."
-  :type pexprs-goutp
-  :body (make-pexprs-gout :exprs nil
-                          :types nil
-                          :terms nil
-                          :events nil
-                          :thm-names nil
-                          :thm-index 1
-                          :names-to-avoid nil))
+  :type exprs-goutp
+  :body (make-exprs-gout :exprs nil
+                         :types nil
+                         :terms nil
+                         :events nil
+                         :thm-names nil
+                         :thm-index 1
+                         :names-to-avoid nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define atc-gen-expr-pure-list ((terms pseudo-term-listp)
-                                (gin pexprs-ginp)
+                                (gin exprs-ginp)
                                 state)
-  :returns (mv erp (gout pexprs-goutp))
+  :returns (mv erp (gout exprs-goutp))
   :short "Generate a list of C expressions from a list of ACL2 terms
           that must be pure expression terms returning C values."
   :long
@@ -2615,16 +2615,16 @@
    (xdoc::p
     "This lifts @(tsee atc-gen-expr-pure) to lists.
      However, we do not return the C types of the expressions."))
-  (b* (((reterr) (irr-pexprs-gout))
-       ((pexprs-gin gin) gin)
+  (b* (((reterr) (irr-exprs-gout))
+       ((exprs-gin gin) gin)
        ((when (endp terms))
-        (retok (make-pexprs-gout :exprs nil
-                                 :types nil
-                                 :terms nil
-                                 :events nil
-                                 :thm-names nil
-                                 :thm-index gin.thm-index
-                                 :names-to-avoid gin.names-to-avoid)))
+        (retok (make-exprs-gout :exprs nil
+                                :types nil
+                                :terms nil
+                                :events nil
+                                :thm-names nil
+                                :thm-index gin.thm-index
+                                :names-to-avoid gin.names-to-avoid)))
        ((erp (expr-gout first))
         (atc-gen-expr-pure (car terms)
                            (make-expr-gin
@@ -2638,14 +2638,14 @@
                             :names-to-avoid gin.names-to-avoid
                             :proofs gin.proofs)
                            state))
-       ((erp (pexprs-gout rest))
+       ((erp (exprs-gout rest))
         (atc-gen-expr-pure-list (cdr terms)
-                                (change-pexprs-gin
+                                (change-exprs-gin
                                  gin
                                  :thm-index first.thm-index
                                  :names-to-avoid first.names-to-avoid)
                                 state)))
-    (retok (make-pexprs-gout
+    (retok (make-exprs-gout
             :exprs (cons first.expr rest.exprs)
             :types (cons first.type rest.types)
             :terms (cons first.term rest.terms)

@@ -1,7 +1,7 @@
 ; Bitwise and
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -369,9 +369,7 @@
            :in-theory (e/d (bvchop ;fl ;FLOOR-TYPE-1 floor-bounded-by-/ MOD-X-Y-=-X+Y-FOR-RATIONALS mod-minus
                                    mod-expt-split FLOOR-WHEN-INTEGERP-OF-QUOTIENT
                                    )
-                           (mod-of-expt-of-2
-                            ;;mod-of-expt-of-2-constant-version
-                            ))
+                           ())
            :expand ((LOGAND X (MOD Y (EXPT 2 M)))
                     (LOGAND X Y)
                     (MOD (* 2 (FLOOR Y 2)) (EXPT 2 M)))
@@ -450,3 +448,25 @@
            (equal (bvand n x y)
                   (bvand n x k)))
   :hints (("Goal" :in-theory (enable bvand))))
+
+;move or drop?
+(defun bind-newsize-to-constant-size (x)
+  (declare (xargs :guard (and (quotep x)
+                              (pseudo-termp x)
+                              (natp (unquote x)))))
+  (acons 'newsize
+         (list 'quote (integer-length (unquote x)))
+         nil))
+
+(defthm bvand-of-constant-tighten
+   (implies (and (syntaxp (and (quotep k)
+                               (< (integer-length (unquote k))
+                                  (unquote size))))
+                 (bind-free (bind-newsize-to-constant-size k) (newsize))
+                 (unsigned-byte-p newsize k)
+                 (< newsize size)
+                 (natp size)
+                 (natp newsize))
+            (equal (bvand size k x)
+                   (bvand newsize k x)))
+   :hints (("Goal" :in-theory (enable bvand-tighten-1))))

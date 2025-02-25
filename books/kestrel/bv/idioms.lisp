@@ -91,6 +91,8 @@
                   (bvand 32 (bvchop size x) (bvchop size y))))
   :hints (("Goal" :in-theory (enable bvshr bvand))))
 
+(theory-invariant (incompatible (:rewrite bvand-extend-to-32bits) (:rewrite bvand-of-constant-tighten)))
+
 (defthmd bvor-extend-to-32bits
   (implies (and (natp size)
                 (< size 32))

@@ -573,8 +573,7 @@
                   (if (<= size1 size2)
                       0
                     (expt 2 size2))))
-  :hints (("Goal" :in-theory (e/d (bvchop) (;mod-of-expt-of-2-constant-version mod-of-expt-of-2
-                                            )))))
+  :hints (("Goal" :in-theory (e/d (bvchop) ()))))
 
 ;can this be expensive?
 ;rename?
@@ -682,24 +681,18 @@
 (theory-invariant (incompatible (:definition bvchop)
                                 (:rewrite mod-of-expt-of-2)))
 
-
-
-;; Replaces mod with bvchop
-;; rename
 ;kill the version with 4 hard-coded
-(defthmd mod-of-expt-of-2-constant-version
-  (implies (and (syntaxp (quotep k)) ;new..
+(defthmd mod-becomes-bvchop-when-power-of-2p
+  (implies (and (syntaxp (quotep k))
                 (power-of-2p k) ;(equal k (expt 2 (+ -1 (integer-length k))))
-                (integerp x)
-                ;;(natp k)
-                )
+                (integerp x))
            (equal (mod x k)
                   (bvchop (+ -1 (integer-length k)) x)))
   :hints (("Goal" :in-theory (e/d (power-of-2p) (mod-of-expt-of-2))
            :use (:instance mod-of-expt-of-2
                            (m (+ -1 (integer-length k)))))))
 
-(theory-invariant (incompatible (:definition bvchop) (:rewrite mod-of-expt-of-2-constant-version)))
+(theory-invariant (incompatible (:rewrite mod-becomes-bvchop-when-power-of-2p) (:definition bvchop)))
 
 (defthm bitp-of-bvchop-of-1
   (bitp (bvchop 1 x)))
@@ -931,13 +924,3 @@
                 (integerp y))
            (equal (bvchop size (+ x y (expt 2 size)))
                   (bvchop size (+ x y)))))
-
-(defthmd mod-becomes-bvchop-when-power-of-2p
-  (implies (and (syntaxp (quotep k))
-                (power-of-2p k)
-                (integerp x))
-           (equal (mod x k)
-                  (bvchop (+ -1 (integer-length k)) x)))
-  :hints (("Goal" :in-theory (enable bvchop power-of-2p))))
-
-(theory-invariant (incompatible (:rewrite mod-becomes-bvchop-when-power-of-2p) (:definition bvchop)))

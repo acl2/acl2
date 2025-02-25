@@ -1,7 +1,7 @@
 ; Definitions of arithmetic operations on bvs
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -13,9 +13,8 @@
 
 (include-book "bvchop-def")
 
-(defund bvplus (size x y)
-  (declare (type (integer 0 *) size))
-  (bvchop size (+ (ifix x) (ifix y))))
+;; See also bvplus-def.lisp
+;; See also bvmult-def.lisp
 
 (defund bvminus (size x y)
   (declare (type (integer 0 *) size))
@@ -24,8 +23,3 @@
 (defun bvuminus (size x)
   (declare (type (integer 0 *) size))
   (bvchop size (- (ifix x))))
-
-(defund bvmult (size x y)
-  (declare (type integer x y)
-           (type (integer 0 *) size))
-  (bvchop size (* (ifix x) (ifix y))))

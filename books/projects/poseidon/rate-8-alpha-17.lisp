@@ -12,7 +12,7 @@
 (in-package "POSEIDON")
 
 (include-book "std/util/defval" :dir :system)
-(include-book "kestrel/crypto/primes/bls12-377-prime" :dir :system)
+(include-book "projects/bls12-377-curves/primes/bls12-377-prime" :dir :system)
 (include-book "kestrel/utilities/strings/chars-codes" :dir :system)
 (include-book "kestrel/utilities/digits-any-base/core" :dir :system)
 (include-book "std/testing/assert-equal" :dir :system)

@@ -488,7 +488,7 @@
     bvor-convert-arg3-to-bv-axe
     bvxor-convert-arg2-to-bv-axe
     bvxor-convert-arg3-to-bv-axe
-    getbit-convert-arg1-to-bv-axe ; todo: more!
+    getbit-convert-arg2-to-bv-axe ; todo: more!
     ;; logext-convert-arg2-to-bv-axe ; loops with logext-of-bvplus-64
     ;; keep this list in sync with *functions-convertible-to-bv*:
     trim-of-logand-becomes-bvand
@@ -2111,7 +2111,7 @@
     acl2-numberp-of-unary--
     fix
     integerp-of-+-when-integerp-1-cheap
-    mod-of-expt-of-2-constant-version
+    mod-becomes-bvchop-when-power-of-2p
     bvlt-of-bvmult-6-5-20 ;which one of these helps?
     bvlt-of-bvmult-6-5-20-alt
     bvlt-trim-arg1-axe-all

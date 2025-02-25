@@ -354,7 +354,7 @@
     (:REWRITE NAT-listp-OF-CDR)
     (:REWRITE NAT-listP-WHEN-NOT-CONSP-CHEAP)
     (:REWRITE STORED-AXE-RULE-LISTP-OF-CDR)
-    (:REWRITE stored-axe-rule-listp-of-get-rules-for-fn-when-rule-alistp)
+    (:REWRITE stored-axe-rule-listp-of-get-rules-for-fn)
     (:REWRITE AXE-BIND-FREE-RESULT-OKAYP-REWRITE)
     (:REWRITE AXE-RULE-HYP-LISTP-OF-CDR)
     (:REWRITE AXE-RULE-HYP-LISTP-OF-STORED-RULE-HYPS)
@@ -434,7 +434,6 @@
     (:REWRITE SYMBOLP-OF-STORED-RULE-SYMBOL)
     (:REWRITE TRIESP-OF-INCREMENT-TRIES)
     (:REWRITE TRUE-LIST-FIX-WHEN-TRUE-LISTP)
-    (:REWRITE TRUE-LISTP-OF-get-rules-for-fn-WHEN-RULE-ALISTP) ; drop?
     (:REWRITE stored-axe-rulep-of-car)
     (:REWRITE WF-DAGP-AFTER-ADD-FUNCTION-CALL-EXPR-TO-DAG-ARRAY)
     (:TYPE-PRESCRIPTION ACL2-NUMBER-LISTP)
@@ -1216,7 +1215,7 @@
                               equiv-alist rule-alist nodenums-to-assume-false1 nodenums-to-assume-false2 assumption-array assumption-array-num-valid-nodes print hit-counts tries interpreted-function-alist monitored-symbols embedded-dag-depth case-designator
                               prover-depth options (+ -1 count))
                            (prog2$ (and (member-eq rule-symbol monitored-symbols)
-                                        (cw "(Failed. Reason: Failed to relieve axe-syntaxp hyp (number ~x0): ~x1 for ~x2.)~%" hyp-num hyp rule-symbol))
+                                        (cw "(Failed. Reason: Failed to relieve axe-syntaxp hyp ~x0 for ~x1.)~%" syntaxp-expr rule-symbol))
                                    (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries))))
                      (if (eq :axe-bind-free fn)
                          (let* ((bind-free-expr (cadr hyp)) ;; strip off the :AXE-BIND-FREE
@@ -1237,7 +1236,7 @@
                                                             prover-depth options (+ -1 count))))
                              ;; failed to relieve the axe-bind-free hyp:
                              (prog2$ (and (member-eq rule-symbol monitored-symbols)
-                                          (cw "(Failed.  Reason: Failed to relieve axe-bind-free hyp (number ~x0): ~x1 for ~x2.)~%" hyp-num hyp rule-symbol))
+                                          (cw "(Failed.  Reason: Failed to relieve axe-bind-free hyp ~x0 for ~x1.)~%" bind-free-expr rule-symbol))
                                      (mv (erp-nil) nil alist dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries))))
                        (if (eq :free-vars fn)
                            ;; HYP has free vars (also, any work-hard has been dropped):
@@ -1278,7 +1277,7 @@
                                                   nil ;hyps-relievedp
                                                   nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries))
                                   (- (and old-try-count
-                                          (let ((try-diff (sub-tries tries old-try-count)))
+                                          (let ((try-diff (subtract-tries tries old-try-count)))
                                             (and (< 100 try-diff) (cw " (~x0 tries used ~x1:~x2.)~%" try-diff rule-symbol hyp-num))))))
                                ;; A binding hyp always counts as relieved:
                                (,relieve-rule-hyps-name (rest hyps) (+ 1 hyp-num)
@@ -1306,7 +1305,7 @@
                                 ((when erp) (mv erp
                                                 nil ;hyps-relievedp
                                                 nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries))
-                                (try-diff (and old-try-count (sub-tries tries old-try-count))))
+                                (try-diff (and old-try-count (subtract-tries tries old-try-count))))
                              (if (consp new-nodenum-or-quotep) ;tests for quotep
                                  (if (unquote new-nodenum-or-quotep) ;hyp rewrote to a non-nil constant:
                                      (prog2$ (and old-try-count (< 100 try-diff) (cw "(~x0 tries used(p) ~x1:~x2)~%" try-diff rule-symbol hyp-num))
@@ -3053,7 +3052,7 @@
                                  ;; rationalp-+
                                  ;; rationalp-unary--
                                  rationalp-when-integerp
-                                 integerp-of-sub-tries
+                                 integerp-of-subtract-tries
                                  axe-rule-hypp
                                  stored-axe-rulep
                                  stored-axe-rule-listp

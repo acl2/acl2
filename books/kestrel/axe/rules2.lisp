@@ -20,22 +20,21 @@
 (include-book "kestrel/typed-lists-light/maxelem" :dir :system)
 (include-book "kestrel/typed-lists-light/all-integerp" :dir :system)
 (include-book "kestrel/bv-lists/all-signed-byte-p" :dir :system)
-(include-book "lenconsmeta") ;BOZO did this speed things up?  try with and without...
+;(include-book "lenconsmeta") ;todo: did this speed things up?  try with and without...
 (include-book "kestrel/utilities/myif" :dir :system)
-(local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
-(local (include-book "kestrel/lists-light/nth" :dir :system))
-(local (include-book "kestrel/lists-light/nthcdr" :dir :system))
-(local (include-book "kestrel/lists-light/len" :dir :system))
+;(local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
+;(local (include-book "kestrel/lists-light/nth" :dir :system))
+;(local (include-book "kestrel/lists-light/nthcdr" :dir :system))
+;(local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/take" :dir :system))
 (local (include-book "kestrel/lists-light/cons" :dir :system))
-(local (include-book "kestrel/lists-light/append" :dir :system))
-(local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
-(local (include-book "kestrel/lists-light/cdr" :dir :system))
-(local (include-book "kestrel/lists-light/update-nth" :dir :system))
+;(local (include-book "kestrel/lists-light/append" :dir :system))
+;(local (include-book "kestrel/lists-light/true-list-fix" :dir :system))
+;(local (include-book "kestrel/lists-light/cdr" :dir :system))
+;(local (include-book "kestrel/lists-light/update-nth" :dir :system))
 (local (include-book "kestrel/lists-light/memberp" :dir :system))
 (local (include-book "kestrel/lists-light/subrange" :dir :system))
-(local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
-(local (include-book "kestrel/library-wrappers/arithmetic-top-with-meta" :dir :system))
+;(local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 
 (local (in-theory (disable ;unsigned-byte-p-of-+-when-<-of-logtail-and-expt
                            ;usb-plus-from-bounds
@@ -2559,8 +2558,6 @@
 
 ;(in-theory (disable mod-cancel))
 
-(local (in-theory (disable <-unary-/-positive-right))) ; avoid loops
-
 ;; (defthm bvchophack6
 ;;    (implies (and (integerp x)
 ;;                  (integerp y)
@@ -2854,7 +2851,7 @@
 ;;                 (<= len end))
 ;;            (equal (SUBRANGE start end x)
 ;;                   (SUBRANGE start (+ -1 len) x)))
-;;   :hints (("Goal" :in-theory (e/d (SUBRANGE) (TAKE-OF-NTHCDR-BECOMES-SUBRANGE)))))
+;;   :hints (("Goal" :in-theory (e/d (SUBRANGE) ()))))
 
 (defthm drop-linear-hyps1
   (implies (and (< (+ free x) y)
@@ -3022,7 +3019,7 @@
 ;;                 (natp start))
 ;;            (equal (subrange start end (byte-fix-list lst))
 ;;                   (byte-fix-list (subrange start end lst))))
-;;   :hints (("Goal" :in-theory (e/d (subrange) (take-of-nthcdr-becomes-subrange
+;;   :hints (("Goal" :in-theory (e/d (subrange) (
 ;;                                               anti-subrange
 ;;                                               )))))
 

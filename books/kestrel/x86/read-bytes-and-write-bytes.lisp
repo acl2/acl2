@@ -92,45 +92,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defthm xr-of-write-bytes
-  (implies (not (equal :mem fld))
-           (equal (xr fld index (write-bytes addr vals x86))
-                  (xr fld index x86)))
-  :hints (("Goal" :in-theory (enable write-bytes))))
-
-(defthm 64-bit-modep-of-write-bytes
-  (equal (64-bit-modep (write-bytes addr vals x86))
-         (64-bit-modep x86))
-  :hints (("Goal" :in-theory (enable write-bytes))))
-
-(defthm app-view-of-write-bytes
-  (equal (app-view (write-bytes addr vals x86))
-         (app-view x86))
-  :hints (("Goal" :in-theory (enable write-bytes))))
-
-(defthm alignment-checking-enabled-p-of-write-bytes
-  (equal (alignment-checking-enabled-p (write-bytes addr vals x86))
-         (alignment-checking-enabled-p x86))
-  :hints (("Goal" :in-theory (enable write-bytes))))
-
-(defthm get-flag-of-write-bytes
-  (equal (get-flag flg (write-bytes addr values x86))
-         (get-flag flg x86))
-  :hints (("Goal" :in-theory (enable write-bytes))))
-
-(defthm write-bytes-of-xw-irrel
-  (implies (not (equal :mem fld))
-           (equal (write-bytes addr values (xw fld index val x86))
-                  (xw fld index val (write-bytes addr values x86))))
-  :hints (("Goal" :in-theory (enable write-bytes))))
-
-(defthm set-flag-of-write-bytes
-  (equal (set-flag flg val (write-bytes addr values x86))
-         (write-bytes addr values (set-flag flg val x86)))
-  :hints (("Goal" :in-theory (enable set-flag wb write-bytes))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ;todo turn only writes of >1 byte into write-bytes..
 (defthm write-bytes-when-length-is-1
   (implies (equal 1 (len bytes))

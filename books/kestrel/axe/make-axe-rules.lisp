@@ -989,9 +989,9 @@
            (symbolp (first loop-stopper))
            (symbolp (second loop-stopper)))
       ;;a loop-stopper of (x y) means y must be smaller than x for the rule to fire
-      (let ((loop-stopper `(:axe-syntaxp . (heavier-dag-term ,(first loop-stopper) ,(second loop-stopper)))))
+      (let ((loop-stopper `(:axe-syntaxp . (lighter-dargp ,(second loop-stopper) ,(first loop-stopper)))))
         (prog2$ nil ;(cw "Note: inserting loop stopper ~x0 for rule ~x1.~%" loop-stopper rule-name)
-                (mv (erp-nil) loop-stopper))) ;TODO: get the invisible fns and have heavier-dag-term (or a variant of it) ignore them
+                (mv (erp-nil) loop-stopper))) ;TODO: get the invisible fns and have lighter-dargp (or a variant of it) ignore them
     (prog2$ (er hard? 'make-axe-rule-hyp-for-loop-stopper "Unrecognized loop stopper: ~x0." loop-stopper)
             (mv :bad-loop-stopper *unrelievable-hyp*))))
 
@@ -1085,7 +1085,7 @@
             rhs rule-symbol (set-difference-eq rhs-vars bound-vars) bound-vars)
         (mv :free-vars-in-rhs nil)))
     (mv (erp-nil)
-        ; Form the rule (note that stored-rules take a different form):
+        ; Form the rule (note that stored-rules take a different form than what we are making here):
         (list lhs rhs rule-symbol (append extra-hyps processed-hyps)))))
 
 ;; (defthm len-of-mv-nth-1-of-make-axe-rule

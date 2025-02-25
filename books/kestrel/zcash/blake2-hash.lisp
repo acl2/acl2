@@ -34,7 +34,7 @@
 
 (define blake2s-256 ((pers byte-listp) (input byte-listp))
   :guard (and (= (len pers) 8)
-              (< (len input) (- blake::*blake2s-max-data-byte-length* 64)))
+              (<= (len input) blake::*max-input-bytes*))
   :returns (output byte-listp
                    :hints (("Goal" :in-theory (enable returns-lemma))))
   :short "The function @($\\mathsf{BLAKE2s}\\textsf{-}\\mathsf{256}$)

@@ -93,28 +93,6 @@
                           (<= low newsize))
            :in-theory (e/d (slice UNSIGNED-BYTE-P-FORCED) (anti-slice)))))
 
-;move or drop?
-(defun bind-newsize-to-constant-size (x)
-  (declare (xargs :guard (and (quotep x)
-                              (pseudo-termp x)
-                              (natp (unquote x)))))
-  (acons 'newsize
-         (list 'quote (integer-length (unquote x)))
-         nil))
-
-(defthm bvand-of-constant-tighten
-   (implies (and (syntaxp (and (quotep k)
-                               (< (integer-length (unquote k))
-                                  (unquote size))))
-                 (bind-free (bind-newsize-to-constant-size k) (newsize))
-                 (unsigned-byte-p newsize k)
-                 (< newsize size)
-                 (natp size)
-                 (natp newsize))
-            (equal (bvand size k x)
-                   (bvand newsize k x)))
-   :hints (("Goal" :in-theory (enable bvand-tighten-1))))
-
 ;fixme change to go to bvif?
 (defthmd getbit-of-if
   (equal (getbit n (if test a b))
@@ -132,7 +110,7 @@
            (equal (* 2 (BVCHOP (+ -1 N) x))
                   (bvchop n (* 2 x))))
   :hints (("Goal" :in-theory (e/d (bvchop mod-expt-split)
-                                  (MOD-OF-EXPT-OF-2 mod-of-expt-of-2-constant-version)))))
+                                  ()))))
 
 (defthmd split-when-low-bit-1
   (implies (and (INTEGERP X)
@@ -141,8 +119,7 @@
            (equal (+ 1 (* 2 (floor x 2)))
                   x))
   :hints (("Goal" :in-theory (e/d (bvchop mod)
-                                  (mod-of-expt-of-2
-                                   mod-of-expt-of-2-constant-version
+                                  (
                                                  ;;MOD-RECOLLAPSE-LEMMA2
                                                  ;;MOD-RECOLLAPSE-LEMMA
                                    )))))
@@ -153,8 +130,7 @@
                 (EQUAL 0 (BVCHOP 1 X)))
            (equal (* 2 (floor x 2))
                   x))
-  :hints (("Goal" :in-theory (e/d (bvchop mod) (MOD-OF-EXPT-OF-2
-                                                 mod-of-expt-of-2-constant-version
+  :hints (("Goal" :in-theory (e/d (bvchop mod) (
                                                  ;;MOD-RECOLLAPSE-LEMMA2
                                                  ;;MOD-RECOLLAPSE-LEMMA
                                                  )))))
@@ -275,8 +251,7 @@
                                    SLICE-WHEN-VAL-IS-NOT-AN-INTEGER
                                    GETBIT-WHEN-VAL-IS-NOT-AN-INTEGER
                                    BITXOR-SPLIT)
-                           (MOD-OF-EXPT-OF-2
-                            mod-of-expt-of-2-constant-version
+                           (
                             anti-slice
                             BVCHOP-OF-LOGTAIL
                             ;; for speed:
@@ -1911,9 +1886,7 @@
   :hints (("Goal"
            :use (:instance FLOOR-PEEL-OFF-CONSTANT (k (+ -1 (expt 2 n))) (n x) (y (expt 2 n)))
            :in-theory (e/d (logtail bvchop floor-of-sum)
-                           (mod-of-expt-of-2
-                            mod-of-expt-of-2-constant-version
-                            floor-peel-off-constant)))))
+                           (floor-peel-off-constant)))))
 
 (defthm getbit-of-one-more
   (implies (integerp x)

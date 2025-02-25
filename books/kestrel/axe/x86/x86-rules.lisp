@@ -21,6 +21,7 @@
 (include-book "kestrel/x86/assumptions64" :dir :system) ;for ADDRESSES-OF-SUBSEQUENT-STACK-SLOTS-AUX
 (include-book "kestrel/x86/assumptions32" :dir :system) ; for return-address-okp
 (include-book "kestrel/x86/conditions" :dir :system) ; for jnl-condition
+(include-book "kestrel/x86/write-over-write-rules64" :dir :system)
 (include-book "kestrel/x86/run-until-return" :dir :system)
 (include-book "kestrel/x86/floats" :dir :system)
 (include-book "../axe-syntax")
@@ -178,43 +179,42 @@
 (def-constant-opener sub-sf-spec64)
 (def-constant-opener sub-zf-spec64)
 
-(def-constant-opener x86isa::!rflagsbits->ac$inline)
-(def-constant-opener x86isa::!rflagsbits->af$inline)
-(def-constant-opener x86isa::!rflagsbits->cf$inline)
-(def-constant-opener x86isa::!rflagsbits->of$inline)
-(def-constant-opener x86isa::!rflagsbits->pf$inline)
-(def-constant-opener x86isa::!rflagsbits->sf$inline)
-(def-constant-opener x86isa::!rflagsbits->zf$inline)
+(def-constant-opener !rflagsbits->ac$inline)
+(def-constant-opener !rflagsbits->af$inline)
+(def-constant-opener !rflagsbits->cf$inline)
+(def-constant-opener !rflagsbits->of$inline)
+(def-constant-opener !rflagsbits->pf$inline)
+(def-constant-opener !rflagsbits->sf$inline)
+(def-constant-opener !rflagsbits->zf$inline)
 
-(def-constant-opener x86isa::one-byte-opcode-modr/m-p$inline)
-(def-constant-opener x86isa::two-byte-opcode-modr/m-p$inline)
+(def-constant-opener one-byte-opcode-modr/m-p$inline)
+(def-constant-opener two-byte-opcode-modr/m-p$inline)
 
-(def-constant-opener x86isa::rflagsbits->ac$inline)
-(def-constant-opener x86isa::rflagsbits->af$inline)
-(def-constant-opener x86isa::rflagsbits->cf$inline)
-(def-constant-opener x86isa::rflagsbits->of$inline)
-(def-constant-opener x86isa::rflagsbits->pf$inline)
-(def-constant-opener x86isa::rflagsbits->sf$inline)
-(def-constant-opener x86isa::rflagsbits->zf$inline)
-(def-constant-opener x86isa::rflagsbits->res1$inline)
-(def-constant-opener x86isa::rflagsbits->res2$inline)
-(def-constant-opener x86isa::rflagsbits->res3$inline)
+(def-constant-opener rflagsbits->ac$inline)
+(def-constant-opener rflagsbits->af$inline)
+(def-constant-opener rflagsbits->cf$inline)
+(def-constant-opener rflagsbits->of$inline)
+(def-constant-opener rflagsbits->pf$inline)
+(def-constant-opener rflagsbits->sf$inline)
+(def-constant-opener rflagsbits->zf$inline)
+(def-constant-opener rflagsbits->res1$inline)
+(def-constant-opener rflagsbits->res2$inline)
+(def-constant-opener rflagsbits->res3$inline)
+(def-constant-opener rflagsbits->tf$inline)
+(def-constant-opener rflagsbits->intf$inline)
+(def-constant-opener rflagsbits->df$inline)
+(def-constant-opener rflagsbits->iopl$inline)
+(def-constant-opener rflagsbits->nt$inline)
+(def-constant-opener rflagsbits->res4$inline)
+(def-constant-opener rflagsbits->rf$inline)
+(def-constant-opener rflagsbits->vm$inline)
+(def-constant-opener rflagsbits->vif$inline)
+(def-constant-opener rflagsbits->vip$inline)
+(def-constant-opener rflagsbits->id$inline)
+(def-constant-opener rflagsbits->res5$inline)
 
-(def-constant-opener x86isa::rflagsbits->tf$inline)
-(def-constant-opener x86isa::rflagsbits->intf$inline)
-(def-constant-opener x86isa::rflagsbits->df$inline)
-(def-constant-opener x86isa::rflagsbits->iopl$inline)
-(def-constant-opener x86isa::rflagsbits->nt$inline)
-(def-constant-opener x86isa::rflagsbits->res4$inline)
-(def-constant-opener x86isa::rflagsbits->rf$inline)
-(def-constant-opener x86isa::rflagsbits->vm$inline)
-(def-constant-opener x86isa::rflagsbits->vif$inline)
-(def-constant-opener x86isa::rflagsbits->vip$inline)
-(def-constant-opener x86isa::rflagsbits->id$inline)
-(def-constant-opener x86isa::rflagsbits->res5$inline)
-(def-constant-opener x86isa::rflagsbits$inline)
-
-(def-constant-opener x86isa::!rflagsbits->af$inline)
+(def-constant-opener rflagsbits$inline)
+(def-constant-opener rflagsbits-fix$inline)
 
 ;; For now, I'm trying just always opening these:
 ;; See books/projects/x86isa/utils/basic-structs.lisp
@@ -242,92 +242,117 @@
 ;; (def-constant-opener x86isa::54bits-fix)
 ;; (def-constant-opener x86isa::64bits-fix)
 
-(def-constant-opener acl2::expt2$inline)
+(def-constant-opener expt2$inline)
 
-(def-constant-opener X86ISA::RFLAGSBITS-FIX$INLINE)
+(def-constant-opener feature-flags); needed?
 
-(def-constant-opener x86isa::feature-flags); needed?
-
-(def-constant-opener x86isa::32-bit-mode-two-byte-opcode-modr/m-p)
-(def-constant-opener x86isa::32-bit-compute-mandatory-prefix-for-two-byte-opcode$inline)
+(def-constant-opener 32-bit-mode-two-byte-opcode-modr/m-p)
+(def-constant-opener 32-bit-compute-mandatory-prefix-for-two-byte-opcode$inline)
 
 ;; TODO: Think about whether to use regular rules, constant opener rules, or build into the evaluator.
 
-(def-constant-opener x86isa::prefixes->num$inline)
-(def-constant-opener x86isa::prefixes->lck$inline)
-(def-constant-opener x86isa::prefixes->rep$inline)
-(def-constant-opener x86isa::prefixes->seg$inline)
-(def-constant-opener x86isa::prefixes->opr$inline)
-(def-constant-opener x86isa::prefixes->adr$inline)
-(def-constant-opener x86isa::prefixes->nxt$inline)
+;; Functions introduced by defbitstruct:
 
-(def-constant-opener x86isa::!prefixes->rep$inline)
-(def-constant-opener x86isa::!prefixes->seg$inline)
+(def-constant-opener prefixes-fix$inline)
+(def-constant-opener prefixes->num$inline)
+(def-constant-opener prefixes->lck$inline)
+(def-constant-opener prefixes->rep$inline)
+(def-constant-opener prefixes->seg$inline)
+(def-constant-opener prefixes->opr$inline)
+(def-constant-opener prefixes->adr$inline)
+(def-constant-opener prefixes->nxt$inline)
+(def-constant-opener !prefixes->num$inline)
+(def-constant-opener !prefixes->lck$inline)
+(def-constant-opener !prefixes->rep$inline)
+(def-constant-opener !prefixes->seg$inline)
+(def-constant-opener !prefixes->opr$inline)
+(def-constant-opener !prefixes->adr$inline)
+(def-constant-opener !prefixes->nxt$inline)
 
-(def-constant-opener x86isa::evex-prefixes->byte0$inline)
-(def-constant-opener x86isa::evex-prefixes->byte1$inline)
-(def-constant-opener x86isa::evex-prefixes->byte2$inline)
-(def-constant-opener x86isa::evex-prefixes->byte3$inline)
+(def-constant-opener vex-prefixes-fix$inline)
+(def-constant-opener vex-prefixes->byte0$inline)
+(def-constant-opener vex-prefixes->byte1$inline)
+(def-constant-opener vex-prefixes->byte2$inline)
+(def-constant-opener !vex-prefixes->byte0$inline)
+(def-constant-opener !vex-prefixes->byte1$inline)
+(def-constant-opener !vex-prefixes->byte2$inline)
 
-(def-constant-opener x86isa::!evex-prefixes->byte0$inline)
-(def-constant-opener x86isa::!evex-prefixes->byte1$inline)
-(def-constant-opener x86isa::!evex-prefixes->byte2$inline)
-(def-constant-opener x86isa::!evex-prefixes->byte3$inline)
+(def-constant-opener vex2-byte1-fix$inline)
+(def-constant-opener vex2-byte1->pp$inline)
+(def-constant-opener vex2-byte1->l$inline)
+(def-constant-opener vex2-byte1->vvvv$inline)
+(def-constant-opener vex2-byte1->r$inline)
 
-(def-constant-opener x86isa::vex-prefixes-fix$inline)
-(def-constant-opener x86isa::vex-prefixes->byte0$inline)
-(def-constant-opener x86isa::vex-prefixes->byte1$inline)
-(def-constant-opener x86isa::vex-prefixes->byte2$inline)
-(def-constant-opener x86isa::!vex-prefixes->byte0$inline)
-(def-constant-opener x86isa::!vex-prefixes->byte1$inline)
-(def-constant-opener x86isa::!vex-prefixes->byte2$inline)
+;; can we optimize these by avoiding introducing the fix?
+(def-constant-opener vex3-byte1-fix$inline)
+(def-constant-opener vex3-byte1->m-mmmm$inline)
+(def-constant-opener vex3-byte1->b$inline)
+(def-constant-opener vex3-byte1->x$inline)
+(def-constant-opener vex3-byte1->r$inline)
+
+(def-constant-opener vex3-byte2-fix$inline)
+(def-constant-opener vex3-byte2->pp$inline)
+(def-constant-opener vex3-byte2->l$inline)
+(def-constant-opener vex3-byte2->vvvv$inline)
+(def-constant-opener vex3-byte2->w$inline)
+
+(def-constant-opener evex-prefixes-fix$inline)
+(def-constant-opener evex-prefixes->byte0$inline)
+(def-constant-opener evex-prefixes->byte1$inline)
+(def-constant-opener evex-prefixes->byte2$inline)
+(def-constant-opener evex-prefixes->byte3$inline)
+(def-constant-opener !evex-prefixes->byte0$inline)
+(def-constant-opener !evex-prefixes->byte1$inline)
+(def-constant-opener !evex-prefixes->byte2$inline)
+(def-constant-opener !evex-prefixes->byte3$inline)
+
+(def-constant-opener evex-byte1-fix$inline)
+(def-constant-opener evex-byte1->mmm$inline)
+(def-constant-opener evex-byte1->res$inline)
+(def-constant-opener evex-byte1->r-prime$inline)
+(def-constant-opener evex-byte1->b$inline)
+(def-constant-opener evex-byte1->x$inline)
+(def-constant-opener evex-byte1->r$inline)
+
+(def-constant-opener evex-byte2-fix$inline)
+(def-constant-opener evex-byte2->pp$inline)
+(def-constant-opener evex-byte2->res$inline)
+(def-constant-opener evex-byte2->vvvv$inline)
+(def-constant-opener evex-byte2->w$inline)
+
+(def-constant-opener evex-byte3-fix$inline)
+(def-constant-opener evex-byte3->aaa$inline)
+(def-constant-opener evex-byte3->v-prime$inline)
+(def-constant-opener evex-byte3->b$inline)
+(def-constant-opener evex-byte3->vl/rc$inline)
+(def-constant-opener evex-byte3->z$inline)
+
+(def-constant-opener modr/m-fix$inline)
+(def-constant-opener modr/m->r/m$inline)
+(def-constant-opener modr/m->reg$inline)
+(def-constant-opener modr/m->mod$inline)
+
+(def-constant-opener x86isa::sib-fix$inline)
+(def-constant-opener x86isa::sib->base$inline)
+(def-constant-opener x86isa::sib->index$inline)
+(def-constant-opener x86isa::sib->scale$inline)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (def-constant-opener x86isa::vex-opcode-modr/m-p$inline)
 (def-constant-opener x86isa::vex-prefixes-map-p$inline)
 
-(def-constant-opener x86isa::evex-byte1->mmm$inline)
-(def-constant-opener x86isa::evex-byte1->res$inline)
-(def-constant-opener x86isa::evex-byte1->r-prime$inline)
-(def-constant-opener x86isa::evex-byte1->b$inline)
-(def-constant-opener x86isa::evex-byte1->x$inline)
-(def-constant-opener x86isa::evex-byte1->r$inline)
 
-(def-constant-opener x86isa::evex-byte2->pp$inline)
-(def-constant-opener x86isa::evex-byte2->res$inline)
-(def-constant-opener x86isa::evex-byte2->vvvv$inline)
-(def-constant-opener x86isa::evex-byte2->w$inline)
 
-(def-constant-opener x86isa::evex-byte3->aaa$inline)
-(def-constant-opener x86isa::evex-byte3->v-prime$inline)
-(def-constant-opener x86isa::evex-byte3->b$inline)
-(def-constant-opener x86isa::evex-byte3->vl/rc$inline)
-(def-constant-opener x86isa::evex-byte3->z$inline)
 
-(def-constant-opener x86isa::vex->vvvv$inline)
-(def-constant-opener x86isa::vex->l$inline)
-(def-constant-opener x86isa::vex->pp$inline)
-(def-constant-opener x86isa::vex->r$inline)
-(def-constant-opener x86isa::vex->w$inline)
-(def-constant-opener x86isa::vex->b$inline)
-(def-constant-opener x86isa::vex->x$inline)
+(def-constant-opener vex->vvvv$inline)
+(def-constant-opener vex->l$inline)
+(def-constant-opener vex->pp$inline)
+(def-constant-opener vex->r$inline)
+(def-constant-opener vex->w$inline)
+(def-constant-opener vex->b$inline)
+(def-constant-opener vex->x$inline)
 
-(def-constant-opener x86isa::vex2-byte1-fix$inline)
-(def-constant-opener x86isa::vex2-byte1->pp$inline)
-(def-constant-opener x86isa::vex2-byte1->l$inline)
-(def-constant-opener x86isa::vex2-byte1->vvvv$inline)
-(def-constant-opener x86isa::vex2-byte1->r$inline)
-
-;; can we optimize these by avoiding introducing the fix?
-(def-constant-opener x86isa::vex3-byte1-fix$inline)
-(def-constant-opener x86isa::vex3-byte1->m-mmmm$inline)
-(def-constant-opener x86isa::vex3-byte1->b$inline)
-(def-constant-opener x86isa::vex3-byte1->x$inline)
-(def-constant-opener x86isa::vex3-byte1->r$inline)
-
-(def-constant-opener x86isa::vex3-byte2-fix$inline)
-(def-constant-opener x86isa::vex3-byte2->pp$inline)
-(def-constant-opener x86isa::vex3-byte2->l$inline)
-(def-constant-opener x86isa::vex3-byte2->vvvv$inline)
-(def-constant-opener x86isa::vex3-byte2->w$inline)
 
 (def-constant-opener x86isa::rex-byte-from-vex-prefixes)
 
@@ -339,28 +364,28 @@
 
 (def-constant-opener byte-listp)
 
-(def-constant-opener x86isa::mxcsrbits-fix)
+(def-constant-opener mxcsrbits-fix)
 
 ;; these expose part-select
-(def-constant-opener x86isa::mxcsrbits->ie$inline)
-(def-constant-opener x86isa::mxcsrbits->de$inline)
-(def-constant-opener x86isa::mxcsrbits->ze$inline)
-(def-constant-opener x86isa::mxcsrbits->oe$inline)
-(def-constant-opener x86isa::mxcsrbits->ue$inline)
-(def-constant-opener x86isa::mxcsrbits->pe$inline)
-(def-constant-opener x86isa::mxcsrbits->daz$inline)
-(def-constant-opener x86isa::mxcsrbits->im$inline)
-(def-constant-opener x86isa::mxcsrbits->dm$inline)
-(def-constant-opener x86isa::mxcsrbits->zm$inline)
-(def-constant-opener x86isa::mxcsrbits->om$inline)
-(def-constant-opener x86isa::mxcsrbits->um$inline)
-(def-constant-opener x86isa::mxcsrbits->pm$inline)
-(def-constant-opener x86isa::mxcsrbits->rc$inline)
-(def-constant-opener x86isa::mxcsrbits->ftz$inline)
-(def-constant-opener x86isa::mxcsrbits->reserved$inline)
+(def-constant-opener mxcsrbits->ie$inline)
+(def-constant-opener mxcsrbits->de$inline)
+(def-constant-opener mxcsrbits->ze$inline)
+(def-constant-opener mxcsrbits->oe$inline)
+(def-constant-opener mxcsrbits->ue$inline)
+(def-constant-opener mxcsrbits->pe$inline)
+(def-constant-opener mxcsrbits->daz$inline)
+(def-constant-opener mxcsrbits->im$inline)
+(def-constant-opener mxcsrbits->dm$inline)
+(def-constant-opener mxcsrbits->zm$inline)
+(def-constant-opener mxcsrbits->om$inline)
+(def-constant-opener mxcsrbits->um$inline)
+(def-constant-opener mxcsrbits->pm$inline)
+(def-constant-opener mxcsrbits->rc$inline)
+(def-constant-opener mxcsrbits->ftz$inline)
+(def-constant-opener mxcsrbits->reserved$inline)
 
-(def-constant-opener x86isa::convert-arith-operation-to-rtl-op$inline)
-;(def-constant-opener x86isa::feature-flag) ; keep feature-flag disabled, for clarity
+(def-constant-opener convert-arith-operation-to-rtl-op$inline)
+;(def-constant-opener feature-flag) ; keep feature-flag disabled, for clarity
 ;(def-constant-opener x86isa::cpuid-flag-fn) ; can't do this, it's an encapsulate
 (def-constant-opener rtl::set-flag) ; drop?
 
@@ -373,8 +398,8 @@
 (defopeners acl2::get-pe-section-aux)
 (defopeners acl2::lookup-pe-symbol)
 
-(defopeners x86isa::simd-add-spec)
-(defopeners x86isa::simd-sub-spec)
+(defopeners simd-add-spec)
+(defopeners simd-sub-spec)
 
 ;; ;todo
 ;; (thm
@@ -387,7 +412,7 @@
   (implies (and (syntaxp (and (quotep flag1)
                               (quotep flag2)
                               ))
-                (axe-syntaxp (heavier-dag-term flag1 flag2))
+                (axe-syntaxp (lighter-dargp flag2 flag1))
                 (not (equal flag1 flag2))
                 (member-eq flag1 *flags*)
                 (member-eq flag2 *flags*)
@@ -442,6 +467,8 @@
 (defund poor-mans-quotep (x) (declare (ignore x)) t)
 (def-constant-opener poor-mans-quotep)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;; Only opens x86-fetch-decode-execute if we can resolve the (first byte of) the current instruction to a constant
 ;; Creates x86-fetch-decode-execute-base-new.
 ;; We tried just testing whether RIP is a constant, but sometimes RIP can be the variable TEXT-OFFSET.
@@ -454,7 +481,7 @@
                                 (read-*ip proc-mode x86))) ; could drop, but this clarifies failures
          ;; ;; Requires us to be able to read the byte at the RIP:
          (poor-mans-quotep (let ((proc-mode (x86-operation-mode x86)))
-                             (mv-nth 1 (x86isa::rme08$inline proc-mode (read-*ip proc-mode x86) 1 :x x86))))
+                             (mv-nth 1 (rme08$inline proc-mode (read-*ip proc-mode x86) 1 :x x86))))
          ;; (poor-mans-quotep (let ((proc-mode (x86-operation-mode x86)))
          ;;                     (read 1 (read-*ip proc-mode x86) x86)))
          ;; (poor-mans-quotep (read 1 (rip x86) x86))
@@ -467,7 +494,7 @@
   (implies (and (canonical-address-p (read-*ip 0 x86)) ; could drop, but this clarifies failures
                 ;; ;; Requires us to be able to read the byte at the RIP:
                 ;; todo: simplify this:
-                (poor-mans-quotep (mv-nth 1 (x86isa::rme08$inline 0 (read-*ip 0 x86) 1 :x x86)))
+                (poor-mans-quotep (mv-nth 1 (rme08$inline 0 (read-*ip 0 x86) 1 :x x86))) ;  todo: use a binding hyp?
                 ;; (poor-mans-quotep (let ((proc-mode (x86-operation-mode x86)))
                 ;;                     (read 1 (read-*ip proc-mode x86) x86)))
                 ;; (poor-mans-quotep (read 1 (rip x86) x86))
@@ -711,7 +738,7 @@
   (implies (axe-syntaxp (write-nest-with-inner-set-flagp-axe x86 acl2::dag-array))
            (equal (read n ad (write n2 ad2 val x86))
                   (read n ad (write n2 ad2 val (clear-flags-extend x86)))))
-  :hints (("Goal" :in-theory (enable clear-flags-extend))))
+  :hints (("Goal" :in-theory (e/d (clear-flags-extend write-of-!rflags) (!rflags !rflags-of-write)))))
 
 ;; Copies the clear inside a write that is not its target
 ;; For Axe only
@@ -753,3 +780,32 @@
                   (write n2 ad2 val2 (write n1 ad1 val1 x86))))
   :hints (("Goal" :use write-of-write-diff-bv
            :in-theory (disable write-of-write-diff-bv))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; this puts the syntactically smaller op first
+(defthmd equal-of-0-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder-axe
+  (implies (and (axe-syntaxp (acl2::lighter-dargp op2 op1))
+                (equal (mxcsrbits->daz$inline mxcsr) 0)
+                (equal (mxcsrbits->im$inline mxcsr) 1)
+                (equal (mxcsrbits->dm$inline mxcsr) 1))
+           (equal (equal 0 (mv-nth 1 (sse-cmp *op-ucomi* op1 op2 mxcsr exp-width frac-width)))
+                  (equal 1 (mv-nth 1 (sse-cmp *op-ucomi* op2 op1 mxcsr exp-width frac-width)))))
+  :hints (("Goal" :use equal-of-0-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder)))
+
+;; this puts the syntactically smaller op first
+(defthmd equal-of-1-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder-axe
+  (implies (and (axe-syntaxp (acl2::lighter-dargp op2 op1))
+                (equal (mxcsrbits->daz$inline mxcsr) 0)
+                (equal (mxcsrbits->im$inline mxcsr) 1)
+                (equal (mxcsrbits->dm$inline mxcsr) 1))
+           (equal (equal 1 (mv-nth 1 (sse-cmp *op-ucomi* op1 op2 mxcsr exp-width frac-width)))
+                  (equal 0 (mv-nth 1 (sse-cmp *op-ucomi* op2 op1 mxcsr exp-width frac-width)))))
+  :hints (("Goal" :use equal-of-1-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder)))
+
+;; this puts the syntactically smaller op first
+(defthmd equal-of-7-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder-axe
+  (implies (axe-syntaxp (acl2::lighter-dargp op2 op1))
+           (equal (equal 7 (mv-nth 1 (sse-cmp *op-ucomi* op1 op2 mxcsr exp-width frac-width)))
+                  (equal 7 (mv-nth 1 (sse-cmp *op-ucomi* op2 op1 mxcsr exp-width frac-width)))))
+  :hints (("Goal" :use equal-of-7-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder)))

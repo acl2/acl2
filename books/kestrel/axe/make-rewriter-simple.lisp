@@ -235,6 +235,29 @@
                 (subsetp-equal x2 x))
            (member-equal a x)))
 
+(defthm alist-suitable-for-hypsp-after-matching-2-special
+  (implies (and (alist-suitable-for-hyp-args-and-hypsp alist hyp-args hyps)
+                (bounded-darg-listp arg-list (get-dag-len rewrite-stobj2))
+                (not (equal :fail (unify-trees-with-dag-nodes hyp-args arg-list (get-dag-array rewrite-stobj2) alist)))
+                (pseudo-dag-arrayp 'dag-array (get-dag-array rewrite-stobj2) (get-dag-len rewrite-stobj2))
+                (axe-tree-listp hyp-args)
+                (symbol-alistp alist))
+           (alist-suitable-for-hypsp (unify-trees-with-dag-nodes hyp-args arg-list (get-dag-array rewrite-stobj2) alist)
+                                     hyps))
+  :hints (("Goal" :use (:instance alist-suitable-for-hypsp-after-matching-2
+                                  (dag-len (get-dag-len rewrite-stobj2))
+                                  (dag-array (get-dag-array rewrite-stobj2)))
+           :in-theory (disable alist-suitable-for-hypsp-after-matching-2))))
+
+(defthm <-of-largest-non-quotep2
+  (implies (and (bounded-darg-listp args nodenum)
+                (natp nodenum) ; not this
+                )
+           (< (largest-non-quotep args) nodenum))
+  :rule-classes (:rewrite :linear)
+  :hints (("Goal" :in-theory (enable largest-non-quotep
+                                     bounded-darg-listp))))
+
 ;; ;loops with LEN-WHEN-DARGP-LESS-THAN?
 ;; (defthmd consp-to-len-bound-for-make-rewriter-simple
 ;;   (equal (consp x) (< 0 (len x)))
@@ -500,9 +523,10 @@
                           ;;consp-to-len-bound-for-make-rewriter-simple
                           ;;len-of-cdr-better-for-make-rewriter-simple
                           myquotep-when-dag-exprp-and-quote
-                          rationalp-of-sub-tries
+                          rationalp-of-subtract-tries
                           append-nodenum-dargs-becomes-append-of-keep-nodenum-dargs
-                          dargp-of-mv-nth-1-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr)))
+                          ;; dargp-of-mv-nth-1-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr
+                          )))
 
        ;todo: dup!
        (local
@@ -648,176 +672,176 @@
                            (cw "Relieving hyp: ~x0 with alist ~x1.~%" hyp alist)))
                    (fn (ffn-symb hyp)) ;; all hyps are conses, fn may be a special keyword tag, like :axe-syntaxp
                    )
-                ;; todo: consider using CASE here:
-                (if (eq :axe-syntaxp fn) ; (:axe-syntaxp . <expr>) ; note the dot!
-                    (let* ((syntaxp-expr (cdr hyp)) ;; strip off the :axe-syntaxp
-                           (result (,eval-axe-syntaxp-expr-fn syntaxp-expr alist (get-dag-array rewrite-stobj2)) ;could make a version without dag-array (may be very common?).. TODO: use :dag-array?
-                                   ))
-                      (if result
-                          ;;this hyp counts as relieved
-                          (,relieve-rule-hyps-name (rest hyps) (+ 1 hyp-num) alist rule-symbol
-                                                   rewrite-stobj2 memoization hit-counts tries limits
-                                                   node-replacement-array node-replacement-count refined-assumption-alist
-                                                   rewrite-stobj (+ -1 count))
-                        (prog2$ (and (member-eq rule-symbol (get-monitored-symbols rewrite-stobj))
-                                     ;;is it worth printing in this case?
-                                     (progn$ (cw "(Failed to relieve axe-syntaxp hyp: ~x0 for ~x1.)~%" hyp rule-symbol)
-                                             ;; (cw "(Alist: ~x0)~%" alist)
-                                             ;; (cw "(DAG:~%")
-                                             ;; (print-array 'dag-array dag-array (get-dag-len rewrite-stobj2))
-                                             ;; (cw ")~%")
-                                             ))
-                                (mv (erp-nil) nil alist rewrite-stobj2 memoization hit-counts tries limits node-replacement-array))))
-                  (if (eq :axe-bind-free fn) ; (:axe-bind-free <expr> . <vars-to-bind>) ; note the dot
-                      ;; To evaluate the axe-bind-free hyp, we use alist, which binds vars to their nodenums or quoteps.
-                      ;; The soundness of Axe should not depend on what an axe-bind-free function does; thus we cannot pass alist to such a function and trust it to faithfully extend it.  Nor can we trust it to extend the dag without changing any existing nodes. So we require the axe-bind-free-function to return an alist binding exactly certain vars, and we check the keys and vals of that alist.
-                      ;;TODO: It might be nice to be able to pass in the assumptions to the axe-bind-free-function? e.g., for finding sizes from unsigned-byte-p assumptions.
-                      (let* ((bind-free-expr (cadr hyp)) ;; strip off the :axe-bind-free
-                             (result (,eval-axe-bind-free-function-application-fn (ffn-symb bind-free-expr) (fargs bind-free-expr) alist (get-dag-array rewrite-stobj2))  ;could make a version without dag-array (may be very common?).. TODO: use :dag-array?
-                                     ))
-                        (if result ;; nil to indicate failure, or an alist whose keys should be exactly the vars-to-bind
-                            (let ((vars-to-bind (cddr hyp)))
-                              (if (not (axe-bind-free-result-okayp result vars-to-bind (get-dag-len rewrite-stobj2)))
-                                  (mv (erp-t)
-                                      (er hard? ',relieve-rule-hyps-name "Bind free hyp ~x0 for rule ~x1 returned ~x2, but this is not a well-formed alist that binds ~x3." hyp rule-symbol result vars-to-bind)
-                                      alist rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)
-                                ;; this hyp counts as relieved:
-                                (,relieve-rule-hyps-name (rest hyps) (+ 1 hyp-num)
-                                                         (append result alist) ;; guaranteed to be disjoint given the analysis done when the rule was made and the call of axe-bind-free-result-okayp above
-                                                         rule-symbol
-                                                         rewrite-stobj2 memoization hit-counts tries limits
-                                                         node-replacement-array node-replacement-count refined-assumption-alist
-                                                         rewrite-stobj (+ -1 count))))
-                          ;; failed to relieve the axe-bind-free hyp:
-                          (prog2$ (and (member-eq rule-symbol (get-monitored-symbols rewrite-stobj))
-                                       (cw "(Failed to relieve axe-bind-free hyp: ~x0 for ~x1.)~%" hyp rule-symbol))
-                                  (mv (erp-nil) nil alist rewrite-stobj2 memoization hit-counts tries limits node-replacement-array))))
-                    (if (eq :free-vars fn) ;can't be a work-hard since there are free vars
-                        (b* (;; Partially instantiate the hyp (the free vars will remain free):
-                             ;; TODO: Could we just do the matching wrt the alist, and skip this instantiation step?:
-                             (partially-instantiated-hyp (,instantiate-hyp-free-vars-name (cdr hyp) ;strip the :free-vars
-                                                                                alist (get-interpreted-function-alist rewrite-stobj)))
-                             ((when (eq 'quote (ffn-symb partially-instantiated-hyp))) ;todo: this should not happen since there are free vars (unless perhaps we give special treatment to IFs)
-                              (er hard? ',relieve-rule-hyps-name "ERROR: Instantiating a hyp with free vars produced a constant.")
-                              (mv :error-instantiating nil alist rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)))
-                          ;; Some free vars remain in the partially-instantiated-hyp, so we search the REFINED-ASSUMPTION-ALIST for matches to bind them:
-                          ;; If the NODE-REPLACEMENT-ARRAY ever contains more information than the REFINED-ASSUMPTION-ALIST, we might need to search it too.
-                          ;; The refined-assumptions have been refined so that (equal (pred x) t) becomes (pred x) for better matching.
-                          ;; TODO: Should we simplify the terms to which the free vars were bound (in case the assumptions are not simplified)?
-                          (,relieve-free-var-hyp-and-all-others-name (lookup-in-refined-assumption-alist (ffn-symb partially-instantiated-hyp) refined-assumption-alist)
-                                                                     (fargs partially-instantiated-hyp)
-                                                                     hyp-num
-                                                                     (rest hyps)
-                                                                     alist rule-symbol
-                                                                     rewrite-stobj2 memoization hit-counts tries limits
-                                                                     node-replacement-array node-replacement-count refined-assumption-alist
-                                                                     rewrite-stobj (+ -1 count)))
-                      (if (eq :axe-binding-hyp fn) ; (:axe-binding-hyp <var> . <expr>)
-                          ;; todo: anything to do for work-hard (here and in the binding hyp case for the other rewriters/provers?)
-                          (b* ((var (cadr hyp))
-                               (expr (cddr hyp))
-                               ;; First, we substitute for all the free vars in expr:
-                               (instantiated-expr (,instantiate-hyp-no-free-vars2-name expr alist (get-interpreted-function-alist rewrite-stobj)))
-                               ;; Now instantiated-hyp is an axe-tree with leaves that are quoteps and nodenums.
-                               ;; TODO: Consider adding a special case here to check whether the hyp is a constant (may be very common)?
-                               ;; Now rewrite the instantianted expr:
-                               (old-try-count tries)
+                (case fn
+                  (:axe-syntaxp ; (:axe-syntaxp . <expr>) ; note the dot!
+                   (let* ((syntaxp-expr (cdr hyp)) ;; strip off the :axe-syntaxp
+                          (result (,eval-axe-syntaxp-expr-fn syntaxp-expr alist (get-dag-array rewrite-stobj2)) ;could make a version without dag-array (may be very common?).. TODO: use :dag-array?
+                                  ))
+                     (if result
+                         ;;this hyp counts as relieved
+                         (,relieve-rule-hyps-name (rest hyps) (+ 1 hyp-num) alist rule-symbol
+                                                  rewrite-stobj2 memoization hit-counts tries limits
+                                                  node-replacement-array node-replacement-count refined-assumption-alist
+                                                  rewrite-stobj (+ -1 count))
+                       (prog2$ (and (member-eq rule-symbol (get-monitored-symbols rewrite-stobj))
+                                    ;;is it worth printing in this case?
+                                    (progn$ (cw "(Failed to relieve axe-syntaxp hyp ~x0 for ~x1.)~%" syntaxp-expr rule-symbol)
+                                            ;; (cw "(Alist: ~x0)~%" alist)
+                                            ;; (cw "(DAG:~%")
+                                            ;; (print-array 'dag-array dag-array (get-dag-len rewrite-stobj2))
+                                            ;; (cw ")~%")
+                                            ))
+                               (mv (erp-nil) nil alist rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)))))
+                  (:axe-bind-free ; (:axe-bind-free <expr> . <vars-to-bind>) ; note the dot
+                   ;; To evaluate the axe-bind-free hyp, we use alist, which binds vars to their nodenums or quoteps.
+                   ;; The soundness of Axe should not depend on what an axe-bind-free function does; thus we cannot pass alist to such a function and trust it to faithfully extend it.  Nor can we trust it to extend the dag without changing any existing nodes. So we require the axe-bind-free-function to return an alist binding exactly certain vars, and we check the keys and vals of that alist.
+                   ;;TODO: It might be nice to be able to pass in the assumptions to the axe-bind-free-function? e.g., for finding sizes from unsigned-byte-p assumptions.
+                   (let* ((bind-free-expr (cadr hyp)) ;; strip off the :axe-bind-free
+                          (result (,eval-axe-bind-free-function-application-fn (ffn-symb bind-free-expr) (fargs bind-free-expr) alist (get-dag-array rewrite-stobj2)) ;could make a version without dag-array (may be very common?).. TODO: use :dag-array?
+                                  ))
+                     (if result ;; nil to indicate failure, or an alist whose keys should be exactly the vars-to-bind
+                         (let ((vars-to-bind (cddr hyp)))
+                           (if (not (axe-bind-free-result-okayp result vars-to-bind (get-dag-len rewrite-stobj2)))
+                               (mv (erp-t)
+                                   (er hard? ',relieve-rule-hyps-name "Bind free hyp ~x0 for rule ~x1 returned ~x2, but this is not a well-formed alist that binds ~x3." hyp rule-symbol result vars-to-bind)
+                                   alist rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)
+                             ;; this hyp counts as relieved:
+                             (,relieve-rule-hyps-name (rest hyps) (+ 1 hyp-num)
+                                                      (append result alist) ;; guaranteed to be disjoint given the analysis done when the rule was made and the call of axe-bind-free-result-okayp above
+                                                      rule-symbol
+                                                      rewrite-stobj2 memoization hit-counts tries limits
+                                                      node-replacement-array node-replacement-count refined-assumption-alist
+                                                      rewrite-stobj (+ -1 count))))
+                       ;; failed to relieve the axe-bind-free hyp:
+                       (prog2$ (and (member-eq rule-symbol (get-monitored-symbols rewrite-stobj))
+                                    (cw "(Failed to relieve axe-bind-free hyp ~x0 for ~x1.)~%" bind-free-expr rule-symbol))
+                               (mv (erp-nil) nil alist rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)))))
+                  (:free-vars ; can't be a work-hard since there are free vars
+                   (b* (;; Partially instantiate the hyp (the free vars will remain free):
+                        ;; TODO: Could we just do the matching wrt the alist, and skip this instantiation step?:
+                        (partially-instantiated-hyp (,instantiate-hyp-free-vars-name (cdr hyp) ;strip the :free-vars
+                                                                                     alist (get-interpreted-function-alist rewrite-stobj)))
+                        ((when (eq 'quote (ffn-symb partially-instantiated-hyp))) ;todo: this should not happen since there are free vars (unless perhaps we give special treatment to IFs)
+                         (er hard? ',relieve-rule-hyps-name "ERROR: Instantiating a hyp with free vars produced a constant.")
+                         (mv :error-instantiating nil alist rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)))
+                     ;; Some free vars remain in the partially-instantiated-hyp, so we search the REFINED-ASSUMPTION-ALIST for matches to bind them:
+                     ;; If the NODE-REPLACEMENT-ARRAY ever contains more information than the REFINED-ASSUMPTION-ALIST, we might need to search it too.
+                     ;; The refined-assumptions have been refined so that (equal (pred x) t) becomes (pred x) for better matching.
+                     ;; TODO: Should we simplify the terms to which the free vars were bound (in case the assumptions are not simplified)?
+                     (,relieve-free-var-hyp-and-all-others-name (lookup-in-refined-assumption-alist (ffn-symb partially-instantiated-hyp) refined-assumption-alist)
+                                                                (fargs partially-instantiated-hyp)
+                                                                hyp-num
+                                                                (rest hyps)
+                                                                alist rule-symbol
+                                                                rewrite-stobj2 memoization hit-counts tries limits
+                                                                node-replacement-array node-replacement-count refined-assumption-alist
+                                                                rewrite-stobj (+ -1 count))))
+                  (:axe-binding-hyp ; (:axe-binding-hyp <var> . <expr>)
+                   ;; todo: anything to do for work-hard (here and in the binding hyp case for the other rewriters/provers?)
+                   (b* ((var (cadr hyp))
+                        (expr (cddr hyp))
+                        ;; First, we substitute for all the free vars in expr:
+                        (instantiated-expr (,instantiate-hyp-no-free-vars2-name expr alist (get-interpreted-function-alist rewrite-stobj)))
+                        ;; Now instantiated-hyp is an axe-tree with leaves that are quoteps and nodenums.
+                        ;; TODO: Consider adding a special case here to check whether the hyp is a constant (may be very common)?
+                        ;; Now rewrite the instantianted expr:
+                        (old-try-count tries)
+                        ((mv erp new-nodenum-or-quotep rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)
+                         (,simplify-tree-and-add-to-dag-name instantiated-expr ; todo: is this known to be a non-var?  if so, take advantage of that fact
+                                                             nil ;nothing is yet known to be equal to instantiated-expr
+                                                             rewrite-stobj2 memoization hit-counts tries limits
+                                                             node-replacement-array node-replacement-count refined-assumption-alist
+                                                             rewrite-stobj (+ -1 count)))
+                        ((when erp) (mv erp nil alist rewrite-stobj2 memoization hit-counts tries limits node-replacement-array))
+                        (- (and old-try-count (let ((try-diff (subtract-tries tries old-try-count)))
+                                                (and (< *used-try-print-threshold* try-diff)
+                                                     (cw " (~x0 tries used ~x1:~x2 (binding hyp).)~%" try-diff rule-symbol hyp-num))))))
+                     ;; A binding hyp always counts as relieved:
+                     (,relieve-rule-hyps-name (rest hyps)
+                                              (+ 1 hyp-num)
+                                              (acons var new-nodenum-or-quotep alist) ; bind the var to the rewritten term
+                                              rule-symbol
+                                              rewrite-stobj2 memoization hit-counts tries limits
+                                              node-replacement-array node-replacement-count refined-assumption-alist
+                                              rewrite-stobj (+ -1 count))))
+                  (otherwise ; HYP is normal:
+                    (b* ((old-try-count tries) ; might be nil
+                         ((mv erp relievedp rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)
+                          (b* (;; First, substitute in for all the vars in HYP (this also evaluates what it can):
+                               (instantiated-hyp (,instantiate-hyp-no-free-vars2-name hyp alist (get-interpreted-function-alist rewrite-stobj)))
+                               ;; instantiated-hyp is now fully instantiated.  It is an axe-tree with leaves that are quoteps and nodenums (from vars already bound)
+                               ((when (fquotep instantiated-hyp)) ;; we know the instantiated-hyp is a cons, because hyp is
+                                ;; The instantiated-hyp is a quoted constant:
+                                (if (unquote instantiated-hyp)
+                                    ;; The instantiated-hyp is a non-nil constant, so it counts as relieved:
+                                    (mv (erp-nil) t rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)
+                                  ;; The instantiated-hyp is 'nil, so it failed to be relieved:
+                                  (progn$ (and (member-eq rule-symbol (get-monitored-symbols rewrite-stobj))
+                                               ;; We don't print much here, because a hyp that turns out to be nil (as opposed to some term for which we need a rewrite rule) is not very interesting.
+                                               (cw "(Failed to relieve hyp ~x0 for ~x1.~% Reason: Instantiated to nil.)~%" hyp rule-symbol))
+                                          (mv (erp-nil) nil rewrite-stobj2 memoization hit-counts tries limits node-replacement-array))))
+                               ;; There are no free vars, so we try to relieve the (fully-instantiated) hyp by simplifying it:
                                ((mv erp new-nodenum-or-quotep rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)
-                                (,simplify-tree-and-add-to-dag-name instantiated-expr ; todo: is this known to be a non-var?  if so, take advantage of that fact
-                                                                    nil ;nothing is yet known to be equal to instantiated-expr
+                                ;; TODO: This tests whether atoms in the instiantiated-hyp are vars, but that seems wasteful because the hyp is fully instantiated):
+                                ;; bozo do we really want to add stupid natp hyps, etc. to the memoization? what about ground terms (most of them will have been evaluated above)?
+                                ;; TODO: Consider not instantiating the hyp but rather simplifying it wrt an alist:
+                                (,simplify-tree-and-add-to-dag-name instantiated-hyp ; todo: is this known to be a non-var?  if so, take advantage of that fact
+                                                                    nil ; nothing is yet known to be equal to instantiated-hyp
                                                                     rewrite-stobj2 memoization hit-counts tries limits
                                                                     node-replacement-array node-replacement-count refined-assumption-alist
                                                                     rewrite-stobj (+ -1 count)))
-                               ((when erp) (mv erp nil alist rewrite-stobj2 memoization hit-counts tries limits node-replacement-array))
-                               (- (and old-try-count (let ((try-diff (sub-tries tries old-try-count)))
-                                                       (and (< *used-try-print-threshold* try-diff)
-                                                            (cw " (~x0 tries used ~x1:~x2 (binding hyp).)~%" try-diff rule-symbol hyp-num))))))
-                            ;; A binding hyp always counts as relieved:
-                            (,relieve-rule-hyps-name (rest hyps)
-                                                     (+ 1 hyp-num)
-                                                     (acons var new-nodenum-or-quotep alist) ; bind the var to the rewritten term
-                                                     rule-symbol
-                                                     rewrite-stobj2 memoization hit-counts tries limits
-                                                     node-replacement-array node-replacement-count refined-assumption-alist
-                                                     rewrite-stobj (+ -1 count)))
-                        ;; HYP is normal:
-                        (b* ((old-try-count tries) ; might be nil
-                             ((mv erp relievedp rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)
-                              (b* (;; First, substitute in for all the vars in HYP (this also evaluates what it can):
-                                   (instantiated-hyp (,instantiate-hyp-no-free-vars2-name hyp alist (get-interpreted-function-alist rewrite-stobj)))
-                                   ;; instantiated-hyp is now fully instantiated.  It is an axe-tree with leaves that are quoteps and nodenums (from vars already bound)
-                                   ((when (fquotep instantiated-hyp)) ;; we know the instantiated-hyp is a cons, because hyp is
-                                    ;; The instantiated-hyp is a quoted constant:
-                                    (if (unquote instantiated-hyp)
-                                        ;; The instantiated-hyp is a non-nil constant, so it counts as relieved:
-                                        (mv (erp-nil) t rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)
-                                      ;; The instantiated-hyp is 'nil, so it failed to be relieved:
-                                      (progn$ (and (member-eq rule-symbol (get-monitored-symbols rewrite-stobj))
-                                                   ;; We don't print much here, because a hyp that turns out to be nil (as opposed to some term for which we need a rewrite rule) is not very interesting.
-                                                   (cw "(Failed to relieve hyp ~x0 for ~x1.~% Reason: Instantiated to nil.)~%" hyp rule-symbol))
-                                              (mv (erp-nil) nil rewrite-stobj2 memoization hit-counts tries limits node-replacement-array))))
-                                   ;; There are no free vars, so we try to relieve the (fully-instantiated) hyp by simplifying it:
-                                   ((mv erp new-nodenum-or-quotep rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)
-                                    ;; TODO: This tests whether atoms in the instiantiated-hyp are vars, but that seems wasteful because the hyp is fully instantiated):
-                                    ;; bozo do we really want to add stupid natp hyps, etc. to the memoization? what about ground terms (most of them will have been evaluated above)?
-                                    ;; TODO: Consider not instantiating the hyp but rather simplifying it wrt an alist:
-                                    (,simplify-tree-and-add-to-dag-name instantiated-hyp ; todo: is this known to be a non-var?  if so, take advantage of that fact
-                                                                        nil ; nothing is yet known to be equal to instantiated-hyp
-                                                                        rewrite-stobj2 memoization hit-counts tries limits
-                                                                        node-replacement-array node-replacement-count refined-assumption-alist
-                                                                        rewrite-stobj (+ -1 count)))
-                                   ((when erp) (mv erp nil rewrite-stobj2 memoization hit-counts tries limits node-replacement-array))
-                                   ((when (consp new-nodenum-or-quotep)) ;tests for quotep
-                                    (if (unquote new-nodenum-or-quotep) ;the unquoted value is non-nil, so the hyp is relieved:
-                                        (mv (erp-nil) t rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)
-                                      ;;hyp rewrote to 'nil, so it failed to be relieved:
-                                      (progn$ (and (member-eq rule-symbol (get-monitored-symbols rewrite-stobj))
-                                                   ;; We don't print much here, because a hyp that turns out to be nil (as opposed to some term for which we need a rewrite rule) is not very interesting.
-                                                   (cw "(Failed to relieve hyp ~x0 for ~x1.~% Reason: Rewrote to nil.)~%" hyp rule-symbol))
-                                              (mv (erp-nil) nil rewrite-stobj2 memoization hit-counts tries limits node-replacement-array))))
-                                   ;; hyp didn't rewrite to a constant, new-nodenum-or-quotep is a node number):
-                                   ;; Check whether the rewritten hyp is one of the known assumptions (todo: would be better to rewrite it using IFF).  TODO: Do the other versions of the rewriter/prover do something like this?
-                                   ((when ;;(nodenum-equal-to-refined-assumptionp new-nodenum-or-quotep refined-assumption-alist (get-dag-array rewrite-stobj2)) ;todo: only do this if the hyp is not a known-boolean?
-                                        (known-true-in-node-replacement-arrayp new-nodenum-or-quotep node-replacement-array node-replacement-count))
-                                    ;;hyp rewrote to a known assumption and so counts as relieved:
-                                    (mv (erp-nil) t rewrite-stobj2 memoization hit-counts tries limits node-replacement-array))
-                                   ;; Hyp failed to be relieved:
-                                   (- (and (member-eq rule-symbol (get-monitored-symbols rewrite-stobj)) ; todo: pull this out into a subroutine?:
-                                           (let* ((relevant-nodes (nodenums-in-refined-assumption-alist refined-assumption-alist nil))
-                                                   ;; (relevant-nodes (let ((expr (aref1 'dag-array (get-dag-array rewrite-stobj2) new-nodenum-or-quotep)))
-                                                   ;;                   (if (and (consp expr)
-                                                   ;;                            (not (eq 'quote (ffn-symb expr))))
-                                                   ;;                       (append-nodenum-dargs (dargs expr) relevant-nodes)
-                                                   ;;                     relevant-nodes)))
-                                                  )
-                                             (progn$ (cw "(Failed to relieve hyp ~x0 of rule ~x1.~%" hyp rule-symbol)
-                                                     (cw "Reason: Rewrote to:~%")
-                                                     (print-dag-node-nicely new-nodenum-or-quotep 'dag-array (get-dag-array rewrite-stobj2) (get-dag-len rewrite-stobj2) 200)
-                                                     (cw "(Alist: ~x0)~%(Refined assumption alist:~%" alist)
-                                                     (print-refined-assumption-alist-elided refined-assumption-alist (get-fns-to-elide rewrite-stobj))
-                                                     (cw ")~%")
-                                                     (cw "(node-replacement-array: elided)~%") ; todo print (but compactly)! also harvest relevant nodes above
-                                                     (cw "(Relevant DAG nodes:~%")
-                                                     (if (consp relevant-nodes)
-                                                         (print-dag-array-nodes-and-supporters 'dag-array (get-dag-array rewrite-stobj2) (get-dag-len rewrite-stobj2) relevant-nodes)
-                                                       (cw "elided"))
-                                                      ;; (print-array 'dag-array (get-dag-array rewrite-stobj2) (get-dag-len rewrite-stobj2))
-                                                     (cw "))~%"))))))
-                                ;; As stated above, hyp failed to be relieved:
-                                (mv (erp-nil) nil rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)))
-                             ((when erp) (mv erp nil alist rewrite-stobj2 memoization hit-counts tries limits node-replacement-array))
-                             ;; todo: handle monitored rules once, here?  but may need to know whether the hyp rewrote to nil
-                             (- (and old-try-count ; todo: pull this out into a subroutine?:
-                                     (let ((try-diff (sub-tries tries old-try-count)))
-                                       (if relievedp
-                                           (and (< *used-try-print-threshold* try-diff)
-                                                (cw " (~x0 tries used ~x1:~x2 (succeeded).)~%" try-diff rule-symbol hyp-num))
-                                         (and (< *wasted-try-print-threshold* try-diff) ; todo: just call - on the tries? ; todo: consider distinguishing whether it rewrote to nil
-                                              (cw "(~x0 tries wasted ~x1:~x2 (failed).)~%" try-diff rule-symbol hyp-num)))))))
-                          (if relievedp
-                              (,relieve-rule-hyps-name (rest hyps) (+ 1 hyp-num) alist rule-symbol
-                                                       rewrite-stobj2 memoization hit-counts tries limits node-replacement-array node-replacement-count refined-assumption-alist rewrite-stobj (+ -1 count))
-                            (mv (erp-nil) nil alist rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)))))))))))
+                               ((when erp) (mv erp nil rewrite-stobj2 memoization hit-counts tries limits node-replacement-array))
+                               ((when (consp new-nodenum-or-quotep)) ;tests for quotep
+                                (if (unquote new-nodenum-or-quotep) ;the unquoted value is non-nil, so the hyp is relieved:
+                                    (mv (erp-nil) t rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)
+                                  ;;hyp rewrote to 'nil, so it failed to be relieved:
+                                  (progn$ (and (member-eq rule-symbol (get-monitored-symbols rewrite-stobj))
+                                               ;; We don't print much here, because a hyp that turns out to be nil (as opposed to some term for which we need a rewrite rule) is not very interesting.
+                                               (cw "(Failed to relieve hyp ~x0 for ~x1.~% Reason: Rewrote to nil.)~%" hyp rule-symbol))
+                                          (mv (erp-nil) nil rewrite-stobj2 memoization hit-counts tries limits node-replacement-array))))
+                               ;; hyp didn't rewrite to a constant, new-nodenum-or-quotep is a node number):
+                               ;; Check whether the rewritten hyp is one of the known assumptions (todo: would be better to rewrite it using IFF).  TODO: Do the other versions of the rewriter/prover do something like this?
+                               ((when ;;(nodenum-equal-to-refined-assumptionp new-nodenum-or-quotep refined-assumption-alist (get-dag-array rewrite-stobj2)) ;todo: only do this if the hyp is not a known-boolean?
+                                    (known-true-in-node-replacement-arrayp new-nodenum-or-quotep node-replacement-array node-replacement-count))
+                                ;;hyp rewrote to a known assumption and so counts as relieved:
+                                (mv (erp-nil) t rewrite-stobj2 memoization hit-counts tries limits node-replacement-array))
+                               ;; Hyp failed to be relieved:
+                               (- (and (member-eq rule-symbol (get-monitored-symbols rewrite-stobj)) ; todo: pull this out into a subroutine?:
+                                       (let* ((relevant-nodes (nodenums-in-refined-assumption-alist refined-assumption-alist nil))
+                                              ;; (relevant-nodes (let ((expr (aref1 'dag-array (get-dag-array rewrite-stobj2) new-nodenum-or-quotep)))
+                                              ;;                   (if (and (consp expr)
+                                              ;;                            (not (eq 'quote (ffn-symb expr))))
+                                              ;;                       (append-nodenum-dargs (dargs expr) relevant-nodes)
+                                              ;;                     relevant-nodes)))
+                                              )
+                                         (progn$ (cw "(Failed to relieve hyp ~x0 of rule ~x1.~%" hyp rule-symbol)
+                                                 (cw "Reason: Rewrote to:~%")
+                                                 (print-dag-node-nicely new-nodenum-or-quotep 'dag-array (get-dag-array rewrite-stobj2) (get-dag-len rewrite-stobj2) 200)
+                                                 (cw "(Alist: ~x0)~%(Refined assumption alist:~%" alist)
+                                                 (print-refined-assumption-alist-elided refined-assumption-alist (get-fns-to-elide rewrite-stobj))
+                                                 (cw ")~%")
+                                                 (cw "(node-replacement-array: elided)~%") ; todo print (but compactly)! also harvest relevant nodes above
+                                                 (cw "(Relevant DAG nodes:~%")
+                                                 (if (consp relevant-nodes)
+                                                     (print-dag-array-nodes-and-supporters 'dag-array (get-dag-array rewrite-stobj2) (get-dag-len rewrite-stobj2) relevant-nodes)
+                                                   (cw "elided"))
+                                                 ;; (print-array 'dag-array (get-dag-array rewrite-stobj2) (get-dag-len rewrite-stobj2))
+                                                 (cw "))~%"))))))
+                            ;; As stated above, hyp failed to be relieved:
+                            (mv (erp-nil) nil rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)))
+                         ((when erp) (mv erp nil alist rewrite-stobj2 memoization hit-counts tries limits node-replacement-array))
+                         ;; todo: handle monitored rules once, here?  but may need to know whether the hyp rewrote to nil
+                         (- (and old-try-count ; todo: pull this out into a subroutine?:
+                                 (let ((try-diff (subtract-tries tries old-try-count)))
+                                   (if relievedp
+                                       (and (< *used-try-print-threshold* try-diff)
+                                            (cw " (~x0 tries used ~x1:~x2 (succeeded).)~%" try-diff rule-symbol hyp-num))
+                                     (and (< *wasted-try-print-threshold* try-diff) ; todo: just call - on the tries? ; todo: consider distinguishing whether it rewrote to nil
+                                          (cw "(~x0 tries wasted ~x1:~x2 (failed).)~%" try-diff rule-symbol hyp-num)))))))
+                      (if relievedp
+                          (,relieve-rule-hyps-name (rest hyps) (+ 1 hyp-num) alist rule-symbol
+                                                   rewrite-stobj2 memoization hit-counts tries limits node-replacement-array node-replacement-count refined-assumption-alist rewrite-stobj (+ -1 count))
+                        (mv (erp-nil) nil alist rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)))))))))
 
         ;; Returns (mv erp instantiated-rhs-or-nil rewrite-stobj2 memoization hit-counts tries limits node-replacement-array) where rhs-or-nil is (if not nil) an axe-tree representing the instantiated RHS.
         (defund ,try-to-apply-rules-name (stored-rules ;the list of rules for the fn in question
@@ -827,7 +851,7 @@
                                           rewrite-stobj count)
           (declare (xargs :guard (and (wf-rewrite-stobj2 rewrite-stobj2)
                                       (stored-axe-rule-listp stored-rules)
-                                                                            (bounded-darg-listp args-to-match (get-dag-len rewrite-stobj2)) ;todo: combine with the next one
+                                      (bounded-darg-listp args-to-match (get-dag-len rewrite-stobj2)) ;todo: combine with the next one
                                       (maybe-bounded-memoizationp memoization (get-dag-len rewrite-stobj2))
                                       (hit-countsp hit-counts)
                                       (triesp tries)
@@ -847,36 +871,35 @@
             (if (endp stored-rules) ;no rule fired
                 (mv (erp-nil) nil rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)
               (b* ((stored-rule (first stored-rules))
+                   (tries (increment-tries tries)) ; does nothing if not counting tries (this adds a try even if the rule-limit will cause us to fail below -- may be ok)
+                   ;; Try to match the args-to-match with the args of the LHS of the rule (we want to fail fast, and most rules don't match, so we try matching right away):
+                   (alist-or-fail (unify-terms-and-dag-items-fast (stored-rule-lhs-args stored-rule) args-to-match (get-dag-array rewrite-stobj2) (get-dag-len rewrite-stobj2)))
+                   ((when (eq :fail alist-or-fail))
+                    ;; the rule didn't match, so try the next rule:
+                    (,try-to-apply-rules-name (rest stored-rules)
+                                              args-to-match rewrite-stobj2 memoization hit-counts tries limits node-replacement-array node-replacement-count refined-assumption-alist rewrite-stobj (+ -1 count)))
+                   ;; The rule matched, but we need to check whether we've hit the limit for it (rare):
                    (print (get-print rewrite-stobj))
-                   ((when (and limits (limit-reachedp stored-rule limits print))) ; todo: just pass in the rule-symbol (extraced below)?
+                   ((when (and limits (limit-reachedp stored-rule limits print))) ; todo: just pass in the rule-symbol (extracted below)?
                     ;; the limit for this rule is reached, so try the next rule:
                     (,try-to-apply-rules-name (rest stored-rules)
                                               args-to-match rewrite-stobj2 memoization hit-counts tries limits node-replacement-array node-replacement-count refined-assumption-alist rewrite-stobj (+ -1 count)))
-                   ;; Limit not reached, so we will try this rule:
-                   (tries (increment-tries tries)) ; does nothing if not counting tries
-                   ;; Try to match the args-to-match with the args of the LHS of the rule:
-                   (alist-or-fail (unify-terms-and-dag-items-fast (stored-rule-lhs-args stored-rule) args-to-match (get-dag-array rewrite-stobj2) (get-dag-len rewrite-stobj2))))
-                (if (eq :fail alist-or-fail)
-                    ;; the rule didn't match, so try the next rule:
-                    (,try-to-apply-rules-name (rest stored-rules)
-                                              args-to-match rewrite-stobj2 memoization hit-counts tries limits node-replacement-array node-replacement-count refined-assumption-alist rewrite-stobj (+ -1 count))
-                  ;; The rule matched, so try to relieve its hyps:
-                  (b* ((- (and (eq print :verbose!)
-                               (cw "(Trying to apply ~x0.~%" (stored-rule-symbol stored-rule))))
-                       (hyps (stored-rule-hyps stored-rule))
-                       ((mv erp hyps-relievedp alist ; may get extended by the binding of free vars
-                            rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)
-                        (if hyps
-                            (let ((rule-symbol (stored-rule-symbol stored-rule)))
-                              (,relieve-rule-hyps-name hyps
-                                                       1 ;initial hyp number
-                                                       alist-or-fail
-                                                       rule-symbol
-                                                       rewrite-stobj2 memoization hit-counts tries limits node-replacement-array node-replacement-count refined-assumption-alist rewrite-stobj (+ -1 count)))
-                          ;;if there are no hyps, don't even bother: BOZO inefficient?:
-                          (mv (erp-nil) t alist-or-fail rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)))
-                       ((when erp) (mv erp nil rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)))
-                    (if hyps-relievedp
+                   ;; Limit not reached, so try to relieve the rule's hyps:
+                   (- (and (eq print :verbose!) (cw "(Trying to apply ~x0.~%" (stored-rule-symbol stored-rule))))
+                   (hyps (stored-rule-hyps stored-rule))
+                   ((mv erp hyps-relievedp alist ; alist may get extended by the binding of free vars
+                        rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)
+                    (if hyps
+                        (let ((rule-symbol (stored-rule-symbol stored-rule)))
+                          (,relieve-rule-hyps-name hyps
+                                                   1 ;initial hyp number
+                                                   alist-or-fail
+                                                   rule-symbol
+                                                   rewrite-stobj2 memoization hit-counts tries limits node-replacement-array node-replacement-count refined-assumption-alist rewrite-stobj (+ -1 count)))
+                      ;;if there are no hyps, don't even bother: todo: inefficient?:
+                      (mv (erp-nil) t alist-or-fail rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)))
+                   ((when erp) (mv erp nil rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)))
+                (if hyps-relievedp
                         ;; the hyps were relieved, so instantiate the RHS:
                         (prog2$ (and (eq print :verbose!)
                                      (cw "Rewriting with ~x0.)~%" (stored-rule-symbol stored-rule)))
@@ -894,7 +917,7 @@
                       (prog2$ (and (eq print :verbose!)
                                    (cw "Failed to apply rule ~x0.)~%" (stored-rule-symbol stored-rule)))
                               (,try-to-apply-rules-name (rest stored-rules)
-                                                        args-to-match rewrite-stobj2 memoization hit-counts tries limits node-replacement-array node-replacement-count refined-assumption-alist rewrite-stobj (+ -1 count))))))))))
+                                                        args-to-match rewrite-stobj2 memoization hit-counts tries limits node-replacement-array node-replacement-count refined-assumption-alist rewrite-stobj (+ -1 count))))))))
 
         ;; Simplifies the application of FN to the ARGS where FN is a symbol and the ARGS are simplified.
         ;; Returns (mv erp new-nodenum-or-quotep rewrite-stobj2 memoization hit-counts tries limits node-replacement-array).
@@ -938,7 +961,7 @@
                     node-replacement-array))
                ;; Next, try to apply rules:
                ((mv erp rhs-or-nil rewrite-stobj2 memoization hit-counts tries limits node-replacement-array)
-                (,try-to-apply-rules-name (get-rules-for-fn fn (get-rule-alist rewrite-stobj))
+                (,try-to-apply-rules-name (rule-db-get fn rewrite-stobj) ;;(get-rules-for-fn fn (get-rule-alist rewrite-stobj))
                                           args
                                           rewrite-stobj2 memoization hit-counts tries limits
                                           node-replacement-array node-replacement-count refined-assumption-alist
@@ -956,21 +979,9 @@
                                                     node-replacement-array node-replacement-count refined-assumption-alist
                                                     rewrite-stobj (+ -1 count))
               ;; No rule fired, so no simplification can be done.  Add the expression to the dag, but perhaps normalize nests of certain functions:
-              (b* (((mv erp nodenum-or-quotep dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
-                    (if (get-normalize-xors rewrite-stobj)
-                        (add-and-normalize-expr fn args ; can we often save consing FN onto ARGS in this?
-                                                (get-dag-array rewrite-stobj2) (get-dag-len rewrite-stobj2) (get-dag-parent-array rewrite-stobj2) (get-dag-constant-alist rewrite-stobj2) (get-dag-variable-alist rewrite-stobj2))
-                      (mv-let (erp nodenum dag-array dag-len dag-parent-array dag-constant-alist)
-                        (add-function-call-expr-to-dag-array fn args ;(if any-arg-was-simplifiedp (cons fn args) tree) ;could put back the any-arg-was-simplifiedp trick to save this cons
-                                                             (get-dag-array rewrite-stobj2) (get-dag-len rewrite-stobj2) (get-dag-parent-array rewrite-stobj2) (get-dag-constant-alist rewrite-stobj2))
-                        (mv erp nodenum dag-array dag-len dag-parent-array dag-constant-alist (get-dag-variable-alist rewrite-stobj2)))))
-                   ;; todo: optimize this stuf by building versions of the dag-builders that traffic in the rewrite-stobj2
+              (b* (((mv erp nodenum-or-quotep rewrite-stobj2)
+                    (add-and-maybe-normalize-expr fn args rewrite-stobj rewrite-stobj2))
                    ((when erp) (mv erp nodenum-or-quotep rewrite-stobj2 memoization hit-counts tries limits node-replacement-array))
-                   (rewrite-stobj2 (put-dag-array dag-array rewrite-stobj2))
-                   (rewrite-stobj2 (put-dag-len dag-len rewrite-stobj2))
-                   (rewrite-stobj2 (put-dag-parent-array dag-parent-array rewrite-stobj2))
-                   (rewrite-stobj2 (put-dag-constant-alist dag-constant-alist rewrite-stobj2))
-                   (rewrite-stobj2 (put-dag-variable-alist dag-variable-alist rewrite-stobj2))
                    ;; See if the nodenum returned is equated to anything:
                    ;; Result is not rewritten (we could rewrite all such items (that replacements can introduce) outside the main clique)
                    (new-nodenum-or-quotep (if (consp nodenum-or-quotep) ; check for constant (e.g., if all xors cancelled)
@@ -1673,7 +1684,7 @@
                             node-replacement-array)
                       ;; Handle NOT and the various kinds of IF:
                       (case fn
-                        (not
+                        (not ; could perhaps delay special handling for NOT until after the args are simplified
                          (,simplify-not-tree-and-add-to-dag-name tree trees-equal-to-tree
                                                                  rewrite-stobj2 memoization hit-counts tries limits
                                                                  node-replacement-array node-replacement-count refined-assumption-alist
@@ -2378,8 +2389,7 @@
                           (bounded-darg-listp (strip-cdrs alist) (get-dag-len rewrite-stobj2))
                           (bounded-darg-list-listp assumption-arg-lists (get-dag-len rewrite-stobj2)))
                      (and (rewrite-stobj2p new-rewrite-stobj2)
-                          (wf-dagp 'dag-array (get-dag-array new-rewrite-stobj2) (get-dag-len new-rewrite-stobj2) 'dag-parent-array (get-dag-parent-array new-rewrite-stobj2) (get-dag-constant-alist new-rewrite-stobj2) (get-dag-variable-alist new-rewrite-stobj2))
-
+                          (wf-rewrite-stobj2 new-rewrite-stobj2)
                           (<= (get-dag-len rewrite-stobj2) (get-dag-len new-rewrite-stobj2))
                           (maybe-bounded-memoizationp new-memoization (get-dag-len new-rewrite-stobj2))
                           (iff new-memoization memoization)
@@ -2410,7 +2420,7 @@
                           (symbol-alistp alist)
                           (bounded-darg-listp (strip-cdrs alist) (get-dag-len rewrite-stobj2)))
                      (and (rewrite-stobj2p new-rewrite-stobj2)
-                          (wf-dagp 'dag-array (get-dag-array new-rewrite-stobj2) (get-dag-len new-rewrite-stobj2) 'dag-parent-array (get-dag-parent-array new-rewrite-stobj2) (get-dag-constant-alist new-rewrite-stobj2) (get-dag-variable-alist new-rewrite-stobj2))
+                          (wf-rewrite-stobj2 new-rewrite-stobj2)
                           (<= (get-dag-len rewrite-stobj2) (get-dag-len new-rewrite-stobj2))
                           (maybe-bounded-memoizationp new-memoization (get-dag-len new-rewrite-stobj2))
                           (iff new-memoization memoization)
@@ -2433,12 +2443,12 @@
                             (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
                             (stored-axe-rule-listp stored-rules)
                             (rewrite-stobjp rewrite-stobj)
-0                            (rewrite-stobj2p rewrite-stobj2)
+                            (rewrite-stobj2p rewrite-stobj2)
                             (bounded-refined-assumption-alistp refined-assumption-alist (get-dag-len rewrite-stobj2)))
                        (and (rewrite-stobj2p new-rewrite-stobj2)
                             (axe-treep instantiated-rhs-or-nil)
                             (bounded-axe-treep instantiated-rhs-or-nil (get-dag-len new-rewrite-stobj2))
-                            (wf-dagp 'dag-array (get-dag-array new-rewrite-stobj2) (get-dag-len new-rewrite-stobj2) 'dag-parent-array (get-dag-parent-array new-rewrite-stobj2) (get-dag-constant-alist new-rewrite-stobj2) (get-dag-variable-alist new-rewrite-stobj2))
+                            (wf-rewrite-stobj2 new-rewrite-stobj2)
                             (<= (get-dag-len rewrite-stobj2) (get-dag-len new-rewrite-stobj2))
                             (maybe-bounded-memoizationp new-memoization (get-dag-len new-rewrite-stobj2))
                             (iff new-memoization memoization)
@@ -2461,7 +2471,7 @@
                             (rewrite-stobj2p rewrite-stobj2)
                             (bounded-refined-assumption-alistp refined-assumption-alist (get-dag-len rewrite-stobj2)))
                        (and (rewrite-stobj2p new-rewrite-stobj2)
-                            (wf-dagp 'dag-array (get-dag-array new-rewrite-stobj2) (get-dag-len new-rewrite-stobj2) 'dag-parent-array (get-dag-parent-array new-rewrite-stobj2) (get-dag-constant-alist new-rewrite-stobj2) (get-dag-variable-alist new-rewrite-stobj2))
+                            (wf-rewrite-stobj2 new-rewrite-stobj2)
                             (true-listp nodenums-or-quoteps)
                             (bounded-darg-listp nodenums-or-quoteps (get-dag-len new-rewrite-stobj2))
                         ;; implied by the above
@@ -2499,7 +2509,7 @@
                             (rewrite-stobj2p rewrite-stobj2)
                             (bounded-refined-assumption-alistp refined-assumption-alist (get-dag-len rewrite-stobj2)))
                        (and (rewrite-stobj2p new-rewrite-stobj2)
-                            (wf-dagp 'dag-array (get-dag-array new-rewrite-stobj2) (get-dag-len new-rewrite-stobj2) 'dag-parent-array (get-dag-parent-array new-rewrite-stobj2) (get-dag-constant-alist new-rewrite-stobj2) (get-dag-variable-alist new-rewrite-stobj2))
+                            (wf-rewrite-stobj2 new-rewrite-stobj2)
                             (dargp-less-than new-nodenum-or-quotep (get-dag-len new-rewrite-stobj2))
                             (<= (get-dag-len rewrite-stobj2) (get-dag-len new-rewrite-stobj2))
                             (maybe-bounded-memoizationp new-memoization (get-dag-len new-rewrite-stobj2))
@@ -2534,7 +2544,7 @@
                             (rewrite-stobj2p rewrite-stobj2)
                             (bounded-refined-assumption-alistp refined-assumption-alist (get-dag-len rewrite-stobj2)))
                        (and (rewrite-stobj2p new-rewrite-stobj2)
-                            (wf-dagp 'dag-array (get-dag-array new-rewrite-stobj2) (get-dag-len new-rewrite-stobj2) 'dag-parent-array (get-dag-parent-array new-rewrite-stobj2) (get-dag-constant-alist new-rewrite-stobj2) (get-dag-variable-alist new-rewrite-stobj2))
+                            (wf-rewrite-stobj2 new-rewrite-stobj2)
                             (dargp-less-than new-nodenum-or-quotep (get-dag-len new-rewrite-stobj2))
                             (<= (get-dag-len rewrite-stobj2) (get-dag-len new-rewrite-stobj2))
                             (maybe-bounded-memoizationp new-memoization (get-dag-len new-rewrite-stobj2))
@@ -2563,7 +2573,7 @@
                             (rewrite-stobj2p rewrite-stobj2)
                             (bounded-refined-assumption-alistp refined-assumption-alist (get-dag-len rewrite-stobj2)))
                        (and (rewrite-stobj2p new-rewrite-stobj2)
-                            (wf-dagp 'dag-array (get-dag-array new-rewrite-stobj2) (get-dag-len new-rewrite-stobj2) 'dag-parent-array (get-dag-parent-array new-rewrite-stobj2) (get-dag-constant-alist new-rewrite-stobj2) (get-dag-variable-alist new-rewrite-stobj2))
+                            (wf-rewrite-stobj2 new-rewrite-stobj2)
                             (dargp-less-than new-nodenum-or-quotep (get-dag-len new-rewrite-stobj2))
                             (<= (get-dag-len rewrite-stobj2) (get-dag-len new-rewrite-stobj2))
                             (maybe-bounded-memoizationp new-memoization (get-dag-len new-rewrite-stobj2))
@@ -2591,7 +2601,7 @@
                             (rewrite-stobj2p rewrite-stobj2)
                             (bounded-refined-assumption-alistp refined-assumption-alist (get-dag-len rewrite-stobj2)))
                        (and (rewrite-stobj2p new-rewrite-stobj2)
-                            (wf-dagp 'dag-array (get-dag-array new-rewrite-stobj2) (get-dag-len new-rewrite-stobj2) 'dag-parent-array (get-dag-parent-array new-rewrite-stobj2) (get-dag-constant-alist new-rewrite-stobj2) (get-dag-variable-alist new-rewrite-stobj2))
+                            (wf-rewrite-stobj2 new-rewrite-stobj2)
                             (dargp-less-than new-nodenum-or-quotep (get-dag-len new-rewrite-stobj2))
                             (<= (get-dag-len rewrite-stobj2) (get-dag-len new-rewrite-stobj2))
                             (maybe-bounded-memoizationp new-memoization (get-dag-len new-rewrite-stobj2))
@@ -2619,7 +2629,7 @@
                             (rewrite-stobj2p rewrite-stobj2)
                             (bounded-refined-assumption-alistp refined-assumption-alist (get-dag-len rewrite-stobj2)))
                        (and (rewrite-stobj2p new-rewrite-stobj2)
-                            (wf-dagp 'dag-array (get-dag-array new-rewrite-stobj2) (get-dag-len new-rewrite-stobj2) 'dag-parent-array (get-dag-parent-array new-rewrite-stobj2) (get-dag-constant-alist new-rewrite-stobj2) (get-dag-variable-alist new-rewrite-stobj2))
+                            (wf-rewrite-stobj2 new-rewrite-stobj2)
                             (dargp-less-than new-nodenum-or-quotep (get-dag-len new-rewrite-stobj2))
                             (<= (get-dag-len rewrite-stobj2) (get-dag-len new-rewrite-stobj2))
                             (maybe-bounded-memoizationp new-memoization (get-dag-len new-rewrite-stobj2))
@@ -2651,7 +2661,7 @@
                             (rewrite-stobj2p rewrite-stobj2)
                             (bounded-refined-assumption-alistp refined-assumption-alist (get-dag-len rewrite-stobj2)))
                        (and (rewrite-stobj2p new-rewrite-stobj2)
-                            (wf-dagp 'dag-array (get-dag-array new-rewrite-stobj2) (get-dag-len new-rewrite-stobj2) 'dag-parent-array (get-dag-parent-array new-rewrite-stobj2) (get-dag-constant-alist new-rewrite-stobj2) (get-dag-variable-alist new-rewrite-stobj2))
+                            (wf-rewrite-stobj2 new-rewrite-stobj2)
                             (dargp-less-than new-nodenum-or-quotep (get-dag-len new-rewrite-stobj2))
                             (<= (get-dag-len rewrite-stobj2) (get-dag-len new-rewrite-stobj2))
                             (maybe-bounded-memoizationp new-memoization (get-dag-len new-rewrite-stobj2))
@@ -2684,7 +2694,7 @@
                             (rewrite-stobj2p rewrite-stobj2)
                             (bounded-refined-assumption-alistp refined-assumption-alist (get-dag-len rewrite-stobj2)))
                        (and (rewrite-stobj2p new-rewrite-stobj2)
-                            (wf-dagp 'dag-array (get-dag-array new-rewrite-stobj2) (get-dag-len new-rewrite-stobj2) 'dag-parent-array (get-dag-parent-array new-rewrite-stobj2) (get-dag-constant-alist new-rewrite-stobj2) (get-dag-variable-alist new-rewrite-stobj2))
+                            (wf-rewrite-stobj2 new-rewrite-stobj2)
                             (dargp-less-than new-nodenum-or-quotep (get-dag-len new-rewrite-stobj2))
                             (<= (get-dag-len rewrite-stobj2) (get-dag-len new-rewrite-stobj2))
                             (maybe-bounded-memoizationp new-memoization (get-dag-len new-rewrite-stobj2))
@@ -2718,7 +2728,7 @@
                             (rewrite-stobj2p rewrite-stobj2)
                             (bounded-refined-assumption-alistp refined-assumption-alist (get-dag-len rewrite-stobj2)))
                        (and (rewrite-stobj2p new-rewrite-stobj2)
-                            (wf-dagp 'dag-array (get-dag-array new-rewrite-stobj2) (get-dag-len new-rewrite-stobj2) 'dag-parent-array (get-dag-parent-array new-rewrite-stobj2) (get-dag-constant-alist new-rewrite-stobj2) (get-dag-variable-alist new-rewrite-stobj2))
+                            (wf-rewrite-stobj2 new-rewrite-stobj2)
                             (dargp-less-than new-nodenum-or-quotep (get-dag-len new-rewrite-stobj2))
                             (<= (get-dag-len rewrite-stobj2) (get-dag-len new-rewrite-stobj2))
                             (maybe-bounded-memoizationp new-memoization (get-dag-len new-rewrite-stobj2))
@@ -2746,7 +2756,7 @@
                             (rewrite-stobj2p rewrite-stobj2)
                             (bounded-refined-assumption-alistp refined-assumption-alist (get-dag-len rewrite-stobj2)))
                        (and (rewrite-stobj2p new-rewrite-stobj2)
-                            (wf-dagp 'dag-array (get-dag-array new-rewrite-stobj2) (get-dag-len new-rewrite-stobj2) 'dag-parent-array (get-dag-parent-array new-rewrite-stobj2) (get-dag-constant-alist new-rewrite-stobj2) (get-dag-variable-alist new-rewrite-stobj2))
+                            (wf-rewrite-stobj2 new-rewrite-stobj2)
                             (dargp-less-than new-nodenum-or-quotep (get-dag-len new-rewrite-stobj2))
                             (<= (get-dag-len rewrite-stobj2) (get-dag-len new-rewrite-stobj2))
                             (maybe-bounded-memoizationp new-memoization (get-dag-len new-rewrite-stobj2))
@@ -2772,7 +2782,7 @@
                             (rewrite-stobj2p rewrite-stobj2)
                             (bounded-refined-assumption-alistp refined-assumption-alist (get-dag-len rewrite-stobj2)))
                        (and (rewrite-stobj2p new-rewrite-stobj2)
-                            (wf-dagp 'dag-array (get-dag-array new-rewrite-stobj2) (get-dag-len new-rewrite-stobj2) 'dag-parent-array (get-dag-parent-array new-rewrite-stobj2) (get-dag-constant-alist new-rewrite-stobj2) (get-dag-variable-alist new-rewrite-stobj2))
+                            (wf-rewrite-stobj2 new-rewrite-stobj2)
                             (dargp-less-than new-nodenum-or-quotep (get-dag-len new-rewrite-stobj2))
                             (<= (get-dag-len rewrite-stobj2) (get-dag-len new-rewrite-stobj2))
                             (maybe-bounded-memoizationp new-memoization (get-dag-len new-rewrite-stobj2))
@@ -2799,7 +2809,7 @@
                             (rewrite-stobj2p rewrite-stobj2)
                             (bounded-refined-assumption-alistp refined-assumption-alist (get-dag-len rewrite-stobj2)))
                        (and (rewrite-stobj2p new-rewrite-stobj2)
-                            (wf-dagp 'dag-array (get-dag-array new-rewrite-stobj2) (get-dag-len new-rewrite-stobj2) 'dag-parent-array (get-dag-parent-array new-rewrite-stobj2) (get-dag-constant-alist new-rewrite-stobj2) (get-dag-variable-alist new-rewrite-stobj2))
+                            (wf-rewrite-stobj2 new-rewrite-stobj2)
                             (DARGP-LESS-THAN new-nodenum-or-quotep (get-dag-len new-rewrite-stobj2))
                             (DARGP new-nodenum-or-quotep) ; follows from the above but no free vars
                             (<= (get-dag-len rewrite-stobj2) (get-dag-len new-rewrite-stobj2))
@@ -2833,7 +2843,9 @@
                    (:compound-recognizer axe-treep-compound-recognizer)
                    (:compound-recognizer natp-compound-recognizer)
                    (:congruence iff-implies-equal-not)
-                   (:definition add-variable-to-dag-array-in-stobj)
+                   ; (:definition add-variable-to-dag-array-in-stobj)
+                   (:rewrite add-variable-to-dag-array-in-stobj-return-type)
+                   (:rewrite add-variable-to-dag-array-in-stobj-return-type-2)
 ;                   (:definition alistp)
                    (:definition axe-rule-hyp-listp)
                    (:definition eq)
@@ -2857,7 +2869,9 @@
                    (:definition ,simplify-trees-and-add-to-dag-name)
                    (:definition synp)
                    (:definition ,try-to-apply-rules-name)
-                   (:definition wf-rewrite-stobj2)
+                   ;; (:definition wf-rewrite-stobj2)
+                   (:rewrite wf-rewrite-stobj2-conjuncts)
+                   (:linear wf-rewrite-stobj2-conjuncts2)
                    (:executable-counterpart all-natp)
                    (:executable-counterpart axe-rule-hyp-listp)
                    (:executable-counterpart axe-tree-listp)
@@ -2909,11 +2923,11 @@
                    (:induction ,(pack$ 'flag-simplify-tree-and-add-to-dag- suffix))
                    (:linear bound-on-mv-nth-3-and-mv-nth-1-of-add-function-call-expr-to-dag-array-alt-strong)
                    (:linear bound-on-mv-nth-3-and-mv-nth-1-of-add-variable-to-dag-array)
-                   (:linear bound-on-mv-nth-3-of-add-and-normalize-expr-3)
+                   ;; (:linear bound-on-mv-nth-3-of-add-and-normalize-expr-3)
                    (:linear bound-on-mv-nth-3-of-add-function-call-expr-to-dag-array-3)
                    (:linear bound-on-mv-nth-3-of-add-variable-to-dag-array-3)
                    (:rewrite <-of-apply-node-replacement-array-bool-to-darg)
-                   (:rewrite <-of-mv-nth-1-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr)
+                   ;; (:rewrite <-of-mv-nth-1-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr)
                    (:rewrite <-trans)
                    (:rewrite <-when-bounded-axe-treep)
                    (:rewrite <=-transitive-1)
@@ -2926,6 +2940,8 @@
                    (:rewrite alist-suitable-for-hypsp-of-unify-terms-and-dag-items-fast-when-stored-axe-rulep)
                    (:rewrite alist-suitable-for-hypsp-when-axe-sytaxp-car)
                    (:rewrite alist-suitable-for-hypsp-of-append-and-cdr-when-axe-binding-hyp)
+                   ;(:rewrite ALIST-SUITABLE-FOR-HYPSP-AFTER-MATCHING-2)
+                   (:rewrite ALIST-SUITABLE-FOR-HYPSP-AFTER-MATCHING-2-special)
                    (:rewrite subsetp-equal-of-free-vars-in-terms-of-fargs-of-cadr-of-car-when-axe-binding-hyp)
                    (:rewrite alistp-of-cdr)
                    (:rewrite alistp-of-for-unify-trees-with-dag-nodes)
@@ -2982,10 +2998,10 @@
                    (:rewrite bounded-refined-assumption-alistp-of-extend-refined-assumption-alist-assuming-negation-of-node-gen)
                    (:rewrite bounded-refined-assumption-alistp-of-extend-refined-assumption-alist-assuming-node-gen)
                    (:rewrite bounded-undo-pairsp-of-nil)
-                   (:rewrite dag-constant-alistp-mv-nth-5-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr)
+                   ;; (:rewrite dag-constant-alistp-mv-nth-5-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr)
                    (:rewrite dag-constant-alistp-of-get-dag-constant-alist)
                    (:rewrite dag-constant-alistp-of-mv-nth-5-of-add-function-call-expr-to-dag-array)
-                   (:rewrite dag-variable-alistp-mv-nth-6-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr)
+                   ;; (:rewrite dag-variable-alistp-mv-nth-6-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr)
                    (:rewrite dag-variable-alistp-of-get-dag-variable-alist)
                    (:rewrite dag-variable-alistp-of-mv-nth-5-of-add-variable-to-dag-array)
                    (:rewrite darg-listp-of-cons)
@@ -2997,14 +3013,14 @@
                    (:rewrite dargp-less-than-of-apply-node-replacement-array-bool-to-darg)
                    (:rewrite dargp-less-than-of-list-of-quote)
                    (:rewrite dargp-less-than-of-lookup-in-memoization-when-bounded-memoizationp)
-                   (:rewrite dargp-less-than-of-mv-nth-1-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr-gen)
+                   ;; (:rewrite dargp-less-than-of-mv-nth-1-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr-gen)
                    (:rewrite dargp-less-than-of-mv-nth-1-of-add-function-call-expr-to-dag-array-gen-alt)
                    (:rewrite dargp-less-than-when-consp-cheap)
                    (:rewrite dargp-less-than-when-myquotep-cheap)
                    (:rewrite dargp-less-than-when-natp-cheap)
                    (:rewrite dargp-less-than-when-not-consp-cheap)
                    (:rewrite dargp-of-apply-node-replacement-array)
-                   (:rewrite dargp-of-mv-nth-1-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr)
+                   ;; (:rewrite dargp-of-mv-nth-1-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr)
                    (:rewrite dargp-of-mv-nth-1-of-add-function-call-expr-to-dag-array)
                    (:rewrite dargp-when-consp-cheap)
                    (:rewrite dargp-when-dargp-less-than)
@@ -3036,7 +3052,7 @@
                    (:rewrite mv-nth-of-if)
                    (:rewrite natp-of-apply-node-replacement-array-bool-to-darg)
                    (:rewrite natp-of-get-dag-len)
-                   (:rewrite natp-of-mv-nth-1-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr)
+                   ;; (:rewrite natp-of-mv-nth-1-of-add-and-normalize-expr-and-mv-nth-3-of-add-and-normalize-expr)
                    (:rewrite natp-of-mv-nth-1-of-add-function-call-expr-to-dag-array)
                    (:rewrite natp-of-mv-nth-3-of-add-variable-to-dag-array)
                    (:rewrite node-replacement-arrayp-when-bounded-node-replacement-arrayp)
@@ -3065,7 +3081,8 @@
                    (:rewrite rewrite-stobj2p-of-put-dag-len)
                    (:rewrite rewrite-stobj2p-of-put-dag-parent-array)
                    (:rewrite rewrite-stobj2p-of-put-dag-variable-alist)
-                   (:rewrite rule-alistp-of-get-rule-alist)
+                   ;; (:rewrite rule-alistp-of-get-rule-alist)
+                   (:rewrite stored-axe-rule-listp-of-rule-db-get)
                    (:rewrite ,(pack$ 'simplify-boolif-tree-and-add-to-dag- suffix '-of-0))
                    (:rewrite ,(pack$ 'simplify-bvif-tree-and-add-to-dag- suffix '-of-0))
                    (:rewrite ,(pack$ 'simplify-bvif-tree-and-add-to-dag1- suffix '-of-0))
@@ -3079,7 +3096,7 @@
                    (:rewrite ,(pack$ 'simplify-tree-and-add-to-dag- suffix '-of-0))
                    (:rewrite ,(pack$ 'simplify-trees-and-add-to-dag- suffix '-of-0))
                    (:rewrite stored-axe-rule-listp-of-cdr)
-                   (:rewrite stored-axe-rule-listp-of-get-rules-for-fn-when-rule-alistp)
+                   (:rewrite stored-axe-rule-listp-of-get-rules-for-fn)
                    (:rewrite stored-axe-rulep-of-car)
                    (:rewrite strip-cdrs-of-acons)
                    (:rewrite strip-cdrs-of-append)
@@ -3100,7 +3117,8 @@
                    (:rewrite trees-to-memoizep-of-cons-if-not-equal-car)
                    (:rewrite true-list-fix-when-true-listp)
                    (:rewrite ,(pack$ 'try-to-apply-rules- suffix '-of-0))
-                   (:rewrite type-of-add-and-normalize-expr)
+                   ;; (:rewrite type-of-add-and-normalize-expr)
+                   (:rewrite add-and-maybe-normalize-expr-return-type)
                    (:rewrite undo-writes-to-node-replacement-array-return-type)
                    (:rewrite update-node-replacement-array-for-assuming-negation-of-node-return-type)
                    (:rewrite update-node-replacement-array-for-assuming-negation-of-node-return-type-alen1-corollary)
@@ -3142,7 +3160,7 @@
                    (:type-prescription member-equal)
                    (:type-prescription myquotep)
                    (:type-prescription natp-of-mv-nth-1-of-add-variable-to-dag-array)
-                   (:type-prescription natp-of-mv-nth-3-of-add-and-normalize-expr)
+                   ;; (:type-prescription natp-of-mv-nth-3-of-add-and-normalize-expr)
                    (:type-prescription natp-of-mv-nth-3-of-add-function-call-expr-to-dag-array-type)
                    (:type-prescription natp-of-mv-nth-3-of-add-variable-to-dag-array)
                    (:type-prescription posp-of-alen1)
@@ -3291,9 +3309,8 @@
                        (symbol-alistp alist)
                        (bounded-darg-listp (strip-cdrs alist) (get-dag-len rewrite-stobj2))
                        (<= x (get-dag-len rewrite-stobj2)))
-                  (and
-                   (<= x (get-dag-len (mv-nth 3 ,call-of-relieve-rule-hyps)))
-                   (darg-listp (strip-cdrs (mv-nth 2 ,call-of-relieve-rule-hyps)))))
+                  (and (<= x (get-dag-len (mv-nth 3 ,call-of-relieve-rule-hyps)))
+                       (darg-listp (strip-cdrs (mv-nth 2 ,call-of-relieve-rule-hyps)))))
          :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-relieve-rule-hyps- suffix))
                   :in-theory (disable ,(pack$ 'theorem-for-relieve-rule-hyps- suffix)))))
 
@@ -3330,6 +3347,7 @@
          :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-try-to-apply-rules- suffix))
                   :in-theory (disable ,(pack$ 'theorem-for-try-to-apply-rules- suffix)))))
 
+       ;; do we still need this?
        (defthm ,(pack$ 'corollary-theorem-for-try-to-apply-rules- suffix)
          (implies (and (wf-rewrite-stobj2 rewrite-stobj2)
                        (bounded-darg-listp args-to-match (get-dag-len rewrite-stobj2))
@@ -3353,7 +3371,9 @@
                                           (get-dag-array (mv-nth 2 ,call-of-try-to-apply-rules))
                                           (get-dag-len (mv-nth 2 ,call-of-try-to-apply-rules)))))
          :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-try-to-apply-rules- suffix))
-                  :in-theory (disable ,(pack$ 'theorem-for-try-to-apply-rules- suffix)))))
+                  :in-theory (e/d (wf-rewrite-stobj2)
+                                  (,(pack$ 'theorem-for-try-to-apply-rules- suffix)
+                                   wf-rewrite-stobj2-conjuncts)))))
 
        (defthm ,(pack$ 'pseudo-dag-arrayp-of-mv-nth-2-of-try-to-apply-rules- suffix)
          (implies (and (<= n (get-dag-len (mv-nth 2 ,call-of-try-to-apply-rules)))
@@ -3368,11 +3388,13 @@
                        (rewrite-stobjp rewrite-stobj)
                        (rewrite-stobj2p rewrite-stobj2)
                        (bounded-refined-assumption-alistp refined-assumption-alist (get-dag-len rewrite-stobj2)))
-                  (PSEUDO-DAG-ARRAYP 'DAG-ARRAY
-                                     (get-dag-array (MV-NTH 2 ,call-of-try-to-apply-rules))
+                  (pseudo-dag-arrayp 'dag-array
+                                     (get-dag-array (mv-nth 2 ,call-of-try-to-apply-rules))
                                      n))
          :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-try-to-apply-rules- suffix))
-                  :in-theory (disable ,(pack$ 'theorem-for-try-to-apply-rules- suffix)))))
+                  :in-theory (e/d (wf-rewrite-stobj2)
+                                  (,(pack$ 'theorem-for-try-to-apply-rules- suffix)
+                                   wf-rewrite-stobj2-conjuncts)))))
 
        (defthm ,(pack$ 'bound-theorem-for-simplify-trees-and-add-to-dag- suffix)
          (implies (and (<= x (get-dag-len rewrite-stobj2))
@@ -3384,8 +3406,7 @@
                        (natp node-replacement-count) (<= node-replacement-count (alen1 'node-replacement-array node-replacement-array))
                        (rewrite-stobjp rewrite-stobj)
                        (rewrite-stobj2p rewrite-stobj2)
-                       (bounded-refined-assumption-alistp refined-assumption-alist (get-dag-len rewrite-stobj2))
-                       )
+                       (bounded-refined-assumption-alistp refined-assumption-alist (get-dag-len rewrite-stobj2)))
                   (<= x
                       (get-dag-len (mv-nth 2 ,call-of-simplify-trees-and-add-to-dag))))
          :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-simplify-trees-and-add-to-dag- suffix))
@@ -3630,7 +3651,9 @@
                        (maybe-memoizationp (mv-nth 3 ,call-of-simplify-tree-and-add-to-dag))
                        (dargp (mv-nth 1 ,call-of-simplify-tree-and-add-to-dag))))
          :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-simplify-tree-and-add-to-dag- suffix))
-                  :in-theory (disable ,(pack$ 'theorem-for-simplify-tree-and-add-to-dag- suffix)))))
+                  :in-theory (e/d (wf-rewrite-stobj2)
+                                  (,(pack$ 'theorem-for-simplify-tree-and-add-to-dag- suffix)
+                                   wf-rewrite-stobj2-conjuncts)))))
 
        (defthm ,(pack$ 'pseudo-dag-arrayp-of-mv-nth-2-of- simplify-tree-and-add-to-dag-name)
          (implies (and (natp len)
@@ -3646,9 +3669,11 @@
                        (rewrite-stobjp rewrite-stobj)
                        (rewrite-stobj2p rewrite-stobj2)
                        (bounded-refined-assumption-alistp refined-assumption-alist (get-dag-len rewrite-stobj2)))
-                  (PSEUDO-DAG-ARRAYP 'DAG-ARRAY (get-dag-array (MV-NTH '2 ,call-of-simplify-tree-and-add-to-dag)) len))
+                  (pseudo-dag-arrayp 'dag-array (get-dag-array (mv-nth '2 ,call-of-simplify-tree-and-add-to-dag)) len))
          :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-simplify-tree-and-add-to-dag- suffix))
-                  :in-theory (disable ,(pack$ 'theorem-for-simplify-tree-and-add-to-dag- suffix)))))
+                  :in-theory (e/d (wf-rewrite-stobj2)
+                                  (,(pack$ 'theorem-for-simplify-tree-and-add-to-dag- suffix)
+                                   wf-rewrite-stobj2-conjuncts)))))
 
        (defthm ,(pack$ '<-of-mv-nth-1-of- simplify-tree-and-add-to-dag-name)
          (implies (and ;(natp bound)
@@ -4865,7 +4890,7 @@
                                           renumbering-stobj)
                  (implies (not erp)
                           (and (rewrite-stobj2p new-rewrite-stobj2)
-                               (wf-dagp 'dag-array (get-dag-array new-rewrite-stobj2) (get-dag-len new-rewrite-stobj2) 'dag-parent-array (get-dag-parent-array new-rewrite-stobj2) (get-dag-constant-alist new-rewrite-stobj2) (get-dag-variable-alist new-rewrite-stobj2))
+                               (wf-rewrite-stobj2 new-rewrite-stobj2)
                                (dargp-less-than new-nodenum-or-quotep (get-dag-len new-rewrite-stobj2))
                                (dargp new-nodenum-or-quotep) ; implied by dargp-less-than (just above) but matches better
                                (<= (get-dag-len rewrite-stobj2) (get-dag-len new-rewrite-stobj2))
@@ -5115,7 +5140,7 @@
                  (declare (ignore tries node-replacement-array))
                  (implies (not erp)
                           (and (rewrite-stobj2p new-rewrite-stobj2)
-                               (wf-dagp 'dag-array (get-dag-array new-rewrite-stobj2) (get-dag-len new-rewrite-stobj2) 'dag-parent-array (get-dag-parent-array new-rewrite-stobj2) (get-dag-constant-alist new-rewrite-stobj2) (get-dag-variable-alist new-rewrite-stobj2))
+                               (wf-rewrite-stobj2 new-rewrite-stobj2)
                                (hit-countsp new-hit-counts)
                                (maybe-memoizationp new-memoization)
                                (iff new-memoization memoization)
@@ -5397,8 +5422,9 @@
                                                       integerp-of-renumberingi
                                                       natp-of-renumberingi
                                                       len-when-pseudo-dagp
-                                                      car-of-nth-when-pseudo-dagp)
-                                                     (natp))))))
+                                                      car-of-nth-when-pseudo-dagp
+                                                      wf-rewrite-stobj2)
+                                                     (natp wf-rewrite-stobj2-conjuncts))))))
       (b* (;; The guard excludes the error here, but this is critical to soundness, so we check it
            ;; in case this function is called from non-guard-verified code:
            ((when (and memoizep
@@ -5437,7 +5463,8 @@
                 (rewrite-stobj (put-known-booleans known-booleans rewrite-stobj))
                 (rewrite-stobj (put-normalize-xors normalize-xors rewrite-stobj))
                 (rewrite-stobj (put-interpreted-function-alist interpreted-function-alist rewrite-stobj))
-                (rewrite-stobj (put-rule-alist rule-alist rewrite-stobj))
+                ;; (rewrite-stobj (put-rule-alist rule-alist rewrite-stobj))
+                (rewrite-stobj (load-rule-db rule-alist rewrite-stobj))
                 (rewrite-stobj (put-print print rewrite-stobj))
                 ;; Initialize rewrite-stobj2:
                 (rewrite-stobj2 (put-dag-array dag-array rewrite-stobj2))
@@ -5516,8 +5543,9 @@
                                 integerp-of-renumberingi
                                 <-of-+-of-1-when-integers
                                 len-when-pseudo-dagp
-                                car-of-nth-when-pseudo-dagp)
-                               (myquotep natp)))))
+                                car-of-nth-when-pseudo-dagp
+                                wf-rewrite-stobj2)
+                               (myquotep natp wf-rewrite-stobj2-conjuncts)))))
 
     (defthm ,(pack$ simplify-dag-core-name '-return-type-corollary-linear)
       (implies (and (not (myquotep (mv-nth 1 ,call-of-simplify-dag-core)))
@@ -5544,9 +5572,8 @@
                :hints (("Goal" :use ,(pack$ simplify-dag-core-name '-return-type)
                :in-theory (e/d (car-of-car-when-pseudo-dagp-cheap) (,(pack$ simplify-dag-core-name '-return-type))))))
 
-    ;; Returns (mv erp dag-or-quotep).
+    ;; Returns (mv erp dag-or-quotep limits).
     ;; TODO: Make a version that returns an array (call crunch-dag instead of drop-non-supporters-array-with-name)?
-    ;; TODO: Return the limits?
     ;; Only the first 5 arguments affect soundness.
     (defund ,simplify-dag-name (dag
                                 assumptions
@@ -5588,9 +5615,9 @@
                                                      (natp))))))
       (b* ((top-nodenum (top-nodenum dag))
            ((when (not (< top-nodenum *max-1d-array-length*)))
-            (mv :dag-too-big nil))
+            (mv :dag-too-big nil limits))
            ;; If we are to memoize, start with a rewrite that memoizes but does not use internal contexts (for soundness):
-           ;; This may be critical to performance.
+           ;; This step (with memoization) may be critical to performance.  This steps may return a reduced LIMITS value.
            ((mv erp dag-or-quotep limits)
             (if (not memoizep)
                 (mv (erp-nil) dag limits)
@@ -5607,15 +5634,15 @@
                    (- (and print (cw ")~%"))) ; balances "(Simplifying DAG with memoization ..."
                    )
                 (mv (erp-nil) dag-or-quotep limits))))
-           ((when erp) (mv erp nil))
-           ((when (myquotep dag-or-quotep)) (mv (erp-nil) dag-or-quotep))
+           ((when erp) (mv erp nil limits))
+           ((when (myquotep dag-or-quotep)) (mv (erp-nil) dag-or-quotep limits))
            (dag dag-or-quotep) ; it was not a quotep, so we rename it
            )
         ;; Continue (usually) with a pass that does use contexts (and does not memoize):
         (if (and memoizep ; means we already simplified above
                  (not (dag-has-internal-contextsp dag)) ; no context info to use
                  )
-            (mv (erp-nil) dag)
+            (mv (erp-nil) dag limits)
           (b* ((top-nodenum (top-nodenum dag))
                (dag-len (+ 1 top-nodenum))
                (- (and print (cw "(Simplifying DAG with internal contexts and no memoization (~x0 nodes, ~x1 assumptions):~%" dag-len (len assumptions))))
@@ -5627,16 +5654,14 @@
                 (make-dag-indices 'dag-array dag-array 'dag-parent-array dag-len))
                (internal-context-array (make-full-context-array-with-parents 'dag-array dag-array dag-len dag-parent-array))
                ;; Do the rewriting:
-               ((mv erp dag-or-quotep
-                    & ;limits
-                    )
+               ((mv erp dag-or-quotep limits)
                 (,simplify-dag-core-name dag assumptions dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist internal-context-array rule-alist interpreted-function-alist known-booleans normalize-xors limits
                                          nil ;memoizep (would be unsound)
                                          count-hits print monitored-symbols fns-to-elide))
-               ((when erp) (mv erp nil))
+               ((when erp) (mv erp nil limits))
                (- (and print (cw ")~%"))) ; balances "(Simplifying DAG with internal contexts ..."
                )
-            (mv (erp-nil) dag-or-quotep)))))
+            (mv (erp-nil) dag-or-quotep limits)))))
 
     (defthm ,(pack$ simplify-dag-name '-return-type)
       (implies (and (not (myquotep (mv-nth 1 ,call-of-simplify-dag)))
@@ -5656,6 +5681,7 @@
                (and (pseudo-dagp (mv-nth 1 ,call-of-simplify-dag))
                     (<= (len (mv-nth 1 ,call-of-simplify-dag))
                         *max-1d-array-length*) ;; todo
+                    (rule-limitsp (mv-nth 2 ,call-of-simplify-dag))
                     ))
       :hints (("Goal" :do-not '(generalize eliminate-destructors)
                :in-theory (e/d (,simplify-dag-name
@@ -5771,10 +5797,11 @@
                                                              ;; integerp-when-dargp ;caused problems when natp is known
                                                              axe-treep-when-pseudo-termp
                                                              dargp-when-natp
-                                                             <-of-if-arg2-axe)
+                                                             <-of-if-arg2-axe
+                                                             wf-rewrite-stobj2)
                                                             (natp
                                                              NATP-WHEN-DARGP ;caused problems when natp is known
-                                                             ))))))
+                                                             wf-rewrite-stobj2-conjuncts))))))
       (b* (;; Create an empty dag-array:
            (slack-amount 1000000) ;todo: make this adjustable
            ((mv dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist)
@@ -5824,7 +5851,8 @@
                                                           rewrite-stobj))
                        (rewrite-stobj (put-normalize-xors normalize-xors rewrite-stobj))
                        (rewrite-stobj (put-interpreted-function-alist interpreted-function-alist rewrite-stobj))
-                       (rewrite-stobj (put-rule-alist rule-alist rewrite-stobj))
+                       ;; (rewrite-stobj (put-rule-alist rule-alist rewrite-stobj))
+                       (rewrite-stobj (load-rule-db rule-alist rewrite-stobj))
                        (rewrite-stobj (put-print print rewrite-stobj))
                        ;; Initialize rewrite-stobj2:
                        (rewrite-stobj2 (put-dag-array dag-array rewrite-stobj2))
@@ -5892,8 +5920,9 @@
                                        ;max-key-hack-2
                                        <-OF-+-OF-1-WHEN-INTEGERS
                                        integerp-when-natp-disabled
-                                       <-of-if-arg2-axe)
-                                      (natp)))))
+                                       <-of-if-arg2-axe
+                                       wf-rewrite-stobj2)
+                                      (natp  wf-rewrite-stobj2-conjuncts)))))
 
     (defthm ,(pack$ 'consp-of-cdr-of-mv-nth-1-of- simplify-term-name '-when-quotep)
       (implies (and (equal 'quote (car (mv-nth 1 ,call-of-simplify-term)))
@@ -6123,7 +6152,8 @@
            ((mv erp rule-alist) (make-rule-alist rules (w state)))
            ((when erp) (mv erp nil state))
            ;; Simplify the DAG:
-           ((mv erp dag-or-quotep) ,call-of-simplify-dag)
+           ((mv erp dag-or-quotep &) ; todo: use the limits?
+            ,call-of-simplify-dag)
            ((when erp) (mv erp nil state)))
         (mv (erp-nil)
             `(progn (defconst ,name ',dag-or-quotep)

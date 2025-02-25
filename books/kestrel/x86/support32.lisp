@@ -200,7 +200,7 @@
                   0))
   :hints (("Goal" :in-theory (e/d (segment-min-eff-addr32
                                    segment-base-and-bounds
-                                   ACL2::MOD-OF-EXPT-OF-2-CONSTANT-VERSION)
+                                   ACL2::MOD-BECOMES-BVCHOP-WHEN-POWER-OF-2P)
                                   (;; x86isa::seg-hidden-basei-is-n64p
                                    ;; x86isa::seg-hidden-limiti-is-n32p
                                    ;; x86isa::seg-hidden-attri-is-n16p
@@ -217,7 +217,7 @@
                        (bvchop 32 (xr :seg-hidden-limit seg-reg x86))))))
   :hints (("Goal" :in-theory (e/d (segment-min-eff-addr32
                                    segment-base-and-bounds
-                                   acl2::mod-of-expt-of-2-constant-version)
+                                   acl2::mod-becomes-bvchop-when-power-of-2p)
                                   (;; x86isa::seg-hidden-basei-is-n64p
                                    ;; x86isa::seg-hidden-limiti-is-n32p
                                    ;; x86isa::seg-hidden-attri-is-n16p
@@ -235,8 +235,7 @@
 (defthm segment-min-eff-addr32-of-set-flag
   (equal (segment-min-eff-addr32 seg-reg (set-flag flg val x86))
          (segment-min-eff-addr32 seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-flag)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable set-flag))))
 
 (defthm segment-min-eff-addr32-of-set-undef (equal (segment-min-eff-addr32 seg-reg (set-undef undef x86)) (segment-min-eff-addr32 seg-reg x86)) :hints (("Goal" :in-theory (enable set-undef))))
 (defthm segment-min-eff-addr32-of-set-mxcsr (equal (segment-min-eff-addr32 seg-reg (set-mxcsr mxcsr x86)) (segment-min-eff-addr32 seg-reg x86)) :hints (("Goal" :in-theory (enable set-mxcsr))))
@@ -273,17 +272,17 @@
 (defthm segment-max-eff-addr32-of-set-flag
   (equal (segment-max-eff-addr32 seg-reg (set-flag flg val x86))
          (segment-max-eff-addr32 seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-flag) ()))))
+  :hints (("Goal" :in-theory (enable set-flag))))
 
 (defthm segment-max-eff-addr32-of-set-undef
   (equal (segment-max-eff-addr32 seg-reg (set-undef undef x86))
          (segment-max-eff-addr32 seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-undef) ()))))
+  :hints (("Goal" :in-theory (enable set-undef))))
 
 (defthm segment-max-eff-addr32-of-set-mxcsr
   (equal (segment-max-eff-addr32 seg-reg (set-mxcsr mxcsr x86))
          (segment-max-eff-addr32 seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (set-mxcsr) ()))))
+  :hints (("Goal" :in-theory (enable set-mxcsr))))
 
 (defthm natp-of-segment-max-eff-addr32
   (implies (and (seg-regp seg-reg)
@@ -334,17 +333,17 @@
 (defthm segment-is-32-bitsp-of-set-flag
   (equal (segment-is-32-bitsp seg-reg (set-flag flg val x86))
          (segment-is-32-bitsp seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (segment-is-32-bitsp) ()))))
+  :hints (("Goal" :in-theory (enable segment-is-32-bitsp))))
 
 (defthm segment-is-32-bitsp-of-set-undef
   (equal (segment-is-32-bitsp seg-reg (set-undef undef x86))
          (segment-is-32-bitsp seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (segment-is-32-bitsp) ()))))
+  :hints (("Goal" :in-theory (enable segment-is-32-bitsp))))
 
 (defthm segment-is-32-bitsp-of-set-mxcsr
   (equal (segment-is-32-bitsp seg-reg (set-mxcsr mxcsr x86))
          (segment-is-32-bitsp seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (segment-is-32-bitsp) ()))))
+  :hints (("Goal" :in-theory (enable segment-is-32-bitsp))))
 
 ;todo: rename?
 ;; Returns the lowest address in the given segment (a linear address) and the
@@ -438,17 +437,17 @@
 (defthm 32-bit-segment-size-of-set-flag
   (equal (32-bit-segment-size seg-reg (set-flag flg val x86))
          (32-bit-segment-size seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (32-bit-segment-size) ()))))
+  :hints (("Goal" :in-theory (enable 32-bit-segment-size))))
 
 (defthm 32-bit-segment-size-of-set-undef
   (equal (32-bit-segment-size seg-reg (set-undef undef x86))
          (32-bit-segment-size seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (32-bit-segment-size) ()))))
+  :hints (("Goal" :in-theory (enable 32-bit-segment-size))))
 
 (defthm 32-bit-segment-size-of-set-mxcsr
   (equal (32-bit-segment-size seg-reg (set-mxcsr mxcsr x86))
          (32-bit-segment-size seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (32-bit-segment-size) ()))))
+  :hints (("Goal" :in-theory (enable 32-bit-segment-size))))
 
 (defthm unsigned-byte-p-of-xr-of-seg-hidden-limit
   (implies (and ;(equal (segment-expand-down-bit seg-reg x86) 1)
@@ -753,10 +752,9 @@
                 (x86p x86) ;drop?
                 )
            (not (mv-nth 0 (ea-to-la *compatibility-mode* eff-addr *cs* 1 x86))))
-  :hints (("Goal" :in-theory (e/d (ea-to-la code-segment-assumptions32-for-code
-                                            segment-base-and-bounds
-                                            acl2::bvchop-identity)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable ea-to-la code-segment-assumptions32-for-code
+                                     segment-base-and-bounds
+                                     acl2::bvchop-identity))))
 
 ;; ;; Under suitable assumptions, we turn rme08 into a call of read-byte-from-segment, which is a much simpler function
 ;; (defthm mv-nth-1-of-rme08-of-cs-becomes-read-byte-from-segment
@@ -950,7 +948,7 @@
                 (<= k (* 4 stack-slots-needed)) ;think about this
                 (x86p x86))
            (not (bvlt 32 (esp x86) k)))
-  :hints (("Goal" :in-theory (e/d (bvlt esp) ()))))
+  :hints (("Goal" :in-theory (enable bvlt esp))))
 
 (defthm not-equal-of-esp-when-stack-segment-assumptions32
   (implies (and (stack-segment-assumptions32 stack-slots-needed x86)
@@ -1014,7 +1012,7 @@
                                    esp
                                    segment-base-and-bounds
                                    ;;segment-is-32-bitsp-intro-2
-                                   ACL2::MOD-OF-EXPT-OF-2-CONSTANT-VERSION
+                                   ACL2::MOD-BECOMES-BVCHOP-WHEN-POWER-OF-2P
                                    acl2::bvchop-identity
                                    )
                                   (;
@@ -1074,7 +1072,7 @@
                                    esp
                                    segment-base-and-bounds
                                    ;;segment-is-32-bitsp-intro-2
-                                   ACL2::MOD-OF-EXPT-OF-2-CONSTANT-VERSION
+                                   ACL2::MOD-BECOMES-BVCHOP-WHEN-POWER-OF-2P
                                    acl2::bvchop-identity
                                    )
                                   (;
@@ -1396,7 +1394,7 @@
 ;;                             ACL2::REWRITE-UNSIGNED-BYTE-P-WHEN-TERM-SIZE-IS-LARGER
 ;;                             )))))
 
-(local (in-theory (enable ACL2::MOD-OF-EXPT-OF-2-CONSTANT-VERSION)))
+(local (in-theory (enable ACL2::MOD-BECOMES-BVCHOP-WHEN-POWER-OF-2P)))
 
 ;;We thought we needed to turn off WML32 and especially WME-SIZE and wme32 (why?)
 ;;Lift the subroutine into logic as a 32-bit program:
@@ -1577,8 +1575,7 @@
 (defthm integerp-of-mv-nth-0-of-segment-base-and-bounds
   (implies (x86p x86)
            (integerp (mv-nth 0 (segment-base-and-bounds proc-mode seg-reg x86))))
-  :hints (("Goal" :in-theory (e/d (segment-base-and-bounds)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable segment-base-and-bounds))))
 
 ;same seg-reg
 (defthm read-byte-from-segment-of-write-byte-to-segment-both
@@ -2098,27 +2095,27 @@
 (defthm 32-bit-segment-start-and-size-of-set-flag
   (equal (32-bit-segment-start-and-size seg-reg (set-flag flg val x86))
          (32-bit-segment-start-and-size seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (32-bit-segment-start-and-size) ()))))
+  :hints (("Goal" :in-theory (enable 32-bit-segment-start-and-size))))
 
 (defthm 32-bit-segment-start-of-set-flag
   (equal (32-bit-segment-start seg-reg (set-flag flg val x86))
          (32-bit-segment-start seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (32-bit-segment-start) ()))))
+  :hints (("Goal" :in-theory (enable 32-bit-segment-start))))
 
 (defthm well-formed-32-bit-segmentp-of-set-flag
   (equal (well-formed-32-bit-segmentp seg-reg (set-flag flg val x86))
          (well-formed-32-bit-segmentp seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (well-formed-32-bit-segmentp) ()))))
+  :hints (("Goal" :in-theory (enable well-formed-32-bit-segmentp))))
 
 (defthm well-formed-32-bit-segmentp-of-set-undef
   (equal (well-formed-32-bit-segmentp seg-reg (set-undef undef x86))
          (well-formed-32-bit-segmentp seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (well-formed-32-bit-segmentp set-undef) ()))))
+  :hints (("Goal" :in-theory (enable well-formed-32-bit-segmentp set-undef))))
 
 (defthm well-formed-32-bit-segmentp-of-set-mxcsr
   (equal (well-formed-32-bit-segmentp seg-reg (set-mxcsr mxcsr x86))
          (well-formed-32-bit-segmentp seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (well-formed-32-bit-segmentp set-mxcsr) ()))))
+  :hints (("Goal" :in-theory (enable well-formed-32-bit-segmentp set-mxcsr))))
 
 (defthm read-byte-from-segment-of-set-flag
   (equal (read-byte-from-segment eff-addr seg-reg (set-flag flg val x86))
@@ -2204,22 +2201,22 @@
 (defthm 32-bit-segment-start-and-size-of-set-undef
   (equal (32-bit-segment-start-and-size seg-reg (set-undef undef x86))
          (32-bit-segment-start-and-size seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (32-bit-segment-start-and-size) ()))))
+  :hints (("Goal" :in-theory (enable 32-bit-segment-start-and-size))))
 
 (defthm 32-bit-segment-start-of-set-undef
   (equal (32-bit-segment-start seg-reg (set-undef undef x86))
          (32-bit-segment-start seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (32-bit-segment-start) ()))))
+  :hints (("Goal" :in-theory (enable 32-bit-segment-start))))
 
 (defthm well-formed-32-bit-segmentp-of-set-undef
   (equal (well-formed-32-bit-segmentp seg-reg (set-undef undef x86))
          (well-formed-32-bit-segmentp seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (well-formed-32-bit-segmentp) ()))))
+  :hints (("Goal" :in-theory (enable well-formed-32-bit-segmentp))))
 
 (defthm well-formed-32-bit-segmentp-of-set-undef
   (equal (well-formed-32-bit-segmentp seg-reg (set-undef undef x86))
          (well-formed-32-bit-segmentp seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (well-formed-32-bit-segmentp set-undef) ()))))
+  :hints (("Goal" :in-theory (enable well-formed-32-bit-segmentp set-undef))))
 
 (defthm read-byte-from-segment-of-set-undef
   (equal (read-byte-from-segment eff-addr seg-reg (set-undef undef x86))
@@ -2252,12 +2249,12 @@
 (defthm 32-bit-segment-start-and-size-of-set-mxcsr
   (equal (32-bit-segment-start-and-size seg-reg (set-mxcsr mxcsr x86))
          (32-bit-segment-start-and-size seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (32-bit-segment-start-and-size) ()))))
+  :hints (("Goal" :in-theory (enable 32-bit-segment-start-and-size))))
 
 (defthm 32-bit-segment-start-of-set-mxcsr
   (equal (32-bit-segment-start seg-reg (set-mxcsr mxcsr x86))
          (32-bit-segment-start seg-reg x86))
-  :hints (("Goal" :in-theory (e/d (32-bit-segment-start) ()))))
+  :hints (("Goal" :in-theory (enable 32-bit-segment-start))))
 
 (defthm read-byte-from-segment-of-set-mxcsr
   (equal (read-byte-from-segment eff-addr seg-reg (set-mxcsr mxcsr x86))
@@ -2447,12 +2444,11 @@
                 (x86p x86-2)
                 (x86p x86))
            (not (mv-nth 0 (x86isa::add-to-*sp *compatibility-mode* (esp x86) delta x86-2))))
-  :hints (("Goal" :in-theory (e/d (x86isa::add-to-*sp
-                                   esp
-                                   segment-base-and-bounds
-                                   ;;segment-is-32-bitsp-intro-2
-                                   acl2::bvchop-identity)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable x86isa::add-to-*sp
+                                     esp
+                                     segment-base-and-bounds
+                                     ;;segment-is-32-bitsp-intro-2
+                                     acl2::bvchop-identity))))
 
 ;;;
 ;;; read-from-segment
@@ -2610,12 +2606,11 @@
                 (x86p x86))
            (eff-addrs-okp 4 (esp x86) *ss* x86))
   :hints (("Goal"
-           :in-theory (e/d (esp
-                            stack-segment-assumptions32
-                            segment-max-eff-addr32
-                            segment-base-and-bounds
-                            segment-min-eff-addr32)
-                           ()))))
+           :in-theory (enable esp
+                              stack-segment-assumptions32
+                              segment-max-eff-addr32
+                              segment-base-and-bounds
+                              segment-min-eff-addr32))))
 
 
 
@@ -2652,12 +2647,11 @@
                 (unsigned-byte-p 32 n1) ;gen?
                 )
            (sep-eff-addr-ranges (+ 1 eff-addr1) (+ -1 n1) eff-addr2 n2))
-  :hints (("Goal" :in-theory (e/d (bvlt
-                                   bvplus
-                                   bvuminus
-                                   bvminus
-                                   acl2::bvchop-of-sum-cases)
-                                  ()))) )
+  :hints (("Goal" :in-theory (enable bvlt
+                                     bvplus
+                                     bvuminus
+                                     bvminus
+                                     acl2::bvchop-of-sum-cases))) )
 
 (defthm sep-eff-addr-ranges-of-all-but-first-alt
   (implies (and (sep-eff-addr-ranges eff-addr1 n1 eff-addr2 n2)
@@ -2667,12 +2661,11 @@
                 (unsigned-byte-p 32 n1))
            (sep-eff-addr-ranges eff-addr1 n1 (+ 1 eff-addr2) (+ -1 n2)))
   :hints (("Goal"
-           :in-theory (e/d (bvlt
-                            bvplus
-                            bvuminus
-                            bvminus
-                            acl2::bvchop-of-sum-cases)
-                           ()))) )
+           :in-theory (enable bvlt
+                              bvplus
+                              bvuminus
+                              bvminus
+                              acl2::bvchop-of-sum-cases))) )
 
 (defthm sep-eff-addr-ranges-of-all-but-first-alt-alt
   (implies (and (sep-eff-addr-ranges eff-addr2 n2 eff-addr1 n1)
@@ -2681,12 +2674,11 @@
                 (unsigned-byte-p 32 n2)
                 (unsigned-byte-p 32 n1))
            (sep-eff-addr-ranges (+ 1 eff-addr1) (+ -1 n1) eff-addr2 n2))
-  :hints (("Goal" :in-theory (e/d (bvlt
-                                   bvplus
-                                   bvuminus
-                                   bvminus
-                                   acl2::bvchop-of-sum-cases)
-                                  ()))) )
+  :hints (("Goal" :in-theory (enable bvlt
+                                     bvplus
+                                     bvuminus
+                                     bvminus
+                                     acl2::bvchop-of-sum-cases))) )
 
 ;; potentially could mess things up
 (defthmd sep-eff-addr-ranges-swap
@@ -2702,24 +2694,22 @@
                 (unsigned-byte-p 32 n1+))
            (sep-eff-addr-ranges eff-addr1 n1 eff-addr2 n2))
   :hints (("Goal"
-           :in-theory (e/d (sep-eff-addr-ranges
-                            bvlt
-                            bvplus
-                            bvuminus
-                            bvminus
-                            acl2::bvchop-of-sum-cases)
-                           ()))))
+           :in-theory (enable sep-eff-addr-ranges
+                              bvlt
+                              bvplus
+                              bvuminus
+                              bvminus
+                              acl2::bvchop-of-sum-cases))))
 
 (defthm sep-eff-addr-ranges-of-1-arg2-adjacent
   (implies (and (integerp eff-addr)
                 (unsigned-byte-p 32 n))
            (sep-eff-addr-ranges eff-addr 1 (+ 1 eff-addr) n))
-  :hints (("Goal" :in-theory (e/d (bvlt
-                                   bvplus
-                                   bvuminus
-                                   bvminus
-                                   acl2::bvchop-of-sum-cases)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable bvlt
+                                     bvplus
+                                     bvuminus
+                                     bvminus
+                                     acl2::bvchop-of-sum-cases))))
 
 (local (acl2::limit-expt)) ;prevent crashes
 
@@ -3130,13 +3120,12 @@
                 (x86p x86))
            (equal (mv-nth 1 (x86isa::add-to-*sp *compatibility-mode* (esp x86) delta x86-2))
                   (+ delta (esp x86))))
-  :hints (("Goal" :in-theory (e/d (x86isa::add-to-*sp
-                                   esp
-                                   segment-base-and-bounds
-                                   ;;segment-is-32-bitsp-intro-2
-                                   acl2::bvchop-identity
-                                   )
-                                  ()))))
+  :hints (("Goal" :in-theory (enable x86isa::add-to-*sp
+                                     esp
+                                     segment-base-and-bounds
+                                     ;;segment-is-32-bitsp-intro-2
+                                     acl2::bvchop-identity
+                                     ))))
 
 (defthm segments-separate-of-code-and-stack
   (implies (code-and-stack-segments-separate x86)
@@ -3515,7 +3504,7 @@
   (implies (and (x86p x86)
                 (signed-byte-p 48 eip))
            (x86p (set-eip eip x86)))
-  :hints (("Goal" :in-theory (e/d (set-eip) ()))))
+  :hints (("Goal" :in-theory (enable set-eip))))
 
 (defthm well-formed-32-bit-segmentp-of-set-eip
   (equal (well-formed-32-bit-segmentp seg-reg (set-eip eip x86))
@@ -3982,30 +3971,29 @@
                 (well-formed-32-bit-segmentp seg-reg x86))
            (equal (mv-nth 1 (x86isa::wml08 (mv-nth 1 (ea-to-la 1 eff-addr seg-reg 1 x86)) val x86))
                   (write-to-segment 1 eff-addr seg-reg val x86)))
-  :hints (("Goal" :in-theory (e/d (x86isa::wml16
-                                   write-to-segment-base
-                                   write-to-segment-unroll
-                                   wb
-                                   wvm08
-                                   write-byte-to-segment
-                                   bvplus
-                                   acl2::bvchop-of-sum-cases
-                                   well-formed-32-bit-segmentp
-                                   segment-base-and-bounds
-                                   segment-max-eff-addr32
-                                   segment-min-eff-addr32
-                                   32-bit-segment-start
-                                   32-bit-segment-size
-                                   32-bit-segment-start-and-size
-                                   n48
-                                   acl2::slice-too-high-is-0-new
-                                   canonical-address-p$inline
-                                   signed-byte-p
-                                   (:e expt)
-                                   ifix
-                                   ea-to-la
-                                   acl2::bvchop-identity)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable x86isa::wml16
+                                     write-to-segment-base
+                                     write-to-segment-unroll
+                                     wb
+                                     wvm08
+                                     write-byte-to-segment
+                                     bvplus
+                                     acl2::bvchop-of-sum-cases
+                                     well-formed-32-bit-segmentp
+                                     segment-base-and-bounds
+                                     segment-max-eff-addr32
+                                     segment-min-eff-addr32
+                                     32-bit-segment-start
+                                     32-bit-segment-size
+                                     32-bit-segment-start-and-size
+                                     n48
+                                     acl2::slice-too-high-is-0-new
+                                     canonical-address-p$inline
+                                     signed-byte-p
+                                     (:e expt)
+                                     ifix
+                                     ea-to-la
+                                     acl2::bvchop-identity))))
 
 (defthm mv-nth-1-of-wml16-of-mv-nth-1-of-ea-to-la
   (implies (and (segment-is-32-bitsp seg-reg x86)
@@ -4017,30 +4005,29 @@
                 (well-formed-32-bit-segmentp seg-reg x86))
            (equal (mv-nth 1 (x86isa::wml16 (mv-nth 1 (ea-to-la 1 eff-addr seg-reg 2 x86)) val x86))
                   (write-to-segment 2 eff-addr seg-reg val x86)))
-  :hints (("Goal" :in-theory (e/d (x86isa::wml16
-                                   write-to-segment-base
-                                   write-to-segment-unroll
-                                   wb
-                                   wvm08
-                                   write-byte-to-segment
-                                   bvplus
-                                   acl2::bvchop-of-sum-cases
-                                   well-formed-32-bit-segmentp
-                                   segment-base-and-bounds
-                                   segment-max-eff-addr32
-                                   segment-min-eff-addr32
-                                   32-bit-segment-start
-                                   32-bit-segment-size
-                                   32-bit-segment-start-and-size
-                                   n48
-                                   acl2::slice-too-high-is-0-new
-                                   canonical-address-p$inline
-                                   signed-byte-p
-                                   (:e expt)
-                                   ifix
-                                   ea-to-la
-                                   acl2::bvchop-identity)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable x86isa::wml16
+                                     write-to-segment-base
+                                     write-to-segment-unroll
+                                     wb
+                                     wvm08
+                                     write-byte-to-segment
+                                     bvplus
+                                     acl2::bvchop-of-sum-cases
+                                     well-formed-32-bit-segmentp
+                                     segment-base-and-bounds
+                                     segment-max-eff-addr32
+                                     segment-min-eff-addr32
+                                     32-bit-segment-start
+                                     32-bit-segment-size
+                                     32-bit-segment-start-and-size
+                                     n48
+                                     acl2::slice-too-high-is-0-new
+                                     canonical-address-p$inline
+                                     signed-byte-p
+                                     (:e expt)
+                                     ifix
+                                     ea-to-la
+                                     acl2::bvchop-identity))))
 
 (defthm mv-nth-1-of-wml32-of-mv-nth-1-of-ea-to-la
   (implies (and (segment-is-32-bitsp seg-reg x86)
@@ -4052,30 +4039,29 @@
                 (well-formed-32-bit-segmentp seg-reg x86))
            (equal (mv-nth 1 (x86isa::wml32 (mv-nth 1 (ea-to-la 1 eff-addr seg-reg 4 x86)) val x86))
                   (write-to-segment 4 eff-addr seg-reg val x86)))
-  :hints (("Goal" :in-theory (e/d (x86isa::wml32
-                                   write-to-segment-base
-                                   write-to-segment-unroll
-                                   wb
-                                   wvm08
-                                   write-byte-to-segment
-                                   bvplus
-                                   acl2::bvchop-of-sum-cases
-                                   well-formed-32-bit-segmentp
-                                   segment-base-and-bounds
-                                   segment-max-eff-addr32
-                                   segment-min-eff-addr32
-                                   32-bit-segment-start
-                                   32-bit-segment-size
-                                   32-bit-segment-start-and-size
-                                   n48
-                                   acl2::slice-too-high-is-0-new
-                                   canonical-address-p$inline
-                                   signed-byte-p
-                                   (:e expt)
-                                   ifix
-                                   ea-to-la
-                                   acl2::bvchop-identity)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable x86isa::wml32
+                                     write-to-segment-base
+                                     write-to-segment-unroll
+                                     wb
+                                     wvm08
+                                     write-byte-to-segment
+                                     bvplus
+                                     acl2::bvchop-of-sum-cases
+                                     well-formed-32-bit-segmentp
+                                     segment-base-and-bounds
+                                     segment-max-eff-addr32
+                                     segment-min-eff-addr32
+                                     32-bit-segment-start
+                                     32-bit-segment-size
+                                     32-bit-segment-start-and-size
+                                     n48
+                                     acl2::slice-too-high-is-0-new
+                                     canonical-address-p$inline
+                                     signed-byte-p
+                                     (:e expt)
+                                     ifix
+                                     ea-to-la
+                                     acl2::bvchop-identity))))
 
 (defthm mv-nth-1-of-wml48-of-mv-nth-1-of-ea-to-la
   (implies (and (segment-is-32-bitsp seg-reg x86)
@@ -4087,30 +4073,29 @@
                 (well-formed-32-bit-segmentp seg-reg x86))
            (equal (mv-nth 1 (x86isa::wml48 (mv-nth 1 (ea-to-la 1 eff-addr seg-reg 6 x86)) val x86))
                   (write-to-segment 6 eff-addr seg-reg val x86)))
-  :hints (("Goal" :in-theory (e/d (x86isa::wml48
-                                   write-to-segment-base
-                                   write-to-segment-unroll
-                                   wb
-                                   wvm08
-                                   write-byte-to-segment
-                                   bvplus
-                                   acl2::bvchop-of-sum-cases
-                                   well-formed-32-bit-segmentp
-                                   segment-base-and-bounds
-                                   segment-max-eff-addr32
-                                   segment-min-eff-addr32
-                                   32-bit-segment-start
-                                   32-bit-segment-size
-                                   32-bit-segment-start-and-size
-                                   n48
-                                   acl2::slice-too-high-is-0-new
-                                   canonical-address-p$inline
-                                   signed-byte-p
-                                   (:e expt)
-                                   ifix
-                                   ea-to-la
-                                   acl2::bvchop-identity)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable x86isa::wml48
+                                     write-to-segment-base
+                                     write-to-segment-unroll
+                                     wb
+                                     wvm08
+                                     write-byte-to-segment
+                                     bvplus
+                                     acl2::bvchop-of-sum-cases
+                                     well-formed-32-bit-segmentp
+                                     segment-base-and-bounds
+                                     segment-max-eff-addr32
+                                     segment-min-eff-addr32
+                                     32-bit-segment-start
+                                     32-bit-segment-size
+                                     32-bit-segment-start-and-size
+                                     n48
+                                     acl2::slice-too-high-is-0-new
+                                     canonical-address-p$inline
+                                     signed-byte-p
+                                     (:e expt)
+                                     ifix
+                                     ea-to-la
+                                     acl2::bvchop-identity))))
 
 (defthm mv-nth-1-of-wml64-of-mv-nth-1-of-ea-to-la
   (implies (and (segment-is-32-bitsp seg-reg x86)
@@ -4122,30 +4107,29 @@
                 (well-formed-32-bit-segmentp seg-reg x86))
            (equal (mv-nth 1 (x86isa::wml64 (mv-nth 1 (ea-to-la 1 eff-addr seg-reg 8 x86)) val x86))
                   (write-to-segment 8 eff-addr seg-reg val x86)))
-  :hints (("Goal" :in-theory (e/d (x86isa::wml64
-                                   write-to-segment-base
-                                   write-to-segment-unroll
-                                   wb
-                                   wvm08
-                                   write-byte-to-segment
-                                   bvplus
-                                   acl2::bvchop-of-sum-cases
-                                   well-formed-32-bit-segmentp
-                                   segment-base-and-bounds
-                                   segment-max-eff-addr32
-                                   segment-min-eff-addr32
-                                   32-bit-segment-start
-                                   32-bit-segment-size
-                                   32-bit-segment-start-and-size
-                                   n48
-                                   acl2::slice-too-high-is-0-new
-                                   canonical-address-p$inline
-                                   signed-byte-p
-                                   (:e expt)
-                                   ifix
-                                   ea-to-la
-                                   acl2::bvchop-identity)
-                                  ()))))
+  :hints (("Goal" :in-theory (enable x86isa::wml64
+                                     write-to-segment-base
+                                     write-to-segment-unroll
+                                     wb
+                                     wvm08
+                                     write-byte-to-segment
+                                     bvplus
+                                     acl2::bvchop-of-sum-cases
+                                     well-formed-32-bit-segmentp
+                                     segment-base-and-bounds
+                                     segment-max-eff-addr32
+                                     segment-min-eff-addr32
+                                     32-bit-segment-start
+                                     32-bit-segment-size
+                                     32-bit-segment-start-and-size
+                                     n48
+                                     acl2::slice-too-high-is-0-new
+                                     canonical-address-p$inline
+                                     signed-byte-p
+                                     (:e expt)
+                                     ifix
+                                     ea-to-la
+                                     acl2::bvchop-identity))))
 
 (defthm mv-nth-1-of-wml80-of-mv-nth-1-of-ea-to-la
   (implies (and (segment-is-32-bitsp seg-reg x86)
@@ -4266,30 +4250,29 @@
            (equal (mv-nth 1 (wb nbytes (mv-nth 1 (ea-to-la 1 eff-addr seg-reg nbytes x86)) :w val x86))
                   (write-to-segment nbytes eff-addr seg-reg val x86)))
   :hints (("Goal" :induct (write-to-segment nbytes eff-addr seg-reg val x86)
-           :in-theory (e/d ( ;;write-to-segment-base
-                            ;;write-to-segment-unroll
-                            write-to-segment
-                            wb
-                            wvm08
-                            write-byte-to-segment
-                            bvplus
-                            acl2::bvchop-of-sum-cases
-                            well-formed-32-bit-segmentp
-                            segment-base-and-bounds
-                            segment-max-eff-addr32
-                            segment-min-eff-addr32
-                            32-bit-segment-start
-                            32-bit-segment-size
-                            32-bit-segment-start-and-size
-                            n48
-                            acl2::slice-too-high-is-0-new
-                            canonical-address-p$inline
-                            signed-byte-p
-                            (:e expt)
-                            ifix
-                            ea-to-la
-                            acl2::bvchop-identity)
-                           ()))))
+           :in-theory (enable ;;write-to-segment-base
+                        ;;write-to-segment-unroll
+                        write-to-segment
+                        wb
+                        wvm08
+                        write-byte-to-segment
+                        bvplus
+                        acl2::bvchop-of-sum-cases
+                        well-formed-32-bit-segmentp
+                        segment-base-and-bounds
+                        segment-max-eff-addr32
+                        segment-min-eff-addr32
+                        32-bit-segment-start
+                        32-bit-segment-size
+                        32-bit-segment-start-and-size
+                        n48
+                        acl2::slice-too-high-is-0-new
+                        canonical-address-p$inline
+                        signed-byte-p
+                        (:e expt)
+                        ifix
+                        ea-to-la
+                        acl2::bvchop-identity))))
 
 (defthm canonical-address-p-of-+-of-ea-to-la-last-address
   (implies (and (eff-addrs-okp nbytes eff-addr seg-reg x86)
@@ -4301,12 +4284,12 @@
             (+ -1 nbytes
                (mv-nth 1
                        (ea-to-la 1 eff-addr seg-reg nbytes x86)))))
-  :hints (("Goal" :in-theory (e/d (canonical-address-p$inline
-                                   signed-byte-p
-                                   (:e expt)
-                                   ifix
-                                   bvplus
-                                   ea-to-la) ()))))
+  :hints (("Goal" :in-theory (enable canonical-address-p$inline
+                                     signed-byte-p
+                                     (:e expt)
+                                     ifix
+                                     bvplus
+                                     ea-to-la))))
 
 (defthm mv-nth-1-of-wml-size-of-mv-nth-1-of-ea-to-la
   (implies (and (segment-is-32-bitsp seg-reg x86)
@@ -4320,8 +4303,7 @@
            (equal (mv-nth 1 (x86isa::wml-size nbytes (mv-nth 1 (ea-to-la 1 eff-addr seg-reg nbytes x86)) val x86))
                   (write-to-segment nbytes eff-addr seg-reg val x86)))
   :hints (("Goal" :in-theory (e/d ()
-                                  (
-                                   x86isa::wml08
+                                  (x86isa::wml08
                                    x86isa::wml16
                                    x86isa::wml32
                                    x86isa::wml48

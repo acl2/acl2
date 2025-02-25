@@ -412,8 +412,10 @@
     x86isa::idiv-spec-32
     x86isa::idiv-spec-64
 
-    ;; do we want to include stuff like this?
-    x86isa::x86-one-byte-opcode-modr/m-p$inline
+    x86isa::one-byte-opcode-modr/m-p$inline
+    x86isa::two-byte-opcode-modr/m-p$inline
+    x86isa::32-bit-mode-two-byte-opcode-modr/m-p
+    x86isa::32-bit-compute-mandatory-prefix-for-two-byte-opcode$inline
 
     ;; my x86 stuff (what package should this stuff be in?)
     x86isa::lift-subroutine
@@ -516,6 +518,7 @@
     x86isa::rflagsbits->vip
     x86isa::rflagsbits->id
     x86isa::rflagsbits->res5
+    x86isa::rflagsbits$inline
 
     x86isa::rflagsbits->cf$inline
     x86isa::rflagsbits->res1$inline
@@ -819,20 +822,20 @@
     x86isa::vex->pp$inline
     x86isa::vex->r$inline
     x86isa::vex->w$inline
+    x86isa::vex->b$inline
+    x86isa::vex->x$inline
 
     x86isa::vex->vvvv
     x86isa::vex->l
     x86isa::vex->pp
     x86isa::vex->r
     x86isa::vex->w
+    x86isa::vex->b
+    x86isa::vex->x
 
     x86isa::x86-illegal-instruction
     x86isa::x86-step-unimplemented
     x86isa::feature-flags
-
-    x86isa::modr/m->reg$inline
-    x86isa::modr/m->mod$inline
-    x86isa::modr/m->r/m$inline
 
     ;; this list is from (acl2::get-ruleset 'x86isa::nw-defs (w state)):
     x86isa::n01
@@ -1020,15 +1023,6 @@
 
     x86isa::i48p$inline  ;todo: more like this
 
-    ;; more like this:
-    x86isa::prefixes->lck$inline
-    x86isa::prefixes->adr$inline
-    x86isa::prefixes->opr$inline
-    x86isa::prefixes->rep$inline
-
-    ;; more like this:
-    x86isa::!prefixes->nxt$inline
-
     x86isa::code-segment-descriptor-attributesbits->d
     x86isa::code-segment-descriptor-attributesbits->d$inline
     x86isa::code-segment-descriptor-attributesbits->p
@@ -1128,6 +1122,172 @@
     x86isa::!zmmi-size$inline
 
     x86isa::64-bit-mode-two-byte-opcode-modr/m-p
+
+    x86isa::simd-add-spec
+    x86isa::simd-sub-spec
+
+    x86isa::convert-arith-operation-to-rtl-op$inline
+
+    ;; names introduced by defbitstruct:
+
+    x86isa::prefixes-fix$inline
+    x86isa::prefixes-fix
+    x86isa::prefixes->num$inline
+    x86isa::prefixes->lck$inline
+    x86isa::prefixes->rep$inline
+    x86isa::prefixes->seg$inline
+    x86isa::prefixes->opr$inline
+    x86isa::prefixes->adr$inline
+    x86isa::prefixes->nxt$inline
+    x86isa::prefixes->num
+    x86isa::prefixes->lck
+    x86isa::prefixes->rep
+    x86isa::prefixes->seg
+    x86isa::prefixes->opr
+    x86isa::prefixes->adr
+    x86isa::prefixes->nxt
+    x86isa::!prefixes->num$inline
+    x86isa::!prefixes->lck$inline
+    x86isa::!prefixes->rep$inline
+    x86isa::!prefixes->seg$inline
+    x86isa::!prefixes->opr$inline
+    x86isa::!prefixes->adr$inline
+    x86isa::!prefixes->nxt$inline
+    x86isa::!prefixes->num
+    x86isa::!prefixes->lck
+    x86isa::!prefixes->rep
+    x86isa::!prefixes->seg
+    x86isa::!prefixes->opr
+    x86isa::!prefixes->adr
+    x86isa::!prefixes->nxt
+
+    x86isa::vex-prefixes-fix$inline
+    x86isa::vex-prefixes-fix
+    x86isa::vex-prefixes->byte0$inline
+    x86isa::vex-prefixes->byte1$inline
+    x86isa::vex-prefixes->byte2$inline
+    x86isa::vex-prefixes->byte0
+    x86isa::vex-prefixes->byte1
+    x86isa::vex-prefixes->byte2
+    x86isa::!vex-prefixes->byte0$inline
+    x86isa::!vex-prefixes->byte1$inline
+    x86isa::!vex-prefixes->byte2$inline
+    x86isa::!vex-prefixes->byte0
+    x86isa::!vex-prefixes->byte1
+    x86isa::!vex-prefixes->byte2
+
+    ;;todo: changers too?
+    x86isa::vex2-byte1-fix$inline
+    x86isa::vex2-byte1-fix
+    x86isa::vex2-byte1->pp$inline
+    x86isa::vex2-byte1->l$inline
+    x86isa::vex2-byte1->vvvv$inline
+    x86isa::vex2-byte1->r$inline
+    x86isa::vex2-byte1->pp
+    x86isa::vex2-byte1->l
+    x86isa::vex2-byte1->vvvv
+    x86isa::vex2-byte1->r
+
+    ;;todo: changers too?
+    x86isa::vex3-byte1-fix$inline
+    x86isa::vex3-byte1-fix
+    x86isa::vex3-byte1->m-mmmm$inline
+    x86isa::vex3-byte1->b$inline
+    x86isa::vex3-byte1->x$inline
+    x86isa::vex3-byte1->r$inline
+    x86isa::vex3-byte1->m-mmmm
+    x86isa::vex3-byte1->b
+    x86isa::vex3-byte1->x
+    x86isa::vex3-byte1->r
+
+    ;;todo: changers too?
+    x86isa::vex3-byte2-fix$inline
+    x86isa::vex3-byte2-fix
+    x86isa::vex3-byte2->pp$inline
+    x86isa::vex3-byte2->l$inline
+    x86isa::vex3-byte2->vvvv$inline
+    x86isa::vex3-byte2->w$inline
+    x86isa::vex3-byte2->pp
+    x86isa::vex3-byte2->l
+    x86isa::vex3-byte2->vvvv
+    x86isa::vex3-byte2->w
+
+    x86isa::evex-prefixes-fix$inline
+    x86isa::evex-prefixes-fix
+    x86isa::evex-prefixes->byte0$inline
+    x86isa::evex-prefixes->byte1$inline
+    x86isa::evex-prefixes->byte2$inline
+    x86isa::evex-prefixes->byte3$inline
+    x86isa::evex-prefixes->byte0
+    x86isa::evex-prefixes->byte1
+    x86isa::evex-prefixes->byte2
+    x86isa::evex-prefixes->byte3
+    x86isa::!evex-prefixes->byte0$inline
+    x86isa::!evex-prefixes->byte1$inline
+    x86isa::!evex-prefixes->byte2$inline
+    x86isa::!evex-prefixes->byte3$inline
+    x86isa::!evex-prefixes->byte0
+    x86isa::!evex-prefixes->byte1
+    x86isa::!evex-prefixes->byte2
+    x86isa::!evex-prefixes->byte3
+
+    x86isa::evex-byte1-fix$inline
+    x86isa::evex-byte1-fix
+    x86isa::evex-byte1->mmm$inline
+    x86isa::evex-byte1->res$inline
+    x86isa::evex-byte1->r-prime$inline
+    x86isa::evex-byte1->b$inline
+    x86isa::evex-byte1->x$inline
+    x86isa::evex-byte1->r$inline
+    x86isa::evex-byte1->mmm
+    x86isa::evex-byte1->res
+    x86isa::evex-byte1->r-prime
+    x86isa::evex-byte1->b
+    x86isa::evex-byte1->x
+    x86isa::evex-byte1->r
+
+    x86isa::evex-byte2-fix$inline
+    x86isa::evex-byte2-fix
+    x86isa::evex-byte2->pp$inline
+    x86isa::evex-byte2->res$inline
+    x86isa::evex-byte2->vvvv$inline
+    x86isa::evex-byte2->w$inline
+    x86isa::evex-byte2->pp
+    x86isa::evex-byte2->res
+    x86isa::evex-byte2->vvvv
+    x86isa::evex-byte2->w
+
+    x86isa::evex-byte3-fix$inline
+    x86isa::evex-byte3-fix
+    x86isa::evex-byte3->aaa$inline
+    x86isa::evex-byte3->v-prime$inline
+    x86isa::evex-byte3->b$inline
+    x86isa::evex-byte3->vl/rc$inline
+    x86isa::evex-byte3->z$inline
+    x86isa::evex-byte3->aaa
+    x86isa::evex-byte3->v-prime
+    x86isa::evex-byte3->b
+    x86isa::evex-byte3->vl/rc
+    x86isa::evex-byte3->z
+
+    x86isa::modr/m-fix$inline
+    x86isa::modr/m-fix
+    x86isa::modr/m->r/m$inline
+    x86isa::modr/m->reg$inline
+    x86isa::modr/m->mod$inline
+    x86isa::modr/m->r/m
+    x86isa::modr/m->reg
+    x86isa::modr/m->mod
+
+    x86isa::sib-fix$inline
+    x86isa::sib-fix
+    x86isa::sib->base$inline
+    x86isa::sib->index$inline
+    x86isa::sib->scale$inline
+    x86isa::sib->base
+    x86isa::sib->index
+    x86isa::sib->scale
+
     ))
 
 (defconst *symbols-from-acl2-package*
@@ -1135,6 +1295,8 @@
     loghead$inline
     logapp
     logmask
+
+    expt2$inline ; from IHS
 
     bvchop
     logext
@@ -1270,7 +1432,10 @@
     axe-syntaxp
     axe-bind-free
     dag-array ; for axe-syntaxp
-    dargs ; for writing axe-syntaxp and axe-bind-free functions
+
+    ;; These are for writing axe-syntaxp and axe-bind-free functions:
+    pseudo-dag-arrayp
+    dargs
     darg1
     darg2
     darg3
@@ -1281,7 +1446,7 @@
 
     syntactic-call-of
     term-should-be-trimmed-axe
-    heavier-dag-term
+    lighter-dargp
 
     prove-equivalence
     prove-equal-with-tactics
@@ -1341,6 +1506,7 @@
     submit-event
     must-be-redundant
     must-fail
+    strip-cadrs
 
     ;; x86 stuff (move to x package?):
     elf-info

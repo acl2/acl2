@@ -19,7 +19,8 @@
 
 ;(include-book "method-designator-strings") ;todo merge into this book?
 ;(include-book "kestrel/sequences/defforall" :dir :system)
-(include-book "kestrel/alists-light/lookup-eq" :dir :system)
+(include-book "kestrel/alists-light/lookup-eq" :dir :system) ; todo: just include the def?
+(local (include-book "kestrel/alists-light/lookup-equal" :dir :system))
 
 (local
  (defthm keyword-listp-forward-to-true-listp

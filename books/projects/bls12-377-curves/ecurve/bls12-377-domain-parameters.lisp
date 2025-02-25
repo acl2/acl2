@@ -1,18 +1,15 @@
-; Elliptic Curve Library
+; bls12-377-curves Library
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2020 Aleo Systems Inc. (https://www.aleo.org)
 ;
-; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
-;
-; Authors: Eric McCarthy (mccarthy@kestrel.edu)
-;          Alessandro Coglio (coglio@kestrel.edu)
-;          Eric Smith (eric.smith@kestrel.edu)
+; Authors: Alessandro Coglio (www.alessandrocoglio.info)
+;          Eric McCarthy (bendyarm on GitHub)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package "ECURVE")
 
-(include-book "kestrel/crypto/primes/bls12-377-prime" :dir :system)
+(include-book "projects/bls12-377-curves/primes/top" :dir :system)
 
 (include-book "std/util/define" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
@@ -20,7 +17,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ bls12-377-domain-parameters
-  :parents (elliptic-curves)
+  :parents (crypto::bls12-377-curves)
   :short "Domain parameters of the BLS12-377 elliptic curve."
   :long
   (xdoc::topstring
@@ -51,9 +48,10 @@
    (xdoc::p
     "In decimal: @($x = 9586122913090633729$).")
    (xdoc::p
-    "@($x$) is used to calculate the base field prime @($p$) and
+    "@($x$) is used to calculate the 
+     <see topic='@(url primes::bls12-377-base-field-prime)'>base field prime q</see>
      and the
-     <see topic='@(url bls12-377-scalar-field-prime)'>scalar field prime r</see>."))
+     <see topic='@(url primes::bls12-377-scalar-field-prime)'>scalar field prime r</see>."))
    9586122913090633729
    :no-function t
    ///
@@ -62,16 +60,31 @@
 
    (assert-event (equal (bls12-377-parameter-x)
                         (+ (* 3 (expt 2 46) 7 13 499)
-                           1))))
+                           1)))
+
+   (assert-event (equal (mod (bls12-377-parameter-x) (* 3 (expt 2 46)))
+                        1))
+   (assert-event (equal (mod (bls12-377-parameter-x) 3)
+                        1))
+)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; show that r was computed from x as stated
 (assert-event
- (equal (bls12-377-scalar-field-prime)
+ (equal (primes::bls12-377-scalar-field-prime)
         (let ((x (bls12-377-parameter-x)))
           (+ (- (expt x 4) (expt x 2)) 1))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(in-theory (disable (:e bls12-377-scalar-field-prime)))
+;; show that q was computed from x as stated
+(assert-event
+ (equal (primes::bls12-377-base-field-prime)
+        (let ((x (bls12-377-parameter-x))
+              (r (primes::bls12-377-scalar-field-prime)))
+          (+ (/ (* (expt (- x 1) 2) r) 3) x))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(in-theory (disable (:e primes::bls12-377-scalar-field-prime) (:e primes::bls12-377-base-field-prime)))

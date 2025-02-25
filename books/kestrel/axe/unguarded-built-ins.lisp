@@ -133,3 +133,67 @@
   (equal (acons-unguarded key datum alist)
          (acons key datum alist))
   :hints (("Goal" :in-theory (enable acons-unguarded))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund nthcdr-unguarded (n l)
+  (declare (xargs :guard t))
+  (if (or (not (natp n))
+          (<= n 0))
+      l
+    (if (consp l)
+        (nthcdr-unguarded (+ n -1) (cdr l))
+      nil)))
+
+(defthm nthcdr-unguarded-correct
+  (equal (nthcdr-unguarded n l)
+         (nthcdr n l))
+  :hints (("Goal" :in-theory (enable nthcdr-unguarded))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund take-unguarded (n lst)
+  (declare (xargs :guard t))
+  (if (true-listp lst)
+      (take (nfix n) lst)
+    (take (nfix n) (true-list-fix lst))))
+
+(defthm take-unguarded-correct
+  (equal (take-unguarded n lst)
+         (take n lst))
+  :hints (("Goal" :in-theory (enable take-unguarded take))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund eql-unguarded (x y)
+  (declare (xargs :guard t))
+  (equal x y))
+
+(defthm eql-unguarded-correct
+  (equal (eql-unguarded x y)
+         (eql x y))
+  :hints (("Goal" :in-theory (enable eql-unguarded eql))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund eq-unguarded (x y)
+  (declare (xargs :guard t))
+  (equal x y))
+
+(defthm eq-unguarded-correct
+  (equal (eq-unguarded x y)
+         (eq x y))
+  :hints (("Goal" :in-theory (enable eq-unguarded eq))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund member-equal-unguarded (x lst)
+  (declare (xargs :guard t))
+  (cond ((atom lst) nil)
+        ((equal x (car lst)) lst)
+        (t (member-equal-unguarded x (cdr lst)))))
+
+(defthm member-equal-unguarded-correct
+  (equal (member-equal-unguarded x y)
+         (member-equal x y))
+  :hints (("Goal" :in-theory (enable member-equal-unguarded member-equal))))

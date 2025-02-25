@@ -1,4 +1,4 @@
-; Supporting material for x86 code proofs
+; Rules about the x86 state
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
 ; Copyright (C) 2020-2025 Kestrel Institute
@@ -194,3 +194,22 @@
 ;;        (x86 (!seg-hiddeni *cs* (expt 2 105) x86))
 ;;        )
 ;;     (mv nil x86)))
+
+
+(defthm xr-of-!memi-when-not-mem
+  (implies (not (equal :mem fld))
+           (equal (xr fld index (!memi i v x86))
+                  (xr fld index x86)))
+  :hints (("Goal" :in-theory (enable !memi))))
+
+(defthm <=-of-memi-linear
+  (<= (memi i x86) 255)
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable memi))))
+
+(defthm xr-mem-of-!memi
+  (equal (xr :mem ad1 (!memi i v x86))
+         (if (equal ad1 i)
+             (loghead 8 v)
+           (xr :mem ad1 x86)))
+  :hints (("Goal" :in-theory (enable !memi))))

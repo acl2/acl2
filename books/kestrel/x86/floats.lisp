@@ -14,9 +14,6 @@
 ;; STATUS: IN-PROGRESS
 
 (include-book "kestrel/x86/portcullis" :dir :system)
-(include-book "kestrel/axe/known-booleans" :dir :system) ; so we can call add-known-boolean (todo: move that to axe dir)
-(include-book "kestrel/axe/axe-syntax" :dir :system) ; todo: split out such rules
-(include-book "kestrel/axe/axe-syntax-functions" :dir :system) ; todo: split out such rules
 (include-book "projects/x86isa/utils/fp-structures" :dir :system)
 (include-book "projects/x86isa/machine/instructions/fp/cmp-spec" :dir :system)
 (include-book "projects/x86isa/machine/instructions/fp/mxcsr" :dir :system)
@@ -405,18 +402,11 @@
 ;;                                      SSE-CMP-SPECIAL))))
 
 ;; essentialy, this puts in < instead of > -- todo make better named normal forms for such things
-;non-axe
-(defthmd equal-of-0-and-mv-nth-1-of-sse-cmp-of-ucomi
-  (implies (and (equal (mxcsrbits->daz$inline mxcsr) 0)
-                (equal (mxcsrbits->im$inline mxcsr) 1)
-                (equal (mxcsrbits->dm$inline mxcsr) 1))
-           (equal (equal 0 (mv-nth 1 (sse-cmp *op-ucomi* op1 op2 mxcsr exp-width frac-width)))
-                  (equal 1 (mv-nth 1 (sse-cmp *op-ucomi* op2 op1 mxcsr exp-width frac-width)))))
-  :hints (("Goal" :in-theory (enable sse-cmp sse-cmp-special))))
 
 ;; this puts the syntactically smaller op first
-(defthmd equal-of-0-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder-axe
-  (implies (and (axe-syntaxp (acl2::heavier-dag-term op1 op2))
+;; See also the Axe version of this rule.
+(defthmd equal-of-0-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder
+  (implies (and (syntaxp (acl2::smaller-termp op2 op1))
                 (equal (mxcsrbits->daz$inline mxcsr) 0)
                 (equal (mxcsrbits->im$inline mxcsr) 1)
                 (equal (mxcsrbits->dm$inline mxcsr) 1))
@@ -425,8 +415,9 @@
   :hints (("Goal" :in-theory (enable sse-cmp sse-cmp-special))))
 
 ;; this puts the syntactically smaller op first
+;; See also the Axe version of this rule.
 (defthmd equal-of-1-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder
-  (implies (and (axe-syntaxp (acl2::smaller-termp op1 op2))
+  (implies (and (syntaxp (acl2::smaller-termp op2 op1))
                 (equal (mxcsrbits->daz$inline mxcsr) 0)
                 (equal (mxcsrbits->im$inline mxcsr) 1)
                 (equal (mxcsrbits->dm$inline mxcsr) 1))
@@ -435,29 +426,14 @@
   :hints (("Goal" :in-theory (enable sse-cmp sse-cmp-special))))
 
 ;; this puts the syntactically smaller op first
-(defthmd equal-of-1-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder-axe
-  (implies (and (axe-syntaxp (acl2::heavier-dag-term op1 op2))
-                (equal (mxcsrbits->daz$inline mxcsr) 0)
-                (equal (mxcsrbits->im$inline mxcsr) 1)
-                (equal (mxcsrbits->dm$inline mxcsr) 1))
-           (equal (equal 1 (mv-nth 1 (sse-cmp *op-ucomi* op1 op2 mxcsr exp-width frac-width)))
-                  (equal 0 (mv-nth 1 (sse-cmp *op-ucomi* op2 op1 mxcsr exp-width frac-width)))))
-  :hints (("Goal" :use equal-of-1-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder)))
-
-;non-axe
-(defthmd equal-of-7-and-mv-nth-1-of-sse-cmp-of-ucomi
-  (implies (syntaxp (acl2::smaller-termp op1 op2))
+;; See also the Axe version of this rule.
+(defthmd equal-of-7-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder
+  (implies (syntaxp (acl2::smaller-termp op2 op1))
            (equal (equal 7 (mv-nth 1 (sse-cmp *op-ucomi* op1 op2 mxcsr exp-width frac-width)))
                   (equal 7 (mv-nth 1 (sse-cmp *op-ucomi* op2 op1 mxcsr exp-width frac-width)))))
   :rule-classes ((:rewrite :loop-stopper nil))
   :hints (("Goal" :in-theory (enable sse-cmp sse-cmp-special))))
 
-(defthmd equal-of-7-and-mv-nth-1-of-sse-cmp-of-ucomi-reorder-axe
-  (implies (axe-syntaxp (acl2::heavier-dag-term op1 op2))
-           (equal (equal 7 (mv-nth 1 (sse-cmp *op-ucomi* op1 op2 mxcsr exp-width frac-width)))
-                  (equal 7 (mv-nth 1 (sse-cmp *op-ucomi* op2 op1 mxcsr exp-width frac-width)))))
-  :hints (("Goal" :use equal-of-7-and-mv-nth-1-of-sse-cmp-of-ucomi
-           :in-theory (disable equal-of-7-and-mv-nth-1-of-sse-cmp-of-ucomi))))
 
 ;dup??
 (defthm sse-daz-of-nil-arg4

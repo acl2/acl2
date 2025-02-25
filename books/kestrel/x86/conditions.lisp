@@ -483,7 +483,6 @@
                            (acl2::slice-becomes-getbit
                             acl2::bvchop-1-becomes-getbit
                             acl2::bvchop-of-logtail-becomes-slice
-                            ACL2::MOD-OF-EXPT-OF-2
                             ACL2::MOD-EXPT-SPLIT))
            :use ((:instance acl2::split-bv
                            (x (bvchop size x))

@@ -1,6 +1,6 @@
 ; A stobj to gather parameters used in rewriting
 ;
-; Copyright (C) 2022-2024 Kestrel Institute
+; Copyright (C) 2022-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -10,11 +10,15 @@
 
 (in-package "ACL2")
 
-;; Unlike rewrite-stobj, this includes values, such as the DAG, that change during rewriting.  So it has to be returned by most functions.
+;; Unlike rewrite-stobj, this includes values that change during rewriting
+;; (such as the DAG).  So rewrite-stobj2 has to be returned by the functions in
+;; the main rewriter clique.
+
+;; TODO: Consider adding more things to this, like the memoization, hit-counts,
+;; tries, and limits.
 
 (include-book "kestrel/utilities/defstobj-plus" :dir :system)
-
-(include-book "wf-dagp") ; reduce, or apply this as an invariant over the fields
+(include-book "wf-dagp")
 
 (defstobj+ rewrite-stobj2
   ;; Functions that are known to be boolean in the current world:
@@ -41,17 +45,57 @@
              (the-dag-variable-alist get-dag-variable-alist)
              (update-the-dag-variable-alist put-dag-variable-alist)))
 
-;; todo: use this more
-;; disable?
-(defun wf-rewrite-stobj2 (rewrite-stobj2)
+;; todo: use this more?
+(defund wf-rewrite-stobj2 (rewrite-stobj2)
   (declare (xargs :stobjs rewrite-stobj2))
   (wf-dagp 'dag-array (get-dag-array rewrite-stobj2) (get-dag-len rewrite-stobj2) 'dag-parent-array (get-dag-parent-array rewrite-stobj2) (get-dag-constant-alist rewrite-stobj2) (get-dag-variable-alist rewrite-stobj2)))
+
+(defthm wf-rewrite-stobj2-conjuncts
+  (implies (and (wf-rewrite-stobj2 rewrite-stobj2)
+                ;(rewrite-stobj2p rewrite-stobj2)
+                )
+           (and (pseudo-dag-arrayp 'dag-array (get-dag-array rewrite-stobj2) (get-dag-len rewrite-stobj2))
+                (natp (get-dag-len rewrite-stobj2))
+                (integerp (get-dag-len rewrite-stobj2))
+                (dag-parent-arrayp 'dag-parent-array (get-dag-parent-array rewrite-stobj2))
+                (bounded-dag-parent-arrayp 'dag-parent-array (get-dag-parent-array rewrite-stobj2)  (get-dag-len rewrite-stobj2))
+                (equal (alen1 'dag-array (get-dag-array rewrite-stobj2))
+                       (alen1 'dag-parent-array (get-dag-parent-array rewrite-stobj2)))
+                (dag-variable-alistp (get-dag-variable-alist rewrite-stobj2))
+                (bounded-dag-variable-alistp (get-dag-variable-alist rewrite-stobj2)
+                                             (get-dag-len rewrite-stobj2))
+                (dag-constant-alistp (get-dag-constant-alist rewrite-stobj2))
+                (bounded-dag-constant-alistp (get-dag-constant-alist rewrite-stobj2)
+                                             (get-dag-len rewrite-stobj2))))
+  :hints (("Goal" :in-theory (enable wf-rewrite-stobj2))))
+
+(theory-invariant (incompatible (:rewrite wf-rewrite-stobj2-conjuncts) (:definition wf-rewrite-stobj2)))
+
+(defthm wf-rewrite-stobj2-conjuncts2
+  (implies (and (wf-rewrite-stobj2 rewrite-stobj2)
+                ;(rewrite-stobj2p rewrite-stobj2)
+                )
+           (and (<= (get-dag-len rewrite-stobj2) 1152921504606846974)
+                (<= 0 (get-dag-len rewrite-stobj2))))
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (e/d (wf-rewrite-stobj2) (wf-rewrite-stobj2-conjuncts)))))
+
+(defthm pseudo-dag-arrayp-of-get-dag-array-when-wf-rewrite-stobj2-gen
+  (implies (and (wf-rewrite-stobj2 rewrite-stobj2)
+                ;(rewrite-stobj2p rewrite-stobj2)
+                (<= n (get-dag-len rewrite-stobj2))
+                (natp n)
+                )
+           (pseudo-dag-arrayp 'dag-array (get-dag-array rewrite-stobj2) n))
+  :hints (("Goal" :use (wf-rewrite-stobj2-conjuncts)
+           :in-theory (disable wf-rewrite-stobj2-conjuncts))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (include-book "dag-array-builders")
 
 ;; returns (mv erp nodenum rewrite-stobj2)
-;; todo: disable
-(defun add-variable-to-dag-array-in-stobj (var rewrite-stobj2)
+(defund add-variable-to-dag-array-in-stobj (var rewrite-stobj2)
   (declare (xargs :guard (and (symbolp var)
                               (wf-rewrite-stobj2 rewrite-stobj2))
                   :stobjs rewrite-stobj2))
@@ -73,8 +117,25 @@
            (and (natp (mv-nth 1 (add-variable-to-dag-array-in-stobj var rewrite-stobj2)))
                 (wf-rewrite-stobj2 (mv-nth 2 (add-variable-to-dag-array-in-stobj var rewrite-stobj2)))
                 (< (mv-nth 1 (add-variable-to-dag-array-in-stobj var rewrite-stobj2))
-                   (get-dag-len (mv-nth 2 (add-variable-to-dag-array-in-stobj var rewrite-stobj2))))))
-  :hints (("Goal" :in-theory (enable add-variable-to-dag-array-in-stobj))))
+                   (get-dag-len (mv-nth 2 (add-variable-to-dag-array-in-stobj var rewrite-stobj2))))
+                (<= (get-dag-len rewrite-stobj2)
+                    (get-dag-len (mv-nth 2 (add-variable-to-dag-array-in-stobj var rewrite-stobj2))))))
+  :hints (("Goal" :in-theory (e/d (add-variable-to-dag-array-in-stobj wf-rewrite-stobj2) (natp wf-rewrite-stobj2-conjuncts)))))
+
+(defthm add-variable-to-dag-array-in-stobj-return-type-2
+  (implies (and; (not (mv-nth 0 (add-variable-to-dag-array-in-stobj var rewrite-stobj2))) ; no error
+                (symbolp var)
+                ; (wf-rewrite-stobj2 rewrite-stobj2)
+                (rewrite-stobj2p rewrite-stobj2))
+           (rewrite-stobj2p (mv-nth 2 (add-variable-to-dag-array-in-stobj var rewrite-stobj2))))
+  :hints (("Goal" :in-theory (e/d (add-variable-to-dag-array-in-stobj wf-rewrite-stobj2) (natp wf-rewrite-stobj2-conjuncts)))))
+
+;; a bit gross, as it makes a claim about a single component of the stobj.
+;; but this helps to support some rewriter rules with very few hyps.
+(defthm add-variable-to-dag-array-in-stobj-return-type-3
+  (implies (natp (get-dag-len rewrite-stobj2))
+           (natp (get-dag-len (mv-nth 2 (add-variable-to-dag-array-in-stobj var rewrite-stobj2)))))
+  :hints (("Goal" :in-theory (e/d (add-variable-to-dag-array-in-stobj wf-rewrite-stobj2) (natp wf-rewrite-stobj2-conjuncts)))))
 
 
 ;; rule for (WF-DAGP 'DAG-ARRAY (GET-DAG-ARRAY REWRITE-STOBJ2) (GET-DAG-LEN REWRITE-STOBJ2) 'DAG-PARENT-ARRAY (GET-DAG-PARENT-ARRAY REWRITE-STOBJ2) (GET-DAG-CONSTANT-ALIST REWRITE-STOBJ2) (GET-DAG-VARIABLE-ALIST REWRITE-STOBJ2))

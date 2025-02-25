@@ -1562,7 +1562,7 @@
   :returns (mv erp (event pseudo-event-formp))
   :short "Generate all the events."
   (b* (((reterr) '(_))
-       ((erp tunit)
+       ((erp tunits)
         (splitgso-transunit-ensemble
           filepath?
           object-ident
@@ -1574,7 +1574,7 @@
           tunits))
        (defconst-event
          `(defconst ,const-new
-            ',tunit)))
+            ',tunits)))
     (retok defconst-event)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -358,7 +358,7 @@
                                   (loop-lifter-state-component-extraction-rules))
                           (w state)))
 
-;; Returns (mv erp rsp-dag).
+;; Returns (mv erp rsp-dag limits).
 (defun extract-rsp-dag (state-dag
                         assumptions ; avoids a logext because we know the rsp is canonical
                         ;; rules-to-monitor
@@ -368,10 +368,10 @@
                               (<= (len state-dag) 1152921504606846974)
                               (pseudo-term-listp assumptions))))
   (b* (((mv erp dag) (acl2::wrap-term-around-dag '(xr ':rgf '4 :x86) :x86 state-dag))
-       ((when erp) (mv erp nil))
+       ((when erp) (mv erp nil nil))
        ((when (quotep dag))
         (er hard? 'extract-rsp-dag "Unexpected constant RSP extraction term: ~x0.")
-        (mv :unexpected-term nil)))
+        (mv :unexpected-term nil nil)))
     (acl2::simplify-dag-x86 dag
                             assumptions
                             *loop-lifter-state-component-extraction-rule-alist*
@@ -387,7 +387,7 @@
                             nil
                             nil)))
 
-;; Returns (mv erp rbp-dag).
+;; Returns (mv erp rbp-dag limits).
 (defun extract-rbp-dag (state-dag
                         assumptions ; avoids a logext because we know the rbp is canonical
                         ;;rules-to-monitor
@@ -397,10 +397,10 @@
                               (<= (len state-dag) 1152921504606846974)
                               (pseudo-term-listp assumptions))))
   (b* (((mv erp dag) (acl2::wrap-term-around-dag '(xr ':rgf '5 :x86) :x86 state-dag)) ;todo make a version of compose-term-and-dag that translates and checks its arg
-       ((when erp) (mv erp nil))
+       ((when erp) (mv erp nil nil))
        ((when (quotep dag))
         (er hard? 'extract-rbp-dag "Unexpected constant RBP extraction term: ~x0.")
-        (mv :unexpected-term nil)))
+        (mv :unexpected-term nil nil)))
     (acl2::simplify-dag-x86 dag
                             assumptions
                             *loop-lifter-state-component-extraction-rule-alist*
@@ -416,7 +416,7 @@
                             nil
                             nil)))
 
-;; Returns (mv erp pc-dag).
+;; Returns (mv erp pc-dag limits).
 (defun extract-pc-dag (state-dag
                        assumptions
                        ;;rules-to-monitor
@@ -426,10 +426,10 @@
                               (<= (len state-dag) 1152921504606846974)
                               (pseudo-term-listp assumptions))))
   (b* (((mv erp dag) (acl2::wrap-term-around-dag '(xr ':rip 'nil :x86) :x86 state-dag))
-       ((when erp) (mv erp nil))
+       ((when erp) (mv erp nil nil))
        ((when (quotep dag))
         (er hard? 'extract-pc-dag "Unexpected constant PC extraction term: ~x0.")
-        (mv :unexpected-term nil)))
+        (mv :unexpected-term nil nil)))
     (acl2::simplify-dag-x86 dag
                             assumptions ;need to know that text offset is reasonable
                             *loop-lifter-pc-extraction-rule-alist*
@@ -532,9 +532,9 @@
          ;; (- (and (acl2::print-level-at-least-tp print) (cw "(DAG to prove: ~x0.)~%" dag-to-prove)))
          (- (cw "(Using ~x0 assumptions.)~%" (len all-assumptions)))
          ;; prove that the original assumptions imply that the updated assumption holds over state-dag
-         ((mv erp res)
+         ((mv erp res &)
           (if (quotep dag-to-prove)
-              (mv nil dag-to-prove) ; todo: bool-fix it?
+              (mv nil dag-to-prove nil) ; todo: bool-fix it?
             (acl2::simplify-dag-x86 dag-to-prove
                                     all-assumptions
                                     rule-alist
@@ -1379,7 +1379,7 @@
          (prog2$ (er hard 'lift-loop "Assumptions should not mention the state var ~x0." state-var)
                  (mv (erp-t) nil nil nil state)))
         ;; Extract the PC at the loop top:
-        ((mv erp loop-top-pc-dag)
+        ((mv erp loop-top-pc-dag &)
          (extract-pc-dag loop-top-state-dag
                          assumptions))
         ((when erp) (mv erp nil nil nil state))
@@ -1389,7 +1389,7 @@
         (pc-assumption `(equal (xr ':rip 'nil ,state-var) ,loop-top-pc-term))
         (- (cw "(Loop top PC assumption: ~x0.)~%" pc-assumption))
         ;; Extract the RSP at the loop top:
-        ((mv erp loop-top-rsp-dag)
+        ((mv erp loop-top-rsp-dag &)
          (extract-rsp-dag loop-top-state-dag assumptions))
         ((when erp) (mv erp nil nil nil state))
         (loop-top-rsp-term (dag-to-term loop-top-rsp-dag))
@@ -1411,7 +1411,7 @@
         ;; (- (cw "(RSP adjustment is ~x0.)~%" rsp-adjustment))
 
         ;; Extract the RBP at the loop top:
-        ((mv erp loop-top-rbp-dag)
+        ((mv erp loop-top-rbp-dag &)
          (extract-rbp-dag loop-top-state-dag
                           assumptions
                           ;lifter-rules
@@ -1727,7 +1727,7 @@
         ((mv erp new-state-dag) (compose-dags new-state-dag :initial-loop-top-state loop-top-state-dag t))
         ((when erp) (mv erp nil nil nil state))
         ;; Simplify again:
-        ((mv erp new-state-dag)
+        ((mv erp new-state-dag &)
          (acl2::simplify-dag-x86 new-state-dag
                                  nil
                                  (acl2::make-rule-alist! (append (extra-loop-lifter-rules) lifter-rules) (w state))
@@ -1848,7 +1848,7 @@
                   ((mv erp state-dag)
                    (dagify-term state-term))
                   ((when erp) (mv erp nil state))
-                  ((mv erp pc-dag)
+                  ((mv erp pc-dag &)
                    (extract-pc-dag state-dag
                                    assumptions))
                   ((when erp) (mv erp nil state))
@@ -1944,7 +1944,7 @@
         ;; Perform the symbolic execution:
         ;; TODO: Suppress printing of result here?:
         ;; TODO: Add support for printing a combined summary at the end of all rewrite phases...
-        ((mv erp state-dag)
+        ((mv erp state-dag &)
          (acl2::simplify-dag-x86 dag-to-run
                                  assumptions
                                  ;; todo: can we do more of this just once?
@@ -2072,7 +2072,7 @@
         ((when erp) (mv erp nil nil nil state))
 
         ;; Extract the RSP:
-        ((mv erp rsp-dag)
+        ((mv erp rsp-dag &)
          (extract-rsp-dag state-dag assumptions))
         ((when erp) (mv erp nil nil nil state))
         (rsp-term (dag-to-term rsp-dag))
@@ -2230,7 +2230,7 @@
        ((mv erp output-dag) (acl2::wrap-term-around-dag '(xr ':rgf '0 :dag) :dag dag))
        ((when erp) (mv erp nil state))
        (- (cw "(output-dag: ~x0)~%" output-dag))
-       ((mv erp output-dag)
+       ((mv erp output-dag &)
         (acl2::simplify-dag-x86 output-dag
                                 assumptions
                                 (acl2::make-rule-alist! (set-difference-eq

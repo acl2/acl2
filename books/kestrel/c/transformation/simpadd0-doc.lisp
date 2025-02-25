@@ -173,4 +173,18 @@
       "Any of these generated theorems may actually fail to prove.
        Currently @('simpadd0') does not generate robust proofs,
        and does not make thorough checks to provide
-       user-friendly error messages if proof generation is not possible.")))))
+       user-friendly error messages if proof generation is not possible."))
+
+    (xdoc::desc
+     "Modular theorems."
+     (xdoc::p
+      "These are actually generated regardless of the @(':proofs') input.
+       They are modular theorems, generated bottom-up,
+       in a robust way, such that they are never expected to fail.
+       This is a preliminary capability for now,
+       but eventually it will be used to generate
+       more robust and general forms of
+       the C-function-level equivalence theorems mentioned above.")
+     (xdoc::p
+      "These theorems have names of the form @('*new*-thm-<i>'),
+       where @('<i>') are increasing positive integers.")))))

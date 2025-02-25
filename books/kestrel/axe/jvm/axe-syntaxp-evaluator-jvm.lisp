@@ -18,7 +18,7 @@
 (include-book "axe-syntax-functions-jvm") ; for no-state-to-step-p and perhaps others
 (include-book "axe-syntax-functions-jvm2") ; for no-state-to-step-for-loop-lifter-p and perhaps others
 
-(make-axe-syntaxp-evaluator 'jvm '(heavier-dag-term
+(make-axe-syntaxp-evaluator 'jvm '(lighter-dargp
                                    ;; bv-term-syntaxp
                                    is-a-myif
                                    syntactic-booleanp

@@ -1,7 +1,7 @@
 ; A function to divide a list into fixed-sized chunks
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -537,13 +537,12 @@
                                                   y))
                                   (group n (nthcdr (- n (mod (len x) n))
                                                    y)))))))
-  :hints (("Goal" :in-theory (e/d (group-of-append) (;MOD-OF-EXPT-OF-2-CONSTANT-VERSION
-                                                                          MOD-TYPE
-                                                                          MOD-bounded-by-modulus
-                                                                          floor-bounded-by-/
+  :hints (("Goal" :in-theory (e/d (group-of-append) (MOD-TYPE
+                                                     MOD-bounded-by-modulus
+                                                     floor-bounded-by-/
                                                                           ;LIST::EQUAL-APPEND-REDUCTION!
                                                                           ;natp-when-integerp
-                                                                          FIRSTN-BECOMES-TAKE-GEN)))))
+                                                     FIRSTN-BECOMES-TAKE-GEN)))))
 
 (defthm group-of-append-new2
   (implies (posp n)
@@ -560,13 +559,12 @@
                                                   y))
                                   (group n (nthcdr (- n (mod (len x) n))
                                                    y)))))))
-  :hints (("Goal" :in-theory (e/d (group-of-append) (;MOD-OF-EXPT-OF-2-CONSTANT-VERSION
-                                                                          MOD-TYPE
-                                                                          MOD-bounded-by-modulus
-                                                                          floor-bounded-by-/
+  :hints (("Goal" :in-theory (e/d (group-of-append) (MOD-TYPE
+                                                     MOD-bounded-by-modulus
+                                                     floor-bounded-by-/
                                                                           ;LIST::EQUAL-APPEND-REDUCTION!
                                                                           ;natp-when-integerp
-                                                                          FIRSTN-BECOMES-TAKE-GEN)))))
+                                                     FIRSTN-BECOMES-TAKE-GEN)))))
 
 (defthm group-of-myif-arg2
   (equal (group z (myif test x y))

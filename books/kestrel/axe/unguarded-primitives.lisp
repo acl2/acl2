@@ -1,7 +1,7 @@
 ; Versions of primitive functions with guards of t
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2022 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -114,15 +114,16 @@
       (pkg-witness pkg)
     'acl2-pkg-witness))
 
-(defthmd equal-when-symbols
-  (implies (and (symbolp x)
-                (symbolp y))
-           (equal (equal x y)
-                  (and (equal (symbol-name x) (symbol-name y))
-                       (equal (symbol-package-name x) (symbol-package-name y)))))
-  :hints (("Goal" :use (:instance symbol-equality
-                                  (s1 x)
-                                  (s2 y)))))
+(local
+  (defthmd equal-when-symbols
+    (implies (and (symbolp x)
+                  (symbolp y))
+             (equal (equal x y)
+                    (and (equal (symbol-name x) (symbol-name y))
+                         (equal (symbol-package-name x) (symbol-package-name y)))))
+    :hints (("Goal" :use (:instance symbol-equality
+                                    (s1 x)
+                                    (s2 y))))))
 
 (defthm pkg-witness-unguarded-correct
   (equal (pkg-witness-unguarded pkg)
@@ -151,3 +152,19 @@
   (equal (intern-in-package-of-symbol-unguarded str sym)
          (intern-in-package-of-symbol str sym))
   :hints (("Goal" :in-theory (enable intern-in-package-of-symbol-unguarded))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund coerce-unguarded (x y)
+  (declare (xargs :guard t))
+  (cond ((equal y 'list)
+         (if (stringp x)
+             (coerce x 'list)
+           nil))
+        (t (coerce (make-character-list x) 'string))))
+
+(defthm coerce-unguarded-correct
+  (equal (coerce-unguarded x y)
+         (coerce x y))
+  :hints (("Goal" :in-theory (enable coerce-unguarded)
+           :use (:instance completion-of-coerce))))

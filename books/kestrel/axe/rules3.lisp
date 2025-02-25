@@ -243,7 +243,8 @@
            (equal (SBVDIV 32 (BVCAT 2 x 2 2) 4)
                   (bvchop 2 x)))
   :hints (("Goal" :in-theory (e/d (sbvdiv ;bvdiv
-                                          bvcat logapp bvchop-of-logtail-becomes-slice)
+                                   bvcat logapp bvchop-of-logtail-becomes-slice
+                                   truncate-4-hack)
                                   (usb-plus-from-bounds
                                    bvplus-of-*-arg2
                                    times-2-of-bvplus-becomes-bvmult-of-bvplus
@@ -288,7 +289,6 @@
                                          mod-x-i*j-of-positives
                                          ;mod-recollapse-lemma
                                          ;mod-recollapse-lemma2
-                                         mod-of-expt-of-2-constant-version
                                          )))))
 
 (in-theory (disable  ;TRIM-TO-N-BITS-META-RULE
@@ -402,21 +402,6 @@
 ;; (defthm <-of-plus-swap-minuses
 ;;   (equal (< (+ (- x) y) (- z))
 ;;          (< (+ z y) x)))
-
-;move up
-(defthmd truncate-becomes-floor-gen4-better-better
-  (implies (and (rationalp i) (rationalp j))
-           (equal (truncate i j)
-                  (if (equal 0 j)
-                      0
-                    (if (equal 0 (mod i j))
-                        (floor i j)
-                      (if (or (and (<= 0 i) (<= 0 j))
-                              (and (< i 0) (< j 0)))
-                          (floor i j)
-                        (+ 1 (floor i j)))))))
-  :hints (("Goal" ;:cases ((equal 0 j))
-           :in-theory (enable mod-=-0 truncate-becomes-floor-gen))))
 
 (defthmd tighten-multiple-of-4
   (implies (and (syntaxp (quotep high))
@@ -611,8 +596,7 @@
            (equal (integerp (* 1/4 x))
                   (equal 0 (bvchop 2 x))))
   :hints (("Goal" :in-theory (e/d (bvchop)
-                                  (MOD-OF-EXPT-OF-2-CONSTANT-VERSION
-                                   MOD-OF-EXPT-OF-2)))))
+                                  ()))))
 
 (defthm unsigned-byte-p-of-times-1/4
  (implies (and (posp x)
@@ -655,8 +639,6 @@
                                    ;<-of-logext-false
                                    ;<-of-logext-true
                                    logext-when-top-bit-0 sbp-32-when-non-neg)))))
-
-(local (in-theory (disable MOD-OF-EXPT-OF-2-CONSTANT-VERSION MOD-OF-EXPT-OF-2)))
 
 ;gen
 (defthm sbvlt-0-bvuminus
@@ -1601,8 +1583,7 @@
   :hints (("Goal" :in-theory (e/d (bvmod bvchop)
                                   (multiple-idioms-for-multiple-4
                                    mod-type
-                                   mod-of-expt-of-2-constant-version
-                                   mod-of-expt-of-2
+
                                    )))))
 
 ;gen!
@@ -6529,10 +6510,7 @@
                                   (;;MOD-NON-NEGATIVE-CONSTANT-POS-REWRITE
                                    ;;MOD-X-Y-=-X
                                    ;;MOD-X-Y-=-X+Y
-                                   MOD-OF-EXPT-OF-2-CONSTANT-VERSION
                                    anti-slice
-                                   MOD-OF-EXPT-OF-2
-
                                    )))))
 
 (defthm bvmod-of-bvmult-same
@@ -6545,10 +6523,7 @@
                                   (;;MOD-NON-NEGATIVE-CONSTANT-POS-REWRITE
                                    ;;MOD-X-Y-=-X
                                    ;;MOD-X-Y-=-X+Y
-                                   MOD-OF-EXPT-OF-2-CONSTANT-VERSION
                                    anti-slice
-                                   MOD-OF-EXPT-OF-2
-
                                    )))))
 
 (defthm bvmod-of-bvplus
@@ -6562,10 +6537,7 @@
   :hints (("Goal" :in-theory (e/d (bvplus sbvmoddown bvmult bvmod bvchop logext logapp getbit slice
                                           bvlt)
                                   (+-of-minus-1-and-bv2
-                                    mod-of-expt-of-2-constant-version
                                    anti-slice
-                                   mod-of-expt-of-2
-
                                    )))))
 
 ;gen!
@@ -6636,15 +6608,8 @@
                                    MOD-TYPE ;expensive!
                                    ;COLLECT-CONSTANTS-OVER-<
                                    not-bvlt-of-max-arg2
-
-
                                    +-of-minus-1-and-bv2
-                                    mod-of-expt-of-2-constant-version
                                    anti-slice
-                                   mod-of-expt-of-2
-
-
-
 
                                    mod-sum-cases
                                    MOD-UPPER-BOUND-LINEAR
@@ -7125,14 +7090,13 @@
                                <-of-mod-same
                                floor-upper-bound-alt-linear
                                floor-bound-lemma3
-                               *-of-floor-upper-bound
-                               mod-of-expt-of-2-constant-version))))
+                               *-of-floor-upper-bound))))
 
 ;gen
 (defthm <-of-*-of-slice-of-same
   (implies (natp x)
            (not (< X (* 4 (SLICE 30 2 X)))))
-  :hints (("Goal" :in-theory (e/d (slice logtail bvchop) (anti-slice MOD-OF-EXPT-OF-2-CONSTANT-VERSION)))))
+  :hints (("Goal" :in-theory (e/d (slice logtail bvchop) (anti-slice)))))
 
 (defthm <-of-floor-combine-constants
   (implies (and (rationalp i)
@@ -7164,8 +7128,7 @@
                             mod-when-<
                             <-when-unsigned-byte-p-alt
                             <-when-unsigned-byte-p
-                            anti-slice
-                            mod-of-expt-of-2-constant-version)))))
+                            anti-slice)))))
 
 (defthm bvlt-of-bvplus-of-bvuminus-and-bvmult-of-bvdiv-sha1
   (implies (unsigned-byte-p 31 x)
@@ -7525,8 +7488,7 @@
                       (slice 8 5 x)
                     0)))
   :hints (("Goal" :in-theory (e/d (slice logtail bvchop)
-                                  (MOD-OF-EXPT-OF-2
-                                   mod-of-expt-of-2-constant-version
+                                  (
                                    anti-slice)))))
 
 ;we may not want to do this if it's surrounded by a bvplus with a large size!
@@ -8560,8 +8522,7 @@
                                  bvchop-when-i-is-not-an-integer
                                  bvchop-when-top-bit-1)
                            (anti-slice
-                            MOD-OF-EXPT-OF-2
-                            mod-of-expt-of-2-constant-version
+
                             bvlt-of-*-arg3
                             plus-of-minus-3-bv-5
                             bvcat-equal-rewrite-alt bvcat-equal-rewrite logapp-equal-rewrite
@@ -9055,8 +9016,7 @@
            (equal (integerp (* 1/32 x))
                   (equal 0 (bvchop 5 x))))
   :hints (("Goal" :in-theory (e/d (bvchop)
-                                  (MOD-OF-EXPT-OF-2-CONSTANT-VERSION
-                                   MOD-OF-EXPT-OF-2)))))
+                                  ()))))
 
 
 
@@ -9717,9 +9677,8 @@
   (implies (integerp x)
            (equal (integerp (/ x 64))
                   (equal 0 (slice 5 0 x))))
-  :hints (("Goal" :in-theory (e/d (bvchop )
-                                  (mod-of-expt-of-2
-                                   mod-of-expt-of-2-constant-version)))))
+  :hints (("Goal" :in-theory (e/d (bvchop)
+                                  ()))))
 
 (defthmd floor-of-64-when-usb-64
   (implies (unsigned-byte-p 64 x)
@@ -9756,7 +9715,7 @@
   :hints
   (("Goal"
     :in-theory (e/d (bvchop)
-                    (mod-of-expt-of-2 mod-of-expt-of-2-constant-version)))))
+                    ()))))
 
 (defthmd *-of-1/64-when-multiple
   (implies (and (equal 0 (bvchop 6 x))
@@ -10187,7 +10146,7 @@
                             UNSIGNED-BYTE-P-FORCED)
                            (FLOOR-WHEN-USB-BIND-FREE
                             ;CANCEL-MOD-+
-                            anti-slice MOD-OF-EXPT-OF-2-CONSTANT-VERSION MOD-OF-EXPT-OF-2)))))
+                            anti-slice )))))
 
 (defthm bvplus-of-bvuminus-of-bvcat-same-helper
   (implies (and (<= m low)
@@ -11250,8 +11209,7 @@
                     0)))
   :hints (("Goal" :in-theory (e/d (slice logtail bvchop)
                                   (anti-slice
-                                   MOD-OF-EXPT-OF-2-CONSTANT-VERSION
-                                   MOD-OF-EXPT-OF-2)))))
+                                   )))))
 
 ;gen the -1
 (defthm <-of-minus1-and-floor
@@ -11327,8 +11285,7 @@
            (equal (EQUAL (BVCHOP 31 K) 0)
                   nil))
   :hints (("Goal" :in-theory (e/d (bvchop unsigned-byte-p)
-                                  (MOD-OF-EXPT-OF-2
-                                   MOD-OF-EXPT-OF-2-constant-version)))))
+                                  ()))))
 
 ;; (thm
 ;;  (equal (< (+ (bvchop 31 x) y) x)
@@ -12036,7 +11993,7 @@
 (defthm sbvmoddown-of-bvplus-of-minus-4
   (equal (sbvmoddown 32 (bvplus 32 '4294967292 x) '4)
          (sbvmoddown 32 x '4))
-  :hints (("Goal" :in-theory (enable sbvmoddown MOD-OF-EXPT-OF-2-CONSTANT-VERSION))))
+  :hints (("Goal" :in-theory (enable sbvmoddown MOD-BECOMES-BVCHOP-WHEN-POWER-OF-2P))))
 
 
 ;fixme or go to myif
@@ -13001,14 +12958,14 @@
                 (not (power-of-2p width)))
            (equal (integer-length (+ -1 width))
                   (+ 1 (lg width))))
-  :hints (("Subgoal *1/5" :in-theory (e/d (FLOOR-OF-SUM) (INTEGER-LENGTH-OF-FLOOR-BY-2  MOD-OF-EXPT-OF-2-CONSTANT-VERSION natp zip))
+  :hints (("Subgoal *1/5" :in-theory (e/d (FLOOR-OF-SUM) (INTEGER-LENGTH-OF-FLOOR-BY-2 natp zip))
            :expand ((:with INTEGER-LENGTH (INTEGER-LENGTH WIDTH))
                     (:with INTEGER-LENGTH (INTEGER-LENGTH (+ -1 WIDTH)))))
-          ("Subgoal *1/4"  :in-theory (e/d (FLOOR-OF-SUM) (INTEGER-LENGTH-OF-FLOOR-BY-2  MOD-OF-EXPT-OF-2-CONSTANT-VERSION natp zip))
+          ("Subgoal *1/4"  :in-theory (e/d (FLOOR-OF-SUM) (INTEGER-LENGTH-OF-FLOOR-BY-2 natp zip))
            :expand ((:with INTEGER-LENGTH (INTEGER-LENGTH WIDTH))
                     (:with INTEGER-LENGTH (INTEGER-LENGTH (+ -1 WIDTH)))))
           ("Goal" :in-theory (e/d (power-of-2p lg integer-length zip expt-of-+)
-                                  ( INTEGER-LENGTH-OF-FLOOR-BY-2 MOD-OF-EXPT-OF-2-CONSTANT-VERSION)))))
+                                  (INTEGER-LENGTH-OF-FLOOR-BY-2)))))
 
 
 ;gen

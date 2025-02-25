@@ -1,8 +1,6 @@
-; Primes Library: Subgroup prime for the twisted Edwards curve "Edwards BLS12"
+; bls12-377-curves Library: Subgroup prime for the twisted Edwards curve "Edwards BLS12"
 ;
-; Copyright (C) 2020 Kestrel Institute (http://www.kestrel.edu)
-;
-; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+; Copyright (C) 2020 Aleo Systems Inc. (https://www.aleo.org)
 ;
 ; Main Author: Eric McCarthy (mccarthy@kestrel.edu)
 ; Contributing Authors: Alessandro Coglio (coglio@kestrel.edu)
@@ -76,4 +74,7 @@
                     ;; 516860609
                     (3 (2 11 734177)
                        (6 1 1)
-                       (() () ())))))))))))))
+                       (() () ()))))))))))))
+
+  :parents (ecurve::edwards-bls12)
+)

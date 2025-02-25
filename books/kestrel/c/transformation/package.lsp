@@ -25,14 +25,21 @@
                (set-difference-eq *std-pkg-symbols*
                                   '())
                c$::*abstract-syntax-symbols*
-               '(defxdoc+
+               '(constant-symbolp
+                 constant-value
+                 defirrelevant
+                 defxdoc+
                  er-soft+
                  erp
                  impossible
                  index-of
                  packn-pos
                  pseudo-event-formp
+                 pseudo-event-form-list
                  pseudo-event-form-listp
+                 pos
+                 pos-fix
                  reterr
                  retok
+                 symbol-list
                  std::defret-mutual)))
