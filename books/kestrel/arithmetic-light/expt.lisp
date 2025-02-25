@@ -455,7 +455,7 @@
            (equal (integerp (* (expt 2 i) (expt 2 j)))
                   (<= 0 (+ i j))))
   :hints (("Goal" :in-theory (e/d (expt-of-+)
-                                  ( ;integerp-of-expt
+                                  (;integerp-of-expt
                                    ;;<-OF-0-AND-EXPT
                                    integerp-of-expt-when-natp
                                    INTEGERP-OF-EXPT-HELPER))
@@ -467,7 +467,7 @@
            (equal (integerp (* (expt 2 i) (/ (expt 2 j))))
                   (<= j i)))
   :hints (("Goal" :in-theory (e/d (expt-of-+)
-                                  ( ;integerp-of-expt
+                                  (;integerp-of-expt
                                    ;;<-OF-0-AND-EXPT
                                    integerp-of-expt-when-natp
                                    INTEGERP-OF-EXPT-HELPER))
