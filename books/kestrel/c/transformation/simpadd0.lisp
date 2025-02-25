@@ -74,11 +74,12 @@
    which we may want to partially automate,
    via things like generalized `folds' over the abstract syntax."
 
-  "We are also in the process of extending these functions
-   to also return events consisting of generated theorems
-   (for when proof generation is on).
-   The theorems are generated, and designed to be proved,
-   in a bottom-up way.
+  "We are extending these functions
+   to also return correctness theorems.
+   The plan is to generate these theorems in a bottom-up way,
+   and eventually replace the top-level theorems,
+   which are currently very specific and brittle,
+   with robust ones that emerge from the bottom-up generation.
    This is one of a few different or slightly different approaches
    to proof generation, which we are exploring."))
 
