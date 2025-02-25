@@ -83,8 +83,6 @@
               Same as above.
 
 - name: initializer-struct-not-enough-args
-  bug: true
-  description: crash
 
 - name: overflow
 
