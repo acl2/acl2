@@ -23,7 +23,7 @@
 (defxdoc+ proposal-to-other
   :parents (correctness)
   :short "Invariant that every proposal message from a correct validator
-          is addressed to a different validator from the proposal author."
+          is addressed to a different validator than the proposal author."
   :long
   (xdoc::topstring
    (xdoc::p
