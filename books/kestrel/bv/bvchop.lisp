@@ -573,8 +573,7 @@
                   (if (<= size1 size2)
                       0
                     (expt 2 size2))))
-  :hints (("Goal" :in-theory (e/d (bvchop) (;mod-of-expt-of-2
-                                            )))))
+  :hints (("Goal" :in-theory (e/d (bvchop) ()))))
 
 ;can this be expensive?
 ;rename?

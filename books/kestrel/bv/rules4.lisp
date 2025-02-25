@@ -113,7 +113,7 @@
     :IN-THEORY
     (E/D (BVCHOP LOGTAIL MOD)
          (;MOD-RECOLLAPSE-LEMMA MOD-RECOLLAPSE-LEMMA2
-          MOD-OF-EXPT-OF-2)))))
+          )))))
 
 (defthm <-of-times-expt-logtail-cancel
   (implies (and (integerp x)
