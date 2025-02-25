@@ -293,7 +293,7 @@
 (defthm alist-suitable-for-hyp-tree-and-hypsp-after-instantiating
   (implies (and (alist-suitable-for-hypsp alist hyps)
                 (equal :free-vars (ffn-symb (car hyps)))
-                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
+;                (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (axe-treep hyp)
                 (consp hyp)
                 (symbol-alistp alist)
@@ -336,7 +336,7 @@
 
 (defthm alist-suitable-for-hypsp-after-matching-2
   (implies (and (alist-suitable-for-hyp-args-and-hypsp alist hyp-args hyps)
-                (bounded-darg-listp arg-list dag-len)
+                (bounded-darg-listp arg-list dag-len) ; dag-len is a free var
                 (not (equal :fail (unify-trees-with-dag-nodes hyp-args arg-list dag-array alist)))
                 (pseudo-dag-arrayp 'dag-array dag-array dag-len)
                 (axe-tree-listp hyp-args)
