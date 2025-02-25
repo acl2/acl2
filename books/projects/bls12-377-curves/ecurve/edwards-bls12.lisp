@@ -1,11 +1,9 @@
-; Elliptic Curve Library
+; bls12-377-curves Library
 ;
-; Copyright (C) 2023 Kestrel Institute (http://www.kestrel.edu)
+; Copyright (C) 2023 Aleo Systems Inc. (https://www.aleo.org)
 ;
-; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
-;
-; Authors: Eric McCarthy (mccarthy@kestrel.edu)
-;          Alessandro Coglio (www.alessandrocoglio.info)
+; Authors: Alessandro Coglio (www.alessandrocoglio.info)
+;          Eric McCarthy (bendyarm on GitHub)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -14,16 +12,14 @@
 (include-book "std/util/add-io-pairs" :dir :system)
 
 (include-book "kestrel/crypto/ecurve/twisted-edwards" :dir :system)
-(acl2::merge-io-pairs
- dm::primep
- (include-book "kestrel/crypto/primes/bls12-377-prime" :dir :system)
- (include-book "kestrel/crypto/primes/edwards-bls12-377-subgroup-prime" :dir :system))
+(include-book "projects/bls12-377-curves/primes/top" :dir :system)
+
 (include-book "std/util/defval" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defxdoc+ edwards-bls12
-  :parents (elliptic-curves)
+  :parents (crypto::bls12-377-curves)
   :short "The Edwards-BLS12 complete twisted Edwards elliptic curve."
   :long
   (xdoc::topstring
@@ -55,8 +51,13 @@
    (xdoc::p
     "This defines the prime field over which Edwards-BLS12 is defined.")
    (xdoc::p
-    "It is the same as the scalar field of the BLS12-377 elliptic curve,
-     which is defined in our cryptograhic library."))
+    "It is the same as the scalar field of the BLS12-377 elliptic curve.
+     See @(tsee primes::bls12-377-scalar-field-prime) for the exact value.
+     The reason this number is called @($q$) here but @($r$) in the
+     BLS12-377 domain parameters, is because the letter is relative to
+     the curve.  The Edwards-BLS12 curve's base field prime (here @($q$))
+     is equal to the BLS12-377 curve's scalar field prime (there @($r$))."))
+
   (primes::bls12-377-scalar-field-prime)
   ///
 
@@ -332,6 +333,11 @@
   :returns (r natp)
   :short "The prime number that is
           the order of the large subgroup of Edwards-BLS12."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "For the exact value see @(tsee primes::edwards-bls12-subgroup-prime)."))
+
   (primes::edwards-bls12-subgroup-prime)
 
   ///

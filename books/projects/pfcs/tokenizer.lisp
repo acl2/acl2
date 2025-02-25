@@ -1,6 +1,6 @@
 ; PFCS (Prime Field Constraint System) Library
 ;
-; Copyright (C) 2024 Provable Inc. (https://www.provable.com)
+; Copyright (C) 2025 Provable Inc. (https://www.provable.com)
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
@@ -12,7 +12,8 @@
 (in-package "PFCS")
 
 (include-book "lexer")
-(include-book "abnf-tree-utilities")
+
+(include-book "projects/abnf/tree-utilities" :dir :system)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -35,7 +36,7 @@
     "Does not look at details of the internal structure."))
   (and (abnf::treep tree)
        (abnf::tree-case tree :nonleaf)
-       (equal (abnf::tree-nonleaf->rulename? tree) 
+       (equal (abnf::tree-nonleaf->rulename? tree)
               (abnf::rulename rulename-string))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -107,7 +108,7 @@
         (reserrf "token repetition item should be an ABNF tree")))
     (car repetition)))
 
-(define filter-and-reduce-lexeme-tree-to-subtoken-trees 
+(define filter-and-reduce-lexeme-tree-to-subtoken-trees
     ((trees abnf::tree-listp))
   :returns (subtoken-trees abnf::tree-list-resultp)
   :short "Sees through lexeme and token trees to return token subtype trees."
@@ -125,7 +126,7 @@
             (first-tree-under-lexeme (check-and-deref-tree-lexeme? first-tree))
             ((when (reserrp first-tree-under-lexeme))
              (reserrf "bad structure under lexeme"))
-            (processed-rest-trees 
+            (processed-rest-trees
              (filter-and-reduce-lexeme-tree-to-subtoken-trees rest-trees))
             ((when (reserrp processed-rest-trees))
              (reserrf "bad structure under lexeme"))
@@ -136,7 +137,7 @@
             ;; so just return the rest
             ((unless (is-tree-rulename? first-tree-under-lexeme "token"))
              processed-rest-trees)
-            (first-tree-under-token (check-and-deref-tree-token? 
+            (first-tree-under-token (check-and-deref-tree-token?
                                      first-tree-under-lexeme))
             ((when (reserrp first-tree-under-token))
              (reserrf "bad structure under token"))
@@ -163,7 +164,7 @@
      Also, if the input string ends in the middle of a token, returns
      @('reserr')."))
   (b* ((lexeme-trees-result (lexemize-pfcs-from-string pfcs-string))
-       ((when (reserrp lexeme-trees-result)) 
+       ((when (reserrp lexeme-trees-result))
         (reserrf "problem lexing pfcs-string"))
        (subtoken-trees (filter-and-reduce-lexeme-tree-to-subtoken-trees
                         lexeme-trees-result))
@@ -181,7 +182,7 @@
     "This does the same thing as @(see tokenize-pfcs), but does not need to
      convert the string to bytes first."))
   (b* ((lexeme-trees-result (lexemize-pfcs-from-bytes pfcs-bytes))
-       ((when (reserrp lexeme-trees-result)) 
+       ((when (reserrp lexeme-trees-result))
         (reserrf "problem lexing pfcs-bytes"))
        (subtoken-trees (filter-and-reduce-lexeme-tree-to-subtoken-trees
                         lexeme-trees-result))
@@ -215,4 +216,3 @@
 boolean_and(w0, w1, w2)")))
   (and (not (reserrp subtoken-trees))
        (subtoken-tree-listp subtoken-trees))))
-

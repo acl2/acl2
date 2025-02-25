@@ -54,7 +54,7 @@
 
 (define group-hash ((d byte-listp) (m byte-listp))
   :guard (and (= (len d) 8)
-              (< (len m) (- blake::*blake2s-max-data-byte-length* 128)))
+              (<= (len m) (- blake::*max-input-bytes* 64)))
   :returns (point? maybe-jubjub-pointp)
   :short "The function
           @($\\mathsf{GroupHash_\\mathsf{URS}^{\\mathbb{J}^{(r)*}}}$)
@@ -78,7 +78,7 @@
 
 (define find-group-hash ((d byte-listp) (m byte-listp))
   :guard (and (= (len d) 8)
-              (< (len m) (- blake::*blake2s-max-data-byte-length* 129)))
+              (<= (len m) (- blake::*max-input-bytes* 65)))
   :returns (point? maybe-jubjub-pointp)
   :short "The function @($\\mathsf{FindGroupHash^{\\mathbb{J}^{(r)*}}}$)
           [ZPS:5.4.9.5]."
@@ -92,7 +92,7 @@
   :prepwork
   ((define find-group-hash-loop ((i natp) (d byte-listp) (m byte-listp))
      :guard (and (= (len d) 8)
-                 (< (len m) (- blake::*blake2s-max-data-byte-length* 129)))
+                 (<= (len m) (- blake::*max-input-bytes* 65)))
      :returns (point? maybe-jubjub-pointp)
      :parents nil
      (if (mbt (natp i))

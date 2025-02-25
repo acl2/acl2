@@ -1085,7 +1085,7 @@
             rhs rule-symbol (set-difference-eq rhs-vars bound-vars) bound-vars)
         (mv :free-vars-in-rhs nil)))
     (mv (erp-nil)
-        ; Form the rule (note that stored-rules take a different form):
+        ; Form the rule (note that stored-rules take a different form than what we are making here):
         (list lhs rhs rule-symbol (append extra-hyps processed-hyps)))))
 
 ;; (defthm len-of-mv-nth-1-of-make-axe-rule

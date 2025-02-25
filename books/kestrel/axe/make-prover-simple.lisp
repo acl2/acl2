@@ -1277,7 +1277,7 @@
                                                   nil ;hyps-relievedp
                                                   nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries))
                                   (- (and old-try-count
-                                          (let ((try-diff (sub-tries tries old-try-count)))
+                                          (let ((try-diff (subtract-tries tries old-try-count)))
                                             (and (< 100 try-diff) (cw " (~x0 tries used ~x1:~x2.)~%" try-diff rule-symbol hyp-num))))))
                                ;; A binding hyp always counts as relieved:
                                (,relieve-rule-hyps-name (rest hyps) (+ 1 hyp-num)
@@ -1305,7 +1305,7 @@
                                 ((when erp) (mv erp
                                                 nil ;hyps-relievedp
                                                 nil dag-array dag-len dag-parent-array dag-constant-alist dag-variable-alist hit-counts tries))
-                                (try-diff (and old-try-count (sub-tries tries old-try-count))))
+                                (try-diff (and old-try-count (subtract-tries tries old-try-count))))
                              (if (consp new-nodenum-or-quotep) ;tests for quotep
                                  (if (unquote new-nodenum-or-quotep) ;hyp rewrote to a non-nil constant:
                                      (prog2$ (and old-try-count (< 100 try-diff) (cw "(~x0 tries used(p) ~x1:~x2)~%" try-diff rule-symbol hyp-num))
@@ -3052,7 +3052,7 @@
                                  ;; rationalp-+
                                  ;; rationalp-unary--
                                  rationalp-when-integerp
-                                 integerp-of-sub-tries
+                                 integerp-of-subtract-tries
                                  axe-rule-hypp
                                  stored-axe-rulep
                                  stored-axe-rule-listp

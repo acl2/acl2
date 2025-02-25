@@ -1432,7 +1432,10 @@
     axe-syntaxp
     axe-bind-free
     dag-array ; for axe-syntaxp
-    dargs ; for writing axe-syntaxp and axe-bind-free functions
+
+    ;; These are for writing axe-syntaxp and axe-bind-free functions:
+    pseudo-dag-arrayp
+    dargs
     darg1
     darg2
     darg3

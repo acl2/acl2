@@ -27,6 +27,7 @@
 (include-book "bvshl-def")
 (include-book "bvlt-def")
 (include-book "bvplus-def")
+(include-book "bvmult-def")
 (include-book "defs-arith")
 (include-book "leftrotate") ; todo: split out defs
 (include-book "rightrotate") ; todo: split out defs
