@@ -71,7 +71,7 @@
      and thus the fact that the proposal's author is a correct validator
      means that the proposal is indeed created by that validator.
      If the author of the proposal is faulty,
-     it does not actually matter whether
+     it does not matter whether
      the proposal actually originates from that validator,
      or instead it originates from some other (faulty) validator
      impersonating the author;
@@ -150,6 +150,9 @@
        (commtt (active-committee-at-round prop.round vstate.blockchain))
        ((unless commtt) nil)
        ((unless (set::in prop.author (committee-members commtt))) nil)
+       ((unless (equal (address-set-fix dests)
+                       (set::delete prop.author (committee-members commtt))))
+        nil)
        ((unless (set::emptyp
                  (certs-with-author+round prop.author prop.round vstate.dag)))
         nil)
@@ -166,9 +169,6 @@
         (active-committee-at-round (1- prop.round) vstate.blockchain))
        ((unless (>= (committee-validators-stake prop.previous prev-commtt)
                     (committee-quorum-stake prev-commtt)))
-        nil)
-       ((unless (equal (address-set-fix dests)
-                       (set::delete prop.author (committee-members commtt))))
         nil))
     t)
   :guard-hints

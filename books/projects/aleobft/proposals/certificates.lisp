@@ -271,7 +271,26 @@
                nil
              (set::insert (pos-fix round) nil)))
     :induct t
-    :enable cert-set->round-set-of-insert))
+    :enable cert-set->round-set-of-insert)
+
+  (defruled in-of-certs-with-author+round
+    (equal (set::in cert (certs-with-author+round author round certs))
+           (and (certificatep cert)
+                (set::in cert (certificate-set-fix certs))
+                (equal (certificate->author cert)
+                       (address-fix author))
+                (equal (certificate->round cert)
+                       (pos-fix round))))
+    :induct t)
+
+  (defruled certs-with-author+round-monotone
+    (implies (set::subset (certificate-set-fix certs1)
+                          (certificate-set-fix certs2))
+             (set::subset (certs-with-author+round author round certs1)
+                          (certs-with-author+round author round certs2)))
+    :enable (in-of-certs-with-author+round
+             set::expensive-rules)
+    :disable certs-with-author+round))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -346,7 +365,24 @@
                nil
              (set::insert (pos-fix round) nil)))
     :induct t
-    :enable cert-set->round-set-of-insert))
+    :enable cert-set->round-set-of-insert)
+
+  (defruled in-of-certs-with-round
+    (equal (set::in cert (certs-with-round round certs))
+           (and (certificatep cert)
+                (set::in cert (certificate-set-fix certs))
+                (equal (certificate->round cert)
+                       (pos-fix round))))
+    :induct t)
+
+  (defruled certs-with-round-monotone
+    (implies (set::subset (certificate-set-fix certs1)
+                          (certificate-set-fix certs2))
+             (set::subset (certs-with-round round certs1)
+                          (certs-with-round round certs2)))
+    :enable (in-of-certs-with-round
+             set::expensive-rules)
+    :disable certs-with-round))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -384,7 +420,26 @@
                nil
              (set::insert (pos-fix round) nil)))
     :induct t
-    :enable cert-set->round-set-of-insert))
+    :enable cert-set->round-set-of-insert)
+
+  (defruled in-of-certs-with-authors+round
+    (equal (set::in cert (certs-with-authors+round authors round certs))
+           (and (certificatep cert)
+                (set::in cert (certificate-set-fix certs))
+                (set::in (certificate->author cert)
+                         (address-set-fix authors))
+                (equal (certificate->round cert)
+                       (pos-fix round))))
+    :induct t)
+
+  (defruled certs-with-authors+round-monotone
+    (implies (set::subset (certificate-set-fix certs1)
+                          (certificate-set-fix certs2))
+             (set::subset (certs-with-authors+round authors round certs1)
+                          (certs-with-authors+round authors round certs2)))
+    :enable (in-of-certs-with-authors+round
+             set::expensive-rules)
+    :disable certs-with-authors+round))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
