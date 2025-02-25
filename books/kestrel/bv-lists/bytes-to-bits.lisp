@@ -1,7 +1,7 @@
 ; BV Lists Library: bytes-to-bits
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -154,5 +154,4 @@
                   (bytes-to-bits (take (floor m 8) lst))))
   :hints (("Goal" :use (:instance take-of-times-8-and-bytes-to-bits (n (floor m 8)))
            :in-theory (e/d (natp bytes-to-bits)
-                           (take-of-times-8-and-bytes-to-bits
-                            mod-of-expt-of-2-constant-version)))))
+                           (take-of-times-8-and-bytes-to-bits)))))

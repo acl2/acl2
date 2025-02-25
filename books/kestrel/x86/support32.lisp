@@ -200,7 +200,7 @@
                   0))
   :hints (("Goal" :in-theory (e/d (segment-min-eff-addr32
                                    segment-base-and-bounds
-                                   ACL2::MOD-OF-EXPT-OF-2-CONSTANT-VERSION)
+                                   ACL2::MOD-BECOMES-BVCHOP-WHEN-POWER-OF-2P)
                                   (;; x86isa::seg-hidden-basei-is-n64p
                                    ;; x86isa::seg-hidden-limiti-is-n32p
                                    ;; x86isa::seg-hidden-attri-is-n16p
@@ -217,7 +217,7 @@
                        (bvchop 32 (xr :seg-hidden-limit seg-reg x86))))))
   :hints (("Goal" :in-theory (e/d (segment-min-eff-addr32
                                    segment-base-and-bounds
-                                   acl2::mod-of-expt-of-2-constant-version)
+                                   acl2::mod-becomes-bvchop-when-power-of-2p)
                                   (;; x86isa::seg-hidden-basei-is-n64p
                                    ;; x86isa::seg-hidden-limiti-is-n32p
                                    ;; x86isa::seg-hidden-attri-is-n16p
@@ -1014,7 +1014,7 @@
                                    esp
                                    segment-base-and-bounds
                                    ;;segment-is-32-bitsp-intro-2
-                                   ACL2::MOD-OF-EXPT-OF-2-CONSTANT-VERSION
+                                   ACL2::MOD-BECOMES-BVCHOP-WHEN-POWER-OF-2P
                                    acl2::bvchop-identity
                                    )
                                   (;
@@ -1074,7 +1074,7 @@
                                    esp
                                    segment-base-and-bounds
                                    ;;segment-is-32-bitsp-intro-2
-                                   ACL2::MOD-OF-EXPT-OF-2-CONSTANT-VERSION
+                                   ACL2::MOD-BECOMES-BVCHOP-WHEN-POWER-OF-2P
                                    acl2::bvchop-identity
                                    )
                                   (;
@@ -1396,7 +1396,7 @@
 ;;                             ACL2::REWRITE-UNSIGNED-BYTE-P-WHEN-TERM-SIZE-IS-LARGER
 ;;                             )))))
 
-(local (in-theory (enable ACL2::MOD-OF-EXPT-OF-2-CONSTANT-VERSION)))
+(local (in-theory (enable ACL2::MOD-BECOMES-BVCHOP-WHEN-POWER-OF-2P)))
 
 ;;We thought we needed to turn off WML32 and especially WME-SIZE and wme32 (why?)
 ;;Lift the subroutine into logic as a 32-bit program:
