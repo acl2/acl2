@@ -18,8 +18,7 @@
 ;; tries, and limits.
 
 (include-book "kestrel/utilities/defstobj-plus" :dir :system)
-
-(include-book "wf-dagp") ; reduce, or apply this as an invariant over the fields
+(include-book "wf-dagp")
 
 (defstobj+ rewrite-stobj2
   ;; Functions that are known to be boolean in the current world:
@@ -46,7 +45,7 @@
              (the-dag-variable-alist get-dag-variable-alist)
              (update-the-dag-variable-alist put-dag-variable-alist)))
 
-;; todo: use this more
+;; todo: use this more?
 (defund wf-rewrite-stobj2 (rewrite-stobj2)
   (declare (xargs :stobjs rewrite-stobj2))
   (wf-dagp 'dag-array (get-dag-array rewrite-stobj2) (get-dag-len rewrite-stobj2) 'dag-parent-array (get-dag-parent-array rewrite-stobj2) (get-dag-constant-alist rewrite-stobj2) (get-dag-variable-alist rewrite-stobj2)))
