@@ -939,23 +939,26 @@
            (all-nodes-are-bvxorsp (rest nodenums) quoted-size dag-array dag-len)))))
 
 ;we always want to go to nth of dargs
-(defthm nth-of-0-and-cddr-of-dargs
-  (equal (nth 0 (cddr (dargs expr)))
-         (nth 2 (dargs expr)))
-  :hints (("Goal" :in-theory (enable nth-of-cdr))))
+(local
+  (defthm nth-of-0-and-cddr-of-dargs
+    (equal (nth 0 (cddr (dargs expr)))
+           (nth 2 (dargs expr)))
+    :hints (("Goal" :in-theory (enable nth-of-cdr)))))
 
-(defthm nth-of-0-and-cdr-of-dargs
-  (equal (nth 0 (cdr (dargs expr)))
-         (nth 1 (dargs expr)))
-  :hints (("Goal" :in-theory (enable nth-of-cdr))))
+(local
+  (defthm nth-of-0-and-cdr-of-dargs
+    (equal (nth 0 (cdr (dargs expr)))
+           (nth 1 (dargs expr)))
+    :hints (("Goal" :in-theory (enable nth-of-cdr)))))
 
-(defthm not-equal-of-nth-0-and-nth-1-when-decreasingp
-  (implies (and (decreasingp x)
-                (all-integerp x)
-                (consp x))
-           (not (EQUAL (NTH 1 x)
-                       (NTH 0 x))))
-  :hints (("Goal" :in-theory (enable DECREASINGP ALL-INTEGERP))))
+(local
+  (defthm not-equal-of-nth-0-and-nth-1-when-decreasingp
+    (implies (and (decreasingp x)
+                  (all-integerp x)
+                  (consp x))
+             (not (EQUAL (NTH 1 x)
+                         (NTH 0 x))))
+    :hints (("Goal" :in-theory (enable DECREASINGP ALL-INTEGERP)))))
 
 ;; sweep down the dag, always processing the highest node first
 ;; list of nodes to handle (never contains duplicates)
