@@ -369,6 +369,18 @@
     :returns (mv (new-expr exprp) (gout simpadd0-goutp))
     :parents (simpadd0 simpadd0-exprs/decls/stmts)
     :short "Transform an expression."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "When we encounter an expression @('x + 0') that we transform into @('x'),
+       we also generate a theorem saying that
+       executing the two expressions give equivalent results.
+       This is proved by essentially just instantiating
+       @(tsee simpadd0-supporting-lemma)
+       (see its documentation, also in regard to the exact way in which
+       we express the equivalence).
+       This is a very preliminary theorem generation capability,
+       which we plan to extend soon."))
     (b* (((simpadd0-gin gin) gin))
       (expr-case
        expr
