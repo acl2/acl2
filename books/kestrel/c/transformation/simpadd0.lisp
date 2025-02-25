@@ -339,7 +339,16 @@
      which has a different type for each transformation function.
      But each function also returns certain common outputs,
      which we put into this data structure
-     for modularity and to facility extension."))
+     for modularity and to facility extension.")
+   (xdoc::p
+    "The set of simplified variables in the @('vars') component consists of
+     the variables @('x') such that an expression of the form @('x + 0')
+     occurs in the C construct transformed by the transformation function
+     (which is returning a value of this fixtype)
+     and was transformed into @('x').
+     This set will be soon used to generate hypotheses, in the theorems,
+     about those functions being in the computation state
+     and containing @('int') values."))
   ((events pseudo-event-form-list
            "Cumulative list of generated events.")
    (thm-name symbol
@@ -351,7 +360,9 @@
    (names-to-avoid symbol-list
                    "Updated list of event names to avoid;
                     this is updated from
-                    the homonymous component of @(tsee simpadd0-gin)."))
+                    the homonymous component of @(tsee simpadd0-gin).")
+   (vars ident-set
+         "Set of simplified variables."))
   :pred simpadd0-goutp)
 
 ;;;;;;;;;;
@@ -362,7 +373,8 @@
   :body (make-simpadd0-gout :events nil
                             :thm-name nil
                             :thm-index 1
-                            :names-to-avoid nil))
+                            :names-to-avoid nil
+                            :vars nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -396,17 +408,20 @@
                   (make-simpadd0-gout :events nil
                                       :thm-name nil
                                       :thm-index gin.thm-index
-                                      :names-to-avoid gin.names-to-avoid))
+                                      :names-to-avoid gin.names-to-avoid
+                                      :vars nil))
        :const (mv (expr-fix expr)
                   (make-simpadd0-gout :events nil
                                       :thm-name nil
                                       :thm-index gin.thm-index
-                                      :names-to-avoid gin.names-to-avoid))
+                                      :names-to-avoid gin.names-to-avoid
+                                      :vars nil))
        :string (mv (expr-fix expr)
                    (make-simpadd0-gout :events nil
                                        :thm-name nil
                                        :thm-index gin.thm-index
-                                       :names-to-avoid gin.names-to-avoid))
+                                       :names-to-avoid gin.names-to-avoid
+                                       :vars nil))
        :paren
        (b* (((mv new-inner (simpadd0-gout gout-inner))
              (simpadd0-expr expr.inner gin state)))
@@ -414,7 +429,8 @@
              (make-simpadd0-gout :events gout-inner.events
                                  :thm-name nil
                                  :thm-index gout-inner.thm-index
-                                 :names-to-avoid gout-inner.names-to-avoid)))
+                                 :names-to-avoid gout-inner.names-to-avoid
+                                 :vars gout-inner.vars)))
        :gensel
        (b* (((mv new-control (simpadd0-gout gout-control))
              (simpadd0-expr expr.control gin state))
@@ -430,7 +446,8 @@
               :events (append gout-control.events gout-assocs.events)
               :thm-name nil
               :thm-index gout-assocs.thm-index
-              :names-to-avoid gout-assocs.names-to-avoid)))
+              :names-to-avoid gout-assocs.names-to-avoid
+              :vars (set::union gout-control.vars gout-assocs.vars))))
        :arrsub
        (b* (((mv new-arg1 (simpadd0-gout gout-arg1))
              (simpadd0-expr expr.arg1 gin state))
@@ -446,7 +463,8 @@
               :events (append gout-arg1.events gout-arg2.events)
               :thm-name nil
               :thm-index gout-arg2.thm-index
-              :names-to-avoid gout-arg2.names-to-avoid)))
+              :names-to-avoid gout-arg2.names-to-avoid
+              :vars (set::union gout-arg1.vars gout-arg2.vars))))
        :funcall
        (b* (((mv new-fun (simpadd0-gout gout-fun))
              (simpadd0-expr expr.fun gin state))
@@ -462,7 +480,8 @@
               :events (append gout-fun.events gout-args.events)
               :thm-name nil
               :thm-index gout-args.thm-index
-              :names-to-avoid gout-args.names-to-avoid)))
+              :names-to-avoid gout-args.names-to-avoid
+              :vars (set::union gout-fun.vars gout-args.vars))))
        :member
        (b* (((mv new-arg (simpadd0-gout gout-arg))
              (simpadd0-expr expr.arg gin state)))
@@ -472,7 +491,8 @@
               :events gout-arg.events
               :thm-name nil
               :thm-index gout-arg.thm-index
-              :names-to-avoid gout-arg.names-to-avoid)))
+              :names-to-avoid gout-arg.names-to-avoid
+              :vars gout-arg.vars)))
        :memberp
        (b* (((mv new-arg (simpadd0-gout gout-arg))
              (simpadd0-expr expr.arg gin state)))
@@ -482,7 +502,8 @@
               :events gout-arg.events
               :thm-name nil
               :thm-index gout-arg.thm-index
-              :names-to-avoid gout-arg.names-to-avoid)))
+              :names-to-avoid gout-arg.names-to-avoid
+              :vars gout-arg.vars)))
        :complit
        (b* (((mv new-type (simpadd0-gout gout-type))
              (simpadd0-tyname expr.type gin state))
@@ -499,7 +520,8 @@
               :events (append gout-type.events gout-elems.events)
               :thm-name nil
               :thm-index gout-elems.thm-index
-              :names-to-avoid gout-elems.names-to-avoid)))
+              :names-to-avoid gout-elems.names-to-avoid
+              :vars (set::union gout-type.vars gout-elems.vars))))
        :unary
        (b* (((mv new-arg (simpadd0-gout gout-arg))
              (simpadd0-expr expr.arg gin state)))
@@ -509,7 +531,8 @@
               :events gout-arg.events
               :thm-name nil
               :thm-index gout-arg.thm-index
-              :names-to-avoid gout-arg.names-to-avoid)))
+              :names-to-avoid gout-arg.names-to-avoid
+              :vars gout-arg.vars)))
        :sizeof
        (b* (((mv new-type (simpadd0-gout gout-type))
              (simpadd0-tyname expr.type gin state)))
@@ -518,7 +541,8 @@
               :events gout-type.events
               :thm-name nil
               :thm-index gout-type.thm-index
-              :names-to-avoid gout-type.names-to-avoid)))
+              :names-to-avoid gout-type.names-to-avoid
+              :vars gout-type.vars)))
        :alignof
        (b* (((mv new-type (simpadd0-gout gout-type))
              (simpadd0-tyname expr.type gin state)))
@@ -528,7 +552,8 @@
               :events gout-type.events
               :thm-name nil
               :thm-index gout-type.thm-index
-              :names-to-avoid gout-type.names-to-avoid)))
+              :names-to-avoid gout-type.names-to-avoid
+              :vars gout-type.vars)))
        :cast
        (b* (((mv new-type (simpadd0-gout gout-type))
              (simpadd0-tyname expr.type gin state))
@@ -544,7 +569,8 @@
               :events (append gout-type.events gout-arg.events)
               :thm-name nil
               :thm-index gout-arg.thm-index
-              :names-to-avoid gout-arg.names-to-avoid)))
+              :names-to-avoid gout-arg.names-to-avoid
+              :vars (set::union gout-type.vars gout-arg.vars))))
        :binary
        (b* (((mv new-arg1 (simpadd0-gout gout-arg1))
              (simpadd0-expr expr.arg1 gin state))
@@ -634,14 +660,18 @@
                     :thm-name thm-name
                     :thm-index thm-index
                     :names-to-avoid (append gout-arg2.names-to-avoid
-                                            (list thm-name)))))
+                                            (list thm-name))
+                    :vars (set::insert (expr-ident->ident new-arg1)
+                                       (set::union gout-arg1.vars
+                                                   gout-arg2.vars)))))
            ;; Do not transform the expression.
            (mv (make-expr-binary :op expr.op :arg1 new-arg1 :arg2 new-arg2)
                (make-simpadd0-gout
                 :events (append gout-arg1.events gout-arg2.events)
                 :thm-name nil
                 :thm-index gout-arg2.thm-index
-                :names-to-avoid gout-arg2.names-to-avoid))))
+                :names-to-avoid gout-arg2.names-to-avoid
+                :vars (set::union gout-arg1.vars gout-arg2.vars)))))
        :cond
        (b* (((mv new-test (simpadd0-gout gout-test))
              (simpadd0-expr expr.test gin state))
@@ -666,7 +696,10 @@
                               gout-else.events)
               :thm-name nil
               :thm-index gout-else.thm-index
-              :names-to-avoid gout-else.names-to-avoid)))
+              :names-to-avoid gout-else.names-to-avoid
+              :vars (set::union gout-test.vars
+                                (set::union gout-then.vars
+                                            gout-else.vars)))))
        :comma
        (b* (((mv new-first (simpadd0-gout gout-first))
              (simpadd0-expr expr.first gin state))
@@ -682,7 +715,8 @@
               :events (append gout-first.events gout-next.events)
               :thm-name nil
               :thm-index gout-next.thm-index
-              :names-to-avoid gout-next.names-to-avoid)))
+              :names-to-avoid gout-next.names-to-avoid
+              :vars (set::union gout-first.vars gout-next.vars))))
        :stmt
        (b* (((mv new-items (simpadd0-gout gout-items))
              (simpadd0-block-item-list expr.items gin state)))
@@ -691,7 +725,8 @@
               :events gout-items.events
               :thm-name nil
               :thm-index gout-items.thm-index
-              :names-to-avoid gout-items.names-to-avoid)))
+              :names-to-avoid gout-items.names-to-avoid
+              :vars gout-items.vars)))
        :tycompat
        (b* (((mv new-type1 (simpadd0-gout gout-type1))
              (simpadd0-tyname expr.type1 gin state))
@@ -707,7 +742,8 @@
               :events (append gout-type1.events gout-type2.events)
               :thm-name nil
               :thm-index gout-type2.thm-index
-              :names-to-avoid gout-type2.names-to-avoid)))
+              :names-to-avoid gout-type2.names-to-avoid
+              :vars (set::union gout-type1.vars gout-type2.vars))))
        :offsetof
        (b* (((mv new-type (simpadd0-gout gout-type))
              (simpadd0-tyname expr.type gin state))
@@ -723,7 +759,8 @@
               :events (append gout-type.events gout-member.events)
               :thm-name nil
               :thm-index gout-member.thm-index
-              :names-to-avoid gout-member.names-to-avoid)))
+              :names-to-avoid gout-member.names-to-avoid
+              :vars (set::union gout-type.vars gout-member.vars))))
        :va-arg
        (b* (((mv new-list (simpadd0-gout gout-list))
              (simpadd0-expr expr.list gin state))
@@ -739,7 +776,8 @@
               :events (append gout-list.events gout-type.events)
               :thm-name nil
               :thm-index gout-type.thm-index
-              :names-to-avoid gout-type.names-to-avoid)))
+              :names-to-avoid gout-type.names-to-avoid
+              :vars (set::union gout-list.vars gout-type.vars))))
        :extension
        (b* (((mv new-expr (simpadd0-gout gout-expr))
              (simpadd0-expr expr.expr gin state)))
@@ -748,7 +786,8 @@
               :events gout-expr.events
               :thm-name nil
               :thm-index gout-expr.thm-index
-              :names-to-avoid gout-expr.names-to-avoid)))
+              :names-to-avoid gout-expr.names-to-avoid
+              :vars gout-expr.vars)))
        :otherwise (prog2$ (impossible) (mv (irr-expr) (irr-simpadd0-gout)))))
     :measure (expr-count expr))
 
@@ -766,7 +805,8 @@
               (make-simpadd0-gout :events nil
                                   :thm-name nil
                                   :thm-index gin.thm-index
-                                  :names-to-avoid gin.names-to-avoid)))
+                                  :names-to-avoid gin.names-to-avoid
+                                  :vars nil)))
          ((mv new-expr (simpadd0-gout gout-expr))
           (simpadd0-expr (car exprs) gin state))
          (gin (change-simpadd0-gin
@@ -780,7 +820,8 @@
            :events (append gout-expr.events gout-exprs.events)
            :thm-name nil
            :thm-index gout-exprs.thm-index
-           :names-to-avoid gout-exprs.names-to-avoid)))
+           :names-to-avoid gout-exprs.names-to-avoid
+           :vars (set::union gout-expr.vars gout-exprs.vars))))
     :measure (expr-list-count exprs))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -797,9 +838,10 @@
        :some (simpadd0-expr expr?.val gin state)
        :none (mv nil
                  (make-simpadd0-gout :events nil
-                                    :thm-name nil
-                                    :thm-index gin.thm-index
-                                    :names-to-avoid gin.names-to-avoid))))
+                                     :thm-name nil
+                                     :thm-index gin.thm-index
+                                     :names-to-avoid gin.names-to-avoid
+                                     :vars nil))))
     :measure (expr-option-count expr?))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -817,7 +859,8 @@
           (make-simpadd0-gout :events gout-expr.events
                               :thm-name nil
                               :thm-index gout-expr.thm-index
-                              :names-to-avoid gout-expr.names-to-avoid)))
+                              :names-to-avoid gout-expr.names-to-avoid
+                              :vars gout-expr.vars)))
     :measure (const-expr-count cexpr))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -838,7 +881,8 @@
                  (make-simpadd0-gout :events nil
                                      :thm-name nil
                                      :thm-index gin.thm-index
-                                     :names-to-avoid gin.names-to-avoid))))
+                                     :names-to-avoid gin.names-to-avoid
+                                     :vars nil))))
     :measure (const-expr-option-count cexpr?))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -867,7 +911,8 @@
               :events (append gout-type.events gout-expr.events)
               :thm-name nil
               :thm-index gout-expr.thm-index
-              :names-to-avoid gout-expr.names-to-avoid)))
+              :names-to-avoid gout-expr.names-to-avoid
+              :vars (set::union gout-type.vars gout-expr.vars))))
        :default
        (b* (((mv new-expr (simpadd0-gout gout-expr))
              (simpadd0-expr genassoc.expr gin state)))
@@ -876,7 +921,8 @@
               :events gout-expr.events
               :thm-name nil
               :thm-index gout-expr.thm-index
-              :names-to-avoid gout-expr.names-to-avoid)))))
+              :names-to-avoid gout-expr.names-to-avoid
+              :vars gout-expr.vars)))))
     :measure (genassoc-count genassoc))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -895,7 +941,8 @@
               (make-simpadd0-gout :events nil
                                   :thm-name nil
                                   :thm-index gin.thm-index
-                                  :names-to-avoid gin.names-to-avoid)))
+                                  :names-to-avoid gin.names-to-avoid
+                                  :vars nil)))
          ((mv new-assoc (simpadd0-gout gout-assoc))
           (simpadd0-genassoc (car genassocs) gin state))
          (gin (change-simpadd0-gin
@@ -909,7 +956,8 @@
            :events (append gout-assoc.events gout-assocs.events)
            :thm-name nil
            :thm-index gout-assocs.thm-index
-           :names-to-avoid gout-assocs.names-to-avoid)))
+           :names-to-avoid gout-assocs.names-to-avoid
+           :vars (set::union gout-assoc.vars gout-assocs.vars))))
     :measure (genassoc-list-count genassocs))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -929,7 +977,8 @@
                   (make-simpadd0-gout :events nil
                                       :thm-name nil
                                       :thm-index gin.thm-index
-                                      :names-to-avoid gin.names-to-avoid))
+                                      :names-to-avoid gin.names-to-avoid
+                                      :vars nil))
        :dot
        (b* (((mv new-member (simpadd0-gout gout-member))
              (simpadd0-member-designor memdes.member gin state)))
@@ -939,7 +988,8 @@
               :events gout-member.events
               :thm-name nil
               :thm-index gout-member.thm-index
-              :names-to-avoid gout-member.names-to-avoid)))
+              :names-to-avoid gout-member.names-to-avoid
+              :vars gout-member.vars)))
        :sub
        (b* (((mv new-member (simpadd0-gout gout-member))
              (simpadd0-member-designor memdes.member gin state))
@@ -955,7 +1005,8 @@
               :events (append gout-member.events gout-index.events)
               :thm-name nil
               :thm-index gout-index.thm-index
-              :names-to-avoid gout-index.names-to-avoid)))))
+              :names-to-avoid gout-index.names-to-avoid
+              :vars (set::union gout-member.vars gout-index.vars))))))
     :measure (member-designor-count memdes))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -970,7 +1021,8 @@
          (gout0 (make-simpadd0-gout :events nil
                                     :thm-name nil
                                     :thm-index gin.thm-index
-                                    :names-to-avoid gin.names-to-avoid)))
+                                    :names-to-avoid gin.names-to-avoid
+                                    :vars nil)))
       (type-spec-case
        tyspec
        :void (mv (type-spec-fix tyspec) gout0)
@@ -991,7 +1043,8 @@
                       :events gout-type.events
                       :thm-name nil
                       :thm-index gout-type.thm-index
-                      :names-to-avoid gout-type.names-to-avoid)))
+                      :names-to-avoid gout-type.names-to-avoid
+                      :vars gout-type.vars)))
        :struct (b* (((mv new-spec (simpadd0-gout gout-spec))
                      (simpadd0-strunispec tyspec.spec gin state)))
                  (mv (type-spec-struct new-spec)
@@ -999,7 +1052,8 @@
                       :events gout-spec.events
                       :thm-name nil
                       :thm-index gout-spec.thm-index
-                      :names-to-avoid gout-spec.names-to-avoid)))
+                      :names-to-avoid gout-spec.names-to-avoid
+                      :vars gout-spec.vars)))
        :union (b* (((mv new-spec (simpadd0-gout gout-spec))
                     (simpadd0-strunispec tyspec.spec gin state)))
                 (mv (type-spec-union new-spec)
@@ -1007,7 +1061,8 @@
                      :events gout-spec.events
                      :thm-name nil
                      :thm-index gout-spec.thm-index
-                     :names-to-avoid gout-spec.names-to-avoid)))
+                     :names-to-avoid gout-spec.names-to-avoid
+                     :vars gout-spec.vars)))
        :enum (b* (((mv new-spec (simpadd0-gout gout-spec))
                    (simpadd0-enumspec tyspec.spec gin state)))
                (mv (type-spec-enum new-spec)
@@ -1015,7 +1070,8 @@
                     :events gout-spec.events
                     :thm-name nil
                     :thm-index gout-spec.thm-index
-                    :names-to-avoid gout-spec.names-to-avoid)))
+                    :names-to-avoid gout-spec.names-to-avoid
+                    :vars gout-spec.vars)))
        :typedef (mv (type-spec-fix tyspec) gout0)
        :int128 (mv (type-spec-fix tyspec) gout0)
        :float32 (mv (type-spec-fix tyspec) gout0)
@@ -1034,7 +1090,8 @@
                            :events gout-expr.events
                            :thm-name nil
                            :thm-index gout-expr.thm-index
-                           :names-to-avoid gout-expr.names-to-avoid)))
+                           :names-to-avoid gout-expr.names-to-avoid
+                           :vars gout-expr.vars)))
        :typeof-type (b* (((mv new-type (simpadd0-gout gout-type))
                           (simpadd0-tyname tyspec.type gin state)))
                       (mv (make-type-spec-typeof-type :type new-type
@@ -1043,7 +1100,8 @@
                            :events gout-type.events
                            :thm-name nil
                            :thm-index gout-type.thm-index
-                           :names-to-avoid gout-type.names-to-avoid)))
+                           :names-to-avoid gout-type.names-to-avoid
+                           :vars gout-type.vars)))
        :typeof-ambig (prog2$ (impossible)
                              (mv (irr-type-spec) (irr-simpadd0-gout)))
        :auto-type (mv (type-spec-fix tyspec) gout0)))
@@ -1069,13 +1127,15 @@
                         :events gout-spec.events
                         :thm-name nil
                         :thm-index gout-spec.thm-index
-                        :names-to-avoid gout-spec.names-to-avoid)))
+                        :names-to-avoid gout-spec.names-to-avoid
+                        :vars gout-spec.vars)))
        :typequal (mv (spec/qual-fix specqual)
                      (make-simpadd0-gout
                       :events nil
                       :thm-name nil
                       :thm-index gin.thm-index
-                      :names-to-avoid gin.names-to-avoid))
+                      :names-to-avoid gin.names-to-avoid
+                      :vars nil))
        :align (b* (((mv new-spec (simpadd0-gout gout-spec))
                     (simpadd0-align-spec specqual.spec gin state)))
                 (mv (spec/qual-align new-spec)
@@ -1083,13 +1143,15 @@
                      :events gout-spec.events
                      :thm-name nil
                      :thm-index gout-spec.thm-index
-                     :names-to-avoid gout-spec.names-to-avoid)))
+                     :names-to-avoid gout-spec.names-to-avoid
+                     :vars gout-spec.vars)))
        :attrib (mv (spec/qual-fix specqual)
                    (make-simpadd0-gout
                     :events nil
                     :thm-name nil
                     :thm-index gin.thm-index
-                    :names-to-avoid gin.names-to-avoid))))
+                    :names-to-avoid gin.names-to-avoid
+                    :vars nil))))
     :measure (spec/qual-count specqual))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1109,7 +1171,8 @@
                :events nil
                :thm-name nil
                :thm-index gin.thm-index
-               :names-to-avoid gin.names-to-avoid)))
+               :names-to-avoid gin.names-to-avoid
+               :vars nil)))
          ((mv new-specqual (simpadd0-gout gout-specqual))
           (simpadd0-spec/qual (car specquals) gin state))
          (gin (change-simpadd0-gin
@@ -1123,7 +1186,8 @@
            :events (append gout-specqual.events gout-specquals.events)
            :thm-name nil
            :thm-index gout-specquals.thm-index
-           :names-to-avoid gout-specquals.names-to-avoid)))
+           :names-to-avoid gout-specquals.names-to-avoid
+           :vars (set::union gout-specqual.vars gout-specquals.vars))))
     :measure (spec/qual-list-count specquals))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1146,7 +1210,8 @@
                             :events gout-type.events
                             :thm-name nil
                             :thm-index gout-type.thm-index
-                            :names-to-avoid gout-type.names-to-avoid)))
+                            :names-to-avoid gout-type.names-to-avoid
+                            :vars gout-type.vars)))
        :alignas-expr (b* (((mv new-expr (simpadd0-gout gout-expr))
                            (simpadd0-const-expr alignspec.expr gin state)))
                        (mv (align-spec-alignas-expr new-expr)
@@ -1154,7 +1219,8 @@
                             :events gout-expr.events
                             :thm-name nil
                             :thm-index gout-expr.thm-index
-                            :names-to-avoid gout-expr.names-to-avoid)))
+                            :names-to-avoid gout-expr.names-to-avoid
+                            :vars gout-expr.vars)))
        :alignas-ambig (prog2$ (impossible)
                               (mv (irr-align-spec) (irr-simpadd0-gout)))))
     :measure (align-spec-count alignspec))
@@ -1175,7 +1241,8 @@
                       :events nil
                       :thm-name nil
                       :thm-index gin.thm-index
-                      :names-to-avoid gin.names-to-avoid))
+                      :names-to-avoid gin.names-to-avoid
+                      :vars nil))
        :typespec (b* (((mv new-spec (simpadd0-gout gout-spec))
                        (simpadd0-type-spec declspec.spec gin state)))
                    (mv (decl-spec-typespec new-spec)
@@ -1183,19 +1250,22 @@
                         :events gout-spec.events
                         :thm-name nil
                         :thm-index gout-spec.thm-index
-                        :names-to-avoid gout-spec.names-to-avoid)))
+                        :names-to-avoid gout-spec.names-to-avoid
+                        :vars gout-spec.vars)))
        :typequal (mv (decl-spec-fix declspec)
                      (make-simpadd0-gout
                       :events nil
                       :thm-name nil
                       :thm-index gin.thm-index
-                      :names-to-avoid gin.names-to-avoid))
+                      :names-to-avoid gin.names-to-avoid
+                      :vars nil))
        :function (mv (decl-spec-fix declspec)
                      (make-simpadd0-gout
                       :events nil
                       :thm-name nil
                       :thm-index gin.thm-index
-                      :names-to-avoid gin.names-to-avoid))
+                      :names-to-avoid gin.names-to-avoid
+                      :vars nil))
        :align (b* (((mv new-spec (simpadd0-gout gout-spec))
                     (simpadd0-align-spec declspec.spec gin state)))
                 (mv (decl-spec-align new-spec)
@@ -1203,25 +1273,29 @@
                      :events gout-spec.events
                      :thm-name nil
                      :thm-index gout-spec.thm-index
-                     :names-to-avoid gout-spec.names-to-avoid)))
+                     :names-to-avoid gout-spec.names-to-avoid
+                     :vars gout-spec.vars)))
        :attrib (mv (decl-spec-fix declspec)
                    (make-simpadd0-gout
                     :events nil
                     :thm-name nil
                     :thm-index gin.thm-index
-                    :names-to-avoid gin.names-to-avoid))
+                    :names-to-avoid gin.names-to-avoid
+                    :vars nil))
        :stdcall (mv (decl-spec-fix declspec)
                     (make-simpadd0-gout
                      :events nil
                      :thm-name nil
                      :thm-index gin.thm-index
-                     :names-to-avoid gin.names-to-avoid))
+                     :names-to-avoid gin.names-to-avoid
+                     :vars nil))
        :declspec (mv (decl-spec-fix declspec)
                      (make-simpadd0-gout
                       :events nil
                       :thm-name nil
                       :thm-index gin.thm-index
-                      :names-to-avoid gin.names-to-avoid))))
+                      :names-to-avoid gin.names-to-avoid
+                      :vars nil))))
     :measure (decl-spec-count declspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1241,7 +1315,8 @@
                :events nil
                :thm-name nil
                :thm-index gin.thm-index
-               :names-to-avoid gin.names-to-avoid)))
+               :names-to-avoid gin.names-to-avoid
+               :vars nil)))
          ((mv new-declspec (simpadd0-gout gout-declspec))
           (simpadd0-decl-spec (car declspecs) gin state))
          (gin (change-simpadd0-gin
@@ -1255,7 +1330,8 @@
            :events (append gout-declspec.events gout-declspecs.events)
            :thm-name nil
            :thm-index gout-declspecs.thm-index
-           :names-to-avoid gout-declspecs.names-to-avoid)))
+           :names-to-avoid gout-declspecs.names-to-avoid
+           :vars (set::union gout-declspec.vars gout-declspecs.vars))))
     :measure (decl-spec-list-count declspecs))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1276,7 +1352,8 @@
                       :events gout-expr.events
                       :thm-name nil
                       :thm-index gout-expr.thm-index
-                      :names-to-avoid gout-expr.names-to-avoid)))
+                      :names-to-avoid gout-expr.names-to-avoid
+                      :vars gout-expr.vars)))
        :list (b* (((mv new-elems (simpadd0-gout gout-elems))
                    (simpadd0-desiniter-list initer.elems gin state)))
                (mv (make-initer-list :elems new-elems
@@ -1285,7 +1362,8 @@
                     :events gout-elems.events
                     :thm-name nil
                     :thm-index gout-elems.thm-index
-                    :names-to-avoid gout-elems.names-to-avoid)))))
+                    :names-to-avoid gout-elems.names-to-avoid
+                    :vars gout-elems.vars)))))
     :measure (initer-count initer))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1307,7 +1385,8 @@
                   :events nil
                   :thm-name nil
                   :thm-index gin.thm-index
-                  :names-to-avoid gin.names-to-avoid))))
+                  :names-to-avoid gin.names-to-avoid
+                  :vars nil))))
     :measure (initer-option-count initer?))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1331,7 +1410,8 @@
            :events (append gout-designors.events gout-initer.events)
            :thm-name nil
            :thm-index gout-initer.thm-index
-           :names-to-avoid gout-initer.names-to-avoid)))
+           :names-to-avoid gout-initer.names-to-avoid
+           :vars (set::union gout-designors.vars gout-initer.vars))))
     :measure (desiniter-count desiniter))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1351,7 +1431,8 @@
                :events nil
                :thm-name nil
                :thm-index gin.thm-index
-               :names-to-avoid gin.names-to-avoid)))
+               :names-to-avoid gin.names-to-avoid
+               :vars nil)))
          ((mv new-desiniter (simpadd0-gout gout-desiniter))
           (simpadd0-desiniter (car desiniters) gin state))
          (gin (change-simpadd0-gin
@@ -1365,7 +1446,8 @@
            :events (append gout-desiniter.events gout-desiniters.events)
            :thm-name nil
            :thm-index gout-desiniters.thm-index
-           :names-to-avoid gout-desiniters.names-to-avoid)))
+           :names-to-avoid gout-desiniters.names-to-avoid
+           :vars (set::union gout-desiniter.vars gout-desiniters.vars))))
     :measure (desiniter-list-count desiniters))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1386,13 +1468,15 @@
                    :events gout-index.events
                    :thm-name nil
                    :thm-index gout-index.thm-index
-                   :names-to-avoid gout-index.names-to-avoid)))
+                   :names-to-avoid gout-index.names-to-avoid
+                   :vars gout-index.vars)))
        :dot (mv (designor-fix designor)
                 (make-simpadd0-gout
                  :events nil
                  :thm-name nil
                  :thm-index gin.thm-index
-                 :names-to-avoid gin.names-to-avoid))))
+                 :names-to-avoid gin.names-to-avoid
+                 :vars nil))))
     :measure (designor-count designor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1412,7 +1496,8 @@
                :events nil
                :thm-name nil
                :thm-index gin.thm-index
-               :names-to-avoid gin.names-to-avoid)))
+               :names-to-avoid gin.names-to-avoid
+               :vars nil)))
          ((mv new-designor (simpadd0-gout gout-designor))
           (simpadd0-designor (car designors) gin state))
          (gin (change-simpadd0-gin
@@ -1426,7 +1511,8 @@
            :events (append gout-designor.events gout-designors.events)
            :thm-name nil
            :thm-index gout-designors.thm-index
-           :names-to-avoid gout-designors.names-to-avoid)))
+           :names-to-avoid gout-designors.names-to-avoid
+           :vars (set::union gout-designor.vars gout-designors.vars))))
     :measure (designor-list-count designors))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1447,7 +1533,8 @@
            :events gout-direct.events
            :thm-name nil
            :thm-index gout-direct.thm-index
-           :names-to-avoid gout-direct.names-to-avoid)))
+           :names-to-avoid gout-direct.names-to-avoid
+           :vars gout-direct.vars)))
     :measure (declor-count declor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1469,7 +1556,8 @@
                   :events nil
                   :thm-name nil
                   :thm-index gin.thm-index
-                  :names-to-avoid gin.names-to-avoid))))
+                  :names-to-avoid gin.names-to-avoid
+                  :vars nil))))
     :measure (declor-option-count declor?))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1488,7 +1576,8 @@
                    :events nil
                    :thm-name nil
                    :thm-index gin.thm-index
-                   :names-to-avoid gin.names-to-avoid))
+                   :names-to-avoid gin.names-to-avoid
+                   :vars nil))
        :paren (b* (((mv new-declor (simpadd0-gout gout-declor))
                     (simpadd0-declor dirdeclor.unwrap gin state)))
                 (mv (dirdeclor-paren new-declor)
@@ -1496,7 +1585,8 @@
                      :events gout-declor.events
                      :thm-name nil
                      :thm-index gout-declor.thm-index
-                     :names-to-avoid gout-declor.names-to-avoid)))
+                     :names-to-avoid gout-declor.names-to-avoid
+                     :vars gout-declor.vars)))
        :array (b* (((mv new-decl (simpadd0-gout gout-decl))
                     (simpadd0-dirdeclor dirdeclor.decl gin state))
                    (gin (change-simpadd0-gin
@@ -1512,7 +1602,8 @@
                      :events (append gout-decl.events gout-expr?.events)
                      :thm-name nil
                      :thm-index gout-expr?.thm-index
-                     :names-to-avoid gout-expr?.names-to-avoid)))
+                     :names-to-avoid gout-expr?.names-to-avoid
+                     :vars (set::union gout-decl.vars gout-expr?.vars))))
        :array-static1 (b* (((mv new-decl (simpadd0-gout gout-decl))
                             (simpadd0-dirdeclor dirdeclor.decl gin state))
                            (gin (change-simpadd0-gin
@@ -1529,7 +1620,8 @@
                              :events (append gout-decl.events gout-expr.events)
                              :thm-name nil
                              :thm-index gout-expr.thm-index
-                             :names-to-avoid gout-expr.names-to-avoid)))
+                             :names-to-avoid gout-expr.names-to-avoid
+                             :vars (set::union gout-decl.vars gout-expr.vars))))
        :array-static2 (b* (((mv new-decl (simpadd0-gout gout-decl))
                             (simpadd0-dirdeclor dirdeclor.decl gin state))
                            (gin (change-simpadd0-gin
@@ -1546,7 +1638,8 @@
                              :events (append gout-decl.events gout-expr.events)
                              :thm-name nil
                              :thm-index gout-expr.thm-index
-                             :names-to-avoid gout-expr.names-to-avoid)))
+                             :names-to-avoid gout-expr.names-to-avoid
+                             :vars (set::union gout-decl.vars gout-expr.vars))))
        :array-star (b* (((mv new-decl (simpadd0-gout gout-decl))
                          (simpadd0-dirdeclor dirdeclor.decl gin state)))
                      (mv (make-dirdeclor-array-star :decl new-decl
@@ -1555,7 +1648,8 @@
                           :events gout-decl.events
                           :thm-name nil
                           :thm-index gout-decl.thm-index
-                          :names-to-avoid gout-decl.names-to-avoid)))
+                          :names-to-avoid gout-decl.names-to-avoid
+                          :vars gout-decl.vars)))
        :function-params (b* (((mv new-decl (simpadd0-gout gout-decl))
                               (simpadd0-dirdeclor dirdeclor.decl gin state))
                              (gin (change-simpadd0-gin
@@ -1575,7 +1669,9 @@
                                                gout-params.events)
                                :thm-name nil
                                :thm-index gout-params.thm-index
-                               :names-to-avoid gout-params.names-to-avoid)))
+                               :names-to-avoid gout-params.names-to-avoid
+                               :vars (set::union gout-decl.vars
+                                                 gout-params.vars))))
        :function-names (b* (((mv new-decl (simpadd0-gout gout-decl))
                              (simpadd0-dirdeclor dirdeclor.decl gin state)))
                          (mv (make-dirdeclor-function-names
@@ -1585,7 +1681,8 @@
                               :events gout-decl.events
                               :thm-name nil
                               :thm-index gout-decl.thm-index
-                              :names-to-avoid gout-decl.names-to-avoid)))))
+                              :names-to-avoid gout-decl.names-to-avoid
+                              :vars gout-decl.vars)))))
     :measure (dirdeclor-count dirdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1606,7 +1703,8 @@
            :events gout-decl?.events
            :thm-name nil
            :thm-index gout-decl?.thm-index
-           :names-to-avoid gout-decl?.names-to-avoid)))
+           :names-to-avoid gout-decl?.names-to-avoid
+           :vars gout-decl?.vars)))
     :measure (absdeclor-count absdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1628,7 +1726,8 @@
                   :events nil
                   :thm-name nil
                   :thm-index gin.thm-index
-                  :names-to-avoid gin.names-to-avoid))))
+                  :names-to-avoid gin.names-to-avoid
+                  :vars nil))))
     :measure (absdeclor-option-count absdeclor?))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1655,7 +1754,8 @@
                      :events gout-inner.events
                      :thm-name nil
                      :thm-index gout-inner.thm-index
-                     :names-to-avoid gout-inner.names-to-avoid)))
+                     :names-to-avoid gout-inner.names-to-avoid
+                     :vars gout-inner.vars)))
        :array (b* (((mv new-decl? (simpadd0-gout gout-decl?))
                     (simpadd0-dirabsdeclor-option dirabsdeclor.decl? gin state))
                    (gin (change-simpadd0-gin
@@ -1671,7 +1771,8 @@
                      :events (append gout-decl?.events gout-expr?.events)
                      :thm-name nil
                      :thm-index gout-expr?.thm-index
-                     :names-to-avoid gout-expr?.names-to-avoid)))
+                     :names-to-avoid gout-expr?.names-to-avoid
+                     :vars (set::union gout-decl?.vars gout-expr?.vars))))
        :array-static1 (b* (((mv new-decl? (simpadd0-gout gout-decl?))
                             (simpadd0-dirabsdeclor-option dirabsdeclor.decl?
                                                           gin
@@ -1691,7 +1792,9 @@
                                              gout-expr.events)
                              :thm-name nil
                              :thm-index gout-expr.thm-index
-                             :names-to-avoid gout-expr.names-to-avoid)))
+                             :names-to-avoid gout-expr.names-to-avoid
+                             :vars (set::union gout-decl?.vars
+                                               gout-expr.vars))))
        :array-static2 (b* (((mv new-decl? (simpadd0-gout gout-decl?))
                             (simpadd0-dirabsdeclor-option dirabsdeclor.decl?
                                                           gin state))
@@ -1710,7 +1813,9 @@
                                              gout-expr.events)
                              :thm-name nil
                              :thm-index gout-expr.thm-index
-                             :names-to-avoid gout-expr.names-to-avoid)))
+                             :names-to-avoid gout-expr.names-to-avoid
+                             :vars (set::union gout-decl?.vars
+                                               gout-expr.vars))))
        :array-star (b* (((mv new-decl? (simpadd0-gout gout-decl?))
                          (simpadd0-dirabsdeclor-option dirabsdeclor.decl?
                                                        gin
@@ -1720,7 +1825,8 @@
                           :events gout-decl?.events
                           :thm-name nil
                           :thm-index gout-decl?.thm-index
-                          :names-to-avoid gout-decl?.names-to-avoid)))
+                          :names-to-avoid gout-decl?.names-to-avoid
+                          :vars gout-decl?.vars)))
        :function (b* (((mv new-decl? (simpadd0-gout gout-decl?))
                        (simpadd0-dirabsdeclor-option dirabsdeclor.decl?
                                                      gin
@@ -1739,7 +1845,9 @@
                         :events (append gout-decl?.events gout-params.events)
                         :thm-name nil
                         :thm-index gout-params.thm-index
-                        :names-to-avoid gout-params.names-to-avoid)))))
+                        :names-to-avoid gout-params.names-to-avoid
+                        :vars (set::union gout-decl?.vars
+                                          gout-params.vars))))))
     :measure (dirabsdeclor-count dirabsdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1761,7 +1869,8 @@
                   :events nil
                   :thm-name nil
                   :thm-index gin.thm-index
-                  :names-to-avoid gin.names-to-avoid))))
+                  :names-to-avoid gin.names-to-avoid
+                  :vars nil))))
     :measure (dirabsdeclor-option-count dirabsdeclor?))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1788,7 +1897,8 @@
            :events (append gout-spec.events gout-decl.events)
            :thm-name nil
            :thm-index gout-decl.thm-index
-           :names-to-avoid gout-decl.names-to-avoid)))
+           :names-to-avoid gout-decl.names-to-avoid
+           :vars (set::union gout-spec.vars gout-decl.vars))))
     :measure (paramdecl-count paramdecl))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1808,7 +1918,8 @@
                :events nil
                :thm-name nil
                :thm-index gin.thm-index
-               :names-to-avoid gin.names-to-avoid)))
+               :names-to-avoid gin.names-to-avoid
+               :vars nil)))
          ((mv new-paramdecl (simpadd0-gout gout-paramdecl))
           (simpadd0-paramdecl (car paramdecls) gin state))
          (gin (change-simpadd0-gin
@@ -1822,7 +1933,8 @@
            :events (append gout-paramdecl.events gout-paramdecls.events)
            :thm-name nil
            :thm-index gout-paramdecls.thm-index
-           :names-to-avoid gout-paramdecls.names-to-avoid)))
+           :names-to-avoid gout-paramdecls.names-to-avoid
+           :vars (set::union gout-paramdecl.vars gout-paramdecls.vars))))
     :measure (paramdecl-list-count paramdecls))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1845,7 +1957,8 @@
                       :events gout-declor.events
                       :thm-name nil
                       :thm-index gout-declor.thm-index
-                      :names-to-avoid gout-declor.names-to-avoid)))
+                      :names-to-avoid gout-declor.names-to-avoid
+                      :vars gout-declor.vars)))
        :absdeclor (b* (((mv new-absdeclor (simpadd0-gout gout-absdeclor))
                         (simpadd0-absdeclor paramdeclor.unwrap gin state)))
                     (mv (paramdeclor-absdeclor new-absdeclor)
@@ -1853,13 +1966,15 @@
                          :events gout-absdeclor.events
                          :thm-name nil
                          :thm-index gout-absdeclor.thm-index
-                         :names-to-avoid gout-absdeclor.names-to-avoid)))
+                         :names-to-avoid gout-absdeclor.names-to-avoid
+                         :vars gout-absdeclor.vars)))
        :none (mv (paramdeclor-none)
                  (make-simpadd0-gout
                   :events nil
                   :thm-name nil
                   :thm-index gin.thm-index
-                  :names-to-avoid gin.names-to-avoid))
+                  :names-to-avoid gin.names-to-avoid
+                  :vars nil))
        :ambig (prog2$ (impossible) (mv (irr-paramdeclor) (irr-simpadd0-gout)))))
     :measure (paramdeclor-count paramdeclor))
 
@@ -1887,7 +2002,8 @@
            :events (append gout-specqual.events gout-decl?.events)
            :thm-name nil
            :thm-index gout-decl?.thm-index
-           :names-to-avoid gout-decl?.names-to-avoid)))
+           :names-to-avoid gout-decl?.names-to-avoid
+           :vars (set::union gout-specqual.vars gout-decl?.vars))))
     :measure (tyname-count tyname))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1910,7 +2026,8 @@
            :events gout-members.events
            :thm-name nil
            :thm-index gout-members.thm-index
-           :names-to-avoid gout-members.names-to-avoid)))
+           :names-to-avoid gout-members.names-to-avoid
+           :vars gout-members.vars)))
     :measure (strunispec-count strunispec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1944,7 +2061,8 @@
                                       gout-declor.events)
                       :thm-name nil
                       :thm-index gout-declor.thm-index
-                      :names-to-avoid gout-declor.names-to-avoid)))
+                      :names-to-avoid gout-declor.names-to-avoid
+                      :vars (set::union gout-specqual.vars gout-declor.vars))))
        :statassert (b* (((mv new-structdecl (simpadd0-gout gout-structdecl))
                          (simpadd0-statassert structdecl.unwrap gin state)))
                      (mv (structdecl-statassert new-structdecl)
@@ -1952,13 +2070,15 @@
                           :events gout-structdecl.events
                           :thm-name nil
                           :thm-index gout-structdecl.thm-index
-                          :names-to-avoid gout-structdecl.names-to-avoid)))
+                          :names-to-avoid gout-structdecl.names-to-avoid
+                          :vars gout-structdecl.vars)))
        :empty (mv (structdecl-empty)
                   (make-simpadd0-gout
                    :events nil
                    :thm-name nil
                    :thm-index gin.thm-index
-                   :names-to-avoid gin.names-to-avoid))))
+                   :names-to-avoid gin.names-to-avoid
+                   :vars nil))))
     :measure (structdecl-count structdecl))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1978,7 +2098,8 @@
                :events nil
                :thm-name nil
                :thm-index gin.thm-index
-               :names-to-avoid gin.names-to-avoid)))
+               :names-to-avoid gin.names-to-avoid
+               :vars nil)))
          ((mv new-structdecl (simpadd0-gout gout-structdecl))
           (simpadd0-structdecl (car structdecls) gin state))
          (gin (change-simpadd0-gin
@@ -1992,7 +2113,8 @@
            :events (append gout-structdecl.events gout-structdecls.events)
            :thm-name nil
            :thm-index gout-structdecls.thm-index
-           :names-to-avoid gout-structdecls.names-to-avoid)))
+           :names-to-avoid gout-structdecls.names-to-avoid
+           :vars (set::union gout-structdecl.vars gout-structdecls.vars))))
     :measure (structdecl-list-count structdecls))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2021,7 +2143,8 @@
            :events (append gout-declor?.events gout-expr?.events)
            :thm-name nil
            :thm-index gout-expr?.thm-index
-           :names-to-avoid gout-expr?.names-to-avoid)))
+           :names-to-avoid gout-expr?.names-to-avoid
+           :vars (set::union gout-declor?.vars gout-expr?.vars))))
     :measure (structdeclor-count structdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2041,7 +2164,8 @@
                :events nil
                :thm-name nil
                :thm-index gin.thm-index
-               :names-to-avoid gin.names-to-avoid)))
+               :names-to-avoid gin.names-to-avoid
+               :vars nil)))
          ((mv new-structdeclor (simpadd0-gout gout-structdeclor))
           (simpadd0-structdeclor (car structdeclors) gin state))
          (gin (change-simpadd0-gin
@@ -2056,7 +2180,8 @@
                            gout-structdeclors.events)
            :thm-name nil
            :thm-index gout-structdeclors.thm-index
-           :names-to-avoid gout-structdeclors.names-to-avoid)))
+           :names-to-avoid gout-structdeclors.names-to-avoid
+           :vars (set::union gout-structdeclor.vars gout-structdeclors.vars))))
     :measure (structdeclor-list-count structdeclors))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2078,7 +2203,8 @@
            :events gout-list.events
            :thm-name nil
            :thm-index gout-list.thm-index
-           :names-to-avoid gout-list.names-to-avoid)))
+           :names-to-avoid gout-list.names-to-avoid
+           :vars gout-list.vars)))
     :measure (enumspec-count enumspec))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2099,7 +2225,8 @@
            :events gout-value.events
            :thm-name nil
            :thm-index gout-value.thm-index
-           :names-to-avoid gout-value.names-to-avoid)))
+           :names-to-avoid gout-value.names-to-avoid
+           :vars gout-value.vars)))
     :measure (enumer-count enumer))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2119,7 +2246,8 @@
                :events nil
                :thm-name nil
                :thm-index gin.thm-index
-               :names-to-avoid gin.names-to-avoid)))
+               :names-to-avoid gin.names-to-avoid
+               :vars nil)))
          ((mv new-enumer (simpadd0-gout gout-enumer))
           (simpadd0-enumer (car enumers) gin state))
          (gin (change-simpadd0-gin
@@ -2133,7 +2261,8 @@
            :events (append gout-enumer.events gout-enumers.events)
            :thm-name nil
            :thm-index gout-enumers.thm-index
-           :names-to-avoid gout-enumers.names-to-avoid)))
+           :names-to-avoid gout-enumers.names-to-avoid
+           :vars (set::union gout-enumer.vars gout-enumers.vars))))
     :measure (enumer-list-count enumers))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2156,7 +2285,8 @@
            :events gout-test.events
            :thm-name nil
            :thm-index gout-test.thm-index
-           :names-to-avoid gout-test.names-to-avoid)))
+           :names-to-avoid gout-test.names-to-avoid
+           :vars gout-test.vars)))
     :measure (statassert-count statassert))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2187,7 +2317,8 @@
            :events (append gout-declor.events gout-init?.events)
            :thm-name nil
            :thm-index gout-init?.thm-index
-           :names-to-avoid gout-init?.names-to-avoid)))
+           :names-to-avoid gout-init?.names-to-avoid
+           :vars (set::union gout-declor.vars gout-init?.vars))))
     :measure (initdeclor-count initdeclor))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2207,7 +2338,8 @@
                :events nil
                :thm-name nil
                :thm-index gin.thm-index
-               :names-to-avoid gin.names-to-avoid)))
+               :names-to-avoid gin.names-to-avoid
+               :vars nil)))
          ((mv new-initdeclor (simpadd0-gout gout-initdeclor))
           (simpadd0-initdeclor (car initdeclors) gin state))
          (gin (change-simpadd0-gin
@@ -2222,7 +2354,8 @@
                            gout-initdeclors.events)
            :thm-name nil
            :thm-index gout-initdeclors.thm-index
-           :names-to-avoid gout-initdeclors.names-to-avoid)))
+           :names-to-avoid gout-initdeclors.names-to-avoid
+           :vars (set::union gout-initdeclor.vars gout-initdeclors.vars))))
     :measure (initdeclor-list-count initdeclors))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2252,7 +2385,8 @@
                                     gout-init.events)
                     :thm-name nil
                     :thm-index gout-init.thm-index
-                    :names-to-avoid gout-init.names-to-avoid)))
+                    :names-to-avoid gout-init.names-to-avoid
+                    :vars (set::union gout-specs.vars gout-init.vars))))
        :statassert (b* (((mv new-decl (simpadd0-gout gout-decl))
                          (simpadd0-statassert decl.unwrap gin state)))
                      (mv (decl-statassert new-decl)
@@ -2260,7 +2394,8 @@
                           :events gout-decl.events
                           :thm-name nil
                           :thm-index gout-decl.thm-index
-                          :names-to-avoid gout-decl.names-to-avoid)))))
+                          :names-to-avoid gout-decl.names-to-avoid
+                          :vars gout-decl.vars)))))
     :measure (decl-count decl))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2278,7 +2413,8 @@
                :events nil
                :thm-name nil
                :thm-index gin.thm-index
-               :names-to-avoid gin.names-to-avoid)))
+               :names-to-avoid gin.names-to-avoid
+               :vars nil)))
          ((mv new-decl (simpadd0-gout gout-decl))
           (simpadd0-decl (car decls) gin state))
          (gin (change-simpadd0-gin
@@ -2292,7 +2428,8 @@
            :events (append gout-decl.events gout-decls.events)
            :thm-name nil
            :thm-index gout-decls.thm-index
-           :names-to-avoid gout-decls.names-to-avoid)))
+           :names-to-avoid gout-decls.names-to-avoid
+           :vars (set::union gout-decl.vars gout-decls.vars))))
     :measure (decl-list-count decls))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2311,7 +2448,8 @@
                   :events nil
                   :thm-name nil
                   :thm-index gin.thm-index
-                  :names-to-avoid gin.names-to-avoid))
+                  :names-to-avoid gin.names-to-avoid
+                  :vars nil))
        :casexpr (b* (((mv new-expr (simpadd0-gout gout-expr))
                       (simpadd0-const-expr label.expr gin state))
                      (gin (change-simpadd0-gin
@@ -2326,13 +2464,15 @@
                        :events (append gout-expr.events gout-range?.events)
                        :thm-name nil
                        :thm-index gout-range?.thm-index
-                       :names-to-avoid gout-range?.names-to-avoid)))
+                       :names-to-avoid gout-range?.names-to-avoid
+                       :vars (set::union gout-expr.vars gout-range?.vars))))
        :default (mv (label-fix label)
                     (make-simpadd0-gout
                      :events nil
                      :thm-name nil
                      :thm-index gin.thm-index
-                     :names-to-avoid gin.names-to-avoid))))
+                     :names-to-avoid gin.names-to-avoid
+                     :vars nil))))
     :measure (label-count label))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2361,7 +2501,8 @@
                                        gout-stmt.events)
                        :thm-name nil
                        :thm-index gout-stmt.thm-index
-                       :names-to-avoid gout-stmt.names-to-avoid)))
+                       :names-to-avoid gout-stmt.names-to-avoid
+                       :vars (set::union gout-label.vars gout-stmt.vars))))
        :compound (b* (((mv new-items (simpadd0-gout gout-items))
                        (simpadd0-block-item-list stmt.items gin state)))
                    (mv (stmt-compound new-items)
@@ -2369,7 +2510,8 @@
                         :events gout-items.events
                         :thm-name nil
                         :thm-index gout-items.thm-index
-                        :names-to-avoid gout-items.names-to-avoid)))
+                        :names-to-avoid gout-items.names-to-avoid
+                        :vars gout-items.vars)))
        :expr (b* (((mv new-expr? (simpadd0-gout gout-expr?))
                    (simpadd0-expr-option stmt.expr? gin state)))
                (mv (stmt-expr new-expr?)
@@ -2377,7 +2519,8 @@
                     :events gout-expr?.events
                     :thm-name nil
                     :thm-index gout-expr?.thm-index
-                    :names-to-avoid gout-expr?.names-to-avoid)))
+                    :names-to-avoid gout-expr?.names-to-avoid
+                    :vars gout-expr?.vars)))
        :if (b* (((mv new-test (simpadd0-gout gout-test))
                  (simpadd0-expr stmt.test gin state))
                 (gin (change-simpadd0-gin
@@ -2392,7 +2535,8 @@
                   :events (append gout-test.events gout-then.events)
                   :thm-name nil
                   :thm-index gout-then.thm-index
-                  :names-to-avoid gout-then.names-to-avoid)))
+                  :names-to-avoid gout-then.names-to-avoid
+                  :vars (set::union gout-test.vars gout-then.vars))))
        :ifelse (b* (((mv new-test (simpadd0-gout gout-test))
                      (simpadd0-expr stmt.test gin state))
                     (gin (change-simpadd0-gin
@@ -2416,7 +2560,10 @@
                                       gout-else.events)
                       :thm-name nil
                       :thm-index gout-else.thm-index
-                      :names-to-avoid gout-else.names-to-avoid)))
+                      :names-to-avoid gout-else.names-to-avoid
+                      :vars (set::union gout-test.vars
+                                        (set::union gout-then.vars
+                                                    gout-else.vars)))))
        :switch (b* (((mv new-target (simpadd0-gout gout-target))
                      (simpadd0-expr stmt.target gin state))
                     (gin (change-simpadd0-gin
@@ -2431,7 +2578,8 @@
                       :events (append gout-target.events gout-body.events)
                       :thm-name nil
                       :thm-index gout-body.thm-index
-                      :names-to-avoid gout-body.names-to-avoid)))
+                      :names-to-avoid gout-body.names-to-avoid
+                      :vars (set::union gout-target.vars gout-body.vars))))
        :while (b* (((mv new-test (simpadd0-gout gout-test))
                     (simpadd0-expr stmt.test gin state))
                    (gin (change-simpadd0-gin
@@ -2446,7 +2594,8 @@
                      :events (append gout-test.events gout-body.events)
                      :thm-name nil
                      :thm-index gout-body.thm-index
-                     :names-to-avoid gout-body.names-to-avoid)))
+                     :names-to-avoid gout-body.names-to-avoid
+                     :vars (set::union gout-test.vars gout-body.vars))))
        :dowhile (b* (((mv new-body (simpadd0-gout gout-body))
                       (simpadd0-stmt stmt.body gin state))
                      (gin (change-simpadd0-gin
@@ -2461,7 +2610,8 @@
                        :events (append gout-body.events gout-test.events)
                        :thm-name nil
                        :thm-index gout-test.thm-index
-                       :names-to-avoid gout-test.names-to-avoid)))
+                       :names-to-avoid gout-test.names-to-avoid
+                       :vars (set::union gout-body.vars gout-test.vars))))
        :for-expr (b* (((mv new-init (simpadd0-gout gout-init))
                        (simpadd0-expr-option stmt.init gin state))
                       (gin (change-simpadd0-gin
@@ -2493,7 +2643,12 @@
                                         gout-body.events)
                         :thm-name nil
                         :thm-index gout-body.thm-index
-                        :names-to-avoid gout-body.names-to-avoid)))
+                        :names-to-avoid gout-body.names-to-avoid
+                        :vars (set::union gout-init.vars
+                                          (set::union gout-test.vars
+                                                      (set::union
+                                                       gout-next.vars
+                                                       gout-body.vars))))))
        :for-decl (b* (((mv new-init (simpadd0-gout gout-init))
                        (simpadd0-decl stmt.init gin state))
                       (gin (change-simpadd0-gin
@@ -2525,26 +2680,34 @@
                                         gout-body.events)
                         :thm-name nil
                         :thm-index gout-body.thm-index
-                        :names-to-avoid gout-body.names-to-avoid)))
+                        :names-to-avoid gout-body.names-to-avoid
+                        :vars (set::union gout-init.vars
+                                          (set::union gout-test.vars
+                                                      (set::union
+                                                       gout-next.vars
+                                                       gout-body.vars))))))
        :for-ambig (prog2$ (impossible) (mv (irr-stmt) (irr-simpadd0-gout)))
        :goto (mv (stmt-fix stmt)
                  (make-simpadd0-gout
                   :events nil
                   :thm-name nil
                   :thm-index gin.thm-index
-                  :names-to-avoid gin.names-to-avoid))
+                  :names-to-avoid gin.names-to-avoid
+                  :vars nil))
        :continue (mv (stmt-fix stmt)
                      (make-simpadd0-gout
                       :events nil
                       :thm-name nil
                       :thm-index gin.thm-index
-                      :names-to-avoid gin.names-to-avoid))
+                      :names-to-avoid gin.names-to-avoid
+                      :vars nil))
        :break (mv (stmt-fix stmt)
                   (make-simpadd0-gout
                    :events nil
                    :thm-name nil
                    :thm-index gin.thm-index
-                   :names-to-avoid gin.names-to-avoid))
+                   :names-to-avoid gin.names-to-avoid
+                   :vars nil))
        :return (b* (((mv new-expr? (simpadd0-gout gout-expr?))
                      (simpadd0-expr-option stmt.expr? gin state)))
                  (mv (stmt-return new-expr?)
@@ -2552,13 +2715,15 @@
                       :events gout-expr?.events
                       :thm-name nil
                       :thm-index gout-expr?.thm-index
-                      :names-to-avoid gout-expr?.names-to-avoid)))
+                      :names-to-avoid gout-expr?.names-to-avoid
+                      :vars gout-expr?.vars)))
        :asm (mv (stmt-fix stmt)
                 (make-simpadd0-gout
                  :events nil
                  :thm-name nil
                  :thm-index gin.thm-index
-                 :names-to-avoid gin.names-to-avoid))))
+                 :names-to-avoid gin.names-to-avoid
+                 :vars nil))))
     :measure (stmt-count stmt))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2579,7 +2744,8 @@
                     :events gout-item.events
                     :thm-name nil
                     :thm-index gout-item.thm-index
-                    :names-to-avoid gout-item.names-to-avoid)))
+                    :names-to-avoid gout-item.names-to-avoid
+                    :vars gout-item.vars)))
        :stmt (b* (((mv new-item (simpadd0-gout gout-item))
                    (simpadd0-stmt item.unwrap gin state)))
                (mv (block-item-stmt new-item)
@@ -2587,7 +2753,8 @@
                     :events gout-item.events
                     :thm-name nil
                     :thm-index gout-item.thm-index
-                    :names-to-avoid gout-item.names-to-avoid)))
+                    :names-to-avoid gout-item.names-to-avoid
+                    :vars gout-item.vars)))
        :ambig (prog2$ (impossible) (mv (irr-block-item) (irr-simpadd0-gout)))))
     :measure (block-item-count item))
 
@@ -2608,7 +2775,8 @@
                :events nil
                :thm-name nil
                :thm-index gin.thm-index
-               :names-to-avoid gin.names-to-avoid)))
+               :names-to-avoid gin.names-to-avoid
+               :vars nil)))
          ((mv new-item (simpadd0-gout gout-item))
           (simpadd0-block-item (car items) gin state))
          (gin (change-simpadd0-gin
@@ -2622,7 +2790,8 @@
            :events (append gout-item.events gout-items.events)
            :thm-name nil
            :thm-index gout-items.thm-index
-           :names-to-avoid gout-items.names-to-avoid)))
+           :names-to-avoid gout-items.names-to-avoid
+           :vars (set::union gout-item.vars gout-items.vars))))
     :measure (block-item-list-count items))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2884,7 +3053,11 @@
                          gout-body.events)
          :thm-name nil
          :thm-index gout-body.thm-index
-         :names-to-avoid gout-body.names-to-avoid)))
+         :names-to-avoid gout-body.names-to-avoid
+         :vars (set::union gout-spec.vars
+                           (set::union gout-declor.vars
+                                       (set::union gout-decls.vars
+                                                   gout-body.vars))))))
   :hooks (:fix)
 
   ///
@@ -2909,7 +3082,8 @@
                     :events gout-fundef.events
                     :thm-name nil
                     :thm-index gout-fundef.thm-index
-                    :names-to-avoid gout-fundef.names-to-avoid)))
+                    :names-to-avoid gout-fundef.names-to-avoid
+                    :vars gout-fundef.vars)))
      :decl (b* (((mv new-decl (simpadd0-gout gout-decl))
                  (simpadd0-decl extdecl.unwrap gin state)))
              (mv (extdecl-decl new-decl)
@@ -2917,19 +3091,22 @@
                   :events gout-decl.events
                   :thm-name nil
                   :thm-index gout-decl.thm-index
-                  :names-to-avoid gout-decl.names-to-avoid)))
+                  :names-to-avoid gout-decl.names-to-avoid
+                  :vars gout-decl.vars)))
      :empty (mv (extdecl-empty)
                 (make-simpadd0-gout
                  :events nil
                  :thm-name nil
                  :thm-index gin.thm-index
-                 :names-to-avoid gin.names-to-avoid))
+                 :names-to-avoid gin.names-to-avoid
+                 :vars nil))
      :asm (mv (extdecl-fix extdecl)
               (make-simpadd0-gout
                :events nil
                :thm-name nil
                :thm-index gin.thm-index
-               :names-to-avoid gin.names-to-avoid))))
+               :names-to-avoid gin.names-to-avoid
+               :vars nil))))
   :hooks (:fix)
 
   ///
@@ -2953,7 +3130,8 @@
              :events nil
              :thm-name nil
              :thm-index gin.thm-index
-             :names-to-avoid gin.names-to-avoid)))
+             :names-to-avoid gin.names-to-avoid
+             :vars nil)))
        ((mv new-edecl (simpadd0-gout gout-edecl))
         (simpadd0-extdecl (car extdecls) gin state))
        (gin (change-simpadd0-gin
@@ -2967,7 +3145,8 @@
          :events (append gout-edecl.events gout-edecls.events)
          :thm-name nil
          :thm-index gout-edecls.thm-index
-         :names-to-avoid gout-edecls.names-to-avoid)))
+         :names-to-avoid gout-edecls.names-to-avoid
+         :vars (set::union gout-edecl.vars gout-edecls.vars))))
   :verify-guards :after-returns
   :hooks (:fix)
 
@@ -2994,7 +3173,8 @@
           :events gout-decls.events
           :thm-name nil
           :thm-index gout-decls.thm-index
-          :names-to-avoid gout-decls.names-to-avoid)))
+          :names-to-avoid gout-decls.names-to-avoid
+          :vars gout-decls.vars)))
   :hooks (:fix)
 
   ///
@@ -3065,7 +3245,8 @@
              :events nil
              :thm-name nil
              :thm-index gin.thm-index
-             :names-to-avoid gin.names-to-avoid)))
+             :names-to-avoid gin.names-to-avoid
+             :vars nil)))
        ((mv path tunit) (omap::head map))
        (new-path (simpadd0-filepath path))
        ((mv new-tunit (simpadd0-gout gout-tunit))
@@ -3081,7 +3262,8 @@
          :events (append gout-tunit.events gout-map.events)
          :thm-name nil
          :thm-index gout-map.thm-index
-         :names-to-avoid gout-map.names-to-avoid)))
+         :names-to-avoid gout-map.names-to-avoid
+         :vars (set::union gout-tunit.vars gout-map.vars))))
   :verify-guards :after-returns
 
   ///
@@ -3112,7 +3294,8 @@
          :events gout-map.events
          :thm-name nil
          :thm-index gout-map.thm-index
-         :names-to-avoid gout-map.names-to-avoid)))
+         :names-to-avoid gout-map.names-to-avoid
+         :vars gout-map.vars)))
   :hooks (:fix)
 
   ///
