@@ -36,6 +36,7 @@
                  pseudo-event-form-list
                  pseudo-event-form-listp
                  pos
+                 pos-fix
                  reterr
                  retok
                  symbol-list
