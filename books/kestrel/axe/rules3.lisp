@@ -596,7 +596,7 @@
            (equal (integerp (* 1/4 x))
                   (equal 0 (bvchop 2 x))))
   :hints (("Goal" :in-theory (e/d (bvchop)
-                                  (MOD-OF-EXPT-OF-2)))))
+                                  ()))))
 
 (defthm unsigned-byte-p-of-times-1/4
  (implies (and (posp x)
@@ -639,8 +639,6 @@
                                    ;<-of-logext-false
                                    ;<-of-logext-true
                                    logext-when-top-bit-0 sbp-32-when-non-neg)))))
-
-(local (in-theory (disable MOD-OF-EXPT-OF-2)))
 
 ;gen
 (defthm sbvlt-0-bvuminus
@@ -1585,7 +1583,7 @@
   :hints (("Goal" :in-theory (e/d (bvmod bvchop)
                                   (multiple-idioms-for-multiple-4
                                    mod-type
-                                   mod-of-expt-of-2
+
                                    )))))
 
 ;gen!
@@ -6513,7 +6511,7 @@
                                    ;;MOD-X-Y-=-X
                                    ;;MOD-X-Y-=-X+Y
                                    anti-slice
-                                   MOD-OF-EXPT-OF-2)))))
+                                   )))))
 
 (defthm bvmod-of-bvmult-same
   (implies (and (bvle 5 x 6)
@@ -6526,7 +6524,7 @@
                                    ;;MOD-X-Y-=-X
                                    ;;MOD-X-Y-=-X+Y
                                    anti-slice
-                                   MOD-OF-EXPT-OF-2)))))
+                                   )))))
 
 (defthm bvmod-of-bvplus
   (implies (and (bvlt size x (- (expt 2 size) n)) ;the bvplus doesn't overflow
@@ -6540,7 +6538,7 @@
                                           bvlt)
                                   (+-of-minus-1-and-bv2
                                    anti-slice
-                                   mod-of-expt-of-2)))))
+                                   )))))
 
 ;gen!
 (defthm bvmult-of-bvplus-for-sha1
@@ -6612,7 +6610,7 @@
                                    not-bvlt-of-max-arg2
                                    +-of-minus-1-and-bv2
                                    anti-slice
-                                   mod-of-expt-of-2
+
                                    mod-sum-cases
                                    MOD-UPPER-BOUND-LINEAR
                                    ;MOD-TYPE ;improve this rule!
@@ -7490,7 +7488,7 @@
                       (slice 8 5 x)
                     0)))
   :hints (("Goal" :in-theory (e/d (slice logtail bvchop)
-                                  (MOD-OF-EXPT-OF-2
+                                  (
                                    anti-slice)))))
 
 ;we may not want to do this if it's surrounded by a bvplus with a large size!
@@ -8524,7 +8522,7 @@
                                  bvchop-when-i-is-not-an-integer
                                  bvchop-when-top-bit-1)
                            (anti-slice
-                            MOD-OF-EXPT-OF-2
+
                             bvlt-of-*-arg3
                             plus-of-minus-3-bv-5
                             bvcat-equal-rewrite-alt bvcat-equal-rewrite logapp-equal-rewrite
@@ -9018,7 +9016,7 @@
            (equal (integerp (* 1/32 x))
                   (equal 0 (bvchop 5 x))))
   :hints (("Goal" :in-theory (e/d (bvchop)
-                                  (MOD-OF-EXPT-OF-2)))))
+                                  ()))))
 
 
 
@@ -9680,7 +9678,7 @@
            (equal (integerp (/ x 64))
                   (equal 0 (slice 5 0 x))))
   :hints (("Goal" :in-theory (e/d (bvchop)
-                                  (mod-of-expt-of-2)))))
+                                  ()))))
 
 (defthmd floor-of-64-when-usb-64
   (implies (unsigned-byte-p 64 x)
@@ -9717,7 +9715,7 @@
   :hints
   (("Goal"
     :in-theory (e/d (bvchop)
-                    (mod-of-expt-of-2)))))
+                    ()))))
 
 (defthmd *-of-1/64-when-multiple
   (implies (and (equal 0 (bvchop 6 x))
@@ -10148,7 +10146,7 @@
                             UNSIGNED-BYTE-P-FORCED)
                            (FLOOR-WHEN-USB-BIND-FREE
                             ;CANCEL-MOD-+
-                            anti-slice MOD-OF-EXPT-OF-2)))))
+                            anti-slice )))))
 
 (defthm bvplus-of-bvuminus-of-bvcat-same-helper
   (implies (and (<= m low)
@@ -11211,7 +11209,7 @@
                     0)))
   :hints (("Goal" :in-theory (e/d (slice logtail bvchop)
                                   (anti-slice
-                                   MOD-OF-EXPT-OF-2)))))
+                                   )))))
 
 ;gen the -1
 (defthm <-of-minus1-and-floor
@@ -11287,7 +11285,7 @@
            (equal (EQUAL (BVCHOP 31 K) 0)
                   nil))
   :hints (("Goal" :in-theory (e/d (bvchop unsigned-byte-p)
-                                  (MOD-OF-EXPT-OF-2)))))
+                                  ()))))
 
 ;; (thm
 ;;  (equal (< (+ (bvchop 31 x) y) x)
