@@ -17,12 +17,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(c$::input-files :files ("file.c")
-                 :const *old-code*)
+(c$::input-files :files ("file1.c")
+                 :const *old-code1*)
 
-(simpadd0 *old-code* *new-code* :proofs t)
+(simpadd0 *old-code1* *new-code1* :proofs t)
 
-(c$::output-files :const *new-code*)
+(c$::output-files :const *new-code1*)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
