@@ -31,7 +31,7 @@
   (xdoc::topstring
    (xdoc::p
     "Each validator keeps track of its own pending proposals,
-     in the @('proposed') map of @(tse validator-state).
+     in the @('proposed') map of @(tsee validator-state).
      The map is initially empty,
      and is extended only by @('propose') events,
      by the validator itself, with its own authored proposal."))
