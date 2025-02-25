@@ -33,26 +33,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Temporary additional symbolic execution rule,
-; to support simpadd0's preliminary proof generation capability.
-
-(defruled c::exec-binary-strict-pure-when-add-alt
-  (implies (and (equal c::op (c::binop-add))
-                (equal c::y (c::expr-value->value eval))
-                (equal c::objdes-y (c::expr-value->object eval))
-                (not (equal (c::value-kind c::x) :array))
-                (not (equal (c::value-kind c::y) :array))
-                (equal c::val (c::add-values c::x c::y))
-                (c::valuep c::val))
-           (equal (c::exec-binary-strict-pure
-                   c::op
-                   (c::expr-value c::x c::objdes-x)
-                   eval)
-                  (c::expr-value c::val nil)))
-  :use c::exec-binary-strict-pure-when-add)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (xdoc::evmac-topic-implementation
 
  simpadd0
@@ -233,6 +213,32 @@
              c::apconvert-expr-value
              c::add-values-of-sint-and-sint0
              ldm-expr-when-expr-zerop)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled simpadd-exec-binary-strict-pure-when-add-alt
+  :short "Alternative symbolic execution theorem."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used in the function equivalence proofs.")
+   (xdoc::p
+    "It is a temporary rule, just like the current function equivalence proofs,
+     which we are in the process of replacing with
+     more robust proofs generated bottom-up."))
+  (implies (and (equal c::op (c::binop-add))
+                (equal c::y (c::expr-value->value eval))
+                (equal c::objdes-y (c::expr-value->object eval))
+                (not (equal (c::value-kind c::x) :array))
+                (not (equal (c::value-kind c::y) :array))
+                (equal c::val (c::add-values c::x c::y))
+                (c::valuep c::val))
+           (equal (c::exec-binary-strict-pure
+                   c::op
+                   (c::expr-value c::x c::objdes-x)
+                   eval)
+                  (c::expr-value c::val nil)))
+  :use c::exec-binary-strict-pure-when-add)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3151,7 +3157,7 @@
            :enable (c::atc-all-rules
                     c::fun-env-lookup
                     omap::assoc
-                    c::exec-binary-strict-pure-when-add-alt)
+                    simpadd-exec-binary-strict-pure-when-add-alt)
            :disable ((:e c::ident)))))
     event)
   :guard-hints (("Goal" :in-theory (enable atom-listp))))
