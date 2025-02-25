@@ -15,6 +15,7 @@
 (include-book "last-blockchain-round")
 (include-book "ordered-blockchain")
 (include-book "proposed-author-self")
+(include-book "proposal-to-other")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -32,6 +33,7 @@
   :order-subtopics (round-after-last
                     last-blockchain-round
                     ordered-blockchain
-                    proposed-author-self))
+                    proposed-author-self
+                    proposal-to-other))
 
 ; TODO: continue
