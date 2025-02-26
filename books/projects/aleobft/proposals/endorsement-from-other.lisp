@@ -76,7 +76,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The reason why use the @(':expand') hint,
+    "The reason why use the @(':expand') hint in some of the proofs,
      instead of just enabling @(tsee endorsement-from-other-p),
      is that, if we do the latter,
      the @('endorsement-from-other-p-necc') rule does not fire,

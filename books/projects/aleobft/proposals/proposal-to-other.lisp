@@ -69,7 +69,7 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "The reason why use the @(':expand') hint,
+    "The reason why use the @(':expand') hint in some of the proofs,
      instead of just enabling @(tsee proposal-to-other-p),
      is that, if we do the latter,
      the @('proposal-to-other-p-necc') rule does not fire,
