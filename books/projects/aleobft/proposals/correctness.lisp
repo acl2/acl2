@@ -17,6 +17,7 @@
 (include-book "proposed-author-self")
 (include-book "proposal-to-other")
 (include-book "endorsement-from-other")
+(include-book "proposed-endorser-other")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -36,6 +37,7 @@
                     ordered-blockchain
                     proposed-author-self
                     proposal-to-other
-                    endorsement-from-other))
+                    endorsement-from-other
+                    proposed-endorser-other))
 
 ; TODO: continue
