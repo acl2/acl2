@@ -1,6 +1,6 @@
 ; Proving equivalence between the sha-3 spec and the spec from ../keccak
 ;
-; Copyright (C) 2023 Kestrel Institute
+; Copyright (C) 2023-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -36,7 +36,6 @@
 ;; Assumes a 256-bit message
 (acl2::unroll-spec-basic *keccak-256-256bit*
                          `(keccak::keccak-256 ,(acl2::symbolic-list 'in 256))
-                         :assumptions '((equal (len m) 256))
                          :rules :auto
                          :extra-rules '(acl2::len-of-cdr
                                         acl2::car-of-nthcdr
