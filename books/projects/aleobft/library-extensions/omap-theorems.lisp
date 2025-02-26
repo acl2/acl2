@@ -42,4 +42,19 @@
            (set::delete key (omap::keys map)))
     :induct t
     :enable (omap::delete
-             set::expensive-rules)))
+             set::expensive-rules))
+
+  (defrule omap::assoc-of-delete
+    (equal (omap::assoc key1 (omap::delete key map))
+           (if (equal key1 key)
+               nil
+             (omap::assoc key1 map)))
+    :induct t
+    :enable omap::delete)
+
+  (defrule omap::lookup-of-delete
+    (equal (omap::lookup key1 (omap::delete key map))
+           (if (equal key1 key)
+               nil
+             (omap::lookup key1 map)))
+    :enable omap::lookup))
