@@ -28,6 +28,7 @@
 
     ident-listp
 
+    ident-set
     ident-setp
     ident-set-fix
 
@@ -56,6 +57,7 @@
     expr-count
     expr-case
     make-expr-ident
+    expr-ident->ident
     expr-const
     expr-const->const
     expr-paren

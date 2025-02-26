@@ -25,7 +25,8 @@
                (set-difference-eq *std-pkg-symbols*
                                   '())
                c$::*abstract-syntax-symbols*
-               '(constant-symbolp
+               '(bool
+                 constant-symbolp
                  constant-value
                  defirrelevant
                  defxdoc+
