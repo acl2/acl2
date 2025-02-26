@@ -1389,20 +1389,20 @@
        which contains an @(tsee amb-expr/tyname).")
      (xdoc::p
       "The @(':alignof') case of this fixtype
-       includes an indication of the undescore variant.
+       includes an indication of the underscore variant.
        Note that the variant without underscores
-       represent the standard @('_Alignof'),
+       represents the standard @('_Alignof'),
        not the non-existing @('alignof'),
        while the other two represent @('__alignof') and @('__alignof__');
        see the ABNF grammar.
-       Presumable, @('_Alignof') was added to the grammar
+       Presumably, @('_Alignof') was added to the grammar
        after @('__alignof') and @('__alignof__') were GCC extensions.")
      (xdoc::p
       "We use different cases, @(':member') and @(':memberp')
        for the @('.') and @('->') operators.")
      (xdoc::p
       "For compound literals, we also capture
-       the presence of absence of the final comma
+       the presence or absence of the final comma
        just after the <i>initializer-list</i>.
        We formalize <i>initializer-list</i> [C17:6.7.9] [C17:A.2.2]
        as a list (which should be non-empty, unless GCC extensions are enabled)
