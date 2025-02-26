@@ -1,7 +1,7 @@
 ; A recognizer for a power of 2
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2020 Kestrel Institute
+; Copyright (C) 2013-2025 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -75,7 +75,7 @@
                 (integerp n))
            (integerp (* k (/ (expt 2 n)) y)))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (expt-of-+ power-of-2p) ( integerp-of-expt-when-natp))
+           :in-theory (e/d (expt-of-+ power-of-2p) (integerp-of-expt-when-natp))
            :use ((:instance integerp-of-* (x (* k (unary-/ (expt '2 n)))))
                  (:instance integerp-of-expt-when-natp
                             (r 2)
@@ -89,7 +89,7 @@
                 (integerp n))
            (integerp (* k y (/ (expt 2 n)))))
   :hints (("Goal" :do-not '(generalize eliminate-destructors)
-           :in-theory (e/d (expt-of-+ power-of-2p) ( integerp-of-expt-when-natp))
+           :in-theory (e/d (expt-of-+ power-of-2p) (integerp-of-expt-when-natp))
            :use ((:instance integerp-of-* (x (* k (unary-/ (expt '2 n)))))
                  (:instance integerp-of-expt-when-natp
                             (r 2)
